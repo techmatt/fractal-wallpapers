@@ -577,6 +577,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
     if args.what == "record":
         return _record_a_solve(args)
 
+    if args.what == "k-sweep":
+        return _sweep_the_ceiling(args)
+
     # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
     # reader who has just seen a stamp printed will type it either way and the
     # cost of not accepting both is a page silently written for a DIFFERENT
@@ -663,6 +666,19 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     print(f"{display_path(tentative.page(stamp))}")
     manifest = tentative.read_manifest(stamp)
     print(json.dumps({"stamp": stamp, **manifest["seats"], "counts": manifest["counts"]}, indent=2))
+    return 0
+
+
+def _sweep_the_ceiling(args: argparse.Namespace) -> int:
+    """One recorded seating per colour-ceiling `K`, so the trade can be looked at."""
+    from fractal_wallpapers.curation import k_sweep, solve, tentative
+
+    try:
+        rungs = k_sweep.sweep(rungs=args.k or k_sweep.RUNGS, n=args.n)
+    except (solve.SolveRefused, tentative.TentativeRefused) as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(rungs, indent=2))
     return 0
 
 
@@ -2605,6 +2621,7 @@ def add_commands(subcommands) -> None:
     from fractal_wallpapers.curation import growth as growth_module
     from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import hunt as hunt_module
+    from fractal_wallpapers.curation import k_sweep as k_sweep_module
     from fractal_wallpapers.curation import mine as mine_module
     from fractal_wallpapers.curation import pool_draw as pool_draw_module
     from fractal_wallpapers.curation import release as release_module
@@ -3576,6 +3593,44 @@ def add_commands(subcommands) -> None:
     # themed baselines of 2026-09-05 are what noticed. The three flags are the
     # same three `run` carries, from the same helper.
     themed_flags(recording)
+
+    sweeping_k = solve_verbs.add_parser(
+        "k-sweep",
+        help="one recorded seating per colour-ceiling K, to look at the trade",
+        description=(
+            "A COUNTERFACTUAL on ceiling.K, which is the headroom a colour gets over its "
+            "target rate before the ceiling refuses a candidate dominant in it. One solve "
+            "per K over ONE pool, everything else exactly what `record` passes, each rung "
+            "kept as a solve record named `sweepK_k<K>_n<N>_<stamp>` and a tentative "
+            "gallery with its page. IT MOVES NO DEFAULT: K stays whatever the constant "
+            "says, and setting it is a separate act taken off the pictures this writes. "
+            "RUN THE SHIPPED K AS A RUNG AND CHECK IT — a rung at the shipped K "
+            "reproduces the record `record` writes at the same N, and a control that "
+            "misses is itself the finding. Every rung is unpublished and every one holds "
+            "prune protection until its folder is deleted, so a sweep nobody is reading "
+            "is a sweep to delete."
+        ),
+    )
+    sweeping_k.add_argument(
+        "--k",
+        type=float,
+        action="append",
+        metavar="K",
+        help="a rung, repeatable. Unsaid, "
+        + ", ".join(f"{k:g}" for k in k_sweep_module.RUNGS)
+        + " run — the 2026-09-06 set, whose first is the shipped K and therefore the "
+        "control. The allowance a K buys is `floor(K * t * n) + 1`, and it is PRINTED per "
+        "rung rather than left to be computed: the product is taken in binary floating "
+        "point, so K=2.4 at n=1000 allows 50 where the arithmetic on paper says 51",
+    )
+    sweeping_k.add_argument(
+        "--n",
+        type=int,
+        default=k_sweep_module.SEATS,
+        help=f"how many wallpapers each rung seats (default {k_sweep_module.SEATS}, the "
+        "size a record is kept at — a counterfactual read at a size no record is kept at "
+        "is not comparable with the record it is a counterfactual on)",
+    )
 
     browsing = solve_verbs.add_parser(
         "browse", help="write a record's page again, off the rows it already holds"
