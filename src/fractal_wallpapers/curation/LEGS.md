@@ -478,6 +478,83 @@ population nobody chose.
 A file and never arguments, on the standing rule — this population is hundreds of
 places long and a Windows command line overflows a long way before it does.
 
+⚠ **A leaned manifest is RE-FLATTENED whenever the plan is smaller than it.**
+`build_plan` does not take `--floor-places` whole: it narrows `world["best"]` to
+the named keys and then passes that through [`proven_places`] →
+[`hunt.spread`] at `want[FLOOR] // per_place` places, **with no weights**, and
+`spread` is a flat round-robin over partitions. So a manifest that carries the
+standing draw-weight table — which is the only place the floor arm can carry it,
+since nothing under this draw reads one — keeps its lean only while the plan is
+larger than the manifest. Size the two together: a manifest at
+`budget * concurrency / (width * price)` against a plan at `PLAN_HEADROOM *
+workers * budget / rate` comes out about 1.6x covered, and the budget rather than
+the plan is then what stops the leg. `sheet_leg_0905` was inside that by accident
+(600 places against a plan of 1,347) and `maps_*_0905` by construction.
+
+### What a floor leg may stand on is a FREE SLOT, and `smooth` has almost none
+
+Measured 2026-09-05 over 9,901 proven unpinned places, which is the population
+`--floor-places` is cut from. Retention keeps
+[`candidate_ledger.RETAIN_PER_PAIR`] = 3 rows a (location, mode) pair, so what a
+floor unit can add prune-free is the *free slots* at its own mode's pairs — and
+the four field modes are not remotely alike on that axis:
+
+| mode | high-band places untried | free slots (proven) | places with one |
+|---|--:|--:|--:|
+| `curvature` | 3,468 | 17,868 | 6,633 |
+| `tia` | 2,623 | 14,245 | 5,355 |
+| `stripe` | 2,547 | 14,094 | 5,340 |
+| **`smooth`** | **80** | **2,237** | **1,510** |
+
+**`smooth` is the mode this pool was opened with**, so 5,682 of the 6,537
+high-band places already hold the full keep in it and only 80 have never been
+tried. A `smooth` floor unit is therefore bounded at about 2,237 candidates
+whatever the clock says, and a leg that asks for more is asking for rows the merge
+will drop — `draw_cells_smoke` kept 9.7% of such a pass and `thin_b2` 9.8%. Size
+a mode's unit off its free slots, not off its clear rate.
+
+**And a unit's width is its free slots, which is why `smooth` runs at 1.** The
+other three fill untried pairs at width 3 and are prune-free by construction; a
+`smooth` unit over places holding one or two rows already has one or two slots, so
+width 1 over every place with a slot buys the most places per second and keeps
+every row. What that gives up is the deeper slots — 727 of the 2,237 — which would
+cost a second and third unit at widths 2 and 3 over a quarter as many places.
+
+### A floor leg cannot weight its MODES, and the weighting is one unit each
+
+[`plan_floor`] hands every entry of `--floor-modes` the same `--floor-width` at
+every place in the manifest, and naming a mode twice does not double it: the draw
+is cached per `colorize.spelled` entry and the second turn reads the same sample
+back. So "weighted toward `smooth`" is not something one leg can be told. It is
+**one unit a mode, and the budgets carry the weighting**.
+
+**That costs no field sharing, which is the part worth knowing.** A field is
+dumped once per *(location, mode)* — never once per location — so four modes at
+one place and four places at one mode each pay four dumps. Splitting a leg by mode
+buys disjoint places at exactly the same price, and disjoint places are breadth.
+
+What it does cost is a setup and a merge each: `maps_*_0905`'s four units paid
+about 70 s of pool load apiece outside their budgets.
+
+### A candidate's price is `dump/W + rest`, and the width is half of it
+
+The 0.5895 s `sheet_leg_0905` reports is a **width-8** number and does not
+transfer. Off that leg's own `sequence.jsonl`, splitting the `dump` stage (paid
+once a pair) from everything else (paid once a candidate):
+
+| mode | dump a pair | rest a candidate | at W=8 | at W=3 | at W=1 |
+|---|--:|--:|--:|--:|--:|
+| `smooth` | 0.44 | 0.466 | 0.521 | 0.613 | 0.906 |
+| `tia` | 1.11 | 0.337 | 0.476 | 0.707 | 1.447 |
+| `curvature` | 2.00 | 0.373 | 0.623 | 1.039 | 2.373 |
+| `stripe` | 2.69 | 0.403 | 0.739 | 1.300 | 3.093 |
+
+`phoenix:classic` is the same arithmetic an order of magnitude up: 16.2 s a dump
+against 0.46 a candidate, which is 2.49 s at width 8 and 5.86 at width 1. **A
+narrow unit is a dump-dominated unit**, so the cheap-mode ordering inverts with
+the width — `stripe` is the dearest of the four at every width and `smooth` the
+cheapest, but the gap runs from 1.4x at width 8 to 3.4x at width 1.
+
 ### `--near-places` is the same thing for the near band, added 2026-09-04
 
 `--near-places FILE` takes the identical manifest and narrows the **near-band**

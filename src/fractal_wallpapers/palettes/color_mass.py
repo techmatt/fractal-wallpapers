@@ -662,8 +662,10 @@ def sweep_log():
     for a reason none of the three share: it is an **experiment log**, finished and
     not to be added to, and the only thing that would let this map be re-cut on
     other terms — excluding [`NOISY_MODES`], weighting the panel differently,
-    rolling to families instead of cells. Re-deriving it is 8.7 hours of wall over
-    27,053 renders, and the pictures it read were censused and deleted.
+    rolling to families instead of cells. Re-deriving it is **52.1 hours of engine
+    time** over 27,053 renders — its own rows' `seconds`, summed 2026-09-05, which
+    is where the 8.7 hours this said before went — and the pictures it read were
+    censused and deleted.
 
     Tracking it is out for the ordinary reason and by a wide margin: 25.7 MB
     against a 1 MiB per-file guard. What the history keeps is this manifest and
@@ -688,8 +690,8 @@ def sweep_log():
         # The rebuild and the restore are the same command on purpose. Every other
         # durable file names a subcommand that makes it again; this one has none.
         # The sweep ran out of `scratch/palette_mass_sweep/`, which is defined as
-        # disposable, and re-deriving it is 8.7 hours over pictures that were
-        # censused and deleted. That there is nothing to rebuild it WITH is the
+        # disposable, and re-deriving it is 52.1 engine hours over pictures that
+        # were censused and deleted. That there is nothing to rebuild it WITH is the
         # whole argument for archiving it, so the refusal says restore twice
         # rather than naming a command nobody can run.
         rebuild_command="fractal-wallpapers curate mass-sweep restore",
