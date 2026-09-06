@@ -213,6 +213,13 @@ LINES: tuple[tuple[str, str, dict], ...] = (
             "themed_radius": 0.3,
         },
     ),
+    # `--k` repeats, because the rungs of a counterfactual are a list and the
+    # shipped one is meant to be named among them as the control.
+    (
+        "curate solve k-sweep --k 2 --k 2.5 --n 200",
+        "curate_solve",
+        {"what": "k-sweep", "k": [2.0, 2.5], "n": 200},
+    ),
     # Both spellings of the stamp, because a reader who has just seen one printed
     # will type it either way and the cost of losing one is a page written for a
     # different record.
@@ -578,6 +585,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--themed-cap",
             "--themed-radius",
         ),
+        "k-sweep": ("--k", "--n"),
         "browse": ("--stamp",),
         "resolve": ("--stamp",),
         "list": (),
@@ -762,7 +770,7 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Eighteen groups and seventy-one verbs, and no group left spelling its verb as
+    """Eighteen groups and seventy-two verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored."""
@@ -772,7 +780,7 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 71
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 72
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

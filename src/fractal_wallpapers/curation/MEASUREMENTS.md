@@ -454,8 +454,12 @@ roster**, and a cell exclusion narrows the **offer** rather than the outcome —
 `SWEEP_K_allowance_0906`: four n=1000 seatings over one pool, everything but `K`
 identical to `20260906T133236Z`, whose seating the `K = 2` arm **reproduces
 exactly** — the same 1,000 keys in the same order, the same objective, the same
-refusal table. There is no `--k` anywhere in `cli/`; `solve.solve(rule=...)` is
-the override path and it is what the sweep drove.
+refusal table. There is no `--k` on `run` or `record` and there should not be;
+`solve.solve(rule=...)` is the override path, and `curate solve k-sweep`
+([`curation.k_sweep`]) is the leg that drives it. **The four records were deleted
+on 2026-09-06** once Matt decided not to read them — the sweep is to be rerun
+under the changed pool, and the command is what carries it rather than a driver in
+`scratch/`.
 
 | K | allowance | cells at it | short | worst | sum | seats moved |
 |---|--:|--:|--:|--:|--:|--:|
