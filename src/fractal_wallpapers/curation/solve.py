@@ -160,8 +160,25 @@ JUDGE_KEY = "p_ge4"
 #: fifth was a calibration stratum and [`curation.rank_key`] carries what it was.
 RANK_KEY = "rank-key"
 
+#: **The cascade, and it is OFF.** Above [`Q4_BAR`] the order is the fine-tier
+#: head's — `models/gallery_grade/`, fitted on human verdicts about pictures that
+#: had already cleared the gate — and below it nothing changes: those rows keep
+#: [`RANK_KEY`]'s value exactly.
+#:
+#: Two things make this a cascade rather than a fourth column. The head's output
+#: is **undefined below the bar**, because every row it was fitted on had cleared
+#: one, so a pool-wide ranking off it would rank rows it has never seen the like
+#: of. And the two stages are not on one scale, so the values are separated by a
+#: constant: an above-bar row is `1 + <fine score>` and a below-bar row is its
+#: rank-key value, which keeps every above-bar row ahead of every below-bar one
+#: and leaves the order *within* each stage the one its own quantity gives.
+#:
+#: **Reachable by name and never the default**, which is [`DEFAULT_KEY`] and stays
+#: `RANK_KEY`. Adoption is a later act; this is the flag it would flip.
+CASCADE_KEY = "cascade"
+
 #: The keys a caller may name.
-KEYS = (RANK_KEY, JUDGE_KEY)
+KEYS = (RANK_KEY, JUDGE_KEY, CASCADE_KEY)
 
 #: **The sort key this leg walks unasked**, since 2026-08-28: the fitted one.
 #:
@@ -660,11 +677,83 @@ def ranking_for(candidates, key: str = DEFAULT_KEY, log=print) -> tuple[dict | N
     named = str(key)
     if named == JUDGE_KEY:
         return None, None
-    if named != RANK_KEY:
+    if named not in (RANK_KEY, CASCADE_KEY):
         raise SolveRefused(f"the sort key is one of {KEYS}, not {key!r}")
     from fractal_wallpapers.curation import rank_key
 
-    return rank_key.order_for(candidates, log=log)
+    order, record = rank_key.order_for(candidates, log=log)
+    if named == RANK_KEY:
+        return order, record
+    return cascade_order(candidates, order, record, log=log)
+
+
+def cascade_order(candidates, order: dict, record: dict, log=print) -> tuple[dict, dict]:
+    """[`RANK_KEY`]'s order with the fine-tier head laid over it above [`Q4_BAR`].
+
+    The below-bar half is handed back **untouched** — same value, same order, same
+    unranked rows — because the head has nothing to say about it. Above the bar a
+    row's value becomes `1 + <the head's own P(>=4)>`, which puts every above-bar
+    row ahead of every below-bar one and orders the top by the quantity that was
+    fitted to order it.
+
+    ⚠ **`p_ge4` and not the head's `rank_score`, and the difference is not
+    cosmetic.** The two order this pool at Spearman **0.92** — a genuinely
+    different order — and the bar this head cleared is stated on `AUC(>=4)`, which
+    is read on `p_ge4`. Ranking on the summed score would seat on a quantity
+    nothing gated. It is also what [`models.head.rank_score`] says of itself: a
+    convenience for a queue, and deliberately not the interface.
+
+    An above-bar row the head has **no reading for** keeps its rank-key value and
+    is counted. That is the conservative direction: it falls behind every row the
+    head could read rather than jumping ahead of them, and a pool this head has
+    not been run over therefore degrades to [`RANK_KEY`] rather than to noise.
+    """
+    from fractal_wallpapers.models import gallery_grade_train
+
+    fine = gallery_grade_train.read_pool_scores()
+    if not fine:
+        raise SolveRefused(
+            f"the {CASCADE_KEY!r} order needs this pool read through the fine-tier head and "
+            f"{gallery_grade_train.pool_scores_path()} is not there. Run "
+            f"`fractal-wallpapers gallery-grade score-pool` first, or seat on {RANK_KEY!r}."
+        )
+    out = dict(order)
+    counted = {"above_bar": 0, "lifted": 0, "above_bar_unread": 0, "below_bar": 0}
+    for candidate in candidates:
+        if not candidate.above_bar:
+            counted["below_bar"] += 1
+            continue
+        counted["above_bar"] += 1
+        read = fine.get(str(candidate.key))
+        if read is None:
+            counted["above_bar_unread"] += 1
+            continue
+        # A probability, so already on 0..1: adding one puts the two stages a
+        # clean 1.0 apart with no rescaling to get wrong.
+        out[candidate.key] = 1.0 + float(read["p_ge4"])
+        counted["lifted"] += 1
+    log(
+        f"[cascade] {counted['lifted']:,} of {counted['above_bar']:,} above-bar rows take the "
+        f"fine head's order; {counted['above_bar_unread']:,} above the bar have no reading and "
+        f"keep the rank key's; {counted['below_bar']:,} below the bar are untouched"
+    )
+    return out, {
+        **record,
+        "key": CASCADE_KEY,
+        "cascade": {
+            "bar": Q4_BAR,
+            "on": "the candidate's own p_ge4, which is what `above_bar` reads",
+            "ordered_by": (
+                "the fine head's p_ge4 — the column its bar is stated on. Its rank_score "
+                "orders the same rows at Spearman 0.92, which is a different order and one "
+                "nothing gated"
+            ),
+            "second_stage": (
+                "models/gallery_grade — fitted on verdicts about rows already past the gate"
+            ),
+            **counted,
+        },
+    }
 
 
 def value_of(candidate, order: dict | None) -> float:
@@ -3069,7 +3158,9 @@ __all__ = [
     "LEGS",
     "OBJECTIVE",
     "OUTSIDE_THE_VIEW",
+    "CASCADE_KEY",
     "Q4_BAR",
+    "cascade_order",
     "Q4_BASIS",
     "RANK_KEY",
     "ROW_BACKSTOP",

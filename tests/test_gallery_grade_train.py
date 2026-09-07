@@ -344,78 +344,27 @@ def test_the_source_geometry_is_the_candidate_column_the_seating_reads() -> None
 # --------------------------------------------------------------------------- #
 # The stopping rule.
 # --------------------------------------------------------------------------- #
-def test_the_objective_is_negated_average_precision_at_the_shipped_boundary() -> None:
-    import numpy
+def test_the_two_metrics_are_unreadable_under_one_condition_and_it_is_the_same_one() -> None:
+    """★ Why there is no fallback branch, kept as a pin after the branch went.
 
-    from fractal_wallpapers.models import metrics, render_deploy
-
-    labels = numpy.array([1, 2, 3, 4, 3, 2])
-    probabilities = numpy.array(
-        [[0.9, 0.2, 0.1], [0.9, 0.4, 0.2], [0.9, 0.8, 0.3], [0.9, 0.95, 0.7]]
-        + [[0.9, 0.7, 0.2]] * 2
-    )
-    value, rule = trainer.objective(labels, probabilities)
-    expected = metrics.average_precision(
-        render_deploy.hits_of(labels), render_deploy.rank_scores(probabilities)
-    )
-    assert rule == "ap_ge3"
-    assert value == pytest.approx(-expected)
-
-
-def test_the_declared_auc_fallback_is_unreachable_under_this_repository_s_metrics() -> None:
-    """★ The fallback cannot fire, and this is the pin that says so out loud.
-
-    The recipe declares AUC(>=3) as the fallback for a stopping slice AP cannot be
-    read on. But [`metrics.average_precision`] and [`metrics.auc`] return `None`
-    under **exactly** the same condition — one class absent at the boundary — so
-    there is no slice where the first is unreadable and the second is not. The
-    branch is kept because it is what the recipe declares and because it costs
-    nothing; what is asserted here is that it is dead, so the day either metric
-    learns to answer on a degenerate slice this test fails and somebody re-reads
-    which rule a run actually stopped on.
+    The first band declared AUC(>=3) as the fallback for a slice AP could not be
+    read on. It could never have fired: [`metrics.average_precision`] and
+    [`metrics.auc`] return `None` under **exactly** the same condition — one class
+    absent at the boundary — so no slice exists where the first fails and the
+    second answers. That is what makes [`readable_at`] a single question asked
+    once before a fit rather than a branch inside the loop, and the day either
+    metric learns to answer on a degenerate slice this test fails and somebody
+    re-reads whether the arrangement still holds.
     """
-    import numpy
-
     from fractal_wallpapers.models import metrics
 
     for labels in ([3, 4, 3, 4], [1, 2, 1, 2]):
-        hits = [1 if grade >= trainer.HIT_TIER else 0 for grade in labels]
-        scores = [0.1, 0.4, 0.2, 0.3]
-        assert metrics.average_precision(hits, scores) is None
-        assert metrics.auc(hits, scores) is None
-        probabilities = numpy.array([[0.9, score, 0.0] for score in scores])
-        value, rule = trainer.objective(numpy.array(labels), probabilities)
-        assert rule == "undefined" and value == float("inf")
-
-
-# --------------------------------------------------------------------------- #
-# The band's pick.
-# --------------------------------------------------------------------------- #
-def test_the_band_picks_on_the_statistic_the_epoch_was_chosen_on(tmp_path, monkeypatch) -> None:
-    monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
-    written = {("frozen", 0): -0.80, ("frozen", 1): -0.81, ("more", 0): -0.90, ("more", 1): -0.70}
-    for (arm, seed), objective in written.items():
-        directory = tmp_path / trainer.run_name(arm, seed)
-        directory.mkdir(parents=True)
-        (directory / "metrics.json").write_text(
-            json.dumps(
-                {
-                    "run": trainer.run_name(arm, seed),
-                    "best_epoch": 3,
-                    "best_selection_objective": objective,
-                    "best_selection_rule": "ap_ge3",
-                    "wall_seconds": 1.0,
-                    "freezing": {"trainable_share": 0.5},
-                    "held_out": {"rows": 201},
-                }
-            ),
-            encoding="utf-8",
-        )
-    record = trainer.band(arms=("frozen", "more"), seeds=(0, 1))
-    assert record["pick"] == {"arm": "more", "seed": 0, "run": "more_seed0"}
-    assert record["arms"]["more"]["best_stopping_ap"] == 0.90
-    assert record["arms"]["more"]["spread"] == pytest.approx(0.20)
-    assert record["arms"]["frozen"]["mean_stopping_ap"] == pytest.approx(0.805)
+        for boundary in (3, 4):
+            hits = [1 if grade >= boundary else 0 for grade in labels]
+            scores = [0.1, 0.4, 0.2, 0.3]
+            unreadable = metrics.average_precision(hits, scores) is None
+            assert unreadable == (metrics.auc(hits, scores) is None)
+            assert unreadable == (not trainer.readable_at(labels, boundary))
 
 
 def test_a_band_with_nothing_fitted_says_so_rather_than_picking(tmp_path, monkeypatch) -> None:
@@ -444,3 +393,203 @@ def test_every_fitted_run_says_its_held_out_number_is_the_stopping_slice() -> No
         record = json.loads(path.read_text(encoding="utf-8"))
         assert "stopping slice" in record["held_out_is"]
         assert "not eval-eligible" in record["held_out_is"]
+
+
+# --------------------------------------------------------------------------- #
+# The band's own stopping rule, and the branch that is asked once.
+# --------------------------------------------------------------------------- #
+def test_a_slice_is_readable_at_a_boundary_only_when_it_holds_both_classes() -> None:
+    assert trainer.readable_at([1, 2, 3, 4], 4)
+    assert trainer.readable_at([3, 4], 4)
+    assert not trainer.readable_at([4, 4, 4], 4)
+    assert not trainer.readable_at([1, 2, 3], 4)
+    assert not trainer.readable_at([], 4)
+
+
+def test_each_rule_reads_its_own_boundary_off_its_own_column() -> None:
+    """★ The correction this band exists for.
+
+    `ap_ge3` ranks by `p_ge3` at the 3 boundary and `auc_ge4` by `p_ge4` at the 4
+    boundary. A rule that read one cutpoint and scored another would be two
+    questions asked as one, and the first band's whole finding is that the 3
+    boundary is not the one a seating inside the gate's own top orders on.
+    """
+    import numpy
+
+    from fractal_wallpapers.models import metrics
+
+    labels = numpy.array([1, 2, 3, 4, 4, 3, 2, 4])
+    # `p_ge3` orders one way and `p_ge4` the reverse, so a rule reading the wrong
+    # column cannot accidentally agree with the right one.
+    p3 = numpy.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+    p4 = 1.0 - p3
+    probabilities = numpy.stack([numpy.ones_like(p3), p3, p4], axis=1)
+
+    value, rule = trainer.objective(labels, probabilities, "ap_ge3")
+    assert rule == "ap_ge3"
+    assert value == pytest.approx(-metrics.average_precision((labels >= 3).astype(int), p3))
+
+    value, rule = trainer.objective(labels, probabilities, "auc_ge4")
+    assert rule == "auc_ge4"
+    assert value == pytest.approx(-metrics.auc((labels >= 4).astype(int), p4))
+
+
+def test_a_rule_nobody_declared_is_refused_rather_than_defaulted() -> None:
+    import numpy
+
+    with pytest.raises(trainer.GradeTrainingError):
+        trainer.objective(numpy.array([3, 4]), numpy.ones((2, 3)), "auc_ge2")
+
+
+def test_an_unreadable_boundary_raises_here_rather_than_returning_infinity() -> None:
+    """The first band's per-epoch fallback is gone and this is what replaced it.
+
+    `readable_at` is asked before the loop, so reaching an unreadable boundary
+    inside one is a fault rather than a branch — and a run that silently returned
+    infinity every epoch would stop on its patience and call that a choice.
+    """
+    import numpy
+
+    with pytest.raises(trainer.GradeTrainingError):
+        trainer.objective(numpy.array([4, 4, 4]), numpy.full((3, 3), 0.5), "auc_ge4")
+
+
+# --------------------------------------------------------------------------- #
+# Bands.
+# --------------------------------------------------------------------------- #
+def test_the_first_band_keeps_bare_names_and_every_later_one_prefixes() -> None:
+    """Renaming the first band's directories would make every report quoting
+    `more_seed1` wrong about a run that still exists."""
+    assert trainer.run_name("more", 1, trainer.FIRST_BAND) == "more_seed1"
+    assert trainer.run_name("more", 1, "auc_ge4") == "auc_ge4_more_seed1"
+    assert trainer.band_path(trainer.FIRST_BAND).name == "band.json"
+    assert trainer.band_path("auc_ge4").name == "band_auc_ge4.json"
+
+
+def test_a_band_nobody_declared_is_refused() -> None:
+    with pytest.raises(trainer.GradeTrainingError):
+        trainer.run_name("more", 0, "auc_ge2")
+
+
+def _fitted(tmp_path, values: dict, band: str = "auc_ge4") -> None:
+    """Write a `metrics.json` per `(arm, seed)` carrying the given statistics."""
+    for (arm, seed), (statistic, spearman) in values.items():
+        directory = tmp_path / trainer.run_name(arm, seed, band)
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "metrics.json").write_text(
+            json.dumps(
+                {
+                    "run": trainer.run_name(arm, seed, band),
+                    "band": band,
+                    "best_epoch": 3,
+                    "best_selection_objective": -statistic,
+                    "best_selection_rule": band,
+                    "wall_seconds": 1.0,
+                    "freezing": {"trainable_share": 0.5},
+                    "held_out": {"rows": 201, "auc_ge4": statistic, "spearman": spearman},
+                }
+            ),
+            encoding="utf-8",
+        )
+
+
+def test_the_arm_is_picked_on_the_mean_and_the_seed_on_the_median(tmp_path, monkeypatch) -> None:
+    """★ Neither half is the argmax, and both halves matter.
+
+    `more` here has the single best run of the band and the worse mean, so an
+    argmax over runs would pick it. And inside the winning arm the median seed is
+    not the best one — which is the point: the epoch surface is flat enough that
+    the best of three seeds is a coin flip rather than a fact about the arm.
+    """
+    monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda: {"unreadable": "not here"})
+    _fitted(
+        tmp_path,
+        {
+            ("last_block", 0): (0.70, 0.4),
+            ("last_block", 1): (0.72, 0.4),
+            ("last_block", 2): (0.74, 0.4),
+            ("more", 0): (0.50, 0.4),
+            ("more", 1): (0.60, 0.4),
+            ("more", 2): (0.99, 0.4),
+        },
+    )
+    read = trainer.band(seeds=(0, 1, 2))
+    assert read["arms"]["last_block"]["mean_selection"] == pytest.approx(0.72)
+    assert read["arms"]["more"]["mean_selection"] == pytest.approx(0.6967, abs=1e-4)
+    assert read["pick"]["arm"] == "last_block", "the single best RUN is `more`, and it loses"
+    assert read["pick"]["seed"] == 1, "the median seed, not the 0.74 one"
+    assert read["pick"]["even_count_took_the_lower_middle"] is False
+
+
+def test_an_even_seed_count_takes_the_lower_middle_and_says_so(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda: {"unreadable": "not here"})
+    _fitted(tmp_path, {("more", 0): (0.60, 0.4), ("more", 1): (0.80, 0.4)})
+    read = trainer.band(arms=("more",), seeds=(0, 1))
+    assert read["pick"]["seed"] == 0
+    assert read["pick"]["even_count_took_the_lower_middle"] is True
+
+
+# --------------------------------------------------------------------------- #
+# The bar.
+# --------------------------------------------------------------------------- #
+def _bar(tmp_path, band: str = "auc_ge4") -> None:
+    (tmp_path / f"bar_{band}.json").write_text(
+        json.dumps(
+            {
+                "band": band,
+                "registered_at": "2026-09-06T00:00:00Z",
+                "gated": {
+                    "incumbents": list(trainer.GATED_INCUMBENTS),
+                    "statistics": list(trainer.GATED_STATISTICS),
+                },
+                "incumbents": {
+                    "candidate_p_ge4": {"auc_ge4": 0.53, "spearman": 0.09},
+                    "rank_key": {"auc_ge4": 0.54, "spearman": 0.14},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def test_a_bar_refuses_to_be_rewritten_after_its_band(tmp_path, monkeypatch) -> None:
+    """A bar rewritten after the fact is a bar fitted to what happened, which is
+    the whole thing pre-registration is for."""
+    monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
+    _bar(tmp_path)
+    with pytest.raises(trainer.GradeTrainingError):
+        trainer.write_bar(log=lambda *_args: None)
+
+
+def test_the_bar_gates_every_seed_and_one_failing_cell_fails_the_band(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda: {"unreadable": "not here"})
+    _bar(tmp_path)
+    _fitted(
+        tmp_path,
+        {("more", 0): (0.70, 0.30), ("more", 1): (0.71, 0.30), ("more", 2): (0.72, 0.30)},
+    )
+    _, document = trainer.acceptance(log=lambda *_args: None)
+    assert document["verdict"] == "CLEARED"
+    # Four cells a seed — two incumbents by two statistics — at three seeds.
+    assert len(document["cells"]) == 12
+    assert document["worst_margin"] == pytest.approx(0.16, abs=1e-9)
+
+    # One seed slipping under one incumbent on one statistic fails the band.
+    _fitted(tmp_path, {("more", 1): (0.71, 0.13)})
+    _, document = trainer.acceptance(log=lambda *_args: None)
+    assert document["verdict"] == "NOT CLEARED"
+    assert [cell["statistic"] for cell in document["failures"]] == ["spearman"]
+    assert document["failures"][0]["incumbent"] == "rank_key"
+
+
+def test_the_bar_names_both_incumbents_and_not_the_easier_one() -> None:
+    """An arm that beat the judge's column and lost to the shipped key would have
+    improved nothing anybody ships — `curation.render_grade` made exactly this
+    correction for the render judge, and it is the same correction here."""
+    assert set(trainer.GATED_INCUMBENTS) == {"candidate_p_ge4", "rank_key"}
+    assert set(trainer.GATED_STATISTICS) == {"auc_ge4", "spearman"}

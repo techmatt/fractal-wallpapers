@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "band": "auc_ge4",
+  "registered_at": "2026-09-07T06:14:31Z",
+  "rule": "the winning arm must beat BOTH incumbents on BOTH statistics at EVERY seed, strictly, on the held-out lineages. Any one of those failing is a FAIL for the band \u2014 there is no partial credit and no best-of",
+  "gated": {
+    "incumbents": [
+      "candidate_p_ge4",
+      "rank_key"
+    ],
+    "statistics": [
+      "auc_ge4",
+      "spearman"
+    ]
+  },
+  "incumbents": {
+    "candidate_p_ge4": {
+      "auc_ge4": 0.5278458453998663,
+      "spearman": 0.09006218167336612,
+      "rows": 201
+    },
+    "rank_key": {
+      "auc_ge4": 0.5434395188237915,
+      "spearman": 0.13794695883552427,
+      "rows": 201
+    }
+  },
+  "population": {
+    "rows": 201,
+    "base_rates": {
+      "ge2": 0.9701,
+      "ge3": 0.7811,
+      "ge4": 0.3333
+    },
+    "is": "the stopping slice \u2014 within-store held out, optimistic by one early stop, and drawn from a store that is not eval-eligible. This bar says which of three quantities orders these rows best and nothing about any other rows"
+  },
+  "does_not_gate": "the arm ranking, the epoch, or anything about the pool. Adoption is a separate act and this bar does not authorize one"
+}

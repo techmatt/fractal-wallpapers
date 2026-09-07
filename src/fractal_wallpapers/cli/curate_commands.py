@@ -2683,6 +2683,58 @@ def keeping_verbs(verbs, *, noun: str, force: str, order=("check", "save", "rest
     return verbs
 
 
+def seat_sheet_cap() -> int:
+    """The sheet's cap, read off the module rather than restated in a help string."""
+    from fractal_wallpapers.curation import seat_sheet
+
+    return seat_sheet.CAP
+
+
+def curate_seat_sheet(args: argparse.Namespace) -> int:
+    """Solve one pool twice and lay out only the seats the two keys disagree about."""
+    from fractal_wallpapers.curation import seat_sheet, solve
+    from fractal_wallpapers.models import gallery_grade_train
+
+    # ONE pool, solved twice. Two pools would be two populations and the diff
+    # would carry whatever moved between them as though the key had done it.
+    candidates, _refused = solve.pool()
+    try:
+        incumbent_order, incumbent_coverage = solve.ranking_for(candidates, solve.RANK_KEY)
+        cascade_order, cascade_coverage = solve.ranking_for(candidates, solve.CASCADE_KEY)
+    except solve.SolveRefused as refusal:
+        print(refusal)
+        return 1
+
+    def run(order, coverage, key):
+        return solve.solve(candidates, n=args.n, order=order, coverage=coverage, key=key)
+
+    print(f"[seat-sheet] solving n={args.n} under {solve.RANK_KEY!r}")
+    incumbent = run(incumbent_order, incumbent_coverage, solve.RANK_KEY)
+    print(f"[seat-sheet] solving n={args.n} under {solve.CASCADE_KEY!r}")
+    candidate = run(cascade_order, cascade_coverage, solve.CASCADE_KEY)
+
+    diff = seat_sheet.difference(incumbent, candidate)
+    # The columns the page captions each card with, joined here because this is
+    # the one place that holds both orders and the head's own reading at once.
+    fine = gallery_grade_train.read_pool_scores()
+    for half in ("arriving", "departing"):
+        for row in diff[half]:
+            read = fine.get(str(row["key"])) or {}
+            # `p_ge4` and not `rank_score`: it is the column the cascade orders
+            # on and the one the head's bar is stated against, and the two order
+            # this pool at Spearman 0.92 rather than identically.
+            row["fine_score"] = read.get("p_ge4")
+            row["rank_key"] = incumbent_order.get(str(row["key"]))
+    try:
+        page, record = seat_sheet.build(args.sheet_name, diff, cap=args.cap)
+    except seat_sheet.SeatSheetError as nothing:
+        print(nothing)
+        return 0
+    print(json.dumps(record, indent=1))
+    print(display_path(page))
+    return 0
+
+
 def add_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
     from fractal_wallpapers.curation import below_bar as below_bar_module
@@ -4845,4 +4897,30 @@ def add_commands(subcommands) -> None:
         help="run one step only: census every finished wallpaper, or read the tables off a "
         "census already taken (default: both)",
     )
+    seating_sheet = steps.add_parser(
+        "seat-sheet",
+        help="the seats that change hands when the cascade orders the seating instead",
+        description=(
+            "ONE pool, solved twice — under the shipped rank key and under the cascade — "
+            "and a page of only the rows where the two disagree, sorted good to bad by the "
+            "fine head and marked arriving or departing. It uses the ledger's STORED "
+            "pictures and renders nothing, it ingests nowhere, and it is not a label "
+            "instrument: the captions are open so it cannot be read as one."
+        ),
+    )
+    seating_sheet.add_argument(
+        "--n", type=int, default=1000, help="gallery size both solves run at (default 1000)"
+    )
+    seating_sheet.add_argument(
+        "--cap",
+        type=int,
+        default=seat_sheet_cap(),
+        help=f"at most this many cards, sampled evenly across the fine head's score range "
+        f"if more differ (default {seat_sheet_cap()})",
+    )
+    seating_sheet.add_argument(
+        "--sheet-name", default="cascade_vs_rank_key", help="what to call this sheet's directory"
+    )
+    seating_sheet.set_defaults(handler=curate_seat_sheet)
+
     expressing.set_defaults(handler=curate_expressed)
