@@ -177,13 +177,13 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **113.60 s over the 3,831
-it holds, 122 deselected**, on this machine, 2026-09-06, on a `.[dev,models]`
-install with a release engine built. The **slow** lane's last reading is **6:43
-over 3,958, 0 skipped**, taken two prompts earlier on the same install and **not
-re-taken since**: eleven fast-lane tests have gone since, so the next slow lane
-should read 3,947 and a figure other than that is worth reading rather than
-assuming. **Zero skips is the normal reading now and 19 was the render cache
+Both are measured, not estimated. The **fast** lane is **117.71 s over the 3,843
+it holds, 123 deselected**, on this machine, 2026-09-06, on a `.[dev,models]`
+install with a release engine built and three label servers up beside it. The
+**slow** lane's last reading is **6:43 over 3,958, 0 skipped**, taken three
+prompts earlier on the same install and **not re-taken since**: eleven fast-lane
+tests have gone and thirteen have landed since, so the next slow lane should read
+3,960 and a figure other than that is worth reading rather than assuming. **Zero skips is the normal reading now and 19 was the render cache
 being short** — a **store** condition, not a tree fault, confirmed by the first
 lane to read a full cache: `renders plan` then `renders build` is what fills it.
 The 19 were worth roughly forty seconds of engine renders and a training loop, so

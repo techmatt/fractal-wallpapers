@@ -450,6 +450,23 @@ original is never modified; `finished_train.population` derives the exclusion at
 read instead. The numbers are in
 [`data/strange_render/README.md`](../../../data/strange_render/README.md).
 
+**And 117 renders are in BOTH stores, which a pooled read counts twice.** Same
+place, mode with the same settings, curve, map and palette pass — `render_key`
+identical, so it is one picture with two verdicts, and the crops are byte-identical
+under identical job names in the two caches. Every one is an `itinerary` whose
+texture said nothing, so it is the smooth field spent by rank bit for bit and both
+sides route to `smooth_render`; the two verdicts agree on all 117. A **per-head**
+read never saw this — `finished_train.population` excludes the strange-store copy as
+off-kind already — but the two **pooled** reads did: `curation.rank_key.fit` had 52
+of them twice in its 3,278-row fit, once on each kind's side of the out-of-fold AUC
+with the lineage group and the fold assigned twice, and `models.render_train
+.population` had all 117. `finished.crossovers` is the one place this is decided
+now, asked of the same router, and both callers go through it; the fit is 3,226 rows
+and the pooled population 11,849. **Nothing was written to a store**, and a crossover
+whose two rows route differently is left whole and reported rather than tiebroken —
+none do today. `models.render_folds.pool` was never double-counting: it routes on
+`routed_to(mode)` alone, which keeps each of the 117 once, in `strange_render`.
+
 **A mode can route to the other store without being that mode.** A modulate —
 `itinerary`, and `tail_itinerary` beside it — shifts its base's palette position by
 an address field, and where that field has no span the shift is zero everywhere and

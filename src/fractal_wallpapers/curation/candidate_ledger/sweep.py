@@ -544,7 +544,7 @@ def delete_pictures(named, log=print) -> dict:
     of a store somebody has swept before, and a leg that refused to finish over
     one would leave the records ahead of the disk.
     """
-    from fractal_wallpapers.paths import rehome
+    from fractal_wallpapers.paths import Tiers, rehome
 
     out = {
         "asked": 0,
@@ -555,9 +555,12 @@ def delete_pictures(named, log=print) -> dict:
         "colormaps": 0,
         "colormap_bytes": 0,
     }
+    # Once above the loop: a prune's doomed list is tens of thousands of names
+    # and resolving the tiers per name is 246x the cost of resolving them here.
+    tiers = Tiers.current()
     for stored in named:
         out["asked"] += 1
-        where = rehome(str(stored))
+        where = rehome(str(stored), tiers)
         if where is None:
             out["absent"] += 1
             continue

@@ -68,6 +68,12 @@ excluded where it is **read** — [`fractal_wallpapers.models.finished_train`]
 derives it at the training read, the same way eval-eligibility is derived and
 never stored.
 
+A **pooled** read has the same question one turn harder: 117 renders are labelled
+in *both* stores, which is one picture with two verdicts rather than a row in the
+wrong place, and a reader that unions the corpora counts each twice.
+[`crossovers`] is that decided once, off the same router, for every caller that
+pools.
+
 ## Eligibility, and why it is not the location store's rule
 
 Over there, a batch may be an instrument if its draw carried no model score and
@@ -282,6 +288,77 @@ def routes_to(row: dict, extend: bool = False) -> str:
 
     flat = texture_flat.extend_with(row) if extend else texture_flat.flat_for(row)
     return routed_to(row.get("mode"), flat)
+
+
+def crossovers(pairs) -> tuple[set, dict]:
+    """`(the (kind, render) pairs a pooled read must leave out, the record)`.
+
+    A finished render is judged per picture and the two stores are keyed apart,
+    so nothing stops one render being labelled in **both**. **117 are**, on
+    2026-09-06 — every one of them an `itinerary` whose texture said nothing, so
+    it is the smooth field spent by rank bit for bit and the two stores hold two
+    verdicts about literally the same pixels. A reader that pools the stores
+    counts each of those twice, which is what
+    [`fractal_wallpapers.curation.rank_key.fit`] was doing to 52 of them.
+
+    **Nothing is written, moved or re-keyed.** The stores are append-only, an
+    original is never modified, and the row this leaves out is a real verdict a
+    person cast. This is the same read-side arrangement [`routes_to`] already
+    serves for the forty `rare_palette` rows, asked of the same router: the
+    render is counted once, in the store its **routed mode** names — which is
+    [`curation.hunt.kind_of`], which is
+    [`curation.mode_policy.routed_mode`]'s KIND half.
+
+    `pairs` is `[(kind, row)]` over both stores; what comes back is the set of
+    `(kind, render_key)` a caller must skip. Only a render **both** stores hold
+    is considered — a row in the wrong store on its own is a different question
+    with a different answer, and this one is not it.
+
+    **A crossover the router cannot settle is left whole and reported.** Two rows
+    of one render can only route differently if the flatness register answers
+    differently at their two geometries — [`render_key`] carries no resolution
+    and [`coloring.texture_flat.KEYED`] does — and inventing a tiebreak there
+    would be deciding which store owns a mode on no evidence. None disagree
+    today; the record says so rather than a caller assuming it.
+    """
+    held: dict = {}
+    for kind, row in pairs:
+        identity = render_key(row)
+        if identity is None:
+            continue
+        held.setdefault(identity, {}).setdefault(kind, []).append(row)
+
+    leave_out: set = set()
+    kept_in: dict[str, int] = {}
+    ambiguous: list[dict] = []
+    crossings = 0
+    for identity, by_kind in held.items():
+        if len(by_kind) < 2:
+            continue
+        crossings += 1
+        routed = {routes_to(row) for rows in by_kind.values() for row in rows}
+        owner = next(iter(routed)) if len(routed) == 1 else None
+        if owner is None or owner not in by_kind:
+            ambiguous.append(
+                {
+                    "place": str(identity[0]),
+                    "mode": str(identity[1]),
+                    "held_by": sorted(by_kind),
+                    "routes_to": sorted(routed),
+                }
+            )
+            continue
+        kept_in[owner] = kept_in.get(owner, 0) + 1
+        leave_out.update((kind, identity) for kind in by_kind if kind != owner)
+
+    record = {
+        "renders_in_both_stores": crossings,
+        "rows_left_out": sum(len(held[identity][kind]) for kind, identity in leave_out),
+        "kept_in": dict(sorted(kept_in.items())),
+        "routed_by": "labeling.finished.routes_to -> hunt.kind_of -> mode_policy.routed_mode",
+        "ambiguous": ambiguous,
+    }
+    return leave_out, record
 
 
 def check(head: str, row: dict, extend: bool = False) -> dict:
@@ -563,6 +640,7 @@ __all__ = [
     "assert_pin_holds",
     "batch_path",
     "check",
+    "crossovers",
     "eval_split_path",
     "head_of",
     "pinned",

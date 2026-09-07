@@ -36,7 +36,7 @@ def sidecar_in_a_tmp_store(tmp_path, monkeypatch):
     monkeypatch.setattr(signatures, "sidecar_path", lambda: tmp_path / signatures.SIDECAR_NAME)
     monkeypatch.setattr(
         "fractal_wallpapers.paths.rehome",
-        lambda path: path if pathlib.Path(path).is_file() else None,
+        lambda path, _tiers=None: path if pathlib.Path(path).is_file() else None,
     )
     return tmp_path
 

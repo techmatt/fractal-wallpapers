@@ -282,16 +282,20 @@ def missing(candidates, held=None) -> list:
     row's pair — because the pool is not the only population worth sweeping: the
     fit's own label rows include recipes a person **rejected**, which the pool
     excludes by rule and the key still has to be fitted on.
+
+    The tiers are resolved **once** above the loop, which is a 246x difference a
+    row and the whole cost of this pass — see [`fractal_wallpapers.paths.rehome`].
     """
-    from fractal_wallpapers.paths import rehome
+    from fractal_wallpapers.paths import Tiers, rehome
 
     known = by_recipe() if held is None else held
+    tiers = Tiers.current()
     out = []
     for candidate in candidates:
         key = str(candidate.key)
         if key in known:
             continue
-        where = rehome(candidate.picture)
+        where = rehome(candidate.picture, tiers)
         if where is not None:
             out.append((key, Path(where)))
     return out

@@ -132,7 +132,7 @@ def test_the_sweep_reads_what_the_sidecar_does_not_hold_and_skips_what_it_does(
     store, tmp_path, monkeypatch
 ):
     made = picture(tmp_path, numpy.full((64, 64), 10.0), name="one")
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _path: made)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _path, _tiers=None: made)
     pool = [Candidate("a", "artifacts/a.png"), Candidate("b", "artifacts/b.png")]
 
     first = flatness.sweep(pool, workers=1, log=lambda *_a, **_k: None)
@@ -153,7 +153,7 @@ def test_coverage_names_what_the_key_would_not_be_able_to_rank(store, monkeypatc
 def test_a_candidate_whose_picture_this_checkout_cannot_resolve_is_counted_apart(
     store, monkeypatch
 ):
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _path: None)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _path, _tiers=None: None)
     record = flatness.sweep(
         [Candidate("a", "artifacts/a.png")], workers=1, log=lambda *_a, **_k: None
     )

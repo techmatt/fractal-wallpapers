@@ -969,6 +969,17 @@ those being `runs` 11,402 and `reframe_draw` 2,124. Neither shape can put two ro
 on one path, and the two shapes cannot collide with each other either, since no run
 directory is shared between them.
 
+**It is pinned now, in `tests/test_leveled_identity.py`, and in two halves that fail
+on different things.** The fast half asks `_delete_colormap` and `pool_draw
+.leveled_dir` for the same picture — behaviourally, by running the prune on a
+throwaway tree and seeing what disappeared — over both live stem shapes and the
+near-misses a derivation built on string surgery would get wrong. It needs no
+ledger, and it fails the day the writer, the sweeper or the draw is edited alone.
+The slow half is the scan, and it does not merely count collisions: it asserts the
+**shape classification is total** and that no directory holds both shapes, so a leg
+naming its files a third way fails at its first row rather than at its first
+collision. 32 s on this machine, `--slow`, off `conftest.tracked_ledger`.
+
 **Read the same pass for the other half of the transaction**: 308,419 of 308,419
 pictures were on disk, none missing, so the pictures-then-records ordering completed
 cleanly through the afternoon's prune of 29,402 rows. And **106,390 surviving rows

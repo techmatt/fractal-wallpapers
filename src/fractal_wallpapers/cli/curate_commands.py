@@ -988,7 +988,7 @@ def _twin_sweep(candidates, radius) -> dict:
     is represented by the picture a seating would reach for first.
     """
     from fractal_wallpapers.curation import distinct, headroom, signatures
-    from fractal_wallpapers.paths import rehome
+    from fractal_wallpapers.paths import Tiers, rehome
 
     kept = headroom.clearing(candidates)
     if radius is not None:
@@ -997,11 +997,15 @@ def _twin_sweep(candidates, radius) -> dict:
     for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
         best.setdefault(candidate.location, candidate)
 
+    # The tiers once, not once a place: [`fractal_wallpapers.paths.rehome`] is
+    # 246x dearer resolving them per call, and this is asked over the whole pool.
+    tiers = Tiers.current()
+
     def picture_of(key):
         held = best.get(key)
         if held is None:
             return None
-        where = Path(rehome(held.picture))
+        where = Path(rehome(held.picture, tiers))
         return where if where.is_file() else None
 
     # The sidecar holds exactly the vector this sweep builds, keyed on the RECIPE;
@@ -1123,7 +1127,7 @@ def curate_rank_key(args: argparse.Namespace) -> int:
 def curate_distinct(args: argparse.Namespace) -> int:
     """The neutral pre-selection read: the join, the distribution, the premise, the sheet."""
     from fractal_wallpapers.curation import distinct, headroom, solve
-    from fractal_wallpapers.paths import rehome
+    from fractal_wallpapers.paths import Tiers, rehome
 
     # `solve.pool` and not `headroom.population` — see `curate solve record`.
     candidates, _ = solve.pool()
@@ -1132,11 +1136,15 @@ def curate_distinct(args: argparse.Namespace) -> int:
     for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
         best.setdefault(candidate.location, candidate)
 
+    # The tiers once, not once a place: [`fractal_wallpapers.paths.rehome`] is
+    # 246x dearer resolving them per call, and this is asked over the whole pool.
+    tiers = Tiers.current()
+
     def picture_of(key):
         held = best.get(key)
         if held is None:
             return None
-        where = Path(rehome(held.picture))
+        where = Path(rehome(held.picture, tiers))
         return where if where.is_file() else None
 
     try:

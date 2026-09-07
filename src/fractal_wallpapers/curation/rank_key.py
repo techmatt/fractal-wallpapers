@@ -32,9 +32,16 @@ shared fit would over-read what is shipped.
 
 **The margin above is a reading on the 1,051 rows of 2026-08-28 and it does not
 reproduce.** `curate rank-key fit` re-joined the label stores after they tripled
-and the fit is now over **3,278 rows**. On that corpus the shipped four-column
-form reads `d = -0.0063` smooth and `-0.0008` strange: **the key buys nothing over
+and the fit is now over **3,226 rows**. On that corpus the shipped four-column
+form reads `d = -0.0071` smooth and `-0.0028` strange: **the key buys nothing over
 raw `p_ge4` on either kind.**
+
+It was 3,278 rows reading `-0.0063` / `-0.0008` for one afternoon of 2026-09-06,
+before [`one_render_one_row`] landed: 52 of those rows were 52 renders labelled in
+**both** stores and counted once on each kind's side. Dropping the duplicates took
+the strange side from 2,029 to 1,977 and moved both `d`s a little further below
+zero. It does not move the finding, which is about the incumbent rather than about
+the form.
 
 **It is the corpus and not any one column**, which was checked the only way that
 separates them — by holding the population fixed and moving only the form. The
@@ -431,6 +438,33 @@ def ledger_identity(row: dict) -> tuple | None:
     )
 
 
+def one_render_one_row(labels: list, log=print) -> tuple[list, dict]:
+    """`(the label entries to fit on, what the crossover was)` — a render once.
+
+    52 rows of the 3,278-row fit of 2026-09-06 were 52 renders labelled in *both*
+    corpora, each read as two independent examples: counted once on each kind's
+    side of the out-of-fold AUC, with its lineage group and its fold assigned
+    twice as well.
+
+    The rule is [`labeling.finished.crossovers`]' and is asked of it rather than
+    spelled again here — that module owns the stores and owns the router. What
+    this adds is the fit's own bookkeeping: the entry list filtered, and a log
+    line, because a population that quietly shrank between two fits is exactly
+    what the population record exists to stop.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    leave_out, record = finished.crossovers([(entry["kind"], entry["row"]) for entry in labels])
+    kept = [entry for entry in labels if (entry["kind"], entry["identity"]) not in leave_out]
+    record = {**record, "label_rows_dropped": len(labels) - len(kept)}
+    log(
+        f"[rank-key] {record['renders_in_both_stores']:,} render(s) labelled in both stores; "
+        f"{record['label_rows_dropped']:,} row(s) counted once in the store their mode routes "
+        f"to ({record['kept_in'] or 'none'}), {len(record['ambiguous']):,} left whole as ambiguous"
+    )
+    return kept, record
+
+
 def _stream_rows(path: Path | None = None):
     """The ledger a line at a time. Streamed rather than read whole because the
     fit needs six fields per row and the ledger is the largest store here — it
@@ -510,6 +544,11 @@ def fit(rows=None, log=print) -> dict:
             if identity is not None:
                 labels.append({"kind": kind, "row": row, "identity": identity})
     log(f"[rank-key] {len(labels):,} resolved scored label rows over {len(KINDS)} stores")
+
+    # One render is one row, whichever store holds it. Done here rather than
+    # below the join so the lineage grouping and the folds are drawn over the
+    # same population the fit is taken over.
+    labels, crossover = one_render_one_row(labels, log=log)
 
     # ---- the ledger side, streamed ----------------------------------------- #
     wanted = {entry["identity"] for entry in labels}
@@ -672,6 +711,7 @@ def fit(rows=None, log=print) -> dict:
                 )
             ),
             "label_stores": stores,
+            "crossover": crossover,
             "labels_resolved": len(labels),
             "joined_the_ledger": len(ledger),
             "dropped": dropped,
@@ -756,6 +796,7 @@ __all__ = [
     "logistic",
     "ledger_identity",
     "load",
+    "one_render_one_row",
     "order_for",
     "population_path",
     "predict",
