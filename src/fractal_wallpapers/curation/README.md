@@ -859,6 +859,17 @@ re-render it. What goes is the JPEG the row points at.
   measured against — and losing it costs a number nobody can re-derive. The join
   is `labeling.finished.render_key` and it is on the *recipe*, never the regime:
   a person who judged this colouring at 1280x720 judged this colouring.
+
+  **Every corpus that judges a picture, and not only the two gates.**
+  `retention.labeled_renders` reads `labeling.gallery_grade` too, keyed through
+  the same function, because a grade is a person's verdict about a picture and
+  the store is the population a conditional head is fitted on. Its runners-up —
+  the near neighbours the solve refused, which are the hard negatives that head
+  has to learn from — are named by no record, so the rank drops them routinely.
+  Measured 2026-09-06 before this line existed: **233 of 300 held by nothing, 95
+  of them carrying a `<stem>.leveled/`**, which dies with the JPEG it sits beside.
+  See `data/gallery_grade/README.md`'s *What holds them now* for where the join
+  lands, and `tests/test_gallery_grade_retention.py` for the pin.
 * **One in 200 of the rest, flagged.** A store holding only its winners cannot
   answer why anything lost. `in_reservoir` is a sha256 of the recipe key and not a
   draw, so the same set is kept in every process that asks — the builtin `hash()`
@@ -984,7 +995,11 @@ collision. 32 s on this machine, `--slow`, off `conftest.tracked_ledger`.
 pictures were on disk, none missing, so the pictures-then-records ordering completed
 cleanly through the afternoon's prune of 29,402 rows. And **106,390 surviving rows
 (34.5%) resolve a `.leveled/`** — that is the live set `pool_draw` can put on a plan,
-against the 373 the first gallery-grade draw actually reached.
+against the 373 the first gallery-grade draw actually reached. **Those 373 are held
+by a row now**, because `retention.labeled_renders` reads the `gallery_grade` store —
+see *What is kept, and why each rule is the rule it is* above. They were not on
+2026-09-06 morning: 233 of that draw's 300 runners-up were named by nothing at all,
+and a `.leveled/` outlives nothing its picture does not.
 
 ⚠ **None of this defends a standalone sweep, and the 2026-08-30 one is the proof.**
 The property belongs to `delete_pictures` because the row goes in the same

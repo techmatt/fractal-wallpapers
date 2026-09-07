@@ -110,6 +110,15 @@ over and there is no side to protect, so this store ships no `eval_split.jsonl` 
 `label pin` does not apply to it. See `data/gallery_grade/README.md` and
 `data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*.
 
+**Keep the plan.** A row carries `leveled` as a boolean and never the directory, so
+the plan a drop was cut from is the only thing that can rebuild a levelled picture as
+it was judged — the sheets' rendered pictures are regenerable and the plans are not.
+`gallery_grade.plan_paths()` is the accessor; nothing else spells their layout.
+A graded row's *candidate* is held in the pool by the label protection —
+`curation/README.md`'s *What is kept, and why each rule is the rule it is* — so a
+merge cannot take the picture or its `<stem>.leveled/` colormap out from under the
+store.
+
 ## Serving a sheet to label
 
 A built sheet is a directory: `sheet.json` (the manifest), `sheet.jsonl` (the rows) and

@@ -156,5 +156,28 @@ that can rebuild the 373 levelled pictures as they were judged, and they are sma
 `tests/test_leveled_identity.py`'s argument — but a row's candidate can leave the
 ledger entirely. Measured 2026-09-06 against `tentative.protected_keys()`: all 700
 seated candidates are protected by the record they were drawn from, and **233 of the
-300 runners-up are not, 95 of them carrying a levelled colormap**. The runners-up are
-the near-neighbour half this store exists to separate, and they are the prunable half.
+300 runners-up were not, 95 of them carrying a levelled colormap**. The runners-up are
+the near-neighbour half this store exists to separate, and they were the prunable half.
+
+## What holds them now
+
+**A grade is a label, so the label protection holds it** — `RETAINED_LABELED`, the
+class that already keeps a row a person has judged, and no second spelling beside it.
+`curation.retention.labeled_renders` reads this store along with the two gates, human
+origin only, keyed through the same `finished.render_key`; `candidate_ledger.prune`
+fills the class from it, inside `merge`, inside every leg. Nothing new is declared and
+nothing else changed.
+
+The join is the recipe and not the regime, so in principle it could mark a sibling of
+the picture a row was cast on rather than that picture — which would take a live
+`.leveled/` with it, since a colormap dies with the JPEG it sits beside. Measured
+2026-09-06 over the 308,419-row ledger the ckpt-112 mine left: **each of the 1,000
+graded render keys is carried by exactly one ledger row, and it is the candidate the
+draw named on `selected_on`.** All 1,000 pictures are on disk and all **373** levelled
+directories are present. A later leg re-rendering one of these recipes at another
+regime would put a second row on a key and both would be protected, which is the
+harmless direction; `tests/test_gallery_grade_retention.py` asserts the direction that
+is not — that the drawn candidate itself is reached — and pins the plans beside it.
+
+`gallery_grade.plan_paths()` is where the plans are asked for, so nothing outside this
+store's module spells their layout.

@@ -26,8 +26,10 @@ is a row whose pixels a reader can still open.
   A rank inside a (location, mode) group asks the same question at every mode and
   survives a retrain.
 * **Five protections**, each keeping a row the rank let go: a seat in a live
-  release row, a human rejection, a human label joining it, a row named by the
-  rank key's own fitted population, and a seat in a **tentative gallery** —
+  release row, a human rejection, a human verdict joining it — from either gate
+  or from the conditional [`labeling.gallery_grade`] store, see
+  [`labeled_renders`] — a row named by the rank key's own fitted population, and
+  a seat in a **tentative gallery** —
   [`curation.tentative`], a gallery recorded under a name so that its pictures
   can be referred to by ID, which is a promise the rank would otherwise break.
   They are spelled and applied in [`candidate_ledger.RETAINED_REASONS`], beside
@@ -159,13 +161,41 @@ def render_key_of(row: dict):
 
 
 def labeled_renders() -> set:
-    """Every render key a **person** has ever cast a score on, over both heads.
+    """Every render key a **person** has ever cast a verdict on about a picture.
 
     Human origin only. A rule-written row is a derivation this project can run
     again; a person's judgement is not, which is the whole reason the label store
     keeps the two apart.
+
+    **Every corpus that judges a picture, and not only the two gates.** The two
+    [`labeling.finished`] heads answer *is this worth keeping*;
+    [`labeling.gallery_grade`] answers how good one is *given* that it already
+    cleared them, and its rows are keyed through the same
+    [`labeling.finished.render_key`] on purpose — a picture is one picture across
+    all three. A protection that read the gates alone would leave the third
+    store's population prunable while reading, from the outside, as the label
+    protection running.
+
+    That is not hypothetical and it is what put this line here. The
+    `gallery_grade` store's first sitting is 700 seated rows and **300
+    runners-up**, and the runners-up are the near-neighbour half the store exists
+    to separate — the hard negatives a head fitted on it has to learn from. The
+    seated 700 are held by [`tentative.protected_keys`], because the record they
+    were drawn from names them. Measured 2026-09-06, **233 of the 300 were held
+    by nothing**, 95 of those carrying a `<stem>.leveled/` colormap that dies with
+    its picture. Retention is not retroactive, so one merge before the head was
+    fit would have taken them permanently.
+
+    **The join reaches the exact candidate here rather than a sibling of it.**
+    `render_key` is the recipe and never the regime, so in principle several
+    ledger rows can answer to one key and a prune could keep the wrong one's
+    picture — which would take a live `.leveled/` with it. Over the store as it
+    stands, 2026-09-06: all 1,000 graded rows key into the ledger, each key is
+    carried by **exactly one** of its 308,419 rows, and that row is the candidate
+    the draw named on `selected_on`. `tests/test_gallery_grade_retention.py` is
+    the pin, and it asserts the reach rather than the count.
     """
-    from fractal_wallpapers.labeling import finished, store
+    from fractal_wallpapers.labeling import finished, gallery_grade, store
 
     out: set = set()
     for head in finished.HEADS:
@@ -175,6 +205,17 @@ def labeled_renders() -> set:
             key = finished.render_key(row)
             if key is not None:
                 out.add(key)
+    # Every row of the store and not [`gallery_grade.resolved`]'s current ones: a
+    # superseded verdict is still a picture a person opened and judged, and the
+    # row that replaced it names the same render anyway. Latest-wins is a
+    # question about what the store *says*; this is a question about what it
+    # would have to be able to show.
+    for row in gallery_grade.read():
+        if row.get("origin") != store.HUMAN:
+            continue
+        key = gallery_grade.render_key(row)
+        if key is not None:
+            out.add(key)
     return out
 
 
