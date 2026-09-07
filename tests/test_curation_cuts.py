@@ -145,32 +145,33 @@ def test_the_acting_bar_is_stamped_with_the_head_its_height_was_measured_on() ->
     )
 
 
-def test_every_acting_render_bar_is_stamped_with_the_head_that_is_shipped() -> None:
-    """All THREE of them, which is one more than the release bar above.
+def test_every_measured_render_height_is_stamped_with_the_head_that_is_shipped() -> None:
+    """Both of them, where the guard above reaches only the one that acts.
 
-    A render flip refuses three cuts, not one: `strange_render_release` off
-    `STRANGE_RELEASE_BAR`, and both gallery floors off `MEASURED_RELEASE_FLOORS`
-    — where the smooth entry is a height that gates nothing at a run's release
-    and gates a gallery slot. The guard above only reaches the first, so a flip
-    that restated the strange bar and forgot the smooth one would leave the
-    gallery pass refusing with every fast test green.
+    A render flip strands two heights, not one. `STRANGE_RELEASE_BAR` acts and
+    refuses on its first comparison; `SMOOTH_RELEASE_FLOOR` acts nowhere since
+    `64c9612` deleted the gallery pass, and a height nothing calls `.acts()` on
+    cannot announce its own staleness — the colour census would go on selecting
+    rows against a sha no row carries and report a smaller population with no
+    line saying why. So the sweep is over `MEASURED_RELEASE_FLOORS`, which is
+    both, and it is the restatements themselves rather than any cut built from
+    them.
     """
     live = floors.live_stamp(floors.SCORING_HEAD)
-    acting = {
-        f"{head}_gallery": floors.gallery_floor(head) for head in floors.MEASURED_RELEASE_FLOORS
+    measured = dict(floors.MEASURED_RELEASE_FLOORS)
+    assert len(measured) == 2, sorted(measured)
+    stale = {
+        head: restated.head_sha256[:12]
+        for head, restated in measured.items()
+        if restated.head_sha256 != live
     }
-    acting.update(
-        {f"{head}_release": floors.release_cut(head) for head in floors.ACTING_RELEASE_BARS}
-    )
-    assert len(acting) == 3, sorted(acting)
-    stale = {name: bar.stamp[:12] for name, bar in acting.items() if bar.stamp != live}
     assert not stale, (
         f"{sorted(stale)} are stamped against a head that is not shipped ({live[:12]}), so "
         f"they refuse on their first call. `head floor --head <kind>` re-measures and the "
         f"height is re-declared in curation.floors."
     )
-    for bar in acting.values():
-        bar.check()
+    for head in floors.ACTING_RELEASE_BARS:
+        floors.release_cut(head).check()
 
 
 def test_a_restated_bar_carries_the_scale_the_method_and_the_day() -> None:

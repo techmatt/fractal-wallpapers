@@ -56,7 +56,7 @@ def test_a_score_from_another_checkpoint_is_refused_and_not_counted() -> None:
     """The failure this guards is silent: the row has a number, the floor has a
     number, and comparing them produces a rate that looks exactly like a real one."""
     kind = "smooth_render"
-    stamp = floors.gallery_floor(kind).stamp
+    stamp = floors.measured_floor(kind).head_sha256
     rows = [
         pool_row("run9", "0001", kind, current={"p_ge3": 0.9, "head_sha256": stamp}),
         pool_row("run9", "0002", kind, current={"p_ge3": 0.9, "head_sha256": "a" * 64}),
@@ -74,13 +74,13 @@ def test_rows_on_the_measured_artifact_are_kept_per_kind() -> None:
             "run9",
             "0001",
             smooth,
-            current={"p_ge3": 0.9, "head_sha256": floors.gallery_floor(smooth).stamp},
+            current={"p_ge3": 0.9, "head_sha256": floors.measured_floor(smooth).head_sha256},
         ),
         pool_row(
             "run9",
             "0002",
             strange,
-            current={"p_ge3": 0.7, "head_sha256": floors.gallery_floor(strange).stamp},
+            current={"p_ge3": 0.7, "head_sha256": floors.measured_floor(strange).head_sha256},
         ),
     ]
     kept = colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)
@@ -110,7 +110,7 @@ def test_a_row_with_no_current_block_still_counts_when_its_pass_was_the_live_hea
     their pass records say `config.heads.render` was the artifact shipped today.
     Qualifying on the block refused every one of them for a missing field."""
     kind = "smooth_render"
-    stamp = floors.gallery_floor(kind).stamp
+    stamp = floors.measured_floor(kind).head_sha256
     records.use(tmp_path)
     rescore._heads_at.cache_clear()
     try:
@@ -172,7 +172,7 @@ def test_an_unscored_row_is_skipped_rather_than_read_as_a_zero() -> None:
             "run9",
             "0001",
             kind,
-            current={"p_ge3": None, "head_sha256": floors.gallery_floor(kind).stamp},
+            current={"p_ge3": None, "head_sha256": floors.measured_floor(kind).head_sha256},
         )
     ]
     assert colors._floor_referenced(rows, index_of(rows), log=lambda *a: None)[kind] == []
@@ -184,7 +184,7 @@ def test_one_picture_named_by_a_row_in_each_store_is_counted_once() -> None:
     picture counted twice weights its colour double in a cell whose whole job is
     to say how often that colour clears."""
     kind = "smooth_render"
-    stamp = floors.gallery_floor(kind).stamp
+    stamp = floors.measured_floor(kind).head_sha256
     released = pool_row("run9", "0001", kind, current={"p_ge3": 0.9, "head_sha256": stamp})
     seated = pool_row("gallery1", "run9_0001", kind, current={"p_ge3": 0.9, "head_sha256": stamp})
     seated["source"] = {"key": released["key"], "run": "run9", "candidate": "0001"}
@@ -199,7 +199,7 @@ def test_a_pass_over_a_pass_resolves_to_the_run_that_rendered_it() -> None:
     """One hop lands on a path nobody ever wrote, and the census reported that
     render as absent rather than as the colour it is."""
     kind = "strange_render"
-    stamp = floors.gallery_floor(kind).stamp
+    stamp = floors.measured_floor(kind).head_sha256
     made = pool_row("run9", "0008", kind, current={"p_ge3": 0.7, "head_sha256": stamp})
     # Every row on the measured artifact, because the chain is what this pins and a
     # link on a retired scale is refused by the rule above before the walk starts.

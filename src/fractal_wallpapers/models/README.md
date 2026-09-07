@@ -678,13 +678,16 @@ and the flip are `ship.stage_candidate` and `ship.promote`, which are separate
 acts.
 
 ⚠ **A render flip is not free, and `models/adoption.py` does not cover it** — its
-`HEAD` is `"location"`. Three ACTING bars stamp the render artifact they were
-measured on and refuse on their first call afterwards: `strange_render_release`,
-`strange_render_gallery`, `smooth_render_gallery`. Refitting them is
-`head floor --head <kind>` against the new artifact, then re-declaring the two
-heights with new stamps in `curation.floors` — `STRANGE_RELEASE_BAR` carries the
-first two bars and `SMOOTH_RELEASE_FLOOR` the third. Until that is done a flip
-stops the curation run's release and gallery paths. **Retire the outgoing bytes
+`HEAD` is `"location"`. **One** ACTING bar stamps the render artifact it was
+measured on and refuses on its first call afterwards, `strange_render_release` off
+`STRANGE_RELEASE_BAR`; until it is refitted a flip stops the curation run's release
+path. `SMOOTH_RELEASE_FLOOR` is measured and acts nowhere — it acted in the gallery
+pass until `64c9612` deleted that pass on 2026-08-28 — but it is **restated at the
+same flip anyway**, because the colour census selects rows by the artifact it names
+and a stale one silently selects nothing. `tests/test_curation_cuts.py`'s
+*every measured render height is stamped with the head that is shipped* holds both.
+Refitting is `head floor --head <kind>` against the new artifact, then re-declaring
+each height with its new stamp in `curation.floors`. **Retire the outgoing bytes
 first**: `torch.save` is not byte-reproducible, so a retired artifact's hash is not
 recoverable from its checkpoint. The copy kept beside the maker artifacts, under
 `retired_weights/render-weights-vN/` with its manifest, is the only thing a later
