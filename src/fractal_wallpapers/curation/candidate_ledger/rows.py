@@ -384,7 +384,8 @@ def colour_block(reading) -> dict:
 
     **The share vectors are not in it.** They were, at 678 bytes a row and 236 MB
     over the store, and no reader ever opened one: every consumer — the pool, the
-    ceiling, the census, the retention aggregates, the rank key's stratum — takes
+    ceiling, the census, the retention aggregates, and the rank key's stratum while
+    it had one — takes
     the already-thresholded `cells` and `families`, which is the reading
     [`palettes.dominance.RULE`] has already made. A share vector kept beside the
     verdict it produced is the verdict stored twice, once in a form nothing can

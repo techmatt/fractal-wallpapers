@@ -1473,6 +1473,24 @@ location blocks for 3 workers. `release.ENGINE_THREADS_PER_WORKER` (7) is worth
 2.7 points of throughput over letting three engines each take the whole machine,
 and it was **measured** here rather than assumed: 4 threads is worse than 7.
 
+**Three is the number and `release.DEFAULT_WORKERS` is where it is written.** Every
+leg that drives the engine takes its default from that one constant — a measure
+pass, a sheet build, a hunt, a mine — and the count is the only part of the pool
+shape a caller chooses, the below-normal priority coming from
+[`process_control.child_priority_flags`] whatever the caller does. A prompt that
+plans a leg around "two engines buy about 2x and it has never carried more" is
+planning against a number this repository does not hold; the table above is the
+one it does.
+
+**And two more legs have now read `concurrency` as if it were the speedup, which
+is the mistake the paragraph above exists to stop.** The ckpt-112 mine's two arms
+ran at three workers on 2026-09-06 and reported **2.978x and 2.962x** — 18,201
+engine seconds over 6,112 wall, and 14,318 over 4,833. Those are the inflated
+column again, landing within a hundredth of the 2.94x measured here, and they are
+**not** a throughput reading: nothing in that leg ran a serial arm, so nothing in
+it measured a speedup at all. The 1.92x above is still the only figure this
+project has for what a third worker buys, and it is from 2026-08-28.
+
 **Starvation is a real case on the narrow legs.** `workers_for` runs the leg on
 `min(workers, blocks)` and says so: the near-band pool held **25 locations** for
 the two-mode field roster and **19** for the four direct traps, and a worker with

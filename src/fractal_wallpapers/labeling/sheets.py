@@ -1118,6 +1118,13 @@ def gallery_grade_source(
       are empty. The mode and the map on a caption are a stratum the labeler can
       read off the card, and the judge's cutpoints under it are the order in
       another shape.
+    * **And `prefill_note` is the fourth, which is a field to ANSWER rather than
+      to empty.** The other three are blank on a blind sheet; this one is not,
+      because the page prints a default when it is unset — *the suggestion is a
+      head's own decode* — and on a sheet carrying no suggestion at all that is a
+      sentence about a thing that is not there. Three fields emptied and a fourth
+      left alone reads as blind and is not, which is why the list is four long
+      here and why the note is written out below rather than defaulted.
 
     The judge still **reads** every picture, at label geometry, and the reading
     travels on the row under `reading` — which the page does not render. It is a

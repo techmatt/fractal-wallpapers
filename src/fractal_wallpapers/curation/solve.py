@@ -154,9 +154,10 @@ SEATS_PER_MODE_FLOOR = 100
 #: project shipped before 2026-08-28 was ordered by. Still reachable by name.
 JUDGE_KEY = "p_ge4"
 
-#: [`curation.rank_key`]'s fitted five-column form — the location head, both
-#: judge cutpoints, the calibration stratum and the flatness column. **This is
-#: the rank quantity the objective is stated in**: `p_ge4` alone is not it.
+#: [`curation.rank_key`]'s fitted four-column form — the location head, both
+#: judge cutpoints and the flatness column. **This is the rank quantity the
+#: objective is stated in**: `p_ge4` alone is not it. Four since 2026-09-06; the
+#: fifth was a calibration stratum and [`curation.rank_key`] carries what it was.
 RANK_KEY = "rank-key"
 
 #: The keys a caller may name.

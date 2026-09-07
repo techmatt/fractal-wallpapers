@@ -2185,7 +2185,7 @@ def solve_flags_a_record_keeps(*, demands, search):
         default=solve_module.DEFAULT_KEY,
         help="the sort key the pool is walked in AND the quantity the objective is stated "
         "in. `rank-key` is the fitted form in `curate rank-key` — the location head, both "
-        "judge cutpoints, the calibration stratum and the flatness column — and is THE "
+        "judge cutpoints and the flatness column — and is THE "
         "DEFAULT since 2026-08-28, on Matt's acceptance by eye. `p_ge4` is the render judge "
         "alone. IT MOVES THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the "
         "clearing rule and the neutral pre-selection still read the judge's own columns",
@@ -4129,7 +4129,7 @@ def add_commands(subcommands) -> None:
         help="the fitted sort key a seating may rank on instead of the judge alone",
         description=(
             "Fit the form `rank_key_fit` selected — the location head's P(>=4), the render "
-            "judge at both cutpoints, the calibration stratum and the flatness column — "
+            "judge at both cutpoints and the flatness column — "
             "over every human label row that joins the candidate ledger, with SHARED "
             "weights over both stores because per-kind bought +0.000 [-.011,+.012] on "
             "smooth. Five folds at 20% grouped on lineage and assigned ONCE over the "
