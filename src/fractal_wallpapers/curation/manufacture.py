@@ -244,9 +244,15 @@ def _write_json(path: Path, document: dict) -> Path:
 def targets() -> tuple[str, ...]:
     """The swatches this batch is manufacturing, thinnest first.
 
-    `expressed`'s own thin list — the swatches at most five of the 246 finished
-    wallpapers express — read off the artifact rather than restated, because a
-    second copy of that list is a second claim about the collection.
+    `expressed`'s own thin list — the swatches at most [`expressed.THIN_PICTURES`]
+    of the finished wallpapers express — read off the artifact rather than
+    restated, because a second copy of that list is a second claim about the
+    collection.
+
+    Through [`expressed.readout`] and not off the file, so this reader stands
+    behind [`expressed.POPULATION_DRIFT`] like the one at merge does. A batch
+    aimed at a list taken over a fraction of the collection is manufacturing for
+    a thinness that may no longer be there.
     """
     from fractal_wallpapers.curation import expressed
 
@@ -257,7 +263,7 @@ def targets() -> tuple[str, ...]:
             f"which swatches the finished collection is thin in, and this batch aims at "
             f"that list rather than at one of its own."
         )
-    thin = json.loads(path.read_text(encoding="utf-8")).get("thin") or []
+    thin = expressed.readout().get("thin") or []
     if not thin:
         raise ManufactureError(f"{path} names no thin swatch, so there is nothing to aim at")
     return tuple(str(name) for name in thin)

@@ -227,7 +227,15 @@ def load(path: Path | None = None) -> Key:
 # The columns, off a pool.
 # --------------------------------------------------------------------------- #
 def thin_cells() -> set:
-    """The colour cells at most [`expressed.THIN_PICTURES`] finished pictures hold."""
+    """The colour cells at most [`expressed.THIN_PICTURES`] finished pictures hold.
+
+    **The partition this key was fitted against**, and not merely an input to it:
+    the coefficient on `stratum_score` was fitted 2026-08-28 against the set as it
+    stood then, so a re-take of `expressed.json` that moved the set would point
+    that weight at a different variable. `expressed.POPULATION_DRIFT` refuses a
+    census that has aged past its population rather than re-deriving one, and the
+    repair is the pair — `curate expressed` then `curate rank-key fit`.
+    """
     from fractal_wallpapers.curation import expressed
 
     return set(expressed.readout()["thin"])
