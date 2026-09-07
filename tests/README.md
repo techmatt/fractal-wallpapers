@@ -349,6 +349,40 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+2 that reconciles exactly, and a first reading taken 8 s dear right after a
+sweep.** `ADOPT_ckpt113_cascade_and_cleanups_0907`, 2026-09-07, idle box,
+`.[dev,models]` with a release engine. **121.89 s over 3,881, 124 deselected**
+fast — 4,005 against the 4,003 below. The +2 is +3 landing and 1 going, all
+arithmetic: one in `test_depth.py` over `depth.field_modes_only`, and in
+`test_seat_sheet.py` the cascade's default-key guard **rewritten as two** — the
+adoption itself, and a new one reading `_prune_ranks`'s source to prove the flip
+could not reach retention. Slow **7:38 over 4,005**, and it is the reading that
+does NOT come back clean: see the entry below this one.
+
+**The 8 s is the sweep, not the code, and this is what the two-reading rule is
+for.** The first fast lane of the prompt read **130.15 s** — +11.35 s on a +2 of
+pure arithmetic, which is exactly the shape the rules say to distrust. Profiling
+the two touched files put neither new test in the top eight durations (the
+slowest of 126 is 4.39 s and both new ones are under a tenth), and a second lane
+on a settled box read 121.89 s. What sat between the baseline and the first
+reading was `curate candidate-ledger orphans --apply` deleting **1,032 pictures
+and 555 colormap directories**; *suspect the disk after anything that moves
+hundreds of thousands of paths* covers it at a smaller scale. Attributed to the
+sweep by elimination and not by measurement.
+
+**One slow guard is RED and it predates this prompt.**
+`test_leveled_identity.py::test_no_two_ledger_rows_name_one_picture` asserts
+`run_index_named >= 13,526` as a floor — *the store only grows* — and the live
+store reads **13,510**. It fails identically on a stashed, clean tree at the
+commit below, in 44 s, so it is not this prompt's code and was not this prompt's
+sweep either: the sweep deletes pictures and colormap directories and writes no
+ledger row. What moved is the ledger, between the reading being written and now,
+and the census the constant records is 16 run-index-named rows out of date. It is
+a **reading to retake, not a guard to weaken** — the row total is over its own
+floor, so the store did grow; a shape it once had shrank. Left red and named here
+rather than repointed, because repointing a census constant to make a lane green
+is the one move that would make the guard worthless.
+
 **-17 that reconciles exactly, and the 8 s of the entry below came back.**
 `FIX_ckpt113_legs_k_rot_and_retirements_0906`, 2026-09-07, idle box,
 `.[dev,models]` with a release engine. **118.80 s over 3,879, 124 deselected**

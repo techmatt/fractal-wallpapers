@@ -1,5 +1,5 @@
 The **fine-tier head**: an order inside the render judge's own flat top. Built
-2026-09-06, **not adopted** — the wiring is staged behind a flag that is off.
+2026-09-06 and **adopted 2026-09-07**, Matt's ruling on its pre-registered bar.
 
 The render judge answers *is this picture worth keeping* and saturates at the good
 end of its own scale. This head answers *how good, given it already cleared the
@@ -8,10 +8,13 @@ It is a **separate network**, same architecture as the render judge and
 initialised from its shipped `weights-v6` artifact, fitted on the `gallery_grade`
 store's thousand human verdicts at the ledger's 640x360 candidate geometry.
 
-⚠ **Nothing reads it.** `curation/rank_key.py` is untouched, retention does not
-see it, `_prune_ranks` is unchanged, and it is not on `models/roster.py`.
-`solve.CASCADE_KEY` is the flag an adoption would flip and `solve.DEFAULT_KEY` is
-still `rank-key`.
+⚠ **One reader, and it is the seating.** `solve.DEFAULT_KEY` is
+`solve.CASCADE_KEY`, so an unflagged `curate solve run` orders on this head above
+the bar. Everything else is where it was: `curation/rank_key.py` is untouched,
+retention does not see it, `_prune_ranks` is unchanged, no bar or floor reads it,
+and it is not on `models/roster.py` — that roster is heads a **render** goes
+through. Adoption moved one constant and nothing else, which is the shape to keep:
+what a prune keeps stays a separate question from what a gallery seats.
 
 ## Two bands, and the second one is the head
 
@@ -76,13 +79,24 @@ have improved nothing anybody ships.
 ## What the cascade actually does to a gallery
 
 ⚠ **It is not a reordering of the top.** One pool solved twice at n=1000, once
-under `rank-key` and once under `cascade`: the two share **175 seats of a
-thousand**. 825 arrive and 825 depart.
+under `rank-key` and once under `cascade`: the two shared **175 seats of a
+thousand** on the pool of 2026-09-06, and **173** on the 272,457-row pool of
+2026-09-07. 827 arrive and 827 depart.
 
-That is the number to have in front of you before adopting anything here. The head
+That was the number in front of Matt when he **adopted it on 2026-09-07**. The head
 clears its bar on the rows a person graded, and what it does to a gallery is
 replace five-sixths of it — which is a question about taste that no statistic on
-this page answers.
+this page answers, and the ruling answered it.
+
+**Where the five-sixths goes, measured 2026-09-07 at n=1000.** Of the 827 departing
+seats, **166** are a different candidate at a location the cascade still seats and
+**661** are a location that leaves the gallery altogether; the arriving side mirrors
+it. One wallpaper per location is permanent, so those are the only two cases, and
+the second is much the larger: this head is mostly changing *where* the gallery
+looks, not which colouring of a place it prefers. It is not the two-stage constant
+doing it — **both** arms seat 1,000 of 1,000 above the bar, so both were choosing
+out of the same 38,884 rows. `curation/GALLERY.md`'s *`cascade` is the default
+since 2026-09-07* carries the split.
 
 **The cascade orders on the head's `p_ge4` and not on its `rank_score`**, because
 `AUC(>=4)` — the statistic the bar is stated on — is read on that column. The two

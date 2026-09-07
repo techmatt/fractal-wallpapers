@@ -2127,11 +2127,16 @@ def solve_flags_a_record_keeps(*, demands, search):
         choices=list(solve_module.KEYS),
         default=solve_module.DEFAULT_KEY,
         help="the sort key the pool is walked in AND the quantity the objective is stated "
-        "in. `rank-key` is the fitted form in `curate rank-key` — the location head, both "
-        "judge cutpoints and the flatness column — and is THE "
-        "DEFAULT since 2026-08-28, on Matt's acceptance by eye. `p_ge4` is the render judge "
-        "alone. IT MOVES THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the "
-        "clearing rule and the neutral pre-selection still read the judge's own columns",
+        "in. `cascade` is THE DEFAULT since 2026-09-07, Matt's ruling: above the solve's "
+        "own bar it orders on the fine-tier head's P(>=4) — `curate rank-key`'s value plus "
+        "one, so the two stages never interleave — and below it hands the rank key's order "
+        "straight back. It REFUSES without `gallery-grade score-pool`, rather than falling "
+        "back to a key the record would then be wrong about. `rank-key` is the fitted form "
+        "in `curate rank-key` — the location head, both judge cutpoints and the flatness "
+        "column — which was the default from 2026-08-28 until the flip and is still what "
+        "retention ranks on. `p_ge4` is the render judge alone. IT MOVES THE ORDER AND THE "
+        "OBJECTIVE AND NOTHING ELSE: every bar, the clearing rule and the neutral "
+        "pre-selection still read the judge's own columns",
     )
     search.add_argument(
         "--no-swap",

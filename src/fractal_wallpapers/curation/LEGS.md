@@ -1010,9 +1010,13 @@ zero failures, and `curate depth` is the **largest** producer of non-field rows 
 the ledger — 11,497 of the 21,913, at the lowest share of any leg (10.8%), because
 they all came through `--modes` and never through the default.
 
-**Two things the record gets wrong when it does.** `config.field_modes_only` is
-written `True` unconditionally, so `cc_pilot` claims it while carrying 96
-`smooth_angle_min` and `smooth_mean_angle` candidates. And the single `--rate`
+**Two things the record got wrong when it does, and one of them is fixed.**
+`config.field_modes_only` was written `True` unconditionally until 2026-09-07, so
+`cc_pilot` claims it while carrying 96 `smooth_angle_min` and `smooth_mean_angle`
+candidates, and every unit of the overnight leg of 2026-09-06 claims it on the
+twelve-mode mined roster. It is derived from the leg's own roster now
+[`depth.field_modes_only`] and a record written since is worth reading; one written
+before is not. The second stands: the single `--rate`
 prices candidates, while `weave` holds the arms' proportions in **counts**: in
 `cc_pilot` the `mode_floor` arm took 25.0% of its planned count — exactly the leg's
 own 25.0% truncation — and **24.7% of the engine seconds against a declared 5%
@@ -1949,10 +1953,13 @@ population. Read them as **per engine**, which is what `--rate` is:
   location-matched: 0.4707 s/cand on three against 0.2652 on one. Contention costs
   1.775x per engine. The record's `concurrency` field read **2.958x** on that leg and
   over-reads by 1.75x. It is engine-seconds over wall and is not a speedup.
-* **`config.field_modes_only` is stamped `true` unconditionally** and is not enforced:
-  `build_plan` takes `--modes` verbatim with no `colorize.shareable()` check, so a
-  wholly composite roster runs and its record still claims field modes only. Do not read
-  that field. The cost of that is in the plan rather than in the record: the roster is
+* **`config.field_modes_only` is derived since 2026-09-07 and was a hard-coded `true`
+  before it.** `build_plan` still takes `--modes` verbatim with no
+  `colorize.shareable()` check — the field is a *report* and never a gate — but it is
+  now `depth.field_modes_only(plan["roster"])`, so a wholly composite roster records
+  itself as one. **Every record written before that date claims field modes only
+  whatever it ran**, so on an older record the field says nothing and the roster is
+  what to read. The cost of a mixed roster is in the plan rather than in the record: it is
   cycled **uniformly**, so a composite mixed in beside field modes takes an equal count
   of the width at several times the unit cost and eats the breadth the leg was bought
   for. A composite wants its own bounded leg, not a seat on this one.

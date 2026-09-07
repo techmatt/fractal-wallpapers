@@ -52,8 +52,11 @@ without making an earlier one worse:
 3. the **worst seated score**, maximized;
 4. the **sum**.
 
-The rank quantity is [`RANK_KEY`], the fitted five-column form the ranking
-retention already uses. `p_ge4` alone is not it and is still reachable by name.
+The rank quantity is [`DEFAULT_KEY`], and since 2026-09-07 that is [`CASCADE_KEY`]:
+[`RANK_KEY`]'s fitted four-column form below [`Q4_BAR`] and the fine-tier head's
+`P(>=4)` above it. [`RANK_KEY`] alone is what the ranking retention uses and what
+every gallery between 2026-08-28 and the flip was seated in; `p_ge4` alone is
+neither. Both are still reachable by name.
 
 **A filled floor outranks the worst seat, and that is the ruling.** Matt's, and
 it is what "grab where possible" means: a mode this pool *can* represent is
@@ -160,10 +163,10 @@ JUDGE_KEY = "p_ge4"
 #: fifth was a calibration stratum and [`curation.rank_key`] carries what it was.
 RANK_KEY = "rank-key"
 
-#: **The cascade, and it is OFF.** Above [`Q4_BAR`] the order is the fine-tier
-#: head's — `models/gallery_grade/`, fitted on human verdicts about pictures that
-#: had already cleared the gate — and below it nothing changes: those rows keep
-#: [`RANK_KEY`]'s value exactly.
+#: **The cascade, and it is the default since 2026-09-07.** Above [`Q4_BAR`] the
+#: order is the fine-tier head's — `models/gallery_grade/`, fitted on human
+#: verdicts about pictures that had already cleared the gate — and below it
+#: nothing changes: those rows keep [`RANK_KEY`]'s value exactly.
 #:
 #: Two things make this a cascade rather than a fourth column. The head's output
 #: is **undefined below the bar**, because every row it was fitted on had cleared
@@ -173,23 +176,36 @@ RANK_KEY = "rank-key"
 #: rank-key value, which keeps every above-bar row ahead of every below-bar one
 #: and leaves the order *within* each stage the one its own quantity gives.
 #:
-#: **Reachable by name and never the default**, which is [`DEFAULT_KEY`] and stays
-#: `RANK_KEY`. Adoption is a later act; this is the flag it would flip.
+#: **Seating only.** [`RANK_KEY`] is still what retention ranks on — see
+#: `candidate_ledger.sweep._prune_ranks` — and adopting this changed nothing
+#: there. What a prune keeps is a separate question from what a gallery seats.
 CASCADE_KEY = "cascade"
 
 #: The keys a caller may name.
 KEYS = (RANK_KEY, JUDGE_KEY, CASCADE_KEY)
 
-#: **The sort key this leg walks unasked**, since 2026-08-28: the fitted one.
+#: **The sort key this leg walks unasked**, since 2026-09-07: [`CASCADE_KEY`].
 #:
-#: Matt's, off the contact sheets — the four-arm before/after at `n = 150` put
-#: the fitted order beside the judge alone on one pool and he accepted it by eye.
-#: It is an acceptance and not a measurement, and the record says which key ran
-#: either way.
+#: It was [`RANK_KEY`] from 2026-08-28, on Matt's acceptance by eye off the
+#: four-arm contact sheets at `n = 150`, and [`RANK_KEY`] is still what the
+#: cascade's below-bar half hands back — so this flip changes the **top** of a
+#: gallery and leaves the rest of the order where it was. Matt's ruling,
+#: 2026-09-07, on the fine-tier head's pre-registered bar.
+#:
+#: Both alternatives stay typeable: `--key rank-key` is the order every gallery
+#: between 2026-08-28 and this flip was seated in, and `--key p_ge4` is the render
+#: judge alone, which is what everything before 2026-08-28 ran.
 #:
 #: It moves the **order and the objective** and nothing else. Every bar, the
-#: clearing rule and the neutral pre-selection still read the judge's own columns.
-DEFAULT_KEY = RANK_KEY
+#: clearing rule and the neutral pre-selection still read the judge's own columns,
+#: and retention is untouched — see [`CASCADE_KEY`].
+#:
+#: ⚠ **It costs a store.** The cascade refuses without
+#: `gallery_grade_train.pool_scores_path()`, so an unflagged seating on a machine
+#: that has never run `gallery-grade score-pool` now stops rather than seats. That
+#: is the intended direction: a silent fall back to [`RANK_KEY`] would be a record
+#: naming a key it did not run.
+DEFAULT_KEY = CASCADE_KEY
 
 #: **The palette-group cap rule this leg runs under unasked**, since 2026-08-28:
 #: the proportional one, `max(1, floor(GROUP_CAP_RATE * n))`. The ckpt-88 ruling.

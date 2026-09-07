@@ -272,6 +272,29 @@ def field_modes() -> list[str]:
     return [mode for mode in mine._mined_modes() if colorize.shareable(mode)]
 
 
+def field_modes_only(roster) -> bool:
+    """Whether every entry on one leg's roster is a mode a dumped field can serve.
+
+    **Derived, and it was a hard-coded `True` until 2026-09-07.** `build_plan`
+    takes `--modes` verbatim and puts it through no [`colorize.shareable`] check,
+    so a wholly composite roster ran and its record still claimed field modes
+    only — `cc_pilot` claims it while carrying 96 `smooth_angle_min` and
+    `smooth_mean_angle` candidates, and the whole of last night's leg claimed it
+    on the twelve-mode mined roster. A prompt naming dear modes can no longer
+    leave a stale `true` behind it.
+
+    Takes the roster as **spelled** — [`colorize.spelled`]'s form, which is what
+    `plan["roster"]` carries and what an entry naming a mode's own settings
+    (`direct_trap_multiply@opacity=0.6`) looks like — so the mode is read back out
+    through [`colorize.roster_entry`] rather than matched as a bare name. The
+    breadth roster is a subset of this one, so asking here asks about the whole
+    leg.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    return all(colorize.shareable(colorize.roster_entry(str(one))[0]) for one in roster)
+
+
 def dear_modes() -> list[str]:
     """Every **mined** mode a dumped field cannot serve — [`field_modes`]'s complement.
 
@@ -2211,7 +2234,7 @@ def run(
             "maps_offered": shape["maps_offered"],
             "maps_drawn_from": shape["maps_drawn_from"],
             "maps_narrowed": shape["maps_narrowed"],
-            "field_modes_only": True,
+            "field_modes_only": field_modes_only(shape["roster"]),
             "cell": shape.get("cell"),
         },
         "plan": shape,
@@ -2902,6 +2925,7 @@ __all__ = [
     "centered_modes",
     "levelling_of",
     "field_modes",
+    "field_modes_only",
     "flat_maps",
     "fields_dir",
     "flat_places",
