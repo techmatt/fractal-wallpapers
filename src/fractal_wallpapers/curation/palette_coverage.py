@@ -249,10 +249,14 @@ def probeable_modes() -> list[str]:
 
 
 def _pool_rows() -> list[dict]:
-    """Every pool row, both stores — the same population the census reads."""
-    from fractal_wallpapers.curation import gallery_store, records
+    """Every pool row — the same population [`curation.colors`]' census reads.
 
-    return [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+    One store since the retired gallery passes' gate store went on 2026-09-06;
+    `colors._pool_rows` carries what that cost and why the two still agree.
+    """
+    from fractal_wallpapers.curation import records
+
+    return list(records.read_decisions(records.RELEASE))
 
 
 def candidates(log=print) -> list[dict]:

@@ -4,8 +4,8 @@ This is here rather than in [`curation.run`] because of who asks. `run` is the
 release pass's wiring — a thousand lines that import a dozen modules and drive an
 engine — and six modules that have nothing to do with running a pass were
 importing all of it for `run_dir`: the ledger's picture resolver, the re-score
-path, the below-bar sheet, the expressed census, the rejection leg and the two
-re-render checks. Every one of them wants to *name a file a past run wrote*,
+path, the below-bar sheet, the colour-expression census, the rejection leg and the
+two re-render checks. Every one of them wants to *name a file a past run wrote*,
 which is a fact about the layout and not about the pass.
 
 So the layout is its own module, it imports [`paths.under`] and nothing else, and

@@ -146,15 +146,14 @@ exist. Rows written before the field existed do not carry it and every one of th
 came out of a 2560x1440 ss4 leg, which is what `curation.checks.UNRECORDED_REGIME`
 says and the only thing it is for.
 
-**And `curate expressed` reads that picture at its own resolution, never at a
-census size.** A share vector is not scale-free, so `expressed.full_shares` takes
-the frame off the release PNG itself and writes it onto the census row — nothing
-is downsampled to count it, and nothing is re-read at a regime it was not made at.
-The 160x90 decode `codebook.of_picture` uses is computed **beside** it as a cheap
-instrument and reported as agreement, not substituted for it: on the released
-population the worst swatch moves 0.7 of a point. Which means a census taken over
-one `release_geometry` and one taken over another are two populations, and the
-field above is what tells them apart.
+**And a colour census over these rows is a census at ONE release geometry.** A
+share vector is not scale-free, so anything measured off a shipped picture is
+measured at that picture's own frame: a census taken over one `release_geometry`
+and one taken over another are two populations, and the field above is the only
+thing that tells them apart. The last such census over this store, what it read
+and why the measurement was retired, are in
+[`curation/MEASUREMENTS.md`](../../src/fractal_wallpapers/curation/MEASUREMENTS.md)'s
+*What the finished collection expressed, measured 2026-09-06*.
 
 **There are two autolevel stamps per released row, and only one of them is here.**
 The stamp on the row is the one from the render the *decision* was taken on, at
@@ -231,8 +230,9 @@ that head never had.
 
 **Re-read again on 2026-08-23** against the one `render` judge that replaced both,
 `b2e225a9`: all 4,784 pool rows, none of them already on that artifact, so
-every row moved. That pass also cleared the 3,592-row gallery-store backlog the
-colour census flagged. The block now carries `judge` — the head that produced the
+every row moved. That pass also cleared the 3,592-row backlog of gallery-pass
+attempts the colour census flagged, in the gate store those passes kept — retired
+with them on 2026-09-06. The block now carries `judge` — the head that produced the
 numbers — beside `head`, which stays the row's KIND because that is what picks a
 floor and a slot.
 

@@ -366,10 +366,18 @@ def picks(map_rows: list[dict], log=print) -> tuple[dict, list[dict]]:
 
 
 def _pool_rows() -> list[dict]:
-    """Every pool row, both stores: a run's release rows and a gallery pass's attempts."""
-    from fractal_wallpapers.curation import gallery_store, records
+    """Every pool row: the tracked release store, which is now the whole of it.
 
-    return [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+    It used to be two. The retired gallery passes' *attempts* lived in their own
+    untracked gate store and were read here beside the release rows; that store was
+    retired on 2026-09-06 with the passes themselves. What went is 10,846 attempt
+    rows, so a census taken after that date is over a smaller population than one
+    taken before and the two are not comparable. The passes' **winners** are
+    untouched: they are release rows like every other and are still counted here.
+    """
+    from fractal_wallpapers.curation import records
+
+    return list(records.read_decisions(records.RELEASE))
 
 
 def _reader():
@@ -863,16 +871,13 @@ def _stored_rows() -> list[dict]:
 
 def _population(chosen: tuple[str, ...]) -> dict:
     """What this census was taken over, so two runs can be told apart by more than a date."""
-    from fractal_wallpapers.curation import gallery_store, records
+    from fractal_wallpapers.curation import records
 
     population: dict = {"baseline": BASELINE}
     if {"picks", "survival"} & set(chosen):
         release = records.read_decisions(records.RELEASE)
-        store = gallery_store.read()
         population["pool"] = {
             "release_rows": len(release),
-            "gallery_store_rows": len(store),
             "runs": sorted({str(row.get("run")) for row in release}),
-            "passes": sorted({str(row.get("run")) for row in store}),
         }
     return population

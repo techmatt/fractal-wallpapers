@@ -472,26 +472,6 @@ def curate_run(args: argparse.Namespace) -> int:
     return 0 if summary["reconciliation"]["holds"] else 1
 
 
-def curate_gallery_store(args: argparse.Namespace) -> int:
-    """Record, check or restore one pass's attempt store against its tracked manifest."""
-    from fractal_wallpapers.curation import durability, gallery_store
-
-    doing = {
-        "save": lambda: gallery_store.save(args.pass_id),
-        "check": lambda: gallery_store.check(args.pass_id),
-        "restore": lambda: gallery_store.restore(args.pass_id, force=args.force),
-    }[args.what]
-    try:
-        report = doing()
-    except durability.DurableLost as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
-        return 1
-    return 0
-
-
 def orphan_unmerged(args: argparse.Namespace):
     """Which unmerged legs `orphans` was told to sweep: named, all, or none.
 
@@ -1890,51 +1870,6 @@ def curate_manufacture(args: argparse.Namespace) -> int:
     return 0
 
 
-def curate_expressed(args: argparse.Namespace) -> int:
-    """How much of the codebook the finished collection expresses, and what a floor could ask."""
-    from fractal_wallpapers.curation import expressed
-
-    try:
-        if args.step_of_expressed in ("census", "all"):
-            expressed.census()
-        readout = expressed.take() if args.step_of_expressed in ("read", "all") else None
-    except expressed.ExpressedError as refusal:
-        print(refusal)
-        return 1
-    if readout is None:
-        return 0
-
-    population = readout["population"]
-    budget = readout["budget"]
-    print(
-        f"\npopulation {population['pictures']} finished wallpapers over "
-        f"{len(population['runs'])} passes, {population['rejected_afterwards']} since taken back"
-    )
-    for label in ("all", "non_neutral"):
-        cell = budget[label]
-        spread = cell["distribution"]
-        print(
-            f"{label:<12} mean {cell['sum_coverage']:.3f} swatches expressed over "
-            f"{cell['swatches']} "
-            f"(median {spread['median']:g}, {spread['min']}-{spread['max']}); "
-            f"largest uniform floor that fits: {cell['implied_ceiling']:.4f}"
-        )
-    print("\nthinnest first:")
-    for swatch in readout["ranked"][:12]:
-        value = readout["coverage"][swatch]
-        print(f"  {swatch:<26} {value:.4f}  ({round(value * population['pictures'])})")
-    print(f"  ... and {len(readout['ranked']) - 12} more, in the readout")
-    census_gap = readout["agreement"]["census_decode"]
-    print(
-        f"\n160x90 decode moves a swatch by at most "
-        f"{census_gap['worst_swatch_move']:.4f} and flips "
-        f"{census_gap['threshold_cells_flipped']} of {census_gap['threshold_cells']} cells"
-    )
-    print(f"\nexpressed {display_path(expressed.readout_path())}")
-    print(f"pictures  {display_path(expressed.pictures_path())}")
-    return 0
-
-
 #: What `--spiral-cap` takes to mean **no cap at all**, beside a share.
 #:
 #: Needed because the default moved. While `solve.DEFAULT_SPIRAL_CAP` was `None`
@@ -3288,44 +3223,6 @@ def add_commands(subcommands) -> None:
         "the run that its class is slow",
     )
     running.set_defaults(handler=curate_run)
-
-    pass_store = steps.add_parser(
-        "gallery-store",
-        help="a gallery pass's attempt store: record it, check it, restore it",
-        description=(
-            "A pass makes locations x heads x draws attempts per slot and each one is a pool "
-            "row carrying its whole join — 1,120 rows at n=50 and ten times that at n=500, "
-            "at about 3.8 KB a row. They live under the regenerable tree rather than in the "
-            "history, so they get what the supply sidecar and the embedding store get: a "
-            "copy on the archive tier, a tracked manifest carrying the row count, the bytes, "
-            "the sha256 and the population the attempts were made over, and a restore that "
-            "counts before it believes."
-        ),
-    )
-    pass_store.set_defaults(handler=curate_gallery_store)
-    # Its own three rather than [`keeping_verbs`]: every verb here names a pass,
-    # because unlike the five stores that share that helper this one keeps a
-    # store per gallery pass rather than a single file.
-    pass_verbs = pass_store.add_subparsers(dest="what", required=True)
-    for named, purpose in (
-        ("check", "check the live store against the manifest"),
-        ("save", "save a fresh copy and manifest"),
-        ("restore", "restore the archived copy, counted before it is believed"),
-    ):
-        keeping_a_pass = pass_verbs.add_parser(named, help=purpose)
-        keeping_a_pass.add_argument(
-            "--pass",
-            dest="pass_id",
-            required=True,
-            help="which pass's store, by id",
-        )
-        if named == "restore":
-            keeping_a_pass.add_argument(
-                "--force",
-                action="store_true",
-                help="overwrite a live store that holds MORE rows than the manifest records. "
-                "Those rows are attempts nobody has saved yet",
-            )
 
     ledger_store = steps.add_parser(
         "candidate-ledger",
@@ -4875,28 +4772,6 @@ def add_commands(subcommands) -> None:
     )
     manufacturing.set_defaults(handler=curate_manufacture)
 
-    expressing = steps.add_parser(
-        "expressed",
-        help="how much of the codebook the finished collection expresses, and what a "
-        "per-swatch floor could arithmetically ask for",
-        description=(
-            "COVERAGE(s) is the fraction of finished full-size wallpapers in which at least "
-            "a tenth of the pixels are assigned to swatch s, read off the shipped render at "
-            "its own resolution rather than off the candidate that stands behind it. Summed "
-            "over the fifty-two, COVERAGE is the mean number of swatches a wallpaper "
-            "expresses — which is what decides whether a uniform per-swatch floor can exist "
-            "at all, since a floor of f across k swatches asks the average picture for f*k "
-            "expressed colours. Measurement only: no floor is set and nothing is gated."
-        ),
-    )
-    expressing.add_argument(
-        "--step",
-        dest="step_of_expressed",
-        choices=["all", "census", "read"],
-        default="all",
-        help="run one step only: census every finished wallpaper, or read the tables off a "
-        "census already taken (default: both)",
-    )
     seating_sheet = steps.add_parser(
         "seat-sheet",
         help="the seats that change hands when the cascade orders the seating instead",
@@ -4922,5 +4797,3 @@ def add_commands(subcommands) -> None:
         "--sheet-name", default="cascade_vs_rank_key", help="what to call this sheet's directory"
     )
     seating_sheet.set_defaults(handler=curate_seat_sheet)
-
-    expressing.set_defaults(handler=curate_expressed)

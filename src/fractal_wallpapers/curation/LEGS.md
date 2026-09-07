@@ -57,6 +57,34 @@ nothing into any label store. Three things travel on each unit beyond the recipe
 the candidate ledger, reads the whole score sidecar, and resolves the rank key
 over two more stores. The `spiral_500` draw took about four minutes.
 
+### A `.leveled/` directory is not SWEEPABLE, and a prune is still structurally safe
+
+Two questions with opposite answers, which is why *can we delete these* keeps being
+asked and keeps being answered wrongly in one direction or the other.
+
+**A sweep cannot be bounded, so there is no partial one either.** The reachable set
+is not a fixed list: `pool_draw` represents each clearing location by its *current*
+best-ranked row, so which candidate is drawable moves with the pool, with the bars
+and with the next merge — a sweep would have to name the survivors in advance and
+there is no moment at which it can. Nor is there a safe subset to take instead. Of
+the 94,485 pool directories walked on 2026-09-06, the provably unreachable part is
+1,483 directories and 0.09 GiB — **1.6% of the count and 1.3% of the bytes** — and
+those are the ones carrying no ledger row at all, which is already
+`curate candidate-ledger orphans`' sweep rather than a new one. There is no version
+of this that pays.
+
+**A prune is safe, and for a reason that is not a count.** `prune` builds its doomed
+list as the `picture` of each row whose key is *not* in the kept set;
+[`candidate_ledger.sweep._delete_colormap`] derives `<parent>/<stem>.leveled` from
+that row's own picture; and [`pool_draw.leveled_dir`] derives
+`<parent>/<stem>.leveled` from a **surviving** row's own picture. One expression,
+three spellings. So a prune could take a live directory only if a dropped row and a
+surviving row named the same picture — an identity question rather than a rank or a
+policy one, and the answer is no. The measurement, the two stem shapes it holds
+under, and the two halves of `tests/test_leveled_identity.py` that fail on different
+things are in [`README.md`](README.md)'s *A prune cannot take a surviving row's
+colormap, and the reason is structural*.
+
 ## `curate hunt` — rendering into a shortage instead of around it
 
 The solve in [`GALLERY.md`](GALLERY.md) turns an impossible gallery into a **work
@@ -1293,9 +1321,10 @@ seconds*: run the arms as separate legs and the wall clock is the share.
 
 ### Retention discard is arithmetic, and no plan prints it
 
-`curate retention` keeps three rows per (location, mode), so what a leg loses at the
-merge is `(per_pair - K) / per_pair` at the shipped keep K and nothing else. The
-same night, three shapes, measured when K was 3:
+`curate retention` keeps [`candidate_ledger.RETAIN_PER_PAIR`] rows per (location,
+mode), so what a leg loses at the merge is `(per_pair - K) / per_pair` at the
+shipped keep K and nothing else. The same night, three shapes, measured when K
+was 3:
 
 | arm | width / modes | per pair | rows made | pruned | pictures |
 |---|---|---|---|---|---|
@@ -1307,8 +1336,16 @@ same night, three shapes, measured when K was 3:
 Exact every time. **Breadth over modes is prune-free and depth in palettes is not** —
 which is not an argument against width, because the discarded rows are the ones a
 wider draw beat, and the clear rate they measured survives in `sequence.jsonl`. It is
-an argument for knowing the number first: `--floor-width 4` is one over the keep and
-costs a quarter of an arm's pictures for nothing, where `3` is free.
+an argument for knowing the number first: **a width at or under the keep is free
+and every row above it is discarded**, so what `--floor-width` is compared against
+is [`candidate_ledger.RETAIN_PER_PAIR`] and never a literal.
+
+**This line has already inverted once, which is why it is written against K.** It
+read "`--floor-width 4` is one over the keep and costs a quarter of an arm's
+pictures for nothing" — true at K=3, and at K=5 that width is *under* the keep and
+prune-free, so the advice as it stood would have cost an arm the quarter it was
+warning about. The table's arms re-priced at the shipped keep: A and B are free,
+and C and D's 8 a pair cost `(8-5)/8` — **37.5%** rather than the 62.5% they paid.
 
 **The arithmetic holds only where the pairs are fresh, and on the near band they are
 not.** A near-band pass deepens (location, mode) pairs that are *already* at
@@ -2091,13 +2128,22 @@ row anywhere and nothing able to find them.
 
 ## `curate manufacture` — the one population here that is made rather than found
 
-Everything else in this stage spends supply. This makes some. `expressed` counted
-what the collection actually holds and found **eight of the fifty-two swatches on
-none of the 246 finished wallpapers and twenty-one on five or fewer**, against a
-library with 38 to 258 maps able to reach each of those twenty-one. The gap is
-not capability, and it is not something a floor can fix — the arithmetic there
-says a per-swatch floor cannot exist above about five percent. Nothing has ever
-*asked* for those colours, so this asks.
+Everything else in this stage spends supply. This makes some. The colour-expression
+census counted what the collection actually held and found **eight of the fifty-two
+swatches on none of the 246 finished wallpapers and twenty-one on five or fewer**,
+against a library with 38 to 258 maps able to reach each of those twenty-one. The
+gap is not capability, and it is not something a floor can fix — the arithmetic
+there says a per-swatch floor cannot exist above about five percent. Nothing has
+ever *asked* for those colours, so this asks.
+
+⚠ **That shortage is a 2026-08-24 reading and it has since closed.** Re-cut over
+the 645 pictures released by 2026-09-06 the same list named **one** cell rather
+than twenty-one, largely because the two passes aimed at those cells hit them —
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the finished collection expressed,
+measured 2026-09-06*. The census was retired the same day, so nothing in this tree
+answers *which colours is the collection short of* any more, and
+[`manufacture.targets`] is a frozen list rather than a current one. A new batch
+says what it aims at and why.
 
 ```
 1  register    both arms, in both stores, BEFORE a pixel exists

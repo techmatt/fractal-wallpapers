@@ -2,11 +2,18 @@
 
 Every other population in this project is *found*. A walk finds places, a run
 colours whatever the palette head picks, and the colour a finished wallpaper ends
-up holding is a by-product of both. [`expressed`] measured what that produces:
-eight of the fifty-two swatches appear on **none** of the 246 finished pictures
-and twenty-one appear on five or fewer, while the library holds 38 to 258 maps
-that can reach each of those twenty-one. The gap is not capability. Nothing has
-ever *asked* for those colours.
+up holding is a by-product of both. The colour-expression census measured what
+that produces: eight of the fifty-two swatches appeared on **none** of the 246
+finished pictures and twenty-one on five or fewer, while the library holds 38 to
+258 maps that can reach each of those twenty-one. The gap is not capability.
+Nothing has ever *asked* for those colours.
+
+That census was retired on 2026-09-06 and its last reading is in
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the finished collection expressed,
+measured 2026-09-06* — where twenty-one over 246 pictures reads as **one** over
+645, largely because the passes aimed at those cells hit them. So the shortage
+this module was built for is a fact about 2026-08-24 and not a standing one, which
+is the whole of the loose end [`targets`] carries.
 
 This module asks. It is the only population here that is manufactured rather than
 observed, and everything about it follows from that one fact:
@@ -113,13 +120,13 @@ ATTEMPTS_PER_LOCATION = 4
 STRANGE_MODES = 2
 
 #: A target swatch is REACHED when it holds at least this share of a picture's
-#: pixels. [`codebook.SHARE_THRESHOLDS`]' own "present" height, and the one
-#: `expressed` counts coverage at, so three modules mean one thing by the word.
+#: pixels. [`codebook.SHARE_THRESHOLDS`]' own "present" height, and the height the
+#: retired colour-expression census counted coverage at, so the two agree.
 REACHED = 0.10
 
 #: What a candidate must show at candidate geometry to be worth confirming at
-#: sheet geometry. Measured rather than chosen — `expressed.SCREEN`, under which
-#: not one of the 788 released (picture, swatch) cells at 10% falls.
+#: sheet geometry. Measured rather than chosen: not one of the 788 released
+#: (picture, swatch) cells at 10% falls under it.
 SCREEN_SHARE = 0.06
 
 #: The swatches this batch aims at, thinnest first — see [`targets`], which is
@@ -270,22 +277,25 @@ def _write_json(path: Path, document: dict) -> Path:
 def targets() -> tuple[str, ...]:
     """The swatches this batch is manufacturing, thinnest first.
 
-    **An explicit list, and a LOOSE END.** Until 2026-09-06 this read `expressed`'s
-    thin list — the swatches at most five finished wallpapers expressed — off the
-    artifact, so that a second copy of it could not become a second claim about the
-    collection. Matt's ruling took the thin list out with the rest of the
-    thin-colour apparatus, and no ordinary target selection was left to fall back
-    to: nothing else in this project answers *which colours is the collection
-    short of*.
+    **An explicit list, and a LOOSE END.** Until 2026-09-06 this read the
+    colour-expression census's thin list — the swatches at most five finished
+    wallpapers expressed — off the artifact, so that a second copy of it could not
+    become a second claim about the collection. Matt's ruling took the thin list
+    out with the rest of the thin-colour apparatus, and the census itself followed
+    the same day; no ordinary target selection was left to fall back to, because
+    nothing else in this project answers *which colours is the collection short
+    of*.
 
     So the list is frozen at what it was, rather than a policy being invented to
     replace it. It is the list on both batches on record — `plan.json`'s `targets`
     under `pilot_rare_colors` and `manufactured_rare_colors` are these
     twenty-one, in this order — so a re-run reproduces the batches that were
     actually built. What it is **not** is a current reading: the census that
-    produced it was taken over 246 pictures on 2026-08-24 and 645 have been
-    released since. Anything aiming a *new* batch has to say what it is aiming at
-    and why, and this constant is the place that decision lands.
+    produced it was taken over 246 pictures on 2026-08-24, and re-cut over the 645
+    released since it named **one** cell rather than twenty-one — see
+    [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the finished collection expressed,
+    measured 2026-09-06*. Anything aiming a *new* batch has to say what it is
+    aiming at and why, and this constant is the place that decision lands.
     """
     return TARGETS
 

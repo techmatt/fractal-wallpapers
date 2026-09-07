@@ -287,15 +287,17 @@ def judged_pool() -> dict:
     hold is a place the gallery pass cannot select, however good the wallpaper
     somebody already made of it. See [`unreachable`].
 
-    **Both stores**, because the pool is in two places. A run's candidates are
-    release rows; a gallery pass's attempts are rows in
-    [`curation.gallery_store`], under `artifacts/` rather than in the history, and
-    a pass makes more of them in one night than every run has made in total.
+    **One store since 2026-09-06**, and it used to be two. The retired gallery
+    passes' attempts lived in their own untracked gate store and were read here as
+    well, and a pass made more of them in one night than every run has made in
+    total; the store went with the passes. So this pool is smaller than it was by
+    the places only an attempt ever named — the passes' seated **winners** are
+    release rows and are still here.
     """
-    from fractal_wallpapers.curation import gallery_store, records
+    from fractal_wallpapers.curation import records
 
     pool: dict[str, str] = {}
-    for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]:
+    for row in records.read_decisions(records.RELEASE):
         location = row.get("location") or {}
         pool.setdefault(str(location.get("key")), str(location.get("partition")))
     return pool

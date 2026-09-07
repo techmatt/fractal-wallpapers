@@ -363,9 +363,9 @@ def _levelled_by_picture() -> dict[str, bool]:
     predates the operator is simply absent from the table — three thousand of them
     are, and a `False` there would claim the operator ran and did nothing.
     """
-    from fractal_wallpapers.curation import gallery_store, records, rescore
+    from fractal_wallpapers.curation import records, rescore
 
-    pool = [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+    pool = list(records.read_decisions(records.RELEASE))
     index = {str(row.get("key")): row for row in pool if row.get("key")}
     out: dict[str, bool] = {}
     for row in pool:

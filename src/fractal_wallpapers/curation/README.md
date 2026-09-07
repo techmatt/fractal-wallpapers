@@ -64,7 +64,6 @@ augment    the stage that RAISES the seat count: one seat out, two in. A 1-swap
 tentative  one solve recorded under a stamp, with IDs, aliases and a browser
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
-gallery_store  four retired passes' attempt rows and pass records, still read
 release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
@@ -75,7 +74,6 @@ colors     the colour census: what colours this project can make, picks, keeps a
 color_sheets  what a colour cell actually looks like, so an eye can rule on it
 swatch_frequency  every swatch, what it looks like, and how often the pool is it
 palette_coverage  how many maps can put a swatch on a real share of an image
-expressed  how much of the codebook the finished collection expresses
 manufacture  forcing the rare swatches onto good places, and the sheets that ask
 checks     the two claims only a re-render can settle
 run_layout where a run's regenerable files go, and at what size it draws them
@@ -98,7 +96,6 @@ fractal-wallpapers curate below-bar                    # the read to take BEFORE
 fractal-wallpapers curate reject --run v1 --rejector matt_review --date 2026-08-17
 fractal-wallpapers curate reach --write scratch/unreached_keys.jsonl   # the gap, as a manifest
 fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.jsonl
-fractal-wallpapers curate gallery-store check --pass gallery1          # is a retired pass's store whole?
 fractal-wallpapers curate candidate-ledger backfill    # the cache, from what exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger save        # both files, made durable
@@ -226,6 +223,18 @@ fractal-wallpapers curate candidate-ledger check      # are they whole
 fractal-wallpapers curate flatness save               # its own durable. `merge` does this too
 fractal-wallpapers curate signatures save             # ...and so is this one. `check`/`restore` too
 ```
+
+⚠ **A score off this store is joined on one judge artifact and one regime, so a
+caller either names the regime or inherits last-row-wins.** `rows.scores_by_recipe`
+reads `artifact=None` as the live head and `regime=None` as *whatever the sidecar
+holds* — correct only while the sidecar is single-regime, which is why an unnamed
+read that finds one recipe at two regimes raises rather than flattening. Six
+production callers pass neither. **And one reader is a writer's skip set rather
+than a join, so it does not raise**: `candidate_ledger/rerender.py`'s `rescore`
+builds its already-read set from `recipe_key` and the artifact alone, so under two
+regimes it counts a recipe read at the *other* geometry as already scored and
+leaves it unscored at the geometry the pool joins on. Both are argued in full under
+*The two retired artifacts were dropped, 2026-09-06* below.
 
 ### The step a judge adoption makes necessary
 
@@ -1175,19 +1184,16 @@ release picture is told from a leftover — one row per winner, carrying the
 resolution and supersample it was actually made at, which is a per-pass decision
 and not a constant.
 
-**Joining a pass's seats to their colour.** `curate expressed` keys its census the
-same way, so `artifacts/curation/expressed/pictures.jsonl` filtered to
-`run == <pass>` is one row per seat and joins on the candidate id with no path
-matching. Its `picture` field is the absolute release picture the row was computed
-on; comparing that path and re-reading the file with `expressed.full_shares` is
-what proves a census row is about the picture in front of you.
-
-**The attempts are the bulk and they are not in the history.** A pass makes
-`locations x heads x draws` attempts per slot — 1,120 at n=50, ten times that at
-n=500 — and a pool row carrying its whole join runs about 3.8 KB. They get the
-`neutral_embeddings` treatment: under the regenerable tree, a copy on the archive
-tier, a tracked manifest, and `curate gallery-store {check,save,restore}` over
-them. The pass writes the copy and the manifest itself as its last act.
+**The attempts were the bulk, they were never in the history, and they are gone.**
+A pass made `locations x heads x draws` attempts per slot — 1,120 at n=50, ten
+times that at n=500 — and a pool row carrying its whole join runs about 3.8 KB, so
+they got the `neutral_embeddings` treatment: under the regenerable tree, a copy on
+the archive tier, a tracked manifest, and a `check`/`save`/`restore` verb over
+them. **Retired on 2026-09-06 with the passes**, Matt's ruling: the store, its
+manifests, the four passes' tracked pass records and slot rows, and the module
+behind them. What survives of a pass is its **winners**, in
+`data/curation/release/<pass>/` like every other release row, and the 14,316 rows
+they put in the candidate ledger.
 
 **A pass no longer writes a release row per attempt.** It used to write both a
 gate row and a release row for every scored attempt, which is the same row twice
@@ -1968,7 +1974,8 @@ sidecar's own paths and `guarded()` — the three a run refuses to start without
 The old shape had `guarded()` reaching from inside `durability` **up** into
 `amend` and `hunt`, two modules that import it, through imports written inside the
 function body. That is a floor module holding a list of its own callers, and it
-kept `durability` and `gallery_store` inside the largest import cycle in the tree:
+kept `durability` and the gallery passes' gate store inside the largest import
+cycle in the tree:
 breaking it took the tree's biggest strongly-connected component from **49 modules
 to 47**. The zero-argument calls went with it — `durability.save()` meaning the
 sidecar was the same accident from the other end, a mechanism whose default
@@ -2210,72 +2217,3 @@ concurrency gain on three. Re-measure rather than trusting that arithmetic. The 
 Each recolor is censused and its JPEG overwritten rather than kept — keeping them
 would be a gigabyte of pictures answering four hundred bytes each — so the contact
 sheet re-makes the sixteen tiles it shows.
-
-## What the finished collection expresses
-
-[`expressed`](expressed.py) asks the same question one step further downstream,
-about the pictures that exist rather than the maps that could make them:
-
-```text
-COVERAGE(s) = the fraction of finished wallpapers in which at least
-              10% of the pixels are assigned to swatch s
-```
-
-```
-fractal-wallpapers curate expressed                 # census, then read
-fractal-wallpapers curate expressed --step census   # read every finished wallpaper only
-fractal-wallpapers curate expressed --step read     # tables off a census already taken
-```
-
-```
-artifacts/curation/expressed/pictures.jsonl   one row per finished wallpaper, four share vectors
-artifacts/curation/expressed/expressed.json   the coverage vector, the budget, the agreement table
-```
-
-**The budget is the finding, and it is arithmetic.** Summed over a set of
-swatches, COVERAGE *is* the mean number of them a picture expresses — the same
-double sum read down the columns instead of across the rows. So a uniform floor
-`f` over `k` swatches asks the average picture for `f * k` expressed colours, and
-the largest `f` that can exist is `mean / k` whatever curation does. Both halves
-are reported, all 52 and the 48 non-neutral, each with the whole histogram: the
-population is 246 pictures over seven integers and every bar is a sentence about
-what a floor would have to be true of.
-
-**Population: the verdict, checked.** Every release row whose verdict is
-`released` and whose full-size picture is on disk — the file is tested rather than
-trusted, because a coverage vector short a picture is a number nobody can
-reproduce. A row [`rejection`](rejection.py) took back afterwards is **kept**:
-this is a question about colour, not about seating.
-
-**Read at the shipped render's own resolution.** A share vector is not
-scale-free, so the census reads each release PNG at whatever that picture is —
-`full_shares` takes the size off the file and writes it onto the row — and the two
-cheap instruments are priced against it rather than assumed. The numbers below
-were taken over a population made entirely at 2560x1440; a pass shipping another
-regime is a different population, and the pass record's `release_geometry` is what
-tells them apart. The 160x90 decode
-[`codebook.of_picture`](../palettes/codebook.py) uses moves a swatch by at most
-0.7 of a point over the released population and flips 12 of 12,792 threshold
-cells. The **candidate render is a different picture** — half the supersampling
-at a sixteenth of the area, levelled off its own histogram — and moves a median
-of 2.1 points, up to 64. That is why a recolor pass would screen at candidate
-geometry and never measure there.
-
-**Runtime.** 246 pictures, four share vectors each, about 180 s; re-measured
-2026-09-06 at **645 pictures in 437 s**, which is the same 0.7 s a picture.
-
-**Nothing downstream reads this readout, since 2026-09-06.** One line of it used
-to: `thin` named the swatches at most `THIN_PICTURES` (5) finished wallpapers
-expressed, `rank_key`'s `stratum_score` column read that list at the merge's prune
-and again at the solve, and `manufacture` aimed a batch of renders at it. A count
-compared against `count / len(rows)` enforces a rate that halves every time the
-collection doubles, and it showed: taken over 246 pictures the list named 21
-cells, re-taken over the 645 released since it named **one**, moving 98,000 of the
-pool's 308,000 rows out of `thin_colour`. Matt ruled the whole apparatus out
-rather than repairing it — see [`GALLERY.md`](GALLERY.md)'s *`curate rank-key` — what
-the gallery leg ranks on instead of the judge alone*, which carries what the column
-was worth, and `expressed.py`'s own
-*What the census is and is not read for*. The thin list, `THIN_PICTURES`, the
-`POPULATION_DRIFT` guard and the `recolor_cost` pricing went with the column; what
-is left here is measurement that decides nothing, which is what the module always
-said it was.

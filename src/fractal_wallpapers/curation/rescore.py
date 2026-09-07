@@ -33,19 +33,23 @@ of both kinds, so the pass loads both heads — and each row is scored by one.
 release PNG: only 153 rows have one, and a floor read at one geometry and applied
 at another is two different measurements wearing one number.
 
-## The pool is in two stores, and both are read and both are written back
+## The pool is ONE store now, and it was two until 2026-09-06
 
-A run's candidates are release rows in the tracked store. A **gallery pass's**
-attempts are rows in [`curation.gallery_store`], under `artifacts/` with a
-tracked manifest, and one pass makes more of them than every run has made in
-total. A re-score that read only the tracked store would leave the larger half of
-the pool carrying a retired head's numbers, and everything that reads the pool as
-one population — `gallery.pool_rows` and the `below_floor` sheet it answers,
-`curation.colors`, the palette coverage, `below_bar` — would be comparing a
-re-scored run row against a stale pass row on two different scales. That is the
-failure this project has already made once, and it is the reason this pass exists
-at all. The *seating* no longer needs it: a gallery pass seats only candidates it
-made itself. Every reading taken **across** the pool still does.
+A run's candidates are release rows in the tracked store, and that is the whole
+pool. It used to be two: the retired gallery passes' *attempts* lived in their own
+untracked gate store with a tracked manifest, and one pass made more of them than
+every run has made in total, so a re-score that read only the tracked store would
+have left the larger half of the pool carrying a retired head's numbers. That
+mattered because everything reading the pool as one population — the `below_floor`
+sheet, [`curation.colors`], the palette coverage, [`below_bar`] — would then be
+comparing a re-scored run row against a stale pass row on two different scales.
+That is the failure this project has already made once, and it is the reason this
+pass exists at all.
+
+The gate store went with the passes on 2026-09-06 and the hazard went with it:
+there is one store, so there is one scale. What survives of those passes is their
+**winners**, which are release rows like any other and are re-scored here like any
+other.
 
 A row with **no score** is skipped rather than read: a failed render is a decision
 with a reason and no number, and it has no picture to read either.
@@ -243,16 +247,14 @@ RE_RENDER_UNIT = "pool_re_render"
 def pool_rows() -> list[dict]:
     """Every scored row of the pool, out of both stores it lives in.
 
-    The population this module is about, in one place: a run's release rows from
-    the tracked store and every gallery pass's attempt rows from its own. A row
-    with **no score** is not in it — a failed render is a decision with a reason
-    and no number, and it has no picture to read either.
+    The population this module is about, in one place: the tracked release store,
+    which is all of it since the gate store was retired. A row with **no score** is
+    not in it — a failed render is a decision with a reason and no number, and it
+    has no picture to read either.
     """
-    from fractal_wallpapers.curation import gallery_store
-
     return [
         row
-        for row in [*records.read_decisions(records.RELEASE), *gallery_store.read()]
+        for row in records.read_decisions(records.RELEASE)
         if (row.get("scores") or {}).get("p_ge3") is not None
     ]
 
@@ -625,32 +627,24 @@ def _shift(rows: list[dict], read: dict) -> dict:
 def _write(rows: list[dict], read: dict, log) -> dict:
     """Put the block on every row and write it back to the store it came from.
 
-    Through each store's own upsert, so the key order and the file layout stay the
+    Through the store's own upsert, so the key order and the file layout stay the
     store's — and so a rejection block a person added survives, which `_carry`
     guarantees and a hand-rolled rewrite would not.
 
-    **Routed by stage**, which is what says which store a row lives in: a release
-    row is a decision about a slot and belongs to the tracked store, and a gate row
-    is a pass's attempt and belongs to that pass's own. A pass whose store was
-    rewritten has its manifest saved again in the same call, because a store the
-    manifest no longer describes reads as `changed` to every later check.
+    **Still grouped by run**, because the upsert is per run file. It used to route
+    by *stage* as well: a `gate` row was a retired gallery pass's attempt and went
+    to that pass's own store, which had to have its manifest saved again in the
+    same call. That store was retired on 2026-09-06, [`pool_rows`] no longer reads
+    a gate row, and the branch went with it.
     """
-    from fractal_wallpapers.curation import gallery_store
-
-    by_run: dict[tuple, list[dict]] = {}
+    by_run: dict[str, list[dict]] = {}
     for row in rows:
-        stage = str(row.get("stage") or records.RELEASE)
-        by_run.setdefault((stage, row["run"]), []).append({**row, BLOCK: read[row["key"]]})
+        by_run.setdefault(str(row["run"]), []).append({**row, BLOCK: read[row["key"]]})
     out = {}
-    for stage, name in sorted(by_run):
-        mine = by_run[(stage, name)]
-        if stage == records.GATE:
-            _, total, new = gallery_store.write(name, mine)
-            gallery_store.save(name, log=lambda line: log(f"[rescore] {line}"))
-        else:
-            _, total, new = records.write_decisions(records.RELEASE, name, mine)
-        out[f"{name}/{stage}"] = total
-        log(f"[rescore] {name} {stage}: {total} row(s) written, {new} new")
+    for name in sorted(by_run):
+        _, total, new = records.write_decisions(records.RELEASE, name, by_run[name])
+        out[f"{name}/{records.RELEASE}"] = total
+        log(f"[rescore] {name} {records.RELEASE}: {total} row(s) written, {new} new")
     return out
 
 

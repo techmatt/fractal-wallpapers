@@ -28,13 +28,13 @@ meant the sidecar, and the list of files a run refuses to start without reached
 **up** from here into [`curation.amend`] and [`curation.hunt`] — two modules that
 import this one. A floor module holding a list of its own callers is an import
 cycle written small enough to look like a style choice, and it held this module
-and [`curation.gallery_store`] inside the largest one in the tree.
+and the gallery passes' gate store inside the largest one in the tree.
 
 The list, the sidecar and the zero-argument defaults are all in
 [`curation.durables`] now. Every other durable is described where its file lives:
 [`amend.durable`], [`hunt.frames_durable`], `candidate_ledger.store.durable_rows`
 and `durable_scores`, `flatness.durable`, `signatures.durable`,
-`embeddings.store`, `gallery_store.durable`, `palettes.color_mass.sweep_log`.
+`embeddings.store`, `palettes.color_mass.sweep_log`.
 
 ## Why these are archived under a manifest rather than tracked
 

@@ -951,3 +951,50 @@ prunes; the table under *What it costs* is the one to read. The retired history 
 comparison worth keeping: on 2026-08-29 over a 275,822-candidate pool the exact
 solve was 238 s at n=150 and **did not terminate at all** at n=1000, while the
 sequential `curate seat` was 51 s at n=150 and had no objective to report.
+
+## What the finished collection expressed, measured 2026-09-06
+
+**The last reading of the colour-expression census, and the reason it is here rather
+than in a module.** The census counted COVERAGE(s) — the fraction of finished
+full-size wallpapers in which at least a tenth of the pixels are assigned to swatch
+`s`, read off the shipped render at its own resolution rather than off the candidate
+behind it. Its policy half went at ckpt 112 with `stratum_score`; the measurement
+went on 2026-09-06, Matt's ruling, having decided nothing since. This is the fact
+about the release that went with it.
+
+**Twenty-one cells down to one, over 645 released pictures.** The shipped thin list
+was cut over 246 pictures on 2026-08-24 at a threshold of five expressing pictures.
+Re-cut over the 645 released by 2026-09-06: **ENTER 0, LEAVE 20, STAY 1** — the one
+being `dark_muted_lime`, at exactly 5 of 645.
+
+* **The threshold was a count, so it tightened as the collection grew.** Five of 246
+  is 2.033% and five of 645 is 0.775% — less than half as much asked of the larger
+  population. Held at the shipped *rate* instead of the shipped count, **14 of the 21
+  would still be thin**: seven cells left on their own merits and thirteen left
+  because the denominator grew.
+* **The aim worked, and that is what emptied the list.** Of the 20 cells that left,
+  the two release passes aimed at thin cells supply nearly every expression —
+  `dark_muted_cyan` 11 of 11, `dark_vivid_cyan` 12 of 12, `dark_muted_teal` 8 of 8,
+  `light_vivid_teal` 6 of 6, all four from `gallery3` and `gallery4`, whose winners
+  are on record at `data/curation/release/<pass>/`. An absolute count of five turns
+  *hit it twice on purpose* into *stop aiming*, which is the shape of failure that
+  ended the apparatus.
+* **The budget barely moved**: mean swatches expressed **3.2033 -> 3.1566** (2.2543
+  non-neutral) over 2.6x the pictures. A uniform per-swatch floor `f` over `k`
+  swatches asks the average picture for `f * k`, so the largest floor that can exist
+  is `mean / k` — and that ceiling did not move with the collection either.
+
+**Two instrument readings worth keeping, because they price every future colour
+measure over finished pictures.** The census read each release PNG at its own
+resolution, and the two cheap alternatives were measured against that rather than
+assumed. The **160x90 decode** [`palettes/codebook.py`](../palettes/codebook.py)'s
+`of_picture` uses moves a swatch by at most **0.7 of a point** over the released
+population and flips **12 of 12,792** threshold cells — cheap enough to substitute.
+The **candidate render** is not: half the supersampling at a sixteenth of the area,
+levelled off its own histogram, it moves a median of **2.1 points and up to 64**.
+Which is why a recolor pass screens at candidate geometry and never *measures*
+there.
+
+**Runtime**: 645 pictures in **455 s**, 0.71 s a picture, against 246 in about 180 s.
+A second run the same day read 437 s over the same population; the 455 is the one
+these numbers were taken from.

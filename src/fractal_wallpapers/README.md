@@ -196,3 +196,27 @@ is `unknown`, which is not a fingerprint and is therefore stale: `location_view.
 render_view` draws it again rather than handing it to a head. That is every
 picture drawn before this existed, and re-reading them is
 `fractal-wallpapers curate redraw`.
+
+### Two things never to do to `renders.job_name`, and both have bitten
+
+Neither is enforced by a test, which is why they are here rather than only in
+`engine_spec.py`'s module docstring: the person about to do either is writing a
+test, and a test author does not read the module the derivation moved to.
+
+⚠ **Never pin a `job_name` digest in a test.** `job_name` is a sha256 of the whole
+engine spec, and `engine_spec.spec_of` writes `paths.colormap_dir()` into that spec
+as an **absolute path into the checkout**. So the digest is different on every
+machine, and different again after a clone moves — a pinned literal passes for the
+author and fails for everybody else and for CI. That the path is in there is
+deliberate and it is why `candidate_ledger` drops `colormap_dir` from the recipe
+key: harmless in a cache file name, which means nothing off the machine that wrote
+it, and not harmless in anything keyed forever. Assert what a name *is a function
+of* — two rows agreeing or differing — never the sixteen characters.
+
+⚠ **Never patch `renders.colormap_dir`.** `spec_of` moved down to `engine_spec.py`
+on 2026-09-04, so it reads `engine_spec.colormap_dir` and nothing else. A fixture
+that patches the name still re-exported from `models/renders.py` is holding a name
+`spec_of` no longer reads: the patch takes, the test goes green, and the digest it
+is checking is silently over the real checkout instead of over the field the
+fixture set up. `tests/test_curation_colorize.py`'s field-name digests are the
+ones that depend on this, and they name `engine_spec`.
