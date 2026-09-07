@@ -418,6 +418,52 @@ leaves rows naming absent pictures, which `curate candidate-ledger pictures`
 reports, `solve.pool` refuses, and a second `prune` repairs — the ranking is a
 deterministic function of the rows.
 
+#### The prune ranks on `rank_key` and a gallery seats on the cascade, and below the bar those are one order
+
+**This is why the seating flip of 2026-09-07 left retention alone, and it is an
+argument rather than an omission.** `_prune_ranks` reads
+[`curation.rank_key`](rank_key.py); `solve.DEFAULT_KEY` has been
+`solve.CASCADE_KEY` since that day. Read cold, that looks like two keys deciding
+the same pool's fate by different lights. It is not, and there are four reasons in
+a row.
+
+**The cascade *contains* the rank key.** Above `solve.Q4_BAR` it orders on the
+fine-tier head (`models/gallery_grade/`, fitted on human verdicts about pictures
+that had already cleared the gate); below the bar it hands back each row's
+`rank_key` value unchanged. So **below the bar the two keys are one order**, and
+retention ranking on `rank_key` is already ranking on the cascade's own lower
+half. There is no third key anywhere.
+
+**The prune's population sits mostly below the bar, so the two mostly cannot
+disagree.** A pair whose rows straddle the bar, or sit wholly beneath it, is
+ordered identically by both. The disagreement can only bite where a prune's whole
+decision is made among rows that are *all* above the bar — and that case had never
+been counted until 2026-09-07. It is **877 of the 3,729 pairs at or over
+`RETAIN_PER_PAIR`, 23.5%** and 23.6% weighted by rows; on those the two orders
+name a different top row 70.6% of the time, and a different survivor *set* in 23.
+Restricted to the pairs that actually delete something, the survivor set differs
+in **23 of 30**. So it is rare that the question arises and near-certain that the
+keys differ once it does. [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *How much of the
+prune is settled above the bar* carries the reading, including why real prune
+decisions are not recoverable from any record.
+
+**Seating-only was a ruling and the reason is containment.** A gallery's ceiling
+holds a bad ordering *at a seat*: the row is still in the pool, `curate seat-sheet`
+shows what the two keys disagree about, and the next solve reseats. `_prune_ranks`
+has no such containment — it deletes the row and its picture permanently, and
+[`MEASUREMENTS.md`](MEASUREMENTS.md) says why the deleted side of that decision
+cannot afterwards be read back. A key adopted on one seating's worth of evidence
+belongs on the reversible decision first.
+
+**And `rank_key` cannot be retired while the cascade runs.** `solve.cascade_order`
+builds the cascade out of `solve.ranking_for`'s `rank-key` mapping and lays the
+fine head over its top; retiring `rank_key` would retire the cascade's below-bar
+half with it. The two are one order, and that cuts both ways.
+
+`curation/GALLERY.md`'s *`cascade` is the default since 2026-09-07* is the seating
+half of this, and `tests/test_seat_sheet.py` pins that `_prune_ranks` reaches
+`curation.rank_key` directly and names neither `DEFAULT_KEY` nor the cascade.
+
 ### Putting a picture back
 
 The prune was taken on an argument — **everything it removes is either retained
@@ -1414,8 +1460,13 @@ pictures the head reads are the smooth renders it was distilled on. The chosen
 map then colours whatever mode the attempt actually draws.
 
 **And the anchor draw is the whole of it: there is no palette-cluster cap at
-release.** Nothing in selection, in the release path or in the gallery pass
-groups the library at all. (A sixteen-way clustering was tracked beside the maps
+release.** Nothing in selection or in the release path groups the library at all.
+**The gallery leg is the exception and has been since 2026-08-25** —
+`ceiling.group_cap` caps the seats one [palette group](../palettes/groups.py) may
+take, and a group is a linkage cluster of near-duplicate maps rather than a single
+map — so this paragraph is about a **run's release** and never about the
+collection. It said otherwise until 2026-09-07 and was wrong on the day it was
+written. (A sixteen-way clustering was tracked beside the maps
 until 2026-09-02 as a figure's record, read by nothing but the command that wrote
 it; the website groups by dominant hue and it was deleted.) So two seated rows may
 land in one region of palette space, and what stops that is the without-replacement

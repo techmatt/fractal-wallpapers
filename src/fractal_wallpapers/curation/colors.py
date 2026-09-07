@@ -461,7 +461,7 @@ def survival(log=print) -> tuple[dict, list[dict]]:
     scored = _floor_referenced(pool_rows, index, log=log)
     by_kind = {}
     for kind, cells in scored.items():
-        floor = floors.gallery_floor(kind)
+        floor = floors.measured_floor(kind)
         graded = []
         for cell in cells:
             read = read_picture(cell["picture"])
@@ -477,8 +477,10 @@ def survival(log=print) -> tuple[dict, list[dict]]:
             )
         by_kind[kind] = {
             "floor": floor.value,
-            "floor_name": floor.name,
-            "head_sha256": floor.stamp,
+            # The height's own name and never a cut's: this stage annotates and
+            # nothing here removes a row, so a `Bar`'s name would be a claim.
+            "floor_name": f"{kind}_measured_release_floor",
+            "head_sha256": floor.head_sha256,
             "n": len(graded),
             "clears": sum(1 for entry in graded if entry["clears"]),
             "by_swatch": _survival_table(graded),
@@ -555,7 +557,7 @@ def _floor_referenced(pool_rows: list[dict], index: dict, log=print) -> dict:
     """
     from fractal_wallpapers.curation import budget, floors, records, rescore
 
-    wanted = {kind: floors.gallery_floor(kind).stamp for kind in budget.KINDS}
+    wanted = {kind: floors.measured_floor(kind).head_sha256 for kind in budget.KINDS}
     out: dict[str, list[dict]] = {kind: [] for kind in wanted}
     seen: set[str] = set()
     mismatched = 0
@@ -634,7 +636,7 @@ def _raise_only(scored: dict, read_picture, log=print) -> dict:
     from fractal_wallpapers.curation import budget, floors
 
     kind = budget.SMOOTH
-    floor = floors.gallery_floor(kind).value
+    floor = floors.measured_floor(kind).value
     graded = []
     for cell in scored.get(kind, []):
         if (cell["row"].get("location") or {}).get("partition") != "mandelbrot":

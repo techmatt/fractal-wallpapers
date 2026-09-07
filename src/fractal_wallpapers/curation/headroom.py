@@ -65,7 +65,8 @@ them.
 Both bars are flags on the arithmetic and neither is a measured crossover. The
 one measured release bar this project acts on is `P(>=3) >= 0.785`
 ([`floors.STRANGE_RELEASE_BAR`]), which is *above* the fallback here; the smooth
-kind's measured floor is 0.780 and gates nothing at a run's release. Nothing in this module
+kind's measured floor is 0.780 and **acts nowhere at all** — it did act in the
+gallery pass until `64c9612` deleted that pass. Nothing in this module
 re-scores at shipping geometry, and no per-mode crossover fitted at label geometry
 is transported onto the candidate column.
 

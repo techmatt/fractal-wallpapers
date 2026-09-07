@@ -46,9 +46,17 @@ carries both.
 
 ```text
 strange_render   0.785   ACTING at release selection      crossing 0.783400
-smooth_render    0.780   measured, advisory at release    crossing 0.779545
-                         and ACTING in the gallery pass
+smooth_render    0.780   measured, ADVISORY everywhere    crossing 0.779545
 ```
+
+**One of the two acts, and `curation.floors.ACTING_RELEASE_BARS` is the one place
+that says which.** It holds `strange_render` and nothing else. The smooth height is
+measured, recorded and written onto records; there is no leg in which it removes a
+picture. It read differently at a second site until 2026-08-28, when `64c9612`
+deleted the pre-solver gallery pass; `curate solve run` replaced that pass and seats
+against `solve.Q4_BAR` on `P(>=4)`, a cutpoint neither of these `P(>=3)` heights
+transfers to. So *measured* and *acting* are two facts about a height here, and this
+table states both because for ten days it stated the second one wrongly.
 
 **A flip moves these two for two reasons and the record separates them.** The store
 grows and the scale moves, and a method that credited the whole move to one of them

@@ -85,7 +85,7 @@ the sha of the head it was read against, how it was read, and when. It is still
 a `>=3` bar. The head now emits a `P(>=4)` and that cutpoint gates nothing: a four
 is a class the release path prefers where it finds one, not a second floor.
 
-## Measured is not the same as acting, and there are now two of each
+## Measured is not the same as acting: two measured heights, one acting bar
 
 The measurement that once set the strange bar to 0.685 was a paragraph of prose
 in a `method` string for five days: `grep -rn isotonic` reached one assertion in
@@ -412,57 +412,41 @@ def release_cut(head: str) -> Advisory | Bar:
     return release_advisory(head)
 
 
-#: Why every measured floor acts in the **gallery pass**, whatever it does at a
-#: run's release. Carried onto every gallery floor, beside the height's own
-#: [`Restatement`], because the two halves have different provenance: where the
-#: number sits is the isotonic crossover, and THAT it acts here is Matt's
-#: 2026-08-22 ruling about what the second phase is for.
-GALLERY_FLOOR_BASIS = (
-    "an ACTING floor in the gallery pass by Matt's ruling of 2026-08-22. The pass chooses "
-    "what the collection SHIPS out of the whole accumulated pool, where a run keeps ten "
-    "pictures to prove its own path works — so a height the head's own labelers measured "
-    "acts on the shipping decision even where it only annotates the diagnostic one. "
-    "Unfilled beats padded: a slot with nothing above the floor is output empty, and an "
-    "empty slot is the signal for where to label or walk next."
-)
+def measured_floor(head: str) -> Restatement:
+    """This kind's measured release height, as a measurement and not as a cut.
 
+    **It is deliberately not a [`Bar`] or an [`Advisory`], because it is neither.**
+    A reader that wants a height and the artifact it was fitted on wants exactly
+    [`Restatement`] — the number, the head's sha256, how it was read and when —
+    and handing back a `Bar` would say the height removes a picture somewhere,
+    which is [`ACTING_RELEASE_BARS`]'s question and the answer for the smooth kind
+    is no.
 
-def gallery_floor(head: str) -> Bar:
-    """The floor a candidate must clear to take a **gallery slot** on this head.
+    This replaced `gallery_floor`, retired 2026-09-07. That function returned a
+    `Bar` on both kinds under Matt's ruling of 2026-08-22, that every measured
+    floor acts in the gallery pass whatever it does at a run's release. `64c9612`
+    deleted that pass on 2026-08-28 and `curation.solve` replaced it, seating
+    against `solve.Q4_BAR` on `P(>=4)` — a cutpoint neither of these `P(>=3)`
+    heights transfers to. **The ruling retired with the pass rather than moving
+    somewhere else**: it was a statement about what a second phase was for, and
+    there is no second phase. The 2026-08-22 ruling that *survives* is the other
+    one, that both heights sit on the 0.005 grid, and this module's header states
+    it.
 
-    Every measured release floor acts here — [`MEASURED_RELEASE_FLOORS`], which is
-    both of them — and that is the one place in this project where a head's cut
-    reads differently at two sites. [`ACTING_RELEASE_BARS`] still answers the
-    question it has always answered, *does this head gate a run's release*, and
-    the smooth head's answer there is still no.
-
-    The two questions are different. A run's release is ten diagnostic pictures
-    out of one night's attempts and a bar there decides how much of one run's own
-    work is worth looking at; the gallery pass decides what the collection ships,
-    out of everything the pool holds, and a slot it cannot fill above a measured
-    floor is a fact about the pool rather than a slot to pad. So the pass reads
-    the measured height on both heads, and a head with no measured floor at all is
-    refused rather than given the advisory's midpoint — an advisory is a number
-    nobody set as an operating point, and seating a wallpaper against one would be
-    a gate nobody could defend.
+    The one caller is [`curation.colors`], the colour census, which gates nothing
+    by its own first sentence: it wants the height to annotate a candidate as
+    clearing or not, and the stamp to refuse a row read on some other artifact.
+    That refusal is the census's own — a row on a known other artifact raises
+    there — so nothing was lost by handing back a measurement.
     """
     if head not in MEASURED_RELEASE_FLOORS:
         raise ValueError(
-            f"no release floor has been measured for {head!r}, so the gallery pass has "
-            f"nothing to seat its slots against. `fractal-wallpapers head floor --head "
-            f"{head}` is the fit that measures one; until it has been run and the height "
-            f"declared in MEASURED_RELEASE_FLOORS, this head cannot fill a gallery slot."
+            f"no release floor has been measured for {head!r}. `fractal-wallpapers head "
+            f"floor --head {head}` is the fit that measures one; until it has been run and "
+            f"the height declared in MEASURED_RELEASE_FLOORS, there is no height on this "
+            f"head anything may be reported against."
         )
-    restated = MEASURED_RELEASE_FLOORS[head]
-    return Bar(
-        name=f"{head}_gallery",
-        value=float(restated.value),
-        head=SCORING_HEAD,
-        # The head the height was MEASURED on, like every other bar: a flip must
-        # refuse here before the pass spends a full-size render on the wrong scale.
-        stamp=restated.head_sha256,
-        basis=f"{GALLERY_FLOOR_BASIS} WHERE it sits is a measurement: {restated}",
-    )
+    return MEASURED_RELEASE_FLOORS[head]
 
 
 def release_bar(head: str) -> Bar | None:
@@ -644,7 +628,6 @@ __all__ = [
     "ATTEMPT_MULTIPLIER",
     "MEASURED_RELEASE_FLOORS",
     "CLUSTER_CAP",
-    "GALLERY_FLOOR_BASIS",
     "GOOD_FLOOR",
     "GREAT_CUT",
     "JUNK_FLOOR",
@@ -662,8 +645,8 @@ __all__ = [
     "HeadStampMismatch",
     "Restatement",
     "release_cap",
-    "gallery_floor",
     "junk_floor_cut",
+    "measured_floor",
     "live_stamp",
     "passes_good_floor",
     "passes_junk_floor",

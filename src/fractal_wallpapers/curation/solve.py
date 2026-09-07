@@ -178,7 +178,12 @@ RANK_KEY = "rank-key"
 #:
 #: **Seating only.** [`RANK_KEY`] is still what retention ranks on — see
 #: `candidate_ledger.sweep._prune_ranks` — and adopting this changed nothing
-#: there. What a prune keeps is a separate question from what a gallery seats.
+#: there. What a prune keeps is a separate question from what a gallery seats,
+#: and the whole argument for leaving it that way is `curation/README.md`'s *The
+#: prune ranks on `rank_key` and a gallery seats on the cascade, and below the bar
+#: those are one order*: the two keys agree everywhere the prune mostly works, the
+#: ruling went to the reversible decision, and [`RANK_KEY`] cannot be retired
+#: while this key exists because [`cascade_order`] is built on its mapping.
 CASCADE_KEY = "cascade"
 
 #: The keys a caller may name.

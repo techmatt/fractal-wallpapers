@@ -588,6 +588,11 @@ that are above the bar — a four-row gap. `pool_scores.jsonl` covers
 `solve.pool`'s above-bar rows, so a row the pool refuses (rejected, no picture,
 off-regime, a mode weighted 0) is above the bar in the ledger with no reading.
 
+This is the number under an argument, and the argument is
+[`README.md`](README.md)'s *The prune ranks on `rank_key` and a gallery seats on
+the cascade, and below the bar those are one order* — why the seating flip left
+retention alone, and why `rank_key` cannot be retired while the cascade runs.
+
 ## What the sourcing channels cost in seats, measured
 
 * **Centered share of a solve is mining-invariant, at 0.16-0.23.** It is the one axis

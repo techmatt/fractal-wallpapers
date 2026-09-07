@@ -1034,8 +1034,12 @@ near-cluster, and the walk order), `curation.mine`'s `best_by_location`,
 objective are the **fitted** key rather than this column.
 
 **Every acting bar in the release path is on `P(>=3)`, not `P(>=4)`.**
-`selection.entries` builds its rank key from `p_ge3`; `floors.release_bar`,
-`floors.gallery_floor` and `curation.rejection` all call `.acts()` on `p_ge3`. The
+`selection.entries` builds its rank key from `p_ge3`; `floors.release_bar` and
+`curation.rejection` call `.acts()` on `p_ge3`, and there is **one** such bar —
+`floors.ACTING_RELEASE_BARS` holds `strange_render` alone. (`floors.gallery_floor`
+was the third caller and was retired on 2026-09-07, its pass having gone in
+`64c9612`; `floors.measured_floor` hands back a measurement now and calls nothing.)
+The
 supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the **location** head. So the
 sentence to carry is: *`P(>=4)` decides who is in the pool for seven modes and
 decides the order for nobody any more; nothing at release reads it.*
@@ -1907,7 +1911,11 @@ drawn record on disk carries it.
 what the prune keeps is a separate question from what a gallery seats, and a key
 that moved both would have moved the one nobody looked at. `tests/test_seat_sheet.py`
 pins that: `_prune_ranks` reaches `curation.rank_key` directly and names neither
-`DEFAULT_KEY` nor the cascade.
+`DEFAULT_KEY` nor the cascade. The **retention** half of the argument — why the two
+keys are one order below the bar, how little of the prune the difference can reach,
+why the ruling went to the reversible decision, and why `rank_key` cannot be retired
+while the cascade runs — is [`README.md`](README.md)'s *The prune ranks on `rank_key`
+and a gallery seats on the cascade, and below the bar those are one order*.
 
 ### The spiral share cap is a tenth by default
 

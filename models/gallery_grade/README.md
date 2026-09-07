@@ -113,6 +113,28 @@ rather than off the top, sorted good to bad and marked arriving or departing. Th
 ledger's stored 640x360 pictures, nothing re-rendered. It ingests nowhere and is
 not a label instrument — the captions are open so it cannot be read as one.
 
+## The level reads as a quality target, Matt's ruling of 2026-09-07
+
+**`p_ge4 >= 0.5` on this head may be read as an absolute quality target and not
+only as a point in a ranking.** Matt's ruling, 2026-09-07, taken by eye: he checked
+seat quality on the cascade's own galleries and is willing to treat a half on this
+column as *this picture is good enough to seat*, rather than treating the head as a
+pure order whose heights mean nothing on their own. **He will revisit it if
+galleries produced under that reading come out bad**, which is the only thing that
+would settle it — nothing on this page does.
+
+⚠ **This supersedes the ckpt-113 line, which said the level was untrusted.** The
+head shipped as an order inside a gate's top and was adopted on `AUC(>=4)` and
+Spearman, both rank statistics, so until this ruling the honest statement was that
+its heights had no meaning off the ranking. A later reader will otherwise take the
+older line as current, which is why the ruling is written here and dated.
+
+Nothing in the code changed with it: `solve.CASCADE_KEY` still lifts an above-bar
+row to `1 + <fine p_ge4>` and orders on it, no bar or floor reads this head, and
+`floors.ACTING_RELEASE_BARS` is untouched. It is a rule for **reading** the column
+— what a 0.0018 seat in the weakest-twenty table means — and if it is ever wired
+into a cut, that is a second ruling and a `Restatement`.
+
 ## What every number here is, and is not
 
 * **The 20% is the stopping slice and it is also the only held-out number there
@@ -123,7 +145,9 @@ not a label instrument — the captions are open so it cannot be read as one.
   population is 700 seats plus 300 runners-up, one row per location, with no
   colour-ceiling representation — a ranker among rows at one location and nothing
   more. `data/gallery_grade/README.md` states the three separations that hold it
-  apart from the two quality corpora.
+  apart from the two quality corpora. That is a statement about the **corpus** and
+  it is unchanged; what a reader may do with the head's **heights** is the ruling
+  above.
 * **The `ap_ge3` band ran two seeds** on Matt's call and `auc_ge4` runs three,
   which is what makes a median pick possible. The split is fixed across a grid
   either way, so a seed moves only the initialisation's dropout draw and the
