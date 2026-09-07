@@ -1132,10 +1132,7 @@ their **3,610** un-decided attempts and 1,468 levelled colormaps (0.624 GiB), ke
 every picture their decision stores named. The 22 killed legs went **whole** — not
 through this sweep, which is pictures-only by design, but through a one-off that
 checked each path against the hot root and the leg shape first: **1.81 GiB over 11,216
-files**, most of it the `fields/` and `candidates/` beside the pictures. Afterwards the
-pool is exactly consistent: **177,993 pictures on disk against 177,993 ledger rows, 0
-named by nothing**, and the only unmerged legs left are the 10 backfilled ones where
-every remaining picture is ledger-named.
+files**, most of it the `fields/` and `candidates/` beside the pictures. That reading did not hold. As of 2026-09-07 those ten legs carry 3,615 pictures with no ledger row, every one dated 2026-09-03, and the per-leg count of 09-03 files matches the per-leg unnamed count on all ten. The 09-02 sweep deleted 3,610 un-decided attempts from exactly these legs and they came back the following day; no archived `runs` copy exists and nothing here identifies the writer. Until it is found, sweeping these legs reclaims nothing durably. State OPEN item 2.
 
 **An unmerged leg is swept only when somebody names it.** `--leg <name>` takes one
 (as the listing prints it, or just its last component) and is repeatable;
