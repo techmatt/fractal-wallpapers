@@ -8,8 +8,9 @@ at all below it, so what is pinned is the "nothing at all": the below-bar half
 comes back identical, an above-bar row the head has no reading for keeps the
 shipped key's value rather than jumping ahead of rows that were read, and every
 above-bar row still outranks every below-bar one however the two scales happen to
-land. It is **off by default** and that is asserted too, because a flag that
-flipped itself would be adopted by accident rather than by a prompt.
+land. It is **the default since 2026-09-07** and that is asserted too, along with
+the two keys it did not retire: adoption moved one constant and the alternatives
+stayed typeable.
 
 **The sheet** decides nothing, so it can only be wrong about arithmetic: which
 rows differ, and which of them a cap keeps.
@@ -60,12 +61,33 @@ def readings(keys, p_ge4) -> dict:
 # --------------------------------------------------------------------------- #
 # The cascade.
 # --------------------------------------------------------------------------- #
-def test_the_cascade_is_reachable_by_name_and_is_not_the_default() -> None:
-    """Adoption is a later act. A flag that flipped itself would be adopted by
-    accident, which is exactly what staging it behind a name is meant to stop."""
-    assert solve.CASCADE_KEY in solve.KEYS
-    assert solve.DEFAULT_KEY == solve.RANK_KEY
-    assert solve.DEFAULT_KEY != solve.CASCADE_KEY
+def test_the_cascade_is_the_default_and_neither_alternative_was_retired() -> None:
+    """Adopted on 2026-09-07, Matt's ruling, and adoption is one constant.
+
+    The other half of the pin is what the flip did NOT do: `rank-key` is the order
+    every gallery between 2026-08-28 and the flip was seated in and is still what
+    retention ranks on, and `p_ge4` is what everything before that ran. A record
+    naming either has to stay re-runnable, so both stay in [`solve.KEYS`].
+    """
+    assert solve.DEFAULT_KEY == solve.CASCADE_KEY
+    assert set(solve.KEYS) == {solve.CASCADE_KEY, solve.RANK_KEY, solve.JUDGE_KEY}
+
+
+def test_adopting_the_cascade_left_retention_ranking_on_the_shipped_key() -> None:
+    """★ Seating only, and this is where that claim would break silently.
+
+    `_prune_ranks` decides what the ledger keeps, and it reads
+    [`curation.rank_key`] itself rather than [`solve.DEFAULT_KEY`] — so the flip
+    could not reach it. A prune that started ranking on a head fitted above the
+    gate would be throwing away the below-bar material the head has never seen.
+    """
+    import inspect
+
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
+    source = inspect.getsource(sweep._prune_ranks)
+    assert "rank_key" in source
+    assert "DEFAULT_KEY" not in source and "cascade" not in source
 
 
 def test_below_the_bar_the_order_is_handed_back_untouched(monkeypatch) -> None:

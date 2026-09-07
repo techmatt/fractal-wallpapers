@@ -1797,9 +1797,14 @@ is the pin, and it is built so the floor costs nothing.
 
 Built at ckpt 88 behind flags; **both are the default since 2026-08-28**. The cap is
 the ckpt-88 ruling, the key is Matt's acceptance by eye on the four-arm contact sheets
-at `n = 150`. `curate solve run` with no flag now seats the proportional cap on the fitted
+at `n = 150`. `curate solve run` with no flag now seats the proportional cap on a fitted
 key; the walk every earlier gallery took is two named flags away and the record says
 which rule and which key it ran under, by name, either way.
+
+**The key moved a second time on 2026-09-07**, to `cascade` — see *`cascade` is the
+default since 2026-09-07* below. So `--key` now carries three names and two of them
+are historical: `rank-key` is what every gallery between the two flips was seated in
+and `p_ge4` is what everything before 2026-08-28 ran.
 
 **A third default joined them on 2026-09-04 and the incumbent line grew a third
 flag with it** — see *The spiral share cap is a tenth by default* below. An
@@ -1807,10 +1812,10 @@ invocation that means the pre-flip gallery has to say `--spiral-cap none`, becau
 saying nothing no longer means no cap.
 
 ```
-curate solve run --n 150                                  # proportional + rank-key + 0.10
+curate solve run --n 150                                  # proportional + cascade + 0.10
 curate solve run --n 150 --group-cap identity --key p_ge4 --spiral-cap none  # the incumbent, whole
 curate solve run --n 150 --group-cap {identity,proportional}  # the palette-group cap
-curate solve run --n 150 --key {rank-key,p_ge4,cascade}   # the sort key
+curate solve run --n 150 --key {cascade,rank-key,p_ge4}   # the sort key
 curate solve run --n 150 --spiral-cap {SHARE,none}        # the spiral share cap
 curate solve run --n 150 --sheet-out <path>               # the contact sheet, elsewhere
 curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
@@ -1821,10 +1826,12 @@ curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
 it, which is what a sweep seating one pool four ways passes.
 
-### `cascade` is staged and OFF, 2026-09-06
+### `cascade` is the default since 2026-09-07
 
-`solve.CASCADE_KEY` is the third key and nothing runs it unasked: `DEFAULT_KEY` is
-still `rank-key`. Above `Q4_BAR` it orders on the **fine-tier head** —
+`solve.CASCADE_KEY` is `DEFAULT_KEY`. Staged and off on 2026-09-06, adopted the
+next day on Matt's ruling, off the fine-tier head's pre-registered bar; `rank-key`
+is one flag away and is still what retention ranks on. Above `Q4_BAR` it orders on
+the **fine-tier head** —
 `models/gallery_grade/`, fitted on human verdicts about pictures that had already
 cleared the gate — and below the bar it hands the rank key's own values straight
 back. The head's output is undefined down there, so the two stages are separated
@@ -1843,15 +1850,38 @@ fractal-wallpapers curate seat-sheet --n 1000        # what the two keys disagre
 ```
 
 ⚠ **It is not a reordering of the top, and the seat count is how you find that
-out.** At n=1000 over the pool of 2026-09-06 the two keys share **175 seats of a
-thousand**: 825 arrive and 825 depart. `curate seat-sheet` solves one pool twice
-and lays out only those rows, sorted good to bad by the fine head and marked
-arriving or departing — capped at 150 cards sampled across the score range, on
-the ledger's stored 640x360 pictures, ingesting nowhere.
+out.** At n=1000 over the pool of 2026-09-06 the two keys shared **175 seats of a
+thousand**; over the 272,457-row pool of 2026-09-07, **173**. `curate seat-sheet`
+solves one pool twice and lays out only those rows, sorted good to bad by the fine
+head and marked arriving or departing — capped at 150 cards sampled across the
+score range, on the ledger's stored 640x360 pictures, ingesting nowhere.
+
+**Four fifths of the churn is the gallery going somewhere else, not looking again
+at the same place.** Measured 2026-09-07 at n=1000, both arms filling 1,000 seats
+at shortfall 0: of the **827** departing seats, **166** are a *different candidate
+at a location the cascade still seats* and **661** are a *location that left the
+gallery entirely*. One wallpaper per location is permanent, so those are the only
+two cases, and the arriving side mirrors them exactly — 166 in place, 661 at
+places the incumbent did not hold. The two keys share 339 places against 173 seats,
+and 339 = 173 + 166 is the identity that says so.
+
+**The constant is not what did it.** An above-bar row is `1 + <fine P(>=4)>` and a
+below-bar row is its rank-key value, so the obvious reading of 827 moved seats is
+that the cascade restricted the gallery to the above-bar half and the incumbent
+had been mixing the two. It did not: **both** seatings are 1,000 of 1,000 above
+the bar, so the below-bar half of the cascade never came into it and the two keys
+were choosing from the same 38,884 rows. What moved the seats is the head
+disagreeing with `rank-key` about which of those rows to take, and disagreeing at
+the *place* level four times in five.
+
+**This is a measurement and it did not gate the adoption.** Matt ruled on the
+head's bar; the split says what the ruling costs.
 
 **Seating only.** Retention does not read it and `_prune_ranks` is untouched —
 what the prune keeps is a separate question from what a gallery seats, and a key
-that moved both would have moved the one nobody looked at.
+that moved both would have moved the one nobody looked at. `tests/test_seat_sheet.py`
+pins that: `_prune_ranks` reaches `curation.rank_key` directly and names neither
+`DEFAULT_KEY` nor the cascade.
 
 ### The spiral share cap is a tenth by default
 

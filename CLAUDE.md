@@ -177,14 +177,22 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **118.80 s over the 3,879
+Both are measured, not estimated. The **fast** lane is **121.89 s over the 3,881
 it holds, 124 deselected**, on this machine, 2026-09-07, on an idle box with a
 `.[dev,models]` install and a release engine built. The **slow** lane's last
-reading is **6:49 over 4,003, 0 skipped**, on the same install in the same
-prompt and after the last edit — the arithmetic's own prediction to the test,
-which [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)
-settles. So the next slow lane should read **4,003** and a figure other than that
-is worth reading rather than assuming. **Zero skips is the normal reading now and 19 was the render cache
+reading is **7:38 over 4,005**, on the same install in the same prompt and after
+the last edit — the arithmetic's own prediction to the test, which
+[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles. So
+the next slow lane should read **4,005** and a figure other than that is worth
+reading rather than assuming.
+
+⚠ **That slow lane is 4,004 passed and ONE red, and the red is a stale census
+rather than a broken tree.**
+`test_leveled_identity.py::test_no_two_ledger_rows_name_one_picture` holds
+`run_index_named >= 13,526` as a floor and the store reads 13,510. It fails the
+same way on a clean tree, so it is nobody's edit; it is the constant needing a
+retake. Until somebody retakes it, **a slow lane with exactly that one failure is
+the expected reading** and a second failure is the thing to look at. **Zero skips is the normal reading now and 19 was the render cache
 being short** — a **store** condition, not a tree fault, confirmed by the first
 lane to read a full cache: `renders plan` then `renders build` is what fills it.
 The 19 were worth roughly forty seconds of engine renders and a training loop, so

@@ -202,11 +202,13 @@ def test_the_cap_a_seating_ran_under_is_on_its_record_by_name():
 
 
 def test_an_unflagged_seating_now_takes_the_proportional_cap_and_the_fitted_key():
-    """Both defaults flipped on 2026-08-28 and the incumbent stayed reachable.
+    """Both defaults flipped on 2026-08-28 and the incumbent stayed reachable; the
+    key half flipped again on 2026-09-07, to the cascade.
 
     The cap half is checked here on the walk itself; the key half is checked on
     the parameter rather than on a resolved order, because resolving one reads two
-    stores and this is a fast-lane test about a default and not about a fit.
+    stores — three under the cascade — and this is a fast-lane test about a default
+    and not about a fit.
     """
     import inspect
 
@@ -215,7 +217,7 @@ def test_an_unflagged_seating_now_takes_the_proportional_cap_and_the_fitted_key(
     assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.PROPORTIONAL
     signature = inspect.signature(solve.solve).parameters
     assert signature["group_cap"].default == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
-    assert signature["key"].default == solve.DEFAULT_KEY == solve.RANK_KEY
+    assert signature["key"].default == solve.DEFAULT_KEY == solve.CASCADE_KEY
     incumbent = solve.solve(
         [candidate("a")], n=150, group_cap=ceiling.IDENTITY, key=solve.JUDGE_KEY, log=quiet
     )
@@ -785,13 +787,19 @@ def test_an_empty_gallery_is_worse_than_any_gallery():
 
 
 def test_the_objective_is_stated_in_the_fitted_key_and_not_p_ge4_alone():
-    """`RANK_KEY` is the rank quantity, which is what the ranking retention already
-    uses. A gallery scored on `p_ge4` alone is a different gallery."""
+    """`RANK_KEY` is the rank quantity below the bar and the one the ranking
+    retention uses whole. A gallery scored on `p_ge4` alone is a different gallery.
+
+    `DEFAULT_KEY` is the cascade since 2026-09-07 and that does not move this: the
+    cascade IS `RANK_KEY` below the bar and `1 + <the fine head's P(>=4)>` above
+    it, so `value_of` reads the same mapping either way.
+    """
     held = candidate("a", score=0.2)
     assert solve.value_of(held, None) == pytest.approx(0.2)
     assert solve.value_of(held, {"a": 0.9}) == pytest.approx(0.9)
     assert solve.value_of(held, {"other": 0.9}) == 0.0, "unreadable is worth nothing here"
-    assert solve.DEFAULT_KEY == solve.RANK_KEY == "rank-key"
+    assert solve.RANK_KEY == "rank-key"
+    assert solve.DEFAULT_KEY == solve.CASCADE_KEY
 
 
 def test_the_record_names_every_tier_and_the_order_they_are_read_in():

@@ -140,6 +140,22 @@ def test_the_roster_is_only_modes_a_dumped_field_can_serve():
         assert colorize.shareable(mode), f"{mode} cannot be served out of a dumped field"
 
 
+def test_the_record_s_field_modes_only_is_derived_from_the_roster_it_ran():
+    """★ It was a hard-coded `True` until 2026-09-07 and lied on every mixed leg.
+
+    Three shapes, and the middle one is the whole point: a roster that mixes a
+    dear mode into field modes reads `False`, so a prompt naming `--modes` cannot
+    leave a stale `true` behind it. The third is the settings spelling — an entry
+    is `<mode>@<setting>=<value>` on the plan, so the mode has to be read back out
+    rather than matched as a bare name.
+    """
+    assert depth.field_modes_only(depth.field_modes()) is True
+    assert depth.field_modes_only([*depth.field_modes(), depth.dear_modes()[0]]) is False
+    assert depth.field_modes_only(["smooth_stripe"]) is False
+    assert depth.field_modes_only(["smooth@shift=0.25"]) is True
+    assert depth.field_modes_only([]) is True, "an empty roster serves no unshareable mode"
+
+
 def test_a_niche_mode_is_out_of_the_draw_while_the_catalogue_still_ships_it():
     """`trap_circle` is niche by [`mode_policy`] and production by the catalogue.
 

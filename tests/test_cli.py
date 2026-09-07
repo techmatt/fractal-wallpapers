@@ -647,16 +647,23 @@ def test_the_focus_report_is_off_on_both_commands_that_walk() -> None:
 
 def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachable() -> None:
     """Flipped on 2026-08-28. `curate solve run` with no flag now chooses under the
-    proportional palette-group cap and the fitted rank key. A third default joined
+    proportional palette-group cap and a fitted key. A third default joined
     them on 2026-09-04 — the spiral share cap — so the incumbent invocation carries
-    a third flag: it solved with NO cap, and saying nothing no longer means that."""
+    a third flag: it solved with NO cap, and saying nothing no longer means that.
+
+    The key half moved again on 2026-09-07, when the cascade was adopted. It is
+    still one flag away from the pre-flip order, which is why `--key` carries
+    three names rather than two: `p_ge4` is the incumbent this test spells and
+    `rank-key` is the order everything between the two flips ran.
+    """
     from fractal_wallpapers.curation import ceiling, solve
 
     parse = cli.build_parser().parse_args
     unflagged = parse(["curate", "solve", "run", "--n", "150"])
     assert unflagged.handler is cli.curate_solve
     assert unflagged.group_cap == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
-    assert unflagged.key == solve.DEFAULT_KEY == solve.RANK_KEY
+    assert unflagged.key == solve.DEFAULT_KEY == solve.CASCADE_KEY
+    assert parse(["curate", "solve", "run", "--n", "150", "--key", "rank-key"]).key == "rank-key"
     assert unflagged.spiral_cap == solve.DEFAULT_SPIRAL_CAP == 0.10
     incumbent = parse(
         [

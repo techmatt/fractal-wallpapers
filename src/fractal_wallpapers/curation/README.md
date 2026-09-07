@@ -1207,6 +1207,31 @@ behind them. What survives of a pass is its **winners**, in
 `data/curation/release/<pass>/` like every other release row, and the 14,316 rows
 they put in the candidate ledger.
 
+### The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT
+
+**Matt's ruling, 2026-09-07. It is held deliberately and it is not a sweep
+candidate.** The four passes' `gate.jsonl` survived the retirement above —
+**14,438 rows**, 1,120 / 2,472 / 3,980 / 6,866, 53 MB — and **nothing in the tree
+reads them any more**, because `gallery_store.py` and `curate gallery-store` went
+with the passes. So a future sweep meets 53 MB of unreadable rows with no manifest
+beside them and no code naming them, which is exactly the shape of something to
+delete. It is not. They are the only judged-attempt data this project has: one pool
+row per attempt carrying its whole join, made under two retired render heads
+(`smooth_render` 3,782, `strange_render` 10,656) over populations that will not
+exist again. **Not to be swept without a ruling from Matt.**
+
+**It is not the last copy, and the report that said so was reading the wrong
+path.** `<archive>/curation_backup/gallery/<pass>/gate.jsonl` is there and all four
+copies verify byte-for-byte against the sha256 the retired `gate.manifest.json`
+carried — checked 2026-09-07. The claim that the archive was empty came of looking
+for `curation_backup/` directly under the archive root; the tier puts it under
+`<archive>/fractal-wallpapers/artifacts/`, which is what `paths` resolves and what
+`storage archive` writes. **The manifests themselves are gone** — they were tracked
+under `data/curation/gallery/<pass>/` and went out with the passes — so `git show
+<the retirement>^:data/curation/gallery/<pass>/gate.manifest.json` is now the only
+place the hashes live. That is the reason to keep this passage rather than a
+`check` verb: there is no longer anything to run.
+
 **A pass no longer writes a release row per attempt.** It used to write both a
 gate row and a release row for every scored attempt, which is the same row twice
 and the second copy in the history. Measured on gallery1's own 1,120 attempts,

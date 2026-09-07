@@ -11,10 +11,12 @@ renamed — see `data/README.md`. A name here that is not on the roster names a
 corpus or a retired judge, never something that ships.
 
 `gallery_grade/` is the third kind of name here and the newest: a head that is
-**built and not adopted**. It is stage two of a cascade behind the render judge's
-`p_ge4`, fitted on the `gallery_grade` store, and nothing reads it — no floor, no
-rank key, no seating path. It is off the roster for the same reason the retired
-judges are, by a different route: they stopped shipping and this has not started.
+**adopted for seating and for nothing else**, since 2026-09-07. It is stage two of
+a cascade behind the render judge's `p_ge4`, fitted on the `gallery_grade` store,
+and `solve.DEFAULT_KEY` is that cascade — so it orders the gallery above the bar
+and is read nowhere else: no floor, no bar, no rank key, no retention. It is off
+the roster because the roster is heads a **render** goes through, and this one
+reads a finished picture that already passed one.
 
 `render/` carries twenty-five run directories and a name does not say which band
 it realizes. [`render/RUNS.md`](render/RUNS.md) is the index: one line per
