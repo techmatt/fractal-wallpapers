@@ -1,9 +1,10 @@
 """`gallery-grade`: the fine-tier head, from the ledger join to the band's pick.
 
-Five verbs and they run in order. `population` and `split` are cheap and are
+Seven verbs and they run in order. `population` and `split` are cheap and are
 written down, because every arm has to be fitted on one join and read on one
-slice; `fit` and `band` are the only ones that cost a GPU — `band` being `fit`
-over the whole grid, one run at a time — and `read` costs nothing at all.
+slice. `preregister` writes the bar and has to run **before** any fit of its
+band. `fit` and `band` are the only ones that cost a GPU — `band` being `fit`
+over the whole grid, one run at a time. `read` and `accept` cost nothing.
 """
 
 from __future__ import annotations
@@ -30,33 +31,70 @@ def gallery_grade(args: argparse.Namespace) -> int:
         print(f"wrote {path}")
         return 0
 
+    if args.what == "preregister":
+        path, document = trainer.write_bar(force=args.force)
+        print(json.dumps(document, indent=1))
+        print(f"wrote {path}")
+        return 0
+
+    if args.what == "accept":
+        path, document = trainer.acceptance()
+        print(json.dumps(document, indent=1))
+        print(f"wrote {path}")
+        return 0 if document["verdict"] == "CLEARED" else 1
+
+    if args.what == "score-pool":
+        from fractal_wallpapers.curation import solve as solve_module
+
+        picked = trainer.band(band_name=args.band)["pick"]
+        candidates, _refused = solve_module.pool()
+        record = trainer.score_pool(
+            candidates, arm=picked["arm"], seed=picked["seed"], band=args.band, device=args.device
+        )
+        print(json.dumps({**record, "picked": picked}, indent=1))
+        return 0
+
     if args.what == "fit":
         record = trainer.fit(
             arm=args.arm,
             seed=args.seed,
+            band=args.band,
             device=args.device,
             epochs=args.epochs,
             workers=args.workers,
         )
         print(
             f"{record['run']}: epoch {record['best_epoch']}  "
-            f"AP(>=3) {-record['best_selection_objective']:.4f}  "
+            f"{record['stopping_rule']['ran_under']} "
+            f"{trainer.selection_statistic(record):.4f}  "
             f"({record['wall_seconds']}s)"
         )
         return 0
 
     if args.what == "band":
-        outcome = trainer.fit_band(device=args.device, epochs=args.epochs, workers=args.workers)
+        outcome = trainer.fit_band(
+            band_name=args.band, device=args.device, epochs=args.epochs, workers=args.workers
+        )
         print(f"fitted {len(outcome['fitted'])}, already there {len(outcome['already_there'])}")
 
-    path, record = trainer.write_band()
+    path, record = trainer.write_band(band_name=args.band)
     print(json.dumps(record, indent=1))
     print(f"wrote {path}")
     return 0
 
 
+def band_flag(parser, trainer_band: str, rules) -> None:
+    """`--band`, which is the stopping rule the run is fitted under."""
+    parser.add_argument(
+        "--band",
+        default=trainer_band,
+        choices=sorted(rules),
+        help=f"which stopping rule this run is fitted under (default {trainer_band})",
+    )
+
+
 def add_commands(subcommands) -> None:
-    from fractal_wallpapers.models.gallery_grade_train import ARMS, SPLIT_SEED
+    from fractal_wallpapers.models.gallery_grade_train import ARMS, BAND, RULES, SPLIT_SEED
 
     group = subcommands.add_parser(
         "gallery-grade",
@@ -102,14 +140,59 @@ def add_commands(subcommands) -> None:
     )
     splitting.set_defaults(handler=gallery_grade)
 
+    registering = steps.add_parser(
+        "preregister",
+        help="write this band's bar, BEFORE any of its runs exists",
+        description=(
+            "The winning arm must beat both incumbents — the judge's own p_ge4 column and "
+            "the shipped rank_key a seating actually ranks on — on AUC(>=4) and on Spearman "
+            "against the grades, at every seed. Their heights are copied into the bar so it "
+            "stays readable without re-deriving them, and it refuses to overwrite: a bar "
+            "rewritten after its band is a bar fitted to what happened."
+        ),
+    )
+    registering.add_argument(
+        "--force",
+        action="store_true",
+        help="overwrite a bar no run has been read against",
+    )
+    registering.set_defaults(handler=gallery_grade)
+
+    accepting = steps.add_parser(
+        "accept",
+        help="read the band against its registered bar",
+        description=(
+            "Every seed of the winning arm, against every incumbent, on every gated "
+            "statistic — and the record carries each of those cells whether it passed or "
+            "not, because a verdict without its arithmetic is one nobody can check. Exits "
+            "non-zero when the band does not clear."
+        ),
+    )
+    accepting.set_defaults(handler=gallery_grade)
+
+    scoring = steps.add_parser(
+        "score-pool",
+        help="read the whole seating pool through the band's picked run",
+        description=(
+            "Writes the column `curate solve --key cascade` resolves its order from. It "
+            "opens each candidate's stored 640x360 JPEG once and renders nothing. The rows "
+            "are a cascade's SECOND stage: ranking the whole file would rank rows this head "
+            "never saw the like of, and the solve applies it above the bar and only there."
+        ),
+    )
+    band_flag(scoring, BAND, RULES)
+    device_flag(scoring)
+    scoring.set_defaults(handler=gallery_grade)
+
     fitting = steps.add_parser(
         "fit",
         help="fit one arm at one seed",
         description=(
-            "The shipped judge's recipe unchanged — twenty epochs, patience six, the epoch "
-            "chosen on stopping-slice AP(>=3) with AUC(>=3) as the fallback. ONE RUN AT A "
-            "TIME on this box: a trainer commits about 4 GiB and every Windows loader worker "
-            "re-imports torch for a gigabyte more."
+            "Twenty epochs, patience six, the epoch chosen on the band's own rule. Whether "
+            "the stopping slice can carry that rule's boundary is asked ONCE, before the "
+            "loop, and a run that cannot is launched under the other rule with that written "
+            "into its record. ONE RUN AT A TIME on this box: a trainer commits about 4 GiB "
+            "and every Windows loader worker re-imports torch for a gigabyte more."
         ),
     )
     fitting.add_argument(
@@ -125,6 +208,7 @@ def add_commands(subcommands) -> None:
         + "; ".join(f"{k} — {v['says']}" for k, v in sorted(ARMS.items())).replace("%", "%%"),
     )
     fitting.add_argument("--seed", type=int, default=0, help="the training seed (default 0)")
+    band_flag(fitting, BAND, RULES)
     device_flag(fitting)
     fitting.add_argument("--epochs", type=int, help="override the recipe's epoch ceiling")
     fitting.add_argument("--workers", type=int, help="override the recipe's loader workers")
@@ -140,6 +224,7 @@ def add_commands(subcommands) -> None:
             "already there is skipped, so a killed band is resumed by re-launching it."
         ),
     )
+    band_flag(banding, BAND, RULES)
     device_flag(banding)
     banding.add_argument("--epochs", type=int, help="override the recipe's epoch ceiling")
     banding.add_argument("--workers", type=int, help="override the recipe's loader workers")
@@ -149,11 +234,13 @@ def add_commands(subcommands) -> None:
         "read",
         help="the band: every run that has been fitted, and the pick",
         description=(
-            "The pick is by stopping-slice AP, which is the rule the epoch was chosen "
-            "under — one statistic decides the epoch inside a run and the run inside the "
-            "band, so nothing is selected on a number nothing was stopped on."
+            "Arms rank by the MEAN of the band's own statistic over their seeds, and the "
+            "winner ships its MEDIAN seed — never the argmax, because the epoch surface is "
+            "flat enough that the best of three seeds is a coin flip rather than a fact "
+            "about the arm."
         ),
     )
+    band_flag(reading, BAND, RULES)
     reading.set_defaults(handler=gallery_grade)
 
 

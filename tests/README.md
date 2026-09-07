@@ -349,6 +349,26 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+20 that reconciles exactly, and a fast lane that moved 8 s with no slow test
+added.** `REFIT_ckpt113_fine_tier_head_and_seat_sheet_0906`, 2026-09-07, idle box,
+`.[dev,models]` with a release engine. **126.99 s over 3,896, 124 deselected**
+fast — 4,020 against the 4,000 below. The +20 is +22 landing and 2 going: eleven
+new guards in `test_gallery_grade_train.py` over the band, the stopping rule and
+the pre-registered bar, eleven in a new `test_seat_sheet.py` over the cascade
+order and the diff, and **two deleted** — both pinned behaviour this prompt
+removed rather than behaviour it broke, and both have a stronger replacement
+beside them. Slow **7:07 over 4,020, 0 skipped**, and it was taken before the last
+edit of the prompt; that edit's own tests are in the fast lane.
+
+**The +8.45 s is not attributed and is the honest reading.** `test_seat_sheet.py`
+is 0.21 s for its eleven and the new guards in `test_gallery_grade_train.py` cost
+under a second between them, so the file-level arithmetic accounts for about one
+second of the eight. The two lanes ran on the same idle box with the same install
+either side of a GPU band and a 320-second pool read, which is the shape of a
+reading taken on a box that has been busy rather than one that is busy — worth
+re-taking before anything is concluded from it, and worth not concluding anything
+from meanwhile.
+
 **+28 that reconciles exactly, and the first slow lane in five prompts.**
 `TRAIN_ckpt113_fine_tier_head_0906`, 2026-09-06, idle box, `.[dev,models]` with a
 release engine. **118.54 s over 3,876, 124 deselected** fast — 4,000 against the

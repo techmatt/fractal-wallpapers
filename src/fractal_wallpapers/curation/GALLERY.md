@@ -1801,7 +1801,7 @@ saying nothing no longer means no cap.
 curate solve run --n 150                                  # proportional + rank-key + 0.10
 curate solve run --n 150 --group-cap identity --key p_ge4 --spiral-cap none  # the incumbent, whole
 curate solve run --n 150 --group-cap {identity,proportional}  # the palette-group cap
-curate solve run --n 150 --key {rank-key,p_ge4}           # the sort key
+curate solve run --n 150 --key {rank-key,p_ge4,cascade}   # the sort key
 curate solve run --n 150 --spiral-cap {SHARE,none}        # the spiral share cap
 curate solve run --n 150 --sheet-out <path>               # the contact sheet, elsewhere
 curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
@@ -1811,6 +1811,38 @@ curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 `solve.ranking_for` is the one place a pass pays for its key — it reads the
 flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
 it, which is what a sweep seating one pool four ways passes.
+
+### `cascade` is staged and OFF, 2026-09-06
+
+`solve.CASCADE_KEY` is the third key and nothing runs it unasked: `DEFAULT_KEY` is
+still `rank-key`. Above `Q4_BAR` it orders on the **fine-tier head** —
+`models/gallery_grade/`, fitted on human verdicts about pictures that had already
+cleared the gate — and below the bar it hands the rank key's own values straight
+back. The head's output is undefined down there, so the two stages are separated
+by a constant rather than mixed: an above-bar row is `1 + <fine score>` and a
+below-bar row is its rank-key value. The above-bar order is the head's **`p_ge4`**
+and not its `rank_score`: `AUC(>=4)` is the statistic the head's bar is stated on
+and it is read on that column, and the two order this pool at Spearman 0.92 —
+a different order, and one nothing gated.
+
+It needs a column and refuses without one:
+
+```
+fractal-wallpapers gallery-grade score-pool          # reads the ABOVE-BAR rows only
+fractal-wallpapers curate solve run --n 1000 --key cascade
+fractal-wallpapers curate seat-sheet --n 1000        # what the two keys disagree about
+```
+
+⚠ **It is not a reordering of the top, and the seat count is how you find that
+out.** At n=1000 over the pool of 2026-09-06 the two keys share **175 seats of a
+thousand**: 825 arrive and 825 depart. `curate seat-sheet` solves one pool twice
+and lays out only those rows, sorted good to bad by the fine head and marked
+arriving or departing — capped at 150 cards sampled across the score range, on
+the ledger's stored 640x360 pictures, ingesting nowhere.
+
+**Seating only.** Retention does not read it and `_prune_ranks` is untouched —
+what the prune keeps is a separate question from what a gallery seats, and a key
+that moved both would have moved the one nobody looked at.
 
 ### The spiral share cap is a tenth by default
 

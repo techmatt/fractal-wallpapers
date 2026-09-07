@@ -107,6 +107,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
+from datetime import UTC
 from pathlib import Path
 
 from fractal_wallpapers import storage
@@ -146,13 +147,60 @@ RANK_COLUMN, HIT_TIER = "p_ge3", 3
 EPOCHS = 20
 PATIENCE = 6
 
-#: The seeds a full band runs. **Two, on Matt's call of 2026-09-06**, where every
-#: other band here runs three: the split is fixed across the whole grid, so a seed
-#: moves the initialisation's dropout draw and the sampler's order and nothing
-#: else, and a second seed is enough to say whether an arm's gap is larger than
-#: its own run-to-run spread. What two seeds cannot do is put an interval on that
-#: spread, and no reading here claims one.
-SEEDS = (0, 1)
+#: The stopping rules a band may run under, by the name every record calls one.
+#:
+#: `ap_ge3` is the shipped judge's, carried whole for the first band. It is the
+#: **wrong boundary for this head** and the first band is what showed it: an order
+#: inside the gate's own top is 3-against-4, and `last_block_seed0` peaked
+#: `AUC(>=4)` at 0.66 on an epoch whose `AP(>=3)` had dipped, so the rule and the
+#: job disagree within a single run.
+#:
+#: `auc_ge4` is this head's own, and it is rank-only at the boundary the seating
+#: cares about. Matt's call of 2026-09-06.
+RULES: dict[str, dict] = {
+    "auc_ge4": {
+        "statistic": "auc",
+        "tier": 4,
+        "says": (
+            "max AUC(>=4) over the stopping slice, ranked by p_ge4. Rank-only, at the "
+            "boundary a seating inside the gate's own top actually orders on"
+        ),
+    },
+    "ap_ge3": {
+        "statistic": "average_precision",
+        "tier": HIT_TIER,
+        "says": (
+            "max AP(>=3) over the stopping slice, ranked by p_ge3 — the shipped render "
+            "judge's rule, carried whole. Superseded here: it is not this head's boundary"
+        ),
+    },
+}
+
+#: The band the first six runs were fitted under, and the one every run since is.
+#:
+#: **The first band's directories keep their bare `<arm>_seed<N>` names**, for
+#: [`render_deploy.run_name`]'s reason: their records are on disk under them and
+#: renaming would make every report quoting `more_seed1` wrong about a run that
+#: still exists. Every later band prefixes its own name.
+FIRST_BAND = "ap_ge3"
+BAND = "auc_ge4"
+
+#: The arms this band runs. **Two, not three**: `frozen` read 0.492 and 0.496 on
+#: `AUC(>=4)` in the first band — chance, and below the judge's own 0.528 — so a
+#: linear read of the frozen trunk has nothing to say about the boundary this band
+#: stops on, and fitting it again would buy a third row saying so.
+BAND_ARMS = ("last_block", "more")
+
+#: The seeds a band runs. Three, which is every other band here; the first band
+#: ran **two** on Matt's call and its records say so on each row.
+#:
+#: The split is fixed across a whole grid, so a seed moves the initialisation's
+#: dropout draw and the sampler's order and nothing else. The third seed is what
+#: makes [`band`]'s **median** pick possible, and a median is the point rather
+#: than a nicety: `more`'s AP surface across epochs is flat enough that cuDNN's
+#: own nondeterminism decides the argmax, so shipping the best seed would ship a
+#: coin flip. The median is the seed the band would give again.
+SEEDS = (0, 1, 2)
 
 #: How much trunk each arm unfreezes, as the `timm` child modules whose parameters
 #: take a gradient. The classifier is in every arm because a head that trained
@@ -213,14 +261,23 @@ def head_dir(run: str | None = None) -> Path:
     return base / run if run else base
 
 
-def run_name(arm: str, seed: int) -> str:
+def run_name(arm: str, seed: int, band: str = BAND) -> str:
+    """`<arm>_seed<N>` for the first band, `<band>_<arm>_seed<N>` for every later one.
+
+    The first band's names are bare because they were written before there was a
+    second one and its records are on disk under them — [`FIRST_BAND`] says why
+    renaming them would be worse than the asymmetry.
+    """
     if arm not in ARMS:
         raise GradeTrainingError(f"{arm!r} is not an arm; the three are {sorted(ARMS)}")
-    return f"{arm}_seed{int(seed)}"
+    if str(band) not in RULES:
+        raise GradeTrainingError(f"{band!r} is not a band; the two are {sorted(RULES)}")
+    stem = f"{arm}_seed{int(seed)}"
+    return stem if str(band) == FIRST_BAND else f"{band}_{stem}"
 
 
-def run_dir(arm: str, seed: int) -> Path:
-    return head_dir(run_name(arm, seed))
+def run_dir(arm: str, seed: int, band: str = BAND) -> Path:
+    return head_dir(run_name(arm, seed, band))
 
 
 def root() -> Path:
@@ -242,8 +299,24 @@ def split_path() -> Path:
     return root() / "split.json"
 
 
-def band_path() -> Path:
-    return root() / "band.json"
+def band_path(band: str = BAND) -> Path:
+    stem = "band" if str(band) == FIRST_BAND else f"band_{band}"
+    return root() / f"{stem}.json"
+
+
+def bar_path(band: str = BAND) -> Path:
+    """Where a band's PRE-REGISTERED bar lives. Tracked, beside the run records.
+
+    The first band has none and never will: it was a build, its rule was the
+    shipped judge's, and a bar written after the fact is a bar fitted to what
+    happened.
+    """
+    return head_dir() / f"bar_{band}.json"
+
+
+def comparison_path(band: str = BAND) -> Path:
+    """Where the bar's READ lives — what the band actually did against it."""
+    return head_dir() / f"comparison_{band}.json"
 
 
 # --------------------------------------------------------------------------- #
@@ -291,6 +364,11 @@ class Unit:
     name: str
     # And this store's own.
     key: str = ""
+    #: The ledger row's own location key, carried because the shipped `rank_key`
+    #: reads the location head's `P(>=4)` for the place and this is the only
+    #: thing that joins a unit to it. It is the ledger's spelling and not
+    #: [`place`]'s, which is the label store's tuple.
+    location: str = ""
     leveled: bool = False
     seated: bool = False
     label_p_ge3: float | None = None
@@ -380,6 +458,7 @@ def population(log=say) -> tuple[list[Unit], dict]:
                     mode=str(row["mode"]),
                     name=str(stored.get("key")),
                     key=str(stored.get("key")),
+                    location=str((stored.get("location") or {}).get("key") or ""),
                     leveled=bool(row.get("leveled")),
                     seated=bool(row.get("seated")),
                     label_p_ge3=reading.get("p_ge3"),
@@ -437,6 +516,7 @@ def write_population(log=say) -> tuple[Path, dict]:
                     {
                         "schema": SCHEMA,
                         "key": unit.key,
+                        "location": unit.location,
                         "picture": tracked_name(unit.path),
                         "grade": unit.score,
                         "batch": unit.batch,
@@ -491,6 +571,7 @@ def read_population() -> list[Unit]:
                 mode=row["mode"],
                 name=row["key"],
                 key=row["key"],
+                location=row.get("location") or "",
                 leveled=bool(row.get("leveled")),
                 seated=bool(row.get("seated")),
                 label_p_ge3=row.get("label_p_ge3"),
@@ -973,32 +1054,52 @@ def _loader(units: list[Unit], transform, recipe: dict, where: str):
 # --------------------------------------------------------------------------- #
 # The stopping rule.
 # --------------------------------------------------------------------------- #
-def objective(labels, probabilities) -> tuple[float, str]:
-    """`(what to MINIMIZE, which rule produced it)` — AP(>=3), or AUC(>=3).
+def readable_at(labels, tier: int) -> bool:
+    """Whether a slice holds **both** classes at `tier`, so a rank statistic exists.
 
-    Negated so the loop keeps one convention, and the rule that produced a number
-    is returned beside it because a run that silently changed objective mid-band
-    would stop on its patience and call the result a choice.
-
-    ⚠ **The AUC fallback is unreachable and is kept anyway.**
-    [`metrics.average_precision`] and [`metrics.auc`] both return `None` under
-    exactly one condition and it is the same condition — one class absent at the
-    boundary — so there is no slice where the first cannot be read and the second
-    can. The branch is what the recipe declares and it costs nothing;
-    `tests/test_gallery_grade_train.py` asserts that it is dead rather than
-    leaving a reader to assume it fired.
+    **This is asked once, before a fit, and never inside the loop.** The first
+    band carried a per-epoch fallback and it could not fire:
+    [`metrics.average_precision`] and [`metrics.auc`] return `None` under exactly
+    one condition and it is the same condition — this one — so a slice either has
+    a rank statistic at a boundary for every epoch or for none of them. A branch
+    that cannot be reached is worse than no branch, because a reader assumes it
+    fired; the question belongs here, where it is answered once and recorded.
     """
-    from fractal_wallpapers.models import metrics, render_deploy
+    held = {int(label) >= int(tier) for label in labels}
+    return len(held) == 2
 
-    hits = render_deploy.hits_of(labels)
-    scores = render_deploy.rank_scores(probabilities)
-    read = metrics.average_precision(hits, scores)
-    if read is not None:
-        return -float(read), f"ap_ge{HIT_TIER}"
-    read = metrics.auc(hits, scores)
-    if read is not None:
-        return -float(read), f"auc_ge{HIT_TIER}"
-    return float("inf"), "undefined"
+
+def objective(labels, probabilities, rule: str = BAND) -> tuple[float, str]:
+    """`(what to MINIMIZE, the rule that produced it)` under one of [`RULES`].
+
+    Negated so the loop keeps one convention, and the rule is returned beside the
+    number because a run that changed objective mid-band would otherwise stop on
+    its patience and call the result a choice.
+
+    **No fallback.** [`readable_at`] settles whether the boundary can be read at
+    all, before the fit starts, and a run whose slice cannot carry its rule is
+    launched under the other one with that written into its record.
+    """
+    from fractal_wallpapers.models import metrics
+
+    said = RULES.get(str(rule))
+    if said is None:
+        raise GradeTrainingError(f"{rule!r} is not a stopping rule; the two are {sorted(RULES)}")
+    import numpy
+
+    tier = int(said["tier"])
+    hits = (numpy.asarray(labels) >= tier).astype(int)
+    # Ranked on the boundary's own column: a statistic at `>=k` read off an
+    # ordering by `P(>=k)` is one question asked once, where ranking on one
+    # cutpoint and scoring on another is two. `render_deploy` says the same.
+    scores = numpy.asarray(probabilities)[:, tier - 2]
+    read = getattr(metrics, said["statistic"])(hits, scores)
+    if read is None:
+        raise GradeTrainingError(
+            f"the stopping slice cannot be read at >={tier}, which `readable_at` is asked "
+            f"before a fit precisely so that this cannot happen inside the loop"
+        )
+    return -float(read), str(rule)
 
 
 # --------------------------------------------------------------------------- #
@@ -1007,15 +1108,21 @@ def objective(labels, probabilities) -> tuple[float, str]:
 def fit(
     arm: str,
     seed: int = 0,
+    band: str = BAND,
     device: str = "auto",
     epochs: int | None = None,
     workers: int | None = None,
     log=say,
 ) -> dict:
-    """Fit one arm at one seed, and write its checkpoints and its records.
+    """Fit one arm at one seed under one band's stopping rule, and write its records.
 
     Resumable the way every trainer here is: an atomic snapshot an epoch, so a
     kill costs one epoch rather than the run, and a clean finish deletes it.
+
+    **The rule is settled before the loop, not inside it.** If the stopping slice
+    does not carry both classes at this band's boundary the run is launched under
+    [`FIRST_BAND`]'s rule instead and its record says so — which is the honest
+    shape of a fallback, as against a per-epoch branch that cannot fire.
     """
     import numpy
     import torch
@@ -1024,6 +1131,8 @@ def fit(
 
     if arm not in ARMS:
         raise GradeTrainingError(f"{arm!r} is not an arm; the three are {sorted(ARMS)}")
+    if str(band) not in RULES:
+        raise GradeTrainingError(f"{band!r} is not a band; the two are {sorted(RULES)}")
 
     state, shipped = initial_state()
     recipe = recipe_from(shipped)
@@ -1041,10 +1150,36 @@ def fit(
     if not stopping:
         raise GradeTrainingError("the stopping slice is empty; there is nothing to stop on")
 
+    # The one pre-flight branch, asked once and written into the record.
+    wanted, tier = str(band), int(RULES[str(band)]["tier"])
+    grades = [unit.score for unit in stopping]
+    rule_record = {
+        "asked_for": wanted,
+        "boundary": tier,
+        "stopping_slice_at_boundary": {
+            "at_or_above": sum(1 for grade in grades if grade >= tier),
+            "below": sum(1 for grade in grades if grade < tier),
+        },
+        "readable": readable_at(grades, tier),
+    }
+    if not rule_record["readable"]:
+        wanted = FIRST_BAND
+        rule_record["ran_under"] = wanted
+        rule_record["says"] = (
+            f"the stopping slice holds one class at >={tier}, so that boundary has no rank "
+            f"statistic. This run was launched under {FIRST_BAND!r} instead, and its numbers "
+            f"are not comparable with a run that stopped on the band's own rule"
+        )
+        log(f"[{HEAD}] ⚠ slice unreadable at >={tier}; running under {FIRST_BAND!r}")
+    else:
+        rule_record["ran_under"] = wanted
+        rule_record["says"] = RULES[wanted]["says"]
+
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
     log(
         f"[{HEAD}] device {where}  torch {torch.__version__}  arm {arm}  seed {recipe['seed']}  "
+        f"band {band} on {wanted}  "
         f"train {len(training)} {finished_train.histogram(training)}  "
         f"stopping {len(stopping)} {finished_train.histogram(stopping)}"
     )
@@ -1110,7 +1245,7 @@ def fit(
     stopping_batches = numpy.array([unit.batch for unit in stopping])
     cutpoint = min(int(recipe["selection_cutpoint"]), classes) - 2
 
-    directory = run_dir(arm, seed)
+    directory = run_dir(arm, seed, band)
     directory.mkdir(parents=True, exist_ok=True)
     try:
         lock = train.claim(directory)
@@ -1175,7 +1310,7 @@ def fit(
             raise GradeTrainingError(f"the head went non-finite at epoch {epoch}")
 
         probabilities = train.score(model, stopping_paths, deploy_transform, where, classes, recipe)
-        value, rule = objective(stopping_labels, probabilities)
+        value, rule = objective(stopping_labels, probabilities, wanted)
         record = {
             "epoch": epoch,
             "loss": running / max(seen, 1),
@@ -1261,8 +1396,9 @@ def fit(
     config = {
         "schema": SCHEMA,
         "head": HEAD,
-        "run": run_name(arm, seed),
+        "run": run_name(arm, seed, band),
         "arm": arm,
+        "band": str(band),
         **recipe,
         "initialised_from": {
             "artifact": str(SOURCE).replace("\\", "/"),
@@ -1271,6 +1407,7 @@ def fit(
             "says": "a COPY. Never a shared trunk — a moved trunk is a judge flip",
         },
         "freezing": freezing,
+        "stopping_rule": rule_record,
         "stopped_early": stopped_early,
         "best_epoch": best_epoch,
         "best_selection_rule": best_rule,
@@ -1294,14 +1431,15 @@ def fit(
     # its whole join — so the band's table can be rebuilt without the GPU.
     model.load_state_dict({key: value.to(where) for key, value in best_state.items()})
     chosen = train.score(model, stopping_paths, deploy_transform, where, classes, recipe)
-    _write_scores(directory, arm, seed, stopping, chosen, classes)
+    _write_scores(directory, arm, seed, band, stopping, chosen, classes)
 
     read = _read_of(stopping_labels, chosen, cutpoint, classes)
     record = {
         "schema": SCHEMA,
         "head": HEAD,
-        "run": run_name(arm, seed),
+        "run": run_name(arm, seed, band),
         "arm": arm,
+        "band": str(band),
         "seed": int(seed),
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
@@ -1311,9 +1449,9 @@ def fit(
         "best_selection_rule": best_rule,
         "stopped_early": stopped_early,
         "selection_metric": (
-            f"AP(>={HIT_TIER}) over the stopping slice, maximized "
-            f"(recorded negated, because the loop minimizes)"
+            f"{RULES[wanted]['says']}, maximized (recorded negated, because the loop minimizes)"
         ),
+        "stopping_rule": rule_record,
         "freezing": freezing,
         "held_out": read,
         "held_out_is": (
@@ -1342,7 +1480,9 @@ def fit(
     return record
 
 
-def fit_band(arms=None, seeds=SEEDS, device: str = "auto", log=say, **rest) -> dict:
+def fit_band(
+    arms=None, seeds=SEEDS, band_name: str = BAND, device: str = "auto", log=say, **rest
+) -> dict:
     """Fit every run of the grid that is not already on disk, **one at a time**.
 
     Sequential and not a knob, for `models/render/README.md`'s reason: this box's
@@ -1353,17 +1493,22 @@ def fit_band(arms=None, seeds=SEEDS, device: str = "auto", log=say, **rest) -> d
     A run whose `metrics.json` is already there is skipped rather than re-fitted,
     so a killed band is resumed by re-launching it.
     """
-    arms = tuple(arms or ARMS)
+    arms = tuple(arms if arms is not None else BAND_ARMS)
     done, ran = [], []
     for arm in arms:
         for seed in seeds:
-            if (run_dir(arm, seed) / "metrics.json").is_file():
-                done.append(run_name(arm, seed))
-                log(f"[{HEAD}] {run_name(arm, seed)} is already fitted — skipping")
+            named = run_name(arm, seed, band_name)
+            if (run_dir(arm, seed, band_name) / "metrics.json").is_file():
+                done.append(named)
+                log(f"[{HEAD}] {named} is already fitted — skipping")
                 continue
-            record = fit(arm=arm, seed=seed, device=device, log=log, **rest)
+            record = fit(arm=arm, seed=seed, band=band_name, device=device, log=log, **rest)
             ran.append(record["run"])
-    return {"fitted": ran, "already_there": done, "band": band(arms, seeds)}
+    return {
+        "fitted": ran,
+        "already_there": done,
+        "band": band(arms, seeds, band_name),
+    }
 
 
 def _read_of(labels, probabilities, cutpoint: int, classes: int) -> dict:
@@ -1382,7 +1527,9 @@ def _read_of(labels, probabilities, cutpoint: int, classes: int) -> dict:
     return out
 
 
-def _write_scores(directory: Path, arm: str, seed: int, units, probabilities, classes: int) -> None:
+def _write_scores(
+    directory: Path, arm: str, seed: int, band: str, units, probabilities, classes: int
+) -> None:
     """The chosen epoch's read of the stopping slice, a row carrying its join."""
     import numpy
 
@@ -1392,7 +1539,7 @@ def _write_scores(directory: Path, arm: str, seed: int, units, probabilities, cl
             row = {
                 "schema": SCHEMA,
                 "head": HEAD,
-                "run": run_name(arm, seed),
+                "run": run_name(arm, seed, band),
                 "key": unit.key,
                 "grade": unit.score,
                 "batch": unit.batch,
@@ -1410,8 +1557,8 @@ def _write_scores(directory: Path, arm: str, seed: int, units, probabilities, cl
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def read_run(arm: str, seed: int) -> dict:
-    path = run_dir(arm, seed) / "metrics.json"
+def read_run(arm: str, seed: int, band: str = BAND) -> dict:
+    path = run_dir(arm, seed, band) / "metrics.json"
     if not path.is_file():
         raise GradeTrainingError(f"{path} is not there — that run has not been fitted")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -1456,22 +1603,409 @@ def baselines() -> dict:
             read[f"auc_ge{boundary}"] = metrics.auc(hits, scores)
         read["spearman"] = metrics.spearman(labels, scores)
         out[column] = read
+    out["rank_key"] = _rank_key_baseline(stopping, labels)
     return out
 
 
-def band(arms=None, seeds=SEEDS) -> dict:
-    """Every run that has been fitted, the baseline it is read beside, and the pick.
+def _rank_key_baseline(stopping, labels) -> dict:
+    """The **shipped seating key** over the same rows — the second incumbent.
 
-    **The pick is by stopping-slice AP**, which is the rule the epoch was chosen
-    under: one statistic decides the epoch inside a run and the run inside the
-    band, so nothing is selected on a number nothing was stopped on.
+    `curation.rank_key` is what a seating ranks on today, and `p_ge4` is only one
+    of its four columns. A head that beat the judge's column and lost to the key
+    would have improved nothing anybody ships, which is the correction
+    [`curation.render_grade`] made for the render judge and the same one applies
+    here.
+
+    The columns are read off the stores the key itself reads — the location
+    scores, the flatness sidecar — so this opens no picture and re-fits nothing.
+    A row missing either is **left out and counted**, never imputed: the key
+    refuses a candidate it cannot read and so does this.
     """
-    arms = tuple(arms or ARMS)
+    import numpy
+
+    from fractal_wallpapers.models import metrics
+
+    try:
+        from fractal_wallpapers.curation import flatness, intake, rank_key
+
+        key = rank_key.load()
+        locations = intake.read_scores()
+        flat = flatness.by_recipe()
+    except Exception as unreadable:  # noqa: BLE001 — the reason belongs on the record
+        return {"unreadable": f"{type(unreadable).__name__}: {unreadable}"}
+
+    values, kept, gaps = [], [], {"no_flatness": 0, "no_location_reading": 0, "no_column": 0}
+    for index, unit in enumerate(stopping):
+        reading = flat.get(unit.key)
+        if reading is None:
+            gaps["no_flatness"] += 1
+            continue
+        place = locations.get(unit.location) or {}
+        loc = place.get("p_ge4")
+        if loc is None:
+            gaps["no_location_reading"] += 1
+        if unit.candidate_p_ge3 is None or unit.candidate_p_ge4 is None:
+            gaps["no_column"] += 1
+            continue
+        try:
+            values.append(
+                key.score(
+                    {
+                        "loc_p_ge4": rank_key.NO_LOCATION_READING if loc is None else float(loc),
+                        "p_ge3": float(unit.candidate_p_ge3),
+                        "p_ge4": float(unit.candidate_p_ge4),
+                        flatness.COLUMN: float(reading),
+                    }
+                )
+            )
+        except rank_key.RankKeyError:
+            gaps["no_column"] += 1
+            continue
+        kept.append(index)
+    if not kept:
+        return {"unreadable": "no row of the stopping slice carries every column", **gaps}
+
+    mine = numpy.asarray(labels)[kept]
+    scores = numpy.array(values, dtype=float)
+    read: dict = {"rows_carrying_it": len(scores), "of": len(stopping), **gaps}
+    for boundary in (2, 3, 4):
+        hits = (mine >= boundary).astype(int)
+        read[f"ap_ge{boundary}"] = metrics.average_precision(hits, scores)
+        read[f"auc_ge{boundary}"] = metrics.auc(hits, scores)
+    read["spearman"] = metrics.spearman(mine, scores)
+    read["fitted_at"] = key.document.get("fitted_at")
+    read["rows_it_is_read_on"] = (
+        "only the stopping rows the key can read, so an arm compared against it is compared "
+        "on those rows and not on all of them"
+    )
+    return read
+
+
+# --------------------------------------------------------------------------- #
+# Reading a pool through the picked run.
+# --------------------------------------------------------------------------- #
+def pool_scores_path() -> Path:
+    """Where this head's read of the seating pool lands.
+
+    **The one spelling of this path.** `curation.solve` reads it to resolve the
+    cascade order and reaches it through this function rather than building it
+    from a root and a string, so a move here moves both.
+    """
+    return root() / "pool_scores.jsonl"
+
+
+def read_pool_scores(path: Path | None = None) -> dict:
+    """`{candidate key: {p_ge2, p_ge3, p_ge4, rank_score}}`, or `{}` if unread.
+
+    Empty rather than raising, because the caller that matters is a seating
+    resolving an order: a missing file means this head has not read this pool,
+    which is a thing for the seating to refuse with its own message about its own
+    key rather than a traceback out of a model module.
+    """
+    where = pool_scores_path() if path is None else Path(path)
+    if not where.is_file():
+        return {}
+    out: dict = {}
+    for line in where.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        out[str(row["key"])] = row
+    return out
+
+
+def score_pool(candidates, arm: str, seed: int, band: str = BAND, device: str = "auto", log=say):
+    """Read a whole pool through one run's chosen checkpoint, and write the rows.
+
+    `candidates` is whatever [`curation.solve.pool`] hands back — anything with a
+    `key` and a `picture` — and this opens each of those pictures once. It is the
+    only pass here that costs more than a minute, and it costs it in decode
+    rather than in forward: the pictures are the ledger's own 640x360 JPEGs and
+    nothing is re-rendered.
+
+    ⚠ **The rows this writes are a cascade's SECOND stage and nothing else.** A
+    reader that ranked the whole file would be ranking rows this head never saw
+    the like of — every row it was fitted on had cleared the gate. `solve` applies
+    it above the bar and only there.
+
+    Which is why **only the above-bar rows are read**. It is not a saving so much
+    as the same statement made twice: a score written for a row the cascade may
+    not use is a number that exists only to be misread, and on this pool it would
+    be seven rows in eight — 223,438 of 260,862 on 2026-09-06 — and twenty minutes
+    of decode. A candidate that carries no `above_bar` is read, because a caller
+    handing in its own list has not said the rows are pool rows.
+    """
+    import numpy
+
+    from fractal_wallpapers.models import train
+    from fractal_wallpapers.paths import Tiers, rehome
+
+    checkpoint = run_dir(arm, seed, band) / "best.pt"
+    if not checkpoint.is_file():
+        raise GradeTrainingError(f"{checkpoint} is not there — that run has not been fitted")
+    model, config, where = load_checkpoint(checkpoint, device)
+
+    tiers = Tiers.current()
+    keys, paths, absent, below = [], [], 0, 0
+    for candidate in candidates:
+        if getattr(candidate, "above_bar", True) is False:
+            below += 1
+            continue
+        named = getattr(candidate, "picture", None)
+        resolved = None if not named else rehome(str(named), tiers)
+        if resolved is None or not resolved.is_file():
+            absent += 1
+            continue
+        keys.append(str(candidate.key))
+        paths.append(resolved)
+    if not paths:
+        raise GradeTrainingError("no candidate of this pool has a picture on disk to read")
+
+    storage.require_hot(*{path.parent for path in paths}, what="reading a pool through this head")
+    began = time.time()
+    log(f"[{HEAD}] reading {len(paths):,} pictures through {run_name(arm, seed, band)}")
+    classes = int(config["classes"])
+    transform = head.Transform(
+        tuple(config["mean"]),
+        tuple(config["std"]),
+        config["interpolation"],
+        train=False,
+        target=tuple(config["target_dims"]),
+    )
+    probabilities = train.score(model, paths, transform, where, classes, config)
+
+    path = pool_scores_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for key, probability in zip(keys, probabilities, strict=True):
+            row = {"schema": SCHEMA, "head": HEAD, "run": run_name(arm, seed, band), "key": key}
+            for index in range(classes - 1):
+                row[f"p_ge{index + 2}"] = float(probability[index])
+            row["rank_score"] = float(numpy.sum(probability))
+            handle.write(json.dumps(row) + "\n")
+
+    record = {
+        "run": run_name(arm, seed, band),
+        "checkpoint": tracked_name(checkpoint),
+        "candidates": len(keys),
+        "below_the_bar_and_not_read": below,
+        "below_the_bar_is": (
+            "where this head's output is undefined. A score written there would exist only "
+            "to be misread, so it is not written"
+        ),
+        "no_picture_on_disk": absent,
+        "seconds": round(time.time() - began, 1),
+        "wrote": str(path),
+    }
+    log(f"[{HEAD}] {len(keys):,} rows in {record['seconds']}s -> {path}")
+    return record
+
+
+def load_checkpoint(path: Path, device: str = "auto"):
+    """Rebuild this head from a checkpoint. The config in the file decides how."""
+    import torch
+
+    from fractal_wallpapers.models import train
+
+    where = train.device_of(device)
+    saved = torch.load(path, map_location="cpu", weights_only=False)
+    config = saved["config"]
+    model = head.build(
+        num_classes=int(config["classes"]), backbone=config["backbone"], pretrained=False
+    )
+    model.load_state_dict({key: value.float() for key, value in saved["state_dict"].items()})
+    return model.to(where).eval(), config, where
+
+
+# --------------------------------------------------------------------------- #
+# The bar, and the read of it.
+# --------------------------------------------------------------------------- #
+#: What the winning arm has to do, and the two incumbents it has to do it against.
+#: Both are quantities a seating already has: `candidate_p_ge4` is the column the
+#: gate emits, `rank_key` is what the seating currently ranks on. **Both, and not
+#: the easier of the two** — [`curation.render_grade`] made exactly this
+#: correction for the render judge, and it applies unchanged here: an arm that
+#: beat the column and lost to the key would have improved nothing that ships.
+GATED_INCUMBENTS = ("candidate_p_ge4", "rank_key")
+
+#: The two statistics gated, at the boundary this head exists to order.
+#: `auc_ge4` is 4-against-the-rest and `spearman` is the whole scale at once; a
+#: head that moved one and not the other has not produced a fine order.
+GATED_STATISTICS = ("auc_ge4", "spearman")
+
+
+def write_bar(band_name: str = BAND, force: bool = False, log=say) -> tuple[Path, dict]:
+    """Register this band's bar, **before its runs exist**.
+
+    The incumbent figures are copied in rather than referenced, so the bar stays
+    readable a year from now without re-deriving anything, and so that a later
+    re-fit of `rank_key` cannot quietly move the height a band was judged at.
+
+    Refuses to overwrite. A bar rewritten after a band is a bar fitted to what
+    happened, which is the whole thing pre-registration is for.
+    """
+    path = bar_path(band_name)
+    if path.is_file() and not force:
+        raise GradeTrainingError(
+            f"{path} already exists, and a bar rewritten after its band is a bar fitted to "
+            f"what happened. Pass force only to correct a bar no run has been read against."
+        )
+    read = baselines()
+    incumbents = {}
+    for name in GATED_INCUMBENTS:
+        mine = read.get(name) or {}
+        if any(mine.get(statistic) is None for statistic in GATED_STATISTICS):
+            raise GradeTrainingError(
+                f"the incumbent {name!r} cannot be read on the stopping slice, so a bar "
+                f"stated against it would be a bar nothing could be judged by: {mine}"
+            )
+        incumbents[name] = {statistic: mine[statistic] for statistic in GATED_STATISTICS}
+        incumbents[name]["rows"] = mine.get("rows_carrying_it")
+
+    document = {
+        "schema": SCHEMA,
+        "head": HEAD,
+        "band": str(band_name),
+        "registered_at": _stamp(),
+        "rule": (
+            "the winning arm must beat BOTH incumbents on BOTH statistics at EVERY seed, "
+            "strictly, on the held-out lineages. Any one of those failing is a FAIL for the "
+            "band — there is no partial credit and no best-of"
+        ),
+        "gated": {"incumbents": list(GATED_INCUMBENTS), "statistics": list(GATED_STATISTICS)},
+        "incumbents": incumbents,
+        "population": {
+            "rows": read.get("rows"),
+            "base_rates": read.get("base_rates"),
+            "is": (
+                "the stopping slice — within-store held out, optimistic by one early stop, "
+                "and drawn from a store that is not eval-eligible. This bar says which of "
+                "three quantities orders these rows best and nothing about any other rows"
+            ),
+        },
+        "does_not_gate": (
+            "the arm ranking, the epoch, or anything about the pool. Adoption is a separate "
+            "act and this bar does not authorize one"
+        ),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    log(f"[{HEAD}] bar registered at {tracked_name(path)}")
+    return path, document
+
+
+def read_bar(band_name: str = BAND) -> dict:
+    path = bar_path(band_name)
+    if not path.is_file():
+        raise GradeTrainingError(
+            f"{path} does not exist. Register the bar before the band, so that what counts "
+            f"as clearing it was decided without knowing what happened."
+        )
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def acceptance(band_name: str = BAND, log=say) -> tuple[Path, dict]:
+    """Read the band against its registered bar, and write the verdict down.
+
+    **Every seed of the winning arm, against every incumbent, on every gated
+    statistic.** The record carries each of those cells whether it passed or not,
+    because a verdict without its arithmetic is a verdict nobody can check.
+    """
+    bar = read_bar(band_name)
+    read = band(seeds=SEEDS, band_name=band_name)
+    winner = read["pick"]["arm"]
+    mine = [row for row in read["runs"] if row["arm"] == winner]
+    if not mine:
+        raise GradeTrainingError(f"the winning arm {winner!r} has no fitted run")
+
+    cells, failures = [], []
+    for row in mine:
+        for incumbent, heights in bar["incumbents"].items():
+            for statistic in bar["gated"]["statistics"]:
+                ours = row["held_out"].get(statistic)
+                theirs = heights.get(statistic)
+                passed = ours is not None and theirs is not None and float(ours) > float(theirs)
+                cell = {
+                    "seed": row["seed"],
+                    "run": row["run"],
+                    "incumbent": incumbent,
+                    "statistic": statistic,
+                    "arm": None if ours is None else round(float(ours), 4),
+                    "incumbent_value": None if theirs is None else round(float(theirs), 4),
+                    "margin": (
+                        None
+                        if ours is None or theirs is None
+                        else round(float(ours) - float(theirs), 4)
+                    ),
+                    "verdict": "PASS" if passed else "FAIL",
+                }
+                cells.append(cell)
+                if not passed:
+                    failures.append(cell)
+
+    verdict = "CLEARED" if not failures else "NOT CLEARED"
+    margins = [cell["margin"] for cell in cells if cell["margin"] is not None]
+    document = {
+        "schema": SCHEMA,
+        "head": HEAD,
+        "band": str(band_name),
+        "read_at": _stamp(),
+        "bar": tracked_name(bar_path(band_name)),
+        "registered_at": bar.get("registered_at"),
+        "arm": winner,
+        "seeds": [row["seed"] for row in mine],
+        "verdict": verdict,
+        "cells": cells,
+        "failures": failures,
+        "worst_margin": None if not margins else round(min(margins), 4),
+        "says": (
+            f"{verdict}: {len(cells) - len(failures)} of {len(cells)} gated cells pass. "
+            f"The bar gates the arm and not the adoption — nothing here is wired in"
+        ),
+    }
+    path = comparison_path(band_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
+    log(f"[{HEAD}] {verdict}: worst margin {document['worst_margin']}")
+    return path, document
+
+
+def _stamp() -> str:
+    from datetime import datetime
+
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def selection_statistic(said: dict) -> float:
+    """The number a run is ranked by inside its band: the rule's own, maximized.
+
+    `best_selection_objective` is recorded negated because the loop minimizes, so
+    this is the one place the sign is undone and every reader takes it from here.
+    """
+    return -float(said["best_selection_objective"])
+
+
+def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
+    """Every run of one band, the incumbents it is read beside, and the pick.
+
+    **Arms are ranked by the MEAN of the band's own statistic over its seeds, and
+    the winning arm ships its MEDIAN seed.** Both halves are deliberate. The mean
+    is what says an arm is better rather than that one of its runs was; the median
+    is what stops the band shipping a coin flip, because `more`'s surface across
+    epochs is flat enough that cuDNN nondeterminism moves the argmax epoch by a
+    dozen while the statistic barely moves. An argmax seed is the luckiest run of
+    three and is not the run the band would give again.
+
+    A median needs an odd count. With an even one this takes the **lower** of the
+    two middle seeds and says so on the record — the conservative direction, and
+    stated rather than silently rounded.
+    """
+    arms = tuple(arms if arms is not None else BAND_ARMS)
     rows = []
     for arm in arms:
         for seed in seeds:
             try:
-                said = read_run(arm, seed)
+                said = read_run(arm, seed, band_name)
             except GradeTrainingError:
                 continue
             rows.append(
@@ -1480,7 +2014,7 @@ def band(arms=None, seeds=SEEDS) -> dict:
                     "seed": int(seed),
                     "run": said["run"],
                     "best_epoch": said["best_epoch"],
-                    "stopping_ap": -float(said["best_selection_objective"]),
+                    "selection": selection_statistic(said),
                     "rule": said.get("best_selection_rule"),
                     "trainable_share": said["freezing"]["trainable_share"],
                     "wall_seconds": said["wall_seconds"],
@@ -1488,32 +2022,53 @@ def band(arms=None, seeds=SEEDS) -> dict:
                 }
             )
     if not rows:
-        raise GradeTrainingError("no run in this band has been fitted")
+        raise GradeTrainingError(f"no run of band {band_name!r} has been fitted")
+
     per_arm: dict = {}
     for row in rows:
-        per_arm.setdefault(row["arm"], []).append(row["stopping_ap"])
-    best = max(rows, key=lambda row: row["stopping_ap"])
+        per_arm.setdefault(row["arm"], []).append(row)
+    summary = {}
+    for arm, mine in sorted(per_arm.items()):
+        values = [row["selection"] for row in mine]
+        summary[arm] = {
+            "seeds": len(values),
+            "mean_selection": round(sum(values) / len(values), 4),
+            "best_selection": round(max(values), 4),
+            "worst_selection": round(min(values), 4),
+            "spread": round(max(values) - min(values), 4),
+        }
+    winner = max(summary, key=lambda arm: summary[arm]["mean_selection"])
+    ordered = sorted(per_arm[winner], key=lambda row: (row["selection"], row["seed"]))
+    middle = (len(ordered) - 1) // 2
+    picked = ordered[middle]
+
     return {
         "schema": SCHEMA,
         "head": HEAD,
-        "arms": {
-            arm: {
-                "seeds": len(values),
-                "mean_stopping_ap": round(sum(values) / len(values), 4),
-                "best_stopping_ap": round(max(values), 4),
-                "spread": round(max(values) - min(values), 4),
-            }
-            for arm, values in sorted(per_arm.items())
+        "band": str(band_name),
+        "rule": RULES[str(band_name)]["says"],
+        "statistic": f"{RULES[str(band_name)]['statistic']} at >={RULES[str(band_name)]['tier']}",
+        "arms": summary,
+        "pick": {
+            "arm": winner,
+            "seed": picked["seed"],
+            "run": picked["run"],
+            "of_seeds": [row["seed"] for row in ordered],
+            "even_count_took_the_lower_middle": len(ordered) % 2 == 0,
         },
-        "pick": {"arm": best["arm"], "seed": best["seed"], "run": best["run"]},
-        "pick_rule": "the highest stopping-slice AP, which is the rule the epoch was chosen on",
+        "pick_rule": (
+            "the arm with the highest MEAN of the band's own statistic over its seeds, at "
+            "that arm's MEDIAN seed. Never the argmax: the epoch surface is flat enough "
+            "that the best seed of three is a coin flip rather than a fact about the arm"
+        ),
         "baseline": _baselines_or_reason(),
         "baseline_is": (
-            "the shipped judge's own columns over these same rows. `candidate_p_ge4` is the "
-            "one a seating walks and is the number to beat; `label_p_ge4` is the same judge "
-            "on the picture the verdict was cast on, which is the easier baseline"
+            "the two incumbents over these same rows — the shipped judge's own "
+            "`candidate_p_ge4`, which is the column, and `rank_key`, which is what a seating "
+            "actually ranks on. An arm beating the column and losing to the key would have "
+            "improved nothing anybody ships"
         ),
-        "runs": sorted(rows, key=lambda row: (-row["stopping_ap"], row["run"])),
+        "runs": sorted(rows, key=lambda row: (-row["selection"], row["run"])),
     }
 
 
@@ -1526,15 +2081,28 @@ def _baselines_or_reason() -> dict:
         return {"unreadable": str(unreadable)}
 
 
-def write_band(arms=None, seeds=SEEDS) -> tuple[Path, dict]:
-    record = band(arms, seeds)
-    path = band_path()
+def write_band(arms=None, seeds=SEEDS, band_name: str = BAND) -> tuple[Path, dict]:
+    record = band(arms, seeds, band_name)
+    path = band_path(band_name)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, record
 
 
 __all__ = [
+    "RULES",
+    "GATED_STATISTICS",
+    "GATED_INCUMBENTS",
+    "FIRST_BAND",
+    "BAND_ARMS",
+    "BAND",
+    "write_bar",
+    "selection_statistic",
+    "readable_at",
+    "read_bar",
+    "comparison_path",
+    "bar_path",
+    "acceptance",
     "ARMS",
     "CARRIED",
     "EPOCHS",

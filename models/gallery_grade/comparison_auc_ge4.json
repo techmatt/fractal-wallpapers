@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "band": "auc_ge4",
+  "read_at": "2026-09-07T06:29:53Z",
+  "bar": "models/gallery_grade/bar_auc_ge4.json",
+  "registered_at": "2026-09-07T06:14:31Z",
+  "arm": "more",
+  "seeds": [
+    0,
+    2,
+    1
+  ],
+  "verdict": "CLEARED",
+  "cells": [
+    {
+      "seed": 0,
+      "run": "auc_ge4_more_seed0",
+      "incumbent": "candidate_p_ge4",
+      "statistic": "auc_ge4",
+      "arm": 0.7193,
+      "incumbent_value": 0.5278,
+      "margin": 0.1915,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 0,
+      "run": "auc_ge4_more_seed0",
+      "incumbent": "candidate_p_ge4",
+      "statistic": "spearman",
+      "arm": 0.4062,
+      "incumbent_value": 0.0901,
+      "margin": 0.3161,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 0,
+      "run": "auc_ge4_more_seed0",
+      "incumbent": "rank_key",
+      "statistic": "auc_ge4",
+      "arm": 0.7193,
+      "incumbent_value": 0.5434,
+      "margin": 0.1759,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 0,
+      "run": "auc_ge4_more_seed0",
+      "incumbent": "rank_key",
+      "statistic": "spearman",
+      "arm": 0.4062,
+      "incumbent_value": 0.1379,
+      "margin": 0.2682,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 2,
+      "run": "auc_ge4_more_seed2",
+      "incumbent": "candidate_p_ge4",
+      "statistic": "auc_ge4",
+      "arm": 0.7189,
+      "incumbent_value": 0.5278,
+      "margin": 0.191,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 2,
+      "run": "auc_ge4_more_seed2",
+      "incumbent": "candidate_p_ge4",
+      "statistic": "spearman",
+      "arm": 0.4044,
+      "incumbent_value": 0.0901,
+      "margin": 0.3144,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 2,
+      "run": "auc_ge4_more_seed2",
+      "incumbent": "rank_key",
+      "statistic": "auc_ge4",
+      "arm": 0.7189,
+      "incumbent_value": 0.5434,
+      "margin": 0.1754,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 2,
+      "run": "auc_ge4_more_seed2",
+      "incumbent": "rank_key",
+      "statistic": "spearman",
+      "arm": 0.4044,
+      "incumbent_value": 0.1379,
+      "margin": 0.2665,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 1,
+      "run": "auc_ge4_more_seed1",
+      "incumbent": "candidate_p_ge4",
+      "statistic": "auc_ge4",
+      "arm": 0.717,
+      "incumbent_value": 0.5278,
+      "margin": 0.1891,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 1,
+      "run": "auc_ge4_more_seed1",
+      "incumbent": "candidate_p_ge4",
+      "statistic": "spearman",
+      "arm": 0.4296,
+      "incumbent_value": 0.0901,
+      "margin": 0.3396,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 1,
+      "run": "auc_ge4_more_seed1",
+      "incumbent": "rank_key",
+      "statistic": "auc_ge4",
+      "arm": 0.717,
+      "incumbent_value": 0.5434,
+      "margin": 0.1735,
+      "verdict": "PASS"
+    },
+    {
+      "seed": 1,
+      "run": "auc_ge4_more_seed1",
+      "incumbent": "rank_key",
+      "statistic": "spearman",
+      "arm": 0.4296,
+      "incumbent_value": 0.1379,
+      "margin": 0.2917,
+      "verdict": "PASS"
+    }
+  ],
+  "failures": [],
+  "worst_margin": 0.1735,
+  "says": "CLEARED: 12 of 12 gated cells pass. The bar gates the arm and not the adoption \u2014 nothing here is wired in"
+}

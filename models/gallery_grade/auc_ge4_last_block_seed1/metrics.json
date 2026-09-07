@@ -1,0 +1,284 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "run": "auc_ge4_last_block_seed1",
+  "arm": "last_block",
+  "band": "auc_ge4",
+  "seed": 1,
+  "device": "cuda",
+  "wall_seconds": 104.8,
+  "segments": [
+    {
+      "from_epoch": 0,
+      "through_epoch": 9,
+      "wall_seconds": 104.8
+    }
+  ],
+  "best_epoch": 3,
+  "best_selection_objective": -0.6453553129873023,
+  "best_selection_rule": "auc_ge4",
+  "stopped_early": {
+    "at_epoch": 9,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 3
+  },
+  "selection_metric": "max AUC(>=4) over the stopping slice, ranked by p_ge4. Rank-only, at the boundary a seating inside the gate's own top actually orders on, maximized (recorded negated, because the loop minimizes)",
+  "stopping_rule": {
+    "asked_for": "auc_ge4",
+    "boundary": 4,
+    "stopping_slice_at_boundary": {
+      "at_or_above": 67,
+      "below": 134
+    },
+    "readable": true,
+    "ran_under": "auc_ge4",
+    "says": "max AUC(>=4) over the stopping slice, ranked by p_ge4. Rank-only, at the boundary a seating inside the gate's own top actually orders on"
+  },
+  "freezing": {
+    "arm": "last_block",
+    "unfrozen": [
+      "blocks.4",
+      "conv_head",
+      "norm_head",
+      "classifier"
+    ],
+    "says": "the last block stage and the pointwise head above it. Half the net by parameter count, because conv_head alone is 49% of this backbone",
+    "trainable_parameters": 1360003,
+    "total_parameters": 2496867,
+    "trainable_share": 0.5447
+  },
+  "held_out": {
+    "rows": 201,
+    "ap_ge2": 0.9844961545057792,
+    "auc_ge2": 0.6341880341880342,
+    "ap_ge3": 0.8253207853913724,
+    "auc_ge3": 0.5787492762015055,
+    "ap_ge4": 0.5042554089367677,
+    "auc_ge4": 0.6453553129873023,
+    "spearman": 0.25623404306102315,
+    "cutpoint": 3
+  },
+  "held_out_is": "the stopping slice. It is the shipped recipe's only holdout and the epoch was chosen on it, so every number here is optimistic by one early stop, and the store is not eval-eligible \u2014 this is a within-store reading and nothing more",
+  "pictures": {
+    "train": 799,
+    "stopping": 201,
+    "total": 1000
+  },
+  "class_counts": {
+    "train": {
+      "1": 20,
+      "2": 147,
+      "3": 387,
+      "4": 245
+    },
+    "stopping": {
+      "1": 6,
+      "2": 38,
+      "3": 90,
+      "4": 67
+    }
+  },
+  "sampled_mass": {
+    "places": 697,
+    "largest_place": 2,
+    "sampled_mass": {
+      "1": 0.0792,
+      "2": 0.2366,
+      "3": 0.375,
+      "4": 0.3092
+    },
+    "raw_share": {
+      "1": 0.025,
+      "2": 0.184,
+      "3": 0.4844,
+      "4": 0.3066
+    }
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 1.188359937321707,
+      "seconds": 10.2,
+      "selection_loss": -0.5416573847182,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8570694335811371,
+      "stopping_auc_ge2": 0.811965811965812,
+      "stopping_mean_p_ge2": 0.9410486198088294,
+      "stopping_auc_ge3": 0.6379559930515345,
+      "stopping_mean_p_ge3": 0.7625451852626819,
+      "stopping_auc_ge4": 0.5416573847182,
+      "stopping_mean_p_ge4": 0.37737276587480384,
+      "stopping_spearman": 0.17100288641598563,
+      "stopping_ap_ge3_n1000_0906_1": 0.809852451965532,
+      "stopping_ap_ge3_n1000_0906_2": 0.8979787088309761,
+      "stopping_ap_ge3_n1000_0906_3": 0.8773202619547706
+    },
+    {
+      "epoch": 1,
+      "loss": 0.6791399113078589,
+      "seconds": 10.4,
+      "selection_loss": -0.5711739808420584,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8293116103076215,
+      "stopping_auc_ge2": 0.7111111111111111,
+      "stopping_mean_p_ge2": 0.952142996528466,
+      "stopping_auc_ge3": 0.6143601621308628,
+      "stopping_mean_p_ge3": 0.8651052378402817,
+      "stopping_auc_ge4": 0.5711739808420584,
+      "stopping_mean_p_ge4": 0.4015066450496014,
+      "stopping_spearman": 0.1847204256066768,
+      "stopping_ap_ge3_n1000_0906_1": 0.7610510667840577,
+      "stopping_ap_ge3_n1000_0906_2": 0.8801506327836551,
+      "stopping_ap_ge3_n1000_0906_3": 0.8695077713464683
+    },
+    {
+      "epoch": 2,
+      "loss": 0.5563069669266367,
+      "seconds": 10.2,
+      "selection_loss": -0.6002450434395188,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8204781822923087,
+      "stopping_auc_ge2": 0.752991452991453,
+      "stopping_mean_p_ge2": 0.9585674848735395,
+      "stopping_auc_ge3": 0.6121887666473653,
+      "stopping_mean_p_ge3": 0.808588857325492,
+      "stopping_auc_ge4": 0.6002450434395188,
+      "stopping_mean_p_ge4": 0.3663789527312795,
+      "stopping_spearman": 0.22970706402771965,
+      "stopping_ap_ge3_n1000_0906_1": 0.7870903634919895,
+      "stopping_ap_ge3_n1000_0906_2": 0.8555449621457936,
+      "stopping_ap_ge3_n1000_0906_3": 0.8437006964023226
+    },
+    {
+      "epoch": 3,
+      "loss": 0.5124534851170899,
+      "seconds": 10.0,
+      "selection_loss": -0.6453553129873023,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8253207853913724,
+      "stopping_auc_ge2": 0.6341880341880342,
+      "stopping_mean_p_ge2": 0.988691404414904,
+      "stopping_auc_ge3": 0.5787492762015055,
+      "stopping_mean_p_ge3": 0.7134197295593958,
+      "stopping_auc_ge4": 0.6453553129873023,
+      "stopping_mean_p_ge4": 0.3720149259125695,
+      "stopping_spearman": 0.25623404306102315,
+      "stopping_ap_ge3_n1000_0906_1": 0.7935231885246617,
+      "stopping_ap_ge3_n1000_0906_2": 0.8890759930208254,
+      "stopping_ap_ge3_n1000_0906_3": 0.8124177872105727
+    },
+    {
+      "epoch": 4,
+      "loss": 0.39686172693333727,
+      "seconds": 10.1,
+      "selection_loss": -0.569169079973268,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8464208418603718,
+      "stopping_auc_ge2": 0.7435897435897436,
+      "stopping_mean_p_ge2": 0.9534364082094751,
+      "stopping_auc_ge3": 0.6201505500868558,
+      "stopping_mean_p_ge3": 0.8523246186491555,
+      "stopping_auc_ge4": 0.569169079973268,
+      "stopping_mean_p_ge4": 0.4825540863133962,
+      "stopping_spearman": 0.16476525994989852,
+      "stopping_ap_ge3_n1000_0906_1": 0.8119534698964032,
+      "stopping_ap_ge3_n1000_0906_2": 0.8970321788173505,
+      "stopping_ap_ge3_n1000_0906_3": 0.8447806109200667
+    },
+    {
+      "epoch": 5,
+      "loss": 0.38793222913903197,
+      "seconds": 10.1,
+      "selection_loss": -0.604588995321898,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8453028605333096,
+      "stopping_auc_ge2": 0.8247863247863247,
+      "stopping_mean_p_ge2": 0.9687491752433588,
+      "stopping_auc_ge3": 0.6305732484076433,
+      "stopping_mean_p_ge3": 0.8930191752110619,
+      "stopping_auc_ge4": 0.604588995321898,
+      "stopping_mean_p_ge4": 0.263291669530829,
+      "stopping_spearman": 0.2567381017026578,
+      "stopping_ap_ge3_n1000_0906_1": 0.7869011000155232,
+      "stopping_ap_ge3_n1000_0906_2": 0.8987236040311882,
+      "stopping_ap_ge3_n1000_0906_3": 0.8533930198042478
+    },
+    {
+      "epoch": 6,
+      "loss": 0.3524616376330169,
+      "seconds": 10.1,
+      "selection_loss": -0.6108264646914681,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8685142107714383,
+      "stopping_auc_ge2": 0.7649572649572649,
+      "stopping_mean_p_ge2": 0.9801853536910792,
+      "stopping_auc_ge3": 0.6705269253039954,
+      "stopping_mean_p_ge3": 0.8346138877795094,
+      "stopping_auc_ge4": 0.6108264646914681,
+      "stopping_mean_p_ge4": 0.23754521661116237,
+      "stopping_spearman": 0.2687593049607926,
+      "stopping_ap_ge3_n1000_0906_1": 0.8238209457719263,
+      "stopping_ap_ge3_n1000_0906_2": 0.9294934401840256,
+      "stopping_ap_ge3_n1000_0906_3": 0.8645371004944358
+    },
+    {
+      "epoch": 7,
+      "loss": 0.3447766044038407,
+      "seconds": 10.3,
+      "selection_loss": -0.6191802183114279,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8386031349730745,
+      "stopping_auc_ge2": 0.7247863247863248,
+      "stopping_mean_p_ge2": 0.9767329662945986,
+      "stopping_auc_ge3": 0.626664736537348,
+      "stopping_mean_p_ge3": 0.7853648486946233,
+      "stopping_auc_ge4": 0.6191802183114279,
+      "stopping_mean_p_ge4": 0.47160195960865037,
+      "stopping_spearman": 0.2586709879898711,
+      "stopping_ap_ge3_n1000_0906_1": 0.7818715525266019,
+      "stopping_ap_ge3_n1000_0906_2": 0.9240890313590202,
+      "stopping_ap_ge3_n1000_0906_3": 0.8267475705404222
+    },
+    {
+      "epoch": 8,
+      "loss": 0.3053900080270254,
+      "seconds": 10.3,
+      "selection_loss": -0.5922254399643573,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8604745405692008,
+      "stopping_auc_ge2": 0.7777777777777778,
+      "stopping_mean_p_ge2": 0.9839445166616195,
+      "stopping_auc_ge3": 0.6576433121019108,
+      "stopping_mean_p_ge3": 0.8362066216099989,
+      "stopping_auc_ge4": 0.5922254399643573,
+      "stopping_mean_p_ge4": 0.24827542335039593,
+      "stopping_spearman": 0.24247760800664678,
+      "stopping_ap_ge3_n1000_0906_1": 0.8278440052572577,
+      "stopping_ap_ge3_n1000_0906_2": 0.9155229360145245,
+      "stopping_ap_ge3_n1000_0906_3": 0.8333940487519419
+    },
+    {
+      "epoch": 9,
+      "loss": 0.2935013004178846,
+      "seconds": 10.1,
+      "selection_loss": -0.598128759189129,
+      "selection_rule": "auc_ge4",
+      "stopping_ap_ge3": 0.8409191792253526,
+      "stopping_auc_ge2": 0.6846153846153846,
+      "stopping_mean_p_ge2": 0.9614982782133822,
+      "stopping_auc_ge3": 0.5946728430804864,
+      "stopping_mean_p_ge3": 0.7507265953976751,
+      "stopping_auc_ge4": 0.598128759189129,
+      "stopping_mean_p_ge4": 0.27509545034571065,
+      "stopping_spearman": 0.19478889774918748,
+      "stopping_ap_ge3_n1000_0906_1": 0.8052337427690545,
+      "stopping_ap_ge3_n1000_0906_2": 0.8985693944532248,
+      "stopping_ap_ge3_n1000_0906_3": 0.8269902998524918
+    }
+  ],
+  "checkpoints": {
+    "best": "models/gallery_grade/auc_ge4_last_block_seed1/best.pt",
+    "last": "models/gallery_grade/auc_ge4_last_block_seed1/last.pt"
+  }
+}
