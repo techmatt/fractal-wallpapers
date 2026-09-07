@@ -241,7 +241,9 @@ def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
 
     picture = tmp_path / "one.jpg"
     Image.new("RGB", (64, 64), (30, 90, 160)).save(picture)
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda name: picture if name else None)
+    monkeypatch.setattr(
+        "fractal_wallpapers.paths.rehome", lambda name, _tiers=None: picture if name else None
+    )
 
     report = candidate_ledger.merge(
         [_row()],
@@ -280,7 +282,9 @@ def test_the_door_records_the_flatness_sidecar_with_the_other_two(tmp_path, monk
 
     picture = tmp_path / "one.jpg"
     Image.new("RGB", (64, 64), (30, 90, 160)).save(picture)
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda name: picture if name else None)
+    monkeypatch.setattr(
+        "fractal_wallpapers.paths.rehome", lambda name, _tiers=None: picture if name else None
+    )
 
     report = candidate_ledger.merge(
         [a_row(picture="artifacts/one.jpg", colour={"cells": [], "families": []})],
@@ -312,7 +316,7 @@ def test_the_door_mirrors_the_reduced_signature_sidecar_too(tmp_path, monkeypatc
     manifests = tmp_path / "manifests"
     manifests.mkdir()
     live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name, _tiers=None: None)
     signatures.write([signatures.row("aaaa", "artifacts/one.jpg", signatures.pack([0.0] * 4))])
 
     report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
@@ -335,7 +339,7 @@ def test_a_checkout_that_never_swept_signatures_merges_without_one(tmp_path, mon
     manifests = tmp_path / "manifests"
     manifests.mkdir()
     live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name, _tiers=None: None)
 
     report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
 
@@ -383,7 +387,7 @@ def test_a_merge_that_swept_nothing_records_an_empty_sidecar_rather_than_none(
     manifests = tmp_path / "manifests"
     manifests.mkdir()
     live, copies = redirect(monkeypatch, tmp_path / "artifacts", manifests)
-    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name: None)
+    monkeypatch.setattr("fractal_wallpapers.paths.rehome", lambda _name, _tiers=None: None)
 
     report = candidate_ledger.merge([a_row()], [], log=lambda *_a, **_k: None)
 

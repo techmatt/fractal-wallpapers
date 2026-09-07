@@ -78,7 +78,7 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.paths import rehome, tracked_name, under
+from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 
 #: The schema every row and every manifest here carries.
 SCHEMA = 1
@@ -549,18 +549,22 @@ def resolve(names, stamp: str | None = None) -> list[dict]:
     ]
 
 
-def _on_disk(row: dict | None) -> bool | None:
-    """Whether one row's stored picture is on this machine; `None` for no picture."""
+def _on_disk(row: dict | None, tiers: Tiers | None = None) -> bool | None:
+    """Whether one row's stored picture is on this machine; `None` for no picture.
+
+    `tiers` for a caller asking over a whole record — a page of an n=2000 record
+    asks this and [`thumbnail_href`] once each per row, and resolving the tiers
+    per call is 246x per ask (see [`fractal_wallpapers.paths.rehome`])."""
     if not row or not row.get("picture"):
         return None
-    resolved = rehome(row["picture"])
+    resolved = rehome(row["picture"], tiers)
     return bool(resolved is not None and resolved.is_file())
 
 
 # --------------------------------------------------------------------------- #
 # The page.
 # --------------------------------------------------------------------------- #
-def thumbnail_href(picture, directory: Path) -> str:
+def thumbnail_href(picture, directory: Path, tiers: Tiers | None = None) -> str:
     """One stored picture as the page refers to it: relative, forward slashes.
 
     Relative rather than absolute so the folder can be copied or synced elsewhere
@@ -568,7 +572,7 @@ def thumbnail_href(picture, directory: Path) -> str:
     letter, which Windows has no relative form for — falls back to a `file://`
     URL, which still opens here and says plainly that it is machine-local.
     """
-    resolved = rehome(picture)
+    resolved = rehome(picture, tiers)
     if resolved is None:
         resolved = Path(str(picture))
     try:
@@ -595,8 +599,11 @@ def page(stamp: str | None = None, log=print) -> Path:
     directory = gallery_dir(stamp)
     rows = read_rows(stamp)
     manifest = read_manifest(stamp)
-    shown = [{**row, "src": thumbnail_href(row.get("picture"), directory)} for row in rows]
-    missing = sum(1 for row in rows if _on_disk(row) is not True)
+    # Two resolutions a row over a record that reaches two thousand of them, so
+    # the tiers are read once here rather than four thousand times below.
+    tiers = Tiers.current()
+    shown = [{**row, "src": thumbnail_href(row.get("picture"), directory, tiers)} for row in rows]
+    missing = sum(1 for row in rows if _on_disk(row, tiers) is not True)
     path = page_path(stamp)
     writing = Path(str(path) + ".writing")
     writing.write_text(

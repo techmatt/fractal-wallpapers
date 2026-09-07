@@ -61,7 +61,7 @@ import random
 from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, headroom, solve
-from fractal_wallpapers.paths import rehome
+from fractal_wallpapers.paths import Tiers, rehome
 
 #: The schema the plan's record carries.
 SCHEMA = 1
@@ -131,17 +131,26 @@ def draw_locations(locations, n: int, seed: int) -> list[str]:
 # --------------------------------------------------------------------------- #
 # The units.
 # --------------------------------------------------------------------------- #
-def leveled_dir(picture: str | None) -> str | None:
+def leveled_dir(picture: str | None, tiers: Tiers | None = None) -> str | None:
     """The `<stem>.leveled/` beside a candidate's picture, where the operator acted.
 
     `None` where it did not, which is the common case and is not a gap: the
     operator is offered every eligible render and declines most of them, and a
     unit with no directory renders through the plain map exactly as its candidate
     did.
+
+    **The derivation is [`candidate_ledger.sweep._delete_colormap`]'s, spelled
+    the same way**, and that is what makes a prune unable to take a live
+    directory: the two read the same expression off two rows' own pictures, so a
+    prune could only reach a surviving row's colormap if a dropped row and a
+    surviving row named one picture. `tests/test_leveled_identity.py` is the pin.
+
+    `tiers` for a draw resolving a whole plan — see
+    [`fractal_wallpapers.paths.rehome`] for what the per-call resolution costs.
     """
     if not picture:
         return None
-    where = rehome(picture)
+    where = rehome(picture, tiers)
     if where is None:
         return None
     where = Path(where)
@@ -149,7 +158,7 @@ def leveled_dir(picture: str | None) -> str | None:
     return str(directory) if directory.is_dir() else None
 
 
-def unit_of(candidate, row: dict, rank_value: float | None) -> dict:
+def unit_of(candidate, row: dict, rank_value: float | None, tiers: Tiers | None = None) -> dict:
     """One plan unit: the recipe the candidate was made from, and its provenance."""
     recipe = row.get("recipe") or {}
     missing = [
@@ -171,7 +180,7 @@ def unit_of(candidate, row: dict, rank_value: float | None) -> dict:
         "curve": recipe["curve"],
         "colormap": recipe["colormap"],
         "recipe": recipe["palette"],
-        "leveled": leveled_dir(row.get("picture")),
+        "leveled": leveled_dir(row.get("picture"), tiers),
         # The reading the row was DRAWN on, at the regime it was drawn at. The
         # sheet reads its own numbers off the picture it renders; these two are
         # not the same number and both are wanted.
@@ -198,11 +207,13 @@ def units_for(drawn: list[str], best: dict, order: dict | None) -> list[dict]:
             f"{missing[:3]}. The pool is built from the ledger, so this is a store that moved "
             f"under the draw."
         )
+    # Once for the plan, not once a unit: [`fractal_wallpapers.paths.rehome`].
+    tiers = Tiers.current()
     out = []
     for location in drawn:
         candidate = best[location]
         value = None if order is None else order.get(candidate.key)
-        out.append(unit_of(candidate, rows[candidate.key], value))
+        out.append(unit_of(candidate, rows[candidate.key], value, tiers))
     return out
 
 

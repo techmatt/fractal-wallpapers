@@ -385,10 +385,14 @@ def missing(candidates, held=None) -> list:
     names. That second case is the whole staleness rule and it is why the row
     carries the picture: a recipe whose picture was re-rendered has a signature
     that is no longer a reading of it, and nothing about a clock would say so.
+
+    The tiers are resolved **once** above the loop, which is a 246x difference a
+    row and the whole cost of this pass — see [`fractal_wallpapers.paths.rehome`].
     """
-    from fractal_wallpapers.paths import rehome
+    from fractal_wallpapers.paths import Tiers, rehome
 
     known = by_recipe() if held is None else held
+    tiers = Tiers.current()
     out = []
     for candidate in candidates:
         key = str(candidate.key)
@@ -397,7 +401,7 @@ def missing(candidates, held=None) -> list:
             continue
         if known.get(key) == picture:
             continue
-        where = rehome(picture)
+        where = rehome(picture, tiers)
         if where is not None:
             out.append((key, picture, Path(where)))
     return out

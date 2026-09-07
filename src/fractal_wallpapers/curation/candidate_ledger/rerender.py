@@ -17,7 +17,7 @@ from pathlib import Path
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import SCHEMA
-from fractal_wallpapers.paths import rehome, tracked_name, under
+from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 
 # --------------------------------------------------------------------------- #
 # Putting back a picture the row still names.
@@ -151,6 +151,8 @@ def re_render(
     cyclic = colorize.cyclic()
     band = colorize.band()
     table = groups_module.member_groups()
+    # Once above the loop, for [`fractal_wallpapers.paths.rehome`]'s 246x.
+    tiers = Tiers.current()
     jobs = []
     refused = []
     for row in wanted:
@@ -178,7 +180,7 @@ def re_render(
         if again != str(row["key"]):
             refused.append({"key": str(row["key"]), "the_render_path_would_make": again})
             continue
-        where = rehome(str(row["picture"]))
+        where = rehome(str(row["picture"]), tiers)
         if where is None:
             refused.append({"key": str(row["key"]), "why": "the stored name is not under the tree"})
             continue
@@ -370,9 +372,11 @@ def rescore(
         transform = scoring.transform_of(config)
         classes = int(config["classes"])
         log(f"[rescore] judge on {where}, {classes} classes, batch {int(batch)}")
+        # Once above the chunking, for [`fractal_wallpapers.paths.rehome`]'s 246x.
+        tiers = Tiers.current()
         for at in range(0, len(wanted), SCORE_CHUNK):
             chunk = wanted[at : at + SCORE_CHUNK]
-            paths = [rehome(str(row["picture"])) for row in chunk]
+            paths = [rehome(str(row["picture"]), tiers) for row in chunk]
             probabilities = train.score(
                 model, paths, transform, where, classes, {"batch_size": int(batch)}
             )

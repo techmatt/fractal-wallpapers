@@ -233,7 +233,7 @@ def regime_of(row: dict):
         ) from bad
 
 
-def gate_render(row: dict, colormap: str, cyclic: set[str], regime) -> Path | None:
+def gate_render(row: dict, colormap: str, cyclic: set[str], regime, tiers=None) -> Path | None:
     """The walk's own picture of this row, where it is still the recipe's picture.
 
     Four things have to hold, and any of them failing means re-rendering rather
@@ -258,7 +258,9 @@ def gate_render(row: dict, colormap: str, cyclic: set[str], regime) -> Path | No
         return None
     if view_name(row, colormap, cyclic, regime) != recorded:
         return None
-    where = rehome(ledger) or Path(ledger)
+    # `tiers` is the scoring pass's, resolved once above its loop rather than
+    # once a supply row — see [`fractal_wallpapers.paths.rehome`] for the 246x.
+    where = rehome(ledger, tiers) or Path(ledger)
     picture = walk_module.views_dir(where.parent) / name
     if not picture.is_file():
         return None
@@ -340,6 +342,7 @@ def score(
     batch. Closing a reach gap is the second thing, and scoring the ledgers whole
     is the first; they are separate legs on purpose.
     """
+    from fractal_wallpapers import paths as paths_module
     from fractal_wallpapers.models import scoring, ship, train
 
     rows, diagnostics = gate_survivors(paths)
@@ -360,8 +363,9 @@ def score(
     tally: dict[str, int] = {}
     pictures: list[Path] = []
     regimes: list[str] = []
+    tiers = paths_module.Tiers.current()
     for index, row in enumerate(rows, start=1):
-        picture, how, spelled = _picture_for(row, colormap, cyclic)
+        picture, how, spelled = _picture_for(row, colormap, cyclic, tiers)
         tally[how] = tally.get(how, 0) + 1
         pictures.append(picture)
         regimes.append(spelled)
@@ -434,7 +438,7 @@ def score(
     }
 
 
-def _picture_for(row: dict, colormap: str, cyclic: set[str]) -> tuple[Path, str, str]:
+def _picture_for(row: dict, colormap: str, cyclic: set[str], tiers=None) -> tuple[Path, str, str]:
     """`(picture, how, regime)` — the picture this row's score is read off.
 
     A row that states a regime is read at the one it states, off the gate render
@@ -449,7 +453,7 @@ def _picture_for(row: dict, colormap: str, cyclic: set[str]) -> tuple[Path, str,
     regime = READ_REGIME if stated is None else stated
     spelled = regime.spelled
     if stated is not None:
-        picture = gate_render(row, colormap, cyclic, regime)
+        picture = gate_render(row, colormap, cyclic, regime, tiers)
         if picture is not None:
             return picture, GATE, spelled
     directory = view_dir(regime)

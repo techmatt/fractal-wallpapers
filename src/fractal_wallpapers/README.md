@@ -68,6 +68,22 @@ snapshot for the whole file so the tier of `artifacts/tiles` is decided once
 rather than stat-ed on two disks a million times.
 `tests/test_storage_tiers.py` is the guard over all of it.
 
+**Hand `tiers` in on any loop over a store, and it is not a micro-optimization.**
+Measured on this machine 2026-09-06 through `flatness.missing` over 20,000 ledger
+rows: **1,777 µs a row bare against 8.6 µs with the tiers handed in**, which over
+the candidate ledger's 308,419 rows is **548 s against 2.7 s**. The loop is correct
+either way and simply sits there — it cost one killed pass during the ckpt-112
+promotion sweep before anybody looked. Resolve `Tiers.current()` **once above the
+loop**. The passes that do are `candidate_ledger.delete_pictures`,
+`candidate_ledger.rerender`'s job build and its rescore chunking,
+`flatness.missing`, `signatures.missing`, `curation.rules.clouds_for`,
+`curation.pool_draw.units_for`, `curation.tentative.page`, `curation.intake`'s
+scoring pass, and `curate distinct`'s two `picture_of` closures. What is
+deliberately left per-call is a **single** resolution — `cli.common.anchored`,
+`curation.binding.anchored` — and the per-card resolutions in the HTML sheets
+(`hunt._card`, `mine._card`, `solve`'s release frame), where the call already opens
+a JPEG to make a thumbnail and the resolution is not what the card costs.
+
 **Two places used to build a tree path without asking**, found by
 `AUDIT_artifacts_inventory` and closed on 2026-09-02: `palettes/carriers.py`'s
 `RECOLOUR_DIR` and `models/decisions.py`'s `FIGURE` were both a bare

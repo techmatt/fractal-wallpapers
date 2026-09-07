@@ -259,9 +259,13 @@ def clouds_for(candidates, cache: int | None = None):
     from pathlib import Path
 
     from fractal_wallpapers.palettes import pixel_clouds
-    from fractal_wallpapers.paths import rehome
+    from fractal_wallpapers.paths import Tiers, rehome
 
     pictures = {candidate.key: candidate.picture for candidate in candidates}
+    #: The tiers resolved once for the pass rather than once a name. The memo
+    #: below already spares a repeat ask; this is what the FIRST ask costs, and
+    #: it is 246x — see [`fractal_wallpapers.paths.rehome`].
+    tiers = Tiers.current()
     #: `key -> the resolved path, or None`. Kept for the life of the pass, because
     #: this is asked once per signature MADE and both halves of it are dear:
     #: [`paths.rehome`] resolves the tier settings and the subtree, and `is_file`
@@ -280,7 +284,7 @@ def clouds_for(candidates, cache: int | None = None):
         held = pictures.get(key)
         where = None
         if held:
-            found = Path(rehome(held))
+            found = Path(rehome(held, tiers))
             where = found if found.is_file() else None
         resolved[key] = where
         return where

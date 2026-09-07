@@ -230,17 +230,14 @@ def test_the_shipped_key_records_every_label_row_it_was_fitted_on():
     """A selection rule fit on human labels is a category no eligibility guard
     covers. The record is the guard, and it has to reconcile with the artifact.
 
-    **Uniqueness is per store and not global, which is a measured fact about the
-    stores rather than a loosening.** This asserted a globally distinct recipe key
-    until 2026-09-06 and that held only while no picture sat in both corpora. On
-    the 3,278-row fit of that day, **52 do** — the same render, the same batch name
-    and the same tier, at two different lines of two same-named files in
-    `smooth_render` and `strange_render`. Each is therefore one label counted twice
-    by the fit, once on each kind's side of the out-of-fold reading; at 1.6% of the
-    population it moves nothing anybody reads, and de-duplicating it means deciding
-    which store owns a mode both hold, which is not a question a guard settles.
-    What is pinned here is what the record actually claims: no **label row** is
-    recorded twice, and no render is consumed twice **within** a kind.
+    **One render is one row, globally and not merely per store.** It was per
+    store for one afternoon of 2026-09-06, when 52 rows of that day's 3,278-row
+    fit turned out to be 52 renders labelled in *both* corpora — the same place,
+    mode, curve, map and palette pass, at two lines of two same-named files —
+    each counted twice, once on each kind's side of the out-of-fold reading, with
+    its lineage group and its fold assigned twice too.
+    [`rank_key.one_render_one_row`] settles it at the read, in the store the
+    render's routed mode names, and the label stores are untouched.
     """
     document = json.loads(rank_key.artifact_path().read_text(encoding="utf-8"))
     rows = [
@@ -250,7 +247,19 @@ def test_the_shipped_key_records_every_label_row_it_was_fitted_on():
     ]
     assert len(rows) == document["population"]["rows"]
     assert len({(row["kind"], row["file"], row["line"]) for row in rows}) == len(rows)
-    assert len({(row["kind"], row["recipe_key"]) for row in rows}) == len(rows)
+    assert len({row["recipe_key"] for row in rows}) == len(rows), (
+        "a render is in the fit twice. Every consumed row joins one ledger row, so a repeated "
+        "recipe key is one picture counted on both kinds' sides — see `one_render_one_row`."
+    )
+    # The same thing said off the join: every consumed row is one of the distinct
+    # ledger rows the join found, so the population cannot exceed them.
+    assert len(rows) <= document["population"]["joined_the_ledger"]
+    crossover = document["population"]["crossover"]
+    assert crossover["ambiguous"] == [], (
+        "a render is in both stores and the router does not name a store holding it. That is "
+        "not a tiebreak a fit invents; it is reported and the rows are left whole."
+    )
+    assert set(crossover["kept_in"]) <= set(rank_key.KINDS)
     for row in rows:
         assert row["kind"] in rank_key.KINDS
         assert 1 <= row["tier"] <= 4
@@ -263,3 +272,94 @@ def test_the_shipped_key_was_fitted_on_the_flatness_column_that_ships():
     assert document["flatness"]["column"] == flatness.COLUMN
     assert document["flatness"]["cell"] == flatness.CELL
     assert document["flatness"]["threshold"] == flatness.THRESHOLD
+
+
+# --------------------------------------------------------------------------- #
+# One render, one row.
+# --------------------------------------------------------------------------- #
+def labelled(kind: str, identity, mode: str = "itinerary", **row) -> dict:
+    """One entry of the fit's label side, in the shape [`rank_key.fit`] builds."""
+    return {
+        "kind": kind,
+        "identity": identity,
+        "row": {"mode": mode, "score": 4, "batch": "b", "identity": identity, **row},
+    }
+
+
+def deduplicated(labels):
+    """[`rank_key.one_render_one_row`] with its log line swallowed."""
+    return rank_key.one_render_one_row(labels, log=lambda *_args, **_flags: None)
+
+
+def test_a_render_labelled_in_both_stores_is_counted_in_the_store_its_mode_routes_to(monkeypatch):
+    """The store is decided by the router and by nothing else — not by which
+    corpus is larger, and not by which of the two rows was written first."""
+    from fractal_wallpapers.labeling import finished
+
+    monkeypatch.setattr(finished, "render_key", lambda row: row["identity"])
+    monkeypatch.setattr(finished, "routes_to", lambda row, extend=False: "smooth_render")
+    labels = [
+        labelled("smooth_render", ("place", "itinerary")),
+        labelled("strange_render", ("place", "itinerary")),
+        labelled("strange_render", ("elsewhere", "stripe"), mode="stripe"),
+    ]
+    kept, record = deduplicated(labels)
+
+    assert [entry["kind"] for entry in kept] == ["smooth_render", "strange_render"]
+    assert [entry["identity"] for entry in kept] == [
+        ("place", "itinerary"),
+        ("elsewhere", "stripe"),
+    ]
+    assert record["renders_in_both_stores"] == 1
+    assert record["label_rows_dropped"] == 1
+    assert record["kept_in"] == {"smooth_render": 1}
+    assert record["ambiguous"] == []
+
+
+def test_a_crossover_the_router_cannot_settle_is_kept_whole_and_reported(monkeypatch):
+    """`render_key` does not carry the geometry and the flatness register is keyed
+    on it, so two rows of one render *can* route differently. Inventing a tiebreak
+    there would be deciding which store owns a mode on no evidence."""
+    from fractal_wallpapers.labeling import finished
+
+    monkeypatch.setattr(finished, "render_key", lambda row: row["identity"])
+    monkeypatch.setattr(finished, "routes_to", lambda row, extend=False: f"{row['side']}_render")
+    labels = [
+        labelled("smooth_render", ("place", "itinerary"), side="smooth"),
+        labelled("strange_render", ("place", "itinerary"), side="strange"),
+    ]
+    kept, record = deduplicated(labels)
+
+    assert len(kept) == 2, "an ambiguous crossover loses no row"
+    assert record["renders_in_both_stores"] == 1
+    assert record["label_rows_dropped"] == 0
+    assert record["kept_in"] == {}
+    assert record["ambiguous"] == [
+        {
+            "place": "place",
+            "mode": "itinerary",
+            "held_by": ["smooth_render", "strange_render"],
+            "routes_to": ["smooth_render", "strange_render"],
+        }
+    ]
+
+
+def test_a_render_only_one_store_holds_is_never_touched(monkeypatch):
+    """Which is every render but 117 of them, so it is the case worth being sure
+    about: the router is not even asked."""
+    from fractal_wallpapers.labeling import finished
+
+    def refuse(row, extend=False):
+        raise AssertionError("the router was asked about a render only one store holds")
+
+    monkeypatch.setattr(finished, "render_key", lambda row: row["identity"])
+    monkeypatch.setattr(finished, "routes_to", refuse)
+    labels = [
+        labelled("smooth_render", ("a", "smooth"), mode="smooth"),
+        labelled("strange_render", ("b", "stripe"), mode="stripe"),
+    ]
+    kept, record = deduplicated(labels)
+
+    assert kept == labels
+    assert record["renders_in_both_stores"] == 0
+    assert record["label_rows_dropped"] == 0

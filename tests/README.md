@@ -349,6 +349,17 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+13 that reconciles exactly, on a box serving three label pages.**
+`FOLLOWUP_ckpt112_identity_pin_rehome_dedup_0906`, 2026-09-06, `.[dev,models]`
+with a release engine, three `label serve` processes up on 8020-8022 while it ran.
+**117.71 s over 3,843, 123 deselected** fast — 3,966 against the 3,953 below, and
+the +13 is exactly what landed: `test_leveled_identity.py`'s ten (nine fast, one
+slow) plus three in `test_rank_key.py`. The new file's fast half is 1.36 s of the
++4.11 s; the rest is not attributed, and the label servers are the obvious
+candidate — this is a reading taken beside something, which is why it says so.
+No slow lane; the one slow guard added was run alone, **32.47 s over 10** with the
+fast nine beside it.
+
 **A -11 that reconciles exactly, and the first reading here with no slow lane
 beside it.** `REMOVE_ckpt112_stratum_score_0906`, 2026-09-06, idle box,
 `.[dev,models]` with a release engine. **113.60 s over 3,831, 122 deselected**

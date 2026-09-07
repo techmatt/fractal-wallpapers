@@ -464,22 +464,37 @@ def population(only: str | None = None) -> tuple[list[Picture], dict]:
     the other head's instrument, and it is not on any sheet this candidate is
     read against. Everything else trains, and the selection slice is drawn out of
     it afterwards over places.
+
+    **A render both stores hold is one picture and is counted once**, in the
+    store its routed mode names — [`fractal_wallpapers.labeling.finished
+    .crossovers`], which is the same read-side arrangement
+    [`finished_train.population`] uses, asked of the same router. 117 renders are
+    labelled in both today and this pooled read held every one of them twice,
+    under identical job names with identical crops in the two caches. Nothing is
+    written to a store.
     """
     import random
 
     forbidden = pinned_everywhere()
+    scored = {kind: finished.resolved(kind).scored() for kind in KINDS}
+    leave_out, crossover = finished.crossovers(
+        [(kind, row) for kind in KINDS for row in scored[kind]]
+    )
     pictures: list[Picture] = []
     absent: list[str] = []
     per_kind: dict[str, dict] = {}
     for kind in KINDS:
         own = set(finished.pinned(kind))
-        rows = finished.resolved(kind).scored()
+        rows = scored[kind]
         crops = renders.crop_dir(kind)
         # One listing of the crop directory rather than a stat a row: see
         # [`renders.present`] for the measurement.
         on_disk = renders.present(kind)
-        counted = {"rows": len(rows), "eval": 0, EXCLUDED: 0, "train_side": 0}
+        counted = {"rows": len(rows), "eval": 0, EXCLUDED: 0, "train_side": 0, "crossover": 0}
         for row in rows:
+            if (kind, finished.render_key(row)) in leave_out:
+                counted["crossover"] += 1
+                continue
             name = renders.job_name({**row, "_head": kind})
             path = crops / f"{name}.jpg"
             if f"{name}.jpg" not in on_disk:
@@ -549,6 +564,7 @@ def population(only: str | None = None) -> tuple[list[Picture], dict]:
         "pinned_locations": {kind: len(finished.pinned(kind)) for kind in KINDS},
         "pinned_locations_union": len(forbidden),
         "per_kind": per_kind,
+        "crossover": crossover,
         "excluded_pictures": sum(1 for p in pictures if p.side == EXCLUDED),
         "excluded_locations": len({p.place for p in pictures if p.side == EXCLUDED}),
         "selection": {
