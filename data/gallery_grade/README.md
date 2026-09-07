@@ -100,6 +100,11 @@ between them are what this head has to learn.
   but p05 is **−0.2518** and p95 **+0.1627**, with **20 of 334** reading `P(≥4)` under
   0.5 at the geometry the person is judging them at. Both are on the row so a later
   reader can attribute a disagreement to the regime rather than to the labeler.
+  **The two readings correlate at r = 0.62**, which is the number that says how to
+  treat them: high enough that the draw did select the pictures it meant to, far too
+  low to use either as a stand-in for the other. The disagreement is centred and
+  heavy-tailed — a median of nothing with a fifth of a probability in each tail — so
+  an aggregate over the store hides it and a per-row join is the only honest read.
 
 ## The page is blind, and that is the point
 

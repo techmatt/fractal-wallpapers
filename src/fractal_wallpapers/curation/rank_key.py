@@ -28,6 +28,28 @@ Those are the **shared-weight** numbers, which are the ones this ships on. The
 per-kind arm with a nested inner selection reads higher and quoting it for a
 shared fit would over-read what is shipped.
 
+## ⚠ On the current corpus the key no longer beats the judge, 2026-09-06
+
+**The margin above is a reading on the 1,051 rows of 2026-08-28 and it does not
+reproduce.** `curate rank-key fit` re-joined the label stores after they tripled
+and the fit is now over **3,278 rows**. On that corpus the shipped four-column
+form reads `d = -0.0063` smooth and `-0.0008` strange: **the key buys nothing over
+raw `p_ge4` on either kind.**
+
+**It is the corpus and not any one column**, which was checked the only way that
+separates them — by holding the population fixed and moving only the form. The
+five-column form on those same 3,278 rows reads `-0.0146` smooth and `+0.0029`
+strange, so it does not beat the judge there either. What moved is the
+**incumbent**: its own smooth AUC went **0.671 to 0.831** as the store grew. The
+columns beside it did not stop carrying signal; the judge stopped leaving that
+much on the table.
+
+Nothing was changed on this reading. It is recorded because the sentence above —
+*every alternative tried alone loses to it, but the ones beside it are
+orthogonal* — was earned on a corpus a third the size of today's, and a session
+reaching for this key as an improvement over `p_ge4` should reach for a re-fit
+first. `curate rank-key fit` prints these figures on whatever the stores hold.
+
 ## What dropping the stratum cost, measured rather than assumed
 
 The five-column form read 0.779 / 0.850 on that population. Removing the column

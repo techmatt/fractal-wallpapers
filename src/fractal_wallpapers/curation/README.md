@@ -313,6 +313,29 @@ This is the rule that would have caught the inverted near-band manifest —
 whole unit spent because *free slot* was inferred from *not taken by a floor arm*
 instead of being subtracted directly.
 
+#### The prune's binding surface is the pairs over K, and it is tiny
+
+**The same one-sidedness bounds what a prune can do at all, and the bound is the
+number to reach for before reading any pool-wide rank statistic.** Measured over
+the ledger the ckpt-112 mine left, 2026-09-06: **119,231 pairs, of which 106 hold
+more than the keep** — 0.09%. `retention.decide` sorts a pair and takes the first
+K, so a pair holding K or fewer is kept **whole whatever the ranking says**. The
+prune's whole binding surface is those 106 pairs.
+
+That is a consequence of the flip and it will not last. The pool was pruned at
+keep 3 while the keep was 3, so almost every pair was cut to at most 3 before the
+keep rose to 5 — which leaves nearly every pair under the new keep with room in
+it, and leaves the ranking with nothing to decide. Pairs will refill and the
+surface will grow; a reading of it is dated, not structural.
+
+**So a pool-wide count of rank changes does not price a change to the rank key,
+and the two numbers differ by three orders of magnitude.** Dropping
+`stratum_score` moved the top-ranked row on **17,335 of the 102,169 pairs holding
+more than one row (17.0%)** — and changed the *kept set* on **31 pairs, 62 rows of
+308,419**. Only the second number is what the merge would have done differently.
+Quote a top-row count as what it is, a statement about the ordering, and price a
+key against the pairs over K.
+
 **And at K = 5 the manifest cut from it stops narrowing anything**, which is the
 100.0% row of the table above read as a leg would spend it: over
 `smooth`/`stripe`/`tia` at `--min-slots 2` it names 23,597 places against the
@@ -917,6 +940,49 @@ things were established before deleting any:
 **194,058 directories were swept, 12,089 excluded** — those four named subtrees, the
 released and parity pictures, the label sheets' own `full/` renders, and everything
 belonging to a leg the ledger cannot answer for.
+
+#### A prune cannot take a surviving row's colormap, and the reason is structural
+
+**The question keeps being asked and it has a closed answer: no prune can delete a
+`.leveled/` that a surviving row still resolves through.** It is worth stating as a
+property rather than as a count, because a count is re-taken after every merge and
+this does not move.
+
+Three spellings of the same expression, and the whole argument is that they are the
+same expression. `prune` builds its doomed list as the `picture` of each row **whose
+key is not in the kept set** and hands only that list to `delete_pictures`;
+`_delete_colormap` derives `<parent>/<stem>.leveled` from that row's own picture;
+and `pool_draw.leveled_dir` derives `<parent>/<stem>.leveled` from a **surviving**
+row's own picture. So a prune can only take a live directory if a dropped row and a
+surviving row name the same picture — which is not a rank question or a policy
+question but an identity one.
+
+**They cannot, and it is measured.** Over all **308,419 rows** of the ledger the
+ckpt-112 mine left, 2026-09-06: 308,419 distinct `(directory, stem)` pairs, **zero
+carried by more than one row**, every row naming a picture and every picture inside
+the tree. The identity holds two different ways at once, which is why it is robust
+to a leg naming its files differently: **294,893 rows name the picture after the
+recipe key**, which is the ledger key itself and unique across the whole store —
+`depth` 286,843, `mine` 4,476, `remode` 2,938, `hunt` 636 — and the other **13,526
+name it by attempt index inside one run directory**, unique within that directory,
+those being `runs` 11,402 and `reframe_draw` 2,124. Neither shape can put two rows
+on one path, and the two shapes cannot collide with each other either, since no run
+directory is shared between them.
+
+**Read the same pass for the other half of the transaction**: 308,419 of 308,419
+pictures were on disk, none missing, so the pictures-then-records ordering completed
+cleanly through the afternoon's prune of 29,402 rows. And **106,390 surviving rows
+(34.5%) resolve a `.leveled/`** — that is the live set `pool_draw` can put on a plan,
+against the 373 the first gallery-grade draw actually reached.
+
+⚠ **None of this defends a standalone sweep, and the 2026-08-30 one is the proof.**
+The property belongs to `delete_pictures` because the row goes in the same
+transaction, which is what its own docstring says and where it says the argument
+stops. A sweep that ranks colormaps on their own has no such row, and that is how
+about thirty `gallery_grade` rows came to be judged through a colouring their
+candidate score was never read on — see `data/batch_caveats.md`'s
+*NEVER-AN-INSTRUMENT*. Nothing here has been repaired; the finding is that there is
+nothing on the prune path to repair.
 
 **The orphan JPEG pile is not what it looks like.** 6,529 pictures in the candidate
 directories carry no ledger row, but **none of them is unnamed**: 7,466 more are
