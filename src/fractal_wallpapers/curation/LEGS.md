@@ -638,6 +638,22 @@ The arm is worth its clock on those terms: at **6.2 engine seconds per KEPT q4
 clear** and **28.4 kept q4 clears a leg minute**, `night_a2` tied the recolour arm as
 the cheapest buy of that night and beat both openers by 5-7x.
 
+⚠ **At the keep of 5 the free-slot half stopped narrowing anything, and the whole
+of `smooth`/`stripe`/`tia`'s near band is four engine-hours.** Measured
+2026-09-06 by `MINE_ckpt112_two_arm_pilot_0906`, on the store the keep flip left:
+`free-slots --mode smooth --mode stripe --mode tia --min-slots 2` names **23,597
+places**, and **23,619** hold a candidate in one of those modes at all — so the
+manifest is 99.9% of the population and the subtraction it exists to replace has
+nothing left to take away. What bounds the arm is the **band**: only **2,954** of
+those 23,597 hold a best field candidate between the two bars, and every one of the
+2,954 is in the manifest, so `--near-places` and the unnarrowed draw plan the same
+places here. Cut the manifest anyway — it is a subtraction rather than an inference,
+it costs seconds, and it is what refuses the inverted shape above — but **do not
+size a leg on the belief that it narrowed**. `armB_freeslots_0906` planned the whole
+2,954 at width 12, made all **35,448** candidates with **nothing stopped for
+budget**, and spent **14,318 engine seconds of a 17,500-second half**: the arm could
+not absorb an even split of one afternoon, let alone a night.
+
 **It will also exhaust its population far inside its budget, because the band is
 narrow.** Of `thin_b1`'s 222 places every one held a candidate in a roster mode and
 only **38** sat between the two bars, so the arm planned 912 candidates and finished
