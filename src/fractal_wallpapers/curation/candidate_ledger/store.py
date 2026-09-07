@@ -37,7 +37,7 @@ a run **read** rather than promising that a recipe has a score.
 ## Where it lives
 
 The rows are megabytes and the history guard acts at 1 MiB a file, so this gets
-what [`curation.gallery_store`] and the supply sidecar get: the file under
+what the supply sidecar and the neutral-render embeddings get: the file under
 `artifacts/`, a copy on the archive tier, and a **manifest** in the history
 saying how many rows, how many bytes and which sha256 that copy is.
 """
@@ -84,11 +84,14 @@ ENGINE_FIELD = "engine"
 
 
 #: Which store a backfilled row came out of. A run records every scored candidate
-#: in the tracked release store; a gallery pass records its attempts in
-#: [`curation.gallery_store`] instead.
+#: in the tracked release store; a retired gallery pass recorded its attempts in
+#: its own untracked gate store instead.
 FROM_RELEASE = "release"
 
 
+#: **Kept though nothing writes it any more.** The gate store was retired on
+#: 2026-09-06 with the passes, so [`rebuild.sources`] stamps only `FROM_RELEASE` —
+#: but 14,316 rows already in the ledger carry this one and readers split on it.
 FROM_GALLERY = "gallery"
 
 

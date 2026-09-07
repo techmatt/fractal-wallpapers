@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import durability, gallery_store, records, rescore, run_layout
+from fractal_wallpapers.curation import records, rescore, run_layout
 
 
 def released(run: str, candidate: str, head: str, **scores) -> dict:
@@ -54,15 +54,8 @@ def test_a_gallery_seat_reads_the_picture_of_the_run_that_made_it() -> None:
 
 
 @pytest.fixture
-def isolated_pool(tmp_path, monkeypatch):
-    """Both halves of the pool under `tmp_path`: the tracked store and the pass stores."""
-    monkeypatch.setattr(gallery_store, "store_root", lambda: tmp_path / "gallery_store")
-    monkeypatch.setattr(
-        gallery_store,
-        "backup_path",
-        lambda pass_id: tmp_path / "backup" / str(pass_id) / gallery_store.STORE_NAME,
-    )
-    monkeypatch.setattr(durability, "rehome", lambda stored: None)
+def isolated_pool(tmp_path):
+    """The pool under `tmp_path`. One store since the gate store was retired."""
     records.use(tmp_path)
     yield tmp_path
     records.use(None)
@@ -287,34 +280,34 @@ def test_a_reading_never_lands_where_a_cut_would_read_it_by_accident() -> None:
         }
 
 
-def test_a_reading_goes_back_to_the_store_the_row_came_from(isolated_pool) -> None:
-    """A pass's attempts are not in the history, and a re-score must not put them there."""
-    attempt = records.decision(
-        run="gallery1",
-        stage=records.GATE,
-        candidate="0007",
-        verdict="kept",
-        row={"partition": "mandelbrot", "head": "smooth_render", "p_ge3": 0.5},
-    )
-    seat = records.decision(
-        run="gallery1",
-        stage=records.RELEASE,
-        candidate="0007",
-        verdict=records.RELEASED,
-        collection=records.GALLERY,
-        row={"partition": "mandelbrot", "head": "smooth_render", "p_ge3": 0.5},
-        picture="release/0007.png",
-    )
-    gallery_store.write("gallery1", [attempt])
-    records.write_decisions(records.RELEASE, "gallery1", [seat])
+def test_a_reading_goes_back_to_the_one_store_the_pool_is_in(isolated_pool) -> None:
+    """The pool is one store, so a reading has one place to go and is grouped by run.
+
+    It was two until 2026-09-06 and `_write` routed by *stage*: a `gate` row was a
+    retired gallery pass's attempt and went to that pass's own untracked store,
+    whose manifest had to be saved again in the same call. Both stores gone, the
+    routing is gone, and this is what has to fail if a second one comes back.
+    """
+    seats = [
+        records.decision(
+            run=run,
+            stage=records.RELEASE,
+            candidate="0007",
+            verdict=records.RELEASED,
+            collection=records.GALLERY,
+            row={"partition": "mandelbrot", "head": "smooth_render", "p_ge3": 0.5},
+            picture="release/0007.png",
+        )
+        for run in ("gallery1", "run9")
+    ]
+    for seat in seats:
+        records.write_decisions(records.RELEASE, seat["run"], [seat])
     block = {"head": "smooth_render", "p_ge3": 0.9}
 
-    written = rescore._write([attempt, seat], {attempt["key"]: block, seat["key"]: block}, print)
+    written = rescore._write(seats, {seat["key"]: block for seat in seats}, print)
 
-    assert written == {"gallery1/gate": 1, "gallery1/release": 1}
-    assert gallery_store.read("gallery1")[0][rescore.BLOCK] == block
-    tracked = records.read_decisions(records.RELEASE, "gallery1")
-    assert [row["candidate"] for row in tracked] == ["0007"]
-    assert tracked[0][rescore.BLOCK] == block
-    # The manifest was saved again in the same call, so the store still reads whole.
-    assert gallery_store.check("gallery1", log=lambda _line: None)["verdict"] == "ok"
+    assert written == {"gallery1/release": 1, "run9/release": 1}
+    for seat in seats:
+        tracked = records.read_decisions(records.RELEASE, seat["run"])
+        assert [row["candidate"] for row in tracked] == ["0007"]
+        assert tracked[0][rescore.BLOCK] == block

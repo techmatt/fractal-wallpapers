@@ -198,16 +198,31 @@ def current_pass(rows) -> str | None:
     Computed AFTER `exclude_run` and off the rows in hand, deliberately: a caller
     asking what the collection looked like without the newest pass should get the
     pass before it, not an empty gallery.
-    """
-    from fractal_wallpapers.curation import gallery_store
 
+    **Ordered off the names in hand, not off a store.** This read the gallery
+    passes' own tracked directory until that store was retired on 2026-09-06; the
+    ordering it wanted is the pass ordinal, which is in the name, so it is derived
+    rather than looked up. A name that is not `<prefix><digits>` sorts last and
+    keeps its own order, which is what the store's own key did.
+    """
     named = {
         str(row.get("run"))
         for row in records.served(rows)
         if row.get("collection") == records.GALLERY
     }
-    ordered = [name for name in gallery_store.passes() if name in named]
+    ordered = sorted(named, key=_pass_ordinal)
     return ordered[-1] if ordered else None
+
+
+#: What a gallery pass's name starts with, and the prefix its ordinal is read off.
+PASS_PREFIX = "gallery"
+
+
+def _pass_ordinal(name: str) -> tuple:
+    """Sort key over pass names: the numbered ones in order, anything else last."""
+    if name.startswith(PASS_PREFIX) and name[len(PASS_PREFIX) :].isdigit():
+        return (0, int(name[len(PASS_PREFIX) :]), name)
+    return (1, 0, name)
 
 
 def by_collection(index: ServedLocations) -> list[tuple]:

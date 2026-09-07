@@ -1,9 +1,18 @@
 """Building the ledger out of the stores that predate it.
 
-The two decision stores — a run's tracked release rows and [`curation.gallery_store`]'s
-four retired passes — read once each into one row per recipe, with the colour and
-the texture flag resolved on the way through. It ends at [`merge.merge`] like
-every other writer.
+The tracked release store, read once into one row per recipe, with the colour and
+the texture flag resolved on the way through. It ends at [`merge.merge`] like every
+other writer.
+
+⚠ **This backfill is no longer complete, and that is a decision rather than a
+gap.** It read a second store until 2026-09-06: the four retired gallery passes'
+attempt rows, stamped [`store.FROM_GALLERY`], which were about a third of what a
+backfill could reach. That store was retired with the passes, so a rebuild from
+scratch would now produce a ledger short those rows. It is not a recovery path
+anybody should need — the ledger is durable, mirrored and checked, and
+`FROM_GALLERY` rows already in it are untouched and still read — but a rebuild is
+no longer a way to get them back. The passes' seated **winners** are release rows
+and still arrive here.
 """
 
 from __future__ import annotations
@@ -11,12 +20,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import gallery_store, recipes, records
+from fractal_wallpapers.curation import recipes, records
 from fractal_wallpapers.curation.candidate_ledger import door as door_module
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import (
-    FROM_GALLERY,
     FROM_RELEASE,
     MADE_IT,
     SCHEMA,
@@ -28,21 +36,20 @@ from fractal_wallpapers.paths import tracked_name
 # The backfill.
 # --------------------------------------------------------------------------- #
 def sources() -> list[dict]:
-    """Every candidate on record in either store, each stamped with which one.
+    """Every candidate on record in the release store, stamped with which store.
 
-    The same two stores [`gallery.pool_rows`] reads, and read here **without its
-    three exclusions**. A row this pass wrote, a row a person rejected and a row
-    with no score are all candidates that were rendered, and the ledger's whole
-    claim is that it holds every picture that exists.
+    The same store [`rescore.pool_rows`] reads, and read here **without its three
+    exclusions**. A row this pass wrote, a row a person rejected and a row with no
+    score are all candidates that were rendered, and the ledger's whole claim is
+    that it holds every picture that exists.
+
+    The stamp is kept though there is one store to stamp: rows already in the
+    ledger carry [`store.FROM_GALLERY`] and readers split on it.
     """
-    out = []
-    for stamped, rows in (
-        (FROM_RELEASE, records.read_decisions(records.RELEASE)),
-        (FROM_GALLERY, gallery_store.read()),
-    ):
-        for candidate in rows:
-            out.append({**candidate, "_store": stamped})
-    return out
+    return [
+        {**candidate, "_store": FROM_RELEASE}
+        for candidate in records.read_decisions(records.RELEASE)
+    ]
 
 
 def _picture_of(source: dict) -> Path:

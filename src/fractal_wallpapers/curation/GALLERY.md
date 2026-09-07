@@ -13,10 +13,14 @@ phase: a quality-weighted farthest-point draw over the neutral embeddings picked
 N locations, each chosen point bought a small judged attempt on its own
 neighbourhood, and a sequential walk seated the winners under two floors, the
 one-wallpaper-per-location rule and the colour ceiling. Four passes ran under it —
-`gallery1` through `gallery4` — and everything they wrote is still here and still
-read: the pass records and slot rows in `data/curation/gallery/<pass>/`, the
-winners in `data/curation/release/<pass>/`, the attempt rows behind
-[`gallery_store`], and 14,316 of the candidate ledger's rows.
+`gallery1` through `gallery4` — and **what they wrote is now their winners and
+nothing else**: the rows in `data/curation/release/<pass>/`, and 14,316 rows in
+the candidate ledger. Their pass records, slot rows, manifests and attempt store
+were retired on 2026-09-06, Matt's ruling. Two things were established before
+deleting: the numbers a doc priced a full-size leg off already sit in
+[`MEASUREMENTS.md`](MEASUREMENTS.md), and no label row in any store resolved
+through that store — all 26,066 of them resolve on their own join, `n_unkeyed`
+zero in every store before and after.
 
 **What replaced it is propose-then-choose.** `curate solve` is the whole
 choosing now — off the candidate ledger rather than off a draw's own attempts, so
@@ -33,8 +37,13 @@ the one leg behind `curate solve` is the section below.
 Three commands went with the phase: `curate gallery` itself, `curate draw` (its step-4
 point draw alone) and `curate on-demand` (the reconciliation of a pass's
 extra-pick log with its attempt store, which had already run on every pass it was
-written for). `curate gallery-store` stays, because the four passes' attempt rows
-are a third of the ledger's backfill.
+written for). `curate gallery-store` outlasted them by nine days, because the four
+passes' attempt rows were about a third of what the ledger's backfill could reach
+— and it went on 2026-09-06 as well. What that costs is stated at
+[`candidate_ledger.rebuild`](candidate_ledger/rebuild.py): a rebuild from scratch
+would now produce a ledger short those rows. The rows already in the ledger are
+untouched, and the ledger is durable, mirrored and checked, so a rebuild is not a
+path anybody should be on.
 
 What the pass established and the rest of this file still rests on is below: the
 **colour ceiling** and its targets, which `curate solve` reads; the **binding reason** an empty seat records, which is how the four passes'
@@ -2188,7 +2197,8 @@ the flatness column, each standardized by the fit's own constants.
 
 **Four columns since 2026-09-06**, and the fifth is worth knowing about. It was a
 calibration stratum, `composite` 2 / `other` 1 / `thin_colour` 0, and the bottom level
-read `expressed`'s thin-swatch list — so the key had a soft colour nudge in it, acting
+read the colour-expression census's thin-swatch list — so the key had a soft colour
+nudge in it, acting
 at the solve and again at the merge prune where it deletes rows permanently. Matt ruled
 that out: the colour ceiling already holds any one colour down as a hard constraint at
 the seat, and no cell is owed seats.

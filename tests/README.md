@@ -151,8 +151,8 @@ is every machine but Matt's — CI included, so none of this costs CI anything.
 There are exactly two roots and everything under `artifacts/` resolves through
 one of them. `paths.HOT_ROOT_VARIABLE` and `paths.ARCHIVE_ROOT_VARIABLE` are the
 whole redirect: the candidate ledger's two row files, the flatness and signature
-sidecars, the supply sidecar, the expressed readout and every durable copy all
-address a root, so setting the two moves all of them at once. **Set them with
+sidecars, the supply sidecar and every durable copy all address a root, so setting
+the two moves all of them at once. **Set them with
 `monkeypatch.setenv` and redirect nothing else you do not have to.**
 
 A per-accessor redirect is complete only against the call graph on the day it was
@@ -348,6 +348,27 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+**-17 that reconciles exactly, and the 8 s of the entry below came back.**
+`FIX_ckpt113_legs_k_rot_and_retirements_0906`, 2026-09-07, idle box,
+`.[dev,models]` with a release engine. **118.80 s over 3,879, 124 deselected**
+fast — 4,003 against the 4,020 below. The -17 is two retirements and nothing else:
+**14** in `test_expressed.py`, deleted whole with the colour-expression census
+Matt ruled out, and **3** parametrized `gallery-store` rows in
+`test_nested_verbs.py`, deleted with the retired gallery passes' gate store. Slow
+**6:49 over 4,003, 0 skipped**, taken after the last edit. Both lanes ran with no
+render leg on the box.
+
+**Two guards changed shape rather than going, and the distinction is the point.**
+`test_curation_rescore`'s store-routing test pinned `_write` sending a `gate` row
+to a pass's own store; there is one store now, so it pins that instead and fails
+if a second appears. `test_unfilled_reason` read its whole population — nine empty
+seats over four passes — out of the deleted slot rows, and now carries those nine
+rows' four counters as a table. Neither is a weakening: the population cannot
+grow, nothing can write a tenth empty seat, and the reader under test is
+unchanged. **The 8.45 s the entry below could not attribute is gone**, on a lane
+17 tests smaller — which is not enough to call it, and the honest reading is still
+that both figures sit inside this lane's idle spread.
 
 **+20 that reconciles exactly, and a fast lane that moved 8 s with no slow test
 added.** `REFIT_ckpt113_fine_tier_head_and_seat_sheet_0906`, 2026-09-07, idle box,

@@ -86,22 +86,6 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate_spiral_scores",
         {"what": "restore", "force": True},
     ),
-    # A gallery pass's store is named by --pass on all three of its verbs.
-    (
-        "curate gallery-store check --pass p9",
-        "curate_gallery_store",
-        {"what": "check", "pass_id": "p9"},
-    ),
-    (
-        "curate gallery-store save --pass p9",
-        "curate_gallery_store",
-        {"what": "save", "pass_id": "p9"},
-    ),
-    (
-        "curate gallery-store restore --pass p9 --force",
-        "curate_gallery_store",
-        {"what": "restore", "pass_id": "p9", "force": True},
-    ),
     # The candidate ledger: eleven verbs, and the group that carried the most
     # flags none of its verbs shared.
     (
@@ -532,11 +516,6 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "save": (),
         "restore": ("--force",),
     },
-    "gallery-store": {
-        "check": ("--pass",),
-        "save": ("--pass",),
-        "restore": ("--pass", "--force"),
-    },
     "candidate-ledger": {
         "backfill": ("--recolour",),
         "census": ("--n", "--out"),
@@ -783,18 +762,20 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Eighteen groups and seventy-three verbs, and no group left spelling its verb
-    as a positional `choices=` argument. The two are not interchangeable: a
-    positional takes the whole group's flags, so `--help` at the group is every
-    verb's flags at once and a flag on the wrong verb is accepted and silently
-    ignored."""
+    """Seventeen groups and seventy verbs, and no group left spelling its verb as a
+    positional `choices=` argument. The two are not interchangeable: a positional
+    takes the whole group's flags, so `--help` at the group is every verb's flags at
+    once and a flag on the wrong verb is accepted and silently ignored.
+
+    Eighteen and seventy-three until 2026-09-06, when `gallery-store` and its three
+    went with the retired gallery passes' gate store."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 73
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 70
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

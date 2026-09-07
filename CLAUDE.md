@@ -177,15 +177,14 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **126.99 s over the 3,896
+Both are measured, not estimated. The **fast** lane is **118.80 s over the 3,879
 it holds, 124 deselected**, on this machine, 2026-09-07, on an idle box with a
 `.[dev,models]` install and a release engine built. The **slow** lane's last
-reading is **7:07 over 4,020, 0 skipped**, on the same install in the same
-prompt — the arithmetic's own prediction to the test, which
-[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles — but
-taken **before** that prompt's last edit, a one-function correction in
-`solve.cascade_order` whose own tests are fast. So the next slow lane should read
-**4,020** and a figure other than that is worth reading rather than assuming. **Zero skips is the normal reading now and 19 was the render cache
+reading is **6:49 over 4,003, 0 skipped**, on the same install in the same
+prompt and after the last edit — the arithmetic's own prediction to the test,
+which [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)
+settles. So the next slow lane should read **4,003** and a figure other than that
+is worth reading rather than assuming. **Zero skips is the normal reading now and 19 was the render cache
 being short** — a **store** condition, not a tree fault, confirmed by the first
 lane to read a full cache: `renders plan` then `renders build` is what fills it.
 The 19 were worth roughly forty seconds of engine renders and a training loop, so

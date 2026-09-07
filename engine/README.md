@@ -351,6 +351,21 @@ it is not the colormap: Spearman(near-white, the map's mean spent Oklab L) is
 about 0.418. `direct_trap_multiply` already carries twice `direct_trap_screen`'s
 threshold and 1.33x its opacity, and it is still the pale one.
 
+⚠ **Never gate on CLIP SHARE. The measure is the in-mask chroma column above.**
+Clip share — the fraction of pixels pinned at the top of a channel — was tried as
+the whiteness detector and it is worthless, because **every compressive operator
+drives it to 0.000 while the surface stays white and flat**. A multiply from white
+never pins a channel: it approaches the ceiling from below and stops, so the pixels
+that make a picture look bleached are exactly the ones clip share is blindest to.
+The same holds for a rolloff, a gamma under 1 and the autolevel band — each lands
+the histogram short of the top and reads clean on a picture nobody would ship.
+In-mask chroma has no such blind spot: it falls when the surface goes pale whatever
+was done to the top end, and `direct_trap_multiply`'s **0.011** against
+`direct_trap_screen`'s **0.046** is the reading a clip-share gate would have scored
+identically at zero. Nothing in `src/` or `engine/` computes clip share today —
+this is a rule about code that does not exist, written down because there is
+nothing left to re-derive it from and nothing that would catch its reintroduction.
+
 **The fix is a mode-param variant, not an engine change.** `renders.coloring_of`
 writes a row's `opacity` and `threshold` into the coloring block, so a varied row
 is a new recipe key: nothing re-keys, no cached picture changes underneath its

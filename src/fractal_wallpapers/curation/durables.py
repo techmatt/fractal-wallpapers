@@ -11,7 +11,7 @@ The sidecar was the first durable and for a while it was the only one, so
 argument and meant the sidecar, and `guarded()` reached **up** into
 [`curation.amend`] and [`curation.hunt`] from inside the floor module those two
 import. That is a module knowing its own callers, and it held `durability` — and
-[`curation.gallery_store`] behind it — inside the largest import cycle in the
+the gallery passes' gate store behind it — inside the largest import cycle in the
 tree.
 
 So the arrow is turned around, the way [`models.roster`] turned it around for
@@ -20,7 +20,7 @@ now and imports `paths` and nothing else above it; every module that *has* a
 durable file describes it where the file lives — [`amend.durable`],
 [`hunt.frames_durable`], `candidate_ledger.store.durable_rows`,
 `flatness.durable`, `signatures.durable`, `embeddings.store`,
-`gallery_store.durable`, `palettes.color_mass.sweep_log` — and this module is
+`palettes.color_mass.sweep_log` — and this module is
 where the sidecar's description lives, beside the one list that has to see three
 of them at once.
 

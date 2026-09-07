@@ -590,10 +590,10 @@ def upsert_file(path: Path, rows) -> tuple[int, int]:
     """Merge `rows` into one flat file by key, rewritten in key order. `(total, new)`.
 
     What `runs.jsonl` is written with — it takes a row per run rather than a run's
-    worth of rows, so it has no reason to be anything but one file — and what
-    [`curation.gallery_store`] writes a gallery pass's untracked gate store with,
-    for the opposite reason: that file is not in the history, so the 1 MiB guard
-    the tracked stores split on does not act over it.
+    worth of rows, so it has no reason to be anything but one file. The retired
+    gallery passes' untracked gate store used it for the opposite reason: that file
+    was not in the history, so the 1 MiB guard the tracked stores split on did not
+    act over it.
     """
     merged: dict = {}
     if path.is_file():
