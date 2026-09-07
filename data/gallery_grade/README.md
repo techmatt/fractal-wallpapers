@@ -105,6 +105,9 @@ between them are what this head has to learn.
   low to use either as a stand-in for the other. The disagreement is centred and
   heavy-tailed — a median of nothing with a fifth of a probability in each tail — so
   an aggregate over the store hides it and a per-row join is the only honest read.
+  Over the landed 1,000 the same reading is **r = 0.696**, with **55** rows under 0.5
+  at label geometry against **none at all** at candidate geometry — the direction is
+  one-way, because a candidate had to read high to be drawn.
 
 ## The page is blind, and that is the point
 
@@ -118,3 +121,40 @@ There is **no anchor sheet for this scale**, because until the first sitting the
 were no rows. The four sentences above are `gallery_grade.MEANINGS`, they go onto
 every sheet's manifest as its `rubric` verbatim, and the first sitting is what creates
 the anchors.
+
+## What the first sitting landed, and the drift inside it
+
+All 1,000 units, ingested 2026-09-06, labeler `matt`: **26 / 185 / 477 / 312** over the
+four grades, 1,000 rows resolving to 1,000 renders over 815 locations, nothing
+superseded and nothing unkeyed.
+
+**The three batches do not agree, and the difference is the scale rather than the
+draw.** They were cut as stratified thirds — near-identical on seated/refused, on the
+kind and on the mode — so a distribution that moves across them is the labeler moving:
+
+| batch | 1 | 2 | 3 | 4 | mean |
+| ----- | - | - | - | - | ---- |
+| `n1000_0906_1` | 17 | 66 | 140 | 111 | 3.033 |
+| `n1000_0906_2` | 6 | 55 | 150 | 122 | 3.165 |
+| `n1000_0906_3` | 3 | 64 | 187 | 79 | 3.027 |
+
+χ² over the 3×4 table is **30.95 on 6 d.f., p = 2.6e-05**. The 1s fall away after the
+first sitting — 17, then 6, then 3 — which is what *creating the anchors* looks like
+from the outside: the first batch is the only one cast without a felt floor. The third
+piles on 3 at the expense of 4. **A fit that pools the three is pooling three slightly
+different scales**, and `batch` is on every row so it can be a covariate rather than a
+surprise.
+
+## The store is not the picture, and the plan is what makes it one again
+
+A row carries `leveled` as a **boolean** and never the directory. The path lives only in
+`artifacts/gallery_grade/<draw>/<batch>/plan.jsonl`, so those plans are the only thing
+that can rebuild the 373 levelled pictures as they were judged, and they are small.
+**The sheets' rendered pictures are regenerable and the plans are not.**
+
+`.leveled/` directories cannot be taken from under a *surviving* row — that is
+`tests/test_leveled_identity.py`'s argument — but a row's candidate can leave the
+ledger entirely. Measured 2026-09-06 against `tentative.protected_keys()`: all 700
+seated candidates are protected by the record they were drawn from, and **233 of the
+300 runners-up are not, 95 of them carrying a levelled colormap**. The runners-up are
+the near-neighbour half this store exists to separate, and they are the prunable half.
