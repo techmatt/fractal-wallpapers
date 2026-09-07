@@ -626,6 +626,42 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 0.404 | near band, mode held, over the **whole** band | 3 | 12 | 09-06 | 35,448 cand / 2,954 places | `armB_freeslots_0906` |
 | 0.737 | the arm A row's own pilot | 3 | 12 | 09-06 | 768 cand / 64 places | `pilotA_places_0906` |
 | 0.714 | the arm B row's own pilot | 3 | 12 | 09-06 | 1,001 cand / 86 places | `pilotB_freeslots_0906` |
+| 5.391 | **the whole `mined()` roster**, breadth over never-opened places | 3 | 12 | 09-07 | 6,006 cand / 502 places | `armA1_0906` |
+| 4.680 | the same, six hours later on a thinner never-opened pool | 3 | 12 | 09-07 | 3,811 cand / 318 places | `armA2_0906` |
+| 2.312 | the same roster, near band, mode held, over places WITH ROOM | 3 | 12 | 09-07 | 6,963 cand / 582 places | `armB1_0906` |
+| 3.304 | arm A1's own pilot, and it reached three partitions of ten | 3 | 12 | 09-07 | 545 cand / 45 places | `pilotA_0906` |
+| 2.523 | arm B1's own pilot | 3 | 12 | 09-07 | 519 cand / 43 places | `pilotB_0906` |
+
+**The full mined roster is 5.3x the breadth price of the three shareable modes and
+6.2x the near band's, and the two rises have different causes.** Twelve modes at
+width 12 gives each place one candidate a mode, so the three field modes pay a dump
+apiece for a single recolour and the **nine dear modes pay a whole render each**:
+they are 75% of arm A's candidates and **82% of its seconds**. The near band's rise
+is sharper and is not about width at all — [`depth.plan_held_mode`] renders the
+**incumbent's** mode, so a twelve-mode roster admits composite incumbents to a draw
+that used to be recolours of a dumped field. Measured on `armB1_0906`'s own rows,
+a `smooth_stripe` incumbent costs **13.0 s** a candidate where a `smooth` one costs
+0.63.
+
+**The angle share, priced off an observed angle draw rather than off the mix.**
+`smooth_mean_angle` + `smooth_angle_min` read **5.407 s** over the 94 of them in
+`pilotA_0906` — 17.3% of its candidates and 28.2% of its seconds — against
+`night_c`'s **8.423** at width 3. The gap is width and not the modes: a narrow unit
+is dump-dominated, and at width 12 the pair rides a block that has already paid.
+Neither figure is a mixed-roster price and neither should be read as one.
+
+**`phoenix:classic` confirms at a third sitting, and it is the plane and not the
+draw.** `armA1_0906` read it at **31.50 s** a candidate over 168 of them — 2.8% of
+the leg's candidates for **16.3% of its seconds** — which sits between `pc1`'s 53.54
+and `pc20m`'s 35.28 for a dear roster there. It is already down-weighted to 0.25 in
+[`curation.draw_weights`] and still costs a sixth of a three-hour unit.
+
+⚠ **The per-partition price is a fact about the places drawn, not about the plane,
+and one leg caught it twice in one night.** The two phoenix planes swapped rank
+between the arm-A units six hours apart on one roster: `phoenix` cost **6.68 s** in
+`armA1_0906` and **11.92 s** in `armA2_0906`, where it was that unit's dearest
+partition, while `phoenix:classic` went 31.50 → 28.60. Read a plane's row here as
+the price of the places that leg reached and re-pilot rather than carrying it.
 
 ⚠ **A short pilot mis-prices a partition-round-robin draw, and it does so in
 whichever direction the dear partitions happen to land.** The two 09-06 pilots above
