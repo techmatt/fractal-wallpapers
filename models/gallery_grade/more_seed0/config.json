@@ -1,0 +1,190 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "run": "more_seed0",
+  "arm": "more",
+  "classes": 4,
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "batch_size": 32,
+  "backbone_lr": 0.0002,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "drop_rate": 0.2,
+  "drop_path_rate": 0.1,
+  "grad_clip": 1.0,
+  "amp": "off",
+  "border_crop": 0.05,
+  "class_balance": "sqrt",
+  "geometry": "stretch",
+  "loss": "CORN ordinal, K-1 conditional-subset tasks",
+  "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+  "selection_cutpoint": 3,
+  "target_dims": [
+    384,
+    224
+  ],
+  "workers": 2,
+  "epochs": 20,
+  "patience": 6,
+  "seed": 0,
+  "source_dims": [
+    640,
+    360
+  ],
+  "augmentation": "geometric only \u2014 border crop and both flips. No colour and no JPEG jitter: the colouring is what the grade is about",
+  "selection": "max AP(>=3) over the stopping slice, ranked by p_ge3, with AUC(>=3) as the fallback where the slice holds one class",
+  "conditioning": "none \u2014 the picture is the input, and the head is told no batch",
+  "cascade": "stage two behind the render judge's p_ge4. Undefined on a row that never cleared the gate; never a pool-wide ranker",
+  "initialised_from": {
+    "artifact": "models/render/render.fp16.pt",
+    "run": "deploy_v6_seed0",
+    "tag": "weights-v6",
+    "says": "a COPY. Never a shared trunk \u2014 a moved trunk is a judge flip"
+  },
+  "freezing": {
+    "arm": "more",
+    "unfrozen": [
+      "<everything>"
+    ],
+    "says": "a full fine-tune \u2014 every parameter takes a gradient",
+    "trainable_parameters": 2496867,
+    "total_parameters": 2496867,
+    "trainable_share": 1.0
+  },
+  "stopped_early": {
+    "at_epoch": 7,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 1
+  },
+  "best_epoch": 1,
+  "best_selection_rule": "ap_ge3",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "inherited": {
+    "identical_to_the_shipped_render_judge": [
+      "classes",
+      "backbone",
+      "batch_size",
+      "backbone_lr",
+      "head_lr",
+      "weight_decay",
+      "drop_rate",
+      "drop_path_rate",
+      "grad_clip",
+      "amp",
+      "border_crop",
+      "class_balance",
+      "geometry",
+      "loss",
+      "sampler",
+      "selection_cutpoint",
+      "target_dims",
+      "workers",
+      "epochs",
+      "patience",
+      "selection"
+    ],
+    "chosen": [
+      {
+        "key": "source_dims",
+        "was": "1280x720 \u2014 the sheet picture a verdict was cast on",
+        "now": "640x360 \u2014 the ledger's stored candidate",
+        "why": "this head is read where a seating reads, and the two geometries are not resamplings of each other: they correlate at r = 0.696 over the landed thousand, with 55 rows under P(>=4) 0.5 at label geometry and none at candidate geometry. Fitting at the deployment column accepts a label-quality cost on purpose"
+      },
+      {
+        "key": "split_stratification",
+        "was": "lineages only",
+        "now": "lineages whole, and the holdout filled to balance the three BATCHES",
+        "why": "the three sittings disagree at p = 2.6e-05 and the strata were near-identical by construction, so a stopping slice over-weighting one sitting would stop on a scale the training side is not on"
+      },
+      {
+        "key": "split_seed",
+        "was": "the run's own seed, so each seed sits on its own slice",
+        "now": "fixed at 0 for every arm and every seed",
+        "why": "the question here is WHICH ARM, and models/render/README.md says why the incumbent arrangement cannot answer it: an AP read on two different slices is not a comparison of two heads. The training seed still moves the initialisation and the sampler order"
+      }
+    ],
+    "not_inherited": [
+      {
+        "key": "pretrained",
+        "why": "the backbone is not re-initialised from ImageNet at all \u2014 it starts at the shipped weights-v6 artifact, which is what makes this a second stage rather than a second judge"
+      },
+      {
+        "key": "kinds",
+        "why": "the render judge is told no kind and this head is told no batch. The corpus is one store with one scale"
+      }
+    ]
+  },
+  "split": {
+    "schema": 1,
+    "rule": "a seeded 80%/20% over LINEAGES, filled by whichever remaining lineage most reduces the per-BATCH shortfall. The holdout's only job is to stop the run \u2014 it is the shipped judge's split with one seed for every arm, so nine runs are read on one slice",
+    "unit": "lineage \u2014 labeling.groups.assign",
+    "seed": 0,
+    "target_share": 0.2,
+    "rows": 1000,
+    "lineages": 776,
+    "grouping": {
+      "groups": 776,
+      "largest": 5,
+      "singletons": 575,
+      "unplaced": 0
+    },
+    "sides": {
+      "train": 799,
+      "stopping": 201
+    },
+    "holdout_share": 0.201,
+    "holdout": {
+      "target_rows": 200,
+      "rows": 201,
+      "lineages": 89
+    },
+    "batches": {
+      "population": {
+        "n1000_0906_1": 334,
+        "n1000_0906_2": 333,
+        "n1000_0906_3": 333
+      },
+      "stopping": {
+        "n1000_0906_1": 67,
+        "n1000_0906_2": 67,
+        "n1000_0906_3": 67
+      },
+      "train": {
+        "n1000_0906_1": 267,
+        "n1000_0906_2": 266,
+        "n1000_0906_3": 266
+      },
+      "stopping_share_by_batch": {
+        "n1000_0906_1": 0.2006,
+        "n1000_0906_2": 0.2012,
+        "n1000_0906_3": 0.2012
+      }
+    },
+    "grades": {
+      "train": {
+        "1": 20,
+        "2": 147,
+        "3": 387,
+        "4": 245
+      },
+      "stopping": {
+        "1": 6,
+        "2": 38,
+        "3": 90,
+        "4": 67
+      }
+    }
+  },
+  "precision": "fp32"
+}

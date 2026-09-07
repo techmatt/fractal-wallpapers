@@ -349,6 +349,21 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+28 that reconciles exactly, and the first slow lane in five prompts.**
+`TRAIN_ckpt113_fine_tier_head_0906`, 2026-09-06, idle box, `.[dev,models]` with a
+release engine. **118.54 s over 3,876, 124 deselected** fast — 4,000 against the
+3,972 below, and the +28 is exactly `test_gallery_grade_train.py`, all of it fast.
+Slow **7:12 over 4,000, 0 skipped**, which is the arithmetic's own prediction to
+the test and the first slow lane taken since the reading five entries below.
+
+Two things are worth having from it. The new file costs **0.40 s** of the fast
+lane for 28 tests, because 26 of them share one module-scoped un-pretrained
+backbone build and the other two read tracked JSON — a whole head's guard for the
+price of one engine-bound test. And the **slow lane did not move**: 6:43 over
+3,958 then, 7:12 over 4,000 now, with 42 more tests and none of them slow. The
+29 s is not attributed and is inside the noise this lane has shown between idle
+readings; nothing here added a render, a training loop or a store sweep.
+
 **+6 that reconciles exactly, and one of the two new fast guards is worth its
 second.** `PROTECT_ckpt112_gallery_grade_keys_0906`, 2026-09-06, idle box,
 `.[dev,models]` with a release engine. **118.94 s over 3,848, 124 deselected**
