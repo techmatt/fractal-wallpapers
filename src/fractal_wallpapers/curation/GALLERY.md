@@ -1877,6 +1877,32 @@ the *place* level four times in five.
 **This is a measurement and it did not gate the adoption.** Matt ruled on the
 head's bar; the split says what the ruling costs.
 
+**A record names the key that actually ordered it, and it did not until
+2026-09-07.** Three fields wrote the literal `"rank_key"` for anything that was
+not `p_ge4` — `objective.rank_quantity`, `order.key` and `config.sort_key` — which
+was true while `rank-key` was the only fitted key and became a lie the day the
+cascade shipped as the default; only `config.sort_key_named` and
+`order.coverage.key` carried the cascade's own spelling. All three now come from
+`solve.ordered_by`, which reads the **coverage record the resolver wrote** rather
+than the `key` argument: `key` defaults to the cascade, so a caller handing in an
+order it resolved elsewhere would otherwise have it labelled `cascade` whatever it
+was. `config.sort_key_named` stays what the caller *asked for* and is a different
+question — which is why it keeps the hyphen in `rank-key` where `sort_key` writes
+`rank_key`, the spelling that key's own coverage block and the 121 existing
+records use (`solve.RECORD_SPELLING`, one key, two spellings). `contact_sheet`
+letters what it sorted on off `config["sort_key"]` and follows along. **The 121
+existing records were not migrated**: they are all rank-key seatings and are
+correct as written.
+
+**`curate pool-draw`'s record names its key too.** The bare `DEFAULT_KEY` inside
+`seat_ranked` is deliberate and stays — "the picture the solve would seat" has to
+be `solve.ranking`'s answer and never a second spelling of it — but a cascade draw
+and a rank-key draw disagree about which row represents a place for most of this
+pool, so a sheet whose record does not name the order cannot be attributed later.
+The record carries `key` at its root, off the same coverage record; `rank_key`
+beside it is that coverage block whole and keeps its 2026-08 name because every
+drawn record on disk carries it.
+
 **Seating only.** Retention does not read it and `_prune_ranks` is untouched —
 what the prune keeps is a separate question from what a gallery seats, and a key
 that moved both would have moved the one nobody looked at. `tests/test_seat_sheet.py`

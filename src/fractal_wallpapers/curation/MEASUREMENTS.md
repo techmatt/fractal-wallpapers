@@ -513,6 +513,81 @@ exactly the boundary. Every `K` whose product lands on an integer has this, and
 allowance should be checked against `ceiling.Rule(k=K).allowed(cell, n)` rather
 than against the formula on paper.
 
+## What the palette-group cap costs at n=1000, measured 2026-09-07
+
+**Nothing. It is not a binding constraint and never has been.** Three n=1000
+seatings over one pool and one cascade order, everything but the cap identical —
+shipped (`max(1, floor(0.025 x n))` = **25**), raised to **50**, and removed
+(`1000`, so no cap at all). **Zero seats change**, in either direction, and the
+objective is bit-identical at all three: `worst 1.001752, sum 1786.467343`, 1,000
+of 1,000 filled, 13 of 13 modes. `group_cap` has **0 refusals** at every rung, the
+busiest map takes **23** of an allowed 25, and `at_the_cap` is 0. Relaxing it
+buys nothing because nothing is spending it.
+
+⚠ **"942 groups against 1,000 seats" is not a statement about the cap.** 942 is
+the width of the drawable colormap pool (`palettes/README.md`), and a gallery
+seats **473** distinct groups, not 942: 230 groups hold exactly one seat and the
+distribution is 1/2/3/4/5/6/7/8/9/23 over 230/119/53/33/20/8/5/1/3/1 groups. A
+count of maps is not a count of seated groups and neither is a cap.
+
+**The weak tail is composition, not supply — and it is not depth either.** The
+seated picture's fine-head `P(>=4)`, per group, runs min **0.0018**, p10 0.304,
+median **0.9629**, p90 0.9998 over the 473 seated groups; **236** hold a seat
+below that median, which is the set a palette-aimed leg (`--draw-maps`,
+`--draw-cells`) would be pointed at. But **934 of the 942 groups already hold at
+least one row the fine head could read**, a weak-half group holds a **median 34**
+of them, and only **70 of the 236 (29.7%)** have their seat as the best row that
+group has anywhere in the pool — the median headroom over the seat is **0.075**
+and the p90 is **0.672**. **461 groups hold readable rows and take no seat at
+all**, at a median 23 rows each and a median best of **0.826**, well above the
+weak half's seats. So the pool is not short of maps and not short of depth behind
+them: what keeps a strong row out is one-wallpaper-per-location and the cell
+allowance — `cell_allowance` is **28,889** refusals against `location`'s 4,204
+and `group_cap`'s zero.
+
+**And the two heads disagree hardest exactly at that tail.** The twenty weakest
+seated groups carry judge `p_ge4` of 0.59-0.998 — several over 0.99 — against
+fine-head readings of 0.0018-0.076. A weak seat here is a picture the gate likes
+and the gallery-grade head does not, which is what the cascade exists to catch.
+
+## How much of the prune is settled above the bar, measured 2026-09-07
+
+The cascade is the fine head above `Q4_BAR` and `rank_key` below it, so **below
+the bar the two orders are one order** and retention ranking on `rank_key` is
+already ranking on the cascade's own lower half. The disagreement can only bite
+where a whole pair sits above the bar.
+
+Over 325,099 ledger rows in 134,198 `(location, mode+mode_params)` pairs:
+**3,729** pairs sit at or over `RETAIN_PER_PAIR`, holding 18,760 rows, and
+**877 (23.5%)** of those are wholly above the bar — **23.6%** weighted by rows,
+so the two readings agree. On those 877, the two orders name a **different top
+row 70.6%** of the time and a **different most-disposable row 71.3%**, and the
+orders are identical in only 13 pairs. **But they almost never disagree about
+what to KEEP**: the survivor set differs in **23** pairs, 2.6% of the 877.
+
+⚠ **The reason is when the store is read, and it is a property of the reading.**
+A pair at exactly the keep deletes nothing whatever the order, and after a
+merge's prune **3,622 of the 3,729 sit exactly at 5**. Only **107** are over it,
+and those are pairs a *protection* held above the keep rather than ordinary prune
+candidates. Restricted to the **30** all-above pairs that actually delete
+something, the survivor set differs in **23 of 30 (76.7%)** and the first
+deletion in **21 of 30 (70%)**. So: rare that a prune's whole decision is made
+above the bar, and near-certain that the two keys differ once it is.
+
+⚠ **Real prune decisions are not recoverable and this is why.** A merge's
+`pruned` block carries counts and names **no dropped key**; the same transaction
+rewrites all three store files against the surviving keys, so a dropped row's
+flatness and judge score are gone and it can have no `rank_key` value; its
+picture is deleted, so it can have no fine-head reading either — `armB2_0907`
+kept 3,210 pictures of 16,200 made. And a displaced **incumbent** appears in no
+leg's `rows.jsonl`. Both sides of the comparison are missing for exactly the rows
+a prune acted on, so the standing-pair reading above is where this stops.
+
+**The fine head reads 11,294 of the 18,760 rows in those pairs**, against 11,298
+that are above the bar — a four-row gap. `pool_scores.jsonl` covers
+`solve.pool`'s above-bar rows, so a row the pool refuses (rejected, no picture,
+off-regime, a mode weighted 0) is above the bar in the ledger with no reading.
+
 ## What the sourcing channels cost in seats, measured
 
 * **Centered share of a solve is mining-invariant, at 0.16-0.23.** It is the one axis
