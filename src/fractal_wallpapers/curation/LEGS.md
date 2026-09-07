@@ -690,6 +690,50 @@ band*, which is a fraction of the places a leg opened, and have somewhere for th
 unspent clock to go — `rare_cells_0904` and this leg both sent it to a fresh unit of
 the opener arm.
 
+⚠ **That reading inverted overnight on 2026-09-07, and the cause is the roster.**
+`armB1_0906` ran the same arm over the same kind of band and was **stopped by the
+clock 81 candidates short of exhausting it**, at a budget share of 1.0012 — where
+`armB_freeslots_0906` had 1,142 s spare over a band five times larger. Two things
+moved at once. The band **collapsed**: re-cut against the day's own scores it held
+2,503 places, of which only **542 had room at their own incumbent pair** — 910 free
+slots against the 5,799 the previous leg consumed, because that leg shut its own
+channel and only the opener refills it. And the arm got **6.2x dearer**, because a
+twelve-mode roster hands [`plan_held_mode`] composite incumbents. So a near band is
+not reliably the arm with clock to spare: **it is bounded by slots and priced by the
+incumbent's mode, and either can bind first.**
+
+**Cut the manifest as free slots at the INCUMBENT's pair, not as free slots.** The
+band and the room are different questions and the second is per (place, incumbent
+coloring): `curate candidate-ledger free-slots --mode X` answers it one mode at a
+time, and a leg holding a whole roster wants the intersection taken per place. Done
+that way the arithmetic is exact — `armB1_0906`'s manifest named **1,192 free slots
+and its merge grew the ledger by 1,188**, four rows in twelve hundred. Everything
+else it made, 5,775 rows, was displacement the prune resolved inside the pair.
+
+### A counterfactual by merge stamp is only clean for an arm that PRUNED NOTHING
+
+`GALLERY.md`'s *A scratch driver asks the same two questions* documents the pool-view
+door as a controlled read and warns that the leg is not monotone in its candidate
+set. There is a second limit it does not state, and a near-band arm walks straight
+into it: **holding out a leg's rows does not undo that leg's prune.** The rows it
+displaced are deleted, so the narrowed pool is not "the pool as if the leg never
+ran" — it is that pool *minus the incumbents the leg destroyed*, which flatters the
+arm being priced.
+
+Measured 2026-09-07: the pool with the whole night held out read **260,570
+candidates against the 260,862 the same pool held before the night**, despite also
+carrying ~1,000 pilot rows the earlier read lacked. The 292-row deficit is
+`armB1_0906`'s prune. A breadth arm has no such problem — `armA1_0906` and
+`armA2_0906` dropped **0** rows between them, every candidate landing on a
+never-opened pair — so credit an opener through the door freely and read a near-band
+arm's counterfactual as an upper bound on what it bought.
+
+**And do not read the objective's `worst` off one of these.** The same night's reads
+gave worst **0.3317** on the full pool, **0.1963** with arm B held out and **0.3541**
+with *both* arms held out — a quantity that falls when one arm leaves and rises when
+two do is being set by where the greedy search landed. Seat attribution and the
+arms' own clear rates priced that night; the objective could not.
+
 The parameter under it is `near_named` and not `near_places`, which is what the
 flag is called. `build_plan` calls [`near_places`] to take the draw, and a
 parameter of that name would shadow the function for the whole of it.

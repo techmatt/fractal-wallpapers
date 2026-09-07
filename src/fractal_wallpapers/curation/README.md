@@ -247,6 +247,18 @@ and headroom read over the ledger comes back empty. `curate candidate-ledger
 score` is the step that closes it, and it is the only one — nothing else in this
 tree reads a ledger picture through the judge.
 
+⚠ **A LEG's own sidecar is keyed the same way, and a driver joining on `key`
+scores the whole leg 0.0 in silence.** `artifacts/curation/depth/<leg>/scores.jsonl`
+carries `key` as the triple `<recipe>|<artifact>|<regime>` with the recipe key in
+its own `recipe_key` field, exactly as the ledger's sidecar does. A readout that
+joins a leg's `rows.jsonl` on `key` therefore matches nothing, and because a missing
+score reads as *did not clear* rather than as an error, the leg reports a clear rate
+of zero and nobody is told. That is not hypothetical:
+`scratch/two_arm_pilot_0906/readout.json` recorded `q4_clears: 0` for both arms of
+the 2026-09-06 leg under a report quoting 1,177 and 3,870, and the same join was
+written again the following night before it was caught. **Join on `recipe_key`**,
+and treat a leg-wide rate of exactly zero as a join fault until proven otherwise.
+
 It writes **beside** the retired artifact's rows and never over them: a picture
 read by two judges is two facts, and the retired reading is what every
 before-and-after comparison is taken against. **That is what a retired reading is
