@@ -710,6 +710,23 @@ after-the-sweep rate is also well under the 65% act rate `curate mine` recorded 
 high-band leg, so 44.6% is a floor on how many pictures the operator really touched
 rather than a reading of the operator.
 
+**And the levelled rows grade lower — inside one judge and not the other.** Over the
+landed sitting the levelled rows mean 2.992 against 3.124 (Mann-Whitney p = 7.6e-04),
+but split by the judge that drew them it is `strange_render`'s alone: 3.024 against
+3.177 there (p = 0.001) and 2.882 against 2.886 over `smooth_render` (p = 0.46). So
+this is not a levelling effect a fit can subtract off as one number, and it is
+confounded with the kind either way — the levelled share is 42.7% of the smooth rows
+against 36.0% of the strange ones.
+
+### The three batches are three slightly different scales
+
+Cut as stratified thirds and cast in one evening in batch order, they disagree at
+χ² = 30.95 on 6 d.f., **p = 2.6e-05**, with the 1s falling 17 → 6 → 3 across the
+sittings. The strata are near-identical by construction, so the movement is the
+labeler finding the scale, not the population. `data/gallery_grade/README.md`'s *What
+the first sitting landed, and the drift inside it* carries the table. Anything
+comparing batches here is comparing anchorings.
+
 ---
 
 ### Reading this file from code
