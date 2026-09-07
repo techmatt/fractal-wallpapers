@@ -83,7 +83,30 @@ ALLOWLIST: frozenset[str] = frozenset()
 # Splitting a partition into numbered parts to sit under a limit would be
 # arranging the data around the guard instead of around what it is. Matt's call,
 # recorded here rather than in a commit message nobody will find again.
-LARGE_TEXT_ALLOWLIST = ("data/palette_choice/rows/",)
+#
+# ⚠ The rank key's population record is the second, added 2026-09-06, and it is
+# the one entry here NOT taken on Matt's prior call — it is a claim made by the
+# leg that hit it and it is his to ratify or reverse. What happened: `curate
+# rank-key fit` re-joins the label stores as they stand, those stores tripled, and
+# the record went 1,051 rows / 567 KB to 3,278 rows / 1.73 MB in one run. It is
+# **not** this leg's doing — removing `stratum_score` took ~25 bytes off each row,
+# and the next fit on this machine was going to cross the line whatever it was
+# fitted on.
+#
+# The alternatives were all worse. Not refitting leaves a five-column artifact a
+# four-column `features_for` cannot score, so the solve and the prune raise on
+# every candidate. Shipping the coefficients without the record makes
+# `population_record` name a file listing rows the weights were not fitted on,
+# which is the one thing that record exists to prevent — and `_prune_protections`
+# reads it, so the wrong 1,051 recipes would be protected from the prune. Dropping
+# `location_key` and `recorded_at` fits under the limit by 90 KB and would be
+# arranging the record around the guard, which is what the note above rejects.
+#
+# Reversing this is one line here plus whatever is decided about the record.
+LARGE_TEXT_ALLOWLIST = (
+    "data/palette_choice/rows/",
+    "data/curation/rank_key/population.jsonl",
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 

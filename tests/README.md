@@ -349,6 +349,30 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A -11 that reconciles exactly, and the first reading here with no slow lane
+beside it.** `REMOVE_ckpt112_stratum_score_0906`, 2026-09-06, idle box,
+`.[dev,models]` with a release engine. **113.60 s over 3,831, 122 deselected**
+fast. The prompt asked for the fast lane and only the fast lane ran, so there is
+no slow figure for this date and the next slow reading should be compared against
+the 3,958 above rather than against anything here.
+
+**The count needs two moves to read, and both are accounted for.** The 3,836
+below was taken at `BUILD_ckpt112_gallery_grade_sheets_0906`, and `d701596`
+landed *after* it with six drift-guard tests in `test_expressed.py` — so the
+baseline this prompt started from was 3,842, not 3,836. Eleven went: nine in
+`test_expressed.py` (two thin-list, one recolor-cost, six drift-guard, which is
+every test `d701596` wrote) and two stratum guards in `test_rank_key.py`.
+3,842 - 11 = 3,831. **A reading taken against 3,836 would look like -5 and would
+be wrong about which tests moved**, which is the same trap as comparing across a
+palette drop.
+
+**113.60 s against 112.00 s with eleven fewer tests is noise, and the log itself
+is the evidence.** The last four fast readings here are 115.01, 111.47, 112.00
+and this one — a 3.5 s spread with no code cause behind any of it, and 113.60
+sits inside it. Nothing in this prompt could plausibly cost time: the removal
+takes a store read *out* of `features_for`, which no longer opens
+`expressed.json` at all.
+
 **A +35 that is entirely one new store's, and the slow lane got *faster*.**
 `BUILD_ckpt112_gallery_grade_sheets_0906`, 2026-09-06, idle box (both lanes run
 after the render legs, never beside them), `.[dev,models]` with a release engine.

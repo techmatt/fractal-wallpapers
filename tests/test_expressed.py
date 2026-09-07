@@ -20,6 +20,10 @@ the places the arithmetic could quietly stop being true:
 * the **cheap instruments are priced, not assumed**. The 160x90 decode and the
   candidate render are both compared against the shipped PNG, and the screen a
   recolor pass would run is re-derived from real pairs at every height.
+
+The thin list, its threshold and the population-drift guard over it were pinned
+here until 2026-09-06 and went with the `stratum_score` column. Nothing acts on
+this module's readout now, so there is nothing left here to pin but arithmetic.
 """
 
 from __future__ import annotations
@@ -135,29 +139,6 @@ def test_a_picture_expressing_nothing_non_neutral_is_a_zero_and_not_a_gap():
 
 
 # --------------------------------------------------------------------------- #
-# Thinness.
-# --------------------------------------------------------------------------- #
-def test_thin_is_a_picture_count_and_never_includes_a_neutral():
-    rows = [picture({}) for _ in range(100)]
-    table = dict.fromkeys(codebook.names(), 0.0)
-    table["black"] = 0.0
-    table["light_vivid_lime"] = expressed.THIN_PICTURES / len(rows)
-    table["dark_vivid_red"] = (expressed.THIN_PICTURES + 1) / len(rows)
-    lean = expressed.thin(table, rows)
-    assert "light_vivid_lime" in lean
-    assert "dark_vivid_red" not in lean
-    assert not set(lean) & set(expressed.neutrals())
-
-
-def test_thin_is_ordered_thinnest_first():
-    rows = [picture({}) for _ in range(100)]
-    table = dict.fromkeys(codebook.names(), 1.0)
-    table["light_vivid_lime"] = 0.02
-    table["dark_vivid_red"] = 0.0
-    assert expressed.thin(table, rows) == ["dark_vivid_red", "light_vivid_lime"]
-
-
-# --------------------------------------------------------------------------- #
 # What the cheap instruments cost.
 # --------------------------------------------------------------------------- #
 def test_agreement_counts_a_threshold_flip_in_both_directions():
@@ -215,95 +196,3 @@ def test_an_empty_release_store_is_refused_rather_than_measured(monkeypatch):
     monkeypatch.setattr(records, "read_decisions", lambda *a, **k: [])
     with pytest.raises(expressed.ExpressedError, match="no finished wallpaper"):
         expressed.finished()
-
-
-def test_the_recolor_cost_splits_the_two_populations_and_never_pools_them(monkeypatch):
-    """One dump then a sweep per map, against a whole render per map. Two prices."""
-    monkeypatch.setattr(expressed, "carriers", lambda swatches: {"dark_vivid_lime": ["a", "b"]})
-    rows = [
-        picture({}, mode_kind="field"),
-        picture({}, mode_kind="composite"),
-        picture({}, mode_kind="direct"),
-    ]
-    cost = expressed.recolor_cost(["dark_vivid_lime"], rows)
-    assert cost["carriers_union"] == 2
-    assert cost["populations"]["field"]["pictures"] == 1
-    assert cost["populations"]["not_field"]["pictures"] == 2
-    assert cost["populations"]["not_field"]["by_kind"] == {"composite": 1, "direct": 1}
-    assert cost["populations"]["field"]["screen_units"] == 2
-    assert cost["populations"]["not_field"]["screen_units"] == 4
-
-
-# --------------------------------------------------------------------------- #
-# The population the census covers, against the one that exists.
-# --------------------------------------------------------------------------- #
-def readout_document(pictures: int, **overrides) -> dict:
-    """The two fields the drift guard reads, and nothing else it does not."""
-    document = {
-        "schema": expressed.SCHEMA,
-        "taken_at": "2026-08-24T05:02:00+00:00",
-        "population": {"pictures": pictures},
-        "thin": ["dark_muted_lime"],
-    }
-    document.update(overrides)
-    return document
-
-
-def test_a_census_within_the_factor_is_handed_over_with_what_it_measured():
-    read = expressed.check_population(readout_document(400), current=645)
-    assert read["census_pictures"] == 400
-    assert read["released_now"] == 645
-    assert read["drift"] == pytest.approx(645 / 400, abs=1e-4)
-    assert read["allowed"] == expressed.POPULATION_DRIFT
-
-
-def test_a_census_past_the_factor_is_refused_and_never_re_derived():
-    """The miss is a refusal. A partition that re-took itself mid-leg would prune
-    rows under a set no record names, which is the attribution the prune rests on."""
-    with pytest.raises(expressed.ExpressedError, match="past the"):
-        expressed.check_population(readout_document(246), current=645)
-
-
-def test_the_drift_is_a_ratio_either_way():
-    """A census over a LARGER population than the store holds is the same fault
-    wearing the other sign — a readout pointed at a store that is not this one."""
-    with pytest.raises(expressed.ExpressedError, match="past the"):
-        expressed.check_population(readout_document(645), current=246)
-
-
-def test_a_store_with_no_released_row_is_not_a_drift():
-    """Nothing to compare against is not a stale census, and it is the shape a
-    redirected store has: refusing there would name the wrong fault."""
-    read = expressed.check_population(readout_document(246), current=0)
-    assert read["drift"] is None
-    assert read["released_now"] == 0
-
-
-def test_reading_the_readout_checks_the_population_it_covers(monkeypatch, tmp_path):
-    """The guard is on the accessor and not on one caller, because `thin_cells`
-    and `manufacture.targets` are two readers of one policy input."""
-    import json
-
-    path = tmp_path / "expressed.json"
-    path.write_text(json.dumps(readout_document(246)), encoding="utf-8")
-    monkeypatch.setattr(expressed, "readout_path", lambda: path)
-    monkeypatch.setattr(expressed, "released_now", lambda: 645)
-    with pytest.raises(expressed.ExpressedError, match="past the"):
-        expressed.readout()
-    monkeypatch.setattr(expressed, "released_now", lambda: 300)
-    assert expressed.readout()["thin"] == ["dark_muted_lime"]
-
-
-def test_released_now_counts_the_verdict_and_not_the_file(monkeypatch):
-    """`finished` tests the picture because it is about to read it; this only needs
-    the size of the population the census was meant to cover."""
-    from fractal_wallpapers.curation import records
-
-    rows = [
-        {"verdict": records.RELEASED},
-        {"verdict": records.RELEASED},
-        {"verdict": records.PASSED_OVER},
-        {"verdict": "unrendered"},
-    ]
-    monkeypatch.setattr(records, "read_decisions", lambda *a, **k: rows)
-    assert expressed.released_now() == 2

@@ -2148,24 +2148,42 @@ curate rank-key show    print the shipped one
 ```
 
 ```text
-sigmoid( b0 + b1 loc_p_ge4 + b2 p_ge3 + b3 p_ge4 + b4 stratum + b5 flat16_1.0 )
+sigmoid( b0 + b1 loc_p_ge4 + b2 p_ge3 + b3 p_ge4 + b4 flat16_1.0 )
 ```
 
-the location head's `P(>=4)` for the place, the render judge at **both** cutpoints, the
-calibration stratum (`composite` 2 / `other` 1 / `thin_colour` 0) and the flatness
-column, each standardized by the fit's own constants.
+the location head's `P(>=4)` for the place, the render judge at **both** cutpoints, and
+the flatness column, each standardized by the fit's own constants.
 
-Fitted on 2026-08-28 over the **1,051** label rows that join the ledger (342 smooth /
-709 strange, 625 lineage groups, tier mix 1.2 / 31.1 / 41.7 / 26.0%), it reads out of
-fold **0.779 smooth against the incumbent's 0.671** and **0.850 strange against
-0.826**. Those are the shared-weight figures; `rank_key_fit`'s headline 0.797 / 0.852
-is the *per-kind* arm with a nested inner selection and is not what ships.
+**Four columns since 2026-09-06**, and the fifth is worth knowing about. It was a
+calibration stratum, `composite` 2 / `other` 1 / `thin_colour` 0, and the bottom level
+read `expressed`'s thin-swatch list — so the key had a soft colour nudge in it, acting
+at the solve and again at the merge prune where it deletes rows permanently. Matt ruled
+that out: the colour ceiling already holds any one colour down as a hard constraint at
+the seat, and no cell is owed seats.
+
+**What that cost, on one population and one partition.** Refit over the same 1,051 rows
+and the same folds, dropping the column loses **0.025 of AUC on strange**
+(`0.850 → 0.825`, `[-0.038,-0.012]` on a lineage-grouped paired bootstrap) and takes the
+whole margin over the raw judge with it; smooth is unmoved at `+0.004 [-0.016,+0.024]`
+(`0.779 → 0.783`). **None of that loss is the colour half.** Keeping a bare composite
+indicator and dropping only the thin level costs `-0.002 [-0.007,+0.004]` on strange;
+keeping the thin level and dropping composite costs `-0.012 [-0.019,-0.006]`. The signal
+was the *mode*, wearing a colour term's name. No composite column replaced it — that is
+a decision left open, not an oversight.
+
+The five-column form was fitted on 2026-08-28 over those 1,051 label rows that join the
+ledger (342 smooth / 709 strange, 625 lineage groups, tier mix 1.2 / 31.1 / 41.7 /
+26.0%) and read out of fold **0.779 smooth against the incumbent's 0.671** and **0.850
+strange against 0.826**. Those are the shared-weight figures; the *per-kind* arm with a
+nested inner selection reads higher and is not what ships. `curate rank-key fit`
+re-joins the stores as they stand and prints its own, over a larger corpus than that.
 
 **Shared weights over both stores**, and per-kind is unresolved on every arm tried. On
-this five-column form specifically it is `+0.018 [-.002,+.039]` on smooth and
+the five-column form specifically it was `+0.018 [-.002,+.039]` on smooth and
 `+0.005 [-.005,+.014]` on strange — the `+0.000 [-.011,+.012]` the ruling cites is the
-*three-column base* arm. Shared is also the only fit the folds support, since 96 of the
-625 lineage groups span both stores and carry 348 of the rows.
+*three-column base* arm, and neither has been re-taken on the four-column one. Shared is
+also the only fit the folds support, since 96 of the 625 lineage groups span both stores
+and carry 348 of the rows.
 
 Two cutpoints and not an expected tier: `1 + p2 + p3 + p4` as a single column **loses**
 (`-0.030*` on strange), and the fit weights `p_ge3` above `p_ge4` on smooth, which an

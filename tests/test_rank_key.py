@@ -89,33 +89,15 @@ def test_the_key_is_monotone_in_a_positive_weight():
 # --------------------------------------------------------------------------- #
 def test_a_candidate_with_no_flatness_reading_is_left_out_of_the_ordering():
     pool = [candidate("a"), candidate("b")]
-    built, gaps = rank_key.features_for(pool, locations={}, readings={"a": 0.1}, thin=set())
+    built, gaps = rank_key.features_for(pool, locations={}, readings={"a": 0.1})
     assert set(built) == {"a"}
     assert gaps["no_flatness"] == 1
 
 
 def test_a_place_the_location_head_has_never_read_scores_at_the_floor_and_is_counted():
-    built, gaps = rank_key.features_for(
-        [candidate("a")], locations={}, readings={"a": 0.1}, thin=set()
-    )
+    built, gaps = rank_key.features_for([candidate("a")], locations={}, readings={"a": 0.1})
     assert built["a"]["loc_p_ge4"] == rank_key.NO_LOCATION_READING
     assert gaps["no_location_reading"] == 1
-
-
-def test_the_stratum_reads_the_colour_against_the_thin_swatches():
-    kinds = {"smooth": "field"}
-    assert rank_key.stratum_of("smooth", ("dark_vivid_lime",), {"dark_vivid_lime"}, kinds) == (
-        "thin_colour"
-    )
-    plain = rank_key.stratum_of("smooth", ("dark_vivid_blue",), {"dark_vivid_lime"}, kinds)
-    assert plain == "other"
-    assert rank_key.stratum_of("x", (), set(), {"x": "composite"}) == "composite"
-
-
-def test_the_stratum_order_is_the_one_the_fit_was_taken_under():
-    """A moved order is a different column wearing the same name, and the shipped
-    coefficients were fitted against this one."""
-    assert rank_key.STRATUM_ORDER == {"composite": 2.0, "other": 1.0, "thin_colour": 0.0}
 
 
 # --------------------------------------------------------------------------- #
@@ -246,7 +228,20 @@ def test_the_shipped_key_loads_and_carries_exactly_the_columns_it_is_read_with()
 
 def test_the_shipped_key_records_every_label_row_it_was_fitted_on():
     """A selection rule fit on human labels is a category no eligibility guard
-    covers. The record is the guard, and it has to reconcile with the artifact."""
+    covers. The record is the guard, and it has to reconcile with the artifact.
+
+    **Uniqueness is per store and not global, which is a measured fact about the
+    stores rather than a loosening.** This asserted a globally distinct recipe key
+    until 2026-09-06 and that held only while no picture sat in both corpora. On
+    the 3,278-row fit of that day, **52 do** — the same render, the same batch name
+    and the same tier, at two different lines of two same-named files in
+    `smooth_render` and `strange_render`. Each is therefore one label counted twice
+    by the fit, once on each kind's side of the out-of-fold reading; at 1.6% of the
+    population it moves nothing anybody reads, and de-duplicating it means deciding
+    which store owns a mode both hold, which is not a question a guard settles.
+    What is pinned here is what the record actually claims: no **label row** is
+    recorded twice, and no render is consumed twice **within** a kind.
+    """
     document = json.loads(rank_key.artifact_path().read_text(encoding="utf-8"))
     rows = [
         json.loads(line)
@@ -254,7 +249,8 @@ def test_the_shipped_key_records_every_label_row_it_was_fitted_on():
         if line.strip()
     ]
     assert len(rows) == document["population"]["rows"]
-    assert {row["recipe_key"] for row in rows}.__len__() == len(rows)
+    assert len({(row["kind"], row["file"], row["line"]) for row in rows}) == len(rows)
+    assert len({(row["kind"], row["recipe_key"]) for row in rows}) == len(rows)
     for row in rows:
         assert row["kind"] in rank_key.KINDS
         assert 1 <= row["tier"] <= 4

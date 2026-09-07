@@ -47,7 +47,7 @@ was allowed to fit on.
 ⚠ **What this deviates from, and why.** The obvious construction is to draw the
 holdout out of the lineages present in the *smallest* dose. On this corpus that
 is unreadable, and the reason is worth writing down rather than rediscovering:
-the rank key's five columns need a candidate-ledger join, and **85% of the rows
+the rank key's columns need a candidate-ledger join, and **85% of the rows
 that have one arrived in the last three days of the era**. A holdout confined to
 lineages present before 2026-08-24 reaches 268 rows a person scored 3 or 4 that
 the key can be read on at all, against 1,421 here — and at the earliest cut it

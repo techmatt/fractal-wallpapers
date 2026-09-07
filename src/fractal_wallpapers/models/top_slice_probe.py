@@ -746,7 +746,7 @@ def read_baseline(
 
 
 def rank_key_column(rows: list[dict], rebuild: bool = False, log=print) -> dict:
-    """`{key: the shipped key's value}` for every slice row carrying all five columns.
+    """`{key: the shipped key's value}` for every slice row carrying all four columns.
 
     Off [`render_grade.rank_key_columns`], which is the same join
     [`curation.rank_key.fit`] makes and is keyed by `<kind>:<job name>` — which
@@ -773,7 +773,6 @@ def rank_key_column(rows: list[dict], rebuild: bool = False, log=print) -> dict:
                 "loc_p_ge4": entry["loc_p_ge4"],
                 "p_ge3": entry["incumbent_p_ge3"],
                 "p_ge4": entry["incumbent_p_ge4"],
-                "stratum_score": entry["stratum_score"],
                 "flat16_1.0": entry["flat16_1.0"],
             }
         )

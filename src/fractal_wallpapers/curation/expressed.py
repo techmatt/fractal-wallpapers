@@ -1,4 +1,4 @@
-"""How much of the codebook the finished collection expresses, and what a recolor could reach.
+"""How much of the codebook the finished collection expresses.
 
 [`palette_coverage`] asks what a *map* can do: how many of the nine hundred baked
 colormaps can put a swatch on a real share of some picture's pixels. This module
@@ -43,58 +43,26 @@ The 160x90 decode [`codebook.of_picture`] uses is checked against that rather
 than assumed: [`agreement`] reports both, and on the released population the
 worst swatch moves 0.7 of a point.
 
-## The recolor lever is priced here and not pulled
+## What the census is and is not read for
 
-Geometry is expensive and palette is not. A seated picture can be recoloured
-under a different map for the price of one gradient sweep; reseating it costs a
-walk, a judge and a slot somebody else wanted. So the enforcement lever a floor
-would pull is *recolour*, and [`recolor_cost`] says what measuring its reach
-would take — per thin swatch, how many maps `verify_palette_coverage` found
-reaching it, over which of the two populations, at what price each.
+Every line of this is a reading. Until 2026-09-06 one of them was not: `thin` named
+the swatches at most five finished pictures expressed, `curation.rank_key`'s
+`stratum_score` column read that list at the merge's prune and again at the solve,
+and `curation.manufacture` aimed a whole batch of renders at it. A count-shaped
+threshold read as policy over a growing collection is wrong in a *direction* — the
+21 cells it named over 246 pictures were **one** cell over the 645 released since,
+which moved 98,000 of the candidate pool's 308,000 rows across a partition a fitted
+coefficient was pointed at.
 
-It says it in two populations and never one. The seven `field` modes recolor from
-a field dumped once; a composite normalizes two fields against the whole frame, a
-modulate looks up a different gradient place per sample and a direct trap is
-colour-valued before any gradient is spent, so those three kinds pay a full
-re-render per map. Two prices two orders of magnitude apart, and a pooled figure
-would hide both.
+Matt's ruling of 2026-09-06 removed the whole apparatus rather than repairing it:
+the colour ceiling already keeps any one colour from dominating, as a hard
+constraint at the seat, and a soft nudge doing a fuzzier version of that job in the
+merge prune was deleting rows permanently for it. The thin list, its threshold, the
+population-drift guard and the recolor pricing that stood behind it all went with
+the `stratum_score` column.
 
-## The screen a recolor pass would run, measured in advance
-
-Measuring that cross product at release geometry is two seconds of recolor on top
-of twenty seconds of field dump, per picture per map. A pass would therefore
-screen at candidate geometry and confirm only what the screen kept — and the
-screen's height is **measured rather than chosen**: over the 788 (picture,
-swatch) cells that reach 10% on the shipped render, not one falls below
-[`SCREEN`] at candidate geometry. [`agreement`] re-derives that on demand, at six
-heights, so the number is a reading and not a remembered claim.
-
-The judge would read the candidate render and nothing else. Both release floors
-were fitted at `640x360` and `curation.rescore` reads the whole pool there — a
-floor measured at one geometry and applied at another is two measurements wearing
-one number.
-
-## The thin set is measurement here and policy downstream, and it can go stale
-
-Everything above is a reading. [`thin`] is the one line of it something else acts
-on: `curation.rank_key`'s `stratum_score` column reads this file's `thin` list at
-the merge's prune and again at the solve, and `curation.manufacture` aims a whole
-batch of renders at it. So a readout is not only out of date when it ages — it is
-**wrong in a direction**, because [`THIN_PICTURES`] is a count and a count means a
-smaller and smaller rate as the collection grows.
-
-Measured 2026-09-06, and it is not a rounding: taken over 246 pictures the
-threshold named 21 cells, and re-taken over the 645 released since it names **one**,
-moving 98,000 of the candidate pool's 308,000 rows out of the `thin_colour`
-stratum. The coefficient that reads that column was fitted 2026-08-28 against the
-21-cell partition, so a re-take alone does not refresh a number, it points a fitted
-weight at a different variable.
-
-[`check_population`] is the guard that came out of that, and [`POPULATION_DRIFT`]
-carries why the factor is what it is. It refuses rather than re-deriving: a
-partition that re-took itself when it noticed it was stale would prune rows
-mid-leg under a set no record names, and the attribution is the thing that makes
-a prune defensible. The repair is a re-take **and** a re-fit, in that order.
+What is left is measurement that decides nothing, which is what the top of this
+docstring already said the module was. **Nothing downstream reads this file.**
 """
 
 from __future__ import annotations
@@ -131,38 +99,9 @@ CANDIDATE_SUPERSAMPLE = 2
 #: and it would go stale the first time a pass shipped another size — which one
 #: did, on 2026-08-25.
 
-#: A swatch is THIN when at most this many of the finished pictures express it.
-#: A count rather than a rate because the population is small enough to name
-#: pictures: five of two hundred and forty-six.
-#:
-#: **The count is measured against whatever population the census holds**, so it
-#: means a different rate on a different population — five of 246 is one in fifty,
-#: five of 645 is one in a hundred and thirty. That is what [`POPULATION_DRIFT`]
-#: watches, and 2026-09-06 measured what the difference does: the set goes from 21
-#: cells to 1 and 98,000 of the pool's 308,000 rows change stratum under it.
-THIN_PICTURES = 5
-
-#: How far the census's own population may sit from the released count before
-#: [`readout`] refuses to hand the reading over. A ratio either way, so a census
-#: taken over a *larger* population than the store now holds — a readout pointed
-#: at the wrong store — is caught by the same number.
-#:
-#: **Two, because the thin set is a policy input read at merge and its threshold
-#: is a count.** [`THIN_PICTURES`] is compared against `count / len(rows)`, so the
-#: rate it enforces halves every time the population doubles, silently, with the
-#: file's own `taken_at` the only thing that says so. The two passes on record
-#: added 150 and 249 pictures, so a pass-sized addition to today's 645 is about
-#: 1.4x and the factor leaves room for two of them before it asks — ordinary
-#: labeling growth never reaches it, and the drift this was written for was 2.62x.
-#:
-#: It does **not** re-derive on a miss. `texture_flat.jsonl` self-extends because
-#: it registers a pure function of the engine spec and a missing row has one
-#: right answer. This is a partition somebody's coefficient was fitted against,
-#: and one that re-took itself mid-leg would prune rows under a set no record
-#: names. The miss is a refusal and the repair is two commands, in this order:
-#: `curate expressed` re-takes the census, `curate rank-key fit` re-fits the
-#: coefficient against the partition that came out of it.
-POPULATION_DRIFT = 2.0
+#: There is deliberately no thinness threshold here either, and there is no
+#: population-drift guard standing over one. Both went with the `stratum_score`
+#: column on 2026-09-06 — see *What the census is and is not read for* above.
 
 
 class ExpressedError(RuntimeError):
@@ -185,7 +124,7 @@ def pictures_path() -> Path:
 
 
 def readout_path() -> Path:
-    """The coverage vector, the budget, and what a recolor pass would cost."""
+    """The coverage vector, the budget and the agreement table."""
     return expressed_dir() / "expressed.json"
 
 
@@ -488,91 +427,15 @@ def agreement(rows: list[dict]) -> dict:
     }
 
 
-def thin(table: dict, rows: list[dict]) -> list[str]:
-    """The non-neutral swatches at most [`THIN_PICTURES`] finished pictures express."""
-    achromatic = set(neutrals())
-    limit = THIN_PICTURES / len(rows)
-    return sorted(
-        (name for name, value in table.items() if name not in achromatic and value <= limit),
-        key=lambda name: (table[name], name),
-    )
-
-
-# --------------------------------------------------------------------------- #
-# Part 3 — the recolor lever.
-# --------------------------------------------------------------------------- #
-def carriers(swatches: list[str]) -> dict[str, list[str]]:
-    """Per swatch, the maps `verify_palette_coverage` found reaching it at 10%.
-
-    Read off the coverage probe's own rows under the production fold, so a map
-    that only reaches the swatch with the fold off — a capability this pipeline
-    never spends — is not in the list. That read is a max over a sixteen-cell
-    panel and this one is over a particular picture's field, so a carrier here is
-    a *candidate* and never a promise.
-    """
-    from fractal_wallpapers.curation import palette_coverage
-
-    best = palette_coverage.reach(palette_coverage.read_rows(), "production")
-    return {
-        swatch: sorted(name for name in best if best[name].get(swatch, 0.0) >= THRESHOLD)
-        for swatch in swatches
-    }
-
-
-def recolor_cost(swatches: list[str], rows: list[dict]) -> dict:
-    """What measuring the recolor ceiling would take, before anybody spends it.
-
-    The cross product is the thin swatches' carriers against the finished
-    pictures, and the two populations are priced apart because they are not the
-    same job: a `field` picture pays one dump and then a sweep per map, and every
-    other kind pays a whole render per map. The per-unit seconds are this
-    machine's, measured on median-`maxiter` rows of each kind, so the estimate
-    moves with the hardware rather than pretending not to.
-    """
-    reachable = carriers(swatches)
-    union = sorted(set().union(*reachable.values())) if reachable else []
-    field = [row for row in rows if row["mode_kind"] == "field"]
-    other = [row for row in rows if row["mode_kind"] != "field"]
-    return {
-        "thin_swatches": len(swatches),
-        "carriers_per_swatch": {swatch: len(names) for swatch, names in reachable.items()},
-        "carriers_union": len(union),
-        "populations": {
-            "field": {
-                "pictures": len(field),
-                "screen_units": len(field) * len(union),
-                "per_unit": {"recolor_seconds": 0.040, "census_seconds": 0.022},
-                "confirm_unit": {"dump_seconds": 20.0, "recolor_seconds": 1.9},
-            },
-            "not_field": {
-                "pictures": len(other),
-                "by_kind": {
-                    kind: sum(1 for row in other if row["mode_kind"] == kind)
-                    for kind in sorted({row["mode_kind"] for row in other})
-                },
-                "screen_units": len(other) * len(union),
-                "per_unit": {"render_seconds": 0.42, "census_seconds": 0.022},
-                "confirm_unit": {"render_seconds": 27.0},
-            },
-        },
-        "judge": {"pictures_per_second": 136, "batch_size": 128, "geometry": "candidate"},
-        "note": (
-            "seconds are one machine's, measured on median-maxiter rows of each kind; "
-            "the screen is at candidate geometry and the confirm at release geometry"
-        ),
-    }
-
-
 # --------------------------------------------------------------------------- #
 # The readout.
 # --------------------------------------------------------------------------- #
 def take(log=print) -> dict:
-    """Coverage, the budget, what the cheap instruments cost, and the recolor price."""
+    """Coverage, the budget, and what the cheap instruments cost."""
     from datetime import UTC, datetime
 
     rows = _read_jsonl(pictures_path())
     table = coverage(rows)
-    lean = thin(table, rows)
     document = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -607,8 +470,6 @@ def take(log=print) -> dict:
         "ranked": sorted(table, key=lambda name: (table[name], name)),
         "budget": budget(rows),
         "agreement": agreement(rows),
-        "thin": lean,
-        "recolor_cost": recolor_cost(lean, rows),
     }
     _write_json(readout_path(), document)
     log(
@@ -619,82 +480,29 @@ def take(log=print) -> dict:
     return document
 
 
-def released_now() -> int:
-    """How many finished wallpapers the release store claims today.
-
-    The verdict alone and not the picture beside it: [`finished`] tests the file
-    because it is about to read it, and this only needs the size of the thing the
-    census was meant to cover. Reading 1,600 decision rows is a tenth of a second
-    against the merge this sits in front of.
-    """
-    from fractal_wallpapers.curation import records
-
-    return sum(
-        1
-        for row in records.read_decisions(records.RELEASE)
-        if row.get("verdict") == records.RELEASED
-    )
-
-
-def check_population(document: dict, current: int | None = None) -> dict:
-    """Refuse a readout whose census population has drifted past [`POPULATION_DRIFT`].
-
-    Returns what it measured so a caller can put it on a record. A store with no
-    released row at all is **not** a miss — there is nothing to compare against,
-    which is the shape a redirected store in a test has, and refusing there would
-    say the census was stale when what is absent is the population.
-    """
-    counted = released_now() if current is None else int(current)
-    census = int((document.get("population") or {}).get("pictures") or 0)
-    read = {
-        "census_pictures": census,
-        "released_now": counted,
-        "drift": None
-        if not census or not counted
-        else round(max(census, counted) / min(census, counted), 4),
-        "allowed": POPULATION_DRIFT,
-        "taken_at": document.get("taken_at"),
-    }
-    if not counted or not census:
-        return read
-    if read["drift"] > POPULATION_DRIFT:
-        raise ExpressedError(
-            f"{readout_path()} was taken {document.get('taken_at')} over {census} finished "
-            f"wallpapers and the release store now holds {counted} — {read['drift']}x, past "
-            f"the {POPULATION_DRIFT}x this allows. The thin set is a policy input read at "
-            f"merge and its threshold is a COUNT, so it enforces a different rate on a "
-            f"different population; nothing here re-derives it, because a partition that "
-            f"moved mid-leg would prune rows under a set no record names. Re-take it and "
-            f"re-fit what was fitted against it: `fractal-wallpapers curate expressed` then "
-            f"`fractal-wallpapers curate rank-key fit`."
-        )
-    return read
-
-
 def readout() -> dict:
-    """The readout as it was last taken, checked against the population it covers."""
+    """The readout as it was last taken.
+
+    No guard over it any more and deliberately none: nothing downstream acts on
+    this document, so a stale one is a stale reading rather than a stale policy.
+    Its own `taken_at` and `population` say what it covers.
+    """
     path = readout_path()
     if not path.is_file():
         raise ExpressedError(f"{path} is missing — take the reading before reading it")
-    document = json.loads(path.read_text(encoding="utf-8"))
-    check_population(document)
-    return document
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 __all__ = [
     "CANDIDATE_RESOLUTION",
     "CANDIDATE_SUPERSAMPLE",
-    "POPULATION_DRIFT",
     "SCHEMA",
     "SCREEN",
-    "THIN_PICTURES",
     "THRESHOLD",
     "ExpressedError",
     "agreement",
     "budget",
-    "carriers",
     "census",
-    "check_population",
     "coverage",
     "distribution",
     "expressed_counts",
@@ -705,8 +513,5 @@ __all__ = [
     "pictures_path",
     "readout",
     "readout_path",
-    "recolor_cost",
-    "released_now",
     "take",
-    "thin",
 ]

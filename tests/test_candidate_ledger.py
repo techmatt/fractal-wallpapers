@@ -266,9 +266,9 @@ def isolated(tmp_path, monkeypatch):
     `hot_root()`/`archive_root()`. Setting the two roots moves all of them at
     once — including the ones nobody enumerated, which is the point. A backfill
     goes through [`candidate_ledger.merge`], the merge prunes, and the prune
-    reads the supply sidecar and the expressed readout; the accessor list named
-    neither, so those two were being read off this machine's real tree. They are
-    written empty here.
+    reads the supply sidecar; the accessor list named it, so it was being read off
+    this machine's real tree. It is written empty here. The expressed readout was
+    the second of those until 2026-09-06, when the rank key stopped reading it.
 
     **`manifest_dir` is still patched, and it is the exception that proves the
     rule.** It resolves off `repo_root()` rather than off a tier, so there is no
@@ -295,9 +295,6 @@ def isolated(tmp_path, monkeypatch):
     store.mkdir(parents=True)
     monkeypatch.setattr(signatures, "sidecar_path", lambda: store / signatures.SIDECAR_NAME)
     (root / "curation" / "supply_scores.jsonl").touch()
-    expressed = root / "curation" / "expressed"
-    expressed.mkdir(parents=True)
-    (expressed / "expressed.json").write_text(json.dumps({"thin": []}), encoding="utf-8")
     return tmp_path
 
 

@@ -122,6 +122,33 @@ REACHED = 0.10
 #: not one of the 788 released (picture, swatch) cells at 10% falls.
 SCREEN_SHARE = 0.06
 
+#: The swatches this batch aims at, thinnest first — see [`targets`], which is
+#: where the loose end this leaves is written down. Frozen 2026-09-06 at the list
+#: the two batches on record were built against.
+TARGETS: tuple[str, ...] = (
+    "dark_muted_cyan",
+    "dark_muted_green",
+    "dark_muted_lime",
+    "dark_muted_teal",
+    "dark_muted_yellow",
+    "dark_vivid_cyan",
+    "dark_vivid_yellow",
+    "light_vivid_teal",
+    "dark_vivid_green",
+    "dark_vivid_lime",
+    "dark_vivid_teal",
+    "light_muted_lime",
+    "light_vivid_green",
+    "light_vivid_lime",
+    "light_muted_green",
+    "light_muted_teal",
+    "light_muted_yellow",
+    "light_muted_magenta",
+    "light_vivid_cyan",
+    "light_vivid_magenta",
+    "dark_muted_magenta",
+)
+
 #: The tier a picture must reach to be served. "At least a 2" on the render
 #: judge's own scale, read as its first unconditional cutpoint.
 SCREEN_TIER = 2
@@ -240,33 +267,27 @@ def _write_json(path: Path, document: dict) -> Path:
 # --------------------------------------------------------------------------- #
 # What to aim at, and what can reach it.
 # --------------------------------------------------------------------------- #
-@lru_cache(maxsize=1)
 def targets() -> tuple[str, ...]:
     """The swatches this batch is manufacturing, thinnest first.
 
-    `expressed`'s own thin list — the swatches at most [`expressed.THIN_PICTURES`]
-    of the finished wallpapers express — read off the artifact rather than
-    restated, because a second copy of that list is a second claim about the
-    collection.
+    **An explicit list, and a LOOSE END.** Until 2026-09-06 this read `expressed`'s
+    thin list — the swatches at most five finished wallpapers expressed — off the
+    artifact, so that a second copy of it could not become a second claim about the
+    collection. Matt's ruling took the thin list out with the rest of the
+    thin-colour apparatus, and no ordinary target selection was left to fall back
+    to: nothing else in this project answers *which colours is the collection
+    short of*.
 
-    Through [`expressed.readout`] and not off the file, so this reader stands
-    behind [`expressed.POPULATION_DRIFT`] like the one at merge does. A batch
-    aimed at a list taken over a fraction of the collection is manufacturing for
-    a thinness that may no longer be there.
+    So the list is frozen at what it was, rather than a policy being invented to
+    replace it. It is the list on both batches on record — `plan.json`'s `targets`
+    under `pilot_rare_colors` and `manufactured_rare_colors` are these
+    twenty-one, in this order — so a re-run reproduces the batches that were
+    actually built. What it is **not** is a current reading: the census that
+    produced it was taken over 246 pictures on 2026-08-24 and 645 have been
+    released since. Anything aiming a *new* batch has to say what it is aiming at
+    and why, and this constant is the place that decision lands.
     """
-    from fractal_wallpapers.curation import expressed
-
-    path = expressed.readout_path()
-    if not path.is_file():
-        raise ManufactureError(
-            f"{path} does not exist. `fractal-wallpapers curate expressed` is what says "
-            f"which swatches the finished collection is thin in, and this batch aims at "
-            f"that list rather than at one of its own."
-        )
-    thin = expressed.readout().get("thin") or []
-    if not thin:
-        raise ManufactureError(f"{path} names no thin swatch, so there is nothing to aim at")
-    return tuple(str(name) for name in thin)
+    return TARGETS
 
 
 def carriers() -> tuple[dict, dict]:
