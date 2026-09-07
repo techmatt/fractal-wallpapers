@@ -622,6 +622,26 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 0.515 | **3** shareable modes, floor draw over proven places | 3 | 8 | 09-05 | 51,959 cand / 2,167 places | `night_b` |
 | 8.423 | `smooth_angle_min` + `smooth_mean_angle`, **no sharing** | 3 | 3 | 09-05 | 1,923 cand / 322 places | `night_c` |
 | 4.618 | 11 dear modes, the 5 `direct_trap_multiply` cells included | 3 | 4 | 09-05 | 2,340 cand / 56 places | `night_d` |
+| 1.015 | 3 shareable modes, **breadth** over never-opened places | 3 | 12 | 09-06 | 17,933 cand / 1,497 places | `armA_places_0906` |
+| 0.404 | near band, mode held, over the **whole** band | 3 | 12 | 09-06 | 35,448 cand / 2,954 places | `armB_freeslots_0906` |
+| 0.737 | the arm A row's own pilot | 3 | 12 | 09-06 | 768 cand / 64 places | `pilotA_places_0906` |
+| 0.714 | the arm B row's own pilot | 3 | 12 | 09-06 | 1,001 cand / 86 places | `pilotB_freeslots_0906` |
+
+⚠ **A short pilot mis-prices a partition-round-robin draw, and it does so in
+whichever direction the dear partitions happen to land.** The two 09-06 pilots above
+are the same shape as the two legs beneath them and they miss in *opposite*
+directions: arm A's pilot read **0.737** against a realized **1.015** (38% under) and
+arm B's read **0.714** against **0.404** (77% over). Neither miss is depth, which is
+what [`LEGS.md`](LEGS.md)'s *A forty-place pilot over-priced this leg by 1.7x* had
+found — it is the **partition mix**. `hunt.spread` is a round-robin, so at 64 places
+each of ten partitions gets six or seven whatever they cost: arm A's pilot drew 12
+`phoenix` and **no `phoenix:classic` at all**, while its leg drew 518 phoenix at
+1.182 s and **517 phoenix:classic at 4.389 s**; arm B's pilot drew 85 of its 1,001
+candidates (8.5%) at `phoenix:classic`'s 3.063 s against the leg's 480 of 35,448
+(1.4%). **So read a pilot's `price` block per partition and re-weight it by the
+plan's own partition counts, rather than reading its pooled
+`seconds_per_candidate`** — the pooled figure prices the pilot's partition mix and
+never the leg's.
 
 **The eight-hour night re-measured the same shapes an order of magnitude wider, and
 two of the five rows above it did not hold.** The breadth/floor gap survives —

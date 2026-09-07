@@ -313,6 +313,14 @@ This is the rule that would have caught the inverted near-band manifest —
 whole unit spent because *free slot* was inferred from *not taken by a floor arm*
 instead of being subtracted directly.
 
+**And at K = 5 the manifest cut from it stops narrowing anything**, which is the
+100.0% row of the table above read as a leg would spend it: over
+`smooth`/`stripe`/`tia` at `--min-slots 2` it names 23,597 places against the
+23,619 that hold a candidate in one of those modes at all. Cut it anyway — the
+subtraction is what refuses the inverted shape — but size the leg off what
+actually bounds it, which is the band and not the slots. Same heading of
+[`LEGS.md`](LEGS.md) carries the measurement.
+
 | | rows | on disk |
 |---|---|---|
 | before, 2026-08-29 | 366,236 | 1,057.3 MiB |
