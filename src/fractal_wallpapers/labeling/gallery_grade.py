@@ -87,7 +87,7 @@ from pathlib import Path
 
 from fractal_wallpapers.labeling import finished, store
 from fractal_wallpapers.labeling import registry as registry_module
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import repo_root, under
 
 #: The schema every gallery-grade row carries, from the very first row.
 SCHEMA = 1
@@ -173,6 +173,37 @@ def batch_path(batch: str) -> Path:
 
 def registry_path() -> Path:
     return store_dir() / "batches.jsonl"
+
+
+def plans_dir() -> Path:
+    """Where the plans this store's drops were cut from live, on whichever tier holds them.
+
+    Under the regenerable tree rather than beside the rows, because a plan is a
+    thousand recipes and the rows are the tracked record. `<draw>/<batch>/plan.jsonl`
+    is the shape a drop leaves behind.
+    """
+    return under(NAME)
+
+
+def plan_paths() -> list[Path]:
+    """Every plan a drop of this store was cut from, over every draw and batch.
+
+    **The one thing here that is not regenerable, and the store cannot say so
+    itself.** A row carries [`leveled`] as a *boolean* — whether the candidate's
+    `<stem>.leveled/` colormap was on disk when the plan was cut, and so whether
+    the sheet's picture went through it or through the plain map — and never the
+    directory. The path lives only on the plan unit, so these files are the only
+    thing that can rebuild a levelled picture as it was judged. The sheets'
+    rendered pictures *are* regenerable and these are not, which is the opposite
+    of how the two look on disk.
+
+    Empty where the tree holds no plan at all, which is every clone that has not
+    run a drop: the rows are tracked and the plans are not.
+    """
+    directory = plans_dir()
+    if not directory.is_dir():
+        return []
+    return sorted(directory.glob("*/*/plan.jsonl"))
 
 
 def registry() -> dict[str, registry_module.Registration]:
@@ -462,6 +493,8 @@ __all__ = [
     "eval_eligible",
     "grade_row",
     "place_of",
+    "plan_paths",
+    "plans_dir",
     "read",
     "register",
     "registry",

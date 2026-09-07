@@ -349,6 +349,22 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+6 that reconciles exactly, and one of the two new fast guards is worth its
+second.** `PROTECT_ckpt112_gallery_grade_keys_0906`, 2026-09-06, idle box,
+`.[dev,models]` with a release engine. **118.94 s over 3,848, 124 deselected**
+fast — 3,972 against the 3,966 below, and the +6 is exactly
+`test_gallery_grade_retention.py`: five fast and one slow. No slow lane; the new
+file was run alone with `--slow`, **27.40 s over 6**, of which 24.06 s is
+`conftest.tracked_ledger`'s reading and 0.78 s is the guard itself.
+
+**+1.23 s for two calls of a reader that now sweeps a third store.**
+`retention.labeled_renders` reads `gallery_grade` beside the two finished heads,
+which took it from 11,849 keys to 12,766 and from about 0.45 s to about 0.57 s;
+two fast tests call it and a third pays it inside a synthetic `prune`. That is
+the whole of the +1.23 s and it is the shape *A cost paid once per test scales
+with the suite* warns about — three tests is fine, and a fourth wanting the same
+reader should take it from a fixture rather than call it again.
+
 **+13 that reconciles exactly, on a box serving three label pages.**
 `FOLLOWUP_ckpt112_identity_pin_rehome_dedup_0906`, 2026-09-06, `.[dev,models]`
 with a release engine, three `label serve` processes up on 8020-8022 while it ran.
