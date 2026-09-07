@@ -148,18 +148,15 @@ def redirect(monkeypatch, root, manifests):
     live = root / "curation" / candidate_ledger.store.UNIT
     copies = root / durability.BACKUP_UNIT / candidate_ledger.store.UNIT
     live.mkdir(parents=True, exist_ok=True)
-    # And the two stores the prune reads that the five accessor patches never
-    # redirected: the supply sidecar (`intake`) and the expressed readout
-    # (`rank_key.thin_cells`). Redirecting at the root redirects those too, which
-    # is how it came out that every test in this file had been reading THIS
-    # MACHINE's real 67k-row supply and its real coverage vector — and would have
-    # failed on a fresh clone, where neither file exists. Empty is the honest
-    # fixture: none of these synthetic keys was ever in either store.
+    # And the store the prune reads that the five accessor patches never
+    # redirected: the supply sidecar (`intake`). Redirecting at the root redirects
+    # it too, which is how it came out that every test in this file had been
+    # reading THIS MACHINE's real 67k-row supply — and would have failed on a
+    # fresh clone, where the file does not exist. Empty is the honest fixture:
+    # none of these synthetic keys was ever in it. The expressed readout was the
+    # second such store until 2026-09-06, when the rank key stopped reading it.
     (root / "curation").mkdir(parents=True, exist_ok=True)
     (root / "curation" / "supply_scores.jsonl").touch()
-    expressed = root / "curation" / "expressed"
-    expressed.mkdir(parents=True, exist_ok=True)
-    (expressed / "expressed.json").write_text(json.dumps({"thin": []}), encoding="utf-8")
     monkeypatch.setattr(signatures, "sidecar_path", lambda: live / signatures.SIDECAR_NAME)
     return live, copies
 

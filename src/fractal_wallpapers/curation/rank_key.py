@@ -5,36 +5,53 @@ judge's `P(>=4)` on the candidate. That judge is the best single column there is
 — every alternative tried alone loses to it — but it is not the only column with
 signal in it, and the ones beside it are **orthogonal** rather than competing.
 
-This is the form that came out of measuring them, `rank_key_fit`, 2026-08-28:
+This is the form, `rank_key_fit` 2026-08-28 with the calibration stratum taken
+back out of it 2026-09-06:
 
 ```text
-sigmoid( b0 + b1*loc_p_ge4 + b2*p_ge3 + b3*p_ge4 + b4*stratum + b5*flat16_1.0 )
+sigmoid( b0 + b1*loc_p_ge4 + b2*p_ge3 + b3*p_ge4 + b4*flat16_1.0 )
 ```
 
 the location head's `P(>=4)` for the place, the render judge at two cutpoints,
-the calibration stratum, and [`curation.flatness`]'s dead-space fraction — each
-standardized by the fit's own constants.
+and [`curation.flatness`]'s dead-space fraction — each standardized by the fit's
+own constants.
 
-## What this form reads, out of fold, as shipped
+## What this form reads, out of fold
 
-**0.779 smooth against the incumbent's 0.671** and **0.850 strange against
-0.826** — `d` of `+0.107` and `+0.024` — over the 1,051 label rows that join the
-ledger, five folds grouped on lineage.
+**0.783 smooth against the incumbent's 0.671** and **0.825 strange against
+0.826** — `d` of `+0.111` and `-0.001` — on the 1,051 label rows the five-column
+fit was taken over, five folds grouped on lineage, so the two forms are compared
+on one population and one partition. `curate rank-key fit` re-joins the stores as
+they stand and prints its own figures, which are over a larger corpus than that.
 
-Those are the **shared-weight** numbers, which are the ones this ships on.
-`rank_key_fit`'s headline 0.797 / 0.852 is the *per-kind* arm with a nested inner
-selection, and quoting it for a shared fit would over-read what is shipped by two
-points of AUC on smooth. `curate rank-key fit` prints these two figures on every
-run so the artifact and its reference line move together.
+Those are the **shared-weight** numbers, which are the ones this ships on. The
+per-kind arm with a nested inner selection reads higher and quoting it for a
+shared fit would over-read what is shipped.
+
+## What dropping the stratum cost, measured rather than assumed
+
+The five-column form read 0.779 / 0.850 on that population. Removing the column
+**loses 0.025 of AUC on strange**, `[-0.038, -0.012]` on a lineage-grouped paired
+bootstrap, which takes the whole margin over the raw judge with it; smooth is
+unmoved, `+0.004 [-0.016, +0.024]`.
+
+**None of that loss is the thin-colour half.** `stratum_score` was three levels —
+`composite` 2.0, `other` 1.0, `thin_colour` 0.0 — and only the last was about
+colour. Collapsing the thin level away and keeping a bare composite indicator
+costs `-0.002 [-0.007, +0.004]` on strange; collapsing the *composite* level away
+and keeping the thin one costs `-0.012 [-0.019, -0.006]`. The signal was the
+mode, wearing a colour term's name. Matt's ruling of 2026-09-06 removed the term
+and no composite column replaced it, which is a decision and not an oversight.
 
 ## Shared weights, not per kind
 
 Per-kind minus shared is unresolved on every arm tried, which is the ruling. On
-**this** form it is `+0.018 [-.002,+.039]` on smooth and `+0.005 [-.005,+.014]`
-on strange — the `+0.000 [-.011,+.012]` the ruling cites is the three-column base
-arm, not the five-column one that ships, and the difference is worth naming: on
-the shipped form the interval is close enough to excluding zero that per-kind
-weights are unresolved rather than *shown* to buy nothing.
+the five-column form it was `+0.018 [-.002,+.039]` on smooth and
+`+0.005 [-.005,+.014]` on strange — the `+0.000 [-.011,+.012]` the ruling cites
+is the three-column base arm — and the difference is worth naming: the interval
+was close enough to excluding zero that per-kind weights are unresolved rather
+than *shown* to buy nothing. **Those readings are the five-column form's** and
+have not been re-taken on the four-column one.
 
 Shared is also the only fit the fold structure supports: 96 of the 625 lineage
 groups span both corpora and carry 348 of the 1,051 rows, so folds drawn per kind
@@ -111,17 +128,11 @@ SCHEMA = 1
 UNIT = "rank_key"
 
 #: The form, in the order the coefficients are written and read.
-COLUMNS = ("loc_p_ge4", "p_ge3", "p_ge4", "stratum_score", flatness.COLUMN)
-
-#: The calibration stratum as a number, ordered rather than one-hot.
 #:
-#: `thin_colour` is a candidate dominant in a swatch at most
-#: [`expressed.THIN_PICTURES`] finished pictures express; `composite` is a mode
-#: with no scalar field to dump. They are the two populations the render judge is
-#: least calibrated on and they are ordered by how far from its training mass
-#: they sit, which a three-column one-hot would spend two degrees of freedom to
-#: say and n=342 cannot afford.
-STRATUM_ORDER = {"composite": 2.0, "other": 1.0, "thin_colour": 0.0}
+#: Four since 2026-09-06. `stratum_score` was the fifth and is gone with the rest
+#: of the thin-colour apparatus; what it cost is in this module's own docstring,
+#: under *What dropping the stratum cost*.
+COLUMNS = ("loc_p_ge4", "p_ge3", "p_ge4", flatness.COLUMN)
 
 #: Five folds at 20%, groups taken whole, assigned once over the **pooled**
 #: corpus. The seed is pinned because a re-fit that redrew them would report an
@@ -226,37 +237,7 @@ def load(path: Path | None = None) -> Key:
 # --------------------------------------------------------------------------- #
 # The columns, off a pool.
 # --------------------------------------------------------------------------- #
-def thin_cells() -> set:
-    """The colour cells at most [`expressed.THIN_PICTURES`] finished pictures hold.
-
-    **The partition this key was fitted against**, and not merely an input to it:
-    the coefficient on `stratum_score` was fitted 2026-08-28 against the set as it
-    stood then, so a re-take of `expressed.json` that moved the set would point
-    that weight at a different variable. `expressed.POPULATION_DRIFT` refuses a
-    census that has aged past its population rather than re-deriving one, and the
-    repair is the pair — `curate expressed` then `curate rank-key fit`.
-    """
-    from fractal_wallpapers.curation import expressed
-
-    return set(expressed.readout()["thin"])
-
-
-def stratum_of(mode: str, cells, thin: set, kinds: dict | None = None) -> str:
-    """`composite`, `thin_colour` or `other` for one candidate."""
-    from fractal_wallpapers.curation import colorize
-
-    kinds = {} if kinds is None else kinds
-    if mode not in kinds:
-        try:
-            kinds[mode] = colorize.kind_of(mode)
-        except Exception:
-            kinds[mode] = "unknown"
-    if kinds[mode] == "composite":
-        return "composite"
-    return "thin_colour" if set(cells or ()) & thin else "other"
-
-
-def features_for(candidates, locations=None, readings=None, thin=None) -> tuple[dict, dict]:
+def features_for(candidates, locations=None, readings=None) -> tuple[dict, dict]:
     """`({key: {column: value}}, what could not be read)` over a pool.
 
     Every column comes off a store that already exists — the ledger row, the
@@ -270,8 +251,6 @@ def features_for(candidates, locations=None, readings=None, thin=None) -> tuple[
 
     location_scores = intake.read_scores() if locations is None else locations
     flat = flatness.by_recipe() if readings is None else readings
-    lean = thin_cells() if thin is None else set(thin)
-    kinds: dict = {}
     out: dict = {}
     gaps = {"no_flatness": 0, "no_location_reading": 0}
     for candidate in candidates:
@@ -287,9 +266,6 @@ def features_for(candidates, locations=None, readings=None, thin=None) -> tuple[
             "loc_p_ge4": NO_LOCATION_READING if loc is None else float(loc),
             "p_ge3": float(candidate.p_ge3),
             "p_ge4": float(candidate.score),
-            "stratum_score": STRATUM_ORDER[
-                stratum_of(candidate.mode, candidate.cells, lean, kinds)
-            ],
             flatness.COLUMN: float(reading),
         }
     return out, gaps
@@ -532,8 +508,6 @@ def fit(rows=None, log=print) -> dict:
     # ---- the columns -------------------------------------------------------- #
     location_scores = intake.read_scores()
     flat = flatness.by_recipe()
-    lean = thin_cells()
-    kinds: dict = {}
     scores = _scores_by_recipe()
     consumed: list = []
     dropped = {"no_ledger_row": 0, "no_score": 0, "no_flatness": 0, "no_location_reading": 0}
@@ -555,7 +529,6 @@ def fit(rows=None, log=print) -> dict:
         loc = place.get("p_ge4")
         if loc is None:
             dropped["no_location_reading"] += 1
-        colour = row.get("colour") or {}
         mode = str((row.get("recipe") or {}).get("mode"))
         label = entry["row"]
         consumed.append(
@@ -573,9 +546,6 @@ def fit(rows=None, log=print) -> dict:
                     "loc_p_ge4": NO_LOCATION_READING if loc is None else float(loc),
                     "p_ge3": float(reading["p_ge3"]),
                     "p_ge4": float(reading["p_ge4"]),
-                    "stratum_score": STRATUM_ORDER[
-                        stratum_of(mode, colour.get("cells") or (), lean, kinds)
-                    ],
                     flatness.COLUMN: float(value),
                 },
             }
@@ -658,7 +628,6 @@ def fit(rows=None, log=print) -> dict:
                 name: round(float(value), 6) for name, value in zip(COLUMNS, deviation, strict=True)
             },
         },
-        "stratum_order": dict(STRATUM_ORDER),
         "no_location_reading_scored_at": NO_LOCATION_READING,
         "population": {
             "rows": len(consumed),
@@ -754,7 +723,6 @@ __all__ = [
     "LAMBDA",
     "NO_LOCATION_READING",
     "SCHEMA",
-    "STRATUM_ORDER",
     "UNIT",
     "Key",
     "RankKeyError",
@@ -770,6 +738,4 @@ __all__ = [
     "population_path",
     "predict",
     "standardize",
-    "stratum_of",
-    "thin_cells",
 ]

@@ -194,7 +194,6 @@ def carried_columns_for(rows: list[dict], flatness: float = 0.1) -> dict:
                 "tier": int(row["score"]),
                 "mode": row["mode"],
                 "loc_p_ge4": 0.5,
-                "stratum_score": 1.0,
                 "flat16_1.0": flatness,
             }
             for row in rows

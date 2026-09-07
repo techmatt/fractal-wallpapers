@@ -584,8 +584,8 @@ def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     # Redirected at the TIER ROOTS rather than per accessor. The ledger's two row
     # files, the flatness sidecar and the durable copies all resolve through a
     # root already, so setting the two moves every one of them — including the
-    # supply sidecar and the expressed readout, which the prune reads and which
-    # a per-accessor list never named. `manifest_dir` is the one that has no root
+    # supply sidecar, which the prune reads and which a per-accessor list never
+    # named. `manifest_dir` is the one that has no root
     # to set, because it is the tracked half; `conftest`'s session guard covers
     # what a fixture misses there.
     root = tmp_path / "artifacts"
@@ -594,9 +594,6 @@ def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     monkeypatch.setattr(candidate_ledger.store, "manifest_dir", lambda: tmp_path / "manifests")
     (root / "curation" / "supply_scores.jsonl").touch()
-    expressed = root / "curation" / "expressed"
-    expressed.mkdir(parents=True)
-    (expressed / "expressed.json").write_text(json.dumps({"thin": []}), encoding="utf-8")
     (tmp_path / "one").mkdir()
     hunt.rows_path("one").write_text(
         json.dumps(a_ledger_row()) + "\n",

@@ -18,8 +18,9 @@ instrument. The band is where a bar would *act*; it is not where the evidence is
 ## ★ The primary is the RANK KEY, and that is a later correction
 
 Everything above is the ckpt-88 reading and its arithmetic still stands. What
-moved at ckpt 91 is what the comparison turns on. `P(>=4)` is **one of five
-columns** [`curation.rank_key`] reads, and the key — not the column — is what
+moved at ckpt 91 is what the comparison turns on. `P(>=4)` is **one of four
+columns** [`curation.rank_key`] reads — five until the calibration stratum came
+out on 2026-09-06 — and the key — not the column — is what
 orders seats; so a retrain that improved the column and left the key alone would
 have improved nothing anybody ships. [`key_delta`] is the declared primary: the
 key **refit on each arm's own out-of-fold predictions**, ordering the rows a
@@ -454,11 +455,14 @@ def pooled(arm: str, rule: str, seed: int, folds=None) -> list[dict]:
 # The primary: the shipped rank key, refit on each arm's own predictions.
 # --------------------------------------------------------------------------- #
 #: The members of [`curation.rank_key.COLUMNS`] a retrain does NOT move. The
-#: place's own reading, the calibration stratum and the dead-space fraction are
-#: facts about the picture rather than about the judge, so they are joined once
-#: and every arm is handed the same ones; the two the judge owns are exactly what
-#: an arm substitutes.
-CARRIED_COLUMNS = ("loc_p_ge4", "stratum_score", "flat16_1.0")
+#: place's own reading and the dead-space fraction are facts about the picture
+#: rather than about the judge, so they are joined once and every arm is handed
+#: the same ones; the two the judge owns are exactly what an arm substitutes.
+#:
+#: `stratum_score` was a third until 2026-09-06 and went with the rank key's own
+#: column. **A cache written before that carries it and is a row shape short of
+#: the current one** — [`rank_key_columns`] takes `rebuild=True` for that.
+CARRIED_COLUMNS = ("loc_p_ge4", "flat16_1.0")
 
 #: The judge's own two columns in the key, in the order the key reads them.
 JUDGE_COLUMNS = ("p_ge3", "p_ge4")
@@ -512,9 +516,7 @@ def rank_key_columns(rebuild: bool = False, log=train.say) -> dict:
 
     location_scores = intake.read_scores()
     flat = flatness.by_recipe()
-    lean = rank_key.thin_cells()
     scores = candidate_ledger.scores_by_recipe()
-    kinds: dict = {}
     out: dict = {}
     dropped = {"no_ledger_row": 0, "no_score": 0, "no_flatness": 0, "no_location_reading": 0}
     for kind, row, identity in labels:
@@ -538,7 +540,6 @@ def rank_key_columns(rebuild: bool = False, log=train.say) -> dict:
         mode = str((entry.get("recipe") or {}).get("mode"))
         stripped = {name: member for name, member in row.items() if not name.startswith("_")}
         name = renders.job_name({**stripped, "_head": kind})
-        cells = (entry.get("colour") or {}).get("cells") or ()
         out[f"{kind}:{name}"] = {
             "kind": kind,
             "name": name,
@@ -549,7 +550,6 @@ def rank_key_columns(rebuild: bool = False, log=train.say) -> dict:
                 if reading_of_place is None
                 else float(reading_of_place)
             ),
-            "stratum_score": rank_key.STRATUM_ORDER[rank_key.stratum_of(mode, cells, lean, kinds)],
             "flat16_1.0": float(value),
             "incumbent_p_ge3": float(reading["p_ge3"]),
             "incumbent_p_ge4": float(reading["p_ge4"]),
@@ -564,7 +564,7 @@ def rank_key_columns(rebuild: bool = False, log=train.say) -> dict:
 def key_readings(rows: list[dict], carried: dict | None = None) -> list[dict]:
     """One arm's reading, put through a rank key **refit on that arm's own scores**.
 
-    The shipped key standardizes and weights five columns, two of which are this
+    The shipped key standardizes and weights four columns, two of which are this
     judge's. A retrain moves the CORN scale by construction, so a key whose
     constants were fitted against the incumbent's scale would read a candidate's
     columns at the wrong offset and report the scale move as a quality change.
@@ -597,7 +597,6 @@ def key_readings(rows: list[dict], carried: dict | None = None) -> list[dict]:
                 carried_row["loc_p_ge4"],
                 float(row["p_ge3"]),
                 float(row["p_ge4"]),
-                carried_row["stratum_score"],
                 carried_row["flat16_1.0"],
             ]
             for row, carried_row in joined

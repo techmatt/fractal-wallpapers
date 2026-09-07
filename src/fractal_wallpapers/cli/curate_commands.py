@@ -1922,13 +1922,6 @@ def curate_expressed(args: argparse.Namespace) -> int:
         f"{census_gap['worst_swatch_move']:.4f} and flips "
         f"{census_gap['threshold_cells_flipped']} of {census_gap['threshold_cells']} cells"
     )
-    cost = readout["recolor_cost"]
-    print(
-        f"recolor pass over {cost['thin_swatches']} thin swatches would put "
-        f"{cost['carriers_union']} carrier maps through "
-        f"{cost['populations']['field']['pictures']} field pictures and "
-        f"{cost['populations']['not_field']['pictures']} that need a re-render"
-    )
     print(f"\nexpressed {display_path(expressed.readout_path())}")
     print(f"pictures  {display_path(expressed.pictures_path())}")
     return 0

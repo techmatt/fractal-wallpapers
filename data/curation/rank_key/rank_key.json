@@ -1,127 +1,126 @@
 {
   "schema": 1,
-  "fitted_at": "2026-08-28T20:01:11Z",
+  "fitted_at": "2026-09-07T02:31:56Z",
   "form": "sigmoid(intercept + sum(w_c * (x_c - mean_c) / deviation_c))",
   "columns": [
     "loc_p_ge4",
     "p_ge3",
     "p_ge4",
-    "stratum_score",
     "flat16_1.0"
   ],
   "weights": "SHARED over both stores; per-kind bought +0.000 [-.011,+.012] smooth and +0.001 [-.005,+.007] strange, unresolved on every arm tried",
   "coefficients": {
-    "intercept": -1.754315,
-    "loc_p_ge4": 0.368615,
-    "p_ge3": 1.19274,
-    "p_ge4": 0.672463,
-    "stratum_score": 0.466797,
-    "flat16_1.0": -0.191863
+    "intercept": -1.384985,
+    "loc_p_ge4": 0.321861,
+    "p_ge3": 0.688156,
+    "p_ge4": 1.280551,
+    "flat16_1.0": 0.013259
   },
   "standardization": {
     "mean": {
-      "loc_p_ge4": 0.568991,
-      "p_ge3": 0.693108,
-      "p_ge4": 0.460968,
-      "stratum_score": 0.938154,
-      "flat16_1.0": 0.109815
+      "loc_p_ge4": 0.394008,
+      "p_ge3": 0.807403,
+      "p_ge4": 0.440833,
+      "flat16_1.0": 0.133089
     },
     "deviation": {
-      "loc_p_ge4": 0.439775,
-      "p_ge3": 0.307491,
-      "p_ge4": 0.388612,
-      "stratum_score": 0.744776,
-      "flat16_1.0": 0.123958
+      "loc_p_ge4": 0.433096,
+      "p_ge3": 0.323339,
+      "p_ge4": 0.423821,
+      "flat16_1.0": 0.139753
     }
-  },
-  "stratum_order": {
-    "composite": 2.0,
-    "other": 1.0,
-    "thin_colour": 0.0
   },
   "no_location_reading_scored_at": 0.0,
   "population": {
-    "rows": 1051,
+    "rows": 3278,
     "by_kind": {
-      "smooth_render": 342,
-      "strange_render": 709
+      "smooth_render": 1249,
+      "strange_render": 2029
     },
-    "tier4": 273,
+    "tier4": 1003,
     "tier_mix": {
-      "1": 13,
-      "2": 327,
-      "3": 438,
-      "4": 273
+      "1": 47,
+      "2": 868,
+      "3": 1360,
+      "4": 1003
     },
     "batches": {
+      "dtm_variants_20260902": 188,
+      "judge_band_20260903": 309,
+      "manufactured_rare_colors": 1,
+      "new_maps_top4_20260905": 329,
       "p_ge4_calibration_smooth": 123,
-      "p_ge4_calibration_strange": 115,
+      "p_ge4_calibration_strange": 107,
+      "phoenix_classic_20260903": 38,
+      "phoenix_q3q4_20260903": 200,
       "release_bar_band": 1,
-      "released_top_end": 116,
+      "released_top_end": 115,
       "seated_and_head_top": 200,
-      "under_seen_modes": 496
+      "smooth_decision_bands": 500,
+      "sparse_mode_head_top": 758,
+      "under_seen_modes": 409
     },
     "label_stores": {
       "smooth_render": {
-        "rows": 5462,
-        "renders": 5397,
-        "scored": 5397,
-        "locations": 2232,
-        "superseded": 65,
+        "rows": 6540,
+        "renders": 6471,
+        "scored": 6471,
+        "locations": 3257,
+        "superseded": 69,
         "unkeyed": 0
       },
       "strange_render": {
-        "rows": 4174,
-        "renders": 4030,
-        "scored": 4030,
-        "locations": 1589,
-        "superseded": 144,
+        "rows": 5951,
+        "renders": 5495,
+        "scored": 5495,
+        "locations": 2804,
+        "superseded": 456,
         "unkeyed": 0
       }
     },
-    "labels_resolved": 9427,
-    "joined_the_ledger": 1051,
+    "labels_resolved": 11966,
+    "joined_the_ledger": 3226,
     "dropped": {
-      "no_ledger_row": 8376,
+      "no_ledger_row": 8688,
       "no_score": 0,
       "no_flatness": 0,
       "no_location_reading": 0
     },
-    "lineage_groups": 625,
+    "lineage_groups": 2030,
     "folds": 5,
     "fold_seed": 20260828,
     "fold_sizes": {
       "smooth_render": [
-        68,
-        68,
-        68,
-        69,
-        69
+        250,
+        249,
+        250,
+        251,
+        249
       ],
       "strange_render": [
-        143,
-        143,
-        143,
-        139,
-        141
+        406,
+        406,
+        406,
+        405,
+        406
       ]
     },
     "population_record": "population.jsonl"
   },
   "out_of_fold": {
     "smooth_render": {
-      "rows": 342,
-      "tier4": 138,
-      "auc": 0.7787,
-      "incumbent_auc": 0.6713,
-      "d": 0.1075
+      "rows": 1249,
+      "tier4": 513,
+      "auc": 0.8248,
+      "incumbent_auc": 0.8311,
+      "d": -0.0063
     },
     "strange_render": {
-      "rows": 709,
-      "tier4": 135,
-      "auc": 0.8496,
-      "incumbent_auc": 0.826,
-      "d": 0.0236
+      "rows": 2029,
+      "tier4": 490,
+      "auc": 0.8612,
+      "incumbent_auc": 0.862,
+      "d": -0.0008
     }
   },
   "flatness": {
@@ -129,5 +128,5 @@
     "cell": 16,
     "threshold": 1.0
   },
-  "seconds": 15.0
+  "seconds": 22.1
 }

@@ -306,8 +306,11 @@ one of them through the **carrier prior** — a bound on the ramp rather than a 
 of this pipeline — until 2026-09-06. That fallback works and is what the two-table rule
 was written for, but it is not the same instrument: through the prior, **21** of the 120
 survived a four-thin-cell cut (`dark_vivid_green`, `dark_vivid_yellow`, `dark_vivid_lime`,
-`dark_vivid_teal`) at the default bar; measured, **50** do. Over all 21
-`rank_key.thin_cells()` the same cut went **55 → 95**. *(An earlier reading here said
+`dark_vivid_teal`) at the default bar; measured, **50** do. Over all 21 cells of the
+thin list as it stood that day the same cut went **55 → 95**. *(That list was
+`expressed`'s and was deleted on 2026-09-06 with the rest of the thin-colour
+apparatus; the reading is kept because it is a measurement of the drop rather than
+of the list, and its cells are named above. An earlier reading here said
 "20 of the 120" without naming its cells; **409** of the 5,985 four-cell subsets of the
 thin cells read exactly 20 today, so that figure named nothing a reader could reproduce.
 A cut is its cells.)*
