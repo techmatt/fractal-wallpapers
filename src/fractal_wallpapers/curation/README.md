@@ -2169,7 +2169,23 @@ at a sixteenth of the area, levelled off its own histogram — and moves a media
 of 2.1 points, up to 64. That is why a recolor pass would screen at candidate
 geometry and never measure there.
 
-**Runtime.** 246 pictures, four share vectors each, about 180 s. The recolor pass
-the readout *prices* is not run: `recolor_cost` reports the cross product it
-would need — 724 carrier maps over 194 field pictures and 52 that need a whole
-re-render per map — so the decision to spend it is taken against a number.
+**Runtime.** 246 pictures, four share vectors each, about 180 s; re-measured
+2026-09-06 at **645 pictures in 437 s**, which is the same 0.7 s a picture. The
+recolor pass the readout *prices* is not run: `recolor_cost` reports the cross
+product it would need — 724 carrier maps over 194 field pictures and 52 that need
+a whole re-render per map — so the decision to spend it is taken against a number.
+
+**The `thin` list is the one line of this that something else acts on, and it can
+go stale in a direction.** `rank_key`'s `stratum_score` reads it at the merge's
+prune and again at the solve, and `manufacture` aims a batch of renders at it.
+`THIN_PICTURES` is a **count**, compared against `count / len(rows)`, so the rate
+it enforces halves every time the collection doubles. Measured 2026-09-06: taken
+over 246 pictures it named 21 cells, and re-taken over the 645 released since it
+names **one**, moving 98,000 of the pool's 308,000 rows out of `thin_colour`. A
+re-take alone is therefore not a data refresh — the coefficient reading that
+column was fitted 2026-08-28 against the 21-cell partition, so swapping the
+partition under it points a fitted weight at a different variable. **The repair is
+a re-take and a re-fit, in that order**, and `expressed.POPULATION_DRIFT` (2x) is
+the guard that asks for it: `readout` refuses past that factor rather than
+re-deriving, because a partition that moved mid-leg would prune rows under a set
+no record names.

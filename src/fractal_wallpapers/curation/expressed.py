@@ -73,6 +73,28 @@ The judge would read the candidate render and nothing else. Both release floors
 were fitted at `640x360` and `curation.rescore` reads the whole pool there — a
 floor measured at one geometry and applied at another is two measurements wearing
 one number.
+
+## The thin set is measurement here and policy downstream, and it can go stale
+
+Everything above is a reading. [`thin`] is the one line of it something else acts
+on: `curation.rank_key`'s `stratum_score` column reads this file's `thin` list at
+the merge's prune and again at the solve, and `curation.manufacture` aims a whole
+batch of renders at it. So a readout is not only out of date when it ages — it is
+**wrong in a direction**, because [`THIN_PICTURES`] is a count and a count means a
+smaller and smaller rate as the collection grows.
+
+Measured 2026-09-06, and it is not a rounding: taken over 246 pictures the
+threshold named 21 cells, and re-taken over the 645 released since it names **one**,
+moving 98,000 of the candidate pool's 308,000 rows out of the `thin_colour`
+stratum. The coefficient that reads that column was fitted 2026-08-28 against the
+21-cell partition, so a re-take alone does not refresh a number, it points a fitted
+weight at a different variable.
+
+[`check_population`] is the guard that came out of that, and [`POPULATION_DRIFT`]
+carries why the factor is what it is. It refuses rather than re-deriving: a
+partition that re-took itself when it noticed it was stale would prune rows
+mid-leg under a set no record names, and the attribution is the thing that makes
+a prune defensible. The repair is a re-take **and** a re-fit, in that order.
 """
 
 from __future__ import annotations
@@ -112,7 +134,35 @@ CANDIDATE_SUPERSAMPLE = 2
 #: A swatch is THIN when at most this many of the finished pictures express it.
 #: A count rather than a rate because the population is small enough to name
 #: pictures: five of two hundred and forty-six.
+#:
+#: **The count is measured against whatever population the census holds**, so it
+#: means a different rate on a different population — five of 246 is one in fifty,
+#: five of 645 is one in a hundred and thirty. That is what [`POPULATION_DRIFT`]
+#: watches, and 2026-09-06 measured what the difference does: the set goes from 21
+#: cells to 1 and 98,000 of the pool's 308,000 rows change stratum under it.
 THIN_PICTURES = 5
+
+#: How far the census's own population may sit from the released count before
+#: [`readout`] refuses to hand the reading over. A ratio either way, so a census
+#: taken over a *larger* population than the store now holds — a readout pointed
+#: at the wrong store — is caught by the same number.
+#:
+#: **Two, because the thin set is a policy input read at merge and its threshold
+#: is a count.** [`THIN_PICTURES`] is compared against `count / len(rows)`, so the
+#: rate it enforces halves every time the population doubles, silently, with the
+#: file's own `taken_at` the only thing that says so. The two passes on record
+#: added 150 and 249 pictures, so a pass-sized addition to today's 645 is about
+#: 1.4x and the factor leaves room for two of them before it asks — ordinary
+#: labeling growth never reaches it, and the drift this was written for was 2.62x.
+#:
+#: It does **not** re-derive on a miss. `texture_flat.jsonl` self-extends because
+#: it registers a pure function of the engine spec and a missing row has one
+#: right answer. This is a partition somebody's coefficient was fitted against,
+#: and one that re-took itself mid-leg would prune rows under a set no record
+#: names. The miss is a refusal and the repair is two commands, in this order:
+#: `curate expressed` re-takes the census, `curate rank-key fit` re-fits the
+#: coefficient against the partition that came out of it.
+POPULATION_DRIFT = 2.0
 
 
 class ExpressedError(RuntimeError):
@@ -569,17 +619,72 @@ def take(log=print) -> dict:
     return document
 
 
+def released_now() -> int:
+    """How many finished wallpapers the release store claims today.
+
+    The verdict alone and not the picture beside it: [`finished`] tests the file
+    because it is about to read it, and this only needs the size of the thing the
+    census was meant to cover. Reading 1,600 decision rows is a tenth of a second
+    against the merge this sits in front of.
+    """
+    from fractal_wallpapers.curation import records
+
+    return sum(
+        1
+        for row in records.read_decisions(records.RELEASE)
+        if row.get("verdict") == records.RELEASED
+    )
+
+
+def check_population(document: dict, current: int | None = None) -> dict:
+    """Refuse a readout whose census population has drifted past [`POPULATION_DRIFT`].
+
+    Returns what it measured so a caller can put it on a record. A store with no
+    released row at all is **not** a miss — there is nothing to compare against,
+    which is the shape a redirected store in a test has, and refusing there would
+    say the census was stale when what is absent is the population.
+    """
+    counted = released_now() if current is None else int(current)
+    census = int((document.get("population") or {}).get("pictures") or 0)
+    read = {
+        "census_pictures": census,
+        "released_now": counted,
+        "drift": None
+        if not census or not counted
+        else round(max(census, counted) / min(census, counted), 4),
+        "allowed": POPULATION_DRIFT,
+        "taken_at": document.get("taken_at"),
+    }
+    if not counted or not census:
+        return read
+    if read["drift"] > POPULATION_DRIFT:
+        raise ExpressedError(
+            f"{readout_path()} was taken {document.get('taken_at')} over {census} finished "
+            f"wallpapers and the release store now holds {counted} — {read['drift']}x, past "
+            f"the {POPULATION_DRIFT}x this allows. The thin set is a policy input read at "
+            f"merge and its threshold is a COUNT, so it enforces a different rate on a "
+            f"different population; nothing here re-derives it, because a partition that "
+            f"moved mid-leg would prune rows under a set no record names. Re-take it and "
+            f"re-fit what was fitted against it: `fractal-wallpapers curate expressed` then "
+            f"`fractal-wallpapers curate rank-key fit`."
+        )
+    return read
+
+
 def readout() -> dict:
-    """The readout as it was last taken."""
+    """The readout as it was last taken, checked against the population it covers."""
     path = readout_path()
     if not path.is_file():
         raise ExpressedError(f"{path} is missing — take the reading before reading it")
-    return json.loads(path.read_text(encoding="utf-8"))
+    document = json.loads(path.read_text(encoding="utf-8"))
+    check_population(document)
+    return document
 
 
 __all__ = [
     "CANDIDATE_RESOLUTION",
     "CANDIDATE_SUPERSAMPLE",
+    "POPULATION_DRIFT",
     "SCHEMA",
     "SCREEN",
     "THIN_PICTURES",
@@ -589,6 +694,7 @@ __all__ = [
     "budget",
     "carriers",
     "census",
+    "check_population",
     "coverage",
     "distribution",
     "expressed_counts",
@@ -600,6 +706,7 @@ __all__ = [
     "readout",
     "readout_path",
     "recolor_cost",
+    "released_now",
     "take",
     "thin",
 ]
