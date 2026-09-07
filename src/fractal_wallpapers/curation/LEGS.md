@@ -784,6 +784,47 @@ The parameter under it is `near_named` and not `near_places`, which is what the
 flag is called. `build_plan` calls [`near_places`] to take the draw, and a
 parameter of that name would shadow the function for the whole of it.
 
+### What the near band buys, decomposed by the incumbent mode, measured 2026-09-07
+
+**The band never chooses a mode.** [`plan_held_mode`] renders each place at its
+own `best_mode`, so a unit's mode *is* its incumbent's, and widening the roster
+changes which incumbent wins the per-place argmax rather than adding modes to
+try. That identity is checkable and was checked: over `armB_0907` and
+`armB2_0907`, **0 of 116 and 0 of 1,350 places carry more than one mode**, so the
+arms' own `by_mode` block *is* a decomposition by incumbent mode.
+
+Split on `colorize.shareable` — the engine catalog's **`field`** kind, the one
+coloring with a single scalar field behind it, so one iteration pass serves every
+palette at that pair. Everything else (composite, modulate, direct) re-renders
+per candidate, and that dump is the whole of the price difference.
+
+| arm | half | cand | eng s | s/cand | clear | kept clears | s a kept clear | seats |
+|---|---|--:|--:|--:|--:|--:|--:|--:|
+| B | field | 528 | 386 | **0.730** | 17.0% | 74 | **5.21** | 2 |
+| B | non-dumping | 862 | 3,012 | **3.494** | 22.7% | 147 | 20.49 | 8 |
+| B2 | field | 14,784 | 7,869 | **0.532** | 6.9% | 885 | **8.89** | 11 |
+| B2 | non-dumping | 1,416 | 5,016 | **3.542** | 11.1% | 121 | 41.45 | 11 |
+
+**The dump is worth 4.8x-6.7x on price and the dear modes convert 1.3x-1.6x
+better, and the price wins.** A field mode is 3.9-8.9 engine seconds a kept clear
+against 20-41; per engine-hour, B2's field half returns **405** kept clears
+against the non-dumping half's 87.
+
+**On SEATS the two halves are level, and that is the finding.** B's ten seats are
+**8 non-dumping to 2 field** off 11.4% of the clock; B2's twenty-two are **11 and
+11** off 38.9%. So the dear half takes half the seats for a third to a ninth of
+the candidates — the conversion advantage is real all the way through to the
+gallery, and it is not big enough to beat the dump on rate. Neither half
+dominates and the mix is not a knob the band has: which half a place falls in is
+its incumbent's mode, decided before the leg starts.
+
+**Which modes:** B2's field half is `smooth` (9,600 candidates, 800 places),
+`tia` (2,748) and `stripe` (2,436) — a place already at the keep has been mined
+often, so its incumbent is cheap and shareable. Its dearest per candidate are
+`smooth_stripe` **8.13 s** and `smooth_mean_angle` **6.84 s**, at 139 and 104
+engine seconds a kept clear. `direct_trap_multiply` clears best in both arms
+(100% at B, 35.4% at B2) and has taken **no seat in either**.
+
 ### `--draw-maps` is the palette twin of it, and it is a draw filter and nothing else
 
 `--draw-maps FILE` is a maps **manifest** — a JSONL of `{"schema": 1, "map": ...}`

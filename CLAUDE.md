@@ -59,8 +59,9 @@ These were decided once, at the first commit, because each is expensive to rever
   tracked file is binary-by-nature or exceeds 1 MiB. Its two allowlists are not
   interchangeable: `ALLOWLIST` excuses a file from both rules and is empty;
   `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and still
-  holds it to being text, its only entry being `data/palette_choice/rows/` on
-  Matt's call. Adding to either is a decision, not a fix.
+  holds it to being text, its two entries being `data/palette_choice/rows/` and
+  `data/curation/rank_key/population.jsonl`, each on Matt's call and each with its
+  reason written at the site. Adding to either is a decision, not a fix.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
@@ -177,19 +178,21 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **118.32 s over the 3,882
+Both are measured, not estimated. The **fast** lane is **120.37 s over the 3,886
 it holds, 124 deselected**, on this machine, 2026-09-07, on an idle box with a
 `.[dev,models]` install and a release engine built. The **slow** lane's last
 reading is **7:38 over 4,005**, taken one test earlier on the same install —
 the arithmetic's own prediction to the test, which
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles. So
-the next slow lane should read **4,006** and a figure other than that is worth
+the next slow lane should read **4,010** and a figure other than that is worth
 reading rather than assuming.
 
 ⚠ **That slow lane is 4,004 passed and ONE red, and the red is a stale census
 rather than a broken tree.**
 `test_leveled_identity.py::test_no_two_ledger_rows_name_one_picture` holds
-`run_index_named >= 13,526` as a floor and the store reads 13,510. It fails the
+`run_index_named >= 13,526` as a floor and the store reads 13,504 — it moved
+DOWN 6 under the merges of 2026-09-07, so the gap widens with mining rather than
+closing, and a retake is the only thing that fixes it. It fails the
 same way on a clean tree, so it is nobody's edit; it is the constant needing a
 retake. Until somebody retakes it, **a slow lane with exactly that one failure is
 the expected reading** and a second failure is the thing to look at. **Zero skips is the normal reading now and 19 was the render cache

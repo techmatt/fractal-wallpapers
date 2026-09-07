@@ -538,10 +538,86 @@ def test_the_mode_floor_leg_walks_the_same_key_as_the_general_leg():
 
 
 def test_each_seat_carries_the_value_its_own_key_gave_it_beside_p_ge4():
-    record = solve.solve([candidate("a", score=0.5)], n=1, order={"a": 0.25}, log=quiet)
+    record = solve.solve(
+        [candidate("a", score=0.5)], n=1, order={"a": 0.25}, key=solve.RANK_KEY, log=quiet
+    )
     seat = record["seated"][0]
     assert (seat["rank"], seat["p_ge4"]) == (0.25, 0.5)
     assert record["config"]["sort_key"] == "rank_key"
+
+
+def test_a_cascade_seating_names_the_cascade_in_every_field_that_says_what_ordered_it(tmp_path):
+    """Three fields wrote the literal `"rank_key"` for anything that was not the
+    judge, which was true while `rank-key` was the only fitted key and became a
+    lie the day the cascade shipped as the default. A record that misnames its own
+    order is worse than one that omits it: the misnaming is invisible, and a
+    cascade seating and a rank-key seating disagree about which picture represents
+    a place four times in five.
+
+    `sort_key_named` stays what the CALLER said, which is a different question and
+    is why it keeps the hyphen: `--key rank-key` is what somebody typed and
+    `rank_key` is what the resolver called itself.
+    """
+    order = {"a": 0.5}
+    cascade = solve.solve(
+        [candidate("a")],
+        n=1,
+        order=order,
+        coverage={"key": solve.CASCADE_KEY, "ranked": 1, "unranked": 0},
+        key=solve.CASCADE_KEY,
+        log=quiet,
+    )
+    assert cascade["config"]["sort_key"] == solve.CASCADE_KEY
+    assert cascade["config"]["sort_key_named"] == solve.CASCADE_KEY
+    assert cascade["order"]["key"] == solve.CASCADE_KEY
+    assert cascade["order"]["coverage"]["key"] == solve.CASCADE_KEY
+    assert cascade["objective"]["rank_quantity"] == solve.CASCADE_KEY
+
+    # The same order under the incumbent key, and every field moves with it.
+    ranked = solve.solve(
+        [candidate("a")],
+        n=1,
+        order=order,
+        coverage={"key": "rank_key", "ranked": 1, "unranked": 0},
+        key=solve.RANK_KEY,
+        log=quiet,
+    )
+    assert ranked["config"]["sort_key"] == "rank_key"
+    assert ranked["config"]["sort_key_named"] == solve.RANK_KEY == "rank-key"
+    assert ranked["order"]["key"] == "rank_key"
+    assert ranked["objective"]["rank_quantity"] == "rank_key"
+
+    # The sheet letters what it sorted on off `config["sort_key"]`, so it follows
+    # rather than carrying a fourth copy of the answer.
+    page = solve.contact_sheet("under-test", cascade, output=tmp_path / "sheet.html").read_text(
+        encoding="utf-8"
+    )
+    assert f"Sorted on <b>{solve.CASCADE_KEY}</b>" in page
+    assert f"1. {solve.CASCADE_KEY} 0.5000" in page
+
+
+def test_the_key_a_record_names_is_the_resolvers_and_not_the_callers_default():
+    """[`ordered_by`] reads the coverage block the resolver wrote, not the `key`
+    argument, because `key` defaults to the cascade and a caller handing in an
+    order it resolved elsewhere would otherwise have it labelled `cascade`
+    whatever it is. With no coverage at all the caller's name is all there is, and
+    it goes through [`RECORD_SPELLING`] so the fallback cannot invent a third
+    spelling of the one key that has two."""
+    mislabelled = solve.solve(
+        [candidate("a")],
+        n=1,
+        order={"a": 0.5},
+        coverage={"key": "rank_key"},
+        log=quiet,  # `key` left at its default, which is the cascade
+    )
+    assert mislabelled["config"]["sort_key_named"] == solve.DEFAULT_KEY == solve.CASCADE_KEY
+    assert mislabelled["config"]["sort_key"] == "rank_key", "the resolver wins"
+
+    bare = solve.solve([candidate("a")], n=1, order={"a": 0.5}, key=solve.RANK_KEY, log=quiet)
+    assert bare["config"]["sort_key"] == "rank_key" != solve.RANK_KEY
+    assert solve.ordered_by(None, solve.CASCADE_KEY) == solve.JUDGE_KEY, (
+        "no mapping means the candidate's own p_ge4 ordered it, whatever was named"
+    )
 
 
 def test_a_seating_on_the_judge_alone_says_so_and_carries_no_rank():
@@ -556,7 +632,7 @@ def test_the_contact_sheet_is_sorted_good_to_bad_by_the_seatings_own_key(tmp_pat
     reads as a quality claim it is not making."""
     pool = [candidate(f"c{at}", score=0.5 + at / 100.0) for at in range(4)]
     order = {"c0": 0.9, "c1": 0.1, "c2": 0.8, "c3": 0.2}
-    record = solve.solve(pool, n=4, order=order, log=quiet)
+    record = solve.solve(pool, n=4, order=order, key=solve.RANK_KEY, log=quiet)
     where = solve.contact_sheet("under-test", record, output=tmp_path / "sheet.html")
     page = where.read_text(encoding="utf-8")
     captions = [f"{at}. rank_key {value:.4f}" for at, value in enumerate([0.9, 0.8, 0.2, 0.1], 1)]

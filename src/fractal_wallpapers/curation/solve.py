@@ -184,6 +184,14 @@ CASCADE_KEY = "cascade"
 #: The keys a caller may name.
 KEYS = (RANK_KEY, JUDGE_KEY, CASCADE_KEY)
 
+#: **One key with two spellings, and this is the one a record uses.**
+#: [`RANK_KEY`] is typed with a hyphen and has written itself with an underscore
+#: everywhere it lands on a record — [`rank_key.order_for`]'s coverage block, and
+#: the 121 solve records that name it. [`CASCADE_KEY`] and [`JUDGE_KEY`] have one
+#: spelling each and are absent here. [`ordered_by`] reads it, so a record says
+#: the same thing whether or not a coverage block came with the order.
+RECORD_SPELLING = {RANK_KEY: "rank_key"}
+
 #: **The sort key this leg walks unasked**, since 2026-09-07: [`CASCADE_KEY`].
 #:
 #: It was [`RANK_KEY`] from 2026-08-28, on Matt's acceptance by eye off the
@@ -770,6 +778,31 @@ def cascade_order(candidates, order: dict, record: dict, log=print) -> tuple[dic
             **counted,
         },
     }
+
+
+def ordered_by(order: dict | None, key: str = DEFAULT_KEY, coverage: dict | None = None) -> str:
+    """The name of the quantity that actually ordered a seating.
+
+    **What every record field claiming to say what ordered a walk is written
+    from**, so the three of them cannot drift apart or from the walk. Until
+    2026-09-07 they wrote the literal `"rank_key"` for anything that was not
+    [`JUDGE_KEY`], which was true while [`RANK_KEY`] was the only fitted key and
+    became a lie the day [`CASCADE_KEY`] shipped.
+
+    `None` order is [`JUDGE_KEY`] whatever a caller named — there is no mapping,
+    so the value is the candidate's own `P(>=4)` and nothing else could have
+    ordered it. Otherwise the **coverage record's own spelling**, which is what
+    the resolver that built the mapping called itself: [`cascade_order`] writes
+    [`CASCADE_KEY`] and [`rank_key.order_for`] writes `"rank_key"`. Reading it off
+    the coverage rather than off `key` is what keeps a caller who hands `solve` an
+    order it resolved elsewhere from labelling it with this function's default.
+    Only a caller passing an order with **no** coverage falls back to `key`, and
+    through [`RECORD_SPELLING`] so that fallback cannot invent a third spelling.
+    """
+    if order is None:
+        return JUDGE_KEY
+    named = None if coverage is None else coverage.get("key")
+    return str(named) if named else RECORD_SPELLING.get(str(key), str(key))
 
 
 def value_of(candidate, order: dict | None) -> float:
@@ -1948,6 +1981,7 @@ def solve(
             cap_rule,
             order,
             key,
+            coverage,
             theme,
             spiral_cap,
             held_ceilings,
@@ -1958,7 +1992,7 @@ def solve(
         "objective": {
             "of": OBJECTIVE,
             "tiers": ["seats", "shortfall", "worst", "sum"],
-            "rank_quantity": "rank_key" if order is not None else JUDGE_KEY,
+            "rank_quantity": ordered_by(order, key, coverage),
             "seed": seeded.get("objective"),
             "after_the_swap_loop": swapped.get("objective"),
             "after_the_augment": augmented.get("objective_after"),
@@ -2012,7 +2046,7 @@ def solve(
             "capable_groups": capable,
         },
         "order": {
-            "key": JUDGE_KEY if order is None else "rank_key",
+            "key": ordered_by(order, key, coverage),
             "of": "the render judge's P(>=4) on the candidate"
             if order is None
             else "a fitted rank key, applied to the ORDER and the OBJECTIVE — every bar, "
@@ -2126,6 +2160,7 @@ def _config(
     group_cap: str,
     order: dict | None,
     key: str,
+    coverage: dict | None = None,
     theme: str | None = None,
     spiral_cap: float | None = None,
     mode_ceilings: dict | None = None,
@@ -2203,7 +2238,12 @@ def _config(
             "targets": dict(sorted(rule.targets.items())),
             "target_rule": target_rule(),
         },
-        "sort_key": JUDGE_KEY if order is None else "rank_key",
+        # What actually ordered the walk, and `sort_key_named` beside it is what the
+        # caller asked for. The two differ where a caller named nothing and took
+        # the default, and they differ in spelling for `rank-key` — whose coverage
+        # record has always called itself `rank_key` and whose 121 existing solve
+        # records say that, so this is the spelling that keeps them readable.
+        "sort_key": ordered_by(order, key, coverage),
         "sort_key_named": str(key),
         # The uniform floor, or `None` where the floors are per mode — which is
         # what the default rule builds. Both shapes are always in `mode_floors`.
@@ -3179,6 +3219,7 @@ __all__ = [
     "cascade_order",
     "Q4_BASIS",
     "RANK_KEY",
+    "RECORD_SPELLING",
     "ROW_BACKSTOP",
     "SAME_PLACE",
     "SCHEMA",
@@ -3207,6 +3248,7 @@ __all__ = [
     "picture_of",
     "pool",
     "ranking",
+    "ordered_by",
     "ranking_for",
     "read_record",
     "explained",

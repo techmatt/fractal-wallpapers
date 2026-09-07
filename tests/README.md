@@ -349,6 +349,20 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+4 in one prompt, and the clock did not move.**
+`FIX_ckpt113_cascade_records_and_pool_reads_0907`, 2026-09-07, idle box,
+`.[dev,models]` with a release engine. **120.37 s over 3,886, 124 deselected**
+fast — 4,010 against the 4,006 below. The +4 is two arithmetic tests in
+`test_solve.py` over the record fields that name a seating's key, and a new
+`tests/test_pool_draw.py` of two, which stands in for the draw's three
+store-facing collaborators and so is arithmetic too. 120.37 against 118.32 below
+is two seconds over a lane that has run 130.15 on a disturbed disk, so nothing
+here is a cost. Slow lane not run — the diff is two modules, their tests and
+three documents, and the one slow guard the prompt touches was run alone: the
+known red still fails, at **13,504** against its floor of 13,526, having moved
+DOWN 6 from 13,510 under last night's merges. **The next slow lane should read
+4,010** and that red should still be the only one.
+
 **+1, and the first reading of this file taken right after a four-hour render
 leg rather than before one.**
 `MINE_ckpt113_band_weighted_with_displacement_0907`, 2026-09-07, box idle again

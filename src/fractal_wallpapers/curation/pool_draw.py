@@ -393,6 +393,14 @@ def draw(
                 "fallback": table["fallback"],
             },
         },
+        # **The key this draw's `best-ranked` actually meant**, off the coverage
+        # record the resolver wrote rather than off a constant here, so a cascade
+        # draw and a rank-key draw are told apart by their own records. The two
+        # disagree about which row represents a place for most of the pool, so a
+        # sheet whose record does not name the order is a sheet nobody can
+        # attribute later. `rank_key` below is the coverage record whole and keeps
+        # its 2026-08 name: every drawn record on disk carries it.
+        "key": solve.ordered_by(order, solve.DEFAULT_KEY, coverage),
         "rank_key": coverage,
         "modes": dict(sorted(modes.items(), key=lambda item: (-item[1], item[0]))),
         "partitions": dict(sorted(partitions.items(), key=lambda item: (-item[1], item[0]))),
