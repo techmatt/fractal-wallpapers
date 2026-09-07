@@ -181,3 +181,26 @@ is not — that the drawn candidate itself is reached — and pins the plans bes
 
 `gallery_grade.plan_paths()` is where the plans are asked for, so nothing outside this
 store's module spells their layout.
+
+## The head fitted on it
+
+`models/gallery_grade/` — built 2026-09-06, **adopted by nothing**. A separate
+network at the render judge's architecture, initialised from its shipped
+`weights-v6` artifact and fitted on these rows at the ledger's **640x360 candidate**
+geometry rather than at the 1280x720 the verdicts were cast on. That is the column a
+seating walks, and it accepts the label-quality cost this file's own caveat prices:
+the two geometries correlate at r = 0.696 and 55 of the thousand read `P(≥4)` under
+0.5 at label geometry against none at candidate geometry.
+
+The store's population is what bounds what that head may claim, and the bound is
+this file's: not eval-eligible, one row per location, no colour-ceiling
+representation. Every number in `models/gallery_grade/README.md` is **within-store
+held out** on a 201-row stopping slice, and the head is stage two of a cascade
+behind `p_ge4` — undefined on the 85.7% of the pool that never clears the gate, and
+never a pool-wide ranker.
+
+The three sittings' drift is a covariate there rather than a surprise:
+`gallery-grade split` balances the batches into the holdout exactly (67/67/67), the
+drift still shows in that holdout's labels at Kruskal p = 0.021 because
+stratification balances counts and not scales, and the head's residual against them
+is flat at p = 0.63.

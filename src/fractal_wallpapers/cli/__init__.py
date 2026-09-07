@@ -72,6 +72,7 @@ GROUPS: tuple[str, ...] = (
     "label_commands",
     "tiles_commands",
     "renders_commands",
+    "gallery_grade_commands",
     "head_commands",
     "spiral_commands",
     "regime_commands",

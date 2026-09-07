@@ -1,0 +1,233 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "run": "more_seed0",
+  "arm": "more",
+  "seed": 0,
+  "device": "cuda",
+  "wall_seconds": 81.0,
+  "segments": [
+    {
+      "from_epoch": 0,
+      "through_epoch": 7,
+      "wall_seconds": 81.0
+    }
+  ],
+  "best_epoch": 1,
+  "best_selection_objective": -0.8917026547207836,
+  "best_selection_rule": "ap_ge3",
+  "stopped_early": {
+    "at_epoch": 7,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 1
+  },
+  "selection_metric": "AP(>=3) over the stopping slice, maximized (recorded negated, because the loop minimizes)",
+  "freezing": {
+    "arm": "more",
+    "unfrozen": [
+      "<everything>"
+    ],
+    "says": "a full fine-tune \u2014 every parameter takes a gradient",
+    "trainable_parameters": 2496867,
+    "total_parameters": 2496867,
+    "trainable_share": 1.0
+  },
+  "held_out": {
+    "rows": 201,
+    "ap_ge2": 0.9829618857151008,
+    "auc_ge2": 0.6923076923076923,
+    "ap_ge3": 0.8917026547207836,
+    "auc_ge3": 0.6947017950202664,
+    "ap_ge4": 0.5086028196656509,
+    "auc_ge4": 0.6765426598351526,
+    "spearman": 0.3673563504370817,
+    "cutpoint": 3
+  },
+  "held_out_is": "the stopping slice. It is the shipped recipe's only holdout and the epoch was chosen on it, so every number here is optimistic by one early stop, and the store is not eval-eligible \u2014 this is a within-store reading and nothing more",
+  "pictures": {
+    "train": 799,
+    "stopping": 201,
+    "total": 1000
+  },
+  "class_counts": {
+    "train": {
+      "1": 20,
+      "2": 147,
+      "3": 387,
+      "4": 245
+    },
+    "stopping": {
+      "1": 6,
+      "2": 38,
+      "3": 90,
+      "4": 67
+    }
+  },
+  "sampled_mass": {
+    "places": 697,
+    "largest_place": 2,
+    "sampled_mass": {
+      "1": 0.0792,
+      "2": 0.2366,
+      "3": 0.375,
+      "4": 0.3092
+    },
+    "raw_share": {
+      "1": 0.025,
+      "2": 0.184,
+      "3": 0.4844,
+      "4": 0.3066
+    }
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 0.5721664798722249,
+      "seconds": 9.9,
+      "selection_loss": -0.8785178369431339,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8785178369431339,
+      "stopping_auc_ge2": 0.7675213675213676,
+      "stopping_mean_p_ge2": 0.9222381495730327,
+      "stopping_auc_ge3": 0.6802258251302837,
+      "stopping_mean_p_ge3": 0.7455143757335658,
+      "stopping_auc_ge4": 0.6630652706616172,
+      "stopping_mean_p_ge4": 0.26849118486256,
+      "stopping_spearman": 0.3365627332954531,
+      "stopping_ap_ge3_n1000_0906_1": 0.8272957261548954,
+      "stopping_ap_ge3_n1000_0906_2": 0.9202859401639344,
+      "stopping_ap_ge3_n1000_0906_3": 0.8894791861410902
+    },
+    {
+      "epoch": 1,
+      "loss": 0.4915899074868356,
+      "seconds": 9.8,
+      "selection_loss": -0.8917026547207836,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8917026547207836,
+      "stopping_auc_ge2": 0.6923076923076923,
+      "stopping_mean_p_ge2": 0.9737851562845575,
+      "stopping_auc_ge3": 0.6947017950202664,
+      "stopping_mean_p_ge3": 0.7600675479448269,
+      "stopping_auc_ge4": 0.6765426598351526,
+      "stopping_mean_p_ge4": 0.35702620403324364,
+      "stopping_spearman": 0.3673563504370817,
+      "stopping_ap_ge3_n1000_0906_1": 0.8449102797553959,
+      "stopping_ap_ge3_n1000_0906_2": 0.9452953355511173,
+      "stopping_ap_ge3_n1000_0906_3": 0.878603327162249
+    },
+    {
+      "epoch": 2,
+      "loss": 0.41718744802683855,
+      "seconds": 9.8,
+      "selection_loss": -0.8908086460658913,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8908086460658913,
+      "stopping_auc_ge2": 0.8444444444444444,
+      "stopping_mean_p_ge2": 0.9015697367387011,
+      "stopping_auc_ge3": 0.694122756224667,
+      "stopping_mean_p_ge3": 0.6719184131954927,
+      "stopping_auc_ge4": 0.6999331699710403,
+      "stopping_mean_p_ge4": 0.340358818422176,
+      "stopping_spearman": 0.39556378954021293,
+      "stopping_ap_ge3_n1000_0906_1": 0.84766724151692,
+      "stopping_ap_ge3_n1000_0906_2": 0.9336967582960515,
+      "stopping_ap_ge3_n1000_0906_3": 0.883006732342512
+    },
+    {
+      "epoch": 3,
+      "loss": 0.37750300753847676,
+      "seconds": 9.8,
+      "selection_loss": -0.8711683244025195,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8711683244025195,
+      "stopping_auc_ge2": 0.7871794871794872,
+      "stopping_mean_p_ge2": 0.9615423730347511,
+      "stopping_auc_ge3": 0.6767515923566879,
+      "stopping_mean_p_ge3": 0.817325740677894,
+      "stopping_auc_ge4": 0.6952550679438628,
+      "stopping_mean_p_ge4": 0.3613941486403801,
+      "stopping_spearman": 0.37332249965050884,
+      "stopping_ap_ge3_n1000_0906_1": 0.8180325224121775,
+      "stopping_ap_ge3_n1000_0906_2": 0.9177488704219418,
+      "stopping_ap_ge3_n1000_0906_3": 0.887003010123897
+    },
+    {
+      "epoch": 4,
+      "loss": 0.37349529364828177,
+      "seconds": 9.7,
+      "selection_loss": -0.8524793218569031,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8524793218569031,
+      "stopping_auc_ge2": 0.811965811965812,
+      "stopping_mean_p_ge2": 0.9730200875304758,
+      "stopping_auc_ge3": 0.6217429067747539,
+      "stopping_mean_p_ge3": 0.7934716984427118,
+      "stopping_auc_ge4": 0.7280017821341056,
+      "stopping_mean_p_ge4": 0.26931973013223715,
+      "stopping_spearman": 0.38282817245928885,
+      "stopping_ap_ge3_n1000_0906_1": 0.7819626761606991,
+      "stopping_ap_ge3_n1000_0906_2": 0.911304205578033,
+      "stopping_ap_ge3_n1000_0906_3": 0.8835946474869479
+    },
+    {
+      "epoch": 5,
+      "loss": 0.35019112517299583,
+      "seconds": 9.7,
+      "selection_loss": -0.879758498190157,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.879758498190157,
+      "stopping_auc_ge2": 0.8,
+      "stopping_mean_p_ge2": 0.9446922124407915,
+      "stopping_auc_ge3": 0.6601042269832079,
+      "stopping_mean_p_ge3": 0.7562346792051937,
+      "stopping_auc_ge4": 0.7215415460013366,
+      "stopping_mean_p_ge4": 0.4257196482380821,
+      "stopping_spearman": 0.36321989440313157,
+      "stopping_ap_ge3_n1000_0906_1": 0.840048895351031,
+      "stopping_ap_ge3_n1000_0906_2": 0.9135023927248122,
+      "stopping_ap_ge3_n1000_0906_3": 0.8945786971744352
+    },
+    {
+      "epoch": 6,
+      "loss": 0.3160469279495139,
+      "seconds": 9.8,
+      "selection_loss": -0.8898628518403238,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8898628518403238,
+      "stopping_auc_ge2": 0.7974358974358975,
+      "stopping_mean_p_ge2": 0.9572890761507643,
+      "stopping_auc_ge3": 0.6905037637521714,
+      "stopping_mean_p_ge3": 0.7438655973876745,
+      "stopping_auc_ge4": 0.7219870795277344,
+      "stopping_mean_p_ge4": 0.352033797198472,
+      "stopping_spearman": 0.41254937507359696,
+      "stopping_ap_ge3_n1000_0906_1": 0.8670961355630453,
+      "stopping_ap_ge3_n1000_0906_2": 0.9375313182261212,
+      "stopping_ap_ge3_n1000_0906_3": 0.8638323829353634
+    },
+    {
+      "epoch": 7,
+      "loss": 0.28717681239633,
+      "seconds": 9.8,
+      "selection_loss": -0.8681265543646774,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8681265543646774,
+      "stopping_auc_ge2": 0.7931623931623931,
+      "stopping_mean_p_ge2": 0.9618053652788506,
+      "stopping_auc_ge3": 0.6365083960625362,
+      "stopping_mean_p_ge3": 0.7442320783320636,
+      "stopping_auc_ge4": 0.7464914234796168,
+      "stopping_mean_p_ge4": 0.3029126671831587,
+      "stopping_spearman": 0.40948453977383087,
+      "stopping_ap_ge3_n1000_0906_1": 0.8142170794640464,
+      "stopping_ap_ge3_n1000_0906_2": 0.9378957909927339,
+      "stopping_ap_ge3_n1000_0906_3": 0.8724049437279582
+    }
+  ],
+  "checkpoints": {
+    "best": "models/gallery_grade/more_seed0/best.pt",
+    "last": "models/gallery_grade/more_seed0/last.pt"
+  }
+}

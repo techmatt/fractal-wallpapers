@@ -1,0 +1,251 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "run": "frozen_seed1",
+  "arm": "frozen",
+  "seed": 1,
+  "device": "cuda",
+  "wall_seconds": 94.9,
+  "segments": [
+    {
+      "from_epoch": 0,
+      "through_epoch": 8,
+      "wall_seconds": 94.9
+    }
+  ],
+  "best_epoch": 2,
+  "best_selection_objective": -0.8509737828285239,
+  "best_selection_rule": "ap_ge3",
+  "stopped_early": {
+    "at_epoch": 8,
+    "of_epochs": 20,
+    "patience": 6,
+    "best_epoch": 2
+  },
+  "selection_metric": "AP(>=3) over the stopping slice, maximized (recorded negated, because the loop minimizes)",
+  "freezing": {
+    "arm": "frozen",
+    "unfrozen": [
+      "classifier"
+    ],
+    "says": "the trunk is a fixed feature extractor; only the ordinal classifier learns",
+    "trainable_parameters": 3843,
+    "total_parameters": 2496867,
+    "trainable_share": 0.0015
+  },
+  "held_out": {
+    "rows": 201,
+    "ap_ge2": 0.9909098890504398,
+    "auc_ge2": 0.7777777777777778,
+    "ap_ge3": 0.8509737828285239,
+    "auc_ge3": 0.6388245512449334,
+    "ap_ge4": 0.33458786970373083,
+    "auc_ge4": 0.4963243484072176,
+    "spearman": 0.04806734958353762,
+    "cutpoint": 3
+  },
+  "held_out_is": "the stopping slice. It is the shipped recipe's only holdout and the epoch was chosen on it, so every number here is optimistic by one early stop, and the store is not eval-eligible \u2014 this is a within-store reading and nothing more",
+  "pictures": {
+    "train": 799,
+    "stopping": 201,
+    "total": 1000
+  },
+  "class_counts": {
+    "train": {
+      "1": 20,
+      "2": 147,
+      "3": 387,
+      "4": 245
+    },
+    "stopping": {
+      "1": 6,
+      "2": 38,
+      "3": 90,
+      "4": 67
+    }
+  },
+  "sampled_mass": {
+    "places": 697,
+    "largest_place": 2,
+    "sampled_mass": {
+      "1": 0.0792,
+      "2": 0.2366,
+      "3": 0.375,
+      "4": 0.3092
+    },
+    "raw_share": {
+      "1": 0.025,
+      "2": 0.184,
+      "3": 0.4844,
+      "4": 0.3066
+    }
+  },
+  "history": [
+    {
+      "epoch": 0,
+      "loss": 1.1464950489311552,
+      "seconds": 10.2,
+      "selection_loss": -0.8426800052696304,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8426800052696304,
+      "stopping_auc_ge2": 0.7743589743589744,
+      "stopping_mean_p_ge2": 0.9991911339750352,
+      "stopping_auc_ge3": 0.6295599305153445,
+      "stopping_mean_p_ge3": 0.9836164461414196,
+      "stopping_auc_ge4": 0.5206059255959011,
+      "stopping_mean_p_ge4": 0.8355310011781891,
+      "stopping_spearman": 0.08376660830831943,
+      "stopping_ap_ge3_n1000_0906_1": 0.775749849597142,
+      "stopping_ap_ge3_n1000_0906_2": 0.8926327782358573,
+      "stopping_ap_ge3_n1000_0906_3": 0.8861844000201827
+    },
+    {
+      "epoch": 1,
+      "loss": 1.0253770120152843,
+      "seconds": 10.3,
+      "selection_loss": -0.8493969947530855,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8493969947530855,
+      "stopping_auc_ge2": 0.7743589743589744,
+      "stopping_mean_p_ge2": 0.9988473960067882,
+      "stopping_auc_ge3": 0.6362188766647365,
+      "stopping_mean_p_ge3": 0.9724319851098842,
+      "stopping_auc_ge4": 0.5086879037647583,
+      "stopping_mean_p_ge4": 0.7438258885572054,
+      "stopping_spearman": 0.06092600460060877,
+      "stopping_ap_ge3_n1000_0906_1": 0.7896398160120885,
+      "stopping_ap_ge3_n1000_0906_2": 0.897646382428566,
+      "stopping_ap_ge3_n1000_0906_3": 0.8803549884688608
+    },
+    {
+      "epoch": 2,
+      "loss": 0.8608479387918312,
+      "seconds": 10.5,
+      "selection_loss": -0.8509737828285239,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8509737828285239,
+      "stopping_auc_ge2": 0.7777777777777778,
+      "stopping_mean_p_ge2": 0.9983127283901246,
+      "stopping_auc_ge3": 0.6388245512449334,
+      "stopping_mean_p_ge3": 0.9550635701362021,
+      "stopping_auc_ge4": 0.4963243484072176,
+      "stopping_mean_p_ge4": 0.6351395533250391,
+      "stopping_spearman": 0.04806734958353762,
+      "stopping_ap_ge3_n1000_0906_1": 0.798697314454076,
+      "stopping_ap_ge3_n1000_0906_2": 0.9004109629916912,
+      "stopping_ap_ge3_n1000_0906_3": 0.8748431701521151
+    },
+    {
+      "epoch": 3,
+      "loss": 0.7743744539826624,
+      "seconds": 10.4,
+      "selection_loss": -0.8458332433271764,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8458332433271764,
+      "stopping_auc_ge2": 0.7803418803418803,
+      "stopping_mean_p_ge2": 0.997591975600181,
+      "stopping_auc_ge3": 0.6354950781702374,
+      "stopping_mean_p_ge3": 0.9255430463628834,
+      "stopping_auc_ge4": 0.49042102918244596,
+      "stopping_mean_p_ge4": 0.5429121353664842,
+      "stopping_spearman": 0.06086408873596703,
+      "stopping_ap_ge3_n1000_0906_1": 0.7971871861789391,
+      "stopping_ap_ge3_n1000_0906_2": 0.8988069904563578,
+      "stopping_ap_ge3_n1000_0906_3": 0.860437060649335
+    },
+    {
+      "epoch": 4,
+      "loss": 0.6880504374808454,
+      "seconds": 10.1,
+      "selection_loss": -0.8473468606175155,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8473468606175155,
+      "stopping_auc_ge2": 0.7803418803418803,
+      "stopping_mean_p_ge2": 0.9966482311926503,
+      "stopping_auc_ge3": 0.609148812970469,
+      "stopping_mean_p_ge3": 0.8839833888323845,
+      "stopping_auc_ge4": 0.4914234796168412,
+      "stopping_mean_p_ge4": 0.4683001061889152,
+      "stopping_spearman": 0.09162277897959255,
+      "stopping_ap_ge3_n1000_0906_1": 0.8222451228413296,
+      "stopping_ap_ge3_n1000_0906_2": 0.899291570482437,
+      "stopping_ap_ge3_n1000_0906_3": 0.8338556546262028
+    },
+    {
+      "epoch": 5,
+      "loss": 0.6821840985844818,
+      "seconds": 10.2,
+      "selection_loss": -0.8390459230654476,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8390459230654476,
+      "stopping_auc_ge2": 0.7777777777777778,
+      "stopping_mean_p_ge2": 0.9951017638962458,
+      "stopping_auc_ge3": 0.593370005790388,
+      "stopping_mean_p_ge3": 0.8492398412752368,
+      "stopping_auc_ge4": 0.5003341501447984,
+      "stopping_mean_p_ge4": 0.44717884089626053,
+      "stopping_spearman": 0.0993336855068985,
+      "stopping_ap_ge3_n1000_0906_1": 0.8132497525053264,
+      "stopping_ap_ge3_n1000_0906_2": 0.8947742537001531,
+      "stopping_ap_ge3_n1000_0906_3": 0.8166090028110714
+    },
+    {
+      "epoch": 6,
+      "loss": 0.5892231273412406,
+      "seconds": 10.2,
+      "selection_loss": -0.834651003657086,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.834651003657086,
+      "stopping_auc_ge2": 0.7760683760683761,
+      "stopping_mean_p_ge2": 0.9935934557400582,
+      "stopping_auc_ge3": 0.5851187029530979,
+      "stopping_mean_p_ge3": 0.8250255186477484,
+      "stopping_auc_ge4": 0.5063488527511695,
+      "stopping_mean_p_ge4": 0.4345435457162283,
+      "stopping_spearman": 0.10476164297382438,
+      "stopping_ap_ge3_n1000_0906_1": 0.8162999684119413,
+      "stopping_ap_ge3_n1000_0906_2": 0.8968359379669004,
+      "stopping_ap_ge3_n1000_0906_3": 0.8033205900798895
+    },
+    {
+      "epoch": 7,
+      "loss": 0.5994579565241579,
+      "seconds": 10.2,
+      "selection_loss": -0.8343164602439673,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.8343164602439673,
+      "stopping_auc_ge2": 0.7760683760683761,
+      "stopping_mean_p_ge2": 0.9916951632796714,
+      "stopping_auc_ge3": 0.5872900984365953,
+      "stopping_mean_p_ge3": 0.817990033197654,
+      "stopping_auc_ge4": 0.5109155713967476,
+      "stopping_mean_p_ge4": 0.4325182677283395,
+      "stopping_spearman": 0.11269560537246788,
+      "stopping_ap_ge3_n1000_0906_1": 0.8172889377974835,
+      "stopping_ap_ge3_n1000_0906_2": 0.8951202205788485,
+      "stopping_ap_ge3_n1000_0906_3": 0.8055813196467572
+    },
+    {
+      "epoch": 8,
+      "loss": 0.5885561715825478,
+      "seconds": 10.1,
+      "selection_loss": -0.835856355189591,
+      "selection_rule": "ap_ge3",
+      "stopping_ap_ge3": 0.835856355189591,
+      "stopping_auc_ge2": 0.7717948717948718,
+      "stopping_mean_p_ge2": 0.9890186463340787,
+      "stopping_auc_ge3": 0.5926462072958888,
+      "stopping_mean_p_ge3": 0.8126154681917607,
+      "stopping_auc_ge4": 0.5083537536199599,
+      "stopping_mean_p_ge4": 0.41526825552417085,
+      "stopping_spearman": 0.11559136273417389,
+      "stopping_ap_ge3_n1000_0906_1": 0.8099467098776302,
+      "stopping_ap_ge3_n1000_0906_2": 0.8992255369181662,
+      "stopping_ap_ge3_n1000_0906_3": 0.8122669392968636
+    }
+  ],
+  "checkpoints": {
+    "best": "models/gallery_grade/frozen_seed1/best.pt",
+    "last": "models/gallery_grade/frozen_seed1/last.pt"
+  }
+}

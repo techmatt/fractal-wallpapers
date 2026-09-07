@@ -10,6 +10,12 @@ The two LABEL STORES those names also belong to did not merge and are not
 renamed — see `data/README.md`. A name here that is not on the roster names a
 corpus or a retired judge, never something that ships.
 
+`gallery_grade/` is the third kind of name here and the newest: a head that is
+**built and not adopted**. It is stage two of a cascade behind the render judge's
+`p_ge4`, fitted on the `gallery_grade` store, and nothing reads it — no floor, no
+rank key, no seating path. It is off the roster for the same reason the retired
+judges are, by a different route: they stopped shipping and this has not started.
+
 `render/` carries twenty-five run directories and a name does not say which band
 it realizes. [`render/RUNS.md`](render/RUNS.md) is the index: one line per
 directory, to the band or role it belongs to.
