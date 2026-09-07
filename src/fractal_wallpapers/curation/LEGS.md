@@ -709,6 +709,52 @@ time, and a leg holding a whole roster wants the intersection taken per place. D
 that way the arithmetic is exact — `armB1_0906`'s manifest named **1,192 free slots
 and its merge grew the ledger by 1,188**, four rows in twelve hundred. Everything
 else it made, 5,775 rows, was displacement the prune resolved inside the pair.
+`armB_0907` reproduced it a day later at a fifth the size: **460 free slots named,
+458 rows of growth.**
+
+#### The opener refills the band at about a FIFTH of what it opens, and that is what bounds arm B
+
+Measured three times over two legs, and the three agree: of the never-opened places
+a breadth arm opens, the share that lands in the near band **with room at its own
+incumbent pair** is `armA1_0906` **83 of 502 (16.5%)**, `armA2_0906` **59 of 319
+(18.5%)**, `armA_0907` **52 of 238 (21.8%)**. The other four fifths land in
+*neither* half of the band — their best roster candidate is outside
+`[SEATING_BAR, PRIMED_BAR)` — and **none of them can land in the at-the-keep half**,
+because a pair a breadth arm just opened holds one row against a keep of five. A
+breadth arm moves the with-room half and leaves the other exactly where it was:
+2,369 places before `armA_0907` and 2,369 after.
+
+The arithmetic closes end to end across the two legs, which is why the share is
+worth trusting: 588 places with room after `armA1_0906`'s re-cut, `armB1_0906` drew
+**582** of them, **6** survived the night, `armA2_0906` added **59** — and the next
+morning's cut read **65**. `armA_0907` added **52** and it read **117**; `armB_0907`
+then planned **116 of the 117**, made 1,390 of a planned 1,392, and stopped for
+budget at 2.
+
+⚠ **So arm B cannot be given more clock than arm A earns for it, however efficient
+it is.** At 4,200 s of render wall `armA_0907` bought 52 band places, and `armB_0907`
+cleared the whole 117-place band in **1,205 s** — the opener spends three and a half
+times the clock to stock a band the near arm empties. Weighting a night toward the
+near band is a decision about **which half of the near band**, not about the split
+between the arms: only [`the displacement half`](#the-displacement-half-is-not-supply-limited-and-that-is-what-it-is-for)
+has supply to absorb it.
+
+⚠ **The figure this replaces was a misreading and it reached a prompt.** "327 of 502
+opened places landed in `[0.50, 0.90)`" was quoted as arm A's refill rate; 327 is the
+count of `smooth`/`tia`/`stripe` among the **542** places the *pre*-leg cut held, and
+has nothing to do with the 502. A prompt sized on it would give arm B four times the
+clock its supply can take.
+
+#### The displacement half is not supply-limited, and that is what it is for
+
+The band's two halves are supply asymmetric by two orders of magnitude and the
+asymmetry is stable: on 2026-09-07 the with-room half held **117** places against the
+at-the-keep half's **2,369**, and a breadth arm cannot add to the second. So the
+half that is measured by the arithmetic above is the half that runs out, and the
+half where a row can only enter by **beating an incumbent** is the one with room for
+a night's clock. What it buys is not stock — net ledger change is zero by
+construction, one incumbent deleted per row kept — but **quality inside the pair**,
+and that is a different purchase from every other arm this project runs.
 
 ### A counterfactual by merge stamp is only clean for an arm that PRUNED NOTHING
 

@@ -631,6 +631,29 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 2.312 | the same roster, near band, mode held, over places WITH ROOM | 3 | 12 | 09-07 | 6,963 cand / 582 places | `armB1_0906` |
 | 3.304 | arm A1's own pilot, and it reached three partitions of ten | 3 | 12 | 09-07 | 545 cand / 45 places | `pilotA_0906` |
 | 2.523 | arm B1's own pilot | 3 | 12 | 09-07 | 519 cand / 43 places | `pilotB_0906` |
+| 4.422 | the same roster, breadth, a day on from `armA1_0906` | 3 | 12 | 09-07 | 2,847 cand / 238 places | `armA_0907` |
+| 4.293 | the same, later the same day | 3 | 12 | 09-07 | 1,757 cand / 148 places | `armA2_0907` |
+| 2.444 | the same roster, near band, mode held, places WITH ROOM | 3 | 12 | 09-07 | 1,390 cand / 116 places | `armB_0907` |
+| **0.795** | the same roster, near band, mode held, places **AT THE KEEP** | 3 | 12 | 09-07 | 16,200 cand / 1,350 places | `armB2_0907` |
+
+⚠ **The displacement half of the near band is the CHEAPEST arm this project has
+measured on the full roster — 0.795 against the with-room half's 2.444 and breadth's
+4.422 — and the cause is which places are in it.** A place already at
+`RETAIN_PER_PAIR` is a place that has been mined often, so its incumbent coloring is
+one of the cheap shareable modes, and [`depth.plan_held_mode`] then buys twelve
+recolours off one field dump. `armB2_0907`'s roster mix says it outright: **`smooth`
+is 9,600 of its 16,200 candidates (59%)**, where the with-room half's largest mode
+was `tia` at 204 of 1,390. The two halves of one band, on one roster, on one box,
+**differ 3.1x in price** — so a leg that sizes them off a single rate will mis-plan
+one of them, and it is the cheap half that overruns its plan.
+
+⚠ **`--rate` sizes the PLAN and the plan is what stopped `armB2_0907`.**
+`PLAN_HEADROOM * workers * budget / rate` at `--rate 1.6` gave 16,200 candidates for
+a 5,400 s share; the arm made all 16,200 in **4,323 s** and stopped with 1,077 s of
+its reserved share unspent, because the rate was set below the with-room half's 2.44
+and above this half's 0.795. **Set the rate below the cheapest arm the leg will run,
+not below the dearest** — the standing advice to under-estimate is right and this is
+what it costs to under-estimate by only half.
 
 **The full mined roster is 5.3x the breadth price of the three shareable modes and
 6.2x the near band's, and the two rises have different causes.** Twelve modes at
