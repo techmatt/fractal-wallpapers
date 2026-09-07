@@ -187,6 +187,11 @@ def solved(keys) -> dict:
     return {"seated": [{"key": str(key), "picture": ""} for key in keys]}
 
 
+def seated_at(pairs) -> dict:
+    """`(candidate, place)` pairs, for the half of the diff that is about places."""
+    return {"seated": [{"key": str(key), "location": str(place)} for key, place in pairs]}
+
+
 def test_the_diff_is_keyed_on_the_candidate_and_never_on_the_seat_number() -> None:
     """Seat numbers renumber under any reordering, so a diff taken on them would
     call every row changed and say nothing."""
@@ -202,6 +207,29 @@ def test_two_solves_that_seated_the_same_rows_have_no_diff_at_all() -> None:
     assert not diff["arriving"] and not diff["departing"] and diff["kept"] == 2
     with pytest.raises(seat_sheet.SeatSheetError):
         seat_sheet.build("nothing-moved", diff, log=quiet)
+
+
+def test_a_changed_seat_says_whether_its_PLACE_moved_or_only_its_candidate() -> None:
+    """★ Two quite different things wear the same badge until the row says which.
+
+    `p1` is seated by both keys and they disagree about the candidate there; `p2`
+    leaves the gallery and `p3` joins it. A count of changed seats reads 4 either
+    way, and only the split says that one of those changes is a swap and two are
+    the gallery going somewhere else.
+    """
+    diff = seat_sheet.difference(
+        seated_at([("a", "p1"), ("b", "p2")]),
+        seated_at([("c", "p1"), ("d", "p3")]),
+    )
+    moved = {row["key"]: row["place_seated"] for row in diff["arriving"] + diff["departing"]}
+    assert moved == {"c": "both", "d": "one", "a": "both", "b": "one"}
+    assert diff["places"] == {
+        "before": 2,
+        "after": 2,
+        "shared": 1,
+        "changed_at_a_shared_place": 2,
+        "changed_because_the_place_moved": 2,
+    }
 
 
 def test_under_the_cap_every_row_is_shown_good_to_bad() -> None:

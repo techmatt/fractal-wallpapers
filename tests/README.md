@@ -349,6 +349,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+1, and the first reading of this file taken right after a four-hour render
+leg rather than before one.**
+`MINE_ckpt113_band_weighted_with_displacement_0907`, 2026-09-07, box idle again
+by then, `.[dev,models]` with a release engine. **118.32 s over 3,882, 124
+deselected** fast — 4,006 against the 4,005 below. The +1 is one arithmetic test
+in `test_seat_sheet.py` for the diff's new place split, which is why the count
+moved and the clock did not: 118.32 against 118.80 two prompts down, a spread of
+half a second over a lane that ran 130.15 once on a disturbed disk. Slow lane not
+run — the tracked diff is two documents, one module and its test, and Matt's
+standing rule is the fast lane for a diff of that shape. **The next slow lane
+should read 4,006** and the one red below should still be the only red.
+
 **+2 that reconciles exactly, and a first reading taken 8 s dear right after a
 sweep.** `ADOPT_ckpt113_cascade_and_cleanups_0907`, 2026-09-07, idle box,
 `.[dev,models]` with a release engine. **121.89 s over 3,881, 124 deselected**

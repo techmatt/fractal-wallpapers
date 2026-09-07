@@ -81,21 +81,47 @@ def seats_of(record: dict) -> dict:
 
 
 def difference(incumbent: dict, candidate: dict) -> dict:
-    """`{arriving, departing, kept}` between two solves of one pool.
+    """`{arriving, departing, kept, places}` between two solves of one pool.
 
     Keyed on the candidate rather than on the seat number, because the seat
     numbers renumber themselves under any reordering and a diff taken on them
     would call every row changed.
+
+    **A changed seat is one of two quite different things and the row says
+    which.** Either the two keys seat the same *place* and disagree about which
+    candidate there deserves it, or one of them seats the place and the other
+    does not — the gallery going somewhere else entirely. On 2026-09-07 the
+    shipped pair split 166 of 827 the first way and 661 the second, so four
+    fifths of the churn was places rather than candidates, and a page that did
+    not distinguish them showed one number where there were two.
     """
     before, after = seats_of(incumbent), seats_of(candidate)
-    arriving = [after[key] for key in after if key not in before]
-    departing = [before[key] for key in before if key not in after]
+    was = {str(row.get("location")) for row in before.values()}
+    now = {str(row.get("location")) for row in after.values()}
+    shared = was & now
+
+    def marked(row: dict) -> dict:
+        return {**row, "place_seated": "both" if str(row.get("location")) in shared else "one"}
+
+    arriving = [marked(after[key]) for key in after if key not in before]
+    departing = [marked(before[key]) for key in before if key not in after]
     return {
         "arriving": arriving,
         "departing": departing,
         "kept": len(set(before) & set(after)),
         "before": len(before),
         "after": len(after),
+        "places": {
+            "before": len(was),
+            "after": len(now),
+            "shared": len(shared),
+            "changed_at_a_shared_place": sum(
+                1 for row in arriving + departing if row["place_seated"] == "both"
+            ),
+            "changed_because_the_place_moved": sum(
+                1 for row in arriving + departing if row["place_seated"] == "one"
+            ),
+        },
     }
 
 
@@ -127,8 +153,12 @@ def _card(row: dict) -> str:
     picture = rehome(str(row.get("picture") or ""), Tiers.current())
     source = "" if picture is None else sheet.thumbnail(picture, THUMBNAIL_WIDTH)
     moved = row["moved"]
+    place = str(row.get("place_seated") or "both")
     facts = [
         f"{row.get('mode') or '?'} &middot; {row.get('cell') or 'no cell'}",
+        f'place <span class="place {place}">seated by '
+        + ("both keys" if place == "both" else "one key only")
+        + "</span>",
         f"fine P(&ge;4) {_number(row.get('fine_score'))}"
         f" &middot; judge p_ge4 {_number(row.get('p_ge4'))}",
         f"rank key {_number(row.get('rank_key'))}",
@@ -173,6 +203,8 @@ PAGE = """<!doctype html>
  .badge.arriving {{ background: #3f8f5c; color: #0b1410; }}
  .badge.departing {{ background: #96434a; color: #1a0c0d; }}
  .key {{ font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }}
+ .place.both {{ color: #d8b45a; }}
+ .place.one {{ color: #7fa8d8; }}
 </style>
 <h1>Seats the cascade moves &mdash; {name}</h1>
 <p class="lede">{lede}</p>
@@ -191,11 +223,19 @@ def build(name: str, diff: dict, cap: int = CAP, log=print) -> tuple[Path, dict]
             "That is a finding and not a failure — record it rather than building a page."
         )
     shown, sampling = sampled(rows, cap)
+    places = diff.get("places") or {}
     lede = (
         f"<b>{diff['before']}</b> seats under the shipped rank key, <b>{diff['after']}</b> under "
         f"the cascade, <b>{diff['kept']}</b> of them the same candidate. "
-        f"<b>{len(diff['arriving'])}</b> arrive and <b>{len(diff['departing'])}</b> depart; "
-        f"<b>{sampling['shown']}</b> of those {sampling['of']} are on this page"
+        f"<b>{len(diff['arriving'])}</b> arrive and <b>{len(diff['departing'])}</b> depart"
+        + (
+            f", of which <b>{places['changed_at_a_shared_place']}</b> sit at a place both keys "
+            f"seat and <b>{places['changed_because_the_place_moved']}</b> are the gallery going "
+            f"somewhere else ({places['shared']} places shared)"
+            if places
+            else ""
+        )
+        + f". <b>{sampling['shown']}</b> of those {sampling['of']} are on this page"
         + (", sampled evenly across the fine head's score range" if sampling["sampled"] else "")
         + ". Sorted good to bad by the fine head. Pictures are the ledger's stored 640&times;360 "
         "candidates &mdash; nothing was re-rendered, and this page ingests nowhere."
@@ -209,6 +249,10 @@ def build(name: str, diff: dict, cap: int = CAP, log=print) -> tuple[Path, dict]
         "schema": SCHEMA,
         "name": str(name),
         "seats": {"before": diff["before"], "after": diff["after"], "kept": diff["kept"]},
+        # The other half of the churn, and the one a seat count hides: whether a
+        # changed seat is a different candidate at a place both keys hold, or a
+        # place one of them does not hold at all.
+        "places": places,
         "changed": len(diff["arriving"]) + len(diff["departing"]),
         "arriving": len(diff["arriving"]),
         "departing": len(diff["departing"]),
