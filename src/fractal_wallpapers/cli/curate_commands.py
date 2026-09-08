@@ -502,6 +502,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         ),
         "pictures": candidate_ledger.picture_census,
         "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
+        "ratchet": lambda: _ratchet(census=args.census),
         "re-render": lambda: candidate_ledger.re_render(limit=args.limit, workers=args.workers),
         "score": lambda: candidate_ledger.rescore(limit=args.limit),
         "restore": lambda: candidate_ledger.restore(force=args.force),
@@ -523,6 +524,37 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     ):
         return 1
     return 0
+
+
+def _ratchet(census: bool = False) -> dict:
+    """What bounds the store from below, and — asked for — whether it still does.
+
+    The log alone is cheap and answers *what is the mark*; `--census` streams the
+    rows to answer *does the store still reconcile against it*, which is the
+    question `tests/test_leveled_identity.py` asks in the slow lane. Same
+    expression either way: the counters come off
+    [`candidate_ledger.ratchet.counts_of`], which is also what a prune records
+    with, so this cannot drift from what it is reading.
+    """
+    from fractal_wallpapers.curation.candidate_ledger import ratchet, store
+
+    standing = ratchet.reading()
+    record = {
+        "schema": ratchet.LOG_SCHEMA,
+        "log": display_path(ratchet.log_path()),
+        "rows_in_the_log": len(ratchet.entries()),
+        **standing,
+    }
+    if not census:
+        return record
+    found = ratchet.counts_of((str(row.get("key")), row.get("picture")) for row in store.stream())
+    record["store"] = found
+    record["reconciles"] = {
+        name: found[name] + standing["deleted"][name] - mark
+        for name, mark in standing["mark"].items()
+    }
+    record["unaccounted"] = sorted(name for name, over in record["reconciles"].items() if over < 0)
+    return record
 
 
 def _free_slots(args: argparse.Namespace) -> int:
@@ -3362,6 +3394,17 @@ def add_commands(subcommands) -> None:
         action="store_true",
         help="read, decide, and touch nothing. THE dry run — there is no second command "
         "that says what a prune would do",
+    )
+
+    ratcheting = ledger_verbs.add_parser(
+        "ratchet",
+        help="the high-water mark, the deletions recorded since it, and whether they reconcile",
+    )
+    ratcheting.add_argument(
+        "--census",
+        action="store_true",
+        help="count the live store as well and report the shortfall, if any. A full parse "
+        "of the rows — about fifteen seconds — where the default reads only the log",
     )
 
     remaking_pictures = ledger_verbs.add_parser(

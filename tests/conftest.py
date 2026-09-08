@@ -132,7 +132,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# The tracked manifests, held still for the length of a session.
+# The tracked records, held still for the length of a session.
 # --------------------------------------------------------------------------- #
 #: The suffix every tracked manifest's name ends in. `durability.save` writes one
 #: on every save, and *which* one it writes is decided by a `Durable` the caller
@@ -151,11 +151,21 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
 #: hashing them twice a session does not show up against a three-minute lane.
 MANIFEST_SUFFIX = "manifest.json"
 
-MANIFESTS_AT_START = pytest.StashKey[dict]()
+#: The tracked files a **runtime writer** appends to that are not manifests, named
+#: one by one because there is no suffix to sweep for. `ratchet.jsonl` is written
+#: by `sweep.prune` at the end of every merge and resolves off `repo_root()`, so
+#: it is in exactly the class this guard was built for: a path a fixture that
+#: redirects at the tier roots looks complete without having moved.
+HELD_STILL = ("data/curation/candidate_ledger/ratchet.jsonl",)
+
+RECORDS_AT_START = pytest.StashKey[dict]()
 
 
-def tracked_manifests() -> dict:
-    """`{repo-relative name: sha256}` for every tracked manifest, right now.
+def tracked_records() -> dict:
+    """`{repo-relative name: sha256}` for every tracked record this run must not move.
+
+    Every `*.manifest.json`, discovered rather than listed so that a durable added
+    tomorrow is covered without anybody remembering, plus [`HELD_STILL`].
 
     `git ls-files` and not a walk, for the reason `CLAUDE.md` gives: this checkout
     carries a hundred gigabytes of untracked `artifacts/` and a recursive walk of
@@ -174,7 +184,7 @@ def tracked_manifests() -> dict:
     # `chr(0)` rather than an escape: this is the separator `-z` writes, and a
     # literal one in the source is a null byte in a tracked text file.
     for name in listing.stdout.split(chr(0)):
-        if not name.endswith(MANIFEST_SUFFIX):
+        if not name.endswith(MANIFEST_SUFFIX) and name not in HELD_STILL:
             continue
         path = repo_root() / name
         if path.is_file():
@@ -183,46 +193,53 @@ def tracked_manifests() -> dict:
 
 
 def pytest_sessionstart(session) -> None:
-    session.config.stash[MANIFESTS_AT_START] = tracked_manifests()
+    session.config.stash[RECORDS_AT_START] = tracked_records()
 
 
 def pytest_sessionfinish(session, exitstatus) -> None:
-    """Fail the session over a tracked manifest this run rewrote, and name it.
+    """Fail the session over a tracked record this run rewrote, and name it.
 
     A **backstop**, not a substitute for redirecting properly. The fixtures that
     exercise a durable redirect at the tier roots, which is where the live file
     and the copy resolve from; a manifest resolves off `repo_root()` instead and
     there is no root to redirect it at, because `repo_root` is imported by value
-    into three dozen modules. So the manifest is the one path a fixture can miss
+    into three dozen modules. So that is the one class of path a fixture can miss
     while looking complete, and this catches the one it missed.
+
+    [`HELD_STILL`]'s ratchet log is the same class and joined this on 2026-09-07,
+    when `prune` gained a tracked writer. Its own redirect is autouse, so the
+    fixtures cannot forget it — this is here for the day somebody overrides that
+    fixture the way `test_signatures.py` overrides the sidecar's.
 
     It names the file and the command that puts it back, because a manifest
     written out of a `tmp_path` store is a wrong count in the history and the next
-    `durability.check` believes it.
+    `durability.check` believes it, and a ratchet row written out of one is a
+    census of three synthetic rows in a guard's high-water mark.
 
     A hook rather than a session-scoped fixture, so that it brackets collection
     too; and reported straight to the terminal reporter rather than through
     `pytest_terminal_summary`, so it does not depend on which of the two pytest
     runs first.
     """
-    before = session.config.stash.get(MANIFESTS_AT_START, None)
+    before = session.config.stash.get(RECORDS_AT_START, None)
     if not before:
         return
-    after = tracked_manifests()
+    after = tracked_records()
     moved = sorted(name for name in set(before) | set(after) if before.get(name) != after.get(name))
     if not moved:
         return
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     if reporter is not None:
-        reporter.write_sep("=", "TRACKED MANIFESTS REWRITTEN BY THIS RUN", red=True, bold=True)
+        reporter.write_sep("=", "TRACKED RECORDS REWRITTEN BY THIS RUN", red=True, bold=True)
         for name in moved:
             reporter.write_line(f"  {name}")
         reporter.write_line("")
         reporter.write_line(
-            "A test wrote a tracked manifest instead of a redirected one, so the history now "
+            "A test wrote a tracked record instead of a redirected one, so the history now "
             "records a count that came out of a temporary store. Put them back with "
             f"`git checkout -- {' '.join(moved)}`, then find the fixture: it is redirecting a "
-            "durable's live file and its copy without redirecting its manifest."
+            "store's live files without redirecting the one path that resolves off "
+            "`repo_root()` rather than off a tier — a durable's manifest, or the ratchet log."
         )
     session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
@@ -307,6 +324,58 @@ def no_signature_sidecar(monkeypatch, _absent_sidecar_root):
 
     nowhere = _absent_sidecar_root / f"{next(_TMP_SERIAL)}_{signatures.SIDECAR_NAME}"
     monkeypatch.setattr(signatures, "sidecar_path", lambda: nowhere)
+
+
+@pytest.fixture(scope="session")
+def tracked_ratchet_log():
+    """Where the **real** ratchet log is, resolved before anything redirects it.
+
+    Session-scoped and depended on by the autouse redirect below, which is what
+    guarantees the order: pytest builds this before the first function-scoped
+    fixture body runs, so it reads `log_path` while it is still the shipped one.
+    The two guards that mean to read the tracked log take this and pass it in,
+    rather than un-patching — an explicit path is one binding, and un-patching is
+    two.
+    """
+    from fractal_wallpapers.curation.candidate_ledger import ratchet
+
+    return ratchet.log_path()
+
+
+@pytest.fixture(scope="session")
+def _absent_ratchet_root(tmp_path_factory):
+    """One directory to hang every test's redirected ratchet log off."""
+    return tmp_path_factory.mktemp("no_tracked_ratchet")
+
+
+@pytest.fixture(autouse=True)
+def no_tracked_ratchet(monkeypatch, tracked_ratchet_log, _absent_ratchet_root):
+    """No test appends to the **tracked** ratchet log. Every test, always.
+
+    [`candidate_ledger.ratchet`]'s log resolves off `repo_root()` and not off a
+    tier, so it is in the class of path a fixture that redirects the store at the
+    tier roots does not move — the same class as `manifest_dir`, and the same
+    class as the defect that put a temporary ledger's counts into two tracked
+    manifests. Any test that prunes writes a mark and a deletion, and a store of
+    three synthetic rows would otherwise append *its* census to the history.
+
+    Autouse rather than per file for the reason the sidecar above is: the hazard
+    belongs to `prune`, not to the tests that happen to call it today, and a
+    redirect written per call site is complete only against the call graph on the
+    day somebody wrote it. Pointing it at a path that does not exist is the whole
+    fixture — an absent log reads as no mark, which is a state [`ratchet.reading`]
+    is defined on.
+
+    The failure it leaves behind if a guard forgets to opt out is **loud**: the
+    census asserts every counter is marked, and an empty log marks none of them.
+    `pytest_sessionfinish` is the backstop under that, and it is a backstop and
+    not the mechanism.
+    """
+    from fractal_wallpapers.curation.candidate_ledger import ratchet
+
+    nowhere = _absent_ratchet_root / f"{next(_TMP_SERIAL)}_{ratchet.LOG_NAME}"
+    assert nowhere != tracked_ratchet_log
+    monkeypatch.setattr(ratchet, "log_path", lambda: nowhere)
 
 
 @pytest.fixture

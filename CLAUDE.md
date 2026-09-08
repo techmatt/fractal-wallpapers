@@ -178,24 +178,25 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **120.37 s over the 3,886
+Both are measured, not estimated. The **fast** lane is **122.01 s over the 3,909
 it holds, 124 deselected**, on this machine, 2026-09-07, on an idle box with a
 `.[dev,models]` install and a release engine built. The **slow** lane's last
-reading is **7:38 over 4,005**, taken one test earlier on the same install —
-the arithmetic's own prediction to the test, which
-[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles. So
-the next slow lane should read **4,010** and a figure other than that is worth
-reading rather than assuming.
+reading is **7:06 over 4,033, all green and zero skipped**, taken on the same
+install and the same tree, which
+[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles the
+counting rule for. So the next slow lane should read **4,033** and a figure other
+than that is worth reading rather than assuming.
 
-⚠ **That slow lane is 4,004 passed and ONE red, and the red is a stale census
-rather than a broken tree.**
-`test_leveled_identity.py::test_no_two_ledger_rows_name_one_picture` holds
-`run_index_named >= 13,526` as a floor and the store reads 13,504 — it moved
-DOWN 6 under the merges of 2026-09-07, so the gap widens with mining rather than
-closing, and a retake is the only thing that fixes it. It fails the
-same way on a clean tree, so it is nobody's edit; it is the constant needing a
-retake. Until somebody retakes it, **a slow lane with exactly that one failure is
-the expected reading** and a second failure is the thing to look at. **Zero skips is the normal reading now and 19 was the render cache
+**The long-standing red is closed and there is no expected failure any more**: a
+lane with any red in it is a lane to read. `test_leveled_identity.py`'s census
+held `run_index_named >= 13,526` as a **floor**, and a floor reads *the store only
+grows* over a store that deletes by design — so it went red the first time mining
+displaced rows and the gap widened with every merge. It is a **ratchet** since
+2026-09-07: the count now, plus every deletion a transaction wrote down since the
+high-water mark, still reaches that mark, with the mark advanced by `prune`
+mechanically. **Repointing a census constant at today's reading is still the
+forbidden edit**, and the ratchet is what makes it unnecessary rather than what
+excuses it. **Zero skips is the normal reading now and 19 was the render cache
 being short** — a **store** condition, not a tree fault, confirmed by the first
 lane to read a full cache: `renders plan` then `renders build` is what fills it.
 The 19 were worth roughly forty seconds of engine renders and a training loop, so
