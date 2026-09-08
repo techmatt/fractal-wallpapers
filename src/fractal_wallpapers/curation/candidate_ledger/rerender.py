@@ -36,6 +36,36 @@ RE_RENDER_UNIT = "re_render"
 RE_RENDER_WORKERS = 3
 
 
+def read_keys(path) -> set[str]:
+    """The **recipe** keys a key manifest names. `{key}`.
+
+    JSONL like every other record here — one object a line, an integer `schema`, a
+    `key` — and a manifest rather than a repeated flag for the reason every batch
+    subcommand here takes one: a Windows command line overflows long before a list
+    of recipes does. Deliberately not [`curation.intake.read_keys`], which reads the
+    same shape holding *location* keys: the two are different identities and a
+    reader that took either would join silently wrong.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise store.LedgerError(
+            f"{path} is not there, so there is no set of recipes to act on. A key manifest "
+            f"is one JSON object a line, each with a `schema` and a `key`."
+        )
+    keys = set()
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        held = row.get("key") or row.get("recipe_key")
+        if not held:
+            raise store.LedgerError(f"{path} line {number} names no `key`")
+        keys.add(str(held))
+    if not keys:
+        raise store.LedgerError(f"{path} holds no key, so there is nothing to act on")
+    return keys
+
+
 def re_render_dir() -> Path:
     """The subtree one re-render leg owns: its dumped fields and its record."""
     return under("curation", RE_RENDER_UNIT)
@@ -70,8 +100,28 @@ def render_pair(payload: dict) -> dict:
     dumped once per (location, mode) and every map at it after that is a recolour
     — so two rows of one pair rendered in two workers would each pay the dump,
     and would race to write it. One pair, one worker, one dump.
+
+    ## What a restored picture has to be, and the member this forgot
+
+    A put-back is only a put-back if the file reproduces the **key** the row is
+    filed under, and that key digests every member of [`recipes.KEYED`]. This built
+    its engine spec by naming four of them, so `mode_params` was silently dropped
+    and a varied row's restored picture was the bare mode's — the same defect
+    [`curation.mine.make`] carried, one function away, and it would have quietly
+    undone that fix on any row this leg touched.
+
+    `mode_params` is passed now, and the two members it still does not pass —
+    `curve` and `palette` — are **checked instead of assumed**: they are
+    [`colorize.render`]'s overrides, which refuse a `fields` directory, so passing
+    them would cost this leg its field sharing on every row to serve a case the
+    pool does not hold. A row whose recipe names anything but the candidate path's
+    own curve and palette is counted as failed with the reason, rather than
+    restored as a picture that is not it. `mode_params` needs no such trade: a
+    non-empty one already takes the render path in [`colorize._shared_field`], so
+    an unvaried row keeps its dump and a varied one never wanted one.
     """
     from fractal_wallpapers.curation import colorize, recipes
+    from fractal_wallpapers.labeling import finished
 
     # Read once per WORKER and not once per pair. A pool task is one (location,
     # mode) and there are thirty-two thousand of them; the cyclic set is a read
@@ -91,15 +141,28 @@ def render_pair(payload: dict) -> dict:
             "viewport": stored["viewport"],
             "maxiter": int(stored["maxiter"]),
         }
+        colormap = str(stored["colormap"])
+        plain = finished.recipe(mirror=colormap not in cyclic)
+        if str(stored.get("curve")) != colorize.CURVE or (stored.get("palette") or {}) != plain:
+            out["failed"] += 1
+            out["why"].append(
+                f"{job['key']}: its recipe names a curve or palette the candidate path does "
+                f"not spend, and this leg serves those out of the field cache, which would "
+                f"put back the plain picture under this row's name"
+            )
+            continue
         try:
             colorize.render(
                 row,
                 str(stored["mode"]),
-                str(stored["colormap"]),
+                colormap,
                 cyclic,
                 Path(job["picture"]),
                 level=True,
                 fields=fields,
+                # The member this forgot. Without it a varied row's put-back is the
+                # bare mode's picture under the variant's key — see the docstring.
+                mode_params=dict(stored.get("mode_params") or {}),
             )
         except Exception as failure:  # noqa: BLE001 — a failed render is a recorded fact
             out["failed"] += 1
@@ -115,9 +178,20 @@ def re_render(
     limit: int | None = None,
     workers: int = RE_RENDER_WORKERS,
     share_fields: bool = True,
+    keys=None,
     log=print,
 ) -> dict:
     """Render every picture the store names and cannot find. Writes no row.
+
+    **`keys` names rows to render whether or not their file is there**, and that is
+    the one case for it: a stored picture that is not its own recipe's picture is
+    worse than a missing one, because nothing looks broken. It is how the seats
+    exposed by `mine.make`'s dropped `mode_params` were put right — the file was on
+    disk, decodable, and of another coloring. The population is then exactly those
+    rows and the record says which selector ran, so a re-render over named keys is
+    never confused with a sweep for absent files. The key guard below runs
+    unchanged: a named row that does not reproduce its own key is refused like any
+    other.
 
     The ledger's second invariant, run as a repair: **the picture stays
     re-renderable from the row alone**. `recipes.of_record` rebuilds the recipe
@@ -144,8 +218,19 @@ def re_render(
     from fractal_wallpapers.palettes import groups as groups_module
 
     started = time.time()
-    wanted = missing_pictures()
-    log(f"[re-render] {len(wanted):,} row(s) name a picture that is not on disk")
+    if keys is None:
+        selector = "rows whose picture is not on disk"
+        wanted = missing_pictures()
+        log(f"[re-render] {len(wanted):,} row(s) name a picture that is not on disk")
+    else:
+        named = {str(key) for key in keys}
+        selector = f"{len(named):,} named row(s), on disk or not"
+        wanted = [row for row in store.stream() if str(row["key"]) in named]
+        absent = named - {str(row["key"]) for row in wanted}
+        log(
+            f"[re-render] {len(wanted):,} of {len(named):,} named row(s) are in the store"
+            + (f"; {len(absent):,} are not and cannot be rendered" if absent else "")
+        )
 
     # ---- the guard, before any engine runs ---------------------------------- #
     cyclic = colorize.cyclic()
@@ -166,7 +251,15 @@ def re_render(
                     maxiter=int(stored["maxiter"]),
                     regime=recipes.CANDIDATE_REGIME,
                     mode=mode,
-                    mode_params={},
+                    # The row's own, not `{}`. This guard rebuilds the members the
+                    # render path *derives* — the palette off the cyclic set, the
+                    # stamp off the shipped band — and there is nothing in the
+                    # checkout to re-derive a leg's chosen settings from, so the
+                    # row is the only source. Pinned empty, a varied row's rebuilt
+                    # key never matched its own and every one of them was refused:
+                    # protective by accident, and it would have gone on refusing
+                    # them after the pictures were correct.
+                    mode_params=dict(stored.get("mode_params") or {}),
                     curve=colorize.CURVE,
                     colormap=colormap,
                     palette=finished.recipe(mirror=colormap not in cyclic),
@@ -250,6 +343,10 @@ def re_render(
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "share_fields": bool(share_fields),
+        # Which population ran, so a re-render over named keys is never read as a
+        # sweep for absent files. `named_but_absent` keeps its name and counts the
+        # population either way, which is what it always was.
+        "selector": selector,
         "named_but_absent": len(wanted),
         "reproduce_their_own_key": len(jobs) if limit is None else None,
         "refused": refused[:20],
@@ -302,9 +399,19 @@ def rescore(
     limit: int | None = None,
     batch: int = SCORE_BATCH,
     device: str = "auto",
+    keys=None,
     log=print,
 ) -> dict:
     """Read every row whose picture is on disk through the judge shipped now.
+
+    **`keys` reads the named rows even where the sidecar already holds a reading**,
+    and it is the companion of [`re_render`]'s own `keys`: a row whose picture has
+    just been *corrected* carries a reading of the picture it used to be, and the
+    skip-what-is-held rule below would leave that reading standing forever. The
+    upsert keys on `(recipe, artifact, regime)`, so a re-read replaces the stale
+    number in place rather than adding a second one — which is right here and is why
+    it is not the default: on an ordinary pass a held reading is a fact about the
+    same picture and re-reading it would buy nothing.
 
     **The step a judge adoption makes necessary and nothing else does.** Scores
     are keyed on `(recipe, artifact, regime)` and
@@ -351,20 +458,31 @@ def rescore(
         if str(row.get("judge_artifact")) == want
     }
     done_partial = _partial_keys(want)
-    wanted = [
-        row
-        for row in stored
-        if str(row["key"]) in present
-        and str(row["key"]) not in held
-        and str(row["key"]) not in done_partial
-    ]
+    if keys is None:
+        wanted = [
+            row
+            for row in stored
+            if str(row["key"]) in present
+            and str(row["key"]) not in held
+            and str(row["key"]) not in done_partial
+        ]
+        log(
+            f"[rescore] {len(stored):,} row(s), {len(present):,} with a picture; "
+            f"{len(held):,} already read on {want[:8]}, {len(done_partial):,} in the partial; "
+            f"{len(wanted):,} to read"
+        )
+    else:
+        # Named rows, held reading or not — see the docstring. The picture still has
+        # to be there: a reading of a file that is not on disk is not a reading.
+        named = {str(key) for key in keys}
+        wanted = [row for row in stored if str(row["key"]) in named and str(row["key"]) in present]
+        log(
+            f"[rescore] {len(wanted):,} of {len(named):,} named row(s) have a picture and "
+            f"will be re-read on {want[:8]}, {len(named & held):,} of them over a reading "
+            f"the sidecar already holds"
+        )
     if limit is not None:
         wanted = wanted[: int(limit)]
-    log(
-        f"[rescore] {len(stored):,} row(s), {len(present):,} with a picture; "
-        f"{len(held):,} already read on {want[:8]}, {len(done_partial):,} in the partial; "
-        f"{len(wanted):,} to read"
-    )
     if wanted:
         from fractal_wallpapers.models import scoring, train
 

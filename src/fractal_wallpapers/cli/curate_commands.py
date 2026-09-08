@@ -505,8 +505,15 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         "pictures": candidate_ledger.picture_census,
         "prune": lambda: candidate_ledger.prune(keep=args.keep, apply=not args.dry_run),
         "ratchet": lambda: _ratchet(census=args.census),
-        "re-render": lambda: candidate_ledger.re_render(limit=args.limit, workers=args.workers),
-        "score": lambda: candidate_ledger.rescore(limit=args.limit),
+        "re-render": lambda: candidate_ledger.re_render(
+            limit=args.limit,
+            workers=args.workers,
+            keys=candidate_ledger.read_keys(resolve_output(args.keys)) if args.keys else None,
+        ),
+        "score": lambda: candidate_ledger.rescore(
+            limit=args.limit,
+            keys=candidate_ledger.read_keys(resolve_output(args.keys)) if args.keys else None,
+        ),
         "restore": lambda: candidate_ledger.restore(force=args.force),
     }[args.what]
     try:
@@ -3545,6 +3552,14 @@ def add_commands(subcommands) -> None:
         type=int,
         help="stop after this many pictures. What a pilot prices the whole leg off",
     )
+    remaking_pictures.add_argument(
+        "--keys",
+        metavar="PATH",
+        help="a key manifest — one JSON object a line carrying a recipe `key` — naming rows "
+        "to render WHETHER OR NOT their picture is on disk. For the one case that needs it: "
+        "a stored file that is not its own recipe's picture, which is worse than a missing "
+        "one because nothing looks broken",
+    )
 
     ledger_verbs.add_parser("save", help="save a fresh copy and manifests")
 
@@ -3555,6 +3570,13 @@ def add_commands(subcommands) -> None:
         "--limit",
         type=int,
         help="stop after this many pictures. What a pilot prices the whole leg off",
+    )
+    rejudging.add_argument(
+        "--keys",
+        metavar="PATH",
+        help="a key manifest naming rows to re-read EVEN WHERE the sidecar already holds a "
+        "reading. The companion of `re-render --keys`: a corrected picture carries a "
+        "reading of the picture it used to be, and the upsert replaces it in place",
     )
 
     putting_back = ledger_verbs.add_parser(

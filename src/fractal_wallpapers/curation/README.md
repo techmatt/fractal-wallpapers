@@ -1006,9 +1006,13 @@ this geometry it is enough of the clock to hold the concurrency under two. More
 than three threads is still the desktop-usability rule and is not the lever; fewer
 places and more maps at each is.
 
-### `mine.make` drops `mode_params`, so every varied candidate in the pool is the bare mode's picture
+### `mine.make` dropped `mode_params`, so every varied candidate in the pool is the bare mode's picture
 
-**Live, not history, and it is one missing keyword.** `hunt.Maker.make` passes
+**Fixed 2026-09-08 in `FIX_ckpt116_mine_mode_params_0908`; the 10,664 rows already in
+the pool were left as they are, deliberately.** What follows is what the defect was
+and what it cost, because the rows are still there.
+
+**It was one missing keyword.** `hunt.Maker.make` passes
 `mode_params=dict(plan.mode_params or {})` into `colorize.render`; `mine.make` — the
 call every `curate mine` and every `curate depth` leg actually renders through —
 does not, so the parameter defaults to `{}`. A leg that names
@@ -1034,9 +1038,34 @@ other direction, in `curation.label_migration`'s byte-identity sweep: 123 of 123
 varied-dtm rows whose staged redraw differed from the ledger's file have a
 **bare-mode** redraw that is byte-identical to it.
 
-**Not fixed here** — `MERGE_ckpt116_label_rows_and_resolve_0908` was asked to
-diagnose and not to repair. What a fix costs is the keyword plus a re-render of
-those rows, and a re-score, because the standing readings are about other pictures.
+**A second renderer had the same hole and it would have undone the fix.**
+`candidate_ledger.rerender.render_pair` — what puts a picture back — built its engine
+spec by naming four members of `recipes.KEYED`, so a restored varied row was the bare
+mode's picture; and `re_render`'s key guard rebuilt each row's key with `mode_params`
+pinned to `{}`, so every varied row failed it and was refused. Protective by accident,
+and it would have gone on refusing them after the pictures were correct. Both fixed
+with the keyword, and the guard now rebuilds with the row's own settings — the row is
+the only place a leg's chosen settings exist.
+
+**The guard is one test over all three renderers.**
+`tests/test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe` renders
+one recipe through `hunt.Maker.make`, `mine.make` and `render_pair` and compares the
+**bytes**, then draws the bare mode and requires it to differ — so a guard on settings
+that move no pixels cannot pass. An assertion that each site passes `mode_params`
+would have caught this one argument and nothing else.
+
+**What it cost, measured on the seats.** Twelve of the 1,000 seats of
+`20260908T201911Z` carry a non-empty `mode_params`; seven of their stored pictures
+were the bare mode's and were re-rendered. **Six of the seven collapse once the file
+matches its key** — `P(≥4)` 0.94→0.002, 0.97→0.018, 0.95→0.011, 0.83→0.000 — so six
+seats were held on a picture the pool would not have chosen. The record was
+deliberately **not** re-solved: thousands of varied rows in the pool are still bare
+under their own keys, so a fresh solve would be differently wrong rather than more
+right.
+
+**The rest of the pool is deliberately out of scope.** Putting it right is a
+re-render of 10,664 rows plus a re-score, because every standing reading on them is
+about another picture.
 
 ## `curate retention` — what survives what the rule drops
 

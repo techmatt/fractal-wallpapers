@@ -17,9 +17,12 @@ built on that would be a comparison of nothing.
 
 from __future__ import annotations
 
+import dataclasses
+from pathlib import Path
+
 import pytest
 
-from fractal_wallpapers.curation import mine
+from fractal_wallpapers.curation import mine, recipes
 
 # --------------------------------------------------------------------------- #
 # Material.
@@ -443,3 +446,134 @@ def test_hours_to_target_is_seconds_a_location_over_primed_a_location():
     # Ten locations at 3.6 s each prime one, so a thousand cost 36,000 s.
     assert out[mine.RANKED]["hours_to_target"] == pytest.approx(10.0)
     assert out[mine.RANKED]["reaches_target"] is True
+
+
+# --------------------------------------------------------------------------- #
+# Every renderer that takes a recipe, on the pixels.
+# --------------------------------------------------------------------------- #
+def engine_is_built() -> bool:
+    from fractal_wallpapers import engine
+
+    try:
+        engine.engine_path()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+needs_engine = pytest.mark.skipif(
+    not engine_is_built(),
+    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
+)
+
+#: The place, frame and settings the maker guard below draws at. `direct_trap_multiply`
+#: because it is the only mode this project has ever varied, and the settings are a
+#: roster cell — [`curation.depth`]'s own spelling — rather than an invented pair.
+MAKER_PLACE = {"family": {"kind": "mandelbrot"}}
+MAKER_FRAME = {
+    "viewport": {
+        "center_re": "-0.7612572175676096",
+        "center_im": "-0.08419961869150334",
+        "width": "0.0001808092935632228",
+    },
+    "maxiter": 4000,
+}
+MAKER_MODE = "direct_trap_multiply"
+MAKER_SETTINGS = {"opacity": 0.6, "threshold": 0.2}
+
+
+@needs_engine
+@pytest.mark.slow
+def test_the_two_makers_draw_the_same_picture_for_one_recipe(tmp_path, monkeypatch) -> None:
+    """**The invariant, and it is about the pixels rather than about a call site.**
+
+    Three functions in this project turn a recipe into a picture — `hunt.Maker.make`,
+    `mine.make` (what every mine and every depth leg actually goes through) and
+    `candidate_ledger.rerender.render_pair` (what puts one back) — and they are three
+    spellings of one act. `mine.make`'s own docstring said "nothing else altered",
+    and for six days it altered `mode_params`: it never passed them, so a leg naming
+    `direct_trap_multiply@opacity=0.6,threshold=0.2` keyed the variant and drew the
+    bare mode, 10,664 rows of it. `render_pair` built its spec by naming four members
+    of `recipes.KEYED` and had the same hole for the same reason.
+
+    An assertion that each one passes `mode_params` would have caught that one
+    argument and nothing else. This renders one recipe all three ways and compares
+    the **bytes**, so whichever member the next renderer forgets is caught by the
+    same guard: a difference here means they do not agree about the picture, whatever
+    the reason.
+
+    The bare mode is drawn too, and must differ — otherwise the comparison above
+    would pass on a mode whose settings do nothing, which is how this bug survived
+    every guard the project already had.
+    """
+    import hashlib
+
+    from fractal_wallpapers.curation import hunt
+    from fractal_wallpapers.curation.candidate_ledger import rerender
+
+    # `hunt.Maker.make` writes into its own leg's subtree and takes no override, so
+    # the ONE accessor that names it is redirected. Deliberately not the tier root:
+    # the judge, the band and the group table all resolve off the real tree and a
+    # test that moved `artifacts/` under it would be testing the fixture. Nothing
+    # here reads a store — this is a write target for two files.
+    monkeypatch.setattr(hunt, "pictures_dir", lambda _name: tmp_path / "hunt")
+    maker = hunt.Maker("makers_agree", log=lambda *_a: None, fields=tmp_path / "fields")
+    plan = hunt.Try(
+        leg="test",
+        location="makers_agree",
+        partition="mandelbrot",
+        mode=MAKER_MODE,
+        colormap="viridis",
+        cell="test",
+        k=1,
+        mode_params=dict(MAKER_SETTINGS),
+    )
+    unit = mine.Unit(
+        arm="test",
+        location="makers_agree",
+        partition="mandelbrot",
+        mode=MAKER_MODE,
+        colormap="viridis",
+        k=1,
+        band="test",
+        mode_params=dict(MAKER_SETTINGS),
+    )
+    recipe = maker.recipe_for(plan, MAKER_PLACE, MAKER_FRAME)
+    key = recipes.key_of(recipe)
+
+    theirs = maker.make(plan, MAKER_PLACE, MAKER_FRAME, recipe, key)
+    ours = mine.make(maker, unit, MAKER_PLACE, MAKER_FRAME, key, pictures=tmp_path / "mine")
+    # The put-back, driven off the stored recipe the way the leg drives it: the row
+    # is the only input, which is the claim `candidate_ledger.rows.row` makes about
+    # every row in the store.
+    back = tmp_path / "back" / f"{key}.jpg"
+    report = rerender.render_pair(
+        {
+            "fields": str(tmp_path / "back_fields"),
+            "rows": [{"key": key, "picture": str(back), "recipe": recipe.record()}],
+        }
+    )
+    assert report["failed"] == 0, report["why"]
+
+    digest = {
+        name: hashlib.sha256(Path(where).read_bytes()).hexdigest()
+        for name, where in (
+            ("hunt", theirs["picture"]),
+            ("mine", ours["picture"]),
+            ("put back", back),
+        )
+    }
+    assert len(set(digest.values())) == 1, (
+        f"the renderers drew different pictures for recipe {key}: "
+        f"{ {name: value[:16] for name, value in digest.items()} }. They are spellings of "
+        f"one act and something is passed to one of them and not the others."
+    )
+
+    bare = dataclasses.replace(unit, mode_params={})
+    plain = mine.make(
+        maker, bare, MAKER_PLACE, MAKER_FRAME, f"{key}_bare", pictures=tmp_path / "mine"
+    )
+    assert hashlib.sha256(Path(plain["picture"]).read_bytes()).hexdigest() != digest["mine"], (
+        "the settings this guard varies make no difference to the picture, so it would "
+        "pass on a maker that dropped them. Choose settings that move the pixels."
+    )

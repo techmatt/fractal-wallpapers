@@ -390,6 +390,31 @@ gain — the three single-knob cells sit at 65.9-78.8% tier-3-or-better and mean
 2.92-2.95, while raising **both** knobs together overshoots: mean tier 1.93, 25.0%
 tier-3-or-better, and no ground left to lose.
 
+**Those 188 were drawn at LABEL geometry through the sheet, and the pool never got
+one.** `curation.mine.make` — what every mine and every depth leg renders through —
+dropped `mode_params` until 2026-09-08, so every varied row the *ledger* holds is the
+bare mode's picture under the variant's key: 10,664 of them across thirteen legs. The
+verdicts above are unaffected, and the reason the numbers still mean something is that
+the sheet's own renderer passed the settings — had it not, all four cells would have
+read identically and they do not. `curation/README.md`'s *`mine.make` dropped
+`mode_params`* has the defect and what it cost.
+
+**Redrawn into the pool after the fix, the finding reproduces.** 40 places where a
+bare row already clears `P(≥3) ≥ 0.50`, each drawn at every cell at candidate geometry
+through the fixed path, 2026-09-08: **near-white share 0.038 bare to 0.000 at every
+one of the four cells**, and median in-mask chroma 0.0209 bare against 0.0263
+(`opacity=0.4`), 0.0266 (`opacity=0.6`), 0.0215 (`threshold=0.2`) and 0.0206 (both).
+So a tinted variant does leave white — but read against what a seat actually looks
+like, the gain is small: the 1,000 seats of `20260908T201911Z` read 0.052 median for
+this mode and 0.067–0.138 for every other one, so the best cell lands at two fifths of
+the palest other mode's seats. **The mode is pastel by construction and the settings do
+not change that**; they move the traced lace off white and leave the ground light.
+
+**And the judge charges for it.** Of the 40 places, all 40 clear bare, against 27
+(`opacity=0.4`), 23 (`threshold=0.2`), 19 (`opacity=0.6`) and 4 (both) — the same
+direction as the `P(>=4)` bias below, now measured on the pool's own geometry.
+`opacity=0.4` is the only cell that buys chroma without spending most of the clears.
+
 **And the bias is the judge's alone.** On the three single-knob cells
 Spearman(chroma, `P(>=4)`) is **-0.291**, which reproduces the -0.269 above on a
 population the audit never saw; Spearman(chroma, Matt's tier) over the same rows is

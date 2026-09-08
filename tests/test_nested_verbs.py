@@ -530,9 +530,9 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "pictures": (),
         "prune": ("--keep", "--dry-run"),
         "ratchet": ("--census",),
-        "re-render": ("--workers", "--limit"),
+        "re-render": ("--workers", "--limit", "--keys"),
         "save": (),
-        "score": ("--limit",),
+        "score": ("--limit", "--keys"),
         "restore": ("--force",),
     },
     "solve": {
