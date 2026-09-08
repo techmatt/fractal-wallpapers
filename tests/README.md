@@ -385,6 +385,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+14 that reconciles exactly, fast lane only, and the slow lane deliberately not
+run.** `FIX_ckpt115_feasibility_group_cap_0908`, 2026-09-08, idle box,
+`.[dev,models]` with a release engine. **121.32 s over 3,935, 128 deselected**
+fast — **4,063** against the 4,049 the entry below this one left. The +14 is
+**+4 slow**, this prompt's four guards on the feasibility row's group cap, which
+is the whole of the deselected move 124 → 128; and **+10 fast**, all of them
+`23d1d15`'s, the only commit to touch `tests/` between the two readings. The
+clock is 121.32 s against 122.86 s over ten more tests, so nothing here is a
+cost. Matt skipped the slow lane mid-prompt, so **4,063 is a derivation and not a
+reading** — it is the fast lane's own collected total, which is what the slow
+lane counts when nothing skips.
+
 **+6 that reconciles exactly, fast lane only, and one flag table caught it.**
 `FIX_ckpt114_recorded_p_fine_bar_0907`, 2026-09-07, idle box, `.[dev,models]` with
 a release engine. **122.86 s over 3,925, 124 deselected** fast — 4,049 against the

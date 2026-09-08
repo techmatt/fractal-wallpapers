@@ -1685,16 +1685,28 @@ measured 2026-09-07* — so the exception is a real difference in the code and n
 much of one in the outcome.) It said otherwise until 2026-09-07 and was wrong on the day it was
 written.
 
-⚠ **The census and the solve price two different caps, and only one of them is
-live.** `candidate_ledger.inventory.feasibility` reads `ceiling.GROUP_CAP` — the
-**identity** cap of one seat a group — so its `group_cap` row says
-`{"cap": 1, "holds": 942, "binds": true}` and has said so since the proportional
-rule replaced the identity one on 2026-08-28. The seating runs
-`ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)`, which is **25** at n=1000 and
-refuses nothing. A leg reading *`group_cap` binds* off a census and *zero
-refusals* off a solve is reading two caps and not one contradiction, and the
-number that matters is the solve's. The census row is a reading of the retired
-rule and reporting it as a live constraint has cost a leg's readout twice.
+**The census and the solve priced two different caps until 2026-09-08, and the
+census was the one that was wrong.** `candidate_ledger.inventory.feasibility` read
+`ceiling.GROUP_CAP` — the **identity** cap of one seat a group — so its `group_cap`
+row said `{"cap": 1, "needs": 1000, "holds": 942, "binds": true}` at n=1000 and had
+said so since the proportional rule replaced the identity one on 2026-08-28, while
+the seating ran `ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)` — **25** a group at
+that rung, refusing nothing. A leg reading *`group_cap` binds* off a census and
+*zero refusals* off a solve was reading two caps and not one contradiction, and it
+cost a leg's readout twice. The row now prices the cap the solve runs, the way
+`headroom`'s `palette_group_cap` block was corrected on 2026-08-31, and carries
+`cap_rule` beside `cap`; it reads `{"cap": 25, "needs": 40, "holds": 942,
+"binds": false}` at n=1000. **`needs` is groups and not seats** — `ceil(n / cap)` —
+which is what it always was, the two being the same number only at a cap of one.
+
+**Under the proportional rule this row can no longer bind on this pool at any n.**
+`ceil(n / max(1, floor(0.025 n)))` peaks at **79 groups**, at n=79, where the
+`max(1, ...)` floor is still holding the cap at one; from n=80 up it runs 40 to 60,
+and from n=1000 up 40 to 42. So a store holding 942 groups clears it everywhere,
+however large the gallery, and the row is a
+necessary condition that is satisfied rather than one that was quietly dropped.
+It binds on a pool of under eighty groups — a themed sub-pool is where to expect
+that, and a themed pass prices `ceiling.themed_group_cap` rather than this.
 
 **A group's population is a fact about the tracked colormap library and never
 about the ledger.** `groups.group_of` is total — a map in `data/palettes/groups.jsonl`

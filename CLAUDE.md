@@ -178,15 +178,16 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **122.86 s over the 3,925
-it holds, 124 deselected**, on this machine, 2026-09-07, on an idle box with a
+Both are measured, not estimated. The **fast** lane is **121.32 s over the 3,935
+it holds, 128 deselected**, on this machine, 2026-09-08, on an idle box with a
 `.[dev,models]` install and a release engine built. The **slow** lane's last
 reading is **7:17 over 4,043, all green and zero skipped**, taken on the same
-install two prompts earlier, which
+install several prompts earlier, which
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles the
-counting rule for. Six fast tests have landed since it, so the next slow lane
-should read **4,049** and a figure other than that is worth reading rather than
-assuming.
+counting rule for. Twenty tests have landed since it — fourteen since the fast
+lane above's predecessor — so the next slow lane should read **4,063**, which is
+the fast lane's own collected total, and a figure other than that is worth
+reading rather than assuming.
 
 **The long-standing red is closed and there is no expected failure any more**: a
 lane with any red in it is a lane to read. `test_leveled_identity.py`'s census
