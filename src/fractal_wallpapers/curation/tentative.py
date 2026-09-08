@@ -401,7 +401,9 @@ def manifest_of(
         "pool": {
             "stamp": None if candidates is None else growth.pool_stamp(candidates),
             "stamp_is": "sha256 over the sorted candidate keys, as `growth.pool_stamp` takes "
-            "it. Two records carrying the same stamp were chosen over the same pool",
+            "it. Two records carrying the same stamp were chosen over the same pool — over "
+            "the same POOL and not necessarily the same seatable rows, because a quality "
+            "bar narrows what a pass may seat and is on `solve.config.fine_bar` instead",
             "candidates": None if candidates is None else len(candidates),
             "locations": places,
             "reachable_locations": pool.get("reachable_locations"),

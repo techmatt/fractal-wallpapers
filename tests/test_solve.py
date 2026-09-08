@@ -21,6 +21,8 @@ be and is now the planted red.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 from tests.test_headroom import candidate
 
@@ -2566,3 +2568,95 @@ def test_a_pass_asked_for_no_chains_says_so_on_the_record():
     assert record["augment"]["gained"] == 0
     assert "not run" in record["augment"]["of"]
     assert "not run" in record["swaps_after_the_augment"]["of"]
+
+
+# --------------------------------------------------------------------------- #
+# The quality bar, which is a recorded parameter and not a driver's filter.
+# --------------------------------------------------------------------------- #
+def scored(rows: dict, monkeypatch) -> None:
+    """Stand in for `gallery-grade score-pool`'s output: `{key: p_fine(>=4)}`.
+
+    A key absent from `rows` is a candidate the head has **no reading for**, which
+    is the case the bar has to hold: on the real pool the head has read exactly
+    the clearing set, so an unread row is one the render judge's own per-mode bar
+    refuses anyway, and excluding it costs nothing.
+    """
+    from fractal_wallpapers.models import gallery_grade_train
+
+    monkeypatch.setattr(
+        gallery_grade_train,
+        "read_pool_scores",
+        lambda *_args, **_rest: {name: {"p_ge4": value} for name, value in rows.items()},
+    )
+
+
+def test_the_fine_bar_is_on_every_record_including_the_ones_that_ran_without_one():
+    """**The whole point of this parameter.** A record silent about the bar has the
+    defect the cascade flip cost a hand-check of sixty-two stamps for: nothing on
+    the record says what made it, so it has to be established by date. `null` is an
+    answer and a missing field is not, so the field is written either way."""
+    record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, log=quiet)
+    assert record["config"]["fine_bar"] is None
+    assert record["config"]["fine_bar_default"] is solve.DEFAULT_FINE_BAR is None
+    assert "p_fine(>=4)" in record["config"]["fine_bar_is"]
+    assert record["fine_bar"]["bar"] is None
+    assert "no fine-head bar" in record["fine_bar"]["of"]
+
+
+def test_the_fine_bar_a_solve_ran_under_is_on_the_config_block_a_manifest_carries(monkeypatch):
+    """`tentative.manifest` carries `config` WHOLE and the `fine_bar` block beside
+    it is not tracked at all, so the VALUE goes on `config` — the spiral cap's own
+    argument — and the counts go in the block."""
+    scored({"a": 0.9, "b": 0.1}, monkeypatch)
+    record = solve.solve(
+        [candidate("a"), candidate("b")], n=20, key=solve.JUDGE_KEY, fine_bar=0.5, log=quiet
+    )
+    assert record["config"]["fine_bar"] == 0.5
+    assert record["config"]["fine_bar_default"] is None, "this leg moved no default"
+    assert record["fine_bar"]["kept"] == 1
+    assert record["fine_bar"]["dropped"] == 1
+    assert record["population"]["candidates"] == 1
+
+
+def test_the_fine_bar_narrows_the_pool_before_the_bars_and_the_view(monkeypatch):
+    """It is a filter on the SEATABLE POOL, taken before anything else runs — so
+    the per-mode bars, the neutral pre-selection, the view's sizing and the strata
+    are all taken over what it leaves, and a barred pass is a whole pass rather
+    than a filtered reading of an unbarred one."""
+    scored({"keep": 0.75, "edge": 0.50, "drop": 0.49}, monkeypatch)
+    pool = [candidate("keep"), candidate("edge"), candidate("drop"), candidate("unread")]
+    record = solve.solve(pool, n=20, key=solve.JUDGE_KEY, fine_bar=0.50, log=quiet)
+    assert {row["key"] for row in record["seated"]} == {"keep", "edge"}, "the bar is >=, not >"
+    assert record["fine_bar"]["unscored"] == 1
+    assert "drop" not in json.dumps(record["rejection"]), (
+        "a row the bar dropped is pool construction and appears in no refusal column"
+    )
+
+
+def test_a_fine_bar_with_no_pool_scores_is_refused_rather_than_ignored(monkeypatch):
+    """The cascade's own direction, for the cascade's own reason: a bar that
+    silently did not apply is a record claiming a pool it did not solve over."""
+    scored({}, monkeypatch)
+    with pytest.raises(solve.SolveRefused) as refused:
+        solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, fine_bar=0.5, log=quiet)
+    assert "gallery-grade score-pool" in str(refused.value)
+
+    scored({"a": 0.2}, monkeypatch)
+    with pytest.raises(solve.SolveRefused) as empty:
+        solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, fine_bar=0.9, log=quiet)
+    assert "no pool to solve over" in str(empty.value)
+
+
+def test_a_pass_with_no_fine_bar_seats_exactly_what_it_seated_before():
+    """The identity pin. Adding the parameter renames nothing and moves no default,
+    so an unbarred pass has to be the pass it was — same rows, same order, same
+    objective — and `fine_bar=None` has to be the same call as not naming it."""
+    pool = [candidate(f"c{at:02d}", score=0.9 - at / 100) for at in range(30)]
+    spelling = dict(
+        n=12, group_cap=ceiling.IDENTITY, key=solve.JUDGE_KEY, spiral_cap=None, radius=None
+    )
+    unnamed = solve.solve(pool, log=quiet, **spelling)
+    explicit = solve.solve(pool, fine_bar=None, log=quiet, **spelling)
+    assert [row["key"] for row in unnamed["seated"]] == [row["key"] for row in explicit["seated"]]
+    assert unnamed["objective"]["final"] == explicit["objective"]["final"]
+    assert unnamed["population"] == explicit["population"]

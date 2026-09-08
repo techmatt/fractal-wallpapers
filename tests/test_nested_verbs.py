@@ -543,6 +543,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--rows-per-seat",
             "--draw-seed",
             "--allow-unranked",
+            "--fine-bar",
             "--target",
             "--mode-floor",
             "--flat-floor",
@@ -571,6 +572,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "record": (
             "--solve-name",
             "--n",
+            "--fine-bar",
             "--spiral-cap",
             "--mode-ceiling",
             "--key",

@@ -310,6 +310,34 @@ SWAP_DROPS = 8
 #: a rule is the reason.
 PRECHECK_REMOVALS = 256
 
+#: **The fine head's quality bar on the seatable pool, unasked: NONE.**
+#:
+#: A bar on `p_fine(>=4)` — the gallery-grade head's own `P(>=4)`, the column its
+#: acceptance is stated on and the column [`cascade_order`] orders the top of the
+#: pool by. At `X` it narrows the pool to the rows reading at or above `X` before
+#: anything else runs, so the leg seats over a smaller and better population
+#: rather than ranking a large one and hoping the order holds.
+#:
+#: **`None` is the default and this leg does not move it.** Matt has adopted
+#: `p_fine(>=4) >= 0.50` at n=1000 as the way forward; the ruling is that it stays
+#: a parameter while the rest of the parameters settle, and that the default flips
+#: in the same act that makes the first cascade record. So what lands here is the
+#: recording and the spelling, and nothing else.
+#:
+#: What the ratified bar does, measured 2026-09-07 at n=1000 over the
+#: 277,542-candidate pool — `curation/MEASUREMENTS.md`'s *What a `p_fine` bar on
+#: the view buys at n=1000, measured 2026-09-07*: it keeps a **quarter** of the
+#: seatable pool (10,974 of 40,127 clearing rows), fills the same thousand seats,
+#: raises the sum **1786.5 -> 1876.6**, and costs a demand shortfall of **0 -> 18**.
+#: The median barely moves (0.9343 -> 0.9314), so what it buys is the deletion of
+#: the gallery's worst fifth rather than a better gallery.
+#:
+#: ⚠ **A narrowed pool is a different cost regime**, and
+#: [`augment.DEFAULT_SECONDS`] — five minutes, documented as never binding at the
+#: shipping rungs — **does** bind there. See `curation/GALLERY.md`'s *A narrowed
+#: view is a different cost regime, and the budget DOES bind there*.
+DEFAULT_FINE_BAR = None
+
 #: **Whether the augmenting-chain stage runs, unasked. ON**, Matt's ruling of
 #: 2026-09-04 off the chains sheet.
 #:
@@ -626,6 +654,74 @@ def within(candidates: list[Candidate], locations) -> list[Candidate]:
     """`candidates` restricted to a set of locations, order preserved."""
     keep = set(locations)
     return [candidate for candidate in candidates if candidate.location in keep]
+
+
+def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[list[Candidate], dict]:
+    """`(candidates reading `p_fine(>=4) >= bar`, what that cost)`. Order preserved.
+
+    `p_fine` is the **gallery-grade head's** own `P(>=4)`, off the pool scores
+    `gallery-grade score-pool` writes — the same column and the same file
+    [`cascade_order`] lays over the top of the rank key, so the bar and the order
+    are stated in one quantity and a record cannot be ambiguous about which.
+
+    **A row with no reading is excluded**, and on this pool that costs nothing:
+    the head has read *exactly* the clearing set — `clearing == above_bar` holds
+    set for set over the 40,127 rows of 2026-09-07 — so every row it has not read
+    is one the render judge's own per-mode bar refuses before any rule runs. It is
+    also the conservative direction, and it is the same direction
+    [`cascade_order`] takes an above-bar row it cannot read: unknown never
+    outranks measured.
+
+    This is a filter on the **seatable pool** and not a rule. Nothing here is a
+    refusal a mine could be aimed down, so the rows it drops leave the record
+    rather than appearing in a refusal column — the returned reading is what says
+    how many, and the leg's `fine_bar` block carries it.
+    """
+    from fractal_wallpapers.models import gallery_grade_train
+
+    fine = gallery_grade_train.read_pool_scores()
+    if not fine:
+        raise SolveRefused(
+            f"a fine-head bar of {float(bar):g} needs this pool read through the "
+            f"gallery-grade head and {gallery_grade_train.pool_scores_path()} is not there. "
+            "Run `fractal-wallpapers gallery-grade score-pool` first, or solve with no bar."
+        )
+    kept: list[Candidate] = []
+    unscored = 0
+    for candidate in candidates:
+        read = fine.get(str(candidate.key))
+        if read is None:
+            unscored += 1
+        elif float(read["p_ge4"]) >= float(bar):
+            kept.append(candidate)
+    reading = {
+        "of": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool BEFORE "
+        "anything else runs. Pool construction and never a rule: the rows it drops are in "
+        "no refusal column, and every count on this record below is a count about the "
+        "narrowed pool",
+        "bar": float(bar),
+        "on": "p_ge4 off models/gallery_grade's pool scores — the column the head's "
+        "acceptance is stated on and the column the cascade orders the top of the pool by",
+        "offered": len(candidates),
+        "kept": len(kept),
+        "dropped": len(candidates) - len(kept),
+        "unscored": unscored,
+        "unscored_are": "excluded. The head has read exactly the clearing set, so an "
+        "unread row is one the render judge's per-mode bar refuses anyway",
+        "scores_read": len(fine),
+        "locations": len({candidate.location for candidate in kept}),
+    }
+    log(
+        f"[fine-bar] {len(kept):,} of {len(candidates):,} candidate(s) read "
+        f"p_fine(>=4) >= {float(bar):g}, over {reading['locations']:,} place(s); "
+        f"{unscored:,} have no reading and are excluded"
+    )
+    if not kept:
+        raise SolveRefused(
+            f"no candidate in the pool reads p_fine(>=4) >= {float(bar):g}, so there is no "
+            f"pool to solve over. {len(fine):,} row(s) carry a reading."
+        )
+    return kept, reading
 
 
 # --------------------------------------------------------------------------- #
@@ -1640,6 +1736,7 @@ def solve(
     targets: dict | None = None,
     floor: int | dict | None = None,
     locations: int | None = None,
+    fine_bar: float | None = DEFAULT_FINE_BAR,
     radius: float | None = distinct.PRESELECT_RADIUS,
     diversity: bool = True,
     group_cap: str = DEFAULT_GROUP_CAP,
@@ -1680,6 +1777,13 @@ def solve(
     that many strongest places. `seconds` is a wall budget for the swap loop
     alone: the seed always runs, and what the clock stops is improvement rather
     than the answer.
+
+    `fine_bar` narrows the pool to the rows the gallery-grade head reads at
+    `p_fine(>=4) >= fine_bar`, **before anything else runs** — [`at_fine_bar`].
+    [`DEFAULT_FINE_BAR`] is `None` and this leg does not move it. The value is on
+    the record whether or not one was applied, so a record is never silent about
+    it: `config.fine_bar` is `None` for a pass that ran unbarred, which is what
+    every record before 2026-09-07 is and what they do not say.
 
     `preselected` is [`preselection_for`]'s result, for a **ladder** solving one
     pool at several `n`: the pre-selection does not read `n`, so every rung
@@ -1751,6 +1855,16 @@ def solve(
         candidates, pool_refused = pool(log=log)
     else:
         pool_refused = {}
+    # BEFORE everything, which is what makes a barred pass a whole pass rather
+    # than a filtered reading of an unbarred one: the per-mode bars, the neutral
+    # pre-selection, the view's sizing and the strata are all taken over the rows
+    # in hand, so a record's every count is a count about the pool it solved.
+    narrowed = {
+        "of": "no fine-head bar was applied: this pass solved over the whole pool",
+        "bar": None,
+    }
+    if fine_bar is not None:
+        candidates, narrowed = at_fine_bar(candidates, float(fine_bar), log=log)
     reachable = strongest_locations(candidates, locations)
     if locations is not None:
         candidates = within(candidates, reachable)
@@ -2011,6 +2125,7 @@ def solve(
             augment_chains,
             augment_depth,
             augment_seconds,
+            fine_bar,
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -2035,6 +2150,11 @@ def solve(
             "reachable_locations": len(reachable),
             "truncated_to": locations,
         },
+        # What the bar cost, where one ran. The VALUE is on `config` — which is
+        # the block a tentative gallery's tracked manifest carries whole — and the
+        # counts are here, exactly as the spiral cap's value is on `config` and
+        # its funnel is in the `spiral` block.
+        "fine_bar": narrowed,
         "theme": None
         if theme is None
         else {
@@ -2190,9 +2310,22 @@ def _config(
     augment_chains: bool = DEFAULT_AUGMENT,
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
+    fine_bar: float | None = DEFAULT_FINE_BAR,
 ) -> dict:
     return {
         "n": n,
+        # On `config` for the spiral cap's reason below, and **written whether or
+        # not a bar ran**: `None` is an explicit value saying this pass solved over
+        # the whole pool, so a record can never be silent about the quality bar the
+        # way the 121 records taken before 2026-09-07 are silent about the sort key
+        # that made them. A missing field would put a reader back on the date.
+        "fine_bar": None if fine_bar is None else float(fine_bar),
+        "fine_bar_default": DEFAULT_FINE_BAR,
+        "fine_bar_is": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool "
+        "BEFORE anything else runs — the per-mode bars, the neutral pre-selection and the "
+        "view are all taken over what it leaves. `null` is NO bar and is the default; the "
+        "flag is `--fine-bar` and `solve.at_fine_bar` is the door. A record that does not "
+        "name the field at all was taken before 2026-09-07 and ran unbarred",
         # **On `config` and not only in the `spiral` block**, because `config` is
         # the block a tentative gallery's tracked manifest carries whole
         # ([`tentative.manifest`]) and the `spiral` block is not. Until 2026-09-04
@@ -3230,6 +3363,7 @@ __all__ = [
     "GONE",
     "SEATED",
     "BOTTOM_QUARTILE",
+    "DEFAULT_FINE_BAR",
     "DEFAULT_GROUP_CAP",
     "DEFAULT_KEY",
     "JUDGE_KEY",
@@ -3257,6 +3391,7 @@ __all__ = [
     "Gallery",
     "Objective",
     "SolveRefused",
+    "at_fine_bar",
     "attribution",
     "autolevel_rate",
     "contact_sheet",
