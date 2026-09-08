@@ -385,6 +385,19 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+1, and it is the deselected count that moves.**
+`FIX_ckpt116_mine_mode_params_0908`, 2026-09-08, idle box, `.[dev,models]` with a
+release engine. **126.04 s over 4,016, 129 deselected** fast — **4,145** against the
+4,144 the entry below this one left. The one test is
+`test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe`, which
+renders one recipe through all three of this project's renderers and compares the
+bytes; it costs about nine seconds of engine and is marked slow, so the *held* count
+does not move at all and the deselected one goes 128 to 129. That is the marking rule
+working: a guard that drives the engine earns the mark whatever it is guarding.
+
+The clock came back to 126.04 s from the 127.93 s below it with nothing removed,
+which is the page-cache reading that entry warned about being right.
+
 **+8, fast lane only, and four seconds nobody should read as a regression.**
 `MERGE_ckpt116_label_rows_and_resolve_0908`, 2026-09-08, idle box, `.[dev,models]`
 with a release engine, taken **after** the merge and the `score-pool` leg rather

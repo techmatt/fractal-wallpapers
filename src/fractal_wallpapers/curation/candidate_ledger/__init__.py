@@ -155,6 +155,7 @@ __all__ = [
     "live_engine",
     "manifest_dir",
     "missing_pictures",
+    "read_keys",
     "merge",
     "read",
     "read_scores",

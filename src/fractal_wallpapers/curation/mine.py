@@ -591,6 +591,26 @@ def make(
     eight come off the render's own meter rather than off a stopwatch here, so
     the parts of a colouring are attributed where they are spent.
 
+    **That claim was false about `mode_params` for six days and cost the pool
+    10,664 rows.** The other maker passed the unit's settings into
+    [`colorize.render`] and this one did not, so the parameter defaulted to `{}`:
+    a leg naming `direct_trap_multiply@opacity=0.6,threshold=0.2` on its roster
+    *recorded* the variant on its row, took the variant's own recipe key —
+    `mode_params` is in [`recipes.KEYED`] and reaches the digest through
+    `engine.coloring`, so the key was never the hole — and **rendered the bare
+    mode**. That was every varied candidate this project has ever drawn: [`Unit`]'s
+    own arms carry no settings, so the route was [`depth.Shot`], which renders
+    through here, and the stored picture reproduces byte-for-byte as the bare-mode
+    render across all 13 legs and 10,664 rows of it.
+    `direct_trap_multiply` is the only mode that has ever carried settings, which
+    is what bounds it.
+
+    A docstring saying *nothing else altered* is what kept it invisible, so the
+    guard is not an assertion about this call site:
+    `tests/test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe`
+    renders one unit both ways and compares the **bytes**, which catches whichever
+    maker forgets next.
+
     **The colour read does not reuse the judge's decode, and should not.** It
     looks like a double decode of one JPEG and is not one. The judge reads the
     full 640x360, resizes it to the head's input size and normalizes it, so its
@@ -627,6 +647,11 @@ def make(
         fields=maker.fields,
         meter=meter,
         reported=reported,
+        # Off the unit, exactly as [`hunt.Maker.make`] takes it off the plan. The
+        # duck type is the three intentions' shared member — `hunt.Try`,
+        # `mine.Unit` and `depth.Shot` all name it `mode_params` — so a caller
+        # that has no settings hands `{}` and pays nothing.
+        mode_params=dict(getattr(unit, "mode_params", None) or {}),
     )
     stages.take(meter)
     at = colorize.tick()
