@@ -211,7 +211,18 @@ fractal-wallpapers gallery-grade read          # the table above, and the pick
 fractal-wallpapers gallery-grade accept        # the band against its bar
 fractal-wallpapers gallery-grade score-pool    # the column the cascade order reads
 fractal-wallpapers curate seat-sheet --n 1000  # what the two keys disagree about
+fractal-wallpapers curate solve run --n 1000 --fine-bar 0.50   # the same column as a BAR
 ```
+
+**`score-pool` writes one file and two readers take it.** `cascade_order` lays
+`p_ge4` over the top of the rank key, and `solve.at_fine_bar` — `--fine-bar SCORE`,
+since 2026-09-07 — narrows the seatable pool to the rows reading at or above a bar
+on the same column. Both refuse without `pool_scores.jsonl` rather than falling
+back, and both take an unread row the conservative way: the order leaves it behind
+every row the head could read, and the bar excludes it. **The bar is off by
+default** and this head's adoption did not change that —
+`curation/GALLERY.md`'s *The bar is a recorded parameter and the default is still
+no bar*.
 
 Each band is **ten to thirteen minutes of fitting** on this box — a run is
 81–144 s — plus a two-minute streaming pass over the ledger that every run

@@ -490,6 +490,63 @@ The four runs whole are [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What a `p_fine` 
 on the view buys at n=1000, measured 2026-09-07*; what one costs on the clock is
 *What the solve costs by stage, control and narrowed, measured 2026-09-07* beside it.
 
+### The bar is a recorded parameter and the default is still no bar
+
+**`--fine-bar SCORE`, `solve.solve(fine_bar=...)`, `solve.DEFAULT_FINE_BAR = None`.**
+Landed 2026-09-07. Matt has adopted `p_fine(≥4) ≥ 0.50` at n=1000 as the way
+forward; the ruling is that it stays a **parameter** while the rest of the
+parameters settle, and that the default flips in the same act that makes the first
+cascade record. **So nothing here moves a default** — what landed is the spelling
+and the recording.
+
+```
+curate solve run    --n 1000 --fine-bar 0.50    # the ratified bar, unrecorded
+curate solve record --n 1000 --fine-bar 0.50    # the same bar, under a stamp
+```
+
+**Recording is the point, not the flag.** Until this, the filter had only ever been
+applied by a scratch driver narrowing `solve.pool()`'s return before handing it in
+— which works, and leaves a record that cannot say it happened. That is exactly the
+defect the `rank-key → cascade` flip cost a hand-check of sixty-two stamps for: a
+solve record did not name the key that ordered it, so which side of the flip a
+record fell had to be established by date. **`config.fine_bar` is on every record
+whether or not a bar ran**, `null` for a pass that ran over the whole pool, because
+a missing field puts a reader back on the date. It rides on `config`, which is the
+block [`tentative.manifest`] carries **whole** into the tracked manifest — the
+spiral cap's own argument — and the counts it cost are in the record's own
+`fine_bar` block beside `population`.
+
+**One spelling for a counterfactual and for a recorded run.** `solve.at_fine_bar`
+is the door and `solve.solve(fine_bar=...)` calls it, so a driver asking *what
+would the bar have done* and a record made under it narrow the pool the same way.
+Semantics as the filtered-view leg measured them: `p_fine(≥4)` off the
+gallery-grade head's pool scores — the same file and the same column
+[`cascade_order`] lays over the top of the rank key — **rows with no reading
+excluded**, which costs nothing because the head has read exactly the clearing set.
+It **refuses** without `gallery-grade score-pool`, for the reason the cascade
+refuses: a bar that silently did not apply is a record claiming a pool it did not
+solve over.
+
+**Before anything else runs**, so the per-mode bars, the neutral pre-selection, the
+view's sizing and the strata are all taken over what the bar leaves — a barred pass
+is a whole pass, not a filtered reading of an unbarred one. The rows it drops are
+**pool construction and not a refusal**: they leave the record rather than
+appearing in a refusal column, because nothing there is a rule a mine could be
+aimed down. `population.candidates` is therefore the narrowed count, and the
+`fine_bar` block says how many were dropped and how many the head had not read.
+
+**Verified by running both**, 2026-09-07, against the digests
+`FIX_ckpt114_solve_profiling_and_speedups_0907` took over the same pool: an
+unbarred `curate solve run --n 1000` reproduces 1000 / 0 / 1.001752 / 1786.467343
+and a `--fine-bar 0.50` run reproduces 1000 / 18 / 1.503910 / 1876.601559, each
+**seat for seat** on the sorted-key digest.
+
+**The ranking key needed nothing** — it has been recorded since 2026-09-07 under
+`config.sort_key` (what actually ordered the walk, off the resolver's own coverage
+record) with `config.sort_key_named` beside it (what the caller asked for), and
+`order.key` and `objective.rank_quantity` are written from the same
+[`ordered_by`]. See *`cascade` is the default since 2026-09-07*.
+
 ### Which axes are held up by a rule, and which are emergent
 
 Read across those same four runs, and the reason to keep it: an axis a rule levels
@@ -2057,6 +2114,7 @@ curate solve run --n 150 --group-cap identity --key p_ge4 --spiral-cap none  # t
 curate solve run --n 150 --group-cap {identity,proportional}  # the palette-group cap
 curate solve run --n 150 --key {cascade,rank-key,p_ge4}   # the sort key
 curate solve run --n 150 --spiral-cap {SHARE,none}        # the spiral share cap
+curate solve run --n 150 --fine-bar SCORE                 # the fine head's quality bar, OFF by default
 curate solve run --n 150 --sheet-out <path>               # the contact sheet, elsewhere
 curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 ```

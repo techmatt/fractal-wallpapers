@@ -711,6 +711,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             n=seats,
             targets=targets,
             floor=floor,
+            fine_bar=args.fine_bar,
             order=order,
             coverage=coverage,
             key=args.key,
@@ -856,6 +857,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             targets=targets,
             floor=floor,
             locations=args.locations,
+            fine_bar=args.fine_bar,
             radius=None if args.no_preselection else args.neutral_radius,
             diversity=not args.no_diversity,
             group_cap=args.group_cap,
@@ -2099,8 +2101,8 @@ def themed_demands(theme: str, n: int) -> tuple[dict, int]:
     return {str(theme): 1.0}, solve_module.mode_floor(int(n))
 
 
-def solve_flags_a_record_keeps(*, demands, search):
-    """The four flags `curate solve run` and `curate solve record` both read.
+def solve_flags_a_record_keeps(*, pool, demands, search):
+    """The flags `curate solve run` and `curate solve record` both read.
 
     A record IS a run, taken once and kept, so the flags it accepts are the ones
     it can pass straight through. Written once for [`common.device_flag`]'s
@@ -2108,13 +2110,30 @@ def solve_flags_a_record_keeps(*, demands, search):
     not be reproducible from the `run` it claims to be, and the drift would show
     up as two `--help` texts describing one flag two ways.
 
-    Two containers rather than one parser, because `run` groups its help — it
-    carries twenty-six flags — and `record` at six does not, so a record hands
-    the same parser twice.
+    Three containers rather than one parser, because `run` groups its help — it
+    carries twenty-seven flags — and `record` does not, so a record hands the
+    same parser three times.
     """
     from fractal_wallpapers.curation import augment as augment_module
     from fractal_wallpapers.curation import solve as solve_module
 
+    pool.add_argument(
+        "--fine-bar",
+        type=float,
+        default=solve_module.DEFAULT_FINE_BAR,
+        metavar="SCORE",
+        help="narrow the pool to the rows the gallery-grade head reads at "
+        "p_fine(>=4) >= SCORE, BEFORE anything else runs — the per-mode bars, the neutral "
+        "pre-selection and the view are all taken over what is left, so a barred pass is a "
+        "whole pass and not a filtered reading of an unbarred one. A row the head has NO "
+        "reading for is excluded, which costs nothing: it has read exactly the clearing "
+        "set. Unsaid, NO bar runs and that is still the default — Matt has adopted 0.50 at "
+        "n=1000 and the ruling is that it stays a parameter until the rest of them settle. "
+        "At 0.50 it keeps a quarter of the seatable pool, fills the same thousand seats, "
+        "raises the sum 1786.5 -> 1876.6 and costs a demand shortfall of 0 -> 18. It needs "
+        "`gallery-grade score-pool` and REFUSES without it. The value is on every record "
+        "either way, `null` for a pass that ran unbarred",
+    )
     demands.add_argument(
         "--spiral-cap",
         type=spiral_cap_value,
@@ -3620,7 +3639,7 @@ def add_commands(subcommands) -> None:
         f"picture. A gallery without it is a bound on a program that does not refuse "
         f"inside {ceiling_module.TAU}, and its record says so",
     )
-    solve_flags_a_record_keeps(demands=demands, search=search)
+    solve_flags_a_record_keeps(pool=pool_size, demands=demands, search=search)
     search.add_argument(
         "--explain-seats-of",
         metavar="NAME",
@@ -3697,7 +3716,7 @@ def add_commands(subcommands) -> None:
         f"size a record is kept at, where a `run` reads a leg at "
         f"{candidate_ledger_module.FIRST_SOLVE})",
     )
-    solve_flags_a_record_keeps(demands=recording, search=recording)
+    solve_flags_a_record_keeps(pool=recording, demands=recording, search=recording)
     # A THEMED record is the one thing a record could not be. Recording a themed
     # gallery had to go through `run`, which writes a solve record and never a
     # stamp — so a themed gallery could be solved and never kept, and the six

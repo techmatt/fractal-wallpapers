@@ -385,6 +385,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+6 that reconciles exactly, fast lane only, and one flag table caught it.**
+`FIX_ckpt114_recorded_p_fine_bar_0907`, 2026-09-07, idle box, `.[dev,models]` with
+a release engine. **122.86 s over 3,925, 124 deselected** fast — 4,049 against the
+4,043 the entry below this one left. The +6 is all arithmetic and all fast: **5**
+in `test_solve.py` for the quality bar as a recorded parameter, and **1** in
+`test_cli.py` for the flag on both verbs. **The slow lane was not run**, Matt's
+instruction, so 4,043 is still the last slow reading and the next one should read
+**4,049**. 122.86 against 120.68 and 122.01 is nothing. The one red the first pass
+took was `test_nested_verbs.py`'s `SURFACE` table, which pins each verb's flag
+list in printed order — it is the guard doing its job on a new flag and the fix
+was the two table entries, not the parser.
+
 **+7 that reconciles exactly, and both lanes moved less than the spread.**
 `FIX_ckpt114_wallpapers_leftovers_0907`, 2026-09-07, idle box, `.[dev,models]`
 with a release engine. **120.68 s over 3,919, 124 deselected** fast and **7:17

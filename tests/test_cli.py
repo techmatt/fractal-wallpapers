@@ -688,6 +688,25 @@ def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachab
         parse(["curate", "solve", "run", "--key", "whatever_matt_meant"])
 
 
+def test_the_fine_bar_is_a_flag_a_record_keeps_and_it_moves_no_default() -> None:
+    """The quality bar is a PARAMETER, and both verbs read it.
+
+    A bar that only `run` accepted would be a bar no tracked manifest could ever
+    carry, and the manifest is where a record says what made it. Unsaid it is
+    `None` on both, which is the default this leg deliberately did not move:
+    Matt has adopted `p_fine(>=4) >= 0.50` at n=1000 and ruled that the flip
+    happens in the same act that makes the first cascade record.
+    """
+    from fractal_wallpapers.curation import solve
+
+    parse = cli.build_parser().parse_args
+    assert solve.DEFAULT_FINE_BAR is None
+    assert parse(["curate", "solve", "run", "--n", "150"]).fine_bar is None
+    assert parse(["curate", "solve", "record"]).fine_bar is None
+    assert parse(["curate", "solve", "run", "--fine-bar", "0.50"]).fine_bar == 0.50
+    assert parse(["curate", "solve", "record", "--fine-bar", "0.50"]).fine_bar == 0.50
+
+
 def test_the_spiral_cap_keeps_no_cap_a_zero_cap_and_a_slack_cap_apart() -> None:
     """Three answers and not two. `none` is no cap at all; `0` is a cap whose
     allowance is zero, so no spiral may be seated; `1.0` is a cap that runs and
