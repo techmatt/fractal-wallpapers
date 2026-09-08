@@ -362,12 +362,54 @@ meant to. **The readout says which happened** — `exhaustive` on the depth bloc
 the difference between *no chain of depth ≤ 2 exists* and *none was found in the
 time given*, and the blockage block is only interpretable beside it.
 
+⚠ **It is a budget between SEATS, and a gallery with few seats can overrun it by
+a lot.** The clock is read once per seat in the sweep, and `chain_at` is then a
+nested walk over that ejection's whole `ready` list with no check inside it — so
+one seat's neighbourhood is unbounded in time and a sweep's granularity is the
+seat count. Observed 2026-09-07: a pass holding **7** seats ran the stage **522.8 s
+against the 300 s budget**, 74% over, on 150 million pairs. At the shipping rungs
+this is invisible — a thousand seats is a thousand clock reads a sweep — and it
+bites exactly where the gallery is small and the population large. Putting a check
+inside `chain_at` would move where a *bound* stage stops and so is **not a
+seat-identical change**; it is a proposal, not a fix that can be taken quietly.
+
 **At n=2000 it is a budget question and the exhaustive cost is unknown** — over
 30 minutes, and nothing has run it to the end. What dominates there is the **chain
 search and not the diversity rule**: the search is **40% of augment time at n=2000
 against 91% at n=1000** [measured], so the next speedup at the larger rung is in the
 search rather than in `Twins.within`. The shipped stage seats 1,795 at 300 s and
 1,984 at 1,800 s, neither exhausted and no mode short.
+
+### A narrowed view is a different cost regime, and the budget DOES bind there
+
+**`DEFAULT_SECONDS`' own note is measured on the full pool at the shipping rungs
+and does not cover a narrowed one.** Narrow the view — the fine head's
+`p_fine(≥4) ≥ X`, `AUDIT_ckpt114_filtered_view_resolve_at_p_fine` — and the same
+`n` over the same machine is a **1.8× solve at 0.50, 3.1× at 0.60 and 4.6× at
+0.70**, and at 0.70 the five minutes ran out with sweep 2 still finding 26 chains.
+
+**The whole of it is the chain stage, and the cause is the seed.** Narrowing does
+not make a seat dearer; it makes the greedy fill less of the gallery, and the
+chain stage is the only stage that can fill the rest. Measured 2026-09-07 on the
+277,542-candidate pool, `--key cascade`, idle box, everything else at the
+defaults, at n=1000:
+
+| | seed fills | chain pairs tried | augment | whole solve |
+|---|---|---|---|---|
+| control, unfiltered | **993** of 1000 | **61** | 26.0 s | 74.8 s |
+| view at `p_fine(≥4) ≥ 0.50` | **792** of 1000 | **357,906** | 90.7 s | 133.4 s |
+
+Two hundred seats to win instead of seven, and each one is a scan of the
+neighbourhood — so the stage's cost tracks *what the seed left*, not `n` and not
+the view's size. The narrowed view is the **smaller** pool of the two (8,652 rows
+against 21,780) and the dearer solve by 1.8×.
+
+⚠ **A short seating over a narrowed view is read off the augment log's final
+sweep before it is believed.** `exhaustive` on the depth block, and a last sweep
+that took 0 chains, is the difference between *the pool holds this many* and *the
+clock ran out* — and over a narrowed view the second is live where over the whole
+pool it is not. The 943 seats that 0.70 reported are a budget artifact and not
+that pool's answer; 0.50 and 0.60 exhausted and are.
 
 ### The objective, and why nothing guards a met demand
 
@@ -639,6 +681,51 @@ and inferring re-decode from them is the exact mistake the miss-rate paragraph
 below warns about. The honest statement is that the cache question is closed for
 the swap loop and **has not been asked for the chain stage**, and that answering
 it needs a fresh `Clouds.of` / `hold` / `let_go` replay of a pass that has one.
+
+**It has been asked now, and 2048 stands.** Taken 2026-09-07 off the pass that
+works the chain stage hardest — n=1000 over the view at `p_fine(≥4) ≥ 0.50`, 208
+seats won by chains over 357,906 pairs — as the same replay, which reproduced that
+pass's own 3,836 decodes exactly before it was read at any other size:
+
+| entries | MiB | decodes | saved against shipped |
+|---|---|---|---|
+| **2,048 (shipped)** | **256** | **3,836** | — |
+| 4,096 | 512 | 3,374 | 462 decodes, ~7.6 s |
+| 8,192 and up | 1,024+ | 3,374 | the same 7.6 s |
+
+**45,101 accesses over 4,191 distinct pictures**, so 3,836 decodes is 92% of the
+compulsory floor and the whole thrash is 462. The curve is flat from 4,096 because
+4,096 covers the working set. So the chain stage's answer is the swap loop's: a
+further 256 MiB buys **7.6 s of a 133 s solve** and the constant stays where it is
+on that evidence — a poor trade against the **one pool-holding process per box**
+rule, and now a measured one rather than an open question.
+
+**The reduced store is written a row at a time and never gathered.** `_stack` and
+`_norms` are a buffer grown by doubling, row `i` being `keys[i]`'s, and what a
+hold or a drop invalidates is a cached `nonzero` over a boolean array. They were
+built lazily instead — a `numpy.stack` over the live rows plus a Python walk over
+`keys` to find them — and **every hold and every drop threw both away**. The swap
+loop barely paid it, because `after_swap` is arithmetic and only an accepted swap
+moves a seat; the **chain stage paid it on every trial**, because an eject, an
+insert and the undo are three seat movements each side of one bound test. At a
+thousand seats the gather is 3.6 ms against the 1.3 ms test it precedes.
+
+A key held again now takes its own row back rather than appending a second one,
+which bounds the store at the distinct pictures ever seated — 5,194 rows became
+2,240 over that same narrowed n=1000 pass. Bit-identical, and verified by running
+both and comparing rather than by argument: same seats, same order, same sum,
+same worst, same shortfall, and the same `pairs_tried`, at n = 200/500/1000 over
+both the whole pool and the narrowed view. It is worth **90.7 s → 60.9 s on the
+chain stage** and 133.4 s → 99.3 s on that solve; on the unfiltered pool, where
+the seed leaves seven seats, it is worth 3.4 s of 74.8 s.
+
+**And a demand counts its store instead of building a set to measure one.**
+`Demand.held` was `len(Demand.taken(state))`, and `taken` builds a `set` of an
+axis store that is already `{value: {seat key: True}}` — the same number every
+time, at **2,661,921 calls and 7.9 s** of that narrowed solve, because
+`Gallery.after_swap` asks every demand this on every trial the swap loop and the
+chain stage price. It shows up in the two 1-swap loops: 14.7 s → 10.7 s at the
+control's n=1000. `tests/test_solve.py` holds the two spellings to agreeing.
 
 **A miss rate quoted as `made / (made + hits)` cannot answer this question**, and
 `READ_solve_bound_and_profile_0904` read one that way and called the cache

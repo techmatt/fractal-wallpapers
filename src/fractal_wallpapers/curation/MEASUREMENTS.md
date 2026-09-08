@@ -1091,6 +1091,53 @@ comparison worth keeping: on 2026-08-29 over a 275,822-candidate pool the exact
 solve was 238 s at n=150 and **did not terminate at all** at n=1000, while the
 sequential `curate seat` was 51 s at n=150 and had no objective to report.
 
+## What the solve costs by stage, control and narrowed, measured 2026-09-07
+
+The 277,542-candidate pool (40,127 clearing, the fine head read on every one),
+idle box, `--key cascade` and everything else at the defaults, three rungs over
+two populations. `PROFILE_solve_stages_0907`. Seconds are wall clock off each
+record's own stage blocks; the front half is the same calls, timed where they are
+called. **The narrowed population is the whole pool filtered to the fine head's
+`p_fine(>=4) >= 0.50` — 10,974 candidates** — and is the previous leg's, seat for
+seat: 1000 / 18 / 1.50391 / 1876.60 both times.
+
+| | seed | swap | augment (twins) | re-swap | **solve** | seed filled | chain pairs |
+|---|---|---|---|---|---|---|---|
+| control n=200 | 1.2 | 0.5 | 2.1 (1.5) | 0.0 | **11.1** | 200 | 0 |
+| control n=500 | 4.6 | 2.9 | 1.2 (0.3) | 0.0 | **16.1** | 500 | 0 |
+| control n=1000 | 19.2 | 15.8 | 26.0 (23.3) | 6.2 | **74.8** | 993 | 61 |
+| ≥0.50 n=200 | 1.1 | 0.5 | 0.4 (0.1) | 0.0 | **4.6** | 200 | 0 |
+| ≥0.50 n=500 | 4.1 | 2.3 | 23.5 (20.3) | 1.7 | **34.2** | 442 | 47,760 |
+| ≥0.50 n=1000 | 13.8 | 13.7 | 90.7 (43.3) | 12.7 | **133.4** | 792 | 357,906 |
+
+**In front of every one of them, once a process:** pool read **21.6 s**, the
+`cascade` order **7.1 s**. Per solve: the bars 0.5 s, the neutral pre-selection
+2.2 s, the view 0.4 s, the sidecar read 1.1 s — 4.3 s of a 74.8 s control solve,
+and flat in `n`.
+
+**This is growth and not a regression, and the cascade is not the suspect.** The
+`cascade` lay-over is **0.35 s** of that 7.1 s — the rank key underneath it is
+4.9 s and the pool read dwarfs both. Against `solver_design.md`'s n=1000 reading
+on the 2026-09-04 pool (110.4 s: seed 18.1 · swap 6.7 · augment 72.1 · re-swap
+10.6), the control at n=1000 is **74.8 s over a pool 70% larger** — the seed is
+flat at 19.2 s because the view is sized in seats, and the augment fell 72.1 →
+26.0 because the cascade's seed fills 993 rather than 911. What did rise is the
+first swap loop, 6.7 → 15.8 s, over a view that grew 19,518 → 21,780 rows.
+
+**The chain stage's cost is what the seed left it**, which is the whole reading:
+it is 1.6% of the control's n=1000 solve and 68% of the narrowed one, at the same
+`n`, over the *smaller* pool. See `GALLERY.md`'s *A narrowed view is a different
+cost regime, and the budget DOES bind there*.
+
+**After the two speedups of the same day**, both bit-identical and both verified
+by running the retired spelling beside the shipped one at all six points:
+
+| | before | after | |
+|---|---|---|---|
+| control n=1000 | 71.7 s | **63.4 s** | 1.13× |
+| ≥0.50 n=1000 | 127.7 s | **93.0 s** | **1.37×** |
+| ≥0.50 n=1000, chain stage alone | 87.3 s | **60.0 s** | 1.45× |
+
 ## What the finished collection expressed, measured 2026-09-06
 
 **The last reading of the colour-expression census, and the reason it is here rather

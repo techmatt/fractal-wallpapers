@@ -283,6 +283,49 @@ def test_the_full_signature_is_fetched_only_when_the_bound_cannot_settle():
     assert near.full_signatures_fetched == 1
 
 
+def test_a_norm_written_per_row_is_the_norm_of_the_whole_stack():
+    """The one arithmetic claim `Twins.hold` rests on, asserted rather than argued.
+
+    The norm screen's store used to be `abs(stack).sum(axis=1)` over a stack
+    gathered on every hold; it is now written a row at a time as the row arrives.
+    Both reduce one contiguous run of the same length in float64, so the two agree
+    **to the bit** — and if a numpy release ever made them differ, the screen would
+    silently start settling a different set of seat comparisons.
+    """
+    import numpy
+
+    made = numpy.random.default_rng(20260907).random((257, rules.bound_width()))
+    for dtype in ("float32", "float64"):
+        stack = made.astype(dtype)
+        whole = numpy.abs(stack).sum(axis=1, dtype=numpy.float64)
+        per_row = numpy.array([numpy.abs(row).sum(dtype=numpy.float64) for row in stack])
+        assert (whole == per_row).all(), f"the two norms differ in {dtype}"
+
+
+def test_a_seat_held_again_takes_its_own_row_back_rather_than_a_second_one():
+    """What bounds the reduced store at the distinct pictures ever seated.
+
+    The augmenting stage ejects and re-inserts thousands of times, and every one of
+    those used to append a row that was never reclaimed — so the store grew with
+    the CHURN rather than with the gallery, and the walk that gathered it grew
+    with it. The row is the key's for the life of the pass, which is a stronger
+    index guarantee than the one this replaced, not a weaker one.
+    """
+    held = rules.Twins(Signatures({"a": 0.0, "b": 0.5, "c": 0.9}))
+    assert held.hold("a") is True
+    assert held.hold("b") is True
+    rows = dict(held._at)
+    for _ in range(50):
+        assert held.drop("a") is True
+        assert held.hold("a") is True
+    assert held._at == rows, "fifty ejections and re-inserts, and no row moved"
+    assert len(held.keys) == 2
+    assert held.held == ["a", "b"]
+    assert held.drop("a") is True
+    assert held.drop("a") is False, "a key already out is still not held"
+    assert held.held == ["b"]
+
+
 def test_the_counted_removals_open_nothing_and_are_a_superset_of_the_real_ones():
     """The whole basis of the swap loop's second prune: the diversity rule can only
     ever narrow the counted set, so a decision taken on the counted set alone is

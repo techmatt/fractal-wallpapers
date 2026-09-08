@@ -115,6 +115,15 @@ DEFAULT_DEPTH = 2
 #: Nearly all of it is the diversity rule (45.7 s and 65.6 s); the chain search
 #: itself is seconds.
 #:
+#: ⚠ **That is measured over the WHOLE pool, and it does not cover a narrowed
+#: view.** What this stage costs tracks the seats the seed left it, not `n`: over
+#: a view narrowed to the fine head's `p_fine(>=4) >= 0.50` the seed fills 792 of
+#: 1,000 rather than 993, so the stage tries **357,906 pairs against the control's
+#: 61**. It bound at the 0.70 rung on 2026-09-07 with sweep 2 still finding
+#: chains, and the seat count that pass reported was a budget artifact. See
+#: `curation/GALLERY.md`'s *A narrowed view is a different cost regime, and the
+#: budget DOES bind there*, and read [`exhaustive`] before believing a short one.
+#:
 #: **n=2000 has not been measured on this path** and the budget is expected to
 #: bind there: the prototype this came from searched 574 s at that rung without
 #: exhausting depth 2, over a stage that was 2.2x slower than this one. That the

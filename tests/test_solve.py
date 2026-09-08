@@ -115,6 +115,31 @@ def test_a_floor_of_zero_is_not_a_demand_at_all():
     assert [demand.name for demand in demands] == ["mode_floor:stripe"]
 
 
+def test_a_demands_count_is_the_size_of_the_set_it_names():
+    """`Demand.held` counts the axis store where `Demand.taken` builds a set of it,
+    and the two must not be able to disagree.
+
+    It is spelled twice because this is the most-called function in the leg —
+    2,661,921 calls in one narrowed n=1000 solve — and building a set to take its
+    length was 7.9 s of it. What makes the short spelling safe is that the store is
+    `{value: {seat key: True}}`, so its keys are already distinct; what would make
+    it unsafe is somebody giving one of the two a filter the other does not have.
+    """
+    state = rules.State(ceiling.Rule(), 20)
+    state.rule.group_cap = 100
+    demands = solve.demands_for({"smooth": 2}, {"dark_vivid_lime": 0.5})
+    for demand in demands:
+        assert demand.held(state) == len(demand.taken(state)) == 0
+    for key in ("a", "b", "c"):
+        state.seat(candidate(key, mode="smooth", cells=("dark_vivid_lime",)), "general_pool")
+        for demand in demands:
+            assert demand.held(state) == len(demand.taken(state))
+    assert [demand.held(state) for demand in demands] == [3, 3]
+    state.unseat("b")
+    for demand in demands:
+        assert demand.held(state) == len(demand.taken(state)) == 2
+
+
 def test_a_colour_target_is_a_share_of_the_seats_that_actually_got_filled():
     """The retired program had two spellings and the hard one was wrong exactly
     where a target is set: `ceil(t * n)` demands a share of seats nobody promised

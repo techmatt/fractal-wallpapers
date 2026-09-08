@@ -341,15 +341,26 @@ class Twins:
         self.clouds = clouds
         self.tau = ceiling.TAU if tau is None else float(tau)
         self.neighbours = int(neighbours)
-        #: The seated, in the order they were held. A dropped seat is blanked to
-        #: `None` rather than compacted, so no index a caller holds ever moves.
+        #: The seated, in the order they were first held. A dropped seat is blanked
+        #: to `None` rather than compacted, so no index a caller holds ever moves.
+        #: A seat held again after a drop **takes its old row back** — see [`hold`].
         self.keys: list = []
-        self._reduced: list = []
+        #: The reduced signatures as one array, row `i` being `keys[i]`'s, in a
+        #: buffer that is grown by doubling and **never rebuilt**. See [`hold`].
+        #: It replaced a parallel `list` of the same rows, which existed only to be
+        #: gathered back into an array on every hold and drop.
         self._stack = None
-        #: `|a|` per row of [`_stack`], rebuilt with it. The norm screen's whole
-        #: store — one float a seat against the seat's own 1,024.
+        #: `|a|` per row of [`_stack`], written with the row. The norm screen's
+        #: whole store — one float a seat against the seat's own 1,024.
         self._norms = None
-        self._live: list = []
+        #: Whether row `i` is a seat right now. The only thing a drop moves.
+        self._alive = None
+        #: `nonzero(_alive)`, cached because it is the one thing a hold or a drop
+        #: does invalidate. Rebuilding it is a pass over a boolean array in C, not
+        #: the megabyte of gathering the stack used to be.
+        self._live = None
+        #: `{key: its row}`, and a **dropped key keeps its entry** so that holding
+        #: it again reuses the row rather than appending a second one.
         self._at: dict = {}
         #: The seated keys whose FULL cloud has actually been decoded. A seat is
         #: registered by [`hold`] and lands here only when something needs to
@@ -450,28 +461,25 @@ class Twins:
             self.without_a_picture += 1
             return {"unreadable": True, "why": "the candidate's picture is not on disk"}
         if self._stack is None:
-            self._live = [at for at, name in enumerate(self.keys) if name is not None]
-            self._stack = (
-                numpy.stack([self._reduced[at] for at in self._live]) if self._live else None
-            )
-            self._norms = (
-                None
-                if self._stack is None
-                else numpy.abs(self._stack).sum(axis=1, dtype=numpy.float64)
-            )
-        if self._stack is None:
+            return []
+        if self._live is None:
+            self._live = numpy.nonzero(self._alive[: len(self.keys)])[0]
+        seated = self._live
+        if not len(seated):
             return []
         self.tested += 1
         width = bound_width()
-        screened = numpy.abs(self._norms - float(numpy.abs(mine).sum(dtype=numpy.float64))) / width
+        norm = float(numpy.abs(mine).sum(dtype=numpy.float64))
+        screened = numpy.abs(self._norms[seated] - norm) / width
         live = numpy.nonzero(screened < self.tau)[0]
-        self.settled_by_the_norm_screen += len(self._live) - len(live)
+        self.settled_by_the_norm_screen += len(seated) - len(live)
         if len(live):
-            lower = numpy.abs(self._stack[live] - mine).sum(axis=1, dtype=numpy.float64) / width
-            close = [self._live[int(live[at])] for at in numpy.nonzero(lower < self.tau)[0]]
+            rows = seated[live]
+            lower = numpy.abs(self._stack[rows] - mine).sum(axis=1, dtype=numpy.float64) / width
+            close = [int(rows[at]) for at in numpy.nonzero(lower < self.tau)[0]]
         else:
             close = []
-        self.settled_by_the_bound += len(self._live) - len(close)
+        self.settled_by_the_bound += len(seated) - len(close)
         if not close:
             # The ordinary case by a long way, and the reason the full signature is
             # fetched lazily: 99.9% of seat comparisons are settled here, and a
@@ -516,7 +524,7 @@ class Twins:
         comparisons off the 4 KiB reduced form, so decoding its 128 KiB cloud the
         moment it sits down pays 16.8 ms for something most seats never need: 912
         decodes at n=1000, of which the leg went on to read 523. What a seat needs
-        to be *screened* is its reduced signature, which is in [`_reduced`] and
+        to be *screened* is its reduced signature, which is in [`_stack`] and
         usually came from the sidecar without opening anything at all; the full
         cloud is fetched by [`cloud_of_seat`] the first time a bound cannot settle.
 
@@ -524,27 +532,101 @@ class Twins:
         signatures at 653 seats — and it is a **time** win as well, which is what
         the profile added. Holding is still unbounded, so the memory half is
         unchanged for a seat that does get read.
+
+        ## The row is written here, and the stack is never rebuilt
+
+        A seat's reduced signature goes straight into [`_stack`] at its own row and
+        its norm into [`_norms`] beside it, in a buffer grown by doubling. What a
+        hold or a drop invalidates is [`_live`] alone — one `nonzero` over a boolean
+        array — and **not** the stack, which is what both used to do.
+
+        The stack was gathered lazily instead, and it cost twice: a `numpy.stack`
+        over every live row, and a Python walk over `keys` to find them. The first
+        is 3.6 ms at a thousand seats against the 1.3 ms bound test it precedes; the
+        second grows with **churn** rather than with the gallery, because `keys`
+        only ever grew — so the augmenting stage, which ejects and re-inserts
+        thousands of times, walked a longer list on every trial than the trial
+        before it. Measured over this pool at n=1000: `PROFILE_solve_stages_0907`.
+
+        **A key held again takes its old row back**, which is what bounds the buffer
+        at the number of distinct pictures ever seated rather than at the number of
+        holds. That leaves an index more stable than before, not less: the row a
+        caller saw for a key is the row it keeps for the life of the pass. Nothing
+        reads a row number across a call — `within` consumes its own — and the
+        arithmetic is row-independent either way, so this is bit-identical and is
+        pinned as such by `tests/test_rules.py`.
         """
+        import numpy
+
         mine = self.reduced_of(key)
         if mine is None:
             return False
-        self._at[str(key)] = len(self.keys)
-        self.keys.append(str(key))
-        self._reduced.append(mine)
-        self._stack = None
+        name = str(key)
+        at = self._at.get(name)
+        if at is None:
+            at = len(self.keys)
+            self._at[name] = at
+            self.keys.append(name)
+            self._make_room(at, mine)
+            self._stack[at] = mine
+            # Per row and not as a column of `abs(stack).sum(axis=1)`, which is what
+            # it replaces. The reduction is over one contiguous run of the same
+            # length either way, so the two agree to the bit — asserted, not argued,
+            # by `test_a_norm_written_per_row_is_the_norm_of_the_whole_stack`.
+            self._norms[at] = numpy.abs(mine).sum(dtype=numpy.float64)
+        else:
+            self.keys[at] = name
+        self._alive[at] = True
+        self._live = None
         return True
 
+    def _make_room(self, at: int, row) -> None:
+        """Grow [`_stack`], [`_norms`] and [`_alive`] to cover row `at`.
+
+        By doubling, so the copy is amortised to a constant per seat, and starting
+        at a size a small gallery never outgrows. The rows already written are
+        carried across unchanged — this is the only copy left in the store and it
+        happens `log2(seats)` times a pass rather than once a hold.
+
+        The buffer takes the **first row's own** width and dtype rather than naming
+        a constant: what it replaced was a `numpy.stack` of these rows, and that is
+        what a stack of them would have been.
+        """
+        import numpy
+
+        if self._stack is not None and at < len(self._stack):
+            return
+        want = 256 if self._stack is None else len(self._stack)
+        while want <= at:
+            want *= 2
+        stack = numpy.zeros((want, len(row)), dtype=row.dtype)
+        norms = numpy.zeros(want, dtype=numpy.float64)
+        alive = numpy.zeros(want, dtype=bool)
+        if self._stack is not None:
+            held = len(self._stack)
+            stack[:held] = self._stack
+            norms[:held] = self._norms
+            alive[:held] = self._alive
+        self._stack, self._norms, self._alive = stack, norms, alive
+
     def drop(self, key: str) -> bool:
-        """Take one seated picture back out. `False` if it was never held."""
-        at = self._at.pop(str(key), None)
-        if at is None:
+        """Take one seated picture back out. `False` if it was never held.
+
+        The row stays where it is and is marked dead, so a seat held again reuses
+        it — see [`hold`]. `_at` therefore keeps a dropped key's entry, and what
+        says whether a key is seated is [`keys`], never the presence of that entry.
+        """
+        name = str(key)
+        at = self._at.get(name)
+        if at is None or self.keys[at] is None:
             return False
         self.keys[at] = None
+        self._alive[at] = False
         # A no-op for a seat nothing ever measured against, which is now most of
         # them: `let_go` only moves what the held store actually holds.
-        self.clouds.let_go(str(key))
-        self._decoded.discard(str(key))
-        self._stack = None
+        self.clouds.let_go(name)
+        self._decoded.discard(name)
+        self._live = None
         return True
 
     def record(self) -> dict:

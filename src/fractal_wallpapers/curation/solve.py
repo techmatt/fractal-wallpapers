@@ -950,13 +950,31 @@ class Demand:
             return int(self.seats)
         return ceiling.share_of(float(self.share), filled)
 
+    def _store(self, state) -> dict:
+        """The axis store this demand counts in. One spelling for both questions
+        below, so a demand cannot answer *which* seats off one store and *how
+        many* off another."""
+        return state.modes if self.axis == "mode" else state.cells
+
     def taken(self, state) -> set:
         """Which seated keys count towards this demand. The axis store, by name."""
-        store = state.modes if self.axis == "mode" else state.cells
-        return set(store.get(self.of, ()))
+        return set(self._store(state).get(self.of, ()))
 
     def held(self, state) -> int:
-        return len(self.taken(state))
+        """How many seats count towards it. `len(taken)` by definition, and it is
+        spelled without building the set for the same reason the counted rules are
+        dictionary lookups: this is the single most-called function in the leg.
+
+        The axis stores are `{value: {seat key: True}}`, so the keys are already
+        distinct and the count is a `len` on a dict the state maintains. Building a
+        set to take its length is the same number every time — asserted by
+        `test_a_demands_count_is_the_size_of_the_set_it_names` — and it was
+        **2,661,921 calls and 7.9 s of a 133 s narrowed n=1000 solve**, because
+        `Gallery.after_swap` asks every demand this on every trial the swap loop
+        and the chain stage price. Measured under `cProfile`,
+        `PROFILE_solve_stages_0907`.
+        """
+        return len(self._store(state).get(self.of, ()))
 
     def counts(self, candidate) -> bool:
         """Whether seating this candidate would count towards the demand."""
