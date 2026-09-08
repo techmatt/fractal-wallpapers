@@ -373,6 +373,21 @@ bites exactly where the gallery is small and the population large. Putting a che
 inside `chain_at` would move where a *bound* stage stops and so is **not a
 seat-identical change**; it is a proposal, not a fix that can be taken quietly.
 
+**It stays a proposal, and 2026-09-07 is when that was settled rather than
+assumed.** The argument for taking it anyway was that a bound stage's seating is
+already decided by wherever the clock happened to fall mid-walk, so no correct
+answer is being preserved — which is true only if no record was made that way.
+Two were. Every `augment` block in every record on the box was swept for a phase
+whose `stopped_because` says the budget ran out: **57 records carry an augment
+block and exactly two bound**, both `depth_2`, both n=2000, both under
+`artifacts/curation/solve/` — `tentative_n2000_20260904T234133Z` (300 s budget,
+301.24 s, 867,427 pairs, filled 1,795) and `tentative_n2000_20260905T001615Z`
+(1,800 s budget, 1,822.61 s, 13,186,436 pairs, filled 1,984). They are the two
+this section already quotes as *seats 1,795 at 300 s and 1,984 at 1,800 s*.
+Neither is a published stamp, and both are records the store keeps and a stamp can
+name. So a check inside the walk would re-seat two records that exist, and taking
+it is a decision about those two rather than a quiet correctness fix.
+
 **At n=2000 it is a budget question and the exhaustive cost is unknown** — over
 30 minutes, and nothing has run it to the end. What dominates there is the **chain
 search and not the diversity rule**: the search is **40% of augment time at n=2000
@@ -1155,11 +1170,27 @@ never measured. Measured over 79,800 pairs from the same population, at the reti
 
 | blocks | bytes a signature | settles | survivors per real violation |
 |---|---|---|---|
-| 1 | 4 KiB | 95.4% | 2.7 |
-| 2 | 8 KiB | 97.4% | 1.6 |
+| 1 | 1 KiB | 95.4% | 2.7 |
+| 2 | 2 KiB | 97.4% | 1.6 |
 | **4 (shipped)** | **4 KiB** | **97.9%** | **1.2** |
-| 16 | 64 KiB | 98.3% | 1.0 |
+| 16 | 16 KiB | 98.3% | 1.0 |
 | 128 (the metric) | 128 KiB | 100% | 1.0 |
+
+The byte column is `BOUND_BLOCKS x DIRECTIONS x float32` at the live
+`DIRECTIONS = 256`, and three of its rows read four times that until 2026-09-07 —
+they were the 1024-direction figures left standing beside two that had been
+brought down. The settle rates are the 1024-direction measurement and are correct
+as they stand: they turn on the ratio of blocks to quantiles, which `DIRECTIONS`
+does not move.
+
+**Eight was measured end to end on 2026-09-07 and it costs rather than pays.** Not
+on the settle rate, which behaves exactly as the table promises, but on the solve:
+seat-identical at both populations and **64.7 → 71.1 s** on the control at n=1000,
+**96.6 → 113.1 s** on the view narrowed to `p_fine(≥4) ≥ 0.50`. `rules.BOUND_BLOCKS`
+carries the whole reading and the reason — the fetches a tighter bound was aimed at
+are candidates that fail to settle against *one* of nine hundred seats, and 99.905%
+→ 99.911% moves 2.7% of them while doubling what every survivor of the norm screen
+pays.
 
 **The grouping axis is the quantiles and not the directions**, and both are sound
 partitions — the bound holds either way. Grouping across directions averages a

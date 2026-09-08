@@ -1249,6 +1249,61 @@ Whether the ten legs are worth keeping is still Matt's and still open. What has
 changed is that it is now a question about **11.75 GiB of superseded attempts**
 and not one a garbage sweep can answer by itself.
 
+### The 11.75 GiB is not the 14,995 pictures, and only one of its subtrees is free
+
+**Asked properly on 2026-09-07 and the two figures name different things.** The ten
+legs hold 77,282 files and 11.76 GiB; `pictures/` — the 15,033 candidate renders the
+census is about, 14,995 of them before the repair leg put 38 back — is **2.59 GiB of
+it**. The rest is `candidates/` 6.39 GiB, `release/` 2.15 GiB, `framings/` 0.50 GiB,
+and `fields/`, which is already empty on all ten.
+
+**Nothing outside the ten names anything but `pictures/`.** Every json and jsonl
+under `artifacts/`, `data/`, `labels/` and `models/` was read: **206 files mention a
+leg path, 27,133 times, and every one of those mentions is a `pictures/` path.** So
+the free subtree is the one whose own writer calls it a cache —
+`runs/<leg>/candidates/<field stem>/<map>.jpg`, written in
+[`colorize.Clouds.recolours`] and read only by a live pass, which
+[`run._discard_partials`] describes as *swept after the attempt leg* and which no
+index names, not even inside the leg. **48,632 files and 6.39 GiB, deleted
+2026-09-07** under an isolation proved against a 330,763-path reference set built at
+the moment of deletion: zero collisions, every path re-checked to be under one of
+the ten legs' `candidates/`, and the six subtrees that had to stay still counted
+before and after. `absent_pictures()` 0 → 0, the ledger's `missing_pictures()`
+0 → 0, and the ratchet untouched at `rows` 308,419 / `recipe_key_named` 294,893 /
+`run_index_named` 13,526, because no row moved.
+
+**`framings/` is unreferenced from outside and was still kept**: its own
+`framings.jsonl` names each trial by slug, so a store that survives the deletion
+would be left naming nothing. That is the orphan sweep's rule applied to a subtree
+rather than to a picture — delete what *nothing* names — and it is the line the
+09-07 deletion was drawn on.
+
+### Why `pictures/` cannot go, and it is not the ledger that stops it
+
+Three answers, each measured rather than argued, and any one of them is enough:
+
+- **644 of the 11,380 ledger keys in the ten legs are `tentative.protected_keys()`**
+  — seats in recorded galleries, 62 stamps naming a leg picture, gallery4 330 of
+  them. `protected_keys` sweeps published and unpublished stamps alike, and an
+  older record whose pictures went is a page of broken thumbnails.
+- **`absent_pictures()` would go 0 → 1,556 and `curate rescore` refuses outright.**
+  The rows that name them are the **tracked** release store, so the *take the rows
+  with the pictures* route is closed: those rows are decision history. All 1,050
+  pictures of the six `run*`/`release_v1` legs are in that set, plus 506 across
+  gallery1–4.
+- **The gallery-grade head stands on 118 of them.** Its 1,000-unit population names
+  118 leg pictures and all 1,000 units carry a human label; three labelling sheets
+  under `artifacts/gallery_grade/n1000_0906/` name 36 by path, and
+  `artifacts/sparse_mode_head_top_places/sheet.jsonl` names 148 more.
+
+**Replayability was never the obstacle and is worth recording as settled.** All
+11,380 ledger rows reproduce their own key under `candidate_ledger.rerender`'s own
+guard — **11,380 of 11,380, zero refused** — and the legs' own `candidates.jsonl`
+rows are 9,749 `untouched` and 4,749 `replayed` with **zero `acted_unrecoverable`**.
+Not one picture in the ten legs is the only copy of what was judged. What stops the
+deletion is that too many live things point at them, not that they could not be
+drawn again.
+
 **An unmerged leg is swept only when somebody names it.** `--leg <name>` takes one
 (as the listing prints it, or just its last component) and is repeatable;
 `--include-unmerged` takes all of them. A named leg is swept under the **same rule as

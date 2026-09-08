@@ -196,6 +196,25 @@ GEOMETRY_RADIUS = 0.07
 #: hundred and twenty-eight. (Those settle rates were measured at 1024 directions;
 #: the ratio of block count to quantile count is what they turn on, and
 #: [`pixel_clouds.DIRECTIONS`] moved neither.)
+#:
+#: **Eight was taken all the way to the clock on 2026-09-07 and it is a loss.** The
+#: proposal was that a tighter bound would attack the full-cloud fetches that are
+#: half a narrowed solve — 17,657 of 25,205 `within` calls at n=1000 on the fine
+#: head's `p_ge4 >= 0.50`. The sidecar was re-swept at `8x256` (261 s over the
+#: 40,127-candidate clearing pool, three workers; the store 298 MB → 517 MB) and
+#: both populations were run against it. **Seat-identical, as predicted**: same
+#: rows, same order, same sum, worst, shortfall and swaps, and the same 357,906
+#: chain pairs tried. And **slower at both**: control n=1000 **64.7 → 71.1 s**,
+#: narrowed n=1000 **96.6 → 113.1 s**.
+#:
+#: The reason the aim was wrong is the denominator. A fall-through is a *candidate*
+#: that fails to settle against **one** of nine hundred seats, and the bound was
+#: already settling 99.905% of seat comparisons; eight takes that to 99.911%, so
+#: the fetches move 17,657 → 17,172 (−2.7%) while every survivor of the norm screen
+#: pays a bound twice as wide. The pairs a bound cannot settle are the genuinely
+#: near ones, and no sound blocking reaches them. **Four stands, now on the solve
+#: clock rather than on the settle-rate curve alone**, and the way at those fetches
+#: is not a tighter bound.
 BOUND_BLOCKS = 4
 
 #: What the bound is, carried in every record that prunes by it. A prune is only
