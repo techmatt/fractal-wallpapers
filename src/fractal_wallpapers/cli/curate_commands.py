@@ -608,6 +608,7 @@ def curate_label_migration(args: argparse.Namespace) -> int:
             store, stamp=args.stamp, classes=_kept_classes(args)
         ),
         "page": lambda: label_migration.page(store, classes=_kept_classes(args)),
+        "merge": lambda: label_migration.merge(store),
     }[args.what]
     try:
         report = doing()
@@ -4974,10 +4975,11 @@ def add_commands(subcommands) -> None:
             "recipe of a picture somebody judged, at 1280x720 ss2. This derives the same "
             "recipe at candidate geometry — geometry changed and nothing else — renders it, "
             "and reads it through the shipped render judge and the fine-tier head. It "
-            "STAGES: nothing is written into the candidate ledger, its score sidecar, the "
-            "fine head's pool scores or either label store, and merging is a separate act "
-            "against a separate decision. Every labelling sitting makes new rows, so each "
-            "stage is resumable and re-uses every picture already on disk."
+            "STAGES: the six reading verbs write nothing into the candidate ledger, its "
+            "score sidecar, the fine head's pool scores or either label store. Merging is a "
+            "separate act against a separate decision and it is the seventh verb, `merge`. "
+            "Every labelling sitting makes new rows, so each stage is resumable and re-uses "
+            "every picture already on disk."
         ),
     )
     migrating.set_defaults(handler=curate_label_migration)
@@ -5086,6 +5088,24 @@ def add_commands(subcommands) -> None:
     _staging_store(paging)
     _population_flag(paging)
     paging.add_argument("--out", metavar="PATH", help="write the record there")
+
+    merging = migration_verbs.add_parser(
+        "merge",
+        help="this store's scored rows into the candidate pool, through THE door",
+        description=(
+            "Every scored row is offered and the ones the pool already holds are NOT "
+            "submitted: an upsert replaces a stored row outright, so submitting one would "
+            "rewrite a row this leg does not own. What is submitted gains a colour reading, "
+            "a home under artifacts/curation/label_migration/<store>/pictures — the "
+            "pictures MOVE out of the store — and the live engine build where it can "
+            "honestly be named. Then curation.candidate_ledger.merge runs: the flatness "
+            "sweep, the retention prune and all four manifests. ONE POOL-HOLDING PROCESS "
+            "PER BOX. `gallery-grade score-pool` must run afterwards or the merged rows are "
+            "unseatable, pool_scores.jsonl being a one-shot file."
+        ),
+    )
+    _staging_store(merging)
+    merging.add_argument("--out", metavar="PATH", help="write the record there")
 
     levelling = steps.add_parser(
         "autolevel",

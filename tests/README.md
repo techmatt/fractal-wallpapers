@@ -385,6 +385,29 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+8, fast lane only, and four seconds nobody should read as a regression.**
+`MERGE_ckpt116_label_rows_and_resolve_0908`, 2026-09-08, idle box, `.[dev,models]`
+with a release engine, taken **after** the merge and the `score-pool` leg rather
+than beside them. **127.93 s over 4,016, 128 deselected** fast — **4,144** against
+the 4,136 the entry below this one left. Matt's prompt did not ask for the slow
+lane and the diff is a new CLI verb plus arithmetic, so **4,144 is a projection for
+the next slow lane and not a reading**.
+
+The +8 are all `test_label_migration.py`: five over the `merge` stage — the
+`POOL_SUBTREES` membership that makes the merged pictures reachable, the leg name,
+the empty-store refusal and two over the engine stamp — and three over
+`fine_by_expressibility`. Every one is arithmetic over a dict or a `tmp_path`, so
+the deselected count does not move, 128 either side.
+
+The clock is 127.93 s against 123.99 s over eight more tests, which is **not
+per-test cost**: four seconds over eight arithmetic guards would be half a second
+each. It is the box, and the reason is on the record rather than guessed — this
+lane ran minutes after a merge that rewrote a 462 MB `rows.jsonl`, a 167 MB score
+sidecar and a 42 MB flatness sidecar, and after a pass that decoded 41,407 JPEGs.
+*Measure on an idle machine* means idle **including the page cache**, and a lane
+taken in the wake of half a gigabyte of writes is reading the disk, not the tree.
+Worth a re-run before anybody prices a guard off it.
+
 **+45, both lanes, and the two counts agree.**
 `FIX_ckpt116_autolevel_replay_0908`, 2026-09-08, idle box, `.[dev,models]` with a
 release engine, both taken **after** the backfill and comparison legs rather than

@@ -321,7 +321,14 @@ def present_pictures(rows=None) -> set:
 #: these names and no others, so a killed leg's pictures would sit on disk with no
 #: row anywhere and nothing in the project able to find them. `tests/test_remode.py`
 #: pins the membership for that reason rather than as a spelling check.
-POOL_SUBTREES = ("depth", "runs", "mine", "reframe_draw", "hunt", "remode")
+#:
+#: **`label_migration` joined on 2026-09-08** for the same reason, and it is the
+#: first member whose pictures were not drawn by a leg of this package at all:
+#: [`curation.label_migration`] renders a candidate for every human verdict in a
+#: staging store under `scratch/`, and its `merge` stage moves the ones it submits
+#: into `label_migration/<store name>/pictures` precisely so that they are
+#: reachable from here. `tests/test_label_migration.py` pins the membership.
+POOL_SUBTREES = ("depth", "runs", "mine", "reframe_draw", "hunt", "remode", "label_migration")
 
 
 #: What every leg calls the directory it keeps its candidates in. [`orphans`]
