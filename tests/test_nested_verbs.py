@@ -189,14 +189,14 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         {"what": "run", "flat_floor": True, "n": None},
     ),
     (
-        "curate solve record --n 1000 --solve-name tentative_n1000 --key rank-key --no-swap "
+        "curate solve record --n 1000 --solve-name tentative_n1000 --key cascade --no-swap "
         "--swap-seconds 900 --spiral-cap 0.25",
         "curate_solve",
         {
             "what": "record",
             "n": 1000,
             "solve_name": "tentative_n1000",
-            "key": "rank-key",
+            "key": "cascade",
             "no_swap": True,
             "swap_seconds": 900.0,
             "spiral_cap": 0.25,

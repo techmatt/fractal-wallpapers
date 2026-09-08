@@ -52,7 +52,8 @@ growth_plot  six pictures of one growth sweep. Matplotlib, scratch only, legibil
 pool_draw  the UNAIMED draw: N pool locations at random, one seat-ranked picture each
 view       what one pass may reach: strata, and band-blind slices of them
 rules      one spelling per selection rule, over incremental state
-rank_key   the fitted sort key a seating may rank on, instead of the judge's `P(>=4)`
+rank_key   the fitted sort key retention ranks on and the cascade's own lower
+           half. Deprecated as a SEATING key 2026-09-08; still resolved, not offered
 signatures the diversity rule's bound signature, swept once into a sidecar
 distinct   which places are visibly different places, decided before any colour
 ceiling    the colour ceiling, and the targets that are the same feature with the sign flipped
@@ -70,7 +71,8 @@ pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
 rejection  taking a released row back afterwards, without losing what the run did
 below_bar  the glance sheet of what an acting bar would take back, to rule off
-sheet      the same thing laid out for a person to disagree with
+sheet      the same thing laid out for a person to disagree with — plus
+           `score_sheet`, the page a LEG reads its own pile on
 colors     the colour census: what colours this project can make, picks, keeps and labels
 color_sheets  what a colour cell actually looks like, so an eye can rule on it
 swatch_frequency  every swatch, what it looks like, and how often the pool is it
@@ -480,22 +482,27 @@ belongs on the reversible decision first.
 **And `rank_key` cannot be retired while the cascade runs.** `solve.cascade_order`
 builds the cascade out of `solve.ranking_for`'s `rank-key` mapping and lays the
 fine head over its top; retiring `rank_key` would retire the cascade's below-bar
-half with it. The two are one order, and that cuts both ways.
+half with it. The two are one order, and that cuts both ways. **Deprecating
+`rank-key` on 2026-09-08 is not that retirement**: what it took away is the
+*offer* — `--key rank-key` is off `solve.OFFERED_KEYS` and a new gallery cannot be
+seated on it by name — and it took away nothing else. `solve.KEYS` still holds all
+three, `solve.ranking_for` still resolves it for a record that names it,
+`_prune_ranks` still ranks on it, and the cascade still is it below the bar.
 
 `curation/GALLERY.md`'s *`cascade` is the default since 2026-09-07* is the seating
 half of this, and `tests/test_seat_sheet.py` pins that `_prune_ranks` reaches
 `curation.rank_key` directly and names neither `DEFAULT_KEY` nor the cascade.
 
-**And no cascade gallery has been recorded yet.** All **62** records in the
-tentative store carry `solve.config.sort_key_named` = `rank-key` — every one of
-them, published and unpublished, counted 2026-09-07 — so the flip is a change to
-what the *next* solve does and not a description of anything on this box. Every
-figure the site draws, every seat `curate seat-sheet` compares and every reading
-taken off `tentative.latest()` is a rank-key seating. That matters twice: a
-cascade-versus-rank-key comparison has one side missing until a cascade record
-exists, and the desire-list reading in `GALLERY.md`'s *The desire list is aimable
-at cell × mode and nowhere else* had to be derived against a **fresh in-memory
-cascade solve** for exactly this reason.
+**The first cascade record is `20260908T144844Z`**, taken at n=1000 under
+`--fine-bar 0.50`. Before it, all **62** records in the tentative store carried
+`solve.config.sort_key_named` = `rank-key` — every one, published and unpublished,
+counted 2026-09-07 — so anything read off a *tracked* stamp is still a rank-key
+seating: the new record is unpublished, `tentative.latest()` resolves over
+published stamps only, and every figure the site draws is on the old side of the
+flip. What the record does close is the missing side of a comparison: a
+cascade-versus-rank-key read at n=1000 no longer has to be derived against a fresh
+in-memory solve, which is how `GALLERY.md`'s *The desire list is aimable at
+cell × mode and nowhere else* had to take its reading.
 
 ### Putting a picture back
 
@@ -1676,7 +1683,34 @@ there either**, on three independent measurements —
 [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the palette-group cap costs at n=1000,
 measured 2026-09-07* — so the exception is a real difference in the code and not
 much of one in the outcome.) It said otherwise until 2026-09-07 and was wrong on the day it was
-written. (A sixteen-way clustering was tracked beside the maps
+written.
+
+⚠ **The census and the solve price two different caps, and only one of them is
+live.** `candidate_ledger.inventory.feasibility` reads `ceiling.GROUP_CAP` — the
+**identity** cap of one seat a group — so its `group_cap` row says
+`{"cap": 1, "holds": 942, "binds": true}` and has said so since the proportional
+rule replaced the identity one on 2026-08-28. The seating runs
+`ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)`, which is **25** at n=1000 and
+refuses nothing. A leg reading *`group_cap` binds* off a census and *zero
+refusals* off a solve is reading two caps and not one contradiction, and the
+number that matters is the solve's. The census row is a reading of the retired
+rule and reporting it as a live constraint has cost a leg's readout twice.
+
+**A group's population is a fact about the tracked colormap library and never
+about the ledger.** `groups.group_of` is total — a map in `data/palettes/groups.jsonl`
+takes its cluster's id, a map absent from it is its own group `map:<name>` — so a
+row can only carry a group some map already had. The drawable pool is 942 groups
+over 1,020 maps and **every one of the 942 already holds a ledger row**, which is
+why no amount of mining moves the count: 750 new locations and 146 gallery-grade
+rows over the night of 2026-09-08 produced **zero** new groups. The last thing that
+moved it was the `classic-pairs-2026-09` drop of 2026-09-05, 822 → 942, and the
+table has not been re-cut since 2026-08-25 — so those 120 maps are singletons by
+default rather than by measurement.
+
+**And 942 is the pool's number, not the view's.** Read over the seatable pool it
+is 942; over the rows the fine head has scored, 934; over the `p_fine >= 0.50`
+view, **762**; among a thousand seated, **477**. A group count quoted without the
+population it was read over says very little. (A sixteen-way clustering was tracked beside the maps
 until 2026-09-02 as a figure's record, read by nothing but the command that wrote
 it; the website groups by dominant hue and it was deleted.) So two seated rows may
 land in one region of palette space, and what stops that is the without-replacement

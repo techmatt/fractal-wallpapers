@@ -56,7 +56,12 @@ The rank quantity is [`DEFAULT_KEY`], and since 2026-09-07 that is [`CASCADE_KEY
 [`RANK_KEY`]'s fitted four-column form below [`Q4_BAR`] and the fine-tier head's
 `P(>=4)` above it. [`RANK_KEY`] alone is what the ranking retention uses and what
 every gallery between 2026-08-28 and the flip was seated in; `p_ge4` alone is
-neither. Both are still reachable by name.
+neither. **A new solve may name [`CASCADE_KEY`] or `p_ge4` and not [`RANK_KEY`]**,
+which was deprecated on 2026-09-08 — see [`OFFERED_KEYS`] — and every key any
+record names is still resolved.
+
+The pool a solve seats over is narrowed by [`DEFAULT_FINE_BAR`] first, and since
+2026-09-08 that is `0.50` rather than no bar at all.
 
 **A filled floor outranks the worst seat, and that is the ruling.** Matt's, and
 it is what "grab where possible" means: a mode this pool *can* represent is
@@ -186,8 +191,22 @@ RANK_KEY = "rank-key"
 #: while this key exists because [`cascade_order`] is built on its mapping.
 CASCADE_KEY = "cascade"
 
-#: The keys a caller may name.
+#: The keys this module can **resolve** — every key a record on this machine
+#: names. [`ranking_for`] takes all three and always will: the 62 records taken
+#: before 2026-09-08 were seated on [`RANK_KEY`] and have to stay re-runnable and
+#: interpretable, and [`cascade_order`] is built on [`RANK_KEY`]'s mapping besides.
 KEYS = (RANK_KEY, JUDGE_KEY, CASCADE_KEY)
+
+#: The keys a **new** solve may name, which is not the same list.
+#:
+#: [`RANK_KEY`] was deprecated as a seating key on 2026-09-08, Matt's ruling —
+#: *the `p_fine` seating is the way* — so `curate solve` no longer offers it and a
+#: fresh gallery cannot be seated on it by name. **Nothing was deleted.**
+#: [`curation.rank_key`] is untouched, it is still what `_prune_ranks` ranks
+#: retention on, it is still the below-bar half of [`cascade_order`], and
+#: [`ranking_for`] still resolves it for anything replaying an old record — which
+#: is the whole of what "readable" has to mean here.
+OFFERED_KEYS = (CASCADE_KEY, JUDGE_KEY)
 
 #: **One key with two spellings, and this is the one a record uses.**
 #: [`RANK_KEY`] is typed with a hyphen and has written itself with an underscore
@@ -205,9 +224,11 @@ RECORD_SPELLING = {RANK_KEY: "rank_key"}
 #: gallery and leaves the rest of the order where it was. Matt's ruling,
 #: 2026-09-07, on the fine-tier head's pre-registered bar.
 #:
-#: Both alternatives stay typeable: `--key rank-key` is the order every gallery
-#: between 2026-08-28 and this flip was seated in, and `--key p_ge4` is the render
-#: judge alone, which is what everything before 2026-08-28 ran.
+#: `--key p_ge4` stays typeable and is the render judge alone, which is what
+#: everything before 2026-08-28 ran. **`--key rank-key` does not** — it was
+#: deprecated on 2026-09-08 and is off [`OFFERED_KEYS`]; it is still resolved for
+#: a record that names it, and it is still the order every gallery between
+#: 2026-08-28 and the cascade flip was seated in.
 #:
 #: It moves the **order and the objective** and nothing else. Every bar, the
 #: clearing rule and the neutral pre-selection still read the judge's own columns,
@@ -310,7 +331,8 @@ SWAP_DROPS = 8
 #: a rule is the reason.
 PRECHECK_REMOVALS = 256
 
-#: **The fine head's quality bar on the seatable pool, unasked: NONE.**
+#: **The fine head's quality bar on the seatable pool, unasked: 0.50**, Matt's
+#: ruling of 2026-09-08.
 #:
 #: A bar on `p_fine(>=4)` — the gallery-grade head's own `P(>=4)`, the column its
 #: acceptance is stated on and the column [`cascade_order`] orders the top of the
@@ -318,11 +340,20 @@ PRECHECK_REMOVALS = 256
 #: anything else runs, so the leg seats over a smaller and better population
 #: rather than ranking a large one and hoping the order holds.
 #:
-#: **`None` is the default and this leg does not move it.** Matt has adopted
-#: `p_fine(>=4) >= 0.50` at n=1000 as the way forward; the ruling is that it stays
-#: a parameter while the rest of the parameters settle, and that the default flips
-#: in the same act that makes the first cascade record. So what lands here is the
-#: recording and the spelling, and nothing else.
+#: It was `None` from the day it landed until 2026-09-08, while the ruling was
+#: that it stayed a parameter until the rest of them settled and that the default
+#: would flip in the same act that made the first cascade record. That act is
+#: `20260908T144844Z`. **So a record that does not name the flag ran WITH the bar
+#: from that stamp onward and WITHOUT it before**, and `config.fine_bar` on the
+#: record is the only reader that can tell them apart — the 62 records taken
+#: before it all carry `null` there.
+#:
+#: ⚠ **It costs the same store the cascade costs.** A row the head has no reading
+#: for is excluded, so an unflagged seating on a machine that has never run
+#: `gallery-grade score-pool` now seats nothing rather than seating the whole
+#: pool. `--fine-bar` takes no `none` spelling; a pass that wants the unbarred
+#: population passes `fine_bar=None` in process, which is what the 62 records'
+#: own re-runs do.
 #:
 #: What the ratified bar does, measured 2026-09-07 at n=1000 over the
 #: 277,542-candidate pool — `curation/MEASUREMENTS.md`'s *What a `p_fine` bar on
@@ -336,7 +367,7 @@ PRECHECK_REMOVALS = 256
 #: [`augment.DEFAULT_SECONDS`] — five minutes, documented as never binding at the
 #: shipping rungs — **does** bind there. See `curation/GALLERY.md`'s *A narrowed
 #: view is a different cost regime, and the budget DOES bind there*.
-DEFAULT_FINE_BAR = None
+DEFAULT_FINE_BAR = 0.50
 
 #: **Whether the augmenting-chain stage runs, unasked. ON**, Matt's ruling of
 #: 2026-09-04 off the chains sheet.
@@ -1780,10 +1811,11 @@ def solve(
 
     `fine_bar` narrows the pool to the rows the gallery-grade head reads at
     `p_fine(>=4) >= fine_bar`, **before anything else runs** — [`at_fine_bar`].
-    [`DEFAULT_FINE_BAR`] is `None` and this leg does not move it. The value is on
-    the record whether or not one was applied, so a record is never silent about
-    it: `config.fine_bar` is `None` for a pass that ran unbarred, which is what
-    every record before 2026-09-07 is and what they do not say.
+    [`DEFAULT_FINE_BAR`] is `0.50` since 2026-09-08, so a pass that names nothing
+    is barred; `fine_bar=None` is the unbarred population. The value is on the
+    record whether or not one was applied, so a record is never silent about it:
+    `config.fine_bar` is `None` for a pass that ran unbarred, which is what every
+    record before `20260908T144844Z` is and what they do not say.
 
     `preselected` is [`preselection_for`]'s result, for a **ladder** solving one
     pool at several `n`: the pre-selection does not read `n`, so every rung
@@ -3368,6 +3400,7 @@ __all__ = [
     "DEFAULT_KEY",
     "JUDGE_KEY",
     "KEYS",
+    "OFFERED_KEYS",
     "LEGS",
     "OBJECTIVE",
     "OUTSIDE_THE_VIEW",

@@ -11,6 +11,7 @@ old constants.
 from __future__ import annotations
 
 import pytest
+from tests.test_solve import a_pool_the_fine_head_has_read  # noqa: F401 — autouse here too
 
 from fractal_wallpapers import engine, paths
 from fractal_wallpapers.curation import mode_policy
@@ -316,14 +317,24 @@ def test_the_floor_rule_is_the_default_and_a_flag_is_what_turns_it_off():
     assert parser.parse_args(["curate", "solve", "run", "--flat-floor"]).flat_floor is True
 
     modes = mode_policy.accepted()
-    floored = solve.solve([], n=150, key=solve.JUDGE_KEY, log=lambda *_: None)["config"]
+    # `fine_bar=None` because the pool here is EMPTY and the floor rule is the
+    # subject: since 2026-09-08 an unflagged pass carries the 0.50 bar, and a bar
+    # over an empty pool refuses before any config block is written.
+    floored = solve.solve([], n=150, key=solve.JUDGE_KEY, fine_bar=None, log=lambda *_: None)[
+        "config"
+    ]
     assert floored["mode_floors"] == solve.floors_for(mode_policy.seat_floors(150), modes)
     assert floored["mode_floor"] is None, "the default is per mode and not one number"
     assert floored["mode_floor_artificial"] is False
     assert "THE DEFAULT" in floored["mode_floor_rule"]
 
     flat = solve.solve(
-        [], n=150, floor=solve.mode_floor(150), key=solve.JUDGE_KEY, log=lambda *_: None
+        [],
+        n=150,
+        floor=solve.mode_floor(150),
+        key=solve.JUDGE_KEY,
+        fine_bar=None,
+        log=lambda *_: None,
     )["config"]
     assert set(flat["mode_floors"].values()) == {solve.mode_floor(150)}
     assert flat["mode_floor_artificial"] is True

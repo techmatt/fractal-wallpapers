@@ -158,3 +158,106 @@ def test_the_near_miss_section_is_not_handed_to_one_head_by_its_scale(tmp_path) 
 
     page = sheet_module.from_records("r", rows, {}, tmp_path, tmp_path / "s.html")
     assert "Passed over (3)" in page.read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- #
+# the score sheet
+# --------------------------------------------------------------------------- #
+def _scored(key: str, value) -> dict:
+    return {"key": key, "p_fine": value}
+
+
+def _fine(row: dict):
+    return row["p_fine"]
+
+
+def test_the_order_is_the_score_descending_and_an_unread_row_is_last() -> None:
+    """A row the head has no reading for is a coverage fact, so it sorts to the
+    tail rather than being dropped — the sheet that hid it hid the reading."""
+    rows = [_scored("a", 0.2), _scored("b", None), _scored("c", 0.9)]
+    assert [row["key"] for row in sheet.by_score(rows, _fine)] == ["c", "a", "b"]
+
+
+def test_a_tie_breaks_on_the_key_so_the_same_pile_redraws_the_same_bytes() -> None:
+    rows = [_scored("z", 0.5), _scored("a", 0.5)]
+    assert [row["key"] for row in sheet.by_score(rows, _fine)] == ["a", "z"]
+
+
+def test_a_row_falls_in_the_first_band_whose_floor_it_clears() -> None:
+    rows = sheet.by_score([_scored("a", 0.90), _scored("b", 0.7499), _scored("c", 0.75)], _fine)
+    bands = sheet.banded(rows, _fine)
+    assert [(label, [row["key"] for row in held]) for label, held, _above in bands] == [
+        ("0.90 and up", ["a"]),
+        ("0.75 &ndash; 0.90", ["c"]),
+        ("0.50 &ndash; 0.75", ["b"]),
+    ]
+
+
+def test_an_empty_band_is_left_out_and_above_counts_what_precedes_it() -> None:
+    """The separator's number a reader wants is how much of the page is better
+    than what follows, and a page of empty sections reads as a form."""
+    rows = sheet.by_score([_scored("a", 0.95), _scored("b", 0.96), _scored("c", 0.05)], _fine)
+    bands = sheet.banded(rows, _fine)
+    assert [(label, len(held), above) for label, held, above in bands] == [
+        ("0.90 and up", 2, 0),
+        ("below 0.10", 1, 2),
+    ]
+
+
+def test_an_unread_row_bands_with_the_bottom_and_its_tile_says_so() -> None:
+    rows = sheet.by_score([_scored("a", 0.95), _scored("b", None)], _fine)
+    label, held, _above = sheet.banded(rows, _fine)[-1]
+    assert label == "below 0.10" and [row["key"] for row in held] == ["b"]
+    assert "&mdash;" in sheet.tile(None, [], score=None)
+
+
+def test_a_caption_line_is_escaped_and_an_unknown_style_is_refused() -> None:
+    """The caller names text, never markup — which is the whole of why this takes
+    a style name out of a fixed vocabulary instead of an HTML string."""
+    import pytest
+
+    drawn = sheet.tile(None, ["<script>", ("mono", "a&b")], score=0.5, index=3)
+    assert "&lt;script&gt;" in drawn and "a&amp;b" in drawn and "<script>" not in drawn
+    assert '<div class="mono">' in drawn and "#3" in drawn
+    with pytest.raises(ValueError, match="caption line's style"):
+        sheet.tile(None, [("shouty", "no")])
+
+
+def test_a_picture_this_machine_does_not_hold_draws_a_placeholder(tmp_path) -> None:
+    """A sheet is read on whichever box has the store, and the tiers move."""
+    assert "picture not on disk" in sheet.tile(tmp_path / "gone.jpg", ["x"], score=0.1)
+
+
+def test_the_page_is_the_bands_in_order_with_one_tile_a_row(tmp_path) -> None:
+    """Last night's leg sheet, in the shape it was hand-built in: rows carrying a
+    score under the caller's own name, a caption the caller composed, ranks
+    running 1..n over the whole page rather than restarting inside each band."""
+    rows = [_scored("a", 0.95), _scored("b", 0.60), _scored("c", 0.61)]
+    out = sheet.score_sheet(
+        rows,
+        score=_fine,
+        lines=lambda row: [("strong", row["key"])],
+        picture=lambda _row: None,
+        title="a leg's clears",
+        lede="<b>3</b> row(s)",
+        output=tmp_path / "sheet.html",
+    )
+    page = out.read_text(encoding="utf-8")
+    assert page.index("0.90 and up") < page.index("0.50 &ndash; 0.75")
+    assert page.count("<figure>") == 3
+    assert "#1" in page and "#3" in page
+    assert "<b>3</b> row(s)" in page  # the lede is the caller's HTML and is not escaped
+    assert "0.7500" not in page
+
+
+def test_a_sheet_over_nothing_is_still_a_page(tmp_path) -> None:
+    out = sheet.score_sheet(
+        [],
+        score=_fine,
+        lines=lambda _row: [],
+        picture=lambda _row: None,
+        title="empty",
+        lede="",
+        output=tmp_path / "sheet.html",
+    )
+    assert "nothing to lay out" in out.read_text(encoding="utf-8")

@@ -54,6 +54,42 @@ def no_neutral_store(monkeypatch):
     monkeypatch.setattr(embeddings, "read", lambda *_args, **_rest: [])
 
 
+class _EveryRowRead(dict):
+    """A pool-scores column that answers **every** key at `p_ge4 = 1.0`.
+
+    Non-empty on purpose: both readers ask `if not fine` first and refuse a column
+    that is there but says nothing, so a column that answers everything has to
+    look like one that holds something.
+    """
+
+    def __init__(self):
+        super().__init__({"a-column-that-answers-every-key": {"p_ge4": 1.0}})
+
+    def get(self, key, default=None):  # noqa: ARG002 — the point is that it never misses
+        return {"p_ge4": 1.0, "p_ge3": 1.0, "p_ge2": 1.0, "rank_score": 3.0}
+
+
+@pytest.fixture(autouse=True)
+def a_pool_the_fine_head_has_read(monkeypatch):
+    """Every synthetic candidate reads `p_fine(>=4) = 1.0`, for every test here.
+
+    [`solve.DEFAULT_FINE_BAR`] is `0.50` since 2026-09-08, so an unflagged pass
+    now narrows the pool to the rows the gallery-grade head has read at or above
+    it — and a synthetic candidate has no reading at all, which would leave every
+    pool in this file empty and every test in it measuring nothing.
+
+    So the fixtures here stand in for a pool the head **has** read and passed,
+    which is the same population these tests measured before the flip and leaves
+    every assertion about seating, refusal and recording saying what it said. It
+    does not weaken the bar: the five tests below that name `fine_bar` hand in
+    their own column through [`scored`] and override this, the default itself is
+    pinned in `test_cli.py`, and the refusal without a column is pinned here.
+    """
+    from fractal_wallpapers.models import gallery_grade_train
+
+    monkeypatch.setattr(gallery_grade_train, "read_pool_scores", lambda *_a, **_k: _EveryRowRead())
+
+
 def modes_of(record) -> set:
     return {seat["mode"] for seat in record["seated"]}
 
@@ -1282,9 +1318,20 @@ def test_the_tracked_pool_seats_and_the_ledger_partitions_it(tracked_pool, track
 
     A ledger that double-counted would inflate whichever axis it double-counted
     on, and that aggregate is what a leg would be aimed down.
+
+    **The pool the ledger partitions is the one the solve walked**, which since
+    `DEFAULT_FINE_BAR` flipped on 2026-09-08 is the narrowed one and not what
+    `solve.pool()` handed in. The bar is pool construction and never a rule — the
+    rows it drops are in no refusal column by design — so counting them here would
+    ask the ledger to account for candidates the walk never saw. `fine_bar.kept`
+    is what it walked, and the two agree with `offered` when nothing was barred.
     """
     record = tracked_seating
-    assert record["filled"] + sum(record["rejection"]["reasons"].values()) == len(tracked_pool)
+    walked = record["fine_bar"]["kept"] if record["config"]["fine_bar"] is not None else None
+    assert walked is None or record["fine_bar"]["offered"] == len(tracked_pool)
+    assert record["filled"] + sum(record["rejection"]["reasons"].values()) == (
+        walked if walked is not None else len(tracked_pool)
+    )
     assert len({seat["location"] for seat in record["seated"]}) == record["filled"]
 
 
@@ -2595,9 +2642,9 @@ def test_the_fine_bar_is_on_every_record_including_the_ones_that_ran_without_one
     defect the cascade flip cost a hand-check of sixty-two stamps for: nothing on
     the record says what made it, so it has to be established by date. `null` is an
     answer and a missing field is not, so the field is written either way."""
-    record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, log=quiet)
+    record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, fine_bar=None, log=quiet)
     assert record["config"]["fine_bar"] is None
-    assert record["config"]["fine_bar_default"] is solve.DEFAULT_FINE_BAR is None
+    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.50
     assert "p_fine(>=4)" in record["config"]["fine_bar_is"]
     assert record["fine_bar"]["bar"] is None
     assert "no fine-head bar" in record["fine_bar"]["of"]
@@ -2612,7 +2659,7 @@ def test_the_fine_bar_a_solve_ran_under_is_on_the_config_block_a_manifest_carrie
         [candidate("a"), candidate("b")], n=20, key=solve.JUDGE_KEY, fine_bar=0.5, log=quiet
     )
     assert record["config"]["fine_bar"] == 0.5
-    assert record["config"]["fine_bar_default"] is None, "this leg moved no default"
+    assert record["config"]["fine_bar_default"] == 0.50, "the default since 2026-09-08"
     assert record["fine_bar"]["kept"] == 1
     assert record["fine_bar"]["dropped"] == 1
     assert record["population"]["candidates"] == 1
