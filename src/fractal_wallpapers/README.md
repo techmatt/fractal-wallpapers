@@ -126,6 +126,74 @@ than by an absolute path: `models.acceptance.beside(relative)` is
 was put and is simply absent afterwards. That absence is the reason the numbers
 it reads are vendored — a bar has to stay re-readable without that repository.
 
+## The standing keep roster
+
+CLAUDE.md's three-way rule — *hot*, *archive*, *delete* — decides where a subtree
+lives, once per subtree. This is the other list: the paths that are **kept**
+whichever tier they are on, each with the one-line reason. It lives here rather
+than in [`curation/README.md`](curation/README.md) because it names top-level tree
+names, tracked stores and `models/` alike, and the unit of the three-way rule is a
+top-level name, which is this section's subject.
+
+**Almost none of it is protected by a mechanism, and that is the thing to
+understand before reading the list.** The only sweep that deletes a candidate is
+`curate candidate-ledger orphans`, and
+[`candidate_ledger.sweep.picture_dirs`](curation/candidate_ledger/sweep.py)
+enumerates `<tier>/curation/<subtree>/<leg>/pictures` — `store.POOL_SUBTREES`,
+`store.PICTURES_NAME`, a fixed shape at a fixed depth — and nothing else.
+Everything on this list bar the last two entries is outside that shape entirely,
+so it is not *exempted* from the sweep, it is **unreachable** by it. What keeps it
+is a ruling, and a ruling is only as good as the place it is written down.
+
+| what | why it is kept |
+|---|---|
+| `artifacts/curation/candidate_ledger/` | the pool itself: `rows.jsonl`, `scores.jsonl`, and the flatness and reduced-signature sidecars |
+| the ten `durability.Durable`s | see below — every one of them is under `artifacts/curation/`, and three are what a run refuses to start without |
+| `artifacts/curation/neutral_embeddings.jsonl` | one neutral-render vector per admitted location; the gallery pass needs a distance |
+| the hot copies under `artifacts/curation/` | `artifacts/curation/` never leaves the hot tier — see [`curation/README.md`](curation/README.md)'s *The archive tier* |
+| the tracked release and gate stores, `data/curation/{release,gate}/` | the live decisions, and half of `orphans`' reference set |
+| `artifacts/reframe_g1` … `g10` | the reframing chain's ledgers — nine legs, there is no `g3`. `discovered_priors` reads every one as a prior, so losing a leg is re-finding its atoms |
+| `artifacts/curation/tentative/<stamp>/` | **every** record, published or not: `tentative.protected_keys()` sweeps the whole store, so deleting a record is the only thing that releases its seats to `prune` |
+| `artifacts/votes/` | the exported voting kits, which are a sitting's whole population |
+| `artifacts/curation/growth/20260902T150756Z/` | one rung of a chronological series that is never rewritten; the pool it was solved over does not exist any more |
+| `data/coloring/texture_flat.jsonl` | the register of which renders' modulate texture carried no information, for rows written before the engine reported it |
+| `data/spiral/`, `models/spiral/` | the spiral probe's corpus and its shipped weights |
+| `models/render/` | `weights-v6` with `render.v5.fp16.pt` beside it, and the run directories every bar was read against |
+| `models/gallery_grade/` | the fine head's weights and its recipe |
+| `artifacts/gallery_grade_head/pool_scores.jsonl` | the cascade **refuses** without it |
+| `artifacts/render_folds/` | the fold assignment every render arm is fitted against — see the note below |
+| `artifacts/top_slice_probe/` | the probe's features, scores and held-out split |
+| `artifacts/gallery_grade/n1000_0906/*/plan.jsonl` | the only thing that can rebuild those levelled pictures as they were judged |
+| `data/curation/candidate_ledger/ratchet.jsonl` | tracked and append-only: the census asserts against it, and a lost row is a lost deletion |
+| `artifacts/curation/depth/*/fields` | Matt's ruling. `depth` **is** a pool subtree, so this is the one entry the sweep walks past — `fields` is not `pictures`, so it is unreachable by name at that depth rather than by subtree |
+| `artifacts/curation/gallery/` | 14,438 gate attempt rows over four retired passes, and `orphans` is their only reader — see [`curation/README.md`](curation/README.md)'s *The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT* |
+
+**The Durables are ten and not five**, all of them under `artifacts/curation/`:
+the supply sidecar (`supply_scores.jsonl`), the score amendment
+(`score_amendments.jsonl`), the hunt frame index (`hunt/frames.jsonl`) — those
+three are [`curation.durables.guarded`], the ones a `curate run` refuses to start
+without — plus the candidate ledger's rows and scores, the flatness sidecar, the
+reduced-signature sidecar, the neutral-render embedding store, the spiral score
+store and the palette colour-mass sweep log. `hunt/frames.jsonl` is the one with
+**no rebuild**: `Durable.rebuild_command` is a sentence rather than a command,
+because the scan it came from is gone.
+
+**`.leveled/` directories are the exception to *unreachable*, and the question has
+two answers.** They sit beside a candidate's own picture inside a `pictures/`
+directory, so `orphans` addresses them — by the name the JPEG would have — and
+takes the ones no store names. That is the sweep working, not a leak: the
+provably-unreachable share is 1.6% of the directories and 1.3% of the bytes, and a
+*bounded* sweep of the rest cannot be written at all. Both halves are
+[`curation/LEGS.md`](curation/LEGS.md)'s *A `.leveled/` directory is not SWEEPABLE,
+and a prune is still structurally safe*.
+
+⚠ **`artifacts/render_folds/` is on neither tier as of 2026-09-07.** The roster
+kept it and it is not there; `render_folds.read_assignment` refuses, so
+`renders dose`, `renders grade`, `renders deploy` and the fits behind them all
+refuse until the deal is re-derived. It would have to be re-derived anyway — the
+corpus has grown since, and `sides_for` refuses an assignment that does not cover
+the store — so what was lost is the record of which fold each row was in, not a
+working input.
 
 ## One shape for a place, and one reader for it
 
