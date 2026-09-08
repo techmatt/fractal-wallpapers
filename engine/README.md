@@ -45,9 +45,12 @@ the switch decides what is *reported*, never what is drawn.
 The pipeline runs `spec → family → iterate → field → coloring → resample`, one
 module per stage; `src/lib.rs` says what each does and why the seam between the
 field and its coloring is the one that matters. `src/spec.rs` documents the JSON
-and `src/mode.rs` the named colorings — nineteen of them, in four shapes: one
+and `src/mode.rs` the named colorings — **twenty** of them, in four shapes: one
 field, two fields blended, a base whose palette position a second field shifts,
-or no field at all.
+or no field at all. Eight field · six composite · two modulate · four direct, and
+`de` is the one of the twenty that is not production — so **nineteen** is the
+count everything downstream draws from, and the two numbers are a catalog total
+and a tier below.
 
 ## The escape loop is written out per family and per channel set
 

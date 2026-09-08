@@ -184,8 +184,8 @@ directory, so `orphans` addresses them — by the name the JPEG would have — a
 takes the ones no store names. That is the sweep working, not a leak: the
 provably-unreachable share is 1.6% of the directories and 1.3% of the bytes, and a
 *bounded* sweep of the rest cannot be written at all. Both halves are
-[`curation/LEGS.md`](curation/LEGS.md)'s *A `.leveled/` directory is not SWEEPABLE,
-and a prune is still structurally safe*.
+[`curation/LEGS.md`](curation/LEGS.md)'s *A `.leveled/` directory is swept only
+with its own picture, and a prune is still structurally safe*.
 
 ⚠ **`artifacts/render_folds/` is on neither tier as of 2026-09-07.** The roster
 kept it and it is not there; `render_folds.read_assignment` refuses, so
@@ -280,6 +280,16 @@ deliberate and it is why `candidate_ledger` drops `colormap_dir` from the recipe
 key: harmless in a cache file name, which means nothing off the machine that wrote
 it, and not harmless in anything keyed forever. Assert what a name *is a function
 of* — two rows agreeing or differing — never the sixteen characters.
+
+**Which move breaks a cache and which does not follows from that one path.**
+`paths.colormap_dir()` is `<repo_root>/data/palettes`, so a **re-clone** renames
+every cached picture and misses the render cache entirely, while moving the
+**hot root** — where `artifacts/` lives — renames nothing, because no tier root
+is in the spec. And `renders.SPEC_MEMBERS` carries `mode` and `mode_params`, the
+name and its settings, never the catalog those resolve through: **adding a catalog
+entry renames nothing**. Editing an existing entry's arithmetic is the other case
+and re-keys nothing either, which is why it is invisible and why the engine
+fingerprint rather than the job name is what catches it.
 
 ⚠ **Never patch `renders.colormap_dir`.** `spec_of` moved down to `engine_spec.py`
 on 2026-09-04, so it reads `engine_spec.colormap_dir` and nothing else. A fixture

@@ -57,10 +57,16 @@ nothing into any label store. Three things travel on each unit beyond the recipe
 the candidate ledger, reads the whole score sidecar, and resolves the rank key
 over two more stores. The `spiral_500` draw took about four minutes.
 
-### A `.leveled/` directory is not SWEEPABLE, and a prune is still structurally safe
+### A `.leveled/` directory is swept only with its own picture, and a prune is still structurally safe
 
 Two questions with opposite answers, which is why *can we delete these* keeps being
 asked and keeps being answered wrongly in one direction or the other.
+
+**Neither answer is *nothing can ever take one*, and that reading has been carried
+before.** A `.leveled/` sits inside a `pictures/` directory, so
+`curate candidate-ledger orphans` reaches it by the name its JPEG would have and
+takes the ones no store names — the sweep working rather than a leak. What cannot
+be written is the *bounded* sweep below.
 
 **A sweep cannot be bounded, so there is no partial one either.** The reachable set
 is not a fixed list: `pool_draw` represents each clearing location by its *current*
