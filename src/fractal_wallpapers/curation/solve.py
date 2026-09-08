@@ -98,15 +98,18 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import augment as augment_module
 from fractal_wallpapers.curation import (
+    backfill,
     candidate_ledger,
     ceiling,
     distinct,
     floors,
     mode_policy,
+    recipes,
     rules,
     signatures,
     view,
 )
+from fractal_wallpapers.curation import stamps as stamps_module
 from fractal_wallpapers.paths import rehome, tracked_name, under
 
 #: The schema every record this module writes carries.
@@ -3108,6 +3111,14 @@ def render_seats(
     where = (solve_dir(name) / "release") if where is None else Path(where)
     where.mkdir(parents=True, exist_ok=True)
     stamps = where / "autolevel_stamps.jsonl"
+    # The levelling each seat inherits, read in one grouped pass over the legs
+    # that made them rather than a file open per seat. A seat missing from this
+    # is a seat whose leg wrote no curve down — `acted_unrecoverable`, and it
+    # renders deciding for itself, which is what every seat did before this.
+    borrowed = stamps_module.for_release(
+        rows, backfill.read(), regime=recipes.CANDIDATE_REGIME.spelled, store="sequence"
+    )
+    log(f"[solve] {len(borrowed)}/{len(rows)} seat(s) inherit a levelling curve")
     tasks, done, reused = [], {}, []
     for seat in record["seated"]:
         row = rows[seat["key"]]
@@ -3131,6 +3142,7 @@ def render_seats(
                 output=str(picture),
                 geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
                 timeout=None if timeout is None else float(timeout),
+                autolevel=borrowed.get(seat["key"]),
             )
         )
     log(f"[solve] {len(tasks)} seat(s) to render at {regime.spelled}, {len(reused)} already there")

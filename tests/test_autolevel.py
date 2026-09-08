@@ -186,3 +186,135 @@ def test_densify_spans_a_real_colormap_end_to_end() -> None:
     assert len(positions) == autolevel.DENSIFY * (len(stops_) - 1) + 1
     assert positions == sorted(positions)
     assert numpy.allclose(space.srgb(lab[-1]), stops_[-1][1], atol=1e-3)
+
+
+# --------------------------------------------------------------------------- #
+# Decide once, replay upward.
+# --------------------------------------------------------------------------- #
+def acting_curve() -> dict:
+    """A curve that actually moves something, so `acts` is true when it is replayed."""
+    return autolevel.derive_curve(stats(black=0.45, white=0.60, mid=0.55), BANDS)
+
+
+def test_a_borrowed_curve_is_applied_and_this_render_is_never_measured(monkeypatch, tmp_path):
+    """The whole point: no `stats_of`, no `derive_curve`, and the handed curve used.
+
+    A release that measured itself would answer a question about a 2560x1440 PNG
+    when the decision on file was taken about a 640x360 JPEG.
+    """
+    base = tmp_path / "base.png"
+    base.write_bytes(b"not read")
+    made = tmp_path / "leveled.png"
+    made.write_bytes(b"also not read")
+    ramp = stops()
+    curve = acting_curve()
+    borrowed = autolevel.borrowed_from(
+        autolevel.make_stamp({}, curve, stats(), 0, 0, acted=True), key="k", regime="640x360ss2"
+    )
+    # Patched only once the source stamp exists: the point is that the *replaying*
+    # render reaches neither, not that this file can do without them.
+    monkeypatch.setattr(
+        autolevel, "stats_of", lambda path: pytest.fail("a borrowed curve measures nothing")
+    )
+    monkeypatch.setattr(
+        autolevel, "derive_curve", lambda *a: pytest.fail("a borrowed curve derives nothing")
+    )
+    leveled = autolevel.maybe_level(
+        base, {"name": "x", "stops": ramp, "mirror": False}, lambda s: made, None, borrowed
+    )
+    assert leveled.image == made
+    assert leveled.acted is True
+    # The stops it rendered through are the ones the source's curve rebuilds.
+    assert autolevel.stops_from_stamp(leveled.stamp, ramp) == autolevel.curved_stops(ramp, curve)[0]
+
+
+def test_a_borrowed_stamp_measured_nothing_and_says_so(tmp_path):
+    """`measured` is the base render's own tone, so a render that read no image has
+    none — and the stamp says which of the two it is rather than leaving a reader
+    to infer it from a null."""
+    base = tmp_path / "base.png"
+    base.write_bytes(b"x")
+    borrowed = autolevel.borrowed_from(
+        autolevel.make_stamp({}, acting_curve(), stats(), 0, 0, acted=True),
+        key="abc123",
+        regime="640x360ss2",
+    )
+    leveled = autolevel.maybe_level(
+        base, {"name": "x", "stops": stops(), "mirror": False}, lambda s: base, None, borrowed
+    )
+    assert leveled.stamp["measured"] is None
+    assert leveled.stamp["provenance"]["curve"] == autolevel.BORROWED
+    assert leveled.stamp["provenance"]["from"]["key"] == "abc123"
+
+
+def test_a_render_that_derived_its_own_curve_still_says_so_and_still_measures(
+    monkeypatch, tmp_path
+):
+    """The condition runs both ways: the invariant "the curve follows from
+    `measured`" is not gone, it is now stated on the row it holds for.
+
+    `stats_of` is stood in for rather than given a picture — this is about which
+    branch runs and what it stamps, and the measurement itself is pinned by
+    `test_a_neutral_render_measures_a_black_point_and_a_chromatic_one_does_not`.
+    """
+    monkeypatch.setattr(autolevel, "stats_of", lambda path: stats(black=0.45, white=0.60, mid=0.55))
+    monkeypatch.setattr(autolevel, "_bands", lambda record: BANDS)
+    base = tmp_path / "base.png"
+    base.write_bytes(b"x")
+    leveled = autolevel.maybe_level(
+        base, {"name": "x", "stops": stops(), "mirror": False}, lambda s: base, {}
+    )
+    assert leveled.stamp["provenance"] == {"curve": autolevel.DERIVED, "from": None}
+    assert leveled.stamp["measured"] is not None
+    assert leveled.acted is True
+
+
+def test_a_borrowed_in_band_decision_comes_back_in_band_and_never_renders(tmp_path):
+    """An inherited identity is still an identity. The larger render is the base
+    map's own bytes, exactly as the candidate was, and `rerender` is not called."""
+    base = tmp_path / "base.png"
+    base.write_bytes(b"x")
+
+    def refuse(_):
+        raise AssertionError("an in-band decision must not re-render")
+
+    borrowed = autolevel.borrowed_from(
+        autolevel.make_stamp({}, autolevel.derive_curve(stats(), BANDS), stats(), 0, 0, False),
+        key="k",
+    )
+    leveled = autolevel.maybe_level(
+        base, {"name": "x", "stops": stops(), "mirror": False}, refuse, None, borrowed
+    )
+    assert leveled.image == base
+    assert leveled.acted is False
+    with pytest.raises(autolevel.AutolevelError):
+        autolevel.stops_from_stamp(leveled.stamp, stops())
+
+
+def test_a_stamp_with_no_curve_lends_nothing_rather_than_lending_an_empty_one():
+    """The `acted_unrecoverable` row, at the one door that could have let it
+    through. A stamp written before the curve was recorded has nothing to replay,
+    and packaging it would hand a later render an empty curve that quietly acts on
+    nothing."""
+    with pytest.raises(autolevel.AutolevelError, match="no curve"):
+        autolevel.borrowed_from({"acted": True})
+
+
+def test_the_switch_is_read_before_the_borrowed_curve(monkeypatch, tmp_path):
+    """The off path stays the pre-operator path even for a render that was handed
+    a decision: one boolean in front of everything, not in front of everything
+    except this."""
+    monkeypatch.setenv(autolevel.SWITCH_ENV, "0")
+    base = tmp_path / "base.png"
+    base.write_bytes(b"x")
+    borrowed = autolevel.borrowed_from(
+        autolevel.make_stamp({}, acting_curve(), stats(), 0, 0, acted=True), key="k"
+    )
+    leveled = autolevel.maybe_level(
+        base,
+        {"name": "x", "stops": stops(), "mirror": False},
+        lambda s: pytest.fail("the off path must not re-render"),
+        None,
+        borrowed,
+    )
+    assert leveled.image == base and leveled.stamp is None

@@ -53,6 +53,22 @@ own coefficients. [`stops_from_stamp`] rebuilds the exact stop list from the
 stamp alone — no image, no re-measurement — so a release render is reproducible
 from its record and a row that acted can be checked against the picture it
 claims to be.
+
+## Decide once, replay upward
+
+The decision is taken **once, at candidate geometry**, and every larger render of
+that row inherits it ([`borrowed_from`], and `borrowed` on [`maybe_level`]).
+Levelling is a judgement about a picture somebody scored, and the picture
+somebody scored is the 640x360 JPEG; a 2560x1440 PNG of the same recipe has a
+different tone — the encoder alone moves the derived stop list on 17 of 24
+candidates, measured in `coloring/README.md` — so a release that measured itself
+would ship a wallpaper levelled by a rule nobody judged. Nothing about the replay
+enters an identity: the curve rides on the run record and the reduced stamp
+[`curation.recipes.stamp_of`] keys on is the same three strings it always was.
+
+What a borrowed row gives up is `measured`, which is `None` on it: no image was
+read, so there is no fingerprint of this render's own base, and the stamp says
+which of the two it is under `provenance.curve`.
 """
 
 from __future__ import annotations
@@ -522,18 +538,68 @@ def curved_stops(stops: list, curve: dict) -> tuple[list, int]:
 # --------------------------------------------------------------------------- #
 # The stamp.
 # --------------------------------------------------------------------------- #
-def make_stamp(record: dict, curve: dict, statistics: dict, capped: int, stops: int, acted: bool):
+#: What [`make_stamp`]'s `provenance.curve` says when this render derived its own.
+DERIVED = "derived"
+
+#: …and when it replayed one decided at another geometry. See [`borrowed_from`].
+BORROWED = "borrowed"
+
+
+def borrowed_from(stamp: dict, **source) -> dict:
+    """One earlier stamp packaged as a curve a later render may replay.
+
+    THE door onto the replay path, and the reason there is one: a caller that
+    reached into `stamp["curve"]` itself would be a caller that could hand over
+    the curve of a stamp that never acted through it, or one from a render under
+    a different band, and neither refuses anywhere downstream.
+
+    `source` is whatever names where the curve came from — a recipe key, the
+    regime it was decided at, the store the stamp was read out of. It is written
+    onto the new stamp verbatim and read by nothing; it is there so a row that
+    inherited a curve says what it inherited it from.
+    """
+    curve = (stamp or {}).get("curve")
+    if not curve:
+        raise AutolevelError(
+            "this stamp carries no curve, so there is nothing for a later render to "
+            "replay. A row stamped before the whole curve was recorded is "
+            "acted_unrecoverable and the way out is its own file, never a re-derivation "
+            "dressed as the original."
+        )
+    return {"curve": dict(curve), "from": dict(source)}
+
+
+def make_stamp(
+    record: dict,
+    curve: dict,
+    statistics: dict | None,
+    capped: int,
+    stops: int,
+    acted: bool,
+    borrowed: dict | None = None,
+):
     """What a render produced under the operator carries.
 
     The whole curve is stamped rather than a summary, because [`stops_from_stamp`]
-    has to rebuild the exact stop list from this alone. `measured` is the *base*
-    render's own statistics, which is what proves a candidate re-render is the
-    render the stamp is about.
+    has to rebuild the exact stop list from this alone.
+
+    `measured` is the *base* render's own statistics **where this render derived
+    its own curve**, and that is what proves a candidate re-render is the render
+    the stamp is about. Where the curve was borrowed it is `None`, and the
+    invariant is conditional rather than gone: the curve follows from `measured`
+    exactly when `provenance.curve` says [`DERIVED`]. It is not filled with the
+    statistics the *source* render read, because those are a fingerprint of a
+    different picture at a different geometry, and a release stamp carrying an
+    eval-geometry `measured` would claim a base render nobody made.
     """
     return {
         "operator": OPERATOR,
         "switch": "on",
         "acted": bool(acted),
+        "provenance": {
+            "curve": BORROWED if borrowed else DERIVED,
+            "from": dict(borrowed.get("from") or {}) if borrowed else None,
+        },
         "band": {
             "path": record.get("_path"),
             "sha256": record.get("_sha256"),
@@ -628,7 +694,13 @@ def overriding_colormap(name: str, stops: list, kind: str, directory: Path) -> P
     return path
 
 
-def maybe_level(base: Path, colormap: dict, rerender, record: dict | None = None) -> Leveled:
+def maybe_level(
+    base: Path,
+    colormap: dict,
+    rerender,
+    record: dict | None = None,
+    borrowed: dict | None = None,
+) -> Leveled:
     """THE switch, and the whole operator behind it.
 
     `base`      the render the caller already made through the unmodified map.
@@ -637,34 +709,60 @@ def maybe_level(base: Path, colormap: dict, rerender, record: dict | None = None
     `rerender`  `stops -> Path`; called **only** when the curve actually acts, so
                 an in-band render costs one measurement and comes back as its own
                 file.
+    `borrowed`  [`borrowed_from`]'s value, where this render is to **replay** a
+                curve rather than decide one. `None` — the default, and what every
+                candidate leg passes — is the deciding path, unchanged.
+
+    ## Decide once, replay upward
+
+    A caller distinguishes the two by passing a curve or not, and there is no
+    third state: `borrowed=None` measures this render's own base and derives from
+    it, and a `borrowed` skips both [`stats_of`] and [`derive_curve`] and applies
+    what it was handed. Everything after that point is one expression rather than
+    two, deliberately — **whether the operator acts is read off the curve** in
+    both cases, because `applies` and `identity` are the curve's own fields, so a
+    replayed in-band decision comes back in band and a replayed acting one acts.
+    That is what makes a release inherit rather than re-decide: the tone of a
+    2560x1440 PNG is not the tone of the 640x360 JPEG the decision was taken on,
+    and re-measuring at the bigger frame answers a question nobody asked.
 
     With the switch off this is `(base, None)` and `rerender` is never called:
     the off path is the pre-operator path with one boolean read in front of it,
-    which is what keeps it a live contract rather than dead code.
+    which is what keeps it a live contract rather than dead code. It is read
+    **before** `borrowed`, so the switch still governs every render there is.
     """
     if not enabled():
         return Leveled(base, None)
     from fractal_wallpapers.coloring import band as band_module
 
     record = band_module.load() if record is None else record
-    statistics = stats_of(base)
-    curve = derive_curve(statistics, band_module.bands(record))
+    if borrowed is None:
+        statistics = stats_of(base)
+        curve = derive_curve(statistics, _bands(record))
+    else:
+        # No measurement of this render at all. `measured` is None on the stamp
+        # for the same reason: nothing read this picture's tone, and a number
+        # that came off another picture is not this one's fingerprint.
+        statistics, curve = None, dict(borrowed["curve"])
     acts = bool(curve.get("applies")) and not curve.get("identity")
     if not acts:
-        return Leveled(base, make_stamp(record, curve, statistics, 0, 0, acted=False))
+        return Leveled(base, make_stamp(record, curve, statistics, 0, 0, False, borrowed))
     stops, capped = curved_stops(colormap["stops"], curve)
     return Leveled(
-        rerender(stops), make_stamp(record, curve, statistics, capped, len(stops), acted=True)
+        rerender(stops),
+        make_stamp(record, curve, statistics, capped, len(stops), True, borrowed),
     )
 
 
 __all__ = [
+    "BORROWED",
     "CHROMA_NEUTRAL",
     "CHROMA_RETAIN",
     "CLIP_HI",
     "CLIP_LO",
     "DEFINITIONS",
     "DENSIFY",
+    "DERIVED",
     "EXPONENT_CLAMP",
     "MASK_L",
     "MIN_RANGE",
@@ -676,6 +774,7 @@ __all__ = [
     "Leveled",
     "applies_to",
     "apply_curve",
+    "borrowed_from",
     "cap_lightness",
     "curved_stops",
     "densify",

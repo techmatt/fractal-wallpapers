@@ -219,6 +219,15 @@ class Task:
     geometry: dict
     timeout: float | None = None
     mode_params: dict = field(default_factory=dict)
+    #: The levelling decision this row **inherits**, as
+    #: [`coloring.autolevel.borrowed_from`] packages one, or `None` where there is
+    #: none to inherit and the render decides for itself. On the task rather than
+    #: looked up in the worker for the reason `mode_params` is: a worker is a
+    #: spawned process with no store open, and a lookup there would be one read of
+    #: a run record per row instead of one per pass. A row that carries `None`
+    #: renders exactly as it did before this existed, which is what every
+    #: `acted_unrecoverable` seat still does.
+    autolevel: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -265,6 +274,7 @@ def render_task(task: Task) -> Result:
                 Path(task.output),
                 render_geometry=task.geometry,
                 mode_params=task.mode_params,
+                borrowed=task.autolevel,
             )
             return Result(
                 task.id,

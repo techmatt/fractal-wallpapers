@@ -66,7 +66,7 @@ from pathlib import Path
 from fractal_wallpapers import engine, paths
 from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.curation import budget as budget_module
-from fractal_wallpapers.curation import floors, intake
+from fractal_wallpapers.curation import floors, intake, recipes
 from fractal_wallpapers.palettes import space
 
 #: How many maps a candidate set holds. The width of the real sets the palette
@@ -77,8 +77,16 @@ CANDIDATES = 32
 #: What a candidate and the picture that gets judged are rendered at. The size
 #: both finished-render judges read and the size the palette head's own pictures
 #: were formed at, so one render answers both.
-RESOLUTION = (640, 360)
-SUPERSAMPLE = 2
+#:
+#: **Read off [`curation.recipes.CANDIDATE_REGIME`] rather than written again.**
+#: The two were independent spellings of one fact until 2026-09-08 — this pair
+#: and that regime — with nothing holding them equal, and two spellings of one
+#: fact is a silent null: the identity side would go on calling a picture a
+#: candidate at a geometry this side had stopped rendering at. The regime owns
+#: it, because a key is the thing that cannot be wrong about it; the pair stays
+#: because the geometry block and every reader of a frame size want the halves.
+RESOLUTION = recipes.CANDIDATE_REGIME.resolution
+SUPERSAMPLE = recipes.CANDIDATE_REGIME.supersample
 
 #: The curve every attempt reads its mode's field through: the identity. A mode
 #: names a field *and* a curve to read it through, and a curve set here would
@@ -690,6 +698,7 @@ def render(
     mode_params: dict | None = None,
     curve: str | None = None,
     palette: dict | None = None,
+    borrowed: dict | None = None,
 ) -> tuple[Path, dict | None]:
     """Render one candidate and level it. `(picture, stamp)`; the stamp may be `None`.
 
@@ -725,6 +734,21 @@ def render(
     rather than being quietly dropped, for the reason `render_row` states — and
     the refusal is here rather than there because `render_row` is also called to
     describe a picture that is not being made.
+
+    ## `borrowed` is the levelling decision, inherited rather than retaken
+
+    [`coloring.autolevel.borrowed_from`]'s value, and it is how a render above
+    candidate geometry gets the curve that was decided at it. Off by default,
+    which is the candidate path: a candidate *is* where the decision is taken, so
+    it measures its own base and derives. A release, a gallery seat and a kit all
+    pass one — see [`curation.stamps.borrowed_for`] for where the curve is read
+    from — and none of them measures anything.
+
+    It is **not** the same axis as `curve` above it and the two never meet in a
+    name: `curve` is the transform the mode reads its field through, is in the
+    recipe key and makes a different picture; this changes no key at all, because
+    the reduced stamp [`curation.recipes.stamp_of`] digests carries the operator,
+    the switch and the band and never the curve the operator derived.
 
     The two paths are held to producing the *same bytes* — not a similar picture,
     the same file — by `test_a_recolour_is_the_render_byte_for_byte`, because a
@@ -814,7 +838,11 @@ def render(
     at = tick()
     repainted = ticks.get("repaint", 0.0)
     leveled = autolevel.maybe_level(
-        scratch, {"name": colormap, "stops": entry["stops"], "mirror": mirror}, rerender, band
+        scratch,
+        {"name": colormap, "stops": entry["stops"], "mirror": mirror},
+        rerender,
+        band,
+        borrowed,
     )
     # The operator's own share is what it took MINUS the colouring it asked for,
     # which `paint` has already booked to `repaint`. Measured this way round

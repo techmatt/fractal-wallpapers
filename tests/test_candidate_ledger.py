@@ -2172,3 +2172,89 @@ def test_the_row_promises_no_same_group_distance_exemption():
     text = json.dumps(_group_cap_row(rows, 1000))
     assert "tau_group" not in text
     assert str(ceiling.TAU_GROUP) not in text
+
+
+# --------------------------------------------------------------------------- #
+# Being listed as keyed does not put a member in the key.
+# --------------------------------------------------------------------------- #
+def _perturbations() -> dict:
+    """One (recipe, changed recipe) pair per keyed member, each on a mode it shows on.
+
+    A member is *provably* keyed when changing it and nothing else moves
+    `key_of`. Two of them cannot be shown on one recipe and the engine is the
+    reason, not this table: `curve` is written onto the coloring's transform for a
+    field, a composite and a modulate and never for a direct trap, which has no
+    field to read through a curve; `mode_params` is only ever non-empty on a
+    direct trap, and `engine_spec.coloring_of` refuses settings on anything else.
+    So each names the mode it is demonstrable on and the pair differs in one
+    member.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    field = recipes.of_decision(decision())
+    direct = dataclasses.replace(field, mode="direct_trap_ring", curve="")
+    return {
+        "family": (field, dataclasses.replace(field, family={"kind": "mandelbrot", "degree": 3})),
+        "viewport": (field, dataclasses.replace(field, viewport=dict(REFINED_VIEWPORT))),
+        "maxiter": (field, dataclasses.replace(field, maxiter=field.maxiter + 1)),
+        "regime": (field, dataclasses.replace(field, regime=release.Regime((1280, 720), 2))),
+        "mode": (field, dataclasses.replace(field, mode="stripe")),
+        "mode_params": (direct, dataclasses.replace(direct, mode_params={"opacity": 0.5})),
+        "curve": (field, dataclasses.replace(field, curve="log")),
+        "colormap": (field, dataclasses.replace(field, colormap="viridis")),
+        "palette": (field, dataclasses.replace(field, palette=finished.recipe(mirror=False))),
+        "autolevel": (
+            field,
+            dataclasses.replace(field, autolevel={**field.autolevel, "band_sha256": "0" * 64}),
+        ),
+    }
+
+
+@pytest.mark.parametrize("member", recipes.KEYED)
+def test_every_keyed_member_moves_the_key(member):
+    """A member declared keyed and left out of the digest was the live gap.
+
+    `Recipe.pixels` builds the material out of two derived blocks — the engine
+    spec and the reduced stamp — and never out of `KEYED`, so a member added to
+    the dataclass and appended to that tuple was classified as deciding the
+    picture and left out of its name, with nothing anywhere noticing. Verified
+    before it was closed: it left `key_of` byte-identical.
+    """
+    cases = _perturbations()
+    assert member in cases, (
+        f"{member} is in KEYED and this table has no case for it, so nothing here says "
+        f"the key carries it. Add the pair that differs in {member} alone."
+    )
+    one, other = cases[member]
+    assert recipes.key_of(one) != recipes.key_of(other)
+
+
+def test_a_keyed_member_the_digest_never_reaches_refuses(monkeypatch):
+    """The refusal that would have caught it. A route is checked for presence on
+    every call; that the route is not merely present but load-bearing is what the
+    perturbation cases above are for."""
+    monkeypatch.setattr(recipes, "KEYED", (*recipes.KEYED, "invented"))
+    monkeypatch.setattr(recipes, "CARRIED", (*recipes.CARRIED, "invented"))
+    with pytest.raises(recipes.RecipeError, match="invented"):
+        recipes.of_decision(decision()).pixels()
+
+
+def test_a_route_naming_something_the_spec_stopped_emitting_refuses(monkeypatch):
+    """The other half: a member whose route was real and is not any more."""
+    monkeypatch.setattr(
+        recipes, "_KEYED_THROUGH", {**recipes._KEYED_THROUGH, "colormap": ("engine.gone",)}
+    )
+    with pytest.raises(recipes.RecipeError, match="engine.gone"):
+        recipes.of_decision(decision()).pixels()
+
+
+def test_the_candidate_geometry_has_one_spelling():
+    """`colorize.RESOLUTION`/`SUPERSAMPLE` and `recipes.CANDIDATE_REGIME` were two
+    independent statements of one fact with nothing holding them equal, which is a
+    silent null: the identity side would go on calling a picture a candidate at a
+    geometry the render side had stopped using. One is read off the other now, and
+    this is the guard that says so rather than re-stating the numbers."""
+    from fractal_wallpapers.curation import colorize
+
+    assert recipes.CANDIDATE_REGIME.resolution == colorize.RESOLUTION
+    assert recipes.CANDIDATE_REGIME.supersample == colorize.SUPERSAMPLE

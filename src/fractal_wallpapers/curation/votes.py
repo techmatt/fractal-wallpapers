@@ -11,14 +11,17 @@ A seat's stored candidate is 640x360, the size the judges read, and it is far to
 small to vote on. So every seat in a kit is **rendered again** at [`FRAME`]
 through [`curation.release`], exactly the way a shipped wallpaper is, and the
 thumbnail is a downscale of *that*. Never of the candidate: the two are different
-pictures, at different sizes, under different autolevel curves, and a grid of
-candidate thumbnails over a fullscreen of fresh renders would be asking people to
-vote on one picture while showing them another.
+pictures at different sizes, and a grid of candidate thumbnails over a fullscreen
+of fresh renders would be asking people to vote on one picture while showing them
+another.
 
-The release path measures its own curve at the frame it is rendering, so a seat
-whose candidate curve was never recorded is not a special case here. Nothing in a
-kit replays a curve, and `curation.depth.levelling_of` is a question about the
-640x360 picture rather than about this one.
+**A kit inherits the candidate's levelling curve and does not measure its own**,
+since 2026-09-08 — [`_borrowed`], and [`curation.stamps`] for where the curve is
+found. This module said the opposite until then, and the opposite is what made a
+kit's picture levelled by a rule nobody judged: the tone of a 2560x1440 PNG is
+not the tone of the 640x360 JPEG the seat was chosen on. `depth.levelling_of` is
+therefore a question about **both** pictures now, and a seat whose candidate
+curve was never recorded is the one case that still decides for itself.
 
 ## The full is lossless first and JPEG second
 
@@ -314,12 +317,17 @@ def plan(
     return stamp, jobs
 
 
-def recipes_for(jobs: list[dict]) -> dict:
-    """`{key: recipe}` for the jobs that still need rendering.
+def rows_for(jobs: list[dict]) -> dict:
+    """`{key: ledger row}` for the jobs that still need rendering.
 
-    [`candidate_ledger.by_key`] and not a read: this wants a few hundred recipes
+    [`candidate_ledger.by_key`] and not a read: this wants a few hundred rows
     out of a store of hundreds of thousands, and reading the whole ledger for them
     would hold every other row in memory for the length of a render leg.
+
+    **The whole row and not just its recipe**, since 2026-09-08. A kit needs two
+    things off the ledger now — the recipe to render and the leg that made it, so
+    [`_borrowed`] can find the levelling curve to inherit — and asking twice is a
+    second stream of a 458 MB store for rows already in hand.
     """
     from fractal_wallpapers.curation import candidate_ledger
 
@@ -331,7 +339,32 @@ def recipes_for(jobs: list[dict]) -> dict:
             f"{len(missing)} seat(s) name a recipe the ledger does not hold -- "
             f"{sorted(missing)[:3]}. A seat cannot be rendered without its recipe."
         )
-    return {key: row["recipe"] for key, row in rows.items()}
+    return rows
+
+
+def recipes_for(jobs: list[dict]) -> dict:
+    """`{key: recipe}` — [`rows_for`] with everything but the recipe dropped."""
+    return {key: row["recipe"] for key, row in rows_for(jobs).items()}
+
+
+def _borrowed(rows: dict, log=print) -> dict:
+    """`{key: borrowed}` — the levelling each seat in a kit inherits.
+
+    A kit is a release at another size, so it inherits for the same reason a
+    release does. This module's own docstring said the opposite until 2026-09-08
+    — "nothing in a kit replays a curve" — and that sentence is what made
+    `depth.levelling_of` a question about the candidate and never about the kit's
+    picture. It is a question about both now, and a seat the store has no curve
+    for is simply absent from this.
+    """
+    from fractal_wallpapers.curation import backfill, recipes
+    from fractal_wallpapers.curation import stamps as stamps_module
+
+    out = stamps_module.for_release(
+        rows, backfill.read(), regime=recipes.CANDIDATE_REGIME.spelled, store="sequence"
+    )
+    log(f"[votes] {len(out)}/{len(rows)} seat(s) inherit a levelling curve")
+    return out
 
 
 def render_fulls(jobs, staging: Path, regime, workers: int, arrived, log=print) -> dict:
@@ -347,8 +380,10 @@ def render_fulls(jobs, staging: Path, regime, workers: int, arrived, log=print) 
     goes instead of at the end is that a thousand of these PNGs is ten gigabytes.
     """
     staging.mkdir(parents=True, exist_ok=True)
-    recipes = recipes_for(jobs)
+    rows = rows_for(jobs)
+    recipes = {key: row["recipe"] for key, row in rows.items()}
     by_key = {job["key"]: job for job in jobs}
+    borrowed = _borrowed(rows, log)
     tasks, standing = [], []
     for job in jobs:
         recipe = recipes[job["key"]]
@@ -369,6 +404,7 @@ def render_fulls(jobs, staging: Path, regime, workers: int, arrived, log=print) 
                 mode_params=dict(recipe.get("mode_params") or {}),
                 output=str(picture),
                 geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
+                autolevel=borrowed.get(job["key"]),
             )
         )
     for job in standing:
@@ -1197,6 +1233,7 @@ __all__ = [
     "plan",
     "read_me",
     "recipes_for",
+    "rows_for",
     "render_fulls",
     "seat_name",
     "seat_supersample",

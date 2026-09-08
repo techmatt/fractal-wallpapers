@@ -1613,6 +1613,23 @@ way out of this, which is why the website ships the stored file and never a re-d
 (`builder/checks.py`'s `seats`). The reader is `depth.levelling_of`, three-way, off
 `sequence.jsonl`'s whole stamp.
 
+**Two causes, and only one of them is history.** Every candidate rendered before
+2026-09-02 predates the whole stamp. But **a mine leg still records none**: `mine.make`
+returns the stamp, the leg counts `autolevel_acted` off it and drops it, and only the
+reduced stamp survives on the ledger row — so a mine-sourced candidate that acted is
+`acted_unrecoverable` the day it is made. Surveyed over `20260908T144844Z` on 2026-09-08:
+of its 1,000 seats **639 already carry a whole stamp** on some leg's `sequence.jsonl`, **84
+take no operator at all** (the direct-trap family), and **277 have no curve on any record**
+— of which only **82** still have the `.leveled/` colormap they shipped through.
+
+`curate autolevel survey` is that reading and `curate autolevel backfill` re-derives the
+277, into `artifacts/curation/autolevel_backfill.jsonl` keyed by recipe key and overlaid at
+read time the way `score_amendments.jsonl` is. **A backfilled curve is a re-derivation and
+not a recovery** — the original base render is gone — so every row says so under
+`provenance.curve` and carries its own verdict against the ramp that shipped where one
+survives. The sidecar is in the ignored store, so a clone does not have it and the website
+still ships the stored picture.
+
 **The page is one file and it opens over `file://`.** The rows are embedded as JSON
 rather than fetched — a `fetch` of a sibling file is refused there — the styling is
 inline, and the only external references are relative paths to the pool's own 640x360
@@ -1736,10 +1753,19 @@ sort by.
 **Every seat is rendered again and the thumbnail comes off that render.** The stored
 candidate is 640x360, the size the judges read, and it is far too small to vote on;
 a grid of candidate thumbnails over a fullscreen of fresh renders would be showing people
-one picture and asking about another. The two are different sizes under different
-autolevel curves, because the release path measures its own curve at the frame it is
-rendering. Nothing in a kit replays a candidate curve, so `depth.levelling_of`'s
-three-way answer is a question about the 640x360 picture and never about this one.
+one picture and asking about another.
+
+**The kit's render inherits the candidate's autolevel curve and does not measure its own**,
+from 2026-09-08. It said the opposite until then — "the release path measures its own curve
+at the frame it is rendering", so the two pictures stood under two different curves and
+`depth.levelling_of` was a question about the 640x360 picture and never about the kit's.
+That is what made the kit a picture nobody had judged: the tone of a 2560x1440 PNG is not
+the tone of the JPEG the seat was chosen on, and `coloring/README.md` measures the encoder
+alone moving the derived stop list on 17 of 24 candidates. The decision is now taken once,
+at candidate geometry, and replayed upward through `coloring.autolevel.maybe_level`'s
+`borrowed` — see *A third of a gallery's seats cannot be re-derived* below for the seats
+that have no decision on file to inherit, which are the one case that still decides for
+itself.
 
 **Twelve seats of `20260904T233233Z` were being rendered as the wrong picture, and it was
 not this module's bug.** `release.Task` had no `mode_params`, so every release-size render
