@@ -178,16 +178,16 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **123.99 s over the 4,008
-it holds, 128 deselected**, and the **slow** lane **7:05 over 4,136, all green and
-zero skipped** — both on this machine, 2026-09-08, on an idle box with a
-`.[dev,models]` install and a release engine built, both taken after a render leg
-rather than beside one. **The two agree**: 4,008 + 128 is 4,136, which is the
-counting rule [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)
-settles, and it is the first pair in a while taken close enough together to state
-as one reading rather than as an expectation. A next slow lane should read the
-fast lane's own collected total, and a figure other than that is worth reading
-rather than assuming.
+Both are measured, not estimated. The **fast** lane is **127.93 s over the 4,016
+it holds, 128 deselected**, on this machine, 2026-09-08, on an idle box with a
+`.[dev,models]` install and a release engine built, taken after a merge and a
+score-pool leg rather than beside one. The **slow** lane's last reading is **7:05
+over 4,136, all green and zero skipped**, taken on the same install a few prompts
+earlier, which the counting rule
+[`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles: eight
+tests have landed since it, all of them `label-migration merge`'s and all fast, so
+the next slow lane should read **4,144**, which is the fast lane's own collected
+total, and a figure other than that is worth reading rather than assuming.
 
 **The long-standing red is closed and there is no expected failure any more**: a
 lane with any red in it is a lane to read. `test_leveled_identity.py`'s census

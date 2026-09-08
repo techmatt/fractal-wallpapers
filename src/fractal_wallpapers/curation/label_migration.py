@@ -59,6 +59,7 @@ render   one picture per derived key, levelled, with its curve written beside it
 score    the shipped render judge and the fine head, both at candidate geometry
 readout  the distributions, the bars, the places, what the path can express, the prune
 page     one row per label-4 verdict: what was judged, beside what a candidate is
+merge    the scored rows the pool does not already hold, through THE door
 ```
 
 Each writes one file and reads the ones before it, so a killed stage costs itself
@@ -94,6 +95,7 @@ RENDERS_NAME = "renders.jsonl"
 SCORES_NAME = "scores.jsonl"
 READOUT_NAME = "readout.json"
 PAGE_NAME = "index.html"
+MERGE_NAME = "merge.json"
 
 #: Where the candidate-geometry pictures go, and — beside each one, under
 #: `<key>.leveled/` — the levelled colormap the operator rendered it through.
@@ -142,6 +144,20 @@ RENDER_CHUNK = 24
 #: population.
 KEPT_CLASSES: tuple[int, ...] = (3, 4)
 
+#: The subtree under `artifacts/curation` this leg's **merged** pictures live in,
+#: and it is named in [`candidate_ledger.POOL_SUBTREES`] as well. A staged picture
+#: lives in the store under `scratch/` and cannot merge from there: the orphan
+#: sweep enumerates `<subtree>/<leg>/pictures` and no other shape, so a picture
+#: anywhere else is a picture with a ledger row that nothing in the project can
+#: ever find again. Adding a name to that tuple is half of shipping a leg, and
+#: this is the other half.
+#:
+#: The pictures are **moved** and not copied. Both trees are on the same volume,
+#: so the move is a rename; a copy would be a gibibyte of the same JPEGs twice, and
+#: [`page`] already keeps its own reduced copies under [`PAGE_PICTURES`], so the
+#: page survives the move with nothing repointed.
+POOL_SUBTREE = "label_migration"
+
 
 class MigrationError(RuntimeError):
     """A stage that cannot run, or a store that cannot be read."""
@@ -158,6 +174,25 @@ def store_root(store: str | Path | None = None) -> Path:
 
 def _path(store, name: str) -> Path:
     return store_root(store) / name
+
+
+def leg_of(store: str | Path | None = None) -> str:
+    """What the pool calls this store's contribution: the store directory's own name.
+
+    One name for the two halves, so a reader who has the staged store can find its
+    pictures in the pool and a reader who has a ledger row's `provenance.run` can
+    find the store it came from. That is the whole reason it is derived rather than
+    a flag: a leg name a caller chose is a leg name nothing joins back.
+    """
+    return store_root(store).name
+
+
+def merged_pictures_dir(store: str | Path | None = None) -> Path:
+    """Where this store's merged pictures live in the pool, under [`POOL_SUBTREE`]."""
+    from fractal_wallpapers.curation import candidate_ledger
+    from fractal_wallpapers.paths import under
+
+    return under("curation", POOL_SUBTREE, leg_of(store)) / candidate_ledger.PICTURES_NAME
 
 
 def in_population(row: dict, classes=KEPT_CLASSES) -> bool:
@@ -903,8 +938,10 @@ def readout(store=None, stamp: str | None = None, classes=KEPT_CLASSES, log=prin
     against their mode's render-judge bar and against the fine bar; then where
     those stand against a recorded gallery; then [`expressibility`] — which judged
     recipes the candidate path could produce at all, cross-tabbed and explained,
-    with the seated gallery as its control; then what a merge would cost at the
-    prune. Nothing is merged and nothing is written into a store.
+    with the seated gallery as its control; then [`fine_by_expressibility`], which
+    is that line laid over `p_fine`; then what a merge would cost at the prune,
+    priced over the whole scored population and over the label-4 rows apart.
+    Nothing is merged and nothing is written into a store.
     """
     from fractal_wallpapers.curation import (
         candidate_ledger,
@@ -1006,7 +1043,19 @@ def readout(store=None, stamp: str | None = None, classes=KEPT_CLASSES, log=prin
         "row can only DISPLACE at, never add to",
     }
 
-    prune = _price_the_prune(fours, derived, scored, staged, ledger_rows, ledger_scores, log=log)
+    # The WHOLE scored population first, because that is what a merge submits. The
+    # label-4 pricing is kept beside it and priced second off the same cache: it is
+    # a subset, so every picture it reads has already been read.
+    flat_cache: dict = {}
+    priced = sorted(key for key in derived if key in scored)
+    prune = _price_the_prune(
+        priced, derived, scored, staged, ledger_rows, ledger_scores, flat_cache, log=log
+    )
+    prune["priced_over"] = "every scored row of the population — what a merge submits"
+    prune_fours = _price_the_prune(
+        sorted(fours), derived, scored, staged, ledger_rows, ledger_scores, flat_cache, log=log
+    )
+    prune_fours["priced_over"] = "the label-4 rows alone, which is a SUBSET of the merge"
     identity = _byte_identity(derived, staged, ledger_rows, log=log)
     reach = expressibility(every, log=log)
     reach["the_seated_gallery"] = seat_expressibility(
@@ -1046,7 +1095,9 @@ def readout(store=None, stamp: str | None = None, classes=KEPT_CLASSES, log=prin
         "places": places,
         "byte_identity": identity,
         "expressibility": reach,
+        "fine_by_expressibility": fine_by_expressibility(derived, scored, log=log),
         "prune": prune,
+        "prune_label_4": prune_fours,
         "seconds": round(time.time() - began, 1),
     }
     _write_json(_path(store, READOUT_NAME), record)
@@ -1057,6 +1108,55 @@ def readout(store=None, stamp: str | None = None, classes=KEPT_CLASSES, log=prin
         f"does not"
     )
     return record
+
+
+def fine_by_expressibility(derived: dict, scored: dict, log=print) -> dict:
+    """`p_fine` for the recipes the candidate path can produce against those it cannot.
+
+    The cross-tab the readout was missing, and it needs no render: `expressibility`
+    already says which side of the line every derived recipe falls on, and `score`
+    already read both heads over the population. Split by human class as well,
+    because the question is not "are the inexpressible ones different" but **is the
+    inexpressible half worth chasing** — and only a class the humans called good can
+    answer that. A palette knob the roster could grow to take is worth growing
+    toward if the pictures behind it score; if they score like the rest, the whole
+    inexpressible half is a curiosity rather than a supply gap.
+
+    Over the **population** and not the whole derivation, because a score is what
+    this reads and only the population has one.
+    """
+    seats: dict = {}
+    for key, row in derived.items():
+        reading = scored.get(key)
+        if reading is None:
+            continue
+        side = "expressible" if row["plain_candidate_recipe"] else "not_expressible"
+        for label in row["labels"]:
+            name = f"{label['head']}/{label['score']}"
+            seats.setdefault(name, {}).setdefault(side, []).append(float(reading["fine"]["p_ge4"]))
+    out: dict = {}
+    for name in sorted(seats):
+        out[name] = {
+            side: {"n": len(values), **_quantiles(values)}
+            for side, values in sorted(seats[name].items())
+        }
+    both = {"expressible": [], "not_expressible": []}
+    for held in seats.values():
+        for side, values in held.items():
+            both[side].extend(values)
+    out["all_classes"] = {
+        side: {"n": len(values), **_quantiles(values)} for side, values in sorted(both.items())
+    }
+    log(
+        f"[fine-by-reach] {len(both['expressible']):,} expressible against "
+        f"{len(both['not_expressible']):,} not, over {len(scored):,} scored row(s)"
+    )
+    out["is"] = (
+        "p_fine(>=4) at candidate geometry, split by whether the candidate path can "
+        "produce the recipe at all — `expressibility`'s own line. A verdict is counted "
+        "under its own class, so a recipe carrying two verdicts is in two rows"
+    )
+    return out
 
 
 #: What a recipe is outside the candidate path **for**. A recipe can be outside on
@@ -1245,8 +1345,27 @@ def _quantiles(values: list) -> dict:
     }
 
 
-def _price_the_prune(fours, derived, scored, staged, ledger_rows, ledger_scores, log=print) -> dict:
-    """What [`retention.decide`] would do to the staged label-4 rows on arrival.
+def _price_the_prune(
+    arriving_keys,
+    derived,
+    scored,
+    staged,
+    ledger_rows,
+    ledger_scores,
+    flat_cache: dict | None = None,
+    log=print,
+) -> dict:
+    """What [`retention.decide`] would do to a set of staged rows on arrival.
+
+    Takes the population it prices rather than assuming one. It was the label-4
+    rows alone, which priced the wrong thing: a merge submits every **scored** row,
+    and the pairs those extra rows land in are pairs the label-4 pricing never
+    reached at all — so the figure it gave was a floor under the real one and read
+    like the whole of it. Both are recorded now, the whole population first.
+
+    `flat_cache` is `{key: flat fraction}` shared across calls, because the staged
+    side of this reads a **picture** per row and two pricings over nested
+    populations would read the smaller one's pictures twice.
 
     Restricted to the `(location, mode+settings)` pairs those rows land in,
     because the decision is per pair and no pair they do not reach can move. The
@@ -1274,7 +1393,7 @@ def _price_the_prune(fours, derived, scored, staged, ledger_rows, ledger_scores,
                 },
             }
         )
-        for key in fours
+        for key in arriving_keys
     }
     pairs = set(incoming.values())
     held = []
@@ -1322,8 +1441,10 @@ def _price_the_prune(fours, derived, scored, staged, ledger_rows, ledger_scores,
             )
         )
 
+    if flat_cache is None:
+        flat_cache = {}
     arriving, staged_gaps = [], {"no_picture": 0, "no_flatness": 0}
-    for key in fours:
+    for key in arriving_keys:
         row, reading = derived[key], scored[key]
         arriving.append(
             {
@@ -1336,7 +1457,9 @@ def _price_the_prune(fours, derived, scored, staged, ledger_rows, ledger_scores,
         if not picture or not Path(picture).is_file():
             staged_gaps["no_picture"] += 1
             continue
-        held_flat = flatness.fraction(Path(picture))
+        if key not in flat_cache:
+            flat_cache[key] = flatness.fraction(Path(picture))
+        held_flat = flat_cache[key]
         if held_flat is None:
             staged_gaps["no_flatness"] += 1
             continue
@@ -1640,6 +1763,220 @@ def _card(key, row, label, reading, judged, candidate, fine_score) -> str:
     )
 
 
+# --------------------------------------------------------------------------- #
+# merge.
+# --------------------------------------------------------------------------- #
+def merge(store=None, log=print) -> dict:
+    """This store's scored rows into the pool, through THE door. Writes `merge.json`.
+
+    Every scored row is *offered* and the ones the pool already holds are **not
+    submitted**, which is the same statement twice rather than two rules:
+    [`records.upsert_file`] replaces a stored row outright — it carries a human
+    rejection across and nothing else — so submitting a row at a key the ledger
+    already holds would overwrite that row's picture, its provenance, its `hunt`
+    block, its colour and its engine field with this leg's. That is a rewrite, and
+    a leg whose whole claim is *these are new candidates* has no business making
+    one. The overlap is not small: 2,314 of the 5,329 scored rows of the
+    2026-09-08 store stand at keys the pool already holds, and 2,200 of them are
+    byte-identical to the ledger's own file anyway — see [`_byte_identity`], which
+    is the measurement that makes leaving them out cheap rather than a loss.
+
+    ## What a row needs that the staging store does not carry
+
+    * **A colour block.** [`solve.pool`] reads `colour.cells` and
+      `colour.families`, and the ceiling and every colour rule act on them; a row
+      with none is a row that escapes the cell allowance. Read here, once per
+      merged picture, through [`palettes.dominance.of_picture`] — the same call
+      [`hunt`] makes at render time.
+    * **A home under `artifacts/`.** See [`POOL_SUBTREE`]: the pictures move out of
+      the store before the row that names them is written.
+    * **An engine build.** The staging store records none, so this asks
+      [`candidate_ledger.live_engine`] and stamps it only where the build still
+      reads what the readout recorded for the leg that drew the pictures. A
+      different build now means the field cannot be honest, and
+      [`candidate_ledger.UNKNOWN_ENGINE`] is what the whole backfilled pool
+      already carries.
+
+    `texture_flat` is carried from the staged recipe row, which took it from
+    [`coloring.texture_flat`]'s register rather than from an engine report — the
+    render stage did not keep the report. It is recorded as such on the record: the
+    register's reading is a measurement where it has one and `False` where it does
+    not, and `False` is what every reader concluded before the flag existed.
+    """
+    from fractal_wallpapers.curation import candidate_ledger, hunt
+    from fractal_wallpapers.palettes import dominance
+    from fractal_wallpapers.paths import tracked_name
+
+    began = time.time()
+    derived = {str(row["key"]): row for row in _read_jsonl(_path(store, RECIPES_NAME))}
+    staged = {str(row["key"]): row for row in _read_jsonl(_path(store, RENDERS_NAME))}
+    scored = {str(row["key"]): row for row in _read_jsonl(_path(store, SCORES_NAME))}
+    if not scored:
+        raise MigrationError(
+            f"{tracked_name(_path(store, SCORES_NAME))} holds no row, so nothing here has a "
+            f"score and nothing may merge. Run the score stage first."
+        )
+
+    build, why = _build_for(store)
+    log(f"[merge] the pictures are stamped {build!r}: {why}")
+
+    ledger_keys = {str(row["key"]) for row in candidate_ledger.stream()}
+    artifact = candidate_ledger.live_artifact()
+    regime = recipes_module.CANDIDATE_REGIME.spelled
+    sidecar = {
+        str(row["key"]) for row in candidate_ledger.stream_scores()
+    }  # keyed `<recipe>|<artifact>|<regime>`
+    offered = sorted(scored)
+    standing = [key for key in offered if key in ledger_keys]
+    submitting = [key for key in offered if key not in ledger_keys]
+    log(
+        f"[merge] {len(offered):,} scored row(s) offered; {len(standing):,} stand at a key "
+        f"the pool already holds and are NOT submitted; {len(submitting):,} are new"
+    )
+
+    where = merged_pictures_dir(store)
+    where.mkdir(parents=True, exist_ok=True)
+    rows, scores, moved, absent, no_colour = [], [], 0, [], 0
+    for key in submitting:
+        held = staged.get(key) or {}
+        picture = Path(held.get("picture") or "")
+        landing = where / picture.name
+        if not landing.is_file():
+            if not picture.is_file():
+                absent.append(key)
+                continue
+            picture.replace(landing)
+            moved += 1
+            # The levelled stop list beside it, where the operator acted. It is
+            # part of the record of how the picture was made and a candidate leg
+            # keeps it beside the picture, so it moves with it or it is orphaned.
+            curves = picture.parent / f"{picture.stem}.leveled"
+            if curves.is_dir() and not (where / curves.name).exists():
+                curves.replace(where / curves.name)
+        recipe = recipes_module.of_record(derived[key]["recipe"])
+        try:
+            colour = candidate_ledger.colour_block(dominance.of_picture(landing))
+        except Exception:  # noqa: BLE001 — a picture the reading refuses is a counted fact
+            colour, _ = None, no_colour
+            no_colour += 1
+        source = {
+            "key": key,
+            "run": leg_of(store),
+            "candidate": key,
+            "location": {
+                "key": derived[key]["location"],
+                "partition": derived[key].get("partition"),
+            },
+        }
+        row = candidate_ledger.row(
+            recipe=recipe,
+            key=key,
+            source=source,
+            colour=colour,
+            picture=tracked_name(landing),
+            texture_flat=bool(derived[key].get("texture_flat")),
+            engine=build,
+        )
+        row["hunt"] = candidate_ledger.hunt_block({"seconds": held.get("seconds")})
+        rows.append(row)
+        reading = scored[key]
+        if f"{key}|{artifact}|{regime}" in sidecar:
+            continue
+        scores.append(
+            candidate_ledger.score_row(
+                key=key,
+                artifact=artifact,
+                regime=regime,
+                # The sidecar's `head` is the label store's KIND — `smooth_render`
+                # or `strange_render` — and never a mode. Through [`hunt.kind_of`]
+                # off the recipe's own mode and the staged row's `texture_flat`,
+                # which is the same call every candidate leg's score row is built
+                # with, rather than the routed mode this store also carries.
+                head=hunt.kind_of(str(derived[key]["mode"]), bool(derived[key]["texture_flat"])),
+                read=reading["judge"],
+                source=source,
+            )
+        )
+    log(
+        f"[merge] {len(rows):,} row(s) built, {moved:,} picture(s) moved into "
+        f"{tracked_name(where)}, {len(scores):,} score row(s) the sidecar lacks"
+    )
+    if not rows:
+        raise MigrationError(
+            "every scored row of this store already stands in the pool, so a merge would "
+            "only rewrite rows it does not own. Nothing was written."
+        )
+
+    written = candidate_ledger.merge(rows, scores, log=log)
+    record = {
+        "schema": SCHEMA,
+        "taken_at": _now(),
+        "store": str(store_root(store)),
+        "leg": leg_of(store),
+        "pictures": tracked_name(where),
+        "engine": {"stamped": build, "why": why},
+        "offered": len(offered),
+        "already_in_the_pool": len(standing),
+        "submitted": len(rows),
+        "not_submitted_is": (
+            "a key the pool already holds is left alone: records.upsert_file REPLACES a "
+            "stored row, so submitting one would rewrite a row this leg does not own"
+        ),
+        "pictures_moved": moved,
+        "pictures_absent": absent,
+        "colour_refused": no_colour,
+        "score_rows_written": len(scores),
+        "score_rows_the_sidecar_already_had": len(rows) - len(scores),
+        "texture_flat_from": (
+            "the staged recipe row, which read coloring.texture_flat's register — the "
+            "render stage kept no engine report"
+        ),
+        "ledger": written["ledger"],
+        "scores": written["scores"],
+        "recorded": written["recorded"],
+        "repeat_draws": written["repeat_draws"],
+        "flatness": written["flatness"],
+        "pruned": written["pruned"],
+        "locations_touched": len({str(row["location"]["key"]) for row in rows}),
+        "seconds": round(time.time() - began, 1),
+    }
+    _write_json(_path(store, MERGE_NAME), record)
+    log(
+        f"[merge] merged {len(rows):,} row(s): the ledger holds "
+        f"{written['ledger']['rows']:,} recipes, {written['ledger']['new']:,} of them new"
+    )
+    return record
+
+
+def _build_for(store) -> tuple[str, str]:
+    """Which engine build this store's pictures may honestly be stamped with.
+
+    The staging store records none — the render stage kept no fingerprint — so the
+    only evidence is [`readout`]'s, which ran after the renders and wrote the build
+    live at that moment. A build that still reads the same is the build that drew
+    them; anything else and the field cannot be answered, which is what
+    [`candidate_ledger.UNKNOWN_ENGINE`] is for and what the whole backfilled pool
+    already carries.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
+    live = str(candidate_ledger.live_engine())
+    path = _path(store, READOUT_NAME)
+    if not path.is_file():
+        return candidate_ledger.UNKNOWN_ENGINE, (
+            f"{path.name} is not there, so nothing says which build drew these pictures"
+        )
+    recorded = str(
+        (json.loads(path.read_text(encoding="utf-8")).get("byte_identity") or {}).get("live_engine")
+    )
+    if recorded != live:
+        return candidate_ledger.UNKNOWN_ENGINE, (
+            f"the readout recorded {recorded!r} and the live build is {live!r}, so the build "
+            f"that drew these pictures is no longer the one this box would ask"
+        )
+    return live, f"the readout recorded {recorded!r} and the live build still reads it"
+
+
 __all__ = [
     "DEFAULT_STORE",
     "PAGE_NAME",
@@ -1653,6 +1990,8 @@ __all__ = [
     "SCHEMA",
     "SCORES_NAME",
     "KEPT_CLASSES",
+    "MERGE_NAME",
+    "POOL_SUBTREE",
     "SCORE_BATCH",
     "WORKERS",
     "BOTH",
@@ -1663,7 +2002,11 @@ __all__ = [
     "census",
     "derive",
     "expressibility",
+    "fine_by_expressibility",
     "in_population",
+    "leg_of",
+    "merge",
+    "merged_pictures_dir",
     "page",
     "readout",
     "render",

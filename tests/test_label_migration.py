@@ -406,3 +406,101 @@ def test_the_population_is_a_parameter_and_not_a_constant():
     row = {"labels": [{"score": 2}]}
     assert not label_migration.in_population(row)
     assert label_migration.in_population(row, classes=(1, 2, 3, 4))
+
+
+# --------------------------------------------------------------------------- #
+# merge: the subtree, the leg name, and what is NOT submitted.
+# --------------------------------------------------------------------------- #
+def test_the_merged_pictures_are_reachable_by_the_orphan_sweep():
+    """Not a spelling check. `candidate_ledger.orphans` enumerates `POOL_SUBTREES`
+    and looks at `<subtree>/<leg>/pictures` and no other shape, so a merged picture
+    outside that has a ledger row and nothing in the project able to find it
+    again."""
+    from fractal_wallpapers.curation import candidate_ledger
+
+    assert label_migration.POOL_SUBTREE in candidate_ledger.POOL_SUBTREES
+    where = label_migration.merged_pictures_dir("scratch/label_migration_demo")
+    assert where.name == candidate_ledger.PICTURES_NAME
+    assert where.parent.name == "label_migration_demo"
+    assert where.parent.parent.name == label_migration.POOL_SUBTREE
+
+
+def test_the_leg_name_is_the_stores_own_name():
+    """One name for the two halves: a ledger row's `provenance.run` names the store
+    it came from, and the store's pictures sit under that same name in the pool. A
+    leg name a caller chose would join back to nothing."""
+    assert label_migration.leg_of("scratch/label_migration_0908") == "label_migration_0908"
+    assert label_migration.leg_of(None) == label_migration.DEFAULT_STORE.name
+
+
+def test_a_merge_with_nothing_scored_refuses_by_name(tmp_path):
+    """The score stage's file is what a merge submits, and an empty store is a
+    caller who has not run it — not an empty merge."""
+    (tmp_path / label_migration.RECIPES_NAME).write_text("", encoding="utf-8")
+    (tmp_path / label_migration.RENDERS_NAME).write_text("", encoding="utf-8")
+    (tmp_path / label_migration.SCORES_NAME).write_text("", encoding="utf-8")
+    with pytest.raises(label_migration.MigrationError, match="score stage"):
+        label_migration.merge(tmp_path, log=quiet)
+
+
+def test_the_build_is_unknown_where_nothing_says_which_one_drew_the_pictures(tmp_path):
+    """The staging store keeps no fingerprint, so the readout's is the only evidence.
+    Absent, it is `UNKNOWN_ENGINE` and never the live build — the whole backfilled
+    pool carries that answer honestly and a guess here would not."""
+    from fractal_wallpapers.curation import candidate_ledger
+
+    build, why = label_migration._build_for(tmp_path)
+    assert build == candidate_ledger.UNKNOWN_ENGINE
+    assert label_migration.READOUT_NAME in why
+
+
+def test_a_readout_naming_another_build_does_not_stamp_the_live_one(tmp_path):
+    (tmp_path / label_migration.READOUT_NAME).write_text(
+        json.dumps({"byte_identity": {"live_engine": "not_this_box"}}), encoding="utf-8"
+    )
+    from fractal_wallpapers.curation import candidate_ledger
+
+    build, why = label_migration._build_for(tmp_path)
+    assert build == candidate_ledger.UNKNOWN_ENGINE
+    assert "not_this_box" in why
+
+
+# --------------------------------------------------------------------------- #
+# p_fine by expressibility: the cross-tab the readout was missing.
+# --------------------------------------------------------------------------- #
+def _fine(value: float) -> dict:
+    return {"fine": {"p_ge4": value}, "judge": {"p_ge4": value, "p_ge3": value}}
+
+
+def test_p_fine_is_split_by_class_and_by_whether_the_path_can_produce_the_recipe():
+    derived = {
+        "a": _derived("a", True, "smooth_render", 4),
+        "b": _derived("b", False, "smooth_render", 4),
+        "c": _derived("c", True, "smooth_render", 3),
+    }
+    read = label_migration.fine_by_expressibility(
+        derived, {"a": _fine(0.9), "b": _fine(0.1), "c": _fine(0.5)}, log=quiet
+    )
+    assert read["smooth_render/4"]["expressible"]["n"] == 1
+    assert read["smooth_render/4"]["expressible"]["median"] == pytest.approx(0.9)
+    assert read["smooth_render/4"]["not_expressible"]["median"] == pytest.approx(0.1)
+    assert read["smooth_render/3"]["expressible"]["n"] == 1
+    assert "not_expressible" not in read["smooth_render/3"]
+    assert read["all_classes"]["expressible"]["n"] == 2
+
+
+def test_an_unscored_row_is_left_out_rather_than_counted_at_zero():
+    derived = {"a": _derived("a", True, "smooth_render", 4)}
+    read = label_migration.fine_by_expressibility(derived, {}, log=quiet)
+    assert read["all_classes"]["expressible"]["n"] == 0
+
+
+def test_a_key_carrying_two_verdicts_is_counted_under_each_class():
+    """The crossover pairs are one picture judged in both stores, and a cross-tab
+    that counted such a key once would have to choose a class for it."""
+    row = _derived("a", True, "smooth_render", 4)
+    row["labels"].append({"head": "strange_render", "score": 3})
+    read = label_migration.fine_by_expressibility({"a": row}, {"a": _fine(0.7)}, log=quiet)
+    assert read["smooth_render/4"]["expressible"]["n"] == 1
+    assert read["strange_render/3"]["expressible"]["n"] == 1
+    assert read["all_classes"]["expressible"]["n"] == 2

@@ -622,6 +622,43 @@ count survives the drop that made it. Over the store on 2026-08-29 it reads
 least this, and an exact figure needs the index this rule exists to not keep. If
 the number turns out embarrassing, that is when something gets built.
 
+### An upsert REPLACES, so a leg that offers a key the pool holds must not submit it
+
+`records.upsert_file` carries a stored row's human `rejected` verdict across and
+**nothing else**: everything else on the row — the picture, the provenance, the
+`hunt` block, the colour, the engine field — is the incoming row's. That is right
+for a leg re-merging its own partial and wrong for a leg whose rows *overlap*
+somebody else's, which is a shape that arrived with
+`curate label-migration merge`: the recipes it derives from the label stores are
+candidate-geometry keys and **2,314 of its 5,329 scored rows stood at keys the pool
+already held**. Submitting those would have rewritten 2,314 rows this leg does not
+own, so the stage offers every scored row and submits only the keys the ledger
+lacks, reporting both counts. It costs nothing to leave them: the byte-identity
+sweep in the same store found 2,200 of the 2,314 staged pictures identical to the
+ledger's own file.
+
+**Where that leg's pictures live, and why it is not `scratch/`.** A staging store
+is under `scratch/label_migration_<stamp>`, and `store.POOL_SUBTREES` bounds the
+orphan sweep to `<subtree>/<leg>/pictures` and no other shape — so the merge stage
+**moves** the pictures it submits to
+`artifacts/curation/label_migration/<store name>/pictures` (a rename, same volume)
+and `label_migration` is a member of that tuple. The leg name is the store
+directory's own name, so `provenance.run` on a ledger row names the store it came
+from and the store's name locates its pictures in the pool.
+
+**`gallery-grade score-pool` has to run after any merge**, before a solve on the
+cascade key: `pool_scores.jsonl` is written whole in one pass and merged rows carry
+no `p_fine` until it is rewritten, which makes them unseatable rather than merely
+unranked. Measured 2026-09-08: 41,407 above-bar pictures in **362.5 s**.
+
+**And `retention.decide` prices the rank alone, so it over-predicts a merge's
+losses.** The same leg priced **241 of 5,329 rows pruned on arrival** and the door's
+prune dropped **3** — none of them arrivals. The five protections are the gap, and
+one of them catches this shape by construction: `a_label_row_joins_to_it` saved 252
+rows, and every row of a label-migration merge has a label row joining to it by
+definition. A pricing off `decide` is a floor on what survives, not an estimate of
+what is lost.
+
 ### A merge is not atomic across the prune, and a held file breaks it halfway
 
 `candidate_ledger.prune` deletes the doomed **pictures first and replaces its three
@@ -968,6 +1005,38 @@ applies — but the operator's `measure` stage is Python over a decoded JPEG, an
 this geometry it is enough of the clock to hold the concurrency under two. More
 than three threads is still the desktop-usability rule and is not the lever; fewer
 places and more maps at each is.
+
+### `mine.make` drops `mode_params`, so every varied candidate in the pool is the bare mode's picture
+
+**Live, not history, and it is one missing keyword.** `hunt.Maker.make` passes
+`mode_params=dict(plan.mode_params or {})` into `colorize.render`; `mine.make` — the
+call every `curate mine` and every `curate depth` leg actually renders through —
+does not, so the parameter defaults to `{}`. A leg that names
+`direct_trap_multiply@opacity=0.6,threshold=0.2` on its roster therefore *records*
+the variant on its row, takes the variant's own recipe key (`mode_params` is in
+`recipes.KEYED` and reaches the digest through `engine.coloring`, so the key is not
+the problem), and **renders the bare mode**. `mine.make`'s own docstring claims it
+is `hunt.Maker.make` "with the single `seconds` split eight ways and nothing else
+altered … at the same recipe", which is what kept this invisible.
+
+Measured 2026-09-08 over the pool: **10,664 rows carry a non-empty `mode_params`,
+across thirteen legs, and every leg sampled has its stored picture reproduce
+byte-for-byte as the bare-mode render.** Four probed rows a leg, own-params render
+against bare-mode render against the stored file: bare matched 4/4 in every leg.
+`dtm_lc_smoke`'s pictures are dated 2026-09-07, five days after the roster feature
+landed, so this is not the pre-`52d6d80` era being rediscovered.
+
+`direct_trap_multiply` is the only mode that has ever carried settings, so the
+damage is bounded to it — and it is not only the pictures: each row's judge score
+is a reading of the bare picture under the variant's key, so the whole
+`dtm_variants` programme compared a mode with itself. The clean proof came from the
+other direction, in `curation.label_migration`'s byte-identity sweep: 123 of 123
+varied-dtm rows whose staged redraw differed from the ledger's file have a
+**bare-mode** redraw that is byte-identical to it.
+
+**Not fixed here** — `MERGE_ckpt116_label_rows_and_resolve_0908` was asked to
+diagnose and not to repair. What a fix costs is the keyword plus a re-render of
+those rows, and a re-score, because the standing readings are about other pictures.
 
 ## `curate retention` — what survives what the rule drops
 
