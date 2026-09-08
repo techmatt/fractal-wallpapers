@@ -169,16 +169,26 @@ written, and this suite has now been bitten by that twice.
   Those tests would have failed on a fresh clone, where neither file exists; they
   write both empty now and are hermetic for the first time.
 
-**One accessor still has to be patched, and it is the tracked half.**
+**Two accessors still have to be patched, and both are the tracked half.**
 `candidate_ledger.store.manifest_dir()` resolves off `repo_root()`, not off a
 tier, and there is no root to set because `repo_root` is imported *by value* into
-three dozen modules. That is the one path a fixture can miss while looking
-complete — so `conftest` hashes every git-tracked `*manifest.json` at session
-start, re-hashes at session finish, and fails the run naming any that moved
-(`pytest_sessionfinish`). 20 files, 104 KB; the cost does not show up against a
-three-minute lane. `signatures.sidecar_path` is patched in those fixtures for an
-unrelated reason: to undo the autouse `no_signature_sidecar`, which the roots
-cannot reach because the function has already been replaced.
+three dozen modules. `candidate_ledger.ratchet.log_path()` joined it on 2026-09-07
+for the same reason and with a wider blast radius: `prune` writes it at the end of
+every merge, so *any* test that prunes would otherwise append a three-row store's
+census to a guard's high-water mark. Its redirect is **autouse**
+(`conftest.no_tracked_ratchet`) rather than per fixture, because the hazard belongs
+to `prune` and not to whichever tests happen to call it today; the two guards that
+mean to read the tracked log take the session-scoped `tracked_ratchet_log` fixture
+and pass the path in, which is one binding rather than an un-patch.
+
+Under both sits the same backstop: `conftest` hashes every git-tracked
+`*manifest.json` — discovered, so a durable added tomorrow is covered — plus the
+names in `HELD_STILL`, at session start, re-hashes at session finish, and fails the
+run naming any that moved (`pytest_sessionfinish`). 20 files, 104 KB; the cost does
+not show up against a three-minute lane. `signatures.sidecar_path` is patched in
+those fixtures for an unrelated reason: to undo the autouse
+`no_signature_sidecar`, which the roots cannot reach because the function has
+already been replaced.
 
 ## Where the time goes
 
@@ -349,6 +359,31 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+23 that reconciles exactly, and the long-standing red is closed rather than
+retaken.** `FIX_ckpt114_named_picture_ratchet_0907`, 2026-09-07, idle box,
+`.[dev,models]` with a release engine. **122.01 s over 3,909, 124 deselected**
+fast — 4,033 against the 4,010 below. The +23 is all arithmetic: **18** in a new
+`test_ratchet.py`, **3** prune-facing guards in `test_candidate_ledger.py`, **1**
+fast provenance guard in `test_leveled_identity.py` reading the seeded mark
+against that file's own `READING`, and **1** `LINES` case in `test_nested_verbs.py`
+for the new `curate candidate-ledger ratchet`. 122.01 against 118.32–121.89 across
+the three readings below is nothing, on a lane that has run 130.15 on a disturbed
+disk. Slow **7:06 over 4,033, 0 skipped and 0 red** — the arithmetic's own
+prediction to the test, taken after the last edit on an idle box, and **the first
+all-green slow lane since the floor below went red**. 7:06 against the 7:38 below
+is a lane 28 tests larger running half a minute faster, which is the spread this
+lane shows between idle readings rather than anything the diff did.
+
+**The red below is gone and the fix was not a retake.** The floor had drifted
+another 6 to **13,504** by the time this prompt ran, which is the argument in one
+number: a retaken constant goes stale inside a week, because *the store only grows*
+is not true of a store `prune` deletes from on purpose. The census is held by a
+**ratchet** now — count now, plus deletions recorded since the high-water mark,
+reaches the mark, per counter — and the 22 rows already gone were entered once as
+an explicit reconciliation with the mark left at 13,526. It reconciles at exactly
+zero headroom, which is what an honest close looks like: no slack invented to make
+it comfortable. The full entry is on the red below.
+
 **+4 in one prompt, and the clock did not move.**
 `FIX_ckpt113_cascade_records_and_pool_reads_0907`, 2026-09-07, idle box,
 `.[dev,models]` with a release engine. **120.37 s over 3,886, 124 deselected**
@@ -408,6 +443,22 @@ a **reading to retake, not a guard to weaken** — the row total is over its own
 floor, so the store did grow; a shape it once had shrank. Left red and named here
 rather than repointed, because repointing a census constant to make a lane green
 is the one move that would make the guard worthless.
+
+**CLOSED 2026-09-07 by `FIX_ckpt114_named_picture_ratchet_0907`, and not by a
+retake.** Two more merges took it to **13,504**, which is the tell: a retaken
+constant would have gone stale again the same week, because the thing being
+asserted — *the store only grows* — is not true of this store and no number makes
+it true. The floor is a **ratchet** now
+([`candidate_ledger.ratchet`](../src/fractal_wallpapers/curation/candidate_ledger/ratchet.py)):
+the count now, plus every deletion a transaction wrote down since the high-water
+mark, must still reach that mark, per counter. `prune` advances the mark and
+records its drops at the end of its own transaction, which it can do because it is
+the **only** writer that removes a row — `store.write` is an upsert and the orphan
+sweep takes pictures. The 22 rows already gone were entered once, by hand, as an
+explicit reconciliation naming them unrecorded displacement-mining loss of the
+ckpt 113–114 era; the mark stayed at 13,526 rather than being re-based to 13,504,
+so the store now reconciles at exactly zero headroom on that counter (13,504 + 22)
+and the history of the loss is a committed line rather than a changed constant.
 
 **-17 that reconciles exactly, and the 8 s of the entry below came back.**
 `FIX_ckpt113_legs_k_rot_and_retirements_0906`, 2026-09-07, idle box,

@@ -5,6 +5,12 @@ bounded by, acting on rows and taking their pictures with them; [`orphans`] is
 the backstop under it, acting on pictures no row names at all. [`delete_pictures`]
 is the single verb both go through, and the only place this project unlinks a
 candidate.
+
+**Only one of the two writes to [`ratchet`], and the asymmetry is the point.** The
+ratchet is a guard over the *rows*, so a prune records what it took and the orphan
+sweep records nothing: it deletes pictures a row never named, and no count the
+ratchet holds can move under it. A sweep that recorded its pictures there would be
+handing the census a licence to lose rows it never lost.
 """
 
 from __future__ import annotations
@@ -16,8 +22,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.curation.candidate_ledger import ratchet, store
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
-from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import (
     ALL_UNMERGED,
     PICTURES_NAME,
@@ -394,6 +400,14 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     would be a store of rows nothing joins to, and the half-written state is the
     one state this must not be able to leave behind.
 
+    ## And it is the only thing that has to write down what it took
+
+    `store.write` is an upsert, so this is where every row that ever leaves the
+    ledger leaves it. [`_record_the_ratchet`] therefore runs at the end of the
+    transaction, raising [`ratchet`]'s high-water mark to the store's peak and
+    recording this prune's drops against it — which is what lets a census assert
+    that the store only shrinks for reasons somebody wrote down.
+
     `apply=False` reads and decides and touches nothing, which is what
     `fractal-wallpapers curate candidate-ledger prune --dry-run` is.
     """
@@ -493,8 +507,41 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
         log(f"[prune] {name}: {held['rows']:,} rows, {held['bytes']:,} bytes")
 
     record["files"] = written
+    record["ratchet"] = _record_the_ratchet(meta, keys, log=log)
     record["seconds"] = round(time.time() - started, 1)
     return record
+
+
+def _record_the_ratchet(meta: list, keys: set, log=print) -> dict:
+    """Advance the high-water mark, then write down what this prune took.
+
+    **After the transaction and never before**, because a mark is a claim about a
+    store that exists: a prune that raised the mark and then failed to rename its
+    three files would leave the ratchet remembering a size the store never kept,
+    and every census after it would read short against a loss nothing could
+    account for. The order inside is the other way round — the mark first, then
+    the deletion — because the counts `meta` holds are the store at its **peak**,
+    after this leg's own rows landed and before the rule took any of them back.
+
+    This is the only recording site because [`_prune_file`] is the only writer
+    that drops a row: `store.write` is an upsert and the orphan sweep takes
+    pictures alone. See [`ratchet`].
+    """
+    before = ratchet.counts_of((held["key"], held["picture"]) for held in meta)
+    dropped = ratchet.counts_of(
+        (held["key"], held["picture"]) for held in meta if held["key"] not in keys
+    )
+    marked = ratchet.advance(before, why="prune")
+    lost = ratchet.record_loss(dropped, why="prune")
+    if marked:
+        log(f"[prune] the ratchet's mark advanced: {marked['counts']}")
+    if lost:
+        log(f"[prune] recorded as taken by the rule: {lost['counts']}")
+    return {
+        "log": tracked_name(ratchet.log_path()),
+        "marked": marked["counts"] if marked else None,
+        "recorded_as_lost": lost["counts"] if lost else None,
+    }
 
 
 def _flatness_path() -> Path:

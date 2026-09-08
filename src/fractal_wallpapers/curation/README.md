@@ -33,6 +33,7 @@ draw_weights  what a partition is worth in a breadth draw, in one table
 candidate_ledger/ every recipe ever rendered, one row each, with its colour
   store      the two files, the tiers, the manifests, and reading rows out of them
   rows       one row and the blocks it carries, as shape with no store behind it
+  ratchet    the high-water mark, and the deletions that account for a smaller store
   rerender   putting back a picture the row names, and reading a score onto it
   sweep      the retention rule, the orphan backstop, and the one delete verb
   door       THE door: `merge` — upsert, record, prune, and every leg comes through it
@@ -216,6 +217,8 @@ fractal-wallpapers curate candidate-ledger prune --dry-run   # THE dry run. Touc
 fractal-wallpapers curate candidate-ledger free-slots --mode smooth --min-slots 2 \
     --out scratch/near_places.jsonl                   # where a leg has ROOM, and the manifest
 fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture that is not there
+fractal-wallpapers curate candidate-ledger ratchet    # the high-water mark and what took rows off it
+fractal-wallpapers curate candidate-ledger ratchet --census   # ...counted against the live store, ~15 s
 fractal-wallpapers curate candidate-ledger re-render  # ...and put them back. ~1.5 pictures/s
 fractal-wallpapers curate candidate-ledger score      # every picture through the judge shipped NOW
 fractal-wallpapers curate candidate-ledger save       # the live files, their manifests
@@ -417,6 +420,25 @@ names, which no reader can find and no run can free. A crash after the deletes
 leaves rows naming absent pictures, which `curate candidate-ledger pictures`
 reports, `solve.pool` refuses, and a second `prune` repairs — the ranking is a
 deterministic function of the rows.
+
+#### A prune writes down what it took, and that is what lets a census assert anything
+
+Because the store deletes on purpose, no count over it can be pinned as a floor:
+*the store only grows* stops being true the first time a leg merges, and the
+census that asserted it went red and stayed red through 2026-09-07 with no repair
+available except repointing the constant, which asserts nothing. So `prune` ends
+its transaction by advancing a **high-water mark** and recording its own drops
+against it, in `data/curation/candidate_ledger/ratchet.jsonl`
+([`candidate_ledger.ratchet`](candidate_ledger/ratchet.py)), and the census asserts
+a **ratchet** instead: the count now, plus every deletion recorded since the mark,
+still reaches the mark. Loss is forgiven exactly when something accounted for it.
+
+**This is the only recording site because it is the only deletion site.**
+`store.write` is an upsert and removes nothing; `orphans` unlinks pictures no row
+names and takes no row, so it deliberately writes nothing here — a sweep that
+recorded its pictures in a guard over rows would be handing the census a licence
+to lose rows it never lost. The mark is read **after** the three files are renamed
+and is the store at its *peak*, before the rule took anything back.
 
 #### The prune ranks on `rank_key` and a gallery seats on the cascade, and below the bar those are one order
 

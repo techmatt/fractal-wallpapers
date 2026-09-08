@@ -17,6 +17,7 @@ the picture is still there, and which pass paid for it.
 ```
 store      the two files, the tiers, the manifests, and reading rows out of them
 rows       one row and the blocks it carries, as shape with no store behind it
+ratchet    the high-water mark, and the deletions that account for a smaller store
 rerender   putting back a picture the row names, and reading a score onto it
 sweep      the retention rule, the orphan backstop, and the one delete verb
 door       THE door: `merge` — upsert, record, prune, and every leg comes through it
@@ -33,9 +34,11 @@ anything imported it. `door`, `rebuild` and `inventory` are what those modules
 do; `merge`, `backfill` and `census` remain what the functions are called and what
 `fractal-wallpapers curate candidate-ledger …` still spells.
 
-`store` and `rows` import nothing above them — no judge, no palette, no label
-store, no leg — which is the whole point of the split: a reader that only needs
-to know what is in the pool pays for none of the machinery that fills it.
+`store`, `rows` and `ratchet` import nothing above them — no judge, no palette, no
+label store, no leg — which is the whole point of the split: a reader that only
+needs to know what is in the pool pays for none of the machinery that fills it.
+`ratchet` goes further and imports nothing of this package either, so the census
+that reads it does not drag the store in to ask what the mark is.
 
 **Within the package, a sibling's *functions* are reached through its module
 (`store.read()`) and its constants are imported by name.** The first half is not
@@ -65,7 +68,14 @@ import importlib
 #: Order settles a tie between two modules holding the same name, and every tie
 #: there is is a shared import of one object (`SCHEMA` in `rows` is `store`'s),
 #: so it decides nothing. `store` leads because it owns the most.
-_MODULES = ("store", "rows", "rerender", "sweep", "door", "rebuild", "inventory")
+#:
+#: **That property is maintained rather than observed**, and `ratchet` is what
+#: made the difference visible: its log carries a schema and is read row by row,
+#: so the obvious names for those were `SCHEMA` and `read` — two ties that would
+#: have been *different objects* wearing one name, resolved silently by this
+#: tuple's order. They are `LOG_SCHEMA` and `entries` for that reason and no
+#: other. A tie here has to be one object or it is a bug waiting on a reordering.
+_MODULES = ("store", "rows", "ratchet", "rerender", "sweep", "door", "rebuild", "inventory")
 
 
 def _held(module: str):
@@ -112,6 +122,22 @@ __all__ = [
     "UNIT",
     "ENGINE_FIELD",
     "UNKNOWN_ENGINE",
+    "LOG_SCHEMA",
+    "LOG_NAME",
+    "COUNTERS",
+    "COUNTER_OF",
+    "RECIPE_KEY",
+    "RUN_INDEX",
+    "MARK",
+    "DELETED",
+    "advance",
+    "append",
+    "counts_of",
+    "entries",
+    "log_path",
+    "reading",
+    "record_loss",
+    "shape_of",
     "backfill",
     "canonical_artifacts",
     "census",

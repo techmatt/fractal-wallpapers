@@ -29,6 +29,17 @@ for. Two halves, and they fail on different things:
   | recipe-key | the ledger key itself | the store holds one row per key |
   | run-index | an attempt index | unique inside one run directory |
 
+**The counts are held by a ratchet and not by a floor**, since 2026-09-07. A
+floor — `>=` the number somebody measured — reads *the store only grows*, and
+this store deletes by design: [`candidate_ledger.sweep.prune`] drops rows every
+time a leg merges, so the first purposeful loss made the floor red with no repair
+available except repointing it, which asserts nothing. What replaced it is
+[`candidate_ledger.ratchet`]: the count now, plus every deletion a transaction
+wrote down since the high-water mark, must still reach that mark. Loss is allowed
+exactly when something accounted for it. **Repointing the mark at today's reading
+is the forbidden edit** and always was — the mark moves on growth, by the prune,
+mechanically.
+
 **The reading it was written against**, 2026-09-06, over the ledger the ckpt-112
 mine left: **308,419 rows**, every one naming a picture, every picture under the
 tree, **308,419 distinct `(directory, stem)` pairs and zero carried by more than
@@ -46,7 +57,7 @@ import pytest
 
 from fractal_wallpapers import paths
 from fractal_wallpapers.curation import pool_draw
-from fractal_wallpapers.curation.candidate_ledger import sweep
+from fractal_wallpapers.curation.candidate_ledger import ratchet, sweep
 
 #: What the reading above says, so a scan that disagrees says so against a number
 #: somebody wrote down rather than against nothing.
@@ -177,7 +188,11 @@ def shapes_of(rows, tiers=None) -> dict:
         first = seen.setdefault(pair, key)
         if first != key:
             out["shared_by_two_rows"].append((first, key, pair))
-        if where.stem == str(key):
+        # Through the shipped classifier and not a second spelling of it: a prune
+        # records what it took under these same two names, and a census counting
+        # by one expression against a recording made by another is two readings
+        # that drift without either one ever looking wrong.
+        if ratchet.shape_of(picture, key) == ratchet.RECIPE_KEY:
             out["recipe_key_named"] += 1
             out["key_directories"].add(pair[0])
         else:
@@ -231,8 +246,23 @@ def test_the_scan_names_a_third_shape_and_the_collision_it_would_bring():
     )
 
 
+def test_the_ratchets_first_mark_is_the_census_this_file_records(tracked_ratchet_log):
+    """The mark the scan is held to is the reading in this file's docstring.
+
+    Arithmetic over a tracked file, so it costs nothing and runs in the fast lane
+    — and it is what stops the mark being a number with no provenance. The seed
+    row was written once, by hand, out of [`READING`]; every row after it is a
+    prune's. If those two ever disagree the guard is measuring against something
+    nobody wrote down, which is the state the floor it replaced ended in."""
+    seeded = [row for row in ratchet.entries(tracked_ratchet_log) if row["event"] == ratchet.MARK]
+    assert seeded, f"{tracked_ratchet_log} holds no mark, so the scan below bounds nothing"
+    first = seeded[0]
+    assert first["schema"] == ratchet.LOG_SCHEMA
+    assert first["counts"] == {name: READING[name] for name in ratchet.COUNTERS}
+
+
 @pytest.mark.slow
-def test_no_two_ledger_rows_name_one_picture(tracked_ledger):
+def test_no_two_ledger_rows_name_one_picture(tracked_ledger, tracked_ratchet_log):
     """The measured half, over every row there is. The rows are the session's one
     reading; see `conftest.tracked_ledger`.
 
@@ -266,7 +296,21 @@ def test_no_two_ledger_rows_name_one_picture(tracked_ledger):
         "day an index reaches a name a key already has: "
         f"{found['directories_in_both_shapes'][:3]}"
     )
-    # The reading, as a floor rather than an equality: the store only grows.
-    assert found["rows"] >= READING["rows"]
-    assert found["recipe_key_named"] >= READING["recipe_key_named"]
-    assert found["run_index_named"] >= READING["run_index_named"]
+    # The census against the ratchet, which is the half that used to be a floor.
+    standing = ratchet.reading(tracked_ratchet_log)
+    assert set(standing["mark"]) >= set(ratchet.COUNTERS), (
+        f"the ratchet has never marked {sorted(set(ratchet.COUNTERS) - set(standing['mark']))}, "
+        f"so nothing bounds those counters from below. {tracked_ratchet_log} is seeded by hand "
+        f"once and advanced by every prune after that."
+    )
+    for counter in ratchet.COUNTERS:
+        mark, forgiven = standing["mark"][counter], standing["deleted"][counter]
+        assert found[counter] + forgiven >= mark, (
+            f"{counter} reads {found[counter]:,} against a high-water mark of {mark:,} taken "
+            f"{standing['marked_at'][counter]}, and only {forgiven:,} of the "
+            f"{mark - found[counter]:,} missing are accounted for. A prune records what it "
+            f"takes, so an unaccounted "
+            f"shortfall of {mark - found[counter] - forgiven:,} is rows that left this store "
+            f"without any transaction saying so. Read {tracked_ratchet_log}; do NOT repoint "
+            f"the mark at today's count, which is what makes this guard worthless."
+        )

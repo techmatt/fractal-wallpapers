@@ -19,7 +19,9 @@ from pathlib import Path
 import pytest
 
 from fractal_wallpapers.curation import candidate_ledger, intake, recipes, release
+from fractal_wallpapers.curation.candidate_ledger import ratchet
 from fractal_wallpapers.models import renders
+from fractal_wallpapers.paths import repo_root
 
 #: Every module of the ledger package, discovered rather than listed: a guard
 #: that swept a hand-written set would go quiet the day somebody adds an eighth
@@ -980,6 +982,94 @@ def test_a_prune_reads_the_store_through_the_accessors_and_never_off_the_root(
     assert candidate_ledger.rows_path().parent == isolated / "artifacts" / "curation" / (
         candidate_ledger.store.UNIT
     )
+
+
+# --------------------------------------------------------------------------- #
+# What the prune writes down about what it took.
+# --------------------------------------------------------------------------- #
+def _pair_of_rows(isolated, place="one"):
+    """Two rows at one (location, mode), each with a picture, named the two ways.
+
+    One picture is stem-named by its own ledger key and the other by an attempt
+    index, so a prune that drops either is visible in the counter it belongs to
+    rather than only in the row total."""
+    from fractal_wallpapers import paths
+
+    here = isolated / "artifacts" / "curation" / "depth" / "leg" / "pictures"
+    here.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for key, stem in (("keyed", "keyed"), ("indexed", "0042")):
+        picture = here / f"{stem}.jpg"
+        picture.write_bytes(b"x")
+        source = decision(location={**decision()["location"], "key": place})
+        rows.append(
+            candidate_ledger.row(
+                recipe=recipes.of_decision(source),
+                key=key,
+                source=source,
+                picture=paths.tracked_name(picture),
+            )
+        )
+    return rows
+
+
+def test_a_prune_advances_the_mark_and_writes_down_what_it_took(isolated):
+    """The recording site, end to end, and it is the only one there is.
+
+    `store.write` is an upsert and the orphan sweep takes pictures alone, so
+    `prune` is where every row that leaves this store leaves it — and therefore
+    the one place that can account for a smaller store to the census in
+    `tests/test_leveled_identity.py`. The mark is the store at its **peak**,
+    before the rule took anything back; the deletion is what it then took."""
+    candidate_ledger.write(_pair_of_rows(isolated))
+    record = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert record["rows_read"] == 2
+    assert record["rows_dropped"] == 1
+    standing = ratchet.reading()
+    assert standing["mark"]["rows"] == 2, "the mark is the peak and not what survived"
+    assert standing["mark"]["recipe_key_named"] == 1
+    assert standing["mark"]["run_index_named"] == 1
+    assert sum(standing["deleted"][name] for name in ("recipe_key_named", "run_index_named")) == 1
+    assert standing["deleted"]["rows"] == 1
+    # And the store now reconciles against what was just written about it, which
+    # is the assertion the census makes over the real one.
+    found = ratchet.counts_of(
+        (str(row["key"]), row.get("picture")) for row in candidate_ledger.read()
+    )
+    assert all(
+        found[name] + standing["deleted"][name] >= standing["mark"][name]
+        for name in ratchet.COUNTERS
+    )
+    assert record["ratchet"]["recorded_as_lost"]["rows"] == 1
+
+
+def test_a_dry_run_prune_writes_no_row_at_all(isolated):
+    """`--dry-run` reads and decides and touches nothing, and the ratchet is part
+    of nothing. A mark raised by a prune that never happened would have the census
+    holding this store to a size it never kept."""
+    candidate_ledger.write(_pair_of_rows(isolated))
+    record = candidate_ledger.prune(keep=1, apply=False, log=lambda *_: None)
+
+    assert record["pictures"] == {"would_delete": 1}
+    assert "ratchet" not in record
+    assert ratchet.entries() == []
+
+
+def test_the_prune_writes_to_a_redirected_ratchet_and_never_to_the_tracked_one(isolated):
+    """The autouse redirect, asserted rather than assumed.
+
+    The log resolves off `repo_root()` and not off a tier, so the fixture that
+    moves this store at the tier roots does **not** move it — the same class of
+    path as `manifest_dir`, and the same class as the defect that put a temporary
+    ledger's counts into two tracked manifests. `conftest.no_tracked_ratchet` is
+    what covers it; this is the assertion that it is switched on."""
+    candidate_ledger.write(_pair_of_rows(isolated))
+    candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    written = ratchet.log_path()
+    assert written.is_file()
+    assert (repo_root() / "data") not in written.parents
 
 
 # --------------------------------------------------------------------------- #

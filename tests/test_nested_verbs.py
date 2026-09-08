@@ -86,7 +86,7 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate_spiral_scores",
         {"what": "restore", "force": True},
     ),
-    # The candidate ledger: eleven verbs, and the group that carried the most
+    # The candidate ledger: twelve verbs, and the group that carried the most
     # flags none of its verbs shared.
     (
         "curate candidate-ledger backfill --recolour",
@@ -121,6 +121,11 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate candidate-ledger prune --keep 12 --dry-run",
         "curate_candidate_ledger",
         {"what": "prune", "keep": 12, "dry_run": True},
+    ),
+    (
+        "curate candidate-ledger ratchet --census",
+        "curate_candidate_ledger",
+        {"what": "ratchet", "census": True},
     ),
     (
         "curate candidate-ledger re-render --limit 500 --workers 3",
@@ -524,6 +529,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "orphans": ("--apply", "--leg", "--include-unmerged"),
         "pictures": (),
         "prune": ("--keep", "--dry-run"),
+        "ratchet": ("--census",),
         "re-render": ("--workers", "--limit"),
         "save": (),
         "score": ("--limit",),
@@ -762,20 +768,21 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Seventeen groups and seventy verbs, and no group left spelling its verb as a
-    positional `choices=` argument. The two are not interchangeable: a positional
+    """Seventeen groups and seventy-one verbs, and no group left spelling its verb as
+    a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored.
 
     Eighteen and seventy-three until 2026-09-06, when `gallery-store` and its three
-    went with the retired gallery passes' gate store."""
+    went with the retired gallery passes' gate store; seventy until 2026-09-07, when
+    `candidate-ledger ratchet` arrived to read the store's high-water mark."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 70
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 71
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

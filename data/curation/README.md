@@ -12,6 +12,7 @@ supply_scores.manifest.json      what the untracked supply sidecar is, so a loss
 neutral_embeddings.manifest.json what the untracked embedding store is, and under what
 candidate_ledger/rows.manifest.json    what the untracked candidate ledger is
 candidate_ledger/scores.manifest.json  ...and its score sidecar, keyed on the judge
+candidate_ledger/ratchet.jsonl   how large that ledger has ever been, and what took rows off it
 ledger_provenance.json           which walk ledger each released row was drawn from
 ```
 
@@ -41,6 +42,30 @@ cosine between two of them is still a number between -1 and 1; the digest is wha
 makes that visible. `curate embed` fills the store, `curate embeddings
 save|check|restore` keeps it. The JPEGs are not copied: every row carries the
 family, viewport and maxiter its own picture re-renders from.
+
+`candidate_ledger/ratchet.jsonl` is the one file here that describes an untracked
+store without being a manifest, and the difference is what it is for. A manifest
+says what the store **is** right now; this says how large it has ever been and
+what took rows off it since. The store deletes by design —
+`candidate_ledger.sweep.prune` drops rows every time a leg merges — so *the store
+only grows* is not a property anything can assert, and a census pinned as a floor
+goes red at the first prune with no repair available except repointing it, which
+asserts nothing. What is asserted instead is a **ratchet**: the count now, plus
+every deletion a transaction wrote down since the high-water mark, still reaches
+that mark. Two kinds of row, `mark` and `deleted`, each resolved per counter;
+`prune` appends both at the end of its transaction, and it is the only writer
+because `store.write` is an upsert and the orphan sweep takes pictures rather than
+rows. Read it with `curate candidate-ledger ratchet` (`--census` counts the live
+store against it); `tests/test_leveled_identity.py` is what holds the store to it,
+and `tests/test_ratchet.py` holds the arithmetic.
+
+**The first two rows were written by hand and say so.** The mark is the census of
+2026-09-06 that `tests/test_leveled_identity.READING` records, and under it sits a
+single reconciliation of 22 `run_index_named` rows — unrecorded displacement-mining
+loss of the ckpt 113–114 era, entered once as an explicit act because those rows
+went before anything recorded a deletion and cannot be reconstructed. Re-baselining
+the mark to today's count would have swallowed that history and read exactly like
+the edit the guard exists to prevent.
 
 `ledger_provenance.json` is the other half of the same question: what the
 collection's 1,050 released rows were drawn from. Eight walk ledgers, and on
