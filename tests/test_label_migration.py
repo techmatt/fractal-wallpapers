@@ -75,7 +75,7 @@ def label_row(**over) -> dict:
 # --------------------------------------------------------------------------- #
 def test_the_derived_recipe_moves_the_geometry_and_nothing_else():
     row = label_row()
-    derived = label_migration._recipe_of(row, None, {})
+    derived = label_migration.recipe_of(row, None, {})
     assert derived.regime == recipes.CANDIDATE_REGIME
     assert derived.regime.spelled == "640x360ss2"
     # Every other keyed member is the row's own, member by member.
@@ -95,21 +95,21 @@ def test_the_derived_recipe_does_not_take_the_candidate_paths_curve_or_palette()
     A derivation that spent `colorize.CURVE` and the plain recipe would hand back
     a recipe for a picture nobody judged, keyed under a name that says otherwise.
     """
-    derived = label_migration._recipe_of(label_row(), None, {})
+    derived = label_migration.recipe_of(label_row(), None, {})
     assert derived.curve != colorize.CURVE
     assert derived.palette != colorize._plain_recipe(True)
 
 
 def test_the_derived_key_is_recomputable_from_the_stored_recipe():
-    derived = label_migration._recipe_of(label_row(), None, {})
+    derived = label_migration.recipe_of(label_row(), None, {})
     key = recipes.key_of(derived)
     assert key == recipes.key_of(recipes.of_record(derived.record()))
 
 
 def test_the_label_regime_never_reaches_the_derived_key():
     """Two rows differing only in the geometry they were judged at derive one key."""
-    at_label = label_migration._recipe_of(label_row(), None, {})
-    elsewhere = label_migration._recipe_of(
+    at_label = label_migration.recipe_of(label_row(), None, {})
+    elsewhere = label_migration.recipe_of(
         label_row(render={"resolution": [1920, 1080], "supersample": 3, "maxiter": 4096}),
         None,
         {},
@@ -119,15 +119,15 @@ def test_the_label_regime_never_reaches_the_derived_key():
 
 def test_a_different_maxiter_is_a_different_picture():
     """maxiter is geometry-adjacent and is NOT normalized: it decides pixels."""
-    mine = label_migration._recipe_of(label_row(), None, {})
-    deeper = label_migration._recipe_of(
+    mine = label_migration.recipe_of(label_row(), None, {})
+    deeper = label_migration.recipe_of(
         label_row(render={"resolution": [1280, 720], "supersample": 2, "maxiter": 8192}), None, {}
     )
     assert recipes.key_of(mine) != recipes.key_of(deeper)
 
 
 def test_the_place_is_spelled_the_way_every_store_here_spells_one():
-    derived = label_migration._recipe_of(label_row(), None, {})
+    derived = label_migration.recipe_of(label_row(), None, {})
     place = label_migration._location_of(derived)
     assert isinstance(place, str)
     assert json.loads(place)[0] == "multibrot3"

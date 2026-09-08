@@ -385,6 +385,21 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+32, and the clock did not move at all.** `SHOW_ckpt116_label4_fate_0908`,
+2026-09-08, idle box, `.[dev,models]` with a release engine. **127.81 s over 4,048,
+129 deselected** fast — **4,177** against the 4,145 the entry below this one left,
+the 32 being `tests/test_label_fate.py`, all of them arithmetic over rows the test
+hands in. Against that entry's 126.04 s over 4,016 the clock is 1.77 s *slower* for
+32 more tests, which is inside the page-cache spread those two entries already
+argue about and is not a reading that 32 fast guards cost anything.
+
+**Taken after a two-hour render leg and not beside one**, which is the rule, and the
+same lane run *beside* that leg an hour earlier read 219.21 s with
+`test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked` red —
+green again in 1.96 s re-run alone. That is the documented load failure behaving
+exactly as documented, on a box whose three engines were busy, and it is the second
+time it has been the thing that goes red first.
+
 **+1, and it is the deselected count that moves.**
 `FIX_ckpt116_mine_mode_params_0908`, 2026-09-08, idle box, `.[dev,models]` with a
 release engine. **126.04 s over 4,016, 129 deselected** fast — **4,145** against the

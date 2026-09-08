@@ -228,6 +228,16 @@ class Task:
     #: renders exactly as it did before this existed, which is what every
     #: `acted_unrecoverable` seat still does.
     autolevel: dict | None = None
+    #: The transform the mode reads its field through, and the palette knobs the
+    #: map is spent under — [`colorize.render_row`]'s two overrides. Here for
+    #: `mode_params`' reason and no other: **both are [`recipes.KEYED`] members**,
+    #: so a row whose recipe names a `log` field or a `gamma` the candidate path
+    #: never spends is a row whose plain render is a picture of something else,
+    #: under its name. Every candidate leg leaves them `None` and renders exactly
+    #: as it always has; the rows that need them are `label_migration`'s, whose
+    #: recipes came out of the two label corpora.
+    curve: str | None = None
+    palette: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -275,6 +285,8 @@ def render_task(task: Task) -> Result:
                 render_geometry=task.geometry,
                 mode_params=task.mode_params,
                 borrowed=task.autolevel,
+                curve=task.curve,
+                palette=task.palette,
             )
             return Result(
                 task.id,

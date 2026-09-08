@@ -2483,8 +2483,9 @@ pairs, literally the same pixels judged in both stores.
 **The corpora are not the candidate path and that needed a door.** The candidate path
 spends `colorize.CURVE` and the plain palette; 6,420 of 11,966 resolved rows carry
 palette knobs it never produces and 868 read their field through `log`. So
-`colorize.render_row`/`render` grew `curve` and `palette` overrides, off by default,
-with this leg the only caller — and they **refuse** a `fields` directory, because a
+`colorize.render_row`/`render` grew `curve` and `palette` overrides, off by default —
+this leg was the only caller until `curate label-fate` and `release.Task` joined it on
+2026-09-08 — and they **refuse** a `fields` directory, because a
 dumped field is named for its curve and `recolored` pins the palette, so a recolour
 under an override would be the plain picture wearing the override's name. Every staged
 render therefore takes the engine path.
@@ -2500,3 +2501,57 @@ nowhere; `depth.levelling_of` reads those as `None` rather than guessing. Re-mea
 a curve off a finished picture gives a *different* curve — that is
 `depth.ACTED_UNRECOVERABLE` — so the way back is to delete those pictures and redraw
 them, which is what the resume does once their rows say nothing.
+
+## `curate label-fate` — what became of every wallpaper somebody graded 4
+
+Three stores hold a human 4 — `data/smooth_render/`, `data/strange_render/` and
+`data/gallery_grade/` — and since `label-migration merge` all of them are **ledger
+rows by key**. So this asks the exact question rather than the distributional one:
+not *how does the pipeline score pictures a person liked*, but *what happened to this
+one*. Five rungs, first that stops it.
+
+```
+scratch/label_fate_<name>/
+  keys.txt             one ledger key a line — the solve's --explain-keys argument
+  population.jsonl     one row a wallpaper: its verdicts, its ledger row, its rung
+  fates.json           which record filled rungs 3 and 4, and what it cost
+  renders.jsonl        one row a picture drawn, and which side of a card it is on
+  index.html           one card a wallpaper, graded picture beside the seat
+  pictures/<key>.jpg   both sides, fresh at 1280x720 ss2
+  page_pictures/       the page's own reduced copies
+```
+
+**`keys` runs BEFORE the solve and the other four after it.** The fate of a row that
+took no seat lives only inside the pass that refused it: `rejection.explained` holds
+one entry per key *asked about*, and a record can only be asked while it is being
+taken. That is what `curate solve record --explain-keys PATH` is for, and `fates`
+refuses a record with no `explained` block or one whose block does not name every row
+of the population — a rung recovered from the aggregate refusal columns would be a
+guess about which of several rules acted first.
+
+**Rung 0 is `solve.pool`'s own five exclusions**, decided on
+`mode_policy.routed_mode_of` and not the recipe's mode. Folding those into the
+coarse-bar count would say a bar refused a picture no bar ever read.
+
+**Both sides of a card are drawn at one geometry**, because `sheets.LABEL_RESOLUTION`
+and `release.RELEASE_REGIME` are the same `1280x720ss2`. `render` refuses if those two
+constants ever move apart rather than quietly drawing a pair at two sizes. Every task
+carries the row's whole recipe — `mode_params`, `curve` and `palette`, all three
+`recipes.KEYED` members — and inherits its levelling through `stamps.for_release`.
+
+**Measured 2026-09-08**, three workers below-normal, this machine: **2,231 pictures in
+7,793.6 s — 2 h 10 min, 3.49 s a picture wall and 10.5 s an engine**, 0 failed. That
+is 6.6x `label-migration`'s 1.59 s an engine at candidate geometry, against four times
+the pixels, and the gap is the levelling: **only 352 of the 2,231 rows can inherit a
+curve**, so 1,879 measure their own and take the operator's second full-resolution
+pass. `curate autolevel backfill` is what would close that, and it was not run here.
+
+⚠ **Estimate this on an idle box or not at all.** Measured beside a fast lane the
+same leg ran at **5.5 pictures a minute** and beside nothing at **26.7** — a 4.9x
+spread, and the first reading put the ETA at 6.5 hours against a true 2 h 10. The
+`CLAUDE.md` rule about measuring a lane on an idle machine applies to estimating a
+leg just as hard.
+
+**A resume costs the rows it was holding and nothing else.** The picture is the
+resume token — `release.decodable` is asked of each one — so a killed leg re-offers
+only what is missing.

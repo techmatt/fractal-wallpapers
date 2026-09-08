@@ -729,8 +729,11 @@ def render(
     [`_shared_field`].
 
     `curve` and `palette` are [`render_row`]'s overrides and every candidate leg
-    leaves them off; the one caller is [`curation.label_migration`], re-expressing
-    a judged recipe at candidate geometry. **They refuse a `fields` directory**
+    leaves them off. [`curation.label_migration`] was the one caller, re-expressing
+    a judged recipe at candidate geometry; since 2026-09-08 [`release.Task`] carries
+    both as well, because that leg's rows are now **in the pool** and a release or
+    label-geometry render of one had been serving the plain picture under its name.
+    **They refuse a `fields` directory**
     rather than being quietly dropped, for the reason `render_row` states — and
     the refusal is here rather than there because `render_row` is also called to
     describe a picture that is not being made.
