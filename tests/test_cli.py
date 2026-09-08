@@ -651,10 +651,11 @@ def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachab
     them on 2026-09-04 — the spiral share cap — so the incumbent invocation carries
     a third flag: it solved with NO cap, and saying nothing no longer means that.
 
-    The key half moved again on 2026-09-07, when the cascade was adopted. It is
-    still one flag away from the pre-flip order, which is why `--key` carries
-    three names rather than two: `p_ge4` is the incumbent this test spells and
-    `rank-key` is the order everything between the two flips ran.
+    The key half moved again on 2026-09-07, when the cascade was adopted, and a
+    third time on 2026-09-08, when `rank-key` was deprecated as a seating key: it
+    is off `--key`'s choices and `p_ge4` is the only incumbent this flag can still
+    spell. A fourth default landed in the same act — the `p_fine` bar — so the
+    incumbent invocation carries a fourth flag as well.
     """
     from fractal_wallpapers.curation import ceiling, solve
 
@@ -663,7 +664,9 @@ def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachab
     assert unflagged.handler is cli.curate_solve
     assert unflagged.group_cap == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
     assert unflagged.key == solve.DEFAULT_KEY == solve.CASCADE_KEY
-    assert parse(["curate", "solve", "run", "--n", "150", "--key", "rank-key"]).key == "rank-key"
+    assert unflagged.fine_bar == solve.DEFAULT_FINE_BAR == 0.50
+    with pytest.raises(SystemExit):
+        parse(["curate", "solve", "run", "--n", "150", "--key", "rank-key"])
     assert unflagged.spiral_cap == solve.DEFAULT_SPIRAL_CAP == 0.10
     incumbent = parse(
         [
@@ -688,23 +691,23 @@ def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachab
         parse(["curate", "solve", "run", "--key", "whatever_matt_meant"])
 
 
-def test_the_fine_bar_is_a_flag_a_record_keeps_and_it_moves_no_default() -> None:
+def test_the_fine_bar_is_a_flag_a_record_keeps_and_both_verbs_default_to_it() -> None:
     """The quality bar is a PARAMETER, and both verbs read it.
 
     A bar that only `run` accepted would be a bar no tracked manifest could ever
     carry, and the manifest is where a record says what made it. Unsaid it is
-    `None` on both, which is the default this leg deliberately did not move:
-    Matt has adopted `p_fine(>=4) >= 0.50` at n=1000 and ruled that the flip
-    happens in the same act that makes the first cascade record.
+    `0.50` on both since 2026-09-08, Matt's ruling — it was `None` until the act
+    that made `20260908T144844Z`, so the date a record was taken is what says
+    which side of the flip it is on and `config.fine_bar` is what proves it.
     """
     from fractal_wallpapers.curation import solve
 
     parse = cli.build_parser().parse_args
-    assert solve.DEFAULT_FINE_BAR is None
-    assert parse(["curate", "solve", "run", "--n", "150"]).fine_bar is None
-    assert parse(["curate", "solve", "record"]).fine_bar is None
-    assert parse(["curate", "solve", "run", "--fine-bar", "0.50"]).fine_bar == 0.50
-    assert parse(["curate", "solve", "record", "--fine-bar", "0.50"]).fine_bar == 0.50
+    assert solve.DEFAULT_FINE_BAR == 0.50
+    assert parse(["curate", "solve", "run", "--n", "150"]).fine_bar == 0.50
+    assert parse(["curate", "solve", "record"]).fine_bar == 0.50
+    assert parse(["curate", "solve", "run", "--fine-bar", "0.75"]).fine_bar == 0.75
+    assert parse(["curate", "solve", "record", "--fine-bar", "0.75"]).fine_bar == 0.75
 
 
 def test_the_spiral_cap_keeps_no_cap_a_zero_cap_and_a_slack_cap_apart() -> None:

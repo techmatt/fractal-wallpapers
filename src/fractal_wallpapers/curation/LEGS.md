@@ -1606,6 +1606,30 @@ printed once per generation. Kill the tree rather than waiting for it, and throw
 pictures away — a partially written PNG can still answer `_already` with the right
 resolution, so a re-run would carry the corrupt ones across.
 
+### The contact sheet a leg reads its own pile on is tracked, since 2026-09-08
+
+**`curation.sheet.score_sheet` — do not copy a sheet script into `scratch/` again.**
+Every leg since 2026-09-07 has rebuilt the same page by hand: rows sorted on the
+gallery-grade head's `p_fine(>=4)` descending, cut at 0.90 / 0.75 / 0.50 / 0.25 /
+0.10 with a sticky separator saying how many sit in the band and how many are above
+the line, one data-URI tile a row so the page works over `file://`. The builder it
+was copied from lived only in `scratch/`, which is gitignored, so each copy started
+from whatever the previous report had quoted.
+
+**The row shape is the caller's.** A ledger row and a gallery seat row carry the
+score, the picture and the caption under different names — which is exactly why the
+old builder could not be reused across legs — so `score_sheet` takes `score`,
+`picture` and `lines` as callables over whatever the caller holds. A caption line is
+plain text, or `(style, text)` with the style one of `sheet.LINE_STYLES`; the sheet
+escapes every one of them, so a caller never hands this module markup. `by_score`,
+`banded` and `tile` are the three pieces on their own, for a page that wants its own
+frame around them.
+
+A row the head has no reading for sorts to the tail and bands with the bottom rather
+than being dropped: a missing score is a **coverage reading**, and it is drawn as an
+em dash where a number would be. An empty band is left out, so the page reads as a
+distribution rather than as a form.
+
 ### What an arm can and cannot be credited with
 
 **The record credits its arms; the ledger does not.** `depth.json` carries the

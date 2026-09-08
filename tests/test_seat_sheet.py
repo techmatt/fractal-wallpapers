@@ -68,9 +68,22 @@ def test_the_cascade_is_the_default_and_neither_alternative_was_retired() -> Non
     every gallery between 2026-08-28 and the flip was seated in and is still what
     retention ranks on, and `p_ge4` is what everything before that ran. A record
     naming either has to stay re-runnable, so both stay in [`solve.KEYS`].
+
+    **Deprecating `rank-key` on 2026-09-08 did not change that.** What it changed
+    is [`solve.OFFERED_KEYS`] — what a NEW solve may name — and the two lists
+    being different is the whole content of "readable but not offered".
     """
     assert solve.DEFAULT_KEY == solve.CASCADE_KEY
     assert set(solve.KEYS) == {solve.CASCADE_KEY, solve.RANK_KEY, solve.JUDGE_KEY}
+    assert set(solve.OFFERED_KEYS) == {solve.CASCADE_KEY, solve.JUDGE_KEY}
+    assert solve.RANK_KEY not in solve.OFFERED_KEYS
+
+
+def test_a_record_seated_on_the_deprecated_key_still_resolves_its_order() -> None:
+    """The 62 stamps taken before 2026-09-08 name `rank-key`, and a deprecation
+    that made them unreplayable would be a deletion wearing another word."""
+    assert solve.RANK_KEY in solve.KEYS
+    assert solve.ordered_by({"a": 1.0}, key=solve.RANK_KEY) == "rank_key"
 
 
 def test_adopting_the_cascade_left_retention_ranking_on_the_shipped_key() -> None:

@@ -48,6 +48,7 @@ from __future__ import annotations
 import base64
 import html
 import io
+from collections.abc import Iterable
 from pathlib import Path
 
 #: The long edge of an embedded thumbnail. Big enough to tell two wallpapers
@@ -315,6 +316,214 @@ def from_records(run: str, rows: list[dict], summary: dict, directory: Path, out
     )
 
 
+# --------------------------------------------------------------------------- #
+# The score sheet: whatever a leg made, laid out worst-to-best by one score.
+# --------------------------------------------------------------------------- #
+#
+# The release sheet above answers *what shipped*. This answers a different
+# question — **how good is the pile** — and it is the page every leg since
+# 2026-09-07 has rebuilt by hand: the rows sorted on the gallery-grade head's
+# `p_fine(>=4)` descending, cut into bands with a sticky separator saying how
+# many sit in each and how many are above the line, one tile a row.
+#
+# **The row shape is the caller's and never this module's.** A ledger row and a
+# gallery seat row carry the score, the picture and the caption under different
+# names, and the sheet that assumed one shape is the reason every leg copied a
+# script instead of calling a function. So the score, the picture and the caption
+# lines all arrive as callables over whatever the caller holds.
+
+#: The bands a score sheet separates on, good to bad. A row falls in the FIRST
+#: band whose floor it clears, so the label states where that floor sits and the
+#: last entry has to be `0.0` or a row below every floor lands in no band at all.
+#:
+#: These six are the cuts the gallery-grade head is read at everywhere else:
+#: 0.50 is the bar Matt adopted at n=1000, and 0.75 and 0.90 are what a mining
+#: leg reports its clears against.
+BANDS: tuple[tuple[float, str], ...] = (
+    (0.90, "0.90 and up"),
+    (0.75, "0.75 &ndash; 0.90"),
+    (0.50, "0.50 &ndash; 0.75"),
+    (0.25, "0.25 &ndash; 0.50"),
+    (0.10, "0.10 &ndash; 0.25"),
+    (0.00, "below 0.10"),
+)
+
+#: The caption vocabulary a caller may name, and nothing else. A caption line is
+#: either plain text or `(style, text)` with the style one of these — which is
+#: what keeps a caller from handing this module markup it would then have to
+#: trust. Everything is escaped on the way in either way.
+LINE_STYLES = ("plain", "strong", "muted", "mono")
+
+#: The score sheet's long edge. Narrower than [`THUMBNAIL_WIDTH`] because this
+#: page carries hundreds of tiles where a release sheet carries dozens, and the
+#: thumbnails are embedded in both.
+SCORE_THUMBNAIL_WIDTH = 320
+
+SCORE_STYLE = """
+body { background:#14161a; color:#e6e8eb; margin:0;
+       font:13px/1.45 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
+header { padding:14px 16px; background:#1b1e24; border-bottom:1px solid #2c313a; }
+h1 { font-size:16px; margin:0 0 6px; }
+.lede { color:#9aa4b1; max-width:78rem; margin:0 0 6px; }
+.lede b { color:#e6e8eb; }
+code { font-family:ui-monospace, monospace; color:#c8b98a; }
+h2.band { position:sticky; top:0; z-index:2; margin:0; padding:8px 16px;
+          background:#22262e; border-top:1px solid #3a4150;
+          border-bottom:1px solid #2c313a; font-size:13px; font-weight:600;
+          letter-spacing:.04em; text-transform:uppercase; }
+h2.band span { float:right; color:#8a939f; font-weight:400; text-transform:none;
+               letter-spacing:0; }
+.grid { display:grid; gap:12px; padding:12px 16px;
+        grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); }
+figure { margin:0; background:#1c1f26; border:1px solid #2c313a; border-radius:6px;
+         overflow:hidden; }
+img { display:block; width:100%; background:#0e1013; }
+.missing { padding:40px 10px; text-align:center; color:#6b7480; }
+figcaption { display:flex; flex-direction:column; gap:2px; padding:7px 9px 9px; }
+.top { display:flex; justify-content:space-between; align-items:baseline; }
+.score { font-size:17px; font-weight:600; font-family:ui-monospace, monospace;
+         color:#d8e4f0; }
+.rank { color:#6b7480; font-family:ui-monospace, monospace; }
+.strong { color:#8fc7a0; font-weight:600; }
+.muted { color:#8a939f; }
+.mono { font-family:ui-monospace, monospace; font-size:10.5px; color:#6b7480;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+"""
+
+
+def by_score(rows: Iterable[dict], score) -> list[dict]:
+    """`rows` ordered on `score` descending, the ones it cannot read last.
+
+    `score` is `row -> float | None`. A row with no score sorts to the tail
+    rather than being dropped: a missing score is a coverage reading, and a sheet
+    that hid it would hide the reading. Ties break on `repr` of the row's `key`
+    where it has one, so redrawing an unchanged pile writes the same bytes.
+    """
+    held = list(rows)
+    return sorted(
+        held,
+        key=lambda row: (
+            score(row) is None,
+            -(score(row) or 0.0),
+            str(row.get("key", "")) if isinstance(row, dict) else "",
+        ),
+    )
+
+
+def banded(ordered: list[dict], score, bands: tuple = BANDS) -> list[tuple]:
+    """`[(label, rows, above)]` — the separators a score sheet is cut at.
+
+    `ordered` must already be through [`by_score`]; this walks it once and never
+    re-sorts, so a caller that wants a different order gets its bands in that
+    order. A band holding nothing is **left out**, which is what makes the page
+    read as a distribution rather than as a form with empty sections. `above` is
+    how many rows precede the band, which is the number a reader actually wants
+    off a separator — *how much of this page is better than what follows*.
+
+    A row with no score falls in the last band, with the rows below every floor:
+    it is unplaceable rather than bad, and the tile says so by drawing an em dash
+    where a score would be.
+    """
+    out: list[tuple] = []
+    for at, (floor, label) in enumerate(bands):
+        ceiling = bands[at - 1][0] if at else None
+        held = [
+            row
+            for row in ordered
+            if (score(row) is None and at == len(bands) - 1)
+            or (
+                score(row) is not None
+                and (score(row) or 0.0) >= floor
+                and (ceiling is None or (score(row) or 0.0) < ceiling)
+            )
+        ]
+        if held:
+            out.append((label, held, sum(len(other) for _l, other, _a in out)))
+    return out
+
+
+def _line(line) -> str:
+    style, text = ("plain", line) if isinstance(line, str) else line
+    if str(style) not in LINE_STYLES:
+        raise ValueError(f"a caption line's style is one of {LINE_STYLES}, not {style!r}")
+    body = html.escape(str(text))
+    return f"<div>{body}</div>" if style == "plain" else f'<div class="{style}">{body}</div>'
+
+
+def tile(picture, lines, *, score=None, index=None, width: int = SCORE_THUMBNAIL_WIDTH) -> str:
+    """One tile: the picture embedded, then the score, the rank, and `lines`.
+
+    `picture` is a path or `None`; a picture this machine does not hold draws a
+    placeholder rather than a broken image, because a sheet is read on whichever
+    box has the store and the tiers move. `lines` is the caption the caller
+    names — see [`LINE_STYLES`] — and this escapes every one of them.
+    """
+    data = thumbnail(Path(picture), width=width) if picture and Path(picture).is_file() else ""
+    image = (
+        f'<img loading="lazy" src="{data}" alt="">'
+        if data
+        else '<div class="missing">picture not on disk</div>'
+    )
+    reading = "&mdash;" if score is None else f"{float(score):.4f}"
+    rank = "" if index is None else f'<span class="rank">#{int(index)}</span>'
+    caption = "".join(_line(line) for line in lines)
+    return (
+        f"<figure>{image}<figcaption>"
+        f'<div class="top"><span class="score">{reading}</span>{rank}</div>'
+        f"{caption}</figcaption></figure>"
+    )
+
+
+def score_sheet(
+    rows: Iterable[dict],
+    *,
+    score,
+    lines,
+    picture,
+    title: str,
+    lede: str,
+    output: Path,
+    bands: tuple = BANDS,
+    width: int = SCORE_THUMBNAIL_WIDTH,
+) -> Path:
+    """The whole page: `rows` ordered on `score`, cut into `bands`, one tile a row.
+
+    The four callables are the whole of the row shape — `score`, `picture` and
+    `lines` each take one row — so a ledger row and a gallery seat row reach this
+    through their own three functions and not through a converter. `lede` is HTML
+    the caller composed and is NOT escaped; `title` is text and is.
+    """
+    ordered = by_score(rows, score)
+    pieces: list[str] = []
+    index = 0
+    for label, held, above in banded(ordered, score, bands):
+        pieces.append(
+            f'<h2 class="band">{label}<span>{len(held)} row(s) &middot; '
+            f"{above} above this line</span></h2><div class='grid'>"
+        )
+        for row in held:
+            index += 1
+            pieces.append(
+                tile(picture(row), lines(row), score=score(row), index=index, width=width)
+            )
+        pieces.append("</div>")
+    if not pieces:
+        pieces.append('<p class="missing">nothing to lay out</p>')
+    page = (
+        "<!doctype html>\n"
+        '<meta charset="utf-8">\n'
+        f"<title>{html.escape(title)}</title>\n"
+        f"<style>{SCORE_STYLE}</style>\n"
+        f'<header>\n <h1>{html.escape(title)}</h1>\n <p class="lede">{lede}</p>\n</header>\n'
+        + "".join(pieces)
+        + "\n"
+    )
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(page, encoding="utf-8", newline="\n")
+    return output
+
+
 def _table(summary: dict) -> str:
     rows = "".join(
         f"<tr><th>{html.escape(str(key))}</th><td>{html.escape(str(value))}</td></tr>"
@@ -324,12 +533,20 @@ def _table(summary: dict) -> str:
 
 
 __all__ = [
+    "BANDS",
+    "LINE_STYLES",
     "NEAR_MISSES",
+    "SCORE_STYLE",
+    "SCORE_THUMBNAIL_WIDTH",
     "THUMBNAIL_QUALITY",
     "THUMBNAIL_WIDTH",
     "autolevel_line",
+    "banded",
     "build",
+    "by_score",
     "from_records",
+    "score_sheet",
     "thumbnail",
+    "tile",
     "top_end",
 ]

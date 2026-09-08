@@ -2122,17 +2122,18 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         type=float,
         default=solve_module.DEFAULT_FINE_BAR,
         metavar="SCORE",
-        help="narrow the pool to the rows the gallery-grade head reads at "
-        "p_fine(>=4) >= SCORE, BEFORE anything else runs — the per-mode bars, the neutral "
-        "pre-selection and the view are all taken over what is left, so a barred pass is a "
-        "whole pass and not a filtered reading of an unbarred one. A row the head has NO "
-        "reading for is excluded, which costs nothing: it has read exactly the clearing "
-        "set. Unsaid, NO bar runs and that is still the default — Matt has adopted 0.50 at "
-        "n=1000 and the ruling is that it stays a parameter until the rest of them settle. "
-        "At 0.50 it keeps a quarter of the seatable pool, fills the same thousand seats, "
-        "raises the sum 1786.5 -> 1876.6 and costs a demand shortfall of 0 -> 18. It needs "
-        "`gallery-grade score-pool` and REFUSES without it. The value is on every record "
-        "either way, `null` for a pass that ran unbarred",
+        help=f"narrow the pool to the rows the gallery-grade head reads at "
+        f"p_fine(>=4) >= SCORE, BEFORE anything else runs — the per-mode bars, the neutral "
+        f"pre-selection and the view are all taken over what is left, so a barred pass is a "
+        f"whole pass and not a filtered reading of an unbarred one. A row the head has NO "
+        f"reading for is excluded, which costs nothing: it has read exactly the clearing "
+        f"set. Unsaid, {solve_module.DEFAULT_FINE_BAR:g} runs (Matt's ruling, 2026-09-08); "
+        f"it was NO bar until then, so a record on this machine that does not name the flag "
+        f"and predates 20260908T144844Z ran unbarred. At 0.50 it keeps a quarter of the "
+        f"seatable pool, fills the same thousand seats, raises the sum 1786.5 -> 1876.6 and "
+        f"costs a demand shortfall of 0 -> 18. It needs `gallery-grade score-pool` and "
+        f"seats NOTHING without it. The value is on every record either way, `null` for a "
+        f"pass that ran unbarred",
     )
     demands.add_argument(
         "--spiral-cap",
@@ -2175,19 +2176,20 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
     )
     search.add_argument(
         "--key",
-        choices=list(solve_module.KEYS),
+        choices=list(solve_module.OFFERED_KEYS),
         default=solve_module.DEFAULT_KEY,
         help="the sort key the pool is walked in AND the quantity the objective is stated "
         "in. `cascade` is THE DEFAULT since 2026-09-07, Matt's ruling: above the solve's "
         "own bar it orders on the fine-tier head's P(>=4) — `curate rank-key`'s value plus "
         "one, so the two stages never interleave — and below it hands the rank key's order "
         "straight back. It REFUSES without `gallery-grade score-pool`, rather than falling "
-        "back to a key the record would then be wrong about. `rank-key` is the fitted form "
-        "in `curate rank-key` — the location head, both judge cutpoints and the flatness "
-        "column — which was the default from 2026-08-28 until the flip and is still what "
-        "retention ranks on. `p_ge4` is the render judge alone. IT MOVES THE ORDER AND THE "
-        "OBJECTIVE AND NOTHING ELSE: every bar, the clearing rule and the neutral "
-        "pre-selection still read the judge's own columns",
+        "back to a key the record would then be wrong about. `p_ge4` is the render judge "
+        "alone. `rank-key` is NOT OFFERED HERE since 2026-09-08, Matt's deprecation of it "
+        "as a seating key — it is still the fitted form in `curate rank-key`, still what "
+        "retention ranks on, still the cascade's own below-bar half, and still resolved for "
+        "a record that names it, so the 62 galleries seated on it stay readable. IT MOVES "
+        "THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the clearing rule and the "
+        "neutral pre-selection still read the judge's own columns",
     )
     search.add_argument(
         "--no-swap",

@@ -490,19 +490,29 @@ The four runs whole are [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What a `p_fine` 
 on the view buys at n=1000, measured 2026-09-07*; what one costs on the clock is
 *What the solve costs by stage, control and narrowed, measured 2026-09-07* beside it.
 
-### The bar is a recorded parameter and the default is still no bar
+### The bar is a recorded parameter, and since 2026-09-08 it is the default
 
-**`--fine-bar SCORE`, `solve.solve(fine_bar=...)`, `solve.DEFAULT_FINE_BAR = None`.**
-Landed 2026-09-07. Matt has adopted `p_fine(≥4) ≥ 0.50` at n=1000 as the way
-forward; the ruling is that it stays a **parameter** while the rest of the
-parameters settle, and that the default flips in the same act that makes the first
-cascade record. **So nothing here moves a default** — what landed is the spelling
-and the recording.
+**`--fine-bar SCORE`, `solve.solve(fine_bar=...)`, `solve.DEFAULT_FINE_BAR = 0.50`.**
+The spelling and the recording landed 2026-09-07 with the default at `None`, under
+the ruling that it stayed a **parameter** until the flip that made the first
+cascade record. That record is `20260908T144844Z`, and the flip went with it:
+Matt's ruling of 2026-09-08, *the `p_fine` seating is the way*.
 
 ```
-curate solve run    --n 1000 --fine-bar 0.50    # the ratified bar, unrecorded
-curate solve record --n 1000 --fine-bar 0.50    # the same bar, under a stamp
+curate solve run    --n 1000                    # the ratified bar, unnamed and running
+curate solve record --n 1000                    # the same bar, under a stamp
+curate solve record --n 1000 --fine-bar 0.50    # the same thing said out loud
 ```
+
+**Which side of the flip a record is on is on the record.** `config.fine_bar` reads
+`null` for the 62 stamps taken before `20260908T144844Z` and `0.50` for one taken
+after that names nothing, so the date is a cross-check rather than the evidence.
+
+⚠ **There is no CLI spelling for the unbarred population any more.** `--fine-bar`
+takes a float, so `0` is a bar of zero — which still excludes every row the head has
+no reading for — and not the absence of one. A pass that wants the whole seatable
+pool passes `fine_bar=None` in process, which is what a re-run of one of the 62
+does.
 
 **Recording is the point, not the flag.** Until this, the filter had only ever been
 applied by a scratch driver narrowing `solve.pool()`'s return before handing it in
@@ -2127,8 +2137,12 @@ it, which is what a sweep seating one pool four ways passes.
 ### `cascade` is the default since 2026-09-07
 
 `solve.CASCADE_KEY` is `DEFAULT_KEY`. Staged and off on 2026-09-06, adopted the
-next day on Matt's ruling, off the fine-tier head's pre-registered bar; `rank-key`
-is one flag away and is still what retention ranks on. Above `Q4_BAR` it orders on
+next day on Matt's ruling, off the fine-tier head's pre-registered bar. `rank-key`
+is still what retention ranks on and is **no longer one flag away**: it was
+deprecated as a seating key on 2026-09-08 and is off `solve.OFFERED_KEYS`, so
+`--key` takes `cascade` or `p_ge4` and nothing else. It stays resolvable for the
+62 records that name it — see `README.md`'s *The prune ranks on `rank_key` and a
+gallery seats on the cascade*. Above `Q4_BAR` it orders on
 the **fine-tier head** —
 `models/gallery_grade/`, fitted on human verdicts about pictures that had already
 cleared the gate — and below the bar it hands the rank key's own values straight
@@ -2298,7 +2312,7 @@ n=1000 and say nothing about a **themed** pass, where the twin test is swapped o
 and this cap is what binds — *`curate headroom --twin` — the one block that opens a
 picture* below.
 
-**`--key rank-key` moves the ORDER and nothing else.** Every bar on the path stays on
+**The sort key moves the ORDER and nothing else.** Every bar on the path stays on
 the judge's own columns — `headroom.bars` chooses a mode's rule on `p_ge4`,
 `headroom.clearing` applies it, and the neutral pre-selection is about places — so two
 seatings differing in this flag differ in the sort order and in no other thing, which

@@ -29,6 +29,7 @@ import math
 
 import numpy
 import pytest
+from tests.test_solve import a_pool_the_fine_head_has_read  # noqa: F401 — autouse here too
 
 from fractal_wallpapers.curation import ceiling
 from fractal_wallpapers.palettes import dominance, groups, pixel_clouds
