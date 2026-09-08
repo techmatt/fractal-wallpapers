@@ -1184,6 +1184,12 @@ alone**: a decision row naming a picture is not evidence its leg merged, and
 folding the decision stores into the stamp would read every backfilled `runs` leg
 as merged and sweep it unasked.
 
+**What the sweep can reach is narrower than what has to be kept**, and the roster
+of the rest is [`../README.md`](../README.md)'s *The standing keep roster*:
+`picture_dirs` walks `<subtree>/<leg>/pictures` and nothing else, so most of what
+must survive is unreachable by it rather than exempted from it, and a ruling is
+all that keeps it.
+
 **Dry-run 2026-09-02** over 187,976 pictures: 32 unmerged legs holding **20,723
 pictures (3.09 GiB)** skipped — **22 killed** (10 `depth`/`mine` legs and 12 `runs`
 smoke legs, 5,238 pictures) and **10 backfilled `runs` legs** (15,485 pictures, 11,875

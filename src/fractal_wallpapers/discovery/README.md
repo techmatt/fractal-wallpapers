@@ -291,6 +291,17 @@ when they were written — the pin set grows every time somebody labels an
 evaluation split — which is why the filter belongs at the carry and not at the
 write.
 
+**So the pin acts at three places and not two**, each guarded by its own test in
+`tests/test_reframing_channel.py`: the seed query filters a proven root out
+(`refused_pinned`), the carry filters a promotion out
+(`reframing.unpinned`, `carried_refused_pinned`), and
+`Channel.refuse_a_pinned_frame` asserts over every frame the operators build,
+which is the backstop under both. **All three keep a frame whose `location_key`
+raises** — the assertion returns silently and the carry filter keeps the seed —
+because a key that cannot be computed is not evidence of a pin. An unkeyable
+frame is therefore drawn unchecked, deliberately and in one direction: the filter
+and the assertion behind it must not disagree about what they are looking at.
+
 **Consumed is relative to the ladder, and the ladder is on the header row.** A
 barren verdict at nine rungs is not a verdict at eleven, so each fire is scoped to
 the operator set, the rung span and the period ceiling it ran under —
@@ -328,11 +339,21 @@ roots produced something and cannot say which of the rest it *reached* before th
 clock ran out: the summary row carries `seeds_consumed` as a count, the queue it
 was drawn from was ordered off a label store that has grown since, and no row
 names a seed the leg fired at and got nothing from. Where a record cannot tell
-"fired barren" from "not reached", the rule is to write nothing — so all seven
-legs on this machine contribute **0** fire rows, every root on the queue reads
-`unknown`, and the first fire rows are the next leg's. What each leg *can* still
-say is on the record either way: `prior_run`'s `ladders` names the four distinct
-ladders the chain has run under, and `fires_recorded` is 0 until a leg writes some.
+"fired barren" from "not reached", the rule is to write nothing — so the seven
+legs that ran before 2026-09-06 contribute **0** fire rows and every root the
+chain offered them reads `unknown`, permanently. Of the nine legs on this machine
+(`g1`, `g2`, `g4`-`g10`; there is no `g3`) only `g9` and `g10` write them, 1,488
+and 384. What each leg *can* still say is on the record either way: `prior_run`'s
+`ladders` names the four distinct ladders the chain has run under, and
+`fires_recorded` is 0 for a leg that wrote none.
+
+**One consequence, and it is about what can be tested rather than about the
+queue.** `g9` and `g10` ran the same ladder — the nine rungs `{16..256}`, the same
+two operators, `seed_max_period` 256 — so every `covers` comparison the store can
+produce today asks whether a ladder covers *itself*, which is the trivially true
+branch. The non-trivial branch, a ladder that reaches further than the one a root
+was barren under, is exercised by `tests/test_reframing_channel.py` and by nothing
+on disk, and it stays that way until a leg runs on a ladder that moves.
 
 **Where to read it.** A run's summary carries `fires` — the ladder, its key, and
 the outcome tally — and the seed query carries `ladder_rule`: how many offered
