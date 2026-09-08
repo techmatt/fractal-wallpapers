@@ -43,6 +43,7 @@ from fractal_wallpapers.cli.common import (
     resolve_output,
     write_tracked_json,
 )
+from fractal_wallpapers.curation import label_migration as label_migration_module
 from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.paths import (
     repo_root,
@@ -523,6 +524,79 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         part.get("verdict") in {"short", "missing"} for part in report.values()
     ):
         return 1
+    return 0
+
+
+def _kept_classes(args: argparse.Namespace) -> tuple:
+    """The human verdict classes a staging verb acts on, off `--classes`."""
+    named = getattr(args, "classes", None)
+    return label_migration_module.KEPT_CLASSES if not named else tuple(named)
+
+
+def _population_flag(parser) -> None:
+    """`--classes` on one staging verb.
+
+    On `render`, `readout` and `page` and not on `score`: the score stage reads
+    whichever rows the render stage staged, so a second spelling of the population
+    there is a second answer to what the leg is about.
+    """
+    parser.add_argument(
+        "--classes",
+        type=int,
+        nargs="+",
+        metavar="N",
+        help=f"the human verdict classes to act on (default "
+        f"{' '.join(str(name) for name in label_migration_module.KEPT_CLASSES)}; a key "
+        f"carrying two verdicts is in if either is named)",
+    )
+
+
+def _staging_store(parser) -> None:
+    """`--store` on one staging verb.
+
+    On each verb and not on the group, because the group's verb is required: a
+    flag declared only above it would have to be typed before the verb, which is
+    not how any other verb in this file reads. `census` does not take it — it is a
+    census of the pool and writes into no staging store at all.
+    """
+    parser.add_argument(
+        "--store",
+        metavar="PATH",
+        default=str(label_migration_module.DEFAULT_STORE),
+        help=f"the staging store this run owns, under the checkout unless absolute "
+        f"(default {label_migration_module.DEFAULT_STORE.as_posix()})",
+    )
+
+
+def curate_label_migration(args: argparse.Namespace) -> int:
+    """Stage the judged recipes at candidate geometry, score them, and read them out."""
+    from fractal_wallpapers.curation import label_migration
+
+    store = getattr(args, "store", None)
+    doing = {
+        "census": lambda: label_migration.census(),
+        "derive": lambda: label_migration.derive(store),
+        "render": lambda: label_migration.render(
+            store, limit=args.limit, workers=args.workers, classes=_kept_classes(args)
+        ),
+        "score": lambda: label_migration.score(store, device=args.device, batch=args.batch),
+        "readout": lambda: label_migration.readout(
+            store, stamp=args.stamp, classes=_kept_classes(args)
+        ),
+        "page": lambda: label_migration.page(store, classes=_kept_classes(args)),
+    }[args.what]
+    try:
+        report = doing()
+    except (label_migration.MigrationError, OSError) as refusal:
+        print(refusal)
+        return 1
+    if getattr(args, "out", None):
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"{out}")
+        return 0
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -4867,3 +4941,124 @@ def add_commands(subcommands) -> None:
         "--sheet-name", default="cascade_vs_rank_key", help="what to call this sheet's directory"
     )
     seating_sheet.set_defaults(handler=curate_seat_sheet)
+
+    migrating = steps.add_parser(
+        "label-migration",
+        help="the judged recipes re-expressed at candidate geometry, staged and read out",
+        description=(
+            "Every row resolving through both finished-render stores carries the whole "
+            "recipe of a picture somebody judged, at 1280x720 ss2. This derives the same "
+            "recipe at candidate geometry — geometry changed and nothing else — renders it, "
+            "and reads it through the shipped render judge and the fine-tier head. It "
+            "STAGES: nothing is written into the candidate ledger, its score sidecar, the "
+            "fine head's pool scores or either label store, and merging is a separate act "
+            "against a separate decision. Every labelling sitting makes new rows, so each "
+            "stage is resumable and re-uses every picture already on disk."
+        ),
+    )
+    migrating.set_defaults(handler=curate_label_migration)
+    migration_verbs = migrating.add_subparsers(dest="what", required=True)
+
+    fine_census = migration_verbs.add_parser(
+        "census",
+        help="how much of the ledger the fine head has read, and what the gap costs",
+        description=(
+            "Read-only, and about the POOL rather than the corpora. Per mode: the rows, the "
+            "ones carrying a p_fine reading, and — the question — how many of the unscored "
+            "ones clear their own mode's headroom bar and so would be seatable if scored, "
+            "split by whether they still have a picture. The record names the code path "
+            "that decides who the fine head runs on."
+        ),
+    )
+    fine_census.add_argument("--out", metavar="PATH", help="write the census there")
+
+    deriving = migration_verbs.add_parser(
+        "derive",
+        help="every resolved label row as a recipe at candidate geometry",
+        description=(
+            "Both stores, every label class. Renders nothing. Reports how many derived "
+            "recipes the candidate ledger already holds, which is the first key-level "
+            "overlap figure this project has taken — the two stores have only ever been "
+            "compared by place."
+        ),
+    )
+    _staging_store(deriving)
+    deriving.add_argument("--out", metavar="PATH", help="write the record there")
+
+    drawing = migration_verbs.add_parser(
+        "render",
+        help="draw every derived recipe at candidate geometry",
+        description=(
+            "Each at its OWN recipe['mode'] and never the routed mode. Levelled like any "
+            "candidate, and the levelled colormap is kept beside the picture rather than "
+            "swept: defining levelling once at eval resolution is a change somebody intends "
+            "to make and these curves are its seed. Resumable — a picture on disk is not "
+            "made again and its stamp is carried forward."
+        ),
+    )
+    _staging_store(drawing)
+    _population_flag(drawing)
+    drawing.add_argument("--limit", type=int, help="render only the first this many recipes")
+    drawing.add_argument(
+        "--workers",
+        type=int,
+        default=label_migration_module.WORKERS,
+        help=f"engines at once (default {label_migration_module.WORKERS}, this machine's "
+        f"render pool)",
+    )
+    drawing.add_argument("--out", metavar="PATH", help="write the record there")
+
+    reading_both = migration_verbs.add_parser(
+        "score",
+        help="the shipped render judge and the fine head, both at candidate geometry",
+        description=(
+            "The existing regime and no second one: every staged picture is 640x360 ss2, "
+            "which is what the sidecar holds and what both heads are deployed against. "
+            "Nothing is scored at label geometry, nothing is written into pool_scores.jsonl "
+            "and rerender.rescore is not touched."
+        ),
+    )
+    _staging_store(reading_both)
+    device_flag(reading_both)
+    reading_both.add_argument(
+        "--batch",
+        type=int,
+        default=label_migration_module.SCORE_BATCH,
+        help=f"pictures per forward pass (default {label_migration_module.SCORE_BATCH})",
+    )
+    reading_both.add_argument("--out", metavar="PATH", help="write the record there")
+
+    reading_out = migration_verbs.add_parser(
+        "readout",
+        help="the distributions, the bars, the places, and what a prune would cost",
+        description=(
+            "Per human label class the shape of both columns; the label-4 rows against "
+            "their mode's render-judge bar and the fine bar; where the ones clearing both "
+            "stand against a recorded gallery; which judged recipes the candidate path "
+            "could produce at all, cross-tabbed by class and by store and split by what "
+            "puts a recipe outside, with the gallery's own seats as the control; and what "
+            "retention.decide would do to them on arrival. It PRICES the merge and does "
+            "not make one."
+        ),
+    )
+    _staging_store(reading_out)
+    _population_flag(reading_out)
+    reading_out.add_argument(
+        "--stamp",
+        metavar="STAMP",
+        help="the recorded gallery to compare places against (default the latest PUBLISHED)",
+    )
+    reading_out.add_argument("--out", metavar="PATH", help="write the record there")
+
+    paging = migration_verbs.add_parser(
+        "page",
+        help="one entry per label-4 verdict: the judged picture beside the candidate",
+        description=(
+            "Self-contained, pictures beside it, both sides written at one width so the "
+            "pair is a comparison at one display size. Sorted by p_fine ascending, so the "
+            "rows the pipeline likes least come first."
+        ),
+    )
+    _staging_store(paging)
+    _population_flag(paging)
+    paging.add_argument("--out", metavar="PATH", help="write the record there")

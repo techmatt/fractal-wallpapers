@@ -715,6 +715,14 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "merge": ("--name",),
         "read": ("--name",),
     },
+    "label-migration": {
+        "census": ("--out",),
+        "derive": ("--store", "--out"),
+        "render": ("--store", "--classes", "--limit", "--workers", "--out"),
+        "score": ("--store", "--device", "--batch", "--out"),
+        "readout": ("--store", "--classes", "--stamp", "--out"),
+        "page": ("--store", "--classes", "--out"),
+    },
 }
 
 
@@ -770,21 +778,23 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Seventeen groups and seventy-one verbs, and no group left spelling its verb as
+    """Eighteen groups and seventy-seven verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored.
 
     Eighteen and seventy-three until 2026-09-06, when `gallery-store` and its three
     went with the retired gallery passes' gate store; seventy until 2026-09-07, when
-    `candidate-ledger ratchet` arrived to read the store's high-water mark."""
+    `candidate-ledger ratchet` arrived to read the store's high-water mark; seventeen and
+    seventy-one until 2026-09-08, when `label-migration` and its six arrived to stage the
+    judged recipes at candidate geometry."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 71
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 77
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "
