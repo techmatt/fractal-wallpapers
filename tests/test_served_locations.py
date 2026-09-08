@@ -28,6 +28,26 @@ FRAME = {"center_re": "-0.5", "center_im": "0", "width": "0.4"}
 ELSEWHERE = {"center_re": "0.28", "center_im": "0.01", "width": "0.001"}
 
 
+@pytest.fixture(autouse=True)
+def unbound(tmp_path, monkeypatch):
+    """The artifacts tier redirected at its root, for every test in this file.
+
+    `retire_repeats` redraws each affected run's release sheet, and
+    `rejection.redraw` writes it through `run_layout.run_dir()` — the artifacts
+    tier, which `records.use(tmp_path)` does not move. This file wrote
+    `artifacts/curation/runs/earlier/release_sheet_earlier.html` onto the live
+    tree on every run until 2026-09-07. `tests/test_release_bar.py`'s `unbound`
+    carries the full reasoning; the two files leaked through the same call.
+    """
+    from fractal_wallpapers import paths
+
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
+    (tmp_path / "artifacts").mkdir(parents=True, exist_ok=True)
+    yield
+    records.use(None)
+
+
 def attempt(number: int, head: str, score: float, viewport: dict) -> dict:
     return {
         "attempt": number,

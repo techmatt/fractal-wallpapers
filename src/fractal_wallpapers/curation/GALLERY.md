@@ -2258,6 +2258,62 @@ A candidate the key could not read sorts last in the walk, and it counts at the
 **bottom** of every percentile here for the same reason — anything else would inflate
 every percentile by the size of the hole.
 
+#### The desire list is aimable at cell × mode and nowhere else
+
+The instrument above answers *which seats are weak*. The **desire list** is the
+next question — *what would a mining leg have to make for those seats to improve*
+— and it is built by holding the other 999 seats and every rule fixed, unseating
+one, and asking what `rules.State` would then admit. That is the swap loop's own
+question rather than a re-solve. Five outcomes: **available** (a rival over the
+threshold exists and the rules admit it, so the seating has slack and no render is
+owed), then *blocked*, *depth*, *breadth*, *unwinnable*; the last three are the
+targets.
+
+**Only cell × mode names a coordinate a leg can be pointed at.** Measured
+2026-09-07 against a fresh cascade n=1000 solve:
+
+| reading | coordinates | targets at X=0.50 | at X=0.90 |
+|---|---|---|---|
+| colour cell | 48 | 3 | 3 |
+| mode | 13 | 0 | 14 |
+| **cell × mode** | **607** | **18** | **84** |
+
+Cell alone and mode alone both dump the whole below-X mass into *blocked*: a set
+that big always holds a strong row somewhere, so the instrument answers "you
+already have one" and names nothing. Cell × mode gives 14 coordinates at X=0.50
+and 63 at X=0.90, and `--draw-cells` plus a mode roster is exactly that pair of
+arguments. **`blocked` is the mass and `cell_allowance` is why** — over the top-20
+rivals of every blocked seat at X=0.50, `cell_allowance` 1,740 · `location` 324 ·
+`spiral` 211 · `twin` 35, with `group_cap` and `family_allowance` naming **zero**
+refusals at every X.
+
+Two things to hold. **The list's length is robust and its labels are not**: over
+breadth cuts of 20/50/100 rows and unwinnable gaps of 0.15/0.25/0.40 the target
+total is invariant — 18 at X=0.50, 39 at 0.75, 84 at 0.90 under every combination
+— while the depth/breadth/unwinnable split moves a lot (at X=0.90: 29/43/12,
+18/60/6, 10/74/0). Read the count; do not lean on the split. And **`unwinnable`
+must never be concluded on the fine head alone** while lime, cyan and blue carry a
+confirmed hue-shaped judge bias: light-and-cool cells hold 17.3% of their seats
+below 0.10 against 3.0% elsewhere, and every X=0.50 target with a cell is
+light-and-cool.
+
+**Re-derive it from scratch after each leg; do not maintain it incrementally.**
+Filling one cell moves the assignment, and both the `available` column and the
+blocked set are functions of the whole seating, so an incremental update is a
+re-solve wearing a hat. Cold on this machine: pool 21 s, cascade order ~8 s, solve
+72 s, and the desire pass itself **34 s** given the pool in hand — the pass is
+cheap because the signature sidecar answers every reduced signature and only ~940
+full clouds are fetched. So it is a `curate solve run --key cascade` plus one
+sweep, it is one pool-holding process, and it **belongs in the same leg as the
+solve** rather than in one of its own.
+
+The probe is a **1-swap** counterfactual by definition, so it cannot see a target
+only a 2-swap or an augmenting chain would retire: the list is an upper bound on
+what mining must supply. It is also the reading that showed the cascade seating
+has no cheaper move left — `available` is **0** at X=0.50 under the cascade, where
+the rank-key record has 561 of 610 below-X seats available and a greedy 1-swap
+pass lifts 506 of them with no mining at all.
+
 ### `curate flatness` — the dead-space column, in a sidecar beside the scores
 
 ```

@@ -158,7 +158,23 @@ MANIFEST_SUFFIX = "manifest.json"
 #: redirects at the tier roots looks complete without having moved.
 HELD_STILL = ("data/curation/candidate_ledger/ratchet.jsonl",)
 
+#: The **regenerable** tree's half of the same question, and the reason this guard
+#: is not about tracked files any more. Every path above resolves off
+#: `repo_root()`; these resolve off a tier, so a fixture *can* move them — and the
+#: class of miss is a fixture that moves one tier and not the other. That is what
+#: `records.use(tmp_path)` does: the decision rows go to a temporary store and the
+#: run's release sheet, written through `run_layout.run_dir()`, does not. Two test
+#: files leaked whole run directories onto this machine's live tree that way,
+#: `runs/r` and `runs/earlier`, until 2026-09-07; a leg that nothing ran is then a
+#: leg every inventory and the orphan sweep have to have an answer for.
+#:
+#: A **name at a fixed depth**, never a walk: this is the tree `CLAUDE.md` says a
+#: recursive grep takes tens of minutes over. One `scandir` of about fifteen
+#: entries, twice a session.
+LIVE_LEG_DIRS = (("curation", "runs"),)
+
 RECORDS_AT_START = pytest.StashKey[dict]()
+LEGS_AT_START = pytest.StashKey[dict]()
 
 
 def tracked_records() -> dict:
@@ -192,29 +208,66 @@ def tracked_records() -> dict:
     return found
 
 
+def live_legs() -> dict:
+    """`{tracked name: [entry names]}` for each of [`LIVE_LEG_DIRS`] on the live tree.
+
+    Off `hot_root()` rather than `paths.under`, and asked only in the two session
+    hooks — where no test is running, so no `monkeypatch` is standing and the root
+    is this machine's own. `under` would resolve the subtree's tier, which is a
+    question about where the bulk lives; this one is about where a write lands.
+    """
+    from fractal_wallpapers import paths
+
+    try:
+        root = paths.hot_root()
+    except paths.StorageRefusal:
+        return {}
+    found = {}
+    for parts in LIVE_LEG_DIRS:
+        where = root.joinpath(*parts)
+        if where.is_dir():
+            found["/".join((paths.ARTIFACTS_NAME, *parts))] = sorted(
+                entry.name for entry in where.iterdir()
+            )
+    return found
+
+
 def pytest_sessionstart(session) -> None:
     session.config.stash[RECORDS_AT_START] = tracked_records()
+    session.config.stash[LEGS_AT_START] = live_legs()
 
 
 def pytest_sessionfinish(session, exitstatus) -> None:
-    """Fail the session over a tracked record this run rewrote, and name it.
+    """Fail the session over a live record or a live leg this run wrote, and name it.
 
-    A **backstop**, not a substitute for redirecting properly. The fixtures that
-    exercise a durable redirect at the tier roots, which is where the live file
-    and the copy resolve from; a manifest resolves off `repo_root()` instead and
-    there is no root to redirect it at, because `repo_root` is imported by value
-    into three dozen modules. So that is the one class of path a fixture can miss
-    while looking complete, and this catches the one it missed.
+    A **backstop**, not a substitute for redirecting properly. It answers one
+    question — *did a test write to this machine's real tree* — and it asks it on
+    both tiers, because the class of miss is the same on each: a fixture that
+    redirects one store's live files and leaves a second path resolving somewhere
+    it never looked.
 
-    [`HELD_STILL`]'s ratchet log is the same class and joined this on 2026-09-07,
-    when `prune` gained a tracked writer. Its own redirect is autouse, so the
-    fixtures cannot forget it — this is here for the day somebody overrides that
-    fixture the way `test_signatures.py` overrides the sidecar's.
+    On the **tracked** tier that path resolves off `repo_root()`, so there is no
+    root to redirect it at — `repo_root` is imported by value into three dozen
+    modules. A durable's manifest is the shape, and [`HELD_STILL`]'s ratchet log
+    joined it on 2026-09-07 when `prune` gained a tracked writer.
 
-    It names the file and the command that puts it back, because a manifest
-    written out of a `tmp_path` store is a wrong count in the history and the next
-    `durability.check` believes it, and a ratchet row written out of one is a
-    census of three synthetic rows in a guard's high-water mark.
+    On the **regenerable** tier the path does follow a root; what goes wrong is
+    that a fixture moves the other one. `records.use(tmp_path)` sends the decision
+    rows to a temporary store and leaves the run's release sheet going through
+    `run_layout.run_dir()` to the live artifacts tree — which is how
+    `artifacts/curation/runs/{r,earlier}` came to be two whole legs nothing ever
+    ran, found on 2026-09-07 by an audit of what the orphan sweep was looking at.
+    [`LIVE_LEG_DIRS`] is that half.
+
+    **One mechanism and two snapshots**, deliberately: a second hook reporting the
+    same class of fault through a second writer is the thing that goes quiet when
+    somebody moves one of them.
+
+    It names what moved and how to put it back, because a manifest written out of
+    a `tmp_path` store is a wrong count in the history that the next
+    `durability.check` believes, a ratchet row written out of one is a census of
+    three synthetic rows in a guard's high-water mark, and a leg written out of
+    one is work the sweeps then have to have an answer for.
 
     A hook rather than a session-scoped fixture, so that it brackets collection
     too; and reported straight to the terminal reporter rather than through
@@ -226,22 +279,43 @@ def pytest_sessionfinish(session, exitstatus) -> None:
         return
     after = tracked_records()
     moved = sorted(name for name in set(before) | set(after) if before.get(name) != after.get(name))
-    if not moved:
+    grew = _legs_that_appeared(session.config.stash.get(LEGS_AT_START, None) or {})
+    if not moved and not grew:
         return
     reporter = session.config.pluginmanager.get_plugin("terminalreporter")
     if reporter is not None:
-        reporter.write_sep("=", "TRACKED RECORDS REWRITTEN BY THIS RUN", red=True, bold=True)
+        reporter.write_sep("=", "THIS RUN WROTE TO THE LIVE TREE", red=True, bold=True)
         for name in moved:
             reporter.write_line(f"  {name}")
+        for name in grew:
+            reporter.write_line(f"  {name}  (a leg that did not exist when the run started)")
         reporter.write_line("")
-        reporter.write_line(
-            "A test wrote a tracked record instead of a redirected one, so the history now "
-            "records a count that came out of a temporary store. Put them back with "
-            f"`git checkout -- {' '.join(moved)}`, then find the fixture: it is redirecting a "
-            "store's live files without redirecting the one path that resolves off "
-            "`repo_root()` rather than off a tier — a durable's manifest, or the ratchet log."
-        )
+        if moved:
+            reporter.write_line(
+                "A test wrote a tracked record instead of a redirected one, so the history now "
+                "records a count that came out of a temporary store. Put them back with "
+                f"`git checkout -- {' '.join(moved)}`, then find the fixture: it is redirecting "
+                "a store's live files without redirecting the one path that resolves off "
+                "`repo_root()` rather than off a tier — a durable's manifest, or the ratchet log."
+            )
+        if grew:
+            reporter.write_line(
+                "A test wrote a run directory onto the regenerable tree. Delete it, then find "
+                "the fixture: it redirected the tracked tier — `records.use(tmp_path)` — and "
+                "left something writing through `run_layout.run_dir()` to the artifacts tier. "
+                "Redirect both, at the roots, the way `tests/test_release_bar.py` does."
+            )
     session.exitstatus = pytest.ExitCode.TESTS_FAILED
+
+
+def _legs_that_appeared(before: dict) -> list[str]:
+    """`<tracked name>/<entry>` for every leg the live tree gained during this run."""
+    after = live_legs()
+    return sorted(
+        f"{where}/{name}"
+        for where, names in after.items()
+        for name in set(names) - set(before.get(where, ()))
+    )
 
 
 # --------------------------------------------------------------------------- #

@@ -17,7 +17,27 @@ from fractal_wallpapers.curation import floors, records, rejection, selection, s
 
 
 @pytest.fixture(autouse=True)
-def unbound():
+def unbound(tmp_path, monkeypatch):
+    """Both tiers redirected, and at their roots.
+
+    `records.use` moves the **tracked** tier, which is where a decision row goes.
+    A rejection also redraws the run's release sheet, and `rejection.redraw`
+    writes it through `run_layout.run_dir()` to the **artifacts** tier — so for as
+    long as this fixture moved one of the two, every run of this file wrote
+    `artifacts/curation/runs/r/release_sheet_r.html` onto the live tree, where the
+    orphan sweep and every inventory then found a leg nothing had run.
+
+    At the roots and not at the accessor: `run_layout.run_dir` is one of six
+    call sites that name a file a past run wrote, and a `monkeypatch.setattr` on
+    it would be complete only against today's call graph. `tests/README.md`'s
+    *Redirecting a store: at the roots, never per accessor* is the rule and this
+    is the third time it has been bought.
+    """
+    from fractal_wallpapers import paths
+
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
+    (tmp_path / "artifacts").mkdir(parents=True, exist_ok=True)
     records.use(None)
     yield
     records.use(None)

@@ -2,9 +2,10 @@
 
 Two sweeps pointed in opposite directions. [`prune`] is the rule the store is
 bounded by, acting on rows and taking their pictures with them; [`orphans`] is
-the backstop under it, acting on pictures no row names at all. [`delete_pictures`]
-is the single verb both go through, and the only place this project unlinks a
-candidate.
+the backstop under it, acting on pictures **no store** names at all — the ledger,
+the two tracked decision stores and the kept gallery attempt rows, unioned in
+[`_named_by_a_store`]. [`delete_pictures`] is the single verb both go through,
+and the only place this project unlinks a candidate.
 
 **Only one of the two writes to [`ratchet`], and the asymmetry is the point.** The
 ratchet is a guard over the *rows*, so a prune records what it took and the orphan
@@ -105,42 +106,122 @@ def picture_dirs() -> list[Path]:
     return found
 
 
-def _named_by_the_ledger(tiers) -> tuple[dict, set]:
-    """`({pictures directory: {file name}}, {directory a MERGE stamped})`.
+def _decision_rows(tiers) -> tuple[list[dict], dict]:
+    """Every decision row this project keeps, slimmed to the four fields that
+    identify a picture, with `{store: rows read}` beside it.
+
+    Three stores, and they are three because the decisions were written by three
+    different things and never merged: the tracked release store, the tracked gate
+    store, and the retired gallery passes' attempt rows under
+    `artifacts/curation/gallery/<pass>/gate.jsonl` — 14,438 of those, kept on
+    Matt's ruling of 2026-09-07 and read by nothing else in the tree.
+
+    **Slimmed rather than read whole**, because a decision row carries its entire
+    join and the attempt rows alone are 53 MB: `origin_of` reads `source`, `run`
+    and `candidate` and nothing more, so those plus `key` are the whole projection
+    and the rest never reaches memory.
+    """
+    from fractal_wallpapers.curation import records
+
+    def slim(row: dict) -> dict:
+        return {
+            "key": row.get("key"),
+            "run": row.get("run"),
+            "candidate": row.get("candidate"),
+            "source": row.get("source"),
+        }
+
+    rows: list[dict] = []
+    counts: dict = {}
+    for name, stage in (("release_store", records.RELEASE), ("gate_store", records.GATE)):
+        read = [slim(row) for row in records.read_decisions(stage)]
+        counts[name] = len(read)
+        rows += read
+
+    attempts = 0
+    gallery = tiers.resolve(("curation", "gallery"))
+    if gallery.is_dir():
+        for pass_dir in sorted(gallery.iterdir()):
+            path = pass_dir / "gate.jsonl"
+            if not path.is_file():
+                continue
+            with path.open(encoding="utf-8") as lines:
+                for line in lines:
+                    if line.strip():
+                        rows.append(slim(json.loads(line)))
+                        attempts += 1
+    counts["gallery_attempts"] = attempts
+    return rows, counts
+
+
+def _named_by_a_store(tiers) -> tuple[dict, set, dict]:
+    """`({pictures directory: {file name}}, {directory a MERGE stamped}, {source: rows})`.
+
+    **The reference set is the union over every store that names a picture**, not
+    the candidate ledger alone, and that changed on 2026-09-07 because the older
+    rule deleted work. The ledger holds `runs` by [`backfill`], which read the two
+    decision stores once — so it holds what those runs *decided about* and drifts
+    away from it with every prune. On 2026-09-02 the gap was 3,610 pictures: they
+    were swept as garbage and `curate re-render` put 3,615 of them back the next
+    morning, because the pool still named them. A sweep and a repair pointed at
+    the same files is a loop, and the union is which of the two was wrong.
 
     Bucketed by directory and resolved through one shared [`paths.Tiers`]
     snapshot, for [`present_pictures`]'s reason: the alternative re-reads the
-    settings once per row, which was 215 s against 1.0 s over this store.
+    settings once per row, which was 215 s against 1.0 s over this store. The
+    decision rows are resolved **once per run** for the same reason — a run
+    directory is a fact about the run and not about the row, and there are
+    sixteen runs against seventeen thousand rows.
 
-    **The second set is the merge stamp and the marker is [`hunt_block`].** No leg
-    writes a stamp of its own — `hunt.merge`, `mine.merge` and `depth.merge` build
-    a report and the CLI prints it — but every row those three hand over carries a
-    `hunt` block, and no other row in the store does. It separates exactly: of
-    177,993 rows on 2026-09-02, **166,118 carry one**, which is `depth` 158,628 +
-    `mine` 4,566 + `reframe_draw` 2,283 + `hunt` 641 to the row, and the 11,875
-    without one are the whole of `runs`.
+    **The second set is the merge stamp, the marker is [`hunt_block`], and only
+    the ledger may write to it.** No leg writes a stamp of its own — `hunt.merge`,
+    `mine.merge` and `depth.merge` build a report and the CLI prints it — but
+    every row those three hand over carries a `hunt` block, and no other row in
+    the store does. It separates exactly: of 177,993 rows on 2026-09-02, **166,118
+    carry one**, which is `depth` 158,628 + `mine` 4,566 + `reframe_draw` 2,283 +
+    `hunt` 641 to the row, and the 11,875 without one are the whole of `runs`.
 
-    That difference is the point rather than a curiosity. The `runs` legs are in
-    this ledger by [`backfill`], which reads the two **decision stores** — so the
-    ledger holds what those runs *decided about* and never what they *rendered*,
-    and a picture of theirs with no row is not a picture anything decided to drop.
-    A backfilled leg therefore does not carry the stamp however many rows name it.
+    A decision row naming a picture is therefore **not** evidence that its leg
+    merged, and folding the decision stores into the stamp would say the opposite:
+    every backfilled `runs` leg would read as merged and be swept unasked, which
+    is the one thing the listing exists to prevent. The union widens what is kept
+    and touches nothing about which legs are decidable.
     """
     from collections import defaultdict
 
+    from fractal_wallpapers.curation import rescore
+
     wanted: dict = defaultdict(set)
     stamped: set = set()
+    named = 0
     for row in store.stream():
-        named = row.get("picture")
-        if not named:
+        stored = row.get("picture")
+        if not stored:
             continue
-        where = rehome(str(named), tiers)
+        where = rehome(str(stored), tiers)
         if where is None:
             continue
+        named += 1
         wanted[where.parent].add(where.name)
         if row.get("hunt") is not None:
             stamped.add(where.parent)
-    return wanted, stamped
+
+    decisions, reference = _decision_rows(tiers)
+    reference = {"candidate_ledger": named, **reference}
+    # The whole chain, and the pool is what lets it be followed: a gallery2 seat
+    # of a gallery1 seat of a run9 candidate is on record, and stopping at the
+    # first link names an id nothing ever made a picture of. One pool over all
+    # three stores, because the chain crosses them.
+    pool = {str(row["key"]): row for row in decisions if row.get("key")}
+    homes: dict = {}
+    for row in decisions:
+        run, candidate = rescore.origin_of(row, pool)
+        home = homes.get(run)
+        if home is None:
+            home = homes[run] = tiers.resolve(("curation", "runs", run, rescore.PICTURES))
+        wanted[home].add(f"{candidate}.jpg")
+    reference["pictures_named"] = sum(len(held) for held in wanted.values())
+    return wanted, stamped, reference
 
 
 def _unmerged_wanted(unmerged: tuple | str) -> set | str:
@@ -176,13 +257,26 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     because a prune only ever decides about rows it can see. This is the only
     thing that can, and that is the whole reason it exists.
 
+    ## What the reference set is
+
+    **Every store that names a picture**, unioned in [`_named_by_a_store`]: the
+    candidate ledger, the tracked release and gate stores, and the retired gallery
+    passes' attempt rows. Not the ledger alone, which is what it was until
+    2026-09-07 and what made the 09-02 sweep and `curate re-render` a loop 3,610
+    pictures wide. A picture a live store still names is not garbage whatever the
+    ledger has since pruned.
+
+    Deleting the pictures behind the kept gallery attempt rows may well be right
+    eventually. It is Matt's call and it is a **named act**, not a side effect of
+    a garbage sweep.
+
     ## The merge stamp decides which question a leg is asked
 
     A leg that has reached `merge` has handed the ledger everything it made, so
-    from that moment the **ledger alone** is the reference set: a picture in it
-    that no row names is a picture the retention rule has already decided about,
-    and keeping it because the leg's own `sequence.jsonl` still mentions it is
-    keeping a file against a decision rather than against an absence.
+    from that moment the **stores alone** are the reference set: a picture none of
+    them names is a picture the retention rule has already decided about, and
+    keeping it because the leg's own `sequence.jsonl` still mentions it is keeping
+    a file against a decision rather than against an absence.
 
     A leg that has **not** merged is the opposite case and it is not swept **unless
     a caller names it**. Its pictures are real work with no row anywhere, which is
@@ -194,24 +288,26 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
 
     `unmerged` is that pointing: leg names — as the listing prints them, or their
     last component — or [`ALL_UNMERGED`]. A named leg is swept **under the same
-    rule as a merged one**: what the ledger names is kept and the rest goes. That
+    rule as a merged one**: what a store names is kept and the rest goes. That
     is one rule rather than two, and it is why the two kinds of unmerged leg need
     no separate handling — a killed leg has no rows, so all of it goes; a
     backfilled `runs` leg keeps every picture its decision stores named and loses
-    the renders nothing decided about. The record reports them apart from the
-    ordinary sweep, under `swept_unmerged`, because a person who named a leg
-    should be able to read back what naming it cost.
+    the renders nothing decided about. **That sentence is true as of 2026-09-07
+    and was false while it stood**: the sweep read the ledger, and the ledger's
+    copy of those decisions goes stale with every prune. The record reports them
+    apart from the ordinary sweep, under `swept_unmerged`, because a person who
+    named a leg should be able to read back what naming it cost.
 
     **The stamp is the `hunt` block, read off the ledger and not off a file** — see
-    [`_named_by_the_ledger`], which works it out in the pass it was already making.
+    [`_named_by_a_store`], which works it out in the pass it was already making.
     Two consequences worth knowing. A leg whose every row was later pruned reads as
     unmerged and is skipped, which is the safe direction and frees nothing that is
     still there. And a leg that merged, then rendered more, then was killed has that
     tail swept — the one case the old leg-records union covered and this does not;
     `merge` it again before sweeping if that is its history.
 
-    `ledger_named` on each `unmerged` entry is how to tell the two kinds apart
-    without opening anything: **0** is a killed leg the ledger never heard of, and
+    `store_named` on each `unmerged` entry is how to tell the two kinds apart
+    without opening anything: **0** is a killed leg no store ever heard of, and
     the advice is literally re-merge or delete. A **large** number is a `runs`-era
     leg that is in the ledger by [`backfill`] and cannot be re-merged at all — its
     pictures outnumber its decisions because the decision stores were never the
@@ -229,10 +325,17 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     * the deletion is [`delete_pictures`] and nothing else, which re-homes each
       name as it unlinks and leaves alone any name with no artifacts component.
 
+    And the reference set is built **here**, in this call, off the stores
+    themselves — never handed in and never carried over from an earlier reading.
+    A sweep deciding what to unlink against a set somebody measured yesterday is
+    a sweep acting on a store that has since moved.
+
     `apply=False` is the default and is the whole of the dry run. Costs a
-    `scandir` per leg plus one streamed pass of the ledger: **9.9 s** over this
-    store on 2026-09-02, against about 31 s when it also read every leg's own
-    records with a regex — that pass was two thirds of the run.
+    `scandir` per leg, one streamed pass of the ledger and one of each decision
+    store: **9.9 s** over this store on 2026-09-02 before the union, against about
+    31 s when it also read every leg's own records with a regex — that pass was
+    two thirds of the run. The `reference` block on the record says what each
+    store contributed.
     """
     from collections import Counter
 
@@ -242,13 +345,13 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     named = _unmerged_wanted(unmerged)
     tiers = Tiers.current()
     roots = [Path(root).resolve() for root in (tiers.hot, tiers.archive) if root is not None]
-    wanted, stamped = _named_by_the_ledger(tiers)
+    wanted, stamped, reference = _named_by_a_store(tiers)
 
     by_subtree: dict = {}
     doomed: list = []
     unmerged: list = []
     swept: list = []
-    ledger_only: Counter = Counter()
+    unreferenced: Counter = Counter()
     for where in picture_dirs():
         # The check at the point of decision, and not carried over from the
         # enumeration. A directory that does not sit under a tier root is not
@@ -266,7 +369,7 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
                 "legs": 0,
                 "unmerged_legs": 0,
                 "pictures": 0,
-                "named_by_the_ledger": 0,
+                "named_by_a_store": 0,
                 "named_by_nothing": 0,
                 "skipped_unmerged": 0,
                 "bytes": 0,
@@ -296,14 +399,14 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
                 {
                     "leg": leg_name,
                     "pictures": len(stems),
-                    "ledger_named": len(held),
+                    "store_named": len(held),
                     "bytes": sum(stems.values()),
                     "why": "unmerged — re-merge or delete",
                 }
             )
             continue
         unnamed = sorted(name for name in stems if name not in held)
-        cell["named_by_the_ledger"] += len(stems) - len(unnamed)
+        cell["named_by_a_store"] += len(stems) - len(unnamed)
         if where not in stamped:
             # Named by the caller, so swept under the merged rule — and counted
             # apart, because "you asked for this leg" and "the retention rule
@@ -312,7 +415,7 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
                 {
                     "leg": leg_name,
                     "pictures": len(stems),
-                    "ledger_named": len(held),
+                    "store_named": len(held),
                     "deleting": len(unnamed),
                     "bytes": sum(stems[name] for name in unnamed),
                     "why": "unmerged, named by the caller",
@@ -320,7 +423,7 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
             )
         if not unnamed:
             continue
-        ledger_only[subtree] += len(unnamed)
+        unreferenced[subtree] += len(unnamed)
         cell["named_by_nothing"] += len(unnamed)
         cell["bytes"] += sum(stems[name] for name in unnamed)
         doomed.extend(tracked_name(where / name) for name in unnamed)
@@ -331,8 +434,9 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
         "applied": bool(apply),
         "subtrees": list(POOL_SUBTREES),
         "by_subtree": dict(sorted(by_subtree.items())),
+        "reference": reference,
         "pictures_on_disk": sum(cell["pictures"] for cell in by_subtree.values()),
-        "carrying_no_ledger_row": dict(sorted(ledger_only.items())),
+        "carrying_no_row": dict(sorted(unreferenced.items())),
         "named_by_nothing": len(doomed),
         "bytes_named_by_nothing": sum(cell["bytes"] for cell in by_subtree.values()),
         "unmerged": sorted(unmerged, key=lambda held: -held["pictures"]),
@@ -346,19 +450,19 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     log(
         f"[orphans] {record['pictures_on_disk']:,} pictures; "
         f"{len(unmerged):,} unmerged leg(s) holding {record['skipped_unmerged']:,} were "
-        f"skipped, and {len(doomed):,} of the rest are named by no ledger row"
+        f"skipped, and {len(doomed):,} of the rest are named by no store at all"
     )
     for held in record["swept_unmerged"]:
         log(
             f"[orphans] unmerged and named by the caller: {held['leg']} — deleting "
             f"{held['deleting']:,} of {held['pictures']:,} picture(s), keeping the "
-            f"{held['ledger_named']:,} the ledger names"
+            f"{held['store_named']:,} a store names"
         )
     for held in record["unmerged"]:
         log(
             f"[orphans] unmerged — re-merge or delete: {held['leg']} "
-            f"({held['pictures']:,} pictures, {held['ledger_named']:,} of them named by a "
-            f"ledger row this leg never merged)"
+            f"({held['pictures']:,} pictures, {held['store_named']:,} of them named by a "
+            f"row this leg never merged)"
         )
     if not apply:
         record["pictures"] = {"would_delete": len(doomed)}

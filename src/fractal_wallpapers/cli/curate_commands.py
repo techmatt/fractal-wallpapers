@@ -3276,9 +3276,10 @@ def add_commands(subcommands) -> None:
             "acts on, and which of them is thin. `orphans` is the other direction and the "
             "backstop under `prune`: a KILLED leg never reaches `merge`, so its pictures "
             "are on disk with no row ever written for them and no prune can free them. A "
-            "leg that HAS merged is decided by the ledger alone; one that has not is "
-            "skipped and listed for a person, never swept. It is a dry run unless "
-            "`--apply` says otherwise."
+            "leg that HAS merged is decided by every store that names a picture — the "
+            "ledger, the two decision stores and the kept gallery attempt rows; one that "
+            "has not is skipped and listed for a person, never swept. It is a dry run "
+            "unless `--apply` says otherwise."
         ),
     )
     ledger_store.set_defaults(handler=curate_candidate_ledger)
