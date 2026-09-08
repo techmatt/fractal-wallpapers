@@ -160,6 +160,14 @@ into a cut, that is a second ruling and a `Restatement`.
   `score-pool` reads and the only ones the cascade orders. On the other 223,438
   this head has no output, because it never saw a row like them, and nothing is
   written for them: a score that exists only to be misread is worse than a gap.
+  **Re-read on the 2026-09-07 pool — 277,542 candidates, 40,127 clearing — the
+  cover is not merely equal in count but equal as a SET**: `clearing` and
+  `above_bar` are the same 40,127 rows, again with every accepted mode on the
+  default rule and none on the fallback. So a filter on `p_fine` narrows the
+  seatable pool and can never be a coverage hole wearing one, which is what makes
+  a filtered re-solve interpretable at all
+  (`curation/GALLERY.md`'s *A `p_fine` bar on the view raises the objective and
+  deletes the worst fifth*).
 
 ## The batch effect, after stratification
 

@@ -1645,7 +1645,11 @@ release.** Nothing in selection or in the release path groups the library at all
 `ceiling.group_cap` caps the seats one [palette group](../palettes/groups.py) may
 take, and a group is a linkage cluster of near-duplicate maps rather than a single
 map — so this paragraph is about a **run's release** and never about the
-collection. It said otherwise until 2026-09-07 and was wrong on the day it was
+collection. (That cap **costs nothing at n=1000 and is not what enforces diversity
+there either**, on three independent measurements —
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the palette-group cap costs at n=1000,
+measured 2026-09-07* — so the exception is a real difference in the code and not
+much of one in the outcome.) It said otherwise until 2026-09-07 and was wrong on the day it was
 written. (A sixteen-way clustering was tracked beside the maps
 until 2026-09-02 as a figure's record, read by nothing but the command that wrote
 it; the website groups by dominant hue and it was deleted.) So two seated rows may
