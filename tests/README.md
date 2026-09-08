@@ -385,6 +385,30 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+45, both lanes, and the two counts agree.**
+`FIX_ckpt116_autolevel_replay_0908`, 2026-09-08, idle box, `.[dev,models]` with a
+release engine, both taken **after** the backfill and comparison legs rather than
+beside them. **123.99 s over 4,008, 128 deselected** fast — **4,136** against the
+4,091 the entry below this one left — and **4,136 passed, 0 skipped, 0 red, 7:05**
+slow. The slow lane's total is exactly the fast lane's collected total, which is
+[*What "the fast-lane count" means*](#what-the-fast-lane-count-means)' rule
+holding rather than a coincidence to note.
+
+The +45 is `test_stamps.py` (10) and `test_backfill.py` (12) whole, plus the
+levelling-replay guards spread over four existing files: `test_autolevel` +6,
+`test_candidate_ledger` +13 — ten of those the parametrized proof that each keyed
+member *moves* the key — `test_curation_release` +2 and `test_depth` +2. **All 45
+are fast and the deselected count does not move**, 128 either side: every one is
+arithmetic over a fixture or a stub, and the two legs that did real work — 277
+backfill renders and 24 release-geometry renders — are legs rather than guards.
+
+The clock is 123.99 s against 122.79 s over forty-five more tests, so the
+per-test cost is flat. The slow lane's **7:05 against 7:17 over ninety-three more
+tests** is the one worth a sentence: it is not a saving anything here bought, it
+is the render cache being warm where the earlier reading had paid for
+`renders plan`/`renders build` inside its own window. Zero skips on both, which
+is the normal reading now.
+
 **+28 that reconciles exactly, fast lane only, and the surface table caught the
 group.** `MIGRATE_ckpt116_label_recipes_0908`, 2026-09-08, idle box,
 `.[dev,models]` with a release engine, taken **after** the render leg rather than

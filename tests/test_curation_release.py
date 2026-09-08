@@ -458,3 +458,54 @@ def test_a_varied_seat_renders_the_varied_mode_on_BOTH_parity_arms(monkeypatch, 
         "concurrent",
     }
     assert report["rows"] == 1
+
+
+# --------------------------------------------------------------------------- #
+# The levelling decision, inherited rather than retaken.
+# --------------------------------------------------------------------------- #
+def test_a_rows_inherited_curve_reaches_the_render_rather_than_being_dropped(monkeypatch) -> None:
+    """`mode_params`' failure, one field over. A task that dropped the curve would
+    render a picture that measured itself at release geometry — a perfectly good
+    picture of a levelling nobody judged, under the seat's own name."""
+    from fractal_wallpapers.curation import colorize
+
+    seen: dict = {}
+
+    def render(row, mode, colormap, cyclic, output, **rest):
+        seen.update(rest)
+        return Path(output), None
+
+    monkeypatch.setattr(colorize, "render", render)
+    borrowed = {"curve": {"applies": True, "identity": False}, "from": {"key": "abc"}}
+    inheriting = release.Task(
+        id="a",
+        row={},
+        colormap="x",
+        mode="smooth",
+        output="a.png",
+        geometry={},
+        autolevel=borrowed,
+    )
+    assert release.render_task(inheriting).ok
+    assert seen["borrowed"] == borrowed
+    # A seat with no curve on any record still renders, deciding for itself.
+    release.render_task(task("b"))
+    assert seen["borrowed"] is None
+
+
+def test_every_builder_of_a_task_carries_the_levelling_it_inherits() -> None:
+    """The same all-of-them claim `mode_params` gets, and for the same reason: one
+    builder that forgot would ship a seat levelled by a rule nobody judged, and the
+    picture would look fine."""
+    import inspect
+
+    from fractal_wallpapers.curation import run, solve, votes
+
+    for module in (checks, run, solve, votes):
+        source = inspect.getsource(module)
+        built = source.count("release.Task(")
+        assert built, f"{module.__name__} no longer builds a release task"
+        assert source.count("autolevel=") >= built, (
+            f"{module.__name__} builds {built} release task(s) and names `autolevel` on "
+            f"fewer — a task without it measures itself at release geometry"
+        )

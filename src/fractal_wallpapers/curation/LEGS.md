@@ -1066,9 +1066,29 @@ redrawn and re-measured derives a black point of **0.6336** against the **0.5953
 the run stamped, on `ed49980b` — so a seat redrawn off a re-measurement is a
 different picture published under the same name.
 
-**Old rows are left exactly as they are.** A tracked record is never edited in
-place, and a curve back-filled from a re-measurement would be a *worse* record than
-an absent one: it would look replayable and be wrong. `depth.levelling_of` reads a
+⚠ **That inference does not follow, and the same row is the counter-example.**
+Re-run on 2026-09-08, `ed49980b03866364` re-derives a black point of **0.5379** —
+a third value, further from the stamped one than the figure above — and the stop
+list it rebuilds is **byte-identical to the `crisis-25.json` the row actually
+shipped through**. The band is `black_pt ∈ (0, 0.3008)` and all three readings sit
+outside it, so all three **project to the same edge** and the curve is the same
+curve: `sides.black_pt == 1` on every one of them. The quantity that decides the
+ramp is the *projected* statistic and never the raw one, which is the whole point
+of *each projected onto its band — inside, itself; outside, the nearest edge*.
+
+So the warning holds only where a re-measurement moves a statistic **across a band
+edge**, and it is a claim about a statistic that was read as a claim about a
+picture. Measured at scale on 2026-09-08: of 277 backfilled seats, **82 could be
+compared against the ramp they shipped and 82 agreed, none differed**.
+
+**Old rows are still left exactly as they are, and for a reason that survives all
+of the above.** A tracked record is never edited in place, and a curve written
+*into* the record from a re-measurement would be indistinguishable from the one the
+run derived. What 2026-09-08 added instead is a **sidecar** — an append-only
+`autolevel_backfill.jsonl` keyed by recipe key, overlaid at read time, with every
+row marked `provenance.curve: rederived` and carrying its own verdict against the
+shipped ramp. The objection was to putting a reconstruction where a record goes,
+and it is answered by not doing that rather than by not reconstructing. `depth.levelling_of` reads a
 row and answers `untouched`, `replayed` or `acted_unrecoverable` — the website's own
 three words — and **241,552 of the 457,143 depth rows across 51 runs (52.8%) are
 `acted_unrecoverable` forever**. The way out for one of them is its own file, which

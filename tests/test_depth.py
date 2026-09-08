@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import pytest
 
+from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.curation import colorize, depth, hunt, mine
 from fractal_wallpapers.palettes import color_mass, dominance
 
@@ -1943,3 +1944,40 @@ def test_a_variant_is_its_own_row_in_the_by_mode_readout():
     assert table["direct_trap_multiply"][over]["candidates_clearing"] == 0
     assert table["direct_trap_multiply@opacity=0.6"]["candidates"] == 2
     assert table["direct_trap_multiply@opacity=0.6"][over]["candidates_clearing"] == 2
+
+
+def test_a_borrowed_curve_reads_as_replayed_through_the_branch_that_was_already_there():
+    """The replay change adds no fourth word, and this is the confirmation rather
+    than the assumption.
+
+    A row that inherited its curve carries `acted` true and the whole curve, which
+    is the third branch's exact condition, so it reads `replayed` — and `replayed`
+    is true of it in the strongest sense available: the stops came off a stamp
+    with no image and no measurement, which is what the word means. The three
+    words are the website's `builder/picks.py` own vocabulary and none of them
+    moved.
+    """
+    borrowed = {
+        "acted": True,
+        "curve": {"applies": True, "identity": False},
+        "measured": None,
+        "provenance": {"curve": autolevel.BORROWED, "from": {"key": "abc", "was": "derived"}},
+    }
+    assert depth.levelling_of({"acted": True, "autolevel": borrowed}) == depth.REPLAYED
+    assert set((depth.UNTOUCHED, depth.REPLAYED, depth.ACTED_UNRECOVERABLE)) == {
+        "untouched",
+        "replayed",
+        "acted_unrecoverable",
+    }
+
+
+def test_an_inherited_in_band_decision_still_reads_as_untouched():
+    """A borrowed decision that did not act is a picture the operator never
+    touched at *this* geometry either, so the switch-off render is still it."""
+    borrowed = {
+        "acted": False,
+        "curve": {"applies": True, "identity": True},
+        "measured": None,
+        "provenance": {"curve": autolevel.BORROWED, "from": {"key": "abc"}},
+    }
+    assert depth.levelling_of({"acted": False, "autolevel": borrowed}) == depth.UNTOUCHED

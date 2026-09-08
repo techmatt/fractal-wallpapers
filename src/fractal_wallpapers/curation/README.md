@@ -20,6 +20,8 @@ durability a file kept on two disks under a tracked manifest: save, check, resto
 durables   which files those are, and the three a run refuses to start without
 rescore    the accumulated pool, read again through the heads shipped now
 amend      re-reading a location whose standing score was read off a picture nobody has
+stamps     the whole autolevel stamp behind one recipe key, wherever a leg wrote it
+backfill   a re-derived curve for the seats no leg wrote one for, in its own sidecar
 floors     every number that removes a picture, in one file
 neutral    the one picture a location is EMBEDDED from, and its frozen recipe
 embeddings one DINOv2 vector per admitted location, keyed and kept forever
@@ -1092,6 +1094,17 @@ things were established before deleting any:
   picture — and it **re-derives rather than reproduces**, which is why a plan that
   named one cannot be handed a fresh directory and called the same render.
 
+  ⚠ **Measured, the re-derivation lands on the identical ramp — 82 of 82.** The
+  backfill of 2026-09-08 (`curate autolevel backfill`, below) re-derived a curve for
+  277 seats of `20260908T144844Z` and compared the stops it rebuilds against the
+  `.leveled/` directory the seat actually shipped through, wherever that directory
+  survived: **82 comparable, 82 `agrees`, 0 `differs`**. That does not make a
+  re-derivation a reproduction — the base render it measures is a *new* render, and
+  the caution above is about what the operation is rather than about what it happened
+  to return — but it prices the caution, and it is the reason the backfill is worth
+  having at all. The other 194 of the 277 had no surviving ramp to check against and
+  are recorded `no_ramp` rather than assumed good.
+
 **194,058 directories were swept, 12,089 excluded** — those four named subtrees, the
 released and parity pictures, the label sheets' own `full/` renders, and everything
 belonging to a leg the ledger cannot answer for.
@@ -1984,6 +1997,78 @@ the hot tier entire, pictures pruned in place under the retention policy rather
 than moved. And a tree only leaves after a copy is verified equal on **both** file
 count and byte sum, because the sources are deleted afterwards and a short copy is
 silent.
+
+## Levelling is decided once and replayed upward
+
+The autolevel operator is a judgement about a picture somebody scored, and the
+picture somebody scored is the 640x360 JPEG. Until 2026-09-08 every larger render
+of that row **measured itself** — a release, a gallery seat, a kit — so the
+wallpaper that shipped was levelled by a rule nobody had judged: the tone of a
+2560x1440 PNG is not the tone of the candidate, and `coloring/README.md` measures
+the JPEG round trip alone moving the derived stop list on **17 of 24** candidates.
+
+The decision is now taken once, at candidate geometry, and inherited by every
+render above it. `coloring.autolevel.maybe_level` takes a `borrowed` curve and
+skips `stats_of`/`derive_curve` when it is given one; a caller distinguishes the
+two by passing one or not, and every candidate leg passes none, which is the
+deciding path unchanged. **Nothing entered an identity.** The reduced stamp
+`recipes.stamp_of` keys on is the same three strings it always was — the operator,
+the switch, the band's sha256 — so no recipe key moved, no picture renamed, and
+no published record was orphaned. Proved rather than argued: `key_of` recomputed
+over 20,000 live ledger rows before and after the change digests to the same
+`4f9fc430…`, with all 20,000 still agreeing with their stored key.
+
+What a borrowed row gives up is `measured`, which is `None` on it. That member is
+the base render's own tone and a render that read no image has none; filling it
+with the *source's* statistics would put a 640x360 fingerprint on a 2560x1440
+stamp. The stamp says which of the two it is under `provenance.curve` —
+`derived`, `borrowed`, or `rederived` for a backfill — and `depth.levelling_of`
+needs no new word for any of it: a borrowed row carries `acted` and the whole
+curve, so it reads `replayed` through the branch that was already there. The three
+words the website's `builder/picks.py` owns did not move.
+
+### `curate autolevel` — which seats can replay, and a curve for the ones that cannot
+
+`curation.stamps` is the join: a recipe key to the whole stamp the leg that made
+it wrote down, read in one pass grouped by leg. Two stores lend a curve —
+`depth/<run>/sequence.jsonl` and `remode/<run>/sequence.jsonl`, one row per
+candidate carrying `key` and `autolevel` — and a **mine leg lends nothing**:
+`mine.make` returns the whole stamp, the leg counts `autolevel_acted` off it and
+drops it. So a mine-sourced candidate that acted is `acted_unrecoverable` *the day
+it is made*, which is not a backlog and is not closed by anything here.
+
+`curate autolevel survey` reads that, renders nothing, and prices the rest.
+Over `20260908T144844Z` on 2026-09-08:
+
+| | seats |
+|---|---|
+| already carry a whole stamp on a run record | 639 |
+| take no operator at all (the direct-trap family) | 84 |
+| have no curve on any record | 277 |
+| …of those, still holding the `.leveled/` they shipped through | 82 |
+
+`curate autolevel backfill` re-derives the 277 at candidate geometry through
+`colorize.render`, the one door a candidate is ever made by, and appends the whole
+stamp to `artifacts/curation/autolevel_backfill.jsonl` keyed by recipe key.
+**274 seats in 320 s, 1.17 s each, zero failures**; 110 acted and 164 came back in
+band. Every seat of the record is replayable after it: 916 replayable, 84 with no
+operator, none left. Flushed every 25 seats, so a killed leg keeps what it did and
+the next run skips it.
+
+**A backfilled curve is a re-derivation, not a recovery.** The original base render
+is gone — what is on disk is the levelled picture the judge scored — so the row
+says `rederived` and carries its own verdict against the ramp that shipped. That
+verdict came back **82 comparable, 82 agree, 0 differ**. What the source said about
+its own curve travels with it, so a release that inherits a backfilled curve stamps
+`was: rederived` and is never mistaken for one that inherited the original.
+
+The sidecar is **not a Durable-class store**, on the three-way rule: it is hot,
+it is regenerable at 1.17 s a seat by the command that made it, and the thing it
+amends is untouched. It is also in the ignored tree, so a clone does not have it
+and the website still ships the stored picture for a seat it cannot replay.
+A store-wide sweep is priced and not run: **6,673 protected keys**, an upper bound
+of 6,673 renders and about **2h10m** at the measured rate, and most of those
+already carry a curve.
 
 ## A standing score is a reading of a picture, and the picture can stop existing
 

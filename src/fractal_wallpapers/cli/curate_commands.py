@@ -43,6 +43,7 @@ from fractal_wallpapers.cli.common import (
     resolve_output,
     write_tracked_json,
 )
+from fractal_wallpapers.curation import backfill as backfill_module
 from fractal_wallpapers.curation import label_migration as label_migration_module
 from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.paths import (
@@ -566,6 +567,29 @@ def _staging_store(parser) -> None:
         help=f"the staging store this run owns, under the checkout unless absolute "
         f"(default {label_migration_module.DEFAULT_STORE.as_posix()})",
     )
+
+
+def curate_autolevel(args: argparse.Namespace) -> int:
+    """What a seat can replay of its levelling, and a curve for the seats that cannot."""
+    from fractal_wallpapers.curation import backfill
+
+    doing = {
+        "survey": lambda: backfill.survey(args.record),
+        "backfill": lambda: backfill.sweep(args.record, limit=args.limit),
+    }[args.what]
+    try:
+        report = doing()
+    except (backfill.BackfillError, OSError) as refusal:
+        print(refusal)
+        return 1
+    if args.out:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"{out}")
+        return 0
+    print(json.dumps(report, indent=2))
+    return 0
 
 
 def curate_label_migration(args: argparse.Namespace) -> int:
@@ -5062,3 +5086,53 @@ def add_commands(subcommands) -> None:
     _staging_store(paging)
     _population_flag(paging)
     paging.add_argument("--out", metavar="PATH", help="write the record there")
+
+    levelling = steps.add_parser(
+        "autolevel",
+        help="the levelling curve a seat inherits, and the seats that have none to inherit",
+        description=(
+            "Levelling is decided once, at candidate geometry, and every larger render of "
+            "that row replays the decision rather than measuring its own. A seat whose leg "
+            "never wrote the curve down cannot replay it, so `backfill` re-derives one and "
+            "records it in a sidecar the release path overlays. A re-derivation is not a "
+            "recovery: the original base render is gone, the row says so, and where the "
+            "seat's own levelled colormap survived on disk the two are compared."
+        ),
+    )
+    levelling.set_defaults(handler=curate_autolevel)
+    levelling_verbs = levelling.add_subparsers(dest="what", required=True)
+
+    surveying = levelling_verbs.add_parser(
+        "survey",
+        help="what a record's seats can replay, and what filling the rest would cost",
+        description=(
+            "Read-only and renders nothing. Per record: the seats, how many already carry a "
+            "whole stamp on some run record, how many take no operator at all, how many "
+            "have no curve anywhere — and of those, how many still have the levelled "
+            "colormap they shipped through, which is what a backfill can be checked "
+            "against. Prices a store-wide sweep off the protected seats."
+        ),
+    )
+    filling_curves = levelling_verbs.add_parser(
+        "backfill",
+        help="re-derive a curve for the seats that have none, and record it in the sidecar",
+        description=(
+            "Renders. Each seat is re-made at candidate geometry through the one door a "
+            "candidate is ever made by, and the stamp that comes back is appended to "
+            "artifacts/curation/autolevel_backfill.jsonl keyed by recipe key. Serial, one "
+            "engine at below-normal priority. Nothing rewrites, deletes or re-keys an "
+            "existing row, and no leg's sequence.jsonl is touched."
+        ),
+    )
+    filling_curves.add_argument(
+        "--limit", type=int, help="stop after this many seats (the whole record by default)"
+    )
+    for verb in (surveying, filling_curves):
+        verb.add_argument(
+            "--record",
+            metavar="STAMP",
+            default=backfill_module.DEFAULT_RECORD,
+            help=f"the recorded gallery whose seats to sweep "
+            f"(default {backfill_module.DEFAULT_RECORD})",
+        )
+        verb.add_argument("--out", metavar="PATH", help="write the record there")

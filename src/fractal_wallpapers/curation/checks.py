@@ -73,7 +73,15 @@ def regime_of_row(row: dict) -> release.Regime:
 
 
 def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
-    """Release tasks rebuilt from the records — the join the record exists to carry."""
+    """Release tasks rebuilt from the records — the join the record exists to carry.
+
+    **The levelling decision is rebuilt with the rest of the task and never taken
+    again.** A release row carries the whole stamp of the render that shipped
+    ([`records.release_row`]), so a task built from the record inherits the curve
+    the picture on disk was made through. Re-deriving here would make the parity
+    check compare two renders that had each measured themselves at release
+    geometry — a fair comparison of the wrong picture, and it would pass.
+    """
     out = []
     for row in rows:
         location, recipe = row["location"], row["recipe"]
@@ -93,9 +101,28 @@ def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
                     **regime_of_row(row).geometry(),
                     "maxiter": int(location["maxiter"]),
                 },
+                autolevel=inherited(row),
             )
         )
     return out
+
+
+def inherited(row: dict) -> dict | None:
+    """The levelling one released row was rendered under, packaged for a re-render.
+
+    `None` where the row's stamp holds no curve — a row that did not act, and a
+    row written before the whole stamp existed. Both re-render deciding for
+    themselves, which is what they did the first time.
+    """
+    stamp = row.get("autolevel") or {}
+    if not stamp.get("curve"):
+        return None
+    return autolevel.borrowed_from(
+        stamp,
+        key=str(row.get("candidate") or ""),
+        store="release row",
+        was=str((stamp.get("provenance") or {}).get("curve") or autolevel.DERIVED),
+    )
 
 
 def parity(run: str, rows: int = 2, workers: int = release.DEFAULT_WORKERS, log=print) -> dict:
@@ -118,6 +145,14 @@ def replay(run: str, log=print) -> dict:
     * **acted** — the stamp carries the whole curve, so the leveled stop list is
       rebuilt from it with no image and no re-measurement, and the render through
       those stops must be identical.
+
+    **Both arms inherit the decision and neither retakes it.** Which arm a row
+    takes is read off the stamp the shipped render wrote, never off a fresh
+    measurement — and that is what keeps the in-band arm honest now that a
+    release inherits its curve. An inherited in-band row is unlevelled at every
+    geometry, so the switch-off render is still exactly it; a check that
+    re-measured at release geometry would find that row *out* of band, level it,
+    and report a difference in the picture rather than in itself.
     """
     directory = run_layout.run_dir(run) / "replay"
     directory.mkdir(parents=True, exist_ok=True)
@@ -133,7 +168,11 @@ def replay(run: str, log=print) -> dict:
         if not shipped.is_file():
             out.append({"candidate": identifier, "verdict": "NO_PICTURE"})
             continue
-        stamp = stamps.get(identifier)
+        # The row's own stamp first and the sidecar second. Both are written by
+        # the same pass about the same render; the row is preferred because it is
+        # the record a reader of the store would reach for, and a run whose
+        # `autolevel_stamps.jsonl` was swept still checks.
+        stamp = row.get("autolevel") or stamps.get(identifier)
         recipe = row["recipe"]
         geometry = {
             **regime_of_row(row).geometry(),

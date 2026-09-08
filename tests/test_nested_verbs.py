@@ -723,6 +723,10 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "readout": ("--store", "--classes", "--stamp", "--out"),
         "page": ("--store", "--classes", "--out"),
     },
+    "autolevel": {
+        "survey": ("--record", "--out"),
+        "backfill": ("--limit", "--record", "--out"),
+    },
 }
 
 
@@ -778,7 +782,7 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Eighteen groups and seventy-seven verbs, and no group left spelling its verb as
+    """Nineteen groups and seventy-nine verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored.
@@ -787,14 +791,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     went with the retired gallery passes' gate store; seventy until 2026-09-07, when
     `candidate-ledger ratchet` arrived to read the store's high-water mark; seventeen and
     seventy-one until 2026-09-08, when `label-migration` and its six arrived to stage the
-    judged recipes at candidate geometry."""
+    judged recipes at candidate geometry, and eighteen and seventy-seven until later the
+    same day, when `autolevel` and its two arrived to say which seats can replay their
+    levelling and to re-derive a curve for the ones that cannot."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 77
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 79
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

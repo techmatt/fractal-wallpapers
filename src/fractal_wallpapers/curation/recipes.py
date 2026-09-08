@@ -93,7 +93,10 @@ NO_OUTPUT = Path("_unwritten")
 #: from on the machine that drew it. See the module docstring.
 PINNED: tuple[str, ...] = ("output", "colormap_dir")
 
-#: Members of [`Recipe`] the key is a digest of.
+#: Members of [`Recipe`] the key is a digest of. **Being in this tuple does not
+#: put a member in the digest** — [`_KEYED_THROUGH`] is what says how each one
+#: gets there, and [`Recipe.pixels`] refuses a member listed here that has no
+#: route. See that table for what the gap was.
 KEYED: tuple[str, ...] = (
     "family",
     "viewport",
@@ -109,6 +112,58 @@ KEYED: tuple[str, ...] = (
 
 #: Members of [`Recipe`] that are carried on the record and decide no pixels.
 CARRIED: tuple[str, ...] = ("palette_group",)
+
+#: **Where each keyed member lands in the digest**, as paths into [`Recipe.pixels`]'s
+#: own output.
+#:
+#: This exists because [`KEYED`] did not key. The digest is built from two
+#: derived blocks — the engine spec and the reduced stamp — and never from the
+#: member list, so a member added to the dataclass and appended to `KEYED` was
+#: *classified as part of the picture and left out of its name*, with nothing in
+#: the tree noticing. Verified before it was closed: a member added to `Recipe`
+#: and to `KEYED` left `key_of` byte-identical.
+#:
+#: A route is checked for **presence** on every call, which is what catches the
+#: member nobody wired up and the route that names a spec key the engine stopped
+#: emitting. It cannot catch a route that is present and ignored — that a member
+#: actually *moves* the key is
+#: `tests/test_candidate_ledger.py`'s perturbation guard, one case per member.
+#:
+#: **Two members reach the digest only on some modes, and that is the engine's
+#: rule rather than a gap here.** `curve` is written onto the coloring's
+#: transform for a field, a composite and a modulate and *not* for a direct trap,
+#: which has no field to read through a curve; `mode_params` is only ever
+#: non-empty on a direct trap, and [`engine_spec.coloring_of`] refuses settings
+#: on anything else. Both route through `engine.coloring`, which is always
+#: present, so the presence check holds on every mode and the perturbation guard
+#: names the mode each one is provable on.
+_KEYED_THROUGH: dict[str, tuple[str, ...]] = {
+    "family": ("engine.family",),
+    "viewport": ("engine.viewport",),
+    "maxiter": ("engine.maxiter",),
+    "regime": ("engine.resolution", "engine.supersample"),
+    "mode": ("engine.coloring",),
+    "mode_params": ("engine.coloring",),
+    "curve": ("engine.coloring",),
+    "colormap": ("engine.colormap",),
+    "palette": ("engine.palette",),
+    "autolevel": ("autolevel",),
+}
+
+
+def _reaches(material: dict, path: str) -> bool:
+    """Whether `path` — dotted, into [`Recipe.pixels`]'s output — is there at all.
+
+    Presence and not truthiness: `autolevel` is [`NO_AUTOLEVEL`] on every mode the
+    operator does not act on, and a member whose value is legitimately null is
+    still a member the digest carries.
+    """
+    here = material
+    for step in path.split("."):
+        if not isinstance(here, dict) or step not in here:
+            return False
+        here = here[step]
+    return True
 
 
 class RecipeError(RuntimeError):
@@ -166,12 +221,15 @@ class Recipe:
     def pixels(self) -> dict:
         """The material [`key_of`] digests: the engine's input, and the operator's.
 
-        Refuses rather than proceeds on an unclassified member, at both levels.
+        Refuses rather than proceeds on an unclassified member, at three levels.
         A field added to this dataclass and left out of [`KEYED`] and [`CARRIED`]
         would silently not be part of the picture's name; a member the engine
         spec grows that lands in neither [`_KEYED_SPEC`] nor [`PINNED`] would
-        silently join it. Both are decisions, and neither is a decision a call
-        site can make by forgetting.
+        silently join it; and a member declared **keyed** that reaches none of
+        the digest would be classified as deciding the pixels and left out of
+        their name anyway, which is the one this returns through
+        [`_KEYED_THROUGH`]. All three are decisions, and none of them is a
+        decision a call site can make by forgetting.
         """
         unclassified = {field.name for field in fields(self)} - set(KEYED) - set(CARRIED)
         if unclassified:
@@ -189,11 +247,34 @@ class Recipe:
                 f"PINNED, so a recipe key does not say whether the picture depends on it. "
                 f"Classify it: PINNED is for members that name a place rather than a picture."
             )
-        return {
+        material = {
             "schema": SCHEMA,
             "engine": {name: spec[name] for name in sorted(spec) if name not in PINNED},
             "autolevel": self.autolevel,
         }
+        unrouted = [name for name in KEYED if name not in _KEYED_THROUGH]
+        if unrouted:
+            raise RecipeError(
+                f"{unrouted} is in KEYED and _KEYED_THROUGH does not say where it lands in "
+                f"the digest, so nothing here can tell whether the key carries it. Being "
+                f"listed as keyed does not put a member in the key: say which path of "
+                f"`pixels()` carries it, and prove it moves the key with a case in "
+                f"tests/test_candidate_ledger.py."
+            )
+        absent = [
+            f"{name} -> {path}"
+            for name in KEYED
+            for path in _KEYED_THROUGH[name]
+            if not _reaches(material, path)
+        ]
+        if absent:
+            raise RecipeError(
+                f"{absent} names a keyed member whose route into the digest is not there. "
+                f"Either the member never reached `pixels()` or the engine spec stopped "
+                f"emitting what it rides in, and a key that silently stopped carrying a "
+                f"member names a different picture under the same name."
+            )
+        return material
 
     def record(self) -> dict:
         """This recipe as a stored row carries it. Every member, keyed and carried."""

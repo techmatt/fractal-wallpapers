@@ -87,6 +87,7 @@ from fractal_wallpapers.curation import (
     floors,
     intake,
     pacing,
+    recipes,
     records,
     release,
     selection,
@@ -94,6 +95,9 @@ from fractal_wallpapers.curation import (
 )
 from fractal_wallpapers.curation import (
     budget as budget_module,
+)
+from fractal_wallpapers.curation import (
+    stamps as stamps_module,
 )
 from fractal_wallpapers.curation.run_layout import (
     RELEASE_RESOLUTION,
@@ -758,6 +762,17 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
                 mode_params=dict(row.get("mode_params") or {}),
                 output=str(picture),
                 geometry={**geometry, "maxiter": int(by_key[row["key"]]["maxiter"])},
+                # The candidate's own decision, inherited rather than retaken at
+                # full resolution. It is in hand — this run made the candidate an
+                # hour ago and `attempt` stamped the whole curve onto the row — so
+                # the release goes nowhere to find it. `None` on a row that
+                # carries no stamp, which renders exactly as it always did.
+                autolevel=stamps_module.borrowed_for(
+                    identifier,
+                    row.get("autolevel"),
+                    regime=recipes.CANDIDATE_REGIME.spelled,
+                    store="run",
+                ),
             )
         )
 

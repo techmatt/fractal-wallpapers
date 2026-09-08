@@ -104,7 +104,7 @@ def test_a_kill_on_the_operator_s_re_render_leaves_nothing_either(tmp_path, monk
     )
     monkeypatch.setattr(colorize, "_colormap_dir", lambda: maps)
 
-    def maybe_level(base, colormap, rerender, record=None):
+    def maybe_level(base, colormap, rerender, record=None, borrowed=None):
         return colorize.autolevel.Leveled(rerender([[0.0, [1, 1, 1]]]), {"acted": True})
 
     monkeypatch.setattr(colorize.autolevel, "maybe_level", maybe_level)

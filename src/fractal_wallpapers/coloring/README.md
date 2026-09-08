@@ -40,6 +40,24 @@ re-measurement. Without that, a release record could say which row shipped and n
 which *image* that row was, which after the operator ships on is no longer a
 record of the decision.
 
+**And replaying is what a bigger render does**, from 2026-09-08. The decision is
+taken once, at candidate geometry, and every larger render of that row inherits it
+— [`maybe_level`]'s `borrowed`, which skips `stats_of` and `derive_curve` and
+applies the curve it was handed. A release that measured itself would be answering
+a question about a 2560x1440 PNG when the picture somebody judged was the 640x360
+JPEG, and the paragraph below prices exactly how far apart those two questions are.
+Whether the operator *acts* is read off the curve in both paths rather than decided
+twice, so an inherited identity is still an identity and still renders no second
+picture. `measured` is `None` on an inherited row, because nothing read that
+render's tone; `provenance.curve` says which of the two it was.
+
+Measured over twelve seats at 1280x720 ss2, inherited against measured-here: the
+six in-band seats are **byte-identical**, all six acting seats **differ** — 0.12 to
+0.72 mean absolute RGB, at most 18 levels on a channel — and all twelve reach the
+**same** act-or-not decision. So what inheriting changes is the curve and not the
+verdict, at this regime; the former 2560x1440 ss4 release regime is four times the
+pixels further from the frame the curve was decided at.
+
 **What the operator costs, measured.** The measurement is linear in the picture.
 On a 640x360 candidate it is 30 ms and it used to be 67 ms, of which the
 sRGB→Oklab conversion was 52 ms and three `numpy.cbrt` calls were 31 ms of
