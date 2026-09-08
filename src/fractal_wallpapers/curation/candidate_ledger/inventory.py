@@ -202,10 +202,21 @@ def feasibility(stored: list, n: int = FIRST_SOLVE, log=print) -> dict:
     can still bind jointly.
     """
     from fractal_wallpapers.curation import ceiling as ceiling_module
+    from fractal_wallpapers.curation import solve as solve_module
     from fractal_wallpapers.palettes import dominance
 
     locations = {str((row.get("location") or {}).get("key")) for row in stored}
     groups = {str((row.get("recipe") or {}).get("palette_group")) for row in stored}
+    # The cap the SHIPPED leg applies, asked of `ceiling` rather than spelled a
+    # second time here — [`headroom`] took the same correction on 2026-08-31 and
+    # this is its shape. The row read `ceiling.GROUP_CAP`, the flat one-a-group cap
+    # retired on 2026-08-28, so it wanted a distinct group for every seat and
+    # called itself short whenever the pool held fewer groups than `n`: at n=1000
+    # it reported 942 groups against 1,000 and `binds` on a cap that is 25 a group
+    # and refuses nothing. That false *`group_cap` binds* reached a leg's readout
+    # twice before it was priced off the live rule.
+    group_seat_cap = ceiling_module.group_cap(n, solve_module.DEFAULT_GROUP_CAP)
+    groups_needed = -(-n // max(1, group_seat_cap))
     cell_allowance = int(ceiling_module.K * ceiling_module.CELL_SHARE * n) + 1
     family_allowance = int(ceiling_module.K * ceiling_module.FAMILY_SHARE * n) + 1
     cells_held = {name for row in stored for name in _cells_of(row)}
@@ -221,14 +232,19 @@ def feasibility(stored: list, n: int = FIRST_SOLVE, log=print) -> dict:
         },
         "distinct_places": _distinct_read(locations, n, log=log),
         "group_cap": {
-            "cap": ceiling_module.GROUP_CAP,
-            "needs": n,
+            "cap": group_seat_cap,
+            "cap_rule": str(solve_module.DEFAULT_GROUP_CAP),
+            "needs": groups_needed,
             "holds": len(groups),
             "of_drawable": len(_drawable_groups()),
-            "binds": len(groups) < n,
-            "read": "marginal, and the loosest form of the cap: a second seat in a group "
-            "is allowed when its pixel cloud is more than tau_group from every picture "
-            "that group already seated",
+            "binds": len(groups) < groups_needed,
+            "read": f"marginal: the cap is a COUNT of {group_seat_cap} seat(s) a palette "
+            f"group may take at n={n}, from ceiling.group_cap under the "
+            f"{solve_module.DEFAULT_GROUP_CAP} rule, which is the cap curation.rules "
+            "applies — so the pool needs ceil(n / cap) groups and nothing here checks "
+            "which ones. There is no same-group distance rule and no second threshold: "
+            "the retired solve's TAU_GROUP row was dropped rather than merged, so this "
+            "count is the whole of the cap and not a loose form of it",
         },
         "colour_ceiling": {
             "k": ceiling_module.K,

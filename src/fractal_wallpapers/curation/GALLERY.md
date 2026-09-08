@@ -1989,6 +1989,18 @@ this block is not comparable. The note it used to carry — that the count was t
 with it, because `curation.rules` **dropped** that same-group distance row rather
 than merging it. The count is the whole cap and there is no second threshold.
 
+**The same second spelling survived in the other census until 2026-09-08.**
+`candidate_ledger.inventory.feasibility` priced its `group_cap` row against
+`ceiling.GROUP_CAP` too, so it wanted one distinct group per seat and reported
+`binds` on any pool holding fewer groups than seats — 942 against 1,000 at n=1000,
+where the cap is 25 and refuses nothing. It put a false *`group_cap` binds* into a
+leg's readout twice, the second time costing a separate census to unpick. Fixed the
+same way, off `ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)`, with `cap_rule`
+beside `cap` and `needs` as `ceil(n / cap)` groups; `tests/test_candidate_ledger.py`
+holds it to the solve's cap over a ladder. Two consumers of one retired constant,
+found eight days apart, is the argument for the rule that a **cap is asked of
+`ceiling` and never spelled a second time**.
+
 **Why the census survived the question at all.** The gallery leg's own expand hook
 reports a per-constraint shortfall, so the obvious move was to retire the census as
 a second spelling of the rules. It does not cover it: `solve.expand` walks

@@ -2073,3 +2073,102 @@ def test_a_backfill_carries_a_stamp_rather_than_erasing_or_inventing_one(isolate
     candidate_ledger.backfill(log=lambda *_: None)
     (after,) = candidate_ledger.read()
     assert candidate_ledger.engine_of(after) == "0123456789abcdef"
+
+
+# --------------------------------------------------------------------------- #
+# The feasibility read prices the cap the shipped leg applies.
+# --------------------------------------------------------------------------- #
+def _grouped_row(key: str, place: str, group: str) -> dict:
+    """One ledger row over the three fields [`inventory.feasibility`] reads."""
+    return {
+        "schema": 1,
+        "key": key,
+        "location": {"key": place},
+        "recipe": {"palette_group": group},
+        "colour": {"cells": [], "families": []},
+    }
+
+
+def _group_cap_row(rows, n: int) -> dict:
+    from fractal_wallpapers.curation import candidate_ledger
+
+    return candidate_ledger.feasibility(rows, n=n, log=lambda *_: None)["group_cap"]
+
+
+@pytest.mark.slow
+def test_the_feasibility_row_prices_the_cap_THE_SHIPPED_LEG_APPLIES():
+    """The row spelled the group cap a second time, as the flat `ceiling.GROUP_CAP`
+    the identity rule returns — retired as the default on 2026-08-28. It therefore
+    wanted one distinct group per seat and said `binds` whenever the pool held
+    fewer groups than seats: at n=1000 the real store reads 942 groups against
+    1,000 and reported a constraint that is 25 seats a group and refuses nothing.
+    That false *`group_cap` binds* reached a leg's readout twice.
+
+    `headroom` took this correction on 2026-08-31 and this is the same one.
+
+    RED under `"cap": ceiling.GROUP_CAP` with `binds` on `len(groups) < n`.
+    """
+    from fractal_wallpapers.curation import ceiling, solve
+
+    # A hundred groups: enough that the identity cap is short at n=1000 and the
+    # shipped cap has slack.
+    rows = [_grouped_row(f"c{at}", f"p{at}", f"map:{at}") for at in range(100)]
+    row = _group_cap_row(rows, 1000)
+    cap = ceiling.group_cap(1000, solve.DEFAULT_GROUP_CAP)
+    assert (cap, ceiling.GROUP_CAP) == (25, 1), "the two rules diverge here or nothing does"
+    assert row["cap"] == cap
+    assert row["cap_rule"] == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
+    # 25 seats a group over 1,000 seats is forty groups, not a thousand.
+    assert row["needs"] == 40
+    assert row["binds"] is False, "100 groups fill 1,000 seats at 25 apiece"
+
+
+@pytest.mark.slow
+def test_the_row_still_reports_short_where_the_proportional_cap_is_genuinely_short():
+    """The fix is not a blanket loosening. Below `1 / ceiling.GROUP_CAP_RATE` seats
+    the `max(1, ...)` floor pins the proportional cap at one, so a small solve
+    still asks for one group a seat and a pool of ten cannot fill twenty."""
+    from fractal_wallpapers.curation import ceiling, solve
+
+    rows = [_grouped_row(f"c{at}", f"p{at}", f"map:{at}") for at in range(10)]
+    row = _group_cap_row(rows, 20)
+    assert ceiling.group_cap(20, solve.DEFAULT_GROUP_CAP) == 1, "the max(1, ...) floor"
+    assert (row["cap"], row["needs"], row["holds"]) == (1, 20, 10)
+    assert row["binds"] is True
+
+
+@pytest.mark.slow
+def test_the_row_cannot_drift_from_the_cap_the_solve_runs():
+    """The drift itself, over the whole ladder rather than one rung: the census's
+    cap **is** `ceiling.group_cap` under the solve's default rule, and the groups
+    it asks for are that cap divided into `n`. A row that spelled either a second
+    time would answer a question the seating never asked."""
+    from fractal_wallpapers.curation import ceiling, solve
+
+    # Five rungs and not the whole ladder, at about 1.5 s a call: the floor
+    # (20), the last seat it holds and the first it does not (79, 80), the rung
+    # the two rules diverge at (1000), and one far above it (40000), where the
+    # identity read was shortest.
+    rows = [_grouped_row(f"c{at}", f"p{at}", f"map:{at}") for at in range(60)]
+    for n in (20, 79, 80, 1000, 40000):
+        row = _group_cap_row(rows, n)
+        cap = ceiling.group_cap(n, solve.DEFAULT_GROUP_CAP)
+        assert row["cap"] == cap, f"n={n}"
+        assert row["needs"] == -(-n // cap), f"n={n}"
+        assert row["binds"] is (row["holds"] < row["needs"]), f"n={n}"
+
+
+@pytest.mark.slow
+def test_the_row_promises_no_same_group_distance_exemption():
+    """The row called itself *the loosest form of the cap* and offered a second
+    seat to any picture more than `tau_group` from the group's first. `curation.rules`
+    dropped that row rather than merging it — the count is the whole rule — so a
+    census may not describe a threshold nothing applies. Same claim as
+    `tests/test_headroom.py`'s on the census block, and the same one
+    `tests/test_solve.py` makes on the record."""
+    from fractal_wallpapers.curation import ceiling
+
+    rows = [_grouped_row("c0", "p0", "map:0")]
+    text = json.dumps(_group_cap_row(rows, 1000))
+    assert "tau_group" not in text
+    assert str(ceiling.TAU_GROUP) not in text
