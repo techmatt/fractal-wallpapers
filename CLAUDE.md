@@ -178,13 +178,13 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **122.01 s over the 3,909
+Both are measured, not estimated. The **fast** lane is **120.68 s over the 3,919
 it holds, 124 deselected**, on this machine, 2026-09-07, on an idle box with a
 `.[dev,models]` install and a release engine built. The **slow** lane's last
-reading is **7:06 over 4,033, all green and zero skipped**, taken on the same
+reading is **7:17 over 4,043, all green and zero skipped**, taken on the same
 install and the same tree, which
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles the
-counting rule for. So the next slow lane should read **4,033** and a figure other
+counting rule for. So the next slow lane should read **4,043** and a figure other
 than that is worth reading rather than assuming.
 
 **The long-standing red is closed and there is no expected failure any more**: a

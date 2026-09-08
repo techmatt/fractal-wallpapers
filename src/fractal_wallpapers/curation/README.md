@@ -486,6 +486,17 @@ half with it. The two are one order, and that cuts both ways.
 half of this, and `tests/test_seat_sheet.py` pins that `_prune_ranks` reaches
 `curation.rank_key` directly and names neither `DEFAULT_KEY` nor the cascade.
 
+**And no cascade gallery has been recorded yet.** All **62** records in the
+tentative store carry `solve.config.sort_key_named` = `rank-key` — every one of
+them, published and unpublished, counted 2026-09-07 — so the flip is a change to
+what the *next* solve does and not a description of anything on this box. Every
+figure the site draws, every seat `curate seat-sheet` compares and every reading
+taken off `tentative.latest()` is a rank-key seating. That matters twice: a
+cascade-versus-rank-key comparison has one side missing until a cascade record
+exists, and the desire-list reading in `GALLERY.md`'s *The desire list is aimable
+at cell × mode and nowhere else* had to be derived against a **fresh in-memory
+cascade solve** for exactly this reason.
+
 ### Putting a picture back
 
 The prune was taken on an argument — **everything it removes is either retained
@@ -531,11 +542,18 @@ the three-worker rule doing its job rather than headroom going unused.
 ### The release pool's pictures come back the same way
 
 `curate candidate-ledger re-render` is the ledger's. **`curate re-render` is the
-pool's** — the release rows in the tracked store and every gallery pass's attempt
-rows in its own, resolved to the one candidate render each is about. It exists
-because `curate rescore` refuses outright while any of them is missing: a reading
-of most of the pool is not a reading of the pool, and the pool's pictures live
-under the regenerable tree where a sweep can take them.
+pool's** — the release rows in the tracked store, resolved to the one candidate
+render each is about. It exists because `curate rescore` refuses outright while
+any of them is missing: a reading of most of the pool is not a reading of the
+pool, and the pool's pictures live under the regenerable tree where a sweep can
+take them.
+
+**It read the gallery passes' attempt rows too until 2026-09-06**, when retiring
+the gallery gate store took them out of `rescore.pool_rows()`. That is worth
+knowing rather than tidying away: while it read them it put 3,530 attempt
+pictures back that the orphan sweep had deleted the day before, which is how the
+loop *The 09-02 sweep and `curate re-render` were a loop* records was found. The
+pool is smaller now and the sweep no longer takes them, so neither half runs.
 
 The adapter is `recipes.of_decision` rather than `of_record`, and the check is the
 same one: the recipe the *render path* would derive is digested against the digest
@@ -566,6 +584,16 @@ iteration-bound rather than contending on a shared dump.
 
 `curate rescore` after it read all **16,029** rows in **280.7 s** (4,529 smooth,
 11,500 strange) and put the whole pool on one artifact.
+
+**A repair leg is a different regime from a bulk one, and 2026-09-07 is the
+reading for it**: 38 absent renders, 38 of 38 reproducing their own recipe, 0
+refused, 0 failed, **23.3 s wall** at 1.38 s a picture per engine. Concurrency
+**2.25**, not the bulk leg's 2.95, because 38 pictures fall in 38 distinct
+(location, mode) pairs — one picture a pair, so every dumped field is paid and
+none is amortised, and the pool spends its time spawning. Price a repair off this
+and a bulk leg off the table above. The pool went whole again in under half a
+minute, which is the shape this command is for: `absent_pictures()` 38 → **0**,
+and `curate rescore` stops refusing.
 
 ### What the rule costs
 
@@ -1136,9 +1164,25 @@ ledger by `backfill`, which reads the two **decision stores** — so the ledger 
 what they decided about and never what they rendered: 11,875 rows against 15,578
 pictures on disk. Sweeping them on row presence would have deleted 3,610 index-named
 attempts out of `gallery1`–`gallery4` and the `run*` legs and called it garbage
-collection. `ledger_named` on each `unmerged` entry tells the two kinds apart at a
+collection. `store_named` on each `unmerged` entry tells the two kinds apart at a
 glance: **0** is a killed leg to re-merge or delete, a **large** number is a
 backfilled leg that cannot be re-merged at all.
+
+**The reference set is the UNION over every store that names a picture, since
+2026-09-07, and before that it was the ledger alone.** `_named_by_a_store` reads
+the candidate ledger, the tracked release store, the tracked gate store and the
+retired gallery passes' attempt rows under `artifacts/curation/gallery/<pass>/`,
+and a picture any of the four names is kept. The ledger alone was not enough for
+exactly the reason the paragraph above gives: `backfill` copied those decisions
+into the ledger *once*, and the copy goes stale with every prune. `orphans` then
+promised in its own docstring that a named backfilled leg *"keeps every picture
+its decision stores named"* while implementing something weaker, which is how the
+09-02 sweep and `curate re-render` became a loop — see *The 09-02 sweep and
+`curate re-render` were a loop* below. The record carries a `reference` block
+saying what each store contributed. **The merge stamp is still the ledger's
+alone**: a decision row naming a picture is not evidence its leg merged, and
+folding the decision stores into the stamp would read every backfilled `runs` leg
+as merged and sweep it unasked.
 
 **Dry-run 2026-09-02** over 187,976 pictures: 32 unmerged legs holding **20,723
 pictures (3.09 GiB)** skipped — **22 killed** (10 `depth`/`mine` legs and 12 `runs`
@@ -1150,11 +1194,60 @@ them, and deleted 24.
 
 **All three were then taken, on Matt's ruling, 2026-09-02.** The 1,135 went with a
 plain `--apply` (0.178 GiB). The 10 backfilled legs were named with `--leg` and lost
-their **3,610** un-decided attempts and 1,468 levelled colormaps (0.624 GiB), keeping
-every picture their decision stores named. The 22 killed legs went **whole** — not
+their **3,610** un-decided attempts and 1,468 levelled colormaps (0.624 GiB) — and
+**not** keeping every picture their decision stores named, which is what that
+`--leg` run was thought to be doing. The 22 killed legs went **whole** — not
 through this sweep, which is pictures-only by design, but through a one-off that
 checked each path against the hot root and the leg shape first: **1.81 GiB over 11,216
-files**, most of it the `fields/` and `candidates/` beside the pictures. That reading did not hold. As of 2026-09-07 those ten legs carry 3,615 pictures with no ledger row, every one dated 2026-09-03, and the per-leg count of 09-03 files matches the per-leg unnamed count on all ten. The 09-02 sweep deleted 3,610 un-decided attempts from exactly these legs and they came back the following day; no archived `runs` copy exists and nothing here identifies the writer. Until it is found, sweeping these legs reclaims nothing durably. State OPEN item 2.
+files**, most of it the `fields/` and `candidates/` beside the pictures.
+
+### The 09-02 sweep and `curate re-render` were a loop, and the union is what closed it
+
+**Closed 2026-09-07.** The 3,610 pictures the 09-02 `--leg` sweep took out of the
+ten backfilled `runs` legs came back the next morning: 3,615 of them, every one
+dated 2026-09-03, the per-leg count of 09-03 files matching the per-leg unnamed
+count on all ten. The writer is **`curate re-render`** — the pool's, `rescore.py`'s
+`re_render`, not the ledger's — run twice inside `RETRAIN_render_v6`: a `--limit`
+pilot that made **61** and stopped at 04:32:41, then the leg proper
+04:32:55.8 → 04:59:55 that made **3,554**. 61 + 3,554 = 3,615 exactly, and
+`artifacts/curation/pool_re_render/re_render.json` carries the leg's own half of
+it (`made: 3554`, `failed: 0`, `refused: 0`, `wall_seconds: 1619.2`). The
+arithmetic closes both ways: 15,485 − 3,610 + 3,615 − 495 = 14,995 pictures on
+disk, the 495 being the drop in ledger-named `runs` rows over the same days, and
+the orphan set measured 0.624 GiB against the sweep's own 0.624 GiB.
+
+**Nothing in that set was garbage. All 3,615 were named by a real store, just not
+by the candidate ledger** — **85** by the tracked gate store, **3,530** by
+`artifacts/curation/gallery/<pass>/gate.jsonl`, matched 3,530 of 3,530 exactly. So
+the sweep and the repair were pointed at the same files and the question was only
+which of the two was wrong. It was the sweep, and `_named_by_a_store` is the fix:
+the reference set is now the union, the loop is disarmed, and deleting the
+pictures behind the kept attempt rows is available as a **named act** rather than
+as a side effect of garbage collection.
+
+The gallery half became invisible on 2026-09-07 rather than on 09-03: retiring the
+gallery gate store stopped `rescore.pool_rows()` reading the attempt rows, which
+is why the pool could put them back in the first place and no longer would.
+
+**Measured after the union, 2026-09-07.** `orphans --include-unmerged`, a dry run
+over all ten legs: **0 pictures would be deleted**, against the 3,615 the
+ledger-only rule named. Every picture in every one of the ten is named by a store,
+which is the arithmetic the audit predicted — 11,380 by the ledger, 85 by the two
+tracked decision stores, 3,530 by the attempt rows, and 11,380 + 3,615 = 14,995,
+the whole of what is on disk. Eight of the ten now report `store_named` *above*
+their picture count (gallery4 6,866 against 6,620) because the stores also name
+renders a prune has since taken; that is the reference set being wider than the
+disk, which is the safe direction.
+
+| | gallery4 | gallery3 | gallery2 | gallery1 | run10 | run3 | run9 | run2 | run8h | release_v1 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| on disk | 6,620 | 3,843 | 2,415 | 1,089 | 311 | 234 | 234 | 114 | 111 | 24 |
+| named by a store | 6,866 | 3,980 | 2,472 | 1,120 | 320 | 240 | 240 | 114 | 112 | 24 |
+| **would delete** | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** | **0** |
+
+Whether the ten legs are worth keeping is still Matt's and still open. What has
+changed is that it is now a question about **11.75 GiB of superseded attempts**
+and not one a garbage sweep can answer by itself.
 
 **An unmerged leg is swept only when somebody names it.** `--leg <name>` takes one
 (as the listing prints it, or just its last component) and is repeatable;
@@ -1171,9 +1264,19 @@ enumeration is `<subtree>/<leg>/pictures` at a **fixed depth**, so a leg's `fiel
 unreachable however large it gets; every directory is checked against the tier roots
 **at the point of deciding** rather than trusted from whatever produced the list; and
 the deletion is `delete_pictures` and nothing else, which is the one deleter in this
-project and re-homes each name as it unlinks. The run costs **9.9 s** over this store —
-a `scandir` per leg and one streamed pass of the ledger. It was about 31 s when it also
-read every leg's own records with a regex, so that pass was two thirds of it.
+project and re-homes each name as it unlinks. And the reference set is built **in the
+call that deletes**, off the stores themselves — never handed in and never carried over
+from an earlier reading, because a sweep deciding against yesterday's measurement is a
+sweep acting on a store that has since moved.
+
+The run costs **17.7 s** over this store, 2026-09-07, at 328,714 pictures over 115 legs.
+Split: the enumeration **1.08 s** (443,134 directory entries), the ledger pass **5.80 s**
+(325,099 rows naming a picture), and the three decision stores **1.02 s** (17,079 rows,
+53 MB of it the gallery attempt rows). **So the union costs a second**, which is the
+answer to whether reading three more stores was affordable. The 9.9 s this used to
+read was over 187,976 pictures and is not comparable; the figure it *is* comparable
+against is the 31 s of the rule before it, which read every leg's own records with a
+regex and spent two thirds of the run doing it.
 
 **The ledger's pictures live in exactly five subtrees, and nothing it holds names a
 field.** Swept 2026-09-02 over 177,993 rows: `depth` 158,628 · `runs` 11,875 · `mine`
@@ -1275,12 +1378,15 @@ they put in the candidate ledger.
 ### The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT
 
 **Matt's ruling, 2026-09-07. It is held deliberately and it is not a sweep
-candidate.** The four passes' `gate.jsonl` survived the retirement above —
-**14,438 rows**, 1,120 / 2,472 / 3,980 / 6,866, 53 MB — and **nothing in the tree
-reads them any more**, because `gallery_store.py` and `curate gallery-store` went
-with the passes. So a future sweep meets 53 MB of unreadable rows with no manifest
-beside them and no code naming them, which is exactly the shape of something to
-delete. It is not. They are the only judged-attempt data this project has: one pool
+candidate.** *(They gained a reader again the same day — `orphans` reads them to
+build its reference set, and it is the only thing that does. See* The reference
+set is the UNION over every store that names a picture*.)* The four passes'
+`gate.jsonl` survived the retirement above —
+**14,438 rows**, 1,120 / 2,472 / 3,980 / 6,866, 53 MB — and for one day **nothing
+in the tree read them**, because `gallery_store.py` and `curate gallery-store`
+went with the passes. So a future sweep met 53 MB of unreadable rows with no
+manifest beside them and no code naming them, which is exactly the shape of
+something to delete. It is not, and there is one reader again. They are the only judged-attempt data this project has: one pool
 row per attempt carrying its whole join, made under two retired render heads
 (`smooth_render` 3,782, `strange_render` 10,656) over populations that will not
 exist again. **Not to be swept without a ruling from Matt.**

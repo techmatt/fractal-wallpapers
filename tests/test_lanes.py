@@ -105,3 +105,49 @@ def test_a_short_lane_says_so_and_names_what_is_missing(monkeypatch, pytestconfi
     assert "3 test modules NOT COLLECTED" in said[0]
     assert "no PIL, torch" in said[0], "named once each, sorted, not once per module"
     assert "dev,models" in said[0], "the line has to say what the missing extra is"
+
+
+# --------------------------------------------------------------------------- #
+# The session backstop's other half: a leg written onto the live tree.
+# --------------------------------------------------------------------------- #
+def test_a_leg_that_appeared_during_the_run_is_named(monkeypatch) -> None:
+    """The fault it catches leaves a directory behind, so the detector is a
+    difference of two listings and not a hash. Named `<where>/<leg>`, because the
+    person reading it is about to delete that path."""
+    monkeypatch.setattr(
+        conftest,
+        "live_legs",
+        lambda: {"artifacts/curation/runs": ["run9", "r", "earlier"]},
+    )
+
+    assert conftest._legs_that_appeared({"artifacts/curation/runs": ["run9"]}) == [
+        "artifacts/curation/runs/earlier",
+        "artifacts/curation/runs/r",
+    ]
+    assert conftest._legs_that_appeared({"artifacts/curation/runs": ["run9", "r", "earlier"]}) == []
+
+
+def test_a_leg_that_went_away_during_the_run_is_not_a_fault() -> None:
+    """One direction only. A test that deletes from the live tree is a different
+    fault and the tracked-record half already covers the records; a sweep run by
+    hand between two lanes is not a fault at all, and reporting it would train
+    everybody to ignore the line."""
+    # Against the real listing rather than a stub, so this cannot pass on a mock
+    # that happens to return nothing: every name is there plus one that is not.
+    before = {
+        where: [*names, "a_leg_that_is_not_there"] for where, names in conftest.live_legs().items()
+    }
+    assert conftest._legs_that_appeared(before) == []
+
+
+def test_the_live_listing_is_a_fixed_name_and_never_a_walk() -> None:
+    """`CLAUDE.md`'s rule: this tree carries four hundred thousand untracked files
+    and a recursive walk of it takes minutes. Each entry is a path at a fixed
+    depth and the listing is one `scandir` of it."""
+    import inspect
+
+    assert conftest.LIVE_LEG_DIRS == (("curation", "runs"),)
+    source = inspect.getsource(conftest.live_legs)
+    for forbidden in ("rglob", "walk(", "**"):
+        assert forbidden not in source, forbidden
+    assert "iterdir()" in source

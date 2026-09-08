@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers.curation import candidate_ledger, intake, recipes, release
+from fractal_wallpapers.curation import candidate_ledger, intake, recipes, records, release
 from fractal_wallpapers.curation.candidate_ledger import ratchet
 from fractal_wallpapers.models import renders
 from fractal_wallpapers.paths import repo_root
@@ -1213,21 +1213,69 @@ def test_nothing_but_the_ledger_deletes_a_candidate_picture():
 def swept(tmp_path, monkeypatch):
     """A whole artifacts tree in `tmp_path`, and the real one out of reach.
 
-    One redirect isolates the sweep entirely, which is the property worth having:
-    `picture_dirs` resolves through `under("curation", ...)` and `stream` resolves
-    through `store_root()`, so both follow the hot root and neither can be moved
-    independently of the other. A fixture that redirected the store by name — the
-    way `isolated` does, for `prune`'s reasons — would leave the sweep's
-    enumeration pointed at this machine's real hundred-and-eighty-thousand
-    pictures.
+    The hot root isolates most of the sweep, which is the property worth having:
+    `picture_dirs` resolves through `under("curation", ...)`, `stream` resolves
+    through `store_root()` and the gallery attempt rows through
+    `under("curation", "gallery")`, so all three follow the one root and none can
+    be moved independently of the others. A fixture that redirected the store by
+    name — the way `isolated` does, for `prune`'s reasons — would leave the
+    sweep's enumeration pointed at this machine's real
+    hundred-and-eighty-thousand pictures.
+
+    **The record root is the second redirect and it is not optional.** Since the
+    reference set became a union the sweep also reads the tracked release and gate
+    stores, which resolve off `repo_root()` and have no tier to follow; without
+    this every orphan guard would read this machine's real decisions, and a
+    picture in a temporary leg would be kept or dropped on what `run9` once
+    decided about a candidate of the same name.
     """
     from fractal_wallpapers import paths
+    from fractal_wallpapers.curation import records
 
     root = tmp_path / "artifacts"
     root.mkdir()
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
     monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
-    return root
+    records.use(tmp_path / "records")
+    try:
+        yield root
+    finally:
+        records.use(None)
+
+
+def a_decision(stage: str, run: str, candidate: str, source=None) -> None:
+    """One decision row in the tracked store, carrying only what the sweep reads."""
+    from fractal_wallpapers.curation import records
+
+    row = {
+        "schema": records.SCHEMA,
+        "key": f"{run}|{stage}|{candidate}",
+        "run": run,
+        "stage": stage,
+        "candidate": candidate,
+        "picture": f"pictures/{candidate}.jpg",
+    }
+    if source is not None:
+        row["source"] = source
+    records.write_decisions(stage, run, [row])
+
+
+def an_attempt(root: Path, pass_name: str, run: str, candidate: str, source=None) -> None:
+    """One retired gallery pass's attempt row, where those rows actually live."""
+    row = {
+        "schema": 1,
+        "key": f"{pass_name}|gate|{candidate}",
+        "run": run,
+        "stage": "gate",
+        "candidate": candidate,
+        "picture": f"pictures/{candidate}.jpg",
+    }
+    if source is not None:
+        row["source"] = source
+    path = root / "curation" / "gallery" / pass_name / "gate.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as lines:
+        lines.write(json.dumps(row) + "\n")
 
 
 def a_leg(root: Path, subtree: str, leg: str, keys, record: str | None = None) -> Path:
@@ -1269,7 +1317,7 @@ def test_a_merged_leg_is_decided_by_the_ledger_alone_and_its_records_do_not_save
 
     assert record["unmerged"] == [], "one row under this leg is the merge stamp"
     assert record["pictures_on_disk"] == 3
-    assert record["carrying_no_ledger_row"] == {"depth": 2}
+    assert record["carrying_no_row"] == {"depth": 2}
     assert record["named_by_nothing"] == 2
     assert record["pictures"]["deleted"] == 2
     assert (pictures / "in_the_ledger.jpg").is_file()
@@ -1292,7 +1340,7 @@ def test_an_unmerged_leg_is_skipped_and_listed_and_nothing_in_it_is_touched(swep
 
     assert [held["leg"] for held in record["unmerged"]] == ["artifacts/curation/depth/killed_leg"]
     assert record["unmerged"][0]["pictures"] == 2
-    assert record["unmerged"][0]["ledger_named"] == 0, "the ledger never heard of it"
+    assert record["unmerged"][0]["store_named"] == 0, "no store ever heard of it"
     assert record["unmerged"][0]["why"] == "unmerged — re-merge or delete"
     assert record["unmerged_legs"] == 1
     assert record["skipped_unmerged"] == 2
@@ -1336,14 +1384,14 @@ def test_a_backfilled_leg_is_not_a_merged_leg_however_many_rows_name_it(swept):
     assert record["named_by_nothing"] == 0, "a backfilled leg carries no merge stamp"
     assert record["unmerged"][0]["leg"] == "artifacts/curation/runs/gallery4"
     # And the count that tells a backfilled leg from a killed one, at a glance.
-    assert record["unmerged"][0]["ledger_named"] == 1
+    assert record["unmerged"][0]["store_named"] == 1
     assert (pictures / "an_attempt.jpg").is_file()
 
 
 def test_an_unmerged_leg_is_swept_only_when_the_caller_names_it(swept):
     """The listing is the safety and naming a leg is the whole of how it is spent.
-    Named, an unmerged leg is swept under the SAME rule as a merged one — what the
-    ledger names is kept, the rest goes — which is why the two kinds need no
+    Named, an unmerged leg is swept under the SAME rule as a merged one — what a
+    store names is kept, the rest goes — which is why the two kinds need no
     separate handling: a killed leg has no rows and loses everything, a backfilled
     `runs` leg keeps every picture its decision stores named."""
     killed = a_leg(swept, "depth", "p1_near", ("a", "b"))
@@ -1368,6 +1416,90 @@ def test_an_unmerged_leg_is_swept_only_when_the_caller_names_it(swept):
     assert not (killed / "a.jpg").exists() and not (killed / "b.jpg").exists()
     assert not (backfilled / "an_attempt.jpg").exists()
     assert (backfilled / "decided.jpg").is_file(), "the ledger names it, so it stays"
+
+
+def test_a_picture_any_store_still_names_survives_a_named_sweep(swept):
+    """The reference set is the UNION, and this is the loop it closes.
+
+    On 2026-09-02 the sweep read the candidate ledger alone, deleted 3,610
+    pictures out of the ten backfilled `runs` legs, and `curate re-render` put
+    3,615 of them back the next morning because the pool still named them. Each of
+    the three stores below named some of that set and the ledger named none of it:
+    the release store 85 of them with the gate store, the retired gallery passes'
+    attempt rows the other 3,530, exactly.
+    """
+    pictures = a_leg(
+        swept,
+        "runs",
+        "run9",
+        ("in_the_ledger", "released", "gated", "an_attempt", "named_by_nothing"),
+    )
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/runs/run9/pictures/in_the_ledger.jpg", merged=False)]
+    )
+    a_decision(records.RELEASE, "run9", "released")
+    a_decision(records.GATE, "run9", "gated")
+    an_attempt(swept, "gallery1", "run9", "an_attempt")
+
+    record = candidate_ledger.orphans(apply=True, unmerged=("run9",), log=lambda *_: None)
+
+    for kept in ("in_the_ledger", "released", "gated", "an_attempt"):
+        assert (pictures / f"{kept}.jpg").is_file(), kept
+    assert not (pictures / "named_by_nothing.jpg").exists()
+    assert record["swept_unmerged"][0]["store_named"] == 4
+    assert record["named_by_nothing"] == 1
+    assert record["reference"] == {
+        "candidate_ledger": 1,
+        "release_store": 1,
+        "gate_store": 1,
+        "gallery_attempts": 1,
+        "pictures_named": 4,
+    }
+
+
+def test_the_source_chain_is_followed_across_the_stores_it_crosses(swept):
+    """A pass's row is a decision about somebody else's render, and the chain can
+    be two links long: a gallery2 seat of a gallery1 seat of a run9 candidate. The
+    pool is built over all three stores at once because the chain crosses them —
+    stopping at the first link resolves to a candidate id nothing ever rendered."""
+    pictures = a_leg(swept, "runs", "run9", ("0000",))
+    an_attempt(swept, "gallery1", "gallery1", "0007", source={"key": "run9|release|0000"})
+    a_decision(records.RELEASE, "gallery2", "0031", source={"key": "gallery1|gate|0007"})
+    a_decision(records.RELEASE, "run9", "0000")
+
+    candidate_ledger.write([])
+    record = candidate_ledger.orphans(apply=True, unmerged=("run9",), log=lambda *_: None)
+
+    assert (pictures / "0000.jpg").is_file()
+    assert record["named_by_nothing"] == 0
+
+
+def test_a_decision_row_is_not_a_merge_stamp(swept):
+    """The union widens what is KEPT and says nothing about which legs are
+    decidable. Folding the decision stores into the stamp would read every
+    backfilled `runs` leg as merged and sweep it unasked, which is the one thing
+    the listing exists to prevent."""
+    pictures = a_leg(swept, "runs", "run9", ("released", "an_attempt"))
+    a_decision(records.RELEASE, "run9", "released")
+    candidate_ledger.write([])
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert [held["leg"] for held in record["unmerged"]] == ["artifacts/curation/runs/run9"]
+    assert record["unmerged"][0]["store_named"] == 1, "named, and still not stamped"
+    assert record["named_by_nothing"] == 0
+    assert (pictures / "an_attempt.jpg").is_file()
+
+
+def test_the_reference_set_is_built_in_the_call_that_deletes(swept):
+    """Never handed in and never carried over from an earlier reading: a sweep
+    deciding against a set somebody measured yesterday is a sweep acting on a
+    store that has since moved."""
+    import inspect
+
+    taken = inspect.signature(candidate_ledger.orphans).parameters
+    assert list(taken) == ["apply", "unmerged", "log"]
+    assert "_named_by_a_store(tiers)" in inspect.getsource(candidate_ledger.orphans)
 
 
 def test_naming_one_unmerged_leg_leaves_the_others_listed(swept):

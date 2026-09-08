@@ -168,6 +168,16 @@ written, and this suite has now been bitten by that twice.
   expressed readout** through the prune, because no accessor list named them.
   Those tests would have failed on a fresh clone, where neither file exists; they
   write both empty now and are hermetic for the first time.
+* **A third time, 2026-09-07, and this one is the mirror image**: two files
+  redirected the **tracked** tier with `records.use(tmp_path)` and left the
+  **artifacts** tier alone, so `rejection.apply` and `rejection.retire_repeats`
+  redrew each run's release sheet through `run_layout.run_dir()` onto the live
+  tree. `test_release_bar.py` wrote `artifacts/curation/runs/r/` and
+  `test_served_locations.py` wrote `artifacts/curation/runs/earlier/`, on every
+  run, for as long as either file has existed — two whole run directories nothing
+  ever ran, which the orphan sweep and every inventory then had to have an answer
+  for. Both fixtures set the two root variables now. **A store has two tiers and
+  a fixture is not done when it has moved one of them.**
 
 **Two accessors still have to be patched, and both are the tracked half.**
 `candidate_ledger.store.manifest_dir()` resolves off `repo_root()`, not off a
@@ -185,7 +195,23 @@ Under both sits the same backstop: `conftest` hashes every git-tracked
 `*manifest.json` — discovered, so a durable added tomorrow is covered — plus the
 names in `HELD_STILL`, at session start, re-hashes at session finish, and fails the
 run naming any that moved (`pytest_sessionfinish`). 20 files, 104 KB; the cost does
-not show up against a three-minute lane. `signatures.sidecar_path` is patched in
+not show up against a three-minute lane.
+
+**It asks the same question on the regenerable tier since 2026-09-07, through the
+same hook.** `LIVE_LEG_DIRS` lists the immediate children of
+`artifacts/curation/runs` at session start and again at finish, and a name that
+appeared fails the run beside the manifests, under one heading and one writer.
+That is the leak above caught rather than trusted: a fixture that moves one tier
+looks complete, and nothing on the artifacts tier is hashed or tracked, so a
+difference of two listings is the only detector there is. **A name at a fixed
+depth and never a walk** — one `scandir` of about a dozen entries, twice a
+session, over the tree `CLAUDE.md` says a recursive grep takes tens of minutes
+across. One mechanism and two snapshots, deliberately: a second hook reporting the
+same class of fault through a second writer is what goes quiet when somebody moves
+one of them. `tests/test_lanes.py` guards the detector, including that it stays a
+`scandir`.
+
+`signatures.sidecar_path` is patched in
 those fixtures for an unrelated reason: to undo the autouse
 `no_signature_sidecar`, which the roots cannot reach because the function has
 already been replaced.
@@ -358,6 +384,23 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+**+7 that reconciles exactly, and both lanes moved less than the spread.**
+`FIX_ckpt114_wallpapers_leftovers_0907`, 2026-09-07, idle box, `.[dev,models]`
+with a release engine. **120.68 s over 3,919, 124 deselected** fast and **7:17
+over 4,043, 0 skipped and 0 red** slow — 4,043 against the 4,036 the entry above
+this one left. The +7 is all arithmetic and all fast: **4** orphan-sweep guards in
+`test_candidate_ledger.py` for the reference set becoming a union, and **3** in
+`test_lanes.py` for the session backstop's new half. **The 4,036 this is +7 of is
+not an entry here**: the solve-profiling leg immediately below in the history
+(`5ccf60b`, three tests added) reported 121.50 s over 3,912 fast and 4,036 in 6:55
+slow in its **commit message** and did not append here, so that reading is in
+`git log` and nowhere else. 120.68 against 121.50 and
+122.01 is nothing. The slow lane's 7:17 against 6:55 is 22 s on a lane that has
+read 6:43 to 7:38 across idle boxes with fewer tests in it than this — and the
+diff's own engine work happened **before** the lane rather than beside it
+(`curate re-render` of 38 pictures, 23.3 s, finished and confirmed idle), so this
+is the box's spread and not a leg sharing it.
 
 **+23 that reconciles exactly, and the long-standing red is closed rather than
 retaken.** `FIX_ckpt114_named_picture_ratchet_0907`, 2026-09-07, idle box,
