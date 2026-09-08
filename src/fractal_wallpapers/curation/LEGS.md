@@ -978,6 +978,41 @@ wants a thin cell should not spend its clock on the direct traps**, whatever
 `delivering` says about the maps it offers them; buy those modes' pictures on their
 own terms and let the colour fall where it falls.
 
+#### The aim is not what fails, and `direct_trap_multiply` has no vivid half
+
+`dtm_lc_smoke`, 2026-09-07, tested the reading that ruling leaves open: the same
+mode aimed at the cells it *can* reach. Both halves came back clearly.
+
+**The mode is structurally muted.** Of 942 pool maps, the number expected to deliver
+any **vivid** lime or cyan cell at [`palettes.dominance.CELL_LEAD`] is **zero** for all
+four, and 0/0/1/2 at a 0.05 cutoff. Realized history agrees over 13,938 unaimed rows
+(previously-aimed excluded on `hunt.drawn_for`/`drawn_cells`): `light_vivid_cyan` **0**,
+`light_vivid_lime` 3, `dark_vivid_cyan` 10, `dark_vivid_lime` 24, while every one of the
+mode's top eighteen realized cells is `*_muted_*`. So a vivid cell is not a thin target
+for this mode, it is an **absent** one, and the fifteen-cell leg above was aimed at
+cells nothing could have delivered.
+
+**Aimed at the muted cells the aim works and the clear rate still dies.** Conditioned
+arm **48.4%** in the target union against a matched flat control's 15.3% — lift
+**3.15x**; per cell `light_muted_cyan` 54.3% vs 6.6% and `light_muted_lime` 40.3% vs
+8.7%. And the conditioned arm cleared **0 of 1,160**, in all four quarters, where the
+flat arm cleared 11. Rows both dominant and clearing: **2**, both unaimed. So the
+ruling above stands for a reason it did not state — the delivery is fine, it is the
+**pictures** the carrier maps make in this mode that never clear.
+
+**An unaimed leg already lands 27.3%** of its rows in the eight lime/cyan cells, so the
+ceiling on aiming here is 3.7x and the measured figure is 3.15x. Two further readings:
+the aimed arm's map supply **exhausts inside seven minutes** (new maps by quarter
+**129 → 28 → 6 → 4**, 167 distinct maps against the flat arm's 670), and it makes 22x
+more colourless pictures — 13.19% of its rows carry no dominant cell against 0.60%.
+Whole leg: 2,320 candidates, 11 clears (0.47% against a ledger-wide 14.39%), **none
+reaching `p_fine(>=4) >= 0.50`**, the best at 0.264.
+
+**And price a `direct_trap_multiply` breadth draw off a breadth draw.** `night_d`'s
+floor draw reads 3.4572-3.7538 s a candidate per engine; this breadth draw ran at
+**2.105**. `PLAN_HEADROOM` absorbed the 1.7x and the leg made its whole plan on 94.1%
+of the clock, but a rate carried across draw shapes over-reads for this mode.
+
 **And the cut is one-sided in the other direction too**: `dark_vivid_blue`, the
 richest cell in the library and deliberately excluded from that leg's draw, took
 **1,099 rows — more than any of the three cells the leg was aimed at** — with 43.1%

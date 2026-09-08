@@ -613,6 +613,26 @@ count survives the drop that made it. Over the store on 2026-08-29 it reads
 least this, and an exact figure needs the index this rule exists to not keep. If
 the number turns out embarrassing, that is when something gets built.
 
+### A merge is not atomic across the prune, and a held file breaks it halfway
+
+`candidate_ledger.prune` deletes the doomed **pictures first and replaces its three
+files after** — the comment at the site says so — so the two halves fail apart. On
+Windows the replace raises `PermissionError: WinError 5` when anything else holds
+`rows.jsonl` open, and the `except` unlinks the three `.writing` temps and re-raises.
+What is left is a store where the pictures are gone, the rows that named them are
+not, and the ratchet never advanced — and the merge that called it has already
+written its rows, so the failure is *after* the part that matters and reports
+nothing. `dtm_lc_smoke` hit this on 2026-09-07: 870 pictures deleted, 870 rows
+surviving, and `depth.merge`'s report — `repeat_draws` included — never returned,
+because it is built after `candidate_ledger.merge` comes back.
+
+**The holder is usually a `label serve` left running**, which is exactly the kind of
+process nobody remembers is up. Close them, then re-run
+`curate candidate-ledger prune`: it is idempotent, it re-deletes nothing
+(`0 of 870 picture(s) deleted`), and it reconciles the store. **`repeat_draws` is
+not recoverable** — it is read against the ledger as it stood *before* the merge,
+which by then no longer exists.
+
 **The key is the pixels and nothing but the pixels.** It is a digest of the
 engine spec — through `renders.spec_of`, so this project has one derivation of
 what a picture's engine input is rather than two — with two members dropped and
