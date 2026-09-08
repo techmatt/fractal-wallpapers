@@ -1191,6 +1191,21 @@ the bar are the sub-section beneath it:
 
 Every other hue holds within a point.
 
+### The `>=0.50` row reproduced exactly a day and 11,411 rows later
+
+`general_breadth_0908`'s counterfactual took the same seating over the same view out
+of a scratch driver, and its **control** — the pool with the night's four merge stamps
+held out — reads **10,974 kept, shortfall 18, worst 1.50391, sum 1876.602, median
+`p_fine` 0.9314, seed 792**: the `>=0.50` row above to six figures. That is worth
+knowing for its own sake, because it says the view is a deterministic function of the
+pool and a counterfactual over it is a clean instrument.
+
+With the night in, the same view reads **11,120 kept over 6,297 places against 10,974
+over 6,191**, shortfall **14**, sum **1877.205**, median **0.9331**, seed **803**. So a
+5.7-hour general leg moves this experiment by **+146 rows, +106 places, −4 shortfall and
++11 seats at the seed** — and the worst seat and the filled count not at all, which is
+the n=1000 saturation the two overnight legs now agree on.
+
 ## What the finished collection expressed, measured 2026-09-06
 
 **The last reading of the colour-expression census, and the reason it is here rather

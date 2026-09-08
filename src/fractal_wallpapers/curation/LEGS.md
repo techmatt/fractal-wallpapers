@@ -521,6 +521,16 @@ workers * budget / rate` comes out about 1.6x covered, and the budget rather tha
 the plan is then what stops the leg. `sheet_leg_0905` was inside that by accident
 (600 places against a plan of 1,347) and `maps_*_0905` by construction.
 
+**And the flat round-robin under it has a price, measured 2026-09-08.**
+`general_breadth_0908`'s floor unit drew with no manifest at all, so `spread` gave the
+ten partitions an equal turn — and **`phoenix:classic` took 60.3% of that unit's engine
+seconds for 9.3% of its candidates**, at **33.99 s a candidate** against 1.17–3.22 for
+every other partition. There is no knob for it: `--partition-weights` bends
+[`_cell_turns`] and so the ranked and matched draws, and nothing under this draw reads a
+weight, so the only lever is a manifest — which the ⚠ above re-flattens whenever the
+plan is larger than it. A floor unit run wide on this machine spends most of its clock
+on one plane. Price it per partition before sizing the next one.
+
 ### What a floor leg may stand on is a FREE SLOT, and `smooth` has almost none
 
 Measured 2026-09-05 over 9,901 proven unpinned places, which is the population
@@ -717,7 +727,8 @@ else it made, 5,775 rows, was displacement the prune resolved inside the pair.
 Measured three times over two legs, and the three agree: of the never-opened places
 a breadth arm opens, the share that lands in the near band **with room at its own
 incumbent pair** is `armA1_0906` **83 of 502 (16.5%)**, `armA2_0906` **59 of 319
-(18.5%)**, `armA_0907` **52 of 238 (21.8%)**. The other four fifths land in
+(18.5%)**, `armA_0907` **52 of 238 (21.8%)**, `armA1_0908` **50 of 309 (16.2%)**.
+The other four fifths land in
 *neither* half of the band — their best roster candidate is outside
 `[SEATING_BAR, PRIMED_BAR)` — and **none of them can land in the at-the-keep half**,
 because a pair a breadth arm just opened holds one row against a keep of five. A
@@ -1200,6 +1211,18 @@ named pair passes both `--floor-modes` and a `--floor-seats` above their floor �
 `empty_modes` used **60**, at which `seats_short_today` reads `smooth_angle_min` 26
 and `smooth_mean_angle` 19; at the default 10 the arm plans nothing and the other
 arms run out of plan rather than clock.
+
+**The crossover has moved a long way and it moves again inside one leg.** Re-read
+2026-09-08 over 326,549 rows, the census is empty up to **120** — the thinnest
+mined mode, `direct_trap_lines`, holds **146** seats against an n=1000 floor of 16,
+and the roster runs 146 · 215 · 229 · 251 · 255 · 257 · 368 · 658 · 706 · 3,512 ·
+3,591 · 8,857. The smallest round value naming the six-mode dear cluster and nothing
+above it is **260**. But `--floor-seats` is a bar on a census the leg's own merges
+move: `general_breadth_0908` derived 260 in its preflight, a `depth plan` probe
+confirmed six modes, and by the time the floor unit planned — one breadth unit and
+one merge later — three of the six were over the line and it drew **three**. So a
+value derived before a multi-unit leg is stale at the unit that uses it: derive it
+after the last merge before the floor unit, or name `--floor-modes` outright.
 
 **And that census counts the raw recipe mode, not the routed one.** A modulate
 whose texture said nothing is `smooth` everywhere the seating looks
