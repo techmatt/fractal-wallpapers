@@ -456,6 +456,124 @@ Nothing pads. A demand the pool cannot fill is still short, still recorded and
 still minimized by tier 2 — a shortfall is a finding, never something the leg
 repairs by seating something it should not.
 
+### A `p_fine` bar on the view raises the objective and deletes the worst fifth
+
+**First, the filter is a filter on the seatable pool and not a coverage hole
+wearing one.** Of the 277,542-candidate pool, 40,127 rows clear their mode's bar,
+and the fine head has read **exactly those 40,127** — `clearing == above_bar` holds
+*set for set* and not merely in count, with every accepted mode landing on the
+`p_ge4` rule and none falling back to `p_ge3`. The other 237,415 are refused
+`below_its_mode_bar` before any rule runs, so **excluding unscored rows costs a
+solve nothing**. Of the 40,127, **10,974 read ≥0.50**, 9,646 ≥0.60 and 8,271 ≥0.70
+— Matt's ratified bar keeps a **quarter** of the seatable pool.
+
+**It fills at 0.50 and at 0.60, and 0.70 is open rather than short.** The 943 seats
+the 0.70 arm reported are a budget artifact: the chain stage stopped on
+`augment.DEFAULT_SECONDS` at 300.8 s with sweep 2 still finding 26 chains, where
+0.50 and 0.60 both exhausted. 0.80 and 0.90 were never run. That is the narrowed
+view's cost regime above, and it is why a short seating over one is read off the
+augment log before it is believed.
+
+**The filter RAISES the objective while filling the same thousand seats** — sum
+**1786.5 → 1876.6** at 0.50, and 1887.0 at 0.60. So the unfiltered solve is leaving
+objective on the table rather than spending it on breadth it could not otherwise
+buy. What it costs is the demand shortfall, **0 → 18**, and two starved mode floors.
+
+**And the median barely moves: 0.9343 → 0.9314.** The bar is not buying a better
+gallery so much as **deleting its worst fifth** — the control seats 69 pictures
+below `p_fine` 0.10 and 173 below 0.50, and at 0.50 those are zero by construction
+while everything above the bar is left roughly where it was. **581 of 1000 seats and
+649 of 1000 places are shared with the control**, so it is a real re-composition and
+still far less violent than the `rank-key → cascade` flip, which shared 179.
+
+The four runs whole are [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What a `p_fine` bar
+on the view buys at n=1000, measured 2026-09-07*; what one costs on the clock is
+*What the solve costs by stage, control and narrowed, measured 2026-09-07* beside it.
+
+### Which axes are held up by a rule, and which are emergent
+
+Read across those same four runs, and the reason to keep it: an axis a rule levels
+cannot be read as a fact about the pool, and an axis nothing holds can move under
+any leg without anybody having decided it should.
+
+**Enforced and binding hard — the colour cell.** `cell_allowance` is the single
+largest consumer of the pool. At n=1000 the allowance is 42 seats a cell and **39 of
+the 48 cells held sit exactly at it** in the control (32 at 0.50 and 0.60, 26 at
+0.70), which is the same reading the K-sweep takes at `K = 2` in
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the colour ceiling costs at n=1000,
+measured 2026-09-06*. This axis is not balanced, it is **levelled by a cap**.
+
+**Enforced and binding exactly — spiral.** 10.1% of seats in *every* run against a
+25.8% pool share: the cap to the seat, which is the shape the section on it below
+gives for every rung it has been run at.
+
+**Declared and never binding — `family_allowance`, `mode_ceiling` and `group_cap`,
+zero refusals in all four runs.** The palette-group cap is 25 and the realized
+maximum is 23–24, so it is one seat from binding and has never bound.
+
+**Emergent, riding on the cell cap.** Hue family looks balanced at 9–14% each and
+**nothing is holding it there**. Partition is 10 of 10 represented every run
+(`mandelbrot` largest at 18.2–18.6% against a 13.5% pool share). Plane runs
+**parameter 53.3–54.0% against a 45.7% pool share** — the gallery leans to parameter
+planes and nothing makes it. Centered is 26–28% of seats against 18% of the pool,
+tone is dark at 93–97 memberships per 100 seats, and flatness is the sharpest of
+them: the seating's median `flat16_1.0` is **0.005 against the pool's 0.133**, so
+the rank key strongly prefers detailed pictures, and that does not move with the bar.
+
+⚠ **A refusal share is compared against the view the run solved over, never against
+the whole pool.** Pool-relative, `cell_allowance`'s refusals look violently
+hue-skewed — red at **31.6% of the refusals against 16.1% of the pool** at 0.50 —
+and the cap reads as doing unacknowledged work on hue. Against the view that run
+actually solved over they track it: red 31.6% against **28.0%**, orange 22.5%
+against 20.7%, vivid 65.3% against 63.2%, dark 57.6% against 56.9%. The cap
+over-charges the over-represented warm and vivid cells by three to five points,
+which is a per-cell cap doing its declared job on the cells those hues concentrate
+in. **The pool-relative comparison is an artifact of the filter and is not
+quotable.**
+
+#### Two hues collapse as the bar rises, and it is a standing trade
+
+Every hue holds within a point between the control and 0.70 except two. **Lime falls
+15.0% → 7.7% of seats and cyan 15.6% → 11.1%** — lime loses half its seats and cyan
+a third. The same axis in hue-family memberships is lime 8.4% → 4.2% and cyan 10.5%
+→ 7.5%, and chroma follows: vivid 93.3 → 84.8 memberships per 100 seats.
+
+**The cell cap cannot fix it, because the supply is not there to cap.** A cell whose
+allowance is 42 and which holds ten rows at the bar is not being levelled by
+anything. So this is the quality bar and the colour breadth this project wants in
+direct conflict, in exactly two hues — a trade to be made deliberately, not a defect
+to be repaired. Both hues are also judge-disliked and light-and-cool, which is the
+`unwinnable` caveat under *The desire list is aimable at cell × mode and nowhere
+else* below.
+
+#### A short mode is read on ABSOLUTE ROWS AT THE BAR, never on pool share
+
+At 0.70 exactly three demands went short, and what each holds **at the bar** is the
+reading — rows first, then places, because one wallpaper per location makes places
+the thing a floor is actually paid in:
+
+| mode | floor at n=1000 | rows at 0.70 | places |
+|---|--:|--:|--:|
+| `direct_trap_multiply` | 16 | **7** | **7** |
+| `direct_trap_lines` | 16 | 25 | 22 |
+| `itinerary` | 32 | 56 | 51 |
+
+**Only the first is provably short on supply**: seven places cannot fill sixteen
+seats however the rules fall, and that is a mining target with no other reading. The
+other two hold more places than their floor asks for and went short anyway, which
+makes them the ordinary mixed case — supply thin enough that the other rules'
+ordinary refusals finish the job — and not a proof about the pool. Every mode that
+is **not** on this list has a deficit that is `cell_allowance` refusing rows it has
+plenty of: `threads` holds 307 rows at the bar and loses 172 of them to the
+allowance, which mining cannot fix.
+
+**Pool share answers a different question and answers it wrongly.** `smooth` is
+55.7% of the pool and 16–17% of every seating; `tia` is 16.0% of the pool and 31–33%
+of seats; `smooth_mean_angle` is **1.0% of the pool and 4.0% of seats**. A thin pool
+share is not a seat shortage and a fat one is not a claim on seats — the census's
+pool-mirror column is the reading, and a short mode is named by counting the rows it
+holds *at the bar*.
+
 ### The sweep belongs at BOTH ends of a mining leg
 
 `curate signatures sweep` is cheap and incremental, and the trap is treating it as a
@@ -2108,6 +2226,20 @@ distinct maps and pushed the seating down the map-quality tail by construction �
 the realized maximum per map is a number the record now **reports** rather than
 assumes: `shortfalls.groups.realized_max` and `at_the_cap` beside the cap itself.
 
+⚠ **And at n=1000 it is not a live constraint — it has now refused nothing in three
+independent measurements.** A counterfactual over one pool at cap 25, cap 50 and no
+cap at all changes zero seats and is bit-identical in the objective
+([`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the palette-group cap costs at n=1000,
+measured 2026-09-07*);
+the balance census reads **0 `group_cap` refusals in all four** of the filtered-view
+runs with a realized maximum of 23–24 of the allowed 25; and the desire-list probe
+finds `group_cap` naming **zero** refusals at every X and under every reading. So a
+gallery that comes back short at this rung is short for some other reason, and
+raising, lowering or removing this cap is not the lever. The measurements are at
+n=1000 and say nothing about a **themed** pass, where the twin test is swapped out
+and this cap is what binds — *`curate headroom --twin` — the one block that opens a
+picture* below.
+
 **`--key rank-key` moves the ORDER and nothing else.** Every bar on the path stays on
 the judge's own columns — `headroom.bars` chooses a mode's rule on `p_ge4`,
 `headroom.clearing` applies it, and the neutral pre-selection is about places — so two
@@ -2577,7 +2709,11 @@ counted and grouped by mode and by run.
 rule that refused it, aggregated by cell, family, mode and partition — a cell whose
 whole refusal column is `cell_allowance` is a cell the gallery is already full of,
 and one whose column is `location` exists only at places something else already took.
-Those are not the same instruction. A greedy shortfall is "this walk did not find
+Those are not the same instruction. ⚠ **A share of this column is compared against
+the view the run solved over and never against the whole pool** — the difference is
+the difference between a cap that looks hue-skewed and a cap doing its declared job,
+and the worked case is under *Which axes are held up by a rule, and which are
+emergent* above. A greedy shortfall is "this walk did not find
 it" and never "the pool does not hold it"; the census's necessary conditions are the
 only infeasibility claims this project makes.
 

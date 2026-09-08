@@ -1138,6 +1138,59 @@ by running the retired spelling beside the shipped one at all six points:
 | ≥0.50 n=1000 | 127.7 s | **93.0 s** | **1.37×** |
 | ≥0.50 n=1000, chain stage alone | 87.3 s | **60.0 s** | 1.45× |
 
+## What a `p_fine` bar on the view buys at n=1000, measured 2026-09-07
+
+`AUDIT_ckpt114_filtered_view_resolve_at_p_fine`. Four n=1000 seatings over the
+277,542-candidate pool, `--key cascade`, `--no-render`, idle box, everything else at
+the defaults. The control is the whole pool; each other arm is the whole pool
+filtered to the fine head's `p_fine(>=4) >= X` before anything else runs.
+
+**Coverage is total, which is what makes the experiment clean.** 40,127 rows clear
+their mode's bar and the fine head has read **every one** — `clearing == above_bar`
+set for set, every accepted mode on the `p_ge4` rule and none on the fallback — so
+the filter narrows the seatable pool and opens no coverage hole. Of the 40,127:
+**10,974** read >=0.50, 9,646 >=0.60, 8,271 >=0.70, 6,821 >=0.80, 4,875 >=0.90.
+
+| run | view | after preselect | places | **filled** | seed alone |
+|---|--:|--:|--:|--:|--:|
+| control (unfiltered) | 277,542 | 34,272 | 9,165 | **1000** | 993 |
+| >=0.50 | 10,974 | 8,845 | 5,058 | **1000** | 792 |
+| >=0.60 | 9,646 | 7,725 | 4,645 | **1000** | 775 |
+| >=0.70 | 8,271 | 6,605 | 4,177 | **943** | 719 |
+
+| run | shortfall | worst | sum | `p_fine` min / median / mean | shared seats / places |
+|---|--:|--:|--:|---|--:|
+| control | 0 | 1.0018 | 1786.5 | 0.0018 / 0.9343 / 0.7865 | — |
+| >=0.50 | 18 | 1.5039 | **1876.6** | 0.5039 / 0.9314 / 0.8766 | 581 / 649 |
+| >=0.60 | 24 | 1.6012 | **1887.0** | 0.6012 / 0.9270 / 0.8870 | 554 / 628 |
+| >=0.70 | 37 | 1.7008 | 1804.3 | 0.7008 / 0.9390 / 0.9134 | 511 / 586 of 943 |
+
+⚠ **The 943 at 0.70 is a budget floor and not that pool's answer.** Its chain stage
+stopped on `augment.DEFAULT_SECONDS` at **300.8 s** with sweep 2 still finding 26
+chains; 0.50 and 0.60 exhausted (87.7 s and 187.2 s, final sweep 0 chains) and are
+trustworthy. **0.80 and 0.90 were never run.** The defensible statement is *0.60
+fills and 0.70 is open*, never a ceiling.
+
+**The seed alone never fills, and the chain stage is what makes any of these
+galleries.** That is where the whole cost went: 71.8 / 128.5 / 220.6 / 332.3 s of
+wall clock across the four arms, on the leg's own clock. Those seconds are the
+**audit's** and are superseded twice over — by the stage table above, taken on a
+separate profiled leg, and by that day's two speedups. Read a cost from that table
+and a *ratio* from this one.
+
+Composition across the same four runs is [`GALLERY.md`](GALLERY.md)'s *Which axes
+are held up by a rule, and which are emergent*, and the two hues that collapse under
+the bar are the sub-section beneath it:
+
+| hue, % of seats | pool | control | 0.50 | 0.60 | 0.70 |
+|---|--:|--:|--:|--:|--:|
+| **lime** | 5.3 | **15.0** | 9.3 | 9.0 | **7.7** |
+| **cyan** | 9.5 | **15.6** | 12.8 | 12.5 | **11.1** |
+| red | 35.3 | 16.8 | 16.8 | 16.8 | 17.8 |
+| green | 8.0 | 16.8 | 16.8 | 16.8 | 17.2 |
+
+Every other hue holds within a point.
+
 ## What the finished collection expressed, measured 2026-09-06
 
 **The last reading of the colour-expression census, and the reason it is here rather
