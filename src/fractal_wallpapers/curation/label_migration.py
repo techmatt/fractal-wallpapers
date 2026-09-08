@@ -452,7 +452,7 @@ def derive(store=None, log=print) -> dict:
             spelled = f"{geometry.get('resolution')}ss{geometry.get('supersample')}"
             label_regimes[spelled] = label_regimes.get(spelled, 0) + 1
             try:
-                recipe = _recipe_of(row, band, groups)
+                recipe = recipe_of(row, band, groups)
                 key = recipes_module.key_of(recipe)
             except Exception as failure:  # noqa: BLE001 — a refusal is a recorded fact
                 refused.append(
@@ -472,7 +472,7 @@ def derive(store=None, log=print) -> dict:
                     "origin": row.get("origin"),
                     "partition": row.get("partition"),
                     "label_render": geometry,
-                    "label_picture": _label_picture(head, row),
+                    "label_picture": label_picture(head, row),
                 }
             )
 
@@ -537,7 +537,7 @@ def derive(store=None, log=print) -> dict:
     return record
 
 
-def _recipe_of(row: dict, band: dict | None, groups: dict):
+def recipe_of(row: dict, band: dict | None, groups: dict):
     """One label row as a [`recipes.Recipe`] at candidate geometry."""
     from fractal_wallpapers.palettes import groups as groups_module
 
@@ -573,7 +573,7 @@ def _partition_of(labels: list) -> str | None:
     return None
 
 
-def _label_picture(head: str, row: dict) -> str:
+def label_picture(head: str, row: dict) -> str:
     """Where the render cache keeps the picture this verdict was cast on.
 
     Through [`renders.job_name`] on the row itself, which is the derivation
@@ -2004,11 +2004,13 @@ __all__ = [
     "expressibility",
     "fine_by_expressibility",
     "in_population",
+    "label_picture",
     "leg_of",
     "merge",
     "merged_pictures_dir",
     "page",
     "readout",
+    "recipe_of",
     "render",
     "render_chunk",
     "score",

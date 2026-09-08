@@ -143,14 +143,15 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate_candidate_ledger",
         {"what": "restore", "force": True},
     ),
-    # The gallery leg. `run` names all twenty-six of its own flags here, because a
+    # The gallery leg. `run` names all twenty-seven of its own flags here, because a
     # flag this line does not name is a default this test would be pinning.
     (
         "curate solve run --n 150 --key p_ge4 --group-cap identity --themed dark_vivid_lime "
         "--themed-cap 4 --themed-radius 0.3 --target dark_vivid_lime=1.0 --mode-floor 3 "
         "--locations 900 --rows-per-seat 5 --draw-seed 11 --allow-unranked --spiral-cap 0.25 "
         "--neutral-radius 0.2 --no-preselection --no-diversity --no-swap --swap-seconds 60 "
-        "--explain-seats-of n150 --no-render --release-regime 1920x1080ss2 --workers 3 "
+        "--explain-seats-of n150 --explain-keys scratch/keys.txt --no-render "
+        "--release-regime 1920x1080ss2 --workers 3 "
         "--no-sheet --sheet-out scratch/sheet.jpg --name n150",
         "curate_solve",
         {
@@ -175,6 +176,7 @@ LINES: tuple[tuple[str, str, dict], ...] = (
             "no_swap": True,
             "swap_seconds": 60.0,
             "explain_seats_of": "n150",
+            "explain_keys": "scratch/keys.txt",
             "no_render": True,
             "release_regime": "1920x1080ss2",
             "workers": 3,
@@ -190,7 +192,7 @@ LINES: tuple[tuple[str, str, dict], ...] = (
     ),
     (
         "curate solve record --n 1000 --solve-name tentative_n1000 --key cascade --no-swap "
-        "--swap-seconds 900 --spiral-cap 0.25",
+        "--swap-seconds 900 --spiral-cap 0.25 --explain-keys scratch/keys.txt",
         "curate_solve",
         {
             "what": "record",
@@ -200,6 +202,7 @@ LINES: tuple[tuple[str, str, dict], ...] = (
             "no_swap": True,
             "swap_seconds": 900.0,
             "spiral_cap": 0.25,
+            "explain_keys": "scratch/keys.txt",
             "themed": None,
         },
     ),
@@ -557,6 +560,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--no-preselection",
             "--no-diversity",
             "--key",
+            "--explain-keys",
             "--no-swap",
             "--swap-seconds",
             "--augment",
@@ -576,6 +580,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--spiral-cap",
             "--mode-ceiling",
             "--key",
+            "--explain-keys",
             "--no-swap",
             "--swap-seconds",
             "--augment",
@@ -724,6 +729,13 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "page": ("--store", "--classes", "--out"),
         "merge": ("--store", "--out"),
     },
+    "label-fate": {
+        "keys": ("--store", "--out"),
+        "population": ("--store", "--out"),
+        "fates": ("--stamp", "--store", "--out"),
+        "render": ("--workers", "--store", "--out"),
+        "page": ("--migration-store", "--repaired-seats-of", "--store", "--out"),
+    },
     "autolevel": {
         "survey": ("--record", "--out"),
         "backfill": ("--limit", "--record", "--out"),
@@ -783,7 +795,7 @@ def test_a_nested_verb_resolves_to_the_namespace_it_always_did(line, handler, ex
 
 
 def test_every_nested_verb_is_a_real_subparser() -> None:
-    """Nineteen groups and eighty verbs, and no group left spelling its verb as
+    """Twenty groups and eighty-five verbs, and no group left spelling its verb as
     a positional `choices=` argument. The two are not interchangeable: a positional
     takes the whole group's flags, so `--help` at the group is every verb's flags at
     once and a flag on the wrong verb is accepted and silently ignored.
@@ -795,14 +807,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     judged recipes at candidate geometry, and eighteen and seventy-seven until later the
     same day, when `autolevel` and its two arrived to say which seats can replay their
     levelling and to re-derive a curve for the ones that cannot; and seventy-nine until
-    `label-migration merge` joined to put that store's rows into the pool."""
+    `label-migration merge` joined to put that store's rows into the pool; and nineteen
+    and eighty until `label-fate` and its five arrived to say what became of every
+    wallpaper somebody graded 4."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 80
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 85
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

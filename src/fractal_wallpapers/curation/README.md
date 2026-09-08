@@ -80,6 +80,10 @@ color_sheets  what a colour cell actually looks like, so an eye can rule on it
 swatch_frequency  every swatch, what it looks like, and how often the pool is it
 palette_coverage  how many maps can put a swatch on a real share of an image
 manufacture  forcing the rare swatches onto good places, and the sheets that ask
+label_migration  every judged recipe re-expressed at candidate geometry, staged
+           outside every store, read out, and merged through THE door
+label_fate what became of every wallpaper a person graded 4, one rung at a time —
+           and the seat that holds each one's place, beside it
 checks     the two claims only a re-render can settle
 run_layout where a run's regenerable files go, and at what size it draws them
 run        the wiring, and nothing else
@@ -121,6 +125,13 @@ fractal-wallpapers curate solve browse <stamp>             # the page again, off
                        # filter, group by mode or cell, click a picture for the full size
 fractal-wallpapers curate solve resolve <alias>,<alias>    # an ID back to a recipe
 fractal-wallpapers curate solve list                       # every record on this machine
+fractal-wallpapers curate label-fate keys --store scratch/label4_fate   # BEFORE the solve
+fractal-wallpapers curate solve record --explain-keys scratch/label4_fate/keys.txt
+fractal-wallpapers curate label-fate population --store scratch/label4_fate  # pool-holding
+fractal-wallpapers curate label-fate fates --stamp <stamp> --store scratch/label4_fate
+fractal-wallpapers curate label-fate render --store scratch/label4_fate   # HOURS, 3 workers
+fractal-wallpapers curate label-fate page --store scratch/label4_fate \
+    --migration-store scratch/label_migration_0908 --repaired-seats-of <stamp>
 fractal-wallpapers curate manufacture --step register --write          # BEFORE anything
 fractal-wallpapers curate manufacture --oversample 2.5                 # plan, build, select
 fractal-wallpapers curate manufacture --step verify --sheet artifacts/<sheet>
@@ -1066,6 +1077,64 @@ right.
 **The rest of the pool is deliberately out of scope.** Putting it right is a
 re-render of 10,664 rows plus a re-score, because every standing reading on them is
 about another picture.
+
+### `release.Task` had the same hole twice more, and `curve`/`palette` was the second
+
+`mode_params` was added to `release.Task` on 2026-09-04 after twelve release renders
+of varied seats came out bare. **The same argument applies to `curve` and `palette`
+and they were not there**: both are `recipes.KEYED` members, so a row whose recipe
+names a `log` field or a sampled `gamma` renders — through the release path — as the
+*plain* picture under that row's name. It went unnoticed while the pool held only
+plain-recipe rows; `label_migration merge` ended that on 2026-09-08 by putting 3,015
+rows derived from the two label corpora into the pool, a third of which carry knobs
+the candidate path never spends. Both are on the task since `curate label-fate`,
+default `None`, so every candidate leg renders exactly as it did.
+
+⚠ **`solve.render_seats` does not yet pass them, and neither does
+`curation.shrinkage`.** A release render of an authored-palette seat is still the
+plain picture, and `shrinkage._render_one` drops `mode_params` *and* re-measures its
+levelling at label geometry rather than inheriting it — which is the pre-`87ad3eb`
+behaviour. Neither was in the scope that found them. `curation.manufacture`'s render
+arm drops `mode_params` too.
+
+## `curate label-fate` — what became of every wallpaper somebody graded 4
+
+Three stores hold a human 4 — `data/smooth_render/`, `data/strange_render/` and
+`data/gallery_grade/` — and since `label-migration merge` every one of those verdicts
+is a **ledger row by key**. So the question stops being *how does the pipeline score
+pictures a person liked* and becomes *what happened to this one*, which has an exact
+answer per row. Five rungs, first one that stops it: off the roster, below the coarse
+bar, below the fine bar, refused by a named rule, seated.
+
+**Rung 0 exists because `solve.pool` refuses before any bar runs.** A mode
+`mode_policy` weights 0, a recorded rejection, a swept picture — none of those is
+*below* anything, and folding them into the coarse-bar count would say a bar refused
+a picture no bar ever read. It is decided on `mode_policy.routed_mode_of` and not the
+recipe's mode, so a modulate whose texture moved nothing is judged as the smooth
+picture it is.
+
+**Rungs 3 and 4 need `--explain-keys`, and that is the whole reason the flag exists.**
+The fate of a row that took no seat lives only inside the pass that refused it:
+`solve.rejection` keeps aggregates, and `rejection.explained` keeps one entry per key
+*asked about*. A record can only be asked while it is being taken, so
+`curate label-fate keys` runs **before** the solve and writes the manifest
+`curate solve record --explain-keys` reads. `fates` refuses a record with no
+`explained` block and one whose block does not name every row of this population —
+a rung recovered from the aggregate columns would be a guess about which of several
+rules acted first, and ending that guess is what joining the corpora to the ledger
+bought.
+
+**Both sides of a card are drawn fresh at one geometry**, because
+`sheets.LABEL_RESOLUTION` and `release.RELEASE_REGIME` are the same `1280x720ss2` —
+the geometry a person judges at and the geometry a wallpaper ships at. `render`
+refuses if those two constants ever move apart rather than quietly drawing a pair at
+two sizes. Each render is told the row's whole recipe (`mode_params`, `curve`,
+`palette`) and **inherits** its levelling through `stamps.for_release`.
+
+**The seat is matched on the exact location.** Where the place holds no seat the card
+says so; where the row was refused `another_place_is_the_same_place` the place itself
+was folded into a neighbour at pool construction and the record does not carry which
+one, so the card says that rather than naming an invented neighbour.
 
 ## `curate retention` — what survives what the rule drops
 

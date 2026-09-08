@@ -44,6 +44,7 @@ from fractal_wallpapers.cli.common import (
     write_tracked_json,
 )
 from fractal_wallpapers.curation import backfill as backfill_module
+from fractal_wallpapers.curation import label_fate as label_fate_module
 from fractal_wallpapers.curation import label_migration as label_migration_module
 from fractal_wallpapers.curation import manufacture as manufacture_module
 from fractal_wallpapers.paths import (
@@ -599,6 +600,37 @@ def curate_autolevel(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_label_fate(args: argparse.Namespace) -> int:
+    """What became of every wallpaper a person graded 4, one rung at a time."""
+    from fractal_wallpapers.curation import label_fate
+
+    store = getattr(args, "store", None)
+    doing = {
+        "keys": lambda: label_fate.keys(store),
+        "population": lambda: label_fate.population(store),
+        "fates": lambda: label_fate.fates(args.stamp, store),
+        "render": lambda: label_fate.render(store, workers=args.workers),
+        "page": lambda: label_fate.page(
+            store,
+            migration_store=args.migration_store,
+            repaired_seats_of=args.repaired_seats_of,
+        ),
+    }[args.what]
+    try:
+        report = doing()
+    except (label_fate.FateRefused, OSError) as refusal:
+        print(refusal)
+        return 1
+    if getattr(args, "out", None):
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"{out}")
+        return 0
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def curate_label_migration(args: argparse.Namespace) -> int:
     """Stage the judged recipes at candidate geometry, score them, and read them out."""
     from fractal_wallpapers.curation import label_migration
@@ -809,6 +841,11 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     # constant below is the one an unthemed record has always carried, so a
     # record taken before the themed pass could reach this verb is unchanged.
     targets, floor = ({}, None) if not args.themed else themed_demands(args.themed, seats)
+    try:
+        explain = keys_to_explain(args)
+    except FileNotFoundError as refusal:
+        print(refusal)
+        return 1
     candidates, refused = solve.pool()
     try:
         order, coverage = solve.ranking_for(candidates, args.key)
@@ -831,6 +868,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             augment_chains=args.augment == "on",
             augment_depth=args.augment_depth,
             augment_seconds=args.augment_seconds,
+            explain=explain,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -947,10 +985,11 @@ def curate_solve(args: argparse.Namespace) -> int:
     # cost off it, and this handler has never looked at that table. Streaming instead
     # is 5.1 s over the store of 2026-09-02 and one fewer whole-ledger copy in a
     # process that is already the pool-holding one.
-    explain = None
-    if args.explain_seats_of:
-        explain = [str(row["key"]) for row in solve.read_record(args.explain_seats_of)["seated"]]
-        print(f"[solve] explaining {len(explain):,} seat(s) of {args.explain_seats_of!r} by name")
+    try:
+        explain = keys_to_explain(args)
+    except FileNotFoundError as refusal:
+        print(refusal)
+        return 1
 
     candidates, _refused = solve.pool()
     try:
@@ -2207,6 +2246,43 @@ def themed_demands(theme: str, n: int) -> tuple[dict, int]:
     return {str(theme): 1.0}, solve_module.mode_floor(int(n))
 
 
+def keys_to_explain(args: argparse.Namespace) -> list | None:
+    """The candidate keys this pass records a fate for, or `None` for no block.
+
+    The union of the two ways of naming a set, because they name different kinds
+    of set and a caller can want both: `--explain-seats-of` is *an earlier
+    gallery's seats*, which is the before/after question, and `--explain-keys` is
+    *any population at all*, which is the question a set defined outside the solve
+    asks. `curate solve record` reaches only the second — a record does not take a
+    record's name as an argument — so the getattr is the run/record split and not
+    defensive coding.
+
+    Order is preserved and duplicates are dropped: the block is one entry per key
+    asked about, and asking twice is not two answers.
+    """
+    from fractal_wallpapers.curation import solve
+
+    named: list = []
+    seats_of = getattr(args, "explain_seats_of", None)
+    if seats_of:
+        named += [str(row["key"]) for row in solve.read_record(seats_of)["seated"]]
+        print(f"[solve] explaining {len(named):,} seat(s) of {seats_of!r} by name")
+    if getattr(args, "explain_keys", None):
+        where = Path(args.explain_keys)
+        if not where.is_file():
+            raise FileNotFoundError(f"no key manifest at {where}")
+        read = [
+            line.strip()
+            for line in where.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        print(f"[solve] explaining {len(read):,} key(s) named in {display_path(where)}")
+        named += read
+    if not named:
+        return None
+    return list(dict.fromkeys(named))
+
+
 def solve_flags_a_record_keeps(*, pool, demands, search):
     """The flags `curate solve run` and `curate solve record` both read.
 
@@ -2296,6 +2372,19 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         "a record that names it, so the 62 galleries seated on it stay readable. IT MOVES "
         "THE ORDER AND THE OBJECTIVE AND NOTHING ELSE: every bar, the clearing rule and the "
         "neutral pre-selection still read the judge's own columns",
+    )
+    search.add_argument(
+        "--explain-keys",
+        metavar="PATH",
+        help="a MANIFEST of candidate keys, one per line, whose fate this pass records ONE "
+        "AT A TIME into `rejection.explained` — every key named comes back `seated`, `not "
+        "in the pool`, or the first rule that refused it. `--explain-seats-of` asks the "
+        "same question of an earlier record's seats; this asks it of any set at all, which "
+        "is what a population defined outside the solve needs — the wallpapers a person "
+        "graded 4, say, which are ledger rows but are nobody's seats. A FILE and never a "
+        "list of keys, because a population runs to thousands and a Windows command line "
+        "does not. Unioned with `--explain-seats-of` where both are named; blank lines and "
+        "`#` comments are skipped",
     )
     search.add_argument(
         "--no-swap",
@@ -5128,6 +5217,127 @@ def add_commands(subcommands) -> None:
     )
     _staging_store(merging)
     merging.add_argument("--out", metavar="PATH", help="write the record there")
+
+    fate = steps.add_parser(
+        "label-fate",
+        help="what became of every wallpaper a person graded 4, one rung at a time",
+        description=(
+            "Three stores hold a human 4 — both finished-render corpora and the fine "
+            "head's own gallery-grade sitting — and since `label-migration merge` every "
+            "one of those verdicts is a ledger row BY KEY. So the fate of a graded "
+            "wallpaper is exact rather than inferred: off the roster, below the coarse "
+            "bar, below the fine bar, refused by a named rule, or seated. `keys` runs "
+            "BEFORE the solve and writes the manifest `curate solve record "
+            "--explain-keys` takes; the rest run after it. The page puts each graded "
+            "picture beside the seat that holds its place, both drawn fresh at the "
+            "geometry a person judged at and a wallpaper ships at."
+        ),
+    )
+    fate.set_defaults(handler=curate_label_fate)
+    fate_verbs = fate.add_subparsers(dest="what", required=True)
+
+    fate_keys = fate_verbs.add_parser(
+        "keys",
+        help="the population's ledger keys, one per line, for `solve --explain-keys`",
+        description=(
+            "Resolves all three stores and joins each graded row to its ledger key — a "
+            "finished-render row through label_migration's own derivation at candidate "
+            "geometry, a gallery-grade row through `selected_on.candidate`, which already "
+            "IS one. `labeler` is not read: every gallery-grade row carries `matt` and "
+            "every finished-render row carries null, so filtering on it would drop two "
+            "stores of one person's verdicts to keep the third. Reads no ledger and takes "
+            "seconds; run it before the solve, because the fate of a row that took no seat "
+            "exists only inside the pass that refused it."
+        ),
+    )
+    fate_population = fate_verbs.add_parser(
+        "population",
+        help="the graded rows joined to the ledger, with rungs 0 to 2 decided",
+        description=(
+            "THE POOL-HOLDING HALF — it streams the ledger for the population's rows and "
+            "reads the score sidecar whole, which is why the rungs are decided once here "
+            "and the render and the page never open the store again. Rung 0 is `solve.pool`'s "
+            "own five exclusions read off the ROUTED mode, rung 1 is solve.Q4_BAR (the "
+            "height score-pool stops reading at) and rung 2 is solve.DEFAULT_FINE_BAR. "
+            "Rungs 3 and 4 are left unset for `fates`, because only the solve knows them."
+        ),
+    )
+    fate_fates = fate_verbs.add_parser(
+        "fates",
+        help="a record's `explained` block into rungs 3 and 4, and the seat at each place",
+        description=(
+            "REFUSES a record with no `rejection.explained` block, and one whose block does "
+            "not name every row here: a rung read off the aggregate refusal columns would "
+            "be a guess about which of several rules acted first, and the point of doing "
+            "this after the merge is that it no longer has to be one. The seat is matched "
+            "on the exact location; a place the record does not hold gets none, and the "
+            "card says so rather than leaving a gap."
+        ),
+    )
+    fate_fates.add_argument(
+        "--stamp", required=True, help="the tentative record whose fates these are"
+    )
+    fate_render = fate_verbs.add_parser(
+        "render",
+        help="every graded picture and every seat beside one, at label geometry",
+        description=(
+            "One pass over both sides, because they are the same render and drawing them "
+            "through two paths would put the difference between the paths into the "
+            "comparison the page exists to make. Each render is told the row's WHOLE "
+            "recipe — mode_params, curve and palette, all three of them recipe-key members "
+            "— and inherits its levelling off the candidate's own stamp rather than "
+            "re-measuring at the larger size. Three workers below normal; resumable on the "
+            "file, so a killed leg costs the rows it was holding."
+        ),
+    )
+    fate_render.add_argument(
+        "--workers",
+        type=int,
+        default=label_fate_module.WORKERS,
+        help=f"engines to drive (default {label_fate_module.WORKERS}, this machine's pool)",
+    )
+    fate_page = fate_verbs.add_parser(
+        "page",
+        help="one card per wallpaper, p_fine ascending inside each rung",
+        description=(
+            "Ascending because the head's largest disagreements with a person come first. "
+            "Each card is the graded picture beside the seat holding its place, at one "
+            "display width, with the human verdict, both scores, the first refusing rule "
+            "where there was one, and the place, mode and palette on each side. The legend "
+            "carries a count per rung and the three things that make a column mean less "
+            "than it looks."
+        ),
+    )
+    fate_page.add_argument(
+        "--migration-store",
+        metavar="PATH",
+        default=None,
+        help="a `label-migration` store whose staged scores stand in where production has "
+        "none. A row below the coarse bar was never read by the fine head — that is what "
+        "the rung MEANS — so the column would otherwise be blank exactly where the "
+        "disagreement is largest. Marked as the migration's reading on every card that "
+        "uses one, and never mixed into the pool's column",
+    )
+    fate_page.add_argument(
+        "--repaired-seats-of",
+        metavar="STAMP",
+        default=None,
+        help="a recorded gallery whose VARIED seats a repair leg re-rendered through the "
+        "fixed path, so they are not flagged. `mine.make` dropped `mode_params` until "
+        "2026-09-08 and the pool still holds thousands of rows drawn bare under a varied "
+        "key; a picture under `hunt` or `label_migration` was never one of them, and "
+        "everything else with settings is marked unless this names it. Named as a stamp "
+        "because that is how the repair was scoped — every varied seat of one record",
+    )
+    for verb in (fate_keys, fate_population, fate_fates, fate_render, fate_page):
+        verb.add_argument(
+            "--store",
+            metavar="PATH",
+            default=str(label_fate_module.DEFAULT_STORE),
+            help=f"the store this reading owns, under the checkout unless absolute "
+            f"(default {label_fate_module.DEFAULT_STORE.as_posix()})",
+        )
+        verb.add_argument("--out", metavar="PATH", help="write the record there")
 
     levelling = steps.add_parser(
         "autolevel",
