@@ -385,6 +385,36 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+28 that reconciles exactly, fast lane only, and the surface table caught the
+group.** `MIGRATE_ckpt116_label_recipes_0908`, 2026-09-08, idle box,
+`.[dev,models]` with a release engine, taken **after** the render leg rather than
+beside it. **122.79 s over 3,963, 128 deselected** fast — **4,091** against the
+4,063 the entry below this one left. The +28 is the whole of
+`tests/test_label_migration.py`, all fast: the derivation's "geometry and nothing
+else" asserted member by member, the `curve`/`palette` override door and its
+refusal of the field cache, the expressibility cross-tab, and the population rule.
+**The deselected count does not move**, 128 either side, because none of the 28
+earns the slow mark — every one is arithmetic over a fixture, and the leg's own
+engine work is a leg rather than a guard.
+
+The clock is 122.79 s against 121.32 s over twenty-eight more tests, which is
+noise and not a cost, and the two guards that first read a store were the reason:
+they swept the real colormap library at about a second each until `expressibility`
+and `seat_expressibility` took `cyclic` as a parameter, the shape `solve.pool`'s
+`spirals` already had. That took the new file 9.52 s → 1.98 s before it was ever
+measured into the lane, which is [*Measure the fast lane after marking, not
+before*](#measure-the-fast-lane-after-marking-not-before) applied to a store read
+instead of a mark.
+
+**Two reds, one cause, and the guard was right.** `test_nested_verbs.py` failed
+twice — `test_every_nested_verb_is_a_real_subparser` and
+`test_a_nested_verb_carries_only_the_flags_its_handler_reads` — because `SURFACE`
+did not name the new `curate label-migration` group. Nothing was broken: the table
+is the pin on what the command line *is*, and a group appearing in it is a
+decision somebody writes down. It went to 18 groups and 77 verbs, and the count
+assertion moved 71 → 77 with it. Matt skipped the slow lane, so **4,091 is a
+derivation and not a reading**, on the same terms as the entry below.
+
 **+14 that reconciles exactly, fast lane only, and the slow lane deliberately not
 run.** `FIX_ckpt115_feasibility_group_cap_0908`, 2026-09-08, idle box,
 `.[dev,models]` with a release engine. **121.32 s over 3,935, 128 deselected**

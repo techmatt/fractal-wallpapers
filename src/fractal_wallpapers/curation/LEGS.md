@@ -2428,3 +2428,55 @@ deliberately not what the page printed under the picture.
 over, by location quality and by a passing score, so a correction rate measured
 on it bounds what a correction rate could be and is never a base rate about the
 pool.
+
+## `curate label-migration` — the judged recipes, drawn again as candidates
+
+Two corpora of human verdicts carry the whole recipe of the picture somebody judged,
+at **label geometry** `1280x720ss2`. The pool stands at `640x360ss2`. This leg derives
+the same recipe at candidate geometry — geometry changed and nothing else — draws it,
+and reads it through the render judge and the fine head. **It stages**: nothing is
+written into the candidate ledger, its sidecar, `pool_scores.jsonl` or either label
+store, and merging is a separate act against a separate decision.
+
+```
+scratch/label_migration_<name>/
+  recipes.jsonl        one row a derived recipe, its key, its label verdicts
+  renders.jsonl        one row a staged render: stamp, levelling verdict, stop list
+  scores.jsonl         both heads, at candidate geometry
+  readout.json         the distributions, bars, places, expressibility, the prune
+  index.html           label-4 pairs, judged beside candidate
+  pictures/<key>.jpg   and <key>.leveled/<colormap>.json beside each one
+  page_pictures/       the page's own copies, both sides at one width
+```
+
+**The store is under `scratch/` and not `artifacts/`** — a staged row is a reading
+nothing in the pipeline may find by accident, and the three-way `artifacts/` decision
+has no bin for *must not be read*.
+
+**The population is human 3 and 4** ([`label_migration.KEPT_CLASSES`], Matt's ruling of
+2026-09-08), `--classes` widens it back. The 1s and 2s buy calibration of the fine head
+across the full human range, which is eval-instrument work, and they are a population
+the head never meets in production: `score-pool` runs on coarse-clears only. **A key
+carrying two verdicts is in if either qualifies** — those are `finished.crossovers`'
+pairs, literally the same pixels judged in both stores.
+
+**The corpora are not the candidate path and that needed a door.** The candidate path
+spends `colorize.CURVE` and the plain palette; 6,420 of 11,966 resolved rows carry
+palette knobs it never produces and 868 read their field through `log`. So
+`colorize.render_row`/`render` grew `curve` and `palette` overrides, off by default,
+with this leg the only caller — and they **refuse** a `fields` directory, because a
+dumped field is named for its curve and `recolored` pins the palette, so a recolour
+under an override would be the plain picture wearing the override's name. Every staged
+render therefore takes the engine path.
+
+**Measured 2026-09-08**, three workers below-normal, this machine: **1.59 s a picture
+per engine, 1.77 a second wall** over 5,329 pictures in 40.6 min. Both heads read
+5,329 in 92.5 s. The readout is a pool-holding process — it reads the ledger whole —
+so it never runs beside another one.
+
+**A killed leg loses its stamps, not its pictures.** `renders.jsonl` is written once at
+the end, so a leg killed mid-flight leaves pictures whose autolevel curve is recorded
+nowhere; `depth.levelling_of` reads those as `None` rather than guessing. Re-measuring
+a curve off a finished picture gives a *different* curve — that is
+`depth.ACTED_UNRECOVERABLE` — so the way back is to delete those pictures and redraw
+them, which is what the resume does once their rows say nothing.

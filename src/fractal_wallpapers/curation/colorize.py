@@ -563,6 +563,8 @@ def render_row(
     cyclic: set[str],
     render: dict | None = None,
     mode_params: dict | None = None,
+    curve: str | None = None,
+    palette: dict | None = None,
 ):
     """One candidate as the render-cache row its picture is made from.
 
@@ -571,15 +573,35 @@ def render_row(
     through `renders.coloring_of`, so it is in the recipe key, in the job name and
     on the ledger row's own `recipe`, which is what makes a varied candidate a new
     picture rather than an overwrite of the shipped one.
+
+    ## `curve` and `palette` are overrides, and every candidate leg leaves them off
+
+    The candidate path spends [`CURVE`] and [`_plain_recipe`] and always has:
+    those two defaults are what "a candidate" means here, and a leg that set them
+    per attempt would be making pictures the judges were not fitted on.
+    [`curation.recipes.of_decision`] reads the same two off the same places for
+    the same reason.
+
+    They are parameters because **the label corpora are not the candidate path**.
+    A finished-render row records the curve and all seven palette knobs somebody
+    actually judged, and 6,420 of the 11,966 resolved rows carry knobs this path
+    never produces with 868 on `log` rather than `linear` — so re-expressing one
+    of those recipes at candidate geometry needs a door that takes them. That is
+    [`curation.label_migration`], which stages and merges nothing.
+
+    The **field cache cannot serve an override** and [`render`] refuses the pair
+    rather than quietly ignoring one: a dumped field is named for its curve and
+    [`recolored`] pins the palette to `_plain_recipe`, so a recolour under an
+    override would be the plain picture wearing the override's name.
     """
     return {
         "family": row["family"],
         "viewport": row["viewport"],
         "mode": mode,
         "mode_params": dict(mode_params or {}),
-        "curve": CURVE,
+        "curve": CURVE if curve is None else str(curve),
         "colormap": colormap,
-        "recipe": _plain_recipe(colormap not in cyclic),
+        "recipe": _plain_recipe(colormap not in cyclic) if palette is None else dict(palette),
         "render": render or _geometry(row),
     }
 
@@ -666,6 +688,8 @@ def render(
     meter: dict | None = None,
     reported: dict | None = None,
     mode_params: dict | None = None,
+    curve: str | None = None,
+    palette: dict | None = None,
 ) -> tuple[Path, dict | None]:
     """Render one candidate and level it. `(picture, stamp)`; the stamp may be `None`.
 
@@ -694,6 +718,13 @@ def render(
     varied candidate is a **new** picture beside the shipped one and never an
     overwrite of it. It also takes the render path unconditionally — see
     [`_shared_field`].
+
+    `curve` and `palette` are [`render_row`]'s overrides and every candidate leg
+    leaves them off; the one caller is [`curation.label_migration`], re-expressing
+    a judged recipe at candidate geometry. **They refuse a `fields` directory**
+    rather than being quietly dropped, for the reason `render_row` states — and
+    the refusal is here rather than there because `render_row` is also called to
+    describe a picture that is not being made.
 
     The two paths are held to producing the *same bytes* — not a similar picture,
     the same file — by `test_a_recolour_is_the_render_byte_for_byte`, because a
@@ -729,9 +760,16 @@ def render(
     """
     from fractal_wallpapers.models import renders
 
+    if fields is not None and (curve is not None or palette is not None):
+        raise RuntimeError(
+            "a curve or palette override cannot be served out of the field cache: a dumped "
+            "field is named for its curve and `recolored` pins the palette to the plain "
+            "recipe, so the recolour would be the plain picture under the override's name. "
+            "Pass fields=None for an overridden render."
+        )
     output = Path(output)
     scratch = writing_path(output)
-    recipe = render_row(row, mode, colormap, cyclic, render_geometry, mode_params)
+    recipe = render_row(row, mode, colormap, cyclic, render_geometry, mode_params, curve, palette)
     spec = renders.spec_of(recipe, scratch)
     mirror = bool(recipe["recipe"]["mirror"])
     output.parent.mkdir(parents=True, exist_ok=True)
