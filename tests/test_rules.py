@@ -99,8 +99,13 @@ def test_two_rules_at_once_intersect_and_an_empty_intersection_is_no_swap_at_all
 
 
 def test_the_cell_allowance_names_the_seats_carrying_that_cell_and_not_the_gallery():
-    state = state_of(20)
-    assert state.rule.allowed("dark_vivid_blue", 20) == 1
+    # The gallery is sized so the allowance is exactly one seat, off the rule
+    # rather than off a number: `floor(K * t * n) + 1` is 1 up to n = 48/K, which
+    # is n < 24 at K=2 and n < 16 at K=3, so a literal here would have to move
+    # with the ceiling and this does not.
+    seats = 48 // (ceiling.K + 1)
+    state = state_of(seats)
+    assert state.rule.allowed("dark_vivid_blue", seats) == 1
     state.seat(candidate("blue", cells=("dark_vivid_blue",)), "general_pool")
     state.seat(candidate("plain", cells=()), "general_pool")
     arriving = candidate("more_blue", cells=("dark_vivid_blue",))

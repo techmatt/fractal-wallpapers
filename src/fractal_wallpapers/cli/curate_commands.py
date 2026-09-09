@@ -824,7 +824,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
             if named and args.stamp and named[0] != args.stamp:
                 print(f"two different stamps were named: {named[0]} and {args.stamp}.")
                 return 1
-            print(f"{display_path(tentative.page(args.stamp or (named[0] if named else None)))}")
+            named_stamp = args.stamp or (named[0] if named else None)
+            out = resolve_output(args.out) if args.out else None
+            print(f"{display_path(tentative.page(named_stamp, out=out))}")
             return 0
         # resolve: a comma list, so one invocation answers a whole figure prompt.
         if not named:
@@ -883,6 +885,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             seconds=args.swap_seconds,
             spiral_cap=args.spiral_cap,
             mode_ceilings=mode_ceilings_named(args.mode_ceiling),
+            cell_floor=args.cell_floor == "on",
             theme=args.themed,
             geometry_radius=args.themed_radius,
             themed_cap=args.themed_cap,
@@ -1058,6 +1061,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             draw_seed=args.draw_seed,
             spiral_cap=args.spiral_cap,
             mode_ceilings=mode_ceilings_named(args.mode_ceiling),
+            cell_floor=args.cell_floor == "on",
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             augment_chains=args.augment == "on",
@@ -2389,6 +2393,7 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
     same parser three times.
     """
     from fractal_wallpapers.curation import augment as augment_module
+    from fractal_wallpapers.curation import ceiling as ceiling_module
     from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import solve as solve_module
 
@@ -2456,6 +2461,22 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         f"`{NO_SPIRAL_CAP[0]}` runs no cap at all and is what the incumbent gallery is "
         "spelled with; 1.0 runs the cap and lets it not bind, which is the spelling for "
         "a record that should say so",
+    )
+    demands.add_argument(
+        "--cell-floor",
+        choices=("on", "off"),
+        default="on" if solve_module.DEFAULT_CELL_FLOOR else "off",
+        help="the COLOUR FLOOR: at least floor(kf * t * seats filled) seats dominant in "
+        f"each of the 48 chromatic cells — kf = {ceiling_module.KF} against the ceiling's "
+        f"k = {ceiling_module.K}, one fair share against three, so 20 of a thousand seats "
+        "where the allowance is 63. SOFT, and it is the ceiling's arithmetic with one "
+        "number changed and NO + 1: a warm-up belongs to a walk that has to seat its first "
+        "row somewhere. It refuses nothing and can never make a pass infeasible — a cell "
+        "the pool cannot fill is a row in `shortfalls.cell_floors` and a shortfall on the "
+        "objective's tier 2, under the seat count and over the worst seated score. ON "
+        "unasked (Matt's ruling, 2026-09-09), so a record that does not name this ran WITH "
+        "it; `config.ceiling.kf` is `null` on one that did not. Always off on `--themed`, "
+        "a theme being one cell by construction",
     )
     demands.add_argument(
         "--mode-ceiling",
@@ -4196,6 +4217,14 @@ def add_commands(subcommands) -> None:
     browsing.add_argument(
         "--stamp",
         help="which record to write again (default the newest)",
+    )
+    browsing.add_argument(
+        "--out",
+        metavar="PATH",
+        help="write the page HERE instead of beside the record's rows, with every "
+        "thumbnail resolved relative to where it lands. That is the difference between "
+        "this and copying `index.html` afterwards, which points at nothing. The record's "
+        "own page is left alone",
     )
 
     resolving = solve_verbs.add_parser(

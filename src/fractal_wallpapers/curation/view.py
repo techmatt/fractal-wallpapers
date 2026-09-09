@@ -138,6 +138,7 @@ def stratify(
     rule,
     rank,
     floors: dict | None = None,
+    cell_floors: dict | None = None,
     rows_per_seat: int = ROWS_PER_SEAT,
     small: int = SMALL_STRATUM,
     seed: int = DRAW_SEED,
@@ -149,16 +150,23 @@ def stratify(
     walk agree about which row of a place is that place's best. `floors` is the
     mode floors at this `n`, read for the sizing alone: a mode that owes five
     seats must be able to reach at least five, whatever its cells' allowances say.
+    `cell_floors` is the **colour** floor at this `n` and is read for exactly the
+    same thing on exactly the same argument — a cell that owes twenty seats must
+    be able to reach twenty rows that could fill them, and a stratum sized on the
+    ceiling alone would size the thinnest cells on what the pool happens to hold.
+    `None` is a pass carrying no colour floor.
 
     Every place's strongest row is kept unconditionally. The size of a stratum's
     **alternate** draw is what `n` seats could spend on that stratum: the fewer of
     its distinct places, `n` itself, and its cell's allowance at this `n`, raised
-    to its mode's floor and then multiplied by `rows_per_seat`. A stratum with at
-    or below `small` alternates keeps all of them.
+    to its mode's floor and its cell's floor and then multiplied by
+    `rows_per_seat`. A stratum with at or below `small` alternates keeps all of
+    them.
     """
     import random
 
     floors = dict(floors or {})
+    cell_floors = dict(cell_floors or {})
     ordered = sorted(candidates, key=rank)
     best, alternates = _population(ordered)
     log(
@@ -185,7 +193,7 @@ def stratify(
         _kind, mode, cell = stratum
         held = forced.get(stratum, 0)
         seats = min(held + len(rows), int(n), _allowance(rule, cell, n))
-        seats = max(seats, int(floors.get(mode, 0)), 1)
+        seats = max(seats, int(floors.get(mode, 0)), int(cell_floors.get(cell, 0)), 1)
         quota = (
             len(rows)
             if len(rows) <= int(small)
@@ -232,8 +240,13 @@ def stratify(
             "no_cell": NO_CELL,
             "small_stratum": int(small),
             "rows_per_seat": int(rows_per_seat),
-            "sizing": "min(rows, n, the cell's allowance at n), raised to the mode's floor, "
-            "times rows_per_seat. A stratum at or below small_stratum is taken whole",
+            "sizing": "min(rows, n, the cell's allowance at n), raised to the mode's floor "
+            "and to the cell's floor, times rows_per_seat. A stratum at or below "
+            "small_stratum is taken whole",
+            "cell_floors": dict(sorted(cell_floors.items())),
+            "cell_floors_are": "the colour floor at this n, read for the SIZING alone and "
+            "never applied here: a cell that owes seats must be able to reach rows that "
+            "could fill them. `{}` is a pass carrying no colour floor",
             "slice": "a seeded stride across the stratum's OWN rank order — band-blind, and "
             "never a top-by-score cut: the worst seated score and the floors are what the "
             "leg maximizes after the seat count, and neither is found at the top of a stratum",

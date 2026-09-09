@@ -1220,6 +1220,32 @@ are worth knowing, so the intersection is reported per card as *no single seat l
 would have been enough* rather than used as the pairing. It is true of 234 of the 453
 paired cards.
 
+### The subtraction on a card is not a margin, and the card now says which leg placed the seat
+
+**The `gap` column was renamed `p_fine Δ` on 2026-09-09 and the old name was
+wrong**, measured rather than suspected — `forced_seating_20260909`, Part A. It
+reads as *how close this row came to a seat* and there is no such quantity on this
+page: the rule that took the row compared no scores at all. `cell_allowance` is a
+**count** against an allowance, `location` is a seat standing in a cluster, and
+the competitor beside either is picked **after the fact** as the marginal seat —
+the two rows never met. 127 of `20260909T173957Z`'s 173 paired cards carried a
+negative value, which reads as *I scored higher and still lost* and is simply what
+a rule that never read a score does.
+
+**So the fact that explains a negative one goes on the card ahead of it: the leg
+that placed the competitor.** Of those 105 negative `cell_allowance` competitors,
+**zero** came from the ranked walk — 47 from `swap`, 47 from `augment`, 11 from a
+mode floor's mandate. `general_pool` is the only leg the seating key orders; the
+swap and the chain accept on the lexicographic objective and a mandate walks one
+demand's subpool scarcest-first, so a seat from any of the other three says
+nothing about how the two rows would have compared. A card whose competitor came
+from the ranked walk gets no disclaimer, because there the two orders did meet.
+
+The column itself stays — a competitor reading 0.01 above a refused row and one
+reading 0.4 above it are different findings — under a label that cannot be read as
+closeness, with the disclaimer beside the number and once at the top of every
+refused slice.
+
 **Every count in this section is one record's**, `20260908T211552Z`, which is what
 made the shape visible. The same population re-solved against the repaired pool as
 `20260909T061451Z` reads 350 / 99 / 72 / 3 by rule against 348 / 102 / 71 / 3, 452

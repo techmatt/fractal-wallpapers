@@ -402,6 +402,34 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+18 fast, and NO slow reading — the clock here is not comparable.**
+`k3_floor_20260909`, 2026-09-09. The fast lane read **4,163 selected, 132
+deselected — 4,295 collected — in 200.85 s**, against the 4,145 / 132 / 129.99 s
+of the entry below. **Matt asked for the slow lane to be skipped**, so this prompt
+took no slow reading and the two lanes' collected counts are not compared here.
+
+⚠ **The 200.85 s was taken beside a render leg** — the fate sheet's 46 label-
+geometry renders on three below-normal workers — so it is a **busy-box** number
+and says nothing about the tree. See *A lane sharing the box with a render leg*
+above; the rule is to run the lane after a leg, and this reading is exactly the
+thing that rule warns about. It is written down because a reading nobody records
+is one somebody re-measures, not because it is comparable with the one below.
+
+The +18 are the colour floor's: eleven in `test_solve.py` (the `Kf` arithmetic,
+`share_down` against `share_of`, the floor as a soft demand, the shortfall tier,
+an unfillable cell, a targeted cell's single demand, the themed exclusion, the
+tracked `kf: null`, and the deadlock attribution), five in `test_tentative.py`
+(the three floor marks on a row, a record that carried no floor, `--out`, the
+badge and facet, and every cell on a tile), and two in `test_label_fate.py` (the
+relabelled `p_fine Δ` and the leg on the card).
+
+**Five existing guards moved off a literal.** `test_solve.py`'s `n=20` meant *the
+size at which a cell's allowance is one* — true at `K = 2` and not at `K = 3` — so
+they went red the moment the ceiling moved, for a reason unrelated to what any of
+them asserts. They read `ONE_SEAT = 48 // (ceiling.K + 1)` now, and
+`test_rules.py` and `test_view.py` took the same edit. That is the shape to copy:
+a guard about *the size where a rule binds* states the rule, not the size.
+
 **+6, and the two lanes agree again.** `k_sweep_20260909`, 2026-09-09, idle box,
 taken after the six-arm colour-ceiling sweep rather than beside it. The **slow**
 lane read **4,277 of 4,277 green in 459.94 s (7:39)**, zero skips, and the **fast**

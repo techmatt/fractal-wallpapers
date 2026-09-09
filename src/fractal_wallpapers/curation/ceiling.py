@@ -38,9 +38,25 @@ after-state and there is no recovery. `floor(K * t * n) + 1` has the warm-up bui
 into the `+ 1`: the first seat may hold any one colour, and the allowance grows
 with the walk instead of being spent against its end.
 
-`K = 2` is the headroom: a colour may run at twice its target rate before the
-ceiling acts. Refusing only a **dominant** candidate is the other half of the
+`K = 3` is the headroom: a colour may run at three times its target rate before
+the ceiling acts. Refusing only a **dominant** candidate is the other half of the
 cliff's removal — a picture that is a fifth red is not what makes a gallery red.
+
+## And the floor under it, which is the same arithmetic and not a rule
+
+`Kf = 1` is the other end of the same sentence: **every cell gets at least one
+fair share and at most three**. `floor(Kf * t * n)` is 20 of a thousand seats
+where the allowance is 63, and it is deliberately expressed in `K`'s units
+rather than as a constant of its own so the two can never come to mean different
+things. It takes **no `+ 1`** — see [`KF`].
+
+The two are not the same *kind* of lever, though, and that asymmetry is the
+whole design. A ceiling is a **rule at the seat**: it refuses a candidate, and
+the walk always has another. A floor cannot refuse anything, so it is a **soft
+demand** on the objective's shortfall tier ([`curation.solve.Demand`]) — a cell
+the pool cannot fill comes out as a reported shortfall rather than as an
+infeasible solve or an empty gallery. Nothing in this module applies it;
+this module only says what it is.
 
 ## Targets, and what they are not
 
@@ -228,12 +244,51 @@ TAU_GROUP = 0.10
 
 #: How much headroom a colour gets over its target rate before the ceiling acts.
 #:
-#: **Two.** At one the ceiling is an exact quota and the walk spends its whole
-#: tail on the fallback; at three it never fires against a supply already skewed
-#: 2.1x. Twice the target rate is the setting at which the observed maxima —
-#: family red at 2.45x uniform, cell `dark_vivid_blue` at 3.25x — are the things
-#: it acts on and nothing else is.
-K = 2
+#: **Three since 2026-09-09**, Matt's ruling off the `K` sweep, replacing the two
+#: this shipped under from the first seating. At n=1000 the allowance goes 42 to
+#: 63 per cell.
+#:
+#: What the sweep measured, four arms at n=1000 over one pool
+#: (`SWEEP_ckpt117_colour_ceiling_0909`): the seating stays full at 1,000 seats
+#: at every rung, and raising `K` buys the objective — sum 1891 at 2, 1939 at 3,
+#: 1954 at 3.75 — by letting the strong cells spread. The thin cells do not
+#: benefit and several **fall**: eight sat under 20 seats at `K = 3` against four
+#: at `K = 2`, with `dark_vivid_lime` at 10 and `dark_vivid_cyan` at 15. A
+#: ceiling cannot fix that, which is what [`KF`] below is for — the two are one
+#: pair and neither is readable alone.
+#:
+#: The argument the two was set on, kept because it is still what bounds this
+#: from below: at one the ceiling is an exact quota and the walk spends its whole
+#: tail on the fallback. What it said about three — that it would never fire —
+#: the sweep contradicts: 5,346 `cell_allowance` refusals at `K = 3` against
+#: 8,662 at `K = 2`, so the rule is still the largest single refusal column.
+#: The observed maxima it was set against were family red at 2.45x uniform and
+#: cell `dark_vivid_blue` at 3.25x.
+K = 3
+
+#: The **floor's** headroom, in exactly [`K`]'s units: how many fair shares of
+#: the gallery every chromatic cell is owed.
+#:
+#: **One**, Matt's ruling of 2026-09-09 and shipped with `K = 3` in the same act.
+#: `floor(Kf * t * n)` at the uniform cell share is `floor(n / 48)` — 20 at
+#: n=1000 — so the pair reads *every cell gets at least one fair share and at
+#: most three*, and the two can never drift apart in meaning because they are one
+#: arithmetic with one number changed.
+#:
+#: **It takes no `+ 1`.** [`Rule.allowed`] carries one as a warm-up — the first
+#: seat of a walk may be any colour — and a floor has nothing to warm up: it is
+#: a demand stated against the finished gallery, so the arithmetic is
+#: [`share_down`] and the answer at n=1000 is 20 rather than 21.
+#:
+#: **The floor is SOFT and is carried as a demand**, not as a rule at the seat.
+#: A ceiling refuses a candidate and the walk always has a fallback; a floor
+#: cannot refuse anything, and a hard mandate on a cell the pool cannot fill
+#: would make the solve infeasible rather than merely worse. So it rides the
+#: lexicographic objective's shortfall tier exactly as the mode floors do —
+#: after the seat count, before the worst seated score — and a cell the pool
+#: cannot fill is a reported shortfall and never an exception. See
+#: [`curation.solve.Demand`].
+KF = 1
 
 #: The default target rate per chromatic cell and per hue family: uniform. 48
 #: cells and 12 families, so a gallery that spread itself evenly would sit exactly
@@ -410,6 +465,8 @@ class Rule:
     group_cap: int = GROUP_CAP
     tau_group: float = TAU_GROUP
     k: int = K
+    #: The floor's headroom, in `k`'s own units. See [`KF`] and [`required`].
+    kf: int = KF
     #: `{cell: {companion cell: rate}}`, the co-dominance a target's implied cells
     #: are derived from. `None` reads it off the tracked carrier table, which is
     #: what a solve and a pass both want; a test hands one in so it does not have
@@ -482,6 +539,34 @@ class Rule:
         """
         return int(math.floor(self.k * self.share(name) * max(0, int(seats)))) + 1
 
+    def floor_share(self, name: str) -> float:
+        """`kf * t` — the share of a gallery this cell or family is owed.
+
+        The floor's rate, denominated in the same `t` the ceiling's is, so that
+        the pair reads as *between `kf` and `k` fair shares* and a target that
+        moves one moves the other. [`curation.solve.Demand`] carries this rather
+        than the [`Rule`] itself, and turns it into a count through
+        [`share_down`] — which is where the two spellings meet.
+        """
+        return float(self.kf) * self.share(name)
+
+    def required(self, name: str, seats: int) -> int:
+        """`floor(kf * t * n)` — how many of `seats` this colour is owed.
+
+        [`allowed`]'s arithmetic with `kf` for `k` and **no `+ 1`**: see [`KF`]
+        on why a warm-up belongs to a ceiling and not to a floor. At the shipped
+        pair and the uniform cell share this is 20 of 1000 against an allowance
+        of 63.
+
+        **Ask this rather than compute the formula on paper**, for [`allowed`]'s
+        own reason: the product is taken in binary floating point and a `kf` and
+        an `n` whose exact product lands on an integer can lose a seat to the
+        floor. `kf = 1` at the uniform share cannot — `1000 / 48` is not near an
+        integer — and that is a fact about today's value rather than about the
+        arithmetic.
+        """
+        return share_down(self.floor_share(name), seats)
+
     def wanted(self, cell: str, n: int) -> int:
         """`ceil(t * N)` — how many pictures a target asks for out of `N` seats."""
         return int(math.ceil(self.targets[cell] * int(n)))
@@ -506,7 +591,25 @@ def share_of(share: float, seats: int) -> int:
     return int(math.ceil(float(share) * max(0, int(seats))))
 
 
+def share_down(share: float, seats: int) -> int:
+    """`floor(share * seats)` — [`share_of`]'s companion, rounding the other way.
+
+    A **floor** under a quantity rounds down and a ceiling over it rounds up, and
+    that is not a rounding convenience: a floor that rounded up would ask a cell
+    for a seat the even split does not owe it, and 48 cells each rounded up ask
+    for more of the gallery than the gallery holds. `48 * ceil(1000/48)` is 1,008
+    and `48 * floor(1000/48)` is 960, so the ceiling-rounded spelling is
+    infeasible by construction at every `n` the shares do not divide.
+
+    Its two readers are [`Rule.required`] and [`curation.solve.Demand.wanted`],
+    for the reason [`share_of`] has two: the floor a demand states and the floor
+    the record reports must not be able to disagree about the quantity.
+    """
+    return int(math.floor(float(share) * max(0, int(seats))))
+
+
 __all__ = [
+    "share_down",
     "share_of",
     "CELL_SHARE",
     "FAMILY_SHARE",
@@ -518,6 +621,7 @@ __all__ = [
     "THEMED_CAP_PLACES",
     "THEMED_GROUP_CAP_RATE",
     "K",
+    "KF",
     "PROPORTIONAL",
     "capable_groups",
     "themed_group_cap",

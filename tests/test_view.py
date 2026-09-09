@@ -162,12 +162,17 @@ def test_the_stride_offset_is_seeded_so_two_passes_at_one_seed_reach_one_view():
 
 def test_a_strata_draw_is_sized_to_what_n_seats_could_spend_on_it():
     """The cell allowance is what bounds a stratum's contribution, so it is what the
-    quota is read off. At n=20 a cell may take one seat, so a stratum of three
-    hundred alternates is not worth three hundred signatures."""
+    quota is read off. At the size below, a cell may take one seat, so a stratum of
+    three hundred alternates is not worth three hundred signatures.
+
+    The size is read off `ceiling.K` and never written down: `floor(K * t * n) + 1`
+    is one up to `n = 48/K`, so a literal would have to be revisited every time the
+    ceiling moved — which is what this went red on when it went from 2 to 3."""
+    seats = 48 // (ceiling.K + 1)
     rows = places_with_alternates(300)
-    small = viewed(rows, n=20)
+    small = viewed(rows, n=seats)
     large = viewed(rows, n=1000)
-    assert solve.rule_for().allowed("dark_vivid_azure", 20) == 1
+    assert solve.rule_for().allowed("dark_vivid_azure", seats) == 1
     assert len(small) < len(large), "more seats reach more of the stratum"
 
 

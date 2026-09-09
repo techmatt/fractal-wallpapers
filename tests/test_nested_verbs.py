@@ -556,6 +556,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--flat-floor",
             "--group-cap",
             "--spiral-cap",
+            "--cell-floor",
             "--mode-ceiling",
             "--themed",
             "--themed-cap",
@@ -584,6 +585,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--forced",
             "--fold",
             "--spiral-cap",
+            "--cell-floor",
             "--mode-ceiling",
             "--key",
             "--explain-keys",
@@ -598,7 +600,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
-        "browse": ("--stamp",),
+        "browse": ("--stamp", "--out"),
         "resolve": ("--stamp",),
         "list": (),
     },
@@ -852,10 +854,13 @@ def test_a_themed_record_and_a_themed_run_ask_for_the_same_two_demands() -> None
     assert floor == solve.mode_floor(200)
 
     # The target is what keeps the cell allowance off the theme: at t=1.0 the
-    # allowance is 2n + 1, and at the cell default of 1/48 it refuses at nine.
+    # allowance is k*n + 1, and at the cell default of 1/48 it refuses at nine
+    # (K=2) or thirteen (K=3). Stated on `ceiling.K` and not on the number it is
+    # today, because what this asserts is that the allowance clears `n` — the
+    # arm of this that a moved K must not silently change.
     rule = ceiling.Rule(targets=targets)
-    assert rule.allowed("dark_vivid_green", 200) == 401 > 200
-    assert ceiling.Rule().allowed("dark_vivid_green", 200) == 9
+    assert rule.allowed("dark_vivid_green", 200) == ceiling.K * 200 + 1 > 200
+    assert ceiling.Rule().allowed("dark_vivid_green", 200) == 4 * ceiling.K + 1 == 13
 
 
 def test_a_themed_record_reaches_the_same_three_flags_the_run_carries() -> None:
