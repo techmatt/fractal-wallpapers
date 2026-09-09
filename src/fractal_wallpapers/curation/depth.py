@@ -1365,6 +1365,22 @@ def build_plan(
     # not touched. The drawable pool is `colorize.pool`'s, so a manifest naming a
     # map that pool stood down is refused rather than dropped quietly — see
     # [`read_maps`].
+    #
+    # **A narrowed pool is refused when it is EMPTY and not when it is small**, and
+    # that changed on 2026-09-09. Both cuts used to refuse below
+    # `colorize.CANDIDATES` on the grounds that the palette head asks a 32-map
+    # neighbourhood of each anchor — but no arm here asks the head anything.
+    # [`flat_maps`] samples this list with a seeded RNG, [`plan_held_mode`] and
+    # [`plan_floor`] sample what a place has not spent, [`aimed_maps`] draws
+    # through the carrier table and falls back to the flat draw, and each takes
+    # `min(width, len(pool))`. `colorize.candidate_set` — the neighbourhood — is
+    # reached from `Colorizer.attempt` and `labeling.sheets` alone, and the live
+    # `Colorizer`s are `curation.run`'s and the sheet's. What renders here is
+    # `mine.make`, which takes the map off the shot and hands it to
+    # `colorize.render`: there is no anchor and no set. So the bound was a guard
+    # inherited from a path this leg does not take, and it refused legitimate
+    # narrow manifests. `colorize.pool`'s own `< CANDIDATES` guard is a different
+    # question — it is about the shipped library and it stands.
     pool_offered = len(maps)
     if draw_maps is not None:
         wanted = list(dict.fromkeys(str(one) for one in draw_maps))
@@ -1379,11 +1395,10 @@ def build_plan(
                 f"the usual cause."
             )
         maps = [one for one in maps if one in set(wanted)]
-        if len(maps) < colorize.CANDIDATES:
+        if not maps:
             raise DepthRefused(
-                f"the maps manifest leaves {len(maps)} map(s) and the palette head asks a "
-                f"{colorize.CANDIDATES}-map neighbourhood of each anchor, so the narrowed pool "
-                f"cannot serve one. Widen the cut."
+                "the maps manifest leaves no map in the drawable pool, so no arm here has "
+                "anything to colour with. Widen the cut."
             )
         log(
             f"[depth] the maps manifest draws {len(maps):,} of the pool's "
@@ -1403,12 +1418,11 @@ def build_plan(
             maps = color_mass.delivering(wanted_cells, cutoff=bar, within=maps)
         except color_mass.ColorMassError as refusal:
             raise DepthRefused(str(refusal)) from refusal
-        if len(maps) < colorize.CANDIDATES:
+        if not maps:
             raise DepthRefused(
-                f"the cells {sorted(wanted_cells)} leave {len(maps)} map(s) of "
-                f"{after_manifest:,} at a cutoff of {bar}, and the palette head asks a "
-                f"{colorize.CANDIDATES}-map neighbourhood of each anchor. Lower --draw-cutoff "
-                f"or list more cells."
+                f"the cells {sorted(wanted_cells)} leave no map of {after_manifest:,} at a "
+                f"cutoff of {bar}, so no arm here has anything to colour with. Lower "
+                f"--draw-cutoff or list more cells."
             )
         log(
             f"[depth] the cells {sorted(wanted_cells)} at >= {bar} draw {len(maps):,} of "

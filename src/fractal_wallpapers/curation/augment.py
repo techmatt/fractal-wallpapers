@@ -131,6 +131,14 @@ DEFAULT_DEPTH = 2
 #: rung whose neighbourhood cannot be exhausted should stop on a valid gallery
 #: rather than run the leg for an hour. What it must never do is bind silently,
 #: which is why `exhaustive` is on the depth block.
+#:
+#: **It is a budget to the PAIR since 2026-09-09**, and it was a budget to the
+#: *seat* before that: the clock was read once per seat and [`Pass.chain_at`]'s
+#: nested walk had no check inside it, so a pass holding 7 seats ran 522.8 s
+#: against this 300 s on 150 million pairs. A budget whose granularity is the seat
+#: count binds least exactly where the gallery is small and the population large,
+#: which is the case it exists for. See `curation/GALLERY.md`'s *A budget to the
+#: pair, and the two records made before it was one*.
 DEFAULT_SECONDS = 300.0
 
 #: How many level-preserving swaps a depth-3 search tries per seat. A bound on
@@ -415,8 +423,9 @@ class Pass:
         A sweep walks every seat in preference order; a sweep that accepts nothing
         is the exhaustion proof, and it is a real one because the index it ran
         against was rebuilt from the state that sweep started in. The clock is
-        read between seats, so the stage stops at a chain boundary and never
-        inside one.
+        read between seats **and inside [`chain_at`]'s own walk**, so the stage
+        stops at a trial boundary — a trial in flight is unwound exactly, and the
+        gallery a bound sweep stops on is as valid as an exhausted one's.
         """
         started = time.monotonic()
         sweeps = 0
@@ -432,8 +441,12 @@ class Pass:
                     stopped = "the budget ran out; the gallery it stopped on is valid"
                     exhausted = False
                     break
-                found, tried = self.chain_at(key)
+                found, tried, ran_out = self.chain_at(key, deadline=deadline)
                 pairs += tried
+                if ran_out:
+                    stopped = "the budget ran out; the gallery it stopped on is valid"
+                    exhausted = False
+                    break
                 if found is not None:
                     took += 1
             self.log(
@@ -451,17 +464,39 @@ class Pass:
             "seconds": round(time.monotonic() - started, 2),
         }
 
-    def chain_at(self, key: str) -> tuple:
-        """`(the chain or None, pairs tried)` — one ejection's whole neighbourhood."""
+    def chain_at(self, key: str, deadline: float | None = None) -> tuple:
+        """`(the chain or None, pairs tried, whether the clock stopped the walk)`.
+
+        One ejection's whole neighbourhood, and **the clock is read inside it**.
+        The walk is `len(ready)` squared and `ready` is a population rather than a
+        gallery, so a sweep that read the clock only between seats was bounded at
+        the granularity of the *seat count*: a pass holding 7 seats ran 522.8 s
+        against a 300 s budget on 150 million pairs, 74% over. Reading it here
+        makes the budget a budget at every rung rather than only at the rungs
+        where the gallery is large.
+
+        The read is per **pair**, which is the granularity the overrun was made of.
+        It costs a `monotonic` against a `counted_refusal` on the same iteration —
+        about a part in thirty of the pair — and it is the only thing that bounds a
+        small gallery over a large pool.
+
+        **A bound walk unwinds like any other refused trial.** Whatever is in
+        flight is unseated and the ejection is put back, so the caller is handed
+        the gallery it lent, and `depth_two` stops the sweep with `exhaustive`
+        false rather than reporting an exhaustion it did not reach.
+        """
         if self.state.filled >= self.state.n or not self.still_seated(key):
-            return None, 0
+            return None, 0, False
         ready = self.candidates_for(frozenset({str(key)}))
         if len(ready) < 2:
-            return None, 0
+            return None, 0, False
         before = self.gallery.objective
         ejected = [self.eject(key)]
         tried = 0
         for first in ready:
+            if deadline is not None and time.monotonic() > deadline:
+                self.undo([], ejected)
+                return None, tried, True
             try:
                 self.insert(first, "augment")
             except Refused as refusal:
@@ -470,6 +505,9 @@ class Pass:
             for second in ready:
                 if str(second.key) == str(first.key):
                     continue
+                if deadline is not None and time.monotonic() > deadline:
+                    self.undo([first], ejected)
+                    return None, tried, True
                 tried += 1
                 self.counts["proposed"] += 1
                 if self.state.counted_refusal(second) is not None:
@@ -481,10 +519,10 @@ class Pass:
                 except Refused as refusal:
                     self._count(refusal.why)
                     continue
-                return self.accept(2, ejected, [first, second], before), tried
+                return self.accept(2, ejected, [first, second], before), tried, False
             self.gallery.unseat(str(first.key))
         self.undo([], ejected)
-        return None, tried
+        return None, tried, False
 
     # -- depth 3 ----------------------------------------------------------- #
     def depth_three(self, deadline: float | None = None, fan_out: int = FAN_OUT) -> dict:
@@ -531,12 +569,20 @@ class Pass:
                         continue
                     swaps += 1
                     branch = Index(self.gallery, self.rows)
-                    chain, tried = self._terminal(branch, ejected, [first], before)
+                    chain, tried, ran_out = self._terminal(
+                        branch, ejected, [first], before, deadline=deadline
+                    )
                     pairs += tried
                     if chain is not None:
                         took += 1
                         break
                     self.undo([first], ejected)
+                    if ran_out:
+                        stopped = "the budget ran out; the gallery it stopped on is valid"
+                        out_of_time = True
+                        break
+                if out_of_time:
+                    break
             self.log(
                 f"[augment] depth 3 sweep {sweeps}: {took} chain(s), "
                 f"{self.gallery.objective.record()}"
@@ -555,11 +601,21 @@ class Pass:
             "seconds": round(time.monotonic() - started, 2),
         }
 
-    def _terminal(self, branch: Index, ejected: list, entered: list, before) -> tuple:
-        """`(a depth-3 chain from the state this branch reached or None, pairs tried)`."""
+    def _terminal(
+        self, branch: Index, ejected: list, entered: list, before, deadline: float | None = None
+    ) -> tuple:
+        """`(a depth-3 chain from the state this branch reached or None, pairs tried, bound)`.
+
+        The same nested walk [`chain_at`] is, one branch deeper, and bounded the
+        same way and for the same reason. What it unwinds here is its **own**
+        second ejection: the branch's first insert belongs to `depth_three` and is
+        undone there, exactly as it is when this walk finds nothing.
+        """
         gone_already = frozenset(str(candidate.key) for candidate, _why in ejected)
         tried = 0
         for key, _seat in self.seats_by_preference():
+            if deadline is not None and time.monotonic() > deadline:
+                return None, tried, True
             if not self.still_seated(key):
                 continue
             gone = frozenset({str(key)}) | gone_already
@@ -575,6 +631,9 @@ class Pass:
                 continue
             second_out = self.eject(key)
             for first in ready:
+                if deadline is not None and time.monotonic() > deadline:
+                    self.undo([], [second_out])
+                    return None, tried, True
                 try:
                     self.insert(first, "augment")
                 except Refused as refusal:
@@ -583,6 +642,9 @@ class Pass:
                 for second in ready:
                     if str(second.key) == str(first.key):
                         continue
+                    if deadline is not None and time.monotonic() > deadline:
+                        self.undo([first], [second_out])
+                        return None, tried, True
                     tried += 1
                     self.counts["proposed"] += 1
                     try:
@@ -593,10 +655,11 @@ class Pass:
                     return (
                         self.accept(3, ejected + [second_out], entered + [first, second], before),
                         tried,
+                        False,
                     )
                 self.gallery.unseat(str(first.key))
             self.undo([], [second_out])
-        return None, tried
+        return None, tried, False
 
     # -- why the rest cannot be bought ------------------------------------- #
     def blockage(self) -> dict:

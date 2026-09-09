@@ -1895,15 +1895,34 @@ def test_the_cell_filter_composes_with_the_maps_manifest_and_both_apply():
     assert {shot.colormap for shot in plan} <= set(overlap)
 
 
-def test_a_cell_cut_that_cannot_serve_a_neighbourhood_is_refused():
-    """The palette head asks 32 maps of each anchor, so a pool that cannot serve
-    one is a head answering a different question — `read_maps`' refusal, by rule
-    rather than by manifest. The message names the cutoff, because the cutoff is
+def test_a_cell_cut_that_narrows_to_nothing_is_refused():
+    """A pool with no map in it has nothing for any arm to colour with, and that
+    is the whole of the bound. The message names the cutoff, because the cutoff is
     the knob that fixes it."""
     with pytest.raises(depth.DepthRefused) as refusal:
         build_a_plan(draw_cells=["dark_vivid_lime"], draw_cutoff=0.99)
     assert "--draw-cutoff" in str(refusal.value)
-    assert str(colorize.CANDIDATES) in str(refusal.value)
+    assert "no map" in str(refusal.value)
+
+
+def test_a_narrow_pool_plans_because_no_arm_here_asks_the_palette_head():
+    """**The 32-map bound was a guard inherited from a path `depth` does not take**,
+    and it was dropped on 2026-09-09.
+
+    Both cuts refused a pool under `colorize.CANDIDATES` on the grounds that the
+    palette head asks a 32-map neighbourhood of each anchor. No arm here asks the
+    head anything: every draw samples this list with a seeded RNG and renders
+    through `mine.make`, which takes the map off the shot. So a manifest of twenty
+    maps is a legitimate narrow leg and it plans — at `--width` above the pool
+    size the draw is simply the pool, which is what `min(width, len(maps))` says.
+    """
+    pool = colorize.pool(11)
+    manifest = pool[: colorize.CANDIDATES - 12]
+    assert len(manifest) < colorize.CANDIDATES, "the point is a pool under the old bound"
+    plan, shape = build_a_plan(draw_maps=manifest)
+    assert shape["maps_drawn_from"] == len(manifest) < shape["maps_offered"]
+    assert plan, "a narrow manifest is a leg, not a refusal"
+    assert {shot.colormap for shot in plan} <= set(manifest)
 
 
 def test_a_misspelt_draw_cell_is_refused_rather_than_narrowing_to_nothing():
