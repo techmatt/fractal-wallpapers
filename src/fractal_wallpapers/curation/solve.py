@@ -689,28 +689,94 @@ def picture_of(candidate: Candidate) -> Path:
     return Path(rehome(candidate.picture))
 
 
-def strongest_locations(candidates: list[Candidate], keep: int | None) -> list[str]:
-    """The `keep` strongest locations by their best candidate. `None` keeps all.
+def strongest_clusters(candidates: list[Candidate], keep: int | None) -> tuple[list[str], dict]:
+    """`(the `keep` strongest clusters by their best candidate, the record)`. `None` keeps all.
 
     Hard optimization against a learned score selects that score's upper tail,
     which is where a judge's false positives live; restricting what the leg may
-    reach is the one lever on that which costs nothing to try. It acts on
-    **locations** and not on candidates because a gallery is a set of places.
+    reach is the one lever on that which costs nothing to try. It acts on a
+    **group of places** and not on candidates because a gallery is a set of
+    places.
+
+    ⚠ **The group is the cluster and never the place**, which is why this runs
+    after [`distinct.preselect`] rather than before it. Under [`distinct.POOL`] an
+    absorbed place's rows stay in the pass carrying their survivor's key, and they
+    contend for that cluster's one seat; a cut on places would drop a place whose
+    cluster sibling survives, which is exactly the discard `pool` removed, taken
+    one stage later instead. Where no fold ran, [`Candidate.cluster`] is the row's
+    own location and the two readings are the same reading.
+
+    ⚠ **Ordered on the same stacked key [`distinct.preselect`] picks its survivors
+    on** — [`distinct.offered_at`], which is `p_fine` where the fine-tier head has
+    read the row and raw `P(>=4)` where it has not, the two scales stacked and
+    never mixed. Ordering the cut on the coarse column alone while the seating
+    orders its top on the fine one is the same defect the fold carried until
+    2026-09-09: a cluster the fine head thinks little of outranking one it has
+    never read. **How many took the fallback is on the record**, for the reason
+    the fold states it — a cut where *every* cluster fell back must not read as a
+    cut that used the new key.
+
+    **`keep=None` is free.** No cut is taken, so there is no order to resolve and
+    no key to name, and reading the pool scores to answer a question nobody asked
+    would put a whole-file read on every solve in the project for a record field.
+    The record says a cut was not taken instead, which is the honest answer and
+    the one a reader needs.
     """
-    per: dict = {}
+    if keep is None:
+        clusters = {candidate.cluster for candidate in candidates}
+        return sorted(clusters), {
+            "of": "no --locations cut was asked for: this pass reaches every cluster the "
+            "pre-selection left standing, and no order over them was resolved",
+            "truncated_to": None,
+            "clusters_offered": len(clusters),
+            "clusters_reached": len(clusters),
+        }
+    fine = distinct.fine_scores(None)
+    best: dict = {}
     for candidate in candidates:
-        if candidate.score > per.get(candidate.location, -1.0):
-            per[candidate.location] = candidate.score
-    ranked = sorted(per.items(), key=lambda item: (-item[1], item[0]))
-    if keep is None or int(keep) >= len(ranked):
-        return [name for name, _ in ranked]
-    return [name for name, _ in ranked[: max(1, int(keep))]]
+        held = best.get(candidate.cluster)
+        if held is None or distinct.offered_at(candidate, fine) < distinct.offered_at(held, fine):
+            best[candidate.cluster] = candidate
+    order = sorted(best, key=lambda name: distinct.offered_at(best[name], fine))
+    on_fine = {name for name in order if str(best[name].key) in fine}
+    fell_back = len(order) - len(on_fine)
+    reached = list(order) if int(keep) >= len(order) else list(order[: max(1, int(keep))])
+    record = {
+        "of": "the --locations cut, taken AFTER the neutral pre-selection and on the "
+        "CLUSTER. Pool construction and never a rule: the rows it drops are in no "
+        "refusal column",
+        "truncated_to": int(keep),
+        "clusters_offered": len(order),
+        "clusters_reached": len(reached),
+        "on": "the cluster, which is a kept place plus every place folded into it. A cut "
+        "on places would drop a place whose cluster sibling survives, which is the "
+        "discard distinct.POOL removed",
+        "key": distinct.FINE_KEY
+        if fell_back == 0
+        else (distinct.COARSE_KEY if not on_fine else "both"),
+        "key_is": f"which key this cut ranked clusters on. {distinct.FINE_KEY} is the "
+        f"fine-tier head's reading, {distinct.COARSE_KEY} the raw judge column, 'both' a "
+        f"cut where some clusters had a reading and some did not. **A record carrying no "
+        f"`key` here cut on {distinct.COARSE_KEY}**, and on places rather than clusters",
+        "ordered_on": {distinct.FINE_KEY: len(on_fine), distinct.COARSE_KEY: fell_back},
+        "clusters_on_the_fallback": fell_back,
+        "order": "each cluster's strongest clearing candidate, on the fine-tier head's "
+        "p_fine(>=4) where it has read that row and raw P(>=4) where it has not, "
+        "descending, ties by key — distinct.offered_at, the key the fold picks its "
+        "survivors on. The two scales are stacked and never mixed: unknown never "
+        "outranks measured",
+    }
+    return reached, record
 
 
-def within(candidates: list[Candidate], locations) -> list[Candidate]:
-    """`candidates` restricted to a set of locations, order preserved."""
-    keep = set(locations)
-    return [candidate for candidate in candidates if candidate.location in keep]
+def within(candidates: list[Candidate], clusters) -> list[Candidate]:
+    """`candidates` restricted to a set of **clusters**, order preserved.
+
+    The cluster and not the location, so a relabeled row travels with the place
+    that absorbed it. Where no fold ran the two are the same string on every row.
+    """
+    keep = set(clusters)
+    return [candidate for candidate in candidates if candidate.cluster in keep]
 
 
 def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[list[Candidate], dict]:
@@ -1837,7 +1903,8 @@ def solve(
 
     `targets` is `{cell: fraction}` and each one is a share of the **realized**
     seat count — see [`target_rule`]. `locations` truncates the reachable pool to
-    that many strongest places. `seconds` is a wall budget for the swap loop
+    that many strongest **clusters**, after the neutral pre-selection has run —
+    [`strongest_clusters`]. `seconds` is a wall budget for the swap loop
     alone: the seed always runs, and what the clock stops is improvement rather
     than the answer.
 
@@ -1934,9 +2001,6 @@ def solve(
     }
     if fine_bar is not None:
         candidates, narrowed = at_fine_bar(candidates, float(fine_bar), log=log)
-    reachable = strongest_locations(candidates, locations)
-    if locations is not None:
-        candidates = within(candidates, reachable)
     if order is None and str(key) != JUDGE_KEY:
         order, coverage = ranking_for(candidates, key, log=log)
 
@@ -2002,6 +2066,22 @@ def solve(
         for candidate in cleared:
             if candidate.key not in survived:
                 refused[candidate.key] = SAME_PLACE
+
+    # AFTER the fold, and on the cluster — see [`strongest_clusters`]. It sat one
+    # line after the fine bar until 2026-09-09, which put it before the fold and
+    # therefore on places: a cut there drops a place whose cluster sibling
+    # survives, which is the discard `distinct.POOL` had just removed. Moving it
+    # also takes the per-mode bars off the truncated tail and onto the whole
+    # clearing pool, which is the pool [`headroom.bars`]' fallback rule was
+    # written to read.
+    reachable, truncation = strongest_clusters(kept, locations)
+    if locations is not None:
+        kept = within(kept, reachable)
+        log(
+            f"[solve] --locations {int(locations)}: the pass reaches "
+            f"{len(reachable):,} of {truncation['clusters_offered']:,} cluster(s) and "
+            f"{len(kept):,} row(s), ranked on {truncation['key']}"
+        )
 
     if order is not None:
         blind = [c for c in cleared if c.key not in order]
@@ -2225,8 +2305,14 @@ def solve(
         },
         "pool": {
             "refused": pool_refused,
-            "reachable_locations": len(reachable),
+            "reachable_clusters": len(reachable),
             "truncated_to": locations,
+            "truncation": truncation,
+            "truncation_is": "the --locations cut. It runs AFTER the neutral "
+            "pre-selection and cuts CLUSTERS since 2026-09-09; before that it ran one "
+            "line after the fine bar and cut places, so a record carrying "
+            "`reachable_locations` instead of `reachable_clusters` was taken under the "
+            "old placement",
         },
         # What the bar cost, where one ran. The VALUE is on `config` — which is
         # the block a tentative gallery's tracked manifest carries whole — and the
@@ -3533,7 +3619,7 @@ __all__ = [
     "seed",
     "solve",
     "solve_dir",
-    "strongest_locations",
+    "strongest_clusters",
     "target_rule",
     "value_of",
     "within",

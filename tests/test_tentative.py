@@ -58,7 +58,7 @@ def record_of(*seats, n: int = 10) -> dict:
         "config": {"n": n, "sort_key": "rank_key"},
         "filled": len(seats),
         "seated": list(seats),
-        "pool": {"reachable_locations": 99, "refused": {}},
+        "pool": {"reachable_clusters": 99, "refused": {}},
         "shortfalls": {"seats": {"asked": n, "filled": len(seats)}},
         "taken_at": "2026-09-02T00:00:00Z",
         "seconds": 1.0,

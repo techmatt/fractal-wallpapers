@@ -1,4 +1,4 @@
-"""What became of every wallpaper a person graded 4, one rung at a time.
+"""What became of every **gallery-grade** wallpaper a person graded 4, one rung at a time.
 
 Three stores hold a human 4: `data/smooth_render/` and `data/strange_render/`,
 the two finished-render corpora, and `data/gallery_grade/`, the fine head's own
@@ -6,6 +6,22 @@ thousand-row sitting. Since `label-migration merge` those verdicts are all
 **ledger rows by key**, and that is what makes this exact rather than inferred —
 a graded picture and a candidate the solve walked past are one object, so *what
 happened to it* has an answer per row instead of a distribution.
+
+## One store, and it is [`STORE`]
+
+This leg read all three until 2026-09-09 and put them on one page, which
+conflated two populations that mean different things. A gallery-grade 4 is a
+verdict on **a candidate this pool holds**, taken off a sheet drawn from the pool
+itself; a finished-render 4 is a verdict on a picture from the finished corpora,
+carried back to a ledger key through [`label_migration.recipe_of`]. Whether a
+coarse-store 4 is a gallery-grade 4 **is not known** — nobody has graded those
+rows on the gallery-grade scale — so putting them on a page about *fate* asks a
+fate question of rows whose membership in the population is itself the open
+question. **That is a different question and it does not have a page here.**
+
+So the population is the gallery-grade store alone. Everything downstream reads
+what [`population`] wrote, so the narrowing happens in [`graded`] and nowhere
+else.
 
 ## The rungs
 
@@ -83,12 +99,15 @@ Each makes a column mean less than it looks:
   reading at all, because nothing ever asked the fine head about it. Where a
   `label_migration` store is named, its staged reading is shown instead and
   marked as **the migration's** rather than the pool's.
-- **Both score columns are contaminated, and not equally.** Seven in ten of the
-  finished-store rows are the render judge's own training data, so `p_ge4` is
-  partly recognition there. **Every gallery-grade row is in the fine head's own
-  corpus**, so for that third of the population `p_fine` is recognition too.
-  There is no one honest column over the whole page and the legend says which is
-  which where.
+- **`p_fine` is recognition on this page, for every row on it.** The population
+  *is* the fine head's own corpus — [`FINE_TRAIN`] fitted on and
+  [`FINE_STOPPING`] in its stopping slice, summing to the whole of it — so the
+  column that sorts the page is the head reading rows it was fitted to. The human
+  grade beside it is the only independent thing on a card, and the page says that
+  once and plainly rather than in a footnote. It is also why this is a page about
+  **fate** and not about the head's accuracy: what a card shows is which rule
+  stopped a wallpaper somebody wanted, and the column is there to order the
+  disagreements, not to be believed.
 - **A row whose `mode_params` was non-empty used not to be the picture its key
   names, and the page flagged it.** `mine.make` dropped the settings until
   2026-09-08, so the pool held 10,664 rows drawn bare under a varied key: the
@@ -101,7 +120,7 @@ Each makes a column mean less than it looks:
 ## The verbs
 
 ```
-keys         the three stores -> one key manifest, for `solve --explain-keys`
+keys         the gallery-grade store -> one key manifest, for `solve --explain-keys`
 population   the stores joined to the ledger, with rungs 0 to 2 decided
 fates        a record's `explained` block -> rungs 3 and 4, and the seat per place
 competitors  the row that beat each refused one, off the rebuilt seating state
@@ -122,7 +141,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.labeling import finished, gallery_grade
+from fractal_wallpapers.labeling import gallery_grade
 from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 
 #: The schema every row and record this module writes carries.
@@ -166,20 +185,16 @@ WORKERS = 3
 #: purpose at this leg's size: no row is declined, but no row hangs the leg.
 ROW_BACKSTOP = 900.0
 
-#: How much of this population each head was **fitted on**, measured rather than
-#: assumed and carried here rather than recomputed per page.
+#: The one store this leg reads. **`gallery_grade` alone since 2026-09-09**, and
+#: the reason is at the head of this module: a coarse-store 4 and a gallery-grade
+#: 4 are verdicts on two different questions, and whether the first implies the
+#: second is unanswered. A page carrying both answered a fate question about rows
+#: whose membership was itself the open question.
 #:
-#: `JUDGE_TRAIN` is how many of the finished-render label-4 rows are in the
-#: shipped render judge's own train side, reconstructed at its recorded
-#: `source_commit` in `MERGE_ckpt116_label_rows_and_resolve_0908` and cross-checked
-#: against that split's `train_tiers["4"]`. **It is not `sides_for(0)`'s reading
-#: today** — the corpora have grown 577 rows since the judge shipped, and today's
-#: `train_tiers["4"]` is 1,357 over a corpus this judge was never fitted on. A page
-#: quoting the live figure would overstate the contamination.
-#:
-#: `FINE_TRAIN`/`FINE_STOPPING` are the gallery-grade grade-4 rows by side, off
-#: `artifacts/gallery_grade_head/split.json`. They sum to **every** gallery-grade
-#: row on the page, which is the point: that store *is* the fine head's corpus.
+#: It is a constant and not a parameter on purpose. The old shape is one argument
+#: away from being rebuilt, and rebuilding it is the thing that was stopped.
+STORE = gallery_grade.NAME
+
 #: The `store.POOL_SUBTREES` whose maker has always passed `mode_params`, so a
 #: picture under one of them is what its recipe key says. `hunt.Maker.make` takes
 #: them off the plan and `label_migration` renders through `colorize.render`
@@ -187,7 +202,16 @@ ROW_BACKSTOP = 900.0
 #: checked, and is flagged. **Adding a name here is a claim somebody measured.**
 SETTINGS_AWARE_SUBTREES = ("hunt", "label_migration")
 
-JUDGE_TRAIN = 1271
+#: How much of this population the fine head was **fitted on**, measured rather
+#: than assumed and carried here rather than recomputed per page. The gallery-grade
+#: grade-4 rows by side, off `artifacts/gallery_grade_head/split.json`. They sum to
+#: **every** row on the page, which is the point and is the page's one caveat:
+#: that store *is* the fine head's corpus, so `p_fine` here is recognition and
+#: never a reading of an unseen picture.
+#:
+#: `JUDGE_TRAIN` sat beside these until 2026-09-09 and was 1,271 — how many
+#: finished-render label-4 rows were inside the shipped render judge's own train
+#: side. It went with the finished stores: no row on this page comes from one.
 FINE_TRAIN = 245
 FINE_STOPPING = 67
 
@@ -285,48 +309,23 @@ def _now() -> str:
 def graded(log=print) -> tuple[dict, dict]:
     """`({ledger key: entry}, per-store verdict counts)` for every wallpaper graded 4.
 
-    The join is different on each side and neither half is a guess. A
-    finished-render row carries the whole recipe of the picture somebody judged,
-    at label geometry, so its ledger key is [`label_migration.recipe_of`]'s
-    derivation of it at candidate geometry — the same call `label-migration
-    derive` makes, so the two agree by construction and not by coincidence. A
-    gallery-grade row was *drawn from* the pool and carries
-    `selected_on.candidate`, which already **is** a ledger key.
+    [`STORE`] and nothing else. A gallery-grade row was *drawn from* the pool and
+    carries `selected_on.candidate`, which already **is** a ledger key, so there
+    is no derivation here at all and nothing to get wrong.
 
-    **`labeler` is not read.** Every gallery-grade row carries `matt` and every
-    finished-render row carries `null`, so a filter on it would drop two stores of
-    one person's verdicts to keep the third.
+    ⚠ **The two finished-render corpora were read here until 2026-09-09.** Their
+    join was the other one: a finished row carries the whole recipe of the picture
+    somebody judged, at label geometry, so its ledger key came from
+    [`label_migration.recipe_of`] at candidate geometry — the same call
+    `label-migration derive` makes. That was sound and is not why they went; they
+    went because a page mixing the two answers a fate question about a population
+    two different gradings define. See this module's own head.
 
-    A key graded in more than one store is **one** entry carrying every verdict.
-    29 are, which is one wallpaper judged twice and never two wallpapers.
+    **`labeler` is not read.** Every gallery-grade row carries `matt`, so a filter
+    on it says nothing this store does not already say.
     """
-    from fractal_wallpapers.curation import colorize, label_migration
-    from fractal_wallpapers.curation import recipes as recipes_module
-    from fractal_wallpapers.palettes import groups as groups_module
-
-    band = colorize.band()
-    groups = groups_module.member_groups()
     held: dict = {}
     counts: dict = {}
-    for head in finished.HEADS:
-        resolution = finished.resolved(head)
-        for row in resolution.scored():
-            if int(row["score"]) != GRADE:
-                continue
-            recipe = label_migration.recipe_of(row, band, groups)
-            key = str(recipes_module.key_of(recipe))
-            entry = held.setdefault(key, {"key": key, "verdicts": []})
-            entry["verdicts"].append(
-                {
-                    "store": head,
-                    "grade": GRADE,
-                    "batch": row.get("batch"),
-                    "recorded_at": row.get("recorded_at"),
-                    "labeler": row.get("labeler"),
-                    "judged_picture": label_migration.label_picture(head, row),
-                }
-            )
-            counts[head] = counts.get(head, 0) + 1
     for row in gallery_grade.resolved().current.values():
         if int(row.get("grade") or 0) != GRADE:
             continue
@@ -686,11 +685,23 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     ceilings. Seating is order-independent for every counted rule, so the
     finished state is the pass's finished state.
 
+    ⚠ **The record's own fold is re-applied first, and a pooled record is wrong
+    without it.** `solve.pool` hands back rows with no cluster on them, but
+    [`rules.State.places`] is keyed on [`solve.Candidate.cluster`] — so a state
+    rebuilt from the bare pool seats every row under its own location and a row
+    that lost its **cluster's** seat to a sibling place looks like a row at a
+    place nobody took. That is not a near miss: it moved 9 of this population's
+    175 refusals off `location` on the first pooled record built here, some to
+    `cell_allowance` and some to no refusal at all. The relabel is read off
+    `preselection.folds`, which is the fold that pass actually took, and never
+    re-derived — this pool is not the pool that pass ran over.
+
     **It proves the rebuild before it uses it.** `counted_refusal` is asked of
     every refused row and must return exactly what the record's `explained` block
     says, for all of them; a single disagreement refuses the whole verb rather
     than pairing 523 cards correctly and one card with a picture that never
-    competed with anything.
+    competed with anything. That guard is what found the missing fold: it reported
+    those 9 rather than drawing them against pictures that never competed.
     """
     from fractal_wallpapers.curation import ceiling, rules, solve, tentative
 
@@ -704,6 +715,15 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     seats = [str(seat["key"]) for seat in tentative.read_rows(stamp)]
 
     candidates, _refused = solve.pool(log=log)
+    # `refusals` on a record whose fold DELETED and `folds` on one that pooled —
+    # the same rows either way, and the second name exists precisely because
+    # nothing was refused. See `distinct.POOL`.
+    preselection = record.get("preselection") or {}
+    absorbed = {
+        str(entry["location"]): entry
+        for entry in (preselection.get("refusals") or preselection.get("folds") or [])
+    }
+    candidates = _refolded(candidates, absorbed, preselection, log=log)
     held = {str(candidate.key): candidate for candidate in candidates}
     state = rules.State(
         ceiling.Rule(
@@ -738,22 +758,27 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     # "the strongest row there now": this pool is not the pool that pass ran over,
     # and a re-derivation could name a row the pre-selection never saw.
     by_picture = {str(candidate.picture): candidate for candidate in candidates}
-    # `refusals` on a record whose fold DELETED and `folds` on one that pooled —
-    # the same rows either way, and the second name exists precisely because
-    # nothing was refused. See `distinct.POOL`.
-    preselection = record.get("preselection") or {}
-    absorbed = {
-        str(entry["location"]): entry
-        for entry in (preselection.get("refusals") or preselection.get("folds") or [])
-    }
-    wrong = []
+    wrong, vacated = [], []
     for row in rows:
         if row["rung"] != REFUSED or row["explained"] in decided_elsewhere:
             continue
         candidate = held.get(row["key"])
         said = None if candidate is None else state.counted_refusal(candidate)
-        if said != row["explained"]:
-            wrong.append({"key": row["key"], "record": row["explained"], "rebuild": said})
+        if said == row["explained"]:
+            continue
+        # ⚠ `None` is NOT a disagreement, and the distinction is the record's own.
+        # `solve`'s refusal map is "the rule that refused it, THE LAST TIME IT WAS
+        # OFFERED", and the search is anytime: a 1-swap or an augmenting chain can
+        # eject the very seat that refused a row after it was last offered, and
+        # then the final state refuses that row by nothing at all. The record is
+        # right and so is the rebuild — they are answers about two moments. Such a
+        # card has no competitor to name, which is what the pairing already does
+        # with an empty requirement set, so it is counted and named rather than
+        # papered over. A mismatch between two NAMED rules is still a real
+        # disagreement and still refuses the verb.
+        (vacated if said is None else wrong).append(
+            {"key": row["key"], "record": row["explained"], "rebuild": said}
+        )
     if wrong:
         raise FateRefused(
             f"the rebuilt state disagrees with {stamp}'s own `explained` block on "
@@ -764,7 +789,10 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     asked = sum(
         1 for row in rows if row["rung"] == REFUSED and row["explained"] not in decided_elsewhere
     )
-    log(f"[competitors] the rebuild reproduces all {asked:,} counted refusal(s) exactly")
+    log(
+        f"[competitors] the rebuild reproduces {asked - len(vacated):,} of {asked:,} counted "
+        f"refusal(s) exactly; {len(vacated):,} were refused by a seat the pass later moved"
+    )
 
     counts: dict = {}
     for row in rows:
@@ -816,6 +844,13 @@ def competitors(stamp: str, store=None, log=print) -> dict:
             1 for row in rows if row["rung"] == REFUSED and not row.get("competitor")
         ),
         "distinct_competitors": len(distinct),
+        "refused_by_a_seat_the_pass_later_moved": len(vacated),
+        "refused_by_a_seat_the_pass_later_moved_is": "the record's refusal map is the rule "
+        "that refused a row THE LAST TIME IT WAS OFFERED, and the search is anytime — so a "
+        "swap or an augmenting chain can eject the seat that refused it afterwards, and the "
+        "final state refuses it by nothing. Both are right; they are answers about two "
+        "moments. These cards have no competitor to name and say so",
+        "moved": vacated,
         "already_rendered": len(distinct & _on_disk(store)),
         "one_removal_would_be_enough": sum(
             1 for row in paired if (row["competitor"] or {}).get("enough")
@@ -831,12 +866,54 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     return out
 
 
+def _refolded(candidates: list, absorbed: dict, preselection: dict, log=print) -> list:
+    """`candidates` carrying the cluster the record's own fold put them in.
+
+    A pooled record seats **one wallpaper per cluster**, and the cluster lives on
+    [`solve.Candidate.cluster`] — which [`solve.pool`] never sets, because the
+    fold is a stage of the solve and not a fact about a ledger row. So a state
+    rebuilt from the bare pool answers the one-seat rule over *places*, and every
+    row whose cluster's seat went to a sibling at another place comes back
+    unrefused or refused by the wrong rule.
+
+    Read off `preselection.folds` and never re-derived: this pool is not the pool
+    that pass ran over, so re-running the walk could fold a place the pass did not.
+
+    **Only where that pass POOLED.** A destructive fold deleted its absorbed
+    places, so their rows were never in the seating at all and are excluded from
+    the proof below by name — relabeling them would be describing a pass that did
+    not happen. A record with no `fold` on its pre-selection deleted, which is
+    what [`distinct.POOL`] says of itself.
+    """
+    from dataclasses import replace
+
+    from fractal_wallpapers.curation import distinct
+
+    if str(preselection.get("fold") or distinct.DELETE) != distinct.POOL or not absorbed:
+        return candidates
+    into = {place: str(entry["lost_to"]) for place, entry in absorbed.items()}
+    out = [
+        candidate
+        if str(candidate.location) not in into
+        else replace(candidate, folded_into=into[str(candidate.location)])
+        for candidate in candidates
+    ]
+    log(
+        f"[competitors] the record's own fold is re-applied: {len(into):,} absorbed "
+        f"place(s), {sum(1 for row in out if row.cluster != row.location):,} row(s) "
+        "relabeled onto their cluster before the state is rebuilt"
+    )
+    return out
+
+
 def _dress(paired: list, distinct: set) -> None:
     """Give every competitor the palette and `p_fine` its caption needs.
 
     One keyed ledger read and one pool-scores read for the whole page, because a
-    competitor is a *seat* and 453 cards share 116 of them — a lookup per card
-    would read the same rows four times over.
+    competitor is a *seat* and a page's cards share far fewer of them than it has
+    cards — 173 over 77 on the gallery-grade population, 453 over 116 on the
+    three-store one it replaced — so a lookup per card would read the same rows
+    several times over.
 
     **The gap goes on the card**, both readings and the difference: a refusal
     losing by 0.01 and one losing by 0.4 are different findings, and a page that
@@ -1245,8 +1322,11 @@ def page(store=None, migration_store=None, repaired_seats_of=None, against=None,
     index = _write_page(
         store,
         PAGE_NAME,
-        title=f"what became of every wallpaper graded {GRADE}",
-        heading=f"What became of every wallpaper graded {GRADE}",
+        # The store is in the title, because the population is the claim: a page
+        # headed "every wallpaper graded 4" over one store of three would be
+        # overstating its own reach in its first line.
+        title=f"what became of every {STORE} wallpaper graded {GRADE}",
+        heading=f"What became of every <b>{STORE}</b> wallpaper graded {GRADE}",
         nav="",
         body=f'<p class="lede">{_lede(rows, read)}</p>'
         f'<div class="legend"><ul>{legend}</ul></div>{_index(rows, counts, slices)}'
@@ -1329,6 +1409,17 @@ def _sorted(rows, keep) -> list:
 
 
 def _cut(mine: list, stem: str, heading: str, note: str, by_rule: bool) -> list:
+    """One rung's pages, and **none at all for a rung nobody is on**.
+
+    An empty rung used to get one empty page and an index link into it, which was
+    invisible while every rung had rows. The gallery-grade population empties two
+    of them by construction — that sitting was drawn from the pool, so nothing is
+    off the roster or below the coarse bar — and a link promising cards to a reader
+    who then finds none is worse than a count with no link. The index still carries
+    the count, so the rungs go on adding to the population.
+    """
+    if not mine:
+        return []
     pages = max(1, -(-len(mine) // PAGE_SIZE))
     return [
         {
@@ -1398,7 +1489,9 @@ def _of(slices: list, stem: str, by_rule: bool) -> list:
 
 
 def _index_row(name: str, total: int, mine: list, note: str) -> str:
-    links = " ".join(f'<a href="{one["file"]}">{one["page"]}</a>' for one in mine)
+    #: An em dash where a rung has no page, which is a rung nobody is on — see
+    #: [`_cut`]. The count is still the count.
+    links = " ".join(f'<a href="{one["file"]}">{one["page"]}</a>' for one in mine) or "—"
     return (
         f'<tr><td><b>{name}</b></td><td class="n">{total:,}</td>'
         f'<td class="pages">{links}</td><td>{note}</td></tr>'
@@ -1465,7 +1558,7 @@ def movement(rows, against) -> dict | None:
     — and it means `seated` is the only forward move anybody would call good news.
 
     Rows the earlier store did not hold are counted as `unmatched` rather than as
-    movement. The two readings are of the same three stores, so a mismatch means
+    movement. The two readings are of the same store, so a mismatch means
     the population itself moved and that is a different finding from a rung
     changing.
     """
@@ -1717,33 +1810,45 @@ def _card(row: dict, left, right, repaired: set, caption=None) -> str:
 def _nothing(row: dict) -> str:
     """What the right-hand side says when there is no picture to put there.
 
-    Two different silences and the card must not blur them: a place the record
-    simply does not hold, and a refusal with no nameable competitor at all.
+    **Three different silences and the card must not blur them.** A place the
+    record simply does not hold; an old destructive fold whose record carries no
+    refusal row naming the place that absorbed this one; and a counted refusal
+    whose seat the pass **later moved**, where the record and the rebuilt final
+    state are both right about two different moments — see [`competitors`]'
+    `refused_by_a_seat_the_pass_later_moved`.
     """
-    if row.get("rung") == REFUSED:
+    from fractal_wallpapers.curation import solve
+
+    if row.get("rung") != REFUSED:
+        return "no seat at this place<br><small>the record holds nothing here</small>"
+    if row.get("explained") == solve.SAME_PLACE:
         return (
             "no row to name<br><small>nothing in the pass's own state beat this row, and "
             "no refusal on the record names a place that absorbed it</small>"
         )
-    return "no seat at this place<br><small>the record holds nothing here</small>"
+    return (
+        "no row to name<br><small>nothing in the pass’s FINAL state beat this row: the "
+        "record names the rule that refused it the last time it was offered, and the seat "
+        "that did was swapped away afterwards. Both are true, of two different "
+        "moments</small>"
+    )
 
 
 def _lede(rows, read: dict) -> str:
-    stores: dict = {}
-    for row in rows:
-        for store in row.get("stores") or ():
-            stores[store] = stores.get(store, 0) + 1
-    spelled = ", ".join(f"<b>{count:,}</b> {name}" for name, count in sorted(stores.items()))
     return (
-        f"<b>{len(rows):,}</b> wallpapers a person graded <b>{GRADE}</b> — {spelled} — every "
-        "one of them a ledger row by key since <code>label-migration merge</code>, so what "
-        "follows is each one's <em>exact</em> fate in "
-        f"<b>{read.get('stamp')}</b> and not an inference from a distribution. "
+        f"<b>{len(rows):,}</b> wallpapers a person graded <b>{GRADE}</b> in the "
+        f"<b>{STORE}</b> store, every one of them a ledger row by key since "
+        "<code>label-migration merge</code>, so what follows is each one's <em>exact</em> "
+        f"fate in <b>{read.get('stamp')}</b> and not an inference from a distribution. "
         "Four rungs and the one before them; a picture stops at the first that holds it. "
-        "<em>Each card shows the graded picture beside the seat that holds its place</em>, "
-        "both drawn fresh at the geometry it was judged at and a wallpaper ships at. "
-        "Sorted by <b>p_fine ascending</b> inside each rung, so the largest disagreements "
-        "come first."
+        "<em>Each card shows the graded picture beside whatever holds its place</em>, both "
+        "drawn fresh at the geometry it was judged at and a wallpaper ships at. Sorted by "
+        "<b>p_fine ascending</b> inside each rung, so the largest disagreements come "
+        "first — and <em>p_fine is recognition for every row here</em>, the population "
+        "being the fine head’s own corpus. "
+        "<b>The two finished-render corpora are not on this page</b> and came off it on "
+        "2026-09-09: whether a coarse-store 4 is a gallery-grade 4 is unanswered, and that "
+        "is a different question from what became of a wallpaper this pool holds."
     )
 
 
@@ -1770,29 +1875,27 @@ def _moved_table(moved) -> str:
 def _legend(rows, counts: dict, staged: dict, repaired: set, moved=None) -> str:
     flagged = [row for row in rows if drawn_bare(row, repaired)]
     borrowed = sum(1 for row in rows if row.get("p_fine_from") == "migration")
-    # Counted by store MEMBERSHIP and not as a partition, because 29 wallpapers
-    # were graded 4 in both and the two figures beside these counts were measured
-    # over the memberships: `JUDGE_TRAIN` over every key a finished store grades 4,
-    # `FINE_TRAIN`/`FINE_STOPPING` over every gallery-grade row. Splitting the
-    # overlap into one bucket would put a numerator over the wrong denominator.
     gallery = sum(1 for row in rows if gallery_grade.NAME in (row.get("stores") or ()))
-    judged = sum(1 for row in rows if set(row.get("stores") or ()) & set(finished.HEADS))
     lines = [f"<b>{_title(name)}</b> — {counts.get(name, 0):,}" for name, _ in RUNGS]
+    # Said once, plainly, at the top of the legend rather than in a footnote: on
+    # THIS page the caveat is not "some of the column is contaminated", it is that
+    # the column is recognition for every row, because the population is the head's
+    # own corpus. A page that buried that would be inviting `p_fine` to be read as
+    # a verdict.
     lines.append(
-        '<span class="warn">Both score columns are contaminated, and not by the same '
-        "amount.</span> Of the <b>"
-        f"{judged:,}</b> rows a finished store grades {GRADE}, <b>{JUDGE_TRAIN:,}</b> are "
-        "inside the shipped render judge's own train side, so <b>p_ge4</b> is largely "
-        "recognition for them. Of the <b>"
-        f"{gallery:,}</b> gallery-grade rows, <b>every one</b> is inside the fine head's "
-        f"1,000-row corpus — {FINE_TRAIN} fitted on and {FINE_STOPPING} in its stopping "
-        "slice — so for those <b>p_fine</b> is recognition too."
+        '<span class="warn">Every row on this page is inside the fine head’s own '
+        f"corpus.</span> All <b>{gallery:,}</b> of them — <b>{FINE_TRAIN}</b> the head was "
+        f"fitted on and <b>{FINE_STOPPING}</b> in its stopping slice — so <b>p_fine</b> "
+        "here is <b>recognition and not a reading of an unseen picture</b>. It is what "
+        "orders the page and it is not a verdict; the human grade beside it is the only "
+        "independent thing on a card. <b>p_ge4</b> is the render judge on the candidate "
+        "and is a different head on a different question."
     )
     lines.append(
-        "<b>So there is no one honest column over this page.</b> <b>p_fine</b> is the "
-        "honest one for the two finished-render stores, where the fine head saw 1.1% of "
-        "the rows; on a gallery-grade card neither column is a verdict on an unseen "
-        "picture, and the human grade beside them is the only independent thing on it."
+        "<b>So this is a page about fate, not about accuracy.</b> What a card asks is "
+        "which rung stopped a wallpaper a person wanted and what took its place — a "
+        "question the record answers exactly. How well either head would score an unseen "
+        "picture is not a question this population can be asked."
     )
     if borrowed:
         lines.append(
@@ -1850,6 +1953,9 @@ __all__ = [
     "NOT_SHOWN",
     "STYLE",
     "SETTINGS_AWARE_SUBTREES",
+    "STORE",
+    "FINE_TRAIN",
+    "FINE_STOPPING",
     "FateRefused",
     "drawn_bare",
     "leg_of",

@@ -104,6 +104,23 @@ spent two commits arguing about it. `pytest -q` ends on a line of the shape
 **A reading is comparable only against another taken on `.[dev,models]` with a
 release engine built.** Anything else is a different suite wearing the same name.
 
+### The lane now refuses the wrong interpreter at the door
+
+The red line above is printed at the **end**, under a green run, which is after
+the number has been written down. Since 2026-09-09 `conftest` also refuses to
+start: if the checkout holds a `.venv` and this is not it, `pytest_configure`
+raises a `UsageError` naming the interpreter it wants and why. That is the whole
+of the check, and it is deliberately narrow — **only where a `.venv` exists**, so
+CI, which builds its own environment and has none, never sees it. Set
+`FRACTAL_WALLPAPERS_ANY_INTERPRETER=1` to measure on another one on purpose,
+which is a thing somebody may want and never a thing to do by accident.
+
+`pythonpath = ["src"]` is what makes the trap possible: pytest imports the package
+from any interpreter on the path, so a bare `python -m pytest` collects, passes,
+and quietly runs a smaller suite. The failure it prevents is not a red lane — it is
+a **green** one over a count nothing can reproduce, plus one gallery guard that
+spawns `sys.executable` and fails for the environment rather than for the tree.
+
 ### The 3,383, resolved
 
 It was an interpreter with no `torch`. Masking `torch` and `timm` at `2bde06e`
@@ -384,6 +401,27 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+**+7, and the wrong interpreter caught on the way in.**
+`PRECLOSEOUT_ckpt117_strongest_locations_fate_split_and_docs_0909`, 2026-09-09,
+idle box, taken after the fate leg's 33.7-minute render rather than beside it. The
+tree held **122.63 s over the 4,127 it holds, 132 deselected**, green —
+**4,259 collected**, against the 4,252 the entry below left it at. The seven are
+three in `test_pool` for the `--locations` cut on clusters (the stacked key, the
+folded sibling, the free `None` path) and four in `test_label_fate` for the fate
+page's narrowing — the record's own fold re-applied before the state rebuild, the
+destructive fold *not* re-applied, the third silence, and a rung nobody is on. All
+seven are arithmetic over synthetic candidates and none earns the mark. The clock
+did not move: **122.63 s against 124.03 s**, which is inside this box's spread on
+an invariant lane.
+
+⚠ **The first reading this prompt took was on the wrong interpreter and was 82
+tests short.** A bare `python -m pytest` resolved to a torch-less miniconda and
+ran **4,044 passed, 21 skipped, 122 deselected** — nine modules not collected, and
+the red line saying so printed *after* the green summary. That reading is not
+comparable to anything and is written down only because it is what
+`conftest`'s new interpreter guard now refuses at the door; see *The lane now
+refuses the wrong interpreter at the door*, above.
 
 **+17, and the slow lane deliberately not taken.**
 `POOL_ckpt117_fold_merges_instead_of_deletes_0909`, 2026-09-09, idle box, taken

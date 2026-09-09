@@ -242,7 +242,7 @@ fractal-wallpapers curate solve run --n 150 --group-cap identity --key p_ge4 --s
 fractal-wallpapers curate solve run --n 150 --spiral-cap none     # no spiral share cap at all
 fractal-wallpapers curate solve run --n 150 --sheet-out <path>    # the sheet, elsewhere
 fractal-wallpapers curate solve run --n 20 --target dark_vivid_lime=1.0   # a colour demand
-fractal-wallpapers curate solve run --n 20 --locations 40    # only the 40 best places
+fractal-wallpapers curate solve run --n 20 --locations 40    # only the 40 best clusters
 fractal-wallpapers curate solve run --n 100 --themed dark_vivid_green --no-render  # THEMED
 fractal-wallpapers curate solve run --n 100 --themed dark_vivid_green --themed-radius 0.05
 ```
@@ -303,7 +303,7 @@ instead of deleting*. Beside it `diversity` carries the twin rule's own counters
 `candidates_tested`, `seconds`, `seat_comparisons_settled_by_the_bound` and
 `...by_the_norm_screen`, `full_signatures_fetched`, `signatures_made`,
 `reduced_from_the_sidecar`, and the constants the reduction ran at. `pool` and
-`view` complete it — `refused` by cause, `reachable_locations`, and the view's
+`view` complete it — `refused` by cause, `reachable_clusters`, and the view's
 `per_stratum` breakdown.
 
 The consequence is the point: **a question about reach is a read, not a leg.**
@@ -1340,12 +1340,13 @@ the mode roster never meets a `P(>=4)` bar. `curation.depth.mode_bars` and
 
 Everywhere else the column is an **ordering** and never a gate: `solve.pool`
 (presence only — a row with no `p_ge4` is refused `no_score`),
-`solve.strongest_locations`, `curation.mine`'s `best_by_location`,
-`curation.framing`'s reframe choice. Since 2026-08-28 the leg's own order and its
-objective are the **fitted** key rather than this column, and since 2026-09-09
-`distinct.preselect` — which place represents a near-cluster, and the walk order
-— takes the fitted key too where the head has read the row; it is the one site on
-this list that reads `p_ge4` only as a **fallback**.
+`curation.mine`'s `best_by_location`, `curation.framing`'s reframe choice. Since
+2026-08-28 the leg's own order and its objective are the **fitted** key rather
+than this column, and since 2026-09-09 `distinct.preselect` — which place
+represents a near-cluster, and the walk order — and `solve.strongest_clusters` —
+the `--locations` cut — take the fitted key too where the head has read the row.
+Those two read `p_ge4` only as a **fallback**, and each says on its record how
+many groups took it.
 
 **Every acting bar in the release path is on `P(>=3)`, not `P(>=4)`.**
 `selection.entries` builds its rank key from `p_ge3`; `floors.release_bar` and
@@ -1362,14 +1363,14 @@ ordering the pool is built by; nothing at release reads it.*
 **"Decides the order for nobody" was the sentence here until 2026-09-09 and it was
 wrong** — it contradicted the paragraph above it, which lists five sites. The
 seating order went to the fitted key and the *pool-construction* orders did not
-move with it: `solve.strongest_locations` still cuts the
-`--locations` tail on raw `P(>=4)`, `solve.pool` still hands its list back sorted
-by it, and `mine`/`depth`'s per-place best is still it. Every one of those runs
-**after** `at_fine_bar`, so on a `--fine-bar` pass the fine head has read all of
-them — see *Where the coarse key still decides*, below. `distinct.preselect` was
-the fourth and **moved on 2026-09-09**, being the one of the four that deleted —
-and later the same day it stopped deleting at all, which is *The fold merges
-instead of deleting*, below.
+move with it: `solve.pool` still hands its list back sorted by it, and
+`mine`/`depth`'s per-place best is still it. Both run **after** `at_fine_bar`, so
+on a `--fine-bar` pass the fine head has read all of them — see *Where the coarse
+key still decides*, below. Two of the five have since moved, both on 2026-09-09
+and both because they **discarded**: `distinct.preselect` first — and later the
+same day it stopped deleting at all, which is *The fold merges instead of
+deleting*, below — and then the `--locations` cut, which is *The `--locations` cut
+takes the seating key, and cuts clusters*.
 
 ### Where the coarse key still decides — `AUDIT_ckpt117_fine_key_sites_and_place_radius_sheet_0909`
 
@@ -1394,7 +1395,7 @@ deletion.
 | site | the decision | `p_fine` there | reversible |
 | --- | --- | --- | --- |
 | ~~`distinct.preselect`~~ **moved 2026-09-09**, and it no longer deletes | the walk order, and so **which place represents a near-cluster** — each place offered by its strongest candidate's raw `P(>=4)` | **all of it.** It runs on the clearing pool, and after `at_fine_bar` on a barred pass | ~~**no** — the place and every row it carries leave the pass under `SAME_PLACE`, and nothing revisits~~ **the irreversibility went too**: the rows stay in the pool under the survivor's cluster and the seating chooses between them |
-| `solve.strongest_locations` | `--locations N` keeps the N strongest **places** by their best candidate's raw `P(>=4)` | **all of it** — it is called on the line after `at_fine_bar` | **no** within the pass; the cut places are gone before the view is sized |
+| ~~`solve.strongest_locations`~~ **moved 2026-09-09**, and it cuts clusters now | `--locations N` keeps the N strongest **places** by their best candidate's raw `P(>=4)` | **all of it** — it is called on the line after `at_fine_bar` | ~~**no** within the pass; the cut places are gone before the view is sized~~ still no, and still the reason it moved |
 | `candidate_ledger.prune` → `retention.decide` | top-`RETAIN_PER_PAIR` per (location, mode) on the fitted `rank_key`; a loser loses its row **and its JPEG** | **11.9%** of the rows it ranks. Only 7.1% of pairs hold two rows with a reading | **no**, and it is the only site here that destroys anything |
 | `depth.best_field_by_location`, `mine.best_by_location` | which row is a place's *best*, which sets the band the near and deepen draws read | yes for the `[SEATING_BAR, PRIMED_BAR)` band — 0.50 to 0.90, entirely above `Q4_BAR` | yes — a draw spends renders and deletes nothing |
 | `depth.near_places` / `proven_places` / `deficient_modes`, `mine.deepen_places` | threshold that best at 0.50 / 0.90 on raw `P(>=4)` | yes, above 0.50 | yes |
@@ -1638,6 +1639,47 @@ those against 9,991,480. The rule is the stage that opens pictures, the **view**
 walks grew 9,263 → 11,160 rows (+20.5%), and it grew 12%. `rules.Twins.record` carries `seconds` from this
 reading on, so the next pool that grows can be read against it rather than inferred
 from the pass total.
+
+### The `--locations` cut takes the seating key, and cuts clusters — `PRECLOSEOUT_ckpt117_strongest_locations_fate_split_and_docs_0909`
+
+`--locations N` is the one lever on the false positives that live in a learned
+score's upper tail: let the leg reach only the N strongest places and see what it
+seats. It carried `preselect`'s defect in a second place, and it carried it after
+`preselect`'s was fixed.
+
+**Nothing in production has ever passed it.** Every solve record on this machine
+was swept — **130 in the hot store, none in the archive** — and exactly one names
+`pool.truncated_to`: `top22`, taken **2026-08-26**, before the fine head, before
+the cascade key and before the fold. So this is a **consistency fix**, not a
+correctness win, and no record moves because of it.
+
+**Two things were wrong.** It ranked places on raw `P(>=4)` while the fold beside
+it and the seating above it both rank on the fitted key, so an unread place could
+outrank a measured one — the defect *The fold picks its survivor on the seating
+key* closed one line away. And it cut **places** while the fold pools them, so a
+place whose cluster sibling survived was dropped anyway: the discard *The fold
+merges instead of deleting* had just removed, taken one stage later.
+
+**Both close in the same move, and the move is where it runs.** A cut on clusters
+has to know the clusters, so `solve.strongest_clusters` runs **after**
+`distinct.preselect` rather than one line after `at_fine_bar`, and it ranks each
+cluster by its strongest row under `distinct.offered_at` — `p_fine` where the head
+has read it, raw `P(>=4)` where it has not, the two scales stacked. `solve.within`
+filters on `cluster` rather than on `location` to match, which is the same string
+on every row of a pass that folded nothing.
+
+**The record says which key it cut under and how many clusters took the fallback**,
+the way `preselection` does, and it says it whether or not a cut was asked for:
+`pool.truncation` carries `key`, `ordered_on`, `clusters_on_the_fallback`,
+`clusters_offered` and `clusters_reached`. `pool.reachable_locations` was renamed
+`reachable_clusters`, so a record carrying the old name was taken under the old
+placement.
+
+**Moving it also takes the per-mode bars off the truncated tail.**
+`headroom.bars` puts a mode below `FALLBACK_LOCATIONS` distinct clearing places on
+`P(>=3)` instead, so a pool truncated to twenty-two places first sent almost every
+mode to the fallback and the bars were a function of the cut. They are now taken
+over the whole clearing pool, and the cut acts on what survives it.
 
 ### The location-level prune does not work, and this is why
 
@@ -3027,6 +3069,20 @@ ledger (342 smooth / 709 strange, 625 lineage groups, tier mix 1.2 / 31.1 / 41.7
 strange against 0.826**. Those are the shared-weight figures; the *per-kind* arm with a
 nested inner selection reads higher and is not what ships. `curate rank-key fit`
 re-joins the stores as they stand and prints its own, over a larger corpus than that.
+
+⚠ **Those margins are a reading of 2026-08-28 and they do not reproduce. On today's
+corpus the key does not beat the judge at all**, which is `rank_key.py`'s own
+*⚠ On the current corpus the key no longer beats the judge, 2026-09-06* and is the
+sentence to carry rather than the `+0.11` above. Re-joined after the label stores
+tripled — **3,226 rows** — the shipped four-column form reads `d = -0.0071` smooth
+and `-0.0028` strange. **It is the corpus and not the form**: held on one population,
+the five-column form does not beat the judge there either, and what moved is the
+**incumbent**, whose own smooth AUC went **0.671 → 0.831** as the store grew. Nothing
+was changed on that reading and the key still ships; what it stops being is an
+*improvement*, so a session reaching for it as one reaches for a re-fit first. Read
+that module's heading for the numbers, and note that the seating has ranked on
+`cascade` since 2026-09-07 anyway — the rank key is what `cascade_order` lays the
+fine head over, and the below-bar half is the only part still ordered by it.
 
 **Shared weights over both stores**, and per-kind is unresolved on every arm tried. On
 the five-column form specifically it was `+0.018 [-.002,+.039]` on smooth and

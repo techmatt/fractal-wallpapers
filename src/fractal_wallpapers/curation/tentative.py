@@ -406,7 +406,11 @@ def manifest_of(
             "bar narrows what a pass may seat and is on `solve.config.fine_bar` instead",
             "candidates": None if candidates is None else len(candidates),
             "locations": places,
-            "reachable_locations": pool.get("reachable_locations"),
+            # `reachable_clusters` since 2026-09-09, when the `--locations` cut moved
+            # after the fold and started cutting clusters — `solve.strongest_clusters`.
+            # The old name is read as a fallback so a manifest rebuilt from a record
+            # taken before that carries its number rather than a null.
+            "reachable_clusters": pool.get("reachable_clusters", pool.get("reachable_locations")),
             "refused": dict(pool_refused) if pool_refused is not None else pool.get("refused"),
             "ledger_rows": ledger_rows(),
             "ledger_path": tracked_name(candidate_ledger.rows_path()),

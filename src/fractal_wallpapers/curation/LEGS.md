@@ -2547,13 +2547,21 @@ a curve off a finished picture gives a *different* curve — that is
 `depth.ACTED_UNRECOVERABLE` — so the way back is to delete those pictures and redraw
 them, which is what the resume does once their rows say nothing.
 
-## `curate label-fate` — what became of every wallpaper somebody graded 4
+## `curate label-fate` — what became of every GALLERY-GRADE wallpaper somebody graded 4
 
 Three stores hold a human 4 — `data/smooth_render/`, `data/strange_render/` and
 `data/gallery_grade/` — and since `label-migration merge` all of them are **ledger
 rows by key**. So this asks the exact question rather than the distributional one:
 not *how does the pipeline score pictures a person liked*, but *what happened to this
 one*. Five rungs, first that stops it.
+
+**It reads the third store alone since 2026-09-09**, `label_fate.STORE`, and
+`README.md`'s *It reads ONE of the three, and which one is the whole point* has why: a
+gallery-grade 4 is a verdict on a candidate this pool holds, a finished-render 4 is a
+verdict carried back to a ledger key, and whether the second implies the first is
+unanswered. A page over both asked a fate question of rows whose membership in the
+population was itself the open question. **The coarse-store 4s do not get a second
+page here**; that is a different question and nobody has asked it yet.
 
 ```
 scratch/label_fate_<name>/
@@ -2582,7 +2590,18 @@ guess about which of several rules acted first.
 `mode_policy.routed_mode_of` and not the recipe's mode. Folding those into the
 coarse-bar count would say a bar refused a picture no bar ever read. It is **counted
 and not shown** on the page, Matt's call of 2026-09-08: no rule ever refused those
-rows, so there is no comparison to draw.
+rows, so there is no comparison to draw. **On the gallery-grade population it reads
+zero**, as does rung 1 — that sitting was drawn *from* the pool, so all 312 rows are
+ledger rows above the coarse bar. Every off-roster and below-coarse row the old
+three-store page counted came from a finished corpus.
+
+⚠ **`competitors` re-applies the record's own fold before rebuilding the state.**
+`solve.pool` sets no cluster, and `rules.State.places` is keyed on it, so a state
+rebuilt from the bare pool answers the one-seat rule over *places* — and a row that
+lost its **cluster's** seat to a sibling at another place comes back unrefused or
+refused by the wrong rule. It moved 9 of 175 refusals on the first pooled record
+built here. The relabel is read off `preselection.folds` and applied only where that
+pass pooled; `label_fate._refolded` is the door.
 
 **What a refused card is paired with depends on the rule that refused it**, and
 `curation/README.md`'s *The picture beside a refused card is not the seat at its

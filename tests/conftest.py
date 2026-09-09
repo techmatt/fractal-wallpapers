@@ -27,8 +27,11 @@ from __future__ import annotations
 import functools
 import hashlib
 import itertools
+import os
 import re
 import subprocess
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -36,6 +39,57 @@ import pytest
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.labeling import store
 from fractal_wallpapers.paths import repo_root
+
+# --------------------------------------------------------------------------- #
+# The interpreter.
+# --------------------------------------------------------------------------- #
+#: The environment variable that waives the check below. For a deliberate reading
+#: on a second interpreter — comparing installs, reproducing a CI environment
+#: locally — which is a thing somebody may want and never a thing to do by
+#: accident.
+INTERPRETER_WAIVER = "FRACTAL_WALLPAPERS_ANY_INTERPRETER"
+
+#: Where this checkout's own interpreter lives, if it has one.
+CHECKOUT_VENV = repo_root() / ".venv"
+
+
+def _wrong_interpreter() -> str | None:
+    """Why this interpreter is not the one to measure on, or `None`.
+
+    **A lane on the wrong interpreter is a smaller suite, not a failure**, and
+    that is the whole reason this exists. `pythonpath = ["src"]` in
+    `pyproject.toml` gets pytest importing the package from anything on the path,
+    so a bare `python -m pytest` collects and passes — with every module that
+    gates on `torch` or `PIL` through a module-level `importorskip` silently
+    absent. [`SKIPPED_WHOLE`] reports that at the *end*, which is a red line under
+    a green run and is read after the number has already been written down.
+
+    So it is refused at the door instead. The condition is narrow on purpose: only
+    where the checkout **has** a `.venv` and this is not it, which makes it inert
+    in CI — CI builds its own environment and has no `.venv` to be wrong about.
+    """
+    if os.environ.get(INTERPRETER_WAIVER):
+        return None
+    if not (CHECKOUT_VENV / "pyvenv.cfg").is_file():
+        return None
+    try:
+        mine = Path(sys.prefix).resolve()
+    except OSError:  # pragma: no cover - a prefix that will not resolve
+        return None
+    if mine == CHECKOUT_VENV.resolve():
+        return None
+    return (
+        f"this is {sys.executable}, not the checkout's own interpreter at "
+        f"{CHECKOUT_VENV}. A lane run on another interpreter is a SMALLER SUITE and "
+        "not a failure: every module gating on torch or PIL is skipped whole at "
+        "collection, so the run goes green over a count nothing can reproduce, and "
+        "one gallery guard that spawns sys.executable fails for the environment "
+        "rather than for the tree. Run "
+        f"`{CHECKOUT_VENV / 'Scripts' / 'python.exe'} -m pytest` "
+        f"(or `{CHECKOUT_VENV / 'bin' / 'python'}` off Windows). "
+        f"Set {INTERPRETER_WAIVER}=1 to measure on this one deliberately."
+    )
+
 
 # --------------------------------------------------------------------------- #
 # The slow lane.
@@ -61,6 +115,9 @@ def pytest_addoption(parser) -> None:
 
 def pytest_configure(config) -> None:
     config.addinivalue_line("markers", SLOW)
+    wrong = _wrong_interpreter()
+    if wrong is not None:
+        raise pytest.UsageError(wrong)
 
 
 def pytest_collection_modifyitems(config, items) -> None:
