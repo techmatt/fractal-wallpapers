@@ -543,15 +543,44 @@ def test_the_first_over_full_cell_is_the_one_that_refused():
     assert label_fate._refusing_set(State, Candidate, "cell_allowance") == {"b", "c"}
 
 
-def test_a_same_place_refusal_is_paired_with_nothing_and_the_card_says_why():
-    """It was refused at POOL CONSTRUCTION, before a seat existed, so there is no
-    seat to name. A card that fell back to the place's seat would name a picture
-    that never competed with it."""
+def test_a_same_place_card_names_the_absorber_and_the_distance_and_not_a_seat():
+    """It was refused at POOL CONSTRUCTION, before a seat existed, so nothing *beat*
+    it — but the record does say which place took it, in `preselection.refusals`,
+    and the card names that place and the neutral distance the fold was taken at.
+    A card that fell back to the place's seat would name a picture that never
+    competed with it, and one that named nothing at all threw away the number that
+    decided it."""
+    row = population_row(
+        rung=label_fate.REFUSED,
+        explained="another_place_is_the_same_place",
+        competitor={
+            "key": "taker01",
+            "why": "another_place_is_the_same_place",
+            "distance": 0.015242,
+            "radius": 0.02,
+            "alternatives": 1,
+        },
+    )
+    key, caption = label_fate._against(row)
+    assert key == "taker01"
+    assert caption == "absorbed this place · 0.0152 apart"
+    card = label_fate._card(row, None, "a.jpg", set(), caption)
+    assert "0.0152" in card
+    assert "inside the 0.02 radius" in card
+    # The counted rules' question was never asked about this row, so the card must
+    # not tell a reader a second rule refused it.
+    assert "no single seat leaving" not in card
+
+
+def test_a_refusal_the_record_names_no_absorber_for_still_says_which_silence_it_is():
+    """The pairing is read off the record, so a record that carries no refusal row
+    for the place leaves the card with nothing — and that is a different silence
+    from a place the record simply does not hold."""
     row = population_row(rung=label_fate.REFUSED, explained="another_place_is_the_same_place")
     assert label_fate._against(row) == (None, None)
     card = label_fate._card(row, None, None, set())
     assert "no row to name" in card
-    assert "folded this place into a neighbour" in card
+    assert "no refusal on the record names a place that absorbed it" in card
 
 
 def test_a_refused_card_pairs_on_the_competitor_and_every_other_rung_on_the_place():
