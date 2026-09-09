@@ -3850,8 +3850,11 @@ def add_commands(subcommands) -> None:
         "--locations",
         type=int,
         metavar="COUNT",
-        help="let the pass reach only this many strongest locations, ranked by their best "
-        "candidate. Unset is the whole ledger",
+        help="let the pass reach only this many strongest CLUSTERS — a kept place plus "
+        "every place the neutral pre-selection folded into it — ranked by their best "
+        "candidate on the fine head's p_fine where it has read the row and raw P(>=4) "
+        "where it has not. Taken after the pre-selection, so it never drops a place whose "
+        "cluster sibling survives. Unset is the whole ledger",
     )
     pool_size.add_argument(
         "--rows-per-seat",
@@ -5322,17 +5325,21 @@ def add_commands(subcommands) -> None:
 
     fate = steps.add_parser(
         "label-fate",
-        help="what became of every wallpaper a person graded 4, one rung at a time",
+        help="what became of every GALLERY-GRADE wallpaper a person graded 4, one rung at a time",
         description=(
-            "Three stores hold a human 4 — both finished-render corpora and the fine "
-            "head's own gallery-grade sitting — and since `label-migration merge` every "
+            "The gallery-grade sitting's own 4s, and since `label-migration merge` every "
             "one of those verdicts is a ledger row BY KEY. So the fate of a graded "
             "wallpaper is exact rather than inferred: off the roster, below the coarse "
-            "bar, below the fine bar, refused by a named rule, or seated. `keys` runs "
-            "BEFORE the solve and writes the manifest `curate solve record "
-            "--explain-keys` takes; the rest run after it. The page puts each graded "
-            "picture beside the seat that holds its place, both drawn fresh at the "
-            "geometry a person judged at and a wallpaper ships at."
+            "bar, below the fine bar, refused by a named rule, or seated. THE TWO "
+            "FINISHED-RENDER CORPORA CAME OFF THIS PAGE ON 2026-09-09: whether a "
+            "coarse-store 4 is a gallery-grade 4 is unanswered, so putting the two "
+            "populations on one page asked a fate question of rows whose membership was "
+            "itself the open question. `keys` runs BEFORE the solve and writes the "
+            "manifest `curate solve record --explain-keys` takes; the rest run after it. "
+            "The page puts each graded picture beside whatever holds its place, both "
+            "drawn fresh at the geometry a person judged at and a wallpaper ships at — "
+            "and says once that p_fine is recognition for every row on it, the "
+            "population being the fine head's own corpus."
         ),
     )
     fate.set_defaults(handler=curate_label_fate)
@@ -5342,12 +5349,10 @@ def add_commands(subcommands) -> None:
         "keys",
         help="the population's ledger keys, one per line, for `solve --explain-keys`",
         description=(
-            "Resolves all three stores and joins each graded row to its ledger key — a "
-            "finished-render row through label_migration's own derivation at candidate "
-            "geometry, a gallery-grade row through `selected_on.candidate`, which already "
-            "IS one. `labeler` is not read: every gallery-grade row carries `matt` and "
-            "every finished-render row carries null, so filtering on it would drop two "
-            "stores of one person's verdicts to keep the third. Reads no ledger and takes "
+            "Resolves the gallery-grade store and joins each graded row to its ledger "
+            "key, which is `selected_on.candidate` and already IS one — the row was drawn "
+            "FROM the pool, so there is no derivation to get wrong. `labeler` is not "
+            "read: every row in this store carries `matt`. Reads no ledger and takes "
             "seconds; run it before the solve, because the fate of a row that took no seat "
             "exists only inside the pass that refused it."
         ),

@@ -30,7 +30,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import label_fate, release, solve
+from fractal_wallpapers.curation import distinct, label_fate, release, solve
 from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 
 
@@ -454,23 +454,25 @@ def test_the_legend_counts_every_rung_even_the_empty_ones():
         assert label_fate._title(name) in legend
 
 
-def test_the_legend_says_both_columns_are_contaminated_and_which_is_which():
-    """The prompt asked for one caveat; the population needed two.
+def test_the_legend_says_p_fine_is_recognition_for_every_row_and_says_it_first():
+    """One caveat now, not two, and it is the stronger one.
 
-    Every gallery-grade row is inside the fine head's own corpus, so `p_fine` is
-    the honest column for the two finished-render stores and recognition for the
-    third — and a legend carrying only the coarse caveat would recommend the
-    contaminated column to a reader.
+    The population **is** the fine head's corpus, so `p_fine` is recognition for
+    every row rather than for a third of them — and the page's own sort key is
+    that column. It is the first line after the rung counts and not a footnote,
+    because a reader who stops early has to have read it.
     """
     rows = [
         population_row(stores=["gallery_grade"], rung=label_fate.SEATED),
-        population_row(stores=["smooth_render"], rung=label_fate.SEATED),
+        population_row(stores=["gallery_grade"], rung=label_fate.REFUSED),
     ]
     legend = label_fate._legend(rows, label_fate._counted(rows), {}, set())
-    assert "Both score columns are contaminated" in legend
-    assert "no one honest column over this page" in legend
-    assert "1.1%" in legend
-    assert f"{label_fate.JUDGE_TRAIN:,}" in legend
+    caveat = legend.index("inside the fine head")
+    assert caveat < legend.index("fate, not about accuracy")
+    assert "recognition and not a reading of an unseen picture" in legend
+    assert f"<b>{label_fate.FINE_TRAIN}</b>" in legend
+    assert "<b>2</b> of them" in legend
+    assert "contaminated" not in legend
 
 
 # --------------------------------------------------------------------------- #
@@ -586,6 +588,24 @@ def test_a_refusal_the_record_names_no_absorber_for_still_says_which_silence_it_
     assert "no refusal on the record names a place that absorbed it" in card
 
 
+def test_a_counted_refusal_with_nothing_to_name_says_the_seat_was_swapped_away():
+    """The third silence. `solve`'s refusal map is the rule that refused a row the
+    LAST TIME IT WAS OFFERED and the search is anytime, so a swap can eject the seat
+    that refused it afterwards — the record and the final state are both right about
+    two different moments, and the card says which one it is looking at."""
+    row = population_row(rung=label_fate.REFUSED, explained="location")
+    card = label_fate._card(row, None, None, set())
+    assert "no row to name" in card
+    assert "swapped away afterwards" in card
+    assert "absorbed it" not in card
+
+
+def test_a_seated_rung_with_no_seat_is_the_other_silence_entirely():
+    """Not a refusal at all: the record holds nothing at this place."""
+    card = label_fate._card(population_row(rung=label_fate.BELOW_FINE), None, None, set())
+    assert "no seat at this place" in card
+
+
 def test_a_refused_card_pairs_on_the_competitor_and_every_other_rung_on_the_place():
     """Two different pairings, and the rung decides which."""
     refused = population_row(
@@ -647,6 +667,19 @@ def test_the_dropped_rung_is_counted_and_not_shown():
     assert label_fate._counted(rows)[label_fate.OFF_THE_ROSTER] == 1
 
 
+def test_a_rung_nobody_is_on_gets_no_page_and_keeps_its_count():
+    """Two rungs are empty by construction on the gallery-grade population — that
+    sitting was drawn from the pool, so nothing is off the roster or below the
+    coarse bar — and a link promising cards to a reader who finds none is worse
+    than a count with no link."""
+    rows = [population_row(rung=label_fate.SEATED, seat=None)]
+    stems = {one["stem"] for one in label_fate._slices(rows)}
+    assert stems == {label_fate.slug(label_fate.SEATED)}
+    assert label_fate._counted(rows)[label_fate.BELOW_COARSE] == 0
+    empty = label_fate._index_row("BELOW THE COARSE BAR", 0, [], "note")
+    assert "<a href" not in empty and ">0<" in empty
+
+
 def test_the_cut_follows_the_sort_and_never_reorders_it():
     """Page 1 of a rung has to be the head of the sort, or the whole point of
     sorting ascending is lost to whoever opens page 1."""
@@ -698,15 +731,63 @@ def test_every_page_carries_prev_next_and_a_way_back_to_the_index():
     assert "prev" in last and "next" not in last
 
 
-def test_the_two_contamination_counts_are_memberships_and_not_a_partition():
-    """29 wallpapers are graded 4 in a finished store AND in the gallery-grade
-    sitting, and both figures beside the counts were measured over the whole
-    membership. Splitting the overlap into one bucket would divide a numerator by
-    the wrong denominator — quietly, and in the direction of understating it."""
-    both = population_row(stores=["smooth_render", "gallery_grade"], rung=label_fate.SEATED)
-    legend = label_fate._legend([both], label_fate._counted([both]), {}, set())
-    assert "<b>1</b> rows a finished store grades 4" in legend
-    assert "<b>1</b> gallery-grade rows" in legend
+def folded_candidate(key: str, location: str):
+    """One [`solve.Candidate`], thinned to what the fold and the seat rule read."""
+    return solve.Candidate(
+        key=key,
+        location=location,
+        partition="p",
+        mode="smooth",
+        mode_params={},
+        group="map:glassworks-25",
+        kind="render",
+        cells=("lime",),
+        families=("green",),
+        score=0.9,
+        p_ge3=0.95,
+        picture=f"artifacts/x/{key}.jpg",
+    )
+
+
+def test_the_records_own_fold_is_re_applied_before_the_state_is_rebuilt():
+    """`solve.pool` sets no cluster — the fold is a stage of the solve, not a fact
+    about a ledger row — so a state rebuilt from the bare pool answers the one-seat
+    rule over PLACES and a row that lost its cluster's seat to a sibling comes back
+    unrefused. Read off the record's own `folds` and never re-derived."""
+    candidates = [folded_candidate("a", "place-kept"), folded_candidate("b", "place-gone")]
+    preselection = {
+        "fold": distinct.POOL,
+        "folds": [{"location": "place-gone", "lost_to": "place-kept"}],
+    }
+    absorbed = {"place-gone": preselection["folds"][0]}
+    refolded = label_fate._refolded(candidates, absorbed, preselection, log=quiet)
+    assert [row.cluster for row in refolded] == ["place-kept", "place-kept"]
+    # The location is untouched: the cluster id is for the seat constraint and
+    # every join that reads a fact ABOUT A PLACE still reads `location`.
+    assert [row.location for row in refolded] == ["place-kept", "place-gone"]
+
+
+def test_a_destructive_fold_is_not_re_applied_because_its_rows_were_never_seated():
+    """Under `delete` the absorbed place left the pass entirely, so relabeling its
+    rows would describe a pass that did not happen. A record carrying no `fold` on
+    its pre-selection deleted, which is the same case."""
+    candidates = [folded_candidate("a", "place-kept"), folded_candidate("b", "place-gone")]
+    folds = [{"location": "place-gone", "lost_to": "place-kept"}]
+    absorbed = {"place-gone": folds[0]}
+    for preselection in ({"fold": distinct.DELETE, "refusals": folds}, {"folds": folds}):
+        refolded = label_fate._refolded(candidates, absorbed, preselection, log=quiet)
+        assert [row.cluster for row in refolded] == ["place-kept", "place-gone"]
+
+
+def test_the_finished_stores_are_off_the_page_and_the_lede_says_so():
+    """A coarse-store 4 is a verdict on a different question and this page does not
+    ask it. The lede says the omission out loud rather than leaving a reader to
+    notice a population that quietly shrank."""
+    rows = [population_row(stores=["gallery_grade"], rung=label_fate.SEATED)]
+    lede = label_fate._lede(rows, {"stamp": "20260909T165641Z"})
+    assert label_fate.STORE == "gallery_grade"
+    assert "finished-render corpora are not on this page" in lede
+    assert "recognition for every row here" in lede
 
 
 def test_the_fine_heads_two_sides_account_for_every_gallery_grade_row():
@@ -773,7 +854,7 @@ def test_the_rung_order_is_RUNGS_and_never_a_second_list():
 
 
 def test_a_row_the_earlier_store_never_held_is_unmatched_and_not_movement(tmp_path):
-    """The two readings are of the same three stores, so a mismatch means the
+    """The two readings are of the same store, so a mismatch means the
     POPULATION moved — a different finding from a rung changing, and one that
     would be hidden if it were counted as a move."""
     was = [population_row(key="a", rung=label_fate.SEATED)]

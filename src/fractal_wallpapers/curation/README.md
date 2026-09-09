@@ -82,8 +82,8 @@ palette_coverage  how many maps can put a swatch on a real share of an image
 manufacture  forcing the rare swatches onto good places, and the sheets that ask
 label_migration  every judged recipe re-expressed at candidate geometry, staged
            outside every store, read out, and merged through THE door
-label_fate what became of every wallpaper a person graded 4, one rung at a time —
-           and the seat that holds each one's place, beside it
+label_fate what became of every GALLERY-GRADE wallpaper a person graded 4, one
+           rung at a time — and whatever holds each one's place, beside it
 checks     the two claims only a re-render can settle
 run_layout where a run's regenerable files go, and at what size it draws them
 run        the wiring, and nothing else
@@ -1129,7 +1129,7 @@ as *the geometry and nothing else moves*. It now reads the recipe through
 the parent. `manufacture`'s render arm passes the row's settings; its recolour arm needs
 none, settings being legal only on a direct trap, which has no field to dump.
 
-## `curate label-fate` — what became of every wallpaper somebody graded 4
+## `curate label-fate` — what became of every GALLERY-GRADE wallpaper somebody graded 4
 
 Three stores hold a human 4 — `data/smooth_render/`, `data/strange_render/` and
 `data/gallery_grade/` — and since `label-migration merge` every one of those verdicts
@@ -1138,12 +1138,46 @@ pictures a person liked* and becomes *what happened to this one*, which has an e
 answer per row. Five rungs, first one that stops it: off the roster, below the coarse
 bar, below the fine bar, refused by a named rule, seated.
 
-**Rung 0 exists because `solve.pool` refuses before any bar runs.** A mode
-`mode_policy` weights 0, a recorded rejection, a swept picture — none of those is
-*below* anything, and folding them into the coarse-bar count would say a bar refused
-a picture no bar ever read. It is decided on `mode_policy.routed_mode_of` and not the
-recipe's mode, so a modulate whose texture moved nothing is judged as the smooth
-picture it is.
+### It reads ONE of the three, and which one is the whole point
+
+**`data/gallery_grade/` alone since 2026-09-09** (`label_fate.STORE`). The page read
+all three until then and put them on one index, which conflated two populations that
+mean different things. A gallery-grade 4 is a verdict on **a candidate this pool
+holds**, taken off a sheet drawn from the pool itself; a finished-render 4 is a
+verdict on a picture from the finished corpora, carried back to a ledger key through
+`label_migration.recipe_of`. **Whether a coarse-store 4 is a gallery-grade 4 is
+unanswered** — nobody has graded those rows on the gallery-grade scale — so a fate
+page over both asks a fate question of rows whose membership in the population is
+itself the open question. That is a different question and it does **not** get a
+second page here.
+
+**The split is visible in rung 0 and rung 1, which are now empty.** Of the 312
+gallery-grade 4s, **312 are in the ledger, 0 off the roster and 0 below the coarse
+bar** — necessarily, since the sitting was drawn *from* the pool. Every one of the
+117 off-roster and 492 below-coarse rows the old page counted was a finished-store
+row, and reading them beside the gallery-grade ones as one distribution read a fact
+about the *carry-back join* as a fact about the pipeline.
+
+**Rung 0 stays in the vocabulary anyway.** `solve.pool` refuses before any bar runs —
+a mode `mode_policy` weights 0, a recorded rejection, a swept picture — and folding
+those into the coarse-bar count would say a bar refused a picture no bar ever read.
+It is decided on `mode_policy.routed_mode_of` and not the recipe's mode, so a
+modulate whose texture moved nothing is judged as the smooth picture it is. It reads
+0 today because of what the population is, not because the rung stopped existing, and
+a sitting drawn some other way would fill it.
+
+**`p_fine` is recognition for every row on this page, and the page says so once.**
+The population **is** the fine head's own corpus — 245 fitted on and 67 in its
+stopping slice, `label_fate.FINE_TRAIN` + `FINE_STOPPING` = 312, the whole of it — so
+the column the page sorts by is the head reading rows it was fitted to. The human
+grade beside it is the only independent thing on a card. That is stated in the lede
+and as the first line of the legend rather than in a footnote, because it is the one
+caveat a reader who stops early has to have read. It is also why this is a page about
+**fate** and not about accuracy: which rule stopped a wallpaper somebody wanted is a
+question the record answers exactly, and how either head would score an unseen picture
+is not a question this population can be asked. The old page's *two* contamination
+figures went with the finished stores — `JUDGE_TRAIN`, 1,271 of the finished-render 4s
+inside the render judge's own train side, is retired with them.
 
 **Rungs 3 and 4 need `--explain-keys`, and that is the whole reason the flag exists.**
 The fate of a row that took no seat lives only inside the pass that refused it:
@@ -1194,9 +1228,31 @@ and a rebuild reproducing 449 of 449. **The proportions are the finding and the
 integers are not** — a greedy seed plus swaps plus augment lands somewhere else under
 any perturbation, and only 892 of 1,000 seats survived this one.
 
-**`another_place_is_the_same_place` is paired with nothing, on purpose.** That refusal
-is taken at **pool construction**, before a seat exists, so there is no seat to name
-and the record does not carry which neighbour absorbed the place.
+**Those three are three-store readings.** The gallery-grade population alone, over
+`20260909T173957Z` — the pooled fold, the fine bar at 0.50 — is **312 rows: 0 / 0 /
+64 / 175 / 73** across the five rungs, and the 175 refusals split **120
+`cell_allowance`, 51 `location`, 3 `twin`, 1 `spiral`** with **zero**
+`another_place_is_the_same_place`. 173 paired over 77 distinct rows, 87 where one
+departure would have been enough, 2 unpairable. The shape the narrower page makes
+visible is that `cell_allowance` is more than twice `location` here: what stops a
+wallpaper a person wanted is far more often the colour ceiling than another picture
+at its own place.
+
+**A pooled pass never writes `another_place_is_the_same_place` at all.** Since the
+fold merges instead of deleting (2026-09-09), a row that loses its cluster's seat to a
+sibling place is refused by the ordinary **`location`** rule, and its card carries the
+sibling, the cluster the two are seated under, and **both spokes of the star** — each
+place's neutral distance to the survivor, never the distance between the two, which
+`distinct.suppress` does not measure. `label_fate._fold` is where a `location` card
+gets that decoration, and it fires only where the seat that took it is at another
+place. Today's record writes **zero** of the old refusal.
+
+The constant is still read, because a record taken before that fold explains itself:
+there the whole place went at pool construction, before a seat existed, and the card
+names the place that absorbed it off the record's own `preselection.refusals` with the
+distance the fold was taken at. `competitors` reads `refusals` on a destructive record
+and `folds` on a pooled one — the same rows either way, and the second name exists
+precisely because nothing was refused.
 
 **The rebuild is proved before it is used.** `competitors` reconstructs the pass's
 final `rules.State` from `solve.pool` and the record's own ceiling, then requires
@@ -2336,6 +2392,19 @@ because a key seated in nine galleries is one picture and one render. `curate
 autolevel survey --record all` prices it without rendering anything, and it is
 the thing to run first: the answer is hours, and the seats that need a curve are
 a fraction of the protected set rather than all of it.
+
+**Swept store-wide on 2026-09-09 and it is closed: over 7,089 protected seats,
+6,466 replayable, 623 take no operator at all, 0 left to backfill.** The last 60
+cost **41.7 s, 0.69 s a seat, zero failures** — 12 agreed with the ramp they
+shipped through and 48 had none to compare against. So **`no operator` is the whole
+of what is unreplayable**, that being the direct-trap family, which has nothing to
+recover; `acted_unrecoverable` is not a state any live seat is in.
+
+**Expect the tail to refill and re-price it rather than trusting the zero.** A new
+record seats rows whose leg wrote no curve down, so the number moves with every
+record taken — those 60 were the three galleries recorded that afternoon. The
+survey answers in seconds and renders nothing, which is why it is the thing to run
+first and why this paragraph states a *rule* and a reading rather than a target.
 
 ## A standing score is a reading of a picture, and the picture can stop existing
 

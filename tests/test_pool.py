@@ -11,10 +11,13 @@ project has shipped one whose premise was false.
 
 from __future__ import annotations
 
+from dataclasses import replace
+from unittest import mock
+
 import pytest
 
 from fractal_wallpapers import paths
-from fractal_wallpapers.curation import colorize, rules, solve
+from fractal_wallpapers.curation import colorize, distinct, rules, solve
 
 
 @pytest.fixture(autouse=True)
@@ -161,14 +164,65 @@ def test_an_empty_ledger_refuses_rather_than_choosing_nothing():
         solve.pool(rows=[], scores=[], log=quiet)
 
 
-def test_the_strongest_locations_are_offered_first_and_none_is_a_truncation():
+def _refuses(_held):
+    """A `fine_scores` that fails if it is called at all."""
+    raise AssertionError("the pool scores were read for a pass that asked for no cut")
+
+
+def test_the_strongest_clusters_are_offered_first_and_none_is_a_truncation():
     rows = [ledger_row("strong"), ledger_row("middle"), ledger_row("weak")]
     scores = [score_row("strong", 0.9), score_row("middle", 0.5), score_row("weak", 0.1)]
     candidates, _refused = solve.pool(rows=rows, scores=scores, artifact=ARTIFACT, log=quiet)
-    assert solve.strongest_locations(candidates, 2) == ["place-strong", "place-middle"]
-    assert len(solve.strongest_locations(candidates, None)) == 3
+    reached, record = solve.strongest_clusters(candidates, 2)
+    assert reached == ["place-strong", "place-middle"]
+    assert record["truncated_to"] == 2
+    assert record["clusters_offered"] == 3
+    everything, whole = solve.strongest_clusters(candidates, None)
+    assert len(everything) == 3
+    assert whole["truncated_to"] is None
+    # No cut, so no order to resolve and no key to name — and, above all, no read
+    # of the pool scores on a solve that never asked for one.
+    assert "key" not in whole
+    with mock.patch.object(distinct, "fine_scores", _refuses):
+        assert solve.strongest_clusters(candidates, None)[0] == everything
     kept = solve.within(candidates, {"place-strong"})
     assert [c.key for c in kept] == ["strong"]
+
+
+def test_the_cut_groups_on_the_cluster_so_a_folded_sibling_travels_with_its_survivor():
+    """A place absorbed by the pre-selection is not a group of its own: its rows
+    ride on the survivor's key, so a cut that keeps the survivor keeps them."""
+    rows = [ledger_row("strong"), ledger_row("middle"), ledger_row("weak")]
+    scores = [score_row("strong", 0.9), score_row("middle", 0.5), score_row("weak", 0.1)]
+    candidates, _refused = solve.pool(rows=rows, scores=scores, artifact=ARTIFACT, log=quiet)
+    folded = [
+        replace(candidate, folded_into="place-strong")
+        if candidate.location == "place-weak"
+        else candidate
+        for candidate in candidates
+    ]
+    reached, record = solve.strongest_clusters(folded, 1)
+    assert reached == ["place-strong"]
+    assert record["clusters_offered"] == 2
+    assert [c.key for c in solve.within(folded, reached)] == ["strong", "weak"]
+
+
+def test_the_cut_ranks_on_the_fine_head_where_it_has_read_the_row():
+    """The stacked key, and the fallback counted: a cluster the fine head has read
+    is offered ahead of every cluster it has not, however high the coarse column."""
+    rows = [ledger_row("strong"), ledger_row("middle"), ledger_row("weak")]
+    scores = [score_row("strong", 0.9), score_row("middle", 0.5), score_row("weak", 0.1)]
+    candidates, _refused = solve.pool(rows=rows, scores=scores, artifact=ARTIFACT, log=quiet)
+    reached, record = solve.strongest_clusters(candidates, 2)
+    assert record["key"] == distinct.COARSE_KEY
+    assert record["clusters_on_the_fallback"] == 3
+    read = {"weak": 0.99, "middle": 0.10}
+    with mock.patch.object(distinct, "fine_scores", lambda _held: dict(read)):
+        reached, record = solve.strongest_clusters(candidates, 2)
+    assert reached == ["place-weak", "place-middle"]
+    assert record["key"] == "both"
+    assert record["clusters_on_the_fallback"] == 1
+    assert record["ordered_on"] == {distinct.FINE_KEY: 2, distinct.COARSE_KEY: 1}
 
 
 # --------------------------------------------------------------------------- #
