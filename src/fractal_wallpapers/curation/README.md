@@ -1186,6 +1186,14 @@ are worth knowing, so the intersection is reported per card as *no single seat l
 would have been enough* rather than used as the pairing. It is true of 234 of the 453
 paired cards.
 
+**Every count in this section is one record's**, `20260908T211552Z`, which is what
+made the shape visible. The same population re-solved against the repaired pool as
+`20260909T061451Z` reads 350 / 99 / 72 / 3 by rule against 348 / 102 / 71 / 3, 452
+paired over 114 distinct rows, 218 where no single departure would have been enough,
+and a rebuild reproducing 449 of 449. **The proportions are the finding and the
+integers are not** — a greedy seed plus swaps plus augment lands somewhere else under
+any perturbation, and only 892 of 1,000 seats survived this one.
+
 **`another_place_is_the_same_place` is paired with nothing, on purpose.** That refusal
 is taken at **pool construction**, before a seat exists, so there is no seat to name
 and the record does not carry which neighbour absorbed the place.

@@ -212,6 +212,13 @@ RUNGS: tuple[tuple[str, str], ...] = (
 #: The rung names, spelled once so a caller never types one.
 OFF_THE_ROSTER, BELOW_COARSE, BELOW_FINE, REFUSED, SEATED = (name for name, _ in RUNGS)
 
+#: How far along a rung is, for the one question a *pair* of readings raises:
+#: which way did a row move. [`RUNGS`] is already written in the order a picture
+#: meets them, so the index into it is the answer and there is no second ordering
+#: to keep in step — **forward** is a row getting further before something stopped
+#: it, and `seated` is as far as forward goes.
+RUNG_ORDER = {name: at for at, (name, _) in enumerate(RUNGS)}
+
 
 class FateRefused(RuntimeError):
     """A store, a record or a column this leg cannot run without."""
@@ -1085,7 +1092,7 @@ PAGE = """<!doctype html>
 """
 
 
-def page(store=None, migration_store=None, repaired_seats_of=None, log=print) -> dict:
+def page(store=None, migration_store=None, repaired_seats_of=None, against=None, log=print) -> dict:
     """One card per wallpaper, in rung order, `p_fine` ascending inside each rung.
 
     Ascending because the head's largest disagreements with a person come first:
@@ -1097,6 +1104,9 @@ def page(store=None, migration_store=None, repaired_seats_of=None, log=print) ->
     head — that is what the rung *means* — so the column would otherwise be blank
     exactly where the disagreement is largest. It is marked as the migration's
     reading on every card that uses one and never mixed into the pool's column.
+
+    `against` names an earlier store of this same leg, and the page then says how
+    many rungs moved between the two records and which way — [`movement`].
     """
     from PIL import Image
 
@@ -1126,7 +1136,8 @@ def page(store=None, migration_store=None, repaired_seats_of=None, log=print) ->
             row["p_fine_from"] = "migration"
 
     counts = _counted(rows)
-    legend = _legend(rows, counts, staged, repaired)
+    moved = movement(rows, against)
+    legend = _legend(rows, counts, staged, repaired, moved)
     slices = _slices(rows)
     missing = {"graded": 0, "against": 0}
     for one in slices:
@@ -1159,7 +1170,8 @@ def page(store=None, migration_store=None, repaired_seats_of=None, log=print) ->
         heading=f"What became of every wallpaper graded {GRADE}",
         nav="",
         body=f'<p class="lede">{_lede(rows, read)}</p>'
-        f'<div class="legend"><ul>{legend}</ul></div>{_index(rows, counts, slices)}',
+        f'<div class="legend"><ul>{legend}</ul></div>{_index(rows, counts, slices)}'
+        f"{_moved_table(moved)}",
     )
     record = {
         "schema": SCHEMA,
@@ -1175,6 +1187,7 @@ def page(store=None, migration_store=None, repaired_seats_of=None, log=print) ->
         "sorted_by": "p_fine ascending inside each rung; the split follows the sort",
         "width": PAGE_WIDTH,
         "staged_p_fine_used": sum(1 for row in rows if row.get("p_fine_from") == "migration"),
+        "movement": moved,
         "missing_pictures": missing,
         "seconds": round(time.time() - began, 1),
     }
@@ -1347,6 +1360,70 @@ def _staged_scores(migration_store) -> dict:
         str(row["key"]): float(row["fine"]["p_ge4"])
         for row in _read_jsonl(where)
         if (row.get("fine") or {}).get("p_ge4") is not None
+    }
+
+
+def movement(rows, against) -> dict | None:
+    """How this reading's rungs stand against an earlier store's. `None` for none named.
+
+    A rung is a fact about a row *and a record together*, so two readings of the
+    same population against two solves are the only way to say a wallpaper's fate
+    changed rather than that the page was rebuilt. `against` names an earlier
+    [`store_root`] — its `population.jsonl` for the rungs and its `fates.json` for
+    the stamp those rungs were read against, so the page can name the record it is
+    comparing with instead of asking a reader to remember.
+
+    **Forward is [`RUNG_ORDER`] and nothing else**: a row that was below the fine
+    bar and is now refused got *further* before something stopped it, which is
+    movement forward even though it still holds no seat. That is the honest
+    reading — the rungs are a sequence a picture walks, not a ranking of outcomes
+    — and it means `seated` is the only forward move anybody would call good news.
+
+    Rows the earlier store did not hold are counted as `unmatched` rather than as
+    movement. The two readings are of the same three stores, so a mismatch means
+    the population itself moved and that is a different finding from a rung
+    changing.
+    """
+    if not against:
+        return None
+    was = {
+        str(row["key"]): row.get("rung")
+        for row in _read_jsonl(store_root(against) / POPULATION_NAME)
+    }
+    if not was:
+        raise FateRefused(
+            f"no {POPULATION_NAME} in {store_root(against)}, so there is no earlier reading "
+            "to compare rungs against."
+        )
+    read = _read_json(store_root(against) / FATES_NAME)
+    moved: dict = {}
+    forward = back = same = unmatched = 0
+    for row in rows:
+        before = was.get(str(row["key"]))
+        now = row.get("rung")
+        if before is None or now is None:
+            unmatched += 1
+            continue
+        if before == now:
+            same += 1
+            continue
+        moved[f"{before} -> {now}"] = moved.get(f"{before} -> {now}", 0) + 1
+        if RUNG_ORDER[now] > RUNG_ORDER[before]:
+            forward += 1
+        else:
+            back += 1
+    return {
+        "against": str(store_root(against)),
+        "against_stamp": read.get("stamp"),
+        "compared": len(rows) - unmatched,
+        "unmatched": unmatched,
+        "unchanged": same,
+        "changed": forward + back,
+        "forward": forward,
+        "back": back,
+        "forward_is": "further along RUNGS before something stopped it — `seated` is as "
+        "far as forward goes, and every other forward move still holds no seat",
+        "transitions": dict(sorted(moved.items(), key=lambda pair: -pair[1])),
     }
 
 
@@ -1566,7 +1643,27 @@ def _lede(rows, read: dict) -> str:
     )
 
 
-def _legend(rows, counts: dict, staged: dict, repaired: set) -> str:
+def _moved_table(moved) -> str:
+    """Every rung transition since the earlier record, largest first. `""` for none."""
+    if not moved or not moved["transitions"]:
+        return ""
+    held = "".join(
+        f"<tr><td><b>{_title(pair.split(' -> ')[0])}</b> → "
+        f'<b>{_title(pair.split(" -> ")[1])}</b></td><td class="n">{count:,}</td></tr>'
+        for pair, count in moved["transitions"].items()
+    )
+    return (
+        f"<h2>What moved since {moved['against_stamp']}</h2>"
+        f'<p class="rung-note">The same wallpapers, read against the earlier record. '
+        f"<b>{moved['forward']:,}</b> got further along the rungs and "
+        f"<b>{moved['back']:,}</b> stopped earlier; <b>{moved['unchanged']:,}</b> "
+        "stood still. Forward is further before something stopped it, so only a move "
+        "to <b>SEATED</b> is a wallpaper that now ships.</p>"
+        f'<table class="idx">{held}</table>'
+    )
+
+
+def _legend(rows, counts: dict, staged: dict, repaired: set, moved=None) -> str:
     flagged = [row for row in rows if drawn_bare(row, repaired)]
     borrowed = sum(1 for row in rows if row.get("p_fine_from") == "migration")
     # Counted by store MEMBERSHIP and not as a partition, because 29 wallpapers
@@ -1600,6 +1697,15 @@ def _legend(rows, counts: dict, staged: dict, repaired: set) -> str:
             "the fine head in production, because <code>score-pool</code> runs on "
             "coarse-clears only."
         )
+    if moved and moved["changed"]:
+        lines.append(
+            f"<b>{moved['changed']:,} of these {moved['compared']:,} wallpapers changed "
+            f"rung</b> since <b>{moved['against_stamp']}</b> — <b>{moved['forward']:,}</b> "
+            f"further along, <b>{moved['back']:,}</b> stopped earlier — and "
+            f"<b>{moved['unchanged']:,}</b> did not move. Same population, same rules, a "
+            "re-solve against a repaired pool: what a wallpaper's fate is depends on the "
+            "record as well as on the wallpaper, and the index has the transitions."
+        )
     if flagged:
         lines.append(
             f'<span class="flag">⚠ {len(flagged):,} rows carry a non-empty '
@@ -1631,6 +1737,7 @@ __all__ = [
     "RENDERS_NAME",
     "ROW_BACKSTOP",
     "RUNGS",
+    "RUNG_ORDER",
     "SCHEMA",
     "SEATED",
     "WORKERS",
@@ -1646,6 +1753,7 @@ __all__ = [
     "fates",
     "graded",
     "keys",
+    "movement",
     "page",
     "slug",
     "pictures_dir",

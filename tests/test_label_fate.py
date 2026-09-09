@@ -687,3 +687,92 @@ def test_the_fine_heads_two_sides_account_for_every_gallery_grade_row():
 
     assert label_fate.FINE_TRAIN + label_fate.FINE_STOPPING == 312
     assert gallery_grade.NAME == "gallery_grade"
+
+
+# --------------------------------------------------------------------------- #
+# two readings of the same population, against two records.
+# --------------------------------------------------------------------------- #
+def wrote_a_store(where, rows, stamp="20260101T000000Z"):
+    """An earlier store of this leg: its population and the stamp it was read at."""
+    where.mkdir(parents=True, exist_ok=True)
+    (where / label_fate.POPULATION_NAME).write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8", newline="\n"
+    )
+    (where / label_fate.FATES_NAME).write_text(
+        json.dumps({"schema": 1, "stamp": stamp}), encoding="utf-8", newline="\n"
+    )
+    return where
+
+
+def test_forward_is_further_along_the_rungs_and_not_a_better_outcome(tmp_path):
+    """A row that was below the fine bar and is now REFUSED moved forward.
+
+    It still holds no seat, and calling that backwards would be reading the rungs
+    as a ranking of outcomes rather than as the sequence a picture walks. Only a
+    move to SEATED is a wallpaper that now ships, which is why the block says so
+    in words beside the count.
+    """
+    was = [
+        population_row(key="a", rung=label_fate.BELOW_FINE),
+        population_row(key="b", rung=label_fate.SEATED),
+        population_row(key="c", rung=label_fate.REFUSED),
+    ]
+    now = [
+        population_row(key="a", rung=label_fate.REFUSED),
+        population_row(key="b", rung=label_fate.REFUSED),
+        population_row(key="c", rung=label_fate.REFUSED),
+    ]
+    moved = label_fate.movement(now, wrote_a_store(tmp_path / "before", was))
+    assert moved["forward"] == 1 and moved["back"] == 1 and moved["unchanged"] == 1
+    assert moved["changed"] == 2
+    assert moved["transitions"] == {"below_the_fine_bar -> refused": 1, "seated -> refused": 1}
+    assert moved["against_stamp"] == "20260101T000000Z"
+
+
+def test_the_rung_order_is_RUNGS_and_never_a_second_list():
+    """Which way a row moved is read off the order the rungs are written in.
+
+    A second ordering would be a second place to edit, and the two would agree
+    until somebody inserted a rung in one of them.
+    """
+    assert list(label_fate.RUNG_ORDER) == [name for name, _ in label_fate.RUNGS]
+    assert label_fate.RUNG_ORDER[label_fate.SEATED] == max(label_fate.RUNG_ORDER.values())
+    assert label_fate.RUNG_ORDER[label_fate.OFF_THE_ROSTER] == 0
+
+
+def test_a_row_the_earlier_store_never_held_is_unmatched_and_not_movement(tmp_path):
+    """The two readings are of the same three stores, so a mismatch means the
+    POPULATION moved — a different finding from a rung changing, and one that
+    would be hidden if it were counted as a move."""
+    was = [population_row(key="a", rung=label_fate.SEATED)]
+    now = [
+        population_row(key="a", rung=label_fate.SEATED),
+        population_row(key="b", rung=label_fate.REFUSED),
+    ]
+    moved = label_fate.movement(now, wrote_a_store(tmp_path / "before", was))
+    assert moved["unmatched"] == 1
+    assert moved["compared"] == 1 and moved["changed"] == 0
+
+
+def test_no_earlier_store_named_is_no_block_rather_than_an_empty_one():
+    assert label_fate.movement([population_row()], None) is None
+    assert label_fate._moved_table(None) == ""
+
+
+def test_an_earlier_store_with_no_population_is_refused(tmp_path):
+    """Rather than reporting every row unmatched, which reads as a population
+    that moved entirely instead of as a path that is not a store."""
+    (tmp_path / "empty").mkdir()
+    with pytest.raises(label_fate.FateRefused):
+        label_fate.movement([population_row()], tmp_path / "empty")
+
+
+def test_the_legend_says_how_many_moved_and_which_way(tmp_path):
+    was = [population_row(key="a", rung=label_fate.REFUSED)]
+    now = [population_row(key="a", rung=label_fate.SEATED)]
+    moved = label_fate.movement(now, wrote_a_store(tmp_path / "before", was))
+    legend = label_fate._legend(now, label_fate._counted(now), {}, set(), moved)
+    assert "<b>1 of these 1 wallpapers changed rung</b>" in legend
+    assert "20260101T000000Z" in legend
+    table = label_fate._moved_table(moved)
+    assert "REFUSED</b> → <b>SEATED" in table

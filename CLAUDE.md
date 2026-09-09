@@ -178,14 +178,16 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **126.34 s over the 4,075
-it holds, 132 deselected**, on this machine, 2026-09-08, on an idle box with a
-`.[dev,models]` install and a release engine built, taken after the render legs
-rather than beside them — **4,207 collected**, which is what the next slow lane
-should read. The **slow** lane last read **4,200 of 4,202 green** the same day,
-and that reading has **no clock**: it was taken beside a backfill leg on Matt's
-instruction, which answers green and red and not the timing. Its two reds are
-closed and five guards landed after it, which is where 4,202 becomes 4,207.
+Both are measured, not estimated. The **fast** lane is **128.56 s over the 4,085
+it holds, 132 deselected**, on this machine, 2026-09-09, on an idle box with a
+`.[dev,models]` install and a release engine built, taken after the render leg
+rather than beside it — **4,217 collected**. The **slow** lane read **4,217 of
+4,217 green in 436.12 s (7:16)** the same day on the same idle box, which is the
+first reading in a while with a clock *and* no red: the 2026-09-08 one was taken
+beside a backfill leg on Matt's instruction and answered green and red only. Its
+two reds are closed and fifteen guards landed after it, which is where 4,202
+becomes 4,217. **The two lanes now agree on the collected count**, which is what
+that number is for.
 
 **The long-standing red is closed and there is no expected failure any more**: a
 lane with any red in it is a lane to read. `test_leveled_identity.py`'s census

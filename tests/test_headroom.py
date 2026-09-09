@@ -149,6 +149,53 @@ def test_a_mode_off_the_production_roster_is_counted_and_not_censused():
     assert "not_a_mode" not in read["modes"]
 
 
+def test_the_rows_the_fine_head_must_have_read_are_the_q4_rows_and_no_others():
+    """`score-pool` reads `above_bar`, which is `score >= Q4_BAR`, which is what
+    this table calls `q4_rows`. Two names for one set, and the census is where a
+    leg finds out whether the head is behind the pool BEFORE it solves."""
+    pool = [candidate("c0", score=0.9), candidate("c1", score=0.9), candidate("c2", score=0.1)]
+    assert [held.above_bar for held in pool] == [True, True, False]
+    read = headroom.bars(pool, fine={"c0": {"p_ge4": 0.7}})
+    assert read["modes"]["smooth"]["q4_rows"] == 2
+    assert read["modes"]["smooth"]["with_p_fine"] == 1
+    assert read["modes"]["smooth"]["q4_unread"] == 1
+    assert read["fine_head"]["q4_rows"] == 2 and read["fine_head"]["q4_unread"] == 1
+
+
+def test_a_below_bar_row_the_head_happens_to_have_read_is_not_counted_as_coverage():
+    """The question is whether every SEATABLE row is read. A reading on a row no
+    cascade can lift is not coverage, and counting it would let a table report
+    full coverage over a pool with unread rows above the bar."""
+    read = headroom.bars(
+        [candidate("c0", score=0.9), candidate("c1", score=0.1)],
+        fine={"c1": {"p_ge4": 0.7}},
+    )
+    assert read["fine_head"]["scores_read"] == 1
+    assert read["fine_head"]["with_p_fine"] == 0 and read["fine_head"]["q4_unread"] == 1
+
+
+def test_no_scores_handed_in_reads_null_and_not_zero():
+    """A caller that did not ask and a pool nothing has read are different facts,
+    and every census in this tree is the first of them."""
+    read = headroom.bars(clearing_pool(3))
+    assert read["fine_head"]["with_p_fine"] is None
+    assert read["fine_head"]["scores_read"] is None
+    assert read["modes"]["smooth"]["with_p_fine"] is None
+    assert read["fine_head"]["q4_rows"] == 3
+
+
+def test_the_census_never_reads_the_pool_scores_store_itself(monkeypatch):
+    """`clearing` and `census` call `bars` on every census and none of them want
+    the column. A store read inside it would be a fifth of a second on each."""
+    from fractal_wallpapers.models import gallery_grade_train
+
+    def refuse(*_args, **_rest):
+        raise AssertionError("headroom read the pool scores itself")
+
+    monkeypatch.setattr(gallery_grade_train, "read_pool_scores", refuse)
+    assert headroom.clearing(clearing_pool(3))
+
+
 # --------------------------------------------------------------------------- #
 # Counts are distinct locations.
 # --------------------------------------------------------------------------- #
