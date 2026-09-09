@@ -808,6 +808,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
     if args.what == "k-sweep":
         return _sweep_the_ceiling(args)
 
+    if args.what == "k-sweep-plot":
+        return _draw_the_ceiling_sweep(args)
+
     # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
     # reader who has just seen a stamp printed will type it either way and the
     # cost of not accepting both is a page silently written for a DIFFERENT
@@ -928,6 +931,21 @@ def _sweep_the_ceiling(args: argparse.Namespace) -> int:
     if held.get("control_check") is not None:
         print(json.dumps(held["control_check"], indent=2))
         return 0 if held["control_check"]["same_seat_order"] else 1
+    return 0
+
+
+def _draw_the_ceiling_sweep(args: argparse.Namespace) -> int:
+    """The two per-cell figures off a sweep already taken. Renders nothing again."""
+    from fractal_wallpapers.curation import k_sweep_plot
+
+    if not args.stamp:
+        print("name a sweep's stamp to draw — the one `k-sweep` printed when it finished.")
+        return 1
+    try:
+        print(f"{display_path(k_sweep_plot.plot(args.stamp))}")
+    except k_sweep_plot.PlotRefused as refusal:
+        print(refusal)
+        return 1
     return 0
 
 
@@ -4141,6 +4159,27 @@ def add_commands(subcommands) -> None:
         "named. A first rung that does not reproduce it exits 1, because a control that "
         "misses is itself the finding and the other rungs are not worth reading until it "
         "is understood",
+    )
+
+    drawing_k = solve_verbs.add_parser(
+        "k-sweep-plot",
+        help="draw one K sweep's per-cell figures, off the readings it already wrote",
+        description=(
+            "TWO PICTURES of a sweep already taken, into `scratch/k_sweep_<stamp>/`: "
+            "per-cell membership at every rung with the control beside each arm, and the "
+            "same as a difference against the control so a colour that FALLS as the "
+            "ceiling loosens reads as a bar below zero rather than as a small one. "
+            "Nothing is re-solved and no record is touched — the input is the sweep's own "
+            "readings.json. Scratch only and disposable, as `curate growth plot` is: the "
+            "durable product of a sweep is its readings and its records."
+        ),
+    )
+    drawing_k.add_argument(
+        "stamp",
+        nargs="?",
+        metavar="STAMP",
+        help="the sweep's stamp, which is what `k-sweep` printed when it finished. NOT a "
+        "rung's stamp: a rung is one seating and the figures are over all of them",
     )
 
     browsing = solve_verbs.add_parser(

@@ -402,6 +402,28 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+6, and the two lanes agree again.** `k_sweep_20260909`, 2026-09-09, idle box,
+taken after the six-arm colour-ceiling sweep rather than beside it. The **slow**
+lane read **4,277 of 4,277 green in 459.94 s (7:39)**, zero skips, and the **fast**
+lane taken right after it held **129.99 s over the 4,145 it holds, 132
+deselected** — **4,277 collected** on both, against the 4,271 the entry below left
+them at.
+
+The six are `test_k_sweep_plot`'s: the cell order taken off the control rather
+than off the widest arm, a cell only a looser rung found sorting last rather than
+being dropped, a rung's missing cell reading as zero, the per-rung allowance on
+the label, the signed difference column, and a stamp no sweep wrote being refused.
+All six are arithmetic over synthetic counts, none touches `matplotlib`, and none
+earns the mark. The clock did not move on either lane: **129.99 s against
+126.42 s** and **459.94 s against 450.28 s**, both inside this box's spread.
+
+⚠ **The first slow lane of this prompt was red on a verb census, not on a
+regression.** `test_nested_verbs.py::test_every_nested_verb_is_a_real_subparser`
+holds the count of registered nested verbs, and `solve k-sweep-plot` made it 89
+where the guard said 88. That constant is *meant* to move when a verb lands and
+its docstring is the log of every time it has — unlike a census pinned at a store
+size, moving it is the edit the guard exists to force.
+
 **+12, and the two lanes agree again.** `forced_seating_20260909`, 2026-09-09,
 idle box, taken after the forced solve leg rather than beside it. The **slow**
 lane read **4,271 of 4,271 green in 450.28 s (7:30)**, zero skips, and the

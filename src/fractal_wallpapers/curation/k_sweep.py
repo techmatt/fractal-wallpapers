@@ -50,6 +50,15 @@ cannot be taken again ends up in a tracked document.
 ceiling counts; a table over each seat's leading cell shows no cell at its
 allowance at all. [`tones`] reports both and says which is which.
 
+## The pictures are a second command
+
+[`curation.k_sweep_plot`] — `curate solve k-sweep-plot <sweep stamp>` — draws the
+per-cell figures off the readings, into `scratch/`. Apart from this module because
+it is disposable and this is not: the durable product of a sweep is its readings
+and its records, and the drawing needs `matplotlib`, which the base install does
+not carry. **The chart is what a collapse is visible in**: a colour that falls as
+the ceiling loosens is a shape across 48 cells and not a number in a column.
+
 ## What it found the first time
 
 `curation/MEASUREMENTS.md`'s *What the colour ceiling costs at n=1000*: the worst
@@ -62,6 +71,14 @@ else takes over — `cell_allowance` is still the top refusal at 2.5.
 product is taken in binary floating point, so `K = 2.4` at `n = 1000` allows **50**
 where the arithmetic on paper says 51. This leg prints the allowance per rung for
 exactly that reason.
+
+## What it found out at `K = 3.75`
+
+`curation/MEASUREMENTS.md`'s *What a colour ceiling four times the target rate
+costs*: every rung still fills and every floor is still met, the pass turns from
+colour-bound to seat-bound between 2.5 and 3, the family allowance takes the same
+`K` and so never binds, and 23 of the 48 cells end **lower** than they began —
+none of them at its own allowance and none of them out of supply.
 """
 
 from __future__ import annotations
@@ -117,8 +134,12 @@ def cell_counts(rows) -> dict:
     The allowance counts a seat in every cell it is dominant in — that is what
     [`rules.State.counted_refusal`] walks — so a table read off `row["cell"]`
     would be answering a different question from the one the ceiling asks, and
-    would show no cell at its allowance at all. The two totals differ by about
-    two to one at n=1000: 1,904 memberships over 1,000 seats at `K = 2`.
+    would show no cell at its allowance at all. The two totals differ by a bit
+    under two to one at n=1000, and **the ratio is a reading and not a constant**:
+    1,904 memberships over 1,000 seats at `K = 2` on the 2026-09-06 pool, 1,802 on
+    the 2026-09-09 one. A multiple of the mean cell is worked out against the
+    realized figure of the record in hand — `memberships / 48` — and never against
+    a remembered one.
     """
     tally: dict = {}
     for row in rows:
@@ -276,6 +297,24 @@ def readings_path(stamp: str, n: int) -> Path:
     return solve.solve_dir(f"sweepK_n{int(n)}_{stamp}") / "readings.json"
 
 
+def readings_named(stamp: str) -> Path:
+    """One sweep's tables, found by its **stamp alone**.
+
+    [`readings_path`] needs the `n` as well because the directory carries it, and
+    a reader coming back to a sweep a day later has the stamp and nothing else —
+    it is what the run printed. The `n` is recovered off the directory rather than
+    guessed at [`SEATS`], so a sweep taken at another size is still findable.
+    """
+    store = solve.solve_dir(f"sweepK_n0_{stamp}").parent
+    held = sorted(store.glob(f"sweepK_n*_{stamp}/readings.json"))
+    if not held:
+        raise FileNotFoundError(
+            f"no sweep tables under the stamp {stamp!r}. A sweep writes them as it "
+            "finishes, so a stamp with none either is not a sweep's or did not finish."
+        )
+    return held[0]
+
+
 def write_readings(held: dict, stamp: str, n: int) -> Path:
     path = readings_path(stamp, n)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -402,6 +441,7 @@ __all__ = [
     "name_of",
     "reading_of",
     "readings",
+    "readings_named",
     "readings_path",
     "summarise",
     "sweep",
