@@ -418,8 +418,13 @@ def test_an_unflagged_varied_row_still_says_it_carries_settings():
 
 
 def test_a_card_with_no_seat_says_so_rather_than_leaving_a_gap():
-    card = label_fate._card(population_row(seat=None, rung=label_fate.REFUSED), None, None, set())
+    """On a rung that pairs by PLACE. A refused card is a different silence and
+    says a different thing — see the same-place guard above."""
+    card = label_fate._card(
+        population_row(seat=None, rung=label_fate.BELOW_FINE), None, None, set()
+    )
     assert "no seat at this place" in card
+    assert "the record holds nothing here" in card
 
 
 def test_a_refused_card_names_the_first_rule_and_the_page_says_it_is_the_first():
@@ -452,6 +457,199 @@ def test_the_legend_says_both_columns_are_contaminated_and_which_is_which():
     assert "no one honest column over this page" in legend
     assert "1.1%" in legend
     assert f"{label_fate.JUDGE_TRAIN:,}" in legend
+
+
+# --------------------------------------------------------------------------- #
+# The pairing, and the two questions it is not allowed to conflate.
+# --------------------------------------------------------------------------- #
+def test_every_refusing_rule_says_what_it_pairs_with():
+    """A rule with no entry would pair silently with nothing and read as a bug in
+    the record rather than as a gap in this table."""
+    assert set(label_fate.PAIRING) == {
+        "location",
+        "cell_allowance",
+        "twin",
+        "another_place_is_the_same_place",
+    }
+
+
+def test_the_refusing_set_is_the_rule_that_ACTED_and_not_the_intersection():
+    """The bug this replaced, kept as a guard.
+
+    `removals` is the intersection across *every* rule a candidate fails, and
+    answers "would one seat leaving be enough". A row the location rule took that
+    also fails the cell allowance has an empty intersection — 101 of this page's
+    102 location refusals do — so pairing on `removals` showed those cards
+    nothing, while the seat standing at their place plainly beat them.
+    """
+
+    class Rule:
+        @staticmethod
+        def allowed(name, n):
+            return 1
+
+    class State:
+        places = {"here": "the_seat"}
+        cells = {"blue": {"seat_a": True, "seat_b": True}}
+        rule = Rule()
+        n = 10
+
+        @staticmethod
+        def counted_removals(_candidate):
+            return set()
+
+    class Candidate:
+        location = "here"
+        cells = ("blue",)
+
+    assert label_fate._refusing_set(State, Candidate, "location") == {"the_seat"}
+    assert label_fate._refusing_set(State, Candidate, "cell_allowance") == {"seat_a", "seat_b"}
+    assert State.counted_removals(Candidate) == set()
+
+
+def test_the_first_over_full_cell_is_the_one_that_refused():
+    """`counted_refusal` returns on the first over-full cell in the candidate's own
+    order, so the set has to come off that cell and not off whichever comes last."""
+
+    class Rule:
+        @staticmethod
+        def allowed(name, n):
+            return 99 if name == "roomy" else 1
+
+    class State:
+        places: dict = {}
+        cells = {"roomy": {"a": True}, "full": {"b": True, "c": True}}
+        rule = Rule()
+        n = 10
+
+    class Candidate:
+        location = "nowhere"
+        cells = ("roomy", "full")
+
+    assert label_fate._refusing_set(State, Candidate, "cell_allowance") == {"b", "c"}
+
+
+def test_a_same_place_refusal_is_paired_with_nothing_and_the_card_says_why():
+    """It was refused at POOL CONSTRUCTION, before a seat existed, so there is no
+    seat to name. A card that fell back to the place's seat would name a picture
+    that never competed with it."""
+    row = population_row(rung=label_fate.REFUSED, explained="another_place_is_the_same_place")
+    assert label_fate._against(row) == (None, None)
+    card = label_fate._card(row, None, None, set())
+    assert "no row to name" in card
+    assert "folded this place into a neighbour" in card
+
+
+def test_a_refused_card_pairs_on_the_competitor_and_every_other_rung_on_the_place():
+    """Two different pairings, and the rung decides which."""
+    refused = population_row(
+        rung=label_fate.REFUSED,
+        explained="cell_allowance",
+        competitor={"key": "rival01", "why": "cell_allowance"},
+        seat={"key": "seat01"},
+    )
+    assert label_fate._against(refused)[0] == "rival01"
+    seated = population_row(rung=label_fate.SEATED, seat={"key": "seat01", "seat": 3})
+    assert label_fate._against(seated)[0] == "seat01"
+
+
+def test_the_gap_is_on_the_card_because_0_01_and_0_4_are_different_findings():
+    row = population_row(
+        rung=label_fate.REFUSED,
+        explained="cell_allowance",
+        p_fine=0.5002,
+        competitor={
+            "key": "rival01",
+            "why": "cell_allowance",
+            "mode": "smooth",
+            "colormap": "a-map",
+            "p_fine": 0.9,
+            "gap": 0.3998,
+            "alternatives": 42,
+        },
+    )
+    card = label_fate._card(row, None, "a.jpg", set())
+    assert "+0.3998" in card
+    assert "marginal of 42 seats" in card
+
+
+def test_a_card_says_when_no_single_departure_would_have_been_enough():
+    row = population_row(
+        rung=label_fate.REFUSED,
+        explained="location",
+        competitor={"key": "r", "why": "location", "alternatives": 1, "enough": []},
+    )
+    assert "no single seat leaving would have been enough" in label_fate._card(
+        row, None, "a.jpg", set()
+    )
+
+
+# --------------------------------------------------------------------------- #
+# The split.
+# --------------------------------------------------------------------------- #
+def test_the_dropped_rung_is_counted_and_not_shown():
+    """117 rows in weight-0 modes: no bar read them and no rule refused them, so a
+    section of them would claim a comparison that does not exist. The index still
+    carries the count, so the rungs add to the population."""
+    assert label_fate.NOT_SHOWN == (label_fate.OFF_THE_ROSTER,)
+    rows = [
+        population_row(rung=label_fate.OFF_THE_ROSTER),
+        population_row(rung=label_fate.SEATED, seat=None),
+    ]
+    stems = {one["stem"] for one in label_fate._slices(rows)}
+    assert label_fate.slug(label_fate.OFF_THE_ROSTER) not in stems
+    assert label_fate._counted(rows)[label_fate.OFF_THE_ROSTER] == 1
+
+
+def test_the_cut_follows_the_sort_and_never_reorders_it():
+    """Page 1 of a rung has to be the head of the sort, or the whole point of
+    sorting ascending is lost to whoever opens page 1."""
+    rows = [
+        population_row(key=f"k{at:04d}", rung=label_fate.BELOW_FINE, p_fine=at / 1000, seat=None)
+        for at in range(320)
+    ]
+    mine = [one for one in label_fate._slices(rows) if one["stem"] == "below-the-fine-bar"]
+    assert [one["file"] for one in mine] == [
+        "below-the-fine-bar-01.html",
+        "below-the-fine-bar-02.html",
+        "below-the-fine-bar-03.html",
+    ]
+    assert [len(one["rows"]) for one in mine] == [150, 150, 20]
+    ordered = [row["p_fine"] for one in mine for row in one["rows"]]
+    assert ordered == sorted(ordered)
+    assert ordered[0] == 0.0
+
+
+def test_the_refused_rung_is_written_twice_and_the_by_rule_pages_are_the_same_cards():
+    rows = [
+        population_row(key="a", rung=label_fate.REFUSED, explained="cell_allowance", seat=None),
+        population_row(key="b", rung=label_fate.REFUSED, explained="location", seat=None),
+    ]
+    slices = label_fate._slices(rows)
+    stems = {one["stem"] for one in slices}
+    assert "refused" in stems
+    assert "refused-cell-allowance" in stems
+    assert "refused-location" in stems
+    plain = sum(len(one["rows"]) for one in slices if one["stem"] == "refused")
+    by_rule = sum(len(one["rows"]) for one in slices if one["by_rule"])
+    assert plain == by_rule == 2
+
+
+def test_a_page_name_is_guessable_and_a_rule_name_survives_the_slug():
+    assert label_fate.slug("below_the_fine_bar") == "below-the-fine-bar"
+    assert label_fate.slug("another_place_is_the_same_place") == "another-place-is-the-same-place"
+
+
+def test_every_page_carries_prev_next_and_a_way_back_to_the_index():
+    rows = [
+        population_row(key=f"k{at:04d}", rung=label_fate.BELOW_FINE, p_fine=at / 1000, seat=None)
+        for at in range(320)
+    ]
+    slices = [one for one in label_fate._slices(rows) if one["stem"] == "below-the-fine-bar"]
+    first, middle, last = (label_fate._nav(one, slices) for one in slices)
+    assert label_fate.PAGE_NAME in first and "prev" not in first and "next" in first
+    assert "prev" in middle and "next" in middle
+    assert "prev" in last and "next" not in last
 
 
 def test_the_two_contamination_counts_are_memberships_and_not_a_partition():

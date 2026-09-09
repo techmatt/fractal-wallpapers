@@ -385,6 +385,13 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+12 more, for the pairing and the split.** `SHOW_ckpt116_label4_fate_v2_0908`,
+2026-09-08, idle box. **129.82 s over 4,060, 129 deselected** — **4,189**. The twelve
+are `label-fate`'s second pass: the rule-by-rule pairing, the page split, and the
+guard that pins which of two definitions of *the row that beat it* the page uses.
+Clock 127.81 -> 129.82 s for 12 more arithmetic tests, which is the same page-cache
+spread the entries below argue about.
+
 **+32, and the clock did not move at all.** `SHOW_ckpt116_label4_fate_0908`,
 2026-09-08, idle box, `.[dev,models]` with a release engine. **127.81 s over 4,048,
 129 deselected** fast — **4,177** against the 4,145 the entry below this one left,

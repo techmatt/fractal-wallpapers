@@ -2513,11 +2513,15 @@ one*. Five rungs, first that stops it.
 ```
 scratch/label_fate_<name>/
   keys.txt             one ledger key a line — the solve's --explain-keys argument
-  population.jsonl     one row a wallpaper: its verdicts, its ledger row, its rung
+  population.jsonl     one row a wallpaper: its verdicts, its ledger row, its rung,
+                       the seat at its place and the row that beat it
   fates.json           which record filled rungs 3 and 4, and what it cost
+  competitors.json     the pairing per rule, and what the rebuild had to prove
   renders.jsonl        one row a picture drawn, and which side of a card it is on
-  index.html           one card a wallpaper, graded picture beside the seat
-  pictures/<key>.jpg   both sides, fresh at 1280x720 ss2
+  index.html           the rung tables and the links
+  <rung>-NN.html       150 cards a page, p_fine ascending, prev/next
+  refused-<rule>-NN.html   the refused rung again, split by what refused it
+  pictures/<key>.jpg   every side, fresh at 1280x720 ss2
   page_pictures/       the page's own reduced copies
 ```
 
@@ -2531,7 +2535,17 @@ guess about which of several rules acted first.
 
 **Rung 0 is `solve.pool`'s own five exclusions**, decided on
 `mode_policy.routed_mode_of` and not the recipe's mode. Folding those into the
-coarse-bar count would say a bar refused a picture no bar ever read.
+coarse-bar count would say a bar refused a picture no bar ever read. It is **counted
+and not shown** on the page, Matt's call of 2026-09-08: no rule ever refused those
+rows, so there is no comparison to draw.
+
+**What a refused card is paired with depends on the rule that refused it**, and
+`curation/README.md`'s *The picture beside a refused card is not the seat at its
+place* has the whole of it. In short: `counted_requirements`' set for the acting rule,
+marginal member where there is a choice; not `removals`, which answers the stricter
+*would one departure be enough* and is empty for 234 of the 453 paired cards.
+`competitors` rebuilds the pass's final state and **refuses unless it reproduces every
+counted refusal the record wrote down**.
 
 **Both sides of a card are drawn at one geometry**, because `sheets.LABEL_RESOLUTION`
 and `release.RELEASE_REGIME` are the same `1280x720ss2`. `render` refuses if those two
