@@ -26,6 +26,7 @@ and each one hands in its own rows.
 
 from __future__ import annotations
 
+import inspect
 import json
 
 import pytest
@@ -524,6 +525,36 @@ def test_the_refusing_set_is_the_rule_that_ACTED_and_not_the_intersection():
     assert label_fate._refusing_set(State, Candidate, "location") == {"the_seat"}
     assert label_fate._refusing_set(State, Candidate, "cell_allowance") == {"seat_a", "seat_b"}
     assert State.counted_removals(Candidate) == set()
+
+
+def test_the_cluster_fields_go_on_a_location_card_and_no_other():
+    """The bug this replaced, kept as a guard.
+
+    `_fold` names the cluster the row's own place was folded into and each
+    place's neutral distance to it, which is the whole story of a `location`
+    card. On a `cell_allowance` card the competitor is the marginal seat in a
+    full cell and has nothing to do with the row's cluster — so the same fields
+    read as *these two are near-duplicates* about rows at unrelated partitions,
+    with the competitor handed a `competitor_distance` of 0.0 for not having been
+    folded at all. Eleven of `20260909T173957Z`'s 120 `cell_allowance` cards
+    carried it and nine of them carried that zero.
+    """
+    absorbed = {"mine": {"lost_to": "survivor", "distance": 0.019675, "lost_to_picture": "s.jpg"}}
+    preselection = {"radius": 0.02}
+
+    class Taker:
+        location = "somewhere_else"
+
+    for why in ("location", "cell_allowance"):
+        row = {"location": "mine", "competitor": {"key": "taker", "why": why}}
+        if why == "location":
+            label_fate._fold(row, {"taker": Taker}, absorbed, preselection)
+        assert ("cluster" in row["competitor"]) is (why == "location"), why
+    source = inspect.getsource(label_fate.competitors)
+    assert "_fold(" in source
+    guarded = [line for line in source.splitlines() if "_fold(row" in line]
+    assert len(guarded) == 1
+    assert 'if why == "location":' in source.splitlines()[source.splitlines().index(guarded[0]) - 1]
 
 
 def test_the_first_over_full_cell_is_the_one_that_refused():

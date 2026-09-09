@@ -852,18 +852,26 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     targets, floor = ({}, None) if not args.themed else themed_demands(args.themed, seats)
     try:
         explain = keys_to_explain(args)
+        forced = keys_to_force(args)
     except FileNotFoundError as refusal:
         print(refusal)
         return 1
     candidates, refused = solve.pool()
     try:
-        order, coverage = solve.ranking_for(candidates, args.key)
+        # ONE column, resolved before the order and handed to both. The order is
+        # resolved out here rather than inside `solve` — see `curate solve run` —
+        # so the forcing has to reach the two of them through one object or the
+        # cascade would rank a pool the bar had already narrowed differently.
+        fine = solve.fine_column(forced)
+        order, coverage = solve.ranking_for(candidates, args.key, fine=fine)
         record = solve.solve(
             candidates,
             n=seats,
             targets=targets,
             floor=floor,
             fine_bar=args.fine_bar,
+            fine=fine,
+            forced=forced,
             fold=args.fold,
             order=order,
             coverage=coverage,
@@ -997,13 +1005,15 @@ def curate_solve(args: argparse.Namespace) -> int:
     # process that is already the pool-holding one.
     try:
         explain = keys_to_explain(args)
+        forced = keys_to_force(args)
     except FileNotFoundError as refusal:
         print(refusal)
         return 1
 
     candidates, _refused = solve.pool()
     try:
-        order, coverage = solve.ranking_for(candidates, args.key)
+        fine = solve.fine_column(forced)
+        order, coverage = solve.ranking_for(candidates, args.key, fine=fine)
         if coverage is not None:
             print(json.dumps(coverage, indent=2))
         record = solve.solve(
@@ -1013,6 +1023,8 @@ def curate_solve(args: argparse.Namespace) -> int:
             floor=floor,
             locations=args.locations,
             fine_bar=args.fine_bar,
+            fine=fine,
+            forced=forced,
             radius=None if args.no_preselection else args.neutral_radius,
             fold=args.fold,
             diversity=not args.no_diversity,
@@ -2274,6 +2286,46 @@ def themed_demands(theme: str, n: int) -> tuple[dict, int]:
     return {str(theme): 1.0}, solve_module.mode_floor(int(n))
 
 
+def keys_named(path) -> list:
+    """The candidate keys one manifest names, in file order and without repeats.
+
+    A FILE and never a list of keys on the command line, because a population runs
+    to thousands and a Windows command line does not — the rule this project has
+    for every batch. Blank lines and `#` comments are skipped so a manifest can
+    say what it is.
+
+    Two flags take one of these — `--explain-keys` and `--forced` — and they read
+    it through one function, so a manifest that works for one works for the other
+    and the same file can serve both in a single run, which is exactly the shape
+    a forced pass wants: force this population, and explain it.
+    """
+    where = Path(path)
+    if not where.is_file():
+        raise FileNotFoundError(f"no key manifest at {where}")
+    read = [
+        line.strip()
+        for line in where.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    return list(dict.fromkeys(read))
+
+
+def keys_to_force(args: argparse.Namespace) -> list | None:
+    """The keys `--forced` names, or `None` where nothing was forced.
+
+    `None` and never an empty list: `solve.fine_column` treats them the same, but
+    a record saying a pass forced nothing and a record saying a pass was handed an
+    empty manifest are the same gallery and it costs nothing to keep the spelling
+    honest at one end.
+    """
+    named = getattr(args, "forced", None)
+    if not named:
+        return None
+    read = keys_named(named)
+    print(f"[solve] forcing {len(read):,} key(s) named in {display_path(Path(named))}")
+    return read
+
+
 def keys_to_explain(args: argparse.Namespace) -> list | None:
     """The candidate keys this pass records a fate for, or `None` for no block.
 
@@ -2297,13 +2349,7 @@ def keys_to_explain(args: argparse.Namespace) -> list | None:
         print(f"[solve] explaining {len(named):,} seat(s) of {seats_of!r} by name")
     if getattr(args, "explain_keys", None):
         where = Path(args.explain_keys)
-        if not where.is_file():
-            raise FileNotFoundError(f"no key manifest at {where}")
-        read = [
-            line.strip()
-            for line in where.read_text(encoding="utf-8").splitlines()
-            if line.strip() and not line.lstrip().startswith("#")
-        ]
+        read = keys_named(where)
         print(f"[solve] explaining {len(read):,} key(s) named in {display_path(where)}")
         named += read
     if not named:
@@ -2345,6 +2391,23 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         f"costs a demand shortfall of 0 -> 18. It needs `gallery-grade score-pool` and "
         f"seats NOTHING without it. The value is on every record either way, `null` for a "
         f"pass that ran unbarred",
+    )
+    pool.add_argument(
+        "--forced",
+        metavar="PATH",
+        help="a MANIFEST of candidate keys, one per line, this pass lifts to the top of "
+        "the fine column BEFORE the bar, the neutral pre-selection and the cascade — so a "
+        "forced row clears `--fine-bar`, is its cluster's survivor and is offered ahead "
+        f"of every unforced row. `solve.FORCED_LIFT` is the lift and it is "
+        f"ORDER-PRESERVING, `{solve_module.FORCED_LIFT:g} + p_fine`: the forced set keeps "
+        "its own order among itself, so several forced rows competing inside one colour "
+        "cell are still ranked against each other rather than tied arbitrarily. It forces "
+        "an OFFER and never a seat — one seat per cluster, the twin test, the allowances, "
+        "the mode ceilings and the spiral cap all still apply, and a forced row refused by "
+        "any of them is the reading this flag exists to give. STAGED and OFF unasked: no "
+        "shipped default moves, and `config.forced` is 0 on every record that does not "
+        "name it. A FILE and never a list of keys, for `--explain-keys`' reason. Blank "
+        "lines and `#` comments are skipped",
     )
     pool.add_argument(
         "--fold",

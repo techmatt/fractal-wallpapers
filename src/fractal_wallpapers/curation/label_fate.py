@@ -811,7 +811,8 @@ def competitors(stamp: str, store=None, log=print) -> dict:
             # of it: whether ONE seat leaving would have been enough.
             if row["competitor"] is not None:
                 row["competitor"]["enough"] = sorted(state.counted_removals(candidate))[:1]
-                _fold(row, held, absorbed, preselection)
+                if why == "location":
+                    _fold(row, held, absorbed, preselection)
         elif why == solve.SAME_PLACE:
             # The old constant, still read so a record taken before 2026-09-09
             # explains itself. A pooled pass never writes one: a row that loses
@@ -945,6 +946,16 @@ def _fold(row: dict, held: dict, absorbed: dict, preselection: dict) -> None:
     row at its own place, it lost to a sibling in the near-duplicate cluster the
     pre-selection folded the two into. So the card names the cluster and how far
     each of the two places sits from the place the cluster is seated under.
+
+    ⚠ **A `location` card and NO OTHER**, and the caller holds that. It ran on
+    `cell_allowance` cards too until 2026-09-09, where the competitor is the
+    marginal seat in a full cell and has nothing to do with the row's cluster:
+    the card then named the cluster the row's own place was folded into, gave the
+    competitor a `competitor_distance` of 0.0 for not being folded at all, and
+    read as *these two are near-duplicates* about two rows at unrelated places.
+    Eleven of `20260909T173957Z`'s 120 `cell_allowance` cards carried it, nine of
+    them with that zero, and it is what made `57375f0818032399` read as sharing a
+    cluster with a seat at a different partition.
 
     **Both distances are to the cluster's own survivor and neither is the gap
     between the two places**, which the walk never measures: [`distinct.suppress`]

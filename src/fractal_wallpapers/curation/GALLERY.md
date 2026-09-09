@@ -582,6 +582,50 @@ record) with `config.sort_key_named` beside it (what the caller asked for), and
 `order.key` and `objective.rank_quantity` are written from the same
 [`ordered_by`]. See *`cascade` is the default since 2026-09-07*.
 
+### `--forced` — a population lifted to the top of the fine column, STAGED
+
+**`--forced PATH`, `solve.solve(forced=...)`, `solve.FORCED_LIFT = 1.0`, off
+unasked.** A manifest of candidate keys, one per line, that the pass lifts in the
+fine column **at load** — `solve.fine_column`, before `at_fine_bar`, before the
+neutral pre-selection walks its order, and before `cascade_order` lays its own
+stage over the top. It was landed to answer one question and is **not adopted**:
+adoption, if it happens, is a separate act against a stated bar.
+
+```
+# force one population and explain the same one, so the run says what became of each
+curate solve record --n 1000   --forced      scratch/<store>/keys.txt   --explain-keys scratch/<store>/keys.txt
+```
+
+**At load, and that is the whole mechanism.** Four readers take one column — the
+bar, the fold's walk order, the `--locations` cut and the cascade — so one lift
+reaches all four. A boost applied after the bar arrives at a row already dropped
+from the pool; a boost applied after the fold arrives at a row whose cluster is
+already somebody else's. `solve.FineColumn` is the pair that gets handed down, on
+`preselection_for`'s pattern: resolve once, hand it about, and a caller that
+resolved the order itself must hand the **same** column to `ranking_for` and to
+`solve` or the pass refuses.
+
+**Order-preserving and never flat**: `1.0 + p_fine`, so the forced set keeps its
+own order among itself. A flat constant would tie the forced rows, including
+inside a single colour cell where several of them compete — and that comparison is
+the reading a forced run exists to give. The bands stack the way the rest of this
+leg already stacks them, each a clean `1.0` wide: below-bar, then read, then
+forced, with a forced row reading `2 + p_fine` after the cascade adds its own.
+
+⚠ **The lifted value leaves the unit interval, deliberately.** Nothing in this tree
+asserts `p_fine ≤ 1`, and the alternative — a second column carrying a forced flag
+that each of the four readers learns to consult — is four places to get out of step
+for a value the existing arithmetic already handles. `config.forced` is the count
+on every record, `0` for every shipped pass, and the solve record's own `forced`
+block names the keys, so nobody has to infer a lift from a number over one.
+
+**It forces an OFFER and never a seat.** Every rule still applies at the seat: one
+per cluster, the twin test, the cell and family allowances, the mode ceilings and
+the spiral cap. A forced row refused by any of them is the reading; a forced row
+refused by anything *else* is a bug. **A forced key the head has no reading for is
+not lifted** and is counted `unread` — there is nothing to raise, and unknown never
+outranks measured is this leg's standing ruling.
+
 ### Which axes are held up by a rule, and which are emergent
 
 Read across those same four runs, and the reason to keep it: an axis a rule levels

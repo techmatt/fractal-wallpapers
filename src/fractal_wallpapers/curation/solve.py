@@ -689,7 +689,9 @@ def picture_of(candidate: Candidate) -> Path:
     return Path(rehome(candidate.picture))
 
 
-def strongest_clusters(candidates: list[Candidate], keep: int | None) -> tuple[list[str], dict]:
+def strongest_clusters(
+    candidates: list[Candidate], keep: int | None, fine: FineColumn | None = None
+) -> tuple[list[str], dict]:
     """`(the `keep` strongest clusters by their best candidate, the record)`. `None` keeps all.
 
     Hard optimization against a learned score selects that score's upper tail,
@@ -705,6 +707,10 @@ def strongest_clusters(candidates: list[Candidate], keep: int | None) -> tuple[l
     cluster sibling survives, which is exactly the discard `pool` removed, taken
     one stage later instead. Where no fold ran, [`Candidate.cluster`] is the row's
     own location and the two readings are the same reading.
+
+    `fine` is [`fine_column`]'s answer, so this cut sees a **forced** row at the
+    top of its cluster and the cluster at the top of the order — the same column
+    the fold and the seating read, which is the whole of that arrangement.
 
     ⚠ **Ordered on the same stacked key [`distinct.preselect`] picks its survivors
     on** — [`distinct.offered_at`], which is `p_fine` where the fine-tier head has
@@ -731,14 +737,14 @@ def strongest_clusters(candidates: list[Candidate], keep: int | None) -> tuple[l
             "clusters_offered": len(clusters),
             "clusters_reached": len(clusters),
         }
-    fine = distinct.fine_scores(None)
+    read = _column(fine, log=lambda *_a: None).read
     best: dict = {}
     for candidate in candidates:
         held = best.get(candidate.cluster)
-        if held is None or distinct.offered_at(candidate, fine) < distinct.offered_at(held, fine):
+        if held is None or distinct.offered_at(candidate, read) < distinct.offered_at(held, read):
             best[candidate.cluster] = candidate
-    order = sorted(best, key=lambda name: distinct.offered_at(best[name], fine))
-    on_fine = {name for name in order if str(best[name].key) in fine}
+    order = sorted(best, key=lambda name: distinct.offered_at(best[name], read))
+    on_fine = {name for name in order if str(best[name].key) in read}
     fell_back = len(order) - len(on_fine)
     reached = list(order) if int(keep) >= len(order) else list(order[: max(1, int(keep))])
     record = {
@@ -779,7 +785,127 @@ def within(candidates: list[Candidate], clusters) -> list[Candidate]:
     return [candidate for candidate in candidates if candidate.cluster in keep]
 
 
-def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[list[Candidate], dict]:
+#: How much a **forced** row's fine reading is lifted by. **1.0**, and the number
+#: is the whole of the design: `p_fine` is a probability on `0..1`, so adding one
+#: puts every forced row above every unforced one with no rescaling to get wrong
+#: and **without flattening the forced set** — a forced row keeps its own
+#: `p_fine` order against its fellows, which is exactly the comparison a forced
+#: pass exists to observe. A flat constant would make the tie-break inside one
+#: colour cell arbitrary, and several forced rows competing inside one cell is
+#: the case worth watching.
+#:
+#: It is [`cascade_order`]'s own `1 + p` and [`distinct.offered_at`]'s stacking,
+#: taken one storey higher: unforced-unread < unforced-read < forced, each band a
+#: clean 1.0 wide. A forced row therefore reads `1 + p_fine` in the column and
+#: `2 + p_fine` after the cascade lays its own stage over the top.
+FORCED_LIFT = 1.0
+
+
+@dataclass(frozen=True)
+class FineColumn:
+    """The fine-tier head's column as ONE pass reads it, plus what forcing did.
+
+    `read` is `{candidate key: p_fine(>=4)}` and `record` is the block the solve
+    carries. Handed about as a pair because three separate readers want the same
+    mapping — [`at_fine_bar`], [`cascade_order`] and [`distinct.preselect`] — and
+    a pass that resolved it three times could resolve it three *different* ways
+    the moment anything moves it. It is [`preselection_for`]'s arrangement
+    exactly: resolve once, hand the result down.
+    """
+
+    read: dict
+    record: dict
+    #: The keys the lift actually reached. A **name** and never a threshold on the
+    #: value: [`cascade_order`] has to know which rows are forced to lay its own
+    #: stage over them, and asking "is the reading over one" would be a second
+    #: definition of forced that a change to [`FORCED_LIFT`] could silently break.
+    forced: frozenset = frozenset()
+    #: Every key the caller NAMED, lifted or not. Apart from [`forced`] because
+    #: they answer two different questions: a caller checking that the column it
+    #: was handed is the column it asked for compares what it *asked*, and a key
+    #: the head has never read is not evidence of a mismatched column.
+    asked: frozenset = frozenset()
+
+
+def fine_column(forced=None, scores: dict | None = None, log=print) -> FineColumn:
+    """The fine column one pass reads, with every **forced** key lifted.
+
+    `forced` is a set of candidate keys the caller wants seated ahead of
+    everything else — [`FORCED_LIFT`] for what the lift is and why it is not
+    flat. `None` and the empty set are the same thing and are what ships: no key
+    is lifted and the column is the store's own, so a pass that names no forced
+    set is byte-for-byte the pass it was before this existed.
+
+    **The lift is applied here and nowhere else**, which is the point. Every
+    reader of `p_fine` in a solve — the bar, the pre-selection's walk order, the
+    cascade — takes this mapping, so a forced row is above the bar, is its
+    cluster's survivor and is at the top of the seating order by one edit rather
+    than three. A boost applied after the bar would arrive too late to matter and
+    a boost applied after the fold would arrive too late to win a cluster.
+
+    ⚠ **The lifted value leaves the unit interval, deliberately.** Nothing in this
+    project asserts `p_fine <= 1`, and the alternative — a second column carrying
+    a forced flag that each of the three readers learns to consult — is three
+    places to get out of step for a value the existing arithmetic already
+    handles. The record says how many keys were lifted and by how much, so no
+    reader of a forced record has to infer it from a number over one.
+
+    A forced key the head has **no reading for is not lifted** and is counted
+    `unread`. There is nothing to lift, and inventing one would be the one thing
+    [`cascade_order`] and [`distinct.offered_at`] both refuse to do: unknown never
+    outranks measured. Such a row stays exactly as unforced as it was, which
+    [`at_fine_bar`] then drops from the pool as it always has.
+    """
+    read = distinct.fine_scores(scores)
+    asked = sorted({str(key) for key in (forced or ())})
+    lifted = [key for key in asked if key in read]
+    # HANDED BACK UNCOPIED where nothing is forced, which is every shipped pass:
+    # a copy of a 42,300-row mapping per solve buys nothing, and a caller that
+    # handed in a mapping of its own gets the object it handed in.
+    out = read
+    if lifted:
+        out = dict(read)
+        for key in lifted:
+            out[key] = float(read[key]) + FORCED_LIFT
+    record = {
+        "of": "the fine-tier head's p_fine(>=4) as this pass read it. `keys` are the rows "
+        "--forced lifted by `lift` BEFORE the fine bar, the neutral pre-selection and the "
+        "cascade, so a forced row clears the bar, survives its cluster and sorts above "
+        "every unforced row. STAGED and off by default: a record carrying `asked: 0` "
+        "forced nothing and is the shipped pass",
+        "lift": FORCED_LIFT,
+        "lift_is": "added to p_fine, so the forced set keeps its OWN order among itself. "
+        "A flat constant would make the tie-break inside one colour cell arbitrary, which "
+        "is the comparison a forced pass exists to observe",
+        "asked": len(asked),
+        "lifted": len(lifted),
+        "unread": len(asked) - len(lifted),
+        "unread_are": "not lifted. The head has no reading to raise and unknown never "
+        "outranks measured, so the row is as unforced as it was and the fine bar drops it",
+        "scores_read": len(read),
+        "keys": lifted,
+    }
+    if asked:
+        log(
+            f"[forced] {len(lifted):,} of {len(asked):,} named key(s) lifted by "
+            f"{FORCED_LIFT:g} in the fine column; {len(asked) - len(lifted):,} have no "
+            f"reading and are left alone"
+        )
+    return FineColumn(read=out, record=record, forced=frozenset(lifted), asked=frozenset(asked))
+
+
+def _column(fine: FineColumn | None, log=print) -> FineColumn:
+    """One reader's fine column: the one it was handed, or an unforced one.
+
+    `None` resolves the store with nothing forced, which is what every caller
+    that predates [`fine_column`] means and what keeps their signatures working.
+    """
+    return fine_column(log=log) if fine is None else fine
+
+
+def at_fine_bar(
+    candidates: list[Candidate], bar: float, fine: FineColumn | None = None, log=print
+) -> tuple[list[Candidate], dict]:
     """`(candidates reading `p_fine(>=4) >= bar`, what that cost)`. Order preserved.
 
     `p_fine` is the **gallery-grade head's** own `P(>=4)`, off the pool scores
@@ -799,11 +925,17 @@ def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[lis
     refusal a mine could be aimed down, so the rows it drops leave the record
     rather than appearing in a refusal column — the returned reading is what says
     how many, and the leg's `fine_bar` block carries it.
+
+    `fine` is [`fine_column`]'s answer, so a **forced** row clears this bar by
+    construction — the lift is in the column before this reads it, which is the
+    only placement that matters: a boost applied afterwards would arrive at a row
+    already dropped from the pool.
     """
     from fractal_wallpapers.models import gallery_grade_train
 
-    fine = gallery_grade_train.read_pool_scores()
-    if not fine:
+    column = _column(fine, log=log)
+    read_at = column.read
+    if not read_at:
         raise SolveRefused(
             f"a fine-head bar of {float(bar):g} needs this pool read through the "
             f"gallery-grade head and {gallery_grade_train.pool_scores_path()} is not there. "
@@ -812,10 +944,10 @@ def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[lis
     kept: list[Candidate] = []
     unscored = 0
     for candidate in candidates:
-        read = fine.get(str(candidate.key))
+        read = read_at.get(str(candidate.key))
         if read is None:
             unscored += 1
-        elif float(read["p_ge4"]) >= float(bar):
+        elif float(read) >= float(bar):
             kept.append(candidate)
     reading = {
         "of": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool BEFORE "
@@ -831,7 +963,11 @@ def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[lis
         "unscored": unscored,
         "unscored_are": "excluded. The head has read exactly the clearing set, so an "
         "unread row is one the render judge's per-mode bar refuses anyway",
-        "scores_read": len(fine),
+        "scores_read": len(read_at),
+        "forced_over_the_bar": sum(1 for candidate in kept if str(candidate.key) in column.forced),
+        "forced_over_the_bar_is": "rows this bar admitted that were FORCED over it — their "
+        "column reading carries solve.FORCED_LIFT and is not a probability. Zero on every "
+        "pass that forced nothing, which is every shipped pass",
         "locations": len({candidate.location for candidate in kept}),
     }
     log(
@@ -842,7 +978,7 @@ def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[lis
     if not kept:
         raise SolveRefused(
             f"no candidate in the pool reads p_fine(>=4) >= {float(bar):g}, so there is no "
-            f"pool to solve over. {len(fine):,} row(s) carry a reading."
+            f"pool to solve over. {len(read_at):,} row(s) carry a reading."
         )
     return kept, reading
 
@@ -854,6 +990,7 @@ def preselection_for(
     cleared,
     radius: float | None = distinct.PRESELECT_RADIUS,
     fold: str = distinct.FOLD,
+    fine: FineColumn | None = None,
     log=print,
 ):
     """The neutral pre-selection over one clearing pool, for a caller solving it at
@@ -867,10 +1004,15 @@ def preselection_for(
     paying eighty seconds for one result.
 
     `None` for `radius` is "no pre-selection", and then there is nothing to share.
+
+    `fine` is [`fine_column`]'s answer, so a ladder that forces a set forces it in
+    the shared fold as well as in each rung's own seating.
     """
     if radius is None:
         return None
-    return distinct.preselect(cleared, radius=float(radius), fold=fold, log=log)
+    return distinct.preselect(
+        cleared, radius=float(radius), fine=_column(fine, log=log).read, fold=fold, log=log
+    )
 
 
 def _shared_preselection(preselected: tuple, cleared: list, radius: float | None) -> tuple:
@@ -914,7 +1056,9 @@ def rule_for(targets: dict | None = None) -> ceiling.Rule:
     return ceiling.Rule(targets=dict(targets or {}))
 
 
-def ranking_for(candidates, key: str = DEFAULT_KEY, log=print) -> tuple[dict | None, dict | None]:
+def ranking_for(
+    candidates, key: str = DEFAULT_KEY, fine: FineColumn | None = None, log=print
+) -> tuple[dict | None, dict | None]:
     """`(the order this leg walks, what the key could read)` for one pool.
 
     `(None, None)` on [`JUDGE_KEY`], where the order is the candidate's own
@@ -937,10 +1081,12 @@ def ranking_for(candidates, key: str = DEFAULT_KEY, log=print) -> tuple[dict | N
     order, record = rank_key.order_for(candidates, log=log)
     if named == RANK_KEY:
         return order, record
-    return cascade_order(candidates, order, record, log=log)
+    return cascade_order(candidates, order, record, fine=fine, log=log)
 
 
-def cascade_order(candidates, order: dict, record: dict, log=print) -> tuple[dict, dict]:
+def cascade_order(
+    candidates, order: dict, record: dict, fine: FineColumn | None = None, log=print
+) -> tuple[dict, dict]:
     """[`RANK_KEY`]'s order with the fine-tier head laid over it above [`Q4_BAR`].
 
     The below-bar half is handed back **untouched** — same value, same order, same
@@ -960,35 +1106,56 @@ def cascade_order(candidates, order: dict, record: dict, log=print) -> tuple[dic
     is counted. That is the conservative direction: it falls behind every row the
     head could read rather than jumping ahead of them, and a pool this head has
     not been run over therefore degrades to [`RANK_KEY`] rather than to noise.
+
+    A **forced** row is lifted whatever [`Q4_BAR`] says about it — [`fine_column`]
+    put the lift in the column and this is where it has to survive. On a real
+    store the clause cannot fire, `score_pool` reading only the above-bar rows, so
+    a forced row has a reading exactly when it is above the bar; it is written
+    anyway because "forced" must not mean "forced unless".
     """
     from fractal_wallpapers.models import gallery_grade_train
 
-    fine = gallery_grade_train.read_pool_scores()
-    if not fine:
+    column = _column(fine, log=log)
+    read_at = column.read
+    if not read_at:
         raise SolveRefused(
             f"the {CASCADE_KEY!r} order needs this pool read through the fine-tier head and "
             f"{gallery_grade_train.pool_scores_path()} is not there. Run "
             f"`fractal-wallpapers gallery-grade score-pool` first, or seat on {RANK_KEY!r}."
         )
     out = dict(order)
-    counted = {"above_bar": 0, "lifted": 0, "above_bar_unread": 0, "below_bar": 0}
+    counted = {"above_bar": 0, "lifted": 0, "above_bar_unread": 0, "below_bar": 0, "forced": 0}
     for candidate in candidates:
-        if not candidate.above_bar:
+        if str(candidate.key) in column.forced:
+            counted["forced"] += 1
+        elif not candidate.above_bar:
             counted["below_bar"] += 1
             continue
-        counted["above_bar"] += 1
-        read = fine.get(str(candidate.key))
+        else:
+            counted["above_bar"] += 1
+        read = read_at.get(str(candidate.key))
         if read is None:
             counted["above_bar_unread"] += 1
             continue
         # A probability, so already on 0..1: adding one puts the two stages a
-        # clean 1.0 apart with no rescaling to get wrong.
-        out[candidate.key] = 1.0 + float(read["p_ge4"])
+        # clean 1.0 apart with no rescaling to get wrong. A forced reading is
+        # that same probability plus FORCED_LIFT, so the third band lands a clean
+        # 1.0 above the second and keeps its own internal order.
+        out[candidate.key] = 1.0 + float(read)
         counted["lifted"] += 1
+    # `above_bar + forced` and not `above_bar` alone: a forced row is counted on
+    # its own line, so the denominator of "took the fine order" has to hold both
+    # or the fraction reads over one.
+    offered = counted["above_bar"] + counted["forced"]
     log(
-        f"[cascade] {counted['lifted']:,} of {counted['above_bar']:,} above-bar rows take the "
-        f"fine head's order; {counted['above_bar_unread']:,} above the bar have no reading and "
-        f"keep the rank key's; {counted['below_bar']:,} below the bar are untouched"
+        f"[cascade] {counted['lifted']:,} of {offered:,} row(s) take the fine head's order; "
+        f"{counted['above_bar_unread']:,} above the bar have no reading and keep the rank "
+        f"key's; {counted['below_bar']:,} below the bar are untouched"
+        + (
+            f"; {counted['forced']:,} of the {offered:,} are FORCED and sort above all of them"
+            if counted["forced"]
+            else ""
+        )
     )
     return out, {
         **record,
@@ -1004,6 +1171,8 @@ def cascade_order(candidates, order: dict, record: dict, log=print) -> tuple[dic
             "second_stage": (
                 "models/gallery_grade — fitted on verdicts about rows already past the gate"
             ),
+            "forced_are": "lifted whatever the bar says, their reading already carrying "
+            "solve.FORCED_LIFT. Zero on every shipped pass",
             **counted,
         },
     }
@@ -1865,6 +2034,8 @@ def solve(
     floor: int | dict | None = None,
     locations: int | None = None,
     fine_bar: float | None = DEFAULT_FINE_BAR,
+    fine: FineColumn | None = None,
+    forced=None,
     radius: float | None = distinct.PRESELECT_RADIUS,
     diversity: bool = True,
     group_cap: str = DEFAULT_GROUP_CAP,
@@ -1915,6 +2086,18 @@ def solve(
     record whether or not one was applied, so a record is never silent about it:
     `config.fine_bar` is `None` for a pass that ran unbarred, which is what every
     record before `20260908T144844Z` is and what they do not say.
+
+    `forced` is a set of candidate keys lifted to the top of the fine column
+    **before** the bar and the fold — [`fine_column`] and [`FORCED_LIFT`]. It is
+    STAGED and off by default: `None` is the shipped pass and nothing about it
+    changes. A forced row clears `fine_bar` by construction, is its cluster's
+    survivor, and is offered ahead of every unforced row while keeping its own
+    `p_fine` order against its fellows. **It forces an offer and never a seat**:
+    every rule still applies at the seat, so a forced row can still be refused by
+    the one-seat-per-cluster rule, the twin test, an allowance, a mode ceiling or
+    the spiral cap. `fine` is [`fine_column`]'s answer already resolved, for the
+    caller that had to resolve the order itself — [`preselection_for`]'s
+    arrangement, and the two must name the same forced set or this raises.
 
     `preselected` is [`preselection_for`]'s result, for a **ladder** solving one
     pool at several `n`: the pre-selection does not read `n`, so every rung
@@ -1999,10 +2182,22 @@ def solve(
         "of": "no fine-head bar was applied: this pass solved over the whole pool",
         "bar": None,
     }
+    # ONE read of the fine column for the whole pass. The bar, the fold's walk
+    # order, the --locations cut and the cascade are four readers of one quantity,
+    # and a pass that resolved it four times could resolve it four different ways
+    # the moment a caller forces anything.
+    if fine is None:
+        fine = fine_column(forced, log=log)
+    elif forced is not None and frozenset(str(named) for named in forced) != fine.asked:
+        raise SolveRefused(
+            f"the fine column handed in forced {len(fine.forced)} key(s) and this pass "
+            f"asked for {len(set(forced))}. Resolve one column and hand it to both "
+            "`ranking_for` and `solve`, or hand neither and let this pass resolve it."
+        )
     if fine_bar is not None:
-        candidates, narrowed = at_fine_bar(candidates, float(fine_bar), log=log)
+        candidates, narrowed = at_fine_bar(candidates, float(fine_bar), fine=fine, log=log)
     if order is None and str(key) != JUDGE_KEY:
-        order, coverage = ranking_for(candidates, key, log=log)
+        order, coverage = ranking_for(candidates, key, fine=fine, log=log)
 
     #: `{key: the rule that refused it, the last time it was offered}`.
     refused: dict = {}
@@ -2051,7 +2246,7 @@ def solve(
     else:
         if preselected is None:
             kept, preselection = distinct.preselect(
-                cleared, radius=float(radius), fold=fold, log=log
+                cleared, radius=float(radius), fine=fine.read, fold=fold, log=log
             )
         else:
             kept, preselection = _shared_preselection(preselected, cleared, radius)
@@ -2074,7 +2269,7 @@ def solve(
     # also takes the per-mode bars off the truncated tail and onto the whole
     # clearing pool, which is the pool [`headroom.bars`]' fallback rule was
     # written to read.
-    reachable, truncation = strongest_clusters(kept, locations)
+    reachable, truncation = strongest_clusters(kept, locations, fine=fine)
     if locations is not None:
         kept = within(kept, reachable)
         log(
@@ -2284,6 +2479,7 @@ def solve(
             augment_seconds,
             fine_bar,
             None if radius is None else fold,
+            len(fine.forced),
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -2319,6 +2515,11 @@ def solve(
         # counts are here, exactly as the spiral cap's value is on `config` and
         # its funnel is in the `spiral` block.
         "fine_bar": narrowed,
+        # Beside `fine_bar` because they are two readings of one column: the bar
+        # is what it cost and this is what was moved before it was applied. A
+        # record that forced nothing carries `asked: 0`, which is every shipped
+        # pass and is the answer a reader needs rather than a missing field.
+        "forced": fine.record,
         "theme": None
         if theme is None
         else {
@@ -2481,6 +2682,7 @@ def _config(
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
     fine_bar: float | None = DEFAULT_FINE_BAR,
     fold: str | None = None,
+    forced: int = 0,
 ) -> dict:
     return {
         "n": n,
@@ -2504,6 +2706,20 @@ def _config(
         # that made them. A missing field would put a reader back on the date.
         "fine_bar": None if fine_bar is None else float(fine_bar),
         "fine_bar_default": DEFAULT_FINE_BAR,
+        # On `config` for the fine bar's own reason: this block is what
+        # `tentative.manifest` carries WHOLE into a tracked manifest, and whether
+        # a gallery was handed a set of rows to seat ahead of the pool is not
+        # something a reader should have to find in an untracked solve record.
+        # `0` is every shipped pass. The keys themselves are in the `forced`
+        # block on the solve record, which is not tracked.
+        "forced": int(forced),
+        "forced_default": 0,
+        "forced_is": "how many rows --forced lifted to the top of the fine column BEFORE "
+        "the bar, the neutral pre-selection and the cascade — solve.FORCED_LIFT, an "
+        "order-preserving `1 + p_fine` so the forced set keeps its own order. STAGED and "
+        "off by default: `0` is a pass that forced nothing, and a record that does not "
+        "name the field at all was taken before 2026-09-09. It forces an OFFER and never "
+        "a seat: every rule still applies",
         "fine_bar_is": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool "
         "BEFORE anything else runs — the per-mode bars, the neutral pre-selection and the "
         "view are all taken over what it leaves. `null` is NO bar and is the default; the "
@@ -3592,7 +3808,10 @@ __all__ = [
     "Gallery",
     "Objective",
     "SolveRefused",
+    "FORCED_LIFT",
+    "FineColumn",
     "at_fine_bar",
+    "fine_column",
     "attribution",
     "autolevel_rate",
     "contact_sheet",
