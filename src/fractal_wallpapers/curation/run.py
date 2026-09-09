@@ -750,17 +750,23 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
         # survive a failure and read as this attempt's work.
         picture.unlink(missing_ok=True)
         tasks.append(
-            release.Task(
+            release.task_for(
                 id=identifier,
-                row={
-                    "family": row["family"],
-                    "viewport": row["viewport"],
-                    "maxiter": by_key[row["key"]].get("maxiter"),
-                },
-                colormap=row["colormap"],
+                row=row,
                 mode=row["mode"],
-                mode_params=dict(row.get("mode_params") or {}),
-                output=str(picture),
+                colormap=row["colormap"],
+                mode_params=row.get("mode_params"),
+                # A run's own candidates come off [`colorize.Colorizer.attempt`],
+                # which stamps `curve` with [`colorize.CURVE`] and records `mirror`
+                # rather than a palette block — so the curve is read and the
+                # palette is `None`, which is the same plain recipe the render path
+                # derives from the map's cyclicity. Named rather than omitted: the
+                # four builders that omitted these released the plain picture under
+                # an authored row's name, and a run whose rows grow the member
+                # should not have to remember this call site.
+                curve=row.get("curve"),
+                palette=row.get("palette"),
+                output=picture,
                 geometry={**geometry, "maxiter": int(by_key[row["key"]]["maxiter"])},
                 # The candidate's own decision, inherited rather than retaken at
                 # full resolution. It is in hand — this run made the candidate an

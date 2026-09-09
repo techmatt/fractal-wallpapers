@@ -85,6 +85,168 @@ def missing_pictures(rows=None) -> list[dict]:
     return [row for row in stored if str(row["key"]) not in present and row.get("picture")]
 
 
+def bare_varied(out=None, log=print) -> dict:
+    """Every row whose stored picture is the **bare** mode under a varied key.
+
+    The population of the repair `mine.make`'s dropped `mode_params` left behind:
+    a row carrying settings whose file was drawn without them, so the picture is
+    not the recipe's, the key names one picture and the disk holds another, and
+    every score on the row is a reading of the wrong file. There is no way to see
+    it by looking — the bare picture is a perfectly good picture of something
+    else — which is why this is derived from the row rather than detected.
+
+    **Which maker drew it is read off the picture's path**, because after six days
+    of a maker dropping a keyword that is the only durable place the fact lives.
+    `hunt` and `label_migration` have always passed the settings, so a picture
+    under either is what its key says; everything else with a non-empty
+    `mode_params` went through `mine.make` or has not been checked, and is in.
+    That is the safe direction and it is [`curation.label_fate.drawn_bare`]'s
+    rule, reached rather than restated — the claim about which makers were
+    settings-aware is one somebody measured and it has one home.
+
+    **Streams the store.** The pool is hundreds of megabytes and this wants a
+    key and two members off each row, so it never holds one: writing a manifest
+    of ten thousand keys must not be a pool-holding process.
+    """
+    from fractal_wallpapers.curation import label_fate
+
+    aware = set(label_fate.SETTINGS_AWARE_SUBTREES)
+    out = re_render_dir() / "bare_varied.jsonl" if out is None else Path(out)
+    by_leg: dict = {}
+    varied = 0
+    named: list = []
+    for row in store.stream():
+        settings = (row.get("recipe") or {}).get("mode_params") or {}
+        if not settings:
+            continue
+        varied += 1
+        leg = label_fate.leg_of(row.get("picture"))
+        if leg.split("/")[0] in aware:
+            continue
+        by_leg[leg] = by_leg.get(leg, 0) + 1
+        named.append({"schema": SCHEMA, "key": str(row["key"]), "leg": leg})
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8", newline="\n") as handle:
+        for held in named:
+            handle.write(json.dumps(held, ensure_ascii=False) + "\n")
+    log(f"[bare-varied] {len(named):,} of {varied:,} varied row(s) — {tracked_name(out)}")
+    return {
+        "schema": SCHEMA,
+        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "varied_rows": varied,
+        "drawn_bare": len(named),
+        "settings_aware": sorted(aware),
+        "by_leg": dict(sorted(by_leg.items(), key=lambda item: -item[1])),
+        "manifest": tracked_name(out),
+    }
+
+
+def recolour(keys, limit: int | None = None, log=print) -> dict:
+    """Re-read the **colour block** of the named rows off their pictures now on disk.
+
+    The third companion of [`re_render`]'s `keys` and [`rescore`]'s, and it exists
+    because a corrected picture invalidates more than its score. A ledger row
+    carries a colour census — the swatch shares and cells [`rows.colour_block`]
+    reduces — read off the picture when the row was made. `re_render` writes no
+    row, deliberately, so after a repair that census is a reading of the file that
+    *used* to be there.
+
+    **It was found by a guard rather than reasoned about**, which is the honest
+    account: `test_the_stored_colour_block_is_what_the_picture_still_reads_as`
+    samples eighty rows and decodes them, and two of the eighty disagreed after the
+    10,664-row repair — both rows the repair had touched. That test has been in the
+    suite since 2026-08-27 and this is the first leg to move enough pictures to
+    trip it.
+
+    **Three readings come off a picture and this re-reads all of them**: the colour
+    census on the row, the flatness column in its sidecar, and the pixel-cloud
+    signature in its own. Only the first was found by a guard; the other two were
+    measured after it — 10,664 stale flatness rows and 949 stale signatures — and
+    they are here because they fail the same way for the same reason. `flatness`
+    feeds [`curation.rank_key`], so a stale column is a seating sorted on the wrong
+    picture.
+
+    Nothing else about the row moves: same key, same recipe, same picture path.
+    The upsert is by key, so a re-run over unchanged pictures writes the same bytes
+    and reports `changed: 0`.
+    """
+    from fractal_wallpapers.curation import durability
+    from fractal_wallpapers.palettes import dominance
+
+    started = time.time()
+    named = {str(key) for key in keys}
+    wanted = [row for row in store.stream() if str(row["key"]) in named]
+    absent = named - {str(row["key"]) for row in wanted}
+    if limit is not None:
+        wanted = wanted[: max(0, int(limit))]
+    log(f"[recolour] {len(wanted):,} of {len(named):,} named row(s) are in the store")
+    tiers = Tiers.current()
+    fresh, changed, no_picture = [], 0, 0
+    for at, row in enumerate(wanted, start=1):
+        named_at = row.get("picture")
+        picture = None if not named_at else rehome(str(named_at), tiers)
+        if picture is None or not picture.is_file():
+            no_picture += 1
+            continue
+        block = rows_module.colour_block(dominance.of_picture(picture))
+        if block != row.get("colour"):
+            changed += 1
+            fresh.append({**row, "colour": block})
+        if at % 2000 == 0:
+            log(f"[recolour] {at:,} of {len(wanted):,} read in {(time.time() - started) / 60:.1f}m")
+    path, total, new = store.write(fresh) if fresh else (store.rows_path(), 0, 0)
+    saved = durability.save(store.durable_rows(), log=log) if fresh else None
+    record = {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "named": len(named),
+        "in_the_store": len(wanted),
+        "not_in_the_store": len(absent),
+        "no_picture_on_disk": no_picture,
+        "read": len(wanted) - no_picture,
+        "changed": changed,
+        "unchanged": len(wanted) - no_picture - changed,
+        "unchanged_is": "the picture reads as the census already on the row, which a repair "
+        "that moved no pixels for this recipe is: the settings make no difference to it",
+        "ledger_rows": total,
+        "ledger_new": new,
+        "wall_seconds": round(time.time() - started, 1),
+        "saved": saved,
+        "rows_path": tracked_name(path),
+    }
+    log(f"[recolour] {changed:,} row(s) re-read in {record['wall_seconds'] / 60:.1f} min")
+
+    # **The other two readings off the same pictures.** Both sidecars are
+    # incremental on the KEY, and a re-render keeps the key and the path — so both
+    # would go on serving a reading of the file that used to be there. `flatness`
+    # feeds `curation.rank_key`, which is what a seating sorts on; `signatures`
+    # feeds the diversity rule. Told which keys are stale, each re-reads exactly
+    # those instead of the whole store.
+    from fractal_wallpapers.curation import flatness, signatures
+
+    touched = {str(row["key"]) for row in wanted}
+    record["flatness"] = flatness.sweep(flatness.of_rows(wanted), stale=touched, log=log)
+    swept = [row for row in wanted if row.get("picture")]
+    record["signatures"] = signatures.sweep(
+        _named_pictures(swept), stale=touched & set(signatures.by_recipe()), log=log
+    )
+    return record
+
+
+class _NamedPicture:
+    """A `(key, picture)` pair in the shape both sidecar sweeps read."""
+
+    __slots__ = ("key", "picture")
+
+    def __init__(self, key: str, picture: str) -> None:
+        self.key, self.picture = key, picture
+
+
+def _named_pictures(rows) -> list:
+    """Ledger rows as the sweeps' candidate shape. Order preserved."""
+    return [_NamedPicture(str(row["key"]), str(row["picture"])) for row in rows]
+
+
 #: One worker process's copy of the cyclic-colormap set, built on first use.
 #: A module global because that is what a spawned worker keeps between tasks.
 _CYCLIC: set | None = None
@@ -121,7 +283,6 @@ def render_pair(payload: dict) -> dict:
     an unvaried row keeps its dump and a varied one never wanted one.
     """
     from fractal_wallpapers.curation import colorize, recipes
-    from fractal_wallpapers.labeling import finished
 
     # Read once per WORKER and not once per pair. A pool task is one (location,
     # mode) and there are thirty-two thousand of them; the cyclic set is a read
@@ -142,8 +303,13 @@ def render_pair(payload: dict) -> dict:
             "maxiter": int(stored["maxiter"]),
         }
         colormap = str(stored["colormap"])
-        plain = finished.recipe(mirror=colormap not in cyclic)
-        if str(stored.get("curve")) != colorize.CURVE or (stored.get("palette") or {}) != plain:
+        # [`colorize.is_candidate_path`] and not the test spelled again: three
+        # places need to know whether a stored recipe is one the candidate path
+        # could have made, and each had worked it out for itself. `mode_params` is
+        # part of that rule and is NOT a reason to refuse here — a non-empty one
+        # already takes the render path, so it is served correctly; the curve and
+        # the palette are what the field cache cannot carry.
+        if not colorize.is_candidate_path({**stored, "mode_params": {}}, cyclic):
             out["failed"] += 1
             out["why"].append(
                 f"{job['key']}: its recipe names a curve or palette the candidate path does "

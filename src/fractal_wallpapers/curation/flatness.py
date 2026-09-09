@@ -301,19 +301,30 @@ def missing(candidates, held=None) -> list:
     return out
 
 
-def sweep(candidates, workers: int = WORKERS, recompute: bool = False, log=print) -> dict:
+def sweep(
+    candidates, workers: int = WORKERS, recompute: bool = False, stale=None, log=print
+) -> dict:
     """Read every candidate the sidecar does not hold, and upsert what it finds.
 
     Incremental by construction: a store already swept costs one read of the
     sidecar and no decodes at all. `recompute` re-reads everything, which is what
     a moved constant would need — and a moved constant is a different [`COLUMN`],
     so it would land beside this one rather than over it.
+
+    `stale` names keys to treat as absent, which is the **picture** moving rather
+    than the constant. This sidecar's incremental rule is *key present, reading
+    kept*, and a re-render writes the same path — so a repaired picture keeps a
+    reading of the file that used to be there, and this column feeds
+    [`curation.rank_key`], which is what a seating sorts on. `recompute` would
+    answer it by re-reading the whole store to fix ten thousand rows.
     """
     import time
     from concurrent.futures import ProcessPoolExecutor
 
     started = time.time()
     held = {} if recompute else by_recipe()
+    if stale:
+        held = {key: value for key, value in held.items() if key not in set(stale)}
     wanted = missing(candidates, held=held)
     already = sum(1 for candidate in candidates if str(candidate.key) in held)
     nameless = len(candidates) - already - len(wanted)

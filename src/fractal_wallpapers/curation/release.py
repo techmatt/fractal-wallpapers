@@ -206,9 +206,16 @@ class Task:
     2026-09-04, so every release render of a varied seat was the **bare** mode
     under the varied seat's name — twelve of the thousand in
     `20260904T233233Z`, and the failure is silent because the bare picture is a
-    perfectly good picture of something else. Defaulted rather than required, so
-    a caller with nothing to say still builds a task; every builder in the tree
-    reads it off the recipe now.
+    perfectly good picture of something else.
+
+    **Build one through [`task_for`] and never here.** The defaults below are what
+    a `dataclass` needs to have any at all, and every one of them is a member that
+    decides pixels — so a caller naming the constructor directly can drop a member
+    and get a task that renders a different picture under its row's name. That is
+    not a hypothetical: four of the five builders in this tree had done exactly
+    that with `curve` and `palette` on 2026-09-08. `task_for` requires each of
+    them by keyword, so forgetting one is a `TypeError` rather than a wrong
+    picture.
     """
 
     id: str
@@ -238,6 +245,64 @@ class Task:
     #: recipes came out of the two label corpora.
     curve: str | None = None
     palette: dict | None = None
+
+
+def task_for(
+    *,
+    id: str,
+    row: dict,
+    mode: str,
+    colormap: str,
+    mode_params,
+    curve,
+    palette,
+    autolevel,
+    output,
+    geometry: dict,
+    timeout: float | None = None,
+) -> Task:
+    """The one place a [`Task`] is built. **Every picture member is required.**
+
+    Five legs in this project turn a stored row into a release render — a pass's
+    seats ([`curation.solve`]), a run's own ([`curation.run`]), a vote sheet's
+    ([`curation.votes`]), a replay check's ([`curation.checks`]) and a fate page's
+    ([`curation.label_fate`]) — and until 2026-09-08 each of them spelled the task
+    out inline. Four had drifted: they passed `mode_params` and dropped `curve`
+    and `palette`, which are [`curation.recipes.KEYED`] members too, so an
+    authored-palette row released as the *plain* picture under its own name.
+
+    The fix is not five more arguments at five call sites. It is that there is one
+    site, and that the members deciding the pixels have **no defaults here**:
+    `mode_params`, `curve`, `palette` and `autolevel` must each be named, and a
+    caller with nothing to say says `None` or `{}` deliberately. A member added to
+    `KEYED` is added here once and every leg fails loudly until it says what it
+    passes — which is the opposite of what a defaulted keyword does, and the whole
+    of why this class of bug was found four times.
+
+    `timeout` keeps its default because it decides no pixels: it is how long the
+    row is allowed to take, not what it is a picture of.
+
+    The row's own `maxiter` is taken from `geometry`, because every builder here
+    set the two from one source and a task whose spec and geometry disagreed about
+    the iteration cap would be a third way to draw the wrong picture.
+    """
+    return Task(
+        id=str(id),
+        row={
+            "family": row["family"],
+            "viewport": row["viewport"],
+            "maxiter": int(geometry["maxiter"]),
+        },
+        colormap=str(colormap),
+        mode=str(mode),
+        mode_params=dict(mode_params or {}),
+        curve=curve,
+        palette=palette,
+        autolevel=autolevel,
+        output=str(output),
+        geometry=dict(geometry),
+        timeout=timeout,
+    )
 
 
 @dataclass(frozen=True)
@@ -674,5 +739,6 @@ __all__ = [
     "render_task",
     "resumable",
     "run_pass",
+    "task_for",
     "timing_path",
 ]

@@ -77,6 +77,21 @@ PROFILE_NAME = "profile.jsonl"
 PICTURES = hunt.PICTURES
 FIELDS = hunt.FIELDS
 
+#: The record that answers *which picture was this, and what curve was it levelled
+#: through*. [`curation.depth`]'s and [`curation.remode`]'s spelling exactly, and
+#: read back by [`curation.stamps`] out of all three.
+#:
+#: **This file did not exist until 2026-09-08, and its absence had a cost.**
+#: [`make`] returns the whole autolevel stamp; the leg counted `autolevel_acted`
+#: off it and dropped the rest, so a mine-sourced candidate that acted was
+#: `acted_unrecoverable` **the day it was made** — not a backlog of old rows but
+#: the shape of the leg. The reduced stamp on the ledger row carries the operator,
+#: the switch and the band and *not* the curve the operator derived, and
+#: [`coloring.autolevel.stops_from_stamp`] needs that curve: re-measuring a
+#: release render derives a different black point, which is the whole thing
+#: decide-once levelling exists to stop.
+SEQUENCE_NAME = "sequence.jsonl"
+
 #: Where a candidate is PRIMED. Read at read time off the sidecar and stored
 #: nowhere, so a judge retrain moves the boundary with no migration.
 PRIMED_BAR = 0.90
@@ -149,6 +164,11 @@ def scores_path(name: str) -> Path:
 def profile_path(name: str) -> Path:
     """One row a candidate: the stopwatch, and what the candidate was."""
     return mine_dir(name) / PROFILE_NAME
+
+
+def sequence_path(name: str) -> Path:
+    """One row a candidate, carrying the **whole** autolevel stamp. See [`SEQUENCE_NAME`]."""
+    return mine_dir(name) / SEQUENCE_NAME
 
 
 def record_path(name: str) -> Path:
@@ -607,9 +627,12 @@ def make(
 
     A docstring saying *nothing else altered* is what kept it invisible, so the
     guard is not an assertion about this call site:
-    `tests/test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe`
-    renders one unit both ways and compares the **bytes**, which catches whichever
-    maker forgets next.
+    `tests/test_renderer_agreement.py` renders one recipe through **every** renderer
+    in the tree and compares the **bytes**, which catches whichever one forgets next.
+    It began over three of them, in this module's own test file, and had to be
+    widened the same week — four more renderers were found dropping `curve` and
+    `palette`, so it now sweeps the tree for `colorize.render` call sites and
+    requires each to be registered or declared exempt.
 
     **The colour read does not reuse the judge's decode, and should not.** It
     looks like a double decode of one JPEG and is not one. The judge reads the
@@ -869,6 +892,7 @@ def run(
     rows_file.parent.mkdir(parents=True, exist_ok=True)
     scores_file = scores_path(name)
     profile_file = profile_path(name)
+    sequence_file = sequence_path(name)
     artifact = hunt._artifact()
     known = set(world["known"])
     made: list = []
@@ -950,6 +974,12 @@ def run(
             "location": unit.location,
             "partition": unit.partition,
             "mode": unit.mode,
+            # The settings this candidate was drawn under, `{}` for the bare mode.
+            # [`curation.depth`]'s row carries it for the reason stated there: a leg
+            # run at `(mode, settings)` whose readout keyed on the bare mode reported
+            # five recipes as one. A mine's own arms draw no settings today, and a
+            # row that says so is worth more than a row that is silent.
+            "mode_params": dict(getattr(unit, "mode_params", None) or {}),
             "mode_kind": _kind_of(unit.mode),
             "texture_flat": result["texture_flat"],
             "colormap": unit.colormap,
@@ -965,6 +995,15 @@ def run(
         }
         made.append(row)
         hunt._append(profile_file, {"schema": SCHEMA, **row})
+        # On the **sequence** row and not on `row`: `made` is held whole for the
+        # length of the leg and feeds `arm_readout`, `compare` and `extrapolate`,
+        # none of which reads a stamp, so a kilobyte a candidate there would be
+        # tens of megabytes of readouts carrying a curve nothing in them wants.
+        # [`curation.depth`] writes the same file the same way for the same reason.
+        hunt._append(
+            sequence_file,
+            {"schema": SCHEMA, "at": at, **row, "autolevel": result["autolevel"]},
+        )
         clock.add(
             stages,
             {
@@ -1033,6 +1072,7 @@ def run(
         "rows_path": tracked_name(rows_file),
         "scores_path": tracked_name(scores_file),
         "profile_path": tracked_name(profile_file),
+        "sequence_path": tracked_name(sequence_file),
     }
     path = record_path(name)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1809,6 +1849,7 @@ __all__ = [
     "SCHEMA",
     "SCORES_NAME",
     "SEATING_BAR",
+    "SEQUENCE_NAME",
     "SHARES",
     "SHEET_ROWS",
     "UNIT",
@@ -1843,6 +1884,7 @@ __all__ = [
     "rows_path",
     "run",
     "scores_path",
+    "sequence_path",
     "taken_maps",
     "weave",
 ]

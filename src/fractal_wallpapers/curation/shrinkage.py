@@ -185,45 +185,67 @@ def sample(sequence: list, per_arm: int = PER_ARM, seed: int = 0, checkpoints=CH
 # The second reading.
 # --------------------------------------------------------------------------- #
 def _render_one(payload: tuple) -> dict:
-    """One candidate re-rendered at label geometry through its own recipe.
+    """One candidate re-rendered at label geometry through its own **whole** recipe.
 
     A module-level function taking a tuple because it is what a process pool can
     carry: the workers hold no judge and no model, only the engine, and the
     scoring happens once in the parent over everything they made.
-    """
-    row, ledger_row, directory, resolution, supersample = payload
-    from fractal_wallpapers.curation import colorize
 
-    recipe = ledger_row.get("recipe") or {}
-    place = ledger_row.get("location") or {}
-    here = {
-        "family": recipe.get("family") or place.get("family"),
-        "viewport": recipe.get("viewport") or place.get("viewport"),
-        "maxiter": int(recipe.get("maxiter") or place.get("maxiter") or 0),
-    }
-    geometry = {
-        "resolution": list(resolution),
-        "supersample": int(supersample),
-        "maxiter": int(here["maxiter"]),
-    }
+    **The recipe is handed over member by member and the levelling is inherited.**
+    Both halves of that were wrong until 2026-09-08. `mode_params`, `curve` and
+    `palette` are [`recipes.KEYED`] members, so dropping them re-read a *different
+    picture* under the row's key and called the difference a geometry effect —
+    which is the whole quantity this module measures. And `level=` was set off
+    whether the row's stamp was non-null, so the operator re-measured its base at
+    **label** geometry rather than replaying the curve decided at candidate
+    geometry: pre-`87ad3eb` behaviour, and it puts a second uncontrolled
+    difference into the same comparison. `borrowed` is packaged in the parent
+    ([`reread`]) for [`release.Task`]'s reason — a worker has no store open.
+    """
+    row, ledger_row, directory, resolution, supersample, borrowed = payload
+    from fractal_wallpapers.curation import colorize, recipes
+
     output = Path(directory) / f"{row['key']}.jpg"
+    # **Inside the `try`, and that is not tidiness.** `recipes.of_record` REFUSES a
+    # row missing a member rather than defaulting one, which is right — a recipe
+    # with a guessed `curve` names a different picture — but this runs under
+    # `pool.map`, where a raise crosses the pool boundary and takes the whole leg
+    # down. The rule here is the one it always was: a re-render that cannot be made
+    # is a recorded row, and the sample carries on without it.
     try:
+        recipe = recipes.of_record(ledger_row["recipe"])
         picture, stamp = colorize.render(
-            here,
-            str(row["mode"]),
-            str(row["colormap"]),
+            {
+                "family": recipe.family,
+                "viewport": recipe.viewport,
+                "maxiter": int(recipe.maxiter),
+            },
+            recipe.mode,
+            recipe.colormap,
             colorize.cyclic(),
             output,
-            render_geometry=geometry,
-            level=recipe.get("autolevel") is not None,
+            render_geometry={
+                "resolution": list(resolution),
+                "supersample": int(supersample),
+                "maxiter": int(recipe.maxiter),
+            },
+            level=recipe.autolevel is not None,
             band=colorize.band(),
+            mode_params=recipe.mode_params,
+            curve=recipe.curve,
+            palette=recipe.palette,
+            borrowed=borrowed,
         )
     except Exception as failure:  # noqa: BLE001 — a refused re-render is a recorded fact
         return {**row, "picture": None, "why": repr(failure)[:200]}
     return {
         **row,
         "picture": str(picture),
+        # What the operator did at THIS geometry. With a curve inherited it is the
+        # candidate's own decision replayed, so this says the replay acted rather
+        # than that label geometry measured itself into acting.
         "acted_at_label_geometry": bool((stamp or {}).get("acted")),
+        "levelling_inherited": borrowed is not None,
     }
 
 
@@ -240,13 +262,29 @@ def reread(
     The judge is loaded once in this process and run over the finished pictures,
     so the second reading differs from the first in the geometry and in nothing
     else — same artifact, same transform, same cutpoints.
+
+    **"In nothing else" is what the levelling lookup below buys.** The curves are
+    read here, once, grouped by leg, and handed down on each payload; a worker
+    that decided for itself would be measuring its own tone at the larger size,
+    and the difference between that and the candidate's curve would arrive in this
+    module's answer wearing the label *geometry effect*. A key with no curve on any
+    record inherits `None` and decides for itself, which is what it did before —
+    and which is what [`curation.backfill`] exists to shrink.
     """
     from concurrent.futures import ProcessPoolExecutor
 
-    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import backfill, colorize, recipes
+    from fractal_wallpapers.curation import stamps as stamps_module
 
     directory = pictures_dir(name)
     directory.mkdir(parents=True, exist_ok=True)
+    wanted = {
+        str(row["key"]): ledger[str(row["key"])] for row in picked if str(row["key"]) in ledger
+    }
+    borrowed = stamps_module.for_release(
+        wanted, backfill.read(), regime=recipes.CANDIDATE_REGIME.spelled, store="sequence"
+    )
+    log(f"[shrinkage] {len(borrowed)}/{len(wanted)} candidate(s) inherit a levelling curve")
     payloads = []
     for row in picked:
         stored = ledger.get(str(row["key"]))
@@ -254,7 +292,14 @@ def reread(
             log(f"[shrinkage] {row['key']} is not in the ledger and cannot be re-rendered")
             continue
         payloads.append(
-            (row, stored, str(directory), list(LABEL_RESOLUTION), int(LABEL_SUPERSAMPLE))
+            (
+                row,
+                stored,
+                str(directory),
+                list(LABEL_RESOLUTION),
+                int(LABEL_SUPERSAMPLE),
+                borrowed.get(str(row["key"])),
+            )
         )
     started = time.perf_counter()
     log(f"[shrinkage] {len(payloads)} candidate(s) at label geometry over {workers} worker(s)")

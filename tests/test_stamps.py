@@ -39,9 +39,9 @@ def ledger_row(run: str = "armA1_0906", band: str = BAND) -> dict:
     }
 
 
-def write_sequence(tmp_path, run: str, rows: list[dict]):
+def write_sequence(tmp_path, run: str, rows: list[dict], store: str = "depth"):
     """One leg's sequence file, in the store layout `sequence_paths` looks in."""
-    where = tmp_path / "curation" / "depth" / run
+    where = tmp_path / "curation" / store / run
     where.mkdir(parents=True, exist_ok=True)
     path = where / "sequence.jsonl"
     with path.open("w", encoding="utf-8", newline="\n") as handle:
@@ -64,10 +64,42 @@ def test_a_run_that_wrote_its_curve_down_lends_it(store):
 
 
 def test_a_leg_that_wrote_no_sequence_lends_nothing(store):
-    """A mine leg is this. `mine.make` returns the whole stamp, the leg counts
-    `autolevel_acted` off it and drops it, so a mine-sourced candidate that acted
-    is `acted_unrecoverable` the day it is made — not a backlog of old rows."""
+    """Every mine leg run before 2026-09-08 is this, and most of the pool came out
+    of one: `mine.make` returned the whole stamp, the leg counted `autolevel_acted`
+    off it and dropped the rest, so a mine-sourced candidate that acted was
+    `acted_unrecoverable` the day it was made. `curation.backfill` is the answer for
+    those rows; writing the file is the answer for the next ones."""
     assert stamps.for_rows({"abc123": ledger_row(run="mine1")}) == {}
+
+
+@pytest.mark.parametrize("leg", stamps.SEQUENCE_STORES)
+def test_every_declared_store_is_looked_in_and_lends_what_it_wrote(store, leg):
+    """`mine` joined `depth` and `remode` on 2026-09-08.
+
+    Parametrized on the declaration rather than on three names written again: a
+    store added to `SEQUENCE_STORES` whose file nothing looked for would be a leg
+    recording a curve nothing could inherit, which is the failure this whole
+    module is the fix for.
+    """
+    write_sequence(store, "leg_0908", [{"key": "abc123", "autolevel": stamp()}], store=leg)
+    found = stamps.for_rows({"abc123": ledger_row(run="leg_0908")})
+    assert found["abc123"]["curve"] == {"applies": True, "identity": False}
+
+
+def test_a_mine_leg_writes_the_row_the_reader_looks_for() -> None:
+    """The two halves of part 2 named in one place: the writer and the reader.
+
+    `curation.mine` names the file and the members, `curation.stamps` reads them,
+    and the three stores spell the same thing — so this pins the agreement rather
+    than trusting that two modules chose the same strings.
+    """
+    from fractal_wallpapers.curation import depth, mine, remode
+
+    assert mine.SEQUENCE_NAME == depth.SEQUENCE_NAME == remode.SEQUENCE_NAME
+    assert mine.sequence_path("x").name == mine.SEQUENCE_NAME
+    assert mine.sequence_path("x").parent == mine.mine_dir("x")
+    assert mine.UNIT in stamps.SEQUENCE_STORES
+    assert mine.sequence_path("x") in stamps.sequence_paths("x")
 
 
 def test_only_the_wanted_keys_come_back_however_long_the_sequence_is(store):

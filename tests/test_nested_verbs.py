@@ -526,6 +526,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
     },
     "candidate-ledger": {
         "backfill": ("--recolour",),
+        "bare-varied": ("--out",),
         "census": ("--n", "--out"),
         "check": (),
         "free-slots": ("--keep", "--mode", "--min-slots", "--out"),
@@ -535,6 +536,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "ratchet": ("--census",),
         "re-render": ("--workers", "--limit", "--keys"),
         "save": (),
+        "recolour": ("--keys", "--limit"),
         "score": ("--limit", "--keys"),
         "restore": ("--force",),
     },
@@ -818,7 +820,7 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 86
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 88
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

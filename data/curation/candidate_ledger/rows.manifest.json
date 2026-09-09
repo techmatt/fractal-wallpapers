@@ -3,8 +3,8 @@
   "path": "artifacts/curation/candidate_ledger/rows.jsonl",
   "copy": "artifacts/curation_backup/candidate_ledger/rows.jsonl",
   "rows": 340972,
-  "bytes": 462709540,
-  "sha256": "c64186fdf5bd1f9175ced7e35dece439330b91b16099008f66f044aa0be1630d",
+  "bytes": 462639976,
+  "sha256": "55be92974e8a1ee6d3729f0d010870de9481a9ec2815ca478db4cba53042b96c",
   "runs": {
     "armA1_0906": 6001,
     "armA1_0908": 3696,

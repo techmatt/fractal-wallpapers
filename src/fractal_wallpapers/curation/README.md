@@ -108,7 +108,11 @@ fractal-wallpapers curate score --ledger <l> --key-file scratch/unreached_keys.j
 fractal-wallpapers curate candidate-ledger backfill    # the cache, from what exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger save        # both files, made durable
+fractal-wallpapers curate candidate-ledger bare-varied # the rows whose picture is the bare mode
+                       # under a varied key: a key manifest for `re-render --keys`, streamed
 fractal-wallpapers curate headroom                     # the census: what is short, and what one more costs
+fractal-wallpapers curate headroom --bars              # the per-mode bar table alone; no census, no solver
+                       # what a before-and-after of a re-score is read off
 fractal-wallpapers curate headroom --n 20 --n 150      # only these rungs of the ladder
 fractal-wallpapers curate headroom --flat-floor        # bound the FLAT mode floor, for a baseline
 fractal-wallpapers curate distinct                     # the neutral pre-selection read, and the radius sheet
@@ -1059,12 +1063,16 @@ and it would have gone on refusing them after the pictures were correct. Both fi
 with the keyword, and the guard now rebuilds with the row's own settings — the row is
 the only place a leg's chosen settings exist.
 
-**The guard is one test over all three renderers.**
-`tests/test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe` renders
-one recipe through `hunt.Maker.make`, `mine.make` and `render_pair` and compares the
-**bytes**, then draws the bare mode and requires it to differ — so a guard on settings
-that move no pixels cannot pass. An assertion that each site passes `mode_params`
-would have caught this one argument and nothing else.
+**The guard is one test over every renderer, and it had to be widened once already.**
+It began as `tests/test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe`
+over three renderers. The tree has **eight**, four more were found dropping `curve` and
+`palette` the same week, and a registry somebody has to remember to add to is a registry
+that goes stale — so it is now `tests/test_renderer_agreement.py`, which renders one
+recipe through every renderer, compares the **bytes**, requires the bare arm to differ so
+a guard on settings that move no pixels cannot pass, and **sweeps the tree for
+`colorize.render` call sites** so a renderer added later is either covered or declared
+exempt with its reason. An assertion that each site passes `mode_params` would have
+caught this one argument and nothing else — and it did exactly that.
 
 **What it cost, measured on the seats.** Twelve of the 1,000 seats of
 `20260908T201911Z` carry a non-empty `mode_params`; seven of their stored pictures
@@ -1075,9 +1083,13 @@ deliberately **not** re-solved: thousands of varied rows in the pool are still b
 under their own keys, so a fresh solve would be differently wrong rather than more
 right.
 
-**The rest of the pool is deliberately out of scope.** Putting it right is a
-re-render of 10,664 rows plus a re-score, because every standing reading on them is
-about another picture.
+**The rest of the pool was repaired on 2026-09-08 in
+`PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908`.** All 10,664 were re-rendered
+through the fixed path and re-scored, because every standing reading on them was about
+another picture. `curate candidate-ledger bare-varied` is what names them: a row carrying
+settings whose picture's path is under neither `hunt` nor `label_migration` went through
+`mine.make` and was drawn bare, which is `label_fate.drawn_bare`'s rule reached rather
+than restated. What that repair did **not** do is re-solve — see the next section.
 
 ### `release.Task` had the same hole twice more, and `curve`/`palette` was the second
 
@@ -1091,12 +1103,31 @@ rows derived from the two label corpora into the pool, a third of which carry kn
 the candidate path never spends. Both are on the task since `curate label-fate`,
 default `None`, so every candidate leg renders exactly as it did.
 
-⚠ **`solve.render_seats` does not yet pass them, and neither does
-`curation.shrinkage`.** A release render of an authored-palette seat is still the
-plain picture, and `shrinkage._render_one` drops `mode_params` *and* re-measures its
-levelling at label geometry rather than inheriting it — which is the pre-`87ad3eb`
-behaviour. Neither was in the scope that found them. `curation.manufacture`'s render
-arm drops `mode_params` too.
+### The fix was one builder, not four more keywords
+
+**Closed 2026-09-08, and the closure is structural.** Five legs turn a stored row into
+a release render — `solve.render_seats`, `checks.tasks_of`, `run`'s release leg,
+`votes.render_fulls` and `label_fate.render` — and every one of them spelled the task
+out inline. Four passed `mode_params` and dropped `curve` and `palette`. Two guards in
+`tests/test_curation_release.py` counted `mode_params=` and `autolevel=` per builder and
+were **green through all four**, which is the argument against fixing this by adding
+keywords: the next member is the one nobody counted.
+
+So there is now **one** builder, `release.task_for`, whose picture-deciding parameters
+have no defaults. Forgetting one is a `TypeError`; a member added to `recipes.KEYED` is
+added to one signature and every leg fails until it says what it passes. The guard is
+correspondingly structural — `release.Task(` is constructed in exactly one place in the
+tree, and the five legs are named as still going through it so a leg that quietly
+stopped releasing is not read as compliance.
+
+Two more renderers were fixed with them. `shrinkage._render_one` dropped all three
+members **and** re-measured its levelling at label geometry rather than inheriting the
+candidate's decision — pre-`87ad3eb` behaviour, and a second uncontrolled difference
+inside the one quantity that module exists to measure, since a shrinkage read is defined
+as *the geometry and nothing else moves*. It now reads the recipe through
+`recipes.of_record` and takes its borrowed curve from `stamps.for_release`, batched in
+the parent. `manufacture`'s render arm passes the row's settings; its recolour arm needs
+none, settings being legal only on a direct trap, which has no field to dump.
 
 ## `curate label-fate` — what became of every wallpaper somebody graded 4
 
@@ -2243,12 +2274,19 @@ words the website's `builder/picks.py` owns did not move.
 ### `curate autolevel` — which seats can replay, and a curve for the ones that cannot
 
 `curation.stamps` is the join: a recipe key to the whole stamp the leg that made
-it wrote down, read in one pass grouped by leg. Two stores lend a curve —
-`depth/<run>/sequence.jsonl` and `remode/<run>/sequence.jsonl`, one row per
-candidate carrying `key` and `autolevel` — and a **mine leg lends nothing**:
-`mine.make` returns the whole stamp, the leg counts `autolevel_acted` off it and
-drops it. So a mine-sourced candidate that acted is `acted_unrecoverable` *the day
-it is made*, which is not a backlog and is not closed by anything here.
+it wrote down, read in one pass grouped by leg. **Three** stores lend a curve now
+— `depth/<run>/sequence.jsonl`, `mine/<run>/sequence.jsonl` and
+`remode/<run>/sequence.jsonl`, one row per candidate carrying `key` and
+`autolevel`, declared in `stamps.SEQUENCE_STORES`.
+
+`mine` joined on 2026-09-08 and until it did, **a mine leg lent nothing**:
+`mine.make` returned the whole stamp, the leg counted `autolevel_acted` off it and
+dropped the rest, so a mine-sourced candidate that acted was
+`acted_unrecoverable` *the day it was made* — not a backlog but the shape of the
+leg, and most of the pool, `curation.depth` rendering through `mine.make` too.
+The leg writes the file now. **That closure does not reach backwards**: every mine
+row already in the store still has no curve anywhere, which is what makes the
+backfill below a sweep rather than a one-off.
 
 `curate autolevel survey` reads that, renders nothing, and prices the rest.
 Over `20260908T144844Z` on 2026-09-08:
@@ -2279,9 +2317,17 @@ The sidecar is **not a Durable-class store**, on the three-way rule: it is hot,
 it is regenerable at 1.17 s a seat by the command that made it, and the thing it
 amends is untouched. It is also in the ignored tree, so a clone does not have it
 and the website still ships the stored picture for a seat it cannot replay.
-A store-wide sweep is priced and not run: **6,673 protected keys**, an upper bound
-of 6,673 renders and about **2h10m** at the measured rate, and most of those
-already carry a curve.
+
+#### The store-wide sweep: `--record all`
+
+`--record all` sweeps every seat of every recorded gallery instead of one
+record's — `tentative.protected_keys`, which is what retention must keep and
+therefore exactly what has to stay replayable. **Published or not**, because an
+older record's IDs are the ones a clone resolves; and de-duplicated for free,
+because a key seated in nine galleries is one picture and one render. `curate
+autolevel survey --record all` prices it without rendering anything, and it is
+the thing to run first: the answer is hours, and the seats that need a curve are
+a fraction of the protected set rather than all of it.
 
 ## A standing score is a reading of a picture, and the picture can stop existing
 

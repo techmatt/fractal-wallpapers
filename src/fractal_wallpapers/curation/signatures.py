@@ -410,18 +410,27 @@ def missing(candidates, held=None) -> list:
 # --------------------------------------------------------------------------- #
 # The sweep.
 # --------------------------------------------------------------------------- #
-def sweep(candidates, workers: int = WORKERS, recompute: bool = False, log=print) -> dict:
+def sweep(
+    candidates, workers: int = WORKERS, recompute: bool = False, stale=None, log=print
+) -> dict:
     """Read every candidate the sidecar cannot answer for, and write the rows.
 
     Incremental by construction: a store already swept costs one read and no
     decodes. `recompute` re-reads every candidate instead, which is what to run
     after changing anything about the reduction itself.
+
+    `stale` names keys to treat as absent. [`missing`] already re-reads a candidate
+    whose row was taken from a **different picture**, and that rule is by picture
+    *path* — so it catches a re-framed row and does **not** catch a re-rendered one,
+    which keeps its name. That is the case this is for.
     """
     import concurrent.futures
     import time
 
     started = time.monotonic()
     held = {} if recompute else by_recipe()
+    if stale:
+        held = {key: value for key, value in held.items() if key not in set(stale)}
     outstanding = missing(candidates, held=held)
     log(f"[signatures] {len(outstanding):,} of {len(candidates):,} candidate(s) to read")
     made: list = []

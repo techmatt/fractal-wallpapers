@@ -81,27 +81,34 @@ def tasks_of(run: str, rows: list[dict], directory: Path) -> list[release.Task]:
     the picture on disk was made through. Re-deriving here would make the parity
     check compare two renders that had each measured themselves at release
     geometry — a fair comparison of the wrong picture, and it would pass.
+
+    **A decision record's `recipe` block is not a stored recipe and the two must
+    not be merged.** It carries `mode`, `curve`, `colormap` and `mirror`, it has
+    no `mode_params` — [`recipes.of_decision`] says why, and states the same
+    `{}` — and the `palette` beside it in the record is the palette *choice*
+    (anchor, candidates, scores), not the knobs a render is spent under. So the
+    palette is `None` here, which is the plain recipe the render path derives
+    from the map's own cyclicity and is what these rows shipped through; the
+    curve is read off the row, because a recolour path states it.
     """
     out = []
     for row in rows:
         location, recipe = row["location"], row["recipe"]
         out.append(
-            release.Task(
+            release.task_for(
                 id=row["candidate"],
-                row={
-                    "family": location["family"],
-                    "viewport": location["viewport"],
-                    "maxiter": location["maxiter"],
-                },
-                colormap=recipe["colormap"],
+                row=location,
                 mode=recipe["mode"],
-                mode_params=dict(recipe.get("mode_params") or {}),
-                output=str(Path(directory) / f"{row['candidate']}.png"),
+                colormap=recipe["colormap"],
+                mode_params=recipe.get("mode_params"),
+                curve=recipe.get("curve"),
+                palette=None,
+                autolevel=inherited(row),
+                output=Path(directory) / f"{row['candidate']}.png",
                 geometry={
                     **regime_of_row(row).geometry(),
                     "maxiter": int(location["maxiter"]),
                 },
-                autolevel=inherited(row),
             )
         )
     return out

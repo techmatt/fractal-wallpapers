@@ -3129,20 +3129,22 @@ def render_seats(
             reused.append(seat["key"])
             continue
         tasks.append(
-            release.Task(
+            release.task_for(
                 id=seat["key"],
-                row={
-                    "family": recipe["family"],
-                    "viewport": recipe["viewport"],
-                    "maxiter": recipe["maxiter"],
-                },
-                colormap=recipe["colormap"],
+                row=recipe,
                 mode=recipe["mode"],
-                mode_params=dict(recipe.get("mode_params") or {}),
-                output=str(picture),
+                colormap=recipe["colormap"],
+                mode_params=recipe.get("mode_params"),
+                # Both off the row and neither dropped. A seat whose recipe names
+                # a `log` field or an authored palette — `label_migration merge`
+                # put 3,015 such rows into the pool on 2026-09-08 — released as
+                # the *plain* picture under its own name until this was passed.
+                curve=recipe.get("curve"),
+                palette=recipe.get("palette"),
+                autolevel=borrowed.get(seat["key"]),
+                output=picture,
                 geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
                 timeout=None if timeout is None else float(timeout),
-                autolevel=borrowed.get(seat["key"]),
             )
         )
     log(f"[solve] {len(tasks)} seat(s) to render at {regime.spelled}, {len(reused)} already there")

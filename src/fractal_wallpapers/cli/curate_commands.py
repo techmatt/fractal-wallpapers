@@ -497,6 +497,9 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         return _free_slots(args)
     doing = {
         "backfill": lambda: candidate_ledger.backfill(recolour=args.recolour),
+        "bare-varied": lambda: candidate_ledger.bare_varied(
+            out=resolve_output(args.out) if args.out else None
+        ),
         "census": lambda: candidate_ledger.census(n=args.n),
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
@@ -510,6 +513,10 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
             limit=args.limit,
             workers=args.workers,
             keys=candidate_ledger.read_keys(resolve_output(args.keys)) if args.keys else None,
+        ),
+        "recolour": lambda: candidate_ledger.recolour(
+            limit=args.limit,
+            keys=candidate_ledger.read_keys(resolve_output(args.keys)),
         ),
         "score": lambda: candidate_ledger.rescore(
             limit=args.limit,
@@ -1107,6 +1114,13 @@ def curate_headroom(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import headroom
 
     candidates, costs, refused = headroom.population()
+    if args.bars:
+        # Before the ladder and before the pre-selection, because neither reads the
+        # bars and both cost minutes. The pool `headroom.population` hands back is
+        # already the population `solve` starts from, so this is the clearing set
+        # exactly as a seating would see it.
+        print(json.dumps({**headroom.bars(candidates), "pool": {"refused": refused}}, indent=2))
+        return 0
     ladder = tuple(args.n) if args.n else headroom.LADDER
     radius = None if args.no_preselection else args.neutral_radius
     swept = None
@@ -3510,6 +3524,28 @@ def add_commands(subcommands) -> None:
         "record. About twenty milliseconds a picture",
     )
 
+    bare_varied = ledger_verbs.add_parser(
+        "bare-varied",
+        help="the rows whose stored picture is the bare mode under a varied key",
+        description=(
+            "Writes a key manifest of every row carrying a non-empty `mode_params` whose "
+            "picture was drawn WITHOUT them — the population `mine.make`'s dropped keyword "
+            "left in the pool. Their files are not their recipes' pictures and every score "
+            "on them is a reading of the wrong file, and nothing looks broken, which is "
+            "worse than a missing picture. Which maker drew a row is read off its picture's "
+            "path, the only durable place that fact lives: a picture under `hunt` or "
+            "`label_migration` is what its key says and is left out. Feed the manifest to "
+            "`re-render --keys` and then `score --keys`. Read-only and STREAMS the store, "
+            "so it is not a pool-holding process."
+        ),
+    )
+    bare_varied.add_argument(
+        "--out",
+        metavar="PATH",
+        default=None,
+        help="write the manifest there (default `bare_varied.jsonl` in the re-render store)",
+    )
+
     censusing = ledger_verbs.add_parser("census", help="take the coverage census")
     censusing.add_argument(
         "--n",
@@ -3652,6 +3688,33 @@ def add_commands(subcommands) -> None:
     )
 
     ledger_verbs.add_parser("save", help="save a fresh copy and manifests")
+
+    recolouring = ledger_verbs.add_parser(
+        "recolour",
+        help="re-read every reading taken off the named pictures: colour, flatness, signature",
+        description=(
+            "The third companion of `re-render --keys` and `score --keys`, and it exists "
+            "because a corrected picture invalidates more than its score. THREE readings "
+            "come off a picture and all three are re-read here: the colour census on the "
+            "ledger row, the flatness column its sidecar holds, and the pixel-cloud "
+            "signature. Each is incremental on the recipe key and a re-render keeps both "
+            "the key and the path, so each would otherwise go on serving a reading of the "
+            "file that used to be there — and flatness feeds `curation.rank_key`, which is "
+            "what a seating sorts on. `--keys` is REQUIRED: this is a repair over a named "
+            "population and never a sweep. A re-run over unchanged pictures reports "
+            "`changed: 0`."
+        ),
+    )
+    recolouring.add_argument(
+        "--keys",
+        metavar="PATH",
+        required=True,
+        help="a key manifest naming the rows whose pictures moved. `candidate-ledger "
+        "bare-varied` writes one",
+    )
+    recolouring.add_argument(
+        "--limit", type=int, help="stop after this many rows. What a pilot prices the leg off"
+    )
 
     rejudging = ledger_verbs.add_parser(
         "score", help="read every picture through the judge shipped now"
@@ -4176,6 +4239,16 @@ def add_commands(subcommands) -> None:
             "seating will see, neutral pre-selection included. One block is not arithmetic "
             "and is opt-in: `--twin`."
         ),
+    )
+    headroom_step.add_argument(
+        "--bars",
+        action="store_true",
+        help="print the per-mode bar table and stop. Which column each accepted mode's "
+        "rows clear on, and how many rows and distinct places clear it — `headroom.bars`, "
+        "which the census reads anyway and which nothing else could print. No census, no "
+        "solver, no neutral pre-selection. What a before-and-after of a re-score is read "
+        "off: the clearing set is the population every seating starts from, so a leg that "
+        "moved thousands of scores moved this table and the size of the move is the answer",
     )
     headroom_step.add_argument(
         "--n",
@@ -5344,11 +5417,12 @@ def add_commands(subcommands) -> None:
         metavar="STAMP",
         default=None,
         help="a recorded gallery whose VARIED seats a repair leg re-rendered through the "
-        "fixed path, so they are not flagged. `mine.make` dropped `mode_params` until "
-        "2026-09-08 and the pool still holds thousands of rows drawn bare under a varied "
-        "key; a picture under `hunt` or `label_migration` was never one of them, and "
-        "everything else with settings is marked unless this names it. Named as a stamp "
-        "because that is how the repair was scoped — every varied seat of one record",
+        "fixed path, so they are not flagged. SUPERSEDED and kept: `mine.make` dropped "
+        "`mode_params` until 2026-09-08, and the repair that followed was store-wide — all "
+        "10,664 rows the pool held, so `label_fate.REPAIRED_STORE_WIDE` turns the flag off "
+        "for everything and this narrows nothing. It is still here because the flag has a "
+        "switch: a leg found regressing turns it back on, and then scoping a repair to one "
+        "record is again a thing somebody does",
     )
     for verb in (
         fate_keys,
@@ -5413,6 +5487,10 @@ def add_commands(subcommands) -> None:
             metavar="STAMP",
             default=backfill_module.DEFAULT_RECORD,
             help=f"the recorded gallery whose seats to sweep "
-            f"(default {backfill_module.DEFAULT_RECORD})",
+            f"(default {backfill_module.DEFAULT_RECORD}). "
+            f"`{backfill_module.EVERY_PROTECTED}` sweeps every seat of every recorded "
+            f"gallery instead — `tentative.protected_keys`, which is what retention must "
+            f"keep and therefore what has to stay replayable, de-duplicated across records "
+            f"and published or not. Hours, so survey it first",
         )
         verb.add_argument("--out", metavar="PATH", help="write the record there")
