@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy
 import pytest
+from tests.test_headroom import candidate
 
 from fractal_wallpapers.curation import ceiling, distinct
 
@@ -119,6 +120,143 @@ def test_a_place_with_no_descriptor_is_kept_and_never_enters_the_block():
     answer = distinct.suppress(order, radius=0.02, rows=rows)
     assert answer["unembedded"] == ["no_descriptor"]
     assert "no_descriptor" in answer["kept"]
+
+
+# --------------------------------------------------------------------------- #
+# Which place a fold keeps.
+#
+# The walk order IS the rule about which place represents a near-cluster, and the
+# fold is a deletion: the absorbed place and every row it carries leave the pass.
+# Nothing here pinned that order until 2026-09-09, which is why moving the key
+# from raw `P(>=4)` to the fine head's `p_fine` ran green over every guard in this
+# file and in `test_solve.py`. These are the guards that pin it.
+# --------------------------------------------------------------------------- #
+def store_of(angles: dict) -> list:
+    """A neutral store placing each named location on the unit circle, so a pair's
+    distance is `1 - cos(a - b)` and a test can state it in one number."""
+    import math
+
+    from fractal_wallpapers.curation import embeddings
+
+    return [
+        {"key": key, "vector": embeddings.pack([math.cos(angle), math.sin(angle)])}
+        for key, angle in angles.items()
+    ]
+
+
+def quiet(*_args, **_rest) -> None:
+    """A `log` that says nothing."""
+
+
+# cos(0.1) is 0.995, so a pair an angle of 0.1 apart sits at 0.005 — inside the
+# 0.02 radius, and one of the two has to go.
+A_NEAR_PAIR = {"a": 0.0, "b": 0.1}
+
+
+def test_the_fold_keeps_the_place_the_fine_head_reads_higher():
+    """The key change itself. `a` is the stronger row on the judge's raw column and
+    `b` on the head the seating actually orders by, and `b` is the one a seating
+    would have reached for — so `b` is the one the fold keeps."""
+    kept, record = distinct.preselect(
+        [candidate("a", score=0.99), candidate("b", score=0.90)],
+        rows=store_of(A_NEAR_PAIR),
+        fine={"a": 0.10, "b": 0.80},
+        log=quiet,
+    )
+    assert {held.key for held in kept} == {"b"}
+    assert record["refusals"][0]["location"] == "a"
+    assert record["refusals"][0]["lost_to"] == "b"
+    assert record["key"] == distinct.FINE_KEY
+
+
+def test_the_same_pool_on_the_coarse_key_keeps_the_other_place_and_names_it():
+    """The other half of the same claim: this is a real disagreement and not a
+    tie broken differently. A record that folded on the old key says so."""
+    kept, record = distinct.preselect(
+        [candidate("a", score=0.99), candidate("b", score=0.90)],
+        rows=store_of(A_NEAR_PAIR),
+        fine={},
+        log=quiet,
+    )
+    assert {held.key for held in kept} == {"a"}
+    assert record["key"] == distinct.COARSE_KEY
+    assert record["ordered_on"] == {distinct.FINE_KEY: 0, distinct.COARSE_KEY: 2}
+
+
+def test_a_place_the_head_has_read_is_offered_ahead_of_one_it_has_not():
+    """The two scales are stacked and never mixed. `b` reads 0.05 on the fine head
+    and 0.10 on the judge, `a` reads 0.99 on the judge and nothing on the head —
+    and `b` still takes the cluster, because unknown never outranks measured."""
+    kept, record = distinct.preselect(
+        [candidate("a", score=0.99), candidate("b", score=0.10)],
+        rows=store_of(A_NEAR_PAIR),
+        fine={"b": 0.05},
+        log=quiet,
+    )
+    assert {held.key for held in kept} == {"b"}
+    assert record["ordered_on"] == {distinct.FINE_KEY: 1, distinct.COARSE_KEY: 1}
+    assert record["places_on_the_fallback"] == 1
+    assert record["key"] == "both"
+    lost = record["refusals"][0]
+    assert lost["location"] == "a"
+    assert lost["ordered_on"] == distinct.COARSE_KEY
+    assert lost["p_fine"] is None, "a place the head never read carries no substituted value"
+    assert lost["lost_to_p_fine"] == 0.05
+
+
+def test_a_place_is_represented_by_its_strongest_row_on_the_fine_key():
+    """Which row stands for a place moves with the key as well as which place
+    stands for a cluster. `a1` is the place's best on the judge's column and `a2`
+    on the head's, and it is `a2`'s reading the fold is decided on."""
+    pool = [
+        candidate("a1", location="a", score=0.99),
+        candidate("a2", location="a", score=0.50),
+        candidate("b1", location="b", score=0.10),
+    ]
+    _kept, record = distinct.preselect(
+        pool,
+        rows=store_of(A_NEAR_PAIR),
+        fine={"a1": 0.10, "a2": 0.80, "b1": 0.95},
+        log=quiet,
+    )
+    lost = record["refusals"][0]
+    assert lost["location"] == "a"
+    assert (lost["p_fine"], lost["p_ge4"]) == (0.8, 0.5)
+    assert lost["ordered_on"] == distinct.FINE_KEY
+    assert lost["lost_to_p_fine"] == 0.95
+
+
+def test_the_walk_reads_the_heads_pool_scores_when_nobody_hands_it_a_column(monkeypatch):
+    """It runs on passes where `solve.at_fine_bar` never did — an unbarred solve, a
+    themed pass on the relaxed crossing — so it resolves the column itself rather
+    than degrading to the coarse key in silence."""
+    from fractal_wallpapers.models import gallery_grade_train
+
+    monkeypatch.setattr(
+        gallery_grade_train,
+        "read_pool_scores",
+        lambda *_args, **_rest: {"a": {"p_ge4": 0.10}, "b": {"p_ge4": 0.80}},
+    )
+    kept, record = distinct.preselect(
+        [candidate("a", score=0.99), candidate("b", score=0.90)],
+        rows=store_of(A_NEAR_PAIR),
+        log=quiet,
+    )
+    assert {held.key for held in kept} == {"b"}
+    assert record["fine_readings_held"] == 2
+
+
+def test_a_walk_where_every_place_fell_back_says_so_in_a_line():
+    """A pass with no fine reading anywhere must not read as a pass that used the
+    new key, so the fallback is a line of its own and not an absent one."""
+    said: list = []
+    distinct.preselect(
+        [candidate("a", score=0.99), candidate("b", score=0.90)],
+        rows=store_of(A_NEAR_PAIR),
+        fine={},
+        log=said.append,
+    )
+    assert any(f"NO place carries a {distinct.FINE_KEY}" in line for line in said)
 
 
 # --------------------------------------------------------------------------- #
@@ -303,10 +441,8 @@ def tracked_places(tracked_ledger):
     if not embeddings.store_path().is_file():
         pytest.skip("the neutral embedding store is not on this machine")
     best: dict = {}
-    for candidate in sorted(
-        headroom.clearing(tracked_ledger.pool), key=lambda c: (-c.score, c.key)
-    ):
-        best.setdefault(candidate.location, candidate)
+    for held in sorted(headroom.clearing(tracked_ledger.pool), key=lambda c: (-c.score, c.key)):
+        best.setdefault(held.location, held)
     keys, matrix = distinct.matrix_for(sorted(best)[:40])
     if len(keys) < 8:
         pytest.skip("too few embedded places in the pool to test the sweep on")

@@ -594,6 +594,46 @@ def distillation_rows():
 
 
 @pytest.fixture(scope="session")
+def _pool_scores_once() -> dict:
+    """The fine-tier head's read of the seating pool, read **once** for the session.
+
+    9.2 MiB and 42,300 rows on this machine, 0.21 s to parse. That was paid once a
+    pass and nobody noticed until `distinct.preselect` started resolving the column
+    itself on 2026-09-09 — the fold picks its survivor on `p_fine` now, and it runs
+    on passes where nothing upstream has read it, so it has to. Every synthetic
+    `headroom.census` and `solve.solve` in this suite then paid the read again, and
+    the fast lane went 124.06 s to 129.13 s over six added guards.
+    """
+    from fractal_wallpapers.models import gallery_grade_train
+
+    return gallery_grade_train.read_pool_scores()
+
+
+@pytest.fixture(autouse=True)
+def the_pool_scores_are_read_once(monkeypatch, _pool_scores_once):
+    """`read_pool_scores()` hands back that one reading rather than re-parsing it.
+
+    **The real store's contents and not a stub**, so a guard sees what the machine
+    holds exactly as it did before — this is the `tracked_ledger` arrangement at a
+    smaller scale, and for the same reason. A call that names a `path` is left
+    alone and reads that file, because a test writing its own column is asking
+    about that file and not about this machine's.
+
+    A module or a test that patches the same name later wins, which is what
+    `test_solve.py`'s own column and `test_distinct.py`'s fine-key guards rely on:
+    an autouse fixture in `conftest` is built before either.
+    """
+    from fractal_wallpapers.models import gallery_grade_train
+
+    real = gallery_grade_train.read_pool_scores
+
+    def read(path=None):
+        return _pool_scores_once if path is None else real(path)
+
+    monkeypatch.setattr(gallery_grade_train, "read_pool_scores", read)
+
+
+@pytest.fixture(scope="session")
 def tracked_ledger():
     """The candidate ledger and its score sidecar, read **once** for the session.
 
