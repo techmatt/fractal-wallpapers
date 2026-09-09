@@ -1337,10 +1337,12 @@ the mode roster never meets a `P(>=4)` bar. `curation.depth.mode_bars` and
 
 Everywhere else the column is an **ordering** and never a gate: `solve.pool`
 (presence only — a row with no `p_ge4` is refused `no_score`),
-`solve.strongest_locations`, `distinct.preselect` (which place represents a
-near-cluster, and the walk order), `curation.mine`'s `best_by_location`,
+`solve.strongest_locations`, `curation.mine`'s `best_by_location`,
 `curation.framing`'s reframe choice. Since 2026-08-28 the leg's own order and its
-objective are the **fitted** key rather than this column.
+objective are the **fitted** key rather than this column, and since 2026-09-09
+`distinct.preselect` — which place represents a near-cluster, and the walk order
+— takes the fitted key too where the head has read the row; it is the one site on
+this list that reads `p_ge4` only as a **fallback**.
 
 **Every acting bar in the release path is on `P(>=3)`, not `P(>=4)`.**
 `selection.entries` builds its rank key from `p_ge3`; `floors.release_bar` and
@@ -1357,19 +1359,21 @@ ordering the pool is built by; nothing at release reads it.*
 **"Decides the order for nobody" was the sentence here until 2026-09-09 and it was
 wrong** — it contradicted the paragraph above it, which lists five sites. The
 seating order went to the fitted key and the *pool-construction* orders did not
-move with it: `distinct.preselect` still picks a near-cluster's representative and
-walks the places on raw `P(>=4)`, `solve.strongest_locations` still cuts the
-`--locations` tail on it, `solve.pool` still hands its list back sorted by it, and
-`mine`/`depth`'s per-place best is still it. Every one of those runs **after**
-`at_fine_bar`, so on a `--fine-bar` pass the fine head has read all of them — see
-*Where the coarse key still decides*, below.
+move with it: `solve.strongest_locations` still cuts the
+`--locations` tail on raw `P(>=4)`, `solve.pool` still hands its list back sorted
+by it, and `mine`/`depth`'s per-place best is still it. Every one of those runs
+**after** `at_fine_bar`, so on a `--fine-bar` pass the fine head has read all of
+them — see *Where the coarse key still decides*, below. `distinct.preselect` was
+the fourth and **moved on 2026-09-09**, being the one of the four that deletes.
 
 ### Where the coarse key still decides — `AUDIT_ckpt117_fine_key_sites_and_place_radius_sheet_0909`
 
 `preselect` orders its walk by `p_ge4` and the seating orders on the cascade key,
 so inside a near-duplicate cluster the survivor is not the row a seating would
 have reached for. This is every other place that shape appears, swept over the
-curation package. **Nothing here was changed on this reading.**
+curation package. **Nothing here was changed on this reading.** `preselect`
+itself was changed on the next one — see *The fold picks its survivor on the
+seating key*, below — and every other row of both tables still stands.
 
 One constraint shapes the whole answer and is stated rather than assumed:
 `gallery-grade score-pool` runs on **coarse-clears only**, so `p_fine` exists
@@ -1382,7 +1386,7 @@ deletion.
 
 | site | the decision | `p_fine` there | reversible |
 | --- | --- | --- | --- |
-| `distinct.preselect` | the walk order, and so **which place represents a near-cluster** — each place offered by its strongest candidate's raw `P(>=4)` | **all of it.** It runs on the clearing pool, and after `at_fine_bar` on a barred pass | **no** — the place and every row it carries leave the pass under `SAME_PLACE`, and nothing revisits |
+| ~~`distinct.preselect`~~ **moved 2026-09-09** | the walk order, and so **which place represents a near-cluster** — each place offered by its strongest candidate's raw `P(>=4)` | **all of it.** It runs on the clearing pool, and after `at_fine_bar` on a barred pass | **no** — the place and every row it carries leave the pass under `SAME_PLACE`, and nothing revisits |
 | `solve.strongest_locations` | `--locations N` keeps the N strongest **places** by their best candidate's raw `P(>=4)` | **all of it** — it is called on the line after `at_fine_bar` | **no** within the pass; the cut places are gone before the view is sized |
 | `candidate_ledger.prune` → `retention.decide` | top-`RETAIN_PER_PAIR` per (location, mode) on the fitted `rank_key`; a loser loses its row **and its JPEG** | **11.9%** of the rows it ranks. Only 7.1% of pairs hold two rows with a reading | **no**, and it is the only site here that destroys anything |
 | `depth.best_field_by_location`, `mine.best_by_location` | which row is a place's *best*, which sets the band the near and deepen draws read | yes for the `[SEATING_BAR, PRIMED_BAR)` band — 0.50 to 0.90, entirely above `Q4_BAR` | yes — a draw spends renders and deletes nothing |
@@ -1426,8 +1430,93 @@ discarded the place whose best candidate reads *higher* on `p_fine` than the pla
 that absorbed it**, median delta -0.0215 and mean absolute delta 0.150. That is
 the shape the audit went looking for, at the one site where it is not reversible.
 
-`PRESELECT_RADIUS` and the representative rule are **held** until
-`scratch/place_radius_sheet/` is read and marked.
+`PRESELECT_RADIUS` is **held** at 0.02 — Matt read `the-72.html` on 2026-09-09 and
+every pair under the radius is the same geometric location, so the radius is not
+too large and shrinking it would only refuse to fold real duplicates. **The
+representative rule moved on that reading**, which is the next section; the radius
+did not, and nothing about it is a function of the key.
+
+### The fold picks its survivor on the seating key — `PRESELECT_ckpt117_fold_on_the_seating_key_0909`
+
+Since 2026-09-09 `distinct.preselect` offers each place by its strongest row on
+**`p_fine(>=4)` where the fine-tier head has read that row**, and on raw `P(>=4)`
+where it has not. The walk order *is* the rule about which place represents a
+near-cluster, the fold is the one pool-construction decision that **deletes**, and
+the audit above measured it discarding the higher-`p_fine` place in 41.8% of the
+resolvable folds. The docstring's claim — that the survivor is the place a seating
+would have reached for — is only true on the key the seating orders by, and now it
+is true.
+
+**The two scales are stacked and never mixed.** A place with a fine reading is
+offered ahead of every place without one, which is `solve.cascade_order`'s `1 + p`
+in the other direction and its ruling: unknown never outranks measured. Mixing a
+`p_fine` and a `P(>=4)` in one comparison would be sorting on two different
+calibrations.
+
+**The fallback is not optional and it is not silent.** `gallery-grade score-pool`
+runs on coarse-clears only, so `p_fine` exists above `Q4_BAR` and nowhere else, and
+this walk runs on passes where `at_fine_bar` did not — a themed pass on the relaxed
+crossing, a solve given no `--fine-bar`, and the 3,995 above-bar rows a one-shot
+read has not caught up with. So every record carries `key` (`p_fine`, `p_ge4` or
+`both`), `ordered_on` (the place counts under each), `places_on_the_fallback` and a
+per-place `ordered_on` on every refusal row, and a walk where every place fell back
+says so in a line of its own rather than reading as a walk that used the new key.
+Treated the way `--augment` is: **a record that carries no `key` folded on
+`p_ge4`**, and a record taken after this change is not comparable to
+`20260909T061451Z` on the objective, because it is a different pool.
+
+**How much the two keys disagree, measured 2026-09-09** on one clearing pool —
+11,637 rows at 6,683 places, `--fine-bar 0.50`, both walks over the same rows so
+the reading is the change itself and not two solves' worth of noise. The new key
+folds 1,174 places and the old 1,175, so the *size* of the fold does not move.
+**Which places survive does**: the two kept sets differ over **543 places**, 272
+kept only by the new key and 271 only by the old, and of the folds both keys make,
+**589 name a different survivor**. That is 8.1% of the pool changing hands and half
+the clusters getting a different representative, out of a change that moves the
+refusal count by one.
+
+**The first record folded on the new key is `20260909T161932Z`**, n=1000,
+`--fine-bar 0.50`, shipped defaults, and it is **not comparable to
+`20260909T061451Z` on the objective**: the ledger grew 293,235 → 308,885 rows in
+between, so the barred pool went 11,362 rows at 6,471 places to 11,637 at 6,683.
+Term by term it reads seats 1,000 → 1,000, worst **1.50391 → 1.50391**, demand
+shortfall **7 → 1**, sum 1,885.59 → 1,889.59; the shortfall that moved is
+`itinerary`, seated 25 → 31 against its floor of 32, whose own clearing pool went
+90 → 100 over the same interval. **Neither number is attributable to the key.**
+The fold refused **1,174 of 6,683 places, 17.6%**, against 1,144 of 6,471, 17.7%.
+
+What *is* attributable, because it is read off the record's own refusal rows:
+**0 of the 1,174 folds discarded the higher-`p_fine` place**, against 435 of 1,042
+— 41.8% — in the record before it. The trade is exact and it is stated rather than
+hidden: **496 of the 1,174, 42.3%, now discard the higher-`p_ge4` place**, mean
+absolute delta 0.1315. The fold sacrifices the coarse column at the rate it used to
+sacrifice the fine one, and the fine one is the column the seating reads.
+
+**What the fold still destroys, and picking a better survivor does not fix it.**
+The fold keeps all of the survivor's ledger and destroys all of the absorbed
+place's. Read over the 1,144 folds of `20260909T061451Z` — 438 clusters, the
+largest absorbing 44 places — against the rows those places hold in the clearing
+pool today, 2,151 rows destroyed:
+
+| what the absorbed place held that the survivor does not | folds | share |
+| --- | --- | --- |
+| a **mode** the survivor has no row in | 477 | 41.7% |
+| a **colour cell** the survivor cannot reach | 1,088 | 95.1% |
+| neither — the survivor covers it | 39 | 3.4% |
+
+Mean mode overlap is **0.674** and mean cell overlap **0.220**. So the overlap is
+**not** near-total: the key change fixes which place represents a cluster and does
+nothing about what leaves with the other one. The modes lost outright are the
+common ones in proportion — `smooth` 149, `tia` 144, `stripe` 131 — and 48 distinct
+cells are lost at least once, led by `dark_vivid_red` 264 and `light_vivid_red`
+203.
+
+**`itinerary` is the sharp one.** Nine of the 1,144 absorbed places hold an
+`itinerary` row and in **eight** of them the survivor holds none — against a mode
+that is **short 7** in that same record. That is not proof the eight would have
+seated, and it is the reason to state the measurement rather than assume the
+overlap: this is what a per-cluster constraint would be bidding for. **None was
+built**, on this reading or on the key change.
 
 ### The location-level prune does not work, and this is why
 
@@ -2957,14 +3046,19 @@ radius, ordered by distance, as pictures — is the instrument. That is how
 of them is recorded with who set it.
 
 The pre-selection is a greedy suppression over **places**, each represented by its
-strongest clearing candidate, strongest first; a place inside the radius of a place
+strongest clearing candidate, strongest first — on the fine head's `p_fine(>=4)`
+where it has read that row and on raw `P(>=4)` where it has not, which is *The fold
+picks its survivor on the seating key* above. A place inside the radius of a place
 already kept is refused and everything that place carries goes with it. A location
 with no neutral descriptor is **admitted**, never dropped — a place can be newer than
 the last embedding leg, and refusing on that would make the pre-filter a function of
-when the store was last built. Measured 2026-08-27 over the 1,427 clearing places:
-425 near pairs touch 250 of them (17.5%), and the greedy refuses **139 places, 9.7%**
-— the suppression keeps one of each cluster, so the share refused is not the share
-touched. In rows that is 600 of 5,924.
+when the store was last built. Measured on `tentative_n1000_20260909T061451Z`, over
+the 6,471 clearing places of an `--fine-bar 0.50` pass: the greedy refuses **1,144
+places, 17.7%**, in rows 2,150 of 11,362. The suppression keeps one of each cluster,
+so the share refused is not the share touched. **The share is a function of pool
+density and not a constant** — the same reading over the 1,427 clearing places of
+2026-08-27 was 139 places, 9.7%, with 425 near pairs touching 250 of them (17.5%),
+and the pool has grown four and a half times since.
 
 **The walk is quadratic in places, and it was the pool that grew rather than the
 code that slowed.** `READ_solve_bound_and_profile_0904` read the pre-selection at

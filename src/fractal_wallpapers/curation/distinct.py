@@ -126,6 +126,30 @@ PRESELECT_RADIUS = 0.02
 #: The seed every draw in this module is taken under, recorded with it.
 SEED = 0
 
+#: What [`preselect`] offers a place by when the fine-tier head has read its
+#: strongest row, and what it falls back to when it has not.
+#:
+#: The fold is a **deletion** — the absorbed place and every row it carries leave
+#: the pass — and it used to pick the survivor on raw `P(>=4)` while the seating
+#: ordered on the cascade key. Measured on `tentative_n1000_20260909T061451Z`,
+#: that discarded the higher-`p_fine` place in **435 of the 1,042 resolvable folds,
+#: 41.8%**, mean absolute delta 0.150: a coin flip on the key that decides seats.
+#:
+#: So a place is offered by its strongest candidate's `p_fine(>=4)` where the head
+#: has read it, and by raw `P(>=4)` where it has not. **The two are not on one
+#: scale and are not mixed on one**: a place with a fine reading is offered ahead
+#: of every place without one, which is [`solve.cascade_order`]'s own spelling
+#: (`1 + p`) and its own ruling — unknown never outranks measured.
+FINE_KEY = "p_fine"
+
+#: The key a place falls back to. Not optional and not silent: `score-pool` runs
+#: on coarse-clears only, so `p_fine` exists above `solve.Q4_BAR` and nowhere
+#: else, and [`preselect`] runs on passes where `solve.at_fine_bar` did not — a
+#: themed pass on the relaxed crossing, a solve given no `--fine-bar`, and the
+#: rows a one-shot `score-pool` has not caught up with. Every record says how many
+#: places took it.
+COARSE_KEY = "p_ge4"
+
 
 class DistinctRefused(RuntimeError):
     """The pre-selection cannot be read."""
@@ -272,7 +296,8 @@ def suppress(order, radius: float = PRESELECT_RADIUS, rows=None) -> dict:
     order they are offered, and the first of a near-cluster to be offered is the
     one that survives it — so the caller's ordering *is* the rule about which
     place represents a cluster, and there is nowhere else for that decision to
-    hide. [`preselect`] offers them strongest-candidate-first;
+    hide. [`preselect`] offers them strongest-candidate-first, on [`FINE_KEY`]
+    where the head has read the row and [`COARSE_KEY`] where it has not;
     [`candidate_ledger.feasibility`] has no score to offer them by and says so.
 
     A place with no neutral descriptor is **kept** and counted, for the reason on
@@ -327,7 +352,56 @@ def suppress(order, radius: float = PRESELECT_RADIUS, rows=None) -> dict:
     return {"kept": kept, "refused": refused, "unembedded": unembedded, "asked": order}
 
 
-def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print) -> tuple:
+def fine_scores(scores=None) -> dict:
+    """`{candidate key: p_fine(>=4)}` — the fine-tier head's read of the pool.
+
+    `None` reads the store, which is what makes [`preselect`]'s key work on the
+    passes where [`solve.at_fine_bar`] never ran and nobody has a reading in hand
+    to pass down. A **mapping** is used as given, and `{}` is the explicit "order
+    this walk on the coarse key alone" — the record says which happened either
+    way, so an empty read is a line in the log and never a silent demotion.
+
+    Read through [`gallery_grade_train.read_pool_scores`] and never off the path,
+    for the reason that function states: it is the one spelling of where this
+    head's read of the pool lands.
+    """
+    if scores is not None:
+        return {str(key): float(value) for key, value in scores.items()}
+    from fractal_wallpapers.models import gallery_grade_train
+
+    return {
+        str(key): float(row["p_ge4"]) for key, row in gallery_grade_train.read_pool_scores().items()
+    }
+
+
+def offered_at(candidate, fine: dict) -> tuple:
+    """The sort key one candidate is offered under. Ascending, so smaller is stronger.
+
+    `(0, -p_fine, key)` where the head has read the row and `(1, -P(>=4), key)`
+    where it has not — the two scales **stacked and never mixed**, so every place
+    with a fine reading is offered ahead of every place without one. That is
+    [`solve.cascade_order`]'s `1 + p` in the other direction and the same ruling:
+    unknown never outranks measured. Ties by key, as before, so the walk is a
+    function of the pool and not of dictionary order.
+    """
+    read = fine.get(str(candidate.key))
+    if read is None:
+        return (1, -float(candidate.score), str(candidate.key))
+    return (0, -float(read), str(candidate.key))
+
+
+def _read(fine: dict, candidate) -> float | None:
+    """One candidate's fine reading for the record, or `None` where there is none.
+
+    `None` and never a substituted coarse value: a reader has to be able to tell a
+    place the head scored low from a place the head never read."""
+    held = fine.get(str(candidate.key))
+    return None if held is None else round(float(held), 6)
+
+
+def preselect(
+    candidates, radius: float = PRESELECT_RADIUS, rows=None, fine=None, log=print
+) -> tuple:
     """`(the candidates whose place survived, the record)`. Geometric distinctness only.
 
     A greedy suppression over places and not over rows: each location is
@@ -336,6 +410,21 @@ def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print
     refused and told which one took it. Strongest first because the choice inside
     a near-cluster is arbitrary otherwise, and the strongest place is the one a
     seating would have reached for anyway.
+
+    ⚠ **That last clause is only true on the key the seating orders by**, which is
+    why this walk takes [`FINE_KEY`] where the fine-tier head has read the row and
+    [`COARSE_KEY`] where it has not — [`offered_at`] for the stacking, and
+    [`FINE_KEY`] for the 41.8% of resolvable folds that went the other way while
+    this walk was on the coarse key alone. `fine` is [`fine_scores`]' mapping;
+    `None` reads the store, because this runs on passes where nothing upstream
+    has.
+
+    **The fallback is counted and named on the record**, both per place on the
+    refusal rows and in the aggregate: `score-pool` reads coarse-clears only, so a
+    pass below `solve.Q4_BAR` — a themed pass on the relaxed crossing, an unbarred
+    solve, the rows a one-shot read has not caught up with — has places with no
+    fine reading at all, and a pass where **every** place fell back must not read
+    as a pass that used the new key.
 
     **A location with no neutral descriptor is admitted, not dropped.** The store
     is built from a neutral render per place and a place can be newer than the
@@ -349,18 +438,24 @@ def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print
     places inside the radius loses four, and both numbers are on the record.
     """
     radius = float(radius)
+    fine = fine_scores(fine)
     best: dict = {}
     for candidate in candidates:
         held = best.get(candidate.location)
-        if held is None or (-candidate.score, candidate.key) < (-held.score, held.key):
+        if held is None or offered_at(candidate, fine) < offered_at(held, fine):
             best[candidate.location] = candidate
-    order = sorted(best, key=lambda key: (-best[key].score, best[key].key))
+    order = sorted(best, key=lambda key: offered_at(best[key], fine))
+    on_fine = {key for key in order if str(best[key].key) in fine}
     walk = suppress(order, radius=radius, rows=rows)
     kept, unembedded = walk["kept"], walk["unembedded"]
     refused = [
         {
             **row,
             "p_ge4": round(best[row["location"]].score, 6),
+            "p_fine": _read(fine, best[row["location"]]),
+            "ordered_on": FINE_KEY if row["location"] in on_fine else COARSE_KEY,
+            "lost_to_p_ge4": round(best[row["lost_to"]].score, 6),
+            "lost_to_p_fine": _read(fine, best[row["lost_to"]]),
             "picture": best[row["location"]].picture,
             "lost_to_picture": best[row["lost_to"]].picture,
         }
@@ -368,15 +463,38 @@ def preselect(candidates, radius: float = PRESELECT_RADIUS, rows=None, log=print
     ]
     surviving = [candidate for candidate in candidates if candidate.location in kept]
     refused.sort(key=lambda row: row["distance"])
+    fell_back = len(order) - len(on_fine)
     log(
         f"[distinct] pre-selection at {radius}: {len(kept):,} of {len(order):,} place(s) kept, "
         f"{len(refused):,} refused"
     )
+    if not on_fine:
+        log(
+            f"[distinct] NO place carries a {FINE_KEY} reading: this walk was ordered on "
+            f"{COARSE_KEY} throughout, which is the old key and not the new one"
+        )
+    else:
+        log(
+            f"[distinct] the walk is ordered on {FINE_KEY} for {len(on_fine):,} place(s) and "
+            f"falls back to {COARSE_KEY} for {fell_back:,}"
+        )
     return surviving, {
         "radius": radius,
         "metric": METRIC,
         "store": tracked_name(embeddings.store_path()),
-        "order": "each place's strongest clearing candidate, P(>=4) descending, ties by key",
+        "key": FINE_KEY if fell_back == 0 else (COARSE_KEY if not on_fine else "both"),
+        "key_is": f"which key this fold picked its survivors on. {FINE_KEY} is the fine-tier "
+        f"head's reading, {COARSE_KEY} the raw judge column, 'both' a walk where some places "
+        f"had a reading and some did not. **A record carrying no `key` folded on {COARSE_KEY}**, "
+        "the way a record carrying no `augment` ran without one",
+        "order": "each place's strongest clearing candidate, on the fine-tier head's "
+        "p_fine(>=4) where it has read that row and raw P(>=4) where it has not, descending, "
+        "ties by key. The two scales are stacked and never mixed: a place with a fine reading "
+        "is offered ahead of every place without one, which is solve.cascade_order's ruling "
+        "that unknown never outranks measured",
+        "ordered_on": {FINE_KEY: len(on_fine), COARSE_KEY: fell_back},
+        "places_on_the_fallback": fell_back,
+        "fine_readings_held": len(fine),
         "rule": "a place closer than the radius to a place already kept is refused. "
         "Geometric distinctness only: this asks whether two places are the same place, and "
         "it is NOT the diversity rule — the twin test at ceiling.TAU is",
@@ -981,6 +1099,8 @@ def write_record(name: str, record: dict) -> Path:
 
 
 __all__ = [
+    "COARSE_KEY",
+    "FINE_KEY",
     "METRIC",
     "PAIRS_SHOWN",
     "PLOT",
@@ -994,11 +1114,13 @@ __all__ = [
     "UNIT",
     "DistinctRefused",
     "bands",
+    "fine_scores",
     "join",
     "ladder_for",
     "matrix_for",
     "near_pairs",
     "nearest",
+    "offered_at",
     "premise",
     "preselect",
     "radius_table",

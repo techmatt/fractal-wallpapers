@@ -385,6 +385,26 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+6, and a store the lane started reading once a test.**
+`PRESELECT_ckpt117_fold_on_the_seating_key_0909`, 2026-09-09, idle box, taken after
+the solve leg. The tree held **4,097 at 124.06 s** before the change and **4,103 at
+122.54 s** after, 132 deselected either way, all green — **4,235 collected**. The
+six are `distinct`'s fine-key guards, and the 4,097 is where the +10 entry below
+left the lane plus the two commits after it. **The slow lane read 4,235 of 4,235
+green in 448.94 s (7:28)**, same box, taken after the fast one, zero skips — 12 s
+and eighteen tests above the 7:16 below.
+
+The reading between the two is the one worth keeping. `distinct.preselect` resolves
+the fine head's `pool_scores.jsonl` itself now — it has to, because it runs on
+passes where nothing upstream read it — so every synthetic `headroom.census` and
+`solve.solve` in this suite paid a 9.2 MiB, 42,300-row parse, 0.21 s a call. That
+read **129.13 s**: green, +5.07 s, and a real-store read newly paid per test rather
+than per pass. `conftest.the_pool_scores_are_read_once` gives the session one
+reading of the real store and hands it back, which is `tracked_ledger`'s
+arrangement at a smaller scale, and it took the lane back under where it started.
+**A call naming a `path` is left alone** — a test writing its own column is asking
+about that file.
+
 **+10, and one of them exists because the other four nearly cost the lane ten
 seconds.** `SOLVE_ckpt117_resolve_and_fate_0908`, 2026-09-09, idle box, taken after
 the render leg. **128.56 s over 4,085 held, 132 deselected — 4,217 collected**, all
