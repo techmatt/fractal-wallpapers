@@ -2578,3 +2578,24 @@ leg just as hard.
 **A resume costs the rows it was holding and nothing else.** The picture is the
 resume token — `release.decodable` is asked of each one — so a killed leg re-offers
 only what is missing.
+
+**A rung is a fact about a row AND a record**, so a second reading against a second
+solve is the only way this leg can say a fate *changed* rather than that the page was
+rebuilt. `page --against <earlier store>` joins the two populations by key and reports
+`forward` / `back` / `unchanged` in the legend and every transition on the index.
+**Forward is `RUNG_ORDER`, which is `RUNGS`' own order and not a ranking of
+outcomes**: below-the-fine-bar → refused is forward, because the row got further
+before something stopped it, and only a move to `seated` is a wallpaper that now
+ships. A key the earlier store never held is `unmatched`, never movement — the
+population moving is a different finding.
+
+**The pictures of an earlier store are reusable, and the criterion is exact rather
+than a guess.** A card's render is decided by the ledger recipe and by
+`stamps.for_release`'s answer, and nothing else. So a key whose recipe is unchanged
+and which has gained no `autolevel_backfill` row since the earlier leg built its
+`borrowed` map draws the identical picture, and copying it in is the same page for
+none of the engine time. `SOLVE_ckpt117_resolve_and_fate_0908` reused **1,910 of
+2,250** that way and drew 340 — 312 late-backfilled keys plus 28 never drawn — which
+is the difference between twenty minutes and two hours. **Take the criterion off the
+stores' own timestamps**, not off a feeling: the backfill rows carry `at`, and
+`sequence.jsonl` mtimes say whether the other half of `for_release` moved.

@@ -263,7 +263,7 @@ def _mixed_cost(costs: dict, candidates) -> float | None:
 # --------------------------------------------------------------------------- #
 # The bars, per mode.
 # --------------------------------------------------------------------------- #
-def bars(candidates, relaxed: bool = False) -> dict:
+def bars(candidates, relaxed: bool = False, fine: dict | None = None) -> dict:
     """Which rule each **accepted** mode's rows clear under, and the counts behind it.
 
     The default bar on `P(>=4)` unless fewer than [`FALLBACK_LOCATIONS`] distinct
@@ -283,6 +283,31 @@ def bars(candidates, relaxed: bool = False) -> dict:
     1,209 at the crossing, `dark_vivid_lime` 266 against 457 — so a themed gallery
     at the per-mode bars is a gallery with no pool. It is the same height on the
     other cutpoint and never a second constant, and the table says which ran.
+
+    ## `with_p_fine` against `q4_rows`, which is the seatability precondition
+
+    `q4_rows` is `score >= DEFAULT_BAR`, and [`solve.Candidate.above_bar`] is the
+    same test on the same constant — so per mode the `q4_rows` are **exactly** the
+    rows `gallery-grade score-pool` reads and the only rows a cascade seating can
+    lift. `with_p_fine` counts how many of them carry a reading in
+    `gallery_grade_train.pool_scores_path()`, and `q4_unread` is the rest.
+
+    **`pool_scores.jsonl` is one-shot and nothing in the tree enforces the
+    ordering**, so a row merged or re-scored since the last `score-pool` is unread
+    and therefore unseatable at any fine bar — [`solve.at_fine_bar`] drops it from
+    the pool and [`solve.cascade_order`] leaves it on the rank key. Both say so on
+    their own record, but only *after* a solve has run. This says it beforehand,
+    per mode, off one pass the census is already making, so a leg can branch on it
+    rather than discover it.
+
+    **The scores are handed in and never read here.** `fine` is
+    `gallery_grade_train.read_pool_scores()`' own mapping, or `None` for a caller
+    that is not asking — and the block then reads `None` rather than zero, which
+    is a different fact from every mode being unread. This module is arithmetic
+    over what it is given, and [`clearing`] and [`census`] call this on every
+    census: reading a five-megabyte store inside it would put a fifth of a second
+    on each of the dozens of calls a test lane makes, for a column none of them
+    asked about.
     """
     modes = mode_policy.accepted()
     held: dict = {name: [] for name in modes}
@@ -301,12 +326,15 @@ def bars(candidates, relaxed: bool = False) -> dict:
         places3 = {c.location for c in above3}
         rule = rule_of(mine, relaxed=relaxed)
         clearing = above4 if rule == DEFAULT_COLUMN else above3
+        read = None if not fine else sum(1 for c in above4 if str(c.key) in fine)
         out[mode] = {
             "rule": rule,
             "bar": DEFAULT_BAR if rule == DEFAULT_COLUMN else FALLBACK_BAR,
             "rows": len(mine),
             "locations": len({c.location for c in mine}),
             "q4_rows": len(above4),
+            "with_p_fine": read,
+            "q4_unread": None if read is None else len(above4) - read,
             "q4_locations": len(places4),
             "q3_rows": len(above3),
             "q3_locations": len(places3),
@@ -334,6 +362,20 @@ def bars(candidates, relaxed: bool = False) -> dict:
         ),
         "on_default": [name for name in modes if out[name]["rule"] == DEFAULT_COLUMN],
         "on_fallback": [name for name in modes if out[name]["rule"] == FALLBACK_COLUMN],
+        "fine_head": {
+            "of": "whether the fine head has read every row a cascade seating could lift. "
+            "q4_rows IS solve.Candidate.above_bar, which is the set `score-pool` reads. "
+            "null throughout is a caller that handed in no scores, not a pool nothing has "
+            "read",
+            "scores_read": len(fine) if fine else None,
+            "q4_rows": sum(block["q4_rows"] for block in out.values()),
+            "with_p_fine": (
+                None if not fine else sum(block["with_p_fine"] for block in out.values())
+            ),
+            "q4_unread": None if not fine else sum(block["q4_unread"] for block in out.values()),
+            "unread_are": "unseatable at any fine bar until `gallery-grade score-pool` runs "
+            "again — pool_scores.jsonl is one-shot and no ordering is enforced",
+        },
         "still_thin": [name for name in modes if out[name]["thin"]],
         "off_roster": dict(sorted(off_roster.items())),
         "modes": out,

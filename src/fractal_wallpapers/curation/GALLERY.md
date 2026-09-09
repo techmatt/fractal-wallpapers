@@ -545,6 +545,19 @@ appearing in a refusal column, because nothing there is a rule a mine could be
 aimed down. `population.candidates` is therefore the narrowed count, and the
 `fine_bar` block says how many were dropped and how many the head had not read.
 
+**`pool_scores.jsonl` is one-shot and nothing enforces the ordering, so ask before
+you solve.** A row merged or re-scored since the last `score-pool` carries no
+reading, and an unread row above the bar is dropped from the pool by `at_fine_bar`
+and left on the rank key by `cascade_order` — both say so on the record, but only
+after a pass has run. `curate headroom --bars` says it beforehand: `with_p_fine`
+against `q4_rows` per accepted mode, plus a `fine_head` block over the whole pool,
+because `q4_rows` **is** `solve.Candidate.above_bar` and so is exactly the set
+`score-pool` reads. `null` there is a caller that handed in no scores — `headroom`
+is arithmetic over what it is given and never reads that store itself, since
+`clearing` and `census` call `bars` on every census without wanting the column.
+Read 41,457 / 41,457 / 0 unread on 2026-09-09, which is what sent
+`SOLVE_ckpt117_resolve_and_fate_0908` straight to its solve.
+
 **Verified by running both**, 2026-09-07, against the digests
 `FIX_ckpt114_solve_profiling_and_speedups_0907` took over the same pool: an
 unbarred `curate solve run --n 1000` reproduces 1000 / 0 / 1.001752 / 1786.467343

@@ -385,6 +385,31 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+10, and one of them exists because the other four nearly cost the lane ten
+seconds.** `SOLVE_ckpt117_resolve_and_fate_0908`, 2026-09-09, idle box, taken after
+the render leg. **128.56 s over 4,085 held, 132 deselected — 4,217 collected**, all
+green. Six are `label-fate`'s rung movement between two records; four are
+`headroom.bars`' `with_p_fine` column.
+
+**The slow lane read 4,217 of 4,217 green in 436.12 s (7:16)**, same box, taken
+after the fast one and after the render leg — **a clock and no red in the same
+reading**, which the entry below could not give. **Zero skips**, so the render cache
+is full, and 7:16 against the 6:45 of a cache-short lane is the forty seconds of
+engine those nineteen cost plus the fifteen guards since.
+
+**The `with_p_fine` column read its own store first, and `test_headroom.py` went
+2.10 s to 12.60 s.** Nine tests in that file call `bars` directly and `clearing` and
+`census` call it on every census, so a five-megabyte `pool_scores.jsonl` read inside
+it was a fifth of a second on each of dozens of calls, for a column none of them
+asked about. The fix is the module's own character rather than a fixture: `bars`
+takes the scores as an argument and the CLI reads the store. **A fixture would have
+fixed one file** — the callers are spread over `test_headroom.py`,
+`test_texture_flat.py`, `test_candidate_ledger.py` and everything that censuses —
+which is *[A derivation paid twice is the thing to look for](#a-derivation-paid-twice-is-the-thing-to-look-for)*
+answered at the derivation instead of at the reader.
+`test_the_census_never_reads_the_pool_scores_store_itself` is the guard, and it
+monkeypatches the reader to raise.
+
 **+18, and the slow lane has a count but no clock — deliberately.**
 `PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908`, 2026-09-08. Fast:
 **126.34 s over 4,075 held, 132 deselected — 4,207 collected**, idle box, taken

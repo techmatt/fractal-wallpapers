@@ -622,6 +622,7 @@ def curate_label_fate(args: argparse.Namespace) -> int:
             store,
             migration_store=args.migration_store,
             repaired_seats_of=args.repaired_seats_of,
+            against=args.against,
         ),
     }[args.what]
     try:
@@ -1119,7 +1120,14 @@ def curate_headroom(args: argparse.Namespace) -> int:
         # bars and both cost minutes. The pool `headroom.population` hands back is
         # already the population `solve` starts from, so this is the clearing set
         # exactly as a seating would see it.
-        print(json.dumps({**headroom.bars(candidates), "pool": {"refused": refused}}, indent=2))
+        #
+        # The pool scores are read HERE and handed in: `headroom` is arithmetic over
+        # what it is given, and `clearing` and `census` call `bars` on every census
+        # without wanting the column.
+        from fractal_wallpapers.models import gallery_grade_train
+
+        read = headroom.bars(candidates, fine=gallery_grade_train.read_pool_scores())
+        print(json.dumps({**read, "pool": {"refused": refused}}, indent=2))
         return 0
     ladder = tuple(args.n) if args.n else headroom.LADDER
     radius = None if args.no_preselection else args.neutral_radius
@@ -5423,6 +5431,17 @@ def add_commands(subcommands) -> None:
         "for everything and this narrows nothing. It is still here because the flag has a "
         "switch: a leg found regressing turns it back on, and then scoping a repair to one "
         "record is again a thing somebody does",
+    )
+    fate_page.add_argument(
+        "--against",
+        metavar="PATH",
+        default=None,
+        help="an earlier store of this same leg. The page then says how many of these "
+        "wallpapers changed rung between that store's record and this one, and which way "
+        "— forward being further along the rungs before something stopped it, so only a "
+        "move to SEATED is a wallpaper that now ships. A rung is a fact about a row AND a "
+        "record, so this is the only way the page can say a fate changed rather than that "
+        "it was rebuilt",
     )
     for verb in (
         fate_keys,

@@ -737,7 +737,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "fates": ("--stamp", "--store", "--out"),
         "competitors": ("--stamp", "--store", "--out"),
         "render": ("--workers", "--store", "--out"),
-        "page": ("--migration-store", "--repaired-seats-of", "--store", "--out"),
+        "page": ("--migration-store", "--repaired-seats-of", "--against", "--store", "--out"),
     },
     "autolevel": {
         "survey": ("--record", "--out"),
