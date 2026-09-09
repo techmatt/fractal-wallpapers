@@ -48,6 +48,11 @@ rung, and getting it wrong is how a page lies quietly:
   entirely — the marginal seat in the full cell — and **not** whatever sits at
   its own location, which is what this page showed until 2026-09-08 and which
   was simply the wrong picture for 348 of its 524 cards.
+- **A folded place shows the place that absorbed it**, off the record's own
+  `preselection.refusals`, with the **neutral distance** the fold was taken at.
+  Nothing beat that row: its whole place went at pool construction, before a seat
+  existed, so the number on the card is a distance between two places and not a
+  margin between two scores.
 - **Every other rung shows the seat holding its place**, matched on the exact
   location, which for them is the right comparison.
 
@@ -528,8 +533,9 @@ def fates(stamp: str, store=None, log=print) -> dict:
     The seat is matched on the exact location. A place the record does not hold
     gets `None` and the card says so; `another_place_is_the_same_place` is called
     out separately, because there the place did not merely lose — it was folded
-    into a neighbour at pool construction, and the record does not carry which
-    neighbour.
+    into a neighbour at pool construction, before any seat existed. **Which
+    neighbour is on the record**, in the pre-selection's own `refusals` block, and
+    [`competitors`] reads it off there.
     """
     from fractal_wallpapers.curation import candidate_ledger, solve, tentative
     from fractal_wallpapers.models import gallery_grade_train
@@ -655,9 +661,10 @@ PAIRING = {
     "pass's own seating key, of the seats already dominant in that cell",
     "twin": "the seated picture the diversity rule measured it against, off the record's own "
     "`diversity_refusals` — a single-member requirement per neighbour",
-    "another_place_is_the_same_place": "NOTHING. The place was folded into a neighbour at "
-    "pool construction, before any seat existed, and the record does not carry which "
-    "neighbour absorbed it — so there is no seat to name and the card says so",
+    "another_place_is_the_same_place": "the strongest candidate at the place that ABSORBED "
+    "it, off the record's own `preselection.refusals` — a place and not a seat, folded at "
+    "pool construction before any seat existed, so the card names the neutral distance the "
+    "fold was taken at rather than a seating gap",
 }
 
 
@@ -719,6 +726,15 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     decided_elsewhere = ("twin", solve.SAME_PLACE)
     order = solve.ranking_for(candidates, config["sort_key_named"], log=lambda *_: None)[0]
     twins = record.get("diversity_refusals") or {}
+    # The fold is keyed by PLACE and names the picture that took it, so the
+    # absorbing candidate is looked up on the picture rather than re-derived as
+    # "the strongest row there now": this pool is not the pool that pass ran over,
+    # and a re-derivation could name a row the pre-selection never saw.
+    by_picture = {str(candidate.picture): candidate for candidate in candidates}
+    absorbed = {
+        str(entry["location"]): entry
+        for entry in ((record.get("preselection") or {}).get("refusals") or [])
+    }
     wrong = []
     for row in rows:
         if row["rung"] != REFUSED or row["explained"] in decided_elsewhere:
@@ -756,7 +772,19 @@ def competitors(stamp: str, store=None, log=print) -> dict:
             # of it: whether ONE seat leaving would have been enough.
             if row["competitor"] is not None:
                 row["competitor"]["enough"] = sorted(state.counted_removals(candidate))[:1]
-        # `another_place_is_the_same_place` keeps `None` on purpose. See PAIRING.
+        elif why == solve.SAME_PLACE:
+            entry = absorbed.get(str(row["location"]))
+            taker = None if entry is None else by_picture.get(str(entry["lost_to_picture"]))
+            row["competitor"] = _competitor(None if taker is None else taker.key, held, order, why)
+            if row["competitor"] is not None:
+                # The DISTANCE is what decided this card and `_dress`'s p_fine gap
+                # is not — the two places never competed for a seat. Both go on
+                # it: the gap is the finding, since the pre-selection walks on the
+                # coarse key and so folds a place the fine head reads higher about
+                # two times in five. See GALLERY.md's *Where the coarse key still
+                # decides*.
+                row["competitor"]["distance"] = round(float(entry["distance"]), 6)
+                row["competitor"]["radius"] = float(record["preselection"]["radius"])
     paired = [row for row in rows if row.get("competitor")]
     distinct = {row["competitor"]["key"] for row in paired}
     _dress(paired, distinct)
@@ -1333,11 +1361,17 @@ def _against(row: dict) -> tuple:
     row that beat it at the rule that refused it**, which for a cell allowance is
     not the seat at its place and never was; every other rung shows the seat
     holding its place, which for them is the right comparison.
+
+    A folded place is a third caption and not a wording tweak: nothing *beat* the
+    row, its whole place was absorbed before a seat existed, so the caption says
+    that and carries the distance the fold was taken at.
     """
     if row.get("rung") == REFUSED:
         rival = row.get("competitor")
         if rival is None:
             return None, None
+        if rival.get("distance") is not None:
+            return str(rival["key"]), f"absorbed this place · {rival['distance']:.4f} apart"
         return str(rival["key"]), f"beat it · {rival['why']}"
     seat = row.get("seat") or {}
     if not seat.get("key"):
@@ -1582,6 +1616,22 @@ def _card(row: dict, left, right, repaired: set, caption=None) -> str:
             f'<span><span class="lab">palette</span> {against.get("colormap", "")}</span>',
             f'<span><span class="lab">p_fine</span> {_score(against.get("p_fine"))}</span>',
         ]
+        if against.get("distance") is not None:
+            # The number that actually decided this card. It is a NEUTRAL cosine
+            # distance between two places and not a margin between two scores, so
+            # it is named in full rather than left to read as one.
+            radius = against.get("radius")
+            beside.append(
+                f'<span><span class="lab">neutral distance</span> '
+                f'<span class="gap">{against["distance"]:.4f}</span>'
+                + (
+                    ""
+                    if radius is None
+                    else f' <span class="lab">inside the {radius:g} radius, so the two '
+                    "count as one place</span>"
+                )
+                + "</span>"
+            )
         if gap is not None:
             beside.append(
                 # SIGNED, and the sign is the finding rather than a detail: the
@@ -1596,7 +1646,11 @@ def _card(row: dict, left, right, repaired: set, caption=None) -> str:
                 f'<span class="lab">marginal of {against["alternatives"]} seats the rule '
                 "would take a departure from</span>"
             )
-        if row.get("rung") == REFUSED and not against.get("enough"):
+        # `"enough" in against` and not `rung == REFUSED`: the question is only
+        # ever asked of the two COUNTED rules, so a twin or a folded place would
+        # otherwise be told a second rule refused it when nothing of the kind was
+        # computed about it.
+        if "enough" in against and not against["enough"]:
             beside.append(
                 '<span class="lab">no single seat leaving would have been enough — it '
                 "fails a second rule too</span>"
@@ -1617,9 +1671,8 @@ def _nothing(row: dict) -> str:
     """
     if row.get("rung") == REFUSED:
         return (
-            "no row to name<br><small>the pre-selection folded this place into a "
-            "neighbour before any seat existed, and the record does not carry which "
-            "one</small>"
+            "no row to name<br><small>nothing in the pass's own state beat this row, and "
+            "no refusal on the record names a place that absorbed it</small>"
         )
     return "no seat at this place<br><small>the record holds nothing here</small>"
 

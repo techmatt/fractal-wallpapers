@@ -1350,8 +1350,84 @@ was the third caller and was retired on 2026-09-07, its pass having gone in
 `64c9612`; `floors.measured_floor` hands back a measurement now and calls nothing.)
 The
 supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the **location** head. So the
-sentence to carry is: *`P(>=4)` decides who is in the pool for seven modes and
-decides the order for nobody any more; nothing at release reads it.*
+sentence to carry is: *`P(>=4)` decides who is in the pool for seven modes,
+decides the **seating** order for nobody any more, and still decides every
+ordering the pool is built by; nothing at release reads it.*
+
+**"Decides the order for nobody" was the sentence here until 2026-09-09 and it was
+wrong** — it contradicted the paragraph above it, which lists five sites. The
+seating order went to the fitted key and the *pool-construction* orders did not
+move with it: `distinct.preselect` still picks a near-cluster's representative and
+walks the places on raw `P(>=4)`, `solve.strongest_locations` still cuts the
+`--locations` tail on it, `solve.pool` still hands its list back sorted by it, and
+`mine`/`depth`'s per-place best is still it. Every one of those runs **after**
+`at_fine_bar`, so on a `--fine-bar` pass the fine head has read all of them — see
+*Where the coarse key still decides*, below.
+
+### Where the coarse key still decides — `AUDIT_ckpt117_fine_key_sites_and_place_radius_sheet_0909`
+
+`preselect` orders its walk by `p_ge4` and the seating orders on the cascade key,
+so inside a near-duplicate cluster the survivor is not the row a seating would
+have reached for. This is every other place that shape appears, swept over the
+curation package. **Nothing here was changed on this reading.**
+
+One constraint shapes the whole answer and is stated rather than assumed:
+`gallery-grade score-pool` runs on **coarse-clears only**, so `p_fine` exists
+above `solve.Q4_BAR` and nowhere else. A site working below that bar cannot
+switch keys whatever anybody would prefer. Hence two lists.
+
+**Sites that could read `p_fine` and do not.** *Reversible* is the column that
+matters: an ordering a later pass can revisit is a different thing from a
+deletion.
+
+| site | the decision | `p_fine` there | reversible |
+| --- | --- | --- | --- |
+| `distinct.preselect` | the walk order, and so **which place represents a near-cluster** — each place offered by its strongest candidate's raw `P(>=4)` | **all of it.** It runs on the clearing pool, and after `at_fine_bar` on a barred pass | **no** — the place and every row it carries leave the pass under `SAME_PLACE`, and nothing revisits |
+| `solve.strongest_locations` | `--locations N` keeps the N strongest **places** by their best candidate's raw `P(>=4)` | **all of it** — it is called on the line after `at_fine_bar` | **no** within the pass; the cut places are gone before the view is sized |
+| `candidate_ledger.prune` → `retention.decide` | top-`RETAIN_PER_PAIR` per (location, mode) on the fitted `rank_key`; a loser loses its row **and its JPEG** | **11.9%** of the rows it ranks. Only 7.1% of pairs hold two rows with a reading | **no**, and it is the only site here that destroys anything |
+| `depth.best_field_by_location`, `mine.best_by_location` | which row is a place's *best*, which sets the band the near and deepen draws read | yes for the `[SEATING_BAR, PRIMED_BAR)` band — 0.50 to 0.90, entirely above `Q4_BAR` | yes — a draw spends renders and deletes nothing |
+| `depth.near_places` / `proven_places` / `deficient_modes`, `mine.deepen_places` | threshold that best at 0.50 / 0.90 on raw `P(>=4)` | yes, above 0.50 | yes |
+| `solve.pool`'s closing sort | hands the pool back `(-score, key)` | yes for the above-bar eighth | yes — the walk re-sorts by `ranking(order)`; this is presentation |
+| `headroom.census`'s `best` / `strongest` | which row represents a place in the census, and the order the twin bound is walked in | yes above the bar | yes — a report |
+| `shrinkage`'s best-per-group, `hunt` and `mine`'s contact sheets | ordering for a page or a measurement | yes above the bar | yes |
+
+**Sites that structurally cannot.**
+
+| site | the decision | why not |
+| --- | --- | --- |
+| `headroom.bars` / `clearing` | the per-mode bar itself, at `DEFAULT_BAR` or `FALLBACK_BAR` | it **is** the coarse gate. A fine reading below it does not exist by construction |
+| the prune's below-bar majority | 88.1% of what it ranks | those rows never cleared the coarse bar, so there is nothing to order them by |
+| `depth.ranked_bands`, `mine.ranked_places` | the ranked breadth order over **never-opened** places, on the location head's `P(>=3)` | no candidate exists at those places, so no candidate head has a picture to read |
+| `embeddings.admitted_only`, `floors.passes_junk_floor` | drops a place under the junk floor | location head, same reason |
+| `manufacture`'s extension tier | which admitted places get built, on the location head's `P(>=4)` | same |
+| `framing.rank` / `adoptable` / `gain_of` | which reframing a location adopts | scored on fresh probe renders the ledger never held; `score-pool` reads pool rows |
+| `solve.pool`'s five exclusions | niche mode, rejection, off-regime, no picture, no score | facts about a row, not scores |
+| `selection.select`, `rejection.below_acting_bar` | which candidates take release slots, and which served rows are taken back | the **finished-render** heads' `p_ge3` at release geometry — a different head on different pixels, outside these three columns entirely |
+
+**And the three that already read it**, because they take the leg's own key and
+that key is `cascade`: `view.stratify`, both swap loops, and `curation.augment`
+(`gallery.value` is `solve.value_of`). Above `Q4_BAR` those *are* `p_fine`.
+
+**What the prune ranks, measured 2026-09-09.** 356,622 ledger rows, every one of
+them carrying a live-judge reading; **42,300 carry a `p_fine`, 11.86%**. Of the
+46,295 rows above `Q4_BAR`, 91.4% have one — the missing 3,995 are the store
+growing since `pool_scores.jsonl` was last written, which is one-shot. Of the
+160,403 (location, mode) pairs, **139,146 hold no row with a reading at all** and
+7.1% hold two, so within-pair a fine key mostly has nothing to order. At rest the
+prune's live decision surface is tiny — 165 pairs over the keep, holding 1,126
+rows — because it runs at every merge; 145 of those 165 hold two readable rows.
+
+**What the pre-selection's order costs, measured on
+`tentative_n1000_20260909T061451Z`.** That pass ran `--fine-bar 0.50` under
+`cascade`, so every one of its 11,362 candidates had a `p_fine` before the
+pre-selection ran. It folded **1,144 of 6,471 places, 17.7%**. Of the 1,042
+refusals where both sides' pictures resolve to a pool key, **435 — 41.8% —
+discarded the place whose best candidate reads *higher* on `p_fine` than the place
+that absorbed it**, median delta -0.0215 and mean absolute delta 0.150. That is
+the shape the audit went looking for, at the one site where it is not reversible.
+
+`PRESELECT_RADIUS` and the representative rule are **held** until
+`scratch/place_radius_sheet/` is read and marked.
 
 ### The location-level prune does not work, and this is why
 
