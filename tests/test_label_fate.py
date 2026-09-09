@@ -514,6 +514,9 @@ def test_the_refusing_set_is_the_rule_that_ACTED_and_not_the_intersection():
 
     class Candidate:
         location = "here"
+        # The seat axis is keyed on the CLUSTER, which is the place's own key
+        # unless the pre-selection folded it into another. See `distinct.POOL`.
+        cluster = "here"
         cells = ("blue",)
 
     assert label_fate._refusing_set(State, Candidate, "location") == {"the_seat"}
@@ -805,3 +808,64 @@ def test_the_legend_says_how_many_moved_and_which_way(tmp_path):
     assert "20260101T000000Z" in legend
     table = label_fate._moved_table(moved)
     assert "REFUSED</b> → <b>SEATED" in table
+
+
+def test_a_cluster_card_names_the_sibling_the_cluster_and_both_spokes():
+    """§3 of `POOL_ckpt117_fold_merges_instead_of_deletes_0909`. `SAME_PLACE` used
+    to leave these cards with a distance and nothing to point at. Now the seat is
+    at a real sibling place, so the card names it, names the cluster, and gives
+    each place's distance to the place the cluster is seated under."""
+
+    class Taker:
+        location = "a"
+
+    row = {"location": "b", "competitor": {"key": "a1"}}
+    label_fate._fold(
+        row,
+        {"a1": Taker()},
+        {"b": {"location": "b", "lost_to": "a", "distance": 0.004}},
+        {"radius": 0.02},
+    )
+    assert row["competitor"]["cluster"] == "a"
+    assert row["competitor"]["distance"] == 0.004
+    assert row["competitor"]["competitor_distance"] == 0.0, "the survivor IS the cluster"
+    assert row["competitor"]["radius"] == 0.02
+
+
+def test_two_absorbed_siblings_each_carry_their_own_spoke_and_never_a_gap():
+    """The distance between two absorbed places is not measured anywhere: the walk
+    only ever compares a place against places it has already kept. So the card
+    carries the two spokes and says which they are, rather than a number nobody
+    took."""
+
+    class Taker:
+        location = "c"
+
+    row = {"location": "b", "competitor": {"key": "c1"}}
+    label_fate._fold(
+        row,
+        {"c1": Taker()},
+        {
+            "b": {"location": "b", "lost_to": "a", "distance": 0.004},
+            "c": {"location": "c", "lost_to": "a", "distance": 0.011},
+        },
+        {"radius": 0.02},
+    )
+    assert (row["competitor"]["distance"], row["competitor"]["competitor_distance"]) == (
+        0.004,
+        0.011,
+    )
+    assert "never compared with each other" in row["competitor"]["distance_is"]
+
+
+def test_a_seat_at_the_rows_own_place_is_not_dressed_as_a_fold():
+    """The ordinary `location` card: a stronger row at the same place took the
+    seat, no fold is involved, and inventing a cluster for it would be a claim
+    about a pre-selection that never touched this place."""
+
+    class Taker:
+        location = "b"
+
+    row = {"location": "b", "competitor": {"key": "b1"}}
+    label_fate._fold(row, {"b1": Taker()}, {}, {"radius": 0.02})
+    assert "cluster" not in row["competitor"]

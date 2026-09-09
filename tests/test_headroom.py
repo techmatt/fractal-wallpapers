@@ -45,6 +45,7 @@ def candidate(
     families=(),
     partition="mandelbrot",
     kind="smooth_render",
+    folded_into=None,
 ):
     """One synthetic candidate, its own place and its own palette group unless a
     test says otherwise, so a test about one axis is not silently about another."""
@@ -60,6 +61,7 @@ def candidate(
         score=float(score),
         p_ge3=float(score if p_ge3 is None else p_ge3),
         picture=f"artifacts/{key}.jpg",
+        folded_into=None if folded_into is None else str(folded_into),
     )
 
 

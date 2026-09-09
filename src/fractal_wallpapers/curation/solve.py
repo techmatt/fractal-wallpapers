@@ -489,10 +489,33 @@ class Candidate:
     #: fact about how the picture was made, and routing is a fact about what it
     #: counts as.
     mode_params: dict = dataclass_field(default_factory=dict)
+    #: The place [`distinct.preselect`] folded this row's location into, or `None`
+    #: where nothing did. Set by the pre-selection under `distinct.POOL` and by
+    #: nothing else; a row at a place that stands on its own carries `None`, which
+    #: is why the seat constraint reads [`cluster`] and never this.
+    #:
+    #: ⚠ **It is not a location and no join may read it as one.** It exists so
+    #: that a near-duplicate cluster holds one seat without the rows at its
+    #: absorbed places being destroyed to make that true — see [`distinct.POOL`].
+    folded_into: str | None = None
 
     @property
     def above_bar(self) -> bool:
         return self.score >= Q4_BAR
+
+    @property
+    def cluster(self) -> str:
+        """What the one-seat rule groups this row under: its own place, or the
+        place [`folded_into`] names.
+
+        The **only** thing the cluster id is for. [`location`] stays this row's
+        true location everywhere a fact about a place is joined on — the spiral
+        scores, the rank key's `loc_p_ge4`, the retention key, the ledger, the
+        view's per-place layer, and every place count on a record — because a
+        relabeled row tested for spiral-ness under another place's score is the
+        failure the whole arrangement is built to avoid.
+        """
+        return self.location if self.folded_into is None else self.folded_into
 
 
 def pool(
@@ -761,7 +784,12 @@ def at_fine_bar(candidates: list[Candidate], bar: float, log=print) -> tuple[lis
 # --------------------------------------------------------------------------- #
 # The rank key.
 # --------------------------------------------------------------------------- #
-def preselection_for(cleared, radius: float | None = distinct.PRESELECT_RADIUS, log=print):
+def preselection_for(
+    cleared,
+    radius: float | None = distinct.PRESELECT_RADIUS,
+    fold: str = distinct.FOLD,
+    log=print,
+):
     """The neutral pre-selection over one clearing pool, for a caller solving it at
     several `n`. Hand the result back as `solve(preselected=...)`.
 
@@ -776,7 +804,7 @@ def preselection_for(cleared, radius: float | None = distinct.PRESELECT_RADIUS, 
     """
     if radius is None:
         return None
-    return distinct.preselect(cleared, radius=float(radius), log=log)
+    return distinct.preselect(cleared, radius=float(radius), fold=fold, log=log)
 
 
 def _shared_preselection(preselected: tuple, cleared: list, radius: float | None) -> tuple:
@@ -1787,6 +1815,7 @@ def solve(
     drops: int = SWAP_DROPS,
     seconds: float | None = None,
     preselected: tuple | None = None,
+    fold: str = distinct.FOLD,
     explain: set | frozenset | list | None = None,
     spiral_cap: float | None = DEFAULT_SPIRAL_CAP,
     mode_ceilings: dict | None = DEFAULT_MODE_CEILINGS,
@@ -1824,6 +1853,11 @@ def solve(
     pool at several `n`: the pre-selection does not read `n`, so every rung
     recomputes the same 13.7 s answer. It is checked against the pool in hand
     before it is used and a single pass is unchanged by it.
+
+    `fold` is what the pre-selection does with a place it folds away —
+    [`distinct.POOL`], which relabels, or [`distinct.DELETE`], which destroys. It
+    is only read where this pass takes its own pre-selection: a handed-in
+    `preselected` already folded, and the record says which way it did.
 
     `group_cap` names the palette-group cap rule and `key` the sort key. **Neither
     touches the pool**: the bars, the clearing rule and the neutral pre-selection
@@ -1952,10 +1986,18 @@ def solve(
         kept, preselection = list(cleared), {"skipped": "no neutral pre-selection was applied"}
     else:
         if preselected is None:
-            kept, preselection = distinct.preselect(cleared, radius=float(radius), log=log)
+            kept, preselection = distinct.preselect(
+                cleared, radius=float(radius), fold=fold, log=log
+            )
         else:
             kept, preselection = _shared_preselection(preselected, cleared, radius)
         preselection = {**preselection, "shared_across_rungs": preselected is not None}
+        # Under `distinct.POOL` this loop finds nothing and writes nothing: the
+        # whole clearing pool comes back, relabeled where a place was absorbed,
+        # and a row that ends up losing its cluster's seat is refused by the
+        # `location` rule with a sibling to name. `SAME_PLACE` is written only by
+        # a destructive fold, and is still read everywhere a record explains
+        # itself.
         survived = {candidate.key for candidate in kept}
         for candidate in cleared:
             if candidate.key not in survived:
@@ -2161,6 +2203,7 @@ def solve(
             augment_depth,
             augment_seconds,
             fine_bar,
+            None if radius is None else fold,
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -2250,6 +2293,11 @@ def solve(
             "locations": len({c.location for c in candidates}),
             "clearing_locations": len({c.location for c in cleared}),
             "locations_after_the_preselection": len({c.location for c in kept}),
+            # Places AND clusters, because the seat constraint reads the second
+            # and every other join reads the first. They differ only where a
+            # pooled fold ran: a destructive fold deletes the absorbed places, so
+            # the two counts meet again at the survivors.
+            "clusters_after_the_preselection": len({c.cluster for c in kept}),
         },
         "filled": gallery.filled,
         "unfilled": n - gallery.filled,
@@ -2346,9 +2394,23 @@ def _config(
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
     fine_bar: float | None = DEFAULT_FINE_BAR,
+    fold: str | None = None,
 ) -> dict:
     return {
         "n": n,
+        # On `config` for the spiral cap's reason below: this block is what
+        # [`tentative.manifest`] carries WHOLE into the tracked manifest, and
+        # whether a gallery seated one wallpaper per PLACE or one per near-cluster
+        # is not something a reader should have to infer from a date. `None` is a
+        # pass that ran no pre-selection at all and folded nothing.
+        "fold": None if fold is None else str(fold),
+        "fold_default": distinct.FOLD,
+        "fold_is": "what the neutral pre-selection did with a place it folded into another. "
+        "`pool` relabels — the rows stay and the seat constraint reads one seat per CLUSTER "
+        "— and `delete` destroys them, which is what shipped until 2026-09-09. `null` is a "
+        "pass with no pre-selection. A record whose config is silent either predates "
+        "2026-09-09 and folded `delete`, or carries the answer on `preselection.fold`, "
+        "which the walk writes itself. See distinct.POOL",
         # On `config` for the spiral cap's reason below, and **written whether or
         # not a bar ran**: `None` is an explicit value saying this pass solved over
         # the whole pool, so a record can never be silent about the quality bar the
@@ -2988,6 +3050,12 @@ def _lost_to(state, preselection: dict, cleared: list) -> dict:
     thing. The diversity rule names a seated candidate. The pre-selection names a
     *place*, and every row that place carries went with it, so each of them is
     given the picture the place lost to.
+
+    **The pre-selection half is empty under a pooled fold**, and that is the right
+    answer rather than a gap: it refuses nothing, so no row lost to it. A row that
+    loses its cluster's seat is refused by the `location` rule, which is a seat and
+    not a place, and `label_fate` is where that pairing is drawn. See
+    [`distinct.POOL`].
     """
     pictures = {candidate.key: candidate.picture for candidate in cleared}
     at_place: dict = {}

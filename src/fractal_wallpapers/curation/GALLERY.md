@@ -296,8 +296,11 @@ whole reason it replaced a method that had no answer at all until it had a proof
 `solve.json` since 2026-08-31 carries a `population` block — `candidates`,
 `clearing`, `after_the_preselection`, `in_the_view`, and the same three at
 location level — which is the funnel from the store to the rows the leg could
-seat, stage by stage. Beside it `diversity` carries the twin rule's own counters:
-`candidates_tested`, `seat_comparisons_settled_by_the_bound` and
+seat, stage by stage. Since 2026-09-09 it also carries
+`clusters_after_the_preselection` beside the places, because the seat constraint
+reads the cluster and every other join reads the place: see *The fold merges
+instead of deleting*. Beside it `diversity` carries the twin rule's own counters:
+`candidates_tested`, `seconds`, `seat_comparisons_settled_by_the_bound` and
 `...by_the_norm_screen`, `full_signatures_fetched`, `signatures_made`,
 `reduced_from_the_sidecar`, and the constants the reduction ran at. `pool` and
 `view` complete it — `refused` by cause, `reachable_locations`, and the view's
@@ -1364,7 +1367,9 @@ move with it: `solve.strongest_locations` still cuts the
 by it, and `mine`/`depth`'s per-place best is still it. Every one of those runs
 **after** `at_fine_bar`, so on a `--fine-bar` pass the fine head has read all of
 them — see *Where the coarse key still decides*, below. `distinct.preselect` was
-the fourth and **moved on 2026-09-09**, being the one of the four that deletes.
+the fourth and **moved on 2026-09-09**, being the one of the four that deleted —
+and later the same day it stopped deleting at all, which is *The fold merges
+instead of deleting*, below.
 
 ### Where the coarse key still decides — `AUDIT_ckpt117_fine_key_sites_and_place_radius_sheet_0909`
 
@@ -1373,7 +1378,9 @@ so inside a near-duplicate cluster the survivor is not the row a seating would
 have reached for. This is every other place that shape appears, swept over the
 curation package. **Nothing here was changed on this reading.** `preselect`
 itself was changed on the next one — see *The fold picks its survivor on the
-seating key*, below — and every other row of both tables still stands.
+seating key*, below — and on the one after that it stopped destroying rows
+altogether, which is what made its own row's *reversible* column stale. Every
+other row of both tables still stands.
 
 One constraint shapes the whole answer and is stated rather than assumed:
 `gallery-grade score-pool` runs on **coarse-clears only**, so `p_fine` exists
@@ -1386,7 +1393,7 @@ deletion.
 
 | site | the decision | `p_fine` there | reversible |
 | --- | --- | --- | --- |
-| ~~`distinct.preselect`~~ **moved 2026-09-09** | the walk order, and so **which place represents a near-cluster** — each place offered by its strongest candidate's raw `P(>=4)` | **all of it.** It runs on the clearing pool, and after `at_fine_bar` on a barred pass | **no** — the place and every row it carries leave the pass under `SAME_PLACE`, and nothing revisits |
+| ~~`distinct.preselect`~~ **moved 2026-09-09**, and it no longer deletes | the walk order, and so **which place represents a near-cluster** — each place offered by its strongest candidate's raw `P(>=4)` | **all of it.** It runs on the clearing pool, and after `at_fine_bar` on a barred pass | ~~**no** — the place and every row it carries leave the pass under `SAME_PLACE`, and nothing revisits~~ **the irreversibility went too**: the rows stay in the pool under the survivor's cluster and the seating chooses between them |
 | `solve.strongest_locations` | `--locations N` keeps the N strongest **places** by their best candidate's raw `P(>=4)` | **all of it** — it is called on the line after `at_fine_bar` | **no** within the pass; the cut places are gone before the view is sized |
 | `candidate_ledger.prune` → `retention.decide` | top-`RETAIN_PER_PAIR` per (location, mode) on the fitted `rank_key`; a loser loses its row **and its JPEG** | **11.9%** of the rows it ranks. Only 7.1% of pairs hold two rows with a reading | **no**, and it is the only site here that destroys anything |
 | `depth.best_field_by_location`, `mine.best_by_location` | which row is a place's *best*, which sets the band the near and deepen draws read | yes for the `[SEATING_BAR, PRIMED_BAR)` band — 0.50 to 0.90, entirely above `Q4_BAR` | yes — a draw spends renders and deletes nothing |
@@ -1441,7 +1448,8 @@ did not, and nothing about it is a function of the key.
 Since 2026-09-09 `distinct.preselect` offers each place by its strongest row on
 **`p_fine(>=4)` where the fine-tier head has read that row**, and on raw `P(>=4)`
 where it has not. The walk order *is* the rule about which place represents a
-near-cluster, the fold is the one pool-construction decision that **deletes**, and
+near-cluster, the fold was then the one pool-construction decision that **deleted**
+— it stopped later the same day, *The fold merges instead of deleting* below — and
 the audit above measured it discarding the higher-`p_fine` place in 41.8% of the
 resolvable folds. The docstring's claim — that the survivor is the place a seating
 would have reached for — is only true on the key the seating orders by, and now it
@@ -1493,8 +1501,9 @@ absolute delta 0.1315. The fold sacrifices the coarse column at the rate it used
 sacrifice the fine one, and the fine one is the column the seating reads.
 
 **What the fold still destroys, and picking a better survivor does not fix it.**
-The fold keeps all of the survivor's ledger and destroys all of the absorbed
-place's. Read over the 1,144 folds of `20260909T061451Z` — 438 clusters, the
+This is the measurement the section below was built on, and it is stated in the
+tense it was taken in: at this reading the fold kept all of the survivor's ledger
+and destroyed all of the absorbed place's. Read over the 1,144 folds of `20260909T061451Z` — 438 clusters, the
 largest absorbing 44 places — against the rows those places hold in the clearing
 pool today, 2,151 rows destroyed:
 
@@ -1517,6 +1526,118 @@ that is **short 7** in that same record. That is not proof the eight would have
 seated, and it is the reason to state the measurement rather than assume the
 overlap: this is what a per-cluster constraint would be bidding for. **None was
 built**, on this reading or on the key change.
+
+### The fold merges instead of deleting — `POOL_ckpt117_fold_merges_instead_of_deletes_0909`
+
+The fold is right that a near-duplicate cluster should hold one seat. It was buying
+that by destroying every row at every absorbed place, and the section above measured
+what that cost: 41.7% of folds destroyed a mode the survivor has no row in and 95.1%
+a colour cell it cannot reach. Since 2026-09-09 it is a **relabel**.
+
+**One seat per cluster, which is the existing rule over a coarser group.** An
+absorbed place's rows stay in the pool carrying the surviving place's key as their
+`solve.Candidate.cluster`, and `rules.State.places` — the one axis whose value is a
+key rather than a set — is keyed on that instead of on `location`. A place nothing
+folded is a cluster of one, `cluster` **is** `location`, and the rule is the
+one-per-location rule it has always been. `--fold delete` keeps the destructive walk
+selectable, because an old record has to reproduce and because the two arms below
+have to differ in one thing.
+
+**`config.fold` says which ran**, alongside `preselection.fold`, because `config` is
+the block `tentative.manifest` carries **whole** into the tracked manifest: whether a
+gallery seated one wallpaper per place or one per near-cluster is not something a
+reader should have to infer from the stamp. `null` there is a pass with no
+pre-selection at all.
+
+**No cluster is built by transitivity, and `preselect` checks rather than assumes.**
+`suppress` compares each place only against places already **kept**, so a refused
+place always points at a kept one and the result is a star forest of depth one. A
+place inside the radius of an absorbed place but outside its survivor's stands as
+its own cluster, exactly as it stands as its own place today. Building the closure
+would be a different fold, not this one minus the destruction.
+
+**The cluster id is for the seat constraint and for nothing else.** There are
+**six** reads of `cluster` in the package and four of them are `rules.State` —
+`seat`, `unseat`, `counted_refusal`, `counted_requirements` — with `label_fate`'s
+`_refusing_set` mirroring `counted_refusal` and the record's own
+`clusters_after_the_preselection` counting them. Everything else joins on
+`location` and must: the spiral verdict and `p_spiral` (joined in `solve.pool`,
+before the fold runs), `rank_key`'s `loc_p_ge4`, `retention.decide`'s
+`(location, mode)` key, the ledger row, `headroom.bars`, `view._population`'s
+per-place layer and its `(place, stratum)` alternates, `ceiling.capable_groups`,
+`rules.Places` for the themed geometry rule, and every place count on a record. A
+relabeled row tested for spiral-ness under another place's score is the failure the
+arrangement exists to avoid, and the guard for it is that the relabel moves exactly
+one field: `tests/test_solve.py::test_the_relabel_moves_exactly_one_field_and_location_is_not_it`.
+
+**`headroom.census` and `curate headroom --twin` ask for `delete` on purpose.** A
+census bounds seats over places and represents each place by its strongest row, and
+the kept set of a destructive walk **is** one representative per cluster — which is
+the bound. A pooled walk would hand them every absorbed place back and they would
+count a cluster's places as that many seatable places.
+
+**A refusal now has something to name.** `SAME_PLACE` said a place was folded before
+any seat existed, which is why those cards showed a distance and no competitor.
+Under pooling it is never written: a row that loses its cluster's seat to a sibling
+is refused by the `location` rule, and its card names the sibling, the cluster and
+each place's neutral distance to the place the cluster is seated under — the two
+absorbed places were never measured against **each other**, so the card carries the
+two spokes of the star and says so. The constant stays readable, and a record taken
+before 2026-09-09 still explains itself.
+
+#### Both folds over one pool, n=1000
+
+`20260909T165641Z` (pool) and `20260909T165848Z` (delete), taken back to back on the
+same ledger, `--n 1000`, tentative, no release render, shipped defaults otherwise.
+The pre-selection is identical in both: **6,683 places fold into 5,509 clusters,
+1,174 absorbed, 2,165 rows** — which is what stayed in one arm and left in the other.
+
+| | pool | delete |
+| --- | --- | --- |
+| rows after the pre-selection | **11,637** | 9,472 |
+| places / clusters after it | 6,683 / 5,509 | 5,509 / 5,509 |
+| rows in the view | 11,160 | 9,263 |
+| seats | 1,000 | 1,000 |
+| demand shortfall | **0** | 1 |
+| worst seated | 1.50391 | 1.50391 |
+| sum | **1,891.212064** | 1,889.586793 |
+| solve wall time | 100.16 s | 89.52 s |
+
+Term by term the two agree on the first and third tiers and differ on the second and
+fourth. Reading the stages: the seed fills **806** seats against 816 — more rows
+competing for the same 5,509 clusters, so the greedy leaves more on the table — and
+the chain stage then reaches 1,000 in both, from a shortfall of 34 against 39, which
+the second swap loop takes to **0 against 1**.
+
+**The two questions this was built to answer.**
+
+**71 of the 1,000 seats are held by a row at a place the destructive fold would have
+absorbed** — 7.1% of the gallery, at 71 of the 1,174 absorbed places. Those rows do
+not exist in the other arm.
+
+**`itinerary` met its floor.** 31 against a floor of 32 under `delete`, and **32
+against 32** under `pool`: the only shortfall either arm carried, closed. Per-mode
+seats meet every floor in the pooled arm and all but that one in the destructive
+one. The rest of the roster moves by single seats in both directions —
+`direct_trap_screen` 27 → 28, `smooth_angle_min` 32 → 33, `smooth_mean_angle` 47 →
+48, `tia` 288 → 297, `threads` 65 → 67, against `smooth` 166 → 160 and `stripe` 249
+→ 240. The gallery trades the two uncapped modes for the floored ones, which is the
+objective's second tier doing what it is above the fourth to do.
+
+**Cluster sizes.** 5,063 clusters of one place, 262 of two, 71 of three, and a long
+thin tail: 32 of four, 25 of five, then singles out to one cluster of **56 places**.
+So the coarsening is concentrated — 446 clusters hold more than one place, 8.1% of
+them — and the largest is a `julia:mandelbrot` neighbourhood the pool has mined
+hard.
+
+**What it costs.** The solve is **100.16 s against 89.52 s, +11.9%**, and the
+diversity rule is essentially all of it: **89.913 s against 80.291 s, +12.0%**, over
+**17,975 measured pairs against 11,769, +52.7%**, with the reduced bound settling
+16,328,214 seat comparisons against 13,344,266 and the norm screen 12,613,957 of
+those against 9,991,480. The rule is the stage that opens pictures, the **view** it
+walks grew 9,263 → 11,160 rows (+20.5%), and it grew 12%. `rules.Twins.record` carries `seconds` from this
+reading on, so the next pool that grows can be read against it rather than inferred
+from the pass total.
 
 ### The location-level prune does not work, and this is why
 
@@ -1623,6 +1744,11 @@ Four names sit outside `rules.RULES` and are kept apart from it deliberately:
 wallpaper), `below_its_mode_bar` (never entered the population) and
 `another_place_is_the_same_place` (the neutral pre-selection, at pool
 construction). A mine aimed at any of the four would be aimed at nothing.
+
+The fourth is **only written by a `--fold delete` pass** since 2026-09-09. A pooled
+fold destroys nothing, so a row that loses its cluster's seat is refused by
+`location` like any other — see *The fold merges instead of deleting*. The name is
+still read, because the records that carry it have to keep explaining themselves.
 
 #### `--explain-seats-of` answers the other question: what happened to THIS picture
 
@@ -3049,7 +3175,11 @@ The pre-selection is a greedy suppression over **places**, each represented by i
 strongest clearing candidate, strongest first — on the fine head's `p_fine(>=4)`
 where it has read that row and on raw `P(>=4)` where it has not, which is *The fold
 picks its survivor on the seating key* above. A place inside the radius of a place
-already kept is refused and everything that place carries goes with it. A location
+already kept is **folded into it**: since 2026-09-09 that means the absorbed place's
+rows stay in the pool carrying the survivor's key as their **cluster**, and the
+one-seat-per-location rule reads one seat per cluster — *The fold merges instead of
+deleting*, below. `--fold delete` is the older behaviour, where the place and every
+row it carried left the pass. A location
 with no neutral descriptor is **admitted**, never dropped — a place can be newer than
 the last embedding leg, and refusing on that would make the pre-filter a function of
 when the store was last built. Measured on `tentative_n1000_20260909T061451Z`, over

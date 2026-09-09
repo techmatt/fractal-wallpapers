@@ -385,6 +385,23 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+17, and the slow lane deliberately not taken.**
+`POOL_ckpt117_fold_merges_instead_of_deletes_0909`, 2026-09-09, idle box, taken
+after both solve legs. The tree held **124.03 s over the 4,120 it holds, 132
+deselected**, green — **4,252 collected**, against the 4,103 / 4,235 the entry
+below left it at. The seventeen are
+the pooled fold's: five in `test_rules` for one-seat-per-cluster, six in
+`test_distinct` for the relabel, the star forest and the record's cluster counts,
+three in `test_solve` for the end-to-end refusal path, the one-field relabel and the
+tracked `config.fold`, and three in `test_label_fate` for the card that names a
+sibling. All seventeen are arithmetic over synthetic candidates and none earns the
+mark.
+
+**The slow lane was not run**, on Matt's instruction mid-prompt, so the two lanes do
+**not** agree on the collected count for this entry and the slow figure below is the
+one from the entry under it. That is a reading this repository is missing rather
+than one it took: the next slow lane closes it.
+
 **+6, and a store the lane started reading once a test.**
 `PRESELECT_ckpt117_fold_on_the_seating_key_0909`, 2026-09-09, idle box, taken after
 the solve leg. The tree held **4,097 at 124.06 s** before the change and **4,103 at

@@ -587,7 +587,16 @@ def census(
         kept = list(cleared)
         preselection = {"skipped": "no neutral pre-selection was applied"}
     else:
-        kept, preselection = distinct.preselect(cleared, radius=float(radius), log=log)
+        # `distinct.DELETE` on purpose and not by inheritance. A census bounds
+        # seats over PLACES and represents each place by its strongest row, and
+        # the kept set of a destructive walk is exactly one representative per
+        # cluster — which is the bound. A pooled walk would hand back every
+        # absorbed place as well and this census would count a cluster's places
+        # as that many seatable places, which is the one thing the fold says
+        # they are not.
+        kept, preselection = distinct.preselect(
+            cleared, radius=float(radius), fold=distinct.DELETE, log=log
+        )
     best: dict = {}
     for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
         best.setdefault(candidate.location, candidate)

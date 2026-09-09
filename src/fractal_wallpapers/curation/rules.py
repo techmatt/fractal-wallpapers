@@ -67,6 +67,8 @@ other: the two metrics are near-orthogonal over this population, which
 
 from __future__ import annotations
 
+import time
+
 from fractal_wallpapers.curation import ceiling
 
 #: The rules, in the order [`State.refuses`] applies them. The first to fail
@@ -408,6 +410,11 @@ class Twins:
         self.reduced_made = 0
         self.reduced_hits = 0
         self.full_signatures_fetched = 0
+        #: Wall seconds spent inside [`within`], accumulated across every call.
+        #: The stage that opens pictures is the one with a reason to grow when the
+        #: pool does, so what it cost is on the record beside what it compared
+        #: rather than left to be inferred from the pass's own total.
+        self.seconds = 0.0
 
     @property
     def held(self) -> list:
@@ -475,6 +482,15 @@ class Twins:
 
         from fractal_wallpapers.palettes import pixel_clouds
 
+        started = time.perf_counter()
+        try:
+            return self._within(key, numpy, pixel_clouds)
+        finally:
+            self.seconds += time.perf_counter() - started
+
+    def _within(self, key: str, numpy, pixel_clouds) -> list | dict:
+        """[`within`]'s body, apart only so the timer is one `try` around all of it
+        rather than a stopwatch at each of its six exits."""
         mine = self.reduced_of(key)
         if mine is None:
             self.without_a_picture += 1
@@ -668,6 +684,10 @@ class Twins:
             "bound_blocks": BOUND_BLOCKS,
             "bound": BOUND,
             "candidates_tested": self.tested,
+            "seconds": round(self.seconds, 3),
+            "seconds_are": "wall time inside the rule itself, over every call: the reduced "
+            "bound, the norm screen, the decodes and the measured pairs. It is the stage "
+            "that opens pictures and the one that grows when the pool does",
             "seat_comparisons_settled_by_the_bound": self.settled_by_the_bound,
             "seat_comparisons_settled_by_the_norm_screen": self.settled_by_the_norm_screen,
             "norm_screen": "the reverse triangle inequality on the L1 norm, a scalar a seat "
@@ -921,8 +941,17 @@ class State:
         }
         #: `{key: (candidate, why it was seated)}`, in the order seated.
         self.seated: dict = {}
-        #: `{location: the one key seated there}`. One wallpaper per location is
+        #: `{cluster: the one key seated there}`. One wallpaper per cluster is
         #: hard, so this axis is the only one whose value is a key rather than a set.
+        #:
+        #: **Keyed on [`solve.Candidate.cluster`] and not on `location`**, which is
+        #: the same constraint over a coarser group: a place the neutral
+        #: pre-selection folded into another shares that place's cluster, so a
+        #: near-duplicate cluster holds one seat between all of its places without
+        #: the rows at the absorbed ones being destroyed to make it true. Under
+        #: `distinct.DELETE` — and for every record taken before 2026-09-09 — no row
+        #: carries a `folded_into`, `cluster` **is** `location`, and this is the
+        #: one-per-location rule it has always been. See [`distinct.POOL`].
         self.places: dict = {}
         #: `{value: {key: True}}` per axis — **which seats** carry each cell,
         #: family, palette group and mode, rather than how many. A count cannot
@@ -970,7 +999,7 @@ class State:
         """Seat one candidate. The caller has already asked [`admits`]."""
         key = str(candidate.key)
         self.seated[key] = (candidate, why)
-        self.places[candidate.location] = key
+        self.places[candidate.cluster] = key
         for store, values in self._axes(candidate):
             for value in values:
                 store.setdefault(value, {})[key] = True
@@ -983,7 +1012,7 @@ class State:
         """Take one seat back out and hand the candidate back. The swap's other half."""
         key = str(key)
         candidate, _why = self.seated.pop(key)
-        self.places.pop(candidate.location, None)
+        self.places.pop(candidate.cluster, None)
         for store, values in self._axes(candidate):
             for value in values:
                 store[value].pop(key, None)
@@ -1078,7 +1107,7 @@ class State:
         in the pool after the fact, where asking the diversity rule of every
         candidate would be a pixel-cloud signature apiece.
         """
-        if candidate.location in self.places:
+        if candidate.cluster in self.places:
             return "location"
         if len(self.groups.get(candidate.group, ())) >= self.rule.group_cap:
             return "group_cap"
@@ -1132,7 +1161,7 @@ class State:
         never pay for one.
         """
         wanted: list = []
-        held = self.places.get(candidate.location)
+        held = self.places.get(candidate.cluster)
         if held is not None:
             wanted.append({held})
         if len(self.groups.get(candidate.group, ())) >= self.rule.group_cap:
@@ -1230,7 +1259,11 @@ class State:
         """
         return {
             "rules": list(rules_for(self.diversity)),
-            "hard": ["one wallpaper per location", "the diversity rule"],
+            "hard": ["one wallpaper per cluster", "the diversity rule"],
+            "location_is": "the `location` rule reads solve.Candidate.cluster — a place's "
+            "own key, or the key of the place distinct.preselect folded it into. It is "
+            "one-per-location exactly when nothing folded, which is every record before "
+            "2026-09-09 and every record taken under distinct.DELETE",
             "counted": [
                 "the palette group cap",
                 "the per-cell allowance",
