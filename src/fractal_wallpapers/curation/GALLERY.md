@@ -362,31 +362,40 @@ meant to. **The readout says which happened** — `exhaustive` on the depth bloc
 the difference between *no chain of depth ≤ 2 exists* and *none was found in the
 time given*, and the blockage block is only interpretable beside it.
 
-⚠ **It is a budget between SEATS, and a gallery with few seats can overrun it by
-a lot.** The clock is read once per seat in the sweep, and `chain_at` is then a
-nested walk over that ejection's whole `ready` list with no check inside it — so
-one seat's neighbourhood is unbounded in time and a sweep's granularity is the
-seat count. Observed 2026-09-07: a pass holding **7** seats ran the stage **522.8 s
-against the 300 s budget**, 74% over, on 150 million pairs. At the shipping rungs
-this is invisible — a thousand seats is a thousand clock reads a sweep — and it
-bites exactly where the gallery is small and the population large. Putting a check
-inside `chain_at` would move where a *bound* stage stops and so is **not a
-seat-identical change**; it is a proposal, not a fix that can be taken quietly.
+#### A budget to the pair, and the two records made before it was one
 
-**It stays a proposal, and 2026-09-07 is when that was settled rather than
-assumed.** The argument for taking it anyway was that a bound stage's seating is
-already decided by wherever the clock happened to fall mid-walk, so no correct
-answer is being preserved — which is true only if no record was made that way.
-Two were. Every `augment` block in every record on the box was swept for a phase
-whose `stopped_because` says the budget ran out: **57 records carry an augment
-block and exactly two bound**, both `depth_2`, both n=2000, both under
-`artifacts/curation/solve/` — `tentative_n2000_20260904T234133Z` (300 s budget,
-301.24 s, 867,427 pairs, filled 1,795) and `tentative_n2000_20260905T001615Z`
-(1,800 s budget, 1,822.61 s, 13,186,436 pairs, filled 1,984). They are the two
-this section already quotes as *seats 1,795 at 300 s and 1,984 at 1,800 s*.
-Neither is a published stamp, and both are records the store keeps and a stamp can
-name. So a check inside the walk would re-seat two records that exist, and taking
-it is a decision about those two rather than a quiet correctness fix.
+⚠ **It was a budget between SEATS until 2026-09-09, and a gallery with few seats
+could overrun it by a lot.** The clock was read once per seat in the sweep, and
+`chain_at` is a nested walk over that ejection's whole `ready` list — so one
+seat's neighbourhood was unbounded in time and a sweep's granularity was the seat
+count. Observed 2026-09-07: a pass holding **7** seats ran the stage **522.8 s
+against the 300 s budget**, 74% over, on 150 million pairs. At the shipping rungs
+it was invisible — a thousand seats is a thousand clock reads a sweep — and it bit
+exactly where the gallery is small and the population large, which is the case a
+budget exists for.
+
+**The check is now inside the walk**, in `chain_at` and in `_terminal` both, read
+before every pair and unwinding whatever trial is in flight, so a bound stage
+stops at a trial boundary on a gallery as valid as an exhausted one's. The read
+costs a `monotonic` against a `counted_refusal` on the same iteration.
+
+**It was a proposal until then, and what settled it was those two records.** The
+argument for taking it was that a bound stage's seating is already decided by
+wherever the clock happened to fall mid-walk, so no correct answer is being
+preserved — true only if no record was made that way. Two were. Every `augment`
+block in every record on the box was swept for a phase whose `stopped_because`
+says the budget ran out: **57 records carry an augment block and exactly two
+bound**, both `depth_2`, both n=2000, both under `artifacts/curation/solve/` —
+`tentative_n2000_20260904T234133Z` (300 s budget, 301.24 s, 867,427 pairs, filled
+1,795) and `tentative_n2000_20260905T001615Z` (1,800 s budget, 1,822.61 s,
+13,186,436 pairs, filled 1,984). They are the two this section quotes as *seats
+1,795 at 300 s and 1,984 at 1,800 s*. Neither is a published stamp, and both are
+records the store keeps and a stamp can name. **They were made under the unbounded
+stage and they are left exactly as they are**: re-solving them would be a
+different pass's answer written under a stamp that already means something, and
+the readings above are read as *what the stage did on 2026-09-04*, not as
+something today's code reproduces. A record made after 2026-09-09 at n=2000 will
+not agree with them, and that is the change working rather than a discrepancy.
 
 **At n=2000 it is a budget question and the exhaustive cost is unknown** — over
 30 minutes, and nothing has run it to the end. What dominates there is the **chain

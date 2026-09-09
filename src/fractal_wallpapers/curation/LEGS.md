@@ -870,9 +870,17 @@ Two refusals, both of them the design working:
   manifest at the seed it will be spent at. (The colour decision is per *group*,
   which is what `color_mass` is keyed on, so re-cutting at another seed keeps the
   same groups and changes only which member stands up.)
-- **A manifest leaving fewer than `colorize.CANDIDATES` maps is refused**, because
-  the palette head asks a 32-map neighbourhood of each anchor and a pool that
-  cannot serve one is a head answering a different question.
+- **A manifest leaving NO map is refused**, and a small one is not. Both cuts
+  refused below `colorize.CANDIDATES` until 2026-09-09, on the grounds that the
+  palette head asks a 32-map neighbourhood of each anchor — but **no arm here asks
+  the head anything**: `flat_maps` samples the pool with a seeded RNG,
+  `plan_held_mode` and `plan_floor` sample what a place has not spent, `aimed_maps`
+  draws through the carrier table, and each takes `min(width, len(pool))`.
+  `colorize.candidate_set` is reached only from `Colorizer.attempt` and
+  `labeling.sheets`, and what renders here is `mine.make`, which takes the map off
+  the shot. The bound was inherited from a path this leg does not take and it
+  refused legitimate narrow manifests. (`colorize.pool`'s own `< CANDIDATES` guard
+  is about the shipped **library** and still stands.)
 
 #### Aiming the whole manifest at ONE DROP is the cheapest coverage there is
 
@@ -944,8 +952,9 @@ intersection. Sparse, and unsaid it is every cell, which is `colorize.pool`
 untouched and bit-for-bit what a run drew before the flag existed.
 
 A map is kept when **any** listed cell clears the cutoff — not all of them, because
-a pool cut to the maps serving all five thin cells at once is a pool that cannot
-stand up a 32-map neighbourhood for one of them. The probability is
+a pool cut to the maps serving all five thin cells at once is a handful of maps
+spread over five cells, which is not a leg aimed at five colours but a leg aimed at
+whatever those few maps happen to carry. The probability is
 `palettes.color_mass.delivering`: **mode-conditional mass where there is a row for
 the map's palette group, the carrier prior where there is not** (822 of 823 groups
 are measured), and the **max** over `mode_policy.accepted()` rather than the mean,
@@ -954,11 +963,13 @@ for failing on modes the leg will not run is a map narrowed away for nothing.
 
 `--draw-cutoff` defaults to `palettes.dominance.CELL_LEAD` (0.10) rather than to a
 constant of its own, so the filter reads as *this pair is expected to be dominant
-here*. It is also the loosest value that is still a bound at this library: at 0.10
-the thinnest cell (`dark_vivid_lime`) offers **42** maps of the 942-map collapsed
-pool and at 0.15 it offers **32**, which is `colorize.CANDIDATES` exactly and no
-headroom at all. Narrowing below the neighbourhood is refused, and the message
-names the cutoff because the cutoff is the knob that fixes it. *(Read 2026-09-06,
+here*. At 0.10 the thinnest cell (`dark_vivid_lime`) offers **42** maps of the
+942-map collapsed pool and at 0.15 it offers **32**. Those two readings were the
+argument for the default while the cut was refused below 32; since 2026-09-09 only
+an **empty** cut is refused, so they now say what the bar costs in supply rather
+than where it becomes illegal — a leg cutting to a dozen maps is a leg that meant
+to, and the message still names the cutoff because the cutoff is the knob that
+fixes it. *(Read 2026-09-06,
 after `classic-pairs-2026-09` was measured into `color_mass`; before that sweep the
 same two readings were 40 and 28, so 120 maps of measured mass bought the thinnest
 cell two offers at the default bar and four at the tighter one. The 822 the older

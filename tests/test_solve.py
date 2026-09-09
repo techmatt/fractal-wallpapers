@@ -2568,6 +2568,77 @@ def test_the_incumbent_spelling_is_bit_identical_with_the_chain_stage_off():
     assert incumbent["config"]["ceiling"]["group_cap_rule"] == ceiling.IDENTITY
 
 
+class _JumpingClock:
+    """Stands in for `augment`'s `time`, and jumps the budget after `jump_after` reads.
+
+    It replaces the **module reference in `augment`'s own namespace** and never
+    `time.monotonic` itself: `solve` reads the same clock for the swap loop's
+    deadline, so patching the module patches the whole leg and the stage under
+    test is then handed a gallery some other stage stopped building.
+
+    The stage reads the clock in five places and one of them is inside
+    [`augment.Pass.chain_at`]'s nested walk, so *where* the jump lands is a
+    function of a read count nothing should have to predict. That is why the guard
+    below sweeps the count rather than naming one: at every landing point the
+    answer has to be the same — a bound readout and a gallery nobody has to unwind.
+
+    **The sweep starts at 3 and the first two reads are why.** [`augment.run`]
+    takes `started` and then computes `deadline` off a second read, so a clock
+    that has already jumped when the deadline is taken sets the deadline *beyond*
+    the jump and nothing can bind. That is an artifact of a fake clock and not a
+    case a real one has.
+    """
+
+    def __init__(self, jump_after: int):
+        self.jump_after = jump_after
+        self.reads = 0
+
+    def monotonic(self) -> float:
+        self.reads += 1
+        return 0.0 if self.reads <= self.jump_after else 5.0
+
+
+@pytest.mark.parametrize("jump_after", [3, 4, 5, 6, 8, 10, 12, 16, 24, 32])
+def test_the_augment_budget_stops_the_walk_wherever_it_falls_and_unwinds_it(
+    monkeypatch, jump_after
+):
+    """**The budget is a budget to the pair, not to the seat.** `chain_at` used to
+    walk one ejection's whole `ready` list with no clock in it, so the stage was
+    bound at the granularity of the *seat count* and a pass holding 7 seats ran
+    522.8 s against a 300 s budget — 74% over, on 150 million pairs.
+
+    What has to hold wherever the clock stops is the unwind: a trial in flight
+    ejected a seat and may have seated one row of two, and the caller is owed the
+    gallery it lent. So this sweeps the jump across the stage's own reads and
+    asks, at each: the depth block says the budget ran out and claims no
+    exhaustion, the seat count never exceeds `n`, no key is seated twice, and
+    every seated key is a row of the pool.
+    """
+    clock = _JumpingClock(jump_after)
+    monkeypatch.setattr(augment, "time", clock)
+    pool = augmentable()
+    record = solve.solve(pool, log=quiet, augment_seconds=1.0, **AUGMENTABLE)
+
+    block = record["augment"]["phases"]["depth_2"]
+    # The readout is consistent wherever the jump landed: a stage the clock
+    # stopped claims no exhaustion and says which of the two it was.
+    assert ("budget" in block["stopped_because"]) is not block["exhaustive"]
+    # And a jump inside the first seat's walk DOES stop it. Six is a reading on
+    # this pool rather than a rule — the whole stage is a few dozen reads here, so
+    # a later jump lands in `blockage` or past the stage, where an exhaustion is
+    # honest and is what the branch above allows for.
+    if jump_after <= 6:
+        assert not block["exhaustive"], "the walk ran past a budget that had gone"
+        assert "budget" in block["stopped_because"]
+    seated = [row["key"] for row in record["seated"]]
+    assert len(seated) == len(set(seated)) <= AUGMENTABLE["n"]
+    assert set(seated) <= {str(row.key) for row in pool}
+    # The stage is anytime and the gallery is valid at every moment, so a bound
+    # pass is a smaller answer and never a broken one.
+    assert record["augment"]["seats_after"] >= record["augment"]["seats_before"]
+    assert record["augment"]["gained"] == len(record["augment"]["chains"])
+
+
 def test_the_augmented_pass_is_bit_identical_run_twice():
     """The second identity pin, on the stage that ships ON.
 
