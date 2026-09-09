@@ -178,16 +178,17 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,295 collected — 4,163 fast,
-132 slow — since the colour floor landed on 2026-09-09**, and that count is the
-comparable half of the last reading: its clock, **200.85 s**, was taken **beside a
-render leg** and is a busy-box number. The last **idle** readings are the pair
-below it, on this machine, 2026-09-09, on a `.[dev,models]` install with a release
-engine built and **4,277 collected** — the **fast** lane **129.99 s over the 4,145
-it holds, 132 deselected**, taken after the colour-ceiling sweep rather than
-beside it, and the **slow** lane **4,277 of 4,277 green in 459.94 s (7:39)** taken
-before it, **zero skips**. **No slow lane has been run since the colour floor**, at
-Matt's instruction, so the two lanes have not been compared on this tree.
+Both are measured, not estimated. The tree holds **4,301 collected — 4,169 fast,
+132 slow — since the gallery-grade correction page landed on 2026-09-09**, and the
+fast lane read them in **129.72 s** with a labeling server on the box and no render
+leg. That is within a third of a second of the last **idle** fast reading below,
+which is what settles the entry between them: **200.85 s over 4,295** was a busy
+box and not the tree. The idle pair is on this machine, 2026-09-09, on a
+`.[dev,models]` install with a release engine built and **4,277 collected** — the
+**fast** lane **129.99 s over the 4,145 it holds, 132 deselected**, and the **slow**
+lane **4,277 of 4,277 green in 459.94 s (7:39)**, **zero skips**. **No slow lane has
+been run since the colour floor**, at Matt's instruction, so the two lanes have not
+been compared on this tree.
 The two before it were 4,271 in 450.28 s and 4,235 in 448.94 s.
 **The two lanes normally agree on the collected count**, which is what that
 number is for, and they **do**: the pair above is one tree read twice.
