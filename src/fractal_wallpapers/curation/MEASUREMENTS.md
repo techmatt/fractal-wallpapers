@@ -513,6 +513,102 @@ exactly the boundary. Every `K` whose product lands on an integer has this, and
 allowance should be checked against `ceiling.Rule(k=K).allowed(cell, n)` rather
 than against the formula on paper.
 
+## What a colour ceiling four times the target rate costs, measured 2026-09-09
+
+`k_sweep_20260909`: six n=1000 seatings over one pool, `K` from the shipped **2**
+out to **3.75**, everything else identical to `20260909T173957Z`, whose seating the
+`K = 2` arm **reproduces exactly** — the same 1,000 keys in the same order, the
+same objective, the same refusal table. Sweep stamp `20260909T203636Z`, six rungs
+in 362 s. **Unforced throughout**: `--forced` is a separate axis and mixing the two
+would confound this. **Nothing here is adopted** — `ceiling.K` is untouched, every
+record is unpublished, and the control is not re-based.
+
+⚠ **The reproduction is the finding people will want first.** Two commits landed
+between the control and this sweep — the `--locations` cut moved after the fold and
+onto the cluster, and `--forced` staged at the fine column — and an unforced pass
+is still seat-for-seat what it was, which is what the `--forced` commit claimed.
+
+**The allowance is a multiple of the *realized* mean and not of a remembered
+constant.** The control seats 1,000 wallpapers carrying **1,802 cell memberships**,
+**1.802 a seat**, so the mean cell holds **37.54** of them. The `~1.9 a seat` in
+this file's 2026-09-06 section is not a rounding of that: it is 1,904/1,000 read
+off a different pool, and the figure has fallen since. Every multiple below is
+against 37.54.
+
+| K | allowance | x realized mean | family allowance | worst | sum | cells at it | short | seats moved |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2.0 | 42 | 1.12 | 167 | 1.503910 | 1891.21 | 32 | 16 | — |
+| 2.5 | 53 | 1.41 | 209 | 1.503910 | 1916.17 | 22 | 26 | 293 |
+| 3.0 | 63 | 1.68 | 251 | 1.713590 | 1939.09 | 14 | 34 | 380 |
+| 3.25 | 68 | 1.81 | 271 | 1.760127 | 1945.08 | 11 | 37 | 395 |
+| 3.5 | 73 | 1.95 | 292 | 1.777384 | 1949.38 | 10 | 38 | 401 |
+| 3.75 | 79 | 2.10 | 313 | 1.787097 | 1953.61 | 10 | 38 | 423 |
+
+Every rung fills all 1,000 seats, meets every demand at a shortfall of zero, and
+seats all 13 modes at or above their floor. Memberships go **1,802 → 2,131**, so a
+seat carries 1.802 colours at the shipped `K` and 2.131 at 3.75.
+
+**The pass stops being colour-bound and becomes seat-bound.** `cell_allowance`
+falls 8,662 → 3,824 while `the_leg_had_no_seat_left` goes **3 → 825**, and the
+crossing is between `K = 2.5` (7 unseated) and `K = 3` (379). `spiral` rises 754 →
+1,126 and `twin` 423 → 597 as the loosening pushes the walk further down the
+ranking; `location` barely moves (1,487 → 1,167). `group_cap`, `family_allowance`
+and `mode_ceiling` are **zero at every rung**, as they always have been.
+
+**The family allowance reads the same `K` and never binds.** `Rule.allowed` is one
+function over cells and families alike — `floor(K x share x n) + 1`, with
+`FAMILY_SHARE` four times `CELL_SHARE` — so raising `K` raises both in step and the
+*relative* slack is fixed. The busiest family runs **135 of 167 (81%)** at `K = 2`
+and **180 of 313 (58%)** at 3.75: it gets slacker, not tighter. The arithmetic says
+it can never take over either — four cells at their allowance is `4 x 42 = 168`
+against a family allowance of 167, one seat apart, and only with *zero* overlap
+between the four; real overlap is nothing like that.
+
+**The tone finding of 2026-09-06 reverses above 2.5.** Over 2.0 → 2.5 the growth is
+even (muted +141, vivid +136) rather than all muted; from 2.5 to 3.75 it is
+**entirely vivid** — vivid +142, muted **-90**. By leading cell the gallery goes
+483/516 vivid/muted at `K = 2` to **559/441** at 3.75, so the flip the earlier sweep
+saw toward muted turns round and goes further the other way.
+
+**Twenty-three of the 48 cells end lower than they began**, and the losses are cyan,
+lime, azure, teal and the cool yellows: by family, `cyan` **83 → 49**, `lime` 52 →
+29, `azure` 93 → 69, `teal` 105 → 90, `blue` 93 → 81, `green` 109 → 97, `yellow`
+108 → 98, against `red` 135 → **180**, `orange` 132 → 179, `rose` 120 → 152,
+`purple` 97 → 127 and `magenta` 101 → 125. **Fourteen of the sixteen cells short at
+`K = 2` end shorter in absolute seats**, which extends the earlier sweep's eight of
+nine four to six times further out. The worst falls are `light_muted_lime` 38 → 21,
+`dark_vivid_cyan` 26 → **9**, `dark_muted_lime` 32 → 16, `dark_muted_cyan` 42 → 27
+and `light_muted_cyan` 42 → 28.
+
+⚠ **No cell falls for want of supply, and none for want of its own allowance.**
+Every one of the 23 sits strictly below its allowance at `K = 3.75`, so the rule is
+not what holds it down; and every one has more unseated clearing places than its
+whole deficit, so the pool could have filled it. The rejection ledger says what
+took them instead: at `K = 2` their places were refused `cell_allowance` 57-79% of
+the time, and at 3.75 that column is `location` (19-46%) and
+`the_leg_had_no_seat_left` (12-45%). One seat per cluster is the binding fact, and
+the loosening spends the clusters on the colours the supply is skewed toward.
+
+**Five of the 23 are the exception and are worth naming**, because
+`cell_allowance` is still their top column at 3.75 — `light_muted_rose` 53%,
+`light_muted_purple` 44%, `dark_vivid_yellow` 42%, `light_muted_magenta` 36%,
+`dark_muted_yellow` 24%. None of the five is itself at its allowance, so the rule
+that fired was a **co-dominant** cell's: their carriers also carry a warm cell
+sitting on 79. Those five are held down by another colour's ceiling and not by
+their own.
+
+**Nothing else moves.** Distinct palette maps go 467 → 430 against a cap of 25 that
+never fires (busiest map 20 → 22). The five modes that sit exactly on their floor —
+`curvature`, the three `direct_trap_*`, `itinerary` — do not move at any `K`, as
+they did not in the earlier sweep; the mode mix moves by `stripe` +11, `smooth` +9,
+`tia` -10 and `smooth_mean_angle` -6, and no mode goes below a floor at any arm.
+Seat churn against the control is 293/380/395/401/423 of 1,000.
+
+The two figures are `curate solve k-sweep-plot <stamp>`
+([`curation.k_sweep_plot`]), scratch only: per-cell membership with the control
+beside every arm, and the same as a difference against the control so a colour that
+**falls** reads as a bar below zero rather than as a small one.
+
 ## What the palette-group cap costs at n=1000, measured 2026-09-07
 
 **Nothing. It is not a binding constraint and never has been.** Three n=1000

@@ -597,6 +597,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--themed-radius",
         ),
         "k-sweep": ("--k", "--n", "--control"),
+        "k-sweep-plot": (),
         "browse": ("--stamp",),
         "resolve": ("--stamp",),
         "list": (),
@@ -817,14 +818,15 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     `label-migration merge` joined to put that store's rows into the pool; and nineteen
     and eighty until `label-fate` and its five arrived to say what became of every
     wallpaper somebody graded 4, its sixth landing the same day to name the row that
-    beat each refused one."""
+    beat each refused one; and eighty-eight until `solve k-sweep-plot` arrived to draw a
+    colour-ceiling sweep's per-cell figures off the readings it already wrote."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 88
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 89
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

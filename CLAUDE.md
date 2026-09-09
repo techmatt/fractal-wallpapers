@@ -178,17 +178,15 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **126.42 s over the 4,139
+Both are measured, not estimated. The **fast** lane is **129.99 s over the 4,145
 it holds, 132 deselected**, on this machine, 2026-09-09, on an idle box with a
-`.[dev,models]` install and a release engine built, taken after the forced solve
-leg rather than beside it — **4,271 collected**. The **slow** lane read **4,271 of
-4,271 green in 450.28 s (7:30)** the same day on the same idle box, taken before
+`.[dev,models]` install and a release engine built, taken after the colour-ceiling
+sweep rather than beside it — **4,277 collected**. The **slow** lane read **4,277 of
+4,277 green in 459.94 s (7:39)** the same day on the same idle box, taken before
 that fast one, **zero skips**.
-The two before it were 4,235 in 448.94 s and 4,217 in 436.12 s.
+The two before it were 4,271 in 450.28 s and 4,235 in 448.94 s.
 **The two lanes normally agree on the collected count**, which is what that
-number is for, and they **do** again: the +17 gap the pooled fold opened — a slow
-lane skipped on Matt's instruction — is closed by the pair above, both taken on
-one tree.
+number is for, and they **do**: the pair above is one tree read twice.
 
 **The long-standing red is closed and there is no expected failure any more**: a
 lane with any red in it is a lane to read. `test_leveled_identity.py`'s census
