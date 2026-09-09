@@ -421,3 +421,59 @@ def test_the_state_names_the_geometry_rule_last_and_never_the_twin_test():
     assert state.record()["rules"][-1] == "geometry"
     assert state.record()["diversity"]["threshold"] == rules.GEOMETRY_RADIUS
     assert rules.rules_for(None) == rules.RULES
+
+
+# --------------------------------------------------------------------------- #
+# One seat per CLUSTER.
+# --------------------------------------------------------------------------- #
+def test_two_places_in_one_cluster_hold_one_seat_between_them():
+    """The whole of what pooling changes in the seating. `b` is a real place with
+    real rows and the pre-selection folded it into `a`, so the two compete for one
+    seat where before the fold `b`'s rows simply were not in the pool."""
+    state = state_of(20)
+    state.seat(candidate("a1", location="a"), "general_pool")
+    arriving = candidate("b1", location="b", folded_into="a")
+    assert state.refuses(arriving) == "location"
+    assert state.removals(arriving) == {"a1"}
+
+
+def test_a_relabeled_row_takes_its_clusters_seat_and_locks_out_the_survivor():
+    """The constraint is one seat per cluster and not one seat per SURVIVOR: a
+    sibling can take the seat, and the place the cluster is named after is then
+    the one refused. That is the trade pooling exists to make available."""
+    state = state_of(20)
+    state.seat(candidate("b1", location="b", folded_into="a"), "general_pool")
+    assert state.places == {"a": "b1"}
+    assert state.refuses(candidate("a1", location="a")) == "location"
+
+
+def test_a_place_nothing_folded_is_its_own_cluster_and_the_rule_is_unchanged():
+    """Every record before 2026-09-09 and every pass under `distinct.DELETE`: no
+    row carries a fold, `cluster` is `location`, and this is the one-per-location
+    rule it has always been."""
+    state = state_of(20)
+    held = candidate("a1", location="a")
+    assert held.cluster == held.location and held.folded_into is None
+    state.seat(held, "general_pool")
+    assert state.places == {"a": "a1"}
+    assert state.refuses(candidate("a2", location="a")) == "location"
+    assert state.admits(candidate("z1", location="z"))
+
+
+def test_unseating_a_relabeled_row_releases_the_cluster_and_not_its_own_place():
+    """`unseat` has to take the same key out that `seat` put in, or the swap loop
+    leaves a cluster locked by a seat that is no longer there."""
+    state = state_of(20)
+    held = candidate("b1", location="b", folded_into="a")
+    state.seat(held, "general_pool")
+    assert state.unseat("b1") is held
+    assert state.places == {}
+    assert state.admits(candidate("a1", location="a"))
+
+
+def test_the_seat_axis_says_it_is_keyed_on_the_cluster():
+    """A record naming `one wallpaper per location` under a pass that seated one
+    per cluster describes a rule that did not run."""
+    state = state_of(20)
+    assert "one wallpaper per cluster" in state.record()["hard"]
+    assert "cluster" in state.record()["location_is"]

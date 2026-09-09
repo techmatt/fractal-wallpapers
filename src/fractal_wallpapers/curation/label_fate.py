@@ -48,11 +48,14 @@ rung, and getting it wrong is how a page lies quietly:
   entirely — the marginal seat in the full cell — and **not** whatever sits at
   its own location, which is what this page showed until 2026-09-08 and which
   was simply the wrong picture for 348 of its 524 cards.
-- **A folded place shows the place that absorbed it**, off the record's own
-  `preselection.refusals`, with the **neutral distance** the fold was taken at.
-  Nothing beat that row: its whole place went at pool construction, before a seat
-  existed, so the number on the card is a distance between two places and not a
-  margin between two scores.
+- **A row that lost its cluster's seat to a sibling place shows that sibling**,
+  with the cluster it is seated under and each place's **neutral distance** to it.
+  It is a `location` card like any other, because a pooled fold refuses nothing:
+  the row stayed in the pool and lost a seat to a near-duplicate of its own place.
+- **A folded place, on a record taken before 2026-09-09, shows the place that
+  absorbed it**, off that record's own `preselection.refusals`, with the neutral
+  distance the fold was taken at. Nothing beat those rows: the whole place went at
+  pool construction, before a seat existed. The constant is read and never written.
 - **Every other rung shows the seat holding its place**, matched on the exact
   location, which for them is the right comparison.
 
@@ -655,8 +658,10 @@ def _seat_of(seat: dict, seat_rows: dict, fine: dict) -> dict:
 #: as the pairing, because *what beat me* and *what would be enough* are both
 #: worth knowing and only the first is a picture.
 PAIRING = {
-    "location": "the seat standing at its own place — that one seat is the whole of the "
-    "location rule's requirement, so there is nothing to choose between",
+    "location": "the one seat standing in this row's CLUSTER — that seat is the whole of "
+    "the location rule's requirement, so there is nothing to choose between. Where it "
+    "stands at a sibling place rather than at this row's own, the card also names the "
+    "cluster and each place's neutral distance to the place the cluster is seated under",
     "cell_allowance": "the marginal seat in the cell that refused it: the weakest, by this "
     "pass's own seating key, of the seats already dominant in that cell",
     "twin": "the seated picture the diversity rule measured it against, off the record's own "
@@ -664,7 +669,9 @@ PAIRING = {
     "another_place_is_the_same_place": "the strongest candidate at the place that ABSORBED "
     "it, off the record's own `preselection.refusals` — a place and not a seat, folded at "
     "pool construction before any seat existed, so the card names the neutral distance the "
-    "fold was taken at rather than a seating gap",
+    "fold was taken at rather than a seating gap. **Retired 2026-09-09** and read only for "
+    "records taken before it: a pooled fold destroys no row, so a row that loses its "
+    "cluster's seat is refused by `location` above and has a sibling to name",
 }
 
 
@@ -731,9 +738,13 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     # "the strongest row there now": this pool is not the pool that pass ran over,
     # and a re-derivation could name a row the pre-selection never saw.
     by_picture = {str(candidate.picture): candidate for candidate in candidates}
+    # `refusals` on a record whose fold DELETED and `folds` on one that pooled —
+    # the same rows either way, and the second name exists precisely because
+    # nothing was refused. See `distinct.POOL`.
+    preselection = record.get("preselection") or {}
     absorbed = {
         str(entry["location"]): entry
-        for entry in ((record.get("preselection") or {}).get("refusals") or [])
+        for entry in (preselection.get("refusals") or preselection.get("folds") or [])
     }
     wrong = []
     for row in rows:
@@ -772,7 +783,12 @@ def competitors(stamp: str, store=None, log=print) -> dict:
             # of it: whether ONE seat leaving would have been enough.
             if row["competitor"] is not None:
                 row["competitor"]["enough"] = sorted(state.counted_removals(candidate))[:1]
+                _fold(row, held, absorbed, preselection)
         elif why == solve.SAME_PLACE:
+            # The old constant, still read so a record taken before 2026-09-09
+            # explains itself. A pooled pass never writes one: a row that loses
+            # its cluster's seat to a sibling is refused by the `location` rule
+            # above, which names the sibling and the fold it happened under.
             entry = absorbed.get(str(row["location"]))
             taker = None if entry is None else by_picture.get(str(entry["lost_to_picture"]))
             row["competitor"] = _competitor(None if taker is None else taker.key, held, order, why)
@@ -844,6 +860,41 @@ def _dress(paired: list, distinct: set) -> None:
         )
 
 
+def _fold(row: dict, held: dict, absorbed: dict, preselection: dict) -> None:
+    """Decorate a `location` card whose seat is at **another place**, in place.
+
+    That happens only under `distinct.POOL`, and it is what the retired
+    `solve.SAME_PLACE` card was trying to be: the row did not lose to a stronger
+    row at its own place, it lost to a sibling in the near-duplicate cluster the
+    pre-selection folded the two into. So the card names the cluster and how far
+    each of the two places sits from the place the cluster is seated under.
+
+    **Both distances are to the cluster's own survivor and neither is the gap
+    between the two places**, which the walk never measures: [`distinct.suppress`]
+    compares a place against kept places only, so a sibling pair is two spokes of
+    one star and the record holds the spokes.
+    """
+    taker = held.get(str((row.get("competitor") or {}).get("key")))
+    if taker is None or str(taker.location) == str(row["location"]):
+        return
+    mine = absorbed.get(str(row["location"]))
+    theirs = absorbed.get(str(taker.location))
+    cluster = (mine or theirs or {}).get("lost_to")
+    if cluster is None:
+        return
+    row["competitor"]["cluster"] = str(cluster)
+    row["competitor"]["distance"] = 0.0 if mine is None else round(float(mine["distance"]), 6)
+    row["competitor"]["competitor_distance"] = (
+        0.0 if theirs is None else round(float(theirs["distance"]), 6)
+    )
+    row["competitor"]["radius"] = float(preselection["radius"])
+    row["competitor"]["distance_is"] = (
+        "each place's neutral distance to the place its cluster is seated under, and 0 for "
+        "that place itself. The two places were never compared with each other: the "
+        "pre-selection walk only ever measures a place against places it has already kept"
+    )
+
+
 def _refusing_set(state, candidate, why: str) -> set:
     """The seats the rule that refused this candidate would accept a departure from.
 
@@ -853,7 +904,7 @@ def _refusing_set(state, candidate, why: str) -> set:
     which is the cell `counted_refusal` returned on.
     """
     if why == "location":
-        held = state.places.get(candidate.location)
+        held = state.places.get(candidate.cluster)
         return set() if held is None else {held}
     for cell in candidate.cells:
         if len(state.cells.get(cell, ())) + 1 > state.rule.allowed(cell, state.n):

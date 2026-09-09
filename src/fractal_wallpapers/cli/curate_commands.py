@@ -864,6 +864,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             targets=targets,
             floor=floor,
             fine_bar=args.fine_bar,
+            fold=args.fold,
             order=order,
             coverage=coverage,
             key=args.key,
@@ -1013,6 +1014,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             locations=args.locations,
             fine_bar=args.fine_bar,
             radius=None if args.no_preselection else args.neutral_radius,
+            fold=args.fold,
             diversity=not args.no_diversity,
             group_cap=args.group_cap,
             key=args.key,
@@ -1174,7 +1176,10 @@ def _twin_sweep(candidates, radius) -> dict:
 
     kept = headroom.clearing(candidates)
     if radius is not None:
-        kept, _record = distinct.preselect(kept, radius=float(radius))
+        # `distinct.DELETE`, for `headroom.headroom`'s reason: this sweep is over
+        # one picture per PLACE and the destructive walk's kept set is exactly one
+        # representative per cluster.
+        kept, _record = distinct.preselect(kept, radius=float(radius), fold=distinct.DELETE)
     best: dict = {}
     for candidate in sorted(kept, key=lambda held: (-held.score, held.key)):
         best.setdefault(candidate.location, candidate)
@@ -2320,6 +2325,7 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
     same parser three times.
     """
     from fractal_wallpapers.curation import augment as augment_module
+    from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import solve as solve_module
 
     pool.add_argument(
@@ -2339,6 +2345,20 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         f"costs a demand shortfall of 0 -> 18. It needs `gallery-grade score-pool` and "
         f"seats NOTHING without it. The value is on every record either way, `null` for a "
         f"pass that ran unbarred",
+    )
+    pool.add_argument(
+        "--fold",
+        choices=list(distinct_module.FOLDS),
+        default=distinct_module.FOLD,
+        help="what the neutral pre-selection does with a place it folds into another. "
+        f"`{distinct_module.POOL}`, THE DEFAULT since 2026-09-09, relabels: the absorbed "
+        "place's rows stay in the pool carrying the surviving place's key as their "
+        "cluster, and the one-seat-per-location rule reads one seat per CLUSTER — so a "
+        "near-duplicate cluster still holds one seat and stops destroying the modes and "
+        f"colour cells only its absorbed places hold. `{distinct_module.DELETE}` is the "
+        "fold as it shipped before that: the place and every row it carries leave the "
+        "pass. It is kept so an older record reproduces and so the two can be compared "
+        "over one pool. Ignored under `--no-preselection`, which folds nothing",
     )
     demands.add_argument(
         "--spiral-cap",

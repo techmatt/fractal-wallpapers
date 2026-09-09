@@ -1805,6 +1805,7 @@ def store_of(vectors) -> list:
 
 
 def test_two_places_inside_the_radius_lose_the_weaker_one():
+    """The destructive fold, which is still selectable and still has to work."""
     import math
 
     # cos(0.1) is 0.995, so the pair sits at 0.005 — inside the 0.02 radius.
@@ -1812,6 +1813,7 @@ def test_two_places_inside_the_radius_lose_the_weaker_one():
     kept, record = distinct.preselect(
         [candidate("a", score=0.99), candidate("b", score=0.98), candidate("c", score=0.97)],
         rows=rows,
+        fold=distinct.DELETE,
         log=quiet,
     )
     assert {held.key for held in kept} == {"a", "c"}
@@ -1823,7 +1825,10 @@ def test_two_places_inside_the_radius_lose_the_weaker_one():
 def test_the_strongest_place_in_a_cluster_is_the_one_kept():
     rows = store_of({"a": 0.0, "b": 0.1})
     kept, _record = distinct.preselect(
-        [candidate("a", score=0.10), candidate("b", score=0.99)], rows=rows, log=quiet
+        [candidate("a", score=0.10), candidate("b", score=0.99)],
+        rows=rows,
+        fold=distinct.DELETE,
+        log=quiet,
     )
     assert {held.key for held in kept} == {"b"}
 
@@ -1831,7 +1836,9 @@ def test_the_strongest_place_in_a_cluster_is_the_one_kept():
 def test_a_place_with_no_descriptor_is_admitted_and_counted():
     """A place can be newer than the last embedding leg, and refusing on that would
     make the pre-filter a function of when the store was last built."""
-    kept, record = distinct.preselect([candidate("a"), candidate("b")], rows=[], log=quiet)
+    kept, record = distinct.preselect(
+        [candidate("a"), candidate("b")], rows=[], fold=distinct.DELETE, log=quiet
+    )
     assert len(kept) == 2
     assert record["admitted_without_a_descriptor"] == 2
     assert record["places_refused"] == 0
@@ -1844,7 +1851,7 @@ def test_refusing_a_place_takes_every_row_that_place_carries():
         candidate("b1", location="b", score=0.98),
         candidate("b2", location="b", score=0.50),
     ]
-    kept, record = distinct.preselect(pool, rows=rows, log=quiet)
+    kept, record = distinct.preselect(pool, rows=rows, fold=distinct.DELETE, log=quiet)
     assert {held.key for held in kept} == {"a1"}
     assert record["candidates_refused"] == 2
 
@@ -1857,6 +1864,7 @@ def test_the_preselection_refusal_is_not_one_of_the_seating_rules(monkeypatch):
         [candidate("a", score=0.99), candidate("b", score=0.98)],
         n=5,
         key=solve.JUDGE_KEY,
+        fold=distinct.DELETE,
         log=quiet,
     )
     assert solve.SAME_PLACE not in rules.RULES
@@ -1879,10 +1887,71 @@ def test_a_preselection_refusal_carries_the_place_it_lost_to_onto_the_sheet(monk
         candidate("b1", location="b", score=0.98),
         candidate("b2", location="b", score=0.50),
     ]
-    record = solve.solve(pool, n=5, key=solve.JUDGE_KEY, log=quiet)
+    record = solve.solve(pool, n=5, key=solve.JUDGE_KEY, fold=distinct.DELETE, log=quiet)
     shown = record["samples"][solve.SAME_PLACE]
     assert {row["key"] for row in shown} == {"b1", "b2"}
     assert all(row["lost_to"]["picture"] == "artifacts/a1.jpg" for row in shown)
+
+
+def test_the_pooled_fold_seats_a_sibling_and_refuses_the_survivor_by_the_seat_rule(monkeypatch):
+    """§3, end to end. Under a destructive fold `b`'s rows never reach the seating
+    and are recorded as `SAME_PLACE`, a refusal taken before any seat existed.
+    Under a pooled fold they compete, one of the two takes the cluster's seat, and
+    the loser is refused by the `location` rule with a seat to name."""
+    rows = store_of({"a": 0.0, "b": 0.1})
+    monkeypatch.setattr(embeddings, "read", lambda *_args, **_rest: rows)
+    pool = [
+        candidate("a1", location="a", score=0.99, cells=("dark_vivid_blue",)),
+        candidate("b1", location="b", score=0.98, cells=("dark_vivid_red",)),
+    ]
+    record = solve.solve(pool, n=5, key=solve.JUDGE_KEY, log=quiet)
+    assert record["population"]["after_the_preselection"] == 2
+    assert record["population"]["locations_after_the_preselection"] == 2
+    assert record["population"]["clusters_after_the_preselection"] == 1
+    assert record["filled"] == 1, "one seat between the two, which is the cluster rule"
+    assert record["rejection"]["reasons"].get(solve.SAME_PLACE) is None
+    assert record["rejection"]["reasons"]["location"] == 1
+
+
+def test_the_relabel_moves_exactly_one_field_and_location_is_not_it():
+    """The join hazard, pinned where it can be pinned once rather than at each
+    join. Every join in this pass — the spiral verdict, `loc_p_ge4`, the retention
+    key, the ledger row, the view's per-place layer, every place count on a record
+    — reads an attribute off the candidate, so a relabel that leaves every
+    attribute but `folded_into` alone cannot move any of them."""
+    import dataclasses
+
+    before = candidate("b1", location="b", score=0.98, cells=("dark_vivid_red",))
+    before = dataclasses.replace(before, spiral=True, p_spiral=0.91)
+    kept, _record = distinct.preselect(
+        [candidate("a1", location="a", score=0.99), before],
+        rows=store_of({"a": 0.0, "b": 0.1}),
+        fine={},
+        log=quiet,
+    )
+    after = next(held for held in kept if held.key == "b1")
+    was, now = dataclasses.asdict(before), dataclasses.asdict(after)
+    assert {name for name in now if now[name] != was[name]} == {"folded_into"}
+    assert (after.location, after.folded_into, after.cluster) == ("b", "a", "a")
+    assert after.spiral is True and after.p_spiral == 0.91, (
+        "the spiral verdict is a fact about b's own place and `a` is a different place"
+    )
+
+
+def test_the_tracked_config_says_which_fold_a_gallery_was_seated_under(monkeypatch):
+    """`config` is the block a tentative gallery's tracked manifest carries WHOLE,
+    and whether a gallery seated one wallpaper per place or one per near-cluster is
+    not something a reader should have to infer from a date. `None` is a pass that
+    ran no pre-selection and folded nothing."""
+    rows = store_of({"a": 0.0, "b": 0.1})
+    monkeypatch.setattr(embeddings, "read", lambda *_args, **_rest: rows)
+    pool = [candidate("a", score=0.99), candidate("b", score=0.98)]
+    for asked in (distinct.POOL, distinct.DELETE):
+        record = solve.solve(pool, n=5, key=solve.JUDGE_KEY, fold=asked, log=quiet)
+        assert record["config"]["fold"] == asked
+        assert record["preselection"]["fold"] == asked
+    bare = solve.solve(pool, n=5, key=solve.JUDGE_KEY, radius=None, log=quiet)
+    assert bare["config"]["fold"] is None
 
 
 def test_a_seating_asked_for_without_the_preselection_says_it_was_skipped():

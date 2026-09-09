@@ -66,6 +66,7 @@ terms below rather than by anything it substitutes for.
 from __future__ import annotations
 
 import statistics
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -129,11 +130,12 @@ SEED = 0
 #: What [`preselect`] offers a place by when the fine-tier head has read its
 #: strongest row, and what it falls back to when it has not.
 #:
-#: The fold is a **deletion** — the absorbed place and every row it carries leave
-#: the pass — and it used to pick the survivor on raw `P(>=4)` while the seating
-#: ordered on the cascade key. Measured on `tentative_n1000_20260909T061451Z`,
-#: that discarded the higher-`p_fine` place in **435 of the 1,042 resolvable folds,
-#: 41.8%**, mean absolute delta 0.150: a coin flip on the key that decides seats.
+#: The fold picks which place a near-cluster is **seated under**, and it used to
+#: pick that survivor on raw `P(>=4)` while the seating ordered on the cascade
+#: key. Measured on `tentative_n1000_20260909T061451Z` while the fold was still a
+#: deletion — see [`POOL`] — that discarded the higher-`p_fine` place in **435 of
+#: the 1,042 resolvable folds, 41.8%**, mean absolute delta 0.150: a coin flip on
+#: the key that decides seats.
 #:
 #: So a place is offered by its strongest candidate's `p_fine(>=4)` where the head
 #: has read it, and by raw `P(>=4)` where it has not. **The two are not on one
@@ -149,6 +151,35 @@ FINE_KEY = "p_fine"
 #: rows a one-shot `score-pool` has not caught up with. Every record says how many
 #: places took it.
 COARSE_KEY = "p_ge4"
+
+#: What [`preselect`] does with the rows at a place it folds away, and the shipped
+#: answer.
+#:
+#: **`pool` relabels.** An absorbed place's rows stay in the pool and carry the
+#: surviving place's key as their [`solve.Candidate.cluster`]; the seat constraint
+#: that read one seat per location reads one seat per cluster. No new rule — the
+#: existing constraint over a coarser group — and no row is destroyed, so a
+#: cluster can still field a mode or a colour cell only one of its places holds.
+#:
+#: That is the whole reason it exists. Measured over the 1,144 folds of
+#: `tentative_n1000_20260909T061451Z`: **41.7%** of folds destroyed a mode the
+#: survivor has no row in and **95.1%** a colour cell it cannot reach, mean mode
+#: overlap 0.674 and mean cell overlap 0.220. The fold is right that a
+#: near-duplicate cluster should hold one seat and it was buying that by throwing
+#: away 2,151 rows to get it.
+POOL = "pool"
+
+#: The fold as it shipped until 2026-09-09: the absorbed place and every row it
+#: carries leave the pass, recorded as `solve.SAME_PLACE`. **Kept selectable and
+#: not removed**, so an old record reproduces and so the two can be compared over
+#: one pool without a second variable moving. [`curation.headroom`]'s census also
+#: asks for it deliberately — a census bounds seats over *places*, and the kept
+#: set of a destructive walk is exactly one representative per cluster.
+DELETE = "delete"
+
+#: Every value [`preselect`] takes for `fold`, and the one it defaults to.
+FOLDS = (POOL, DELETE)
+FOLD = POOL
 
 
 class DistinctRefused(RuntimeError):
@@ -400,9 +431,30 @@ def _read(fine: dict, candidate) -> float | None:
 
 
 def preselect(
-    candidates, radius: float = PRESELECT_RADIUS, rows=None, fine=None, log=print
+    candidates, radius: float = PRESELECT_RADIUS, rows=None, fine=None, fold=FOLD, log=print
 ) -> tuple:
-    """`(the candidates whose place survived, the record)`. Geometric distinctness only.
+    """`(the candidates the fold left standing, the record)`. Geometric distinctness only.
+
+    Under [`POOL`], which is the default, **nothing is left out**: the whole
+    clearing pool comes back and an absorbed place's rows carry the surviving
+    place's key as their [`solve.Candidate.cluster`], so the seat constraint reads
+    one seat per cluster instead of one seat per location. Under [`DELETE`] an
+    absorbed place and every row it carries leave the pass, which is what shipped
+    until 2026-09-09 and is kept selectable.
+
+    **The cluster id is for the seat constraint and for nothing else.** A
+    relabeled row's `location` is still its own true location and every join that
+    reads a fact *about a place* still reads it — the spiral scores, the rank
+    key's `loc_p_ge4`, the retention key, the ledger, the view's per-place layer,
+    and every place count on a record. A relabeled row tested for spiral-ness
+    under another place's score is the failure this parameter exists to avoid.
+
+    **No cluster is built by transitivity.** [`suppress`] compares each place only
+    against places already kept, so a refused place always points at a kept one:
+    the result is a star forest of depth one and never a general clustering. A
+    place inside the radius of a refused place but outside its survivor's survives
+    today as its own place, and it keeps doing so, as its own cluster. This
+    function checks that rather than assuming it.
 
     A greedy suppression over places and not over rows: each location is
     represented by its **strongest** clearing candidate, the places are walked in
@@ -438,6 +490,9 @@ def preselect(
     places inside the radius loses four, and both numbers are on the record.
     """
     radius = float(radius)
+    fold = str(fold)
+    if fold not in FOLDS:
+        raise DistinctRefused(f"{fold!r} is not a fold: {' or '.join(FOLDS)}")
     fine = fine_scores(fine)
     best: dict = {}
     for candidate in candidates:
@@ -448,7 +503,7 @@ def preselect(
     on_fine = {key for key in order if str(best[key].key) in fine}
     walk = suppress(order, radius=radius, rows=rows)
     kept, unembedded = walk["kept"], walk["unembedded"]
-    refused = [
+    folds = [
         {
             **row,
             "p_ge4": round(best[row["location"]].score, 6),
@@ -461,12 +516,41 @@ def preselect(
         }
         for row in walk["refused"]
     ]
-    surviving = [candidate for candidate in candidates if candidate.location in kept]
-    refused.sort(key=lambda row: row["distance"])
+    folds.sort(key=lambda row: row["distance"])
+    into = {row["location"]: row["lost_to"] for row in folds}
+    # The star-forest claim, checked and not assumed: every absorbed place must
+    # point at a place the walk KEPT. If one ever pointed at another absorbed
+    # place the clusters would be chains, `cluster` would depend on the order the
+    # relabel happened to be applied in, and the fold would have changed rather
+    # than the destruction.
+    chained = sorted(set(into.values()) & set(into))
+    if chained:
+        raise DistinctRefused(
+            f"{len(chained):,} place(s) were absorbed INTO a place that was itself absorbed, "
+            f"which suppress cannot produce and pooling cannot represent — {chained[:3]}"
+        )
+    if fold == DELETE:
+        surviving = [candidate for candidate in candidates if candidate.location in kept]
+    else:
+        surviving = [
+            candidate
+            if candidate.location not in into
+            else replace(candidate, folded_into=into[candidate.location])
+            for candidate in candidates
+        ]
     fell_back = len(order) - len(on_fine)
     log(
-        f"[distinct] pre-selection at {radius}: {len(kept):,} of {len(order):,} place(s) kept, "
-        f"{len(refused):,} refused"
+        f"[distinct] pre-selection at {radius}: {len(order):,} place(s) fold into "
+        f"{len(kept):,} cluster(s), {len(folds):,} absorbed"
+    )
+    log(
+        f"[distinct] the fold is {fold}: "
+        + (
+            f"{len(candidates) - len(surviving):,} row(s) at those places leave the pass"
+            if fold == DELETE
+            else f"{sum(1 for c in surviving if c.cluster != c.location):,} row(s) at those "
+            "places stay and are relabeled onto their cluster"
+        )
     )
     if not on_fine:
         log(
@@ -478,9 +562,18 @@ def preselect(
             f"[distinct] the walk is ordered on {FINE_KEY} for {len(on_fine):,} place(s) and "
             f"falls back to {COARSE_KEY} for {fell_back:,}"
         )
+    sizes: dict = {key: 1 for key in kept}
+    for survivor in into.values():
+        sizes[survivor] += 1
+    largest = max(sizes, key=lambda key: (sizes[key], key)) if sizes else None
     return surviving, {
         "radius": radius,
         "metric": METRIC,
+        "fold": fold,
+        "fold_is": "pool: an absorbed place's rows stay and carry the surviving place's "
+        "key as their cluster, and the seat constraint reads one seat per cluster. "
+        "delete: the absorbed place and every row it carries leave the pass, which is "
+        "what shipped until 2026-09-09. **A record carrying no `fold` deleted**",
         "store": tracked_name(embeddings.store_path()),
         "key": FINE_KEY if fell_back == 0 else (COARSE_KEY if not on_fine else "both"),
         "key_is": f"which key this fold picked its survivors on. {FINE_KEY} is the fine-tier "
@@ -495,20 +588,60 @@ def preselect(
         "ordered_on": {FINE_KEY: len(on_fine), COARSE_KEY: fell_back},
         "places_on_the_fallback": fell_back,
         "fine_readings_held": len(fine),
-        "rule": "a place closer than the radius to a place already kept is refused. "
-        "Geometric distinctness only: this asks whether two places are the same place, and "
-        "it is NOT the diversity rule — the twin test at ceiling.TAU is",
+        "rule": "a place closer than the radius to a place already kept is folded into it "
+        "— absorbed under `pool`, refused outright under `delete`. Geometric distinctness "
+        "only: this asks whether two places are the same place, and it is NOT the diversity "
+        "rule — the twin test at ceiling.TAU is",
+        "clusters_are": "a star forest of depth one and never a transitive closure. suppress "
+        "compares each place only against places already KEPT, so an absorbed place always "
+        "points at a kept one; a place inside the radius of an absorbed place but outside "
+        "its survivor's stands as its own cluster",
         "places_asked": len(order),
         "places_kept": len(kept),
-        "places_refused": len(refused),
-        "share_of_places_refused": round(len(refused) / max(1, len(order)), 4),
+        "places_folded": len(folds),
+        "share_of_places_folded": round(len(folds) / max(1, len(order)), 4),
+        # Places AND clusters, everywhere the record used to say one. A cluster is
+        # a kept place plus everything absorbed into it, so a place that nothing
+        # folded into is a cluster of one and `clusters` is `places_kept` — the
+        # two are the same count read as two different facts, and the sizes are
+        # what say how much coarser the seat constraint actually got.
+        "clusters": len(kept),
+        "clusters_of_more_than_one_place": sum(1 for size in sizes.values() if size > 1),
+        "cluster_sizes": {str(size): count for size, count in sorted(_sizes(sizes).items())},
+        "largest_cluster": None
+        if largest is None
+        else {"cluster": largest, "places": sizes[largest]},
         "admitted_without_a_descriptor": len(unembedded),
         "unembedded": unembedded,
         "candidates_asked": len(candidates),
         "candidates_kept": len(surviving),
         "candidates_refused": len(candidates) - len(surviving),
-        "refusals": refused,
+        "candidates_relabeled": sum(1 for row in candidates if row.location in into)
+        if fold == POOL
+        else 0,
+        # `folds` under both, because the walk is the same walk; `refusals` only
+        # where rows were actually refused, so a reader that joins on it — the
+        # rejection ledger's `lost_to`, `label_fate`'s cards — finds nothing to
+        # join under pooling rather than a list of refusals that never happened.
+        "folds": folds,
+        **(
+            {
+                "places_refused": len(folds),
+                "share_of_places_refused": round(len(folds) / max(1, len(order)), 4),
+                "refusals": folds,
+            }
+            if fold == DELETE
+            else {}
+        ),
     }
+
+
+def _sizes(members: dict) -> dict:
+    """`{cluster size: how many clusters are that size}` off `{cluster: places}`."""
+    out: dict = {}
+    for size in members.values():
+        out[size] = out.get(size, 0) + 1
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -1100,10 +1233,14 @@ def write_record(name: str, record: dict) -> Path:
 
 __all__ = [
     "COARSE_KEY",
+    "DELETE",
     "FINE_KEY",
+    "FOLD",
+    "FOLDS",
     "METRIC",
     "PAIRS_SHOWN",
     "PLOT",
+    "POOL",
     "PREMISE_BANDS",
     "PREMISE_PAIRS",
     "PRESELECT_RADIUS",

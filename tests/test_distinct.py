@@ -161,6 +161,7 @@ def test_the_fold_keeps_the_place_the_fine_head_reads_higher():
         [candidate("a", score=0.99), candidate("b", score=0.90)],
         rows=store_of(A_NEAR_PAIR),
         fine={"a": 0.10, "b": 0.80},
+        fold=distinct.DELETE,
         log=quiet,
     )
     assert {held.key for held in kept} == {"b"}
@@ -176,6 +177,7 @@ def test_the_same_pool_on_the_coarse_key_keeps_the_other_place_and_names_it():
         [candidate("a", score=0.99), candidate("b", score=0.90)],
         rows=store_of(A_NEAR_PAIR),
         fine={},
+        fold=distinct.DELETE,
         log=quiet,
     )
     assert {held.key for held in kept} == {"a"}
@@ -191,6 +193,7 @@ def test_a_place_the_head_has_read_is_offered_ahead_of_one_it_has_not():
         [candidate("a", score=0.99), candidate("b", score=0.10)],
         rows=store_of(A_NEAR_PAIR),
         fine={"b": 0.05},
+        fold=distinct.DELETE,
         log=quiet,
     )
     assert {held.key for held in kept} == {"b"}
@@ -219,7 +222,7 @@ def test_a_place_is_represented_by_its_strongest_row_on_the_fine_key():
         fine={"a1": 0.10, "a2": 0.80, "b1": 0.95},
         log=quiet,
     )
-    lost = record["refusals"][0]
+    lost = record["folds"][0]
     assert lost["location"] == "a"
     assert (lost["p_fine"], lost["p_ge4"]) == (0.8, 0.5)
     assert lost["ordered_on"] == distinct.FINE_KEY
@@ -240,6 +243,7 @@ def test_the_walk_reads_the_heads_pool_scores_when_nobody_hands_it_a_column(monk
     kept, record = distinct.preselect(
         [candidate("a", score=0.99), candidate("b", score=0.90)],
         rows=store_of(A_NEAR_PAIR),
+        fold=distinct.DELETE,
         log=quiet,
     )
     assert {held.key for held in kept} == {"b"}
@@ -257,6 +261,123 @@ def test_a_walk_where_every_place_fell_back_says_so_in_a_line():
         log=said.append,
     )
     assert any(f"NO place carries a {distinct.FINE_KEY}" in line for line in said)
+
+
+# --------------------------------------------------------------------------- #
+# The fold relabels rather than deleting.
+# --------------------------------------------------------------------------- #
+def test_the_pooled_fold_keeps_every_row_the_destructive_one_destroys():
+    """The change itself. `b` is folded into `a` either way; under `pool` its two
+    rows stay in the pool carrying `a`'s key as their cluster, and under `delete`
+    they leave the pass entirely."""
+    pool = [
+        candidate("a1", location="a", score=0.99),
+        candidate("b1", location="b", score=0.90),
+        candidate("b2", location="b", score=0.40),
+    ]
+    kept, record = distinct.preselect(pool, rows=store_of(A_NEAR_PAIR), fine={}, log=quiet)
+    assert [held.key for held in kept] == ["a1", "b1", "b2"]
+    assert record["fold"] == distinct.POOL
+    assert record["candidates_refused"] == 0
+    assert record["candidates_relabeled"] == 2
+
+    gone, deleted = distinct.preselect(
+        pool, rows=store_of(A_NEAR_PAIR), fine={}, fold=distinct.DELETE, log=quiet
+    )
+    assert [held.key for held in gone] == ["a1"]
+    assert deleted["candidates_refused"] == 2
+    assert deleted["candidates_relabeled"] == 0
+
+
+def test_a_relabeled_row_keeps_its_own_location_and_only_its_cluster_moves():
+    """The join hazard, pinned. The cluster id is for the seat constraint and for
+    nothing else: a relabeled row tested for spiral-ness, or ranked on
+    `loc_p_ge4`, or swept by the retention key under another place's reading is
+    the failure the whole arrangement is built to avoid."""
+    kept, _record = distinct.preselect(
+        [candidate("a1", location="a", score=0.99), candidate("b1", location="b", score=0.90)],
+        rows=store_of(A_NEAR_PAIR),
+        fine={},
+        log=quiet,
+    )
+    moved = next(held for held in kept if held.key == "b1")
+    assert moved.location == "b", "its true location, which every join about a PLACE reads"
+    assert moved.folded_into == "a"
+    assert moved.cluster == "a", "and only the seat constraint reads this"
+    stayed = next(held for held in kept if held.key == "a1")
+    assert (stayed.location, stayed.folded_into, stayed.cluster) == ("a", None, "a")
+
+
+def test_a_place_outside_the_survivors_radius_is_its_own_cluster_and_never_a_chain():
+    """No transitive closure. `b` is folded into `a`; `c` is inside `b`'s radius and
+    outside `a`'s, so it survives as its own place today and as its own cluster
+    now. Building the closure would make one cluster of all three, which is a
+    different fold and not the same fold minus the destruction."""
+    # `b` at 0.15 rad and `c` at 0.30, so each is 0.15 from its neighbour and `c`
+    # is 0.30 from `a`. 1-cos(0.15) is 0.0112, inside the 0.02 radius; 1-cos(0.30)
+    # is 0.0447, outside it.
+    kept, record = distinct.preselect(
+        [
+            candidate("a1", location="a", score=0.99),
+            candidate("b1", location="b", score=0.90),
+            candidate("c1", location="c", score=0.80),
+        ],
+        rows=store_of({"a": 0.0, "b": 0.15, "c": 0.30}),
+        fine={},
+        log=quiet,
+    )
+    assert {held.key: held.cluster for held in kept} == {"a1": "a", "b1": "a", "c1": "c"}
+    assert record["clusters"] == 2
+    assert [row["lost_to"] for row in record["folds"]] == ["a"]
+    assert not set(row["lost_to"] for row in record["folds"]) & {
+        row["location"] for row in record["folds"]
+    }, "an absorbed place must never be a cluster id"
+
+
+def test_the_record_counts_clusters_and_their_sizes_beside_the_places():
+    """`share_of_places_refused` was a count of a destruction. Nothing is refused
+    under a pooled fold, so what the record has to say instead is how many
+    clusters there are and how big they got."""
+    _kept, record = distinct.preselect(
+        [
+            candidate("a1", location="a", score=0.99),
+            candidate("b1", location="b", score=0.90),
+            candidate("z1", location="z", score=0.80),
+        ],
+        rows=store_of({"a": 0.0, "b": 0.1, "z": 1.5}),
+        fine={},
+        log=quiet,
+    )
+    assert record["places_asked"] == 3
+    assert record["places_kept"] == record["clusters"] == 2
+    assert record["places_folded"] == 1
+    assert record["cluster_sizes"] == {"1": 1, "2": 1}
+    assert record["largest_cluster"] == {"cluster": "a", "places": 2}
+    assert record["clusters_of_more_than_one_place"] == 1
+    assert "refusals" not in record, "nothing was refused, so nothing may join on one"
+    assert "share_of_places_refused" not in record
+
+
+def test_a_destructive_fold_still_writes_the_refusals_an_old_reader_joins_on():
+    """`solve._lost_to`, the rejection sheet and `label_fate`'s cards all join on
+    `refusals`. The destructive path keeps writing it, under the same row shape,
+    so a record taken that way explains itself exactly as it always has."""
+    _kept, record = distinct.preselect(
+        [candidate("a1", location="a", score=0.99), candidate("b1", location="b", score=0.90)],
+        rows=store_of(A_NEAR_PAIR),
+        fine={},
+        fold=distinct.DELETE,
+        log=quiet,
+    )
+    assert record["fold"] == distinct.DELETE
+    assert record["refusals"] == record["folds"]
+    assert record["places_refused"] == record["places_folded"] == 1
+    assert record["share_of_places_refused"] == 0.5
+
+
+def test_a_fold_nobody_named_is_refused_rather_than_guessed():
+    with pytest.raises(distinct.DistinctRefused):
+        distinct.preselect([candidate("a")], rows=[], fold="drop", log=quiet)
 
 
 # --------------------------------------------------------------------------- #
