@@ -792,6 +792,38 @@ a `smooth` figure onto a strange page. All three builds reported
 for byte on **23 of 23**, **24 of 24** and **14 of 14** sampled rows, 48 of the 61
 of them levelled.
 
+**A stratified pilot prices the PAGE and prices no MODE, and this is the reading
+that separates the two.** `p_fine_correction_20260909`, 2026-09-09, three sheets of
+251 / 250 / 249 units at 1280×720 ss2 over 750 distinct locations, three workers,
+zero errors:
+
+| sheet | units | s/unit wall | s/unit work | cache hits |
+|---|---:|---:|---:|---:|
+| pilot, one unit of each of the 13 modes | 13 | 2.33 | **6.83** | 1 |
+| sheet 1 | 251 | 2.20 | **6.95** | 57 |
+| sheet 2 | 250 | 3.15 | 9.42 | 54 |
+| sheet 3 | 249 | 1.76 | 4.93 | 46 |
+
+The pilot's 6.83 against sheet 1's 6.95 is **1.7%**, and the wall estimate it gave
+for that sheet was 9.1 min against 9.2 — but **every one of its thirteen per-mode
+figures was wrong**, in both directions and by up to 4×: `itinerary` 16.9 → 3.8,
+`stripe` 20.7 → 10.5, against `smooth_angle_min` 2.3 → 13.1 and `smooth_stripe`
+5.6 → 11.7. One of the thirteen was a **cache hit** and priced its mode at 0.01 s
+against a real 5.51. So the aggregate works by cancellation across a mode mix the
+pilot reproduces exactly, and quoting one of its rows is the error that agreement
+hides. The three sheets carry the same mix by construction and still span **1.9×**
+on work per unit, so the mix is not the whole story either — sheet 2 ran beside a
+labeling server and sheet 3 did not.
+
+**A `.leveled/` on the plan is worth checking before the plan is written, and it
+costs nothing.** 153 of those 750 units resolve a `<stem>.leveled/` and **153 of
+153** hold the JSON for that unit's own colormap, so the key is live on every row
+that has one; the other 597 render through the library map. Re-rendering from the
+plan matched byte for byte on **12 of 12** sampled rows, 8 of them levelled. And
+the shipped render judge read candidate against label geometry over sheet 1's 217
+pool rows at mean `P(≥4)` **+0.0072**, median **+0.0041**, single rows **−0.512** to
+**+0.366** — the same claim the paragraph below makes, on a population outside it.
+
 **Both readings on every row, and the shift is a mean of nothing and a tail of a
 half.** `selected_on` at 640×360 ss2 against `columns` at 1280×720 ss2, over the
 480: mean `P(≥4)` shift **+0.0074** on the smooth sheet and **−0.0156** on the

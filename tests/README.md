@@ -402,6 +402,24 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+6 fast, and the clock did not move.** `p_fine_sitting_20260909`, 2026-09-09.
+The fast lane read **4,169 selected, 132 deselected — 4,301 collected — in
+129.72 s**, against the entry below it at **4,163 / 132 / 200.85 s** and the idle
+reading below that at **4,145 / 132 / 129.99 s**. The +6 are the gallery-grade
+correction page's, all in `test_gallery_grade.py`: the prefill and the good→bad
+order, the unread row sorting last, the page's own prefill note, a page asked for
+prefilled and handed none, `stated_suggestions`' `gaps` door, and the default
+staying blind with the CLI reading the plan for the answer. Every one is
+arithmetic over a fake renderer, so none of them earns the slow mark.
+
+**The clock is the tree's and the 200.85 s below it was the box's**, which this
+reading is the second half of: same lane, six more tests, **129.72 s against
+129.99 s** on a reading taken two sittings earlier. So the +18 entry's 200.85 s
+was a busy box and nothing else, as it said it was — and this one was taken with
+a **labeling server** on the box and no render leg, which costs nothing measurable.
+**No slow lane has been run since the colour floor still stands**: this prompt took
+none either, on the same instruction.
+
 **+18 fast, and NO slow reading — the clock here is not comparable.**
 `k3_floor_20260909`, 2026-09-09. The fast lane read **4,163 selected, 132
 deselected — 4,295 collected — in 200.85 s**, against the 4,145 / 132 / 129.99 s
