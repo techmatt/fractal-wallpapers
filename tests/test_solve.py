@@ -55,18 +55,23 @@ def no_neutral_store(monkeypatch):
 
 
 class _EveryRowRead(dict):
-    """A pool-scores column that answers **every** key at `p_ge4 = 1.0`.
+    """A fine column that answers **every** key at `p_fine(>=4) = 1.0`.
 
     Non-empty on purpose: both readers ask `if not fine` first and refuse a column
     that is there but says nothing, so a column that answers everything has to
     look like one that holds something.
+
+    ⚠ **It is patched over [`distinct.fine_scores`] and not over the store behind
+    it**, because that is the one door a solve reads the column through since
+    `solve.fine_column` landed: patching the store instead leaves the never-miss
+    `get` behind in the conversion and every row comes back unread.
     """
 
     def __init__(self):
-        super().__init__({"a-column-that-answers-every-key": {"p_ge4": 1.0}})
+        super().__init__({"a-column-that-answers-every-key": 1.0})
 
     def get(self, key, default=None):  # noqa: ARG002 — the point is that it never misses
-        return {"p_ge4": 1.0, "p_ge3": 1.0, "p_ge2": 1.0, "rank_score": 3.0}
+        return 1.0
 
 
 @pytest.fixture(autouse=True)
@@ -87,7 +92,21 @@ def a_pool_the_fine_head_has_read(monkeypatch):
     """
     from fractal_wallpapers.models import gallery_grade_train
 
-    monkeypatch.setattr(gallery_grade_train, "read_pool_scores", lambda *_a, **_k: _EveryRowRead())
+    real = distinct.fine_scores
+
+    def read(scores=None):
+        """The store's own branch stood in for; a HANDED-IN mapping is still used
+        as given, which is what `fine={}` and the tests that name their own column
+        depend on."""
+        return _EveryRowRead() if scores is None else real(scores)
+
+    monkeypatch.setattr(distinct, "fine_scores", read)
+    # The store behind the door, for the readers that still go straight to it.
+    monkeypatch.setattr(
+        gallery_grade_train,
+        "read_pool_scores",
+        lambda *_a, **_k: {"a-column-that-answers-every-key": {"p_ge4": 1.0}},
+    )
 
 
 def modes_of(record) -> set:
@@ -1823,10 +1842,16 @@ def test_two_places_inside_the_radius_lose_the_weaker_one():
 
 
 def test_the_strongest_place_in_a_cluster_is_the_one_kept():
+    """`fine={}` and not the autouse column: `{}` is the explicit "order this walk
+    on the coarse key alone", and what is being asserted here is that the STRONGER
+    of two places survives. A column that reads both at 1.0 — which is what this
+    file's fixture stands in for — is a tie, and a tie is decided by the key, so
+    the assertion would be about alphabetical order rather than about strength."""
     rows = store_of({"a": 0.0, "b": 0.1})
     kept, _record = distinct.preselect(
         [candidate("a", score=0.10), candidate("b", score=0.99)],
         rows=rows,
+        fine={},
         fold=distinct.DELETE,
         log=quiet,
     )
@@ -2774,6 +2799,14 @@ def scored(rows: dict, monkeypatch) -> None:
         gallery_grade_train,
         "read_pool_scores",
         lambda *_args, **_rest: {name: {"p_ge4": value} for name, value in rows.items()},
+    )
+    # And the door the solve reads it through, which the autouse fixture above has
+    # already made answer everything: patching only the store would leave that in
+    # place and this column would never be seen.
+    monkeypatch.setattr(
+        distinct,
+        "fine_scores",
+        lambda scores=None: {str(name): float(value) for name, value in (scores or rows).items()},
     )
 
 

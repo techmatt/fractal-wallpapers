@@ -402,6 +402,24 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+12, and the two lanes agree again.** `forced_seating_20260909`, 2026-09-09,
+idle box, taken after the forced solve leg rather than beside it. The **slow**
+lane read **4,271 of 4,271 green in 450.28 s (7:30)**, zero skips, and the
+**fast** lane taken right after it held **126.42 s over the 4,139 it holds, 132
+deselected** — **4,271 collected** on both, against the 4,259 the entry below left
+the fast lane at and the 4,235 it left the slow one at. **That closes the +17 gap**
+the pooled fold's entry opened when its slow lane was skipped on Matt's
+instruction: the pair above is one tree read twice.
+
+The twelve are `--forced`'s: eleven in a new `test_forced` — the staging claim that
+an unforced pass reads the store's own column *object for object*, the
+order-preserving lift, the three doors it has to reach before they act, the unread
+key that is not lifted, and the offer-not-a-seat guard — and one in
+`test_label_fate` for the cluster fields going on a `location` card and no other.
+All twelve are arithmetic over synthetic candidates and none earns the mark. The
+clock did not move: **126.42 s against 122.63 s and 124.03 s**, inside this box's
+spread on an invariant lane, and **450.28 s against 448.94 s** on the slow one.
+
 **+7, and the wrong interpreter caught on the way in.**
 `PRECLOSEOUT_ckpt117_strongest_locations_fate_split_and_docs_0909`, 2026-09-09,
 idle box, taken after the fate leg's 33.7-minute render rather than beside it. The
