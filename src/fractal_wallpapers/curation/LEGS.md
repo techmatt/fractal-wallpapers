@@ -572,6 +572,16 @@ width 1 over every place with a slot buys the most places per second and keeps
 every row. What that gives up is the deeper slots — 727 of the 2,237 — which would
 cost a second and third unit at widths 2 and 3 over a quarter as many places.
 
+**The width to run is the one maximising `W * |places with room >= W|`**, and
+pairing it with a manifest cut at that same `W` is what makes a unit keep
+everything it renders. Width 1 over every place with a slot is that rule's answer
+where the room is thin; it is not the rule. `general_leg_0909`'s band cuts held
+9/6/14/328 places at room 1/2/3/4, so the four widths absorb 357, 696, 1,026 and
+**1,312** rows and the answer is **4** — width 1 there would have left three
+quarters of the room unspent. All three of that leg's band merges kept **every row
+they rendered**. The room per place is
+`curate candidate-ledger free-slots --min-slots N`'s question, asked once per `N`.
+
 ### A floor leg cannot weight its MODES, and the weighting is one unit each
 
 [`plan_floor`] hands every entry of `--floor-modes` the same `--floor-width` at
@@ -628,6 +638,19 @@ named rather than dropped — it means the place was opened only in modes this l
 is not running — and a manifest that leaves none is **refused**, on
 `--floor-places`' reason: a leg that quietly planned a near band over a population
 nobody chose would report its rate over that one.
+
+⚠ **Cut the manifest with `--modes smooth stripe tia`, not with the leg's roster.**
+The draw holds the incumbent's mode and `plan_held_mode` skips any place whose
+incumbent is not in [`field_modes`] — a location whose best candidate is a composite
+has no field to hand over — so a manifest cut over a twelve-mode roster names places
+the draw then drops in silence. Measured over `general_leg_0909`, whose band arms
+were handed 328, 255 and 236 places and planned **160, 87 and 68**: at the middle
+cut, 284 places had room and **219 of them had a `smooth`/`stripe`/`tia`
+incumbent**. All three arms ran out of planned work at 41%, 13% and 33% of their
+clock while being the cheapest work of the night, so this is a third to a half of
+the best arm there is, given away to a manifest that names the wrong population. It
+has widened since `curvature` left the mines on 2026-09-06 and took that roster from
+four modes to three.
 
 ⚠ **A near band over a PRUNE-FREE breadth arm's own places is the one shape that
 buys nothing, and the two settings are in direct tension.** A breadth arm sized to
@@ -736,7 +759,9 @@ else it made, 5,775 rows, was displacement the prune resolved inside the pair.
 Measured three times over two legs, and the three agree: of the never-opened places
 a breadth arm opens, the share that lands in the near band **with room at its own
 incumbent pair** is `armA1_0906` **83 of 502 (16.5%)**, `armA2_0906` **59 of 319
-(18.5%)**, `armA_0907` **52 of 238 (21.8%)**, `armA1_0908` **50 of 309 (16.2%)**.
+(18.5%)**, `armA_0907` **52 of 238 (21.8%)**, `armA1_0908` **50 of 309 (16.2%)**,
+and the three breadth arms of `general_leg_0909` **77 of 370 (20.8%)**, **87 of 438
+(19.9%)** and **68 of 358 (19.0%)** — seven readings between 16 and 22%.
 The other four fifths land in
 *neither* half of the band — their best roster candidate is outside
 `[SEATING_BAR, PRIMED_BAR)` — and **none of them can land in the at-the-keep half**,
