@@ -122,6 +122,25 @@ were no rows. The four sentences above are `gallery_grade.MEANINGS`, they go ont
 every sheet's manifest as its `rubric` verbatim, and the first sitting is what creates
 the anchors.
 
+### And blind was the first sitting's property, not the store's — 2026-09-09
+
+The anchors exist and a head is fitted on them, so the second sitting is a
+**correction** page: `p_fine_correction_20260909`, 750 units over four blocks and
+three sheets, prefilled with the fine head's own decode and read good→bad by its
+expected grade. Blind is still `sheets.gallery_grade_source`'s default and there is
+no flag — the plan decides, by stating a `suggestion` or not.
+
+**Only the first two of the six things above turn over.** The prefill and the order
+are this store's *own* head correcting itself, which is the opposite of the render
+judge injecting the order this scale replaces; the card is untouched, so `facts`,
+the caption and `columns` are still empty and no stratum is readable off it. Two
+consequences a reader of these rows has to carry: the suggestion is a reading of the
+row's **candidate at 640×360 ss2** and not of the 1280×720 picture the page served,
+and a prefilled page measures **downward disagreement only**, so a correction rate
+off that batch is a ceiling and not the head's report card.
+`data/batch_caveats.md`'s *FOUR-BLOCKS-ONE-BATCH* is the entry, and the block a row
+was drawn in lives on the row inside `selected_on.block`.
+
 ## What the first sitting landed, and the drift inside it
 
 All 1,000 units, ingested 2026-09-06, labeler `matt`: **26 / 185 / 477 / 312** over the

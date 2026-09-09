@@ -439,7 +439,7 @@ LOCATION_RUBRIC = (
 )
 
 
-def stated_suggestions(units: list[dict], tiers: tuple) -> list:
+def stated_suggestions(units: list[dict], tiers: tuple, gaps: str = "") -> list:
     """What the plan prefilled, one per unit — all of them, or none of them.
 
     A revision sheet prefills the **incumbent verdict**, which is the stored
@@ -450,10 +450,22 @@ def stated_suggestions(units: list[dict], tiers: tuple) -> list:
 
     One rule, both sources — the location sheet and the finished-render sheet
     ask the same question of a plan and must not answer it two ways.
+
+    **`gaps` is the one exception and it is a sentence, not a flag.** Passing a
+    reason lets a page mix stated prefills with absent ones, and it is right only
+    where every stated prefill means the *same* thing and an absent one means the
+    prefiller had no opinion rather than a different kind of one. The
+    gallery-grade sheet is the case: its prefill is the fine head's own decode,
+    that head is defined only over rows clearing the render bar, and this project
+    already has a rule for a row it cannot read — `solve.at_fine_bar` leaves such
+    a row behind every row the head could read rather than guessing at it. The
+    reason travels onto the manifest, so a sheet on disk says why it has holes.
     """
     stated = [unit.get("suggestion") for unit in units]
-    if any(value is not None for value in stated) and not all(
-        value is not None for value in stated
+    if (
+        not gaps
+        and any(value is not None for value in stated)
+        and not all(value is not None for value in stated)
     ):
         raise SheetError(
             "some plan units state a suggestion and some leave it to the head. A page whose "
@@ -1089,21 +1101,52 @@ def attribute_source(
 # --------------------------------------------------------------------------- #
 # The gallery-grade source.
 # --------------------------------------------------------------------------- #
+#: What a blind gallery-grade page tells a labeler about its own prefills, which
+#: is that it has none. See [`gallery_grade_source`] for why the field is
+#: answered rather than left empty.
+GRADE_BLIND_NOTE = (
+    "nothing here is prefilled and nothing is ordered by a head. Every one of these "
+    "already cleared the render judge's bar, and the order that judge would put them "
+    "in is the order this scale exists to replace — so the page is a shuffle and the "
+    "cards say nothing about what made them."
+)
+
+#: The same field on a **correction** page, where the prefill is the fine head's
+#: own decode and the order is that head's expected grade. It says which head,
+#: which regime, and what an absent suggestion means, because all three change
+#: what an agreement is worth.
+GRADE_CORRECTION_NOTE = (
+    "the suggestion is the FINE head's own decode of this picture's candidate, read at "
+    "the ledger's 640x360 candidate geometry rather than on the larger picture in front "
+    "of you, and the page is ordered good→bad by that head's expected grade. It is not a "
+    "label until you accept it. A card with no suggestion at all is one the fine head has "
+    "no output for — it never saw a row like it — and every one of those sits after every "
+    "row it could read."
+)
+
+#: Why a correction page here may carry prefills on some rows and not others —
+#: [`stated_suggestions`]'s `gaps` argument, which refuses the mix without one.
+GRADE_GAP_REASON = (
+    "the fine head is defined over rows clearing the render bar and has no output for any "
+    "other row, so an absent suggestion here is the head having no opinion and not a second "
+    "kind of prefill"
+)
+
+
 def gallery_grade_source(
     resolution=LABEL_RESOLUTION,
     supersample: int = LABEL_SUPERSAMPLE,
     renderer=None,
     scores=None,
     reuse_cache: bool = False,
+    prefilled: bool = False,
 ) -> Source:
     """The source that asks how good a picture is GIVEN that it cleared the bar.
 
-    A fourth kind of unit and the second blind one. The picture is a finished
-    render at exactly the geometry [`finished_source`] serves, and the verdict
-    keys on that render — so the cut is that one's, knob for knob. What differs is
-    everything a page can tell a labeler, because this head exists to replace an
-    order the render judge cannot supply and a page carrying that order would be
-    asking the labeler to reproduce it:
+    A fourth kind of unit. The picture is a finished render at exactly the
+    geometry [`finished_source`] serves, and the verdict keys on that render — so
+    the cut is that one's, knob for knob. What differs is everything a page can
+    tell a labeler, and the default is **blind**:
 
     * **Nothing is prefilled.** No decode, no incumbent verdict, no sweep. The
       first sitting on this scale is what creates its anchors, so there is nothing
@@ -1125,6 +1168,34 @@ def gallery_grade_source(
       sentence about a thing that is not there. Three fields emptied and a fourth
       left alone reads as blind and is not, which is why the list is four long
       here and why the note is written out below rather than defaulted.
+
+    ## `prefilled` is a CORRECTION page and the two bullets it turns over are the
+    ## first two, on this store's own head and never on the render judge's
+
+    Once the store has a head fitted on it, the sheet the rig is built for becomes
+    available here too: the fine head's own decode prefilled, the page read
+    good→bad by that head, and the sweep the page offers whenever a suggestion
+    exists. The blind rule above is **not** relaxed by that and is not weakened by
+    it — what it forbids is the *render* judge ordering a page this scale exists
+    to replace, and a head correcting its own decode is the opposite arrangement.
+    The other two bullets are untouched: the card still carries no facts, no
+    caption and no `columns`, so a labeler still cannot read a stratum off it.
+
+    Two things about the prefill that a later reader has to be told, because
+    neither is recoverable from a stored row:
+
+    * **The prefill is a reading of the CANDIDATE, at candidate geometry.** The
+      fine head was fitted at the ledger's 640x360 ss2 and this page serves
+      1280x720 ss2, so nothing here re-reads it on the picture it renders. That is
+      why the suggestion comes off the **plan** rather than off a scorer: a column
+      the plan already holds is honest about which picture it is about, and a
+      re-read at a geometry the head has never seen would not be.
+    * **A row the head has no output for carries no suggestion**, and this source
+      allows the gap that [`stated_suggestions`] otherwise refuses — see the
+      `gaps` argument there. The fine head is defined over rows clearing the
+      render bar and nothing else, and the order puts an unread row after every
+      row the head could read, which is `curation.solve.at_fine_bar`'s rule for
+      the same column.
 
     The judge still **reads** every picture, at label geometry, and the reading
     travels on the row under `reading` — which the page does not render. It is a
@@ -1212,6 +1283,11 @@ def gallery_grade_source(
                 **{key: unit[key] for key in ("seated", "refusal", "pre_stamp") if key in unit},
                 "leveled": bool(leveled),
             },
+            # The fine head's expected grade for this row's candidate, off the
+            # plan. It is what a correction page is ordered by and it never
+            # reaches the page: `suggest` moves it onto `suggestion_score`, which
+            # every sheet carries, and drops the private name.
+            "_expected": unit.get("suggestion_score"),
             "_picture": picture,
             "_thumb": directory / "thumb" / f"{name}.jpg",
         }
@@ -1233,7 +1309,19 @@ def gallery_grade_source(
             probabilities, _classes = score_pictures(finished.HEADS[0], pictures)
         else:
             probabilities, _classes = scores
-        for row, probability in zip(rows, probabilities, strict=True):
+        stated = stated_suggestions(
+            units,
+            gallery_grade.tiers(),
+            gaps=GRADE_GAP_REASON if prefilled else "",
+        )
+        if prefilled and not any(value is not None for value in stated):
+            raise SheetError(
+                "this sheet was cut as a correction page and not one plan unit states a "
+                "suggestion. The prefill on this page is the fine head's own decode and it "
+                "comes off the plan, so a page asked for prefilled and handed none would "
+                "serve a blind sheet under a correction sheet's manifest."
+            )
+        for row, probability, prefill in zip(rows, probabilities, stated, strict=True):
             # `reading` and not `columns`: the page renders `columns` under the
             # picture, and the whole point of this sheet is that it renders
             # nothing. The judge's opinion is a covariate of the estimand, so it
@@ -1243,20 +1331,48 @@ def gallery_grade_source(
                 for index, value in enumerate(probability)
             }
             row["columns"] = {}
-            row["suggestion"] = None
-            # No prefill, so no expected tier. Null rather than zero: zero is a
-            # reading and this is the absence of one.
-            row["suggestion_score"] = None
-        return "none"
+            row["suggestion"] = None if prefill is None else int(prefill)
+            # The expected grade the plan read off the fine head, which is what
+            # the page is ordered by. Null rather than zero on a blind page and on
+            # a row that head has no output for: zero is a reading and this is the
+            # absence of one.
+            expected = row.pop("_expected", None)
+            row["suggestion_score"] = None if expected is None else float(expected)
+        if not prefilled:
+            return "none"
+        log(
+            f"{sum(1 for value in stated if value is not None)} of {len(stated)} units carry "
+            f"the fine head's decode; the rest sit after every row it could read"
+        )
+        return "plan"
 
     def order(rows: list[dict], seed: int) -> tuple[list[int], str]:
-        """A seeded shuffle, sections in the order the plan introduced them."""
+        """A seeded shuffle, or good→bad by the fine head where the plan read it.
+
+        Sections stay outermost either way, in the order the plan introduced them.
+        A row the fine head has no output for sorts after every row it could read
+        — `curation.solve.at_fine_bar`'s rule for this same column — and ties
+        among those keep the shuffle so the tail is not draw order.
+        """
         sections: list[str] = []
         for row in rows:
             if row["section"] not in sections:
                 sections.append(row["section"])
         indices = list(range(len(rows)))
         random.Random(seed).shuffle(indices)
+        if prefilled:
+            shuffled = {index: position for position, index in enumerate(indices)}
+            scored = [row.get("suggestion_score") for row in rows]
+            indices.sort(
+                key=lambda i: (
+                    sections.index(rows[i]["section"]),
+                    scored[i] is None,
+                    -(scored[i] or 0.0),
+                    shuffled[i],
+                )
+            )
+            reading = "fine grade"
+            return indices, reading if len(sections) == 1 else f"sections, {reading}"
         if len(sections) > 1:
             indices.sort(key=lambda i: sections.index(rows[i]["section"]))
             return indices, "sections, shuffle"
@@ -1271,16 +1387,14 @@ def gallery_grade_source(
         tiers=gallery_grade.tiers(),
         rubric=gallery_grade.RUBRIC,
         words=gallery_grade.words(),
-        # The page knows two kinds of prefill and this page has neither, so it has
-        # to be told: unset, it prints "the suggestion is a head's own decode",
-        # which on a sheet with no suggestion at all is a sentence about a thing
-        # that is not there.
-        prefill_note=(
-            "nothing here is prefilled and nothing is ordered by a head. Every one of these "
-            "already cleared the render judge's bar, and the order that judge would put them "
-            "in is the order this scale exists to replace — so the page is a shuffle and the "
-            "cards say nothing about what made them."
-        ),
+        # The page knows two kinds of prefill and a blind page here has neither,
+        # so it has to be told: unset, it prints "the suggestion is a head's own
+        # decode", which on a sheet with no suggestion at all is a sentence about
+        # a thing that is not there. A correction page has a *third* kind — this
+        # store's own head, read at a geometry that is not the page's — and the
+        # page's other default, "the verdict this row already carries", is a
+        # sentence about an incumbent label nobody here has cast.
+        prefill_note=GRADE_CORRECTION_NOTE if prefilled else GRADE_BLIND_NOTE,
         render_record={
             "resolution": list(resolution),
             "supersample": supersample,

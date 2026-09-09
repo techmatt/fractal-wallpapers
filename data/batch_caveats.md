@@ -727,6 +727,96 @@ labeler finding the scale, not the population. `data/gallery_grade/README.md`'s 
 the first sitting landed, and the drift inside it* carries the table. Anything
 comparing batches here is comparing anchorings.
 
+## FOUR-BLOCKS-ONE-BATCH — `p_fine_correction_20260909` is four populations and one drop name
+
+*Registry: `gallery_grade/batches.jsonl`. 750 units over 750 distinct locations,
+three sheets, one batch. The NEVER-AN-INSTRUMENT entry above governs it too.*
+
+The second sitting on this scale and the first **correction** one: the fine head
+now exists, so 650 of the 750 carry its own decode as a prefilled suggestion and
+the page is read good→bad by its expected grade. That changes what almost every
+number off this batch means, and four things have to travel with it.
+
+### The four blocks, and which of them a number may be read over
+
+A block survives ingest only inside `selected_on.block`, which `intake` carries
+onto the stored row because the plan stated it. Nothing else on the row says which
+population it came from — `facts` and the sheet directory are untracked and the
+page is not sectioned, so the unit ids interleave the four.
+
+| block | units | rule | conditioned on |
+|---|---:|---|---|
+| `top_band` | 300 | `p_fine(≥4) ≥ 0.85`, of 6,245 such | the fine head |
+| `near_bar` | 200 | `0.40 ≤ p_fine(≥4) ≤ 0.65`, of 3,724 | the fine head |
+| `floor_thin_cell` | 150 | seats of `20260909T215815Z` carrying a `cell_floor:` stamp | the colour floor |
+| `low_anchor` | 100 | the coarse corpora's score-3 rows, accepted modes only | nothing but the mode roster |
+
+**Only `low_anchor` is an unconditioned draw**, and it is unconditioned over the
+*coarse* corpora rather than over the pool — so it is not a base rate either, and
+the store's own refusal to be an instrument is unchanged.
+
+### A prefilled page measures downward disagreement only
+
+The correction rate off these 750 is a **ceiling** on the head's error and not its
+report card: a page ordered by a head, with that head's tier under every card,
+collects the rows a person bothered to move. And `top_band` is judge-selected, so
+near-all-downward corrections there are what that selection produces rather than a
+finding. The sweep leaves no mark — see *`under_seen_modes` was swept from position
+270* above — so an agreement read off a swept suffix is not an agreement.
+
+**The prefill is a reading of the CANDIDATE at 640×360 ss2**, which is not the
+1280×720 ss2 picture on the page. The fine head was fitted at candidate geometry
+and nothing here re-reads it at label geometry, so a disagreement between the
+suggestion and the grade carries a regime shift inside it. The shipped *render*
+judge's reading of the served picture is on every row under `reading`, at label
+geometry, and is the only column here read on the picture a person actually saw.
+
+**`low_anchor`'s 100 carry no suggestion at all.** The fine head is defined over
+rows clearing the render bar and has no output for any other row, so those rows sit
+after every row it could read — `solve.at_fine_bar`'s rule for the same column —
+and the sweep cannot turn a gap into a tier. Their job is to stop a retrain
+drifting upward under a batch that is overwhelmingly downward corrections.
+
+### The mode mix is a cap and a floor's own, and the two do not mean the same thing
+
+`tia`, `threads` and `stripe` are 50.8% of this store's standing 1,000 rows and
+34.4% of the clearing pool; here they are **21.3%** (72 / 31 / 57 of 750). Blocks
+1, 2 and 4 cap each of the three at **4% of the block** and otherwise water-fill
+toward even coverage over the 13 accepted modes. **Block 3 is not capped**: its
+population is the seats the K=3 colour floor bought and capping it would change
+what the block measures, so 88 of its 150 are those three modes. A per-mode
+statistic pooled over the batch is therefore pooled over two different mode rules,
+and `smooth` at 100 of 750 is the *even-coverage* answer rather than the pool's
+55% — which is also why the batch is 650 strange-kind against 100 smooth-kind.
+
+### One batch, three sheets, ONE drop name — export and ingest each before opening the next
+
+`store.export_path` names a drop for the head and the **batch**, so all three
+sheets save to `labels/gallery_grade.p_fine_correction_20260909.json` and the
+second page's export **replaces** the first's. The three cuts are 251 / 250 / 249
+units, and `intake` joins a drop to a sheet by position, so a drop read against the
+wrong cut of the same batch binds verdicts to plausible wrong pictures without an
+error — the 2026-08-29 case in `labeling/README.md`'s *And the ingest cannot tell
+which cut the drop came from* is exactly this shape. The batch is one batch on
+purpose (three registrations differing only by a sheet index would make the three
+sheets non-comparable for no gain), so the discipline is the operator's: **label a
+sheet, export it, `label ingest --sheet artifacts/sheet/p_fine_correction_20260909_<n>`,
+and only then open the next.**
+
+### Two smaller things
+
+**`refusal` is null on every row here, seated or not.** This leg ran no
+counterfactual replay of the record's solve, so an unseated row says only that it
+holds no seat in `20260909T215815Z` — it does not say which rule refused it. On
+`n1000_0906_*` the same field is the rule. 245 of the 750 are seats of that record
+(150 of them block 3's, which are seats by construction).
+
+**103 of the 750 locations already carry a graded row** from `n1000_0906_*` under a
+*different* picture. The exclusion is per render and not per place — 64 draws were
+dropped as already graded — so a per-location read across the two sittings is a
+read over two colourings of one place, which is the difference this head exists to
+learn and not a duplicate.
+
 ---
 
 ### Reading this file from code
