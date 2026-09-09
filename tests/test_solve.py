@@ -38,6 +38,7 @@ from fractal_wallpapers.curation import (
     solve,
     view,
 )
+from fractal_wallpapers.palettes import dominance
 
 
 @pytest.fixture(autouse=True)
@@ -115,6 +116,16 @@ def modes_of(record) -> set:
 
 def quiet(*_args, **_rest) -> None:
     """A `log` that says nothing, so a suite of two thousand tests stays readable."""
+
+
+#: A gallery size at which the per-cell allowance is exactly ONE seat.
+#:
+#: `floor(K * t * n) + 1` is one for every `n` under `48/K`, which was n=20 at
+#: `K = 2` and is 12 at `K = 3`. Several guards below are about what happens when
+#: a cell is full, and they were written against the literal 20 — so the day the
+#: ceiling moved, five of them went red for a reason that had nothing to do with
+#: what they assert. Read off `ceiling.K` and never written down.
+ONE_SEAT = 48 // (ceiling.K + 1)
 
 
 # --------------------------------------------------------------------------- #
@@ -358,11 +369,11 @@ def test_the_coverage_the_key_reported_lands_on_the_record():
 
 
 def test_the_cell_allowance_refuses_past_the_ceilings_own_arithmetic():
-    # At n=20 the per-cell allowance is one, so twenty candidates all dominant in
-    # one cell seat exactly one of themselves.
+    # At ONE_SEAT the per-cell allowance is one, so twenty candidates all dominant
+    # in one cell seat exactly one of themselves.
     pool = [candidate(f"c{at}", cells=("dark_vivid_blue",)) for at in range(20)]
-    assert solve.rule_for().allowed("dark_vivid_blue", 20) == 1
-    record = solve.solve(pool, n=20, key=solve.JUDGE_KEY, log=quiet)
+    assert solve.rule_for().allowed("dark_vivid_blue", ONE_SEAT) == 1
+    record = solve.solve(pool, n=ONE_SEAT, key=solve.JUDGE_KEY, log=quiet)
     assert record["filled"] == 1
     assert record["rejection"]["reasons"]["cell_allowance"] == 19
 
@@ -495,7 +506,7 @@ def test_the_ledger_aggregates_by_cell_family_mode_and_partition():
         candidate(f"c{at}", cells=("dark_vivid_blue",), families=("blue",), partition="julia")
         for at in range(20)
     ]
-    record = solve.solve(pool, n=20, key=solve.JUDGE_KEY, log=quiet)
+    record = solve.solve(pool, n=ONE_SEAT, key=solve.JUDGE_KEY, log=quiet)
     by = record["rejection"]["by"]
     assert by["cells"]["dark_vivid_blue"]["rows"]["cell_allowance"] == 19
     assert by["families"]["blue"]["rows"]["cell_allowance"] == 19
@@ -508,7 +519,7 @@ def test_the_ledger_counts_distinct_locations_beside_the_rows():
         candidate(f"c{at}", location=f"place{at % 3}", cells=("dark_vivid_blue",))
         for at in range(20)
     ]
-    record = solve.solve(pool, n=20, key=solve.JUDGE_KEY, log=quiet)
+    record = solve.solve(pool, n=ONE_SEAT, key=solve.JUDGE_KEY, log=quiet)
     cell = record["rejection"]["by"]["cells"]["dark_vivid_blue"]
     assert cell["rows"]["location"] + cell["rows"].get("cell_allowance", 0) == 19
     assert max(cell["locations"].values()) <= 3
@@ -804,10 +815,14 @@ def test_a_candidate_the_key_cannot_read_counts_at_the_bottom_of_every_percentil
 def test_the_weak_cells_and_the_full_cells_are_two_lists_and_not_one():
     """A cell at its allowance and a cell whose best row is weak are OPPOSITE
     instructions to a mine, so they are never in the same list."""
-    # At n=150 the per-cell allowance is seven, so nine blue candidates spend it
-    # and one lime candidate does not. At n=20 every allowance is one and the two
-    # lists would be the same list.
-    pool = [candidate(f"strong{at}", cells=("dark_vivid_blue",), score=0.9) for at in range(9)]
+    # At n=150 the per-cell allowance is `floor(K * 150/48) + 1` — seven at K=2 and
+    # ten at K=3 — so exactly that many blue candidates spend it and one lime
+    # candidate does not. The count is read off the rule rather than written down,
+    # because a ceiling that moved would otherwise leave the blue cell UNDER its
+    # allowance and this test asserting the opposite. At the one-seat size every
+    # allowance is one and the two lists would be the same list.
+    spent = solve.rule_for().allowed("dark_vivid_blue", 150)
+    pool = [candidate(f"strong{at}", cells=("dark_vivid_blue",), score=0.9) for at in range(spent)]
     pool += [candidate("weak", cells=("dark_muted_lime",), score=0.51)]
     record = solve.solve(pool, n=150, radius=None, key=solve.JUDGE_KEY, log=quiet)
     weakest = record["attribution"]["best_available"]["cells"][0]
@@ -832,6 +847,186 @@ def test_only_a_constraint_that_CAN_go_unmet_is_reported_as_short():
         "short": 1,
     }
     assert not any(row["constraint"].startswith("cell") for row in record["attribution"]["unmet"])
+
+
+# --------------------------------------------------------------------------- #
+# The colour floor. `Kf = 1` against the ceiling's `K`, and SOFT.
+# --------------------------------------------------------------------------- #
+def test_the_floor_is_the_ceilings_arithmetic_with_kf_for_k_and_no_plus_one():
+    """The pair reads *at least kf fair shares and at most k*, and it has to be
+    ONE arithmetic or the two drift. The missing `+ 1` is the whole difference in
+    kind: a ceiling warms up because a walk has to seat its first row somewhere,
+    and a floor is a demand stated against the finished gallery."""
+    rule = ceiling.Rule()
+    assert rule.required("dark_vivid_lime", 1000) == 1000 // 48 == 20
+    assert rule.allowed("dark_vivid_lime", 1000) == ceiling.K * 1000 // 48 + 1 == 63
+    assert rule.required("dark_vivid_lime", 1000) == ceiling.share_down(
+        rule.kf * ceiling.CELL_SHARE, 1000
+    )
+    # No warm-up: an empty gallery owes nothing, where the allowance is already 1.
+    assert rule.required("dark_vivid_lime", 0) == 0
+    assert rule.allowed("dark_vivid_lime", 0) == 1
+
+
+def test_a_floor_that_rounded_up_would_ask_for_more_gallery_than_there_is():
+    """Why `share_down` exists beside `share_of` rather than one function doing
+    both. 48 cells each rounded up ask for 1,008 of 1,000 seats — infeasible by
+    construction at every `n` the share does not divide."""
+    assert 48 * ceiling.share_of(ceiling.CELL_SHARE, 1000) == 1008 > 1000
+    assert 48 * ceiling.share_down(ceiling.CELL_SHARE, 1000) == 960 <= 1000
+
+
+def test_the_colour_floor_is_one_soft_demand_per_cell_and_never_a_rule_at_the_seat():
+    """It rides the shortfall tier. Nothing in `rules.State` reads it, so it can
+    refuse no candidate — which is what stops an unfillable cell making the solve
+    infeasible instead of merely worse."""
+    rule = ceiling.Rule()
+    demands = solve.demands_for({}, {}, rule=rule, cell_floor=True)
+    assert len(demands) == len(dominance.cells()) == 48
+    assert {demand.axis for demand in demands} == {"cell"}
+    assert all(demand.name.startswith("cell_floor:") for demand in demands)
+    assert all(demand.wanted(1000) == 20 for demand in demands)
+    # And it is genuinely absent from the seating rules.
+    assert "cell_floor" not in rules.State(rule, 1000).refusals
+
+
+def test_the_floor_shortfall_rides_the_mode_floors_own_tier_and_outranks_nothing_else():
+    """The choice, stated as a guard: colour shortfall JOINS the mode-floor term
+    rather than taking a tier of its own. A tier of its own would have to be
+    ordered against theirs and no ruling says which starvation wins; one term
+    ranks them by how many seats are missing, which is the only comparison either
+    supports. Tier order is unmoved — seats first, worst seat still beneath."""
+    assert solve.Objective(seats=1, worst=0.1, shortfall=0, total=1.0).beats(
+        solve.Objective(seats=1, worst=0.9, shortfall=1, total=9.0)
+    ), "one seat of shortfall outranks any worst-seat or sum gain"
+    assert solve.Objective(seats=2, worst=0.1, shortfall=5, total=1.0).beats(
+        solve.Objective(seats=1, worst=0.9, shortfall=0, total=9.0)
+    ), "and the seat count still outranks the shortfall"
+
+
+def test_a_cell_the_pool_cannot_fill_is_a_recorded_shortfall_and_not_an_exception():
+    """The whole argument for the floor being soft. One row of one cell: 47 cells
+    are unfillable and the pass still returns a gallery."""
+    record = solve.solve(
+        [candidate("a", cells=("dark_vivid_blue",), families=("blue",))],
+        n=1000,
+        radius=None,
+        key=solve.JUDGE_KEY,
+        log=quiet,
+    )
+    assert record["filled"] == 1
+    block = record["shortfalls"]["cell_floors"]
+    assert block["cells"] == 48
+    # At one filled seat the floor owes nothing at all, so nothing is short: the
+    # demand is a share of the REALIZED count, which is what stops a pass that
+    # under-fills reporting 48 starvations it was never going to avoid.
+    assert block["floor"] == 0 and block["below_the_floor_count"] == 0
+    # The COLOUR half of the shortfall term, and not the whole of it: the mode
+    # floors are on the same tier and a one-seat gallery is hundreds short of
+    # those, which is a different starvation and not what this is about.
+    assert block["short_total"] == 0
+    assert all(
+        row["short"] == 0
+        for row in record["shortfalls"]["demands"]["rows"]
+        if row["demand"].startswith("cell_floor:")
+    )
+
+
+def test_a_targeted_cell_carries_one_demand_and_asks_for_the_larger_of_the_two():
+    """Two demands over one cell would double-count its shortfall. On `kf = 1` the
+    target binds by construction — a target REPLACES the cell's share, so the
+    floor under it is `floor(t*n)` against the target's own `ceil(t*n)`."""
+    rule = solve.rule_for({"dark_vivid_lime": 0.05})
+    demands = solve.demands_for({}, rule.targets, rule=rule, cell_floor=True)
+    lime = [demand for demand in demands if demand.of == "dark_vivid_lime"]
+    assert len(lime) == 1 and lime[0].name == "target:dark_vivid_lime"
+    assert lime[0].share == 0.05 and lime[0].floor_share == 0.05
+    assert lime[0].wanted(1000) == 50
+
+
+def test_the_colour_floor_is_off_on_the_themed_path_whatever_the_caller_passed():
+    """A themed pass is deliberately one cell, so 47 of the 48 floors would be
+    demands the pass exists to fail. Off the way the twin test already is."""
+    pool = [
+        candidate(f"c{at}", location=f"p{at}", cells=("dark_vivid_blue",), families=("blue",))
+        for at in range(4)
+    ]
+    record = solve.solve(
+        pool,
+        n=20,
+        theme="dark_vivid_blue",
+        targets={"dark_vivid_blue": 1.0},
+        radius=None,
+        key=solve.JUDGE_KEY,
+        cell_floor=True,
+        log=quiet,
+    )
+    assert record["config"]["ceiling"]["kf"] is None
+    assert record["config"]["ceiling"]["floor"] is None
+    assert record["shortfalls"]["cell_floors"] is None
+
+
+def test_a_pass_with_no_colour_floor_says_so_on_the_tracked_config_and_not_by_silence():
+    """`config` is the block the tentative manifest carries WHOLE, and this pair
+    will be read back for months: `kf: null` is a pass that carried no floor, and
+    a record with no `kf` KEY at all predates 2026-09-09."""
+    record = solve.solve(
+        [candidate("a")], n=20, cell_floor=False, radius=None, key=solve.JUDGE_KEY, log=quiet
+    )
+    assert record["config"]["ceiling"]["kf"] is None
+    assert record["config"]["ceiling"]["kf_default"] == ceiling.KF
+    assert record["config"]["ceiling"]["k"] == ceiling.K
+    assert record["shortfalls"]["cell_floors"] is None
+    assert not any(
+        demand["demand"].startswith("cell_floor:")
+        for demand in record["shortfalls"]["demands"]["rows"]
+    )
+
+
+def test_a_starved_cell_names_the_cells_that_deadlocked_it_and_not_only_the_rule():
+    """The shape a seat charging 2.1 cells produces: the row that would fill a
+    starving cell is refused by the ALLOWANCE for a different cell it is also
+    dominant in. Neither that cell's own allowance nor its own supply can show it
+    — both are true of a deadlocked cell — which is why `deadlocked_on` is a
+    column rather than a note.
+
+    Asked of the block directly and not through a whole solve, because the seed's
+    scarcity leg exists precisely to stop this happening in a pool small enough to
+    write down: it seats each cell's own subpool first, so a two-cell fixture that
+    starves under the finished rules seats fine under the walk. What the block has
+    to get right is the attribution over a finished state, and that is what this
+    hands it.
+    """
+    rule = solve.rule_for()
+    state = rules.State(rule, 1000)
+    # `blue` at its allowance, and enough colourless seats that the floor owes
+    # every cell two — `floor(filled / 48)`.
+    for at in range(rule.allowed("dark_vivid_blue", 1000)):
+        state.seat(candidate(f"blue{at}", location=f"b{at}", cells=("dark_vivid_blue",)), "seed")
+    for at in range(120):
+        state.seat(candidate(f"plain{at}", location=f"p{at}", cells=()), "seed")
+    # Every azure row this pool holds also carries blue, and blue is full.
+    azure_rows = [
+        candidate(f"both{at}", location=f"x{at}", cells=("dark_vivid_azure", "dark_vivid_blue"))
+        for at in range(9)
+    ]
+    gallery = solve.Gallery(state, None, solve.demands_for({}, {}, rule=rule, cell_floor=True))
+    cleared = [held for held, _why in state.seated.values()] + azure_rows
+    refused = {held.key: "cell_allowance" for held in azure_rows}
+    block = solve._cell_floors(gallery, rule, cleared, refused)
+
+    azure = block["per_cell"]["dark_vivid_azure"]
+    assert azure["floor"] == state.filled // 48 == 3
+    assert azure["seated"] == 0 and azure["short"] == 3, "azure could not reach its floor"
+    assert azure["clearing"] == 9 > azure["seated"], "the pool held rows for it"
+    assert azure["refused_by"] == {"cell_allowance": 9}
+    # The finding: the rule that took them was about BLUE, which was not short.
+    assert azure["deadlocked"] == 9
+    assert azure["deadlocked_on"] == {"dark_vivid_blue": 9}
+    assert block["per_cell"]["dark_vivid_blue"]["short"] == 0
+    assert block["deadlocked_total"] == 9
+    # A cell refused for its OWN allowance is not deadlocked — it is simply full.
+    assert block["per_cell"]["dark_vivid_blue"]["deadlocked"] == 0
 
 
 # --------------------------------------------------------------------------- #
@@ -1231,7 +1426,7 @@ def test_the_expand_hook_says_which_rules_acted_on_a_stratum_it_could_not_fill()
     """The instruction: a stratum whose refusals are `cell_allowance` is one the
     gallery is already full of, and mining it buys nothing."""
     rows = [candidate(f"c{at}", cells=("dark_vivid_blue",), score=0.9) for at in range(12)]
-    record = solve.solve(rows, n=20, floor={"smooth": 5}, key=solve.JUDGE_KEY, log=quiet)
+    record = solve.solve(rows, n=ONE_SEAT, floor={"smooth": 5}, key=solve.JUDGE_KEY, log=quiet)
     row = record["expand"]["short"][0]
     stratum = row["strata"][0]
     assert stratum["cell"] == "dark_vivid_blue"
@@ -1301,7 +1496,13 @@ def test_a_target_is_a_share_of_the_seats_that_actually_got_filled():
     record = solve.solve(
         rows, n=150, targets={"dark_vivid_lime": 1.0}, key=solve.JUDGE_KEY, log=quiet
     )
-    demand = next(row for row in record["shortfalls"]["demands"]["rows"] if row["axis"] == "cell")
+    # Named, and not "the first cell-axis row": since the colour floor landed there
+    # is one cell demand per chromatic cell and the targeted one is not first.
+    demand = next(
+        row
+        for row in record["shortfalls"]["demands"]["rows"]
+        if row["axis"] == "cell" and row["of"] == "dark_vivid_lime"
+    )
     assert demand["asked"] == record["filled"], "the realized count, never n"
     assert record["filled"] < 150
 

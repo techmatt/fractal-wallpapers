@@ -10,8 +10,8 @@ A **tentative gallery** is that. One stamped folder holds `gallery.jsonl` — on
 row per seat, carrying the ledger recipe key that IS the ID, a short alias for
 typing, and the few columns a person filters on — `manifest.json` saying what pool
 it was taken over and how it did, and `index.html`, a self-contained browser over
-the pool's own 640x360 candidate pictures — filterable on six facets, groupable on
-four, and opening any picture at the size the screen gives.
+the pool's own 640x360 candidate pictures — filterable on seven facets, groupable
+on five, and opening any picture at the size the screen gives.
 
 **The record is the rows and the manifest; the page is a derivation of them.**
 Matt's ruling of 2026-09-05, and it is what publication tracks: `gallery.jsonl`
@@ -61,6 +61,11 @@ written before this field existed means, so an absent one needs no rewrite;
 dominant colour cell and hue family, which is what a person means by "the green
 one"); `cells` and `families` (lists, every name the picture is dominant in,
 because dominance is thresholded and one picture carries more than one);
+`seated_for` (text, the demand or leg that placed the seat, as `solve` stamped it)
+and `floor` (text, [`FLOOR_MANDATED`] / [`FLOOR_HOLDING`] / [`FLOOR_FREE`] — what
+the **colour floor** had to do with this seat being here, with `floor_cells`
+naming the cells that make it so; both are forward-only and absent on a record
+taken before 2026-09-09, which carried no colour floor);
 `centered` (bool, joined off the walk ledgers through
 [`depth.centered_locations`], since nothing downstream of a walk carries the flag);
 `rank` (the leg's own fitted rank key, which is what the seats were ordered on) and
@@ -281,6 +286,36 @@ def aliases(keys) -> dict:
 # --------------------------------------------------------------------------- #
 # The record.
 # --------------------------------------------------------------------------- #
+#: What a seat's `floor` column says about the colour floor. Three answers and
+#: they are not the same fact.
+#:
+#: [`FLOOR_MANDATED`] is a seat the scarcity leg took **for** a cell floor: its
+#: `seated_for` names a `cell_floor:` demand, so the floor is why this picture is
+#: in the gallery at all. [`FLOOR_HOLDING`] is a seat some other leg placed that
+#: the floor now **keeps**: it is dominant in a cell sitting at or below its
+#: floor, so removing it would open a shortfall and the objective's tier 2
+#: refuses every swap that would. [`FLOOR_FREE`] is a seat the floor has no
+#: opinion about.
+#:
+#: The distinction is the evaluation question. *What did the floor drag in* is
+#: answered by the first; *what is the floor now paying for* by the first and the
+#: second together, because a mandated seat that a swap later replaced is a seat
+#: the floor still bought.
+FLOOR_MANDATED = "mandated"
+FLOOR_HOLDING = "holding"
+FLOOR_FREE = "no"
+
+
+def _floor_marks(record: dict) -> dict:
+    """`{cell: its floor}` for the cells at or below it. Empty where none ran."""
+    block = ((record.get("shortfalls") or {}).get("cell_floors") or {}).get("per_cell") or {}
+    return {
+        str(cell): int(row["floor"])
+        for cell, row in block.items()
+        if int(row["seated"]) <= int(row["floor"])
+    }
+
+
 def rows_of(record: dict, centered: frozenset | None = None) -> list[dict]:
     """A solve record's seats as the rows this store keeps, in seat order.
 
@@ -294,11 +329,23 @@ def rows_of(record: dict, centered: frozenset | None = None) -> list[dict]:
     if centered is None:
         centered = depth.centered_locations()
     named = aliases(str(held["key"]) for held in seated)
+    # The cells whose floor is unmet or exactly met, so a seat that charges one of
+    # them is a seat the floor is holding. Off the record's own block and never
+    # re-derived: this is a reading OF that record, not a second answer to it.
+    binding = _floor_marks(record)
     out = []
     for seat, held in enumerate(seated):
         cells = [str(name) for name in (held.get("cells") or ())]
         families = [str(name) for name in (held.get("families") or ())]
         key = str(held["key"])
+        why = str(held.get("seated_for") or "")
+        floor_cells = sorted(cell for cell in cells if cell in binding)
+        if why.startswith("cell_floor:"):
+            floor = FLOOR_MANDATED
+        elif floor_cells:
+            floor = FLOOR_HOLDING
+        else:
+            floor = FLOOR_FREE
         out.append(
             {
                 "schema": SCHEMA,
@@ -318,6 +365,15 @@ def rows_of(record: dict, centered: frozenset | None = None) -> list[dict]:
                 "hue_family": families[0] if families else None,
                 "cells": cells,
                 "families": families,
+                # Which leg placed the seat and, off it, what the COLOUR FLOOR had
+                # to do with the seat being here — see [`FLOOR_MANDATED`]. FORWARD
+                # ONLY, as `mode_params` is: a record written before 2026-09-09
+                # carries neither, and a reader takes an absent `floor` to mean the
+                # pass carried no colour floor rather than that every seat was free
+                # of it.
+                "seated_for": held.get("seated_for"),
+                "floor": floor,
+                "floor_cells": floor_cells,
                 "centered": str(held.get("location")) in centered,
                 # Joined at record time like `centered`, and off the seat rather
                 # than off a second store read: `solve` already did the location
@@ -587,7 +643,7 @@ def thumbnail_href(picture, directory: Path, tiers: Tiers | None = None) -> str:
         return resolved.absolute().as_uri()
 
 
-def page(stamp: str | None = None, log=print) -> Path:
+def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     """Write `index.html` beside a record's rows. Returns the page.
 
     Self-contained: the rows are embedded, the styling is inline, and the only
@@ -600,9 +656,17 @@ def page(stamp: str | None = None, log=print) -> Path:
     browse <stamp>` writes it again on any clone that has the two tracked files,
     which is why the page itself is not tracked. `record` calls this too, so a
     fresh record still lands with its page beside it.
+
+    `out` writes the same page somewhere else — a sheet under `scratch/` for one
+    reading, say — with every thumbnail resolved **relative to where it lands**,
+    which is the whole reason this is a parameter rather than a copy afterwards:
+    an `index.html` moved by hand points at nothing. It is the same derivation
+    either way and the record's own page is left where it is.
     """
     stamp = latest() if stamp is None else str(stamp)
-    directory = gallery_dir(stamp)
+    path = page_path(stamp) if out is None else Path(out)
+    directory = path.parent
+    directory.mkdir(parents=True, exist_ok=True)
     rows = read_rows(stamp)
     manifest = read_manifest(stamp)
     # Two resolutions a row over a record that reaches two thousand of them, so
@@ -610,7 +674,6 @@ def page(stamp: str | None = None, log=print) -> Path:
     tiers = Tiers.current()
     shown = [{**row, "src": thumbnail_href(row.get("picture"), directory, tiers)} for row in rows]
     missing = sum(1 for row in rows if _on_disk(row, tiers) is not True)
-    path = page_path(stamp)
     writing = Path(str(path) + ".writing")
     writing.write_text(
         _PAGE.replace("__STAMP__", html.escape(str(stamp)))
@@ -678,6 +741,10 @@ _PAGE = """<!doctype html>
            cursor: pointer; border-bottom: 1px dotted #47536b; }
   .alias.flash { color: #7ee08a; border-bottom-color: #7ee08a; }
   .dim { color: #8a939f; }
+  .floor { margin-top: 4px; font-size: 11px; border-radius: 3px; padding: 1px 5px;
+           display: inline-block; }
+  .floor.mandated { background: #3a2a14; color: #f0b45e; border: 1px solid #6b4a1d; }
+  .floor.holding { background: #1d2a20; color: #7ec294; border: 1px solid #33513d; }
   .num { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
   #empty { padding: 24px 14px; color: #8a939f; }
   /* The full-size view. A candidate picture is 640x360, so `contain` scales it up
@@ -703,6 +770,7 @@ _PAGE = """<!doctype html>
     <fieldset id="f-partition"><legend>partition</legend></fieldset>
     <fieldset id="f-centered"><legend>centered</legend></fieldset>
     <fieldset id="f-spiral"><legend>spiral</legend></fieldset>
+    <fieldset id="f-floor"><legend>colour floor</legend></fieldset>
     <fieldset><legend>find, group &amp; sort</legend>
       <input type="search" id="q" placeholder="ID or alias" size="18">
       <select id="group">
@@ -711,6 +779,7 @@ _PAGE = """<!doctype html>
         <option value="cell">group by colour cell</option>
         <option value="hue_family">group by hue family</option>
         <option value="partition">group by partition</option>
+        <option value="floor">group by colour floor</option>
       </select>
       <select id="sort">
         <option value="rank">rank, best first</option>
@@ -735,7 +804,7 @@ _PAGE = """<!doctype html>
 <div id="lb"><img alt=""><div class="bar"></div></div>
 <script>
 const ROWS = __ROWS__;
-const FACETS = ["mode", "hue_family", "cell", "partition", "centered", "spiral"];
+const FACETS = ["mode", "hue_family", "cell", "partition", "centered", "spiral", "floor"];
 // `cells` and `families` are lists because dominance is thresholded: a picture
 // can be dominant in several, and filtering on the leading one alone would hide
 // a green picture from the green filter whenever teal happened to lead it.
@@ -862,13 +931,31 @@ function tile(row) {
   top.append(left, score);
   const one = document.createElement("div");
   one.className = "dim";
+  // EVERY cell the seat is dominant in, not the leading one: the colour floor is
+  // stated per cell and a seat charges 2.1 of them on average, so a tile showing
+  // one membership cannot be checked against a floor at all.
   one.textContent = row.mode + " \\u00b7 " + (row.hue_family || NONE) +
-    " \\u00b7 " + (row.cell || NONE);
+    " \\u00b7 " + ((row.cells && row.cells.length) ? row.cells.join(" + ") : NONE);
   const two = document.createElement("div");
   two.className = "dim";
   two.textContent = row.partition + (row.centered ? " \\u00b7 centered" : "") +
     " \\u00b7 seat " + row.seat;
   meta.append(top, one, two);
+  // The floor mark, and only where the pass carried a floor at all. A seat the
+  // floor bought must not look like every other seat: that is the whole question
+  // this page is being read to answer.
+  if (row.floor === "mandated" || row.floor === "holding") {
+    const mark = document.createElement("div");
+    mark.className = "floor " + row.floor;
+    mark.textContent = row.floor === "mandated"
+      ? "floor seated this \\u2014 " + (row.seated_for || "").replace("cell_floor:", "")
+      : "floor holds this \\u2014 " + (row.floor_cells || []).join(", ");
+    mark.title = row.floor === "mandated"
+      ? "the scarcity leg took this seat FOR a cell floor: the floor is why it is here"
+      : "another leg placed it, and it is dominant in a cell at or below its floor \\u2014 " +
+        "so the objective's shortfall tier now refuses every swap that would remove it";
+    meta.append(mark);
+  }
   card.append(meta);
   return card;
 }
@@ -934,10 +1021,13 @@ function openAt(i) {
   const who = document.createElement("b");
   who.textContent = row.alias;
   const what = document.createElement("span");
-  what.textContent = "  \\u00b7  " + row.mode + " \\u00b7 " + (row.cell || NONE) +
+  what.textContent = "  \\u00b7  " + row.mode +
+    " \\u00b7 " + ((row.cells && row.cells.length) ? row.cells.join(" + ") : NONE) +
     " \\u00b7 " + row.partition + (row.centered ? " \\u00b7 centered" : "") +
     " \\u00b7 seat " + row.seat +
-    " \\u00b7 rank " + (row.rank === null ? NONE : Number(row.rank).toFixed(3));
+    " \\u00b7 rank " + (row.rank === null ? NONE : Number(row.rank).toFixed(3)) +
+    (row.floor === "mandated" ? "  \\u00b7  seated BY a colour floor"
+      : row.floor === "holding" ? "  \\u00b7  held by a colour floor" : "");
   view.querySelector(".bar").replaceChildren(where, who, what);
   view.classList.add("open");
 }
@@ -988,6 +1078,9 @@ draw();
 
 __all__ = [
     "ALIAS_LENGTH",
+    "FLOOR_FREE",
+    "FLOOR_HOLDING",
+    "FLOOR_MANDATED",
     "MANIFEST_NAME",
     "PAGE_NAME",
     "RECORDED_SEATS",

@@ -167,6 +167,63 @@ def test_a_row_carries_the_leading_dominant_colour_and_every_one_the_picture_hol
     assert rows[0]["families"] == ["green", "lime"]
 
 
+def floors_of(**per_cell) -> dict:
+    """A record's `shortfalls.cell_floors` block, thinned to what `rows_of` reads."""
+    return {
+        "per_cell": {
+            cell: {"floor": floor, "seated": seated} for cell, (floor, seated) in per_cell.items()
+        }
+    }
+
+
+def test_a_seat_the_colour_floor_bought_does_not_look_like_every_other_seat():
+    """The evaluation question the sheet is read to answer is *what did the floor
+    drag in*, and it cannot be answered off a page where a floor-mandated seat is
+    indistinguishable from one the ranked walk placed."""
+    record = record_of(seat("k0", seated_for="cell_floor:dark_vivid_green"))
+    record["shortfalls"]["cell_floors"] = floors_of(dark_vivid_green=(20, 20))
+
+    row = tentative.rows_of(record)[0]
+    assert row["seated_for"] == "cell_floor:dark_vivid_green"
+    assert row["floor"] == tentative.FLOOR_MANDATED
+    assert row["floor_cells"] == ["dark_vivid_green"]
+
+
+def test_a_seat_another_leg_placed_that_the_floor_now_HOLDS_is_a_third_answer():
+    """*What did the floor drag in* and *what is the floor now paying for* are two
+    questions. A swap or a chain can replace a mandated seat with one of its own,
+    and the floor is still why a seat of that colour is there — so a seat charging
+    a cell at or below its floor is marked, and marked differently."""
+    record = record_of(seat("k0", seated_for="swap"))
+    record["shortfalls"]["cell_floors"] = floors_of(
+        dark_vivid_green=(20, 20), light_muted_lime=(20, 41)
+    )
+
+    row = tentative.rows_of(record)[0]
+    assert row["floor"] == tentative.FLOOR_HOLDING
+    assert row["floor_cells"] == ["dark_vivid_green"], "the cell above its floor is not one"
+
+
+def test_a_seat_in_no_cell_the_floor_is_short_of_is_free_of_it():
+    record = record_of(seat("k0", seated_for="general_pool"))
+    record["shortfalls"]["cell_floors"] = floors_of(
+        dark_vivid_green=(20, 63), light_muted_lime=(20, 41)
+    )
+
+    assert tentative.rows_of(record)[0]["floor"] == tentative.FLOOR_FREE
+
+
+def test_a_record_that_carried_no_colour_floor_marks_no_seat_with_one():
+    """`shortfalls.cell_floors` is `null` on a pass that ran without one, and every
+    record before 2026-09-09 is such a pass. The mark has to be absent rather than
+    guessed at, or a re-browsed old gallery would grow floor badges."""
+    record = record_of(seat("k0", seated_for="general_pool"))
+    record["shortfalls"]["cell_floors"] = None
+
+    row = tentative.rows_of(record)[0]
+    assert row["floor"] == tentative.FLOOR_FREE and row["floor_cells"] == []
+
+
 def test_a_seat_with_no_dominant_colour_records_null_rather_than_a_guess():
     """A picture the codebook reads as neutral is dominant in nothing, and a
     record that invented a family for it would be a filter answering wrongly."""
@@ -387,6 +444,50 @@ def test_every_tile_names_its_picture_relatively_and_carries_the_full_id(store):
     assert embedded[0]["key"] == "k0"
     assert embedded[0]["src"] == "../../depth/a_leg/pictures/k0.jpg"
     assert not embedded[0]["src"].startswith("/"), "an absolute path does not travel"
+
+
+def test_a_page_written_elsewhere_resolves_its_thumbnails_from_where_it_LANDS(store):
+    """`--out` is a parameter rather than a copy afterwards for exactly this: an
+    `index.html` moved by hand points at nothing, because every reference in it is
+    relative to the folder it was written in."""
+    tentative.write(record_of(seat("k0")), stamp="20260902T000000Z", log=quiet)
+    beside = tentative.page("20260902T000000Z", log=quiet)
+
+    elsewhere = tentative.page("20260902T000000Z", out=store / "sheet" / "gallery.html", log=quiet)
+    embedded = json.loads(
+        elsewhere.read_text(encoding="utf-8").split("const ROWS = ", 1)[1].split(";\n", 1)[0]
+    )
+
+    assert elsewhere == store / "sheet" / "gallery.html"
+    assert embedded[0]["src"] == "../curation/depth/a_leg/pictures/k0.jpg"
+    assert beside.is_file(), "the record's own page is left where it is"
+    assert "../../depth/" in beside.read_text(encoding="utf-8")
+
+
+def test_the_page_marks_the_seats_the_colour_floor_bought_and_can_filter_on_them(store):
+    """A badge and a facet, because the question is asked both ways: *which of
+    these did the floor drag in* wants the mark on the tile, and *show me only
+    those* wants the filter."""
+    record = record_of(seat("k0", seated_for="cell_floor:dark_vivid_green"), seat("k1"))
+    record["shortfalls"]["cell_floors"] = floors_of(dark_vivid_green=(20, 20))
+    tentative.write(record, log=quiet)
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert '<fieldset id="f-floor"><legend>colour floor</legend></fieldset>' in page
+    assert '"floor"]' in page or '"floor",' in page, "the facet list has to hold it"
+    assert "floor seated this" in page and "floor holds this" in page
+    assert '<option value="floor">group by colour floor</option>' in page
+
+
+def test_a_tile_names_every_cell_it_charges_and_not_only_the_leading_one(store):
+    """A seat charges 2.1 cells on average and the floor is stated per cell, so a
+    tile showing one membership cannot be checked against a floor at all."""
+    tentative.write(record_of(seat("k0")), log=quiet)
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert 'row.cells.join(" + ")' in page
 
 
 def test_the_page_opens_a_picture_full_size_rather_than_selecting_it(store):

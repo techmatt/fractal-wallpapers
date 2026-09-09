@@ -110,6 +110,7 @@ from fractal_wallpapers.curation import (
     view,
 )
 from fractal_wallpapers.curation import stamps as stamps_module
+from fractal_wallpapers.palettes import dominance
 from fractal_wallpapers.paths import rehome, tracked_name, under
 
 #: The schema every record this module writes carries.
@@ -384,6 +385,25 @@ DEFAULT_FINE_BAR = 0.50
 #: taken before this default existed. `--augment off` is the way back and is what
 #: the identity pin runs under. See [`curation.augment`].
 DEFAULT_AUGMENT = True
+
+#: **Whether the colour floor runs, unasked. ON**, Matt's ruling of 2026-09-09,
+#: shipped in the same act that took [`ceiling.K`] from 2 to 3.
+#:
+#: The floor is [`ceiling.Rule.required`] — `floor(Kf * t * n)`, 20 seats a cell
+#: at n=1000 against an allowance of 63 — carried as one soft [`Demand`] per
+#: chromatic cell. It cannot refuse anything and it cannot make a solve
+#: infeasible: an unfillable cell is a **shortfall** on tier 2 of the objective,
+#: recorded per cell in `shortfalls.cell_floors` and never an exception.
+#:
+#: **Off on the themed path**, and that is not a flag a themed caller sets: a
+#: themed pass is deliberately one cell, so 48 floors would be 47 demands the
+#: pass exists to fail. [`solve`] switches it off there the way it already swaps
+#: the twin test out, and the record says so.
+#:
+#: `False` is the pass that ran with no colour floor at all, which is every
+#: record before this and what `--cell-floor off` asks for. `config.ceiling.kf`
+#: is `null` on such a record, so a reader is never left inferring it from a date.
+DEFAULT_CELL_FLOOR = True
 
 #: How many improvement passes before the loop stops and says so. A backstop and
 #: not an operating parameter: the loop's own stopping rule is a pass that takes
@@ -1315,11 +1335,22 @@ def target_rule() -> str:
 class Demand:
     """One thing the pass was told to seat some of, and how to count it.
 
-    Two kinds today and they are one shape: a **mode floor** wants a fixed number
-    of seats in one mode, and a **colour target** wants a share of the realized
-    seats dominant in one cell. Both are soft, both are counted in tier 3 of the
-    objective, and both are seated from their own subpool by the scarcity leg —
-    so neither is a special case anywhere below this line.
+    Three kinds today and they are one shape: a **mode floor** wants a fixed
+    number of seats in one mode, a **colour target** wants a share of the
+    realized seats dominant in one cell, and the **colour floor** wants
+    [`ceiling.Rule.required`]'s share of them — one fair share, rounded down.
+    All three are soft, all three are counted in tier 2 of the objective, and all
+    three are seated from their own subpool by the scarcity leg, so none of them
+    is a special case anywhere below this line.
+
+    **The colour floor joins the mode floors' shortfall term rather than taking
+    one of its own**, and that is a choice with a reason: a tier of its own would
+    have to be ordered against theirs, and there is no ruling saying a starved
+    mode outranks a starved colour or the other way about. One term ranks them by
+    *how many seats* are missing, which is the only comparison either quantity
+    supports. It sits where the tier already sat — under the seat count, over the
+    worst seated score — so a colour shortfall can never outrank tier order and
+    can never make the solve fail.
     """
 
     name: str
@@ -1329,19 +1360,37 @@ class Demand:
     seats: int | None = None
     #: A share of the realized seat count, for a colour target. `None` for a count.
     share: float | None = None
+    #: `kf * t`, for a colour floor — [`ceiling.Rule.floor_share`]. `None` for a
+    #: demand that carries no floor. A cell carrying **both** a target and the
+    #: floor holds both fields and asks for the larger; see [`wanted`].
+    floor_share: float | None = None
 
     def wanted(self, filled: int) -> int:
         """How many seats this demand asks for, given how many got filled.
 
-        Through [`ceiling.share_of`] and not a second `math.ceil` here, so that a
-        colour target and the spiral share cap cannot drift apart about what "a
-        share of the realized seats" means. They point opposite ways — a target is
-        a floor under the quantity and a cap is a ceiling over it — which is
-        exactly why they have to be the same quantity.
+        Through [`ceiling.share_of`] and [`ceiling.share_down`] rather than a
+        `math.ceil` or a `math.floor` here, so that a colour target and the
+        spiral share cap cannot drift apart about what "a share of the realized
+        seats" means, and neither can a colour floor and the allowance it sits
+        under. They point opposite ways — a target and a floor are floors under
+        the quantity and a cap is a ceiling over it — which is exactly why they
+        have to be the same quantity.
+
+        **A cell carrying a target and the floor asks for the larger of the
+        two**, in one demand rather than two — two demands over one cell would
+        double-count its shortfall. On today's `kf = 1` the max never has to
+        choose: a target REPLACES the cell's share ([`ceiling.Rule.share`]), so
+        the floor under a targeted cell is `floor(t * n)` against the target's
+        own `ceil(t * n)` and the target is what binds. That is the pair staying
+        denominated in one vector rather than a coincidence to rely on, and the
+        max is what keeps it true at a `kf` above one without a special case.
         """
-        if self.seats is not None:
-            return int(self.seats)
-        return ceiling.share_of(float(self.share), filled)
+        asked = 0 if self.seats is None else int(self.seats)
+        if self.share is not None:
+            asked = max(asked, ceiling.share_of(float(self.share), filled))
+        if self.floor_share is not None:
+            asked = max(asked, ceiling.share_down(float(self.floor_share), filled))
+        return asked
 
     def _store(self, state) -> dict:
         """The axis store this demand counts in. One spelling for both questions
@@ -1374,23 +1423,43 @@ class Demand:
         return candidate.mode == self.of if self.axis == "mode" else self.of in candidate.cells
 
 
-def demands_for(held: dict, targets: dict) -> list:
-    """Every demand one pass carries, mode floors then colour targets.
+def demands_for(held: dict, targets: dict, rule=None, cell_floor: bool = False) -> list:
+    """Every demand one pass carries: mode floors, then one row per colour cell.
 
     A floor of zero is not a demand: it cannot go short, and carrying it would put
     a row on the shortfall block that no gallery can fail — which is how a floor
     rule reads as working when it is switched off.
+
+    `cell_floor` asks for [`ceiling.Rule.required`] under **every** chromatic
+    cell of the codebook, targeted or not, and `rule` is where the arithmetic
+    comes from. One demand per cell whatever it carries: a targeted cell holds
+    its target's share and the floor's in the same row and asks for the larger —
+    see [`Demand.wanted`]. `cell_floor=False` is the pass that carried colour
+    targets alone, which is every record before 2026-09-09 and every themed pass
+    since.
+
+    **The cells come from the codebook and never from the pool.** A cell nothing
+    in the pool is dominant in is exactly the cell whose shortfall a reader needs
+    to see, and a demand list built off the seated rows could not name it.
     """
     out = [
         Demand(name=f"mode_floor:{mode}", axis="mode", of=mode, seats=int(seats))
         for mode, seats in sorted(held.items())
         if int(seats) > 0
     ]
-    out += [
-        Demand(name=f"target:{cell}", axis="cell", of=cell, share=float(share))
-        for cell, share in sorted((targets or {}).items())
-        if float(share) > 0
-    ]
+    asked = {cell: float(share) for cell, share in (targets or {}).items() if float(share) > 0}
+    cells = sorted(set(asked) | (set(dominance.cells()) if cell_floor else set()))
+    for cell in cells:
+        floor_share = rule.floor_share(cell) if cell_floor and rule is not None else None
+        out.append(
+            Demand(
+                name=f"target:{cell}" if cell in asked else f"cell_floor:{cell}",
+                axis="cell",
+                of=cell,
+                share=asked.get(cell),
+                floor_share=floor_share,
+            )
+        )
     return out
 
 
@@ -2056,6 +2125,7 @@ def solve(
     explain: set | frozenset | list | None = None,
     spiral_cap: float | None = DEFAULT_SPIRAL_CAP,
     mode_ceilings: dict | None = DEFAULT_MODE_CEILINGS,
+    cell_floor: bool = DEFAULT_CELL_FLOOR,
     augment_chains: bool = DEFAULT_AUGMENT,
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
@@ -2120,6 +2190,12 @@ def solve(
     cap and it is not the same record as `1.0` — see the constant. The default
     lives here rather than only on the flag because a bare call and a typed
     command must not be two answers to what this leg does.
+
+    `cell_floor` is [`DEFAULT_CELL_FLOOR`] unasked — **on** since 2026-09-09,
+    which is a change of the same kind: a pass that says nothing about it used to
+    carry no colour floor and now carries one per chromatic cell. It is `False`
+    on the themed path whatever a caller passes, because a themed pass is one
+    cell on purpose. See the constant.
 
     `mode_ceilings` is [`DEFAULT_MODE_CEILINGS`] unasked — a **change of
     2026-09-05** by the same argument, and `{}` is what a caller spells for no
@@ -2234,6 +2310,25 @@ def solve(
     held_floors = floors_for(asked, modes)
     #: The uniform floor, where the caller passed one. `None` says it was per mode.
     flat = None if isinstance(asked, dict) else int(asked)
+    # Off on the themed path whatever the caller passed, and said out loud rather
+    # than assumed: a themed pass is deliberately one cell, so 47 of the 48 floors
+    # would be demands the pass exists to fail. It is the same exclusion the twin
+    # test already takes there.
+    held_cell_floor = bool(cell_floor) and theme is None
+    if cell_floor and theme is not None:
+        log(
+            f"[solve] the colour floor is OFF for this themed pass on {theme}: a themed "
+            "gallery is one cell by construction and 48 cell floors would fight the point "
+            "of it"
+        )
+    if held_cell_floor:
+        log(
+            f"[solve] the colour floor is floor(kf x t x n) = "
+            f"{ceiling.share_down(rule.kf * ceiling.CELL_SHARE, n)} seat(s) for each of the "
+            f"{len(dominance.cells())} chromatic cells at the uniform share, against an "
+            f"allowance of {int(math.floor(rule.k * ceiling.CELL_SHARE * n)) + 1}. SOFT: it "
+            "rides the shortfall tier and refuses nothing"
+        )
 
     table = headroom.bars(population, relaxed=theme is not None)
     cleared = headroom.clearing(population, table)
@@ -2328,6 +2423,11 @@ def solve(
         rule=rule,
         rank=rank,
         floors=held_floors,
+        cell_floors=(
+            {cell: rule.required(cell, n) for cell in dominance.cells()}
+            if held_cell_floor
+            else None
+        ),
         rows_per_seat=rows_per_seat,
         seed=draw_seed,
         log=log,
@@ -2377,7 +2477,7 @@ def solve(
             f"ceil({spiral_cap:g} x seats filled) of the seats may be spiral locations, "
             f"off {len(viewed.rows):,} view row(s) of which {held_spirals:,} are"
         )
-    demands = demands_for(held_floors, rule.targets)
+    demands = demands_for(held_floors, rule.targets, rule=rule, cell_floor=held_cell_floor)
     gallery = Gallery(state, order, demands)
 
     seeded = seed(gallery, viewed.rows, demands, rank, refused, log=log)
@@ -2480,6 +2580,7 @@ def solve(
             fine_bar,
             None if radius is None else fold,
             len(fine.forced),
+            held_cell_floor,
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -2683,6 +2784,7 @@ def _config(
     fine_bar: float | None = DEFAULT_FINE_BAR,
     fold: str | None = None,
     forced: int = 0,
+    cell_floor: bool = DEFAULT_CELL_FLOOR,
 ) -> dict:
     return {
         "n": n,
@@ -2777,11 +2879,33 @@ def _config(
             if theme is not None
             else ""
         ),
+        # `k` and `kf` are ONE PAIR and are written together, on `config` — which
+        # is the block [`tentative.manifest`] carries whole into a tracked
+        # manifest, the same reason `spiral_cap` and `fold` sit there. A record
+        # predating either field cannot say whether it ran under it, and this pair
+        # will be read back for months: `k: 2` is a record taken before
+        # 2026-09-09, and `kf: null` is one that carried no colour floor, which is
+        # every record before that date and every themed pass since.
         "ceiling": {
             "k": rule.k,
+            "k_default": ceiling.K,
+            "kf": rule.kf if cell_floor else None,
+            "kf_default": ceiling.KF,
             "cell_share": ceiling.CELL_SHARE,
             "family_share": ceiling.FAMILY_SHARE,
             "allowance": "floor(k * t * n) + 1",
+            "floor": None
+            if not cell_floor
+            else ceiling.share_down(rule.kf * ceiling.CELL_SHARE, n),
+            "floor_rule": "floor(kf * t * n), and NO + 1 — the ceiling's warm-up is for a "
+            "walk that has to seat its first row somewhere and a floor has nothing to warm "
+            "up. At the uniform cell share the pair reads: every chromatic cell gets at "
+            "least kf fair shares of the gallery and at most k",
+            "floor_is": "SOFT, and one demand per chromatic cell on the objective's "
+            "shortfall tier — it never refuses a candidate and never makes a solve "
+            "infeasible. A cell the pool cannot fill is a row in `shortfalls.cell_floors`. "
+            "`null` is a pass that carried no colour floor: every record before 2026-09-09, "
+            "and every themed pass since, a theme being one cell by construction",
             "group_cap": rule.group_cap,
             "group_cap_rule": str(group_cap),
             "group_cap_from": {
@@ -2898,6 +3022,105 @@ def _per_mode(gallery: Gallery, modes: list, held: dict, cleared: list, refused:
     return out
 
 
+def _cell_floors(gallery: Gallery, rule: ceiling.Rule, cleared: list, refused: dict) -> dict | None:
+    """What the colour floor asked of each cell, what it got, and what stood in
+    the way of the cells it missed. `None` where no colour floor ran.
+
+    Three facts per short cell, on [`_per_mode`]'s argument: a cell short of its
+    floor is short for unrelated reasons and one list conflates them. `clearing`
+    is how many rows dominant in the cell cleared their mode's bar at all, and
+    `refused_by` is which rules acted on the ones that did not sit.
+
+    **`deadlocked` is the fourth and it is the interesting one.** A seat charges
+    about 2.1 cells, so a row that would fill a starving cell is very often
+    dominant in a *second* cell that is already at its allowance — and then the
+    ceiling refuses it for a colour nobody was short of. That is a shape neither
+    the allowance column nor the supply column can show, because both are true of
+    it: the cell is starved, the pool holds rows for it, and the rule that took
+    them was about somewhere else entirely. It is counted here by asking which
+    cell [`rules.State.counted_refusal`] actually returned on — its own loop,
+    over the finished state — and comparing it with the cell that went short.
+    """
+    if not gallery.demands:
+        return None
+    wanted = {
+        demand.of: demand
+        for demand in gallery.demands
+        if demand.axis == "cell" and demand.floor_share is not None
+    }
+    if not wanted:
+        return None
+    state = gallery.state
+    filled = state.filled
+    supply: dict = {}
+    acted: dict = {}
+    deadlocked: dict = {}
+    binding: dict = {}
+    for candidate in cleared:
+        why = refused.get(candidate.key)
+        for cell in candidate.cells:
+            if cell not in wanted:
+                continue
+            supply[cell] = supply.get(cell, 0) + 1
+            if why is None:
+                continue
+            acted.setdefault(cell, {})
+            acted[cell][why] = acted[cell].get(why, 0) + 1
+            if why != "cell_allowance":
+                continue
+            # The cell `counted_refusal` returned on: the FIRST of this
+            # candidate's cells over its allowance, in the candidate's own order.
+            over = next(
+                (
+                    name
+                    for name in candidate.cells
+                    if len(state.cells.get(name, ())) + 1 > rule.allowed(name, state.n)
+                ),
+                None,
+            )
+            if over is not None and over != cell:
+                deadlocked[cell] = deadlocked.get(cell, 0) + 1
+                binding.setdefault(cell, {})
+                binding[cell][over] = binding[cell].get(over, 0) + 1
+    rows = {}
+    for cell, demand in sorted(wanted.items()):
+        asks = demand.wanted(filled)
+        got = demand.held(state)
+        rows[cell] = {
+            "floor": asks,
+            "allowance": rule.allowed(cell, state.n),
+            "seated": got,
+            "short": max(0, asks - got),
+            "clearing": supply.get(cell, 0),
+            "refused_by": dict(sorted(acted.get(cell, {}).items(), key=lambda item: -item[1])),
+            "deadlocked": deadlocked.get(cell, 0),
+            "deadlocked_on": dict(
+                sorted(binding.get(cell, {}).items(), key=lambda item: -item[1])[:5]
+            ),
+        }
+    short = [cell for cell, row in rows.items() if row["short"] > 0]
+    return {
+        "of": "one soft demand per chromatic cell, floor(kf * t * seats filled). It rides "
+        "the same shortfall tier the mode floors ride and can neither refuse a candidate "
+        "nor make the solve infeasible",
+        "floor": ceiling.share_down(rule.kf * ceiling.CELL_SHARE, filled),
+        "floor_of": "the realized seat count and not n, for curation.solve.target_rule's "
+        "reason: this leg does not promise n seats, so a demand denominated in seats "
+        "nobody is promising to fill reports nothing when the answer comes back short",
+        "cells": len(rows),
+        "at_or_over_the_floor": len(rows) - len(short),
+        "below_the_floor": short,
+        "below_the_floor_count": len(short),
+        "short_total": sum(row["short"] for row in rows.values()),
+        "deadlocked_total": sum(rows[cell]["deadlocked"] for cell in short),
+        "deadlocked_is": "a row dominant in a starving cell that the ALLOWANCE refused for "
+        "a DIFFERENT cell it is also dominant in — a seat charges about 2.1 cells, so the "
+        "companion being full is a way to starve a cell that neither its own allowance nor "
+        "its own supply can show. `deadlocked_on` names the cells that were full",
+        "per_cell": rows,
+    }
+
+
 def _shortfalls(
     gallery: Gallery,
     rule: ceiling.Rule,
@@ -2973,6 +3196,10 @@ def _shortfalls(
             },
             "counts": dict(sorted(counts.items(), key=lambda item: -item[1])),
         },
+        # Beside `cells` because they are the two ends of one sentence: that block
+        # is what the ceiling let through and this is what the floor asked for.
+        # `null` is a pass that carried no colour floor.
+        "cell_floors": _cell_floors(gallery, rule, cleared, refused),
         "families": {
             "held": len(kin),
             "over_allowance": {

@@ -609,6 +609,70 @@ The two figures are `curate solve k-sweep-plot <stamp>`
 beside every arm, and the same as a difference against the control so a colour that
 **falls** reads as a bar below zero rather than as a small one.
 
+## What `K = 3` and a colour floor of one fair share cost together, measured 2026-09-09
+
+`k3_floor_20260909`: one unforced n=1000 seating at the two adopted values,
+`20260909T215815Z`, against two arms over the same pool — the published-shape
+control `20260909T173957Z` (`K = 2`, no floor) and the sweep's `K = 3` rung with
+no floor. Everything else identical; `--forced` staged and off.
+
+| | seats | worst seat | sum | shortfall | seconds |
+|---|---|---|---|---|---|
+| `K = 2`, no floor (control) | 1000 | 1.503910 | 1891.212 | 0 | 100.1 |
+| `K = 3`, no floor | 1000 | 1.713590 | 1939.087 | 0 | 40.9 |
+| **`K = 3` + floor 20** | 1000 | 1.548138 | 1938.170 | 0 | 68.1 |
+
+**Every one of the 48 cells reached its floor. The shortfall is zero and so is the
+deadlock count.** That is the finding and it was not the expected one: the sweep's
+`K = 3` arm left eight cells under 20 seats with `dark_vivid_lime` at 10 and
+`dark_vivid_cyan` at 15, and the floor closed all eight without costing a seat.
+Six cells sit **exactly** at 20 — `dark_vivid_lime`, `dark_muted_lime`,
+`dark_vivid_cyan`, `light_vivid_cyan`, `light_vivid_azure`, `light_muted_blue` —
+which is the pool being scarce there rather than the floor being slack.
+
+**The price is the worst seat and almost nothing else.** The sum gives up **0.92
+of 1938** against the un-floored arm, and the worst seated score falls
+**1.713590 → 1.548138**. That is the shape the tier order predicts: a floor is
+paid for in tier 3, and the seats it drags in are by construction not near the top
+of anything. Against the `K = 2` control both still rise — sum +46.96, worst
++0.044.
+
+**287 of the 1,000 seats carry a `cell_floor:` stamp**, over 30 of the 48 cells,
+the busiest being `light_vivid_teal` and `light_muted_blue` at 18 each. A further
+11 seats are held by the floor without having been mandated by it — placed by
+another leg and dominant in a cell now sitting at its floor, so tier 2 refuses
+every swap that would remove them. The scarcity leg's share of the seed goes
+**300 → 520** and the ranked walk's **506 → 426**.
+
+**The augmenting chain found nothing to do**, 194 seats gained in the control
+against **0** here: the seed already filled all thousand, which it did not before.
+Seat churn against the control is **398 of 1,000**, and against the un-floored
+`K = 3` arm **162** — so most of the movement is the ceiling's and the floor moves
+a sixth of the gallery.
+
+**`cell_allowance` stays the largest refusal column** and falls with the ceiling:
+8,662 at `K = 2`, 5,346 at `K = 3` unfloored, **4,565** here. `spiral` rises 754 →
+1,266 and `twin` 423 → 662, both being rules that only get to act once the
+allowance stops acting first.
+
+### The deadlock the floor was expected to hit, and did not
+
+A seat charges about 2.1 cells, so a row that would fill a starving cell is often
+dominant in a second cell already at its allowance. Counted over the finished
+state — `shortfalls.cell_floors.per_cell.<cell>.deadlocked` — it is **8,962 rows
+across 47 cells**, and **not one of them is in a cell that went short**: the shape
+is real and it is concentrated in the *fat* cells, led by `light_vivid_red` (1,060
+rows, 778 of them refused for `dark_vivid_red`) and `light_vivid_orange` (948).
+Those cells are at 63 and losing nothing they need.
+
+Over the six cells that landed exactly on the floor it is 3, 2, 2, 6, 38 and 0
+rows. What actually refuses a thin cell's rows here is `spiral` and
+`the_leg_had_no_seat_left`, not another cell's allowance — `dark_vivid_lime`'s 50
+clearing rows go 9 `spiral`, 7 `twin`, 6 out of seats. So the thin cells are
+**carrier-bound and spiral-bound**, which is a mining instruction rather than a
+ceiling one, and the `K` sweep's feasibility reading — taken against each cell's
+`K = 2` deficit — did not answer the question a target of 20 asks.
+
 ## What the palette-group cap costs at n=1000, measured 2026-09-07
 
 **Nothing. It is not a binding constraint and never has been.** Three n=1000

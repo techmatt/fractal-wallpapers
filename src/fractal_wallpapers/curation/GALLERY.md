@@ -112,7 +112,7 @@ Three tests at each seat, in order, the first failure naming the rejection:
 group       one seat per palette group, unless this candidate's pixel cloud is
             more than 0.10 from EVERY picture that group already seated
 dominance   pro rata: with n seats filled including this one, a colour may hold
-            floor(K x t x n) + 1 of them, K = 2, t uniform (1/48 a cell, 1/12 a
+            floor(K x t x n) + 1 of them, K = 3, t uniform (1/48 a cell, 1/12 a
             family) unless a --target moved it. Only a candidate DOMINANT in an
             over-allowance colour is refused; carrying some of it is fine
 twin        no picture within 0.034281 of two already-shipped ones
@@ -148,6 +148,62 @@ path-dependent, so a slot that moves invalidates every seat after it in the walk
 order — and only after it, which is why replaying is enough and patching is not.
 Replaying arithmetic is free; replaying renders is not, which is what the
 on-demand cache is for.
+
+### `K = 3` and `Kf = 1` — the ceiling and the floor are one arithmetic
+
+**Matt's ruling of 2026-09-09, and both values shipped in one act.** `K` went from
+2 to 3 off the four-arm sweep; `Kf = 1` is new and is the other end of the same
+sentence — **every chromatic cell gets at least one fair share of the gallery and
+at most three**. At n=1000 that reads 20 seats owed against 63 allowed.
+
+The floor is deliberately expressed in the ceiling's units rather than as a
+constant of its own, so the two cannot drift apart in meaning and a `--target`
+that moves a cell's share moves both ends of its band together. `Kf` takes **no
+`+ 1`**: the ceiling's is a warm-up for a walk that has to seat its first row
+somewhere, and a floor is a demand stated against the finished gallery, so it is
+`floor(Kf · t · n)` and reads 20 rather than 21.
+
+**They are not the same kind of lever, and that asymmetry is the design.** A
+ceiling is a rule at the seat: it refuses a candidate and the walk has another. A
+floor cannot refuse anything, and a hard mandate on a cell the pool cannot fill
+would make the solve **infeasible** rather than merely worse. So the floor is one
+soft `solve.Demand` per cell, riding the lexicographic objective's shortfall tier
+— under the seat count, over the worst seated score — exactly as the mode floors
+already ride it. A cell the pool cannot fill is a row in `shortfalls.cell_floors`
+and never an exception or an empty gallery.
+
+**Colour shortfall joins the mode floors' term rather than taking a tier of its
+own.** A tier of its own would have to be ordered against theirs, and there is no
+ruling saying a starved mode outranks a starved colour or the other way about;
+one term ranks them by *how many seats are missing*, which is the only comparison
+either quantity supports. Tier order is unmoved by the addition.
+
+**Off on the themed path**, whatever a caller passes. A themed pass is one cell by
+construction, so 47 of the 48 floors would be demands the pass exists to fail —
+the same exclusion the twin test already takes there.
+
+What the sweep measured, four arms at n=1000 over one pool: the seating stays full
+at every rung and the objective rises with `K` — sum 1891 at 2, 1939 at 3, 1954 at
+3.75 — because the strong cells spread. The **thin** cells do not benefit and
+several fall: eight sat under 20 seats at `K = 3` against four at `K = 2`, with
+`dark_vivid_lime` at 10. That is what the floor is for, and it is why raising the
+ceiling alone would have made the collection more lopsided rather than less.
+
+**`config.ceiling.k` and `config.ceiling.kf` are on the tracked manifest**, which
+is what a reader months from now has. `k: 2` is a record taken before 2026-09-09;
+`kf: null` is one that carried no colour floor, which is every record before that
+date and every themed pass since; a record with no `kf` **key** at all predates
+the field. `--cell-floor off` is the way back.
+
+#### The deadlock a floor cannot see on its own
+
+A seat charges about 2.1 cells, so the row that would fill a starving cell is very
+often dominant in a **second** cell already at its allowance — and then the ceiling
+refuses it for a colour nobody was short of. Neither of the two obvious columns
+shows that, because both are true of it: the cell is starved *and* the pool holds
+rows for it *and* the rule that took them was about somewhere else. So
+`shortfalls.cell_floors.per_cell.<cell>.deadlocked` counts those rows and
+`deadlocked_on` names the cells that were full.
 
 ### `--target <cell>=<fraction>`
 
@@ -633,9 +689,10 @@ cannot be read as a fact about the pool, and an axis nothing holds can move unde
 any leg without anybody having decided it should.
 
 **Enforced and binding hard — the colour cell.** `cell_allowance` is the single
-largest consumer of the pool. At n=1000 the allowance is 42 seats a cell and **39 of
-the 48 cells held sit exactly at it** in the control (32 at 0.50 and 0.60, 26 at
-0.70), which is the same reading the K-sweep takes at `K = 2` in
+largest consumer of the pool. **At `K = 2`, which is what these four runs were
+taken under**, the allowance at n=1000 was 42 seats a cell and **39 of the 48 cells
+held sat exactly at it** in the control (32 at 0.50 and 0.60, 26 at 0.70) — the same
+reading the K-sweep takes at `K = 2` in
 [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the colour ceiling costs at n=1000,
 measured 2026-09-06*. This axis is not balanced, it is **levelled by a cap**.
 
@@ -675,8 +732,9 @@ a third. The same axis in hue-family memberships is lime 8.4% → 4.2% and cyan 
 → 7.5%, and chroma follows: vivid 93.3 → 84.8 memberships per 100 seats.
 
 **The cell cap cannot fix it, because the supply is not there to cap.** A cell whose
-allowance is 42 and which holds ten rows at the bar is not being levelled by
-anything. So this is the quality bar and the colour breadth this project wants in
+allowance is 42 (63 since `K = 3`) and which holds ten rows at the bar is not being
+levelled by anything — and neither can the colour floor above, which is why an
+unfillable cell is a recorded shortfall there rather than a mandate. So this is the quality bar and the colour breadth this project wants in
 direct conflict, in exactly two hues — a trade to be made deliberately, not a defect
 to be repaired. Both hues are also judge-disliked and light-and-cool, which is the
 `unwinnable` caveat under *The desire list is aimable at cell × mode and nowhere

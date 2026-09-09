@@ -123,8 +123,8 @@ def test_there_is_no_floor_under_the_raw_share() -> None:
 def test_the_allowance_is_floor_k_t_n_plus_one() -> None:
     rule = ceiling.Rule()
     for seats in (1, 12, 24, 48, 150):
-        assert rule.allowed("dark_vivid_green", seats) == math.floor(2 * seats / 48) + 1
-        assert rule.allowed("green", seats) == math.floor(2 * seats / 12) + 1
+        assert rule.allowed("dark_vivid_green", seats) == math.floor(ceiling.K * seats / 48) + 1
+        assert rule.allowed("green", seats) == math.floor(ceiling.K * seats / 12) + 1
 
 
 def test_the_warm_up_is_the_plus_one_and_the_first_seat_may_be_any_colour() -> None:
@@ -145,7 +145,7 @@ def test_a_target_replaces_the_allowance_for_its_cell_and_for_its_family() -> No
     assert rule.share("green") == 0.05, "the family of a targeted cell moves with it"
     assert rule.share("dark_vivid_red") == ceiling.CELL_SHARE
     assert rule.share("red") == ceiling.FAMILY_SHARE
-    assert rule.allowed("dark_vivid_green", 150) == math.floor(2 * 0.05 * 150) + 1 == 16
+    assert rule.allowed("dark_vivid_green", 150) == math.floor(ceiling.K * 0.05 * 150) + 1 == 23
 
 
 def test_a_target_raises_the_cells_its_carriers_also_deliver() -> None:
@@ -185,10 +185,10 @@ def test_the_implied_raise_is_read_off_the_tracked_carrier_table() -> None:
     """
     rule = ceiling.Rule(targets={"dark_vivid_lime": 1.0})
     assert rule.implied["dark_muted_lime"] == pytest.approx(0.380952, abs=1e-3)
-    assert rule.allowed("dark_muted_lime", 60) == 49, (
-        "the cell the n=60 lime solve was thirteen short in, at an allowance of three"
+    assert rule.allowed("dark_muted_lime", 60) == 73, (
+        "the cell the n=60 lime solve was thirteen short in, at an allowance of four"
     )
-    assert rule.allowed("dark_vivid_red", 60) == 3, "an untouched cell keeps the default"
+    assert rule.allowed("dark_vivid_red", 60) == 4, "an untouched cell keeps the default"
 
 
 def test_two_targets_in_one_family_add_up_under_it() -> None:
@@ -240,8 +240,14 @@ def test_every_ceiling_constant_is_pinned_at_the_value_it_was_calibrated_to():
     a change to which wallpapers ship that no other test would report."""
     assert ceiling.GROUP_CAP == 1, "gallery3: 59 of 91 groups sat above one seat"
     assert ceiling.TAU_GROUP == 0.10, "the twins sheet's three reference pairs, 0.0999-0.1000"
-    assert ceiling.K == 2, (
-        "family red at 2.45x uniform and dark_vivid_blue at 3.25x are what it acts on"
+    assert ceiling.K == 3, (
+        "Matt 2026-09-09 off the K sweep, replacing the 2 that family red at 2.45x uniform "
+        "and dark_vivid_blue at 3.25x were what it acted on. At n=1000 the cell allowance "
+        "goes 42 to 63 and the sum 1891 to 1939"
+    )
+    assert ceiling.KF == 1, (
+        "Matt 2026-09-09, shipped with K=3 in one act: one fair share under, three over. "
+        "floor(Kf * t * n) is 20 of a thousand seats and takes NO + 1"
     )
     assert ceiling.CELL_SHARE == 1.0 / 48.0, "uniform over the codebook's chromatic cells"
     assert ceiling.FAMILY_SHARE == 1.0 / 12.0, "uniform over its hue families"

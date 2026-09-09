@@ -650,7 +650,7 @@ def test_a_refused_card_pairs_on_the_competitor_and_every_other_rung_on_the_plac
     assert label_fate._against(seated)[0] == "seat01"
 
 
-def test_the_gap_is_on_the_card_because_0_01_and_0_4_are_different_findings():
+def test_the_p_fine_delta_is_on_the_card_because_0_01_and_0_4_are_different_findings():
     row = population_row(
         rung=label_fate.REFUSED,
         explained="cell_allowance",
@@ -661,13 +661,59 @@ def test_the_gap_is_on_the_card_because_0_01_and_0_4_are_different_findings():
             "mode": "smooth",
             "colormap": "a-map",
             "p_fine": 0.9,
-            "gap": 0.3998,
+            "p_fine_delta": 0.3998,
             "alternatives": 42,
         },
     )
     card = label_fate._card(row, None, "a.jpg", set())
     assert "+0.3998" in card
     assert "marginal of 42 seats" in card
+
+
+def test_the_delta_column_cannot_be_read_as_how_close_the_row_came_to_a_seat():
+    """`forced_seating_20260909`'s Part A finding, as a guard on the page.
+
+    The column was called `gap` and 127 of 173 paired cards carried a negative
+    one, which reads as *I scored higher and still lost* — about a rule that
+    compared no scores at all. So the label says what it is, the card carries the
+    disclaimer, and the LEG that placed the competitor goes on ahead of it, that
+    being the fact which actually explains a negative value.
+    """
+    row = population_row(
+        rung=label_fate.REFUSED,
+        explained="cell_allowance",
+        p_fine=0.9,
+        competitor={
+            "key": "rival01",
+            "why": "cell_allowance",
+            "mode": "smooth",
+            "colormap": "a-map",
+            "p_fine": 0.5,
+            "p_fine_delta": -0.4,
+            "leg": "swap",
+            "alternatives": 42,
+        },
+    )
+    card = label_fate._card(row, None, "a.jpg", set())
+    assert ">gap<" not in card, "the old label is gone from the card"
+    assert "p_fine Δ" in card
+    assert "not a margin" in card
+    assert "seat placed by" in card and "swap" in card
+    assert "a leg the seating key does not order" in card
+
+
+def test_a_competitor_the_ranked_walk_placed_is_the_one_leg_that_is_not_disclaimed():
+    """`general_pool` IS ordered by the seating key, so a comparison against one of
+    its seats is the one case where the two readings did meet."""
+    row = population_row(
+        rung=label_fate.REFUSED,
+        explained="cell_allowance",
+        p_fine=0.9,
+        competitor={"key": "r", "why": "cell_allowance", "leg": "general_pool", "alternatives": 1},
+    )
+    card = label_fate._card(row, None, "a.jpg", set())
+    assert "seat placed by" in card
+    assert "a leg the seating key does not order" not in card
 
 
 def test_a_card_says_when_no_single_departure_would_have_been_enough():

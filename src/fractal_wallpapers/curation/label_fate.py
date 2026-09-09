@@ -77,11 +77,17 @@ rung, and getting it wrong is how a page lies quietly:
 
 Where there is nothing to show the card says which silence it is: a place the
 record does not hold, or a refusal with no nameable competitor at all. Both are
-more interesting answers than a gap.
+more interesting answers than a difference of two scores.
 
-**The gap is on every paired card** — both `p_fine` readings and the difference.
-A refusal losing by 0.01 and one losing by 0.4 are different findings and a page
-that named only the winner would flatten them into one.
+**Both `p_fine` readings and their difference are on every paired card**, under
+the name `p_fine Δ` and beside the **leg that placed the competitor**. A refusal
+whose competitor reads 0.01 above it and one whose competitor reads 0.4 above it
+are different findings and a page naming only the winner would flatten them.
+
+⚠ **That column was called `gap` until 2026-09-09 and the name was wrong** — see
+[`P_FINE_DELTA_IS`]. It is not a measure of how close a row came to a seat and
+there is no such quantity on this page: the rules that refuse compare no scores
+at all. The leg is what explains a negative one, so it goes on the card first.
 
 Both sides are rendered fresh at [`sheets.LABEL_RESOLUTION`], which is also
 [`release.RELEASE_REGIME`] — the geometry a person judged at and the geometry a
@@ -713,6 +719,12 @@ def competitors(stamp: str, store=None, log=print) -> dict:
     record = solve.read_record(str((manifest.get("solve") or {}).get("name")))
     config = record["config"]
     seats = [str(seat["key"]) for seat in tentative.read_rows(stamp)]
+    # `{key: the demand or leg that placed it}`, off the record's own seats — the
+    # fact that explains a negative `p_fine_delta` on a card. See `_competitor`.
+    placed = {
+        str(seat["key"]): str(seat.get("seated_for") or "") or None
+        for seat in (record.get("seated") or ())
+    }
 
     candidates, _refused = solve.pool(log=log)
     # `refusals` on a record whose fold DELETED and `folds` on one that pooled —
@@ -803,10 +815,12 @@ def competitors(stamp: str, store=None, log=print) -> dict:
         counts[why] = counts.get(why, 0) + 1
         if why == "twin":
             against = (twins.get(row["key"]) or {}).get("too_close_to")
-            row["competitor"] = _competitor(against, held, order, why)
+            row["competitor"] = _competitor(against, held, order, why, placed)
         elif why in ("location", "cell_allowance"):
             candidate = held[row["key"]]
-            row["competitor"] = _marginal(_refusing_set(state, candidate, why), held, order, why)
+            row["competitor"] = _marginal(
+                _refusing_set(state, candidate, why), held, order, why, placed
+            )
             # The stricter question, kept beside the pairing rather than instead
             # of it: whether ONE seat leaving would have been enough.
             if row["competitor"] is not None:
@@ -820,7 +834,9 @@ def competitors(stamp: str, store=None, log=print) -> dict:
             # above, which names the sibling and the fold it happened under.
             entry = absorbed.get(str(row["location"]))
             taker = None if entry is None else by_picture.get(str(entry["lost_to_picture"]))
-            row["competitor"] = _competitor(None if taker is None else taker.key, held, order, why)
+            row["competitor"] = _competitor(
+                None if taker is None else taker.key, held, order, why, placed
+            )
             if row["competitor"] is not None:
                 # The DISTANCE is what decided this card and `_dress`'s p_fine gap
                 # is not — the two places never competed for a seat. Both go on
@@ -907,6 +923,34 @@ def _refolded(candidates: list, absorbed: dict, preselection: dict, log=print) -
     return out
 
 
+#: What the `p_fine` difference on a paired card is, said on the card itself.
+#:
+#: ⚠ **It was called `gap` until 2026-09-09 and that name was a lie**, measured
+#: rather than suspected — `forced_seating_20260909`, Part A. It reads as *how
+#: close this row came to a seat* and it is nothing of the kind: the rule that
+#: took the row compared no scores at all. `cell_allowance` is a **count** against
+#: an allowance, `location` is a seat standing in a cluster, and the competitor
+#: shown beside either is picked **after the fact** as the marginal seat — the
+#: two rows never met. 127 of that record's 173 paired cards carried a NEGATIVE
+#: value, which reads as *I scored higher and still lost* and is simply what a
+#: rule that never looked at a score does.
+#:
+#: So the column is named for what it is — the difference between two readings —
+#: and the fact that explains a negative one goes on the card beside it:
+#: [`_competitor`]'s `leg`. Of those 105 negative `cell_allowance` competitors,
+#: **zero** were placed by the ranked walk; 47 came from `swap`, 47 from
+#: `augment`, 11 from a mode floor's mandate. A seat placed by a leg the rank key
+#: does not order is a seat that outscoring proves nothing about.
+P_FINE_DELTA_IS = (
+    "competitor.p_fine minus this row's, and NOT a measure of how close this row came to a "
+    "seat. The rule that refused it compared no scores: `cell_allowance` is a count against "
+    "an allowance and `location` is a seat standing in a cluster, and the competitor beside "
+    "it is the marginal seat picked after the fact. A negative value is normal and means "
+    "only that a higher-reading row lost to a rule that never read either — see `leg`, "
+    "which names how that seat was placed"
+)
+
+
 def _dress(paired: list, distinct: set) -> None:
     """Give every competitor the palette and `p_fine` its caption needs.
 
@@ -916,9 +960,12 @@ def _dress(paired: list, distinct: set) -> None:
     three-store one it replaced — so a lookup per card would read the same rows
     several times over.
 
-    **The gap goes on the card**, both readings and the difference: a refusal
-    losing by 0.01 and one losing by 0.4 are different findings, and a page that
-    showed only which one won would flatten them into the same picture.
+    **Both readings and their difference go on the card, under a name that
+    cannot be read as closeness** — see [`P_FINE_DELTA_IS`]. A refusal whose
+    competitor reads 0.01 above it and one whose competitor reads 0.4 above it
+    are different findings and a page naming only the winner would flatten them;
+    a page calling the subtraction a *gap* invites the reader to conclude the
+    thing the seating never measured.
     """
     from fractal_wallpapers.curation import candidate_ledger
     from fractal_wallpapers.models import gallery_grade_train
@@ -933,9 +980,10 @@ def _dress(paired: list, distinct: set) -> None:
         rival["mode_params"] = dict(recipe.get("mode_params") or {})
         rival["p_fine"] = None if not read else float(read["p_ge4"])
         mine = row.get("p_fine")
-        rival["gap"] = (
+        rival["p_fine_delta"] = (
             None if rival["p_fine"] is None or mine is None else round(rival["p_fine"] - mine, 6)
         )
+        rival["p_fine_delta_is"] = P_FINE_DELTA_IS
 
 
 def _fold(row: dict, held: dict, absorbed: dict, preselection: dict) -> None:
@@ -1005,7 +1053,7 @@ def _on_disk(store) -> set:
     return {path.stem for path in pictures_dir(store).glob("*.jpg")}
 
 
-def _marginal(could: set, held: dict, order, why: str) -> dict | None:
+def _marginal(could: set, held: dict, order, why: str, placed: dict) -> dict | None:
     """The weakest of the seats the refusing rule would take a departure from.
 
     Weakest by the pass's own seating key, because that is the seat a 1-swap
@@ -1018,16 +1066,26 @@ def _marginal(could: set, held: dict, order, why: str) -> dict | None:
     if not could:
         return None
     ranked = sorted(could, key=lambda key: (solve.value_of(held[key], order), str(key)))
-    return _competitor(ranked[0], held, order, why, alternatives=len(could))
+    return _competitor(ranked[0], held, order, why, placed, alternatives=len(could))
 
 
-def _competitor(key, held: dict, order, why: str, alternatives: int = 1) -> dict | None:
-    """One competitor, as the card shows it."""
+def _competitor(key, held: dict, order, why: str, placed: dict, alternatives: int = 1):
+    """One competitor, as the card shows it.
+
+    **`leg` is on it and is the fact a reader needs**, off the record's own
+    `seated_for` through [`solve.leg_of`]. It is what explains the card the
+    subtraction beside it cannot: a competitor placed by `swap`, `augment` or a
+    mandate was placed by a leg the rank key does not order — the swap and the
+    chain accept on the lexicographic objective, and a mandate walks its own
+    subpool scarcest-first — so a refused row reading higher than it is the
+    ordinary case rather than an anomaly. See [`P_FINE_DELTA_IS`].
+    """
     from fractal_wallpapers.curation import solve
 
     candidate = held.get(str(key or ""))
     if candidate is None:
         return None
+    why_seated = placed.get(str(candidate.key))
     return {
         "key": str(candidate.key),
         "why": why,
@@ -1036,6 +1094,13 @@ def _competitor(key, held: dict, order, why: str, alternatives: int = 1) -> dict
         "value": float(solve.value_of(candidate, order)),
         "mode": str(candidate.mode),
         "location": str(candidate.location),
+        "seated_for": why_seated,
+        "leg": None if why_seated is None else solve.leg_of(why_seated),
+        "leg_is": "which leg of the pass placed this seat, off the record's own "
+        "`seated_for`. `general_pool` is the ranked walk and is the ONLY leg the seating "
+        "key ordered; `swap` and `augment` accept on the lexicographic objective and a "
+        "mandate walks one demand's subpool scarcest-first, so a seat from any of those "
+        "three says nothing about how the two rows would have compared",
     }
 
 
@@ -1242,6 +1307,7 @@ STYLE = """
  .facts span { white-space: nowrap; }
  .lab { color: #6b7480; }
  .gap { color: #e07b53; font-weight: 600; }
+ .leg { color: #f0b45e; font-weight: 600; }
  .key { font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }
  .flag { color: #e07b53; }
  .staged { color: #7fa6d8; }
@@ -1407,7 +1473,7 @@ def _slices(rows) -> list:
             _sorted(refused, lambda row, w=why: str(row["explained"]) == w),
             f"{slug(REFUSED)}-{slug(why)}",
             f"REFUSED · {why}",
-            f"each card is paired with {PAIRING.get(why, 'nothing')}",
+            f"each card is paired with {PAIRING.get(why, 'nothing')}. {P_FINE_DELTA_IS}",
             by_rule=True,
         )
     return out
@@ -1764,13 +1830,29 @@ def _card(row: dict, left, right, repaired: set, caption=None) -> str:
             if right
             else '<figure><div class="gone">no picture</div></figure>'
         )
-        gap = against.get("gap")
+        delta = against.get("p_fine_delta")
         beside = [
             f'<span><span class="lab">against</span> '
             f"{_mode(against.get('mode', ''), against.get('mode_params') or {})}</span>",
             f'<span><span class="lab">palette</span> {against.get("colormap", "")}</span>',
             f'<span><span class="lab">p_fine</span> {_score(against.get("p_fine"))}</span>',
         ]
+        # THE FACT THAT EXPLAINS THE CARD, and it goes ahead of the subtraction
+        # rather than after it: a competitor placed by `swap`, `augment` or a
+        # mandate was placed by a leg the seating key does not order, so a refused
+        # row reading higher than it is the ordinary case. `general_pool` is the
+        # only leg the key ordered. See `P_FINE_DELTA_IS`.
+        if against.get("leg"):
+            beside.append(
+                f'<span><span class="lab">seat placed by</span> '
+                f'<span class="leg">{against["leg"]}</span>'
+                + (
+                    ""
+                    if against["leg"] == "general_pool"
+                    else ' <span class="lab">— a leg the seating key does not order</span>'
+                )
+                + "</span>"
+            )
         if against.get("distance") is not None:
             # The number that actually decided this card. It is a NEUTRAL cosine
             # distance between two places and not a margin between two scores, so
@@ -1787,14 +1869,21 @@ def _card(row: dict, left, right, repaired: set, caption=None) -> str:
                 )
                 + "</span>"
             )
-        if gap is not None:
+        if delta is not None:
             beside.append(
                 # SIGNED, and the sign is the finding rather than a detail: the
                 # marginal seat in a full cell is by definition the weakest seat
                 # in it, so it is usually WORSE on p_fine than the row it refused
                 # — 326 of 453 on this page. A `+` glued on the front would have
                 # printed `+-0.1638` and buried that behind what reads as a typo.
-                f'<span><span class="lab">gap</span> <span class="gap">{gap:+.4f}</span></span>'
+                #
+                # ⚠ NAMED `p_fine Δ` AND NEVER `gap`, since 2026-09-09. The
+                # old label read as how close this row came to a seat, which is a
+                # quantity no rule here computed — see `P_FINE_DELTA_IS`, which the
+                # page also states once at the top of every slice.
+                '<span><span class="lab">p_fine Δ</span> '
+                f'<span class="gap">{delta:+.4f}</span> '
+                '<span class="lab">not a margin — nothing compared the two</span></span>'
             )
         if against.get("alternatives", 1) > 1:
             beside.append(
