@@ -415,6 +415,21 @@ not change that**; they move the traced lace off white and leave the ground ligh
 direction as the `P(>=4)` bias below, now measured on the pool's own geometry.
 `opacity=0.4` is the only cell that buys chroma without spending most of the clears.
 
+**Paired at the same place, the direction is near-unanimous and the size is not.**
+Those medians are taken across places and cannot answer the question the cells were
+drawn to answer, which is whether a cell beats bare *at the place it was drawn at*.
+Read pair by pair over the same 40: `opacity=0.4` beats its own place's bare on
+in-mask chroma at **36 of 40**, `opacity=0.6` at 34, `threshold=0.2` at 30 and both
+at 26, with median gains of +0.0054, +0.0078, +0.0041 and +0.0035 — **+62% of the
+bare chroma at the median place**, which is a large relative move on a very small
+number and is why the across-place medians look flat. The four places where no cell
+beats bare are four where bare already sits at or above the median bare chroma of
+0.0209. **The cell that gains the most chroma at a place is usually not one that
+survives the judge** — the per-place best cell clears `P(≥3) ≥ 0.50` at only 16 of
+40, and it is `opacity=0.6` at 15 places and both at 9. `opacity=0.4` is the cell
+that holds the two together: all 27 of its clears are also places where it beat
+bare.
+
 **And the bias is the judge's alone.** On the three single-knob cells
 Spearman(chroma, `P(>=4)`) is **-0.291**, which reproduces the -0.269 above on a
 population the audit never saw; Spearman(chroma, Matt's tier) over the same rows is
