@@ -129,6 +129,7 @@ fractal-wallpapers curate label-fate keys --store scratch/label4_fate   # BEFORE
 fractal-wallpapers curate solve record --explain-keys scratch/label4_fate/keys.txt
 fractal-wallpapers curate label-fate population --store scratch/label4_fate  # pool-holding
 fractal-wallpapers curate label-fate fates --stamp <stamp> --store scratch/label4_fate
+fractal-wallpapers curate label-fate competitors --stamp <stamp> --store scratch/label4_fate
 fractal-wallpapers curate label-fate render --store scratch/label4_fate   # HOURS, 3 workers
 fractal-wallpapers curate label-fate page --store scratch/label4_fate \
     --migration-store scratch/label_migration_0908 --repaired-seats-of <stamp>
@@ -1131,10 +1132,55 @@ refuses if those two constants ever move apart rather than quietly drawing a pai
 two sizes. Each render is told the row's whole recipe (`mode_params`, `curve`,
 `palette`) and **inherits** its levelling through `stamps.for_release`.
 
-**The seat is matched on the exact location.** Where the place holds no seat the card
-says so; where the row was refused `another_place_is_the_same_place` the place itself
-was folded into a neighbour at pool construction and the record does not carry which
-one, so the card says that rather than naming an invented neighbour.
+### The picture beside a refused card is not the seat at its place, and that took two goes
+
+A card pairs the graded wallpaper with what beat it, and **which picture that is
+depends on the rule that refused it**. The first version of this page paired every
+card with the seat holding its *location*. For the 348 `cell_allowance` refusals that
+is simply the wrong picture: the row that beat them filled the colour cell and stands
+somewhere else entirely, and the seat at their own place had nothing to do with it.
+
+**The pairing is `rules.State.counted_requirements`' own set for the rule that
+refused** — the seats that rule would accept a departure from — with the **marginal**
+member shown where the set has more than one: the weakest by the pass's own seating
+key, which is the seat a 1-swap ejects first. `location` gives a one-member set, so
+the seat at the place *is* the answer there and always was.
+
+⚠ **It is deliberately not `rules.State.removals`**, and the difference cost a rebuild
+to notice. `removals` intersects the requirement sets across *every* rule a candidate
+fails and answers the stricter *would one seat leaving be enough*. **101 of the 102
+location refusals here also fail the cell allowance**, so their intersection is empty
+and `removals` names nothing — while the seat at their place plainly beat them. Both
+are worth knowing, so the intersection is reported per card as *no single seat leaving
+would have been enough* rather than used as the pairing. It is true of 234 of the 453
+paired cards.
+
+**`another_place_is_the_same_place` is paired with nothing, on purpose.** That refusal
+is taken at **pool construction**, before a seat exists, so there is no seat to name
+and the record does not carry which neighbour absorbed the place.
+
+**The rebuild is proved before it is used.** `competitors` reconstructs the pass's
+final `rules.State` from `solve.pool` and the record's own ceiling, then requires
+`counted_refusal` to reproduce every refusal the record wrote down — 450 of them, exactly
+— and refuses outright otherwise. The two it cannot be asked about are excluded by name
+rather than by silence: `twin` is the diversity rule's, kept per key in the record's
+`diversity_refusals`, and `another_place_is_the_same_place` is pool construction's. The
+first run of the verb reported a 71-row disagreement that was exactly those, which is
+the guard working.
+
+### The page is an index and 21 slices, not one page
+
+2,107 cards on one page is 2.1 MB of markup over 4,214 lazy images and the browser
+stalls on it. Pages hold **150 cards** (`label_fate.PAGE_SIZE`), the rung is sorted
+`p_fine` ascending and *then* cut so the split never reorders, and page 1 of a rung is
+always its largest disagreements. Names are guessable — `below-the-fine-bar-03.html` —
+and every page carries prev/next and a link back. **The refused rung is written twice**,
+once by `p_fine` and once split by refusing rule, because those four are four different
+questions.
+
+**`OFF THE ROSTER` is counted and not shown**, Matt's call: no bar read those 117 rows
+and no rule refused them, so there is no comparison to draw. The index carries the
+count so the rungs still add to the population.
 
 ## `curate retention` — what survives what the rule drops
 

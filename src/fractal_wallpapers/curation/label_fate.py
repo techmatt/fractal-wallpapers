@@ -37,18 +37,27 @@ and 4 come from the solve itself, through [`solve.explained`], which is why
 refuses one that was not. A rung read off the aggregate refusal columns instead
 would be a guess, and the point of this leg is that it does not have to guess.
 
-## ★ The seat beside it is the point
+## ★ The picture beside it is the point, and it is not always the same picture
 
-Every entry shows the graded picture beside **the seat that holds its place in
-the record**, at one display size. A rung on its own says a picture lost; the
-pair says what it lost to, and whether that is a trade anybody would make. Where
-the place holds no seat the card says so rather than leaving a gap — an empty
-place is a different and more interesting answer than a better picture.
+A rung on its own says a wallpaper lost; the pair says what it lost **to**, and
+whether that is a trade anybody would make. Which picture that is depends on the
+rung, and getting it wrong is how a page lies quietly:
 
-The seat is matched on the **exact location**, and where a row was refused
-`another_place_is_the_same_place` the card says the place itself lost to a
-neighbour inside the pre-selection radius: the record does not carry which
-neighbour per row, so naming one would be an invention.
+- **A refused card shows the row that beat it at the rule that refused it**, off
+  [`PAIRING`]. For a `cell_allowance` refusal that is a picture somewhere else
+  entirely — the marginal seat in the full cell — and **not** whatever sits at
+  its own location, which is what this page showed until 2026-09-08 and which
+  was simply the wrong picture for 348 of its 524 cards.
+- **Every other rung shows the seat holding its place**, matched on the exact
+  location, which for them is the right comparison.
+
+Where there is nothing to show the card says which silence it is: a place the
+record does not hold, or a refusal with no nameable competitor at all. Both are
+more interesting answers than a gap.
+
+**The gap is on every paired card** — both `p_fine` readings and the difference.
+A refusal losing by 0.01 and one losing by 0.4 are different findings and a page
+that named only the winner would flatten them into one.
 
 Both sides are rendered fresh at [`sheets.LABEL_RESOLUTION`], which is also
 [`release.RELEASE_REGIME`] — the geometry a person judged at and the geometry a
@@ -84,15 +93,18 @@ Each makes a column mean less than it looks:
 ## The verbs
 
 ```
-keys        the three stores -> one key manifest, for `solve --explain-keys`
-population  the stores joined to the ledger, with rungs 0 to 2 decided
-fates       a record's `explained` block -> rungs 3 and 4, and the seat per place
-render      every graded picture and every seat that holds one of their places
-page        one card per wallpaper, sorted by p_fine ascending inside each rung
+keys         the three stores -> one key manifest, for `solve --explain-keys`
+population   the stores joined to the ledger, with rungs 0 to 2 decided
+fates        a record's `explained` block -> rungs 3 and 4, and the seat per place
+competitors  the row that beat each refused one, off the rebuilt seating state
+render       every graded picture, every seat, every competitor, at label geometry
+page         an index and one page per rung slice, p_fine ascending
 ```
 
 `keys` runs before the solve and the rest after it. Each writes one file and
-reads the ones before it, so a killed stage costs itself and nothing earlier.
+reads the ones before it, so a killed stage costs itself and nothing earlier —
+and `render` reads the pictures already on disk, so re-running it after
+`competitors` draws only what the new pairings added.
 """
 
 from __future__ import annotations
@@ -117,6 +129,7 @@ DEFAULT_STORE = Path("scratch") / "label_fate"
 KEYS_NAME = "keys.txt"
 POPULATION_NAME = "population.jsonl"
 FATES_NAME = "fates.json"
+COMPETITORS_NAME = "competitors.json"
 RENDERS_NAME = "renders.jsonl"
 PAGE_NAME = "index.html"
 
@@ -606,6 +619,253 @@ def _seat_of(seat: dict, seat_rows: dict, fine: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# the competitor: the row whose removal would admit a refused one.
+# --------------------------------------------------------------------------- #
+#: What a refused card is paired with, and where each pairing comes from.
+#:
+#: **The definition is [`rules.State.counted_requirements`]' own set for the rule
+#: that refused, and is not restated here.** That method returns one set of seated
+#: keys per rule the candidate fails — the seats that rule would accept a
+#: departure from — so the rows that beat it *at the rule that took it* is a thing
+#: the seating rules define rather than a thing a page decides. Where the set
+#: holds more than one seat, the **marginal** member is the weakest by the pass's
+#: own seating key, which is the seat a 1-swap ejects first; ties break on the
+#: key, so the answer never depends on dict order.
+#:
+#: ⚠ **It is deliberately NOT [`rules.State.removals`]**, which is the
+#: intersection across *every* rule the candidate fails and answers a stricter
+#: question: which single seat leaving would be **enough**. Those are different
+#: and the difference is large — 101 of the 102 location refusals here fail the
+#: cell allowance as well, so their intersection is empty and `removals` names
+#: nothing at all, while the seat standing at their place is plainly the row that
+#: beat them. The intersection is reported per card as `enough` rather than used
+#: as the pairing, because *what beat me* and *what would be enough* are both
+#: worth knowing and only the first is a picture.
+PAIRING = {
+    "location": "the seat standing at its own place — that one seat is the whole of the "
+    "location rule's requirement, so there is nothing to choose between",
+    "cell_allowance": "the marginal seat in the cell that refused it: the weakest, by this "
+    "pass's own seating key, of the seats already dominant in that cell",
+    "twin": "the seated picture the diversity rule measured it against, off the record's own "
+    "`diversity_refusals` — a single-member requirement per neighbour",
+    "another_place_is_the_same_place": "NOTHING. The place was folded into a neighbour at "
+    "pool construction, before any seat existed, and the record does not carry which "
+    "neighbour absorbed it — so there is no seat to name and the card says so",
+}
+
+
+def competitors(stamp: str, store=None, log=print) -> dict:
+    """The row whose removal would admit each refused one. Rewrites the population.
+
+    **Pool-holding, and it rebuilds the pass's final state rather than guessing at
+    it.** The seated candidates come from [`solve.pool`] — the same objects the
+    solve walked, so the cells, families, group and mode behind every count are
+    the pass's own and not a re-derivation — and they are seated into a
+    [`rules.State`] carrying the record's own ceiling, spiral cap and mode
+    ceilings. Seating is order-independent for every counted rule, so the
+    finished state is the pass's finished state.
+
+    **It proves the rebuild before it uses it.** `counted_refusal` is asked of
+    every refused row and must return exactly what the record's `explained` block
+    says, for all of them; a single disagreement refuses the whole verb rather
+    than pairing 523 cards correctly and one card with a picture that never
+    competed with anything.
+    """
+    from fractal_wallpapers.curation import ceiling, rules, solve, tentative
+
+    began = time.time()
+    rows = _read_jsonl(_path(store, POPULATION_NAME))
+    if not rows:
+        raise FateRefused("no population.jsonl in this store. Run `population` first.")
+    manifest = tentative.read_manifest(stamp)
+    record = solve.read_record(str((manifest.get("solve") or {}).get("name")))
+    config = record["config"]
+    seats = [str(seat["key"]) for seat in tentative.read_rows(stamp)]
+
+    candidates, _refused = solve.pool(log=log)
+    held = {str(candidate.key): candidate for candidate in candidates}
+    state = rules.State(
+        ceiling.Rule(
+            targets=config["ceiling"].get("targets") or {},
+            group_cap=int(config["ceiling"]["group_cap"]),
+            k=config["ceiling"]["k"],
+        ),
+        int(config["n"]),
+        diversity=None,
+        spiral_cap=config.get("spiral_cap"),
+        mode_ceilings=config.get("mode_ceilings") or {},
+    )
+    for key in seats:
+        state.seat(held[key], "recorded")
+    log(f"[competitors] {state.filled:,} seat(s) rebuilt into the pass's final state")
+
+    # The proof, over the refusals `counted_refusal` is the one that DECIDES.
+    #
+    # Two are decided somewhere else and are excluded by name rather than by
+    # silence, because a state rebuilt from the seats cannot be asked about
+    # either: `twin` is the diversity rule's, kept per key in the record's own
+    # `diversity_refusals`; and `another_place_is_the_same_place` is taken at
+    # POOL CONSTRUCTION, before a seat exists — so asking the counted rules about
+    # one of those 71 rows gets an answer about a rule that never ran on it. The
+    # first run of this verb reported exactly that, 71 rows deep, which is the
+    # guard doing its job rather than a disagreement to paper over.
+    decided_elsewhere = ("twin", solve.SAME_PLACE)
+    order = solve.ranking_for(candidates, config["sort_key_named"], log=lambda *_: None)[0]
+    twins = record.get("diversity_refusals") or {}
+    wrong = []
+    for row in rows:
+        if row["rung"] != REFUSED or row["explained"] in decided_elsewhere:
+            continue
+        candidate = held.get(row["key"])
+        said = None if candidate is None else state.counted_refusal(candidate)
+        if said != row["explained"]:
+            wrong.append({"key": row["key"], "record": row["explained"], "rebuild": said})
+    if wrong:
+        raise FateRefused(
+            f"the rebuilt state disagrees with {stamp}'s own `explained` block on "
+            f"{len(wrong):,} row(s) — {wrong[:3]}. Every pairing below is read off that "
+            "state, so a disagreement makes all of them suspect rather than most of them "
+            "right."
+        )
+    asked = sum(
+        1 for row in rows if row["rung"] == REFUSED and row["explained"] not in decided_elsewhere
+    )
+    log(f"[competitors] the rebuild reproduces all {asked:,} counted refusal(s) exactly")
+
+    counts: dict = {}
+    for row in rows:
+        row["competitor"] = None
+        if row["rung"] != REFUSED:
+            continue
+        why = row["explained"]
+        counts[why] = counts.get(why, 0) + 1
+        if why == "twin":
+            against = (twins.get(row["key"]) or {}).get("too_close_to")
+            row["competitor"] = _competitor(against, held, order, why)
+        elif why in ("location", "cell_allowance"):
+            candidate = held[row["key"]]
+            row["competitor"] = _marginal(_refusing_set(state, candidate, why), held, order, why)
+            # The stricter question, kept beside the pairing rather than instead
+            # of it: whether ONE seat leaving would have been enough.
+            if row["competitor"] is not None:
+                row["competitor"]["enough"] = sorted(state.counted_removals(candidate))[:1]
+        # `another_place_is_the_same_place` keeps `None` on purpose. See PAIRING.
+    paired = [row for row in rows if row.get("competitor")]
+    distinct = {row["competitor"]["key"] for row in paired}
+    _dress(paired, distinct)
+    out = {
+        "schema": SCHEMA,
+        "taken_at": _now(),
+        "stamp": stamp,
+        "pairing": PAIRING,
+        "refused": sum(counts.values()),
+        "by_rule": dict(sorted(counts.items(), key=lambda item: -item[1])),
+        "paired": len(paired),
+        "unpairable": sum(
+            1 for row in rows if row["rung"] == REFUSED and not row.get("competitor")
+        ),
+        "distinct_competitors": len(distinct),
+        "already_rendered": len(distinct & _on_disk(store)),
+        "one_removal_would_be_enough": sum(
+            1 for row in paired if (row["competitor"] or {}).get("enough")
+        ),
+        "one_removal_is_never_enough_is": "the candidate fails a second rule as well, so "
+        "`removals` — the intersection across every failing rule — is empty. It still lost "
+        "to the row named on the card; no single departure would have admitted it",
+        "path": str(_write_jsonl(_path(store, POPULATION_NAME), rows)),
+        "seconds": round(time.time() - began, 1),
+    }
+    _write_json(_path(store, COMPETITORS_NAME), out)
+    log(f"[competitors] {len(paired):,} paired over {len(distinct):,} distinct row(s)")
+    return out
+
+
+def _dress(paired: list, distinct: set) -> None:
+    """Give every competitor the palette and `p_fine` its caption needs.
+
+    One keyed ledger read and one pool-scores read for the whole page, because a
+    competitor is a *seat* and 453 cards share 116 of them — a lookup per card
+    would read the same rows four times over.
+
+    **The gap goes on the card**, both readings and the difference: a refusal
+    losing by 0.01 and one losing by 0.4 are different findings, and a page that
+    showed only which one won would flatten them into the same picture.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+    from fractal_wallpapers.models import gallery_grade_train
+
+    seats = candidate_ledger.by_key(distinct)
+    fine = gallery_grade_train.read_pool_scores()
+    for row in paired:
+        rival = row["competitor"]
+        recipe = (seats.get(rival["key"]) or {}).get("recipe") or {}
+        read = fine.get(rival["key"]) or {}
+        rival["colormap"] = str(recipe.get("colormap") or "")
+        rival["mode_params"] = dict(recipe.get("mode_params") or {})
+        rival["p_fine"] = None if not read else float(read["p_ge4"])
+        mine = row.get("p_fine")
+        rival["gap"] = (
+            None if rival["p_fine"] is None or mine is None else round(rival["p_fine"] - mine, 6)
+        )
+
+
+def _refusing_set(state, candidate, why: str) -> set:
+    """The seats the rule that refused this candidate would accept a departure from.
+
+    Mirrors [`rules.State.counted_refusal`]'s own loop so the set belongs to the
+    rule that actually acted and not to some later one the candidate also fails:
+    the cell taken is the **first** over-full cell in the candidate's own order,
+    which is the cell `counted_refusal` returned on.
+    """
+    if why == "location":
+        held = state.places.get(candidate.location)
+        return set() if held is None else {held}
+    for cell in candidate.cells:
+        if len(state.cells.get(cell, ())) + 1 > state.rule.allowed(cell, state.n):
+            return set(state.cells.get(cell, ()))
+    return set()
+
+
+def _on_disk(store) -> set:
+    """Every key this store already has a label-geometry picture for."""
+    return {path.stem for path in pictures_dir(store).glob("*.jpg")}
+
+
+def _marginal(could: set, held: dict, order, why: str) -> dict | None:
+    """The weakest of the seats the refusing rule would take a departure from.
+
+    Weakest by the pass's own seating key, because that is the seat a 1-swap
+    ejects first — so it is the row that would actually step aside rather than
+    any row that could. `solve.value_of` reads the key the record was seated on,
+    so this does not care which key that was.
+    """
+    from fractal_wallpapers.curation import solve
+
+    if not could:
+        return None
+    ranked = sorted(could, key=lambda key: (solve.value_of(held[key], order), str(key)))
+    return _competitor(ranked[0], held, order, why, alternatives=len(could))
+
+
+def _competitor(key, held: dict, order, why: str, alternatives: int = 1) -> dict | None:
+    """One competitor, as the card shows it."""
+    from fractal_wallpapers.curation import solve
+
+    candidate = held.get(str(key or ""))
+    if candidate is None:
+        return None
+    return {
+        "key": str(candidate.key),
+        "why": why,
+        "how": PAIRING[why],
+        "alternatives": int(alternatives),
+        "value": float(solve.value_of(candidate, order)),
+        "mode": str(candidate.mode),
+        "location": str(candidate.location),
+    }
+
+
+# --------------------------------------------------------------------------- #
 # the renders. Both sides, one geometry.
 # --------------------------------------------------------------------------- #
 def render(store=None, workers: int = WORKERS, log=print) -> dict:
@@ -724,6 +984,7 @@ def render(store=None, workers: int = WORKERS, log=print) -> dict:
         "wanted": len(wanted),
         "graded": sum(1 for side in wanted.values() if "graded" in side),
         "seats": sum(1 for side in wanted.values() if "seat" in side),
+        "competitors": sum(1 for side in wanted.values() if "competitor" in side),
         "already": len(already),
         "made": len(made),
         "failed": failed,
@@ -740,9 +1001,10 @@ def render(store=None, workers: int = WORKERS, log=print) -> dict:
 def _wanted(rows) -> dict:
     """`{key: which side of the page it is on}` over both sides of every card.
 
-    A key can be both — a graded wallpaper that took the seat at its own place —
-    and is drawn once, which is the point of keying the render on the recipe and
-    not on the card.
+    A key can be more than one — a graded wallpaper that took the seat at its own
+    place, a seat that is also somebody else's marginal competitor — and is drawn
+    once, which is the point of keying the render on the recipe and not on the
+    card. Many refusals share a marginal row, so this is where that collapses.
     """
     out: dict = {}
     for row in rows:
@@ -751,52 +1013,79 @@ def _wanted(rows) -> dict:
         seat = row.get("seat")
         if seat and seat.get("key"):
             out.setdefault(str(seat["key"]), []).append("seat")
+        rival = row.get("competitor")
+        if rival and rival.get("key"):
+            out.setdefault(str(rival["key"]), []).append("competitor")
     return {key: sorted(set(sides)) for key, sides in out.items()}
 
 
 # --------------------------------------------------------------------------- #
 # the page.
 # --------------------------------------------------------------------------- #
+#: How many cards one page carries. **150**, chosen by loading them rather than
+#: by taste: the single 2,107-card page this replaced is 2.1 MB of markup over
+#: 4,214 lazy images and the browser stalls scrolling it, where 150 cards is
+#: ~150 KB and paints at once. The split follows the sort and never reorders, so
+#: page 1 of a rung is always that rung's largest disagreements.
+PAGE_SIZE = 150
+
+#: The rung that is **counted and not shown**, Matt's call of 2026-09-08. Those
+#: rows are in modes `mode_policy` weights 0: no bar ever read them and no rule
+#: ever refused them, so there is no comparison to draw and a section of them
+#: would say there was. The index carries the count, so the rungs still add to
+#: the population.
+NOT_SHOWN = (OFF_THE_ROSTER,)
+
+STYLE = """
+ body { font: 13px/1.45 system-ui, sans-serif; margin: 1.5rem;
+        background: #14161a; color: #dfe3e8; }
+ a { color: #7fa6d8; }
+ h1 { font-size: 1.2rem; margin: 0 0 .4rem; }
+ h2 { font-size: 1rem; margin: 1.8rem 0 .3rem; }
+ .lede, .rung-note { max-width: 66rem; color: #9aa4b1; margin: 0 0 1rem; }
+ .lede b, .rung-note b { color: #dfe3e8; }
+ .lede em { color: #d8b45a; font-style: normal; }
+ .legend { max-width: 66rem; margin: 0 0 1.5rem; padding: .7rem .9rem;
+           background: #1c1f26; border-radius: 6px; color: #9aa4b1; }
+ .legend li { margin: .3rem 0; }
+ .legend b { color: #dfe3e8; }
+ .legend .warn { color: #d8b45a; }
+ .nav { margin: 0 0 1.2rem; padding: .5rem .7rem; background: #1c1f26;
+        border-radius: 6px; display: flex; gap: 1.2rem; flex-wrap: wrap;
+        max-width: 84rem; }
+ .nav .here { color: #dfe3e8; font-weight: 600; }
+ .idx { max-width: 72rem; border-collapse: collapse; }
+ .idx td { padding: .25rem .9rem .25rem 0; vertical-align: top; }
+ .idx .n { color: #d8b45a; text-align: right; }
+ .idx .pages a { margin-right: .35rem; }
+ .row { background: #1c1f26; border-radius: 6px; margin: 0 0 1rem; overflow: hidden;
+        max-width: 84rem; }
+ .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #0e1013; }
+ figure { margin: 0; position: relative; }
+ img { display: block; width: 100%; }
+ figcaption { position: absolute; left: 0; top: 0; background: rgba(10,12,15,.78);
+              padding: .15rem .45rem; font-size: .68rem; letter-spacing: .04em;
+              text-transform: uppercase; color: #9aa4b1; }
+ .judged figcaption { color: #d8b45a; }
+ .facts { display: flex; flex-wrap: wrap; gap: .15rem 1.1rem; padding: .5rem .7rem; }
+ .facts.seat { padding-top: 0; color: #8f98a4; }
+ .facts span { white-space: nowrap; }
+ .lab { color: #6b7480; }
+ .gap { color: #e07b53; font-weight: 600; }
+ .key { font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }
+ .flag { color: #e07b53; }
+ .staged { color: #7fa6d8; }
+ .gone { padding: 4rem 1rem; text-align: center; color: #6b7480; }
+ .empty { padding: 3.5rem 1rem; text-align: center; color: #8f98a4;
+          background: #191c22; }
+"""
+
 PAGE = """<!doctype html>
-<meta charset="utf-8"><title>what became of every wallpaper graded {grade}</title>
-<style>
- body {{ font: 13px/1.45 system-ui, sans-serif; margin: 1.5rem;
-         background: #14161a; color: #dfe3e8; }}
- h1 {{ font-size: 1.2rem; margin: 0 0 .4rem; }}
- h2 {{ font-size: 1rem; margin: 2.2rem 0 .2rem; color: #dfe3e8; }}
- h2 .n {{ color: #d8b45a; }}
- .lede, .rung-note {{ max-width: 66rem; color: #9aa4b1; margin: 0 0 1rem; }}
- .lede b, .rung-note b {{ color: #dfe3e8; }}
- .lede em {{ color: #d8b45a; font-style: normal; }}
- .legend {{ max-width: 66rem; margin: 0 0 1.5rem; padding: .7rem .9rem;
-            background: #1c1f26; border-radius: 6px; color: #9aa4b1; }}
- .legend li {{ margin: .3rem 0; }}
- .legend b {{ color: #dfe3e8; }}
- .legend .warn {{ color: #d8b45a; }}
- .row {{ background: #1c1f26; border-radius: 6px; margin: 0 0 1rem; overflow: hidden;
-         max-width: 84rem; }}
- .pair {{ display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #0e1013; }}
- figure {{ margin: 0; position: relative; }}
- img {{ display: block; width: 100%; }}
- figcaption {{ position: absolute; left: 0; top: 0; background: rgba(10,12,15,.78);
-               padding: .15rem .45rem; font-size: .68rem; letter-spacing: .04em;
-               text-transform: uppercase; color: #9aa4b1; }}
- .judged figcaption {{ color: #d8b45a; }}
- .facts {{ display: flex; flex-wrap: wrap; gap: .15rem 1.1rem; padding: .5rem .7rem; }}
- .facts.seat {{ padding-top: 0; color: #8f98a4; }}
- .facts span {{ white-space: nowrap; }}
- .lab {{ color: #6b7480; }}
- .key {{ font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }}
- .flag {{ color: #e07b53; }}
- .staged {{ color: #7fa6d8; }}
- .gone {{ padding: 4rem 1rem; text-align: center; color: #6b7480; }}
- .empty {{ padding: 3.5rem 1rem; text-align: center; color: #8f98a4;
-           background: #191c22; }}
-</style>
-<h1>What became of every wallpaper graded {grade}</h1>
-<p class="lede">{lede}</p>
-<div class="legend"><ul>{legend}</ul></div>
-{sections}
+<meta charset="utf-8"><title>{title}</title>
+<style>{style}</style>
+<h1>{heading}</h1>
+{nav}
+{body}
 """
 
 
@@ -841,50 +1130,210 @@ def page(store=None, migration_store=None, repaired_seats_of=None, log=print) ->
             row["p_fine_from"] = "migration"
 
     counts = _counted(rows)
-    sections, missing = [], {"graded": 0, "seat": 0}
-    for name, meaning in RUNGS:
-        mine = [row for row in rows if row.get("rung") == name]
-        mine.sort(key=lambda row: (row.get("p_fine") is None, row.get("p_fine") or 0.0, row["key"]))
+    legend = _legend(rows, counts, staged, repaired)
+    slices = _slices(rows)
+    missing = {"graded": 0, "against": 0}
+    for one in slices:
         cards = []
-        for row in mine:
+        for row in one["rows"]:
             left = _beside(made(row["key"]), beside, f"{row['key']}.graded.jpg", Image)
-            seat = row.get("seat") or {}
-            right = _beside(made(seat.get("key")), beside, f"{row['key']}.seat.jpg", Image)
+            against, caption = _against(row)
+            right = (
+                None
+                if not against
+                else _beside(made(against), beside, f"{against}.against.jpg", Image)
+            )
             missing["graded"] += left is None
-            missing["seat"] += bool(seat) and right is None
-            cards.append(_card(row, left, right, repaired))
-        sections.append(
-            f'<h2>{_title(name)} — <span class="n">{len(mine):,}</span></h2>'
-            f'<p class="rung-note">{meaning}.</p>' + "\n".join(cards)
+            missing["against"] += bool(against) and right is None
+            cards.append(_card(row, left, right, repaired, caption))
+        _write_page(
+            store,
+            one["file"],
+            title=f"{one['heading']} — page {one['page']} of {one['pages']}",
+            heading=one["heading"],
+            nav=_nav(one, slices),
+            body=f'<p class="rung-note">{one["note"]}.</p>'
+            + (f'<div class="legend"><ul>{legend}</ul></div>' if one["page"] == 1 else "")
+            + "\n".join(cards),
         )
-
-    page_path = _path(store, PAGE_NAME)
-    page_path.parent.mkdir(parents=True, exist_ok=True)
-    page_path.write_text(
-        PAGE.format(
-            grade=GRADE,
-            lede=_lede(rows, read),
-            legend=_legend(rows, counts, staged, repaired),
-            sections="\n".join(sections),
-        ),
-        encoding="utf-8",
-        newline="\n",
+    index = _write_page(
+        store,
+        PAGE_NAME,
+        title=f"what became of every wallpaper graded {GRADE}",
+        heading=f"What became of every wallpaper graded {GRADE}",
+        nav="",
+        body=f'<p class="lede">{_lede(rows, read)}</p>'
+        f'<div class="legend"><ul>{legend}</ul></div>{_index(rows, counts, slices)}',
     )
     record = {
         "schema": SCHEMA,
         "taken_at": _now(),
-        "page": str(page_path),
+        "index": str(index),
         "pictures": str(beside),
+        "pages": len(slices),
+        "page_size": PAGE_SIZE,
         "entries": len(rows),
+        "shown": sum(len(one["rows"]) for one in slices if not one["by_rule"]),
+        "not_shown": {name: counts.get(name, 0) for name in NOT_SHOWN},
         "rungs": counts,
-        "sorted_by": "p_fine ascending inside each rung",
+        "sorted_by": "p_fine ascending inside each rung; the split follows the sort",
         "width": PAGE_WIDTH,
         "staged_p_fine_used": sum(1 for row in rows if row.get("p_fine_from") == "migration"),
         "missing_pictures": missing,
         "seconds": round(time.time() - began, 1),
     }
-    log(f"[page] {len(rows):,} card(s) -> {page_path}")
+    log(f"[page] {len(slices)} page(s) + index -> {index}")
     return record
+
+
+def _write_page(store, name: str, *, title, heading, nav, body) -> Path:
+    where = _path(store, name)
+    where.parent.mkdir(parents=True, exist_ok=True)
+    where.write_text(
+        PAGE.format(title=title, style=STYLE, heading=heading, nav=nav, body=body),
+        encoding="utf-8",
+        newline="\n",
+    )
+    return where
+
+
+def slug(text: str) -> str:
+    """A rung or rule name as a URL somebody can guess and type."""
+    return str(text).replace("_", "-").strip("-")
+
+
+def _slices(rows) -> list:
+    """Every page this build writes: the rungs, then the refused rung again by rule.
+
+    A rung is sorted and *then* cut, so the cut never reorders and page 1 is
+    always the end of the sort a reader came for. The refused rung is written
+    twice because its four rules are four different questions — a row the location
+    rule took lost to the seat at its place, and a row the cell allowance took
+    lost to a picture somewhere else entirely.
+    """
+    out: list = []
+    for name, note in RUNGS:
+        if name in NOT_SHOWN:
+            continue
+        out += _cut(
+            _sorted(rows, lambda row, n=name: row.get("rung") == n),
+            slug(name),
+            _title(name),
+            note,
+            by_rule=False,
+        )
+    refused = [row for row in rows if row.get("rung") == REFUSED]
+    for why in sorted({str(row["explained"]) for row in refused}):
+        out += _cut(
+            _sorted(refused, lambda row, w=why: str(row["explained"]) == w),
+            f"{slug(REFUSED)}-{slug(why)}",
+            f"REFUSED · {why}",
+            f"each card is paired with {PAIRING.get(why, 'nothing')}",
+            by_rule=True,
+        )
+    return out
+
+
+def _sorted(rows, keep) -> list:
+    mine = [row for row in rows if keep(row)]
+    mine.sort(key=lambda row: (row.get("p_fine") is None, row.get("p_fine") or 0.0, row["key"]))
+    return mine
+
+
+def _cut(mine: list, stem: str, heading: str, note: str, by_rule: bool) -> list:
+    pages = max(1, -(-len(mine) // PAGE_SIZE))
+    return [
+        {
+            "file": f"{stem}-{at + 1:02d}.html",
+            "stem": stem,
+            "heading": heading,
+            "note": note,
+            "page": at + 1,
+            "pages": pages,
+            "by_rule": by_rule,
+            "rows": mine[at * PAGE_SIZE : (at + 1) * PAGE_SIZE],
+        }
+        for at in range(pages)
+    ]
+
+
+def _nav(one: dict, slices: list) -> str:
+    """The index, prev, next, and where in the rung this page is."""
+    mine = [held for held in slices if held["stem"] == one["stem"]]
+    at = one["page"] - 1
+    parts = [f'<a href="{PAGE_NAME}">index</a>']
+    if at > 0:
+        parts.append(f'<a href="{mine[at - 1]["file"]}">&larr; prev</a>')
+    parts.append(f'<span class="here">page {one["page"]} of {one["pages"]}</span>')
+    if at + 1 < len(mine):
+        parts.append(f'<a href="{mine[at + 1]["file"]}">next &rarr;</a>')
+    parts.append(f'<span class="lab">{len(one["rows"]):,} cards, p_fine ascending</span>')
+    return f'<div class="nav">{"".join(parts)}</div>'
+
+
+def _index(rows, counts: dict, slices: list) -> str:
+    """The rung table, the same refused rung split by rule, and the dropped line."""
+    held = [
+        _index_row(_title(name), counts.get(name, 0), _of(slices, slug(name), False), note)
+        for name, note in RUNGS
+        if name not in NOT_SHOWN
+    ]
+    out = f'<h2>By rung</h2><table class="idx">{"".join(held)}</table>'
+    by_rule = []
+    for why in sorted({str(row["explained"]) for row in rows if row.get("rung") == REFUSED}):
+        mine = _of(slices, f"{slug(REFUSED)}-{slug(why)}", True)
+        by_rule.append(
+            _index_row(
+                why,
+                sum(len(one["rows"]) for one in mine),
+                mine,
+                PAIRING.get(why, "nothing — the card says why"),
+            )
+        )
+    out += (
+        "<h2>The refused rung again, split by the rule that refused</h2>"
+        f'<p class="rung-note">The same <b>{counts.get(REFUSED, 0):,}</b> cards. Four '
+        "different questions: what a row lost to depends entirely on which rule took it.</p>"
+        f'<table class="idx">{"".join(by_rule)}</table>'
+    )
+    dropped = ", ".join(f"<b>{counts.get(name, 0):,}</b> {_title(name)}" for name in NOT_SHOWN)
+    return out + (
+        f'<h2>Counted and not shown</h2><p class="rung-note">{dropped} — rows in modes '
+        "<code>mode_policy</code> weights 0. No bar ever read them and no rule ever refused "
+        "them, so there is no comparison to draw; the count is here so the rungs still add "
+        f"to the <b>{len(rows):,}</b> wallpapers.</p>"
+    )
+
+
+def _of(slices: list, stem: str, by_rule: bool) -> list:
+    return [one for one in slices if one["stem"] == stem and one["by_rule"] is by_rule]
+
+
+def _index_row(name: str, total: int, mine: list, note: str) -> str:
+    links = " ".join(f'<a href="{one["file"]}">{one["page"]}</a>' for one in mine)
+    return (
+        f'<tr><td><b>{name}</b></td><td class="n">{total:,}</td>'
+        f'<td class="pages">{links}</td><td>{note}</td></tr>'
+    )
+
+
+def _against(row: dict) -> tuple:
+    """`(key of the picture beside this card, what its caption says)`.
+
+    Two different pairings and the rung decides which: a refused card shows **the
+    row that beat it at the rule that refused it**, which for a cell allowance is
+    not the seat at its place and never was; every other rung shows the seat
+    holding its place, which for them is the right comparison.
+    """
+    if row.get("rung") == REFUSED:
+        rival = row.get("competitor")
+        if rival is None:
+            return None, None
+        return str(rival["key"]), f"beat it · {rival['why']}"
+    seat = row.get("seat") or {}
+    if not seat.get("key"):
+        return None, None
+    return str(seat["key"]), f"seat {seat.get('seat')} · holds this place"
 
 
 def _title(name: str) -> str:
@@ -990,8 +1439,9 @@ def _mode(mode: str, params: dict) -> str:
     return f"{mode}@" + ",".join(f"{name}={value}" for name, value in sorted(params.items()))
 
 
-def _card(row: dict, left, right, repaired: set) -> str:
-    seat = row.get("seat") or {}
+def _card(row: dict, left, right, repaired: set, caption=None) -> str:
+    against = row.get("competitor") if row.get("rung") == REFUSED else (row.get("seat") or {})
+    against = against or {}
     staged = row.get("p_fine_from") == "migration"
     verdicts = " · ".join(
         f"{verdict['store']} {verdict['grade']}" for verdict in row.get("verdicts") or ()
@@ -1021,30 +1471,63 @@ def _card(row: dict, left, right, repaired: set) -> str:
         if left
         else '<figure class="judged"><div class="gone">no picture</div></figure>'
     )
-    if not seat:
-        held = (
-            '<figure><div class="empty">no seat at this place<br>'
-            "<small>the record holds nothing here</small></div></figure>"
-        )
+    if not against:
+        held = f'<figure><div class="empty">{_nothing(row)}</div></figure>'
         beneath = ""
     else:
         held = (
             f'<figure><img loading="lazy" src="{right}">'
-            f"<figcaption>seat {seat.get('seat')} · holds this place</figcaption></figure>"
+            f"<figcaption>{caption or 'holds this place'}</figcaption></figure>"
             if right
-            else '<figure><div class="gone">no seat picture</div></figure>'
+            else '<figure><div class="gone">no picture</div></figure>'
         )
-        beneath = (
-            '<div class="facts seat">'
-            f'<span><span class="lab">seat</span> {_mode(seat["mode"], seat["mode_params"])}</span>'
-            f'<span><span class="lab">palette</span> {seat["colormap"]}</span>'
-            f'<span><span class="lab">p_fine</span> {_score(seat.get("p_fine"))}</span>'
-            f'<span class="key">{seat["key"]}</span></div>'
-        )
+        gap = against.get("gap")
+        beside = [
+            f'<span><span class="lab">against</span> '
+            f"{_mode(against.get('mode', ''), against.get('mode_params') or {})}</span>",
+            f'<span><span class="lab">palette</span> {against.get("colormap", "")}</span>',
+            f'<span><span class="lab">p_fine</span> {_score(against.get("p_fine"))}</span>',
+        ]
+        if gap is not None:
+            beside.append(
+                # SIGNED, and the sign is the finding rather than a detail: the
+                # marginal seat in a full cell is by definition the weakest seat
+                # in it, so it is usually WORSE on p_fine than the row it refused
+                # — 326 of 453 on this page. A `+` glued on the front would have
+                # printed `+-0.1638` and buried that behind what reads as a typo.
+                f'<span><span class="lab">gap</span> <span class="gap">{gap:+.4f}</span></span>'
+            )
+        if against.get("alternatives", 1) > 1:
+            beside.append(
+                f'<span class="lab">marginal of {against["alternatives"]} seats the rule '
+                "would take a departure from</span>"
+            )
+        if row.get("rung") == REFUSED and not against.get("enough"):
+            beside.append(
+                '<span class="lab">no single seat leaving would have been enough — it '
+                "fails a second rule too</span>"
+            )
+        beside.append(f'<span class="key">{against.get("key", "")}</span>')
+        beneath = f'<div class="facts seat">{"".join(beside)}</div>'
     return (
         f'<div class="row"><div class="pair">{graded}{held}</div>'
         f'<div class="facts">{"".join(facts)}</div>{beneath}</div>'
     )
+
+
+def _nothing(row: dict) -> str:
+    """What the right-hand side says when there is no picture to put there.
+
+    Two different silences and the card must not blur them: a place the record
+    simply does not hold, and a refusal with no nameable competitor at all.
+    """
+    if row.get("rung") == REFUSED:
+        return (
+            "no row to name<br><small>the pre-selection folded this place into a "
+            "neighbour before any seat existed, and the record does not carry which "
+            "one</small>"
+        )
+    return "no seat at this place<br><small>the record holds nothing here</small>"
 
 
 def _lede(rows, read: dict) -> str:
@@ -1113,6 +1596,8 @@ def _legend(rows, counts: dict, staged: dict, repaired: set) -> str:
 
 __all__ = [
     "BELOW_COARSE",
+    "COMPETITORS_NAME",
+    "PAIRING",
     "BELOW_FINE",
     "DEFAULT_STORE",
     "FATES_NAME",
@@ -1133,14 +1618,19 @@ __all__ = [
     "SEATED",
     "WORKERS",
     "PAGE",
+    "PAGE_SIZE",
+    "NOT_SHOWN",
+    "STYLE",
     "SETTINGS_AWARE_SUBTREES",
     "FateRefused",
     "drawn_bare",
     "leg_of",
+    "competitors",
     "fates",
     "graded",
     "keys",
     "page",
+    "slug",
     "pictures_dir",
     "population",
     "render",

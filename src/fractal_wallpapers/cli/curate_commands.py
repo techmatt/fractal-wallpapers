@@ -609,6 +609,7 @@ def curate_label_fate(args: argparse.Namespace) -> int:
         "keys": lambda: label_fate.keys(store),
         "population": lambda: label_fate.population(store),
         "fates": lambda: label_fate.fates(args.stamp, store),
+        "competitors": lambda: label_fate.competitors(args.stamp, store),
         "render": lambda: label_fate.render(store, workers=args.workers),
         "page": lambda: label_fate.page(
             store,
@@ -5277,6 +5278,26 @@ def add_commands(subcommands) -> None:
     fate_fates.add_argument(
         "--stamp", required=True, help="the tentative record whose fates these are"
     )
+    fate_competitors = fate_verbs.add_parser(
+        "competitors",
+        help="the row whose removal would admit each refused one",
+        description=(
+            "Pairs every refused card with the row that actually beat it, which for a "
+            "`cell_allowance` refusal is NOT the seat standing at its place. The definition "
+            "is `rules.State.removals` and is not restated here: `requirements` gives one "
+            "set of seated keys per rule the candidate fails, one member of every set has "
+            "to leave, and `removals` is their intersection. Where that holds more than one "
+            "seat the MARGINAL member is shown — the weakest by this pass's own seating "
+            "key, which is the seat a 1-swap ejects first. POOL-HOLDING: it rebuilds the "
+            "pass's final state from `solve.pool` and the record's own ceiling, and it "
+            "REFUSES unless `counted_refusal` reproduces every refusal the record wrote "
+            "down. `another_place_is_the_same_place` is left unpaired on purpose — the "
+            "place was folded into a neighbour before any seat existed."
+        ),
+    )
+    fate_competitors.add_argument(
+        "--stamp", required=True, help="the tentative record these pairings are against"
+    )
     fate_render = fate_verbs.add_parser(
         "render",
         help="every graded picture and every seat beside one, at label geometry",
@@ -5329,7 +5350,14 @@ def add_commands(subcommands) -> None:
         "everything else with settings is marked unless this names it. Named as a stamp "
         "because that is how the repair was scoped — every varied seat of one record",
     )
-    for verb in (fate_keys, fate_population, fate_fates, fate_render, fate_page):
+    for verb in (
+        fate_keys,
+        fate_population,
+        fate_fates,
+        fate_competitors,
+        fate_render,
+        fate_page,
+    ):
         verb.add_argument(
             "--store",
             metavar="PATH",

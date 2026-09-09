@@ -178,16 +178,16 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The **fast** lane is **127.81 s over the 4,048
+Both are measured, not estimated. The **fast** lane is **129.82 s over the 4,060
 it holds, 129 deselected**, on this machine, 2026-09-08, on an idle box with a
 `.[dev,models]` install and a release engine built, taken after a render leg
 rather than beside one. The **slow** lane's last reading is **7:05 over 4,136, all
 green and zero skipped**, taken on the same install a few prompts earlier, which
 the counting rule
 [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) settles:
-forty-one tests have landed since it — eight of `label-migration merge`'s, thirty-two
-of `label-fate`'s, all of those fast, and the one renderer-agreement guard, which is
-slow — so the next slow lane should read **4,177**, which is the fast lane's own
+fifty-three tests have landed since it — eight of `label-migration merge`'s,
+forty-four of `label-fate`'s, all of those fast, and the one renderer-agreement guard,
+which is slow — so the next slow lane should read **4,189**, which is the fast lane's own
 collected total, and a figure other than that is worth reading rather than assuming.
 
 **The long-standing red is closed and there is no expected failure any more**: a
