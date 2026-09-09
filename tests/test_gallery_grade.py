@@ -379,6 +379,145 @@ def test_the_sheet_row_carries_the_reading_and_the_draw_and_shows_neither(tmp_pa
     assert "score" not in made_row
 
 
+# --------------------------------------------------------------------------- #
+# The correction page: the fine head's own decode, and never the render judge's.
+# --------------------------------------------------------------------------- #
+def a_unit(**changes) -> dict:
+    """One gallery-grade plan unit, the shape [`sheets.units_from_plan`] reads."""
+    unit = {
+        "family": {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]},
+        "viewport": {"center_re": "0.1", "center_im": "0.2", "width": "0.5"},
+        "maxiter": 8000,
+        "mode": "threads",
+        "mode_params": {},
+        "curve": "linear",
+        "colormap": "twilight_shifted",
+        "recipe": dict(finished.recipe(mirror=True)),
+        "seated": False,
+        "refusal": "location",
+        "pre_stamp": False,
+        "leveled": None,
+    }
+    unit.update(changes)
+    return unit
+
+
+def a_grade_sheet(tmp_path, units: list[dict], prefilled: bool, seed: int = 0):
+    """Build a gallery-grade sheet over `units`, rendering nothing real."""
+
+    def render(join, output, colormaps=None):
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"not a picture")
+
+    reading = ([[1.0, 0.9, 0.5]] * len(units), 4)
+    source = sheets.gallery_grade_source(renderer=render, scores=reading, prefilled=prefilled)
+    monkeyed = sheets.thumbnail
+    try:
+        sheets.thumbnail = lambda picture, out: out
+        return sheets.build(source, units, tmp_path, batch="b", seed=seed, log=lambda *_a: None)
+    finally:
+        sheets.thumbnail = monkeyed
+
+
+def test_a_correction_page_prefills_the_fine_heads_decode_and_reads_good_to_bad(
+    tmp_path,
+) -> None:
+    """The two bullets `prefilled` turns over, and the two it does not.
+
+    The prefill comes off the PLAN — the fine head reads a candidate at 640x360
+    and this page serves 1280x720, so nothing re-reads it here — and the order is
+    that head's expected grade. What does not move is the card: no facts, no
+    caption, no `columns`, because a stratum a labeler can read off a card is the
+    thing this store's blindness was ever about.
+    """
+    units = [
+        a_unit(colormap="twilight_shifted", suggestion=2, suggestion_score=2.1),
+        a_unit(colormap="magma", suggestion=4, suggestion_score=3.8),
+        a_unit(colormap="viridis", suggestion=3, suggestion_score=3.0),
+    ]
+    sheet = a_grade_sheet(tmp_path, units, prefilled=True)
+
+    assert [row["suggestion"] for row in sheet.rows] == [4, 3, 2]
+    assert [row["suggestion_score"] for row in sheet.rows] == [3.8, 3.0, 2.1]
+    assert [row["join"]["colormap"] for row in sheet.rows] == [
+        "magma",
+        "viridis",
+        "twilight_shifted",
+    ]
+    assert sheet.manifest["order"] == "fine grade"
+    assert sheet.manifest["scorer"] == "plan"
+    assert sheet.manifest["suggested_by"] == "plan"
+    assert sheet.manifest["suggested_tiers"] == {"2": 1, "3": 1, "4": 1}
+    # The card is untouched, which is the half of the blindness that stands.
+    for row in sheet.rows:
+        assert row["facts"] == [] and row["columns"] == {}
+        assert row["pictures"][0]["caption"] == ""
+        assert row["reading"] == {"p_ge2": 1.0, "p_ge3": 0.9, "p_ge4": 0.5}
+
+
+def test_a_row_the_fine_head_cannot_read_carries_no_prefill_and_sorts_last(tmp_path) -> None:
+    """`solve.at_fine_bar`'s rule for this same column, arriving at the page.
+
+    The fine head is defined over rows clearing the render bar, so a row it has
+    no output for gets no suggestion rather than a guessed one — and it sits
+    after every row the head could read, which is also what stops the sweep
+    turning a gap into a tier.
+    """
+    units = [
+        a_unit(colormap="magma"),
+        a_unit(colormap="viridis", suggestion=1, suggestion_score=1.2),
+        a_unit(colormap="twilight_shifted", suggestion=4, suggestion_score=3.9),
+    ]
+    sheet = a_grade_sheet(tmp_path, units, prefilled=True)
+
+    assert [row["suggestion"] for row in sheet.rows] == [4, 1, None]
+    assert sheet.rows[-1]["join"]["colormap"] == "magma"
+    assert sheet.rows[-1]["suggestion_score"] is None
+    assert "no output for" in sheet.manifest["prefill_note"]
+
+
+def test_the_page_is_told_the_prefill_is_this_stores_head_at_another_geometry(tmp_path) -> None:
+    """`page.html`'s two defaults are both wrong here, and each is wrong its own way.
+
+    Unset, the page says *a head's own decode*, which does not say which head or
+    that it read a different picture; and with `suggested_by` reading `plan` it
+    says *the verdict this row already carries*, which is an incumbent label
+    nobody in this store has cast.
+    """
+    note = sheets.GRADE_CORRECTION_NOTE
+    assert "FINE head" in note and "640x360" in note
+    sheet = a_grade_sheet(tmp_path, [a_unit(suggestion=3, suggestion_score=3.0)], prefilled=True)
+    assert sheet.manifest["prefill_note"] == note
+    assert sheet.manifest["suggested_by"] == "plan"
+
+
+def test_a_page_asked_for_prefilled_and_handed_none_is_refused(tmp_path) -> None:
+    """Otherwise it serves a blind sheet under a correction sheet's manifest."""
+    with pytest.raises(sheets.SheetError, match="not one plan unit states a suggestion"):
+        a_grade_sheet(tmp_path, [a_unit(), a_unit(colormap="magma")], prefilled=True)
+
+
+def test_the_gap_the_shared_rule_refuses_needs_a_reason_to_be_allowed() -> None:
+    """`stated_suggestions` is one rule for every source, and `gaps` is the door.
+
+    Without a reason the mix is refused, which is what keeps a page from meaning
+    an incumbent verdict on one row and a decode on the next.
+    """
+    units = [{"suggestion": 3}, {"suggestion": None}]
+    with pytest.raises(sheets.SheetError, match="all of them or none"):
+        sheets.stated_suggestions(units, gallery_grade.tiers())
+    assert sheets.stated_suggestions(units, gallery_grade.tiers(), gaps="because") == [3, None]
+
+
+def test_the_default_is_still_blind_and_the_cli_reads_the_plan_for_the_answer() -> None:
+    """No flag decides this; the plan does, and `label build` asks it the one way."""
+    source = sheets.gallery_grade_source()
+    assert source.prefill_note == sheets.GRADE_BLIND_NOTE
+    assert source.order([{"section": ""}] * 4, 0)[1] == "shuffle"
+    body = (REPO_ROOT / "src/fractal_wallpapers/cli/label_commands.py").read_text(encoding="utf-8")
+    assert 'prefilled=any(unit.get("suggestion") is not None for unit in units)' in body
+
+
 def test_a_drop_ingests_end_to_end_and_the_store_reads_it_back(tmp_path, monkeypatch) -> None:
     """The whole seam, because a store nothing can ingest into is a store with no use.
 

@@ -88,10 +88,16 @@ def label_build(args: argparse.Namespace) -> int:
         )
     elif args.head == gallery_grade.NAME:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
+        # Blind or correction is the PLAN's answer and never a second flag's: the
+        # prefill on this page is the fine head's decode read at candidate
+        # geometry, so it can only come off the plan, and a flag that could
+        # disagree with it is a flag that eventually does. `sheets.build` reads
+        # `suggested_by` off the same test.
         source = sheets.gallery_grade_source(
             resolution=tuple(args.resolution),
             supersample=args.supersample,
             reuse_cache=args.reuse_renders,
+            prefilled=any(unit.get("suggestion") is not None for unit in units),
         )
     elif args.head:
         units = sheets.units_from_plan(resolve_output(args.from_plan))

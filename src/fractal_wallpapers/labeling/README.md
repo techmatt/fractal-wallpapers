@@ -110,6 +110,50 @@ over and there is no side to protect, so this store ships no `eval_split.jsonl` 
 `label pin` does not apply to it. See `data/gallery_grade/README.md` and
 `data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*.
 
+### Once the store has a head, the same sheet cuts as a correction page
+
+Blind was the **first sitting's** property and not the store's: with no anchors on
+this scale there was nothing to correct against. The fine head has existed since
+2026-09-06, so a plan may now state a `suggestion` and a `suggestion_score` per unit
+and `label build` cuts a correction page — prefilled, read good→bad, sweep offered.
+**Blind is still the default and there is no flag**: `label build` asks the plan,
+`prefilled=any(unit.get("suggestion") is not None for unit in units)`, so a flag that
+could disagree with the plan does not exist.
+
+**The first two bullets above turn over and the other two do not.** What the blind
+rule forbids is the *render* judge ordering a page this scale exists to replace, and
+a head correcting its own decode is the opposite arrangement. The card still carries
+no `facts`, no caption and no `columns`, so a labeler still cannot read a stratum off
+it, and `reading` still travels unrendered.
+
+Two things about the prefill that no stored row can answer:
+
+* **It is a reading of the CANDIDATE, at candidate geometry.** The fine head was
+  fitted at the ledger's 640×360 ss2 and the page serves 1280×720 ss2, so nothing
+  re-reads it on the picture it renders. That is why the suggestion comes off the
+  **plan** rather than off a scorer — a column the plan already holds is honest
+  about which picture it is about. `sheets.GRADE_CORRECTION_NOTE` says so on the
+  page, because `page.html`'s two defaults are both wrong here: unset it says *a
+  head's own decode* without saying which head or which picture, and with
+  `suggested_by` reading `plan` it says *the verdict this row already carries*,
+  which is an incumbent label nobody in this store has cast.
+* **A row the head has no output for carries no suggestion**, and this is the one
+  source that may mix stated prefills with absent ones — `sheets.stated_suggestions`
+  refuses the mix without a reason and takes one in `gaps`. The fine head is defined
+  over rows clearing the render bar and nothing else; an absent suggestion is the
+  head having no opinion rather than a second kind of prefill, and the order puts
+  every such row after every row the head could read, which is
+  `curation.solve.at_fine_bar`'s rule for the same column. The sweep therefore
+  cannot turn a gap into a tier.
+
+`p_fine_correction_20260909` is the first of these — 750 units, four blocks, three
+sheets, one batch — and `data/batch_caveats.md`'s *FOUR-BLOCKS-ONE-BATCH* carries
+what reading its rows wrong looks like. **The block a row was drawn in survives
+ingest only inside `selected_on`**, which is the section-free alternative to *A
+slice tag survives ingest only as a UNIT-ID BLOCK* below: `intake` copies
+`selected_on` onto the stored row whole, so a plan that puts its slice name there
+keeps the page reading good→bad end to end instead of good→bad within blocks.
+
 **Keep the plan.** A row carries `leveled` as a boolean and never the directory, so
 the plan a drop was cut from is the only thing that can rebuild a levelled picture as
 it was judged — the sheets' rendered pictures are regenerable and the plans are not.
