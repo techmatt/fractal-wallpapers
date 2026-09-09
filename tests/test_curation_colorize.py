@@ -926,3 +926,66 @@ def test_a_candidate_carrying_settings_never_takes_the_shared_field(tmp_path) ->
     assert colorize._shared_field(row, "smooth", None, None) is None, "no cache offered"
     assert colorize._shared_field(row, "smooth", None, tmp_path, {"opacity": 0.6}) is None
     assert colorize._shared_field(row, "direct_trap_multiply", None, tmp_path) is None
+
+
+# --------------------------------------------------------------------------- #
+# Which stored recipes the candidate path could have made.
+# --------------------------------------------------------------------------- #
+def candidate_recipe(**over) -> dict:
+    """A stored recipe block as a candidate leg writes one."""
+    from fractal_wallpapers.labeling import finished
+
+    colormap = over.pop("colormap", "viridis")
+    plain = finished.recipe(mirror=colormap not in CYCLIC)
+    return {
+        "mode": "smooth",
+        "colormap": colormap,
+        "curve": colorize.CURVE,
+        "mode_params": {},
+        "palette": plain,
+        **over,
+    }
+
+
+CYCLIC = {"twilight", "twilight_shifted", "hsv"}
+
+
+def test_a_candidate_path_recipe_is_the_one_a_plan_could_rebuild():
+    """`is_candidate_path` is the rule three places needed and each had inlined.
+
+    A candidate leg spends `CURVE`, the plain palette and no settings on every
+    attempt, so a row naming anything else could only have come from a caller
+    holding the overrides — `curation.label_migration`, re-expressing a judged
+    recipe out of the label corpora.
+    """
+    assert colorize.is_candidate_path(candidate_recipe(), CYCLIC)
+
+
+@pytest.mark.parametrize(
+    ("member", "value"),
+    [
+        ("curve", "log"),
+        ("mode_params", {"opacity": 0.6}),
+        ("palette", {"gamma": 0.55, "cycles": 2.0, "mirror": True}),
+    ],
+)
+def test_each_override_is_enough_on_its_own_to_leave_the_candidate_path(member, value):
+    """One case a member, because the failure this closes was **one** of them.
+
+    `tests/test_hunt.py`'s recipe-key guard rebuilt every sampled row from a plan
+    and went red on five `label_migration` rows: three carrying an authored gamma,
+    one a `log` curve. A predicate that only noticed the curve would have left the
+    palette rows red and looked like a fix.
+    """
+    assert not colorize.is_candidate_path(candidate_recipe(**{member: value}), CYCLIC)
+
+
+def test_the_fold_follows_the_map_rather_than_being_a_constant():
+    """A cyclic map is NOT folded and an acyclic one is, so the plain palette is a
+    function of the colormap. A predicate that compared against one fixed recipe
+    would call every map on the other side of that an override."""
+    assert colorize.is_candidate_path(candidate_recipe(colormap="twilight"), CYCLIC)
+    assert colorize.is_candidate_path(candidate_recipe(colormap="viridis"), CYCLIC)
+    folded = candidate_recipe(colormap="twilight")
+    folded["palette"] = {**folded["palette"], "mirror": True}
+    assert not colorize.is_candidate_path(folded, CYCLIC)

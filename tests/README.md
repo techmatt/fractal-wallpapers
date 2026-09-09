@@ -385,6 +385,36 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+18, and the slow lane has a count but no clock — deliberately.**
+`PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908`, 2026-09-08. Fast:
+**126.34 s over 4,075 held, 132 deselected — 4,207 collected**, idle box, taken
+after the render legs. Slow: **4,200 of 4,202 green**, taken *while* a store-wide
+`curate autolevel backfill` was rendering, at Matt's instruction, so **no seconds
+are recorded for it** — a lane beside a leg answers green and red and not the
+timing, which is
+*[A lane sharing the box with a render leg](#a-lane-sharing-the-box-with-a-render-leg)*
+being used rather than broken. The five between 4,202 and 4,207 landed after that
+slow lane, closing its two reds.
+
+**Both of that lane's reds were real and only one was the prompt's own.**
+`test_the_stored_colour_block_is_what_the_picture_still_reads_as` went red because
+re-rendering 10,664 pictures left their stored colour census reading the files that
+used to be there — the guard that told this project a repair invalidates *every*
+picture-derived reading and not only the score. `test_a_hunt_names_a_pass_s_pictures_the_way_the_pass_did`
+went red because `MERGE_ckpt116` had put 3,015 authored-recipe rows into the pool
+and no slow lane had run since; the guard rebuilt them from a plan that cannot
+name a curve or a palette. **A latent red survived a whole prompt because the
+fast lane does not hold either guard** — both are slow, and the slow lane is what
+a checkpoint runs.
+
+The eighteen: `test_renderer_agreement.py` is six (two fast, four slow) and
+**replaces** one slow guard that moved out of `test_mine.py`, so the deselected
+count goes 129 to 132. Then twelve fast — three over `release.task_for` being the
+tree's only task builder, four over the stamp stores and the backfill's seat
+selector, five over `colorize.is_candidate_path`. `test_nested_verbs.py`'s declared
+surface caught both new `candidate-ledger` verbs before either lane did, which is
+the cheaper guard doing its job first.
+
 **+12 more, for the pairing and the split.** `SHOW_ckpt116_label4_fate_v2_0908`,
 2026-09-08, idle box. **129.82 s over 4,060, 129 deselected** — **4,189**. The twelve
 are `label-fate`'s second pass: the rule-by-rule pairing, the page split, and the
@@ -414,7 +444,10 @@ release engine. **126.04 s over 4,016, 129 deselected** fast — **4,145** again
 `test_mine.py::test_the_two_makers_draw_the_same_picture_for_one_recipe`, which
 renders one recipe through all three of this project's renderers and compares the
 bytes; it costs about nine seconds of engine and is marked slow, so the *held* count
-does not move at all and the deselected one goes 128 to 129. That is the marking rule
+does not move at all and the deselected one goes 128 to 129. (Three was the whole
+tree as it was understood that day. It is eight, and that test is now
+`test_renderer_agreement.py` — see the entry for
+`PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908` above.) That is the marking rule
 working: a guard that drives the engine earns the mark whatever it is guarding.
 
 The clock came back to 126.04 s from the 127.93 s below it with nothing removed,

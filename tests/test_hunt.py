@@ -490,13 +490,35 @@ def test_a_hunt_names_a_pass_s_pictures_the_way_the_pass_did(tracked_ledger):
     maker.groups = groups_module.member_groups()
     if not autolevel.enabled():
         pytest.skip("the autolevel switch is off, so no render here carries a stamp")
+    # **Candidate-path rows only, and that is a filter the pool did not need until
+    # 2026-09-08.** This rebuilds each recipe through `Maker.recipe_for`, which
+    # spends `colorize.CURVE`, the plain palette and no settings — so it can only
+    # name a picture the candidate path could have made. `label-migration merge`
+    # put 3,015 rows derived from the label corpora into the pool that day and
+    # about a third carry knobs the candidate path never spends, which made the
+    # unfiltered claim false: the first slow lane after the merge found five such
+    # rows and this guard was what went red. `colorize.is_candidate_path` is the
+    # rule, shared with `rerender.render_pair`, which refuses the same rows for
+    # the same reason.
+    cyclic = maker.cyclic
     strata: dict = {}
+    skipped_overrides = 0
     for row in stored:
         recipe = row["recipe"]
         if not recipe.get("autolevel"):
             continue
+        if not colorize.is_candidate_path(recipe, cyclic):
+            skipped_overrides += 1
+            continue
         strata.setdefault((str(recipe["mode"]), str(recipe["colormap"])), []).append(row)
     assert strata, "no levelled recipe on record to check against"
+    # The filter is a claim about the store and is checked rather than trusted: a
+    # predicate that started answering False for everything would empty the
+    # population and leave this test green over nothing.
+    assert skipped_overrides, (
+        "no row in the pool names a curve or palette off the candidate path, so this "
+        "filter is excluding nothing and should go — or `is_candidate_path` has broken"
+    )
     draw = random.Random(SAMPLE_SEED)
     per_stratum = max(1, SAMPLE // len(strata))
     sample = [

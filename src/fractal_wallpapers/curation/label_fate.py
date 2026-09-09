@@ -81,14 +81,14 @@ Each makes a column mean less than it looks:
   corpus**, so for that third of the population `p_fine` is recognition too.
   There is no one honest column over the whole page and the legend says which is
   which where.
-- **A row whose `mode_params` is non-empty may not be the picture its key
-  names.** `mine.make` dropped the settings until 2026-09-08, so the pool holds
-  thousands of rows drawn bare under a varied key. The fresh render here is
-  correct; the *scores* beside it were read off the bare picture. What is flagged
-  is decided on the **maker**, which the picture's own path records: `hunt` and
-  `label_migration` have always passed the settings, a record named to
-  `--repaired-seats-of` had its varied seats re-rendered, and everything else is
-  marked rather than assumed.
+- **A row whose `mode_params` was non-empty used not to be the picture its key
+  names, and the page flagged it.** `mine.make` dropped the settings until
+  2026-09-08, so the pool held 10,664 rows drawn bare under a varied key: the
+  fresh render here was correct and the *scores* beside it had been read off the
+  bare picture. What was flagged was decided on the **maker**, which the picture's
+  own path records. All 10,664 were re-rendered and re-scored the same day —
+  see [`REPAIRED_STORE_WIDE`] — so nothing is flagged now, and a card still says
+  which settings a row carries, that being a fact worth having either way.
 
 ## The verbs
 
@@ -929,22 +929,18 @@ def render(store=None, workers: int = WORKERS, log=print) -> dict:
             continue
         recipe = row["recipe"]
         tasks.append(
-            release.Task(
+            release.task_for(
                 id=key,
-                row={
-                    "family": recipe["family"],
-                    "viewport": recipe["viewport"],
-                    "maxiter": recipe["maxiter"],
-                },
-                colormap=recipe["colormap"],
+                row=recipe,
                 mode=recipe["mode"],
-                mode_params=dict(recipe.get("mode_params") or {}),
-                output=str(picture),
-                geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
-                timeout=ROW_BACKSTOP,
-                autolevel=borrowed.get(key),
+                colormap=recipe["colormap"],
+                mode_params=recipe.get("mode_params"),
                 curve=recipe.get("curve"),
                 palette=recipe.get("palette"),
+                autolevel=borrowed.get(key),
+                output=picture,
+                geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
+                timeout=ROW_BACKSTOP,
             )
         )
     log(f"[render] {len(tasks):,} to draw, {len(already):,} already on disk")
@@ -1388,6 +1384,21 @@ def leg_of(picture) -> str:
     return "/".join(parts[at + 1 : at + 3]) if len(parts) > at + 2 else ""
 
 
+#: When every varied row in the pool was re-rendered through the fixed path, and
+#: how the population was derived. `PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908`
+#: took `candidate_ledger.bare_varied` — the store's own answer to *which rows carry
+#: settings their picture was not drawn with* — and re-rendered and re-scored all
+#: **10,664** of them, 0 failed, every one reproducing its own recipe key.
+#:
+#: **So the flagged set below is empty, and that is why it is a constant rather
+#: than a deletion.** The maker rule is still the right rule and is still the one
+#: written down; what changed is that no row in the pool fails it any more. Set this
+#: to `None` to switch the flag back on, which is what a leg found regressing would
+#: want — a flag that stayed on over a repaired store would tell a reader to
+#: distrust scores that are now correct, which is the same failure in the mirror.
+REPAIRED_STORE_WIDE = "2026-09-08"
+
+
 def drawn_bare(row: dict, repaired: set) -> bool:
     """Whether this row's stored picture is the **bare** mode under a varied key.
 
@@ -1397,12 +1408,18 @@ def drawn_bare(row: dict, repaired: set) -> bool:
     under either subtree is what its key says whatever its settings are. The third
     is a row the repair leg re-rendered by name.
 
-    Everything else with a non-empty `mode_params` is flagged, including the
+    Everything else with a non-empty `mode_params` would be flagged, including the
     subtrees nobody has checked. That is the safe direction: a picture that IS its
     key marked as suspect costs a reader one look, and a bare picture shown
     unmarked under a varied name is the failure this whole class of bug is.
+
+    **[`REPAIRED_STORE_WIDE`] short-circuits all of it**, because the store-wide
+    repair made the answer *no* for every row rather than for a named few. See that
+    constant for why it is a switch and not a deletion.
     """
     if not row.get("mode_params"):
+        return False
+    if REPAIRED_STORE_WIDE is not None:
         return False
     if str(row["key"]) in repaired:
         return False

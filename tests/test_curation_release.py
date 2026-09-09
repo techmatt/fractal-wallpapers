@@ -176,27 +176,73 @@ def test_a_rows_mode_settings_reach_the_render_rather_than_being_dropped(monkeyp
     assert seen["mode_params"] == {}
 
 
-def test_every_builder_of_a_task_reads_the_mode_settings_off_the_recipe() -> None:
-    """Four builders and one omission is a wrong picture, so the claim is about all
-    of them at once rather than about the one this was found through."""
+def test_a_release_task_is_constructed_in_exactly_one_place_in_the_tree() -> None:
+    """**The guard that replaced counting keywords at call sites, and why.**
+
+    There were two guards here. One counted `mode_params=` against `release.Task(`
+    per module and one counted `autolevel=`, and both were green on 2026-09-08
+    while **four of the five builders dropped `curve` and `palette`** — two more
+    [`recipes.KEYED`] members, so an authored-palette row released as the plain
+    picture under its own name. A guard that names the members somebody already
+    thought of cannot catch the next one; that is the same lesson
+    `test_renderer_agreement.py` is built on.
+
+    So the claim is structural instead: `release.Task(` is constructed **once**,
+    inside [`release.task_for`], whose picture-deciding parameters have no
+    defaults. A builder that forgets a member gets a `TypeError`, and a member
+    added to `KEYED` is added to one signature and every leg fails until it says
+    what it passes.
+    """
     import inspect
 
-    from fractal_wallpapers.curation import run, solve
+    from fractal_wallpapers import curation
 
-    for module in (checks, run, solve):
-        source = inspect.getsource(module)
-        built = source.count("release.Task(")
-        assert built, f"{module.__name__} no longer builds a release task"
-        assert source.count("mode_params=") >= built, (
-            f"{module.__name__} builds {built} release task(s) and names `mode_params` on "
-            f"fewer — a task without it renders the bare mode under the varied seat's name"
-        )
-    # `release` itself builds none any more, and that is the fix of 2026-09-05:
-    # `parity` was the fifth builder, missed because it rebuilds a task it was
-    # HANDED rather than making one from a record. It re-points instead, so every
-    # field carries — including one added after this was written.
+    root = Path(inspect.getfile(curation)).parent
+    sites = {
+        path.relative_to(root).as_posix(): path.read_text(encoding="utf-8").count("Task(")
+        for path in sorted(root.rglob("*.py"))
+    }
+    outside = {name: count for name, count in sites.items() if count and name != "release.py"}
+    assert not outside, (
+        f"{sorted(outside)} construct a release task directly. There is one builder — "
+        f"`release.task_for` — and it is the only thing that can require every member "
+        f"deciding the pixels. A second construction site is a second chance to forget one."
+    )
+    # One inside `release` itself and no more — the one `task_for` makes. `parity`
+    # is the other place a task comes into being there and it re-points one it was
+    # HANDED, through `dataclasses.replace`, so every field carries including one
+    # added after this was written. `parity` was the fifth builder and was missed
+    # in 2026-09-05 for exactly that reason, so it is pinned rather than counted.
+    assert sites["release.py"] == 1, "release.py builds a task somewhere besides `task_for`"
+    assert inspect.getsource(release.task_for).count("Task(") == 1
     assert "Task(" not in inspect.getsource(release.parity)
     assert "dataclasses.replace(task" in inspect.getsource(release.parity)
+
+
+def test_the_one_builder_refuses_a_task_that_does_not_name_every_picture_member() -> None:
+    """`task_for` is only worth having if omission is an error rather than a default.
+
+    One case per member, because the failure this closes is *one* forgotten
+    keyword: four builders passed `mode_params` and dropped `curve` and `palette`,
+    and every guard the project had was green.
+    """
+    whole = {
+        "id": "a",
+        "row": {"family": {}, "viewport": {}},
+        "mode": "smooth",
+        "colormap": "viridis",
+        "mode_params": {},
+        "curve": "linear",
+        "palette": None,
+        "autolevel": None,
+        "output": "a.png",
+        "geometry": {"resolution": [16, 9], "supersample": 1, "maxiter": 64},
+    }
+    assert release.task_for(**whole).row["maxiter"] == 64, "the row's cap comes off the geometry"
+    for member in ("mode_params", "curve", "palette", "autolevel"):
+        short = {name: value for name, value in whole.items() if name != member}
+        with pytest.raises(TypeError):
+            release.task_for(**short)
 
 
 def test_a_stamp_only_comes_back_when_there_is_one_to_write() -> None:
@@ -493,19 +539,61 @@ def test_a_rows_inherited_curve_reaches_the_render_rather_than_being_dropped(mon
     assert seen["borrowed"] is None
 
 
-def test_every_builder_of_a_task_carries_the_levelling_it_inherits() -> None:
-    """The same all-of-them claim `mode_params` gets, and for the same reason: one
-    builder that forgot would ship a seat levelled by a rule nobody judged, and the
-    picture would look fine."""
+def test_every_keyed_member_the_task_carries_reaches_the_render(monkeypatch) -> None:
+    """The fast mirror of `test_renderer_agreement.py`'s authored case.
+
+    That one proves it on the pixels and costs an engine; this one costs nothing and
+    says *which* argument went missing when it does. Both exist because the four
+    builders that dropped `curve` and `palette` were handing them to a task that
+    would have carried them — the members were never put on the task at all, and
+    nothing between the task and `colorize.render` would have noticed either.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    seen: dict = {}
+
+    def render(row, mode, colormap, cyclic, output, **rest):
+        seen.update(rest)
+        return Path(output), None
+
+    monkeypatch.setattr(colorize, "render", render)
+    palette = {"gamma": 0.55, "cycles": 2.0, "mirror": True}
+    whole = release.task_for(
+        id="a",
+        row={"family": {}, "viewport": {}},
+        mode="smooth",
+        colormap="viridis",
+        mode_params={"opacity": 0.6},
+        curve="log",
+        palette=palette,
+        autolevel=None,
+        output="a.png",
+        geometry={"resolution": [16, 9], "supersample": 1, "maxiter": 64},
+    )
+    assert release.render_task(whole).ok
+    assert seen["mode_params"] == {"opacity": 0.6}
+    assert seen["curve"] == "log"
+    assert seen["palette"] == palette
+
+
+def test_every_leg_that_releases_a_row_goes_through_the_one_builder() -> None:
+    """The all-of-them claim, now that there is one door to check they take.
+
+    Five legs turn a stored row into a release render and each spelled the task
+    out inline until 2026-09-08. Naming them here is the other half of
+    `test_a_release_task_is_constructed_in_exactly_one_place_in_the_tree`: that
+    one says nothing builds a task directly, this one says these five still build
+    tasks at all, so a leg that quietly stopped releasing anything is not read as
+    compliance.
+    """
     import inspect
 
-    from fractal_wallpapers.curation import run, solve, votes
+    from fractal_wallpapers.curation import label_fate, run, solve, votes
 
-    for module in (checks, run, solve, votes):
+    for module in (checks, label_fate, run, solve, votes):
         source = inspect.getsource(module)
-        built = source.count("release.Task(")
-        assert built, f"{module.__name__} no longer builds a release task"
-        assert source.count("autolevel=") >= built, (
-            f"{module.__name__} builds {built} release task(s) and names `autolevel` on "
-            f"fewer — a task without it measures itself at release geometry"
+        assert "release.task_for(" in source, (
+            f"{module.__name__} releases rows and no longer builds a task through "
+            f"`release.task_for` — either it stopped releasing, or it found another way "
+            f"to build one, and the second is how this bug class returns"
         )

@@ -392,19 +392,17 @@ def render_fulls(jobs, staging: Path, regime, workers: int, arrived, log=print) 
             standing.append(job)
             continue
         tasks.append(
-            release.Task(
+            release.task_for(
                 id=job["key"],
-                row={
-                    "family": recipe["family"],
-                    "viewport": recipe["viewport"],
-                    "maxiter": recipe["maxiter"],
-                },
-                colormap=recipe["colormap"],
+                row=recipe,
                 mode=recipe["mode"],
-                mode_params=dict(recipe.get("mode_params") or {}),
-                output=str(picture),
-                geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
+                colormap=recipe["colormap"],
+                mode_params=recipe.get("mode_params"),
+                curve=recipe.get("curve"),
+                palette=recipe.get("palette"),
                 autolevel=borrowed.get(job["key"]),
+                output=picture,
+                geometry={**regime.geometry(), "maxiter": int(recipe["maxiter"])},
             )
         )
     for job in standing:

@@ -1028,6 +1028,16 @@ def _build_group(payload: tuple) -> list[dict]:
                     render_geometry=geometry,
                     level=True,
                     band=band,
+                    # Off the row, `{}` for every attempt this batch has ever
+                    # planned. Named rather than left to default because it is a
+                    # [`recipes.KEYED`] member and a renderer that names some
+                    # members and drops the rest is the defect this project has
+                    # now found in six renderers: a plan that ever draws a
+                    # `(mode, settings)` cell would otherwise record the settings
+                    # and make the bare picture. The recolor arm above needs
+                    # none — settings are legal only on a direct trap, which has
+                    # no field to dump and never reaches it.
+                    mode_params=row.get("mode_params"),
                 )
             read = codebook.of_picture(picture)
         except Exception as failure:  # noqa: BLE001 — a failed attempt is a recorded row

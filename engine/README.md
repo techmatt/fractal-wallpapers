@@ -392,8 +392,9 @@ tier-3-or-better, and no ground left to lose.
 
 **Those 188 were drawn at LABEL geometry through the sheet, and the pool never got
 one.** `curation.mine.make` — what every mine and every depth leg renders through —
-dropped `mode_params` until 2026-09-08, so every varied row the *ledger* holds is the
-bare mode's picture under the variant's key: 10,664 of them across thirteen legs. The
+dropped `mode_params` until 2026-09-08, so every varied row the *ledger* held was the
+bare mode's picture under the variant's key: 10,664 of them across thirteen legs, all
+re-rendered and re-scored the same day. The
 verdicts above are unaffected, and the reason the numbers still mean something is that
 the sheet's own renderer passed the settings — had it not, all four cells would have
 read identically and they do not. `curation/README.md`'s *`mine.make` dropped

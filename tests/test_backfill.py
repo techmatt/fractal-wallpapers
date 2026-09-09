@@ -132,3 +132,34 @@ def test_the_wanted_list_skips_the_modes_the_operator_never_acts_on():
 def test_the_wanted_list_skips_a_seat_that_already_has_a_curve_on_a_run_record():
     rows = {"field": {"recipe": {"autolevel": {"band_sha256": "x"}}, "provenance": {"run": "r"}}}
     assert backfill._wanted(rows, {"field": {"curve": {}}}) == []
+
+
+# --------------------------------------------------------------------------- #
+# Which seats a sweep is over.
+# --------------------------------------------------------------------------- #
+def test_a_named_record_is_swept_as_its_own_seats(monkeypatch):
+    from fractal_wallpapers.curation import tentative
+
+    monkeypatch.setattr(tentative, "read_rows", lambda stamp: [{"key": "a"}, {"key": "b"}])
+    assert backfill.seats_of("20260908T144844Z") == ["a", "b"]
+
+
+def test_every_protected_seat_is_one_word_and_de_duplicates_across_records(monkeypatch):
+    """The store-wide sweep, and the reason it is not `sum(len(record))`.
+
+    A key seated in nine galleries is one picture and one render here.
+    `protected_keys` is already a set over every stamp, published or not, which is
+    what retention keeps and therefore what has to stay replayable.
+    """
+    from fractal_wallpapers.curation import tentative
+
+    monkeypatch.setattr(tentative, "protected_keys", lambda: {"b", "a"})
+    monkeypatch.setattr(tentative, "read_rows", _never_read)
+    assert backfill.seats_of(backfill.EVERY_PROTECTED) == ["a", "b"]
+
+
+def _never_read(stamp):
+    raise AssertionError(
+        "the store-wide sweep read one record's rows. It is over `protected_keys` and "
+        "opening a stamp would mean it had resolved the word as a stamp name."
+    )

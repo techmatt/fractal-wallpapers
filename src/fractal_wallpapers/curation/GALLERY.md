@@ -1613,11 +1613,15 @@ way out of this, which is why the website ships the stored file and never a re-d
 (`builder/checks.py`'s `seats`). The reader is `depth.levelling_of`, three-way, off
 `sequence.jsonl`'s whole stamp.
 
-**Two causes, and only one of them is history.** Every candidate rendered before
-2026-09-02 predates the whole stamp. But **a mine leg still records none**: `mine.make`
-returns the stamp, the leg counts `autolevel_acted` off it and drops it, and only the
-reduced stamp survives on the ledger row — so a mine-sourced candidate that acted is
-`acted_unrecoverable` the day it is made. Surveyed over `20260908T144844Z` on 2026-09-08:
+**Two causes, and both are history since 2026-09-08.** Every candidate rendered before
+2026-09-02 predates the whole stamp. And until 2026-09-08 **a mine leg recorded none**:
+`mine.make` returned the stamp, the leg counted `autolevel_acted` off it and dropped
+the rest, and only the reduced stamp survived on the ledger row — so a mine-sourced
+candidate that acted was `acted_unrecoverable` the day it was made, and since
+`curation.depth` renders through `mine.make` that was most of the pool rather than one
+leg's corner. `mine` writes `sequence.jsonl` now and is in `stamps.SEQUENCE_STORES`.
+**Neither closure reaches backwards**, which is what the backfill is for.
+Surveyed over `20260908T144844Z` on 2026-09-08:
 of its 1,000 seats **639 already carry a whole stamp** on some leg's `sequence.jsonl`, **84
 take no operator at all** (the direct-trap family), and **277 have no curve on any record**
 — of which only **82** still have the `.leveled/` colormap they shipped through.
@@ -1771,12 +1775,23 @@ itself.
 not this module's bug.** `release.Task` had no `mode_params`, so every release-size render
 in the tree dropped them: a `direct_trap_multiply` at `opacity=0.6` came out as the bare
 mode under the varied seat's name. Silent, because the bare picture is a perfectly good
-picture of something else. The field is on the task from 2026-09-04 and all four builders
-— `solve.render_seats`, `checks.tasks_of`, `run`'s release leg, `votes.render_fulls` —
-read it off the recipe; `tests/test_curation_release.py` holds both halves, the value
-reaching `colorize.render` and every builder naming it. **The solve's own release renders
+picture of something else. The field is on the task from 2026-09-04 and all the builders
+— `solve.render_seats`, `checks.tasks_of`, `run`'s release leg, `votes.render_fulls`, and
+`label_fate.render` since — read it off the recipe. **The solve's own release renders
 under `artifacts/curation/solve/tentative_n1000_20260904T233233Z/release/` predate the fix
 and those twelve are wrong there.**
+
+**And the same hole was still open twice over, which is why there is one builder now.**
+`curve` and `palette` are `recipes.KEYED` members too, and four of the five builders
+passed `mode_params` and dropped both — so a row whose recipe named a `log` field or an
+authored `gamma` released as the *plain* picture under its name. It went unnoticed while
+the pool held only candidate-path recipes and stopped being safe on 2026-09-08, when
+`label-migration merge` put 3,015 label-corpus rows into the pool. The guard that was
+supposed to cover this counted `mode_params=` per builder and was green throughout,
+which is the lesson: **the members somebody thought to count are not the ones that get
+dropped next.** Every leg now builds through `release.task_for`, whose picture-deciding
+parameters have no defaults, and `tests/test_curation_release.py` asserts that
+`release.Task(` is constructed in exactly one place in the tree.
 
 ### What a kit costs, measured
 

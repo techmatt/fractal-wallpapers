@@ -14,19 +14,23 @@ means finding the row that took it.
 
 ## What has a curve to lend, and what does not
 
-Two stores write one sequence row per candidate carrying the whole stamp, and
+Three stores write one sequence row per candidate carrying the whole stamp, and
 they write it in the same shape — `key`, and `autolevel` beside it:
-`depth/<run>/sequence.jsonl` and `remode/<run>/sequence.jsonl`. A gallery run's
+`depth/<run>/sequence.jsonl`, `mine/<run>/sequence.jsonl` and
+`remode/<run>/sequence.jsonl`. A gallery run's
 own candidate rows carry it too, but nothing here reads those: a run releasing
 its own seats already holds them in memory, and [`curation.run`] passes the stamp
 straight across rather than going out to disk for what it just made.
 
-**A mine leg records no stamp at all.** [`curation.mine.make`] returns the whole
-stamp and the leg counts `autolevel_acted` off it and drops it; only the reduced
-stamp survives, on the ledger row. So a mine-sourced candidate that acted is
-`acted_unrecoverable` by construction and there is nothing here to find — not a
-backlog of old rows but the shape of the leg, which is why [`curation.backfill`]
-exists and why it is a sweep over seats rather than a one-off migration.
+**A mine leg recorded no stamp at all until 2026-09-08.** [`curation.mine.make`]
+returned the whole stamp, the leg counted `autolevel_acted` off it and dropped
+the rest, and only the reduced stamp survived on the ledger row — so a
+mine-sourced candidate that acted was `acted_unrecoverable` **the day it was
+made**, not as a backlog but as the shape of the leg. `mine` writes the same file
+in the same shape now and is in [`SEQUENCE_STORES`]. What that does **not** do is
+reach backwards: every mine and depth-through-mine row already in the pool still
+has no curve on any record, which is why [`curation.backfill`] exists and why it
+is a sweep over seats rather than a one-off migration.
 
 ## A batch, never a row at a time
 
@@ -49,7 +53,13 @@ from fractal_wallpapers.paths import under
 #: Declared rather than discovered: a store added here is a decision about where
 #: a curve may be inherited from, and a leg that writes no sequence row lends
 #: nothing however many pictures it made.
-SEQUENCE_STORES: tuple[str, ...] = ("depth", "remode")
+#:
+#: `mine` joined on 2026-09-08 and every mine leg before that date lends nothing:
+#: the file is written from now on, and the rows already in the store are
+#: [`curation.backfill`]'s to re-derive. A sweep does not have to know which of
+#: the three wrote a run's file — [`sequence_paths`] tries all of them and a
+#: missing one is not an error, because a run name belongs to exactly one store.
+SEQUENCE_STORES: tuple[str, ...] = ("depth", "mine", "remode")
 
 #: What one sequence row calls the two members read here.
 KEY_FIELD, STAMP_FIELD = "key", "autolevel"

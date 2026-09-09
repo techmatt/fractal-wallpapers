@@ -366,7 +366,7 @@ def test_a_varied_key_is_spelled_with_its_settings_and_a_bare_one_is_not():
     )
 
 
-def test_a_varied_row_is_flagged_on_its_MAKER_and_not_on_its_settings():
+def test_a_varied_row_is_flagged_on_its_MAKER_and_not_on_its_settings(monkeypatch):
     """The flag is a claim about which renderer drew the stored picture.
 
     `hunt` and `label_migration` have always passed the settings, so a varied row
@@ -387,6 +387,14 @@ def test_a_varied_row_is_flagged_on_its_MAKER_and_not_on_its_settings():
         picture="artifacts/curation/hunt/a_hunt/pictures/k.jpg",
     )
     bare = population_row(picture="artifacts/curation/depth/dtm_known_full/pictures/k.jpg")
+    # The store-wide repair of 2026-09-08 makes the answer `no` for every row, so
+    # the maker rule is exercised with it switched off. Both halves are the test:
+    # the rule still says what it always said, and the live flag is off because
+    # nothing in the pool fails it any more — a flag left on over repaired rows
+    # would tell a reader to distrust scores that are now correct.
+    assert label_fate.REPAIRED_STORE_WIDE == "2026-09-08"
+    assert label_fate.drawn_bare(depth, set()) is False, "the repair is store-wide"
+    monkeypatch.setattr(label_fate, "REPAIRED_STORE_WIDE", None)
     assert label_fate.drawn_bare(depth, set()) is True
     assert label_fate.drawn_bare(migrated, set()) is False
     assert label_fate.drawn_bare(hunted, set()) is False
@@ -404,17 +412,23 @@ def test_a_windows_picture_path_names_its_leg_the_same_as_a_posix_one():
     assert label_fate.leg_of("nowhere/k.jpg") == ""
 
 
-def test_an_unflagged_varied_row_still_says_it_carries_settings():
+def test_an_unflagged_varied_row_still_says_it_carries_settings(monkeypatch):
     varied = population_row(
         mode_params={"opacity": 0.6},
         rung=label_fate.SEATED,
         picture="artifacts/curation/depth/d/pictures/k.jpg",
     )
-    flagged = label_fate._card(varied, None, None, set())
-    assert "drawn bare under a varied key" in flagged
-    settled = label_fate._card(varied, None, None, {varied["key"]})
+    # Since the store-wide repair the card never warns, and still says the row is
+    # varied: which settings a picture was drawn under is a fact a reader wants
+    # whether or not anything was ever wrong with it.
+    settled = label_fate._card(varied, None, None, set())
     assert "drawn bare under a varied key" not in settled
     assert "varied key" in settled
+    monkeypatch.setattr(label_fate, "REPAIRED_STORE_WIDE", None)
+    flagged = label_fate._card(varied, None, None, set())
+    assert "drawn bare under a varied key" in flagged
+    named = label_fate._card(varied, None, None, {varied["key"]})
+    assert "drawn bare under a varied key" not in named
 
 
 def test_a_card_with_no_seat_says_so_rather_than_leaving_a_gap():

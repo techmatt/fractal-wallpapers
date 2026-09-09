@@ -292,6 +292,9 @@ src/fractal_wallpapers/curation/mine.py              the arms, the clock, the re
 artifacts/curation/mine/<name>/rows.jsonl            ledger rows, appended as each lands
 artifacts/curation/mine/<name>/scores.jsonl          sidecar rows, likewise
 artifacts/curation/mine/<name>/profile.jsonl         one row a candidate: the stopwatch
+artifacts/curation/mine/<name>/sequence.jsonl        the same row plus the WHOLE autolevel
+                                                     stamp, which is what a larger render
+                                                     inherits. Since 2026-09-08
 artifacts/curation/mine/<name>/pictures/<key>.jpg    the renders, named by recipe
 artifacts/curation/mine/<name>/fields/<name>.f32     one dumped field a (location, mode),
                                                      swept to 64 as the run goes
@@ -1109,11 +1112,17 @@ The stamp is written on the **sequence** row and not on the in-memory `made` row
 `made` is held whole for the length of the leg and feeds `curves`, `by_mode` and
 `rank_readout`, none of which reads a stamp.
 
-**`mine` has the same gap and this did not close it.** Its `rows.jsonl` is ledger
-rows, so it carries the reduced stamp and no `acted` at all; the boolean is on
-`profile.jsonl`, which nothing joins by key. `mine.make` now returns the whole stamp
-— that is where depth's comes from — so closing it is a one-line change at that
-leg's writer whenever somebody wants it.
+**`mine` had the same gap and it was closed on 2026-09-08.** Its `rows.jsonl` is
+ledger rows, so it carries the reduced stamp and no `acted` at all; the boolean was
+on `profile.jsonl`, which nothing joins by key, and the curve was on nothing. The leg
+writes `sequence.jsonl` in depth's shape now and `mine` is in
+`stamps.SEQUENCE_STORES`, so a mine-sourced seat lends its curve like any other.
+
+It mattered more than "whenever somebody wants it" made it sound. **`curation.depth`
+renders through `mine.make` too**, so this was not one leg's gap: every candidate
+either leg has ever made was `acted_unrecoverable` the day it was made, which is most
+of the pool. Closing it does not reach backwards — the rows already in the store need
+`curate autolevel backfill`, which re-derives rather than recovers.
 
 **Field modes only, and every conclusion is conditional on that.** A composite at
 forty candidates is **212 s a location, measured** — one arm's worth of places would

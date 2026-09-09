@@ -482,6 +482,33 @@ def _plain_recipe(mirror: bool) -> dict:
     return finished.recipe(mirror=mirror)
 
 
+def is_candidate_path(recipe: dict, cyclic: set[str] | None = None) -> bool:
+    """Whether this stored recipe is one the **candidate path** could have made.
+
+    The candidate path spends [`CURVE`] and [`_plain_recipe`] on every attempt and
+    draws no `mode_params`, so a recipe naming anything else is one only a caller
+    with the overrides could produce — [`curation.label_migration`], re-expressing a
+    judged recipe out of the label corpora. This says which, once, because three
+    places need to know and each had worked it out for itself.
+
+    **It stopped being a distinction without a difference on 2026-09-08**, when
+    `label-migration merge` put 3,015 rows into the pool and about a third of them
+    carry knobs the candidate path never spends. Before that the pool was
+    candidate-path rows alone, so anything asserting *every row here is rebuildable
+    from a plan* was accidentally true. `tests/test_hunt.py`'s recipe-key guard was
+    one such thing and went red the first slow lane after the merge.
+
+    `cyclic` defaults to the shipped set; a caller inside a worker passes its own.
+    """
+    cyclic = globals()["cyclic"]() if cyclic is None else cyclic
+    colormap = str(recipe.get("colormap") or "")
+    if str(recipe.get("curve") or "") != CURVE:
+        return False
+    if (recipe.get("mode_params") or {}) != {}:
+        return False
+    return (recipe.get("palette") or {}) == _plain_recipe(colormap not in cyclic)
+
+
 def recolored(
     field: Path,
     colormap: str,

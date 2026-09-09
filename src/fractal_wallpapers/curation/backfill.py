@@ -8,12 +8,16 @@ tone at release geometry, which is the thing the replay change exists to stop.
 
 ## Why there are so many, and it is not only history
 
-Two causes, and only the first is a backlog. Every candidate rendered before
-2026-09-02 predates the whole stamp. But [`curation.mine`] **still** records no
-stamp: `mine.make` returns it, the leg counts `autolevel_acted` off it and drops
-it, and the ledger row keeps only the reduced stamp. A mine-sourced acted
-candidate is therefore unrecoverable the day it is made. This module fills both
-in the same way and does not pretend the second is closed by doing so.
+Two causes, and **both are now backlogs**. Every candidate rendered before
+2026-09-02 predates the whole stamp. And until 2026-09-08 [`curation.mine`]
+recorded no stamp at all: `mine.make` returned it, the leg counted
+`autolevel_acted` off it and dropped it, and the ledger row kept only the reduced
+stamp — so a mine-sourced acted candidate was unrecoverable the day it was made,
+which is most of the pool, `curation.depth` rendering through `mine.make` too.
+That leg writes `mine/<run>/sequence.jsonl` now and [`curation.stamps`] reads it,
+so the second cause has stopped producing. Neither closure reaches backwards:
+this module fills what is already there, in one way, and the rows it fills are
+the reason it is a sweep over seats rather than a one-off migration.
 
 ## What a backfilled stamp is, and what it is not
 
@@ -187,6 +191,29 @@ DEFAULT_RECORD = "20260908T144844Z"
 #: only thing that distinguishes a slow one from a hung one is a line.
 PROGRESS = 25
 
+#: What `--record` is given to sweep **every** protected seat in the store rather
+#: than one record's. A word and not a flag because it is the same question — over
+#: which seats — asked with a wider answer, and a separate flag would make
+#: `--record X --all-protected` a thing somebody could type.
+EVERY_PROTECTED = "all"
+
+
+def seats_of(stamp: str) -> list[str]:
+    """The recipe keys a sweep of `stamp` is over. [`EVERY_PROTECTED`] widens it.
+
+    **Published or not**, because [`curation.tentative.protected_keys`] is what
+    retention must keep and therefore what has to stay replayable: an older
+    record's seats are exactly the ones whose pictures a clone resolves, and a
+    seat that cannot replay its levelling ships a re-measurement under a caption
+    that says otherwise. It de-duplicates across records for free — one key seated
+    in nine galleries is one render here.
+    """
+    from fractal_wallpapers.curation import tentative
+
+    if str(stamp) == EVERY_PROTECTED:
+        return sorted(tentative.protected_keys())
+    return [str(row["key"]) for row in tentative.read_rows(stamp)]
+
 
 def _wanted(rows: dict, held: dict) -> list[str]:
     """The keys of `rows` that have no curve anywhere and take the operator at all.
@@ -218,7 +245,7 @@ def survey(stamp: str = DEFAULT_RECORD) -> dict:
     from fractal_wallpapers.curation import candidate_ledger, tentative
     from fractal_wallpapers.curation import stamps as stamps_module
 
-    keys = [str(row["key"]) for row in tentative.read_rows(stamp)]
+    keys = seats_of(stamp)
     rows = candidate_ledger.by_key(keys)
     already = read()
     held = stamps_module.for_rows(rows, already)
@@ -294,10 +321,10 @@ def sweep(
     import shutil
     import time as time_module
 
-    from fractal_wallpapers.curation import candidate_ledger, colorize, tentative
+    from fractal_wallpapers.curation import candidate_ledger, colorize
     from fractal_wallpapers.curation import stamps as stamps_module
 
-    keys = [str(row["key"]) for row in tentative.read_rows(stamp)]
+    keys = seats_of(stamp)
     rows = candidate_ledger.by_key(keys)
     held = stamps_module.for_rows(rows, read())
     wanted = _wanted(rows, held)
