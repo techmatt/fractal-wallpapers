@@ -402,6 +402,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**The slowest of the 4,325 readings, and eleven n=1000 solves are what was before it.**
+`cell_deltas_20260910`, 2026-09-10. **4,193 selected, 132 deselected — 4,325 collected —
+in 145.84 s**, green, nothing running beside it and no pool held. The tree changed by two
+`curation` doc sections and nothing else, so the collected count is the five readings
+below's exactly and the **3.9 s over the reading below** is what a box that has just held
+a 308,885-row candidate pool eleven times looks like — the lane's own stores are competing
+with a page cache full of somebody else's pool. That is the shape *measure on an idle
+machine* is about: the leg had finished, and the box had not. ⚠ `CLAUDE.md` still reads
+4,301 / 4,169, now four trees behind.
+
 **A docs-only commit, and the clock landed on the busy-box reading rather than the
 idle one.** `best_head_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
 4,325 collected — in 141.96 s**, green, no pool held and no render leg, but taken

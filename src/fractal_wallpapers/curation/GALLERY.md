@@ -189,6 +189,17 @@ several fall: eight sat under 20 seats at `K = 3` against four at `K = 2`, with
 `dark_vivid_lime` at 10. That is what the floor is for, and it is why raising the
 ceiling alone would have made the collection more lopsided rather than less.
 
+**What it reaches is three cells, and the `cell_floor:` stamp count does not say so.**
+Measured 2026-09-10 on an ensemble column at n=1000: the floor stamps **256 seats**
+and **three cells sit exactly on it**, all lime; solved with the floor off, those same
+three are the **only** cells that fall under 20 and the fourth-thinnest holds 22
+unaided. So the stamp count is a reading of the scarcity leg's *order* — which cells
+were mandated before the general pool got to them — and never of what the floor is
+worth. The number that answers *worth* is the floor-off arm. On that same column
+**12 of the 48 cells sit at the allowance**, so the live colour constraint there is
+the ceiling. [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the colour floor and the
+spiral cap actually bind on, measured 2026-09-10*.
+
 **`config.ceiling.k` and `config.ceiling.kf` are on the tracked manifest**, which
 is what a reader months from now has. `k: 2` is a record taken before 2026-09-09;
 `kf: null` is one that carried no colour floor, which is every record before that
@@ -3039,6 +3050,16 @@ that fills by scarcity, so the allowance a mandated spiral meets is the allowanc
 *that* seat and not at the finished count — which is why a cap denominated in `n`
 would not bind here. Spirals are a **location** property: the clearing pool runs
 about **28% spiral** and a seating takes **20.8%** of them before any cap.
+
+**And it still binds at 0.15**, measured 2026-09-10 over an ensemble column at n=1000:
+**151 of 151** allowed and taken, with the `spiral` refusal column unmoved at 481 →
+480. Fifty more seats went in and the same rows were still refused, for the reason
+above — the allowance is met at *every* seat of a scarcity-ordered walk and not at the
+end of one — so a raise buys seats without buying slack, and there is no rung yet at
+which this cap has not bound. It is also the largest objective move either loosening
+knob has produced, and it does **not** relieve the thin lime cells the cap was
+supposed to be starving. [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the colour floor
+and the spiral cap actually bind on, measured 2026-09-10*.
 
 **Three answers and not two, so `0` is not the spelling for `none`.** `none` (or
 `off`) runs no cap at all and the `spiral` refusal column is zero by construction;
