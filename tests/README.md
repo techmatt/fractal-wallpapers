@@ -402,6 +402,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A docs-only commit, and the clock landed on the busy-box reading rather than the
+idle one.** `best_head_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
+4,325 collected — in 141.96 s**, green, no pool held and no render leg, but taken
+minutes after an 18-fit training grid and a 42,300-picture scoring pass had finished.
+The tree changed by two README sections and nothing else, so the collected count is
+the four readings below's exactly and the 1.4–2.7 s over them is the box settling.
+**Nothing in this leg is tracked but the docs**: eighteen fits, a scoring pass and two
+solves all landed under `scratch/`, which is why a leg that ran for two hours moves
+this lane by two seconds.
+
 **A second 400-row ingest, and the count still did not move.**
 `aug_sweep_sheets_ingest_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
 4,325 collected — in 139.29 s**, green, idle box, no render leg and no pool held. The
