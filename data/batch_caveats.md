@@ -803,6 +803,48 @@ sheets non-comparable for no gain), so the discipline is the operator's: **label
 sheet, export it, `label ingest --sheet artifacts/sheet/p_fine_correction_20260909_<n>`,
 and only then open the next.**
 
+**What happened instead cost nothing, and it is worth knowing it works.** Sheet 1's
+drop was copied aside as `…​.sheet1.json` before sheet 2 went up, and sheets 2 and 3
+were saved by hand as `… pt2.json` and `… pt3.json`, so no export replaced another
+and all three were ingested afterwards through `--labels`. The unit count is what
+made that safe — 251 / 250 / 249 are distinct, one drop matches one cut — and the
+confirmation is that Spearman of page position against verdict came back
+`−0.745 / −0.477 / −0.494` where a misbound drop reads near zero. The recipe is in
+`labeling/README.md`'s *A hand-renamed drop is the working answer to one batch cut
+into several sheets*. It is a second-best to ingesting between pages, not a
+replacement: three cuts of equal length would leave the count with nothing to say.
+
+### The three sheets are three scales, and the sheet is on the row
+
+Labelled 2026-09-09 in sheet order over about half an hour, they disagree at
+**χ² = 69.39 on 6 d.f., p = 7.5e-12** over the whole 750, and the disagreement is
+not spread evenly across the blocks. It is **`top_band`** — χ² = 79.66, p = 1.4e-13,
+sheet 1 giving **no 1s at all** to its 100 rows against 32 and 28 on sheets 2 and 3,
+and a block mean of 3.33 / 2.14 / 2.37 — and `floor_thin_cell` behind it
+(p = 7.7e-04). At the bottom the three sheets agree: `near_bar` p = 0.07,
+`low_anchor` p = 0.20. The sheets are near-identical by construction, and measured:
+mean `p_fine` inside `top_band` is 0.9414 / 0.9480 / 0.9317 and the render judge's
+own reading of the served picture 0.865 / 0.887 / 0.890 — if anything sheet 1's
+rows are the *slightly worse* ones. So the movement is the labeler, in the same
+shape `n1000_0906_*` moved above, except that here it is inside **one batch** and
+therefore inside any number a reader pools. **A `top_band` false-positive rate off
+this batch is a mean of 10% / 68% / 57%, and quoting the pooled 45% hides that.**
+What makes it recoverable is that `intake` writes the sheet directory's name onto
+every row: `row["sheet"]` is `p_fine_correction_20260909_1/2/3`, so a sheet term is
+available to any fit and a per-sheet read costs nothing.
+
+### Coarse 3 is fine 1, and `low_anchor` is where that is measured
+
+The 100 `low_anchor` rows are the coarse corpora's score-**3** rows, and Matt graded
+**84 of them 1, 14 of them 2, 2 of them 3 and none 4** — mean 1.18, 98% at or under
+2. That is the whole coarse-to-fine scale relation at the bottom end and nothing
+else in the tree measures it: a middling coarse render is a gallery-grade reject,
+not a gallery-grade middle. The offset is about two tiers and it is flat across
+modes (per-mode means 1.00–1.56 over 4–9 rows each) and across kinds (strange 1.17,
+smooth 1.25). **Any retrain that mixes a coarse tier into a fine target without
+this offset is mixing two scales**, and the block exists so the mixing has a
+measured number rather than an assumption.
+
 ### Two smaller things
 
 **`refusal` is null on every row here, seated or not.** This leg ran no
