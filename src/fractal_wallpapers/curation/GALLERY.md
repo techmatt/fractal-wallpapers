@@ -2282,6 +2282,8 @@ src/fractal_wallpapers/curation/votes.py   the encoder, the builder, the page
 artifacts/votes/<stamp>/full/sNNNN.jpg     2560x1440, the picture a click opens
 artifacts/votes/<stamp>/thumbs/sNNNN.jpg   512x288, downscaled from the full, never the candidate
 artifacts/votes/<stamp>/index.html         the viewer, one file, openable over file://
+artifacts/votes/<stamp>/orders/<name>.json one friend's deck, expanded
+artifacts/votes/<stamp>/manifest.json      the record, the encoding, the seed and the offsets
 artifacts/votes/<stamp>/README.txt         the paragraph the friends read
 artifacts/votes/<stamp>.zip                what actually gets sent
 ```
@@ -2296,6 +2298,9 @@ can never move at all.
 ```
 # the whole record, at the defaults
 fractal-wallpapers curate votes build <stamp> --out artifacts/votes/<stamp>
+# one zip for everybody, and a different deck each — the names go in at build time
+fractal-wallpapers curate votes build <stamp> --out artifacts/votes/<stamp> \
+    --friend Ada --friend Bo --friend Cass --friend Dev
 # forty seats first, so the viewer can be tried before a leg of hours
 fractal-wallpapers curate votes build --out artifacts/votes/<stamp>_n40 --limit 40
 # cheaper to make and smaller to send, and it shows
@@ -2306,11 +2311,105 @@ fractal-wallpapers curate votes build --out artifacts/votes/mixed \
 ```
 
 A recorded gallery is a decision this project took. A voting kit is that decision handed
-to people who are not here, and what comes back is one small JSON file per person:
-`{viewer, record, name, order_seed, votes: {<recipe key>: 1 | 2}, pages_visited,
-exported_at}`. **There is no ingest yet and the schema is the contract** — the votes have
-to exist before anything reads them, and `votes.VIEWER` names the shape so a friend's
-copy of a kit outlives this checkout's memory of what wrote it.
+to people who are not here, and what comes back is one small JSON file per person,
+`<name>_labels.json`. **There is no ingest yet and the schema is the contract** — the
+votes have to exist before anything reads them, and `votes.VIEWER` names the shape so a
+friend's copy of a kit outlives this checkout's memory of what wrote it.
+
+### `<name>_labels.json`, and what 3.0 added
+
+**`"3.0"` from 2026-09-09, and it is the first version that names the file rather than
+the page.** 1 and 2.0 carried the same seven fields — the version said which viewer
+somebody had been looking at, not how to read what came back. 3.0 is **four more fields
+beside those seven and not one change to them**: `votes` is still `{<recipe key>: 1 | 2}`,
+the labeler is still the name that was submitted, and a reader that only knows 2.0 reads a
+3.0 file correctly and loses only the new columns.
+
+```
+viewer  record  name  order_seed  votes  pages_visited  exported_at    the seven, unchanged
+deck_offset     where in the master permutation this person's walk started
+page_size       how many pictures a page held
+pages_completed the pages they pressed Finish page on
+rows            the same votes as records, in deck order
+```
+
+A row is `{key, vote, page, position, at, page_complete}`. The vote is written twice —
+once in `votes` and once in `rows` — and that is the price of the additive rule: reshaping
+`votes` into objects would have been the same information and a broken contract.
+
+**`page_complete` is the field a partial pass turns on.** Matt's instruction to the friends
+is *go as far as you feel like, but finish any page you start*, so the trailing page of a
+pass is the one page whose votes were taken under a stopping decision. It **stays in the
+file, flagged**, rather than being dropped: dropping it would hide exactly the bias it
+records. A page is completed **only** by the *Finish page* button at the bottom of it —
+turning to a page from the pager marks nothing, because a page somebody jumped to and left
+is the case the flag exists to tell apart from one they worked.
+
+### One master permutation, rotated per friend
+
+**The kit hands every friend a different deck out of one zip.** It draws **one**
+permutation over its seats at build time, from a seed recorded in `manifest.json`, and
+every deck is that same permutation **rotated**: friend *i* of *F* starts at
+`round(i*N/F)`. So a partial pass is a uniform random sample of the record rather than a
+prefix of a fixed order, every picture collects close to the same number of votes for the
+same total effort, and there is nothing to coordinate — the rotation does it. Eight
+friends who each work five pages of 25 have covered a thousand seats **exactly once
+between them**, which independent per-person shuffles could not do at any effort.
+
+**One zip and not one per person.** The pictures are the kit; the decks are a few
+kilobytes. `--friend NAME` is repeatable and the order the names are given in is the order
+they are spaced in, the first screen lists them, and the pick is what selects the deck.
+A kit built with **no** names keeps the old typed-name box, and its deck is the same master
+permutation rotated by a hash of what gets typed: one ordering rule, a worse offset.
+
+**The order files ship and the page never reads them.** `file://` refuses `fetch` of a
+sibling file, so `index.html` inlines the master order and the offsets and derives each
+deck — F decks in N integers rather than F×N. `orders/<name>.json` is the same arithmetic
+written out, for an ingest and for reading a deck by eye, and `tests/test_votes.py` holds
+the two to agreeing.
+
+**The seed belongs to the kit once it is drawn.** `--out` at a kit that already exists is a
+resume, and `build` reads the seed back off that kit's own `manifest.json` unless `--seed`
+names another — a re-drawn seed would rotate every page a friend had not reached yet out
+from under them while leaving the votes they had already given attached to seats somewhere
+else.
+
+**A page is 25 pictures, down from 100 on 2026-09-09**, and `--page` moves it. It is a
+unit of *finishing* rather than of layout: finishing the one you start is the whole
+instruction, so a page has to be short enough that starting one is not a commitment
+somebody regrets. A thousand seats is forty pages, which is a longer pager — it gets its
+own row under the strip with a ceiling on its height — and a shorter decision.
+
+### Progress persists, and the page probes rather than trusts
+
+**All three engines keep `localStorage` under `file://` across a browser restart**, measured
+2026-09-09 by driving the 250-seat kit from a `file://` URL in **Chromium 153**, **Firefox
+155** and **WebKit 26.6**: vote, close the browser, reopen the folder on the same profile,
+and the name, the votes, the finished pages and the page they were on all come back.
+
+**Safari itself was not measured and could not be** — it is macOS and iOS only, and this is
+a Windows box; WebKit is its engine and not the same product, and Safari has refused local
+storage on `file://` pages before. So the page **probes** on the way in — a write, a read,
+a remove — and if that throws it says so in a band at the top and stops pretending. The way
+back from there is the friend's own export, reloaded through **Resume from file**, and that
+button is on screen in every browser rather than only a broken one: a friend who changed
+computers has the same problem and the same answer. A browser that keeps nothing also gets
+the browser's own confirm on the way out, and only once there is something to lose.
+
+**The drive is not in the suite and is not going to be.** It needs three browser engines
+and a node stack, against a base install this project keeps torch-free on purpose, so it
+was run from outside the checkout and what it found is written here. `tests/test_votes.py`
+holds the page to *having* the probe, the band and the resume path; whether a given browser
+honours them is a fact about the browser and belongs in a reading, not in a lane.
+
+**What a whole pass looks like, driven end to end on the 250-seat kit** (`--ss 1`,
+2026-09-09): the first screen offers the four names, the pick lands on a 25-tile page with
+a ten-button pager, the deck the page derives is byte-identical to the shipped
+`orders/Anna.json`, a mouse vote, a hovered keypress and a fullscreen vote all land, the
+fullscreen closes on the vote, *Finish page* advances and the strip reads
+`3 rated · 1 of 10 pages finished`. The export carries four rows — three on the finished
+page with `page_complete: true`, one on the trailing page with `false`. Every engine, no
+page errors.
 
 **A filename carries the seat's position and nothing else.** No rank, no key, no mode: a
 friend who can read a rank off a filename has been told the answer. The join lives in the
@@ -2351,9 +2450,10 @@ blue: it is the button that says nothing about the picture, which is the one lie
 colour there would tell.
 
 **Two people on one computer, and the button that is not how you do it.** A name is a
-slot — ratings live under `votes/<record>/<name>` — so a partner taking a turn types their
-own name and gets their own walk and their own storage, and the first person gets hers
-back by typing hers. Nothing has to be destroyed to share a machine, and the README says
+slot — ratings live under `votes/<record>/<name>` — so a partner taking a turn picks their
+own name (*Not you?* in the strip goes back to the first screen) and gets their own deck
+and their own storage, and the first person gets hers back by picking hers.
+Nothing has to be destroyed to share a machine, and the README says
 so before it says anything about the button. **`Start over` is for leaving the computer
 clean**: it erases every name's ratings *for this record* and it asks **twice**, an in-page
 band carrying the count of exactly what would go, then the browser's own dialog. Two steps
@@ -2371,7 +2471,9 @@ opened and a page somebody worked and liked nothing on are the same blank from t
 and only the first is worth going back to. Blank would mean *unknown* and nothing here is
 unknown. The count is over the **walk** and not over the record — two people's page 3 hold
 different pictures — and it names no picture, mode or vote, so there is still nothing to
-sort by.
+sort by. **A finished page is drawn as an edge on its button and not as a third number**,
+because it is the one thing on the strip that is not a count, and the strip's figure beside
+the tallies reads `<n> rated · <d> of <P> pages finished`.
 
 **Every seat is rendered again and the thumbnail comes off that render.** The stored
 candidate is 640x360, the size the judges read, and it is far too small to vote on;
@@ -2467,6 +2569,15 @@ than deflating them: rebuilt both ways over the same forty, deflate bought 0.1 M
 | 85 | 1.35 GB | **1.05 GB** |
 | 90 | 1.74 GB | 1.31 GB |
 | 95 | 2.58 GB | 1.82 GB |
+
+**The decks and the page are free and the friend count does not move the zip.** One zip
+goes to everybody, so the pictures are paid for once however many names are on the list:
+the 250-seat kit rebuilt for four friends came to **343.0 MB against 342.9 before it**, and
+an order file is one integer per seat — about 1.2 KB at 250 seats and 5 KB at a thousand,
+deflated in the zip. **A thousand pictures at full wallpaper size is ~1.15 GB zipped** at
+the shipped defaults — 1.13 GB of fulls at 2560x1440 ss4 q85 4:2:0, ~20 MB of thumbnails,
+and under 100 KB of page, decks and manifest at any friend count somebody would actually
+send to.
 
 **The zip is the constraint and quality does not fix it.** The whole quality axis moves
 the total by a factor of two and the floor is still most of a gigabyte, because a fractal
