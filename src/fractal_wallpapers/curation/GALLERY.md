@@ -195,15 +195,99 @@ is what a reader months from now has. `k: 2` is a record taken before 2026-09-09
 date and every themed pass since; a record with no `kf` **key** at all predates
 the field. `--cell-floor off` is the way back.
 
+#### ★ The rule counts MEMBERSHIPS and not seats, and that is the trap
+
+**The unit a `K` is stated in is not the unit the rule applies it in**, and getting
+that backwards is what made `K = 2` far tighter than anyone reading it supposed. A
+cell's allowance is written as a share of `n`, the seat count — but
+`rules.State.counted_refusal` charges a seat to **every** cell it is dominant in, so
+what the allowance actually bounds is *memberships*, of which there are close to
+twice as many. The denominator a "fair share" has to be read against is
+`memberships / 48` and never `n / 48`.
+
+**The ratio is a reading and never a constant.** It is `memberships / seats` on the
+record in hand, `k_sweep.cell_counts` is the one door that computes it, and it moves
+both with the pool and with `K`: **1.802 a seat on the `K = 2` control of
+2026-09-09** — 1,802 memberships over 1,000 seats, so the mean cell holds **37.54** —
+rising to 2.118 at `K = 3` and 2.131 at 3.75 as the loosening seats more multi-cell
+rows, against **1.904 on the 2026-09-06 pool**. Carry the date with the figure; it
+has fallen once already.
+
+So `K = 2` reads as *twice a fair share* and lands at **42 against a realized mean of
+37.54 — 1.12×**, six per cent of headroom rather than a hundred. That is why 32 of
+the 48 cells sat pinned at exactly 42 under a rule nobody thought was binding, why
+`cell_allowance` was the largest refusal column by a factor of six over `location`,
+and why a floor was worth adding at all. Against the realized mean the sweep's rungs
+are **1.12, 1.41, 1.68, 1.81, 1.95 and 2.10** for `K` of 2, 2.5, 3, 3.25, 3.5 and
+3.75 — so the shipped `K = 3` is **1.68× uniform**, not three times anything.
+
+**A `K` proposed in seat units has to be converted before it is argued about**:
+divide by the memberships-per-seat figure of the pool in hand. And read the allowance
+off `ceiling.Rule(k=K).allowed(cell, n)` rather than off the formula on paper —
+`floor(K · t · n) + 1` is evaluated in binary floating point and loses a seat wherever
+the product lands on an integer, which is how `K = 2.4` gives 50 at n=1000 and not
+51.
+
 #### The deadlock a floor cannot see on its own
 
-A seat charges about 2.1 cells, so the row that would fill a starving cell is very
+A seat charges about 2.1 cells at `K = 3` (2.118, 2026-09-09; see the unit trap
+above), so the row that would fill a starving cell is very
 often dominant in a **second** cell already at its allowance — and then the ceiling
 refuses it for a colour nobody was short of. Neither of the two obvious columns
 shows that, because both are true of it: the cell is starved *and* the pool holds
 rows for it *and* the rule that took them was about somewhere else. So
 `shortfalls.cell_floors.per_cell.<cell>.deadlocked` counts those rows and
 `deadlocked_on` names the cells that were full.
+
+#### A `cell_floor:` stamp says WHICH LEG placed a seat, not that the floor bought it
+
+**287 of the 1,000 seats on `20260909T215815Z` carry one and the counterfactual is
+162.** The stamp is the scarcity mandate's signature and nothing more: the floor
+turns each starving cell into a `solve.Demand`, the seed leg walks those subpools
+scarcest-first, and every seat placed that way is stamped — including the many the
+ranked walk would have placed anyway a few seats later. The mandate merely got there
+first, which is a fact about the order the legs run in. Seat churn against the
+un-floored `K = 3` arm over the same pool is **162 of 1,000**, and that is the number
+that answers *what did the floor change*.
+
+Two things to read beside the stamp count. **11 seats are HELD and not mandated** —
+placed by another leg, dominant in a cell now sitting at its floor, so tier 2 refuses
+any swap that would remove them; the floor is doing work there and no stamp says so.
+And the leg mix moves under it: the scarcity seed goes **300 → 520** and the ranked
+walk **506 → 426**, while the augmenting chain drops **194 → 0** because the seed now
+fills all thousand on its own. So a stamp count is an **upper bound** on the floor's
+effect and the leg mix is the shape of it; the only measurement of the effect itself
+is the same pool re-run under `--cell-floor off`.
+
+#### What actually holds a thin colour down, and it is NOT the ceiling
+
+**Loosening the ceiling does not feed the thin cells**, and the sweep out to
+`K = 3.75` is what settles it: 23 of the 48 cells end *lower* than they began, and
+for **18 of them neither obvious explanation holds**. Every one sits **strictly below
+its own allowance** at the widest rung, so the rule is not refusing it; and every one
+has more unseated clearing places than its whole deficit, so the pool could have
+filled it. What the rejection ledger names instead is `location` (19–46% of their
+refused places) and `the_leg_had_no_seat_left` (12–45%), where `cell_allowance` had
+been 57–79% at `K = 2`. **One seat per cluster is the binding fact** — the extra
+headroom is spent on the colours the supply is skewed toward, and each thin seat has
+to displace a scarce one. The other five of the 23 are the deadlock above: still
+refused by `cell_allowance` while below their own, so by a co-dominant warm cell's.
+
+**Under the floor the same cells are refused by the spiral cap.** `dark_vivid_lime`'s
+50 clearing rows go 9 `spiral`, 7 `twin`, 6 out of seats; across the six cells that
+landed exactly on the floor of 20 the deadlock count is 3, 2, 2, 6, 38 and 0. Over
+the ceiling and floor together `spiral` refusals rise **754 → 1,266** and `twin`
+423 → 662, precisely because the allowance stops acting first and those are what is
+left underneath it.
+
+★ **Matt has ruled the spiral cap STAYS**, 2026-09-09, and it is not to be
+re-litigated as a colour lever. A thin colour bound by `spiral` is a **mining**
+instruction rather than a colour-rule one: the answer is a conditioned leg bringing
+non-spiral carriers into the cell — `curate hunt`'s conditioned leg or `curate
+depth`'s conditioned draw — and not a wider cap. See *The spiral share cap is a tenth
+by default* below for why: a tenth is already under half of what the gallery was
+doing unaided, so widening it to feed lime would trade a ruled diversity property for
+a colour the mines can supply.
 
 ### `--target <cell>=<fraction>`
 
@@ -656,6 +740,15 @@ fine column **at load** — `solve.fine_column`, before `at_fine_bar`, before th
 neutral pre-selection walks its order, and before `cascade_order` lays its own
 stage over the top. It was landed to answer one question and is **not adopted**:
 adoption, if it happens, is a separate act against a stated bar.
+
+★ **It STAYS STAGED INDEFINITELY. Matt's ruling of 2026-09-09, and it is written
+here because this is where a cleanup pass would look before deleting it.** He is
+unlikely to adopt it; it remains available as an **instrument** for future
+experiments, which is a standing purpose and not an unfinished migration. So
+`--forced`, `solve.FORCED_LIFT`, the `forced` block on the record and
+`config.forced` are **not dead code**, the absence of a shipped pass that names the
+flag is not evidence that nothing uses it, and none of it is to be removed on a
+tidying argument. A retirement is a ruling, the same as an adoption would be.
 
 ```
 # force one population and explain the same one, so the run says what became of each

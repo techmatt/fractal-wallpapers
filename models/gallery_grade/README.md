@@ -179,6 +179,40 @@ a flag, because every solve record ever taken resolves its cascade order out of
 that one file and a silent overwrite would make `20260909T215815Z` and every
 record before it unreproducible with nothing looking broken.
 
+#### The admitted SET churned 93.3% while its size did not move
+
+Over the whole re-scored pool — 42,300 rows, the exhaustive census rather than the
+8,000-row sample the level was matched on — the shipped head admitted **11,637 rows
+(27.51%)** at 0.50 and the adopted head admits **11,824 (27.95%)** at 0.184. The
+match survives the census with a drift of **+0.44 points**, which is what says the
+level stands unadjusted.
+
+⚠ **Only 6,302 rows are admitted by both.** 5,335 leave and 5,522 arrive — a 93.3%
+symmetric churn against the old admitted set. So a gallery taken after this act is
+**a different pool of the same size, not a re-ranking of the old one**, and that is
+a stronger statement than *the order inside the admitted pool changed* above: barely
+half the pool being ordered is the pool that was there before. Any before/after
+across the adoption compares two populations, and a seat that moved cannot be
+attributed to the ordering without checking that both rows were admitted on both
+sides.
+
+#### Distinct places FELL while admitted rows rose, and nothing has been ruled on it
+
+**6,683 → 6,235**, a loss of **448 distinct locations available to a seating**, at the
+same time as admitted rows went 11,637 → 11,824. The refit's admitted set is simply
+more concentrated per place: **1.90 rows a place against 1.74**.
+
+**Recorded as an open observation and not as a problem.** It was not predicted, and
+it is the one number in the adoption that could bind, because one seat per cluster
+makes *places* and not rows the currency a seating spends — see `curation/GALLERY.md`'s
+*What actually holds a thin colour down, and it is NOT the ceiling*, where clusters
+are already the binding fact at n=1000. Nothing has been measured about what 448
+fewer places costs a solve, and no ruling has been asked for. The thin cells
+separately got **better** off in places under the refit and are reordered sharply
+among themselves — `light_muted_blue` 146 → 405 and `dark_vivid_cyan` 106 → 221
+against `dark_vivid_lime` 50 → 52 — so the loss is not concentrated where the colour
+floor draws.
+
 ### What it does at `p_fine >= 0.50`, which is a fixed constant on a moved scale
 
 **Recall of labelled 4s at the bar: train 0.663, stopping 0.405, gap 0.258.** The

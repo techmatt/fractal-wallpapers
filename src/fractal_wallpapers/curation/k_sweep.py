@@ -67,6 +67,10 @@ of the growth is muted, and the cells that were short at `K = 2` end **shorter**
 because the headroom is spent where the supply is. The refusal table says nothing
 else takes over — `cell_allowance` is still the top refusal at 2.5.
 
+⚠ **The muted half of that is bounded to `K <= 2.5` and reverses above it**; the
+short-cells half extends. Never quote the tone finding as a property of the ceiling
+— see the next section.
+
 ⚠ **Read the allowance off [`ceiling.Rule.allowed`] and not off the formula.** The
 product is taken in binary floating point, so `K = 2.4` at `n = 1000` allows **50**
 where the arithmetic on paper says 51. This leg prints the allowance per rung for
@@ -78,7 +82,9 @@ exactly that reason.
 costs*: every rung still fills and every floor is still met, the pass turns from
 colour-bound to seat-bound between 2.5 and 3, the family allowance takes the same
 `K` and so never binds, and 23 of the 48 cells end **lower** than they began —
-none of them at its own allowance and none of them out of supply.
+none of them at its own allowance and none of them out of supply. **The tone
+finding above reverses here**: 2.5 → 3.75 grows the gallery by +142 vivid against
+-90 muted, and the leading split goes 483/516 vivid/muted to 559/441.
 """
 
 from __future__ import annotations

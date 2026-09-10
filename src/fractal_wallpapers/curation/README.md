@@ -1246,6 +1246,25 @@ reading 0.4 above it are different findings — under a label that cannot be rea
 closeness, with the disclaimer beside the number and once at the top of every
 refused slice.
 
+**Under the colour floor the leg column is MORE load-bearing, not less.** Re-read on
+the `K = 3` + floor record, the competitor was placed by a **mandate** on 103 of 144
+cards — 50 `cell_floor` and 53 `mode_floor` — by `swap` on 14, and by the ranked walk
+on only **27**. So 66 of the 81 negative-delta cards are now against a seat that no
+seating key ordered at all, where before the floor existed the mandate accounted for
+11 of 105. Adding a soft demand adds a leg that does not read the column the card
+subtracts, so the disclaimer is doing more work on every record taken since
+2026-09-09.
+
+⚠ **The 0 / 0 / 64 / 175 / 73 above is a `K = 2`, no-floor, `p_fine ≥ 0.50` reading
+and does not survive either ruling.** Rebuilt on the `K = 3` + floor record the same
+312 rows read **0 / 0 / 64 / 168 / 80** — seven more of the graded 4s ship, with 25
+refused → seated against 18 the other way and 269 unchanged. And the fine head's
+adoption moved rung 2 itself: `label_fate`'s second rung **is**
+`solve.DEFAULT_FINE_BAR`, so a fate readout taken after 2026-09-09 sits on a
+different rung boundary *and* a different column, and no two of these three readings
+are comparable. Read the rungs off the record's own `config.fine_bar` and
+`config.fine_head`.
+
 **Every count in this section is one record's**, `20260908T211552Z`, which is what
 made the shape visible. The same population re-solved against the repaired pool as
 `20260909T061451Z` reads 350 / 99 / 72 / 3 by rule against 348 / 102 / 71 / 3, 452

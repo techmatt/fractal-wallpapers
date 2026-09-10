@@ -402,6 +402,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A docs-only pass, and it caught up a log that was two commits behind.**
+`pre_closeout_20260909`, 2026-09-09. **4,178 selected, 132 deselected — 4,310
+collected — in 132.19 s**, green, idle box, no server and no render leg. This
+prompt wrote only prose and docstrings and added no test, so the **+9 over the
+4,301 of the entry below is the two commits between them** — seven from the fine
+head's refit and two from its adoption, neither of which appended here. A reading
+is only ever comparable against one taken on the same install, so an entry that
+does not appear leaves the next reader attributing a jump to their own change:
+**append the reading even when the count did not move, and especially when it
+did.**
+
+The clock is the third idle reading in a row inside half a second of the others —
+129.30, 129.72 and now 132.19 s — over a suite nine tests larger, so the two
+adoption commits cost the lane nothing measurable. ⚠ **`CLAUDE.md`'s current
+figure still reads 4,301 and was deliberately left alone**: it pairs a fast count
+with a slow one, **no slow lane has run since the colour floor** on Matt's
+instruction, and moving half of a paired figure breaks the claim it exists to
+make. Whoever takes the next paired reading moves both halves at once.
+
 **750 rows landed and the lane did not notice.** `p_fine_ingest_20260909`,
 2026-09-09. **4,169 selected, 132 deselected — 4,301 collected — in 129.30 s**,
 green, on an idle box with no server and no render leg. Nothing was added: the
