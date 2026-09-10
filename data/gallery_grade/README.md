@@ -184,6 +184,43 @@ and 3, at χ² = 79.66 on 6 d.f. — and `sheet` is on every row for the same re
 `batch` is, so it can be a covariate. Unlike the first sitting the drift is
 **inside one batch**, so `batch` alone will not reach it.
 
+## The same row twice — what the 2026-09-10 sweep sitting measured
+
+`aug_sweep_A_20260910` and `aug_sweep_B_20260910`, 200 units each, labeler `matt`, blind
+and shuffled, ingested oldest drop first: **75 / 57 / 42 / 26** and **149 / 42 / 7 / 2**,
+means 2.095 and 1.310. The store stands at **2,945 rows over 2,829 renders** at
+**720 / 666 / 848 / 595**, with 116 renders superseded — which is the point of the sitting.
+
+**116 of sheet A's units already carried a verdict, so this is the first measurement of
+the scale float that is WITHIN a row rather than between rows.** Every earlier reading —
+the three batches of the first sitting, the correction sitting's blocks — compared
+different pictures graded at different times and could not separate the labeler moving
+from the draw moving. Here it is one person, one row, twice.
+
+| earlier sitting | n | mean signed shift | earlier → now |
+| --- | --- | --- | --- |
+| `gallery_top_20260910` | 59 | **+0.068** ± 0.118 | 1.97 → 2.03 |
+| `gallery_tail_20260910` | 32 | **−1.031** ± 0.159 | 2.94 → 1.91 |
+| `p_fine_correction_20260909` | 10 | −0.500 ± 0.428 | 2.60 → 2.10 |
+| `n1000_0906_*` | 15 | **−1.333** ± 0.232 | 3.53 → 2.20 |
+
+Read on today's one scale those four groups sit within **0.25 tiers** of each other; their
+earlier verdicts spread **1.19**. The pictures cannot move, so most of the spread was the
+scale. Stratifying on the earlier grade shrinks the estimate to 0.5–0.7 tiers and
+over-corrects doing it — the shift regresses on the earlier grade at slope −0.551, and the
+earlier grade is carried on the very scale being measured. **Between 0.7 and 1.1 tiers of
+the cross-sitting spread is float**, and a fit pooling sittings is pooling that.
+
+⚠ **`anchored=false` records that a page had no anchors; it does not make two such pages
+commensurable.** `n1000_0906_*` shares this sitting's footing and the same 15 rows come
+back 1.33 tiers lower — the largest gap in the table. Treat the flag as a caveat, never as
+a licence to compare two sittings' levels.
+
+**The drift inside a page survives the shuffle and is now measurable free of the column.**
+Both sheets fall as the sitting goes on — A at −0.425 ± 0.125 tiers per 100 cards, B at
+−0.236 ± 0.070 — and sheet B is the first page here whose position effect is not
+confounded with what the page was cut to compare.
+
 ## The store is not the picture, and the plan is what makes it one again
 
 A row carries `leveled` as a **boolean** and never the directory. The path lives only in

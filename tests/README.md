@@ -402,6 +402,17 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A second 400-row ingest, and the count still did not move.**
+`aug_sweep_sheets_ingest_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
+4,325 collected — in 139.29 s**, green, idle box, no render leg and no pool held. The
+collected count is the three readings below's exactly, on the commit that lands
+`aug_sweep_{A,B}_20260910`'s 400 rows and two README sections — so `gallery_grade` has
+now grown 2,000 → 2,945 rows across three ingests without adding a test, which is the
+answer to *which store grew* stated once for all of them: no guard parametrizes over
+that store's rows. The clock is 1.3 s under the reading below and inside the band the
+idle readings sit in, against a store 16% larger than that reading saw. ⚠ `CLAUDE.md`
+still reads 4,301 / 4,169, one tree behind, for the reason the entries below give.
+
 **The fastest reading this tree has given, and it was taken on the least idle box.**
 `augmentation_sweep_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
 4,325 collected — in 140.55 s**, green, on a box that had just finished a 400-tile
