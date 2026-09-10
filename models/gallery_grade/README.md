@@ -103,6 +103,40 @@ forgetting a flag. Moving `CORPUS` is part of adopting a refit.
 `as_built` **names its three batches** rather than excluding the new one, so
 re-running its population gives the file it gave in 2026-09-06.
 
+## What augmentation the recipe applies, transform by transform
+
+Carried whole out of `render.fp16.pt` and recorded in the config only as the one
+line *geometric only — border crop and both flips*, which is true and is not enough
+to reason about. Read off the `head.Transform` `fit` actually constructs, it is:
+
+```text
+1 border crop     uniform(0, 0.05) PER EDGE, independently, rounded to pixels.
+                  On a 640x360 candidate: up to 32 px off each of left and right,
+                  18 off each of top and bottom. Mean retained area ~90%,
+                  worst case ~81%. Skipped for a picture the crop would leave
+                  under 8 px of.
+2 resize          bicubic STRETCH to 384x224. Deterministic, and the same call at
+                  deploy — which is the whole reason it is a function of its own.
+3 horizontal flip p = 0.5
+4 vertical flip   p = 0.5
+5 JPEG re-encode  OFF   (`jpeg=None` at the call site)
+6 brightness      OFF   (`brightness=0.0`)
+7 contrast        OFF   (`contrast=0.0`)
+8 normalize       ImageNet-12k mean/std off the backbone's own data config
+```
+
+Beside it, and part of the same answer: dropout 0.20, stochastic depth 0.10, weight
+decay 0.05, grad clip 1.0, cosine 2e-4 backbone / 1e-3 head, batch 32, sqrt class
+balance × per-place weight, and `more` is every parameter.
+
+**The three that are off are off by ruling, not by accident** — `models/head.py`'s
+*The transform is the same core in training and at deploy*: for a render judge the
+palette is part of the label, so a colour jitter would move the answer with the
+picture. A study that wants a colour axis here has to argue with that first, and
+`scratch/augmentation_sweep_20260910_report.md` is where the ±1° and ±3° Oklab
+probes landed — a mean ΔE of 0.0015 and 0.0046, far below anything a person could
+respond to, so those two arms measured nothing and are not evidence either way.
+
 ## The refit on `corrected`, ADOPTED 2026-09-09
 
 1,750 rows over 1,462 locations, 1,358 lineages; the split redrawn over everything
@@ -423,3 +457,15 @@ afterwards reads from `artifacts/gallery_grade_head/population.jsonl`. Reading t
 above-bar pool through the picked run is **320 s for 37,424 pictures**, and the
 two solves behind the seat sheet are about a minute each. One run at a time is not
 a knob; `render/README.md`'s note on this machine's commit charge is why.
+
+**That pool pass is decode-bound and `score_pool` pays it single-threaded.**
+`train._pictures` uses `num_workers=0`, which is right for a scorer that runs once;
+it is the wrong shape for reading a pool through *several* checkpoints, and the
+difference is not marginal. Measured 2026-09-10 on the same 42,300 above-bar rows:
+**345 s** through `score-pool`, against **91 s** for a pass at six workers that puts
+three checkpoints on each decoded batch before dropping it — one decode, three
+columns. An ensemble read one checkpoint at a time costs `k` × 345 s and buys
+nothing; the pattern is in `scratch/aug_sweep_0910/score_many.py`. The same trick is
+worth more inside a fit: caching the deploy-transform decode of the stopping slice
+took an epoch of the fine head from 30 s to 5 s, because a Windows loader **respawns
+its workers every epoch** unless the dataset's epoch counter lives in shared memory.

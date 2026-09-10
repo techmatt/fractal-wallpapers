@@ -488,6 +488,7 @@ number and picking the wrong one is off by an order of magnitude:
 | run2's plane admissions, 1e-3 to 1e-9 | 172 | 24,777 | 7.4 |
 | run9's plane channel at 1e-6 and deeper, gates *not* applied | 164 | 31,955 | **53.5** |
 | run10's refusals and unattempted admissions, screened | 200 | 11,927 | **3.1** |
+| a gallery-grade sheet over seated pool candidates, 2026-09-10 | 200 | 22,999 | **3.5** |
 
 **Maxiter barely predicts it; what the pixels do predicts it.** The first three rows sit
 within 30% on maxiter and span 8× on cost. A row that escapes early is cheap however
@@ -897,6 +898,27 @@ the picture path and the thumbnail all travel with the row and the id encodes th
 page position and nothing else. `blind_palettes_20260905` was cut, stripped and
 renumbered this way on 2026-09-05 — 0 facts, 0 columns, 0 captions, 0 suggestions
 and 100 of 100 joins complete afterwards.
+
+**None of that applies to a GALLERY-GRADE sheet, which is blind by construction.**
+`sheets.gallery_grade_source(prefilled=False)` already emits `facts: []`,
+`columns: {}`, an empty caption, `suggestion: null` and a seeded shuffle, and its
+`prefill_note` is written for a page with no suggestion on it — so there is nothing
+to strip and a rewrite would only be a chance to get it wrong. Cutting one of these
+through a `finished_source` and stripping it afterwards is the mistake to avoid: that
+source prefills off the shipped **render** judge, which reads 4 on nearly everything
+above its own gate.
+
+**The opposite case — blind except for one stated line — is a wrapped `cut` and not
+a rewrite either.** `Source` is a frozen dataclass, so
+`dataclasses.replace(source, cut=…)` around a `cut` that re-attaches the plan unit's
+own `facts` gives a page that is blind in every other respect, with the render, the
+thumbnail and the join all still the tracked builder's.
+`aug_sweep_A_20260910` was cut that way on 2026-09-10, its one fact line naming which
+of two columns picked each seat; `scratch/aug_sweep_0910/build_sheets.py` is the
+shape. Ordering stays the source's seeded shuffle in that case, which matters for the
+same reason the section above renumbers: a labelled page that is also blocked by its
+label confounds the label with page position, and `seats_ingest_20260910` measured
+that drift at **+0.967 tiers across one afternoon**.
 
 **The batch name is on the page too**, in the section line, and so is `order`. Neither is
 strippable and neither should be: they are what a labeler needs to know which sheet is in
