@@ -293,6 +293,20 @@ Afterwards the binding is auditable from the store alone: `intake` writes the sh
 directory's name onto every row as `sheet`, so which cut a verdict came off outlives the
 untracked sheet directory.
 
+**Cut a batch into sheets of UNEQUAL size, because equal ones cannot be bound.** The unit
+count is the only check that binds a drop to a cut on its own, and `gallery_top_20260910`
+went out as `182 / 182 / 181` — so two of its three drops were interchangeable by count,
+and no statistic could separate them either: cuts drawn at random from one population and
+ordered by one column have near-identical column distributions, so a swapped binding barely
+moves any aggregate while binding every row to the wrong picture. What settled it was the
+**saving convention** — `<head>.<batch>.json` for the first cut and ` pt2` / ` pt3` for the
+rest — which is a labeler's habit rather than anything the rig enforces, corroborated by
+the drops' mtimes, the negative position-against-verdict reading on each pairing, and three
+covariates that are not page position (mode, kind, colour cell), all favouring it. Prefer
+sizes that differ, as `p_fine_correction_20260909`'s `251 / 250 / 249` did — that sitting is
+also where the naming convention was *proved*, because there the counts bound the drops
+independently and the names agreed.
+
 ## A verdict cast on a pinned location is WITHHELD, not written
 
 A finished store's evaluation side is a **batch** — one registered `eval_only`, cut

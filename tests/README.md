@@ -402,6 +402,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A store grew by 27% and the count did not move at all.** `seats_ingest_20260910`,
+2026-09-10. **4,193 selected, 132 deselected — 4,325 collected — in 158.28 s**,
+green, no render leg and no pool held, on the commit that landed
+`gallery_top_20260910`'s 545 rows. **The collected count is the reading below's
+exactly**, which is the point of carrying it: 545 rows and one README paragraph
+added no test, and `--collect-only` re-read 4,325 after the ingest to confirm it.
+The clock is 5.5 s over that reading and 28 s over the idle baseline near 130,
+and the answer to *which store grew* is on the record rather than guessed at —
+`gallery_grade` went 2,000 → 2,545 rows, so every guard that sweeps it reads a
+quarter more. That is the expected direction and the size is not worth a profile;
+what would be worth one is the same clock with the store unchanged.
+
 **+15 fast, and the box was worth 20 s while the change was worth 2.8.**
 `votes_kit_randomize_20260909`, 2026-09-09. **4,193 selected, 132 deselected —
 4,325 collected — in 152.81 s**, green, no render leg and no pool held. The +15
