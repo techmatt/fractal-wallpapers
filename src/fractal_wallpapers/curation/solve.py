@@ -371,7 +371,30 @@ PRECHECK_REMOVALS = 256
 #: [`augment.DEFAULT_SECONDS`] — five minutes, documented as never binding at the
 #: shipping rungs — **does** bind there. See `curation/GALLERY.md`'s *A narrowed
 #: view is a different cost regime, and the budget DOES bind there*.
-DEFAULT_FINE_BAR = 0.50
+#: ⚠ **0.50 -> 0.184 on 2026-09-09**, in the act that adopted the corrected
+#: refit. **The column did not move and the gate did not move.** 0.184 is a
+#: MATCHED constant, not a discovered one: it is the level at which
+#: `corrected_auc_ge4_more_seed1` admits the same fraction of the pool that the
+#: shipped `auc_ge4_more_seed2` admitted at 0.50 — 27.76%, measured on the
+#: seed-`20260909` 8,000-row sample of that day's above-bar pool. The refit reads
+#: the pool much more strictly on this column (9.6% of that sample clears 0.50
+#: against 27.8%), so holding the flag still would have been a large, unruled
+#: tightening of the gate dressed as continuity.
+#:
+#: **So the refit's benefit is in the ORDER inside the admitted pool, not in a
+#: narrower admission.** Nothing here raises the bar. A reader comparing a
+#: pre-adoption record with a post-adoption one is comparing two galleries drawn
+#: from the same-sized population through different orderings, and any claim that
+#: the gallery got choosier is a claim this constant does not support.
+#:
+#: ⚠ **It is not principled to three digits and the match will not hold.** It was
+#: fitted to one sample of one pool on one day; mining into the thin cells moves
+#: the pool's composition and the matched fraction drifts with it. Re-derive it
+#: against a fresh sample rather than trusting the digits, and treat a drift as
+#: information about the pool rather than as a reason to nudge the number.
+#: `models/gallery_grade/README.md`'s *Adopted 2026-09-09* carries the derivation
+#: and the alternatives that were measured and rejected.
+DEFAULT_FINE_BAR = 0.184
 
 #: **Whether the augmenting-chain stage runs, unasked. ON**, Matt's ruling of
 #: 2026-09-04 off the chains sheet.
@@ -2581,6 +2604,7 @@ def solve(
             None if radius is None else fold,
             len(fine.forced),
             held_cell_floor,
+            _fine_head(),
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -2763,6 +2787,23 @@ def _spiral_block(gallery, cleared, kept, viewed, cap: float | None) -> dict:
     }
 
 
+def _fine_head() -> str | None:
+    """The run whose column this pass could read, or `None` on an unscored box.
+
+    Read here rather than threaded down from [`solve`] because every reader of
+    `p_fine` in a pass already resolves the same store through
+    [`distinct.fine_scores`], and a second parameter carrying the same fact is a
+    second thing to get out of step. Failure is `None` and never an exception: a
+    solve that ran must be able to write its record.
+    """
+    try:
+        from fractal_wallpapers.models import gallery_grade_train
+
+        return gallery_grade_train.pool_scores_run()
+    except (OSError, ValueError, KeyError):
+        return None
+
+
 def _config(
     n: int,
     rule: ceiling.Rule,
@@ -2785,6 +2826,7 @@ def _config(
     fold: str | None = None,
     forced: int = 0,
     cell_floor: bool = DEFAULT_CELL_FLOOR,
+    fine_head: str | None = None,
 ) -> dict:
     return {
         "n": n,
@@ -2824,9 +2866,23 @@ def _config(
         "a seat: every rule still applies",
         "fine_bar_is": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool "
         "BEFORE anything else runs — the per-mode bars, the neutral pre-selection and the "
-        "view are all taken over what it leaves. `null` is NO bar and is the default; the "
-        "flag is `--fine-bar` and `solve.at_fine_bar` is the door. A record that does not "
-        "name the field at all was taken before 2026-09-07 and ran unbarred",
+        "view are all taken over what it leaves. `null` is NO bar; the flag is `--fine-bar` "
+        "and `solve.at_fine_bar` is the door. A record that does not name the field at all "
+        "was taken before 2026-09-07 and ran unbarred. THE DEFAULT HAS MOVED TWICE: null "
+        "until 2026-09-08, 0.50 until 2026-09-09, 0.184 since — and the last move was a "
+        "MATCHED level under a new head and not a change of strictness, so `fine_bar` is "
+        "only readable beside `fine_head` below",
+        # A `p_fine` level means nothing without the head that produced the
+        # column. 0.50 under `auc_ge4_more_seed2` and 0.184 under
+        # `corrected_auc_ge4_more_seed1` admit the same fraction of one pool;
+        # 0.50 under the second admits a third of it. A record naming only the
+        # number would read as a tightening that never happened, so the run is
+        # on `config` beside it and not left to the date.
+        "fine_head": fine_head,
+        "fine_head_is": "the gallery-grade run whose `p_ge4` this pass could read — the "
+        "run named on every row of `gallery-grade score-pool`'s output. `null` is a "
+        "machine that has never scored the pool, and a record that does not name the "
+        "field was taken before 2026-09-09, under `auc_ge4_more_seed2`",
         # **On `config` and not only in the `spiral` block**, because `config` is
         # the block a tentative gallery's tracked manifest carries whole
         # ([`tentative.manifest`]) and the `spiral` block is not. Until 2026-09-04

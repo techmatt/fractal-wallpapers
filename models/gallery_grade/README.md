@@ -1,5 +1,8 @@
 The **fine-tier head**: an order inside the render judge's own flat top. Built
-2026-09-06 and **adopted 2026-09-07**, Matt's ruling on its pre-registered bar.
+2026-09-06 and **adopted 2026-09-07**, Matt's ruling on its pre-registered bar;
+**refitted on the corrected corpus and re-adopted 2026-09-09** — same
+architecture, same rule, 1,750 rows instead of 1,000. What ships is
+`corrected_auc_ge4_more_seed1`.
 
 The render judge answers *is this picture worth keeping* and saturates at the good
 end of its own scale. This head answers *how good, given it already cleared the
@@ -100,7 +103,7 @@ forgetting a flag. Moving `CORPUS` is part of adopting a refit.
 `as_built` **names its three batches** rather than excluding the new one, so
 re-running its population gives the file it gave in 2026-09-06.
 
-## The refit on `corrected`, 2026-09-09 — STAGED, not adopted
+## The refit on `corrected`, ADOPTED 2026-09-09
 
 1,750 rows over 1,462 locations, 1,358 lineages; the split redrawn over everything
 at 1,400 / 350. **No number here is comparable with the build corpus's**: the
@@ -121,6 +124,60 @@ survive the corpus change.** `more`'s spread was 0.0023 on `as_built` under this
 same rule and is **0.0313** here, and the three seeds land on epochs 3, 6 and 11
 where they all landed on 7 before. The flat surface was not the rule's alone, and
 the median pick is doing more work on this corpus than on the last one.
+
+### Adopted 2026-09-09 — the column stayed, the level was re-matched
+
+Matt's ruling. Three acts and none of them is the others: `CORPUS` moved to
+`corrected`, the pool was re-scored through `corrected_auc_ge4_more_seed1`, and
+`solve.DEFAULT_FINE_BAR` moved **0.50 → 0.184**.
+
+⚠ **0.184 is a MATCHED constant, not a discovered one.** It is the level at which
+the refit admits the same fraction of the pool the shipped head admitted at 0.50
+— 27.76%, measured on the seed-`20260909` 8,000-row sample of that day's
+above-bar pool. It was calibrated, not derived, and a reader must not take three
+digits as three digits of meaning. It was fitted to one sample of one pool on one
+day; **mining into the thin cells will quietly stop the match holding**, and the
+right response to a drift is to re-derive against a fresh sample and read the
+drift as information about the pool.
+
+⚠ **The gate did not move.** The refit reads the pool far more strictly on this
+column — 9.6% of that sample clears 0.50 against 27.8% — so holding the flag at
+0.50 would have been a large unruled tightening dressed as continuity. Because
+the admitted fraction is held, **the refit's benefit is in the ORDER inside the
+admitted pool and not in a narrower admission**. A gallery taken after this act
+is drawn from a same-sized population through a different ordering; any reading
+of it as *choosier* is a reading nothing here supports.
+
+**The column stayed `p_ge4`**, and the alternatives were measured rather than
+assumed. At equal 27.76% admission, read on the corrected stopping fold:
+
+```text
+column        level    recall of 4s   4s among admitted   >=3 among admitted
+p_ge4        0.1840          0.742              37.7%              70.9%
+sqrt(p3*p4)  0.3249          0.708              37.7%              70.7%
+rank_score   1.7416          0.663              38.6%              75.8%
+p_ge3        0.6570          0.596              39.6%              76.9%
+```
+
+`p_ge4` keeps the most labelled 4s at equal admission and ties on 4-precision;
+the trade the other columns offer is *fewer 1s and 2s for fewer 4s*. Two things
+settled it beyond the table. **`p_ge3` is not a gated column** — `AUC(>=3)` was
+never one of the two statistics this band's bar was stated on, where `p_ge4`
+(AUC) and `rank_score` (Spearman) both are. And a level is a recorded parameter
+where a column is a code change in `solve.at_fine_bar` plus a second ruling.
+On the 111 rows held out by *both* splits the recall gap between the columns is
+2 rows against 5 out of 35, which is not a difference worth either.
+
+⚠ **`config.fine_head` is new and `config.fine_bar` cannot be read without it.**
+0.50 under `auc_ge4_more_seed2` and 0.184 under `corrected_auc_ge4_more_seed1`
+admit the same fraction; 0.50 under the second admits a third of it. A record
+that does not name the field was taken before 2026-09-09 under the shipped head.
+
+**The superseded scores are kept.** `score_pool` moves the live
+`pool_scores.jsonl` to `pool_scores_<run>.jsonl` before writing — automatic, not
+a flag, because every solve record ever taken resolves its cascade order out of
+that one file and a silent overwrite would make `20260909T215815Z` and every
+record before it unreproducible with nothing looking broken.
 
 ### What it does at `p_fine >= 0.50`, which is a fixed constant on a moved scale
 
@@ -199,11 +256,15 @@ pure order whose heights mean nothing on their own. **He will revisit it if
 galleries produced under that reading come out bad**, which is the only thing that
 would settle it — nothing on this page does.
 
-⚠ **A ruling about a level is a ruling about THIS head's scale.** The staged
-`corrected` refit reads 9.6% of a pool sample at or above 0.50 where the shipped
-head reads 27.8%, so *this picture is good enough to seat* would mean a different
-picture on it. Adopting a refit therefore re-opens this ruling rather than
-inheriting it — see *What it does at `p_fine >= 0.50`* above.
+⚠ **A ruling about a level is a ruling about THIS head's scale, and the head
+has been replaced.** The `corrected` refit reads 9.6% of a pool sample at or
+above 0.50 where the shipped head read 27.8%, so *this picture is good enough to
+seat* names a different picture on it. **The 2026-09-09 adoption moved the
+seating level to 0.184 to hold the admitted fraction**, which means the level a
+solve cuts at is now a matched constant rather than a quality target read off
+this column — see *Adopted 2026-09-09* above. Whether **0.184 on the refit** may
+be read the way 0.50 on the shipped head was is a question this ruling does not
+answer and Matt has not been asked.
 
 ⚠ **This supersedes the ckpt-113 line, which said the level was untrusted.** The
 head shipped as an order inside a gate's top and was adopted on `AUC(>=4)` and

@@ -227,7 +227,15 @@ BUILD_CORPUS = "as_built"
 #: default pointing at a staged refit would let an adoption happen by forgetting
 #: a flag. Moving this constant is part of adopting a refit and is Matt's call,
 #: not a tidy-up.
-CORPUS = BUILD_CORPUS
+#:
+#: **Moved to `corrected` on 2026-09-09**, Matt's ruling, adopting
+#: `corrected_auc_ge4_more_seed1` — `more`, the median seed, epoch 6 — which
+#: cleared its pre-registered bar 12 of 12 at worst margin +0.085. The adopting
+#: act is three things and this constant is only the first: the pool was
+#: re-scored through that run and `solve.DEFAULT_FINE_BAR` moved 0.50 -> 0.184 to
+#: hold the admitted fraction where it was. `models/gallery_grade/README.md`'s
+#: *Adopted 2026-09-09* carries what the move does and does not mean.
+CORPUS = "corrected"
 
 #: The arms this band runs. **Two, not three**: `frozen` read 0.492 and 0.496 on
 #: `AUC(>=4)` in the first band — chance, and below the judge's own 0.528 — so a
@@ -1964,6 +1972,78 @@ def pool_scores_path() -> Path:
     return root() / "pool_scores.jsonl"
 
 
+def superseded_pool_scores_path(run: str) -> Path:
+    """Where the scores a re-score is about to replace are kept.
+
+    Named for the **run that wrote them**, which is the only thing that makes
+    them interpretable: a row's `p_ge4` means nothing without the head it came
+    out of, and two heads' columns are not on one scale — the refit reads 9.6%
+    of the pool above 0.50 where the shipped head reads 27.8%.
+
+    A second archive of one run gets a stamp rather than overwriting the first.
+    The first is the file the records taken under it were made against, and
+    losing it to a later, wider read of the same head would make those records
+    unreproducible without anything looking broken.
+    """
+    where = root() / f"pool_scores_{run}.jsonl"
+    if not where.is_file():
+        return where
+    # [`_stamp`]'s own spelling carries colons, which are not legal in a Windows
+    # filename — the compact form is what every stamped name in this project
+    # uses, and a path built from the readable one fails on this machine and
+    # passes on CI.
+    stamp = _stamp().replace("-", "").replace(":", "")
+    return root() / f"pool_scores_{run}_{stamp}.jsonl"
+
+
+def keep_superseded_pool_scores(log=say) -> Path | None:
+    """Move the live pool scores aside, if there are any, and say where they went.
+
+    ⚠ **[`pool_scores_path`] is one-shot and a re-score is destructive.** Every
+    solve record ever taken resolves its cascade order out of that one file, so
+    overwriting it makes every prior record's ordering unreproducible. This runs
+    before the write, always, and it is not optional or flagged: an adoption that
+    silently invalidated the records it was judged against would be the worst
+    version of this act.
+
+    The run name is read off the file's own first row rather than from a caller,
+    so the archive cannot be misnamed by a caller that thinks it knows which head
+    is live.
+    """
+    live = pool_scores_path()
+    if not live.is_file():
+        return None
+    run = "unnamed"
+    with live.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                run = str(json.loads(line).get("run") or "unnamed")
+                break
+    kept = superseded_pool_scores_path(run)
+    live.replace(kept)
+    log(f"[{HEAD}] kept the superseded scores of {run} at {kept}")
+    return kept
+
+
+def pool_scores_run(path: Path | None = None) -> str | None:
+    """Which run wrote the live pool scores, or `None` if nothing has.
+
+    **A `p_fine` value is meaningless without it.** The shipped head and the
+    corrected refit put 27.8% and 9.6% of one pool above 0.50, so a record
+    saying `fine_bar: 0.184` says nothing at all unless it also says whose
+    column that 0.184 was read on. Cheap on purpose — one line, not the file —
+    because a solve record builder asks it and the file is nine megabytes.
+    """
+    where = pool_scores_path() if path is None else Path(path)
+    if not where.is_file():
+        return None
+    with where.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                return str(json.loads(line).get("run") or "") or None
+    return None
+
+
 def read_pool_scores(path: Path | None = None) -> dict:
     """`{candidate key: {p_ge2, p_ge3, p_ge4, rank_score}}`, or `{}` if unread.
 
@@ -2054,6 +2134,7 @@ def score_pool(
 
     path = pool_scores_path()
     path.parent.mkdir(parents=True, exist_ok=True)
+    superseded = keep_superseded_pool_scores(log=log)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for key, probability in zip(keys, probabilities, strict=True):
             row = {
@@ -2079,6 +2160,12 @@ def score_pool(
         "no_picture_on_disk": absent,
         "seconds": round(time.time() - began, 1),
         "wrote": str(path),
+        "superseded": None if superseded is None else str(superseded),
+        "superseded_is": (
+            "the scores this write replaced, kept under the name of the run that made "
+            "them. Every solve record taken before this one resolves its cascade order "
+            "out of that file"
+        ),
     }
     log(f"[{HEAD}] {len(keys):,} rows in {record['seconds']}s -> {path}")
     return record
@@ -2442,8 +2529,11 @@ __all__ = [
     "initial_state",
     "objective",
     "population",
+    "keep_superseded_pool_scores",
+    "pool_scores_run",
     "read_population",
     "read_run",
+    "superseded_pool_scores_path",
     "read_split",
     "recipe_from",
     "root",
