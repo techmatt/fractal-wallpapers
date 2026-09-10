@@ -221,6 +221,48 @@ Both sheets fall as the sitting goes on — A at −0.425 ± 0.125 tiers per 100
 −0.236 ± 0.070 — and sheet B is the first page here whose position effect is not
 confounded with what the page was cut to compare.
 
+## Three ways to identify the footing, and they are not equally strong
+
+`best_head_20260910` fitted a de-drifted training view over this store —
+`g = z + alpha[sitting] + delta[cut] + beta[cut] * x`, `x` the page position in
+hundreds of cards. Nothing here was rewritten; what the fit found is about the store
+and belongs beside it.
+
+**A RANDOMIZED CUT is the strongest evidence in this store and it is free.**
+`gallery_top_20260910`'s three cuts were assigned at random independently of score,
+mode, cell, leg and seat, so the three populations *are* one population and every
+difference between their mean grades is the cut. That gives **+0.417 / −0.006 /
+−0.414** tiers, standard errors 0.05–0.08 over 545 rows — a cut-1-to-cut-3 spread of
+**0.831**, against `seats_ingest_20260910`'s independently measured **+0.832 raw**.
+Two routes, one number. **Randomizing the cut of a multi-sheet page costs nothing at
+plan time and is what makes its drift measurable afterwards**; `p_fine_correction`'s
+cuts are *balanced* rather than randomized and `n1000_0906`'s are stratified thirds,
+both of which are one assumption weaker and are read the same way under that caveat.
+
+**The 116 links carry BETWEEN sittings and nothing else does.** The link graph is a
+star with `aug_sweep_A_20260910` at the centre, so every other sitting's level is read
+against it: `gallery_tail` **+1.112 ± 0.145**, `n1000_0906` **+1.312 ± 0.212**,
+`p_fine_correction` **+0.456 ± 0.260**, `gallery_top` **−0.034 ± 0.107**. A sitting
+with under about fifteen links cannot support a level per cut and shares one.
+
+**A SCORE-ORDERED page's position slope is still identified, through the pair shift.**
+No regression inside such a page can separate position from expected grade — but
+regressing the *shift* on the earlier card's position conditions on a second, blind
+reading of the same picture, so the picture cancels and what is left is the page.
+`gallery_top` reads **−0.324 ± 0.184** per 100 cards on 59 links and `gallery_tail`
+**+0.016 ± 0.224** on 32. The first is the same sign and size as the two blind pages'
+own **−0.425** and **−0.236**, measured on a page nobody could read it off directly.
+
+Over the 116 twice-graded rows the correction takes the mean |shift| from **0.862 to
+0.631** and its sd from **1.099 to 0.811**; the between-sheet spread of that shift
+falls **2.026 → 1.093**, the residual sitting almost entirely in `p_fine_correction`'s
+three cuts, which have 3–4 links apiece. Keyed on the **sheet** it beats the same fit
+keyed on the batch (0.631 against 0.675, spread 1.09 against 1.73), which is the
+randomized-cut evidence doing work no batch-level term can reach.
+
+⚠ **De-drifting is a better target to be SCORED against than to be TRAINED on** — see
+`models/gallery_grade/README.md`'s *What the de-drifted target is for*.
+
 ## The store is not the picture, and the plan is what makes it one again
 
 A row carries `leveled` as a **boolean** and never the directory. The path lives only in

@@ -414,6 +414,38 @@ n1000_0906_2   67              3.284           0.932            0.751       +0.4
 n1000_0906_3   67              2.970           0.890            0.637       +0.340
 ```
 
+## What the de-drifted target is for — 2026-09-10, `best_head_20260910`
+
+That leg fitted a normalized training view over the store —
+`data/gallery_grade/README.md`'s *Three ways to identify the footing* has the model —
+and ran three arms on **both** targets over 2,829 rows, three seeds each, at the
+AUC(≥4) checkpoint with the per-batch offset on. Nothing was adopted.
+
+**Normalizing the target helps as an EVALUATION target and does nothing as a TRAINING
+target.** Every arm reads far better against normalized labels than against raw ones —
+AUC(≥4) 0.83–0.87 against 0.72–0.76, exact-tier 0.37–0.46 against 0.30–0.35 — and that
+holds for the arms fitted on raw labels just as much as for the arms fitted on
+normalized ones. **Fitting on the normalized target does not beat fitting on the raw
+one even when the normalized labels are the scorer**: `A_raw` reads AUC(≥4) **0.858**
+against normalized labels where `A_normalized` reads **0.836**. What the correction
+removes is noise in the *measurement*, which a scorer should take out and a trainer
+gains nothing from taking out.
+
+⚠ **And it costs something to train on.** Against the raw verdicts — what Matt
+actually said — a normalized-target arm lets **18–20** of 144 held-out grade-1 rows
+above a matched bar where a raw-target arm lets **13–15**. The rounding is why: half
+the corpus changes tier, and 1,395 of 2,829 rows carry a grade nobody cast.
+
+**A per-cutpoint negative weight is the CORN-native asymmetry and it bought nothing
+at k=3.** Upweighting the negative side of every cutpoint by 2× or 4× — which under
+CORN is exactly "do not let a row that stopped at tier k cross above k", the negatives
+at cutpoint k being the rows whose grade *is* k — moves the escape rate from 0.0903 to
+0.0903 and 0.1042. The trade curve of the 2× arm sits very slightly inside the
+symmetric one at matched escape and the two are inside each other's noise on 144 rows.
+**The threshold, not the loss, is where the asymmetry lives**: on one column, holding
+the escape rate at 5% instead of matching 27.76% narrows the admitted pool from
+11,743 rows to **2,073**.
+
 ## What is here
 
 `bar_auc_ge4.json` and `comparison_auc_ge4.json`, the band's bar and its read.
