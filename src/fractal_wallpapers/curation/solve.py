@@ -61,7 +61,10 @@ which was deprecated on 2026-09-08 — see [`OFFERED_KEYS`] — and every key an
 record names is still resolved.
 
 The pool a solve seats over is narrowed by [`DEFAULT_FINE_BAR`] first, and since
-2026-09-08 that is `0.50` rather than no bar at all.
+2026-09-08 that is a bar rather than no bar at all. **The level is only readable
+beside the head it is stated on**: `0.50` on `auc_ge4_more_seed2` until
+2026-09-09 and `0.184` on the corrected refit since, which are the same gate on
+two columns.
 
 **A filled floor outranks the worst seat, and that is the ruling.** Matt's, and
 it is what "grab where possible" means: a mode this pool *can* represent is
@@ -335,8 +338,9 @@ SWAP_DROPS = 8
 #: a rule is the reason.
 PRECHECK_REMOVALS = 256
 
-#: **The fine head's quality bar on the seatable pool, unasked: 0.50**, Matt's
-#: ruling of 2026-09-08.
+#: **The fine head's quality bar on the seatable pool, unasked: 0.184**, Matt's
+#: ruling of 2026-09-08 that there be one, at the level the ⚠ below moved it to
+#: on 2026-09-09 when the head under it changed.
 #:
 #: A bar on `p_fine(>=4)` — the gallery-grade head's own `P(>=4)`, the column its
 #: acceptance is stated on and the column [`cascade_order`] orders the top of the
@@ -2174,8 +2178,9 @@ def solve(
 
     `fine_bar` narrows the pool to the rows the gallery-grade head reads at
     `p_fine(>=4) >= fine_bar`, **before anything else runs** — [`at_fine_bar`].
-    [`DEFAULT_FINE_BAR`] is `0.50` since 2026-09-08, so a pass that names nothing
-    is barred; `fine_bar=None` is the unbarred population. The value is on the
+    [`DEFAULT_FINE_BAR`] is `0.184` since 2026-09-09 and was `0.50` for the day
+    before it, so a pass that names nothing is barred; `fine_bar=None` is the
+    unbarred population. The value is on the
     record whether or not one was applied, so a record is never silent about it:
     `config.fine_bar` is `None` for a pass that ran unbarred, which is what every
     record before `20260908T144844Z` is and what they do not say.

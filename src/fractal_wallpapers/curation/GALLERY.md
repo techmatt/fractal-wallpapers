@@ -732,6 +732,65 @@ record) with `config.sort_key_named` beside it (what the caller asked for), and
 `order.key` and `objective.rank_quantity` are written from the same
 [`ordered_by`]. See *`cascade` is the default since 2026-09-07*.
 
+#### ★ The objective's SUM is denominated in the fine column, so two records across a head change are not comparable
+
+**`objective.final.sum` fell 1938.2 → 1776.0 between `20260909T215815Z` and
+`20260910T025205Z` and nothing got worse.** Those are the same rules, the same
+`n`, the same pool and the same gate, run either side of the fine head's
+adoption — and `rank_quantity` is `cascade`, which above [`Q4_BAR`] **is** the
+fine head's `P(>=4)` plus one. Both records seat 1,000 rows all of which are
+above the q4 bar, so the sum is literally `n + Σ p_fine` on whichever column was
+live. Recalibrating the head rewrites every term in it.
+
+The same trap runs through `worst`: **1.548 → 1.191**, and each sits just above
+its own record's bar — 0.048 over `0.50` on the outgoing column, 0.007 over
+`0.184` on the incoming one. A worst seat pinned to the bar is what the tier
+order predicts and it says nothing about the picture.
+
+**The comparable column is `p_ge4`**, the render judge's, which neither adoption
+touched: mean over the seats went **0.8754 → 0.8834**. Read that, or re-run the
+old pool, and never the sum. `config.fine_head` is on the manifest for exactly
+this reason — see *Which side of each flip a record is on is on the record*.
+
+#### The first seating on the adopted column, and what the concentration cost
+
+**`20260910T025205Z`, n=1000 at the defaults with `--explain-keys` over the 442
+gallery-grade rows** — `tentative_solve_20260909`. Full at 1,000/1,000, shortfall
+0, 13 of 13 modes, 48 of 48 cells at or over the colour floor, zero deadlock, 78.4 s.
+
+**Seat churn against `20260909T215815Z` is 784 of 1,000**, which is the adoption's
+whole effect on the seating with every rule held still. For scale, the colour floor
+itself moved 162 seats. **The seating churns LESS than the pool did**: the admitted
+row set turned over 93.3% and the seating 78.4%, because 399 of the 784 arrivals are
+rows the old bar admitted too and simply did not seat.
+
+⚠ **448 fewer places cost 189 clusters, and the cluster is what the seat rule
+reads.** Admitted places fell 6,683 → 6,235, but the neutral pre-selection folded
+915 of them where it had folded 1,174, so reachable clusters fell only 5,509 →
+5,320 — 3.4%, against 5.3 clusters per seat of headroom. The concentration landed
+disproportionately on places that were going to be absorbed anyway. **Distinct
+places bound nothing**: `location` refusals moved 2,499 → 2,639 while
+`the_leg_had_no_seat_left` went 540 → 1,433 and `cell_allowance` 6,751 → 5,911.
+The pool got easier to seat and the binding moved to the seat budget.
+
+**Only 152 of the 1,000 seats come from places the old bar did not admit at all**,
+and 166 of the outgoing record's seats stand at places the new bar does not admit.
+The place sets overlap far more than the row sets do — 4,727 places in both against
+6,302 rows — so a 93.3% row turnover is mostly a re-choice *within* a place, and one
+seat per cluster collapses most of it before it can reach the gallery.
+
+**Which cells sit exactly at the floor is a property of the head and not a standing
+list.** Six did on the outgoing column, five do here, and only two are the same:
+`dark_muted_lime` and `dark_vivid_lime` stay, `dark_vivid_yellow`,
+`light_muted_lime` and `light_vivid_magenta` arrive, and `dark_vivid_cyan`,
+`light_vivid_cyan`, `light_vivid_azure` and `light_muted_blue` leave — the four that
+leave are the four whose clearing places roughly doubled under the refit. The
+sharpest single move is `light_vivid_magenta` **42 → 20**: its clearing places went
+364 → 175 and the floor is the only thing holding it at 20. None of the five is
+supply-bound — the thinnest, `dark_vivid_lime`, clears 52 places against a floor of
+20 — and in all five `the_leg_had_no_seat_left` is now the largest refusal column
+where `cell_allowance` led two of them before.
+
 ### `--forced` — a population lifted to the top of the fine column, STAGED
 
 **`--forced PATH`, `solve.solve(forced=...)`, `solve.FORCED_LIFT = 1.0`, off
