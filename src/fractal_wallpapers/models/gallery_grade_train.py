@@ -185,6 +185,50 @@ RULES: dict[str, dict] = {
 FIRST_BAND = "ap_ge3"
 BAND = "auc_ge4"
 
+#: The corpora a band may be fitted over. **A corpus is WHICH ROWS and a band is
+#: WHICH STOPPING RULE**, and they are two axes rather than one: a refit on more
+#: labels under an unchanged rule is a different corpus, not a different band.
+#:
+#: They are separate because the population join and the split are written down
+#: once and every run of a grid reads them. Re-fitting on a grown store under the
+#: same name would overwrite the file the adopted run's own `split` block names,
+#: and the run on disk would stop being reproducible without anything looking
+#: broken.
+#:
+#: `batches` is the store's own batch names, or `None` for *every graded row*.
+#: The build corpus lists its three rather than saying "not the new one", so that
+#: re-running its population a year from now gives the file it gave then.
+CORPORA: dict[str, dict] = {
+    "as_built": {
+        "batches": ("n1000_0906_1", "n1000_0906_2", "n1000_0906_3"),
+        "says": (
+            "the three sittings of 2026-09-06 — the thousand rows this head was built on "
+            "and adopted on"
+        ),
+    },
+    "corrected": {
+        "batches": None,
+        "says": (
+            "every graded row the store holds, the correction sitting of 2026-09-09 "
+            "included. Its rows are not comparable with the build corpus's: the split is "
+            "redrawn over everything, so no slice of one is a slice of the other"
+        ),
+    },
+}
+
+#: The corpus whose files carry the **bare** names, for [`FIRST_BAND`]'s reason
+#: turned onto the other axis: `population.jsonl`, `split.json` and
+#: `auc_ge4_more_seed2/` are on disk under those names and are what every record
+#: written before 2026-09-09 refers to. Every later corpus suffixes its own.
+BUILD_CORPUS = "as_built"
+
+#: What an unflagged verb here means, and it is **the ADOPTED corpus** rather
+#: than the newest one. `score-pool` writes the column a seating orders on, so a
+#: default pointing at a staged refit would let an adoption happen by forgetting
+#: a flag. Moving this constant is part of adopting a refit and is Matt's call,
+#: not a tidy-up.
+CORPUS = BUILD_CORPUS
+
 #: The arms this band runs. **Two, not three**: `frozen` read 0.492 and 0.496 on
 #: `AUC(>=4)` in the first band — chance, and below the judge's own 0.528 — so a
 #: linear read of the frozen trunk has nothing to say about the boundary this band
@@ -261,23 +305,41 @@ def head_dir(run: str | None = None) -> Path:
     return base / run if run else base
 
 
-def run_name(arm: str, seed: int, band: str = BAND) -> str:
-    """`<arm>_seed<N>` for the first band, `<band>_<arm>_seed<N>` for every later one.
+def check_corpus(corpus: str) -> str:
+    if str(corpus) not in CORPORA:
+        raise GradeTrainingError(f"{corpus!r} is not a corpus; the two are {sorted(CORPORA)}")
+    return str(corpus)
+
+
+def qualified(stem: str, corpus: str = CORPUS) -> str:
+    """`stem` for the build corpus, `<corpus>_<stem>` for every later one.
+
+    The one place the corpus enters a name, so that a file, a run directory and a
+    bar all say the same thing about which rows they are about.
+    """
+    return stem if check_corpus(corpus) == BUILD_CORPUS else f"{corpus}_{stem}"
+
+
+def run_name(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> str:
+    """`<corpus>_<band>_<arm>_seed<N>`, with both leading parts dropped at their default.
 
     The first band's names are bare because they were written before there was a
     second one and its records are on disk under them — [`FIRST_BAND`] says why
-    renaming them would be worse than the asymmetry.
+    renaming them would be worse than the asymmetry, and [`BUILD_CORPUS`] says
+    the same about the other axis.
     """
     if arm not in ARMS:
         raise GradeTrainingError(f"{arm!r} is not an arm; the three are {sorted(ARMS)}")
     if str(band) not in RULES:
         raise GradeTrainingError(f"{band!r} is not a band; the two are {sorted(RULES)}")
     stem = f"{arm}_seed{int(seed)}"
-    return stem if str(band) == FIRST_BAND else f"{band}_{stem}"
+    if str(band) != FIRST_BAND:
+        stem = f"{band}_{stem}"
+    return qualified(stem, corpus)
 
 
-def run_dir(arm: str, seed: int, band: str = BAND) -> Path:
-    return head_dir(run_name(arm, seed, band))
+def run_dir(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> Path:
+    return head_dir(run_name(arm, seed, band, corpus))
 
 
 def root() -> Path:
@@ -291,32 +353,32 @@ def root() -> Path:
     return under("gallery_grade_head")
 
 
-def population_path() -> Path:
-    return root() / "population.jsonl"
+def population_path(corpus: str = CORPUS) -> Path:
+    return root() / f"{qualified('population', corpus)}.jsonl"
 
 
-def split_path() -> Path:
-    return root() / "split.json"
+def split_path(corpus: str = CORPUS) -> Path:
+    return root() / f"{qualified('split', corpus)}.json"
 
 
-def band_path(band: str = BAND) -> Path:
+def band_path(band: str = BAND, corpus: str = CORPUS) -> Path:
     stem = "band" if str(band) == FIRST_BAND else f"band_{band}"
-    return root() / f"{stem}.json"
+    return root() / f"{qualified(stem, corpus)}.json"
 
 
-def bar_path(band: str = BAND) -> Path:
+def bar_path(band: str = BAND, corpus: str = CORPUS) -> Path:
     """Where a band's PRE-REGISTERED bar lives. Tracked, beside the run records.
 
     The first band has none and never will: it was a build, its rule was the
     shipped judge's, and a bar written after the fact is a bar fitted to what
     happened.
     """
-    return head_dir() / f"bar_{band}.json"
+    return head_dir() / f"{qualified(f'bar_{band}', corpus)}.json"
 
 
-def comparison_path(band: str = BAND) -> Path:
+def comparison_path(band: str = BAND, corpus: str = CORPUS) -> Path:
     """Where the bar's READ lives — what the band actually did against it."""
-    return head_dir() / f"comparison_{band}.json"
+    return head_dir() / f"{qualified(f'comparison_{band}', corpus)}.json"
 
 
 # --------------------------------------------------------------------------- #
@@ -369,6 +431,18 @@ class Unit:
     #: thing that joins a unit to it. It is the ledger's spelling and not
     #: [`place`]'s, which is the label store's tuple.
     location: str = ""
+    #: The **cut** a verdict was cast on, and the **block** of the draw it came
+    #: from. Both are covariates the split balances and neither is ever shown to
+    #: the model — `data/batch_caveats.md`'s *The sheet is a covariate* is why
+    #: they are carried at all: the correction sitting's three sheets disagree at
+    #: chi-square 69.39 over its 750 rows, so a fold that took them unevenly
+    #: would move a recall gap for a reason that is not fit.
+    #:
+    #: They fall back rather than being absent: a row from before the blocked
+    #: draws reads `pre_existing`, and a store that names no sheet reads its
+    #: batch, which is what those sittings' sheets were called anyway.
+    block: str = ""
+    sheet: str = ""
     leveled: bool = False
     seated: bool = False
     label_p_ge3: float | None = None
@@ -377,7 +451,24 @@ class Unit:
     candidate_p_ge4: float | None = None
 
 
-def population(log=say) -> tuple[list[Unit], dict]:
+#: What a row from before the blocked draws calls its block. One value and not
+#: `None`, because it is a stratum the split balances and a missing stratum is a
+#: shortfall nothing can be measured against.
+PRE_EXISTING = "pre_existing"
+
+
+def block_of(row: dict) -> str:
+    """Which block of a blocked draw this verdict came from, or [`PRE_EXISTING`]."""
+    drawn = row.get("selected_on") or {}
+    return str(drawn.get("block") or PRE_EXISTING)
+
+
+def sheet_of(row: dict) -> str:
+    """The cut a verdict was cast on, falling back to the batch that holds it."""
+    return str(row.get("sheet") or row.get("batch") or "")
+
+
+def population(corpus: str = CORPUS, log=say) -> tuple[list[Unit], dict]:
     """Every graded row, joined to the ledger row whose picture it was cast about.
 
     One streaming pass over the ledger, which is the largest store here and is
@@ -394,7 +485,15 @@ def population(log=say) -> tuple[list[Unit], dict]:
     from fractal_wallpapers.models import finished_train
     from fractal_wallpapers.paths import Tiers, rehome
 
+    held = CORPORA[check_corpus(corpus)]["batches"]
     graded = gallery_grade.resolved().graded()
+    if held is not None:
+        graded = [row for row in graded if str(row.get("batch")) in set(held)]
+        if not graded:
+            raise GradeTrainingError(
+                f"corpus {corpus!r} names batches {sorted(held)} and the store holds no "
+                f"graded row from any of them"
+            )
     wanted: dict = {}
     unkeyed = 0
     for row in graded:
@@ -459,6 +558,8 @@ def population(log=say) -> tuple[list[Unit], dict]:
                     name=str(stored.get("key")),
                     key=str(stored.get("key")),
                     location=str((stored.get("location") or {}).get("key") or ""),
+                    block=block_of(row),
+                    sheet=sheet_of(row),
                     leveled=bool(row.get("leveled")),
                     seated=bool(row.get("seated")),
                     label_p_ge3=reading.get("p_ge3"),
@@ -471,6 +572,8 @@ def population(log=say) -> tuple[list[Unit], dict]:
     storage.require_hot(*{unit.path.parent for unit in units}, what="fitting the fine-tier head")
 
     record = {
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
         "graded_rows": len(graded),
         "render_keys": len(wanted),
         "ledger_rows_scanned": scanned,
@@ -480,6 +583,8 @@ def population(log=say) -> tuple[list[Unit], dict]:
         "keys_carried_by_more_than_one_ledger_row": ambiguous,
         "geometry": "the ledger's stored 640x360 candidate — not the 1280x720 sheet picture",
         "batches": _counted(unit.batch for unit in units),
+        "blocks": _counted(unit.block for unit in units),
+        "sheets": _counted(unit.sheet for unit in units),
         "grades": finished_train.histogram(units),
         "leveled": sum(1 for unit in units if unit.leveled),
         "seated": sum(1 for unit in units if unit.seated),
@@ -500,14 +605,14 @@ def _counted(values) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
-def write_population(log=say) -> tuple[Path, dict]:
+def write_population(corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
     """Resolve the store against the ledger once and keep the answer.
 
     The ledger pass is the expensive half of a fit and it does not change between
     arms, so it is cached under the regenerable tree and every run reads it.
     """
-    units, record = population(log=log)
-    path = population_path()
+    units, record = population(corpus=corpus, log=log)
+    path = population_path(corpus)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for unit in units:
@@ -520,6 +625,8 @@ def write_population(log=say) -> tuple[Path, dict]:
                         "picture": tracked_name(unit.path),
                         "grade": unit.score,
                         "batch": unit.batch,
+                        "block": unit.block,
+                        "sheet": unit.sheet,
                         "place": unit.place,
                         "partition": unit.partition,
                         "mode": unit.mode,
@@ -534,7 +641,7 @@ def write_population(log=say) -> tuple[Path, dict]:
                 )
                 + "\n"
             )
-    (root() / "population.json").write_text(
+    (root() / f"{qualified('population', corpus)}.json").write_text(
         json.dumps({"schema": SCHEMA, **record}, indent=2) + "\n",
         encoding="utf-8",
         newline="\n",
@@ -542,11 +649,11 @@ def write_population(log=say) -> tuple[Path, dict]:
     return path, record
 
 
-def read_population() -> list[Unit]:
+def read_population(corpus: str = CORPUS) -> list[Unit]:
     """The cached join, re-homed against this machine's tiers."""
     from fractal_wallpapers.paths import Tiers, rehome
 
-    path = population_path()
+    path = population_path(corpus)
     if not path.is_file():
         raise GradeTrainingError(
             f"{path} is not there — run `gallery-grade population` first, so that every arm "
@@ -572,6 +679,8 @@ def read_population() -> list[Unit]:
                 name=row["key"],
                 key=row["key"],
                 location=row.get("location") or "",
+                block=row.get("block") or PRE_EXISTING,
+                sheet=row.get("sheet") or row.get("batch") or "",
                 leveled=bool(row.get("leveled")),
                 seated=bool(row.get("seated")),
                 label_p_ge3=row.get("label_p_ge3"),
@@ -586,14 +695,49 @@ def read_population() -> list[Unit]:
 # --------------------------------------------------------------------------- #
 # The split: lineages whole, batches balanced.
 # --------------------------------------------------------------------------- #
+#: What the holdout is balanced on, beyond taking lineages whole. **Marginals,
+#: not the cross**: a lineage carries a handful of rows and the cross of three
+#: families is mostly empty cells, so a shortfall stated on it would be noise
+#: rather than a constraint.
+#:
+#: * `sheet` — the cut a verdict was cast on, and a **refinement of the batch**:
+#:   every sheet sits inside exactly one batch, so balancing sheets balances
+#:   batches by summation and the batch is reported rather than balanced. The
+#:   three sittings of 2026-09-06 disagree at p = 2.6e-05 and the correction
+#:   sitting's own three sheets at chi-square 69.39, so this is the same
+#:   constraint the build corpus had, tightened by one level.
+#: * `block` — which population of a blocked draw a row came from. The four
+#:   blocks are four different questions, and a stopping slice that was mostly
+#:   `near_bar` would be measuring a boundary rather than a fit.
+#: * `grade` — the label. The blocks' scales run from mean 1.18 to 2.69, so
+#:   block balance does not imply grade balance, and a recall read on a slice
+#:   short of 4s is read on a handful of rows.
+STRATA = ("sheet", "block", "grade")
+
+
+def strata_of(unit: Unit) -> dict[str, str]:
+    """The `{family: value}` this unit counts under, for each of [`STRATA`]."""
+    return {
+        "sheet": unit.sheet or unit.batch,
+        "block": unit.block or PRE_EXISTING,
+        "grade": str(unit.score),
+    }
+
+
 def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None = None) -> dict:
-    """Put every unit on the side the seeded, batch-stratified 80/20 gives it.
+    """Put every unit on the side the seeded, stratified 80/20 gives it.
 
     Lineages are the hard constraint and go whole. Inside that, the holdout is
-    filled by whichever remaining lineage most reduces the **per-batch** shortfall
-    — the three sittings are three slightly different scales, so a stopping slice
-    that happened to over-weight one of them would be stopping on a scale the
-    training side is not on.
+    filled by whichever remaining lineage most reduces the summed shortfall over
+    [`STRATA`]'s marginals — the cuts are different scales, the blocks are
+    different populations, and a stopping slice over-weighting any of them would
+    be stopping on something the training side is not on.
+
+    ⚠ **A stratum is a covariate the SPLIT reads and the model never does.** No
+    sheet term, no reweighting, no exclusion: Matt's ruling of 2026-09-09 is that
+    the sheets' disagreement is label noise and stays label noise. What the
+    balance buys is that the train-vs-stopping gap moves for fit and not for
+    which cuts landed on which side.
 
     `rows` is the label rows the units came from, in the same order; the grouping
     rule reads a family and a viewport off them and this module does not carry a
@@ -618,15 +762,25 @@ def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None
     for index, group in enumerate(lineage):
         members.setdefault(group, []).append(index)
 
+    # One flat coordinate per (family, value), so the greedy below sums one L1
+    # gain over all of [`STRATA`] at once rather than ranking the families
+    # against each other — which nothing here could say how to do.
+    strata = [strata_of(unit) for unit in units]
+    coordinates = sorted({(family, value) for mine in strata for family, value in mine.items()})
+    per_stratum = {
+        coordinate: sum(1 for mine in strata if mine.get(coordinate[0]) == coordinate[1])
+        for coordinate in coordinates
+    }
     batches = sorted({unit.batch for unit in units})
     per_batch = {name: sum(1 for unit in units if unit.batch == name) for name in batches}
-    target = {name: per_batch[name] * HOLDOUT_SHARE for name in batches}
+    target = {name: per_stratum[name] * HOLDOUT_SHARE for name in coordinates}
     wanted = round(len(units) * HOLDOUT_SHARE)
 
-    def vector(group: int) -> dict[str, int]:
-        out = dict.fromkeys(batches, 0)
+    def vector(group: int) -> dict[tuple, int]:
+        out = dict.fromkeys(coordinates, 0)
         for index in members[group]:
-            out[units[index].batch] += 1
+            for family, value in strata[index].items():
+                out[(family, value)] += 1
         return out
 
     order = sorted(members)
@@ -642,7 +796,7 @@ def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None
         for group in remaining:
             counts = vector(group)
             gain = sum(
-                abs(shortfall[name]) - abs(shortfall[name] - counts[name]) for name in batches
+                abs(shortfall[name]) - abs(shortfall[name] - counts[name]) for name in coordinates
             )
             if best_gain is None or gain > best_gain:
                 best, best_gain = group, gain
@@ -664,9 +818,10 @@ def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None
         "schema": SCHEMA,
         "rule": (
             f"a seeded {1 - HOLDOUT_SHARE:.0%}/{HOLDOUT_SHARE:.0%} over LINEAGES, filled by "
-            f"whichever remaining lineage most reduces the per-BATCH shortfall. The holdout's "
-            f"only job is to stop the run — it is the shipped judge's split with one seed for "
-            f"every arm, so every run of the grid is read on one slice"
+            f"whichever remaining lineage most reduces the summed shortfall over the "
+            f"{', '.join(STRATA)} marginals. The holdout's only job is to stop the run — it "
+            f"is the shipped judge's split with one seed for every arm, so every run of the "
+            f"grid is read on one slice"
         ),
         "unit": "lineage — labeling.groups.assign",
         "seed": int(seed),
@@ -677,6 +832,8 @@ def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None
         "sides": {"train": len(training), "stopping": len(stopping)},
         "holdout_share": round(len(stopping) / len(units), 4),
         "holdout": {"target_rows": wanted, "rows": len(stopping), "lineages": len(held)},
+        "strata": _balance(units, stopping),
+        "worst_stratum_drift": _worst_drift(units, stopping),
         "batches": {
             "population": per_batch,
             "stopping": _counted(unit.batch for unit in stopping),
@@ -687,6 +844,10 @@ def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None
                 )
                 for name in batches
             },
+            "balanced_by": (
+                "the sheet, which refines it — the batch is reported here and is not itself "
+                "a coordinate of the fill"
+            ),
         },
         "grades": {
             "train": finished_train.histogram(training),
@@ -700,6 +861,43 @@ def sides_for(units: list[Unit], seed: int = SPLIT_SEED, rows: list[dict] | None
         "side_of_row": [unit.side for unit in units],
         "key_of_row": [unit.key for unit in units],
     }
+
+
+def _balance(units: list[Unit], stopping: list[Unit]) -> dict:
+    """What share of each stratum the holdout actually took, family by family."""
+    out: dict = {}
+    for family in STRATA:
+        counts: dict[str, list[int]] = {}
+        for unit in units:
+            counts.setdefault(strata_of(unit)[family], [0, 0])[0] += 1
+        for unit in stopping:
+            counts.setdefault(strata_of(unit)[family], [0, 0])[1] += 1
+        out[family] = {
+            value: {
+                "population": population_count,
+                "stopping": stopping_count,
+                "share": round(stopping_count / max(population_count, 1), 4),
+            }
+            for value, (population_count, stopping_count) in sorted(counts.items())
+        }
+    return out
+
+
+def _worst_drift(units: list[Unit], stopping: list[Unit]) -> dict:
+    """The stratum furthest from [`HOLDOUT_SHARE`] — the one number to read first.
+
+    A balance table nobody scans is a balance table, and the fill is greedy over
+    lineages taken whole, so it cannot hit every marginal exactly. This is where
+    it did worst, so that a split which failed is refused by eye rather than by
+    hope.
+    """
+    balance, worst = _balance(units, stopping), None
+    for family, values in balance.items():
+        for value, read in values.items():
+            drift = abs(read["share"] - HOLDOUT_SHARE)
+            if worst is None or drift > worst["drift"]:
+                worst = {"stratum": f"{family}={value}", "drift": round(drift, 4), **read}
+    return worst or {}
 
 
 def label_rows_for(units: list[Unit]) -> list[dict]:
@@ -723,21 +921,23 @@ def label_rows_for(units: list[Unit]) -> list[dict]:
     return out
 
 
-def write_split(seed: int = SPLIT_SEED, log=say) -> tuple[Path, dict]:
-    units = read_population()
-    record = sides_for(units, seed)
-    path = split_path()
+def write_split(seed: int = SPLIT_SEED, corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
+    units = read_population(corpus)
+    record = {"corpus": check_corpus(corpus), **sides_for(units, seed)}
+    path = split_path(corpus)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
     log(
         f"[{HEAD}] split: train {record['sides']['train']} / stopping "
-        f"{record['sides']['stopping']} over {record['lineages']} lineages"
+        f"{record['sides']['stopping']} over {record['lineages']} lineages; "
+        f"worst stratum {record['worst_stratum_drift'].get('stratum')} at "
+        f"{record['worst_stratum_drift'].get('share')}"
     )
     return path, record
 
 
-def read_split() -> dict:
-    path = split_path()
+def read_split(corpus: str = CORPUS) -> dict:
+    path = split_path(corpus)
     if not path.is_file():
         raise GradeTrainingError(
             f"{path} does not exist — draw the split before fitting on it, so that every arm "
@@ -746,7 +946,7 @@ def read_split() -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def apply_split(units: list[Unit], document: dict | None = None) -> dict:
+def apply_split(units: list[Unit], document: dict | None = None, corpus: str = CORPUS) -> dict:
     """Put the written split's sides back onto a freshly read population.
 
     **Applied, never re-derived.** Re-running the draw would give the same answer
@@ -755,7 +955,7 @@ def apply_split(units: list[Unit], document: dict | None = None) -> dict:
     populations. The row order and the keys are both checked, because a file
     agreeing about a length is not a file agreeing about a corpus.
     """
-    document = document or read_split()
+    document = document or read_split(corpus)
     sides = document["side_of_row"]
     keys = document["key_of_row"]
     if len(sides) != len(units):
@@ -823,11 +1023,20 @@ INHERITANCE = {
         {
             "key": "split_stratification",
             "was": "lineages only",
-            "now": "lineages whole, and the holdout filled to balance the three BATCHES",
+            "now": (
+                "lineages whole, and the holdout filled to balance the SHEET, BLOCK and "
+                "GRADE marginals"
+            ),
             "why": (
-                "the three sittings disagree at p = 2.6e-05 and the strata were "
-                "near-identical by construction, so a stopping slice over-weighting one "
-                "sitting would stop on a scale the training side is not on"
+                "the cuts a page was cast on are measurably different scales — the three "
+                "sittings of 2026-09-06 at p = 2.6e-05 and the correction sitting's own "
+                "three sheets at chi-square 69.39 — and a blocked draw's blocks are four "
+                "different populations whose means run 1.18 to 2.69. A stopping slice "
+                "over-weighting any of them stops on something the training side is not on. "
+                "Every one of the three is read by the SPLIT and none is ever shown to the "
+                "model: the sheets' disagreement is accepted as label noise, Matt’s "
+                "ruling of 2026-09-09, so there is no sheet term, no reweighting and no "
+                "exclusion"
             ),
         },
         {
@@ -1109,6 +1318,7 @@ def fit(
     arm: str,
     seed: int = 0,
     band: str = BAND,
+    corpus: str = CORPUS,
     device: str = "auto",
     epochs: int | None = None,
     workers: int | None = None,
@@ -1133,6 +1343,7 @@ def fit(
         raise GradeTrainingError(f"{arm!r} is not an arm; the three are {sorted(ARMS)}")
     if str(band) not in RULES:
         raise GradeTrainingError(f"{band!r} is not a band; the two are {sorted(RULES)}")
+    check_corpus(corpus)
 
     state, shipped = initial_state()
     recipe = recipe_from(shipped)
@@ -1143,8 +1354,8 @@ def fit(
         recipe["workers"] = int(workers)
     classes = int(recipe["classes"])
 
-    units = read_population()
-    split = apply_split(units)
+    units = read_population(corpus)
+    split = apply_split(units, corpus=corpus)
     training = [unit for unit in units if unit.side == "train"]
     stopping = [unit for unit in units if unit.side == "stopping"]
     if not stopping:
@@ -1245,7 +1456,7 @@ def fit(
     stopping_batches = numpy.array([unit.batch for unit in stopping])
     cutpoint = min(int(recipe["selection_cutpoint"]), classes) - 2
 
-    directory = run_dir(arm, seed, band)
+    directory = run_dir(arm, seed, band, corpus)
     directory.mkdir(parents=True, exist_ok=True)
     try:
         lock = train.claim(directory)
@@ -1396,9 +1607,11 @@ def fit(
     config = {
         "schema": SCHEMA,
         "head": HEAD,
-        "run": run_name(arm, seed, band),
+        "run": run_name(arm, seed, band, corpus),
         "arm": arm,
         "band": str(band),
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
         **recipe,
         "initialised_from": {
             "artifact": str(SOURCE).replace("\\", "/"),
@@ -1431,15 +1644,34 @@ def fit(
     # its whole join — so the band's table can be rebuilt without the GPU.
     model.load_state_dict({key: value.to(where) for key, value in best_state.items()})
     chosen = train.score(model, stopping_paths, deploy_transform, where, classes, recipe)
-    _write_scores(directory, arm, seed, band, stopping, chosen, classes)
+    _write_scores(directory, arm, seed, band, corpus, stopping, chosen, classes)
 
     read = _read_of(stopping_labels, chosen, cutpoint, classes)
+    # The same read on the rows the two INCUMBENTS can be read on, so that a bar
+    # stated against them compares like with like. A row drawn from outside the
+    # seating pool carries no candidate reading at all, and on the corrected
+    # corpus that is a hundred `low_anchor` rows: comparing an arm's AUC over the
+    # whole slice against a column's over four fifths of it would be two
+    # populations wearing one number.
+    on_gate = [index for index, unit in enumerate(stopping) if unit.candidate_p_ge4 is not None]
+    gate_read = (
+        _read_of(stopping_labels[on_gate], chosen[on_gate], cutpoint, classes)
+        if len(on_gate) not in (0, len(stopping))
+        else dict(read)
+    )
+    gate_read["of"] = len(stopping)
+    gate_read["is"] = (
+        "the stopping rows the shipped judge read as candidates — the slice both "
+        "incumbents are readable on, and the slice a bar is stated over"
+    )
     record = {
         "schema": SCHEMA,
         "head": HEAD,
-        "run": run_name(arm, seed, band),
+        "run": run_name(arm, seed, band, corpus),
         "arm": arm,
         "band": str(band),
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
         "seed": int(seed),
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
@@ -1454,6 +1686,7 @@ def fit(
         "stopping_rule": rule_record,
         "freezing": freezing,
         "held_out": read,
+        "held_out_on_the_gate_column": gate_read,
         "held_out_is": (
             "the stopping slice. It is the shipped recipe's only holdout and the epoch was "
             "chosen on it, so every number here is optimistic by one early stop, and the "
@@ -1481,7 +1714,13 @@ def fit(
 
 
 def fit_band(
-    arms=None, seeds=SEEDS, band_name: str = BAND, device: str = "auto", log=say, **rest
+    arms=None,
+    seeds=SEEDS,
+    band_name: str = BAND,
+    corpus: str = CORPUS,
+    device: str = "auto",
+    log=say,
+    **rest,
 ) -> dict:
     """Fit every run of the grid that is not already on disk, **one at a time**.
 
@@ -1497,17 +1736,25 @@ def fit_band(
     done, ran = [], []
     for arm in arms:
         for seed in seeds:
-            named = run_name(arm, seed, band_name)
-            if (run_dir(arm, seed, band_name) / "metrics.json").is_file():
+            named = run_name(arm, seed, band_name, corpus)
+            if (run_dir(arm, seed, band_name, corpus) / "metrics.json").is_file():
                 done.append(named)
                 log(f"[{HEAD}] {named} is already fitted — skipping")
                 continue
-            record = fit(arm=arm, seed=seed, band=band_name, device=device, log=log, **rest)
+            record = fit(
+                arm=arm,
+                seed=seed,
+                band=band_name,
+                corpus=corpus,
+                device=device,
+                log=log,
+                **rest,
+            )
             ran.append(record["run"])
     return {
         "fitted": ran,
         "already_there": done,
-        "band": band(arms, seeds, band_name),
+        "band": band(arms, seeds, band_name, corpus),
     }
 
 
@@ -1528,7 +1775,14 @@ def _read_of(labels, probabilities, cutpoint: int, classes: int) -> dict:
 
 
 def _write_scores(
-    directory: Path, arm: str, seed: int, band: str, units, probabilities, classes: int
+    directory: Path,
+    arm: str,
+    seed: int,
+    band: str,
+    corpus: str,
+    units,
+    probabilities,
+    classes: int,
 ) -> None:
     """The chosen epoch's read of the stopping slice, a row carrying its join."""
     import numpy
@@ -1539,10 +1793,12 @@ def _write_scores(
             row = {
                 "schema": SCHEMA,
                 "head": HEAD,
-                "run": run_name(arm, seed, band),
+                "run": run_name(arm, seed, band, corpus),
                 "key": unit.key,
                 "grade": unit.score,
                 "batch": unit.batch,
+                "block": unit.block,
+                "sheet": unit.sheet,
                 "place": unit.place,
                 "partition": unit.partition,
                 "mode": unit.mode,
@@ -1557,14 +1813,14 @@ def _write_scores(
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def read_run(arm: str, seed: int, band: str = BAND) -> dict:
-    path = run_dir(arm, seed, band) / "metrics.json"
+def read_run(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> dict:
+    path = run_dir(arm, seed, band, corpus) / "metrics.json"
     if not path.is_file():
         raise GradeTrainingError(f"{path} is not there — that run has not been fitted")
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def baselines() -> dict:
+def baselines(corpus: str = CORPUS) -> dict:
     """The shipped judge's own columns over the stopping slice, at both geometries.
 
     **Recomputed on this band's own rows rather than quoted from anywhere.** The
@@ -1582,26 +1838,40 @@ def baselines() -> dict:
 
     from fractal_wallpapers.models import metrics
 
-    units = read_population()
-    apply_split(units)
+    units = read_population(corpus)
+    apply_split(units, corpus=corpus)
     stopping = [unit for unit in units if unit.side == "stopping"]
     labels = numpy.array([unit.score for unit in stopping])
-    out: dict = {"rows": len(stopping), "base_rates": {}}
+    out: dict = {"corpus": check_corpus(corpus), "rows": len(stopping), "base_rates": {}}
     for boundary in (2, 3, 4):
         out["base_rates"][f"ge{boundary}"] = round(float((labels >= boundary).mean()), 4)
+    out["gate_column_rows"] = sum(1 for unit in stopping if unit.candidate_p_ge4 is not None)
+    out["gate_column_is"] = (
+        "the rows the shipped judge read AS CANDIDATES. A row drawn from somewhere other "
+        "than the seating pool carries no such reading — the correction sitting's 100 "
+        "`low_anchor` rows are coarse-3 verdicts about 1280x720 pictures and were never "
+        "candidates — so the two incumbents are readable on this slice and not on the whole "
+        "stopping side"
+    )
     for column in ("candidate_p_ge3", "candidate_p_ge4", "label_p_ge3", "label_p_ge4"):
         values = [getattr(unit, column) for unit in stopping]
-        present = [value is not None for value in values]
-        if not all(present):
-            out[column] = {"rows_carrying_it": sum(present), "of": len(stopping), "read": None}
+        kept = [index for index, value in enumerate(values) if value is not None]
+        if not kept:
+            out[column] = {"rows_carrying_it": 0, "of": len(stopping), "read": None}
             continue
-        scores = numpy.array(values, dtype=float)
-        read: dict = {"rows_carrying_it": len(scores)}
+        # Dropped and counted, never imputed — [`_rank_key_baseline`]'s rule, which
+        # this branch used to refuse instead. A column absent on a fifth of the
+        # slice is a column read on the other four fifths and SAID to be, where
+        # refusing outright makes a bar unstatable for want of rows nobody
+        # claimed it covered.
+        scores = numpy.array([values[index] for index in kept], dtype=float)
+        mine = numpy.asarray(labels)[kept]
+        read: dict = {"rows_carrying_it": len(scores), "of": len(stopping)}
         for boundary in (2, 3, 4):
-            hits = (labels >= boundary).astype(int)
+            hits = (mine >= boundary).astype(int)
             read[f"ap_ge{boundary}"] = metrics.average_precision(hits, scores)
             read[f"auc_ge{boundary}"] = metrics.auc(hits, scores)
-        read["spearman"] = metrics.spearman(labels, scores)
+        read["spearman"] = metrics.spearman(mine, scores)
         out[column] = read
     out["rank_key"] = _rank_key_baseline(stopping, labels)
     return out
@@ -1714,7 +1984,15 @@ def read_pool_scores(path: Path | None = None) -> dict:
     return out
 
 
-def score_pool(candidates, arm: str, seed: int, band: str = BAND, device: str = "auto", log=say):
+def score_pool(
+    candidates,
+    arm: str,
+    seed: int,
+    band: str = BAND,
+    corpus: str = CORPUS,
+    device: str = "auto",
+    log=say,
+):
     """Read a whole pool through one run's chosen checkpoint, and write the rows.
 
     `candidates` is whatever [`curation.solve.pool`] hands back — anything with a
@@ -1740,7 +2018,7 @@ def score_pool(candidates, arm: str, seed: int, band: str = BAND, device: str = 
     from fractal_wallpapers.models import train
     from fractal_wallpapers.paths import Tiers, rehome
 
-    checkpoint = run_dir(arm, seed, band) / "best.pt"
+    checkpoint = run_dir(arm, seed, band, corpus) / "best.pt"
     if not checkpoint.is_file():
         raise GradeTrainingError(f"{checkpoint} is not there — that run has not been fitted")
     model, config, where = load_checkpoint(checkpoint, device)
@@ -1763,7 +2041,7 @@ def score_pool(candidates, arm: str, seed: int, band: str = BAND, device: str = 
 
     storage.require_hot(*{path.parent for path in paths}, what="reading a pool through this head")
     began = time.time()
-    log(f"[{HEAD}] reading {len(paths):,} pictures through {run_name(arm, seed, band)}")
+    log(f"[{HEAD}] reading {len(paths):,} pictures through {run_name(arm, seed, band, corpus)}")
     classes = int(config["classes"])
     transform = head.Transform(
         tuple(config["mean"]),
@@ -1778,14 +2056,19 @@ def score_pool(candidates, arm: str, seed: int, band: str = BAND, device: str = 
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for key, probability in zip(keys, probabilities, strict=True):
-            row = {"schema": SCHEMA, "head": HEAD, "run": run_name(arm, seed, band), "key": key}
+            row = {
+                "schema": SCHEMA,
+                "head": HEAD,
+                "run": run_name(arm, seed, band, corpus),
+                "key": key,
+            }
             for index in range(classes - 1):
                 row[f"p_ge{index + 2}"] = float(probability[index])
             row["rank_score"] = float(numpy.sum(probability))
             handle.write(json.dumps(row) + "\n")
 
     record = {
-        "run": run_name(arm, seed, band),
+        "run": run_name(arm, seed, band, corpus),
         "checkpoint": tracked_name(checkpoint),
         "candidates": len(keys),
         "below_the_bar_and_not_read": below,
@@ -1834,7 +2117,9 @@ GATED_INCUMBENTS = ("candidate_p_ge4", "rank_key")
 GATED_STATISTICS = ("auc_ge4", "spearman")
 
 
-def write_bar(band_name: str = BAND, force: bool = False, log=say) -> tuple[Path, dict]:
+def write_bar(
+    band_name: str = BAND, corpus: str = CORPUS, force: bool = False, log=say
+) -> tuple[Path, dict]:
     """Register this band's bar, **before its runs exist**.
 
     The incumbent figures are copied in rather than referenced, so the bar stays
@@ -1844,13 +2129,13 @@ def write_bar(band_name: str = BAND, force: bool = False, log=say) -> tuple[Path
     Refuses to overwrite. A bar rewritten after a band is a bar fitted to what
     happened, which is the whole thing pre-registration is for.
     """
-    path = bar_path(band_name)
+    path = bar_path(band_name, corpus)
     if path.is_file() and not force:
         raise GradeTrainingError(
             f"{path} already exists, and a bar rewritten after its band is a bar fitted to "
             f"what happened. Pass force only to correct a bar no run has been read against."
         )
-    read = baselines()
+    read = baselines(corpus)
     incumbents = {}
     for name in GATED_INCUMBENTS:
         mine = read.get(name) or {}
@@ -1866,6 +2151,8 @@ def write_bar(band_name: str = BAND, force: bool = False, log=say) -> tuple[Path
         "schema": SCHEMA,
         "head": HEAD,
         "band": str(band_name),
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
         "registered_at": _stamp(),
         "rule": (
             "the winning arm must beat BOTH incumbents on BOTH statistics at EVERY seed, "
@@ -1877,10 +2164,15 @@ def write_bar(band_name: str = BAND, force: bool = False, log=say) -> tuple[Path
         "population": {
             "rows": read.get("rows"),
             "base_rates": read.get("base_rates"),
+            "slice": "gate_column" if read.get("gate_column_rows", 0) < read.get("rows") else "all",
+            "gate_column_rows": read.get("gate_column_rows"),
+            "gate_column_is": read.get("gate_column_is"),
             "is": (
                 "the stopping slice — within-store held out, optimistic by one early stop, "
                 "and drawn from a store that is not eval-eligible. This bar says which of "
-                "three quantities orders these rows best and nothing about any other rows"
+                "three quantities orders these rows best and nothing about any other rows. "
+                "Where `slice` is `gate_column` the heights and the arm are both read on "
+                "the rows the incumbents exist for, and never on two different populations"
             ),
         },
         "does_not_gate": (
@@ -1894,8 +2186,8 @@ def write_bar(band_name: str = BAND, force: bool = False, log=say) -> tuple[Path
     return path, document
 
 
-def read_bar(band_name: str = BAND) -> dict:
-    path = bar_path(band_name)
+def read_bar(band_name: str = BAND, corpus: str = CORPUS) -> dict:
+    path = bar_path(band_name, corpus)
     if not path.is_file():
         raise GradeTrainingError(
             f"{path} does not exist. Register the bar before the band, so that what counts "
@@ -1904,30 +2196,38 @@ def read_bar(band_name: str = BAND) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def acceptance(band_name: str = BAND, log=say) -> tuple[Path, dict]:
+def acceptance(band_name: str = BAND, corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
     """Read the band against its registered bar, and write the verdict down.
 
     **Every seed of the winning arm, against every incumbent, on every gated
     statistic.** The record carries each of those cells whether it passed or not,
     because a verdict without its arithmetic is a verdict nobody can check.
     """
-    bar = read_bar(band_name)
-    read = band(seeds=SEEDS, band_name=band_name)
+    bar = read_bar(band_name, corpus)
+    read = band(seeds=SEEDS, band_name=band_name, corpus=corpus)
     winner = read["pick"]["arm"]
     mine = [row for row in read["runs"] if row["arm"] == winner]
     if not mine:
         raise GradeTrainingError(f"the winning arm {winner!r} has no fitted run")
 
+    # Read on the slice the bar was stated over, and named on every cell: on the
+    # corrected corpus the incumbents exist for four fifths of the stopping rows,
+    # and an arm read over all of them would be a different population.
+    stated = bar.get("population") or {}
+    on = "held_out_on_the_gate_column" if stated.get("slice") == "gate_column" else ""
     cells, failures = [], []
     for row in mine:
+        read_on = (row.get(on) if on else None) or row["held_out"]
         for incumbent, heights in bar["incumbents"].items():
             for statistic in bar["gated"]["statistics"]:
-                ours = row["held_out"].get(statistic)
+                ours = read_on.get(statistic)
                 theirs = heights.get(statistic)
                 passed = ours is not None and theirs is not None and float(ours) > float(theirs)
                 cell = {
                     "seed": row["seed"],
                     "run": row["run"],
+                    "read_on": on or "held_out",
+                    "rows": read_on.get("rows"),
                     "incumbent": incumbent,
                     "statistic": statistic,
                     "arm": None if ours is None else round(float(ours), 4),
@@ -1949,8 +2249,9 @@ def acceptance(band_name: str = BAND, log=say) -> tuple[Path, dict]:
         "schema": SCHEMA,
         "head": HEAD,
         "band": str(band_name),
+        "corpus": check_corpus(corpus),
         "read_at": _stamp(),
-        "bar": tracked_name(bar_path(band_name)),
+        "bar": tracked_name(bar_path(band_name, corpus)),
         "registered_at": bar.get("registered_at"),
         "arm": winner,
         "seeds": [row["seed"] for row in mine],
@@ -1963,7 +2264,7 @@ def acceptance(band_name: str = BAND, log=say) -> tuple[Path, dict]:
             f"The bar gates the arm and not the adoption — nothing here is wired in"
         ),
     }
-    path = comparison_path(band_name)
+    path = comparison_path(band_name, corpus)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
     log(f"[{HEAD}] {verdict}: worst margin {document['worst_margin']}")
@@ -1985,7 +2286,7 @@ def selection_statistic(said: dict) -> float:
     return -float(said["best_selection_objective"])
 
 
-def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
+def band(arms=None, seeds=SEEDS, band_name: str = BAND, corpus: str = CORPUS) -> dict:
     """Every run of one band, the incumbents it is read beside, and the pick.
 
     **Arms are ranked by the MEAN of the band's own statistic over its seeds, and
@@ -2005,7 +2306,7 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
     for arm in arms:
         for seed in seeds:
             try:
-                said = read_run(arm, seed, band_name)
+                said = read_run(arm, seed, band_name, corpus)
             except GradeTrainingError:
                 continue
             rows.append(
@@ -2019,6 +2320,9 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
                     "trainable_share": said["freezing"]["trainable_share"],
                     "wall_seconds": said["wall_seconds"],
                     "held_out": said["held_out"],
+                    # Absent on every run fitted before 2026-09-09, where the two
+                    # were the same slice and the key was not written.
+                    "held_out_on_the_gate_column": said.get("held_out_on_the_gate_column"),
                 }
             )
     if not rows:
@@ -2046,6 +2350,8 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
         "schema": SCHEMA,
         "head": HEAD,
         "band": str(band_name),
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
         "rule": RULES[str(band_name)]["says"],
         "statistic": f"{RULES[str(band_name)]['statistic']} at >={RULES[str(band_name)]['tier']}",
         "arms": summary,
@@ -2061,7 +2367,7 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
             "that arm's MEDIAN seed. Never the argmax: the epoch surface is flat enough "
             "that the best seed of three is a coin flip rather than a fact about the arm"
         ),
-        "baseline": _baselines_or_reason(),
+        "baseline": _baselines_or_reason(corpus),
         "baseline_is": (
             "the two incumbents over these same rows — the shipped judge's own "
             "`candidate_p_ge4`, which is the column, and `rank_key`, which is what a seating "
@@ -2072,18 +2378,20 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND) -> dict:
     }
 
 
-def _baselines_or_reason() -> dict:
+def _baselines_or_reason(corpus: str = CORPUS) -> dict:
     """The baseline, or why it could not be read. A band is still worth writing
     without it, and a missing block that raised would take the table with it."""
     try:
-        return baselines()
+        return baselines(corpus)
     except (GradeTrainingError, OSError) as unreadable:
         return {"unreadable": str(unreadable)}
 
 
-def write_band(arms=None, seeds=SEEDS, band_name: str = BAND) -> tuple[Path, dict]:
-    record = band(arms, seeds, band_name)
-    path = band_path(band_name)
+def write_band(
+    arms=None, seeds=SEEDS, band_name: str = BAND, corpus: str = CORPUS
+) -> tuple[Path, dict]:
+    record = band(arms, seeds, band_name, corpus)
+    path = band_path(band_name, corpus)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, record
@@ -2091,6 +2399,16 @@ def write_band(arms=None, seeds=SEEDS, band_name: str = BAND) -> tuple[Path, dic
 
 __all__ = [
     "RULES",
+    "CORPORA",
+    "CORPUS",
+    "BUILD_CORPUS",
+    "PRE_EXISTING",
+    "STRATA",
+    "block_of",
+    "check_corpus",
+    "qualified",
+    "sheet_of",
+    "strata_of",
     "GATED_STATISTICS",
     "GATED_INCUMBENTS",
     "FIRST_BAND",
