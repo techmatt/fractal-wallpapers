@@ -276,6 +276,23 @@ offered **515 rows bound to the wrong pictures**, without an error. Match the *u
 to the drop before ingesting, and delete or rename the superseded cut once its replacement
 is labelled.
 
+**A hand-renamed drop is the working answer to one batch cut into several sheets, and the
+unit count is what makes it safe.** `p_fine_correction_20260909` went out as three sheets
+of `251 / 250 / 249` sharing one drop name; the labeler saved the second and third aside
+under their own names rather than letting each export replace the last, so all three
+survived. Ingest is then one `label ingest --sheet <dir> --labels <that file>` per sheet,
+run in **cast order** — the oldest export first, for the reason *A second ingest of the
+same export is a no-op* gives in [`intake`]. Two cheap checks before writing anything, both
+of which this pairing passed: no two drops carry the same verdicts (identical files are one
+sheet exported twice, not two sheets), and each drop's unit count matches exactly one cut.
+A third check is worth the minute it costs, because the count alone cannot catch a drop
+that happens to match the wrong sheet of the same length: on a page ordered by a score,
+**Spearman of page position against verdict is strongly negative on a correctly bound
+drop** — `−0.745 / −0.477 / −0.494` on the three above — and a misbound one sits near zero.
+Afterwards the binding is auditable from the store alone: `intake` writes the sheet
+directory's name onto every row as `sheet`, so which cut a verdict came off outlives the
+untracked sheet directory.
+
 ## A verdict cast on a pinned location is WITHHELD, not written
 
 A finished store's evaluation side is a **batch** — one registered `eval_only`, cut
@@ -1075,6 +1092,17 @@ every 1 it holds inside the prefix.
 The fix, when a session needs to be able to tell them apart, is a second sheet
 or a second pass and not a flag: nothing in the drop, the sheet or the store
 records which button produced a tier.
+
+**The bound can also come back empty, and that is the reading worth having.** It
+is a suffix, so when the last override sits *at* the last position carrying a
+suggestion there is no suffix at all and every agreement on the page was cast by
+hand. All three sheets of `p_fine_correction_20260909` read that way — last
+override at position 217 / 217 / 216 of 217 / 217 / 216 prefilled rows — so its
+139 agreements are evidence and not defaults. What sits after those positions on
+each sheet is the `low_anchor` block, which carries **no** suggestion; a sweep
+writes `row.suggestion` and cannot turn an absence into a tier, so those rows are
+hand-cast by construction rather than by the bound. A page that puts its
+unsuggested rows last therefore ends up bounded on both sides at once.
 
 ### Reading a labelled batch back afterwards
 

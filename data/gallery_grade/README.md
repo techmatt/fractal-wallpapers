@@ -164,6 +164,26 @@ piles on 3 at the expense of 4. **A fit that pools the three is pooling three sl
 different scales**, and `batch` is on every row so it can be a covariate rather than a
 surprise.
 
+## What the second sitting landed — the correction page, 2026-09-09
+
+`p_fine_correction_20260909`, 750 units over three sheets, labeler `matt`, ingested
+in cast order: **275 / 185 / 160 / 130**, nothing superseded and nothing unkeyed. The
+store now holds **1,750 rows over 1,462 locations, 945 of them seated**, at
+**301 / 370 / 637 / 442**. It is one batch and **four populations** — three of them
+conditioned draws — so the block on `selected_on.block` decides which rows a number
+may be read over; `data/batch_caveats.md`'s *FOUR-BLOCKS-ONE-BATCH* is the file that
+says which, and none of this is eval-eligible.
+
+**This sitting is much harsher than the first, and that is the population and not
+only the scale.** The first sitting drew from the pool at large and landed a mean of
+3.07; this one draws from the fine head's own top, from the colour floor's seats and
+from the coarse corpora's 3s, and lands **2.19**. The two are not comparable as
+distributions. Two things do carry across: the drift is the same shape and bigger —
+`top_band` moves from a block mean of 3.33 on sheet 1 to 2.14 and 2.37 on sheets 2
+and 3, at χ² = 79.66 on 6 d.f. — and `sheet` is on every row for the same reason
+`batch` is, so it can be a covariate. Unlike the first sitting the drift is
+**inside one batch**, so `batch` alone will not reach it.
+
 ## The store is not the picture, and the plan is what makes it one again
 
 A row carries `leveled` as a **boolean** and never the directory. The path lives only in

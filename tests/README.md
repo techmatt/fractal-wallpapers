@@ -402,6 +402,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**750 rows landed and the lane did not notice.** `p_fine_ingest_20260909`,
+2026-09-09. **4,169 selected, 132 deselected — 4,301 collected — in 129.30 s**,
+green, on an idle box with no server and no render leg. Nothing was added: the
+prompt ingested a labelled sitting and wrote three READMEs, so the count is
+identical to the entry below and the clock is 0.42 s under it. That is the useful
+part — the gallery-grade store went from 1,000 rows to **1,750** and no guard that
+sweeps it got measurably dearer, which is the *which store grew* question answered
+in the cheap direction. A data commit takes the fast lane and not `--slow`, and
+this is why.
+
 **+6 fast, and the clock did not move.** `p_fine_sitting_20260909`, 2026-09-09.
 The fast lane read **4,169 selected, 132 deselected — 4,301 collected — in
 129.72 s**, against the entry below it at **4,163 / 132 / 200.85 s** and the idle
