@@ -969,6 +969,9 @@ def curate_votes(args: argparse.Namespace) -> int:
             chroma=args.chroma,
             supersample=args.ss,
             supersample_for=overrides,
+            friends=tuple(args.friend or ()),
+            per_page=args.page,
+            seed=args.seed,
         )
     except (votes.VotesRefused, tentative.TentativeRefused) as refusal:
         print(refusal)
@@ -4253,7 +4256,9 @@ def add_commands(subcommands) -> None:
             "the stored candidate is 640x360 and far too small to vote on — the thumbnail "
             "is a downscale of that render and never of the candidate, and the folder is "
             "zipped with a self-contained page that opens by double-clicking. A filename "
-            "carries the seat's position and nothing else: no rank, no key, no mode. What "
+            "carries the seat's position and nothing else: no rank, no key, no mode. One zip "
+            "goes to everybody and each named friend gets the same master permutation rotated "
+            "to a different start, so a partial pass is a uniform sample of the record. What "
             "comes back is one small JSON file per person, keyed by recipe key, in the "
             f"shape {votes_module.VIEWER} fixes."
         ),
@@ -4309,6 +4314,30 @@ def add_commands(subcommands) -> None:
         choices=votes_module.SUPERSAMPLES,
         default=votes_module.SUPERSAMPLE,
         help=f"the field supersample under the frame (default {votes_module.SUPERSAMPLE})",
+    )
+    building_votes.add_argument(
+        "--friend",
+        action="append",
+        metavar="NAME",
+        help="a friend the kit is built for, repeatable and in the order they are spaced. "
+        "Each gets the SAME master permutation rotated by round(i*N/F), so a partial pass "
+        "is a uniform sample rather than a prefix and two friends who stop early have voted "
+        "on disjoint pictures. One zip for everybody: the first screen asks who they are and "
+        "that picks the deck. With no names the deck is rotated by a hash of a typed name",
+    )
+    building_votes.add_argument(
+        "--page",
+        type=int,
+        default=votes_module.PAGE,
+        help=f"how many pictures a page holds (default {votes_module.PAGE}). Finishing a page "
+        "is the unit the friends are asked for, so this is a size somebody commits to",
+    )
+    building_votes.add_argument(
+        "--seed",
+        type=int,
+        help="the master permutation's seed. Drawn and recorded if not given, and a rebuild "
+        "into a kit that already exists reads its own back — a re-drawn seed would move every "
+        "page a friend had not reached yet",
     )
     building_votes.add_argument(
         "--ss-for",

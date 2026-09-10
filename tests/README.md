@@ -402,6 +402,41 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**+15 fast, and the box was worth 20 s while the change was worth 2.8.**
+`votes_kit_randomize_20260909`, 2026-09-09. **4,193 selected, 132 deselected —
+4,325 collected — in 152.81 s**, green, no render leg and no pool held. The +15
+are all `test_votes.py`'s: the master permutation and its seed, the even offsets,
+the disjointness and evenness properties, the order files against the page's own
+arithmetic, the seed a rebuild keeps, three refused name collisions, the pick
+that selects a deck, the page finished only by its button, the row shape, the
+storage probe, and the 25.
+
+**The clock is the box and this is the cheap way that was settled.** 152.81 s
+against an idle baseline near 130 reads like a regression, and the rule is *a
+lane that moves right after code landed is the code until measured otherwise* —
+so the tree was stashed and the lane re-read on the same box inside the same half
+hour: **4,178 / 132 — 4,310 collected — in 150.03 s**. Two and a half minutes
+each, and it converts a 23-second question into a 2.78-second answer: fifteen
+tests, ten of which build a kit and encode two 2560x1440 JPEGs, cost **2.78 s**
+and the other **twenty seconds are the box**. A stash-and-re-read is the *whole
+lane* rather than the one-file profile the rule recommends, and it was the right
+trade here only because the change is spread across one file's worth of new
+tests rather than concentrated in a derivation somebody could name.
+
+⚠ **A second writer was on the box**: `data/gallery_grade/batches.jsonl` gained a
+row of somebody else's between the two readings. It changed nothing measurable —
+no guard parametrizes over that store's rows — but a stash taken while another
+process is writing the tree is a way to lose their work, and this one was safe
+only because the file was clean when the stash was taken. **Do not stash to
+answer *box or tree* when `git status` is dirty with somebody else's files**;
+re-run one engine-bound guard instead.
+
+⚠ **`CLAUDE.md`'s figure now reads three drops behind at 4,301** and is still
+deliberately left alone, for the entry below's reason: it pairs a fast count with
+a slow one, no slow lane has run since the colour floor on Matt's instruction,
+and this change adds no slow test — all fifteen are arithmetic and JPEG encodes
+in `tmp_path`. Whoever takes the next paired reading moves both halves at once.
+
 **Three labelling servers on the box cost the lane 0.7 s.** `tentative_solve_20260909`,
 2026-09-09. **4,178 selected, 132 deselected — 4,310 collected — in 131.52 s**, green,
 with three `label serve` processes up on ports 8020–8022 and no render leg. The count is

@@ -134,9 +134,16 @@ def test_a_kit_is_a_folder_a_friend_can_open_and_a_zip_to_send_it_in(
 ) -> None:
     manifest = built(tmp_path, store)
     kit = tmp_path / "kit"
+    # `manifest.json` travels with the kit and the leg's own numbers do not: a
+    # folder that does not carry its master seed and its offsets cannot have its
+    # decks reproduced from what a friend was sent, and `build` reads its seed
+    # back out of it so a rebuild does not rotate anybody's remaining pages.
     assert sorted(path.name for path in kit.iterdir()) == sorted(
-        [votes.PAGE_NAME, votes.READ_ME, votes.FULLS, votes.THUMBS]
+        [votes.PAGE_NAME, votes.READ_ME, votes.MANIFEST_NAME, votes.FULLS, votes.THUMBS]
     )
+    # No `orders/` here: nobody was named, so there is no deck to write down
+    # before somebody types a name into the un-named kit's box.
+    assert not (kit / votes.ORDERS).exists()
     assert sorted(path.name for path in (kit / votes.FULLS).iterdir()) == [
         "s0000.jpg",
         "s0001.jpg",
@@ -416,7 +423,8 @@ def test_each_page_button_carries_the_votes_given_on_that_page(
     assert "of order.slice(p * PER_PAGE, (p + 1) * PER_PAGE)" in page
     # Repainted by the one function every vote goes through, buttons and keys
     # alike, so a page turned under a fullscreen cannot leave a count behind.
-    assert re.search(r"function setVote\([^)]*\) \{[^}]*paintPager\(\);", page, re.S)
+    setting = page.split("function setVote(")[1].split("\n}")[0]
+    assert "paintPager();" in setting
     assert "count.textContent = String(given);" in page
 
 
@@ -468,22 +476,24 @@ def test_the_paragraph_says_a_second_person_does_not_need_to_erase_anything(
     button is the one they find."""
     built(tmp_path, store)
     text = (tmp_path / "kit" / votes.READ_ME).read_text(encoding="utf-8")
-    assert "type their own\nname" in text
+    assert "pick their own\nname" in text
     assert "erases every rating on the" in text and "asks you twice" in text
 
 
 def test_the_export_says_which_viewer_a_friend_was_looking_at(
     tmp_path, store, stub_renders
 ) -> None:
-    """2.0, and deliberately not `votes/v2`: telling it from the first version's
-    `votes/v1` is telling two unrelated strings apart. The schema under it is
-    unchanged — same seven fields, same vote values — so the version names the
-    page rather than how to read what came back."""
-    assert votes.VIEWER == "2.0"
+    """3.0, and deliberately not `votes/v3`: telling it from the first version's
+    `votes/v1` is telling two unrelated strings apart.
+
+    1 and 2.0 were the same seven fields and the version named the page a person
+    was looking at. **3.0 is the first that names the file**: four more fields,
+    every one of them beside the seven rather than over them."""
+    assert votes.VIEWER == "3.0"
     manifest = built(tmp_path, store)
     page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
-    assert manifest["viewer"] == "2.0"
-    assert 'const VIEWER = "2.0";' in page
+    assert manifest["viewer"] == "3.0"
+    assert 'const VIEWER = "3.0";' in page
 
 
 def test_the_paragraph_the_friends_read_names_the_keys(tmp_path, store, stub_renders) -> None:
@@ -494,3 +504,247 @@ def test_the_paragraph_the_friends_read_names_the_keys(tmp_path, store, stub_ren
     assert "2 for the thumbs-up, 3 for the star" in text
     assert "1 for an average one" in text
     assert "Any of the three closes the large picture" in text
+
+
+# --------------------------------------------------------------------------- #
+# One master permutation, rotated per friend.
+# --------------------------------------------------------------------------- #
+#: The names the deck tests build for. Three, so `round(i*N/F)` is not a halving,
+#: and two of them carry a space and a dot so the slug rule is exercised by the
+#: ordinary case rather than by a test written for it alone.
+FRIENDS = ("Ada", "Bo Jones", "C.J.")
+
+
+def built_for(tmp_path, stamp, friends, **over) -> dict:
+    """A two-seat kit built for `friends`, at a fixed seed unless told another."""
+    return votes.build(
+        stamp=stamp,
+        out=tmp_path / "kit",
+        limit=2,
+        friends=friends,
+        seed=over.pop("seed", 12345),
+        log=lambda _line: None,
+        **over,
+    )
+
+
+def inlined(directory: Path, name: str):
+    """`const <name> = ...;` as the page carries it, read back as JSON."""
+    page = (directory / votes.PAGE_NAME).read_text(encoding="utf-8")
+    found = re.search(rf"^const {name} = (.*);$", page, re.MULTILINE)
+    assert found, f"the page does not inline {name}"
+    return json.loads(found.group(1))
+
+
+def test_the_master_permutation_is_a_permutation_and_its_seed_reproduces_it() -> None:
+    """The seed is what regenerates a deck when the kit is gone, so it has to be
+    the whole input. Two seeds that agreed would mean the seed said nothing."""
+    assert sorted(votes.master_order(500, 7)) == list(range(500))
+    assert votes.master_order(500, 7) == votes.master_order(500, 7)
+    assert votes.master_order(500, 7) != votes.master_order(500, 8)
+    assert votes.master_order(0, 7) == []
+
+
+def test_a_friend_starts_an_even_share_of_the_way_into_the_same_order() -> None:
+    """`round(i*N/F)`, and that is the whole coordination there is: no friend is
+    told anything about another and the offsets do the spacing."""
+    assert votes.deck_offsets(1000, ("a", "b", "c", "d")) == [0, 250, 500, 750]
+    assert votes.deck_offsets(1000, ("a",)) == [0]
+    assert votes.deck_offsets(7, ("a", "b", "c")) == [0, 2, 5]
+    assert votes.deck_offsets(1000, ()) == []
+
+
+def test_friends_who_each_finish_the_same_few_pages_have_voted_on_disjoint_pictures() -> None:
+    """The property the rotation buys, and the reason it is a rotation rather than
+    a per-person shuffle: eight friends who each work five pages of 25 have
+    covered the thousand **exactly once between them**, with no overlap to throw
+    away and no picture left unseen. Seven independent shuffles would be colliding
+    at random from the first page."""
+    order = votes.master_order(1000, 4242)
+    friends = tuple(f"friend{index}" for index in range(8))
+    reach = 5 * votes.PAGE
+    seen = [
+        seat
+        for offset in votes.deck_offsets(1000, friends)
+        for seat in votes.rotated(order, offset)[:reach]
+    ]
+    assert len(seen) == 1000
+    assert sorted(seen) == list(range(1000))
+
+
+def test_every_picture_collects_the_same_votes_for_the_same_total_effort() -> None:
+    """Past the point where the decks lap each other the counts stay flat to
+    within one, which is what "close to the same number of votes" means and the
+    thing a prefix of a fixed order gets catastrophically wrong."""
+    order = votes.master_order(1000, 99)
+    friends = tuple(f"friend{index}" for index in range(7))
+    reach = 12 * votes.PAGE
+    counts = dict.fromkeys(range(1000), 0)
+    for offset in votes.deck_offsets(1000, friends):
+        for seat in votes.rotated(order, offset)[:reach]:
+            counts[seat] += 1
+    assert max(counts.values()) - min(counts.values()) <= 1
+
+
+def test_the_order_file_is_the_deck_the_page_derives(tmp_path, store, stub_renders) -> None:
+    """The files ship and the page never reads them — `file://` refuses to fetch a
+    sibling — so the two are the same arithmetic written twice, and this is what
+    holds them to agreeing."""
+    manifest = built_for(tmp_path, store, FRIENDS)
+    kit = tmp_path / "kit"
+    order = inlined(kit, "ORDER")
+    picks = inlined(kit, "DECKS")
+    assert order == votes.master_order(2, manifest["deck"]["seed"])
+    assert picks == [
+        {"name": "Ada", "offset": 0},
+        {"name": "Bo Jones", "offset": 1},
+        {"name": "C.J.", "offset": 1},
+    ]
+    for row in manifest["deck"]["friends"]:
+        held = json.loads((kit / row["file"]).read_text(encoding="utf-8"))
+        assert held["name"] == row["name"]
+        assert held["order"] == votes.rotated(order, row["offset"])
+        assert held["order_seed"] == manifest["deck"]["seed"]
+        assert held["page_size"] == votes.PAGE
+
+
+def test_the_kit_carries_the_seed_and_the_offsets_it_was_built_with(
+    tmp_path, store, stub_renders
+) -> None:
+    """A kit that did not would be a folder whose decks could never be rebuilt
+    from what the friends were actually sent."""
+    manifest = built_for(tmp_path, store, FRIENDS, seed=777)
+    assert manifest["deck"]["seed"] == 777
+    assert manifest["deck"]["page_size"] == votes.PAGE
+    assert [row["file"] for row in manifest["deck"]["friends"]] == [
+        "orders/Ada.json",
+        "orders/Bo_Jones.json",
+        "orders/C_J.json",
+    ]
+    held = json.loads((tmp_path / "kit" / votes.MANIFEST_NAME).read_text(encoding="utf-8"))
+    assert held["deck"] == manifest["deck"]
+    assert held["record"] == store
+    # The leg's own numbers stay out of the folder that goes to somebody else's
+    # computer: this is what the kit IS, not what it cost to make.
+    assert "render" not in held and "where" not in held
+
+
+def test_a_rebuild_keeps_the_seed_the_friends_are_half_way_through(
+    tmp_path, store, stub_renders
+) -> None:
+    """`--out` at a kit that exists is a resume. A re-drawn seed would rotate
+    every page nobody had reached yet out from under them while leaving the votes
+    they had already given attached to seats somewhere else entirely."""
+    first = built_for(tmp_path, store, FRIENDS, seed=555)
+    again = votes.build(
+        stamp=store, out=tmp_path / "kit", limit=2, friends=FRIENDS, log=lambda _line: None
+    )
+    assert again["deck"]["seed"] == first["deck"]["seed"] == 555
+    told = votes.build(
+        stamp=store,
+        out=tmp_path / "kit",
+        limit=2,
+        friends=FRIENDS,
+        seed=556,
+        log=lambda _line: None,
+    )
+    assert told["deck"]["seed"] == 556
+
+
+@pytest.mark.parametrize("friends", [("Ada", "Ada"), ("Bo Jones", "Bo-Jones"), ("Ada", "  ")])
+def test_two_friends_the_kit_cannot_tell_apart_are_refused_at_the_flag(
+    tmp_path, store, friends
+) -> None:
+    """A collision is one friend handed two decks or two friends sharing a slot,
+    and the slug is the order file's name. Found at the flag or not at all."""
+    with pytest.raises(votes.VotesRefused):
+        votes.build(stamp=store, out=tmp_path / "kit", friends=friends, log=lambda _line: None)
+
+
+def test_the_first_screen_asks_who_they_are_and_the_pick_selects_the_deck(
+    tmp_path, store, stub_renders
+) -> None:
+    """One zip for everybody — the pictures are not duplicated per person — so the
+    page is what routes a friend to their own walk. A typed name survives only for
+    the kit nobody was named in, where the same master order is rotated by a hash
+    of it: one ordering rule, a worse offset."""
+    built_for(tmp_path, store, FRIENDS)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert "function offsetFor(name)" in page
+    assert 'button.addEventListener("click", () => begin(deck.name));' in page
+    assert "return DECKS.length ? 0 : seedOf(name) % Math.max(1, ORDER.length);" in page
+    # The deck is derived from the master order and an offset, never fetched:
+    # `file://` refuses a sibling and the failure would be silent.
+    assert "fetch(" not in page
+
+
+def test_a_page_is_finished_by_the_button_that_says_so_and_by_nothing_else(
+    tmp_path, store, stub_renders
+) -> None:
+    """*Go as far as you feel like, but finish any page you start* is the whole
+    instruction, so a page somebody jumped to from the pager and left has to stay
+    distinguishable from one they worked — which is what the flag on every row is
+    for."""
+    built_for(tmp_path, store, FRIENDS)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    finishing = page.split("function finishPage()")[1].split("\n}")[0]
+    assert "completed.push(page)" in finishing
+    drawing = page.split("function drawPage(next)")[1].split("\n}")[0]
+    assert "completed" not in drawing, "turning a page marks it finished"
+    assert 'document.getElementById("done").addEventListener("click", finishPage);' in page
+
+
+def test_every_exported_row_carries_its_page_position_time_and_whether_it_was_finished(
+    tmp_path, store, stub_renders
+) -> None:
+    """Additive: `votes` is still `{key: 1 | 2}` and the seven fields under it mean
+    what they meant, so a reader that only knows 2.0 loses the new columns and
+    nothing else. The trailing page of a partial pass stays in the file with
+    `page_complete: false` — it is the one page whose votes were taken under a
+    stopping decision, and dropping it would hide exactly that."""
+    built_for(tmp_path, store, FRIENDS)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    building = page.split("function rows()")[1].split("\n}\n")[0]
+    for field in ("key:", "vote:", "page:", "position:", "at:", "page_complete:"):
+        assert field in building, field
+    assert "position: seat % PER_PAGE," in building
+    assert "page_complete: done.has(which)," in building
+    shape = page.split("function exported()")[1].split("\n}\n")[0]
+    for field in ("viewer:", "record:", "name:", "order_seed:", "votes:", "pages_visited:"):
+        assert field in shape, field
+    for field in ("deck_offset:", "page_size:", "pages_completed:", "rows: rows()"):
+        assert field in shape, field
+    # The labeler is the name that was submitted and never one this tool infers.
+    assert "name: who," in shape
+
+
+def test_the_page_probes_storage_and_says_so_when_the_browser_refuses_it(
+    tmp_path, store, stub_renders
+) -> None:
+    """Chromium, Firefox and WebKit were all measured keeping `localStorage`
+    across a browser restart from a `file://` URL. **Safari itself could not be**
+    — it is macOS and iOS only — and it has refused local storage on `file://`
+    before, so the page probes rather than trusts: a page that only wrapped its
+    writes would keep nothing there and still say the choices were being saved.
+    The band is on screen and the way back is the friend's own export, which is
+    also the way back for a friend who changed computers — so it is offered in
+    every browser rather than only a broken one."""
+    built_for(tmp_path, store, FRIENDS)
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert 'localStorage.setItem("votes/probe", "1");' in page
+    assert "function paintStorage()" in page
+    assert 'id="nostore"' in page
+    assert "function resumeFrom(text)" in page
+    assert "if (held.record !== RECORD)" in page
+    assert 'accept=".json,application/json"' in page
+
+
+def test_a_page_is_twenty_five_pictures(tmp_path, store, stub_renders) -> None:
+    """Down from 100 on 2026-09-09, and it is a unit of *finishing* rather than of
+    layout: a page has to be short enough that starting one is not a commitment
+    somebody regrets, because finishing the one you start is what Matt asks."""
+    assert votes.PAGE == 25
+    manifest = built_for(tmp_path, store, FRIENDS, per_page=10)
+    assert manifest["deck"]["page_size"] == 10
+    page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
+    assert "const PER_PAGE = 10;" in page

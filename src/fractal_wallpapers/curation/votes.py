@@ -58,13 +58,62 @@ which would be un-reproducible at the seat. It rides in the inlined list beside
 the key rather than in the filename, where it would be a second thing a friend
 can read off a tile and sort by.
 
-## The order is per-viewer and it is a permutation, not a shuffle of a window
+## One master permutation, rotated per friend
 
-Seeded from the viewer's own name, so reopening the folder resumes the same walk
-rather than re-randomising what they have already seen. There is no sort, no
-filter and no search: this is the one place in the project where a person is asked
-what they like, and every affordance for finding a particular picture is an
-affordance for voting on something other than the picture in front of them.
+The kit draws **one** permutation over its seats at build time, from a seed
+recorded in the kit's manifest, and every deck is that same permutation
+**rotated**: friend *i* of *F* starts at `round(i*N/F)`. A partial pass is then a
+uniform random sample of the record rather than a prefix of a fixed order, every
+picture collects close to the same number of votes for the same total effort, and
+two friends who both stop after two pages have voted on **disjoint** pictures.
+There is no coordination and nothing to reconcile: the rotation does it.
+
+**Identity is a pick, not a hash of a typed name.** The first screen lists the
+names the kit was built for and the choice selects the deck. A kit built with no
+names falls back to a typed name, whose deck is the same master permutation
+rotated by a hash of it — the same machine with a worse offset, so there is one
+ordering rule here and not two.
+
+**The order files ship and the page never reads them.** `file://` refuses `fetch`
+of a sibling file, so the page inlines the master permutation and the offsets and
+derives each deck from them; `orders/<slug>.json` is the written record of the
+same arithmetic, for an ingest and for a person checking a deck by eye.
+[`tests/test_votes.py`] holds the two to agreeing.
+
+There is no sort, no filter and no search: this is the one place in the project
+where a person is asked what they like, and every affordance for finding a
+particular picture is an affordance for voting on something other than the picture
+in front of them.
+
+## A page is finished on purpose, and that is what the rows record
+
+Matt's instruction to the friends is *go as far as you feel like, but finish any
+page you start*, so [`PAGE`] is small enough to be a unit somebody finishes and
+the page carries a **Finish page** button that is the only thing marking one
+complete. Turning to a page from the pager marks nothing: a page a person jumped
+to and left is exactly the case the flag exists to tell apart. The trailing page
+of a pass is therefore the one page whose votes were taken under a stopping
+decision, it stays in the export, and every row on it reads `page_complete: false`
+rather than being dropped.
+
+## Progress survives the browser being shut, and it is probed rather than assumed
+
+`localStorage` under `file://` is the mechanism, and **all three engines keep it
+across a browser restart** — measured 2026-09-09 by driving this kit from a
+`file://` URL in Chromium 153, Firefox 155 and WebKit 26.6, voting, closing the
+browser, and reopening the folder on the same profile. `curation/GALLERY.md`'s
+*Progress persists, and the page probes rather than trusts* has the readings.
+
+**What could not be measured is Safari itself**, which is macOS and iOS only and
+so cannot be run from this box; WebKit is its engine and not the same product,
+and Safari has refused local storage on `file://` pages in the past. So the page
+**probes** on the way in — a write, a read and a remove — rather than trusting
+any of this. If the probe throws, it says on screen that this browser will not
+remember anything and falls back to the one thing every browser allows from a
+local file: **the friend's own export**, saved with the button that was already
+there and loaded back through `Resume from file`. That button is on screen in
+every browser and not only a broken one, because a friend who has changed
+computers has the same problem and the same answer.
 
 **The per-page counts under the pager are the one exception, and they are about
 the person rather than about the pictures.** A page nobody has opened and a page
@@ -95,15 +144,27 @@ exported_at}` -- [`VIEWER`] names the shape. An export is the **complete** state
 every time, so it is idempotent by name and the latest file per person wins. There
 is no ingest in this module and there is not meant to be one yet: the schema is the
 contract and the votes have to exist before anything reads them.
+
+**3.0 adds and never rewrites.** Every field above means what it meant, `votes` is
+still `{<recipe key>: 1 | 2}`, and the labeler is still the name that was
+submitted. What is new sits beside them: `deck_offset` and `page_size` say which
+walk the votes were taken on, `pages_completed` says which pages were finished,
+and **`rows` is the same votes as records** — one object per vote carrying
+`{key, vote, page, position, at, page_complete}`, in deck order. A reader that
+only knows 2.0 reads a 3.0 export correctly and loses only the new columns, which
+is the whole reason the vote is written twice rather than `votes` being reshaped
+into objects.
 """
 
 from __future__ import annotations
 
 import html
 import json
+import random
 import shutil
 import time
 import zipfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from fractal_wallpapers.curation import release, tentative
@@ -112,14 +173,17 @@ from fractal_wallpapers.curation import release, tentative
 #: reads it before anything else, because the friends' copies of a kit outlive
 #: this checkout's memory of what version wrote them.
 #:
-#: **`"2.0"` from 2026-09-05**, Matt's spelling, and it is deliberately not
-#: `votes/v2`: the first version spelled itself `votes/v1` and an ingest telling
-#: the two apart is telling `"votes/v1"` from `"2.0"`, which is a comparison no
-#: parser can get subtly wrong. What changed under it is the viewer and not the
-#: schema — a v1 export and a 2.0 export carry the same seven fields and the same
-#: vote values, so the version says which page a person was looking at rather
-#: than how to read what came back.
-VIEWER = "2.0"
+#: **`"3.0"` from 2026-09-09**, Matt's spelling, and it is deliberately not
+#: `votes/v3`: the first version spelled itself `votes/v1` and an ingest telling
+#: the two apart is telling `"votes/v1"` from `"3.0"`, which is a comparison no
+#: parser can get subtly wrong.
+#:
+#: 2.0 and 1 were the same seven fields — the version named the page a person was
+#: looking at and not how to read what came back. **3.0 is the first that names
+#: the file**: it carries four more fields, every one of them additive, and the
+#: seven under them are untouched. See the module docstring's *What ingest will be
+#: handed*.
+VIEWER = "3.0"
 
 #: What every seat is rendered at. The frame and not a [`release.Regime`]: the
 #: supersample under it is the caller's, priced by `scratch/votes_pilot`, and the
@@ -176,13 +240,22 @@ CHROMA = "420"
 #: and 4:2:2 is a third answer nobody asked for.
 SUBSAMPLING = {"444": 0, "420": 2}
 
-#: How many seats a page of the viewer holds. A thousand seats is ten pages, which
-#: is a number a person can hold in their head while deciding whether to carry on.
-PAGE = 100
+#: How many seats a page of the viewer holds. **25 from 2026-09-09, down from
+#: 100**, and it is a unit of *finishing* rather than of layout: Matt's
+#: instruction to the friends is "go as far as you feel like, but finish any page
+#: you start", so a page has to be short enough that starting one is not a
+#: commitment somebody regrets. A thousand seats is forty pages, which is a longer
+#: pager and a shorter decision.
+PAGE = 25
 
-#: The three names a kit's folder holds beside its two picture directories.
+#: The names a kit's folder holds beside its two picture directories. `ORDERS` is
+#: one small JSON file per named friend; a kit built with no names has no such
+#: directory, because the un-named deck is derived from what gets typed and there
+#: is nothing to write down in advance.
 PAGE_NAME = "index.html"
 READ_ME = "README.txt"
+MANIFEST_NAME = "manifest.json"
+ORDERS = "orders"
 FULLS, THUMBS, STAGING = "full", "thumbs", "_png"
 
 
@@ -459,9 +532,177 @@ def cut(png: Path, job: dict, fulls: Path, thumbs: Path, quality: int, chroma: s
 
 
 # --------------------------------------------------------------------------- #
+# The decks.
+# --------------------------------------------------------------------------- #
+def _kit_seed(directory: Path, seed: int | None) -> int:
+    """The master seed for a kit: the caller's, the kit's own, or a fresh draw.
+
+    In that order, and the middle one is the point: `--out` at a kit that already
+    exists is a **resume**, and a resume that re-drew the seed would rotate every
+    friend's remaining pages out from under them while leaving the votes they had
+    already given attached to seats in other places.
+    """
+    if seed is not None:
+        return int(seed)
+    held = Path(directory) / MANIFEST_NAME
+    if held.is_file():
+        try:
+            return int(json.loads(held.read_text(encoding="utf-8"))["deck"]["seed"])
+        except (ValueError, KeyError, TypeError, OSError):
+            # A manifest this cannot read is one this did not write. A fresh draw
+            # is the honest answer and the new one is recorded a moment later.
+            pass
+    return draw_seed()
+
+
+def draw_seed() -> int:
+    """A fresh master seed, 32 bits. Drawn here so there is one place it is drawn.
+
+    A kit that is rebuilt takes the seed off its own `manifest.json` instead
+    ([`build`]), so this fires once per kit and never on a resume: a rebuild that
+    re-drew would hand every friend a different deck from the one they are half
+    way through.
+    """
+    return random.SystemRandom().getrandbits(32)
+
+
+def master_order(count: int, seed: int) -> list[int]:
+    """The one permutation a kit's decks are rotations of, from `seed`.
+
+    Fisher-Yates spelled out rather than `random.shuffle`, because this is a
+    number a kit is reproduced from months later and the loop is the definition.
+    The permutation is also *written into the kit* — the page inlines it and
+    `orders/<slug>.json` expands it — so reproducing a deck is normally reading a
+    file, and the seed is what regenerates one when the file is gone.
+    """
+    draw = random.Random(int(seed))
+    out = list(range(max(0, int(count))))
+    for i in range(len(out) - 1, 0, -1):
+        j = draw.randrange(i + 1)
+        out[i], out[j] = out[j], out[i]
+    return out
+
+
+def deck_offsets(count: int, friends: Sequence[str]) -> list[int]:
+    """Where each friend starts in the master order: `round(i*N/F)` for friend i.
+
+    Evenly spaced and nothing cleverer, which is the whole property: F friends who
+    each get through k pages have covered F*k*PAGE **distinct** seats with no
+    overlap at all until somebody passes their neighbour's start, and every
+    picture is reached by the same number of decks in the same number of pages.
+    """
+    total = len(friends)
+    return [round(index * int(count) / total) for index in range(total)]
+
+
+def rotated(order: Sequence[int], offset: int) -> list[int]:
+    """`order` started at `offset` and wrapped. A deck, from the master order."""
+    order = list(order)
+    if not order:
+        return []
+    at = int(offset) % len(order)
+    return order[at:] + order[:at]
+
+
+def slug_for(name: str) -> str:
+    """A friend's name as a filename stem: alphanumerics kept, the rest an `_`.
+
+    Refusing a collision is [`decks`]'s job and not this function's -- two names
+    that slug the same are a mistake at the flag, and this has no way to tell
+    which of the two it is being asked about.
+    """
+    kept = "".join(character if character.isalnum() else "_" for character in str(name).strip())
+    return kept.strip("_") or "friend"
+
+
+def decks(count: int, friends: Sequence[str]) -> list[dict]:
+    """`[{name, slug, offset}]` -- one deck per friend, in the order they were named.
+
+    The offsets are [`deck_offsets`] and the order the names were given in is the
+    order they are spaced in, so re-running a build with the same list produces
+    the same decks and adding a name to the end of it does not.
+
+    Two names that are the same, or that slug the same, are **refused**: the slug
+    is the order file's name and the export joins on the name a person picked, so
+    a collision is either one friend receiving two decks or two friends sharing a
+    slot. Both are found at the flag or not at all.
+    """
+    names = [str(name).strip() for name in friends]
+    if any(not name for name in names):
+        raise VotesRefused("a friend's name cannot be blank.")
+    if len(set(names)) != len(names):
+        raise VotesRefused(f"two friends are named the same: {sorted(names)}")
+    offsets = deck_offsets(count, names)
+    rows = [
+        {"name": name, "slug": slug_for(name), "offset": offset}
+        for name, offset in zip(names, offsets, strict=True)
+    ]
+    slugs = [row["slug"] for row in rows]
+    if len(set(slugs)) != len(slugs):
+        raise VotesRefused(
+            f"two friends' names become the same filename: {sorted(slugs)}. "
+            "A deck is written as orders/<name>.json, so give them apart names."
+        )
+    return rows
+
+
+def write_orders(
+    directory: Path,
+    stamp: str,
+    order: Sequence[int],
+    rows: Sequence[dict],
+    seed: int,
+    per_page: int,
+) -> list[dict]:
+    """Write `orders/<slug>.json` per friend and return the rows for the manifest.
+
+    Each file is the friend's whole deck expanded -- the same thing the page
+    derives from the master order and the offset, written out so that a deck can
+    be read without running the page, diffed against another, or joined against an
+    export by a reader that never saw this module.
+    """
+    where = Path(directory) / ORDERS
+    where.mkdir(parents=True, exist_ok=True)
+    written = []
+    for row in rows:
+        deck = rotated(order, row["offset"])
+        path = where / f"{row['slug']}.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "schema": 1,
+                    "viewer": VIEWER,
+                    "record": str(stamp),
+                    "name": row["name"],
+                    "order_seed": int(seed),
+                    "offset": int(row["offset"]),
+                    "page_size": int(per_page),
+                    "seats": len(deck),
+                    "pages": max(1, -(-len(deck) // max(1, int(per_page)))),
+                    "order": deck,
+                },
+                ensure_ascii=False,
+            )
+            + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        written.append({**row, "file": f"{ORDERS}/{path.name}"})
+    return written
+
+
+# --------------------------------------------------------------------------- #
 # The folder a friend opens.
 # --------------------------------------------------------------------------- #
-def page(directory: Path, stamp: str, jobs: list[dict]) -> Path:
+def page(
+    directory: Path,
+    stamp: str,
+    jobs: list[dict],
+    order: Sequence[int] | None = None,
+    rows: Sequence[dict] = (),
+    seed: int = 0,
+    per_page: int = PAGE,
+) -> Path:
     """Write `index.html`. Self-contained, and openable over `file://`.
 
     The inlined seat list is `{"key": ..., "ss": ...}` per seat, in seat order.
@@ -471,14 +712,25 @@ def page(directory: Path, stamp: str, jobs: list[dict]) -> Path:
     aggregate. **The mode is not in it**: a page carrying the mode is a page a
     friend can group by, which is the module docstring's whole objection to
     putting anything but the position in a filename.
+
+    **The decks are inlined as the master order plus one offset per name**, and
+    not as F expanded permutations: `file://` refuses to fetch `orders/`, so the
+    page has to carry them, and a rotation is the one shape that carries F decks
+    in N integers rather than F*N. The expanded files ship anyway — they are the
+    readable record of the same arithmetic, and [`write_orders`] writes them.
     """
     path = directory / PAGE_NAME
     seats = [{"key": job["key"], "ss": int(job.get("ss", SUPERSAMPLE))} for job in jobs]
+    order = list(range(len(jobs))) if order is None else list(order)
+    picks = [{"name": row["name"], "offset": int(row["offset"])} for row in rows]
     writing = Path(str(path) + ".writing")
     writing.write_text(
         _PAGE.replace("__RECORD__", html.escape(str(stamp)))
         .replace("__VIEWER__", html.escape(VIEWER))
-        .replace("__PAGE__", str(int(PAGE)))
+        .replace("__PAGE__", str(int(per_page)))
+        .replace("__SEED__", str(int(seed)))
+        .replace("__ORDER__", json.dumps(order))
+        .replace("__DECKS__", json.dumps(picks, ensure_ascii=False))
         .replace("__SEATS__", json.dumps(seats, ensure_ascii=False)),
         encoding="utf-8",
         newline="\n",
@@ -487,10 +739,16 @@ def page(directory: Path, stamp: str, jobs: list[dict]) -> Path:
     return path
 
 
-def read_me(directory: Path) -> Path:
-    """The paragraph the friends read. One, and no jargon in it."""
+def read_me(directory: Path, friends: Sequence[str] = ()) -> Path:
+    """The paragraph the friends read. One, and no jargon in it.
+
+    The first line differs on whether the kit names anybody, because it is the
+    first thing they do: a named kit is *tap your name*, an un-named one is *type
+    a name*. Everything after it is the same for both.
+    """
     path = directory / READ_ME
-    path.write_text(_READ_ME, encoding="utf-8", newline="\n")
+    opening = _NAMED if friends else _TYPED
+    path.write_text(_READ_ME.replace("__WHO__", opening), encoding="utf-8", newline="\n")
     return path
 
 
@@ -533,9 +791,12 @@ def build(
     supersample: int = SUPERSAMPLE,
     supersample_for: dict | None = None,
     workers: int | None = None,
+    friends: Sequence[str] = (),
+    per_page: int = PAGE,
+    seed: int | None = None,
     log=print,
 ) -> dict:
-    """The whole kit: render, encode, thumbnail, page, paragraph, zip.
+    """The whole kit: render, encode, thumbnail, page, paragraph, decks, zip.
 
     Resumable at the seat: a seat whose two JPEGs are already there is not
     rendered again, so a killed leg picks up where it stopped and a kit rebuilt at
@@ -550,11 +811,18 @@ def build(
     cheapest first so the fulls a person can look at start landing early, each is
     the locked three workers in turn and never two pools at once, and every seat
     is encoded and its PNG deleted as it arrives regardless of which pass made it.
+
+    **The seed is drawn once per kit and then belongs to the kit.** A rebuild
+    reads it back off the kit's own `manifest.json` unless `seed` names another,
+    because the decks are what the friends are half way through and a rebuild that
+    re-drew would move every picture they had not reached yet.
     """
     if out is None:
         raise VotesRefused("a kit is built into a directory; name one with --out.")
     if chroma not in SUBSAMPLING:
         raise VotesRefused(f"{chroma!r} is not a chroma; it is one of {sorted(SUBSAMPLING)}.")
+    if int(per_page) < 1:
+        raise VotesRefused(f"a page holds at least one seat, not {per_page}.")
     directory = Path(out)
     workers = release.DEFAULT_WORKERS if workers is None else int(workers)
     overrides = {str(mode): int(value) for mode, value in (supersample_for or {}).items()}
@@ -601,18 +869,53 @@ def build(
         # budget is taken off, so both are here rather than one derived twice.
         "legs": legs,
     }
-    written = page(directory, stamp, jobs)
-    read_me(directory)
+    seed = _kit_seed(directory, seed)
+    order = master_order(len(jobs), seed)
+    deck_rows = decks(len(jobs), friends)
+    written_orders = (
+        write_orders(directory, stamp, order, deck_rows, seed, per_page) if friends else []
+    )
+    pages = max(1, -(-len(jobs) // int(per_page)))
+    deck = {
+        "seed": int(seed),
+        "page_size": int(per_page),
+        "pages": pages,
+        # What was written down, and it is empty when nobody was named: an
+        # un-named kit's deck is a rotation by a hash of whatever gets typed, so
+        # there is no offset to record before somebody types it.
+        "friends": written_orders,
+    }
+    written = page(directory, stamp, jobs, order, deck_rows, seed, per_page)
+    read_me(directory, friends)
+    kit_manifest = {
+        "schema": 2,
+        "viewer": VIEWER,
+        "record": stamp,
+        "seats": len(jobs),
+        "deck": deck,
+        "order": order,
+    }
+    # In the kit and therefore in the zip, because a kit that does not carry its
+    # own seed and offsets cannot be reproduced from what a friend was sent, and
+    # the rebuild above reads its seed back out of it. The leg's own numbers --
+    # what it rendered, how long it took, where it wrote -- are the caller's and
+    # stay out of a folder that goes to somebody else's computer.
+    (directory / MANIFEST_NAME).write_text(
+        json.dumps(kit_manifest, ensure_ascii=False, indent=1) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     staging = directory / STAGING
     if staging.is_dir() and not any(staging.iterdir()):
         staging.rmdir()
     bundle = archive(directory, log)
     full_bytes = [row["full_bytes"] for row in sizes]
     manifest = {
-        "schema": 1,
+        "schema": 2,
         "viewer": VIEWER,
         "record": stamp,
         "seats": len(jobs),
+        "deck": deck,
         "encoding": {
             "quality": int(quality),
             "chroma": chroma,
@@ -642,6 +945,14 @@ def build(
         f"[votes] {len(jobs)} seat(s) at q{quality} {chroma}, "
         f"{manifest['zip_bytes'] / 1e6:.1f} MB zipped"
     )
+    log(
+        f"[votes] seed {seed}, {per_page} a page, {pages} page(s), "
+        + (
+            ", ".join(f"{row['name']}@{row['offset']}" for row in deck_rows)
+            if deck_rows
+            else "no names given — the deck is rotated by a hash of what gets typed"
+        )
+    )
     return manifest
 
 
@@ -649,10 +960,18 @@ def build(
 #: sentence in it is something they have to do -- there is no explanation of what
 #: a fractal is, what a seat is, or what happens to the file afterwards, because
 #: none of that changes what they should click.
+#: The first line of it, which is the only line that differs between a kit that
+#: names its friends and one that does not: the pick is what selects a deck.
+_NAMED = (
+    "Pick your name from the list when it asks — everybody gets a\n"
+    "different set of pictures, so please use your own."
+)
+_TYPED = "Type your name when it asks."
+
 _READ_ME = """Thanks for helping pick wallpapers.
 
 Unzip this folder somewhere and open index.html — it opens in your browser and
-needs nothing installed. Type your name when it asks. You'll see pages of
+needs nothing installed. __WHO__ You'll see pages of
 pictures. If you like one, click the thumbs-up under it; if you really like one,
 click the star instead. Skip everything else — most of them should be skipped,
 and there's no number you're trying to reach. Click a picture to see it large —
@@ -660,15 +979,24 @@ the same three choices are buttons underneath it, Average, thumbs-up and star �
 and press Escape to come back. Your choices are saved as you go, so you can close
 the page and come back to it later.
 
+Go as far as you feel like — but please finish any page you start. A page is 25
+pictures, and there's a "Finish page" button at the bottom of each one that takes
+you to the next. That button is how the page counts as finished, so use it rather
+than the numbers at the top when you've worked all the way through.
+
 The keyboard does the same three things to whichever picture you're pointing at,
 or to the large one if you have one open: 2 for the thumbs-up, 3 for the star,
 and 1 for an average one. Any of the three closes the large picture, so you can
 go straight on to the next.
 
-When you're done, click Export at the top. Your browser will save a small file.
-Send that file back and you're finished.
+When you're done — or any time before that — click Export at the top. Your
+browser will save a small file. Send that file back and you're finished.
 
-If somebody else wants a turn on the same computer, they can just type their own
+If a yellow line at the top says your browser can't remember your choices, there
+is nothing to fix — just click Export before you close the page, and when you
+come back click "Resume from file" and pick the file you saved.
+
+If somebody else wants a turn on the same computer, they can pick their own
 name — everyone's choices are kept separately, so you won't be in each other's
 way. "Start over" at the top is the other thing: it erases every rating on the
 computer, yours and theirs, and it asks you twice before it does. Export first.
@@ -700,7 +1028,11 @@ _PAGE = """<!doctype html>
   .tally { font-variant-numeric: tabular-nums; color: #c6cbd3; }
   .tally .up { color: var(--up); }
   .tally .star { color: var(--star); }
-  .pager { display: flex; gap: 5px; flex-wrap: wrap; }
+  .progress { font-variant-numeric: tabular-nums; color: #8f97a3; }
+  /* Forty pages at 25 a page, so the pager gets its own row and a ceiling on
+     its height rather than pushing Export off the end of the first one. */
+  .pager { display: flex; gap: 5px; flex-wrap: wrap; flex-basis: 100%;
+           max-height: 82px; overflow-y: auto; }
   .pager button { display: flex; flex-direction: column; align-items: center;
                   gap: 1px; line-height: 1.15; min-width: 36px; padding: 4px 9px; }
   /* Small type, and the only thing it has to do is answer "have I worked this
@@ -710,6 +1042,9 @@ _PAGE = """<!doctype html>
   .pager .count { font-size: 10px; font-variant-numeric: tabular-nums;
                   color: #666e7c; }
   .pager .count.worked { color: #e8eaed; font-weight: 700; }
+  /* A finished page is the one thing on the strip that is not a count, so it is
+     drawn as an edge rather than as a third number. */
+  .pager button.done { border-color: var(--star); }
   button { background: #262b34; color: #e8eaed; border: 1px solid #39404b;
            border-radius: 5px; padding: 5px 10px; font: inherit; cursor: pointer; }
   button:hover { background: #333a45; }
@@ -724,8 +1059,21 @@ _PAGE = """<!doctype html>
   #confirm b { color: #fff1f2; }
   button.danger { background: #b91c1c; border-color: #ef4444; color: #fff5f5; }
   button.danger:hover { background: #dc2626; }
-  main { display: grid; gap: 12px; padding: 14px 14px 70px;
+  /* The band a browser that will not keep localStorage gets. Amber and not red:
+     nothing has gone wrong and nothing has been lost, but Export is now the only
+     thing that saves. */
+  #nostore { background: #3a2a08; border-bottom: 1px solid #92400e; color: #fde68a;
+             padding: 9px 14px; }
+  main { display: grid; gap: 12px; padding: 14px 14px 20px;
          grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  /* The end of a page, and the only thing that marks one finished. Full width
+     under the grid, because "finish any page you start" is the one instruction
+     the friends are given and it has to be where they run out of pictures. */
+  #foot { padding: 0 14px 70px; display: flex; gap: 12px; align-items: center;
+          flex-wrap: wrap; }
+  #foot button { padding: 10px 18px; font-size: 15px; }
+  #foot .note { color: #8f97a3; }
+  #done.done { background: var(--star); border-color: #22c55e; color: #f2fdf5; }
   @media (max-width: 1100px) { main { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 680px) { main { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .tile { border: 3px solid transparent; border-radius: 8px; overflow: hidden;
@@ -756,17 +1104,27 @@ _PAGE = """<!doctype html>
   #gate p { color: #aeb5bf; }
   #gate input { background: #0b0d10; color: #e8eaed; border: 1px solid #39404b;
                 border-radius: 5px; padding: 8px 10px; font: inherit; width: 220px; }
+  #names { display: flex; gap: 8px; flex-wrap: wrap; }
+  #names button { padding: 9px 16px; font-size: 15px; }
   [hidden] { display: none !important; }
 </style>
 <header hidden id="strip">
   <span class="who" id="who"></span>
+  <button id="switch">Not you?</button>
   <span class="tally"><span class="up" id="tallyup"></span>
     <span class="star" id="tallystar"></span></span>
+  <span class="progress" id="progress"></span>
   <span class="grow"></span>
-  <span class="pager" id="pager"></span>
+  <button id="resume">Resume from file</button>
   <button id="reset">Start over</button>
   <button id="export">Export</button>
+  <span class="pager" id="pager"></span>
 </header>
+<div id="nostore" hidden>
+  <b>This browser will not remember your choices when you close the page.</b>
+  Click <b>Export</b> before you close it, and <b>Resume from file</b> with that
+  file when you come back. Everything else works normally.
+</div>
 <div id="confirm" hidden>
   <b>Erase every rating on this computer?</b>
   <span id="confirmwhat"></span>
@@ -775,6 +1133,11 @@ _PAGE = """<!doctype html>
   <button id="keep">Cancel</button>
 </div>
 <main id="grid" hidden></main>
+<div id="foot" hidden>
+  <button id="done"></button>
+  <span class="note" id="footnote"></span>
+</div>
+<input id="resumefile" type="file" accept=".json,application/json" hidden>
 <div id="big" hidden>
   <img id="bigimg" alt="">
   <div class="bar">
@@ -786,13 +1149,18 @@ _PAGE = """<!doctype html>
 <div id="gate">
   <div>
     <h1>Pick the wallpapers you like</h1>
-    <p>Type your name, then rate the ones you like with the thumbs-up, and the
-       ones you really like with the star. Skip everything else.</p>
+    <p id="ask">Who are you?</p>
+    <p id="names" hidden></p>
+    <p id="typed" hidden><input id="name" placeholder="your name" autofocus>
+       <button id="start">Start</button></p>
+    <p>Rate the ones you like with the thumbs-up, and the ones you really like
+       with the star. Skip everything else.</p>
     <p>Keys: <b>2</b> thumbs-up, <b>3</b> star, <b>1</b> average — on whichever
        picture you are pointing at. Any of the three closes a large picture.</p>
     <p>Click a picture to see it large; the same three are buttons under it.</p>
-    <p><input id="name" placeholder="your name" autofocus>
-       <button id="start">Start</button></p>
+    <p>Go as far as you feel like, and finish any page you start — the
+       <b>Finish page</b> button at the bottom is what marks one done.</p>
+    <p><button id="resumegate">Resume from a file you exported</button></p>
   </div>
 </div>
 <script>
@@ -805,6 +1173,16 @@ const KEYS = SEATS.map((seat) => seat.key);
 const RECORD = "__RECORD__";
 const VIEWER = "__VIEWER__";
 const PER_PAGE = __PAGE__;
+// ONE permutation over the seats, drawn at build time from ORDER_SEED and
+// written into the kit rather than recomputed here. Every deck is this array
+// ROTATED: friend i of F starts at round(i*N/F), so two friends who each get
+// through two pages have voted on disjoint pictures and every picture is reached
+// by the same number of decks in the same number of pages. `orders/<name>.json`
+// holds each rotation expanded; the page derives them because `file://` will not
+// let it fetch a sibling file.
+const ORDER_SEED = __SEED__;
+const ORDER = __ORDER__;
+const DECKS = __DECKS__;
 const PAGES = Math.max(1, Math.ceil(KEYS.length / PER_PAGE));
 // Every person's ratings live under SLOTS + their name, and the remembered name
 // lives beside that prefix rather than inside it. A COLON and not a slash, and
@@ -815,10 +1193,12 @@ const SLOTS = "votes/" + RECORD + "/";
 const NAME_KEY = "votes/" + RECORD + ":name";
 
 let who = "";
+let offset = 0;
 let votes = {};
+let at = {};
 let visited = [];
+let completed = [];
 let order = [];
-let seed = 0;
 let page = 0;
 let hovered = null;
 let open = null;
@@ -826,9 +1206,10 @@ let scrolled = 0;
 
 function pad(index) { return "s" + String(index).padStart(4, "0"); }
 
-// FNV-1a over the name, so the same person gets the same walk every time they
-// open the folder — a fresh shuffle on reopening would re-show what they had
-// already decided about.
+// FNV-1a over the name. It is no longer what decides a walk — the master order
+// is — and it survives for the one case that has no deck of its own: a kit built
+// with nobody named, where the person types a name and the same master order is
+// rotated by a hash of it. One ordering rule, a worse offset.
 function seedOf(text) {
   let hash = 2166136261;
   for (let i = 0; i < text.length; i++) {
@@ -838,38 +1219,55 @@ function seedOf(text) {
   return hash >>> 0;
 }
 
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+// The deck: the master order started at `by` and wrapped.
+function rotate(by) {
+  const at = ((by % ORDER.length) + ORDER.length) % ORDER.length;
+  return ORDER.slice(at).concat(ORDER.slice(0, at));
 }
 
-function permutation(count, source) {
-  const out = Array.from({length: count}, (_, i) => i);
-  for (let i = count - 1; i > 0; i--) {
-    const j = Math.floor(source() * (i + 1));
-    const swap = out[i]; out[i] = out[j]; out[j] = swap;
-  }
-  return out;
+function offsetFor(name) {
+  for (const deck of DECKS) { if (deck.name === name) return deck.offset; }
+  return DECKS.length ? 0 : seedOf(name) % Math.max(1, ORDER.length);
 }
 
 function slot() { return SLOTS + who; }
 
-function save() {
+// Probed on the way in rather than assumed, and the result is shown on screen.
+// Chromium, Firefox and WebKit were all measured keeping this across a browser
+// restart from a `file://` URL; Safari itself could not be, and has refused
+// local storage on `file://` before. A page that only wrapped its writes in
+// try/catch would keep nothing there and still tell a friend their choices were
+// being saved as they went, which is the one failure worth a probe.
+let keeping = (function () {
   try {
-    localStorage.setItem(slot(), JSON.stringify({votes: votes, pages: visited}));
-  } catch (e) { /* a private window keeps nothing; the page still works */ }
+    localStorage.setItem("votes/probe", "1");
+    localStorage.removeItem("votes/probe");
+    return true;
+  } catch (e) { return false; }
+})();
+
+function save() {
+  if (!keeping) return;
+  try {
+    localStorage.setItem(slot(), JSON.stringify(
+      {votes: votes, at: at, pages: visited, done: completed}));
+  } catch (e) { keeping = false; paintStorage(); }
 }
 
 function load() {
+  votes = {}; at = {}; visited = []; completed = [];
+  if (!keeping) return;
   try {
     const held = JSON.parse(localStorage.getItem(slot()) || "{}");
     votes = held.votes || {};
+    at = held.at || {};
     visited = held.pages || [];
-  } catch (e) { votes = {}; visited = []; }
+    completed = held.done || [];
+  } catch (e) { votes = {}; at = {}; visited = []; completed = []; }
+}
+
+function paintStorage() {
+  document.getElementById("nostore").hidden = keeping;
 }
 
 function tally() {
@@ -877,6 +1275,9 @@ function tally() {
   for (const key in votes) { if (votes[key] === 2) star++; else if (votes[key] === 1) up++; }
   document.getElementById("tallyup").textContent = "\\u{1F44D} " + up;
   document.getElementById("tallystar").textContent = "\\u2605 " + star;
+  document.getElementById("progress").textContent =
+    (up + star) + " rated \\u00b7 " + completed.length + " of " + PAGES +
+    " page" + (PAGES === 1 ? "" : "s") + " finished";
 }
 
 // Votes given on each page of THIS viewer's own walk, thumbs-up and stars
@@ -918,7 +1319,11 @@ const BY_KEY = new Map([["1", 0], ["2", 1], ["3", 2]]);
 // `kind` 0 is neutral.
 function setVote(index, kind) {
   const key = KEYS[index];
-  if (kind) votes[key] = kind; else delete votes[key];
+  // The timestamp is the moment the vote was cast and it goes with the vote:
+  // clearing drops both, so a row in the export can never carry the time of a
+  // decision that was later taken back.
+  if (kind) { votes[key] = kind; at[key] = Date.now(); }
+  else { delete votes[key]; delete at[key]; }
   save();
   tally();
   paintTile(index);
@@ -975,7 +1380,31 @@ function drawPage(next) {
     paintTile(index);
   }
   drawPager();
+  paintFoot();
   window.scrollTo(0, 0);
+}
+
+// The button that finishes a page, and the only thing that does. Turning to a
+// page from the pager marks nothing: a page somebody jumped to and left is
+// exactly the case `page_complete` exists to tell apart from one they worked.
+function paintFoot() {
+  const button = document.getElementById("done");
+  const note = document.getElementById("footnote");
+  const finished = completed.includes(page);
+  button.classList.toggle("done", finished);
+  button.textContent = finished
+    ? "\\u2713 Page " + (page + 1) + " finished" + (page + 1 < PAGES ? " \\u2014 next page" : "")
+    : "Finish page " + (page + 1) + (page + 1 < PAGES ? " \\u2014 next page" : "");
+  note.textContent = page + 1 < PAGES
+    ? "Go as far as you feel like \\u2014 but finish any page you start."
+    : "That is the last page. Click Export at the top and send the file back.";
+}
+
+function finishPage() {
+  if (!completed.includes(page)) { completed.push(page); save(); }
+  tally();
+  paintPager();
+  if (page + 1 < PAGES) drawPage(page + 1); else paintFoot();
 }
 
 function drawPager() {
@@ -1005,9 +1434,11 @@ function paintPager() {
   const counts = pageCounts();
   for (const button of document.getElementById("pager").querySelectorAll("button")) {
     const count = button.querySelector(".count");
-    const given = counts[Number(button.dataset.p)] || 0;
+    const which = Number(button.dataset.p);
+    const given = counts[which] || 0;
     count.textContent = String(given);
     count.classList.toggle("worked", given > 0);
+    button.classList.toggle("done", completed.includes(which));
   }
 }
 
@@ -1065,33 +1496,66 @@ function press(index, kind) {
   if (open === index) shut();
 }
 
-document.getElementById("start").addEventListener("click", begin);
+// The first screen is a PICK when the kit names anybody, because the choice is
+// what selects the deck and a typed name that is one letter off would hand
+// somebody a walk nobody was allotted. A kit built with no names keeps the box.
+function drawGate() {
+  const names = document.getElementById("names");
+  names.textContent = "";
+  names.hidden = !DECKS.length;
+  document.getElementById("typed").hidden = DECKS.length > 0;
+  document.getElementById("ask").textContent = DECKS.length
+    ? "Who are you? Everybody has a different set of pictures, so please pick your own name."
+    : "Who are you?";
+  for (const deck of DECKS) {
+    const button = document.createElement("button");
+    button.textContent = deck.name;
+    button.addEventListener("click", () => begin(deck.name));
+    names.appendChild(button);
+  }
+  document.getElementById("gate").hidden = false;
+  document.getElementById("strip").hidden = true;
+  document.getElementById("grid").hidden = true;
+  document.getElementById("foot").hidden = true;
+  document.getElementById("big").hidden = true;
+}
+
+document.getElementById("start").addEventListener("click", () => {
+  begin(document.getElementById("name").value.trim());
+});
 document.getElementById("name").addEventListener("keydown", (event) => {
-  if (event.key === "Enter") begin();
+  if (event.key === "Enter") begin(document.getElementById("name").value.trim());
+});
+document.getElementById("switch").addEventListener("click", () => {
+  open = null;
+  drawGate();
 });
 
-function begin() {
-  const typed = document.getElementById("name").value.trim();
-  if (!typed) return;
-  who = typed;
+function begin(name) {
+  if (!name) return;
+  who = name;
+  offset = offsetFor(who);
   try { localStorage.setItem(NAME_KEY, who); } catch (e) { /* nothing kept */ }
+  load();
   start();
 }
 
 function start() {
-  seed = seedOf(who);
-  order = permutation(KEYS.length, mulberry32(seed));
-  load();
+  order = rotate(offset);
   document.getElementById("gate").hidden = true;
   document.getElementById("strip").hidden = false;
   document.getElementById("grid").hidden = false;
+  document.getElementById("foot").hidden = false;
   document.getElementById("who").textContent = who;
+  paintStorage();
   tally();
   // The furthest page they reached, not the first: reopening the folder is
   // carrying on, and starting them again at page one is asking them to scroll
   // past everything they have already decided about.
   drawPage(visited.length ? Math.max(...visited) : 0);
 }
+
+document.getElementById("done").addEventListener("click", finishPage);
 
 for (const button of document.querySelectorAll("#big .bar button")) {
   button.addEventListener("click", () => {
@@ -1150,23 +1614,22 @@ function doReset() {
     for (const key of drop) localStorage.removeItem(key);
   } catch (e) { /* nothing was kept, so nothing needs removing */ }
   who = "";
+  offset = 0;
   votes = {};
+  at = {};
   visited = [];
+  completed = [];
   order = [];
-  seed = 0;
   page = 0;
   open = null;
   hovered = null;
   scrolled = 0;
   document.getElementById("confirm").hidden = true;
-  document.getElementById("big").hidden = true;
-  document.getElementById("strip").hidden = true;
-  document.getElementById("grid").hidden = true;
   document.getElementById("grid").textContent = "";
-  document.getElementById("gate").hidden = false;
+  drawGate();
   const typed = document.getElementById("name");
   typed.value = "";
-  typed.focus();
+  if (!DECKS.length) typed.focus();
 }
 
 document.getElementById("reset").addEventListener("click", askReset);
@@ -1185,17 +1648,51 @@ document.addEventListener("keydown", (event) => {
   if (target !== null) press(target, BY_KEY.get(event.key));
 });
 
-document.getElementById("export").addEventListener("click", () => {
-  const payload = {
+// The same votes as records, one row per vote, in the order this person walked
+// them. `key` and `vote` are what `votes` already carries; the four beside them
+// are what a partial pass needs before it can be read — which page, where on it,
+// when, and whether the page was ever finished. The trailing page of a pass is
+// the one place a stopping decision touched what somebody voted on, and it stays
+// in the file flagged rather than being dropped.
+function rows() {
+  const done = new Set(completed);
+  const out = [];
+  for (let seat = 0; seat < order.length; seat++) {
+    const key = KEYS[order[seat]];
+    if (!votes[key]) continue;
+    const which = Math.floor(seat / PER_PAGE);
+    out.push({
+      key: key,
+      vote: votes[key],
+      page: which,
+      position: seat % PER_PAGE,
+      at: at[key] ? new Date(at[key]).toISOString() : null,
+      page_complete: done.has(which),
+    });
+  }
+  return out;
+}
+
+function exported() {
+  return {
+    // The seven fields 1 and 2.0 carried, meaning exactly what they meant.
     viewer: VIEWER,
     record: RECORD,
     name: who,
-    order_seed: seed,
+    order_seed: ORDER_SEED,
     votes: votes,
     pages_visited: visited.slice().sort((a, b) => a - b),
     exported_at: new Date().toISOString(),
+    // 3.0, all of it additive.
+    deck_offset: offset,
+    page_size: PER_PAGE,
+    pages_completed: completed.slice().sort((a, b) => a - b),
+    rows: rows(),
   };
-  const blob = new Blob([JSON.stringify(payload, null, 1)], {type: "application/json"});
+}
+
+document.getElementById("export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(exported(), null, 1)], {type: "application/json"});
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = who.replace(/[^A-Za-z0-9_-]+/g, "_") + "_labels.json";
@@ -1205,16 +1702,83 @@ document.getElementById("export").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 });
 
+// --------------------------------------------------------------------------- //
+// Resume from the friend's own export.
+// --------------------------------------------------------------------------- //
+// The one way back that every browser allows from a `file://` page, and it is on
+// screen whether or not localStorage works: a friend who changed computers has
+// the same problem as a friend on WebKit, and one button answers both. A file
+// from another record is refused rather than merged — the keys would join to
+// nothing and the pages would mean somebody else's walk.
+function resumeFrom(text) {
+  let held;
+  try { held = JSON.parse(text); } catch (e) { held = null; }
+  if (!held || typeof held !== "object") {
+    window.alert("That file is not one this page exported.");
+    return;
+  }
+  if (held.record !== RECORD) {
+    window.alert("That file is from a different set of pictures (" + held.record + ").");
+    return;
+  }
+  const name = String(held.name || "").trim();
+  if (!name) { window.alert("That file does not say whose it is."); return; }
+  if (DECKS.length && !DECKS.some((deck) => deck.name === name)) {
+    window.alert("This kit has no deck for " + name + ".");
+    return;
+  }
+  who = name;
+  offset = typeof held.deck_offset === "number" ? held.deck_offset : offsetFor(who);
+  votes = held.votes || {};
+  visited = held.pages_visited || [];
+  completed = held.pages_completed || [];
+  at = {};
+  for (const row of held.rows || []) {
+    if (row && row.key && row.at) at[row.key] = Date.parse(row.at) || Date.now();
+  }
+  save();
+  try { localStorage.setItem(NAME_KEY, who); } catch (e) { /* nothing kept */ }
+  start();
+}
+
+const picker = document.getElementById("resumefile");
+picker.addEventListener("change", () => {
+  const file = picker.files && picker.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { resumeFrom(String(reader.result)); picker.value = ""; };
+  reader.readAsText(file);
+});
+for (const id of ["resume", "resumegate"]) {
+  document.getElementById(id).addEventListener("click", () => picker.click());
+}
+
+// A browser that keeps nothing gets the browser's own "are you sure" on the way
+// out, and only once there is something to lose. Where localStorage works this
+// never fires: leaving is not losing anything.
+window.addEventListener("beforeunload", (event) => {
+  if (keeping || !Object.keys(votes).length) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
+paintStorage();
 const remembered = (function () {
   try { return localStorage.getItem(NAME_KEY); } catch (e) { return null; }
 })();
-if (remembered) { who = remembered; start(); }
+if (remembered && (!DECKS.length || DECKS.some((deck) => deck.name === remembered))) {
+  begin(remembered);
+} else {
+  drawGate();
+}
 </script>
 """
 
 __all__ = [
     "CHROMA",
     "FRAME",
+    "MANIFEST_NAME",
+    "ORDERS",
     "PAGE",
     "QUALITY",
     "SUPERSAMPLE",
@@ -1225,14 +1789,21 @@ __all__ = [
     "archive",
     "build",
     "cut",
+    "deck_offsets",
+    "decks",
+    "draw_seed",
     "encode",
+    "master_order",
     "page",
     "parse_supersample_for",
     "plan",
     "read_me",
     "recipes_for",
+    "rotated",
     "rows_for",
     "render_fulls",
     "seat_name",
     "seat_supersample",
+    "slug_for",
+    "write_orders",
 ]
