@@ -459,11 +459,17 @@ def test_an_unreadable_boundary_raises_here_rather_than_returning_infinity() -> 
 # --------------------------------------------------------------------------- #
 def test_the_first_band_keeps_bare_names_and_every_later_one_prefixes() -> None:
     """Renaming the first band's directories would make every report quoting
-    `more_seed1` wrong about a run that still exists."""
-    assert trainer.run_name("more", 1, trainer.FIRST_BAND) == "more_seed1"
-    assert trainer.run_name("more", 1, "auc_ge4") == "auc_ge4_more_seed1"
-    assert trainer.band_path(trainer.FIRST_BAND).name == "band.json"
-    assert trainer.band_path("auc_ge4").name == "band_auc_ge4.json"
+    `more_seed1` wrong about a run that still exists.
+
+    The corpus is named on every call here rather than left to the default,
+    because this is a test about the BAND axis and the default on the other one
+    moves whenever a refit is adopted.
+    """
+    build = trainer.BUILD_CORPUS
+    assert trainer.run_name("more", 1, trainer.FIRST_BAND, build) == "more_seed1"
+    assert trainer.run_name("more", 1, "auc_ge4", build) == "auc_ge4_more_seed1"
+    assert trainer.band_path(trainer.FIRST_BAND, build).name == "band.json"
+    assert trainer.band_path("auc_ge4", build).name == "band_auc_ge4.json"
 
 
 def test_a_band_nobody_declared_is_refused() -> None:
@@ -474,7 +480,7 @@ def test_a_band_nobody_declared_is_refused() -> None:
 def _fitted(tmp_path, values: dict, band: str = "auc_ge4") -> None:
     """Write a `metrics.json` per `(arm, seed)` carrying the given statistics."""
     for (arm, seed), (statistic, spearman) in values.items():
-        directory = tmp_path / trainer.run_name(arm, seed, band)
+        directory = tmp_path / trainer.run_name(arm, seed, band)  # the default corpus
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "metrics.json").write_text(
             json.dumps(
@@ -535,7 +541,7 @@ def test_an_even_seed_count_takes_the_lower_middle_and_says_so(tmp_path, monkeyp
 # The bar.
 # --------------------------------------------------------------------------- #
 def _bar(tmp_path, band: str = "auc_ge4") -> None:
-    (tmp_path / f"bar_{band}.json").write_text(
+    (tmp_path / trainer.bar_path(band).name).write_text(
         json.dumps(
             {
                 "band": band,
@@ -610,7 +616,7 @@ def test_a_bar_stated_over_the_gate_column_reads_the_arm_there_too(tmp_path, mon
         said["held_out_on_the_gate_column"] = {"rows": 330, "auc_ge4": 0.51, "spearman": 0.30}
         path.write_text(json.dumps(said), encoding="utf-8")
 
-    bar = tmp_path / "bar_auc_ge4.json"
+    bar = tmp_path / trainer.bar_path("auc_ge4").name
     stated = json.loads(bar.read_text(encoding="utf-8"))
     stated["population"] = {"rows": 350, "slice": "gate_column", "gate_column_rows": 330}
     bar.write_text(json.dumps(stated), encoding="utf-8")
@@ -646,8 +652,14 @@ def test_the_build_corpus_keeps_the_bare_names_and_every_later_one_says_which() 
     reused the file would leave a run on disk that nothing could reproduce and
     nothing would look broken.
     """
-    assert trainer.CORPUS == trainer.BUILD_CORPUS, "the default is the ADOPTED corpus"
-    assert trainer.run_name("more", 2, "auc_ge4") == "auc_ge4_more_seed2"
+    # The default is the ADOPTED corpus, which is `corrected` since 2026-09-09 —
+    # `score-pool` writes the column a seating orders on, so an unflagged verb
+    # must mean the head that is live rather than the newest one fitted. Moving
+    # it is an act with a re-score and a bar move in it, never a tidy-up.
+    assert trainer.CORPUS in trainer.CORPORA
+    assert trainer.CORPUS == "corrected", "adopted 2026-09-09"
+    assert trainer.BUILD_CORPUS == "as_built", "the corpus whose files carry bare names"
+    assert trainer.run_name("more", 2, "auc_ge4", trainer.BUILD_CORPUS) == "auc_ge4_more_seed2"
     assert trainer.run_name("more", 2, "auc_ge4", "corrected") == "corrected_auc_ge4_more_seed2"
     assert trainer.run_name("more", 1, trainer.FIRST_BAND, "corrected") == "corrected_more_seed1"
 
@@ -755,3 +767,57 @@ def test_the_sheet_is_a_split_coordinate_and_never_a_model_input(tmp_path) -> No
     assert len(example) == 3, "a picture, a grade and an index — no cut and no block"
     assert example[1] == units[0].score
     assert not {"sheet", "block"} & set(trainer.CARRIED)
+
+
+# --------------------------------------------------------------------------- #
+# The pool scores, which are one-shot.
+# --------------------------------------------------------------------------- #
+def test_a_rescore_keeps_the_scores_it_supersedes_under_the_name_of_their_run(
+    tmp_path, monkeypatch
+) -> None:
+    """★ Every solve record ever taken resolves its order out of one file.
+
+    Overwriting it makes every prior record's ordering unreproducible with
+    nothing looking broken, so the archive is part of the write and not a flag.
+    It is named for the run that made the scores because a `p_ge4` means nothing
+    without the head behind it: 0.50 admits 27.8% of a pool under one of these
+    heads and 9.6% under the other.
+    """
+    monkeypatch.setattr(trainer, "root", lambda: tmp_path)
+    assert trainer.keep_superseded_pool_scores(log=lambda *_: None) is None, "nothing to keep"
+
+    live = trainer.pool_scores_path()
+    live.write_text(
+        json.dumps({"schema": 1, "head": trainer.HEAD, "run": "auc_ge4_more_seed2", "key": "a"})
+        + "\n",
+        encoding="utf-8",
+    )
+    assert trainer.pool_scores_run() == "auc_ge4_more_seed2"
+
+    kept = trainer.keep_superseded_pool_scores(log=lambda *_: None)
+    assert kept is not None and kept.name == "pool_scores_auc_ge4_more_seed2.jsonl"
+    assert not live.exists(), "the live file is MOVED, so a half-written re-score cannot pass"
+    assert json.loads(kept.read_text(encoding="utf-8"))["key"] == "a"
+
+    # A second archive of one run never overwrites the first: the first is the
+    # file the records taken under it were made against.
+    live.write_text(
+        json.dumps({"schema": 1, "head": trainer.HEAD, "run": "auc_ge4_more_seed2", "key": "b"})
+        + "\n",
+        encoding="utf-8",
+    )
+    again = trainer.keep_superseded_pool_scores(log=lambda *_: None)
+    assert again != kept and again.name.startswith("pool_scores_auc_ge4_more_seed2_")
+    assert json.loads(kept.read_text(encoding="utf-8"))["key"] == "a", "the first is untouched"
+
+
+def test_the_live_pool_scores_are_never_named_for_a_corpus() -> None:
+    """One file, whatever head wrote it — `solve` reads that path and only it.
+
+    A corpus-suffixed live file would mean a seating had to know which head was
+    adopted to find its own column, which is the question adoption exists to
+    answer once. The corpus shows up in the archive names and in the `run` field
+    on every row, never in the path a reader resolves.
+    """
+    assert trainer.pool_scores_path().name == "pool_scores.jsonl"
+    assert trainer.superseded_pool_scores_path("x").name == "pool_scores_x.jsonl"

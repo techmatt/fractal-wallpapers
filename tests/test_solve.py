@@ -79,9 +79,10 @@ class _EveryRowRead(dict):
 def a_pool_the_fine_head_has_read(monkeypatch):
     """Every synthetic candidate reads `p_fine(>=4) = 1.0`, for every test here.
 
-    [`solve.DEFAULT_FINE_BAR`] is `0.50` since 2026-09-08, so an unflagged pass
-    now narrows the pool to the rows the gallery-grade head has read at or above
-    it — and a synthetic candidate has no reading at all, which would leave every
+    [`solve.DEFAULT_FINE_BAR`] has been non-null since 2026-09-08 — `0.50` then
+    and `0.184` since the corrected refit was adopted on 2026-09-09 — so an
+    unflagged pass narrows the pool to the rows the gallery-grade head has read
+    at or above it — and a synthetic candidate has no reading at all, which would leave every
     pool in this file empty and every test in it measuring nothing.
 
     So the fixtures here stand in for a pool the head **has** read and passed,
@@ -1540,7 +1541,7 @@ def test_the_tracked_pool_seats_and_the_ledger_partitions_it(tracked_pool, track
     on, and that aggregate is what a leg would be aimed down.
 
     **The pool the ledger partitions is the one the solve walked**, which since
-    `DEFAULT_FINE_BAR` flipped on 2026-09-08 is the narrowed one and not what
+    `DEFAULT_FINE_BAR` went non-null on 2026-09-08 is the narrowed one and not what
     `solve.pool()` handed in. The bar is pool construction and never a rule — the
     rows it drops are in no refusal column by design — so counting them here would
     ask the ledger to account for candidates the walk never saw. `fine_bar.kept`
@@ -3018,7 +3019,7 @@ def test_the_fine_bar_is_on_every_record_including_the_ones_that_ran_without_one
     answer and a missing field is not, so the field is written either way."""
     record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, fine_bar=None, log=quiet)
     assert record["config"]["fine_bar"] is None
-    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.50
+    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.184
     assert "p_fine(>=4)" in record["config"]["fine_bar_is"]
     assert record["fine_bar"]["bar"] is None
     assert "no fine-head bar" in record["fine_bar"]["of"]
@@ -3032,11 +3033,16 @@ def test_the_fine_bar_a_solve_ran_under_is_on_the_config_block_a_manifest_carrie
     record = solve.solve(
         [candidate("a"), candidate("b")], n=20, key=solve.JUDGE_KEY, fine_bar=0.5, log=quiet
     )
-    assert record["config"]["fine_bar"] == 0.5
-    assert record["config"]["fine_bar_default"] == 0.50, "the default since 2026-09-08"
+    assert record["config"]["fine_bar"] == 0.5, "what this pass ASKED for"
+    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.184
     assert record["fine_bar"]["kept"] == 1
     assert record["fine_bar"]["dropped"] == 1
     assert record["population"]["candidates"] == 1
+    # The level and the head are one fact written in two fields. 0.50 under the
+    # shipped head and 0.184 under the corrected refit admit the same fraction of
+    # one pool, so a record naming only the number cannot be read at all.
+    assert "fine_head" in record["config"]
+    assert "auc_ge4_more_seed2" in record["config"]["fine_head_is"]
 
 
 def test_the_fine_bar_narrows_the_pool_before_the_bars_and_the_view(monkeypatch):
