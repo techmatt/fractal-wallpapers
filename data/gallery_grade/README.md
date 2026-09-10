@@ -239,7 +239,9 @@ behind `p_ge4` — undefined on the 85.7% of the pool that never clears the gate
 never a pool-wide ranker.
 
 The three sittings' drift is a covariate there rather than a surprise:
-`gallery-grade split` balances the batches into the holdout exactly (67/67/67), the
-drift still shows in that holdout's labels at Kruskal p = 0.021 because
-stratification balances counts and not scales, and the head's residual against them
-is flat at p = 0.63.
+`gallery-grade split` balances the batches into the holdout exactly (67/67/67) — and
+since 2026-09-09 it balances the **sheet**, the **block** and the **grade** instead,
+the sheet being the finer constraint the correction sitting needed and a refinement
+of the batch. The drift still shows in that holdout's labels at Kruskal p = 0.021
+because stratification balances counts and not scales, and the head's residual
+against them is flat at p = 0.63.

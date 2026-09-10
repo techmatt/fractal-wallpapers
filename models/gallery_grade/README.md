@@ -76,6 +76,82 @@ Naming both incumbents is `curation/render_grade.py`'s correction applied
 unchanged: an arm that beat the judge's column and lost to the shipped key would
 have improved nothing anybody ships.
 
+## A corpus is which rows; a band is which stopping rule
+
+Two axes, and until 2026-09-09 there was only ever one value on the second, so the
+run names carried the band alone. The correction sitting made the distinction
+load-bearing: a refit on a grown store is a different **corpus** under an unchanged
+**rule**, and re-fitting under one name would have overwritten the join and the
+split that `auc_ge4_more_seed2` — the run a seating orders on — refers to. A run on
+disk that nothing can reproduce, with nothing looking broken.
+
+```text
+corpus       what it holds                                            file names
+as_built     the three sittings of 2026-09-06, 1,000 rows             bare
+corrected    every graded row, the 2026-09-09 sitting included        `corrected_` prefixed
+```
+
+`--corpus` is on **every** verb, `read` and `accept` included, so that a join, a
+split, a bar and a run each say which rows they are about. ⚠ **The default is the
+ADOPTED corpus and not the newest one** — `score-pool` writes the column a seating
+orders on, so a default pointing at a staged refit would let an adoption happen by
+forgetting a flag. Moving `CORPUS` is part of adopting a refit.
+
+`as_built` **names its three batches** rather than excluding the new one, so
+re-running its population gives the file it gave in 2026-09-06.
+
+## The refit on `corrected`, 2026-09-09 — STAGED, not adopted
+
+1,750 rows over 1,462 locations, 1,358 lineages; the split redrawn over everything
+at 1,400 / 350. **No number here is comparable with the build corpus's**: the
+201-row slice is gone and the 350-row one is not a superset of it.
+
+```text
+arm          mean AUC(>=4)  best    worst   spread   epochs
+last_block          0.6695  0.6795  0.6537  0.0258   7, 8, 4
+more                0.7113  0.7272  0.6959  0.0313   3, 6, 11
+```
+
+`more` wins the mean again and ships its median seed, `corrected_auc_ge4_more_seed1`
+at epoch 6. **CLEARED, 12 of 12, worst margin +0.085** against
+`corrected_bar_auc_ge4.json`, registered before any run of the band existed.
+
+⚠ **The reproducibility the build corpus credited to the stopping rule did not
+survive the corpus change.** `more`'s spread was 0.0023 on `as_built` under this
+same rule and is **0.0313** here, and the three seeds land on epochs 3, 6 and 11
+where they all landed on 7 before. The flat surface was not the rule's alone, and
+the median pick is doing more work on this corpus than on the last one.
+
+### What it does at `p_fine >= 0.50`, which is a fixed constant on a moved scale
+
+**Recall of labelled 4s at the bar: train 0.663, stopping 0.405, gap 0.258.** The
+train arm is the sanity arm and it is the reading to notice — a head with the
+capacity to overfit 1,400 rows would sit near 1.0 and this one cannot fit two of
+every three of its own training 4s. Per block the gap is **0.03** inside
+`top_band` and **0.03** inside `floor_thin_cell`, and **0.317** on the
+pre-existing rows: it is concentrated exactly where the sitting's exclusion left
+old 4s beside new downward corrections at similar pictures.
+
+⚠ **The head got much stricter and 0.50 did not.** Over a seeded 8,000-row sample
+of the above-bar pool the clearing fraction goes **27.8% → 9.6%**, the median
+reading 0.104 → 0.088 and the 75th percentile **0.581 → 0.207**. The level that
+clears the same *count* on that sample is **0.184**. So a solve that keeps
+`--fine-bar 0.50` against this head is applying a materially tighter cut than the
+same flag applied to the shipped one, without the flag having moved.
+
+### The bar is stated over the gate column, because a fifth of the slice has none
+
+The sitting's 100 `low_anchor` rows are coarse-3 verdicts about 1280x720 pictures
+that were **never candidates**, so they carry no `selected_on.p_ge4` — and neither
+incumbent exists for them. 330 of the 350 stopping rows carry the column.
+
+The baseline used to **refuse** a column absent anywhere and now **drops and
+counts**, which is [`_rank_key_baseline`]'s own rule applied to its sibling; and
+each run records `held_out_on_the_gate_column` beside `held_out`, so a bar stated
+over that slice reads the arm there too. **Two populations must never wear one
+number**: on `as_built` the two reads are the same 201 rows and the key is absent
+from those records, which is what `acceptance` falls back on.
+
 ## What the cascade actually does to a gallery
 
 ⚠ **It is not a reordering of the top.** One pool solved twice at n=1000, once
@@ -122,6 +198,12 @@ column as *this picture is good enough to seat*, rather than treating the head a
 pure order whose heights mean nothing on their own. **He will revisit it if
 galleries produced under that reading come out bad**, which is the only thing that
 would settle it — nothing on this page does.
+
+⚠ **A ruling about a level is a ruling about THIS head's scale.** The staged
+`corrected` refit reads 9.6% of a pool sample at or above 0.50 where the shipped
+head reads 27.8%, so *this picture is good enough to seat* would mean a different
+picture on it. Adopting a refit therefore re-opens this ruling rather than
+inheriting it — see *What it does at `p_fine >= 0.50`* above.
 
 ⚠ **This supersedes the ckpt-113 line, which said the level was untrusted.** The
 head shipped as an order inside a gate's top and was adopted on `AUC(>=4)` and
@@ -171,6 +253,21 @@ into a cut, that is a second ruling and a `Restatement`.
 
 ## The batch effect, after stratification
 
+**Since 2026-09-09 the split balances the SHEET, the BLOCK and the GRADE**, not the
+batch. The sheet refines the batch — every sheet sits inside exactly one batch, so
+balancing sheets balances batches by summation — and it is the finer constraint the
+correction sitting needed: its three cuts disagree at chi-square 69.39 over 750
+rows, inside a single batch, where the 2026-09-06 sittings disagreed across three.
+The block is there because a blocked draw's four populations run from mean grade
+1.18 to 2.69, and the grade because block balance does not imply grade balance. All
+three are **marginals rather than the cross**, filled greedily with lineages taken
+whole; on `corrected` the worst marginal lands at 0.195 against a target of 0.200.
+
+⚠ **A stratum is read by the SPLIT and never by the model.** Matt's ruling of
+2026-09-09: the sheets' disagreement is accepted as label noise — no sheet term, no
+reweighting, no exclusion. What the balance buys is that a train-against-stopping
+gap moves for fit and not for which cuts landed on which side.
+
 The three sittings are three slightly different scales — chi-square 30.95 on
 6 d.f., p = 2.6e-05 over the store. The split balances their **counts** exactly
 (67/67/67 in the holdout, 0.2006/0.2012/0.2012 of each sitting) and cannot balance
@@ -204,7 +301,8 @@ are ignored by the same `models/**/*.pt` rule every other head's are. There is n
 
 ```
 fractal-wallpapers gallery-grade population    # join the store to the ledger, once
-fractal-wallpapers gallery-grade split         # the 80/20, batch-stratified, once
+fractal-wallpapers gallery-grade split         # the 80/20, stratified, once
+fractal-wallpapers gallery-grade band --corpus corrected       # a refit's own files
 fractal-wallpapers gallery-grade preregister   # the bar, BEFORE any run of its band
 fractal-wallpapers gallery-grade band          # every run not on disk, one at a time
 fractal-wallpapers gallery-grade read          # the table above, and the pick

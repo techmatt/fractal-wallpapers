@@ -502,7 +502,7 @@ def test_the_arm_is_picked_on_the_mean_and_the_seed_on_the_median(tmp_path, monk
     the best of three seeds is a coin flip rather than a fact about the arm.
     """
     monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
-    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda: {"unreadable": "not here"})
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda *_: {"unreadable": "not here"})
     _fitted(
         tmp_path,
         {
@@ -524,7 +524,7 @@ def test_the_arm_is_picked_on_the_mean_and_the_seed_on_the_median(tmp_path, monk
 
 def test_an_even_seed_count_takes_the_lower_middle_and_says_so(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
-    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda: {"unreadable": "not here"})
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda *_: {"unreadable": "not here"})
     _fitted(tmp_path, {("more", 0): (0.60, 0.4), ("more", 1): (0.80, 0.4)})
     read = trainer.band(arms=("more",), seeds=(0, 1))
     assert read["pick"]["seed"] == 0
@@ -567,7 +567,7 @@ def test_the_bar_gates_every_seed_and_one_failing_cell_fails_the_band(
     tmp_path, monkeypatch
 ) -> None:
     monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
-    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda: {"unreadable": "not here"})
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda *_: {"unreadable": "not here"})
     _bar(tmp_path)
     _fitted(
         tmp_path,
@@ -587,9 +587,171 @@ def test_the_bar_gates_every_seed_and_one_failing_cell_fails_the_band(
     assert document["failures"][0]["incumbent"] == "rank_key"
 
 
+def test_a_bar_stated_over_the_gate_column_reads_the_arm_there_too(tmp_path, monkeypatch) -> None:
+    """★ Two populations must never wear one number.
+
+    A row drawn from outside the seating pool carries no candidate reading, so
+    neither incumbent exists for it — the correction sitting's `low_anchor`
+    hundred are exactly that. Comparing an arm's AUC over the whole stopping
+    slice against a column's over the four fifths of it that has the column
+    would flatter or punish the arm for a reason that is not the arm.
+    """
+    monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
+    monkeypatch.setattr(trainer, "_baselines_or_reason", lambda *_: {"unreadable": "not here"})
+    _bar(tmp_path)
+    _fitted(
+        tmp_path,
+        {("more", 0): (0.70, 0.30), ("more", 1): (0.71, 0.30), ("more", 2): (0.72, 0.30)},
+    )
+    # The whole slice clears; the slice the incumbents exist on does not.
+    for seed in (0, 1, 2):
+        path = tmp_path / trainer.run_name("more", seed, "auc_ge4") / "metrics.json"
+        said = json.loads(path.read_text(encoding="utf-8"))
+        said["held_out_on_the_gate_column"] = {"rows": 330, "auc_ge4": 0.51, "spearman": 0.30}
+        path.write_text(json.dumps(said), encoding="utf-8")
+
+    bar = tmp_path / "bar_auc_ge4.json"
+    stated = json.loads(bar.read_text(encoding="utf-8"))
+    stated["population"] = {"rows": 350, "slice": "gate_column", "gate_column_rows": 330}
+    bar.write_text(json.dumps(stated), encoding="utf-8")
+
+    _, document = trainer.acceptance(log=lambda *_args: None)
+    assert document["verdict"] == "NOT CLEARED", "read over the whole slice this would pass"
+    assert {cell["read_on"] for cell in document["cells"]} == {"held_out_on_the_gate_column"}
+    assert {cell["rows"] for cell in document["cells"]} == {330}
+
+    # A bar over the whole slice reads the whole slice, and the same runs clear.
+    stated["population"]["slice"] = "all"
+    bar.write_text(json.dumps(stated), encoding="utf-8")
+    _, document = trainer.acceptance(log=lambda *_args: None)
+    assert document["verdict"] == "CLEARED"
+    assert {cell["read_on"] for cell in document["cells"]} == {"held_out"}
+
+
 def test_the_bar_names_both_incumbents_and_not_the_easier_one() -> None:
     """An arm that beat the judge's column and lost to the shipped key would have
     improved nothing anybody ships — `curation.render_grade` made exactly this
     correction for the render judge, and it is the same correction here."""
     assert set(trainer.GATED_INCUMBENTS) == {"candidate_p_ge4", "rank_key"}
     assert set(trainer.GATED_STATISTICS) == {"auc_ge4", "spearman"}
+
+
+# --------------------------------------------------------------------------- #
+# The corpus: which rows, as against which stopping rule.
+# --------------------------------------------------------------------------- #
+def test_the_build_corpus_keeps_the_bare_names_and_every_later_one_says_which() -> None:
+    """A refit on a grown store must not overwrite what a shipped run refers to.
+
+    The adopted run's own `split` block names `split.json`, so a corpus that
+    reused the file would leave a run on disk that nothing could reproduce and
+    nothing would look broken.
+    """
+    assert trainer.CORPUS == trainer.BUILD_CORPUS, "the default is the ADOPTED corpus"
+    assert trainer.run_name("more", 2, "auc_ge4") == "auc_ge4_more_seed2"
+    assert trainer.run_name("more", 2, "auc_ge4", "corrected") == "corrected_auc_ge4_more_seed2"
+    assert trainer.run_name("more", 1, trainer.FIRST_BAND, "corrected") == "corrected_more_seed1"
+
+    for corpus in sorted(trainer.CORPORA):
+        paths = {
+            trainer.population_path(corpus),
+            trainer.split_path(corpus),
+            trainer.band_path("auc_ge4", corpus),
+            trainer.bar_path("auc_ge4", corpus),
+            trainer.comparison_path("auc_ge4", corpus),
+        }
+        assert len(paths) == 5
+    for name in ("population_path", "split_path", "band_path", "bar_path", "comparison_path"):
+        reach = getattr(trainer, name)
+        assert reach(corpus=trainer.BUILD_CORPUS) != reach(corpus="corrected"), name
+
+    assert trainer.population_path(trainer.BUILD_CORPUS).name == "population.jsonl"
+    assert trainer.split_path(trainer.BUILD_CORPUS).name == "split.json"
+    assert trainer.bar_path("auc_ge4", trainer.BUILD_CORPUS).name == "bar_auc_ge4.json"
+    assert trainer.bar_path("auc_ge4", "corrected").name == "corrected_bar_auc_ge4.json"
+
+
+def test_a_corpus_nobody_declared_is_refused_rather_than_defaulted() -> None:
+    for reach in (trainer.check_corpus, trainer.population_path, trainer.split_path):
+        with pytest.raises(trainer.GradeTrainingError):
+            reach("everything")
+    with pytest.raises(trainer.GradeTrainingError):
+        trainer.run_name("more", 0, "auc_ge4", "everything")
+
+
+def test_the_build_corpus_names_its_batches_rather_than_excluding_the_new_one() -> None:
+    """So that re-running its population a year from now gives the file it gives today."""
+    held = trainer.CORPORA[trainer.BUILD_CORPUS]["batches"]
+    assert held and set(held) == {"n1000_0906_1", "n1000_0906_2", "n1000_0906_3"}
+    assert trainer.CORPORA["corrected"]["batches"] is None, "every graded row, named as such"
+
+
+# --------------------------------------------------------------------------- #
+# The strata, which the split reads and the model never does.
+# --------------------------------------------------------------------------- #
+def test_a_row_from_before_the_blocked_draws_still_carries_every_stratum() -> None:
+    """A missing stratum is a shortfall nothing can be measured against."""
+    assert trainer.block_of({"batch": "n1000_0906_1"}) == trainer.PRE_EXISTING
+    assert trainer.block_of({"selected_on": {"block": "top_band"}}) == "top_band"
+    assert trainer.sheet_of({"batch": "n1000_0906_1"}) == "n1000_0906_1"
+    assert trainer.sheet_of({"batch": "b", "sheet": "b_2"}) == "b_2"
+
+    bare = unit("k0", 3, "n1000_0906_1", place="p0")
+    mine = trainer.strata_of(bare)
+    assert set(mine) == set(trainer.STRATA)
+    assert mine == {"sheet": "n1000_0906_1", "block": trainer.PRE_EXISTING, "grade": "3"}
+
+
+def test_the_holdout_takes_every_sheet_block_and_grade_in_proportion() -> None:
+    """The stratification, which is the one thing this split adds to the shipped one.
+
+    Four blocks over three cuts and four grades, unevenly composed on purpose —
+    a fill that balanced only the count would take a slice that is mostly one
+    block, and the train-vs-stopping gap would then move for a reason that is
+    not fit.
+    """
+    blocks = ["top_band", "near_bar", "floor_thin_cell", "low_anchor", trainer.PRE_EXISTING]
+    units, rows = [], []
+    for index in range(400):
+        block = blocks[index % len(blocks)]
+        pre = block == trainer.PRE_EXISTING
+        held = unit(
+            f"k{index:04d}",
+            1 + (index // 5) % 4,
+            "n1000_0906_1" if pre else "correction",
+            place=f"p{index:04d}",
+        )
+        held.block = block
+        held.sheet = "n1000_0906_1" if pre else f"correction_{1 + index % 3}"
+        units.append(held)
+        rows.append(row_at(index * 3.0, index * 5.0, 0.1))
+
+    record = trainer.sides_for(units, seed=0, rows=rows)
+    for family in trainer.STRATA:
+        for value, read in record["strata"][family].items():
+            assert abs(read["share"] - trainer.HOLDOUT_SHARE) < 0.06, (family, value, read)
+    assert record["worst_stratum_drift"]["drift"] < 0.06, record["worst_stratum_drift"]
+
+
+def test_the_sheet_is_a_split_coordinate_and_never_a_model_input(tmp_path) -> None:
+    """Matt's ruling of 2026-09-09: the cuts' disagreement stays label noise.
+
+    The `Unit` the loader is handed carries `sheet` and `block`, so the guard
+    that matters is that nothing downstream of the split reads either. A
+    training example is a picture and a grade, and the recipe carries no key
+    naming a cut — the head is told no batch and these are two more of the same.
+    """
+    from PIL import Image
+
+    picture = tmp_path / "one.jpg"
+    Image.new("RGB", (64, 36), (9, 9, 9)).save(picture)
+
+    units, rows = corpus(60)
+    for held, cut in zip(units, ["a", "b", "c"] * 20, strict=True):
+        held.path, held.sheet, held.block = picture, cut, "top_band"
+    trainer.sides_for(units, seed=0, rows=rows)
+
+    examples = trainer.Pictures(units, lambda image, _random: image)
+    example = examples[0]
+    assert len(example) == 3, "a picture, a grade and an index — no cut and no block"
+    assert example[1] == units[0].score
+    assert not {"sheet", "block"} & set(trainer.CARRIED)

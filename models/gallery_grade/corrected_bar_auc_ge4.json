@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "band": "auc_ge4",
+  "corpus": "corrected",
+  "corpus_is": "every graded row the store holds, the correction sitting of 2026-09-09 included. Its rows are not comparable with the build corpus's: the split is redrawn over everything, so no slice of one is a slice of the other",
+  "registered_at": "2026-09-10T00:28:32Z",
+  "rule": "the winning arm must beat BOTH incumbents on BOTH statistics at EVERY seed, strictly, on the held-out lineages. Any one of those failing is a FAIL for the band \u2014 there is no partial credit and no best-of",
+  "gated": {
+    "incumbents": [
+      "candidate_p_ge4",
+      "rank_key"
+    ],
+    "statistics": [
+      "auc_ge4",
+      "spearman"
+    ]
+  },
+  "incumbents": {
+    "candidate_p_ge4": {
+      "auc_ge4": 0.5146626882372138,
+      "spearman": 0.07007563971578629,
+      "rows": 330
+    },
+    "rank_key": {
+      "auc_ge4": 0.5693971746934589,
+      "spearman": 0.19540376788981956,
+      "rows": 330
+    }
+  },
+  "population": {
+    "rows": 350,
+    "base_rates": {
+      "ge2": 0.8286,
+      "ge3": 0.6171,
+      "ge4": 0.2543
+    },
+    "slice": "gate_column",
+    "gate_column_rows": 330,
+    "gate_column_is": "the rows the shipped judge read AS CANDIDATES. A row drawn from somewhere other than the seating pool carries no such reading \u2014 the correction sitting's 100 `low_anchor` rows are coarse-3 verdicts about 1280x720 pictures and were never candidates \u2014 so the two incumbents are readable on this slice and not on the whole stopping side",
+    "is": "the stopping slice \u2014 within-store held out, optimistic by one early stop, and drawn from a store that is not eval-eligible. This bar says which of three quantities orders these rows best and nothing about any other rows. Where `slice` is `gate_column` the heights and the arm are both read on the rows the incumbents exist for, and never on two different populations"
+  },
+  "does_not_gate": "the arm ranking, the epoch, or anything about the pool. Adoption is a separate act and this bar does not authorize one"
+}

@@ -20,25 +20,27 @@ def gallery_grade(args: argparse.Namespace) -> int:
     from fractal_wallpapers.models import gallery_grade_train as trainer
 
     if args.what == "population":
-        path, record = trainer.write_population()
+        path, record = trainer.write_population(corpus=args.corpus)
         print(json.dumps(record, indent=1))
         print(f"wrote {path}")
         return 0
 
     if args.what == "split":
-        path, record = trainer.write_split(seed=args.seed)
+        path, record = trainer.write_split(seed=args.seed, corpus=args.corpus)
         print(json.dumps({k: v for k, v in record.items() if not k.endswith("_of_row")}, indent=1))
         print(f"wrote {path}")
         return 0
 
     if args.what == "preregister":
-        path, document = trainer.write_bar(force=args.force)
+        path, document = trainer.write_bar(
+            band_name=args.band, corpus=args.corpus, force=args.force
+        )
         print(json.dumps(document, indent=1))
         print(f"wrote {path}")
         return 0
 
     if args.what == "accept":
-        path, document = trainer.acceptance()
+        path, document = trainer.acceptance(band_name=args.band, corpus=args.corpus)
         print(json.dumps(document, indent=1))
         print(f"wrote {path}")
         return 0 if document["verdict"] == "CLEARED" else 1
@@ -46,10 +48,15 @@ def gallery_grade(args: argparse.Namespace) -> int:
     if args.what == "score-pool":
         from fractal_wallpapers.curation import solve as solve_module
 
-        picked = trainer.band(band_name=args.band)["pick"]
+        picked = trainer.band(band_name=args.band, corpus=args.corpus)["pick"]
         candidates, _refused = solve_module.pool()
         record = trainer.score_pool(
-            candidates, arm=picked["arm"], seed=picked["seed"], band=args.band, device=args.device
+            candidates,
+            arm=picked["arm"],
+            seed=picked["seed"],
+            band=args.band,
+            corpus=args.corpus,
+            device=args.device,
         )
         print(json.dumps({**record, "picked": picked}, indent=1))
         return 0
@@ -59,6 +66,7 @@ def gallery_grade(args: argparse.Namespace) -> int:
             arm=args.arm,
             seed=args.seed,
             band=args.band,
+            corpus=args.corpus,
             device=args.device,
             epochs=args.epochs,
             workers=args.workers,
@@ -73,11 +81,15 @@ def gallery_grade(args: argparse.Namespace) -> int:
 
     if args.what == "band":
         outcome = trainer.fit_band(
-            band_name=args.band, device=args.device, epochs=args.epochs, workers=args.workers
+            band_name=args.band,
+            corpus=args.corpus,
+            device=args.device,
+            epochs=args.epochs,
+            workers=args.workers,
         )
         print(f"fitted {len(outcome['fitted'])}, already there {len(outcome['already_there'])}")
 
-    path, record = trainer.write_band(band_name=args.band)
+    path, record = trainer.write_band(band_name=args.band, corpus=args.corpus)
     print(json.dumps(record, indent=1))
     print(f"wrote {path}")
     return 0
@@ -93,8 +105,34 @@ def band_flag(parser, trainer_band: str, rules) -> None:
     )
 
 
+def corpus_flag(parser, default: str, corpora) -> None:
+    """`--corpus`, which is WHICH ROWS — a separate axis from `--band`'s rule.
+
+    On **every** verb here, including the two that cost nothing, because a join,
+    a split, a bar and a run all have to be about one set of rows and the only
+    way to be sure of that is for each of them to say which.
+    """
+    parser.add_argument(
+        "--corpus",
+        default=default,
+        choices=sorted(corpora),
+        help=(
+            f"which rows this is about (default {default}, the ADOPTED corpus — a refit on "
+            f"a grown store names its own, so that a forgotten flag cannot overwrite the "
+            f"join and split a shipped run refers to)"
+        ),
+    )
+
+
 def add_commands(subcommands) -> None:
-    from fractal_wallpapers.models.gallery_grade_train import ARMS, BAND, RULES, SPLIT_SEED
+    from fractal_wallpapers.models.gallery_grade_train import (
+        ARMS,
+        BAND,
+        CORPORA,
+        CORPUS,
+        RULES,
+        SPLIT_SEED,
+    )
 
     group = subcommands.add_parser(
         "gallery-grade",
@@ -119,17 +157,20 @@ def add_commands(subcommands) -> None:
             "dropped and counted with its reason rather than repaired."
         ),
     )
+    corpus_flag(resolving, CORPUS, CORPORA)
     resolving.set_defaults(handler=gallery_grade)
 
     splitting = steps.add_parser(
         "split",
-        help="draw the 80/20 over lineages, filled to balance the three sittings",
+        help="draw the 80/20 over lineages, filled to balance the sheets, blocks and grades",
         description=(
             "Lineages are the hard constraint and go whole; inside that the holdout is "
-            "filled by whichever remaining lineage most reduces the per-batch shortfall, "
-            "because the three sittings disagree at p = 2.6e-05. ONE seed for every arm and "
-            "every seed of the band: an AP read on two different slices is not a comparison "
-            "of two heads."
+            "filled by whichever remaining lineage most reduces the summed shortfall over "
+            "the sheet, block and grade marginals. The cuts are measurably different scales, "
+            "the blocks are different populations, and a stopping slice over-weighting any "
+            "of them stops on something the training side is not on. A stratum is read by "
+            "the SPLIT and never by the model. ONE seed for every arm and every seed of the "
+            "band: an AP read on two different slices is not a comparison of two heads."
         ),
     )
     splitting.add_argument(
@@ -138,6 +179,7 @@ def add_commands(subcommands) -> None:
         default=SPLIT_SEED,
         help=f"the draw's seed (default {SPLIT_SEED}, and moving it re-splits the whole band)",
     )
+    corpus_flag(splitting, CORPUS, CORPORA)
     splitting.set_defaults(handler=gallery_grade)
 
     registering = steps.add_parser(
@@ -156,6 +198,8 @@ def add_commands(subcommands) -> None:
         action="store_true",
         help="overwrite a bar no run has been read against",
     )
+    band_flag(registering, BAND, RULES)
+    corpus_flag(registering, CORPUS, CORPORA)
     registering.set_defaults(handler=gallery_grade)
 
     accepting = steps.add_parser(
@@ -168,6 +212,8 @@ def add_commands(subcommands) -> None:
             "non-zero when the band does not clear."
         ),
     )
+    band_flag(accepting, BAND, RULES)
+    corpus_flag(accepting, CORPUS, CORPORA)
     accepting.set_defaults(handler=gallery_grade)
 
     scoring = steps.add_parser(
@@ -181,6 +227,7 @@ def add_commands(subcommands) -> None:
         ),
     )
     band_flag(scoring, BAND, RULES)
+    corpus_flag(scoring, CORPUS, CORPORA)
     device_flag(scoring)
     scoring.set_defaults(handler=gallery_grade)
 
@@ -209,6 +256,7 @@ def add_commands(subcommands) -> None:
     )
     fitting.add_argument("--seed", type=int, default=0, help="the training seed (default 0)")
     band_flag(fitting, BAND, RULES)
+    corpus_flag(fitting, CORPUS, CORPORA)
     device_flag(fitting)
     fitting.add_argument("--epochs", type=int, help="override the recipe's epoch ceiling")
     fitting.add_argument("--workers", type=int, help="override the recipe's loader workers")
@@ -225,6 +273,7 @@ def add_commands(subcommands) -> None:
         ),
     )
     band_flag(banding, BAND, RULES)
+    corpus_flag(banding, CORPUS, CORPORA)
     device_flag(banding)
     banding.add_argument("--epochs", type=int, help="override the recipe's epoch ceiling")
     banding.add_argument("--workers", type=int, help="override the recipe's loader workers")
@@ -241,7 +290,8 @@ def add_commands(subcommands) -> None:
         ),
     )
     band_flag(reading, BAND, RULES)
+    corpus_flag(reading, CORPUS, CORPORA)
     reading.set_defaults(handler=gallery_grade)
 
 
-__all__ = ["add_commands", "gallery_grade"]
+__all__ = ["add_commands", "corpus_flag", "gallery_grade"]
