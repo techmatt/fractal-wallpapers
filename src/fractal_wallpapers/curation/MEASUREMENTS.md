@@ -1427,3 +1427,53 @@ there.
 **Runtime**: 645 pictures in **455 s**, 0.71 s a picture, against 246 in about 180 s.
 A second run the same day read 437 s over the same population; the 455 is the one
 these numbers were taken from.
+
+## What the colour floor and the spiral cap actually bind on, measured 2026-09-10
+
+`cell_deltas_20260910`: eleven n=1000 solves over one pool (308,885 candidates), all
+through the pool-view door with an in-memory column and **no record written**. The
+column is `best_head_20260910`'s `B2_raw` ensemble at its own bar **0.022689**, which
+admits 11,743; the reference seating reproduces that leg's `best_arm` **seat for seat
+and in the same order**, so everything below is one controlled before/after.
+
+**The active set, and it is much smaller than the machinery suggests.** At `Kf = 1`
+the floor is 20 seats a cell against an allowance of 63, and **three cells sit exactly
+on it** — `dark_muted_lime`, `dark_vivid_lime`, `light_vivid_lime` — with none below.
+Solved with the floor switched off, **those same three are the only cells that fall
+under 20**, at **6, 12 and 13**, and the fourth-thinnest holds 22 unaided. So a leg
+that stamps **256 seats** `cell_floor:` is *holding* 29 memberships in three cells:
+the stamp count reads the scarcity leg's order, not the floor's worth. Meanwhile
+**12 of the 48 cells sit at the allowance**, and `cell_allowance` is the largest
+refusal column at 6,593 rows — on this column the ceiling is the live colour
+constraint and the floor is not.
+
+| arm | cells at floor | worst seat | sum | seats moved |
+|---|---|---|---|---|
+| floor 20 (shipped) | 3 | 1.052173 | 1484.765 | — |
+| floor 15 (`kf = 0.75`) | 2 | 1.083438 | 1486.158 | 88 |
+| floor 12 (`kf = 0.6`) | 1 | 1.101868 | 1488.309 | 108 |
+| floor off (`kf = 0`) | 0 | 1.101868 | 1493.510 | 130 |
+| spiral cap 0.15 | 4 | 1.064127 | 1494.777 | 113 |
+
+**The spiral cap binds to the last seat at 0.15 as it does at 0.10**, 151 of 151
+allowed and taken, and the `spiral` refusal column does not move with it — 481 → 480.
+Fifty more seats went in and the same rows were still refused, because
+`ceil(cap x (filled + 1))` is met at *every* seat of a scarcity-ordered walk rather
+than at the end of one. **It does not relieve the thin cells**: all three lime cells
+sit at exactly 20 under the looser cap, and `dark_vivid_yellow` joins them there.
+
+### ★ A tightened constraint comes back with a BETTER answer, so a shadow price here is a suboptimality reading
+
+One more seat demanded of each binding cell, everything else held: `dark_vivid_lime`
+20 → 21 moves 48 seats for **worst −0.003173, sum +0.591**; `dark_muted_lime` moves 55
+for **worst unchanged, sum +0.339**; `light_vivid_lime` moves 52 for **worst
+unchanged, sum +1.426**. A superset of constraints cannot raise a true optimum, so
+**two of the three dominate the shipped answer outright** and the seed-plus-1-swap is
+that far from optimal at this rung. **Read it as the scatter under every objective
+comparison the leg makes: about 1.4 of sum at n=1000.** The control says it is not the
+instrument — raising `dark_vivid_orange`'s floor 20 → 21 on a cell holding 63 changes
+**not one seat** and is bit-identical in the objective.
+
+So the floor doses' gains (+1.393 and +3.544) sit at and just over that scatter, and
+the cap's **+10.011** is the only reading here clearly outside it. The cap's own
+marginal seat is **+3.315** against +6.70 for the next forty-nine between them.
