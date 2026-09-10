@@ -479,6 +479,16 @@ memberships go 1,904 → 2,021 and **all of the growth is muted**: muted 1,008 �
 1,129 while vivid sits at 896 → 892. By leading cell the gallery flips from
 vivid-majority to muted-majority, 509/488 to 471/527.
 
+⚠ **BOUNDED, 2026-09-09: that tone reading holds to `K ≤ 2.5` and reverses above
+it.** It was taken over 2.0 → 2.5 and does not extend. Carried out to 3.75 on the
+later pool the growth over 2.0 → 2.5 is even (muted +141, vivid +136) rather than
+all muted, and from 2.5 to 3.75 it is **entirely vivid**, +142 vivid against **−90**
+muted, with the leading split going 483/516 vivid/muted to **559/441** — past
+uniform and back the other way. So *loosening `K` hands the gallery to the muted
+cells* is true of the range measured here and false of the range beyond it, and it
+must not be quoted as a property of the ceiling. See *What a colour ceiling four
+times the target rate costs, measured 2026-09-09* below.
+
 **Twenty-three of the 48 cells track the allowance exactly** — 42/47/50/53 at every
 rung, which is also the count still pinned at K=2.5. Warm and blue: all four
 `*_orange` and `*_red`, three of four `*_azure`, `*_blue` and `*_purple`, both
@@ -491,7 +501,10 @@ scarce one: `light_vivid_teal` 40 → 18, `dark_vivid_lime` 31 → 12,
 `light_vivid_lime` 31 → 13, `light_vivid_cyan` 29 → 13, `dark_vivid_yellow` 27 →
 14. `light_vivid_magenta` is flat at 18 → 17 and is the pool's floor, not the
 rule's. **So a looser ceiling does not buy the short cells anything; it buys the
-long ones more room, and the short cells pay for it.**
+long ones more room, and the short cells pay for it.** That half *does* extend —
+fourteen of the sixteen cells short at `K = 2` end shorter in absolute seats out at
+3.75, four to six times further out — and it is only the **tone** of the growth that
+reverses.
 
 **Nothing else becomes binding.** `cell_allowance` stays the top refusal at every
 rung — 15,021 → 10,697 → 8,782 → 7,985, still 3.6x `location` at K=2.5 — while
@@ -657,7 +670,9 @@ allowance stops acting first.
 
 ### The deadlock the floor was expected to hit, and did not
 
-A seat charges about 2.1 cells, so a row that would fill a starving cell is often
+A seat charges about 2.1 cells — 2.118 measured on this run, against 1.802 at
+`K = 2` on the same pool the same day; the ratio is a reading and moves with both
+the pool and `K` — so a row that would fill a starving cell is often
 dominant in a second cell already at its allowance. Counted over the finished
 state — `shortfalls.cell_floors.per_cell.<cell>.deadlocked` — it is **8,962 rows
 across 47 cells**, and **not one of them is in a cell that went short**: the shape

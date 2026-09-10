@@ -39,8 +39,10 @@ into the `+ 1`: the first seat may hold any one colour, and the allowance grows
 with the walk instead of being spent against its end.
 
 `K = 3` is the headroom: a colour may run at three times its target rate before
-the ceiling acts. Refusing only a **dominant** candidate is the other half of the
-cliff's removal — a picture that is a fifth red is not what makes a gallery red.
+the ceiling acts — ★ a rate in **memberships** and never in seats, which is about
+1.68x the realized mean cell rather than three times it. See [`K`]. Refusing only a
+**dominant** candidate is the other half of the cliff's removal — a picture that is
+a fifth red is not what makes a gallery red.
 
 ## And the floor under it, which is the same arithmetic and not a rule
 
@@ -264,6 +266,20 @@ TAU_GROUP = 0.10
 #: 8,662 at `K = 2`, so the rule is still the largest single refusal column.
 #: The observed maxima it was set against were family red at 2.45x uniform and
 #: cell `dark_vivid_blue` at 3.25x.
+#:
+#: ★ **"Three times its target rate" is in SEAT units and the rule counts
+#: MEMBERSHIPS**, which is the one thing to get right before proposing a number
+#: here. [`curation.rules.State.counted_refusal`] charges a seat to every cell it
+#: is dominant in, so the fair share this is a multiple of is
+#: `memberships / 48` and not `n / 48` — and there are about two memberships to a
+#: seat. Measured, and it is a **reading** that moves with the pool and with `K`
+#: ([`curation.k_sweep.cell_counts`]): 1.802 a seat at `K = 2` and 2.118 at
+#: `K = 3` on the 2026-09-09 pool, 1.904 on the 2026-09-06 one. So the shipped
+#: `K = 3` is **1.68x** the realized mean cell and `K = 2` was **1.12x**, not
+#: double — which is why 32 of 48 cells sat pinned at 42 under a rule nobody
+#: thought was binding, and why [`KF`] was needed at all. Convert before you
+#: argue: `curation/GALLERY.md`'s *★ The rule counts MEMBERSHIPS and not seats,
+#: and that is the trap*.
 K = 3
 
 #: The **floor's** headroom, in exactly [`K`]'s units: how many fair shares of

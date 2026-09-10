@@ -3088,7 +3088,9 @@ def _cell_floors(gallery: Gallery, rule: ceiling.Rule, cleared: list, refused: d
     `refused_by` is which rules acted on the ones that did not sit.
 
     **`deadlocked` is the fourth and it is the interesting one.** A seat charges
-    about 2.1 cells, so a row that would fill a starving cell is very often
+    about 2.1 cells — 2.118 at `K = 3` on 2026-09-09, 1.802 at `K = 2` on the same
+    pool, and it is a **reading** rather than a constant
+    ([`k_sweep.cell_counts`]) — so a row that would fill a starving cell is very often
     dominant in a *second* cell that is already at its allowance — and then the
     ceiling refuses it for a colour nobody was short of. That is a shape neither
     the allowance column nor the supply column can show, because both are true of
