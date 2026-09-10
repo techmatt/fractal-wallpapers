@@ -307,6 +307,18 @@ sizes that differ, as `p_fine_correction_20260909`'s `251 / 250 / 249` did — t
 also where the naming convention was *proved*, because there the counts bound the drops
 independently and the names agreed.
 
+**On a SHUFFLED page the position check does not apply, and the overlap with earlier
+verdicts is what replaces it.** Every check above reads position against verdict, which is
+a statement about a page ordered by a score; a blind page is a seeded shuffle and a
+correctly bound drop sits at zero there just as a misbound one does. What works instead is
+the store itself: any unit whose render key already carries a verdict predicts this drop's
+verdict on the correct binding and nothing on the wrong one. Measured 2026-09-10 on
+`aug_sweep_A_20260910`, where 116 of 200 units had been graded in an earlier sitting —
+**r = 0.470 correct against 0.011 for the swap**. A page with no such overlap has neither
+check, so its drop is bound by its name and its unit count alone, which is why two blind
+pages cut on one day want **different batches** rather than one batch in two cuts: the rig
+writes the batch into the drop's name and the ambiguity never arises.
+
 ## A verdict cast on a pinned location is WITHHELD, not written
 
 A finished store's evaluation side is a **batch** — one registered `eval_only`, cut
