@@ -402,6 +402,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Three labelling servers on the box cost the lane 0.7 s.** `tentative_solve_20260909`,
+2026-09-09. **4,178 selected, 132 deselected — 4,310 collected — in 131.52 s**, green,
+with three `label serve` processes up on ports 8020–8022 and no render leg. The count is
+the entry below's exactly and this prompt added no test; it recorded a tentative solve,
+which is worth saying because a new stamp in `artifacts/curation/tentative/` moves
+**nothing** here — no guard parametrizes over the store. Against 132.19 s idle that is
+inside the half-second band the last four readings sit in, so a **labelling server is not
+a render leg**: the rule is *measure on an idle machine*, and an idle server is idle. The
+one that kills a lane holds the pool or drives the engine.
+
 **A docs-only pass, and it caught up a log that was two commits behind.**
 `pre_closeout_20260909`, 2026-09-09. **4,178 selected, 132 deselected — 4,310
 collected — in 132.19 s**, green, idle box, no server and no render leg. This
