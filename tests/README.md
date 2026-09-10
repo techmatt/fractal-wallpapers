@@ -402,6 +402,20 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**The fastest reading this tree has given, and it was taken on the least idle box.**
+`augmentation_sweep_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
+4,325 collected — in 140.55 s**, green, on a box that had just finished a 400-tile
+render leg and a 33-fit training grid; nothing was still running, no pool was held.
+**The collected count is the two readings below's exactly** — two batch
+registrations in `data/gallery_grade/batches.jsonl` and two README sections added no
+test — and `--collect-only` was run against a stashed tree to confirm it: 4,325 both
+ways. So the 17.7 s under the reading below is the box and not the tree, and it is
+the direction nobody predicts: the readings near 158 and 152 were taken with *no*
+render leg, this one immediately after one. Whatever those two were sharing the box
+with, it was not the thing anybody suspected. ⚠ `CLAUDE.md`'s current figure is one
+tree behind — it still says 4,301 / 4,169, which was true until
+`gallery_top_20260910` landed.
+
 **A store grew by 27% and the count did not move at all.** `seats_ingest_20260910`,
 2026-09-10. **4,193 selected, 132 deselected — 4,325 collected — in 158.28 s**,
 green, no render leg and no pool held, on the commit that landed
