@@ -175,6 +175,27 @@ def registry_path() -> Path:
     return store_dir() / "batches.jsonl"
 
 
+def corpus_dir(corpus: str | None = None) -> Path:
+    """Where a **frozen** corpus's files are tracked, inside this store's directory.
+
+    Named here and not in the trainer that reads it, because this store owns where
+    `data/<NAME>/` is and a second module spelling that out is the thing
+    `tests/test_gallery_grade.py`'s *The choke point* refuses. The trainer holds
+    every other fact about a corpus — which ones exist, which one ships, what its
+    five files mean — and asks this only for the directory.
+
+    **A frozen corpus is an exception and not a pattern.** A corpus the population
+    command will rebuild belongs under the regenerable tree with every other one;
+    one is kept here because a shipped column was fitted on it and the command that
+    made it reads the live store, which has since grown past those rows.
+    `data/gallery_grade/corpus/README.md` carries that decision, and
+    `tests/test_history_purity.py`'s two exemptions — the size rule and the
+    absolute-path rule — are what tracking it costs.
+    """
+    where = store_dir() / "corpus"
+    return where if corpus is None else where / str(corpus)
+
+
 def plans_dir() -> Path:
     """Where the plans this store's drops were cut from live, on whichever tier holds them.
 

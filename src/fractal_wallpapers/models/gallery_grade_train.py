@@ -228,18 +228,6 @@ CORPORA: dict[str, dict] = {
     },
 }
 
-#: The corpora whose files are tracked rather than regenerable, and read from
-#: `data/gallery_grade/corpus/<name>/` rather than from [`root`].
-#:
-#: **One corpus is frozen and that is not a pattern to follow.** A corpus that the
-#: population command will rebuild belongs under the regenerable tree with every
-#: other; this one is kept because a shipped column was fitted on it and the
-#: command that made it no longer can. `data/gallery_grade/corpus/README.md`
-#: carries the decision and `tests/test_history_purity.py` the size exemption two
-#: of its files need.
-FROZEN_CORPUS_DIR = Path("data") / "gallery_grade" / "corpus"
-
-
 #: The corpus whose files carry the **bare** names, for [`FIRST_BAND`]'s reason
 #: turned onto the other axis: `population.jsonl`, `split.json` and
 #: `auc_ge4_more_seed2/` are on disk under those names and are what every record
@@ -439,8 +427,27 @@ def frozen(corpus: str) -> bool:
 
 
 def frozen_dir(corpus: str) -> Path:
-    """Where a frozen corpus's five files live. Tracked, and read-only to this module."""
-    return repo_root() / FROZEN_CORPUS_DIR / check_corpus(corpus)
+    """Where a frozen corpus's five files live. Tracked, and read-only to this module.
+
+    **One corpus is frozen and that is not a pattern to follow.** A corpus the
+    population command will rebuild belongs under the regenerable tree at [`root`]
+    with every other one; this is kept because a shipped column was fitted on it
+    and the command that made it reads the live store, which has grown past those
+    rows. `data/gallery_grade/corpus/README.md` carries the decision, and
+    `tests/test_history_purity.py` carries the two exemptions tracking it costs —
+    the size rule for two of the five files, and the absolute-path rule that
+    `population.jsonl`'s frozen `path` member cannot be rewritten to satisfy.
+
+    **The directory is asked for and not spelled here.** This module used to build
+    it as `Path("data") / "gallery_grade" / "corpus"`, which is the *store's* own
+    directory under a second module's hand — what `tests/test_gallery_grade.py`'s
+    *The choke point* refuses, on the ground that a second speller is a second
+    answer to where the store lives. `check_corpus` stays this side of the call:
+    which corpora exist is this module's fact, and where they sit is the store's.
+    """
+    from fractal_wallpapers.labeling import gallery_grade
+
+    return gallery_grade.corpus_dir(check_corpus(corpus))
 
 
 def run_name(
