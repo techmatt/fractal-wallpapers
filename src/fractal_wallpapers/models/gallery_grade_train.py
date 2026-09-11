@@ -214,7 +214,31 @@ CORPORA: dict[str, dict] = {
             "redrawn over everything, so no slice of one is a slice of the other"
         ),
     },
+    "twelve_sheets": {
+        "batches": None,
+        "frozen": True,
+        "says": (
+            "the 2,829 rows over twelve labelling sheets the store held on 2026-09-10 — "
+            "the two gallery sittings and the augmentation sweep's two sheets on top of "
+            "`corrected`'s. FROZEN: its join, its split and its targets are tracked under "
+            "`data/gallery_grade/corpus/twelve_sheets/` rather than regenerable, because "
+            "the join reads the LIVE store and cannot give these rows back once another "
+            "sheet is graded"
+        ),
+    },
 }
+
+#: The corpora whose files are tracked rather than regenerable, and read from
+#: `data/gallery_grade/corpus/<name>/` rather than from [`root`].
+#:
+#: **One corpus is frozen and that is not a pattern to follow.** A corpus that the
+#: population command will rebuild belongs under the regenerable tree with every
+#: other; this one is kept because a shipped column was fitted on it and the
+#: command that made it no longer can. `data/gallery_grade/corpus/README.md`
+#: carries the decision and `tests/test_history_purity.py` the size exemption two
+#: of its files need.
+FROZEN_CORPUS_DIR = Path("data") / "gallery_grade" / "corpus"
+
 
 #: The corpus whose files carry the **bare** names, for [`FIRST_BAND`]'s reason
 #: turned onto the other axis: `population.jsonl`, `split.json` and
@@ -235,7 +259,12 @@ BUILD_CORPUS = "as_built"
 #: re-scored through that run and `solve.DEFAULT_FINE_BAR` moved 0.50 -> 0.184 to
 #: hold the admitted fraction where it was. `models/gallery_grade/README.md`'s
 #: *Adopted 2026-09-09* carries what the move does and does not mean.
-CORPUS = "corrected"
+#:
+#: **Moved to `twelve_sheets` on 2026-09-10**, Matt's ruling, adopting the
+#: `drop_high_asymmetric` k=3 ensemble over seeds 0/1/2 — the gallery he approved
+#: off `deterministic_refit_20260910`'s browse page. The adopting act is the same
+#: three things and this constant is still only the first.
+CORPUS = "twelve_sheets"
 
 #: The arms this band runs. **Two, not three**: `frozen` read 0.492 and 0.496 on
 #: `AUC(>=4)` in the first band — chance, and below the judge's own 0.528 — so a
@@ -280,6 +309,76 @@ ARMS: dict[str, dict] = {
         "says": "a full fine-tune — every parameter takes a gradient",
     },
 }
+
+#: The recipes a band may be fitted under. **A corpus is WHICH ROWS, a band is
+#: WHICH STOPPING RULE, and a recipe is WHICH KNOBS** — three axes rather than
+#: one, for [`CORPORA`]'s reason carried one step further: two arms fitted under
+#: different dropout are not two arms, and a grid that mixed them would answer a
+#: question nobody asked.
+#:
+#: `inherited` is the shipped judge's, carried whole — [`INHERITANCE`] lists what
+#: came across — and it is what every run before 2026-09-10 was fitted under, so
+#: its runs keep bare names for [`FIRST_BAND`]'s reason.
+#:
+#: `drop_high_asymmetric` is `best_head_20260910`'s winning column, adopted
+#: 2026-09-10. Four knobs move and each was measured before it was taken:
+#:
+#: * **`drop_high`** — dropout 0.4, stochastic depth 0.2. `augmentation_sweep_
+#:   20260910` ran eleven arms and this is the only one that won every column.
+#: * **the 2x negative weighting** — every CORN cutpoint's negative term is
+#:   upweighted, which is exactly *do not let a row that stopped at tier k cross
+#:   above k*: cutpoint k is trained only on the rows that reached it, and its
+#:   negatives are precisely the rows whose grade IS k. The loss stays a weighted
+#:   **mean**, so the arm is not also a learning-rate sweep.
+#: * **a fixed horizon and no early stop** — 30 epochs, patience above it, the
+#:   epoch taken at the best AUC(>=4) wherever on the curve it falls. The loss
+#:   rule buys a reproducible epoch at the cost of a less reproducible column.
+#: * **a learned per-batch offset on the logit**, centred at every use so it is
+#:   identified, no weight decay, and **dropped at inference** — so the column a
+#:   seating reads is on one scale, the average sitting's.
+#:
+#: It ships an **ensemble of every seed**, averaged on the probability scale,
+#: rather than the band's median run: `stability_and_sheet_20260910` measured
+#: churn falling as `0.108 + 0.657/sqrt(k)` with no knee.
+RECIPES: dict[str, dict] = {
+    "inherited": {
+        "arms": BAND_ARMS,
+        "ensemble": False,
+        "ships": "the band's median seed",
+        "says": "the shipped render judge's recipe, carried whole",
+    },
+    "drop_high_asymmetric": {
+        "arms": ("more",),
+        "ensemble": True,
+        "ships": "every seed, averaged on the probability scale",
+        "drop_rate": 0.4,
+        "drop_path_rate": 0.2,
+        "neg_weight": 2.0,
+        "epochs": 30,
+        "patience": 999,
+        "offset": "batch",
+        "checkpoint": "auc_ge4",
+        "workers": 6,
+        "says": (
+            "dropout 0.4 and stochastic depth 0.2, every cutpoint's negative term at 2x, a "
+            "fixed 30-epoch horizon with the AUC(>=4) checkpoint, and a learned per-batch "
+            "offset dropped at inference. Ships k seeds averaged on the probability scale"
+        ),
+    },
+}
+
+#: What an unflagged verb here means on the recipe axis, and it is the recipe the
+#: SHIPPED column was fitted under. [`CORPUS`]'s rule, on the third axis: a
+#: default pointing at a staged recipe would let an adoption happen by forgetting
+#: a flag.
+#:
+#: **Moved to `drop_high_asymmetric` on 2026-09-10**, Matt's ruling, adopting the
+#: k=3 ensemble of seeds 0/1/2 over [`CORPUS`] `twelve_sheets`.
+RECIPE = "drop_high_asymmetric"
+
+#: The recipe whose runs carry **bare** names, for [`FIRST_BAND`]'s reason on the
+#: third axis: every run fitted before 2026-09-10 is on disk without one.
+FIRST_RECIPE = "inherited"
 
 
 class GradeTrainingError(RuntimeError):
@@ -328,13 +427,31 @@ def qualified(stem: str, corpus: str = CORPUS) -> str:
     return stem if check_corpus(corpus) == BUILD_CORPUS else f"{corpus}_{stem}"
 
 
-def run_name(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> str:
-    """`<corpus>_<band>_<arm>_seed<N>`, with both leading parts dropped at their default.
+def check_recipe(recipe: str) -> str:
+    if str(recipe) not in RECIPES:
+        raise GradeTrainingError(f"{recipe!r} is not a recipe; they are {sorted(RECIPES)}")
+    return str(recipe)
+
+
+def frozen(corpus: str) -> bool:
+    """Whether this corpus's files are tracked rather than regenerable."""
+    return bool(CORPORA[check_corpus(corpus)].get("frozen"))
+
+
+def frozen_dir(corpus: str) -> Path:
+    """Where a frozen corpus's five files live. Tracked, and read-only to this module."""
+    return repo_root() / FROZEN_CORPUS_DIR / check_corpus(corpus)
+
+
+def run_name(
+    arm: str, seed: int, band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE
+) -> str:
+    """`<corpus>_<recipe>_<band>_<arm>_seed<N>`, each leading part dropped at its default.
 
     The first band's names are bare because they were written before there was a
     second one and its records are on disk under them — [`FIRST_BAND`] says why
-    renaming them would be worse than the asymmetry, and [`BUILD_CORPUS`] says
-    the same about the other axis.
+    renaming them would be worse than the asymmetry, and [`BUILD_CORPUS`] and
+    [`FIRST_RECIPE`] say the same about the other two axes.
     """
     if arm not in ARMS:
         raise GradeTrainingError(f"{arm!r} is not an arm; the three are {sorted(ARMS)}")
@@ -343,11 +460,15 @@ def run_name(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> str
     stem = f"{arm}_seed{int(seed)}"
     if str(band) != FIRST_BAND:
         stem = f"{band}_{stem}"
+    if check_recipe(recipe) != FIRST_RECIPE:
+        stem = f"{recipe}_{stem}"
     return qualified(stem, corpus)
 
 
-def run_dir(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> Path:
-    return head_dir(run_name(arm, seed, band, corpus))
+def run_dir(
+    arm: str, seed: int, band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE
+) -> Path:
+    return head_dir(run_name(arm, seed, band, corpus, recipe))
 
 
 def root() -> Path:
@@ -362,31 +483,46 @@ def root() -> Path:
 
 
 def population_path(corpus: str = CORPUS) -> Path:
+    """A frozen corpus's join is tracked; every other one's is regenerable."""
+    if frozen(corpus):
+        return frozen_dir(corpus) / "population.jsonl"
     return root() / f"{qualified('population', corpus)}.jsonl"
 
 
 def split_path(corpus: str = CORPUS) -> Path:
+    if frozen(corpus):
+        return frozen_dir(corpus) / "split.json"
     return root() / f"{qualified('split', corpus)}.json"
 
 
-def band_path(band: str = BAND, corpus: str = CORPUS) -> Path:
-    stem = "band" if str(band) == FIRST_BAND else f"band_{band}"
-    return root() / f"{qualified(stem, corpus)}.json"
+def _banded(stem: str, band: str, recipe: str, bare_first_band: bool = False) -> str:
+    """`<recipe>_<stem>_<band>`, each part dropped at its default. One spelling.
+
+    `bare_first_band` is [`band_path`]'s alone and is the asymmetry `band.json` is
+    on disk under: the bar and its read were written after there was a second
+    band and have always carried its name.
+    """
+    named = stem if (bare_first_band and str(band) == FIRST_BAND) else f"{stem}_{band}"
+    return named if check_recipe(recipe) == FIRST_RECIPE else f"{recipe}_{named}"
 
 
-def bar_path(band: str = BAND, corpus: str = CORPUS) -> Path:
+def band_path(band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE) -> Path:
+    return root() / f"{qualified(_banded('band', band, recipe, True), corpus)}.json"
+
+
+def bar_path(band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE) -> Path:
     """Where a band's PRE-REGISTERED bar lives. Tracked, beside the run records.
 
     The first band has none and never will: it was a build, its rule was the
     shipped judge's, and a bar written after the fact is a bar fitted to what
     happened.
     """
-    return head_dir() / f"{qualified(f'bar_{band}', corpus)}.json"
+    return head_dir() / f"{qualified(_banded('bar', band, recipe), corpus)}.json"
 
 
-def comparison_path(band: str = BAND, corpus: str = CORPUS) -> Path:
+def comparison_path(band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE) -> Path:
     """Where the bar's READ lives — what the band actually did against it."""
-    return head_dir() / f"{qualified(f'comparison_{band}', corpus)}.json"
+    return head_dir() / f"{qualified(_banded('comparison', band, recipe), corpus)}.json"
 
 
 # --------------------------------------------------------------------------- #
@@ -619,6 +755,12 @@ def write_population(corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
     The ledger pass is the expensive half of a fit and it does not change between
     arms, so it is cached under the regenerable tree and every run reads it.
     """
+    if frozen(corpus):
+        raise GradeTrainingError(
+            f"{corpus!r} is frozen: its join is tracked because the live store has moved "
+            f"past it, and rebuilding it here would overwrite the rows a shipped column was "
+            f"fitted on with different ones. Name another corpus."
+        )
     units, record = population(corpus=corpus, log=log)
     path = population_path(corpus)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -657,10 +799,73 @@ def write_population(corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
     return path, record
 
 
+def read_frozen_population(corpus: str) -> list[Unit]:
+    """A tracked corpus's join, with the per-render **raw** target as the score.
+
+    Read in its own shape rather than converted on the way in: the file is kept
+    byte for byte so that `checksums.json` still checks against the column fitted
+    on it, and a reader that needed it re-serialised would be a reader asking for
+    the one thing that cannot happen to it.
+
+    ⚠ **The score is not the row's own verdict.** `population.jsonl` carries the
+    grade as cast; the band trains on `targets.json`'s per-render `raw`, which is
+    that scale de-duplicated over a render's repeat gradings. The `normalized`
+    column beside it is a yardstick and never a training target —
+    `models/gallery_grade/README.md`'s *What the de-drifted target is for*.
+    """
+    from fractal_wallpapers.paths import Tiers, rehome
+
+    where = frozen_dir(corpus)
+    path = where / "population.jsonl"
+    if not path.is_file():
+        raise GradeTrainingError(
+            f"{path} is not there. A frozen corpus is tracked rather than regenerable — "
+            f"`gallery-grade population` will not rebuild it, and `data/gallery_grade/"
+            f"corpus/README.md` says why."
+        )
+    targets = json.loads((where / "targets.json").read_text(encoding="utf-8"))["per_render"]
+    render_of = json.loads((where / "render_key_of.json").read_text(encoding="utf-8"))
+    tiers = Tiers.current()
+    units: list[Unit] = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        key = str(row["key"])
+        render = render_of.get(key)
+        if render is None or render not in targets:
+            raise GradeTrainingError(f"{path}:{number}: {key} has no per-render target")
+        units.append(
+            Unit(
+                path=rehome(row["path"], tiers) or Path(row["path"]),
+                score=int(targets[render]["raw"]),
+                side="",
+                batch=row["batch"],
+                place=row["place"],
+                partition=row.get("partition") or "",
+                mode=row["mode"],
+                name=key,
+                key=key,
+                location=row.get("location") or "",
+                block=row.get("block") or PRE_EXISTING,
+                sheet=row.get("sheet") or row.get("batch") or "",
+                leveled=bool(row.get("leveled")),
+                seated=bool(row.get("seated")),
+                label_p_ge3=row.get("label_p_ge3"),
+                label_p_ge4=row.get("label_p_ge4"),
+                candidate_p_ge3=row.get("candidate_p_ge3"),
+                candidate_p_ge4=row.get("candidate_p_ge4"),
+            )
+        )
+    return units
+
+
 def read_population(corpus: str = CORPUS) -> list[Unit]:
     """The cached join, re-homed against this machine's tiers."""
     from fractal_wallpapers.paths import Tiers, rehome
 
+    if frozen(corpus):
+        return read_frozen_population(corpus)
     path = population_path(corpus)
     if not path.is_file():
         raise GradeTrainingError(
@@ -930,6 +1135,11 @@ def label_rows_for(units: list[Unit]) -> list[dict]:
 
 
 def write_split(seed: int = SPLIT_SEED, corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
+    if frozen(corpus):
+        raise GradeTrainingError(
+            f"{corpus!r} is frozen: re-drawing its sides would put the shipped column's "
+            f"training rows into its holdout. Name another corpus."
+        )
     units = read_population(corpus)
     record = {"corpus": check_corpus(corpus), **sides_for(units, seed)}
     path = split_path(corpus)
@@ -1320,6 +1530,182 @@ def objective(labels, probabilities, rule: str = BAND) -> tuple[float, str]:
 
 
 # --------------------------------------------------------------------------- #
+# `drop_high_asymmetric`: the loss, the pictures, and the eval slice.
+# --------------------------------------------------------------------------- #
+def weighted_corn_loss(logits, ranks, num_classes: int = 4, neg_weight: float = 1.0):
+    """[`head.corn_loss`] with the NEGATIVE side of each cutpoint upweighted.
+
+    Under CORN, cutpoint `k` is trained only on the rows that reached it, so its
+    negatives are exactly the rows whose grade **is** `k`. Upweighting them is
+    therefore precisely *do not let a row that stopped at tier k cross above k* —
+    the asymmetry stated in the loss rather than in a threshold.
+
+    Each cutpoint stays a weighted **mean** and the cutpoints are averaged, so
+    moving `neg_weight` is not also a learning-rate sweep.
+
+    At `neg_weight = 1.0` this is [`head.corn_loss`] exactly, and
+    [`assert_symmetric_case`] asserts that rather than this docstring claiming it.
+    """
+    import torch.nn.functional as functional
+
+    total = logits.new_zeros(())
+    tasks = num_classes - 1
+    for cutpoint in range(tasks):
+        subset = ranks > (cutpoint - 1)
+        if subset.sum() < 1:
+            continue
+        target = (ranks[subset] > cutpoint).float()
+        predicted = logits[subset, cutpoint]
+        weight = target + neg_weight * (1.0 - target)
+        log_sigmoid = functional.logsigmoid(predicted)
+        per_row = log_sigmoid * target + (log_sigmoid - predicted) * (1.0 - target)
+        total = total + -(weight * per_row).sum() / weight.sum()
+    return total / tasks
+
+
+def unweighted_corn_loss(logits, ranks, tasks: int = 3) -> float:
+    """The CORN loss over a whole slice at once, in numpy, **unweighted always**.
+
+    Unweighted whatever the recipe: it is the comparison number on the stopping
+    slice, and a loss read under each recipe's own weighting would be three
+    different quantities wearing one name.
+    """
+    import numpy
+
+    logits = numpy.asarray(logits, dtype=float)
+    ranks = numpy.asarray(ranks, dtype=int)
+    total, counted = 0.0, 0
+    for cutpoint in range(tasks):
+        subset = ranks > (cutpoint - 1)
+        if subset.sum() < 1:
+            continue
+        target = (ranks[subset] > cutpoint).astype(float)
+        predicted = logits[subset, cutpoint]
+        log_sigmoid = -numpy.logaddexp(0.0, -predicted)
+        loss = -(log_sigmoid * target + (log_sigmoid - predicted) * (1.0 - target)).sum()
+        total += loss / subset.sum()
+        counted += 1
+    return float(total / max(counted, 1))
+
+
+def assert_symmetric_case() -> None:
+    """`neg_weight = 1` is the shipped loss, to floating point. Asserted, not assumed.
+
+    Run at the top of every fit under this recipe, where it costs microseconds and
+    stands between a silent re-derivation and a band nobody can compare with the
+    one beside it.
+    """
+    import torch
+
+    torch.manual_seed(0)
+    logits = torch.randn(64, 3)
+    ranks = torch.randint(0, 4, (64,))
+    mine = weighted_corn_loss(logits, ranks, 4, 1.0)
+    theirs = head.corn_loss(logits, ranks, num_classes=4)
+    if not torch.allclose(mine, theirs, atol=1e-6):
+        raise GradeTrainingError(
+            f"the weighted loss is not the shipped one at neg_weight 1.0: {mine} vs {theirs}"
+        )
+
+
+class SittingPictures:
+    """[`Pictures`] plus the **sitting** each row's verdict was cast in.
+
+    The sitting is the offset's coordinate and never an input: the model is shown
+    the picture, and a learned scalar per sitting is added to its logits during
+    training and dropped at inference.
+
+    Module level for [`Pictures`]'s reason — a Windows loader worker is spawned
+    and finds the class by name — and the epoch counter is **shared memory** for
+    the same one turned one step further: this recipe's loader is persistent, so
+    a plain integer set in the parent would never reach a worker and every epoch
+    would silently redraw the crop it drew at epoch zero.
+    """
+
+    def __init__(self, rows: list[Unit], transform, groups: list[int], augment: bool) -> None:
+        import torch
+
+        self.rows = rows
+        self.transform = transform
+        self.groups = groups
+        self.augment = augment
+        self.epoch = torch.zeros((), dtype=torch.long).share_memory_()
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch.fill_(int(epoch))
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __getitem__(self, index: int):
+        import random
+
+        from PIL import Image
+
+        row = self.rows[index]
+        with Image.open(row.path) as opened:
+            opened.load()
+            image = opened.convert("RGB")
+        if self.augment:
+            drawn = self.transform(image, random.Random(f"{row.name}:{int(self.epoch)}"))
+        else:
+            drawn = self.transform(image)
+        return drawn, row.score, index, self.groups[index]
+
+
+def decoded_stopping(units: list[Unit], transform, corpus: str, seed, log=say):
+    """The eval rows, decoded and normalized ONCE and kept as fp16 beside the band.
+
+    The deploy transform is deterministic and identical for every run, so decoding
+    the stopping slice afresh every epoch of every run is one JPEG opened five
+    hundred times over a band.
+
+    ⚠ **Decoded serially and never through a loader.** A `DataLoader` draws its
+    base seed off the global generator the moment an iterator is made, so a
+    build-the-cache branch that used one would consume RNG that the read-the-cache
+    branch does not — and two runs of one seed would part depending on whether the
+    cache happened to be there. Five hundred pictures is six seconds.
+    """
+    import torch
+    from PIL import Image
+
+    cache = root() / f"decoded_stopping_{qualified(str(seed), corpus)}.pt"
+    keys = [unit.key for unit in units]
+    if cache.is_file():
+        stored = torch.load(cache, map_location="cpu", weights_only=False)
+        if stored["keys"] == keys:
+            return stored["pictures"]
+    began = time.time()
+    out = None
+    for index, unit in enumerate(units):
+        with Image.open(unit.path) as opened:
+            opened.load()
+            picture = transform(opened.convert("RGB"))
+        if out is None:
+            out = torch.zeros((len(units), *picture.shape), dtype=torch.float16)
+        out[index] = picture.to(torch.float16)
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"keys": keys, "pictures": out}, cache)
+    log(f"[{HEAD}] decoded {len(units)} stopping picture(s) in {time.time() - began:.0f}s")
+    return out
+
+
+def _logits_of(model, pictures, recipe: dict, where: str, classes: int):
+    """Every decoded row through the model, **offsets off**, in the order given."""
+    import numpy
+    import torch
+
+    model.eval()
+    size = int(recipe["batch_size"]) * 4
+    out = numpy.zeros((len(pictures), classes - 1), dtype=numpy.float64)
+    with torch.no_grad():
+        for start in range(0, len(pictures), size):
+            block = pictures[start : start + size].to(where, non_blocking=True).float()
+            out[start : start + size] = model(block).float().cpu().numpy()
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # The fit.
 # --------------------------------------------------------------------------- #
 def fit(
@@ -1327,6 +1713,7 @@ def fit(
     seed: int = 0,
     band: str = BAND,
     corpus: str = CORPUS,
+    recipe: str = RECIPE,
     device: str = "auto",
     epochs: int | None = None,
     workers: int | None = None,
@@ -1341,11 +1728,34 @@ def fit(
     does not carry both classes at this band's boundary the run is launched under
     [`FIRST_BAND`]'s rule instead and its record says so — which is the honest
     shape of a fallback, as against a per-epoch branch that cannot fire.
+
+    **Every recipe but [`FIRST_RECIPE`] has its own body**, and that is deliberate
+    rather than a refusal to generalise: a recipe is reproducible only if it
+    consumes the random stream in the order it consumed it the day it was fitted,
+    and a shared loop with four branches in it is a loop whose stream moves the
+    next time somebody adds a fifth.
     """
+    if check_recipe(recipe) != FIRST_RECIPE:
+        return _fit_drop_high_asymmetric(
+            arm=arm,
+            seed=seed,
+            band=band,
+            corpus=corpus,
+            recipe=recipe,
+            device=device,
+            epochs=epochs,
+            workers=workers,
+            log=log,
+        )
+
     import numpy
     import torch
 
     from fractal_wallpapers.models import finished_train, metrics, train
+
+    # Held aside before `recipe` is rebound to the carried dict three lines into
+    # this body: the parameter is a NAME and the local is the shipped judge's keys.
+    recipe_name = check_recipe(recipe)
 
     if arm not in ARMS:
         raise GradeTrainingError(f"{arm!r} is not an arm; the three are {sorted(ARMS)}")
@@ -1464,7 +1874,7 @@ def fit(
     stopping_batches = numpy.array([unit.batch for unit in stopping])
     cutpoint = min(int(recipe["selection_cutpoint"]), classes) - 2
 
-    directory = run_dir(arm, seed, band, corpus)
+    directory = run_dir(arm, seed, band, corpus, recipe_name)
     directory.mkdir(parents=True, exist_ok=True)
     try:
         lock = train.claim(directory)
@@ -1615,11 +2025,13 @@ def fit(
     config = {
         "schema": SCHEMA,
         "head": HEAD,
-        "run": run_name(arm, seed, band, corpus),
+        "run": run_name(arm, seed, band, corpus, recipe_name),
         "arm": arm,
         "band": str(band),
         "corpus": check_corpus(corpus),
         "corpus_is": CORPORA[check_corpus(corpus)]["says"],
+        "recipe": recipe_name,
+        "recipe_is": RECIPES[recipe_name]["says"],
         **recipe,
         "initialised_from": {
             "artifact": str(SOURCE).replace("\\", "/"),
@@ -1652,7 +2064,7 @@ def fit(
     # its whole join — so the band's table can be rebuilt without the GPU.
     model.load_state_dict({key: value.to(where) for key, value in best_state.items()})
     chosen = train.score(model, stopping_paths, deploy_transform, where, classes, recipe)
-    _write_scores(directory, arm, seed, band, corpus, stopping, chosen, classes)
+    _write_scores(directory, arm, seed, band, corpus, recipe_name, stopping, chosen, classes)
 
     read = _read_of(stopping_labels, chosen, cutpoint, classes)
     # The same read on the rows the two INCUMBENTS can be read on, so that a bar
@@ -1675,11 +2087,12 @@ def fit(
     record = {
         "schema": SCHEMA,
         "head": HEAD,
-        "run": run_name(arm, seed, band, corpus),
+        "run": run_name(arm, seed, band, corpus, recipe_name),
         "arm": arm,
         "band": str(band),
         "corpus": check_corpus(corpus),
         "corpus_is": CORPORA[check_corpus(corpus)]["says"],
+        "recipe": recipe_name,
         "seed": int(seed),
         "device": where,
         "wall_seconds": round(time.time() - began, 1),
@@ -1721,11 +2134,377 @@ def fit(
     return record
 
 
+def _fit_drop_high_asymmetric(
+    arm: str,
+    seed: int,
+    band: str,
+    corpus: str,
+    recipe: str,
+    device: str = "auto",
+    epochs: int | None = None,
+    workers: int | None = None,
+    log=say,
+) -> dict:
+    """[`RECIPES`]`['drop_high_asymmetric']`, fitted once. The adopted column's own.
+
+    A faithful port of the recipe `best_head_20260910` measured and
+    `deterministic_refit_20260910` fitted the shipped heads under, and *faithful*
+    is the operative word: every line that touches the random stream is in the
+    order it was in that day, because the promise this recipe carries is that its
+    checkpoints rebuild from their seeds.
+
+    **No resume and no early stop.** The horizon is fixed and the patience sits
+    above it, so there is no stopping test to fire and the AUC(>=4) checkpoint is
+    free to land anywhere on the curve. A resume would have to restore the loader's
+    position in the random stream as well as the model's weights, and a run is
+    three minutes.
+    """
+    import numpy
+    import torch
+    from torch.utils.data import DataLoader, WeightedRandomSampler
+
+    from fractal_wallpapers.models import finished_train, metrics, train
+
+    knobs = RECIPES[check_recipe(recipe)]
+    if arm not in knobs["arms"]:
+        raise GradeTrainingError(
+            f"{recipe!r} runs {list(knobs['arms'])} and not {arm!r} — the others were "
+            f"measured and dropped, and re-fitting one would buy a row saying so"
+        )
+    if str(band) not in RULES:
+        raise GradeTrainingError(f"{band!r} is not a band; the two are {sorted(RULES)}")
+    check_corpus(corpus)
+    assert_symmetric_case()
+    train.make_deterministic()
+
+    state, shipped = initial_state()
+    carried = recipe_from(shipped)
+    carried["seed"] = int(seed)
+    carried["epochs"] = int(knobs["epochs"] if epochs is None else epochs)
+    carried["patience"] = int(knobs["patience"])
+    carried["drop_rate"] = float(knobs["drop_rate"])
+    carried["drop_path_rate"] = float(knobs["drop_path_rate"])
+    carried["workers"] = int(knobs["workers"] if workers is None else workers)
+    classes = int(carried["classes"])
+
+    units = read_population(corpus)
+    split = apply_split(units, corpus=corpus)
+    training = [unit for unit in units if unit.side == "train"]
+    stopping = [unit for unit in units if unit.side == "stopping"]
+    if not stopping:
+        raise GradeTrainingError("the stopping slice is empty; there is nothing to stop on")
+    sittings = sorted({str(unit.batch) for unit in units})
+    index_of = {name: position for position, name in enumerate(sittings)}
+    groups = [index_of[str(unit.batch)] for unit in training]
+
+    tier = int(RULES[str(band)]["tier"])
+    grades = [unit.score for unit in stopping]
+    rule_record = {
+        "asked_for": str(band),
+        "boundary": tier,
+        "stopping_slice_at_boundary": {
+            "at_or_above": sum(1 for grade in grades if grade >= tier),
+            "below": sum(1 for grade in grades if grade < tier),
+        },
+        "readable": readable_at(grades, tier),
+        "ran_under": str(band),
+        "says": RULES[str(band)]["says"],
+    }
+    if not rule_record["readable"]:
+        raise GradeTrainingError(
+            f"the stopping slice holds one class at >={tier}, and this recipe checkpoints on "
+            f"that boundary and nothing else — there is no rule to fall back to"
+        )
+
+    where = train.device_of(device)
+    train.set_seed(int(carried["seed"]))
+
+    model = head.build(
+        num_classes=classes,
+        backbone=carried["backbone"],
+        pretrained=False,
+        drop_rate=carried["drop_rate"],
+        drop_path_rate=carried["drop_path_rate"],
+    )
+    missing, unexpected = model.load_state_dict(state, strict=False)
+    if missing or unexpected:
+        raise GradeTrainingError(
+            f"the shipped judge's weights do not fit this architecture: {len(missing)} "
+            f"missing and {len(unexpected)} unexpected tensors"
+        )
+    model = model.to(where)
+    freezing = freeze(model, arm)
+
+    data_config = head.data_config(model)
+    target_dims = tuple(carried["target_dims"])
+    train_transform = head.Transform(
+        data_config["mean"],
+        data_config["std"],
+        data_config["interpolation"],
+        train=True,
+        border_crop=carried["border_crop"],
+        jpeg=None,
+        brightness=0.0,
+        contrast=0.0,
+        target=target_dims,
+    )
+    deploy_transform = head.Transform(
+        data_config["mean"],
+        data_config["std"],
+        data_config["interpolation"],
+        train=False,
+        target=target_dims,
+    )
+
+    head_parameters = [p for p in model.get_classifier().parameters() if p.requires_grad]
+    head_ids = {id(parameter) for parameter in head_parameters}
+    backbone_parameters = [
+        p for p in model.parameters() if p.requires_grad and id(p) not in head_ids
+    ]
+    parameter_groups = [{"params": head_parameters, "lr": carried["head_lr"]}]
+    if backbone_parameters:
+        parameter_groups.insert(0, {"params": backbone_parameters, "lr": carried["backbone_lr"]})
+    # A learned scalar per sitting, zero-initialised, **centred at every use** so
+    # the parameterization is identified — the classifier's own bias can absorb
+    # any constant, and an uncentred vector would wander with it. Its own group at
+    # ten times the head's rate and no decay: a handful of scalars have about a
+    # tier to travel inside thirty epochs.
+    offsets = torch.nn.Parameter(torch.zeros(len(sittings), device=where))
+    parameter_groups.append(
+        {"params": [offsets], "lr": carried["head_lr"] * 10, "weight_decay": 0.0}
+    )
+    optimizer = torch.optim.AdamW(parameter_groups, weight_decay=carried["weight_decay"])
+    schedule = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=carried["epochs"])
+
+    raw, mass = finished_train.weights(training)
+    sampler = WeightedRandomSampler(
+        torch.tensor(raw, dtype=torch.double), num_samples=len(training), replacement=True
+    )
+    examples = SittingPictures(training, train_transform, groups, True)
+    loader = DataLoader(
+        examples,
+        batch_size=carried["batch_size"],
+        sampler=sampler,
+        num_workers=carried["workers"],
+        pin_memory=(where == "cuda"),
+        persistent_workers=bool(carried["workers"]),
+        prefetch_factor=4 if carried["workers"] else None,
+        drop_last=False,
+    )
+
+    stopping_labels = numpy.array([unit.score for unit in stopping])
+    ranks_stopping = stopping_labels - 1
+    stopping_pictures = decoded_stopping(
+        stopping, deploy_transform, corpus, split.get("split_seed", SPLIT_SEED), log=log
+    )
+    cutpoint = min(int(carried["selection_cutpoint"]), classes) - 2
+
+    directory = run_dir(arm, seed, band, corpus, recipe)
+    directory.mkdir(parents=True, exist_ok=True)
+    try:
+        lock = train.claim(directory)
+    except RuntimeError as taken:
+        raise GradeTrainingError(str(taken)) from None
+    log(
+        f"[{HEAD}] device {where}  arm {arm}  seed {seed}  recipe {recipe}  "
+        f"train {len(training)} {finished_train.histogram(training)}  "
+        f"stopping {len(stopping)} {finished_train.histogram(stopping)}  "
+        f"offsets over {len(sittings)} sitting(s)"
+    )
+
+    history: list[dict] = []
+    best_auc, best_state, best_epoch = -float("inf"), None, -1
+    began = time.time()
+
+    for epoch in range(int(carried["epochs"])):
+        examples.set_epoch(epoch)
+        set_train_mode(model, arm)
+        clock, running, seen = time.time(), 0.0, 0
+        for crops, labels, _index, group in loader:
+            crops = crops.to(where, non_blocking=True)
+            labels = labels.to(where)
+            optimizer.zero_grad(set_to_none=True)
+            centred = offsets - offsets.mean()
+            read = model(crops) + centred[group.to(where)].unsqueeze(1)
+            loss = weighted_corn_loss(
+                read.float(), (labels - 1).long(), classes, float(knobs["neg_weight"])
+            )
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(
+                [p for p in model.parameters() if p.requires_grad], carried["grad_clip"]
+            )
+            optimizer.step()
+            running += loss.item() * crops.size(0)
+            seen += crops.size(0)
+        schedule.step()
+
+        if any(not torch.isfinite(parameter).all() for parameter in model.parameters()):
+            raise GradeTrainingError(f"the head went non-finite at epoch {epoch}")
+
+        held = _logits_of(model, stopping_pictures, carried, where, classes)
+        probabilities = head.probabilities(held)
+        with torch.no_grad():
+            shown = (offsets - offsets.mean()).detach().cpu().numpy().tolist()
+        record = {
+            "epoch": epoch,
+            "loss": running / max(seen, 1),
+            "seconds": round(time.time() - clock, 1),
+            "eval_loss": unweighted_corn_loss(held, ranks_stopping, classes - 1),
+            "offsets": {name: round(value, 4) for name, value in zip(sittings, shown, strict=True)},
+            f"stopping_ap_ge{cutpoint + 2}": metrics.average_precision(
+                (stopping_labels >= cutpoint + 2).astype(int), probabilities[:, cutpoint]
+            ),
+        }
+        for index in range(classes - 1):
+            record[f"stopping_auc_ge{index + 2}"] = metrics.auc(
+                (stopping_labels >= index + 2).astype(int), probabilities[:, index]
+            )
+        record["stopping_spearman"] = metrics.spearman(
+            stopping_labels, head.rank_score(probabilities)
+        )
+        value, rule = objective(stopping_labels, probabilities, str(band))
+        record["selection_loss"] = value
+        record["selection_rule"] = rule
+        history.append(record)
+        log(
+            f"[{HEAD}] epoch {epoch:2d}  loss {record['loss']:.4f}  "
+            f"eval {record['eval_loss']:.4f}  "
+            f"AUC>=4 {train.shown(record[f'stopping_auc_ge{classes}'])}  "
+            f"({record['seconds']}s)"
+        )
+
+        auc = record[f"stopping_auc_ge{tier}"]
+        if auc is not None and auc > best_auc:
+            best_auc, best_epoch = auc, epoch
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+
+    lock.unlink(missing_ok=True)
+    last_state = {k: v.detach().cpu() for k, v in model.state_dict().items()}
+    if best_state is None:
+        best_state = last_state
+
+    config = {
+        "schema": SCHEMA,
+        "head": HEAD,
+        "run": run_name(arm, seed, band, corpus, recipe),
+        "arm": arm,
+        "band": str(band),
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
+        "recipe": check_recipe(recipe),
+        "recipe_is": knobs["says"],
+        **carried,
+        "neg_weight": float(knobs["neg_weight"]),
+        "offset": knobs["offset"],
+        "offset_groups": sittings,
+        "offset_is": (
+            "a learned scalar per sitting, centred at every use and DROPPED at inference — "
+            "the column a seating reads is the model without it, which is the average "
+            "sitting's scale"
+        ),
+        "checkpoint_rule": knobs["checkpoint"],
+        "determinism": train.determinism_record(),
+        "initialised_from": {
+            "artifact": str(SOURCE).replace("\\", "/"),
+            "run": shipped.get("run"),
+            "tag": "weights-v6",
+            "says": "a COPY. Never a shared trunk — a moved trunk is a judge flip",
+        },
+        "freezing": freezing,
+        "stopping_rule": rule_record,
+        "stopped_early": None,
+        "best_epoch": best_epoch,
+        "best_selection_rule": str(band),
+        "mean": list(data_config["mean"]),
+        "std": list(data_config["std"]),
+        "interpolation": data_config["interpolation"],
+        "inherited": INHERITANCE,
+        "split": {key: value for key, value in split.items() if not key.endswith("_of_row")},
+        "precision": "fp32",
+    }
+    torch.save({"state_dict": best_state, "config": config}, directory / "best.pt")
+    torch.save({"state_dict": last_state, "config": config}, directory / "last.pt")
+
+    model.load_state_dict({key: value.to(where) for key, value in best_state.items()})
+    chosen = head.probabilities(_logits_of(model, stopping_pictures, carried, where, classes))
+    _write_scores(directory, arm, seed, band, corpus, recipe, stopping, chosen, classes)
+
+    read = _read_of(stopping_labels, chosen, cutpoint, classes)
+    on_gate = [index for index, unit in enumerate(stopping) if unit.candidate_p_ge4 is not None]
+    gate_read = (
+        _read_of(stopping_labels[on_gate], chosen[on_gate], cutpoint, classes)
+        if len(on_gate) not in (0, len(stopping))
+        else dict(read)
+    )
+    gate_read["of"] = len(stopping)
+    gate_read["is"] = (
+        "the stopping rows the shipped judge read as candidates — the slice both "
+        "incumbents are readable on, and the slice a bar is stated over"
+    )
+    record = {
+        "schema": SCHEMA,
+        "head": HEAD,
+        "run": run_name(arm, seed, band, corpus, recipe),
+        "arm": arm,
+        "band": str(band),
+        "corpus": check_corpus(corpus),
+        "corpus_is": CORPORA[check_corpus(corpus)]["says"],
+        "recipe": check_recipe(recipe),
+        "seed": int(seed),
+        "device": where,
+        "wall_seconds": round(time.time() - began, 1),
+        "segments": [
+            {
+                "from_epoch": 0,
+                "through_epoch": int(carried["epochs"]) - 1,
+                "wall_seconds": round(time.time() - began, 1),
+            }
+        ],
+        "best_epoch": best_epoch,
+        "best_selection_objective": -float(best_auc),
+        "best_selection_rule": str(band),
+        "stopped_early": None,
+        "selection_metric": (
+            f"{RULES[str(band)]['says']}, maximized (recorded negated, because the loop "
+            f"minimizes). No early stop: the horizon is fixed and the patience sits above it"
+        ),
+        "stopping_rule": rule_record,
+        "freezing": freezing,
+        "held_out": read,
+        "held_out_on_the_gate_column": gate_read,
+        "held_out_is": (
+            "the stopping slice. It is the shipped recipe's only holdout and the epoch was "
+            "chosen on it, so every number here is optimistic by one choice, and the store "
+            "is not eval-eligible — this is a within-store reading and nothing more"
+        ),
+        "pictures": {"train": len(training), "stopping": len(stopping), "total": len(units)},
+        "class_counts": {
+            "train": finished_train.histogram(training),
+            "stopping": finished_train.histogram(stopping),
+        },
+        "sampled_mass": mass,
+        "history": history,
+        "checkpoints": {
+            "best": tracked_name(directory / "best.pt"),
+            "last": tracked_name(directory / "last.pt"),
+        },
+    }
+    (directory / "config.json").write_text(
+        json.dumps(config, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
+    )
+    (directory / "metrics.json").write_text(
+        json.dumps(record, indent=2, default=str) + "\n", encoding="utf-8", newline="\n"
+    )
+    log(f"[{HEAD}] {record['run']} done in {record['wall_seconds']}s, AUC epoch {best_epoch}")
+    return record
+
+
 def fit_band(
     arms=None,
     seeds=SEEDS,
     band_name: str = BAND,
     corpus: str = CORPUS,
+    recipe: str = RECIPE,
     device: str = "auto",
     log=say,
     **rest,
@@ -1740,12 +2519,12 @@ def fit_band(
     A run whose `metrics.json` is already there is skipped rather than re-fitted,
     so a killed band is resumed by re-launching it.
     """
-    arms = tuple(arms if arms is not None else BAND_ARMS)
+    arms = tuple(arms if arms is not None else RECIPES[check_recipe(recipe)]["arms"])
     done, ran = [], []
     for arm in arms:
         for seed in seeds:
-            named = run_name(arm, seed, band_name, corpus)
-            if (run_dir(arm, seed, band_name, corpus) / "metrics.json").is_file():
+            named = run_name(arm, seed, band_name, corpus, recipe)
+            if (run_dir(arm, seed, band_name, corpus, recipe) / "metrics.json").is_file():
                 done.append(named)
                 log(f"[{HEAD}] {named} is already fitted — skipping")
                 continue
@@ -1754,6 +2533,7 @@ def fit_band(
                 seed=seed,
                 band=band_name,
                 corpus=corpus,
+                recipe=recipe,
                 device=device,
                 log=log,
                 **rest,
@@ -1762,7 +2542,7 @@ def fit_band(
     return {
         "fitted": ran,
         "already_there": done,
-        "band": band(arms, seeds, band_name, corpus),
+        "band": band(arms, seeds, band_name, corpus, recipe),
     }
 
 
@@ -1788,6 +2568,7 @@ def _write_scores(
     seed: int,
     band: str,
     corpus: str,
+    recipe: str,
     units,
     probabilities,
     classes: int,
@@ -1801,7 +2582,7 @@ def _write_scores(
             row = {
                 "schema": SCHEMA,
                 "head": HEAD,
-                "run": run_name(arm, seed, band, corpus),
+                "run": run_name(arm, seed, band, corpus, recipe),
                 "key": unit.key,
                 "grade": unit.score,
                 "batch": unit.batch,
@@ -1821,8 +2602,10 @@ def _write_scores(
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def read_run(arm: str, seed: int, band: str = BAND, corpus: str = CORPUS) -> dict:
-    path = run_dir(arm, seed, band, corpus) / "metrics.json"
+def read_run(
+    arm: str, seed: int, band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE
+) -> dict:
+    path = run_dir(arm, seed, band, corpus, recipe) / "metrics.json"
     if not path.is_file():
         raise GradeTrainingError(f"{path} is not there — that run has not been fitted")
     return json.loads(path.read_text(encoding="utf-8"))
@@ -2064,13 +2847,53 @@ def read_pool_scores(path: Path | None = None) -> dict:
     return out
 
 
+def ensemble_name(
+    arm: str, seeds, band: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE
+) -> str:
+    """[`run_name`]'s spelling for a column k checkpoints wrote, with `_kN` for `_seedN`.
+
+    A column is meaningless without the head it came out of, and an ensemble's
+    head is k of them — so the name says how many rather than naming one of the
+    three and being wrong about the other two.
+    """
+    stem = f"{arm}_k{len(tuple(seeds))}"
+    if str(band) != FIRST_BAND:
+        stem = f"{band}_{stem}"
+    if check_recipe(recipe) != FIRST_RECIPE:
+        stem = f"{recipe}_{stem}"
+    return qualified(stem, corpus)
+
+
+def shipped_runs(
+    band_name: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE, seeds=SEEDS
+) -> tuple[str, list[int], str]:
+    """`(arm, seeds, the name of the column they write)` — what this recipe ships.
+
+    **The two recipes ship different things and the difference is one flag.**
+    `inherited` ships the band's MEDIAN seed, because its epoch surface is flat
+    enough that the best of three is a coin flip. `drop_high_asymmetric` ships
+    **every** seed averaged on the probability scale, because
+    `stability_and_sheet_20260910` measured churn falling as `0.108 + 0.657/sqrt(k)`
+    with no knee — three averaged heads are more reproducible than re-running one.
+    """
+    read = band(seeds=seeds, band_name=band_name, corpus=corpus, recipe=recipe)
+    winner = str(read["pick"]["arm"])
+    if not RECIPES[check_recipe(recipe)]["ensemble"]:
+        chosen = [int(read["pick"]["seed"])]
+        return winner, chosen, run_name(winner, chosen[0], band_name, corpus, recipe)
+    chosen = [int(row["seed"]) for row in read["runs"] if row["arm"] == winner]
+    return winner, sorted(chosen), ensemble_name(winner, chosen, band_name, corpus, recipe)
+
+
 def score_pool(
     candidates,
-    arm: str,
-    seed: int,
+    arm: str | None = None,
+    seed: int | None = None,
     band: str = BAND,
     corpus: str = CORPUS,
+    recipe: str = RECIPE,
     device: str = "auto",
+    seeds=SEEDS,
     log=say,
 ):
     """Read a whole pool through one run's chosen checkpoint, and write the rows.
@@ -2098,10 +2921,28 @@ def score_pool(
     from fractal_wallpapers.models import train
     from fractal_wallpapers.paths import Tiers, rehome
 
-    checkpoint = run_dir(arm, seed, band, corpus) / "best.pt"
-    if not checkpoint.is_file():
-        raise GradeTrainingError(f"{checkpoint} is not there — that run has not been fitted")
-    model, config, where = load_checkpoint(checkpoint, device)
+    if arm is None or seed is None:
+        arm, chosen, column = shipped_runs(band, corpus, recipe, seeds)
+    else:
+        chosen, column = [int(seed)], run_name(arm, int(seed), band, corpus, recipe)
+    checkpoints = [run_dir(arm, one, band, corpus, recipe) / "best.pt" for one in chosen]
+    for checkpoint in checkpoints:
+        if not checkpoint.is_file():
+            raise GradeTrainingError(f"{checkpoint} is not there — that run has not been fitted")
+    loaded = [load_checkpoint(checkpoint, device) for checkpoint in checkpoints]
+    models = [one[0] for one in loaded]
+    config, where = loaded[0][1], loaded[0][2]
+    for _model, other, _where in loaded[1:]:
+        differing = [
+            key
+            for key in ("classes", "backbone", "mean", "std", "interpolation", "target_dims")
+            if other.get(key) != config.get(key)
+        ]
+        if differing:
+            raise GradeTrainingError(
+                f"the ensemble's checkpoints disagree about {differing} — a mean over two "
+                f"different transforms is not a column"
+            )
 
     tiers = Tiers.current()
     keys, paths, absent, below = [], [], 0, 0
@@ -2121,7 +2962,7 @@ def score_pool(
 
     storage.require_hot(*{path.parent for path in paths}, what="reading a pool through this head")
     began = time.time()
-    log(f"[{HEAD}] reading {len(paths):,} pictures through {run_name(arm, seed, band, corpus)}")
+    log(f"[{HEAD}] reading {len(paths):,} pictures through {column} ({len(models)} head(s))")
     classes = int(config["classes"])
     transform = head.Transform(
         tuple(config["mean"]),
@@ -2130,7 +2971,12 @@ def score_pool(
         train=False,
         target=tuple(config["target_dims"]),
     )
-    probabilities = train.score(model, paths, transform, where, classes, config)
+    # **Averaged on the PROBABILITY scale**, which is the scale the pool carries,
+    # the bar cuts on and a seating orders by. A mean of logits is a different
+    # column and agrees on every conclusion `stability_and_sheet_20260910` drew;
+    # it is not what was approved, so it is not what ships.
+    read = train.score_many(models, paths, transform, where, classes, config)
+    probabilities = read.mean(axis=0)
 
     path = pool_scores_path()
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -2140,7 +2986,7 @@ def score_pool(
             row = {
                 "schema": SCHEMA,
                 "head": HEAD,
-                "run": run_name(arm, seed, band, corpus),
+                "run": column,
                 "key": key,
             }
             for index in range(classes - 1):
@@ -2149,8 +2995,12 @@ def score_pool(
             handle.write(json.dumps(row) + "\n")
 
     record = {
-        "run": run_name(arm, seed, band, corpus),
-        "checkpoint": tracked_name(checkpoint),
+        "run": column,
+        "arm": arm,
+        "seeds": chosen,
+        "ships": RECIPES[check_recipe(recipe)]["ships"],
+        "checkpoints": [tracked_name(one) for one in checkpoints],
+        "averaged_on": "the probability scale",
         "candidates": len(keys),
         "below_the_bar_and_not_read": below,
         "below_the_bar_is": (
@@ -2205,7 +3055,11 @@ GATED_STATISTICS = ("auc_ge4", "spearman")
 
 
 def write_bar(
-    band_name: str = BAND, corpus: str = CORPUS, force: bool = False, log=say
+    band_name: str = BAND,
+    corpus: str = CORPUS,
+    recipe: str = RECIPE,
+    force: bool = False,
+    log=say,
 ) -> tuple[Path, dict]:
     """Register this band's bar, **before its runs exist**.
 
@@ -2216,7 +3070,7 @@ def write_bar(
     Refuses to overwrite. A bar rewritten after a band is a bar fitted to what
     happened, which is the whole thing pre-registration is for.
     """
-    path = bar_path(band_name, corpus)
+    path = bar_path(band_name, corpus, recipe)
     if path.is_file() and not force:
         raise GradeTrainingError(
             f"{path} already exists, and a bar rewritten after its band is a bar fitted to "
@@ -2240,6 +3094,8 @@ def write_bar(
         "band": str(band_name),
         "corpus": check_corpus(corpus),
         "corpus_is": CORPORA[check_corpus(corpus)]["says"],
+        "recipe": check_recipe(recipe),
+        "recipe_is": RECIPES[check_recipe(recipe)]["says"],
         "registered_at": _stamp(),
         "rule": (
             "the winning arm must beat BOTH incumbents on BOTH statistics at EVERY seed, "
@@ -2273,8 +3129,8 @@ def write_bar(
     return path, document
 
 
-def read_bar(band_name: str = BAND, corpus: str = CORPUS) -> dict:
-    path = bar_path(band_name, corpus)
+def read_bar(band_name: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE) -> dict:
+    path = bar_path(band_name, corpus, recipe)
     if not path.is_file():
         raise GradeTrainingError(
             f"{path} does not exist. Register the bar before the band, so that what counts "
@@ -2283,15 +3139,17 @@ def read_bar(band_name: str = BAND, corpus: str = CORPUS) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def acceptance(band_name: str = BAND, corpus: str = CORPUS, log=say) -> tuple[Path, dict]:
+def acceptance(
+    band_name: str = BAND, corpus: str = CORPUS, recipe: str = RECIPE, log=say
+) -> tuple[Path, dict]:
     """Read the band against its registered bar, and write the verdict down.
 
     **Every seed of the winning arm, against every incumbent, on every gated
     statistic.** The record carries each of those cells whether it passed or not,
     because a verdict without its arithmetic is a verdict nobody can check.
     """
-    bar = read_bar(band_name, corpus)
-    read = band(seeds=SEEDS, band_name=band_name, corpus=corpus)
+    bar = read_bar(band_name, corpus, recipe)
+    read = band(seeds=SEEDS, band_name=band_name, corpus=corpus, recipe=recipe)
     winner = read["pick"]["arm"]
     mine = [row for row in read["runs"] if row["arm"] == winner]
     if not mine:
@@ -2337,8 +3195,9 @@ def acceptance(band_name: str = BAND, corpus: str = CORPUS, log=say) -> tuple[Pa
         "head": HEAD,
         "band": str(band_name),
         "corpus": check_corpus(corpus),
+        "recipe": check_recipe(recipe),
         "read_at": _stamp(),
-        "bar": tracked_name(bar_path(band_name, corpus)),
+        "bar": tracked_name(bar_path(band_name, corpus, recipe)),
         "registered_at": bar.get("registered_at"),
         "arm": winner,
         "seeds": [row["seed"] for row in mine],
@@ -2351,7 +3210,7 @@ def acceptance(band_name: str = BAND, corpus: str = CORPUS, log=say) -> tuple[Pa
             f"The bar gates the arm and not the adoption — nothing here is wired in"
         ),
     }
-    path = comparison_path(band_name, corpus)
+    path = comparison_path(band_name, corpus, recipe)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8", newline="\n")
     log(f"[{HEAD}] {verdict}: worst margin {document['worst_margin']}")
@@ -2373,7 +3232,13 @@ def selection_statistic(said: dict) -> float:
     return -float(said["best_selection_objective"])
 
 
-def band(arms=None, seeds=SEEDS, band_name: str = BAND, corpus: str = CORPUS) -> dict:
+def band(
+    arms=None,
+    seeds=SEEDS,
+    band_name: str = BAND,
+    corpus: str = CORPUS,
+    recipe: str = RECIPE,
+) -> dict:
     """Every run of one band, the incumbents it is read beside, and the pick.
 
     **Arms are ranked by the MEAN of the band's own statistic over its seeds, and
@@ -2388,12 +3253,12 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND, corpus: str = CORPUS) ->
     two middle seeds and says so on the record — the conservative direction, and
     stated rather than silently rounded.
     """
-    arms = tuple(arms if arms is not None else BAND_ARMS)
+    arms = tuple(arms if arms is not None else RECIPES[check_recipe(recipe)]["arms"])
     rows = []
     for arm in arms:
         for seed in seeds:
             try:
-                said = read_run(arm, seed, band_name, corpus)
+                said = read_run(arm, seed, band_name, corpus, recipe)
             except GradeTrainingError:
                 continue
             rows.append(
@@ -2439,6 +3304,9 @@ def band(arms=None, seeds=SEEDS, band_name: str = BAND, corpus: str = CORPUS) ->
         "band": str(band_name),
         "corpus": check_corpus(corpus),
         "corpus_is": CORPORA[check_corpus(corpus)]["says"],
+        "recipe": check_recipe(recipe),
+        "recipe_is": RECIPES[check_recipe(recipe)]["says"],
+        "ships": RECIPES[check_recipe(recipe)]["ships"],
         "rule": RULES[str(band_name)]["says"],
         "statistic": f"{RULES[str(band_name)]['statistic']} at >={RULES[str(band_name)]['tier']}",
         "arms": summary,
@@ -2475,10 +3343,14 @@ def _baselines_or_reason(corpus: str = CORPUS) -> dict:
 
 
 def write_band(
-    arms=None, seeds=SEEDS, band_name: str = BAND, corpus: str = CORPUS
+    arms=None,
+    seeds=SEEDS,
+    band_name: str = BAND,
+    corpus: str = CORPUS,
+    recipe: str = RECIPE,
 ) -> tuple[Path, dict]:
-    record = band(arms, seeds, band_name, corpus)
-    path = band_path(band_name, corpus)
+    record = band(arms, seeds, band_name, corpus, recipe)
+    path = band_path(band_name, corpus, recipe)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8", newline="\n")
     return path, record

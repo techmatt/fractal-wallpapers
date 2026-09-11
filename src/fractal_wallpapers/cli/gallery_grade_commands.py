@@ -33,14 +33,16 @@ def gallery_grade(args: argparse.Namespace) -> int:
 
     if args.what == "preregister":
         path, document = trainer.write_bar(
-            band_name=args.band, corpus=args.corpus, force=args.force
+            band_name=args.band, corpus=args.corpus, recipe=args.recipe, force=args.force
         )
         print(json.dumps(document, indent=1))
         print(f"wrote {path}")
         return 0
 
     if args.what == "accept":
-        path, document = trainer.acceptance(band_name=args.band, corpus=args.corpus)
+        path, document = trainer.acceptance(
+            band_name=args.band, corpus=args.corpus, recipe=args.recipe
+        )
         print(json.dumps(document, indent=1))
         print(f"wrote {path}")
         return 0 if document["verdict"] == "CLEARED" else 1
@@ -48,17 +50,20 @@ def gallery_grade(args: argparse.Namespace) -> int:
     if args.what == "score-pool":
         from fractal_wallpapers.curation import solve as solve_module
 
-        picked = trainer.band(band_name=args.band, corpus=args.corpus)["pick"]
+        arm, seeds, column = trainer.shipped_runs(
+            band_name=args.band, corpus=args.corpus, recipe=args.recipe
+        )
         candidates, _refused = solve_module.pool()
         record = trainer.score_pool(
             candidates,
-            arm=picked["arm"],
-            seed=picked["seed"],
             band=args.band,
             corpus=args.corpus,
+            recipe=args.recipe,
             device=args.device,
         )
-        print(json.dumps({**record, "picked": picked}, indent=1))
+        print(
+            json.dumps({**record, "picked": {"arm": arm, "seeds": seeds, "run": column}}, indent=1)
+        )
         return 0
 
     if args.what == "fit":
@@ -67,6 +72,7 @@ def gallery_grade(args: argparse.Namespace) -> int:
             seed=args.seed,
             band=args.band,
             corpus=args.corpus,
+            recipe=args.recipe,
             device=args.device,
             epochs=args.epochs,
             workers=args.workers,
@@ -83,13 +89,14 @@ def gallery_grade(args: argparse.Namespace) -> int:
         outcome = trainer.fit_band(
             band_name=args.band,
             corpus=args.corpus,
+            recipe=args.recipe,
             device=args.device,
             epochs=args.epochs,
             workers=args.workers,
         )
         print(f"fitted {len(outcome['fitted'])}, already there {len(outcome['already_there'])}")
 
-    path, record = trainer.write_band(band_name=args.band, corpus=args.corpus)
+    path, record = trainer.write_band(band_name=args.band, corpus=args.corpus, recipe=args.recipe)
     print(json.dumps(record, indent=1))
     print(f"wrote {path}")
     return 0
@@ -102,6 +109,24 @@ def band_flag(parser, trainer_band: str, rules) -> None:
         default=trainer_band,
         choices=sorted(rules),
         help=f"which stopping rule this run is fitted under (default {trainer_band})",
+    )
+
+
+def recipe_flag(parser, default: str, recipes) -> None:
+    """`--recipe`, which is WHICH KNOBS — the third axis, beside rows and rule.
+
+    On every verb that names a run, for `corpus_flag`'s reason: two arms fitted
+    under different dropout are not two arms, and a bar, a band and a checkpoint
+    all have to say which recipe they are about.
+    """
+    parser.add_argument(
+        "--recipe",
+        default=default,
+        choices=sorted(recipes),
+        help=(
+            f"which knobs this run is fitted under (default {default}, the ADOPTED recipe): "
+            + "; ".join(f"{k} — {v['says']}" for k, v in sorted(recipes.items()))
+        ).replace("%", "%%"),
     )
 
 
@@ -130,6 +155,8 @@ def add_commands(subcommands) -> None:
         BAND,
         CORPORA,
         CORPUS,
+        RECIPE,
+        RECIPES,
         RULES,
         SPLIT_SEED,
     )
@@ -200,6 +227,7 @@ def add_commands(subcommands) -> None:
     )
     band_flag(registering, BAND, RULES)
     corpus_flag(registering, CORPUS, CORPORA)
+    recipe_flag(registering, RECIPE, RECIPES)
     registering.set_defaults(handler=gallery_grade)
 
     accepting = steps.add_parser(
@@ -214,6 +242,7 @@ def add_commands(subcommands) -> None:
     )
     band_flag(accepting, BAND, RULES)
     corpus_flag(accepting, CORPUS, CORPORA)
+    recipe_flag(accepting, RECIPE, RECIPES)
     accepting.set_defaults(handler=gallery_grade)
 
     scoring = steps.add_parser(
@@ -228,6 +257,7 @@ def add_commands(subcommands) -> None:
     )
     band_flag(scoring, BAND, RULES)
     corpus_flag(scoring, CORPUS, CORPORA)
+    recipe_flag(scoring, RECIPE, RECIPES)
     device_flag(scoring)
     scoring.set_defaults(handler=gallery_grade)
 
@@ -257,6 +287,7 @@ def add_commands(subcommands) -> None:
     fitting.add_argument("--seed", type=int, default=0, help="the training seed (default 0)")
     band_flag(fitting, BAND, RULES)
     corpus_flag(fitting, CORPUS, CORPORA)
+    recipe_flag(fitting, RECIPE, RECIPES)
     device_flag(fitting)
     fitting.add_argument("--epochs", type=int, help="override the recipe's epoch ceiling")
     fitting.add_argument("--workers", type=int, help="override the recipe's loader workers")
@@ -274,6 +305,7 @@ def add_commands(subcommands) -> None:
     )
     band_flag(banding, BAND, RULES)
     corpus_flag(banding, CORPUS, CORPORA)
+    recipe_flag(banding, RECIPE, RECIPES)
     device_flag(banding)
     banding.add_argument("--epochs", type=int, help="override the recipe's epoch ceiling")
     banding.add_argument("--workers", type=int, help="override the recipe's loader workers")
@@ -291,7 +323,8 @@ def add_commands(subcommands) -> None:
     )
     band_flag(reading, BAND, RULES)
     corpus_flag(reading, CORPUS, CORPORA)
+    recipe_flag(reading, RECIPE, RECIPES)
     reading.set_defaults(handler=gallery_grade)
 
 
-__all__ = ["add_commands", "corpus_flag", "gallery_grade"]
+__all__ = ["add_commands", "corpus_flag", "gallery_grade", "recipe_flag"]

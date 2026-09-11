@@ -461,15 +461,15 @@ def test_the_first_band_keeps_bare_names_and_every_later_one_prefixes() -> None:
     """Renaming the first band's directories would make every report quoting
     `more_seed1` wrong about a run that still exists.
 
-    The corpus is named on every call here rather than left to the default,
-    because this is a test about the BAND axis and the default on the other one
-    moves whenever a refit is adopted.
+    The corpus and the recipe are named on every call here rather than left to
+    their defaults, because this is a test about the BAND axis and the defaults on
+    the other two move whenever a refit is adopted.
     """
-    build = trainer.BUILD_CORPUS
-    assert trainer.run_name("more", 1, trainer.FIRST_BAND, build) == "more_seed1"
-    assert trainer.run_name("more", 1, "auc_ge4", build) == "auc_ge4_more_seed1"
-    assert trainer.band_path(trainer.FIRST_BAND, build).name == "band.json"
-    assert trainer.band_path("auc_ge4", build).name == "band_auc_ge4.json"
+    build, first = trainer.BUILD_CORPUS, trainer.FIRST_RECIPE
+    assert trainer.run_name("more", 1, trainer.FIRST_BAND, build, first) == "more_seed1"
+    assert trainer.run_name("more", 1, "auc_ge4", build, first) == "auc_ge4_more_seed1"
+    assert trainer.band_path(trainer.FIRST_BAND, build, first).name == "band.json"
+    assert trainer.band_path("auc_ge4", build, first).name == "band_auc_ge4.json"
 
 
 def test_a_band_nobody_declared_is_refused() -> None:
@@ -477,15 +477,16 @@ def test_a_band_nobody_declared_is_refused() -> None:
         trainer.run_name("more", 0, "auc_ge2")
 
 
-def _fitted(tmp_path, values: dict, band: str = "auc_ge4") -> None:
+def _fitted(tmp_path, values: dict, band: str = "auc_ge4", recipe: str = trainer.RECIPE) -> None:
     """Write a `metrics.json` per `(arm, seed)` carrying the given statistics."""
     for (arm, seed), (statistic, spearman) in values.items():
-        directory = tmp_path / trainer.run_name(arm, seed, band)  # the default corpus
+        # The default corpus, and whichever recipe the reader will ask for.
+        directory = tmp_path / trainer.run_name(arm, seed, band, trainer.CORPUS, recipe)
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "metrics.json").write_text(
             json.dumps(
                 {
-                    "run": trainer.run_name(arm, seed, band),
+                    "run": trainer.run_name(arm, seed, band, trainer.CORPUS, recipe),
                     "band": band,
                     "best_epoch": 3,
                     "best_selection_objective": -statistic,
@@ -509,6 +510,8 @@ def test_the_arm_is_picked_on_the_mean_and_the_seed_on_the_median(tmp_path, monk
     """
     monkeypatch.setattr(trainer, "head_dir", lambda run=None: tmp_path / run if run else tmp_path)
     monkeypatch.setattr(trainer, "_baselines_or_reason", lambda *_: {"unreadable": "not here"})
+    # The INHERITED recipe, because this is a test about two arms and the adopted
+    # recipe runs one: `frozen` and `last_block` were measured and dropped.
     _fitted(
         tmp_path,
         {
@@ -519,8 +522,9 @@ def test_the_arm_is_picked_on_the_mean_and_the_seed_on_the_median(tmp_path, monk
             ("more", 1): (0.60, 0.4),
             ("more", 2): (0.99, 0.4),
         },
+        recipe=trainer.FIRST_RECIPE,
     )
-    read = trainer.band(seeds=(0, 1, 2))
+    read = trainer.band(seeds=(0, 1, 2), recipe=trainer.FIRST_RECIPE)
     assert read["arms"]["last_block"]["mean_selection"] == pytest.approx(0.72)
     assert read["arms"]["more"]["mean_selection"] == pytest.approx(0.6967, abs=1e-4)
     assert read["pick"]["arm"] == "last_block", "the single best RUN is `more`, and it loses"
@@ -657,29 +661,42 @@ def test_the_build_corpus_keeps_the_bare_names_and_every_later_one_says_which() 
     # must mean the head that is live rather than the newest one fitted. Moving
     # it is an act with a re-score and a bar move in it, never a tidy-up.
     assert trainer.CORPUS in trainer.CORPORA
-    assert trainer.CORPUS == "corrected", "adopted 2026-09-09"
+    assert trainer.CORPUS == "twelve_sheets", "adopted 2026-09-10"
     assert trainer.BUILD_CORPUS == "as_built", "the corpus whose files carry bare names"
-    assert trainer.run_name("more", 2, "auc_ge4", trainer.BUILD_CORPUS) == "auc_ge4_more_seed2"
-    assert trainer.run_name("more", 2, "auc_ge4", "corrected") == "corrected_auc_ge4_more_seed2"
-    assert trainer.run_name("more", 1, trainer.FIRST_BAND, "corrected") == "corrected_more_seed1"
+    first = trainer.FIRST_RECIPE
+    assert (
+        trainer.run_name("more", 2, "auc_ge4", trainer.BUILD_CORPUS, first) == "auc_ge4_more_seed2"
+    )
+    assert (
+        trainer.run_name("more", 2, "auc_ge4", "corrected", first) == "corrected_auc_ge4_more_seed2"
+    )
+    assert (
+        trainer.run_name("more", 1, trainer.FIRST_BAND, "corrected", first)
+        == "corrected_more_seed1"
+    )
 
     for corpus in sorted(trainer.CORPORA):
         paths = {
             trainer.population_path(corpus),
             trainer.split_path(corpus),
-            trainer.band_path("auc_ge4", corpus),
-            trainer.bar_path("auc_ge4", corpus),
-            trainer.comparison_path("auc_ge4", corpus),
+            trainer.band_path("auc_ge4", corpus, first),
+            trainer.bar_path("auc_ge4", corpus, first),
+            trainer.comparison_path("auc_ge4", corpus, first),
         }
         assert len(paths) == 5
-    for name in ("population_path", "split_path", "band_path", "bar_path", "comparison_path"):
+    for name in ("population_path", "split_path"):
         reach = getattr(trainer, name)
         assert reach(corpus=trainer.BUILD_CORPUS) != reach(corpus="corrected"), name
+    for name in ("band_path", "bar_path", "comparison_path"):
+        reach = getattr(trainer, name)
+        assert reach(corpus=trainer.BUILD_CORPUS, recipe=first) != reach(
+            corpus="corrected", recipe=first
+        ), name
 
     assert trainer.population_path(trainer.BUILD_CORPUS).name == "population.jsonl"
     assert trainer.split_path(trainer.BUILD_CORPUS).name == "split.json"
-    assert trainer.bar_path("auc_ge4", trainer.BUILD_CORPUS).name == "bar_auc_ge4.json"
-    assert trainer.bar_path("auc_ge4", "corrected").name == "corrected_bar_auc_ge4.json"
+    assert trainer.bar_path("auc_ge4", trainer.BUILD_CORPUS, first).name == "bar_auc_ge4.json"
+    assert trainer.bar_path("auc_ge4", "corrected", first).name == "corrected_bar_auc_ge4.json"
 
 
 def test_a_corpus_nobody_declared_is_refused_rather_than_defaulted() -> None:

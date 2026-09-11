@@ -655,7 +655,7 @@ on the view buys at n=1000, measured 2026-09-07*; what one costs on the clock is
 
 ### The bar is a recorded parameter, and since 2026-09-08 it is the default
 
-**`--fine-bar SCORE`, `solve.solve(fine_bar=...)`, `solve.DEFAULT_FINE_BAR = 0.184`.**
+**`--fine-bar SCORE`, `solve.solve(fine_bar=...)`, `solve.DEFAULT_FINE_BAR = 0.030242`.**
 The spelling and the recording landed 2026-09-07 with the default at `None`, under
 the ruling that it stayed a **parameter** until the flip that made the first
 cascade record. That record is `20260908T144844Z`, and the flip went with it:
@@ -664,22 +664,27 @@ Matt's ruling of 2026-09-08, *the `p_fine` seating is the way*.
 ```
 curate solve run    --n 1000                     # the ratified bar, unnamed and running
 curate solve record --n 1000                     # the same bar, under a stamp
-curate solve record --n 1000 --fine-bar 0.184    # the same thing said out loud
+curate solve record --n 1000 --fine-bar 0.030242 # the same thing said out loud
 ```
 
-⚠ **The default moved 0.50 → 0.184 on 2026-09-09 and that is NOT a tightening.**
-It went with the adoption of the refitted fine head, and it is the level at which
-that head admits the fraction the old one admitted at 0.50 — a **matched**
-constant, derived in `models/gallery_grade/README.md`'s *Adopted 2026-09-09*. The
-gate is where it was; what changed is the order inside it. Holding 0.50 would have
-cut the admitted pool to roughly a third without a ruling saying so.
+⚠ **The default moved 0.50 → 0.184 on 2026-09-09 and 0.184 → 0.030242 on
+2026-09-10, and neither is a tightening.** Each went with the adoption of a new
+fine head, and each is the level at which that head admits the fraction its
+predecessor admitted — **matched** constants, derived in
+`models/gallery_grade/README.md`'s *Adopted 2026-09-09* and *Adopted 2026-09-10*.
+The gate has been 27.76% of the pool throughout; what changes is the order inside
+it. The last move is the largest and the least meaningful: a **k=3 ensemble**
+averages on the probability scale, an average pulls the tails in, and the mass
+sits an order lower than any single head's.
 
-**Which side of each flip a record is on is on the record**, and after 2026-09-09
+**Which side of each flip a record is on is on the record**, and since 2026-09-09
 it takes two fields. `config.fine_bar` reads `null` for the 62 stamps taken before
 `20260908T144844Z` and a number after; `config.fine_head` names the run whose
-column that number was read on, because 0.50 under `auc_ge4_more_seed2` and 0.184
-under `corrected_auc_ge4_more_seed1` mean the same thing and 0.50 under the latter
-does not. A record with no `fine_head` predates the adoption.
+column that number was read on, because 0.50 under `auc_ge4_more_seed2`, 0.184
+under `corrected_auc_ge4_more_seed1` and 0.030242 under
+`twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3` mean the same thing, and any
+one of those numbers on another of those columns does not. A record with no
+`fine_head` predates the first adoption.
 
 ⚠ **There is no CLI spelling for the unbarred population any more.** `--fine-bar`
 takes a float, so `0` is a bar of zero — which still excludes every row the head has
@@ -755,7 +760,8 @@ live. Recalibrating the head rewrites every term in it.
 
 The same trap runs through `worst`: **1.548 → 1.191**, and each sits just above
 its own record's bar — 0.048 over `0.50` on the outgoing column, 0.007 over
-`0.184` on the incoming one. A worst seat pinned to the bar is what the tier
+`0.184` on the incoming one. The 2026-09-10 adoption repeats it exactly: **1.041**
+against a bar of `0.030242`. A worst seat pinned to the bar is what the tier
 order predicts and it says nothing about the picture.
 
 **The comparable column is `p_ge4`**, the render judge's, which neither adoption

@@ -402,6 +402,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A new count, and fourteen tests that cost the lane a second.**
+`adopt_deterministic_20260910`, 2026-09-10. **4,207 selected, 132 deselected —
+4,339 collected — in 137.90 s**, green, nothing running beside it. The **+14 over
+every reading below is `tests/test_gallery_grade_corpus.py`**, whole: the frozen
+corpus's five checksums, the three naming axes, the asymmetric loss at a weight of
+one, and the two guards on the determinism promise. It cost **1.0 s** against the
+reading below on a box that had just fitted a band, re-scored 42,300 rows and
+written an n=1000 record — so re-hashing 4.5 MB of tracked corpus every fast lane
+is not a cost worth arranging around. ⚠ The count moved because tests were
+**added**, which is the one reason a moved count needs no investigation; the
+entries below are what a moved count with no test added has to answer to.
+
 **The fastest of the 4,325 readings, on a box that had just done more work than any
 of the others.** `deterministic_refit_20260910`, 2026-09-10. **4,193 selected, 132
 deselected — 4,325 collected — in 136.92 s**, green, nothing running beside it. Four

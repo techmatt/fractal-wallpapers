@@ -285,6 +285,94 @@ def set_seed(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
+#: The cuBLAS workspace a deterministic run needs, and **it is read when the
+#: handle is made rather than when it is asked for** — so it is set at the CLI's
+#: own entry, in `cli/__init__.py`, before anything here imports torch.
+CUBLAS_WORKSPACE = ":4096:8"
+
+
+class NotDeterministic(RuntimeError):
+    """A run asked for determinism on a process that cannot give it."""
+
+
+def make_deterministic() -> None:
+    """Pin every kernel to a deterministic implementation, or refuse to fit.
+
+    ⚠ **Seeding is not reproducibility on CUDA.** `adopt_and_record_20260910`
+    refitted an adopted column at its own seed on unchanged code and got a
+    different head: the two runs parted in the FIRST epoch's training loss, and a
+    flat checkpoint surface turned that into epoch 29 against epoch 4 and 516 of
+    1,000 gallery seats. The input stream was identical throughout — what moved
+    was the atomics in cuDNN's backward kernels.
+
+    It costs about **8% an epoch** at a thirty-epoch horizon — 5.40 s against 5.00
+    on this box's `drop_high_asymmetric` runs — and that is the real figure. A
+    three-epoch probe reads it as free, because the warm-up epoch swamps it.
+
+    **A promise about one machine and one build**, not about the recipe: the same
+    seeds on another GPU or another cuDNN give another column. Whatever is fitted
+    under this should record [`determinism_record`] beside it.
+    """
+    import os
+
+    import torch
+
+    if os.environ.get("CUBLAS_WORKSPACE_CONFIG") != CUBLAS_WORKSPACE:
+        raise NotDeterministic(
+            f"CUBLAS_WORKSPACE_CONFIG is {os.environ.get('CUBLAS_WORKSPACE_CONFIG')!r} and "
+            f"has to be {CUBLAS_WORKSPACE!r} BEFORE torch is imported — cuBLAS reads it when "
+            f"it makes its handle. `fractal_wallpapers.cli` sets it at the entry point, so a "
+            f"process that reaches here without it is one that imported torch first."
+        )
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=False)
+
+
+def determinism_record() -> dict:
+    """What a rebuild has to match. None of it is re-derivable from the recipe."""
+    import os
+
+    import torch
+
+    return {
+        "deterministic_algorithms": torch.are_deterministic_algorithms_enabled(),
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+        "cudnn_benchmark": torch.backends.cudnn.benchmark,
+        "torch": torch.__version__,
+        "cuda": torch.version.cuda,
+        "cudnn": torch.backends.cudnn.version(),
+        "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
+        "is": "determinism is a promise about one build and one device, not about a recipe",
+    }
+
+
+def score_many(models, paths, transform, where: str, classes: int, recipe: dict):
+    """[`score`] for k heads over ONE decode pass — an ensemble's own shape.
+
+    Returns `(k, len(paths), classes - 1)` of PROBABILITIES, each head's own, for
+    the caller to average. Averaging here would decide a question that belongs to
+    whoever built the ensemble: a mean of probabilities and a mean of logits are
+    different columns, and only one of them is the scale a bar cuts on.
+
+    The pass is decode-bound rather than forward-bound — 42,300 candidate JPEGs at
+    about 460 a second against three forwards on a warm batch — so k heads one at
+    a time would be k decodes of the same pictures.
+    """
+    import numpy
+    import torch
+
+    for model in models:
+        model.eval()
+    out = numpy.zeros((len(models), len(paths), classes - 1), dtype=numpy.float64)
+    with torch.no_grad():
+        for pictures, index in _pictures(paths, transform, where, recipe):
+            block = pictures.to(where, non_blocking=True)
+            position = index.numpy()
+            for which, model in enumerate(models):
+                out[which, position] = model(block).float().cpu().numpy()
+    return numpy.stack([head.probabilities(one) for one in out])
+
+
 def population(name: str = "location", regimes: tuple = ()) -> tuple[list, dict]:
     """The locations, joined to their tiles, with the selection slice assigned.
 

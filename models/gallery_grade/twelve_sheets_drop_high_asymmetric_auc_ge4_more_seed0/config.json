@@ -1,0 +1,387 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "run": "twelve_sheets_drop_high_asymmetric_auc_ge4_more_seed0",
+  "arm": "more",
+  "band": "auc_ge4",
+  "corpus": "twelve_sheets",
+  "corpus_is": "the 2,829 rows over twelve labelling sheets the store held on 2026-09-10 \u2014 the two gallery sittings and the augmentation sweep's two sheets on top of `corrected`'s. FROZEN: its join, its split and its targets are tracked under `data/gallery_grade/corpus/twelve_sheets/` rather than regenerable, because the join reads the LIVE store and cannot give these rows back once another sheet is graded",
+  "recipe": "drop_high_asymmetric",
+  "recipe_is": "dropout 0.4 and stochastic depth 0.2, every cutpoint's negative term at 2x, a fixed 30-epoch horizon with the AUC(>=4) checkpoint, and a learned per-batch offset dropped at inference. Ships k seeds averaged on the probability scale",
+  "classes": 4,
+  "backbone": "mobilenetv4_conv_small.e2400_r224_in1k",
+  "batch_size": 32,
+  "backbone_lr": 0.0002,
+  "head_lr": 0.001,
+  "weight_decay": 0.05,
+  "drop_rate": 0.4,
+  "drop_path_rate": 0.2,
+  "grad_clip": 1.0,
+  "amp": "off",
+  "border_crop": 0.05,
+  "class_balance": "sqrt",
+  "geometry": "stretch",
+  "loss": "CORN ordinal, K-1 conditional-subset tasks",
+  "sampler": "w_class[1/sqrt] x w_place[1/pictures at this place], in that order",
+  "selection_cutpoint": 3,
+  "target_dims": [
+    384,
+    224
+  ],
+  "workers": 6,
+  "epochs": 30,
+  "patience": 999,
+  "seed": 0,
+  "source_dims": [
+    640,
+    360
+  ],
+  "augmentation": "geometric only \u2014 border crop and both flips. No colour and no JPEG jitter: the colouring is what the grade is about",
+  "selection": "max AP(>=3) over the stopping slice, ranked by p_ge3, with AUC(>=3) as the fallback where the slice holds one class",
+  "conditioning": "none \u2014 the picture is the input, and the head is told no batch",
+  "cascade": "stage two behind the render judge's p_ge4. Undefined on a row that never cleared the gate; never a pool-wide ranker",
+  "neg_weight": 2.0,
+  "offset": "batch",
+  "offset_groups": [
+    "aug_sweep_A_20260910",
+    "aug_sweep_B_20260910",
+    "gallery_tail_20260910",
+    "gallery_top_20260910",
+    "n1000_0906_1",
+    "n1000_0906_2",
+    "n1000_0906_3",
+    "p_fine_correction_20260909"
+  ],
+  "offset_is": "a learned scalar per sitting, centred at every use and DROPPED at inference \u2014 the column a seating reads is the model without it, which is the average sitting's scale",
+  "checkpoint_rule": "auc_ge4",
+  "determinism": {
+    "deterministic_algorithms": true,
+    "cublas_workspace_config": ":4096:8",
+    "cudnn_benchmark": false,
+    "torch": "2.6.0+cu124",
+    "cuda": "12.4",
+    "cudnn": 90100,
+    "device": "NVIDIA GeForce RTX 2060 SUPER",
+    "is": "determinism is a promise about one build and one device, not about a recipe"
+  },
+  "initialised_from": {
+    "artifact": "models/render/render.fp16.pt",
+    "run": "deploy_v6_seed0",
+    "tag": "weights-v6",
+    "says": "a COPY. Never a shared trunk \u2014 a moved trunk is a judge flip"
+  },
+  "freezing": {
+    "arm": "more",
+    "unfrozen": [
+      "<everything>"
+    ],
+    "says": "a full fine-tune \u2014 every parameter takes a gradient",
+    "trainable_parameters": 2496867,
+    "total_parameters": 2496867,
+    "trainable_share": 1.0
+  },
+  "stopping_rule": {
+    "asked_for": "auc_ge4",
+    "boundary": 4,
+    "stopping_slice_at_boundary": {
+      "at_or_above": 119,
+      "below": 447
+    },
+    "readable": true,
+    "ran_under": "auc_ge4",
+    "says": "max AUC(>=4) over the stopping slice, ranked by p_ge4. Rank-only, at the boundary a seating inside the gate's own top actually orders on"
+  },
+  "stopped_early": null,
+  "best_epoch": 25,
+  "best_selection_rule": "auc_ge4",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "interpolation": "bicubic",
+  "inherited": {
+    "identical_to_the_shipped_render_judge": [
+      "classes",
+      "backbone",
+      "batch_size",
+      "backbone_lr",
+      "head_lr",
+      "weight_decay",
+      "drop_rate",
+      "drop_path_rate",
+      "grad_clip",
+      "amp",
+      "border_crop",
+      "class_balance",
+      "geometry",
+      "loss",
+      "sampler",
+      "selection_cutpoint",
+      "target_dims",
+      "workers",
+      "epochs",
+      "patience",
+      "selection"
+    ],
+    "chosen": [
+      {
+        "key": "source_dims",
+        "was": "1280x720 \u2014 the sheet picture a verdict was cast on",
+        "now": "640x360 \u2014 the ledger's stored candidate",
+        "why": "this head is read where a seating reads, and the two geometries are not resamplings of each other: they correlate at r = 0.696 over the landed thousand, with 55 rows under P(>=4) 0.5 at label geometry and none at candidate geometry. Fitting at the deployment column accepts a label-quality cost on purpose"
+      },
+      {
+        "key": "split_stratification",
+        "was": "lineages only",
+        "now": "lineages whole, and the holdout filled to balance the SHEET, BLOCK and GRADE marginals",
+        "why": "the cuts a page was cast on are measurably different scales \u2014 the three sittings of 2026-09-06 at p = 2.6e-05 and the correction sitting's own three sheets at chi-square 69.39 \u2014 and a blocked draw's blocks are four different populations whose means run 1.18 to 2.69. A stopping slice over-weighting any of them stops on something the training side is not on. Every one of the three is read by the SPLIT and none is ever shown to the model: the sheets' disagreement is accepted as label noise, Matt\u2019s ruling of 2026-09-09, so there is no sheet term, no reweighting and no exclusion"
+      },
+      {
+        "key": "split_seed",
+        "was": "the run's own seed, so each seed sits on its own slice",
+        "now": "fixed at 0 for every arm and every seed",
+        "why": "the question here is WHICH ARM, and models/render/README.md says why the incumbent arrangement cannot answer it: an AP read on two different slices is not a comparison of two heads. The training seed still moves the initialisation and the sampler order"
+      }
+    ],
+    "not_inherited": [
+      {
+        "key": "pretrained",
+        "why": "the backbone is not re-initialised from ImageNet at all \u2014 it starts at the shipped weights-v6 artifact, which is what makes this a second stage rather than a second judge"
+      },
+      {
+        "key": "kinds",
+        "why": "the render judge is told no kind and this head is told no batch. The corpus is one store with one scale"
+      }
+    ]
+  },
+  "split": {
+    "schema": 1,
+    "rule": "a seeded 80%/20% over LINEAGES, filled by whichever remaining lineage most reduces the summed shortfall over the sheet, block, grade marginals. The holdout's only job is to stop the run \u2014 it is the shipped judge's split with one seed for every arm, so every run of the grid is read on one slice",
+    "unit": "lineage \u2014 labeling.groups.assign",
+    "seed": 20260910,
+    "target_share": 0.2,
+    "rows": 2829,
+    "lineages": 2089,
+    "grouping": {
+      "groups": 2089,
+      "largest": 9,
+      "singletons": 1563,
+      "unplaced": 0
+    },
+    "sides": {
+      "train": 2263,
+      "stopping": 566
+    },
+    "holdout_share": 0.2001,
+    "holdout": {
+      "target_rows": 566,
+      "rows": 566,
+      "lineages": 193
+    },
+    "strata": {
+      "sheet": {
+        "aug_sweep_A_20260910": {
+          "population": 200,
+          "stopping": 40,
+          "share": 0.2
+        },
+        "aug_sweep_B_20260910": {
+          "population": 200,
+          "stopping": 40,
+          "share": 0.2
+        },
+        "gallery_tail_20260910": {
+          "population": 218,
+          "stopping": 43,
+          "share": 0.1972
+        },
+        "gallery_top_20260910_1": {
+          "population": 161,
+          "stopping": 32,
+          "share": 0.1988
+        },
+        "gallery_top_20260910_2": {
+          "population": 163,
+          "stopping": 32,
+          "share": 0.1963
+        },
+        "gallery_top_20260910_3": {
+          "population": 162,
+          "stopping": 32,
+          "share": 0.1975
+        },
+        "n1000_0906_1": {
+          "population": 330,
+          "stopping": 69,
+          "share": 0.2091
+        },
+        "n1000_0906_2": {
+          "population": 327,
+          "stopping": 69,
+          "share": 0.211
+        },
+        "n1000_0906_3": {
+          "population": 328,
+          "stopping": 60,
+          "share": 0.1829
+        },
+        "p_fine_correction_20260909_1": {
+          "population": 247,
+          "stopping": 50,
+          "share": 0.2024
+        },
+        "p_fine_correction_20260909_2": {
+          "population": 247,
+          "stopping": 50,
+          "share": 0.2024
+        },
+        "p_fine_correction_20260909_3": {
+          "population": 246,
+          "stopping": 49,
+          "share": 0.1992
+        }
+      },
+      "block": {
+        "aug_sweep_A": {
+          "population": 200,
+          "stopping": 40,
+          "share": 0.2
+        },
+        "aug_sweep_B": {
+          "population": 200,
+          "stopping": 40,
+          "share": 0.2
+        },
+        "floor_thin_cell": {
+          "population": 146,
+          "stopping": 30,
+          "share": 0.2055
+        },
+        "gallery_tail": {
+          "population": 218,
+          "stopping": 43,
+          "share": 0.1972
+        },
+        "gallery_top": {
+          "population": 486,
+          "stopping": 96,
+          "share": 0.1975
+        },
+        "low_anchor": {
+          "population": 99,
+          "stopping": 20,
+          "share": 0.202
+        },
+        "near_bar": {
+          "population": 200,
+          "stopping": 40,
+          "share": 0.2
+        },
+        "pre_existing": {
+          "population": 985,
+          "stopping": 198,
+          "share": 0.201
+        },
+        "top_band": {
+          "population": 295,
+          "stopping": 59,
+          "share": 0.2
+        }
+      },
+      "grade": {
+        "1": {
+          "population": 720,
+          "stopping": 144,
+          "share": 0.2
+        },
+        "2": {
+          "population": 666,
+          "stopping": 133,
+          "share": 0.1997
+        },
+        "3": {
+          "population": 848,
+          "stopping": 170,
+          "share": 0.2005
+        },
+        "4": {
+          "population": 595,
+          "stopping": 119,
+          "share": 0.2
+        }
+      }
+    },
+    "worst_stratum_drift": {
+      "stratum": "sheet=n1000_0906_3",
+      "drift": 0.0171,
+      "population": 328,
+      "stopping": 60,
+      "share": 0.1829
+    },
+    "batches": {
+      "population": {
+        "aug_sweep_A_20260910": 200,
+        "aug_sweep_B_20260910": 200,
+        "gallery_tail_20260910": 218,
+        "gallery_top_20260910": 486,
+        "n1000_0906_1": 330,
+        "n1000_0906_2": 327,
+        "n1000_0906_3": 328,
+        "p_fine_correction_20260909": 740
+      },
+      "stopping": {
+        "aug_sweep_A_20260910": 40,
+        "aug_sweep_B_20260910": 40,
+        "gallery_tail_20260910": 43,
+        "gallery_top_20260910": 96,
+        "n1000_0906_1": 69,
+        "n1000_0906_2": 69,
+        "n1000_0906_3": 60,
+        "p_fine_correction_20260909": 149
+      },
+      "train": {
+        "aug_sweep_A_20260910": 160,
+        "aug_sweep_B_20260910": 160,
+        "gallery_tail_20260910": 175,
+        "gallery_top_20260910": 390,
+        "n1000_0906_1": 261,
+        "n1000_0906_2": 258,
+        "n1000_0906_3": 268,
+        "p_fine_correction_20260909": 591
+      },
+      "stopping_share_by_batch": {
+        "aug_sweep_A_20260910": 0.2,
+        "aug_sweep_B_20260910": 0.2,
+        "gallery_tail_20260910": 0.1972,
+        "gallery_top_20260910": 0.1975,
+        "n1000_0906_1": 0.2091,
+        "n1000_0906_2": 0.211,
+        "n1000_0906_3": 0.1829,
+        "p_fine_correction_20260909": 0.2014
+      },
+      "balanced_by": "the sheet, which refines it \u2014 the batch is reported here and is not itself a coordinate of the fill"
+    },
+    "grades": {
+      "train": {
+        "1": 576,
+        "2": 533,
+        "3": 678,
+        "4": 476
+      },
+      "stopping": {
+        "1": 144,
+        "2": 133,
+        "3": 170,
+        "4": 119
+      }
+    },
+    "split_seed": 20260910
+  },
+  "precision": "fp32"
+}

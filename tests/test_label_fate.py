@@ -197,7 +197,7 @@ def test_this_module_defines_no_bar_of_its_own():
     # Not 0.50 any more and not the same KIND of constant as `Q4_BAR`: the gate's
     # bar is a level on the render judge and has not moved, where this one is a
     # level on the fine head and was re-matched when that head was replaced.
-    assert solve.DEFAULT_FINE_BAR == 0.184
+    assert solve.DEFAULT_FINE_BAR == 0.030242
 
 
 def test_counting_a_rung_leaves_the_undecided_out():

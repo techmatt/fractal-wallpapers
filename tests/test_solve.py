@@ -79,8 +79,9 @@ class _EveryRowRead(dict):
 def a_pool_the_fine_head_has_read(monkeypatch):
     """Every synthetic candidate reads `p_fine(>=4) = 1.0`, for every test here.
 
-    [`solve.DEFAULT_FINE_BAR`] has been non-null since 2026-09-08 — `0.50` then
-    and `0.184` since the corrected refit was adopted on 2026-09-09 — so an
+    [`solve.DEFAULT_FINE_BAR`] has been non-null since 2026-09-08 — `0.50` then,
+    `0.184` from the corrected refit's adoption on 2026-09-09, and `0.030242` from
+    the k=3 ensemble's on 2026-09-10 — so an
     unflagged pass narrows the pool to the rows the gallery-grade head has read
     at or above it — and a synthetic candidate has no reading at all, which would leave every
     pool in this file empty and every test in it measuring nothing.
@@ -3019,7 +3020,7 @@ def test_the_fine_bar_is_on_every_record_including_the_ones_that_ran_without_one
     answer and a missing field is not, so the field is written either way."""
     record = solve.solve([candidate("a")], n=20, key=solve.JUDGE_KEY, fine_bar=None, log=quiet)
     assert record["config"]["fine_bar"] is None
-    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.184
+    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.030242
     assert "p_fine(>=4)" in record["config"]["fine_bar_is"]
     assert record["fine_bar"]["bar"] is None
     assert "no fine-head bar" in record["fine_bar"]["of"]
@@ -3034,13 +3035,14 @@ def test_the_fine_bar_a_solve_ran_under_is_on_the_config_block_a_manifest_carrie
         [candidate("a"), candidate("b")], n=20, key=solve.JUDGE_KEY, fine_bar=0.5, log=quiet
     )
     assert record["config"]["fine_bar"] == 0.5, "what this pass ASKED for"
-    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.184
+    assert record["config"]["fine_bar_default"] == solve.DEFAULT_FINE_BAR == 0.030242
     assert record["fine_bar"]["kept"] == 1
     assert record["fine_bar"]["dropped"] == 1
     assert record["population"]["candidates"] == 1
     # The level and the head are one fact written in two fields. 0.50 under the
-    # shipped head and 0.184 under the corrected refit admit the same fraction of
-    # one pool, so a record naming only the number cannot be read at all.
+    # shipped head, 0.184 under the corrected refit and 0.030242 under the k=3
+    # ensemble admit the same fraction of one pool, so a record naming only the
+    # number cannot be read at all.
     assert "fine_head" in record["config"]
     assert "auc_ge4_more_seed2" in record["config"]["fine_head_is"]
 

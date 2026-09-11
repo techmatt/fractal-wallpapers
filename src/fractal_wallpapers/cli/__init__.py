@@ -53,10 +53,19 @@ Resolving keeps one binding per name, which is what
 from __future__ import annotations
 
 import argparse
+import os
 from collections.abc import Sequence
 from importlib import import_module
 
 from fractal_wallpapers.paths import StorageRefusal, repo_root
+
+# The one thing here that runs at import, and it has to: cuBLAS reads this when it
+# makes its handle, so a trainer that asked for determinism after torch was
+# imported would be asking too late. `models/train.make_deterministic` refuses
+# rather than warns when it is absent, which is how a fit says *this process
+# cannot keep the promise* instead of quietly not keeping it. `setdefault`, so a
+# caller who set it deliberately keeps their value.
+os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
 
 __all__ = ["build_parser", "main", "repo_root"]
 
