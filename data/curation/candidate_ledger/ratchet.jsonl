@@ -22,3 +22,7 @@
 {"schema": 1, "event": "mark", "at": "2026-09-11T06:49:21Z", "why": "prune", "counts": {"rows": 359009, "recipe_key_named": 345516}}
 {"schema": 1, "event": "deleted", "at": "2026-09-11T06:49:21Z", "why": "prune", "counts": {"rows": 229, "recipe_key_named": 229}}
 {"schema": 1, "event": "mark", "at": "2026-09-11T12:20:35Z", "why": "prune", "counts": {"rows": 370018, "recipe_key_named": 356525}}
+{"schema": 1, "event": "deleted", "at": "2026-09-11T17:33:55Z", "why": "rotation/ckpt120", "counts": {"rows": 3468, "recipe_key_named": 3337, "run_index_named": 131}}
+{"schema": 1, "event": "mark", "at": "2026-09-11T17:35:48Z", "why": "prune", "counts": {"rows": 371409, "recipe_key_named": 358047}}
+{"schema": 1, "event": "deleted", "at": "2026-09-11T17:35:48Z", "why": "prune", "counts": {"rows": 177, "recipe_key_named": 177}}
+{"schema": 1, "event": "mark", "at": "2026-09-11T21:46:00Z", "why": "prune", "counts": {"rows": 374186, "recipe_key_named": 360824}}

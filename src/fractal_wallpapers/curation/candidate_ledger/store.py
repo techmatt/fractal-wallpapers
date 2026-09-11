@@ -328,7 +328,23 @@ def present_pictures(rows=None) -> set:
 #: staging store under `scratch/`, and its `merge` stage moves the ones it submits
 #: into `label_migration/<store name>/pictures` precisely so that they are
 #: reachable from here. `tests/test_label_migration.py` pins the membership.
-POOL_SUBTREES = ("depth", "runs", "mine", "reframe_draw", "hunt", "remode", "label_migration")
+#:
+#: **`rotation` joined on 2026-09-11.** [`curation.rotation`] draws five rotations
+#: of a stored recipe and adopts at most one of them, so it is the first member
+#: that *deletes most of what it makes* — which makes the sweep's reach matter
+#: more here rather than less: a pass killed between rendering a chunk and
+#: deciding it leaves five-sixths of that chunk named by nothing.
+#: `tests/test_rotation.py` pins the membership.
+POOL_SUBTREES = (
+    "depth",
+    "runs",
+    "mine",
+    "reframe_draw",
+    "hunt",
+    "remode",
+    "label_migration",
+    "rotation",
+)
 
 
 #: What every leg calls the directory it keeps its candidates in. [`orphans`]

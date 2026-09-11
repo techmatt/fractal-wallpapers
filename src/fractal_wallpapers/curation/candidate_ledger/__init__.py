@@ -167,6 +167,7 @@ __all__ = [
     "render_pair",
     "renders_of",
     "prune",
+    "remove",
     "restore",
     "row",
     "rows_path",

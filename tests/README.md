@@ -402,6 +402,24 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Thirty-seven tests for one new leg and every one of them is in the fast lane.**
+`rotation_pass_ckpt120`, 2026-09-11, idle box after a 4h03m render leg. **Fast:
+4,272 selected, 136 deselected — 4,408 collected — in 142.40 s. Slow: 4,408 of
+4,408 in 517.94 s (8:38), zero skips, zero failures.** The two lanes agree on 4,408.
+
+**The +37 is one prompt's and its split is worth reading.** All thirty-seven are
+`tests/test_rotation.py`'s and they cost **+1.12 s** between them, because the whole
+of that leg away from the half-second a recolour takes is a filter over the ledger,
+a seeded draw and a `max` — a fake ledger and never a picture. The removal
+transaction's six guards are the only ones that write a file, and they write three
+small ones into `tmp_path`. **The slow lane moved +7.74 s over the same tree and no
+slow test was added**, which is those thirty-seven running in it plus the box.
+
+The one thing that did *not* need a new guard is the renderer: this leg makes its
+pictures through `mine.make`, so `test_renderer_agreement.py` covers it without a
+registry entry — the sweep there is for modules that call `colorize.render`
+directly, and a leg that goes through the maker is not one.
+
 **A new renderer route costs nine seconds and it is the slow lane's, not the fast
 one's.** `palette_variant_mine_ckpt120`, 2026-09-11, idle box after an 5h20m render
 leg. **Fast: 4,235 selected, 136 deselected — 4,371 collected — in 141.28 s. Slow:

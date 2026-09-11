@@ -1215,10 +1215,13 @@ def test_nothing_but_the_ledger_deletes_a_candidate_picture():
 
     assert "unlink(" not in inspect.getsource(retention)
     assert "rmtree(" not in inspect.getsource(retention)
-    # `rescore` is the third only because it drops the chunk file it wrote for
+    # `rescore` is here only because it drops the chunk file it wrote for
     # itself, for `re_render`'s reason below: a leg's own working file is not a
-    # candidate, and neither of them can reach a picture.
-    assert owners("unlink(") == ["delete_pictures", "prune", "rescore"]
+    # candidate, and neither of them can reach a picture. `prune` and `remove` are
+    # the two row-dropping transactions and each drops its own three `.writing`
+    # names; the candidates they free they free through `delete_pictures`, which
+    # is the one verb and the reason this list is a census rather than a spelling.
+    assert owners("unlink(") == ["delete_pictures", "prune", "remove", "rescore"]
     # `re_render` is the second only because it drops the shared field directory
     # it dumped for itself, which is its own working file and not a candidate's.
     assert owners("rmtree(") == ["_delete_colormap", "re_render"]

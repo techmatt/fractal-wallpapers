@@ -743,6 +743,36 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "merge": ("--name",),
         "read": ("--name",),
     },
+    "rotate": {
+        "plan": ("--name", "--bar", "--seed", "--rotations"),
+        "run": (
+            "--name",
+            "--bar",
+            "--seed",
+            "--rotations",
+            "--tolerance",
+            "--budget",
+            "--chunk",
+            "--groups",
+            "--workers",
+            "--device",
+        ),
+        "merge": ("--name", "--dry-run"),
+        "read": ("--name",),
+        "mine": (
+            "--name",
+            "--budget",
+            "--rate",
+            "--width",
+            "--rotations",
+            "--seed",
+            "--modes",
+            "--shares",
+            "--chunk",
+            "--workers",
+            "--device",
+        ),
+    },
     "label-migration": {
         "census": ("--out",),
         "derive": ("--store", "--out"),
@@ -835,14 +865,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     and eighty until `label-fate` and its five arrived to say what became of every
     wallpaper somebody graded 4, its sixth landing the same day to name the row that
     beat each refused one; and eighty-eight until `solve k-sweep-plot` arrived to draw a
-    colour-ceiling sweep's per-cell figures off the readings it already wrote."""
+    colour-ceiling sweep's per-cell figures off the readings it already wrote; and
+    twenty and eighty-nine until `rotate` and its five arrived to ask the phases
+    nothing ever asked and to take out the rows they replace."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 89
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 94
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

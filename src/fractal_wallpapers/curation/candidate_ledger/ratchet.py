@@ -29,15 +29,19 @@ displacement mine's merges. Reset together, those 22 accounted deletions would
 have been dropped and the counter would have read short against a mark it never
 reached again.
 
-## One deletion site, so one recording site
+## Every deletion site records, and there are two
 
 Rows enter through [`door.merge`] and `store.write` is an upsert, which never
-removes; the only writer that drops a row is `sweep._prune_file`, inside
-[`sweep.prune`], and every leg that grows the store runs it. So there is one
-place to record from and it is the transaction itself, rather than a caller who
-has to remember. The orphan sweep and [`sweep.delete_pictures`] are deliberately
-**not** recorded here: they unlink pictures and take no row, so no count this
-module holds can move under them.
+removes. Two transactions drop a row and both write here: [`sweep.prune`], which
+is the retention rule and runs from every merge, and [`sweep.remove`], which is
+told which keys to take and exists because [`curation.rotation`] replaces a row
+with a rotation of it and has to be able to take the row it replaced. Recording
+is the transaction's own second half at both sites rather than a caller's to
+remember, which is the property that matters — **what makes a loss forgivable is
+that some transaction wrote it down, not that only one kind of transaction
+could**. The orphan sweep and [`sweep.delete_pictures`] are deliberately **not**
+recorded here: they unlink pictures and take no row, so no count this module
+holds can move under them.
 
 ## Where the log lives, and why it is tracked
 
