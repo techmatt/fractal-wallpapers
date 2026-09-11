@@ -471,12 +471,31 @@ epoch's training loss**, before any stopping rule has been consulted. The 30-epo
 AUC(≥4) surface is then flat enough (mean |Δ| 0.027) that the checkpoint rule turns
 that into a different epoch.
 
-★ **`torch.use_deterministic_algorithms(True)` makes it bit-for-bit reproducible at no
-measurable cost.** Two three-epoch runs under it agreed to all sixteen digits of the
-training loss, the eval loss and AUC(≥4), at **5.1–5.2 s an epoch against the free
-recipe's 5.1** — no op raised for want of a deterministic implementation, with
-`CUBLAS_WORKSPACE_CONFIG=:4096:8` set before torch is imported. Nothing in this
-checkout sets it yet.
+★ **`torch.use_deterministic_algorithms(True)` makes it bit-for-bit reproducible, and
+it costs about 8%.** No op raises for want of a deterministic implementation;
+`CUBLAS_WORKSPACE_CONFIG=:4096:8` has to be set before torch is imported, because
+cuBLAS reads it at load. Nothing in this checkout sets either yet. The price is
+**5.40 s an epoch against 5.00**, 87 epochs of each — about ten seconds on a
+three-minute run, and *not* the "no measurable cost" a three-epoch probe first read:
+at that length the warm-up epoch swamps it.
+
+### Verified on the real horizon, not on a proxy — `deterministic_refit_20260910`
+
+**A whole 30-epoch run repeats bitwise**: two of them agree to sixteen digits on every
+epoch's training loss, eval loss, AUC(≥4) and per-batch offsets, their held-out logits
+are `array_equal` across all thirty epochs, and all **278 checkpoint tensors** are
+`torch.equal`. Four three-epoch runs across two sessions agree with each other as well.
+
+⚠ **A short verification run shares only EPOCH 0 with a long one, and that is the
+schedule rather than a determinism failure.** `CosineAnnealingLR`'s `T_max` is the
+epoch ceiling, so a 3-epoch run and a 30-epoch run are on different learning rates
+from their first `schedule.step()` onward — they agree exactly at epoch 0 and part at
+epoch 1. Verify at the horizon you will fit at, or expect to read a false negative.
+
+**What a rebuild has to match**, none of it re-derivable: torch **2.6.0+cu124**, cuDNN
+**90100**, an **RTX 2060 SUPER**, `cudnn.benchmark` false, and that environment
+variable. Determinism is a promise about one machine and one build, not about the
+recipe.
 
 **The scoring and the seating half is exactly reproducible already**, which is what
 makes the above a statement about the fit alone: re-ensembling a stored pool-score

@@ -402,6 +402,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**The fastest of the 4,325 readings, on a box that had just done more work than any
+of the others.** `deterministic_refit_20260910`, 2026-09-10. **4,193 selected, 132
+deselected — 4,325 collected — in 136.92 s**, green, nothing running beside it. Four
+30-epoch fits, a 42,300-picture scoring pass, a pool hold and an n=1000 solve came
+before it, and it still reads **3.7 s under** the entry below and **2.4 s under** the
+139.29 s taken on an idle box. The tree changed by two `models/gallery_grade` README
+sections and nothing else. ★ **So *the box had just been busy* does not predict the
+clock** — the eight 4,325 readings span 136.92 to 158.28 s and a busy box holds both
+ends of that. What the log actually shows is that a lane sharing the box with a
+leg is killed or distorted, and a lane taken **after** one is a lane on an idle box
+however hard that box was working a minute earlier.
+
 **Three fits, a 42,300-picture scoring pass and two pool holds before it, and the
 clock did not notice.** `adopt_and_record_20260910`, 2026-09-10. **4,193 selected,
 132 deselected — 4,325 collected — in 140.62 s**, green, nothing running beside it.
