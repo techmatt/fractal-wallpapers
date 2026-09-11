@@ -69,6 +69,18 @@ seed so no member is permanently favoured.
 The table is deliberately conservative. Sixty-five groups over 143 maps out of
 901 — the other 758 are singletons, and a singleton is not a claim that a map is
 unique, only that nothing in the library came within the cut of it.
+
+## A variant of a map is in its base map's group
+
+[`palettes.variants`] makes a new map by moving one axis of an existing one, and
+the table above cannot name it: the table is a reading of the tracked library and
+no variant is in the library. Left alone, a variant would be its own singleton —
+its own group id, its own seat under the gallery's palette-group cap, its own
+slot through [`collapse`] beside the map it was derived from. That is the one
+thing a group exists to prevent, so [`group_of`] resolves a variant to its base
+map's group and [`collapse`] draws over the result. Neither needs the cut
+re-derived and neither moves a seated row: `palette_group` is carried on a recipe
+and not keyed, so nothing re-keys and nothing re-solves on this account.
 """
 
 from __future__ import annotations
@@ -564,9 +576,35 @@ def group_of(name: str, table: dict | None = None, directory: Path | None = None
     The **total** form of [`member_groups`], and it is spelled here rather than at
     each call site so two callers cannot disagree about what a singleton is called.
     `table` is [`member_groups`] already read, for a caller asking this per row.
+
+    ## A variant answers with its BASE MAP's group
+
+    [`palettes.variants`] derives a new map by moving one axis of an existing one,
+    and a variant is not a second *choice* — it is the map it came from, a quarter
+    turn round or half as saturated. So it belongs to whatever group the base
+    belongs to, always: the gallery's palette-group cap counts a base map and
+    every variant of it as one group, and [`collapse`] stands one of them up
+    rather than all of them.
+
+    **Read off the name and not off a carried field**, though a field on the map
+    record would be the better mechanism if one could reach here. It cannot: every
+    caller of this holds a map *name* off a recipe — `curation.recipes.of_decision`,
+    the ledger's rebuild, `curation.hunt`, `curation.rescore` — and a variant's
+    document is not in the library this function reads. [`variants.write`] takes a
+    directory on purpose and never `colormap_dir()`, so there is no record beside
+    the name to carry anything. The name is the only fact that travels, and it is
+    mechanical: [`variants.name_of`] spells `<base>~<axis>-<dose>`, the mark is
+    absent from every tracked map (`tests/test_palette_groups.py` holds the
+    library to it), and [`variants.base_of`] is the one split.
     """
+    from fractal_wallpapers.palettes import variants
+
     lookup = member_groups(directory) if table is None else table
-    return lookup.get(str(name), f"map:{name}")
+    name = str(name)
+    if name in lookup:
+        return lookup[name]
+    base = variants.base_of(name)
+    return lookup.get(base, f"map:{base}")
 
 
 def run(directory: Path | None = None, cut: float = CUT, log=None) -> dict:
@@ -619,21 +657,32 @@ def collapse(names, seed: int, directory: Path | None = None) -> tuple[list[str]
     The draw is seeded on the run's own seed, so two runs of one seed hold the same
     pool and two seeds spread across the group. A map the library holds but this
     pool does not is left alone, and a group with one member present is not a group.
+
+    **Grouped by [`group_of`] and not by the table's rows**, so a pool holding a
+    map *and* a variant of it collapses to one of the two rather than standing the
+    variant up as a second look — see [`group_of`]. For a pool of library maps the
+    two readings are the same pool, draw for draw: a group id the table names has
+    exactly the members the row names, every other map is alone under `map:<name>`
+    and consumes no draw, and `m01` sorts before `map:` so the draw order over the
+    table's own groups is what it always was.
     """
     names = list(names)
-    present = set(names)
     draw = random.Random(seed)
+    held: dict[str, list[str]] = collections.defaultdict(list)
+    table = member_groups(directory)
+    for name in sorted(set(names)):
+        held[group_of(name, table)].append(name)
     kept: dict[str, str] = {}
     dropped: dict[str, str] = {}
-    for row in sorted(groups(directory), key=lambda row: row["group"]):
-        members = sorted(name for name in row["members"] if name in present)
+    for group in sorted(held):
+        members = held[group]
         if len(members) < 2:
             continue
         picked = members[draw.randrange(len(members))]
-        kept[picked] = row["group"]
+        kept[picked] = group
         for name in members:
             if name != picked:
-                dropped[name] = row["group"]
+                dropped[name] = group
     pool = [name for name in names if name not in dropped]
     return pool, {
         "collapsed": True,
