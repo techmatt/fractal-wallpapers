@@ -185,19 +185,19 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,371 collected — 4,235 fast,
-136 slow — since `palette_variant_mine_ckpt120` landed on 2026-09-11**, and the
-pair was taken on this machine on an idle box after a render leg, on a
-`.[dev,models]` install with a release engine built: the **fast** lane **141.28 s**
-and the **slow** lane **4,371 of 4,371 in 510.20 s (8:30)**, both **green**,
-**zero skips**.
+Both are measured, not estimated. The tree holds **4,408 collected — 4,272 fast,
+136 slow — since `rotation_pass_ckpt120` landed on 2026-09-11**, and the pair was
+taken on this machine on an idle box after a render leg, on a `.[dev,models]`
+install with a release engine built: the **fast** lane **142.40 s** and the
+**slow** lane **4,408 of 4,408 in 517.94 s (8:38)**, both **green**, **zero
+skips**.
 
-The ten over the previous reading are all that prompt's, and they are **7 fast to 3
-slow** while the clock moved **+0.64 s** and **+27.3 s**: the fast seven are
-arithmetic over a seeded draw, and the slow three each render a recipe through
-every renderer in the tree. A guard that costs nine seconds is not a guard to
-regret — it is `tests/test_renderer_agreement.py`'s, the file that exists because
-the same defect has now been found seven times.
+The thirty-seven over the previous reading are all that prompt's and **all of them
+are fast**, for **+1.12 s** between them: a leg whose whole substance away from the
+render is a filter over the ledger, a seeded draw and a `max` needs a fake ledger
+and never a picture. It added **no** slow test at all, and it did not need to —
+it draws its pictures through `mine.make`, so `tests/test_renderer_agreement.py`
+covers it without a registry entry.
 
 **`5665ae6` left three reds that only the slow lane could see, and they are closed.**
 Nine green fast lanes went past them. Two were the *guard* and not the tree — the

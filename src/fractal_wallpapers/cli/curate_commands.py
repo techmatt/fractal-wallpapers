@@ -1577,6 +1577,80 @@ def curate_shrinkage(args: argparse.Namespace) -> int:
     return 0
 
 
+def curate_rotate(args):
+    """Price the passing set, rotate it, or put the decisions in the store."""
+    from fractal_wallpapers.curation import rotation
+
+    try:
+        if args.what == "merge":
+            print(json.dumps(rotation.merge(args.name, apply=not args.dry_run), indent=2))
+            return 0
+        if args.what == "read":
+            record = rotation.read(args.name)
+            print(json.dumps({**record.get("population", {}), **record["counts"]}, indent=2))
+            return 0
+        if args.what == "mine":
+            record = rotation.mine(
+                args.name,
+                seed=args.seed,
+                rate=args.rate,
+                budget=args.budget,
+                width=args.width,
+                rotations=args.rotations,
+                roster=args.modes,
+                shares=json.loads(args.shares) if args.shares else None,
+                workers=args.workers,
+                device=args.device,
+                chunk=args.chunk,
+            )
+            print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
+            print(f"\nrecord {display_path(rotation.record_path(args.name))}")
+            return 0
+        if args.what == "plan":
+            # The plan step renders nothing and holds the pool, which makes it the
+            # honest place to read a count before spending hours of engine on it.
+            # It resolves no recipe - that needs the group table and the band, and
+            # is `run`'s first act - so `rotations` here is what the draw intends
+            # rather than what survives the dedupe.
+            world = rotation.population(args.bar)
+            _groups, shape = rotation.plan_of(
+                world["sources"], args.seed, world["known"], args.rotations
+            )
+            print(
+                json.dumps(
+                    {
+                        "ledger_rows": world["ledger_rows"],
+                        "passing": world["passing"],
+                        "rotatable": len(world["sources"]),
+                        "refused": world["refused"],
+                        "owed": rotation.owed(world["refused"]),
+                        "protected": world["protected"],
+                        "plan": shape,
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        record = rotation.run(
+            args.name,
+            bar=args.bar,
+            seed=args.seed,
+            tolerance=args.tolerance,
+            rotations=args.rotations,
+            budget=args.budget,
+            workers=args.workers,
+            device=args.device,
+            chunk=args.chunk,
+            groups=args.groups,
+        )
+    except rotation.RotationRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
+    print(f"\nrecord {display_path(rotation.record_path(args.name))}")
+    return 0
+
+
 def curate_remode(args: argparse.Namespace) -> int:
     """Read the population, render a retired mode's rows again, merge them, read back."""
     from fractal_wallpapers.curation import remode
@@ -3104,6 +3178,7 @@ def add_commands(subcommands) -> None:
     from fractal_wallpapers.curation import pool_draw as pool_draw_module
     from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import remode as remode_module
+    from fractal_wallpapers.curation import rotation as rotation_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
     from fractal_wallpapers.curation import signatures as signatures_module
@@ -4957,6 +5032,219 @@ def add_commands(subcommands) -> None:
         f"with fewer location blocks than workers runs on one worker a block",
     )
     device_flag(running_remode)
+
+    rotate_step = steps.add_parser(
+        "rotate",
+        help="ask the phases nothing ever asked: every passing recipe against five "
+        "rotations of its own gradient, best of the six, and the row it replaces removed",
+        description=(
+            "Every recipe in the store was chosen at phase 0 with no alternative on the "
+            "table, because Palette.phase was not a member a candidate leg could move "
+            "until 2026-09-11 - so the pool is a selected-at-phase-0 population and every "
+            "head fitted on it inherits that. This takes the residue back out. Per row six "
+            "candidates: the picture it already has, plus five phases drawn uniformly over "
+            "the turn with the repeat fixed at 1, scored through the fine head with "
+            "p_coarse carried beside and gated on for neither. Best of the six wins; where "
+            "it is a rotation clearing the tolerance the rotation is adopted and the row it "
+            "replaces comes out of the store with its picture and its levelled colormap. "
+            "Two kinds of row are never removed whatever the scores say - a row seated in "
+            "ANY recorded gallery, and a row carrying ANY human label - and this honours "
+            "the prune rule's other three protections beside them. The unit of work is the "
+            "(location, mode) pair, because one dumped field serves every rotation under "
+            "it: that is what makes six candidates a row cost about one and a quarter "
+            "renders instead of six, and it is also what bounds the coverage to the modes "
+            "the engine can dump a field for. The direct traps are excluded outright - the "
+            "axis is a byte-for-byte no-op on a trap figure over a flat ground."
+        ),
+    )
+    rotate_step.set_defaults(handler=curate_rotate)
+    rotate_verbs = rotate_step.add_subparsers(dest="what", required=True)
+    planning_rotate = rotate_verbs.add_parser(
+        "plan", help="read the passing set and census it, rendering nothing"
+    )
+    running_rotate = rotate_verbs.add_parser("run", help="render, read, decide")
+    merging_rotate = rotate_verbs.add_parser(
+        "merge", help="adopt what won and remove what it replaced"
+    )
+    reading_rotate = rotate_verbs.add_parser("read", help="a finished pass's readout")
+    mining_rotate = rotate_verbs.add_parser(
+        "mine",
+        help="a standard mining draw where every candidate is the best of five phases",
+        description=(
+            "What the store arm does to rows that exist, done to rows that do not. A "
+            "standard depth draw over mode_policy.mined()'s roster, and the one thing that "
+            "differs from a production leg is that each drawn shot becomes a phase-0 "
+            "control plus four rotations, all five read through the fine head, and the best "
+            "of them merged. The four that lose are recorded with their drawn phases and "
+            "both columns and their pictures are freed: merging them would spend the "
+            "retention rule's keep on near-duplicates, and recording only the winner would "
+            "be the selected-at-one-phase bias again one level up, with nothing beside the "
+            "argmax to correct a rate by. Direct traps are drawn bare - the axis is a "
+            "no-op on them."
+        ),
+    )
+    # --name first and required on all five, the shape every leg group here has.
+    for a_pass in (
+        planning_rotate,
+        running_rotate,
+        merging_rotate,
+        reading_rotate,
+        mining_rotate,
+    ):
+        a_pass.add_argument(
+            "--name",
+            required=True,
+            help="what to call this pass. Its rows, its pictures, its fields, its "
+            "decisions and its record live under it, and `merge` names it again",
+        )
+    # The population flags are on `plan` and `run` and on neither of the other two:
+    # a merge reads the files the run already wrote and a read reads its record, so
+    # a bar named there would be a flag that could disagree with the pass.
+    for a_draw in (planning_rotate, running_rotate):
+        a_draw.add_argument(
+            "--bar",
+            type=float,
+            default=None,
+            metavar="P_FINE",
+            help=f"the fine bar the passing set is taken at (default the shipped "
+            f"{solve_module.DEFAULT_FINE_BAR:g}). Rows under it are not this pass's "
+            f"clock to spend",
+        )
+        a_draw.add_argument(
+            "--seed",
+            type=int,
+            default=0,
+            help="the draw's seed (default 0). Seeded per ROW off the row's own key, so a "
+            "pass that stopped at the clock and a pass re-run over the same population "
+            "draw the same phases for the same rows",
+        )
+        a_draw.add_argument(
+            "--rotations",
+            type=int,
+            default=rotation_module.ROTATIONS,
+            metavar="COUNT",
+            help=f"phases drawn a row beside the one it has (default "
+            f"{rotation_module.ROTATIONS}, so a row is six candidates)",
+        )
+    running_rotate.add_argument(
+        "--tolerance",
+        type=float,
+        default=rotation_module.TOLERANCE,
+        metavar="FACTOR",
+        help=f"a winning rotation is adopted where it reads at least this times the "
+        f"incumbent's STORED fine column (default {rotation_module.TOLERANCE:g}). Relative "
+        f"because p_fine spans orders of magnitude down the pool",
+    )
+    running_rotate.add_argument(
+        "--budget",
+        type=float,
+        default=3600.0,
+        metavar="SECONDS",
+        help="wall seconds of RENDERING (default 3600). The ledger read and the guard "
+        "resolution sit outside it, and what it truncates is whole chunks",
+    )
+    running_rotate.add_argument(
+        "--chunk",
+        type=int,
+        default=rotation_module.CHUNK_GROUPS,
+        metavar="GROUPS",
+        help=f"(location, mode) groups rendered before the pass stops to read what it made "
+        f"(default {rotation_module.CHUNK_GROUPS}). It is the interruption point: every "
+        f"picture of a finished chunk is either adopted or unlinked",
+    )
+    running_rotate.add_argument(
+        "--groups",
+        type=int,
+        default=None,
+        metavar="COUNT",
+        help="render only this many whole groups. For a smoke, and whole groups because a "
+        "dump pays for itself only across the rotations that follow it",
+    )
+    running_rotate.add_argument(
+        "--workers",
+        type=int,
+        default=rotation_module.WORKERS,
+        metavar="COUNT",
+        help=f"render workers (default {rotation_module.WORKERS}, this machine's pool)",
+    )
+    device_flag(running_rotate)
+    mining_rotate.add_argument(
+        "--budget",
+        type=float,
+        default=3600.0,
+        metavar="SECONDS",
+        help="wall seconds of RENDERING (default 3600). The population read and the plan "
+        "sit outside it, and what it truncates is whole chunks of location blocks",
+    )
+    mining_rotate.add_argument(
+        "--rate",
+        type=float,
+        default=rotation_module.MINE_RATE,
+        metavar="SECONDS",
+        help=f"engine seconds a SHOT the plan is sized off (default "
+        f"{rotation_module.MINE_RATE:g}, a deliberate under-estimate). The surplus of a "
+        f"plan is never started, so clock-bound is the correct way for a leg to end",
+    )
+    mining_rotate.add_argument(
+        "--width",
+        type=int,
+        default=rotation_module.MINE_WIDTH,
+        metavar="MAPS",
+        help=f"maps a location (default {rotation_module.MINE_WIDTH}). Over twelve modes "
+        f"that is one map a (location, mode), and a best-of-five merges one row - so a "
+        f"pair takes one against a keep of {candidate_ledger_module.RETAIN_PER_PAIR}",
+    )
+    mining_rotate.add_argument(
+        "--rotations",
+        type=int,
+        default=rotation_module.MINE_ROTATIONS,
+        metavar="COUNT",
+        help=f"phases drawn a shot beside its phase-0 control (default "
+        f"{rotation_module.MINE_ROTATIONS}, so a shot is five candidates)",
+    )
+    mining_rotate.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="the draw's seed (default 0), for the plan and for the phases both",
+    )
+    mining_rotate.add_argument(
+        "--modes",
+        nargs="+",
+        default=None,
+        metavar="MODE",
+        help="the roster (default mode_policy.mined(), the policy's own). Named because "
+        "`curate depth`'s default roster is the three SHAREABLE modes and not the twelve",
+    )
+    mining_rotate.add_argument(
+        "--shares",
+        default=None,
+        metavar="JSON",
+        help=f"how the plan is split between the draws, spelled WHOLE - build_plan merges "
+        f"what it is given over depth.SHARES, so naming one entry leaves the rest on their "
+        f"defaults. Default {json.dumps(rotation_module.MINE_SHARES)}",
+    )
+    mining_rotate.add_argument(
+        "--chunk",
+        type=int,
+        default=rotation_module.CHUNK_GROUPS,
+        metavar="BLOCKS",
+        help=f"location blocks rendered before the leg stops to read what it made "
+        f"(default {rotation_module.CHUNK_GROUPS})",
+    )
+    mining_rotate.add_argument(
+        "--workers",
+        type=int,
+        default=rotation_module.WORKERS,
+        metavar="COUNT",
+        help=f"render workers (default {rotation_module.WORKERS}, this machine's pool)",
+    )
+    device_flag(mining_rotate)
+    merging_rotate.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="decide and touch nothing: no upsert, no removal, no prune",
+    )
 
     retention_step = steps.add_parser(
         "retention",

@@ -2537,6 +2537,174 @@ leg here: `curate candidate-ledger orphans` enumerates those names and no others
 so a subtree missing from the tuple leaves a killed run's pictures on disk with no
 row anywhere and nothing able to find them.
 
+## `curate rotate` — the phases nothing ever asked, and the rows they replace
+
+Every other leg here adds to the pool. This one **replaces** rows in it, and it is
+the only thing in the project that does.
+
+`Palette.phase` — where the traversal of the gradient starts — was not a member a
+candidate leg could move until 2026-09-11. So every recipe in the store was chosen
+at phase 0 with no alternative on the table, the pool is a **selected-at-phase-0
+population**, and every head fitted on it inherits that and calls it quality. The
+target to hold in mind is *what the store would look like if rotations had been on
+the table from the beginning*. This does not reach it and is not meant to: it acts
+on the rows that pass the shipped fine bar, and the point is the direction.
+
+```
+fractal-wallpapers curate rotate plan  --name r1                 # the census, rendering nothing
+fractal-wallpapers curate rotate run   --name r1 --budget 24000  # render, read, decide
+fractal-wallpapers curate rotate merge --name r1 --dry-run       # what it would take and add
+fractal-wallpapers curate rotate merge --name r1                 # remove, then upsert
+fractal-wallpapers curate rotate read  --name r1
+fractal-wallpapers curate rotate mine  --name m1 --budget 18000  # the same question, on rows that do not exist yet
+```
+
+```
+src/fractal_wallpapers/curation/rotation.py            the population, the draw, the decision
+artifacts/curation/rotation/<name>/plan.jsonl          every row and the phases drawn for it
+artifacts/curation/rotation/<name>/decisions.jsonl     all six candidates a row, both columns
+artifacts/curation/rotation/<name>/rows.jsonl          the ledger rows the winners become
+artifacts/curation/rotation/<name>/scores.jsonl        sidecar rows, likewise
+artifacts/curation/rotation/<name>/removed.jsonl       the keys the adoptions replace
+artifacts/curation/rotation/<name>/pictures/<key>.jpg  the adopted rotations, named by recipe
+artifacts/curation/rotation/<name>/rotation.json       the record
+```
+
+### The dump is the whole economics, and it is also the whole coverage
+
+A palette pass is spent **after** the field is read, so five rotations of one recipe
+are five colormap lookups over one iteration pass. That is the only reason six
+candidates a row is affordable at all: at full render price it would be six times
+what the store originally cost, and as a recolour it is about one and a quarter.
+The unit of work is therefore the **(location, mode) pair** and never the row —
+`rerender.render_pair`'s arrangement and `remode.blocks_of`'s, reached rather than
+restated.
+
+It also bounds what the pass can reach, and the bound is the engine's rather than a
+choice: only a `field` coloring has a single scalar field to dump. So the
+composites, the modulates and the direct traps are out, and the traps are out
+**twice over** — `phase` is a byte-for-byte no-op on a trap figure over a flat
+ground, so a rotation of one would take a second recipe key for the same picture.
+Everything else refused is recorded as **owed**: rotatable at full render price,
+which is six iteration passes a row, and not done here.
+
+### Levelling: each candidate derives its own, which is the cheap answer and the sound one
+
+Matt's ruling is that the curve is close enough either way — share the dump's, take
+phase 0's, or let each derive. Deriving is what `colorize.render` already does with
+`borrowed` unset, so it is *zero* code; and it is the only one of the three that
+keeps the ledger's second invariant. A recipe key's autolevel member is
+`recipes.stamp_of` — the operator, the switch and the band — and **never the curve
+the operator derived**, so an inherited curve would put a picture in the store
+under a key that a `re-render` of that row reproduces differently. What it costs is
+the `measure` stage: a JPEG decode and an Oklab pass, in Python, per candidate.
+
+### The tolerance is a factor of the STORED column, and that is the only reading that can refuse
+
+`--tolerance` is relative because `p_fine` spans orders of magnitude down the pool:
+a fixed margin would be the whole reading at the bottom and a rounding error at the
+top. It is asked against the reading the pool **already carries** and not against
+the pass's own re-score of phase 0, and the difference is whether it bites at all —
+a rotation that wins best-of-six has beaten the fresh reading by construction, so a
+factor on that would refuse nothing ever. What the stored column catches is all six
+coming in far under what the store says the row is worth, which is a levelling, a
+head or a picture that moved rather than a rotation to adopt.
+
+**Re-scoring phase 0 is also the pass's own proof that nothing else moved.** The
+row's picture is not re-rendered — it is read, by the same head in the same batch as
+its five rotations — so the fresh reading and the stored one must agree, and they do
+to seven decimals over every row the pass has visited.
+
+### Two rows are never removed, and the list here is longer than the ruling's
+
+A row seated in **any** recorded gallery, and ⚠ a row carrying **any** human label,
+coarse or fine, sheet or import: a hand label does not come back, and a label
+pointing at a picture nobody has is worse than no label. If a held row's rotation
+wins, **both** are kept — the guard refuses the removal and never the adoption.
+
+`rotation.protections` honours those two and `sweep.prune`'s other three beside them
+— a live release seat, a human rejection, and a row the rank key's own fitted
+population names — on the argument that a pass which protects more rows than it was
+asked to is safe in a direction a pass that protects fewer is not. Each is counted
+apart on the record, so the two the ruling named can be read on their own.
+
+### The removal is a second transaction on this store, and it records its loss
+
+`sweep.remove` is the verb, and it is the second thing in the project that drops a
+ledger row. The single-deletion-site rule it joins was protecting one property —
+that the `ratchet` can account for every row this store has lost by reading the
+transactions — and **that property is kept rather than spent**: `remove` writes its
+loss down exactly as a prune does, and the ratchet's reading is unchanged by which
+of the two wrote the row. What `remove` does *not* have is a rule: `prune` decides,
+this one is told, and the caller owns every protection it meant to honour.
+
+**The removal runs before the merge**, which is the one ordering decision here. A
+rotation lands on the same `(location, mode)` pair its incumbent stands in — the
+palette is not part of what `retention` pairs on — so merging first would hand the
+prune a pair one row over its real size and let the rule evict a **third** row this
+pass never decided anything about.
+
+### `curate rotate mine` — the same question on rows that do not exist yet
+
+Standard process and standard mode policy: the draw is `depth.build_plan`'s over
+`mode_policy.mined()`'s twelve, and the one thing that differs from a production
+depth leg is that each shot becomes a phase-0 control plus four rotations, all five
+are read through the fine head, and the best of them is the row that merges.
+
+⚠ **The four that lose are recorded and not merged, and both halves are the point.**
+Merging all five would put four near-duplicates at one (location, mode) and spend
+the retention rule's keep on them. Recording only the winner is the subtler failure
+and is the selected-at-one-phase bias again one level up: a store that keeps the
+argmax of five and forgets the five gives every rate read off it a winner's curse
+with nothing beside it to correct by. `decisions.jsonl` carries all five with their
+drawn phases and both columns.
+
+**Width 12 over twelve modes is prune-free arithmetic, not a knob.** One map a
+(location, mode), one row of the five merged, one row a pair against a keep of five.
+`palette_variant_mine_ckpt120`'s pilot ran width 12 over `curate depth`'s *default*
+roster — which is the three shareable modes and not the policy's twelve — and lost
+229 of 726 rows at the merge. `--modes` defaults to the policy here for that reason.
+
+### The chunk is the interruption point, and it is what bounds the disk
+
+A chunk of groups renders on the pool, the fine head reads everything the chunk made
+in **one** batch, the decisions are taken, and every rotation that was not adopted
+has its picture and its `<stem>.leveled/` unlinked before the next chunk starts. So
+the disk holds one chunk of undecided candidates rather than a pass of them, and a
+pass killed at the clock leaves no picture that is neither adopted nor gone. The
+render pool is idle while the heads read, which is the trade the chunk size sets:
+400 groups is about eleven minutes of rendering against about one of reading.
+
+Its subtree is in `candidate_ledger.POOL_SUBTREES`, and it matters more here than at
+any other leg: five-sixths of what this pass makes is garbage **by design**, so a
+run killed mid-chunk leaves that whole chunk named by nothing.
+
+**It holds the pool**, twice — the population read streams the ledger and the merge
+rewrites it — and the one-pool-holding-process rule binds on both.
+
+### What the first pass found
+
+`rotation_pass_ckpt120`, 2026-09-11, the whole rotatable passing set: 9,402 rows,
+47,010 rotations, 2.579 engine seconds a row. **3,468 adopted with the row removed,
+1,391 adopted beside a row a guard held, 4,543 left alone, 0 refused by the
+tolerance.** A rotation wins 51.7% of rows and a *single* rotation wins 19.0%, so
+the width is the whole result. `curation/MEASUREMENTS.md`'s *What a rotation of a
+stored recipe costs* has the prices.
+
+⚠ **The winning rotation is usually a SMALL one — and that is the selection rather
+than the curve.** Inside 0.05 turns of phase 0 a rotation wins 41.3% of the time
+against 12–15% past 0.20. On the mining arm, whose control nothing selected on, the
+same table is **flat** across the turn at 50–55%. A store row is above the bar
+*because its phase-0 reading was*, so phase 0 sits on a hill and a near neighbour is
+still on it. `palette_variant_mine_ckpt120` measured the phase win as absent below
+0.125 turns and was measuring the other population.
+
+**The tolerance has never fired and structurally cannot while the re-score agrees.**
+Phase 0's fresh reading reproduced its stored column to 5.0e-7 over all 9,402 rows,
+so a winner has already beaten 1.0x it. That is what the knob is *for* — it is a
+guard against a levelling, a head or a picture having moved, and a pass where it
+starts refusing is a pass to read rather than a factor to lower.
+
 ## `curate manufacture` — the one population here that is made rather than found
 
 Everything else in this stage spends supply. This makes some. The colour-expression

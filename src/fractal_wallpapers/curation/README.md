@@ -37,7 +37,8 @@ candidate_ledger/ every recipe ever rendered, one row each, with its colour
   rows       one row and the blocks it carries, as shape with no store behind it
   ratchet    the high-water mark, and the deletions that account for a smaller store
   rerender   putting back a picture the row names, and reading a score onto it
-  sweep      the retention rule, the orphan backstop, and the one delete verb
+  sweep      the retention rule, the orphan backstop, the one picture-delete verb,
+             and `remove`: named rows out, told rather than decided
   door       THE door: `merge` — upsert, record, prune, and every leg comes through it
   rebuild    `backfill`: built out of the two decision stores that predate the ledger
   inventory  `census` and `feasibility`: what the pool holds, and what a solve can get
@@ -48,6 +49,8 @@ mine       price a PRIMED location three ways, and profile what one candidate co
 depth      buy width at one place, and measure what it buys against the head's rank
 shrinkage  re-read a candidate set's winner at label geometry, and price the winner's curse
 remode     a retired mode's clearing rows, rendered again in a mode still bought
+rotation   the phases nothing ever asked: every passing recipe against five
+           rotations of its own gradient, best of the six, and the row it replaces gone
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
 growth     what more mining buys, at every gallery size — measured by subsampling the pool
 growth_plot  six pictures of one growth sweep. Matplotlib, scratch only, legibility only

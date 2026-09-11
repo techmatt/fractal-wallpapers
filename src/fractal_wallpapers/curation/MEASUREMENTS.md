@@ -798,6 +798,42 @@ retention alone, and why `rank_key` cannot be retired while the cascade runs.
   construction**: dead space below 0.05 is **24% of the pool and 62% of the seats**.
   Intentional, Matt's ruling of ckpt 107, and not a defect to correct.
 
+## What a rotation of a stored recipe costs, measured 2026-09-11
+
+`rotation_pass_ckpt120`, the whole passing set: **9,402 rows over 6,764 (location,
+mode) pairs, 47,010 rotations, 24,244 engine seconds on three below-normal workers
+in 9,117 s of wall.** Idle box. **2.579 engine seconds a row and 0.516 a rotation.**
+
+**The dump is the whole of it and the split says so.** Per row, the dearest of its
+five rotations against the median of the other four — the first rotation at a pair
+pays the iteration pass and everything after it is a colormap lookup over an array
+on disk:
+
+| mode | rows | eng s a row | median | dearest rotation, median | recolour, median |
+|---|--:|--:|--:|--:|--:|
+| `smooth` | 4,214 | 2.111 | 1.864 | 0.693 | 0.2521 |
+| `stripe` | 2,634 | 3.610 | 2.656 | 1.446 | 0.2190 |
+| `tia` | 2,456 | 2.223 | 1.877 | 0.833 | 0.2073 |
+| `curvature` | 98 | 3.858 | 2.465 | 1.363 | 0.1969 |
+
+⚠ **A recolour here is 0.21 s and not the 0.041 s of `curate mine bench`'s bare
+recolour**, and the gap is the autolevel operator rather than the engine. Every
+candidate derives its own curve, which is a JPEG decode and an Oklab pass in
+**Python** plus the operator's second colouring — `measure` + `repaint`, not
+`paint`. That is what deriving costs, and it is what buys a picture whose recipe
+key a `re-render` reproduces: the key's autolevel member is the operator, the
+switch and the band and never the curve, so an *inherited* curve would put a
+picture in the store under a name that does not rebuild.
+
+**Six candidates a row costs about one and a quarter renders and not six.** 2.579 s
+a row against the 2.0–2.4 s a single full render of these modes costs at this depth.
+
+**Only four of the eight field modes are in it**, and that is the population rather
+than the operation: `smooth`, `stripe`, `tia` and `curvature` are the only field
+modes with rows above the shipped fine bar. 1,915 passing rows are on a mode with
+no field to dump — the composites and `itinerary` — and are **owed** at full render
+price, which is six iteration passes a row rather than one.
+
 ## Every per-candidate rate this project has measured
 
 ⚠ **These are historical, measured under different conditions, and not comparable
@@ -890,6 +926,8 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 4.293 | the same, later the same day | 3 | 12 | 09-07 | 1,757 cand / 148 places | `armA2_0907` |
 | 2.444 | the same roster, near band, mode held, places WITH ROOM | 3 | 12 | 09-07 | 1,390 cand / 116 places | `armB_0907` |
 | **0.795** | the same roster, near band, mode held, places **AT THE KEEP** | 3 | 12 | 09-07 | 16,200 cand / 1,350 places | `armB2_0907` |
+| 0.516 | **a rotation of a stored recipe**, 4 field modes, one dump a pair | 3 | 5 rot | 09-11 | 47,010 rot / 9,402 rows / 6,764 pairs | `rotation_pass_ckpt120` |
+| 1.593 | **a mined best-of-five**, whole `mined()` roster, per CANDIDATE | 3 | 5 | 09-11 | its own pilot, 177 cand / 45 shots | `rotation_pass_ckpt120` |
 
 ⚠ **The displacement half of the near band is the CHEAPEST arm this project has
 measured on the full roster — 0.795 against the with-room half's 2.444 and breadth's

@@ -7,11 +7,17 @@ the two tracked decision stores and the kept gallery attempt rows, unioned in
 [`_named_by_a_store`]. [`delete_pictures`] is the single verb both go through,
 and the only place this project unlinks a candidate.
 
-**Only one of the two writes to [`ratchet`], and the asymmetry is the point.** The
-ratchet is a guard over the *rows*, so a prune records what it took and the orphan
-sweep records nothing: it deletes pictures a row never named, and no count the
-ratchet holds can move under it. A sweep that recorded its pictures there would be
-handing the census a licence to lose rows it never lost.
+[`remove`] is beside them and is neither: a **told** removal of named rows, for a
+pass that replaces a row and has to take the one it replaced. It decides nothing
+and honours no protection of its own — the caller owns that list — which is what
+keeps the rule in one place while the verb is available to more than one.
+
+**The picture sweep does not write to [`ratchet`] and both row transactions do,
+and the asymmetry is the point.** The ratchet is a guard over the *rows*, so
+`prune` and `remove` each record what they took and the orphan sweep records
+nothing: it deletes pictures a row never named, and no count the ratchet holds can
+move under it. A sweep that recorded its pictures there would be handing the
+census a licence to lose rows it never lost.
 """
 
 from __future__ import annotations
@@ -906,6 +912,125 @@ def _prune_file(source: Path, into: Path, keys: set, column: str) -> dict:
     with into.open("w", encoding="utf-8", newline="\n") as handle:
         for held in store._stream_of(source):
             if str(held.get(column)) not in keys:
+                dropped += 1
+                continue
+            handle.write(json.dumps(held, ensure_ascii=False) + "\n")
+            rows += 1
+    return {"rows": rows, "dropped": dropped, "bytes": into.stat().st_size}
+
+
+def remove(keys, why: str, apply: bool = True, log=print) -> dict:
+    """Take the **named** rows out of the store, their pictures with them.
+
+    The second row-dropping transaction, and for a long time there was only
+    [`prune`]'s. It is here because a pass that *replaces* a row has to be able to
+    take the row it replaced: [`curation.rotation`] adopts a rotation of a recipe
+    and the recipe it rotated is then a picture the store is keeping twice, and
+    there was no verb for that. Adding one is a decision rather than a repair —
+    the argument for a single deletion site was that a store nothing else deletes
+    from is a store whose losses the [`ratchet`] can account for by reading one
+    transaction — so this keeps that property rather than spending it: **it
+    records its loss exactly as a prune does**, and the ratchet's reading is
+    unchanged by which of the two wrote the row.
+
+    What it is **not** is a rule. `prune` decides; this is told. The caller names
+    the keys and owns every protection it meant to honour, which is the one thing
+    that makes a general delete verb safe to have at all — see
+    [`curation.rotation.protections`] for the set the one caller honours, which is
+    the prune's own five and not a shorter list.
+
+    The order is [`prune`]'s and it is the safety property: pictures first, then
+    the record transaction, then the mark. A crash between the first two leaves
+    rows naming pictures that are not there — which [`picture_census`] reports and
+    a `re-render` puts back — and the other order leaves pictures nothing names,
+    which is garbage no reader can find.
+
+    `apply=False` decides and touches nothing.
+    """
+    started = time.time()
+    named = {str(key) for key in keys}
+    if not named:
+        raise LedgerError("remove() was named no key, so there is nothing to take")
+    files = (store.rows_path(), store.scores_path(), _flatness_path())
+    homes = {path.parent for path in files}
+    if len(homes) != 1:
+        # [`prune`]'s refusal, for [`prune`]'s reason: a test that redirected two
+        # of the three would have this rewrite the third — this machine's real
+        # store — to hold only the keys of a temporary one.
+        raise LedgerError(
+            f"the store's three files are in {len(homes)} directories and a removal rewrites "
+            f"all three against one set of keys: {[str(path) for path in files]}. Nothing "
+            f"was read. If this is a test, redirect `flatness.sidecar_path` too."
+        )
+    if not files[0].is_file():
+        raise LedgerError(f"{files[0]} is not there, so there is nothing to remove from.")
+
+    meta = [
+        (str(row["key"]), row.get("picture"))
+        for row in store.stream(files[0])
+        if str(row["key"]) in named
+    ]
+    found = {key for key, _picture in meta}
+    record = {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "applied": bool(apply),
+        "why": str(why),
+        "named": len(named),
+        "in_the_store": len(meta),
+        "not_in_the_store": len(named - found),
+        "store": tracked_name(files[0].parent),
+    }
+    log(f"[remove] {len(meta):,} of {len(named):,} named row(s) are in the store")
+    doomed = [picture for _key, picture in meta if picture]
+    if not apply or not meta:
+        record["pictures"] = {"would_delete": len(doomed)}
+        record["seconds"] = round(time.time() - started, 1)
+        return record
+
+    record["pictures"] = delete_pictures(doomed, log=log)
+    columns = ("key", "recipe_key", "recipe_key")
+    temps = [path.with_suffix(path.suffix + ".writing") for path in files]
+    written: dict = {}
+    try:
+        for name, path, temp, column in zip(
+            ("rows", "scores", "flatness"), files, temps, columns, strict=True
+        ):
+            written[name] = _remove_from_file(path, temp, found, column)
+        for temp, path in zip(temps, files, strict=True):
+            temp.replace(path)
+    except BaseException:
+        for temp in temps:
+            temp.unlink(missing_ok=True)
+        raise
+    for name, held in written.items():
+        log(f"[remove] {name}: {held['rows']:,} rows, {held['dropped']:,} dropped")
+    record["files"] = written
+    # The ratchet, for [`prune._record_the_ratchet`]'s reason and with no mark:
+    # this transaction only ever shrinks the store, and a mark is a claim about a
+    # size the store reached.
+    lost = ratchet.record_loss(ratchet.counts_of(meta), why=str(why))
+    record["ratchet"] = {
+        "log": tracked_name(ratchet.log_path()),
+        "recorded_as_lost": lost["counts"] if lost else None,
+    }
+    record["seconds"] = round(time.time() - started, 1)
+    return record
+
+
+def _remove_from_file(source: Path, into: Path, keys: set, column: str) -> dict:
+    """Stream one recipe-keyed file into a `.writing` name, minus the named rows.
+
+    [`_prune_file`]'s inverse — that one is told what to keep and this one what to
+    drop — and a separate body rather than a flag, because the two differ in the
+    direction of one comparison and a caller that got the flag the wrong way round
+    would delete the complement of what it meant to.
+    """
+    rows = 0
+    dropped = 0
+    with into.open("w", encoding="utf-8", newline="\n") as handle:
+        for held in store._stream_of(source):
+            if str(held.get(column)) in keys:
                 dropped += 1
                 continue
             handle.write(json.dumps(held, ensure_ascii=False) + "\n")
