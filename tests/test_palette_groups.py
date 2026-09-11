@@ -14,8 +14,9 @@ the change belongs in front of a person rather than in a diff.
 from __future__ import annotations
 
 import pytest
+from tests.test_headroom import candidate
 
-from fractal_wallpapers.palettes import groups
+from fractal_wallpapers.palettes import groups, variants
 from fractal_wallpapers.paths import colormap_dir
 
 #: The three maps a pass over gallery3's seats found sharing twelve of them, and
@@ -245,3 +246,93 @@ def test_the_pool_collapses_and_says_so(monkeypatch) -> None:
     monkeypatch.setenv(groups.COLLAPSE_ENV, "off")
     assert colorize.pool(seed=0) == shipped
     assert colorize.pool_record(seed=0)["collapsed"] is False
+
+
+# --------------------------------------------------------------------------- #
+# A variant belongs to its base map's group.
+# --------------------------------------------------------------------------- #
+#: Three maps the table leaves alone, so a variant test reads a singleton
+#: base — `twilight_shifted` looks like one and is in `m06`.
+SINGLETON = "viridis"
+OTHER_SINGLETONS = ["jet", "magma"]
+
+
+def a_grouped_map() -> str:
+    """One member of a real group, so the base's answer is an id and not `map:`."""
+    return groups.groups()[0]["members"][0]
+
+
+def test_the_mark_a_variant_is_split_on_is_absent_from_every_tracked_map() -> None:
+    """`group_of` recovers a variant's base by splitting its name on
+    `variants.MARK`, so a tracked map carrying one would be split into a base that
+    is not itself and would answer with somebody else's group. The mark was chosen
+    because no map here carries it; this is what holds that true."""
+    carrying = [name for name in groups.library() if variants.MARK in name]
+    assert carrying == [], f"{len(carrying)} tracked map(s) carry {variants.MARK!r}"
+
+
+def test_a_variant_and_its_base_are_one_group() -> None:
+    """Both halves: a base inside a real group, and a base that is a singleton.
+    A variant is the same map one axis round, so it names the same group whatever
+    the base's own group turns out to be."""
+    table = groups.member_groups()
+    for base in (a_grouped_map(), SINGLETON):
+        wanted = groups.group_of(base, table)
+        for axis, dose in variants.DOSES:
+            name = variants.name_of(base, axis, dose)
+            assert groups.group_of(name, table) == wanted
+            assert groups.group_of(name) == wanted
+    # And a variant OF a variant, which is how the sheet's two axes compose.
+    twice = variants.name_of(variants.name_of(SINGLETON, "phase", 250), "repeat", 2)
+    assert groups.group_of(twice, table) == groups.group_of(SINGLETON, table)
+
+
+def test_the_palette_group_cap_counts_a_base_map_and_its_variants_together() -> None:
+    """The cap is a count of seats one palette group may take, keyed on the
+    `palette_group` a recipe carries — which is `group_of`'s answer. At a cap of
+    one, a base map's variant is refused for `group_cap` exactly as a second seat
+    on the base map would be."""
+    from fractal_wallpapers.curation import ceiling, rules
+
+    base = a_grouped_map()
+    variant = variants.name_of(base, "phase", 250)
+    rule = ceiling.Rule(targets={})
+    rule.group_cap = 1
+    state = rules.State(rule, 8)
+    state.seat(candidate("seated", group=groups.group_of(base)), "general_pool")
+    arriving = candidate("arriving", group=groups.group_of(variant))
+    assert state.refuses(arriving) == "group_cap"
+    assert set(state.groups[groups.group_of(base)]) == {"seated"}
+
+
+def test_the_collapse_does_not_stand_a_variant_up_as_a_separate_look() -> None:
+    """A pool holding a map and variants of it spends ONE slot on them, whether
+    the base is in a group or a singleton — and every map that is not one of them
+    is untouched. A variant standing up in the base's place is fine: the members
+    of a group are near enough that no one of them deserves the slot."""
+    table = groups.member_groups()
+    assert not set([SINGLETON, *OTHER_SINGLETONS]) & set(table), "these three are not singletons"
+    base = SINGLETON
+    family = [base, *[variants.name_of(base, axis, dose) for axis, dose in variants.DOSES]]
+    others = OTHER_SINGLETONS
+    pool, record = groups.collapse([*others, *family], seed=0)
+    inside = [name for name in pool if name in family]
+    assert len(inside) == 1
+    assert record["maps_stood_down"] == len(family) - 1
+    assert [name for name in pool if name not in family] == others
+    assert record["drawn"][f"map:{base}"] == inside[0]
+
+
+def test_the_collapse_is_what_it_was_for_a_pool_of_library_maps() -> None:
+    """Resolving variants changed no draw the library itself takes. The table's own
+    group ids sort ahead of every `map:` id and a singleton consumes no draw, so a
+    pool with no variant in it collapses exactly as it did — which is what makes
+    this a fix rather than a re-seeding of every run record in the store."""
+    names = groups.library()
+    pool, record = groups.collapse(names, seed=0)
+    table = {row["group"]: sorted(row["members"]) for row in groups.groups()}
+    assert record["groups_collapsed"] == len(table)
+    assert set(record["drawn"]) == set(table)
+    for group, members in table.items():
+        assert record["drawn"][group] in members
+        assert [name for name in members if name in set(pool)] == [record["drawn"][group]]

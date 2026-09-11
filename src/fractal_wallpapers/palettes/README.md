@@ -535,11 +535,30 @@ Three findings worth keeping apart from that verdict:
 **And a variant with no carriers row is constrained but un-aimable.** The colour ceiling and
 floor read the row's own measured dominance (`solve.in_theme`), so nothing slips them;
 `color_mass.delivering` and `carriers.draw` give it a prior of 0.0 and cut it out of every
-cell-aimed draw. The group cap is the real hazard: `groups.group_of` returns `map:<name>`
+cell-aimed draw.
+
+### The group cap counted a variant as its own look, and does not any more
+
+The hazard this section carried until 2026-09-10: `groups.group_of` returned `map:<name>`
 for a map absent from the table, so at n=1000 under the shipped `proportional` rule one look
-goes from 25 seats to **13 x 25 = 325 of 1,000** until the grouping is re-cut — and a
-cyclicity flip is exactly zero M1 away from its base, because `groups.cloud` discards `kind`
-while the renderer honours it.
+went from 25 seats to **13 x 25 = 325 of 1,000**, and `groups.collapse` stood all thirteen up
+beside each other in the drawable pool. **A variant of a map is not a second choice**, so
+`group_of` now resolves one to its base map's group and `collapse` draws over that answer.
+
+**Read off the name, not off a carried field**, and the field would be better if it could
+reach: every caller holds a map *name* off a recipe and a variant's document is not in the
+library the table is a reading of, because `write` takes a directory and never
+`colormap_dir()`. The name is the only fact that travels and it is mechanical —
+`<base>~<axis>-<dose>`, split on a mark no tracked map carries, which
+`tests/test_palette_groups.py` holds the library to.
+
+Nothing re-solves on this account: `palette_group` is *carried and not keyed*
+(`recipes.CARRIED`), so no seated row rebinds, and a pool with no variant in it collapses
+draw for draw as it did — the table's own group ids sort ahead of every `map:` id and a
+singleton consumes no draw. What the fix does **not** touch is the metric: a cyclicity flip
+is still exactly zero M1 away from its base, because `groups.cloud` discards `kind` while
+the renderer honours it. That only ever mattered for a variant admitted to the library, and
+admitting one is still the decision above.
 
 ## `dominance` — what colour a picture is, and `pixel_clouds` — whether two are one picture
 
