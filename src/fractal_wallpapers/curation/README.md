@@ -1129,10 +1129,15 @@ as *the geometry and nothing else moves*. It now reads the recipe through
 the parent. `manufacture`'s render arm passes the row's settings; its recolour arm needs
 none, settings being legal only on a direct trap, which has no field to dump.
 
-### The `curve`/`palette` refusal is one rule doing two jobs, and a NEW MAP is neither
+### The `curve`/`palette` refusal was one rule doing two jobs, and a NEW MAP is neither
 
-`render` refuses a `fields=` directory beside either override. Read from the split that
-decides it, the two halves fail differently and only one of them is about the cache.
+`render` refused a `fields=` directory beside **either** override. Read from the split
+that decides it, the two halves fail differently and only one of them was ever about the
+cache — so **since 2026-09-11 the refusal is the curve's alone**, and a palette override
+rides the cache. `recolored` takes the whole pass; `test_a_recolour_is_the_render_byte_for_byte`
+sweeps three of them and a second guard holds each path to the pass actually *moving* the
+picture, because two paths agreeing is also what you get when both of them ignore it.
+The split below is why, and it is unchanged apart from the verdict.
 
 **The map is not in a field's identity at all.** `renders.RECOLOR_MEMBERS` is `colormap`
 and `recipe`, and `field_job_name` pins both to constants — `FIELD_COLORMAP` and
@@ -1150,18 +1155,26 @@ dumped field.
   it unsaid — so an overridden render served from the cache would paint the `linear`
   field wearing the override's name. `field_job_name` already digests a curve, so each
   distinct one would simply get its own field.
-* **`palette` is recolour-side** and the hole is a dropped argument: `recolored` writes
-  `_plain_recipe(mirror)` and throws the other six knobs away. The Rust `RecolorSpec`
-  already carries a full `Palette` and `fn recolor` spends it exactly as `fn render`
-  does, so nothing about the cache stops this.
+* **`palette` was recolour-side** and the hole was a dropped argument: `recolored` wrote
+  `_plain_recipe(mirror)` and threw the other six knobs away. The Rust `RecolorSpec`
+  already carried a full `Palette` and `fn recolor` spends it through `coloring::shade`
+  and `coloring::toned` exactly as `fn render` does, so nothing about the cache ever
+  stopped this. **Closed in `palette_variant_mine_ckpt120`**: `recolored` takes a
+  `palette`, defaulting to the plain pass of its `mirror` so every call that predates it
+  reads as it did, and `render` hands it the pass it keyed the row under.
 
-So the refusal is **broader than it needs to be on the palette half**. Priced, as of
-`palette_variant_smoke_ckpt120`: `recolored` taking the recipe rather than only `mirror`,
-`_shared_field` taking a curve and passing it on, `render` dropping the guard — three
-functions here, nothing in Rust and nothing in `engine_spec`, plus extending
-`test_a_recolour_is_the_render_byte_for_byte`, whose matrix sweeps defaults only. The one
-thing nobody has measured is whether a **levelled** repaint composes with a non-identity
-`gamma` or `transfer`; the two paths have only ever been compared on the plain recipe.
+**What that bought and what it cost.** A varied palette is now a **recolour**, so
+`curate depth --vary-palette` prices its varied rows the way an unvaried leg prices its
+plain ones on the three shareable modes — which is the only thing that makes *varied
+against unvaried inside one leg* a comparison rather than two legs at two prices. The
+phase sweep of 2026-09-11 is the demonstration: 100 points over 5 seats, twenty phases
+each at candidate geometry, **50 s of wall on three workers** — five dumps and ninety-five
+recolours where the old refusal would have made it a hundred renders.
+
+`curve` keeps its refusal and `curation.candidate_ledger.rerender` keeps a refusal that
+now names the curve alone. The one thing still unmeasured is whether a **levelled**
+repaint composes with a non-identity `gamma` or `transfer`; the passes compared are
+`phase` and `cycles` over the plain defaults, which is what the varied draw spends.
 
 ### A leg whose maps are not in the tracked library cannot go through `colorize.render`
 

@@ -272,15 +272,21 @@ def render_pair(payload: dict) -> dict:
     [`curation.mine.make`] carried, one function away, and it would have quietly
     undone that fix on any row this leg touched.
 
-    `mode_params` is passed now, and the two members it still does not pass —
-    `curve` and `palette` — are **checked instead of assumed**: they are
-    [`colorize.render`]'s overrides, which refuse a `fields` directory, so passing
-    them would cost this leg its field sharing on every row to serve a case the
-    pool does not hold. A row whose recipe names anything but the candidate path's
-    own curve and palette is counted as failed with the reason, rather than
-    restored as a picture that is not it. `mode_params` needs no such trade: a
-    non-empty one already takes the render path in [`colorize._shared_field`], so
-    an unvaried row keeps its dump and a varied one never wanted one.
+    `mode_params` is passed now, and so is `palette`. **`curve` is the one member
+    still checked rather than passed**, and the split is the field cache's own: a
+    dumped field is *named* for its curve, so a curve override served out of the
+    cache would be the plain field's picture under this row's key — there is no
+    fixing that short of dumping a second field, and a row naming one is counted as
+    failed with the reason rather than restored as a picture that is not it.
+
+    The palette was in that sentence until 2026-09-11 and should not have been.
+    It is spent **after** the field is read, and the only reason a recolour could
+    not carry one was that [`colorize.recolored`] pinned it to the plain pass. It
+    takes the whole pass now, so a varied row — [`curation.depth`]'s `--vary-palette`
+    draw writes them into the pool — puts back as itself and keeps its dump.
+    `mode_params` needs no trade either: a non-empty one already takes the render
+    path in [`colorize._shared_field`], so an unvaried row keeps its dump and a
+    varied one never wanted one.
     """
     from fractal_wallpapers.curation import colorize, recipes
 
@@ -303,18 +309,19 @@ def render_pair(payload: dict) -> dict:
             "maxiter": int(stored["maxiter"]),
         }
         colormap = str(stored["colormap"])
-        # [`colorize.is_candidate_path`] and not the test spelled again: three
-        # places need to know whether a stored recipe is one the candidate path
-        # could have made, and each had worked it out for itself. `mode_params` is
-        # part of that rule and is NOT a reason to refuse here — a non-empty one
-        # already takes the render path, so it is served correctly; the curve and
-        # the palette are what the field cache cannot carry.
-        if not colorize.is_candidate_path({**stored, "mode_params": {}}, cyclic):
+        # The curve alone, and it is asked directly rather than through
+        # [`colorize.is_candidate_path`]: that function answers *could the
+        # candidate path have made this recipe*, which is a different question
+        # from *can this leg serve it*, and the two stopped having one answer when
+        # the field cache learned to carry a palette. `mode_params` is served by
+        # the render path and the palette rides the recolour, so a row is refused
+        # here for the one member a dumped field is named for.
+        if str(stored.get("curve") or "") != colorize.CURVE:
             out["failed"] += 1
             out["why"].append(
-                f"{job['key']}: its recipe names a curve or palette the candidate path does "
-                f"not spend, and this leg serves those out of the field cache, which would "
-                f"put back the plain picture under this row's name"
+                f"{job['key']}: its recipe names the curve {stored.get('curve')!r} and this "
+                f"leg serves rows out of the field cache, which is named for the curve it "
+                f"was dumped at — putting back the plain field's picture under this row's name"
             )
             continue
         try:
@@ -329,6 +336,10 @@ def render_pair(payload: dict) -> dict:
                 # The member this forgot. Without it a varied row's put-back is the
                 # bare mode's picture under the variant's key — see the docstring.
                 mode_params=dict(stored.get("mode_params") or {}),
+                # The other member this forgot, and the one the refusal above used
+                # to stand in for. A varied row put back through the plain pass is
+                # the plain picture under the varied key.
+                palette=dict(stored.get("palette") or {}) or None,
             )
         except Exception as failure:  # noqa: BLE001 — a failed render is a recorded fact
             out["failed"] += 1
@@ -428,7 +439,18 @@ def re_render(
                     mode_params=dict(stored.get("mode_params") or {}),
                     curve=colorize.CURVE,
                     colormap=colormap,
-                    palette=finished.recipe(mirror=colormap not in cyclic),
+                    # The row's own, for `mode_params`' reason exactly one member
+                    # over. This was `finished.recipe(mirror=...)` — the pass the
+                    # candidate path derives — and a leg's DRAWN phase and cycles
+                    # cannot be re-derived from anything in the checkout either, so
+                    # a varied row's rebuilt key never matched its own and every one
+                    # of them was refused. Protective by accident while `render_pair`
+                    # served the plain picture, and it would have gone on refusing
+                    # them after that was fixed. A row carrying no palette at all is
+                    # still rebuilt from the cyclic set, which is every row written
+                    # before `curation.recipes` recorded one.
+                    palette=dict(stored.get("palette") or {})
+                    or finished.recipe(mirror=colormap not in cyclic),
                     autolevel=recipes.live_stamp(mode, band),
                     palette_group=groups_module.group_of(colormap, table),
                 )

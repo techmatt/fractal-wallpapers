@@ -415,6 +415,51 @@ fractal-wallpapers curate depth merge --name d1                             # fo
 fractal-wallpapers curate depth sheet --name d1                             # redraw the autopsy
 ```
 
+### `--modes` unsaid is the THREE shareable modes, not the policy's twelve
+
+The help says *every shareable mode `curation.mode_policy` mines*, and both halves
+of that bind: the default roster is `mined()` **intersected with** the modes a
+dumped field can serve, which is `smooth`, `tia` and `stripe`. A leg meaning the
+policy's roster names all twelve on the command line, the way `smoke_mine_20260910`
+and `palette_variant_mine_ckpt120` both do. Nothing warns, and the two legs look
+identical in the log until the per-mode tally comes out three rows long.
+
+### `--vary-palette` — moving the palette block, and nothing else
+
+Off by default. On, every candidate draws a `phase` and a `repeat` alongside its
+map — `Palette.phase` and `Palette.cycles`, the engine's own knobs for where the
+traversal of the gradient starts and how many times it is traversed. **No map is
+derived, written or admitted**: both are in `recipes.KEYED`, so a varied candidate
+is a new picture beside the plain one and the library is the library the leg
+started with. `depth.PALETTE_REPEATS` and `depth.PALETTE_PHASE_HELD` carry the
+draw — repeat 1/2/3 at 0.7/0.2/0.1, phase exactly 0 at 0.3 and otherwise uniform
+over the turn — and `Shot.palette` carries the result onto the row as
+`palette_drawn`, `{}` for an identity draw.
+
+**An identity draw is `{}` and takes the plain candidate key.** That is the point
+of the draw returning overrides rather than a whole pass: the leg's own unvaried
+rows key exactly as an unvaried leg's would and are readable against the pool
+rather than being a second spelling of it.
+
+**The direct traps are drawn bare and excluded from the varied draw.** A trap has
+no field for a traversal to start anywhere in, so the axis is a no-op on those
+modes — `engine/src/direct_trap.rs` on purpose, measured by the eye sheet of
+2026-09-10 at eleven varied tiles to one sha256. A varied draw there would take a
+second recipe key for a byte-identical picture.
+
+**Every varied shot gets its phase-0 twin**, at the same location, mode and map and
+immediately after it in the plan so the pair lands in one location block. *Does
+adjusting the phase of a recipe you already have beat leaving it alone* is a
+question about a matched pair, and the per-candidate draw cannot answer it — one
+shot gets one draw, so the identity rows land at other places and other maps.
+
+**Width against the keep is the thing to get right.** The twin doubles the rows at
+a (location, mode) pair, against `RETAIN_PER_PAIR = 5`. Twelve modes cycled at
+width 12 is one map a pair and two rows — prune-free. The same width over the
+**default three-mode roster** is four maps a pair and eight rows: the
+`pvmine_pilot_0911` pilot lost 229 of 726 at the merge, which is that arithmetic
+and not a surprise.
+
 ### A roster entry is a mode, or a mode with its own settings
 
 **The five `direct_trap_multiply` cells are all in the production roster**, ruled
@@ -2605,10 +2650,11 @@ spends `colorize.CURVE` and the plain palette; 6,420 of 11,966 resolved rows car
 palette knobs it never produces and 868 read their field through `log`. So
 `colorize.render_row`/`render` grew `curve` and `palette` overrides, off by default —
 this leg was the only caller until `curate label-fate` and `release.Task` joined it on
-2026-09-08 — and they **refuse** a `fields` directory, because a
-dumped field is named for its curve and `recolored` pins the palette, so a recolour
-under an override would be the plain picture wearing the override's name. Every staged
-render therefore takes the engine path.
+2026-09-08. The **`curve`** override refuses a `fields` directory, because a dumped field
+is named for its curve and a recolour under one would be the plain field's picture
+wearing the override's name; since 2026-09-11 the palette does not, `recolored` taking
+the whole pass. This leg's rows carry both, so a staged render still takes the engine
+path — it is the curve that puts it there.
 
 **Measured 2026-09-08**, three workers below-normal, this machine: **1.59 s a picture
 per engine, 1.77 a second wall** over 5,329 pictures in 40.6 min. Both heads read

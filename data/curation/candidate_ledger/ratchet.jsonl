@@ -19,3 +19,6 @@
 {"schema": 1, "event": "mark", "at": "2026-09-11T03:11:58Z", "why": "prune", "counts": {"rows": 357094, "recipe_key_named": 343601}}
 {"schema": 1, "event": "mark", "at": "2026-09-11T03:13:55Z", "why": "prune", "counts": {"rows": 357298, "recipe_key_named": 343805}}
 {"schema": 1, "event": "mark", "at": "2026-09-11T03:15:55Z", "why": "prune", "counts": {"rows": 358283, "recipe_key_named": 344790}}
+{"schema": 1, "event": "mark", "at": "2026-09-11T06:49:21Z", "why": "prune", "counts": {"rows": 359009, "recipe_key_named": 345516}}
+{"schema": 1, "event": "deleted", "at": "2026-09-11T06:49:21Z", "why": "prune", "counts": {"rows": 229, "recipe_key_named": 229}}
+{"schema": 1, "event": "mark", "at": "2026-09-11T12:20:35Z", "why": "prune", "counts": {"rows": 370018, "recipe_key_named": 356525}}

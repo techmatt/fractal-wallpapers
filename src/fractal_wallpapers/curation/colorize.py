@@ -373,6 +373,15 @@ def anchors(members: list[str], count: int, seed: int) -> list[str]:
 #: are the other three. See [`shareable`].
 FIELD_KIND = "field"
 
+#: The kind a **palette pass cannot reach**: a trap figure over a flat ground,
+#: with no field for a traversal to start anywhere in. `Palette.phase` and
+#: `Palette.cycles` are a no-op on it — `engine/src/direct_trap.rs` on purpose,
+#: and the eye sheet of 2026-09-10 measured it, eleven varied tiles to one
+#: sha256 — so a leg varying that axis draws these modes bare rather than taking
+#: a second recipe key for a byte-identical picture. The engine's word, like
+#: [`FIELD_KIND`]: [`kind_of`] reads it out of the catalog.
+DIRECT_KIND = "direct"
+
 #: Modes whose dump the engine has refused in this process, so the refusal is
 #: paid once rather than once a candidate. A refusal is a fact about the mode's
 #: coloring and not about the location, which is what makes it cacheable here.
@@ -483,20 +492,30 @@ def _plain_recipe(mirror: bool) -> dict:
 
 
 def is_candidate_path(recipe: dict, cyclic: set[str] | None = None) -> bool:
-    """Whether this stored recipe is one the **candidate path** could have made.
+    """Whether this stored recipe is one a **bare plan** could rebuild.
 
-    The candidate path spends [`CURVE`] and [`_plain_recipe`] on every attempt and
-    draws no `mode_params`, so a recipe naming anything else is one only a caller
-    with the overrides could produce — [`curation.label_migration`], re-expressing a
-    judged recipe out of the label corpora. This says which, once, because three
-    places need to know and each had worked it out for itself.
+    The name is older than the question it answers, and the gap is worth stating
+    rather than leaving to be read off the body. What this tests is *are the
+    curve, the settings and the palette all the ones a leg DERIVES rather than
+    draws* — which was the same thing as "the candidate path" while no candidate
+    leg drew any of them, and is not any more. `mode_params` has been on a roster
+    since 2026-09-04 and `palette` has been on [`curation.depth`]'s varied draw
+    since 2026-09-11, so a row this answers False for may be one a candidate leg
+    made perfectly ordinarily, with its own key and its own picture.
 
     **It stopped being a distinction without a difference on 2026-09-08**, when
     `label-migration merge` put 3,015 rows into the pool and about a third of them
-    carry knobs the candidate path never spends. Before that the pool was
-    candidate-path rows alone, so anything asserting *every row here is rebuildable
-    from a plan* was accidentally true. `tests/test_hunt.py`'s recipe-key guard was
-    one such thing and went red the first slow lane after the merge.
+    carry knobs no leg derives. Before that the pool was derived-recipe rows
+    alone, so anything asserting *every row here is rebuildable from a plan* was
+    accidentally true. `tests/test_hunt.py`'s recipe-key guard was one such thing
+    and went red the first slow lane after the merge. It is still the right
+    predicate there, because that guard rebuilds through `Maker.recipe_for` with
+    no drawn members and would name a different picture for a row carrying one.
+
+    **It is not the right predicate for asking whether a leg can RENDER a row**,
+    and `candidate_ledger.rerender` asked it that way: it refused rows over members
+    its renderer serves correctly. That site names the one member — the curve —
+    that a dumped field genuinely cannot carry.
 
     `cyclic` defaults to the shipped set; a caller inside a worker passes its own.
     """
@@ -515,6 +534,7 @@ def recolored(
     mirror: bool,
     output: Path,
     colormap_dir: Path | None = None,
+    palette: dict | None = None,
 ) -> Path:
     """One candidate picture: the dumped field through one map, no re-iteration.
 
@@ -523,6 +543,22 @@ def recolored(
     so pointed at the levelled directory this is that render without the second
     iteration pass behind it. The transform is left unsaid, so the recolor reads
     the curve out of the dump's own record — which [`field_row`] put there.
+
+    ## `palette` is the whole pass and `mirror` was one knob of it
+
+    This threw six knobs away. It spent [`_plain_recipe`] and took `mirror`
+    alone, so a caller with a `gamma`, a `phase` or a `cycles` of its own got the
+    plain picture under its recipe's name — which is why [`render`] refused a
+    palette override and a field cache together. The engine never needed the
+    narrowing: `RecolorSpec` carries a full `Palette` and `fn recolor` spends it
+    through `coloring::shade` and `coloring::toned` exactly as `fn render` does,
+    which is what makes the two paths byte-identical on a varied palette as well
+    as on the plain one.
+
+    `mirror` stays as the parameter because a caller that has only that — the
+    palette head's own recolours, the carrier table's — should not have to spell
+    a whole pass to say it. Unsaid, `palette` is [`_plain_recipe`] of it, so
+    every call that predates this reads exactly as it did.
 
     A file already at `output` is left alone: the candidate recolours the palette
     head reads are cached that way and remaking one would spend a render for a
@@ -537,7 +573,7 @@ def recolored(
                 "field": str(field),
                 "colormap": colormap,
                 "colormap_dir": str(colormap_dir or _colormap_dir()),
-                "palette": _plain_recipe(mirror),
+                "palette": _plain_recipe(mirror) if palette is None else dict(palette),
                 "output": str(output),
             }
         )
@@ -624,10 +660,11 @@ def render_row(
     of those recipes at candidate geometry needs a door that takes them. That is
     [`curation.label_migration`], which stages and merges nothing.
 
-    The **field cache cannot serve an override** and [`render`] refuses the pair
-    rather than quietly ignoring one: a dumped field is named for its curve and
-    [`recolored`] pins the palette to `_plain_recipe`, so a recolour under an
-    override would be the plain picture wearing the override's name.
+    The **field cache cannot serve a curve override** and [`render`] refuses that
+    pair rather than quietly ignoring one: a dumped field is named for its curve,
+    so a recolour under one would be the plain field's picture wearing the
+    override's name. A **palette** override rides the cache since
+    2026-09-11 — [`recolored`] takes the whole pass rather than `mirror` alone.
     """
     return {
         "family": row["family"],
@@ -755,15 +792,25 @@ def render(
     overwrite of it. It also takes the render path unconditionally — see
     [`_shared_field`].
 
-    `curve` and `palette` are [`render_row`]'s overrides and every candidate leg
-    leaves them off. [`curation.label_migration`] was the one caller, re-expressing
+    `curve` and `palette` are [`render_row`]'s overrides and most candidate legs
+    leave them off. [`curation.label_migration`] was the one caller, re-expressing
     a judged recipe at candidate geometry; since 2026-09-08 [`release.Task`] carries
     both as well, because that leg's rows are now **in the pool** and a release or
     label-geometry render of one had been serving the plain picture under its name.
-    **They refuse a `fields` directory**
-    rather than being quietly dropped, for the reason `render_row` states — and
-    the refusal is here rather than there because `render_row` is also called to
-    describe a picture that is not being made.
+
+    **`curve` refuses a `fields` directory and `palette` no longer does.** The two
+    were one refusal and are two rules. A dumped field is *named* for its curve
+    and [`field_of`] is handed the catalogue's, so a curve override served out of
+    the cache would be the plain field's picture wearing the override's name —
+    there is no fixing that short of dumping a second field, and the refusal
+    stands. The palette was never field-side at all: it is spent after the field
+    is read, and the only reason a recolour could not carry one was that
+    [`recolored`] pinned it to [`_plain_recipe`]. It takes the whole pass now, so
+    a varied palette rides the cache and `test_a_recolour_is_the_render_byte_for_byte`
+    holds the two paths to the same bytes on a varied palette as on a plain one.
+    That is what lets [`curation.depth`]'s varied draw cost what an unvaried one
+    costs on the three shareable modes, which is the only thing that makes the two
+    comparable at all.
 
     ## `borrowed` is the levelling decision, inherited rather than retaken
 
@@ -814,12 +861,12 @@ def render(
     """
     from fractal_wallpapers.models import renders
 
-    if fields is not None and (curve is not None or palette is not None):
+    if fields is not None and curve is not None:
         raise RuntimeError(
-            "a curve or palette override cannot be served out of the field cache: a dumped "
-            "field is named for its curve and `recolored` pins the palette to the plain "
-            "recipe, so the recolour would be the plain picture under the override's name. "
-            "Pass fields=None for an overridden render."
+            "a curve override cannot be served out of the field cache: a dumped field is "
+            "named for its curve and `field_of` is never handed this one, so the recolour "
+            "would be the plain field's picture under the override's name. Pass fields=None "
+            "for a curve-overridden render."
         )
     output = Path(output)
     scratch = writing_path(output)
@@ -846,7 +893,14 @@ def render(
             if reported is not None and isinstance(report, dict):
                 reported.update(report)
         else:
-            recolored(field, colormap, mirror, scratch, colormap_dir=colormap_dir)
+            recolored(
+                field,
+                colormap,
+                mirror,
+                scratch,
+                colormap_dir=colormap_dir,
+                palette=recipe["recipe"],
+            )
         spent(stage, at)
 
     paint("paint")
@@ -1299,6 +1353,7 @@ __all__ = [
     "FIELDS_KEPT",
     "FIELDS_SWEPT_EVERY",
     "METER_STAGES",
+    "DIRECT_KIND",
     "FIELD_KIND",
     "field_of",
     "field_row",

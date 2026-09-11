@@ -46,6 +46,7 @@ absurd.
 from __future__ import annotations
 
 import collections
+import dataclasses
 import functools
 import json
 import math
@@ -161,6 +162,104 @@ BUDGET_SECONDS = 5400.0
 #: not a tuning knob: more than three engines at once makes the desktop unusable.
 #: A leg with fewer location blocks than this runs on fewer ([`workers_for`]).
 DEFAULT_WORKERS = release.DEFAULT_WORKERS
+
+#: **The varied palette draw**, off by default and turned on per run by
+#: `--vary-palette`. What it moves is two members of the engine's own palette
+#: block — `Palette.phase`, where the traversal of the gradient starts, and
+#: `Palette.cycles`, how many times it is traversed. Both are in
+#: [`curation.recipes.KEYED`], so a varied candidate is a new picture beside the
+#: plain one and never an overwrite of it, and **no map is derived, written or
+#: admitted**: the library this leg draws from is the library it started with.
+#:
+#: `repeat` is `cycles` under the name the draw states it in. `1` is the identity
+#: on that axis and is in the set on purpose — the baked `variants.repeat` axis
+#: cannot express a tiling of one, and a draw whose cheapest arm were a 2x tile
+#: would be measuring the tile rather than the axis.
+PALETTE_REPEATS: tuple[tuple[int, float], ...] = ((1, 0.7), (2, 0.2), (3, 0.1))
+
+#: How often the varied draw holds `phase` at **exactly** 0, the rest of the mass
+#: going uniformly over the full turn. Not a rounding of the continuum: 0 is the
+#: identity and a continuous draw would reach it with probability zero, so the
+#: leg would hold no unvaried rows of its own to read the varied ones against.
+PALETTE_PHASE_HELD = 0.3
+
+
+def palette_drawn(rng) -> dict:
+    """One `(phase, repeat)` pair as the overrides [`Shot.palette`] carries.
+
+    `{}` for the identity, which is the whole reason this returns overrides rather
+    than a pass: an identity draw then takes the **plain candidate key**, its row
+    is byte-identical to one the unvaried leg would have made, and it is readable
+    against the existing pool rather than being a second spelling of it.
+    """
+    repeat = rng.choices(
+        [count for count, _share in PALETTE_REPEATS],
+        weights=[share for _count, share in PALETTE_REPEATS],
+    )[0]
+    phase = 0.0 if rng.random() < PALETTE_PHASE_HELD else round(rng.random(), 6)
+    drawn = {}
+    if phase:
+        drawn["phase"] = float(phase)
+    if repeat != 1:
+        drawn["cycles"] = float(repeat)
+    return drawn
+
+
+def vary_palettes(intended: list, seed: int, log=print) -> tuple[list, dict]:
+    """Every shot given a drawn palette, and every varied one given its phase-0 twin.
+
+    `(plan, tally)`. The plan order is the weave's, with each twin **immediately
+    after** the shot it twins — which is what keeps [`blocks_of`]'s location cut
+    and the weave's arm proportions intact: a pair is one location, so it lands in
+    one block, and a leg killed mid-plan has spent its budget the way a finished
+    one would have.
+
+    ## The direct traps are drawn bare and it is not a taste
+
+    A trap has no field for a traversal to start anywhere in, so `phase` and
+    `cycles` are a **no-op** on those modes — `engine/src/direct_trap.rs` says so
+    and the eye sheet of 2026-09-10 measured it, eleven tiles to one sha256. A
+    varied draw there would take a second recipe key for a byte-identical picture
+    and put a duplicate in the pool under a name claiming it was varied. They draw
+    the plain pass, and they are the leg's own control for everything that is not
+    the palette.
+
+    ## The twin is what makes the pair question answerable
+
+    *Does adjusting the phase of a recipe you already have beat leaving it alone*
+    is a question about a **matched pair**, and the draw above cannot answer it:
+    one shot gets one draw, so the identity rows land at other places, other modes
+    and other maps. Each varied shot is therefore paired with its own phase-0,
+    repeat-1 twin at the same (location, mode, map). On the three shareable modes
+    the twin is a recolour of a field its partner already paid to dump, so the
+    pairing costs the leg far less than doubling it.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    rng = random.Random(seed)
+    out: list = []
+    tally = {"bare_direct_trap": 0, "identity": 0, "varied": 0, "twins": 0}
+    for shot in intended:
+        if colorize.kind_of(shot.mode) == colorize.DIRECT_KIND:
+            tally["bare_direct_trap"] += 1
+            out.append(shot)
+            continue
+        drawn = palette_drawn(rng)
+        if not drawn:
+            tally["identity"] += 1
+            out.append(shot)
+            continue
+        tally["varied"] += 1
+        tally["twins"] += 1
+        out.append(dataclasses.replace(shot, palette=drawn))
+        out.append(shot)
+    log(
+        f"[depth] varied palette draw: {tally['varied']:,} varied shot(s) with a twin each, "
+        f"{tally['identity']:,} identity draw(s), {tally['bare_direct_trap']:,} direct-trap "
+        f"shot(s) drawn bare; {len(intended):,} planned -> {len(out):,}"
+    )
+    return out, tally
+
 
 #: How much longer the plan is than the budget prices it at. [`mine.PLAN_HEADROOM`]'s
 #: reason, and more of it: the rate this run is sized off is a per-candidate mean
@@ -494,6 +593,10 @@ class Shot:
     #: every entry until somebody passes one. [`hunt.Try.mode_params`]'s member,
     #: same name and same reason.
     mode_params: dict = dataclass_field(default_factory=dict)
+    #: Overrides onto the palette pass — [`hunt.Try.palette`] and [`mine.Unit.palette`],
+    #: same name and same reason. Empty unless [`vary_palettes`] drew this shot a
+    #: `phase` and a `cycles`, which is what `--vary-palette` turns on.
+    palette: dict = dataclass_field(default_factory=dict)
 
     def named(self) -> dict:
         """This intention as the ledger row carries it.
@@ -517,6 +620,8 @@ class Shot:
             out["drawn_for"] = self.cell
         if self.mode_params:
             out["mode_params"] = dict(self.mode_params)
+        if self.palette:
+            out["palette_drawn"] = dict(self.palette)
         return out
 
 
@@ -1269,6 +1374,7 @@ def build_plan(
     floor_seats: int = 10,
     floor_width: int = FLOOR_WIDTH,
     workers: int = 1,
+    vary_palette: bool = False,
     log=print,
 ) -> tuple:
     """The draws sized off a per-candidate rate. `(plan, shape)`.
@@ -1755,7 +1861,19 @@ def build_plan(
             for arm, held in plans.items()
         },
     }
-    return weave(plans, shares), shape
+    woven = weave(plans, shares)
+    if not vary_palette:
+        return woven, shape
+    # **After the weave and not inside a draw.** The palette is an axis over the
+    # whole plan rather than one arm's ask, and a twin has to sit beside its
+    # partner in the *final* order for the pair to land in one location block.
+    # Its own seed, for the reason `seeds` above states: a run nobody can re-take
+    # is a measurement nobody can check.
+    woven, varied = vary_palettes(woven, int(seed) + 3, log=log)
+    shape["seeds"]["palette"] = int(seed) + 3
+    shape["vary_palette"] = varied
+    shape["planned"] = len(woven)
+    return woven, shape
 
 
 # --------------------------------------------------------------------------- #
@@ -1962,6 +2080,7 @@ def run(
     floor_width: int = FLOOR_WIDTH,
     floor_seats: int = 10,
     workers: int = DEFAULT_WORKERS,
+    vary_palette: bool = False,
     device: str = "auto",
     margin: float = framing.MARGIN,
     world: dict | None = None,
@@ -1997,6 +2116,16 @@ def run(
     the three files a serial leg would have written, in the same order, whatever
     order the workers actually finished in.
 
+    ## `vary_palette` moves the palette block and nothing else
+
+    Off by default. On, every shot that is not a direct trap draws a `phase` and
+    a `repeat` and each varied one gets its phase-0 twin — [`vary_palettes`] has
+    the draw, the exclusion and the pairing. Nothing about the place draw, the
+    mode roster, the map pool or the budget changes, which is what makes the
+    varied rows and the leg's own unvaried rows a comparison rather than two legs.
+    No map is derived, written or admitted: `phase` and `cycles` are the engine's
+    own palette knobs and the library is untouched.
+
     A killed run keeps everything it made: all three files are appended to as each
     block lands and the record is the only thing written at the end.
     """
@@ -2028,6 +2157,7 @@ def run(
         floor_width=floor_width,
         floor_seats=floor_seats,
         workers=workers,
+        vary_palette=vary_palette,
         log=log,
     )
     # The parent's own Maker resolves recipes and sweeps the field cache; it never
@@ -2139,6 +2269,14 @@ def run(
             # `direct_trap_multiply` variant sweep was run to get and could not read
             # back off its own record.
             "mode_params": dict(shot.mode_params),
+            # **The drawn (phase, repeat), on every row the varied leg makes**,
+            # `{}` for an identity draw and for every row of an unvaried leg. On
+            # the row and not left to be read back off `recipe.palette`, because
+            # the two say different things: the recipe carries the whole pass
+            # including the map's own bake, and this says what the DRAW moved.
+            # A row that had forgotten that could not be put on either side of
+            # the comparison the leg exists for.
+            "palette_drawn": dict(shot.palette),
             "mode_kind": mine._kind_of(shot.mode),
             # The cell this candidate's palette was drawn FOR, and `None` off the
             # aimed arm. Carried on the made row and not only on the ledger row

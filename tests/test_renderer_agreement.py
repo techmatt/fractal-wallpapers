@@ -88,6 +88,21 @@ VARIED_SETTINGS = {"opacity": 0.6, "threshold": 0.2}
 AUTHORED_MODE = "smooth"
 AUTHORED_CURVE = "log"
 
+#: The **drawn** case: a field mode at the candidate path's own curve with the two
+#: palette knobs [`curation.depth`]'s `--vary-palette` draw moves. It is a third
+#: case and not a narrowing of the authored one because the renderers that can
+#: draw it are different: a candidate leg cannot name a curve and now *can* name a
+#: palette, so this is the one case that crosses both halves of the registry —
+#: `hunt` and `mine` draw it off an intention's `palette` member, the stored
+#: renderers off the recipe, and all of them have to agree.
+#:
+#: It exists because that member is a **new route for `palette` into a picture**,
+#: and every previous defect this file records was a renderer with a route it did
+#: not spend. `mine.make` dropped `mode_params` for six days under a docstring
+#: saying nothing else was altered.
+DRAWN_MODE = "smooth"
+DRAWN_PALETTE = {"phase": 0.37, "cycles": 2.0}
+
 
 def _palette(**knobs) -> dict:
     from fractal_wallpapers.labeling import finished
@@ -135,6 +150,33 @@ class Case:
     bare: recipes.Recipe
     #: The `KEYED` members this case is a test of.
     members: tuple
+    #: Whether a **candidate leg** can ask for this case at all. A plan carries
+    #: `mode_params` and `palette` and does not carry a curve, which is what keeps
+    #: the authored case the stored renderers' alone.
+    on_a_plan: bool = True
+
+
+def _intended(recipe) -> dict:
+    """What a candidate leg's intention carries to ask for **this** recipe.
+
+    Off the recipe and never off the case, because every draw function here is
+    also handed `case.bare` — by the must-differ arm — and a leg that took its
+    settings from the case would draw the varied picture for both arms and make
+    that guard pass on anything.
+
+    The palette is the **overrides**, which is what an intention holds:
+    [`hunt.Maker.palette_for`] lands them on the map's own bake, so a member equal
+    to the plain pass is not one the draw moved.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    plain = _palette(mirror=recipe.colormap not in colorize.cyclic())
+    return {
+        "mode_params": dict(recipe.mode_params),
+        "palette": {
+            name: value for name, value in recipe.palette.items() if plain.get(name) != value
+        },
+    }
 
 
 def varied_case() -> Case:
@@ -156,6 +198,28 @@ def authored_case() -> Case:
         ),
         bare=_recipe(AUTHORED_MODE),
         members=("curve", "palette"),
+        on_a_plan=False,
+    )
+
+
+def drawn_case() -> Case:
+    """A palette a **draw** moved, over the candidate path's own curve.
+
+    The pass is built the way [`hunt.Maker.palette_for`] builds it — the drawn
+    knobs over the map's own bake — rather than spelled out, so a case that
+    disagreed with the maker about `mirror` would be a case no candidate leg could
+    reproduce and the failure would read as a renderer's.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    return Case(
+        name="drawn",
+        recipe=_recipe(
+            DRAWN_MODE,
+            palette=_palette(mirror="viridis" not in colorize.cyclic(), **DRAWN_PALETTE),
+        ),
+        bare=_recipe(DRAWN_MODE),
+        members=("palette",),
     )
 
 
@@ -199,7 +263,7 @@ def _draw_hunt(case, recipe, where: Path) -> Path:
         colormap=recipe.colormap,
         cell="test",
         k=1,
-        mode_params=dict(recipe.mode_params),
+        **_intended(recipe),
     )
     return Path(maker.make(plan, PLACE, FRAME, recipe, recipes.key_of(recipe))["picture"])
 
@@ -216,7 +280,7 @@ def _draw_mine(case, recipe, where: Path) -> Path:
         colormap=recipe.colormap,
         k=1,
         band="test",
-        mode_params=dict(recipe.mode_params),
+        **_intended(recipe),
     )
     made = mine.make(maker, unit, PLACE, FRAME, recipes.key_of(recipe), pictures=where / "pictures")
     return Path(made["picture"])
@@ -393,15 +457,36 @@ def _digest(picture: Path) -> str:
     return hashlib.sha256(Path(picture).read_bytes()).hexdigest()
 
 
+#: Renderers a case is **not** asked for, by name, with the reason. A candidate
+#: leg that cannot express a member is not dropping it — see the module docstring
+#: — and this says which leg and which case rather than leaving the absence to be
+#: inferred from a filter.
+NOT_ASKED: dict[tuple[str, str], str] = {
+    ("drawn", "manufacture"): "a manufacture row names a place, a mode and a map and has no "
+    "palette member to carry a draw. It is the one candidate leg the varied draw does not "
+    "reach, and `curation.depth` is the leg that draw belongs to.",
+}
+
+
+def renderers_for(case: Case) -> list:
+    """Which registry entries are asked to draw one case, and why the rest are not."""
+    return [
+        renderer
+        for renderer in RENDERERS
+        if (case.on_a_plan or renderer.takes == STORED)
+        and (case.name, renderer.name) not in NOT_ASKED
+    ]
+
+
 @needs_engine
 @pytest.mark.slow
-@pytest.mark.parametrize("case_of", [varied_case, authored_case], ids=["varied", "authored"])
+@pytest.mark.parametrize(
+    "case_of", [varied_case, authored_case, drawn_case], ids=["varied", "authored", "drawn"]
+)
 def test_every_renderer_draws_the_same_picture_for_one_recipe(case_of, tmp_path) -> None:
     """The whole point of the file. Bytes, over every renderer that can draw it."""
     case = case_of()
-    asked = [
-        renderer for renderer in RENDERERS if case.name == "varied" or renderer.takes == STORED
-    ]
+    asked = renderers_for(case)
     assert len(asked) >= 4, "a case drawn by fewer than four renderers is not a comparison"
 
     digests: dict = {}
@@ -428,7 +513,9 @@ def test_every_renderer_draws_the_same_picture_for_one_recipe(case_of, tmp_path)
 
 @needs_engine
 @pytest.mark.slow
-@pytest.mark.parametrize("case_of", [varied_case, authored_case], ids=["varied", "authored"])
+@pytest.mark.parametrize(
+    "case_of", [varied_case, authored_case, drawn_case], ids=["varied", "authored", "drawn"]
+)
 def test_the_members_each_case_varies_actually_move_the_pixels(case_of, tmp_path) -> None:
     """Without this the file above would pass on a renderer that dropped every member.
 
@@ -437,7 +524,7 @@ def test_the_members_each_case_varies_actually_move_the_pixels(case_of, tmp_path
     both. Identical bytes here mean the case is testing nothing.
     """
     case = case_of()
-    draw = _draw_release if case.name == "authored" else _draw_mine
+    draw = _draw_mine if case.on_a_plan else _draw_release
     varied = _digest(draw(case, case.recipe, tmp_path / "varied"))
     plain = _digest(draw(case, case.bare, tmp_path / "plain"))
     assert varied != plain, (
@@ -513,24 +600,40 @@ def test_every_renderer_in_the_tree_is_in_this_registry() -> None:
     assert not stale, f"{sorted(stale)} is exempted and no longer renders anything"
 
 
-def test_a_candidate_leg_is_declared_rather_than_assumed_to_drop_the_overrides() -> None:
-    """`hunt`, `mine` and `manufacture` take a plan and cannot name a curve or a palette.
+def test_a_candidate_leg_is_declared_rather_than_assumed_to_drop_the_curve() -> None:
+    """`hunt`, `mine` and `manufacture` take a plan and cannot name a **curve**.
 
     That is what the candidate path IS — [`colorize.render_row`] spends
-    `colorize.CURVE` and the plain recipe on every attempt, and a leg that set them
-    per attempt would be making pictures the judges were not fitted on. So they are
-    asked for the varied case only, and this pins the reason rather than leaving
-    their absence from the authored case looking like an oversight.
+    `colorize.CURVE` on every attempt with no way to say otherwise, and a leg that
+    set it per attempt would be making pictures through a transform the judges were
+    not fitted on. So the authored case is the stored renderers' alone, and this
+    pins the reason rather than leaving their absence looking like an oversight.
+
+    **The palette is no longer on that list**, and the change is deliberate rather
+    than a drift: [`curation.depth`]'s varied draw puts a `phase` and a `cycles` on
+    the intention itself, [`hunt.Maker.palette_for`] is the one derivation that
+    turns them into a pass, and both candidate legs draw the `drawn` case above.
+    The default is unchanged — an intention with no `palette` spends the plain one —
+    so every leg that does not opt in makes exactly the pictures it made before.
     """
-    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import colorize, hunt
 
     plan = colorize.render_row(
         {"family": {}, "viewport": {}, "maxiter": 256}, "smooth", "viridis", set()
     )
     assert plan["curve"] == colorize.CURVE
     assert plan["mode_params"] == {}
+    assert plan["recipe"] == _palette(mirror=True)
     assert {renderer.name for renderer in RENDERERS if renderer.takes == CANDIDATE} == {
         "hunt",
         "mine",
         "manufacture",
     }
+    # The three intentions are one duck type and the maker reads whichever it is
+    # handed, so a member added to one of them and not the others is a leg that
+    # silently cannot draw what the other two can.
+    from fractal_wallpapers.curation import depth, mine
+
+    for intention in (hunt.Try, mine.Unit, depth.Shot):
+        held = {field.name for field in dataclasses.fields(intention)}
+        assert {"mode_params", "palette"} <= held, intention.__name__

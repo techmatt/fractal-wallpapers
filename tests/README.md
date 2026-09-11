@@ -402,6 +402,28 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A new renderer route costs nine seconds and it is the slow lane's, not the fast
+one's.** `palette_variant_mine_ckpt120`, 2026-09-11, idle box after an 5h20m render
+leg. **Fast: 4,235 selected, 136 deselected — 4,371 collected — in 141.28 s. Slow:
+4,371 of 4,371 in 510.20 s (8:30), zero skips, zero failures.** The two lanes agree
+on 4,371.
+
+**The +10 is one prompt's and its split is the point.** Seven land in the fast lane
+and cost **+0.64 s** between them — the varied palette draw's shares, its identity
+case, its `mirror` refusal, the twin's adjacency, the direct-trap exclusion, the
+unvaried default, and the ledger guard that now reads two members off the row
+instead of deriving them. Three land in the slow lane and cost **+27.3 s**: a third
+case in `test_renderer_agreement.py` drawn through every renderer in the tree, its
+must-differ arm, and a second exactness pin holding each render path to the palette
+pass actually *moving* the picture. `test_a_recolour_is_the_render_byte_for_byte`'s
+own matrix tripled in the same commit — three passes where it swept defaults alone —
+and went 8.0 s to 16.6 s without adding a test.
+
+⚠ **A fast lane taken beside the leg read 339.46 s** on the same tree an hour
+earlier, 2.4x the idle figure. That is this file's *A lane sharing the box with a
+render leg* again and it was run for pass/fail rather than for a number; it is here
+so nobody reads it as a regression.
+
 **All three closed, and the lane is whole for the first time since the colour floor.**
 `palette_variant_smoke_ckpt120` part 2, 2026-09-10. **Fast: 4,228 selected, 133
 deselected — 4,361 collected — in 140.64 s. Slow: 4,361 of 4,361 in 482.87 s (8:02),

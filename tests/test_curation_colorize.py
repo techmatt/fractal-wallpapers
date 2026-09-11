@@ -491,6 +491,26 @@ EXACTNESS_PLACES = (
 #: not the other is the failure this pair would catch and a single map would not.
 EXACTNESS_MAPS = ("viridis", "twilight_shifted")
 
+#: The palette passes the two paths are held to agreeing on, as overrides onto
+#: [`finished.recipe`]'s defaults. `None` is the candidate path's own pass and is
+#: what this pin covered on its own until 2026-09-11.
+#:
+#: The other two are the axis [`curation.depth`]'s varied draw rides — `phase`,
+#: where the traversal of the gradient starts, and `cycles`, how many times it is
+#: traversed — and they are here because the recolour used to **throw them away**:
+#: `colorize.recolored` spent `_plain_recipe(mirror)` and took no pass at all, so a
+#: varied candidate served out of the field cache would have been the plain
+#: picture under the varied recipe's name. `render` refused the pair rather than
+#: let that happen; the refusal is gone on this half and this is what replaces it.
+#: A pass that moved on one path and not the other is the failure, and it is
+#: invisible in every other guard here because both paths would still produce *a*
+#: picture.
+EXACTNESS_PASSES: tuple[dict | None, ...] = (
+    None,
+    {"phase": 0.37},
+    {"cycles": 2.0, "phase": 0.125},
+)
+
 #: **The raster the two exactness pins below are taken on, and the one thing here
 #: that is not production's own.** `colorize.RESOLUTION` at `SUPERSAMPLE` 2 is a
 #: 1280x720 iteration pass a unit, and the two pins were 116.6 s and 29.5 s of a
@@ -547,60 +567,116 @@ def test_a_recolour_is_the_render_byte_for_byte(tmp_path) -> None:
     every judge score in the ledger without moving anything a reader could see, so
     this is held to the file's bytes and not to the picture's look.
 
-    Over every shareable mode, both planes and both bakes, with the autolevel
-    operator on — which is where the two paths differ most, because on the shared
-    path the operator's second pass is a recolour of the same field rather than a
-    second iteration of it.
+    Over every shareable mode, both planes, both bakes and every pass in
+    [`EXACTNESS_PASSES`], with the autolevel operator on — which is where the two
+    paths differ most, because on the shared path the operator's second pass is a
+    recolour of the same field rather than a second iteration of it.
 
     Taken on [`EXACTNESS_GEOMETRY`] rather than on production's raster; that
     constant carries the measurement and the trade.
     """
+    from fractal_wallpapers.labeling import finished
+
     cyclic = colorize.cyclic()
     band = colorize.band()
 
     def both_paths(at: int, row: dict, mode: str) -> int:
-        """Every map at one (place, mode), which is one unit of the render pool.
+        """Every map and pass at one (place, mode), one unit of the render pool.
 
         The colormaps stay serial inside a unit because that is exactly what they
         share: the field cache is keyed on the family, the viewport, the geometry,
-        the mode and the curve, and never on the map. Two threads at one
-        (place, mode) would be two writers of one `.f32`.
+        the mode and the curve, and never on the map or the pass. Two threads at
+        one (place, mode) would be two writers of one `.f32`.
         """
         geometry = exactness_geometry(row)
         for colormap in EXACTNESS_MAPS:
-            plain = tmp_path / f"plain{at}-{mode}-{colormap}.jpg"
-            shared = tmp_path / f"shared{at}-{mode}-{colormap}.jpg"
-            _, plain_stamp = colorize.render(
-                row,
-                mode,
-                colormap,
-                cyclic,
-                plain,
-                render_geometry=geometry,
-                level=True,
-                band=band,
-            )
-            _, shared_stamp = colorize.render(
-                row,
-                mode,
-                colormap,
-                cyclic,
-                shared,
-                render_geometry=geometry,
-                level=True,
-                band=band,
-                fields=tmp_path / "fields",
-            )
-            assert digest_of(plain) == digest_of(shared), f"{mode}/{colormap} at {at}"
-            assert plain_stamp == shared_stamp, f"{mode}/{colormap} at {at}: the stamp"
-        return len(EXACTNESS_MAPS)
+            for spent, override in enumerate(EXACTNESS_PASSES):
+                # `None` is the candidate path's own pass and is passed as `None`
+                # rather than re-spelled: that branch is what every leg but the
+                # varied draw takes, and a test that always handed an explicit
+                # palette would stop covering it.
+                palette = (
+                    None
+                    if override is None
+                    else finished.recipe(mirror=colormap not in cyclic, **override)
+                )
+                where = f"{at}-{mode}-{colormap}-{spent}"
+                plain = tmp_path / f"plain{where}.jpg"
+                shared = tmp_path / f"shared{where}.jpg"
+                _, plain_stamp = colorize.render(
+                    row,
+                    mode,
+                    colormap,
+                    cyclic,
+                    plain,
+                    render_geometry=geometry,
+                    level=True,
+                    band=band,
+                    palette=palette,
+                )
+                _, shared_stamp = colorize.render(
+                    row,
+                    mode,
+                    colormap,
+                    cyclic,
+                    shared,
+                    render_geometry=geometry,
+                    level=True,
+                    band=band,
+                    fields=tmp_path / "fields",
+                    palette=palette,
+                )
+                assert digest_of(plain) == digest_of(shared), where
+                assert plain_stamp == shared_stamp, f"{where}: the stamp"
+        return len(EXACTNESS_MAPS) * len(EXACTNESS_PASSES)
 
     units = [
         (at, row, mode) for at, row in enumerate(EXACTNESS_PLACES) for mode in shareable_modes()
     ]
     with ThreadPoolExecutor(max_workers=release.DEFAULT_WORKERS) as pool:
         checked = sum(pool.map(lambda unit: both_paths(*unit), units))
-    assert checked == len(EXACTNESS_PLACES) * len(shareable_modes()) * len(EXACTNESS_MAPS)
+    assert checked == (
+        len(EXACTNESS_PLACES) * len(shareable_modes()) * len(EXACTNESS_MAPS) * len(EXACTNESS_PASSES)
+    )
+
+
+@needs_engine
+@pytest.mark.slow
+def test_a_varied_pass_makes_a_different_picture_on_both_paths(tmp_path) -> None:
+    """The other half of the pin above, and the half it cannot state.
+
+    Byte-for-byte agreement between two paths is satisfied by both of them
+    ignoring the pass — which is exactly the bug that was there, one path at a
+    time. This holds each path to the pass *moving* the picture, so the agreement
+    above is an agreement about something.
+    """
+    from fractal_wallpapers.labeling import finished
+
+    cyclic = colorize.cyclic()
+    row = EXACTNESS_PLACES[0]
+    geometry = exactness_geometry(row)
+    colormap = EXACTNESS_MAPS[0]
+    seen: dict = {}
+    for spent, override in enumerate(EXACTNESS_PASSES):
+        palette = (
+            None if override is None else finished.recipe(mirror=colormap not in cyclic, **override)
+        )
+        for path, fields in (("plain", None), ("shared", tmp_path / "fields")):
+            output = tmp_path / f"{path}{spent}.jpg"
+            colorize.render(
+                row,
+                colorize.SMOOTH_MODE,
+                colormap,
+                cyclic,
+                output,
+                render_geometry=geometry,
+                level=False,
+                fields=fields,
+                palette=palette,
+            )
+            seen.setdefault(path, []).append(digest_of(output))
+    for path, digests in seen.items():
+        assert len(set(digests)) == len(EXACTNESS_PASSES), f"{path}: {digests}"
 
 
 @needs_engine

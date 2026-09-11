@@ -367,6 +367,9 @@ class Unit:
     #: reason: these three intentions are one duck type and [`hunt.Maker`] reads
     #: whichever it is handed. Empty for every arm this module draws.
     mode_params: dict = dataclass_field(default_factory=dict)
+    #: Overrides onto the palette pass, [`hunt.Try.palette`]'s member under the
+    #: same name and for the same reason. Empty for every arm this module draws.
+    palette: dict = dataclass_field(default_factory=dict)
 
     def named(self) -> dict:
         """This intention as the ledger row carries it.
@@ -388,6 +391,8 @@ class Unit:
         }
         if self.mode_params:
             out["mode_params"] = dict(self.mode_params)
+        if self.palette:
+            out["palette_drawn"] = dict(self.palette)
         return out
 
 
@@ -675,6 +680,12 @@ def make(
         # `mine.Unit` and `depth.Shot` all name it `mode_params` — so a caller
         # that has no settings hands `{}` and pays nothing.
         mode_params=dict(getattr(unit, "mode_params", None) or {}),
+        # The same arrangement one member over, and through the maker's own
+        # derivation rather than a second one here: `palette` is the third member
+        # of the intention duck type, it is in [`recipes.KEYED`], and a pass named
+        # on the row and not handed to the renderer is exactly the defect the
+        # paragraph above is about.
+        palette=maker.palette_for(unit),
     )
     stages.take(meter)
     at = colorize.tick()

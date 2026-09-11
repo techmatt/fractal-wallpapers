@@ -647,6 +647,15 @@ class Try:
     #: the same member under the same name: those three are one duck type and the
     #: maker reads whichever it is handed.
     mode_params: dict = dataclass_field(default_factory=dict)
+    #: Overrides onto the palette pass [`Maker.recipe_for`] would otherwise spend,
+    #: `{}` for every draw that takes the candidate path's own — which is every
+    #: draw a hunt takes. The third member of the duck type above, for the same
+    #: reason and with the same warning: `palette` is in [`curation.recipes.KEYED`],
+    #: so a varied candidate takes its own key and its own file and cannot
+    #: overwrite the plain one. `mirror` is **not** an override a draw may set —
+    #: it is the map's bake, read off the cyclic set by the maker — so a draw
+    #: naming one would be describing another map's picture under this map's name.
+    palette: dict = dataclass_field(default_factory=dict)
 
     def named(self) -> dict:
         """This intention as the ledger row carries it."""
@@ -659,6 +668,8 @@ class Try:
         }
         if self.mode_params:
             out["mode_params"] = dict(self.mode_params)
+        if self.palette:
+            out["palette_drawn"] = dict(self.palette)
         return out
 
 
@@ -1196,9 +1207,16 @@ class Maker:
         which is the whole of what lets a leg name a `(mode, settings)` pair on its
         roster. `recipes.KEYED` holds it, so a varied candidate takes its own key
         and its own file and cannot overwrite the shipped mode's picture.
+
+        `palette` is the same arrangement one member over, and the same sentence
+        is true of it: the intention's overrides land on [`finished.recipe`]'s
+        defaults, `palette` is keyed, and a drawn `phase` or `cycles` is a new
+        picture beside the plain one rather than an overwrite of it. **`mirror`
+        stays this function's** — it is the map's bake and not a knob a draw gets
+        to turn — so the override is applied over it and an intention naming one is
+        refused rather than silently repainting a different map's picture.
         """
         from fractal_wallpapers.curation import colorize
-        from fractal_wallpapers.labeling import finished
         from fractal_wallpapers.palettes import groups as groups_module
 
         return recipes.Recipe(
@@ -1210,10 +1228,50 @@ class Maker:
             mode_params=dict(plan.mode_params or {}),
             curve=colorize.CURVE,
             colormap=plan.colormap,
-            palette=finished.recipe(mirror=plan.colormap not in self.cyclic),
+            palette=self.palette_for(plan),
             autolevel=self.stamp_for(plan.mode),
             palette_group=groups_module.group_of(plan.colormap, self.groups),
         )
+
+    def palette_for(self, plan) -> dict:
+        """The **whole** palette pass one intention is rendered through.
+
+        One derivation, and that is the whole point of it being a method rather
+        than an expression inside [`recipe_for`]: the recipe's `palette` member and
+        the pass [`colorize.render`] is handed have to be the same object's value
+        or the row is keyed for a picture nobody drew. That is `mine.make`'s
+        `mode_params` defect exactly — a member named on the row and dropped on the
+        way to the engine — and `tests/test_renderer_agreement.py` is the guard.
+
+        The plain pass is [`finished.recipe`]'s defaults over the map's bake, which
+        is what every leg but a varied draw spends. An intention's `palette` is
+        **overrides onto** that and never a replacement of it, so a draw cannot
+        forget a knob it did not mean to move.
+
+        Two refusals rather than a silent drop. `mirror` is the map's bake — read
+        off the cyclic set here — and a draw that turned it would be painting a
+        different map's picture under this map's name. A knob the engine does not
+        read would be recorded on the row, dropped between here and the spec, and
+        would leave the row claiming a pass its picture never had.
+        """
+        from fractal_wallpapers.labeling import finished
+
+        drawn = dict(getattr(plan, "palette", None) or {})
+        if "mirror" in drawn:
+            raise RuntimeError(
+                "an intention drew `mirror`, which is the colormap's bake and not a palette "
+                "knob a draw may turn: a folded map painted unfolded is a different map's "
+                "picture under this one's name. Draw the knobs that describe the pass."
+            )
+        loose = set(drawn) - set(finished.RECIPE_KEYS)
+        if loose:
+            raise RuntimeError(
+                f"{sorted(loose)} is not a palette knob the engine reads "
+                f"({', '.join(finished.RECIPE_KEYS)}), so it would be recorded on the row, "
+                f"dropped on the way to the engine spec, and leave the row claiming a pass "
+                f"its picture never had."
+            )
+        return finished.recipe(mirror=plan.colormap not in self.cyclic, **drawn)
 
     def stamp_for(self, mode: str) -> dict | None:
         """The autolevel identity a render in this mode will carry.
@@ -1268,6 +1326,11 @@ class Maker:
             fields=self.fields,
             reported=reported,
             mode_params=dict(plan.mode_params or {}),
+            # The pass the recipe above was keyed under, through the one
+            # derivation that built it. A palette named on the row and not handed
+            # to the renderer is `mine.make`'s `mode_params` defect one member
+            # over: the row says varied and the file is plain.
+            palette=self.palette_for(plan),
         )
         verdict = colorize.score_picture(self.judge(), picture)
         reading = dominance.of_picture(picture)

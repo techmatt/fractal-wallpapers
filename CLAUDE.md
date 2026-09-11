@@ -185,12 +185,19 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,361 collected — 4,228 fast,
-133 slow — since `a3a48ea` and `palette_variant_smoke_ckpt120` landed on
-2026-09-10**, and the pair was taken on this machine on an idle box after a render
-leg, on a `.[dev,models]` install with a release engine built: the **fast** lane
-**140.64 s** and the **slow** lane **4,361 of 4,361 in 482.87 s (8:02)**, both
-**green**, **zero skips**.
+Both are measured, not estimated. The tree holds **4,371 collected — 4,235 fast,
+136 slow — since `palette_variant_mine_ckpt120` landed on 2026-09-11**, and the
+pair was taken on this machine on an idle box after a render leg, on a
+`.[dev,models]` install with a release engine built: the **fast** lane **141.28 s**
+and the **slow** lane **4,371 of 4,371 in 510.20 s (8:30)**, both **green**,
+**zero skips**.
+
+The ten over the previous reading are all that prompt's, and they are **7 fast to 3
+slow** while the clock moved **+0.64 s** and **+27.3 s**: the fast seven are
+arithmetic over a seeded draw, and the slow three each render a recipe through
+every renderer in the tree. A guard that costs nine seconds is not a guard to
+regret — it is `tests/test_renderer_agreement.py`'s, the file that exists because
+the same defect has now been found seven times.
 
 **`5665ae6` left three reds that only the slow lane could see, and they are closed.**
 Nine green fast lanes went past them. Two were the *guard* and not the tree — the

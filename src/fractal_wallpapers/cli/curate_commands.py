@@ -1701,6 +1701,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             "near_width": args.near_width,
             "top_bands": args.top_bands,
             "workers": args.workers,
+            "vary_palette": args.vary_palette,
         }
         if args.what == "plan":
             _intended, shape = depth.build_plan(
@@ -2742,6 +2743,20 @@ def depth_leg_flags(parser, *, device: bool):
         metavar="COUNT",
         help=f"palettes per (proven location, mode) in the mode-floor draw (default "
         f"{depth_module.FLOOR_WIDTH})",
+    )
+    draw_shares.add_argument(
+        "--vary-palette",
+        action="store_true",
+        help="draw each candidate a PHASE and a REPEAT as well as a map — `Palette.phase` "
+        f"and `Palette.cycles`, the engine's own knobs for where the gradient's traversal "
+        f"starts and how many times it is traversed. repeat "
+        f"{', '.join(f'{count} at {share:g}' for count, share in depth_module.PALETTE_REPEATS)}; "
+        f"phase exactly 0 at {depth_module.PALETTE_PHASE_HELD:g} and otherwise uniform over "
+        "the turn. The direct traps have no field for a traversal to start in and are drawn "
+        "bare; every varied shot gets its own phase-0 twin at the same place, mode and map, "
+        "which is what makes `does adjusting an existing recipe pay` a matched question. "
+        "**No map is derived, written or admitted** — the palette block is part of the "
+        "recipe key, so a varied candidate is a new picture beside the plain one",
     )
     populations.add_argument(
         "--modes",
