@@ -16,6 +16,9 @@ a reason that is not depth.
 
 from __future__ import annotations
 
+import dataclasses
+import random
+
 import pytest
 
 from fractal_wallpapers.coloring import autolevel
@@ -2000,3 +2003,119 @@ def test_an_inherited_in_band_decision_still_reads_as_untouched():
         "provenance": {"curve": autolevel.BORROWED, "from": {"key": "abc"}},
     }
     assert depth.levelling_of({"acted": False, "autolevel": borrowed}) == depth.UNTOUCHED
+
+
+# --------------------------------------------------------------------------- #
+# The varied palette draw.
+# --------------------------------------------------------------------------- #
+def _shots(count: int, mode: str = "smooth") -> list:
+    return [
+        depth.Shot(
+            arm=depth.RANKED,
+            location=f"loc{at:03d}",
+            partition="mandelbrot",
+            mode=mode,
+            colormap="viridis",
+            k=1,
+            band="b1",
+        )
+        for at in range(count)
+    ]
+
+
+def test_the_varied_draw_holds_its_declared_shares_and_keeps_phase_zero_reachable():
+    """The three repeats at 0.7/0.2/0.1 and a held phase-0 at 0.3.
+
+    On a thousand draws, which is enough to separate 0.7 from 0.2 and 0.1 from
+    either and is not enough to pin a decimal — the assertions are bands, not
+    readings, because a seeded draw whose tolerance was its own sample would go
+    red the first time somebody changed the seed.
+
+    **Phase 0 is reachable at all** is the half that is not about arithmetic: a
+    continuous draw reaches it with probability zero, so a leg drawn that way
+    would hold no unvaried rows of its own to read the varied ones against.
+    """
+    rng = random.Random(11)
+    drawn = [depth.palette_drawn(rng) for _ in range(1000)]
+    repeats = [one.get("cycles", 1.0) for one in drawn]
+    for count, share in depth.PALETTE_REPEATS:
+        seen = repeats.count(float(count)) / len(repeats)
+        assert abs(seen - share) < 0.06, f"repeat {count}: {seen:.3f} against {share}"
+    held = sum(1 for one in drawn if "phase" not in one) / len(drawn)
+    assert abs(held - depth.PALETTE_PHASE_HELD) < 0.06, held
+    assert all(0.0 < one["phase"] < 1.0 for one in drawn if "phase" in one)
+    # The identity draw is `{}` and not `{"phase": 0.0, "cycles": 1.0}`: a shot
+    # carrying those would take a recipe key of its own for the plain picture.
+    assert {} in drawn
+
+
+def test_an_identity_draw_takes_the_plain_candidate_key():
+    """The whole reason the draw returns overrides rather than a pass.
+
+    A shot whose draw came out identity has to key exactly as the unvaried leg's
+    would, or the leg's own control rows are a second spelling of the pool rather
+    than part of it.
+    """
+    plain, varied = _shots(1)[0], None
+    varied = dataclasses.replace(plain, palette={"phase": 0.25})
+    maker = hunt.Maker.__new__(hunt.Maker)
+    maker.cyclic = colorize.cyclic()
+    assert maker.palette_for(plain) == maker.palette_for(dataclasses.replace(plain, palette={}))
+    assert maker.palette_for(varied)["phase"] == 0.25
+    assert maker.palette_for(varied) != maker.palette_for(plain)
+
+
+def test_a_draw_that_named_mirror_or_a_knob_the_engine_does_not_read_is_refused():
+    """`mirror` is the map's bake and not a knob a draw may turn — a folded map
+    painted unfolded is another map's picture under this one's name — and a knob
+    the engine does not read would be recorded on the row and dropped on the way
+    to the spec, leaving the row claiming a pass its picture never had."""
+    maker = hunt.Maker.__new__(hunt.Maker)
+    maker.cyclic = colorize.cyclic()
+    shot = _shots(1)[0]
+    with pytest.raises(RuntimeError, match="bake"):
+        maker.palette_for(dataclasses.replace(shot, palette={"mirror": True}))
+    with pytest.raises(RuntimeError, match="palette knob"):
+        maker.palette_for(dataclasses.replace(shot, palette={"spin": 2.0}))
+
+
+def test_every_varied_shot_gets_its_phase_zero_twin_at_the_same_place_and_map():
+    """The matched pair the leg's third question is asked of, and the pair has to
+    be **adjacent**: `blocks_of` cuts the plan by location, so a twin separated
+    from its partner by another place would be a second block and a second dump."""
+    plan, tally = depth.vary_palettes(_shots(60), seed=5, log=lambda *_a: None)
+    varied = [at for at, shot in enumerate(plan) if shot.palette]
+    assert varied, "no shot drew a varied palette in 60, which cannot be"
+    assert tally["varied"] == len(varied)
+    assert tally["twins"] == tally["varied"]
+    for at in varied:
+        twin = plan[at + 1]
+        assert twin.palette == {}
+        assert (twin.location, twin.mode, twin.colormap) == (
+            plan[at].location,
+            plan[at].mode,
+            plan[at].colormap,
+        )
+    assert len(plan) == len(_shots(60)) + tally["twins"]
+
+
+def test_a_direct_trap_is_drawn_bare_and_gets_no_twin():
+    """`Palette.phase` and `Palette.cycles` are a no-op on a trap — it has no field
+    for the traversal to start anywhere in — so a varied draw there would take a
+    second recipe key for a byte-identical picture."""
+    plan, tally = depth.vary_palettes(
+        _shots(40, mode="direct_trap_screen"), seed=5, log=lambda *_a: None
+    )
+    assert tally["bare_direct_trap"] == 40
+    assert tally == {"bare_direct_trap": 40, "identity": 0, "varied": 0, "twins": 0}
+    assert len(plan) == 40
+    assert all(shot.palette == {} for shot in plan)
+    assert colorize.kind_of("direct_trap_screen") == colorize.DIRECT_KIND
+
+
+def test_an_unvaried_leg_is_untouched_by_the_flag_being_there():
+    """The default. A plan built without `--vary-palette` is the plan that was
+    built before the draw existed, shot for shot."""
+    shots = _shots(20)
+    assert all(shot.palette == {} for shot in shots)
+    assert all(shot.named().get("palette_drawn") is None for shot in shots)

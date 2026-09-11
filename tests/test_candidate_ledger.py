@@ -1109,8 +1109,8 @@ def test_a_row_naming_no_picture_is_not_something_to_render():
 
 def test_the_re_render_refuses_a_row_it_cannot_reproduce_exactly():
     """**The guard the whole leg rests on.** The recipe the render path derives —
-    palette knobs off the cyclic set, the autolevel stamp off the shipped band —
-    is digested, and the row is rendered only if that digest is the row's own key.
+    the autolevel stamp off the shipped band — is digested, and the row is rendered
+    only if that digest is the row's own key.
 
     A row where the two disagree would get DIFFERENT pixels under its own name,
     which is worse than having no picture: every score and every flatness reading
@@ -1123,6 +1123,30 @@ def test_the_re_render_refuses_a_row_it_cannot_reproduce_exactly():
     assert source.index("refused.append") < source.index("jobs.append"), (
         "the key check has to come before the job is queued, not after it is rendered"
     )
+
+
+def test_the_key_guard_takes_a_drawn_member_off_the_row_and_derives_the_rest():
+    """The two halves of that guard, and the line between them is *can this be
+    re-derived*.
+
+    `mode_params` and `palette` are a **leg's choices**. Nothing in the checkout
+    can re-derive a drawn `phase` or a roster's settings, so the row is the only
+    source and the guard reads them off it. The autolevel stamp and the fallback
+    palette are derivations, and re-deriving them is the whole point.
+
+    Pinned to the derivation, a varied row's rebuilt key never matches its own and
+    every one of them is refused. That happened once, to `mode_params`, where it
+    was protective by accident because the renderer was drawing bare; it would
+    have gone on refusing them after the pictures were right. `--vary-palette`
+    puts rows in the pool that carry a palette the candidate path never spends, so
+    the palette had to stop being on the derived side before the first one landed.
+    """
+    import inspect
+
+    source = inspect.getsource(candidate_ledger.re_render)
+    assert 'mode_params=dict(stored.get("mode_params") or {})' in source
+    assert 'palette=dict(stored.get("palette") or {})' in source
+    assert "autolevel=recipes.live_stamp(mode, band)" in source
 
 
 def test_the_re_render_writes_pictures_and_nothing_else(isolated):
