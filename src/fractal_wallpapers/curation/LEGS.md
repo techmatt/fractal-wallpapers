@@ -598,6 +598,81 @@ buys disjoint places at exactly the same price, and disjoint places are breadth.
 What it does cost is a setup and a merge each: `maps_*_0905`'s four units paid
 about 70 s of pool load apiece outside their budgets.
 
+### NO leg can weight its modes, and a wall-clock split is delivered by unit budgets
+
+The section above is about the floor draw and the limit is the whole module's:
+`plan_cycled_modes` cycles a roster **uniformly by count** at every place, and
+`--modes` decides eligibility and nothing else. **There is no mode-side share of
+the clock anywhere in this tree.** The partition axis has one —
+[`draw_weights.SECONDS_SHARE`], declared shares of engine seconds converted to
+turns by `w = s·U/p` off a measured price — written precisely because a share of
+turns is not a share of seconds. The mode axis never got that machinery, and the
+gap is not cosmetic: on the twelve-mode roster a uniform cycle spends per
+candidate from 1.48 s (`smooth`) to 10.81 s (`smooth_stripe`), 7.3x.
+
+**So a wall-clock split is spelled as one unit a roster, with `--budget` carrying
+it.** `--budget` is WALL seconds, and `smoke_mine_20260910` asked `tia` and
+`stripe` for 5% each against 90% for the other ten, ran 90 / 90 / 1620, and
+realised **5.14% / 5.22% / 89.64%** of render wall — 4.97% / 5.00% on engine
+seconds. Every unit must be **clock-bound** for the shares to be comparable; a
+unit that empties its plan hands its remainder to nobody and the split is off by
+whatever it left.
+
+⚠ **Run the units BEFORE any merge, on one seed, and the places match for free.**
+Breadth opens *never-opened* locations, so with nothing merged between them the
+units walk the same ranked order and the small ones' places are a prefix-subset
+of the big one's — 35 locations were common to all three that night, and on the
+overlap the mode comparison controls the place, which no pooled rate can. Disjoint
+rosters mean no unit can prune another's rows.
+
+**Width is set by the prune and not by taste.** [`candidate_ledger.RETAIN_PER_PAIR`]
+is 5, and a breadth unit puts `width / |roster|` rows on each (place, mode) pair, so
+a ONE-mode unit at the twelve-mode width would land 12 on one pair and lose 7 at the
+merge. Width **4** at one mode is prune-free and leaves a free slot for a later band;
+the ten-mode unit at width 12 is ~1.2 a pair. All three units merged **1,661 of
+1,661, prune-free**.
+
+### What the twelve modes cost and what they buy, measured 2026-09-10
+
+`smoke_mine_20260910`, 1,834 s of render wall, 5,433 engine seconds, 1,661
+candidates, 93 clears at `Q4_BAR`, 31 rows over the shipped fine bar. **n is ~100 a
+mode in the ten-mode unit, so this is an ordering and not a set of rates.**
+
+| drawn mode | s/cand | clear@.50 | gg rows | eng-s a gg row |
+|---|--:|--:|--:|--:|
+| `smooth_stripe` | 10.81 | 2.94% | 0 | — |
+| `smooth_curvature` | 7.79 | **0.00%** | 0 | — |
+| `smooth_mean_angle` | 7.36 | 5.26% | 0 | — |
+| `smooth_angle_min` | 6.76 | 4.00% | 4 | 169 |
+| `threads` | 5.21 | 8.82% | 4 | 133 |
+| `itinerary` | 4.92 | 4.12% | 2 | 238 |
+| `direct_trap_multiply` | 1.79 | 2.06% | 2 | 87 |
+| `direct_trap_lines` | 1.57 | 2.02% | 0 | — |
+| `direct_trap_screen` | 1.54 | 5.05% | 2 | 76 |
+| `smooth` | 1.48 | **10.75%** | 2 | 69 |
+| `stripe` | 1.33 | 8.82% | 6 | **45** |
+| `tia` | 0.57 | 6.57% | 9 | **30** |
+
+★ **The scarcity of the non-field modes is a PRICE fact before it is a quality
+one.** `tia` and `stripe` took 9.97% of the engine seconds and returned **40.7% of
+the rows, 52.7% of the clears and 48.4% of the gallery-grade rows**. The four dear
+`smooth_*` composites took **60.1% of the whole leg's clock for 4 gallery-grade
+rows**. But the ten are not one population: `threads` and `direct_trap_screen`
+clear at ordinary prices and are worth feeding, and a leg meaning *feed the others*
+should name them rather than the composites.
+
+**A one-mode unit is much cheaper per candidate than the same mode inside a mixed
+cycle**, because the dump amortises over the unit's whole width instead of over the
+one or two candidates the cycle gives it: `tia` read **0.573 s** here against 2.49 s
+in the twelve-mode leg of 2026-09-09, and `stripe` **1.331** against 5.22. So
+splitting by mode buys rows as well as control.
+
+**What a single leg would need to do this natively**: [`draw_weights.converted`]'s
+algebra on the mode axis, at these prices, wants turn weights `tia` 4.78 and
+`stripe` 2.05 against 1.0 for the other ten. The prices are per-width, so such a
+table needs [`hunt.Price.seed_for`]'s band discipline or it repeats the near-band /
+breadth mistake the partition side already refuses.
+
 ### A candidate's price is `dump/W + rest`, and the width is half of it
 
 The 0.5895 s `sheet_leg_0905` reports is a **width-8** number and does not
