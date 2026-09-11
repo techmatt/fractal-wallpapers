@@ -541,6 +541,7 @@ def run(
 
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
+    train.make_deterministic()
     pictures, selection_record = population(head_name)
     by_side = sides(pictures)
     training, choosing, holdout = by_side["train"], by_side[SELECTION], by_side["eval"]

@@ -464,6 +464,83 @@ to families.
 `check` reporting `missing` is its **resting state**, not an alarm; `durables.guard`
 refuses over the supply sidecar and nothing else.
 
+## `variants` — one map, one axis moved
+
+A candidate set asks *which of these thirty-two maps suits this location*. [`variants`] asks
+*is this map better a quarter-turn round, or reversed, or half as saturated*, and the only
+way the render path can be told about that is a **new map**: the recipe key derives through
+`renders.spec_of`, so a rotated gradient drawn under its base map's name is two different
+pictures under one key. Every variant is therefore named mechanically —
+`<base>~<axis>-<dose>`, `~` because no map in the tracked library carries one, so
+`base_of` is total over both populations.
+
+Six axes: phase, reversal, repetition, cyclicity, Oklab chroma, Oklab lightness. **Nothing
+is resampled.** Every tracked map sits on an even grid with an explicit closing stop, so
+the four positional axes are exact permutations and tilings of the stop colours the base
+map already has — the identity is the base byte for byte, and a measured delta is the axis
+rather than an interpolation artifact. The two Oklab axes land through
+`autolevel.gamut_fit` (chroma pulled back by bisection, lightness kept) and report how many
+stops the fit moved. `kind` and the recipe's `mirror` move together through `mirror_for`,
+because `colormap.rs` refuses to fold a cyclic map and production folds everything else.
+
+**`write` takes a directory and has no default.** Admitting a variant to `data/palettes/`
+is a decision with three rebuilds behind it, in this order and not another:
+
+1. **`palettes groups`** first, ~5 min and growing with the square of the library. It has
+   to be first because `color_mass` rows are keyed on the **group id**: cut them while a
+   variant is still a singleton and a later re-group orphans its rows silently, and
+   `test_palette_color_mass`'s grid check would not catch it.
+2. **`palettes carriers`**, ~80–90 s, and it is not optional — `test_palette_carriers`
+   pins the header's map count to the `data/palettes/*.json` glob, so the suite goes red
+   the moment any new file lands there.
+3. **`curate mass-sweep extend`** then **`palettes color-mass --only-new`**, at the
+   **137.8 s a map** measured over `classic-pairs-2026-09`.
+
+Then `palette_sets.ADMITTED_DROPS` and `palette admit`, which is what puts a map in the
+drawable pool at all. Note `palette_group` is *carried and not keyed*, so a re-group never
+rebinds an already-seated row.
+
+### What the first sweep of the axis found, 2026-09-10
+
+`palette_variant_smoke_ckpt120`: 22,880 pictures, 20 base maps x 12 variants x 4 shareable
+modes x 22 places, matched within (place, mode, base map), read through all three shipped
+heads. Unmerged, and the maps were kept out of the library.
+
+**The axis is real and it is not worth mining.** Keep-the-best-of-12 against drawing twelve
+*other* base maps at the same place and mode — the same clock, since a variant and a map
+are one recolour — variants buy **69%** of the render judge's gain, **54%** of the fine
+head's rank and **31%** of `fine_p_ge4`, the column that seats a wallpaper. Every positional
+axis is negative on every column; repetition is the worst (−0.581 render rank at 3x) and
+reversal the only near-null one. **Kind splits them five to one**: phase on a sequential
+map is −0.335 render rank against −0.066 on a cyclic one, which is the seam `variants.seams`
+counts.
+
+Three findings worth keeping apart from that verdict:
+
+* **The two render heads want opposite saturation.** The finished-render judge reads 0.5x
+  chroma **+0.043** rank and 1.5x **−0.022**; the gallery-grade head reads the reverse,
+  **−0.096** and **+0.037**, and the palette head agrees with the gallery-grade head at 35
+  sigma. No axis but chroma raises anything, and the two heads disagree about its sign.
+* **The autolevel operator absorbs the lightness axis.** It acted on 40.1% of base rows,
+  85.7% of 1.2x lightness and **100.0%** of 0.8x — so a lightness dose measured with the
+  switch on is measuring the residual. Sweep that axis with `FRACTAL_WALLPAPERS_AUTOLEVEL`
+  off or not at all.
+* **A rotation is far from its base in the twin metric and a chroma rescale is not.** At
+  `ceiling.TAU`, base-against-variant medians run 4.34x τ for a half-turn and 1.83x for an
+  eighth, while **1.5x chroma sits at 0.99x τ with 50.7% of its pairs inside** and reversal
+  at 26.3%. The intuition that rotation is the small change is backwards in the metric the
+  solve uses. Across a whole family 6.98% of pairs are inside τ against **0.06%** between
+  two different base maps — 116x the twin rate, at 2.5x tighter median separation.
+
+**And a variant with no carriers row is constrained but un-aimable.** The colour ceiling and
+floor read the row's own measured dominance (`solve.in_theme`), so nothing slips them;
+`color_mass.delivering` and `carriers.draw` give it a prior of 0.0 and cut it out of every
+cell-aimed draw. The group cap is the real hazard: `groups.group_of` returns `map:<name>`
+for a map absent from the table, so at n=1000 under the shipped `proportional` rule one look
+goes from 25 seats to **13 x 25 = 325 of 1,000** until the grouping is re-cut — and a
+cyclicity flip is exactly zero M1 away from its base, because `groups.cloud` discards `kind`
+while the renderer honours it.
+
 ## `dominance` — what colour a picture is, and `pixel_clouds` — whether two are one picture
 
 `dominance` is one definition read everywhere: the codebook's 52-cell census with

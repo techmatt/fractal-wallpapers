@@ -1806,6 +1806,7 @@ def fit(
 
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
+    train.make_deterministic()
     log(
         f"[{HEAD}] device {where}  torch {torch.__version__}  arm {arm}  seed {recipe['seed']}  "
         f"band {band} on {wanted}  "

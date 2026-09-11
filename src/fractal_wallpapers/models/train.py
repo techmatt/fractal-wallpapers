@@ -482,6 +482,7 @@ def train(
 
     where = device_of(device)
     set_seed(int(recipe["seed"]))
+    make_deterministic()
     locations, selection_record = population(name, drawn)
     pin_report = assert_the_pin_holds(locations)
     by_side = dataset.sides(locations)

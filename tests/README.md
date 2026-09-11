@@ -402,6 +402,38 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**The first slow lane since the colour floor, and it is RED in three places that are
+nobody's fast lane.** `palette_variant_smoke_ckpt120`, 2026-09-10. **Fast: 4,223
+selected, 132 deselected — 4,355 collected — in 145.67 s, green. Slow: 4,352 of
+4,355 in 502.58 s (8:22), three failures, zero skips.** Idle box, after the leg and
+not beside it; `.[dev,models]` install, release engine built. The **+16 over the
+reading below is `tests/test_palette_variants.py`**, whole, and the count moved
+because tests were added.
+
+The three reds all land in `5665ae6`'s rescued corpus and **none of them is reachable
+from the fast lane**, which is why nine days of green fast lanes said nothing about
+them:
+
+* `test_history_purity.py::test_no_absolute_paths_in_tracked_records` —
+  `data/gallery_grade/corpus/twelve_sheets/population.jsonl` carries
+  `C:\Code\fractal-wallpapers\...` in its `path` member, on hundreds of rows. A
+  tracked record naming one machine's drive letter is what `paths.tracked_name`
+  exists to prevent.
+* `test_gallery_grade.py::test_only_the_store_addresses_the_gallery_grade_records` —
+  `models/gallery_grade_train.py` addresses the store's directory itself rather than
+  going through `labeling/gallery_grade.py`.
+* `test_gallery_grade_retention.py::test_every_graded_row_is_protected_on_the_real_store`
+  — a graded row of `p_fine_correction_20260909` names no drawn candidate, so nothing
+  can say which picture it was cast on.
+
+⚠ **They are attributed, not fixed**, and the attribution is not an inference: the
+store-addressing guard was re-run with this prompt's one-line edit to
+`gallery_grade_train.py` stashed and **failed identically**. ★ The standing lesson is
+the one `CLAUDE.md` already draws and this is its first real instance — **a lane with
+any red in it is a lane to read**, and a red that only the slow lane can see is a red
+that survives every fast lane taken in the meantime. Nine fast-lane readings sit
+between the colour floor and this one.
+
 **A new count, and fourteen tests that cost the lane a second.**
 `adopt_deterministic_20260910`, 2026-09-10. **4,207 selected, 132 deselected —
 4,339 collected — in 137.90 s**, green, nothing running beside it. The **+14 over

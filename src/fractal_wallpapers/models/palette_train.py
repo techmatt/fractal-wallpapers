@@ -447,6 +447,7 @@ def run(
 
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
+    train.make_deterministic()
     training, holdout = population()
     log(f"device {where}  torch {torch.__version__}  seed {recipe['seed']}  head palette")
     log(

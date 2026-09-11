@@ -874,6 +874,7 @@ def run(
 
     where = train.device_of(device)
     train.set_seed(int(recipe["seed"]))
+    train.make_deterministic()
     pictures, split_record = split() if split is not None else population(only)
     by_side = sides(pictures)
     training, choosing = by_side["train"], by_side[SELECTION]

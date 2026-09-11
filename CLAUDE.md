@@ -178,18 +178,25 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,301 collected — 4,169 fast,
-132 slow — since the gallery-grade correction page landed on 2026-09-09**, and the
-fast lane read them in **129.72 s** with a labeling server on the box and no render
-leg. That is within a third of a second of the last **idle** fast reading below,
-which is what settles the entry between them: **200.85 s over 4,295** was a busy
-box and not the tree. The idle pair is on this machine, 2026-09-09, on a
-`.[dev,models]` install with a release engine built and **4,277 collected** — the
-**fast** lane **129.99 s over the 4,145 it holds, 132 deselected**, and the **slow**
-lane **4,277 of 4,277 green in 459.94 s (7:39)**, **zero skips**. **No slow lane has
-been run since the colour floor**, at Matt's instruction, so the two lanes have not
-been compared on this tree.
-The two before it were 4,271 in 450.28 s and 4,235 in 448.94 s.
+Both are measured, not estimated. The tree holds **4,355 collected — 4,223 fast,
+132 slow — since `palette_variant_smoke_ckpt120` landed on 2026-09-10**, and the
+pair was taken on this machine on an idle box after a render leg, on a
+`.[dev,models]` install with a release engine built: the **fast** lane **145.67 s**,
+green, and the **slow** lane **4,352 of 4,355 in 502.58 s (8:22)**, **zero skips**
+and **three failures**.
+
+**Those three are `5665ae6`'s and they are the first thing a slow lane found after
+nine fast lanes could not**: a tracked corpus naming `C:\Code\...` in
+`data/gallery_grade/corpus/twelve_sheets/population.jsonl`,
+`models/gallery_grade_train.py` addressing the gallery-grade store's directory
+itself, and a `p_fine_correction_20260909` graded row naming no drawn candidate.
+None is reachable from the fast lane. They are **attributed and open**, which is not
+the same thing as expected — see the rule below.
+
+The idle pair before it, 2026-09-09 at **4,277 collected**: **fast** 129.99 s over
+the 4,145 it holds, 132 deselected; **slow** 4,277 of 4,277 green in 459.94 s (7:39),
+zero skips. **200.85 s over 4,295** on the same era was a busy box and not the tree.
+The two before that were 4,271 in 450.28 s and 4,235 in 448.94 s.
 **The two lanes normally agree on the collected count**, which is what that
 number is for, and they **do**: the pair above is one tree read twice.
 
