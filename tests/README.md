@@ -402,6 +402,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Three fits, a 42,300-picture scoring pass and two pool holds before it, and the
+clock did not notice.** `adopt_and_record_20260910`, 2026-09-10. **4,193 selected,
+132 deselected — 4,325 collected — in 140.62 s**, green, nothing running beside it.
+The tree changed by one `models/gallery_grade` README section and nothing else, so
+the collected count is the six readings below's exactly. It sits **5.2 s under** the
+eleven-solve reading below and 1.3 s under the training-grid one, on a box that had
+held the 308,885-row pool twice and read every candidate picture off disk once —
+which is the same *box settling* band those two describe and not a fourth story.
+⚠ `CLAUDE.md` still reads 4,301 / 4,169, now five trees behind, and is still
+deliberately left alone for the reason the entries below give: **no slow lane has
+run since the colour floor**, and this change adds no test of either kind.
+
 **The slowest of the 4,325 readings, and eleven n=1000 solves are what was before it.**
 `cell_deltas_20260910`, 2026-09-10. **4,193 selected, 132 deselected — 4,325 collected —
 in 145.84 s**, green, nothing running beside it and no pool held. The tree changed by two

@@ -446,6 +446,49 @@ symmetric one at matched escape and the two are inside each other's noise on 144
 the escape rate at 5% instead of matching 27.76% narrows the admitted pool from
 11,743 rows to **2,073**.
 
+## A fit here does not reproduce, and the fix is one call — 2026-09-10
+
+**Re-running a run of this head at its own seed, on the same code and the same rows,
+gives a different head.** Measured by refitting `best_head_20260910`'s adopted column
+`B2_raw` — all three seeds, the identical recipe, nothing varied — and reading the
+result the whole way through to a seating:
+
+```text
+                       approved                     refit, same seeds
+AUC(>=4) checkpoint    epoch 29 / 15 / 16           epoch 4 / 4 / 16
+pool column, k=3       pearson 0.798 with the refit, spearman 0.783
+bar at 27.76%          0.022689                     0.083975     (x3.7, same 11,743 admitted)
+admitted set                       churn 0.564, 8,431 of 11,743 shared
+n=1000 seating         worst 1.052173               worst 1.130850
+                       sum 1484.765135              sum 1406.724666
+                                   516 of 1,000 seats change, jaccard 0.319
+```
+
+**What moves is the CUDA kernels and nothing above them.** The input stream is a pure
+function of the seed — the sampler's 2,263 draws are identical under one seed and the
+augmentation is keyed on `<row>:<epoch>` — and the two runs part in the **first
+epoch's training loss**, before any stopping rule has been consulted. The 30-epoch
+AUC(≥4) surface is then flat enough (mean |Δ| 0.027) that the checkpoint rule turns
+that into a different epoch.
+
+★ **`torch.use_deterministic_algorithms(True)` makes it bit-for-bit reproducible at no
+measurable cost.** Two three-epoch runs under it agreed to all sixteen digits of the
+training loss, the eval loss and AUC(≥4), at **5.1–5.2 s an epoch against the free
+recipe's 5.1** — no op raised for want of a deterministic implementation, with
+`CUBLAS_WORKSPACE_CONFIG=:4096:8` set before torch is imported. Nothing in this
+checkout sets it yet.
+
+**The scoring and the seating half is exactly reproducible already**, which is what
+makes the above a statement about the fit alone: re-ensembling a stored pool-score
+block and re-solving returns the approved seating **seat for seat and in order**, the
+bar re-deriving to the same six decimals. So a column is recoverable from its scores
+forever, and only from its scores — a seating that must come back is one whose column
+is kept, not one whose recipe is written down.
+
+⚠ **A level therefore does not transfer between two runs of one recipe**, never mind
+between recipes: 0.022689 and 0.083975 are the same matched fraction of the same pool
+under the same eleven-line recipe. Derive it, always.
+
 ## What is here
 
 `bar_auc_ge4.json` and `comparison_auc_ge4.json`, the band's bar and its read.
