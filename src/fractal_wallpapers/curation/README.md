@@ -1129,6 +1129,62 @@ as *the geometry and nothing else moves*. It now reads the recipe through
 the parent. `manufacture`'s render arm passes the row's settings; its recolour arm needs
 none, settings being legal only on a direct trap, which has no field to dump.
 
+### The `curve`/`palette` refusal is one rule doing two jobs, and a NEW MAP is neither
+
+`render` refuses a `fields=` directory beside either override. Read from the split that
+decides it, the two halves fail differently and only one of them is about the cache.
+
+**The map is not in a field's identity at all.** `renders.RECOLOR_MEMBERS` is `colormap`
+and `recipe`, and `field_job_name` pins both to constants — `FIELD_COLORMAP` and
+`finished.recipe(mirror=False)` — so what a dump is a function of is the place, the
+geometry, the mode and the curve, and nothing else. That is the whole of why one
+iteration pass serves thirty-two candidates, and it means **a map this repository has
+never rendered before is served by the field cache exactly as a shipped one is**.
+`mirror` rides along with it: `recolored` takes it as a parameter and it is the one knob
+of the seven a recolour does not pin, which is why a map's `kind` can vary over one
+dumped field.
+
+* **`curve` is field-side** (`renders.FIELD_IDENTITY`) and the hole is a call site rather
+  than the cache: `_shared_field` never passes a curve down to `field_of`, and
+  `engine recolor` reads the transform out of the dump's own record when the spec leaves
+  it unsaid — so an overridden render served from the cache would paint the `linear`
+  field wearing the override's name. `field_job_name` already digests a curve, so each
+  distinct one would simply get its own field.
+* **`palette` is recolour-side** and the hole is a dropped argument: `recolored` writes
+  `_plain_recipe(mirror)` and throws the other six knobs away. The Rust `RecolorSpec`
+  already carries a full `Palette` and `fn recolor` spends it exactly as `fn render`
+  does, so nothing about the cache stops this.
+
+So the refusal is **broader than it needs to be on the palette half**. Priced, as of
+`palette_variant_smoke_ckpt120`: `recolored` taking the recipe rather than only `mirror`,
+`_shared_field` taking a curve and passing it on, `render` dropping the guard — three
+functions here, nothing in Rust and nothing in `engine_spec`, plus extending
+`test_a_recolour_is_the_render_byte_for_byte`, whose matrix sweeps defaults only. The one
+thing nobody has measured is whether a **levelled** repaint composes with a non-identity
+`gamma` or `transfer`; the two paths have only ever been compared on the plain recipe.
+
+### A leg whose maps are not in the tracked library cannot go through `colorize.render`
+
+`render` gives its first paint no way to reach another colormap directory —
+`engine_spec.spec_of` hard-wires `paths.colormap_dir()`, and the only directory `paint`
+ever takes is the autolevel operator's own levelled copy. It also reads the map's stops
+out of that same directory to hand the operator. So a leg holding its maps elsewhere
+calls the two halves itself: `colorize.field_of`, then
+`colorize.recolored(..., colormap_dir=...)`, then `autolevel.maybe_level` with a
+`rerender` that writes through `autolevel.overriding_colormap` into a scratch directory.
+That is `render`'s own body with one string changed, and it is what
+`palettes/README.md`'s *Variants — one map, one axis moved* was rendered through.
+
+**What it costs, measured over 22,880 pictures on 2026-09-10** at candidate geometry
+across `smooth`, `stripe`, `curvature` and `tia`: one recolour **62.3 ms**, the operator
+28.0 ms when it does not act and 217.3 ms when it does — **186.1 ms of worker time a
+candidate**, 66.4 ms of wall at the three-worker pool. The same places by the render path,
+both levelled, run 1.5x to 2.1x that (smooth 151→315 ms, tia 91→137 ms), and the dump
+being amortised is 0.05–0.20 s once per (location, mode). The ratio is this low because
+half the clock is the operator, which both paths pay, and because candidate geometry is
+small; the `curate mine bench` table above is the same measurement where iteration
+dominates.
+
 ## `curate label-fate` — what became of every GALLERY-GRADE wallpaper somebody graded 4
 
 Three stores hold a human 4 — `data/smooth_render/`, `data/strange_render/` and
