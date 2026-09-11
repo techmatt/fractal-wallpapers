@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "head": "gallery_grade",
+  "band": "auc_ge4",
+  "corpus": "twelve_sheets",
+  "corpus_is": "the 2,829 rows over twelve labelling sheets the store held on 2026-09-10 \u2014 the two gallery sittings and the augmentation sweep's two sheets on top of `corrected`'s. FROZEN: its join, its split and its targets are tracked under `data/gallery_grade/corpus/twelve_sheets/` rather than regenerable, because the join reads the LIVE store and cannot give these rows back once another sheet is graded",
+  "recipe": "drop_high_asymmetric",
+  "recipe_is": "dropout 0.4 and stochastic depth 0.2, every cutpoint's negative term at 2x, a fixed 30-epoch horizon with the AUC(>=4) checkpoint, and a learned per-batch offset dropped at inference. Ships k seeds averaged on the probability scale",
+  "registered_at": "2026-09-11T02:03:59Z",
+  "rule": "the winning arm must beat BOTH incumbents on BOTH statistics at EVERY seed, strictly, on the held-out lineages. Any one of those failing is a FAIL for the band \u2014 there is no partial credit and no best-of",
+  "gated": {
+    "incumbents": [
+      "candidate_p_ge4",
+      "rank_key"
+    ],
+    "statistics": [
+      "auc_ge4",
+      "spearman"
+    ]
+  },
+  "incumbents": {
+    "candidate_p_ge4": {
+      "auc_ge4": 0.5246669204415684,
+      "spearman": 0.088086830418904,
+      "rows": 466
+    },
+    "rank_key": {
+      "auc_ge4": 0.5697500317218627,
+      "spearman": 0.1740700186913321,
+      "rows": 466
+    }
+  },
+  "population": {
+    "rows": 566,
+    "base_rates": {
+      "ge2": 0.7456,
+      "ge3": 0.5106,
+      "ge4": 0.2102
+    },
+    "slice": "gate_column",
+    "gate_column_rows": 466,
+    "gate_column_is": "the rows the shipped judge read AS CANDIDATES. A row drawn from somewhere other than the seating pool carries no such reading \u2014 the correction sitting's 100 `low_anchor` rows are coarse-3 verdicts about 1280x720 pictures and were never candidates \u2014 so the two incumbents are readable on this slice and not on the whole stopping side",
+    "is": "the stopping slice \u2014 within-store held out, optimistic by one early stop, and drawn from a store that is not eval-eligible. This bar says which of three quantities orders these rows best and nothing about any other rows. Where `slice` is `gate_column` the heights and the arm are both read on the rows the incumbents exist for, and never on two different populations"
+  },
+  "does_not_gate": "the arm ranking, the epoch, or anything about the pool. Adoption is a separate act and this bar does not authorize one"
+}

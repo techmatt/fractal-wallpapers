@@ -474,7 +474,13 @@ that into a different epoch.
 ★ **`torch.use_deterministic_algorithms(True)` makes it bit-for-bit reproducible, and
 it costs about 8%.** No op raises for want of a deterministic implementation;
 `CUBLAS_WORKSPACE_CONFIG=:4096:8` has to be set before torch is imported, because
-cuBLAS reads it at load. Nothing in this checkout sets either yet. The price is
+cuBLAS reads it at load. **Both are in the tracked path since 2026-09-10**:
+`fractal_wallpapers.cli` sets the variable at its own entry, and
+`models/train.make_deterministic` turns the flag on and **refuses** rather than
+warns when the variable is absent — a fit that could not keep the promise says so
+instead of quietly not keeping it. `drop_high_asymmetric` calls it; the other
+trainers here do not yet, and adopting it is one line each plus whoever prices it
+on their ops. The price is
 **5.40 s an epoch against 5.00**, 87 epochs of each — about ten seconds on a
 three-minute run, and *not* the "no measurable cost" a three-epoch probe first read:
 at that length the warm-up epoch swamps it.
@@ -507,6 +513,58 @@ is kept, not one whose recipe is written down.
 ⚠ **A level therefore does not transfer between two runs of one recipe**, never mind
 between recipes: 0.022689 and 0.083975 are the same matched fraction of the same pool
 under the same eleven-line recipe. Derive it, always.
+
+## Adopted 2026-09-10 — a k=3 ensemble, and a third axis to name it on
+
+What ships is **`twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3`**: three seeds
+averaged on the probability scale, fitted under determinism, cleared **12 of 12**
+gated cells at worst margin **+0.115**. Matt approved the gallery off
+`deterministic_refit_20260910`'s browse page and this is that column, reproduced by
+the tracked machinery rather than imported from `scratch/`.
+
+**A corpus is WHICH ROWS, a band is WHICH STOPPING RULE, and a recipe is WHICH
+KNOBS.** The third axis landed with this adoption, because the recipe moves four
+things at once — dropout 0.4 / stochastic depth 0.2, every CORN cutpoint's negative
+term at 2×, a fixed 30-epoch horizon with the AUC(≥4) checkpoint, and a learned
+per-sitting offset dropped at inference — and two arms fitted under different
+dropout are not two arms. `--recipe` is on every verb that names a run, exactly as
+`--corpus` is. `inherited` keeps bare names, for the reason the other two axes'
+first values do.
+
+★ **It reproduced bit for bit, which is the whole point of the detour.** All three
+seeds, 90 epochs, **834 checkpoint tensors**, every per-sitting offset, and the
+checkpoint epochs 25 / 10 / 17 — identical to the runs Matt looked at.
+`adopt_and_record_20260910` is what that is measured against: the same recipe
+without determinism returned 516 of 1,000 seats different.
+
+```text
+bar at the 27.76% matched fraction   0.030242   admitting 11,743 of 42,300
+                                     re-derived against the pool of the day, to
+                                     the same six decimals as the approved column
+n=1000 record  20260911T022330Z      1000/1000, shortfall 0
+                                     worst 1.041483   sum 1451.098395
+                                     legs 454 · 279 · 170 · 97
+```
+
+**Three things and this section is the first.** The pool was re-scored through the
+ensemble — 42,300 rows, 377 s, the superseded `corrected_auc_ge4_more_seed1` column
+kept beside it — and `solve.DEFAULT_FINE_BAR` moved **0.184 → 0.030242** to hold the
+admitted fraction where it has been since 2026-09-09. ⚠ **That is not a
+tightening.** An average pulls the tails in, so a k=3 column's mass sits an order
+lower than a single head's; the gate is the same 27.76%.
+
+⚠ **The corpus is frozen and tracked.** `twelve_sheets` is 2,829 rows over twelve
+labelling sheets, and `gallery-grade population` will not give them back — it reads
+the live store, which has already moved past them. Its five files live under
+`data/gallery_grade/corpus/twelve_sheets/` with their checksums, and both writers
+refuse to touch it. `data/gallery_grade/corpus/README.md` is the decision.
+
+**`score-pool` averages k checkpoints now**, over one decode pass —
+`train.score_many` returns each head's probabilities and the caller averages,
+because a mean of logits is a different column and only one of them is the scale a
+bar cuts on. The column is named `_k3` rather than after one of its three runs, and
+`shipped_runs` is the one place that answers *which checkpoints is this recipe's
+column*.
 
 ## What is here
 

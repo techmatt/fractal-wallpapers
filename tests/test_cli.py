@@ -664,7 +664,7 @@ def test_both_gallery_changes_are_the_default_and_the_incumbent_is_still_reachab
     assert unflagged.handler is cli.curate_solve
     assert unflagged.group_cap == solve.DEFAULT_GROUP_CAP == ceiling.PROPORTIONAL
     assert unflagged.key == solve.DEFAULT_KEY == solve.CASCADE_KEY
-    assert unflagged.fine_bar == solve.DEFAULT_FINE_BAR == 0.184
+    assert unflagged.fine_bar == solve.DEFAULT_FINE_BAR == 0.030242
     with pytest.raises(SystemExit):
         parse(["curate", "solve", "run", "--n", "150", "--key", "rank-key"])
     assert unflagged.spiral_cap == solve.DEFAULT_SPIRAL_CAP == 0.10
@@ -697,19 +697,20 @@ def test_the_fine_bar_is_a_flag_a_record_keeps_and_both_verbs_default_to_it() ->
     A bar that only `run` accepted would be a bar no tracked manifest could ever
     carry, and the manifest is where a record says what made it.
 
-    **The default has moved twice and the record is what tells them apart**:
-    `None` until the act that made `20260908T144844Z`, `0.50` until 2026-09-09,
-    and `0.184` since the act that adopted the corrected refit. The last move is
-    not a change of strictness — it is the level at which the new head admits
-    the fraction the old one admitted at 0.50 — so `config.fine_head` has to be
-    read beside `config.fine_bar` or the number lies.
+    **The default has moved three times and the record is what tells them
+    apart**: `None` until the act that made `20260908T144844Z`, `0.50` until
+    2026-09-09, `0.184` until 2026-09-10, and `0.030242` since the act that
+    adopted the `drop_high_asymmetric` k=3 ensemble. No move since the first is a
+    change of strictness — each is the level at which the new head admits the
+    fraction the old one admitted — so `config.fine_head` has to be read beside
+    `config.fine_bar` or the number lies.
     """
     from fractal_wallpapers.curation import solve
 
     parse = cli.build_parser().parse_args
-    assert solve.DEFAULT_FINE_BAR == 0.184
-    assert parse(["curate", "solve", "run", "--n", "150"]).fine_bar == 0.184
-    assert parse(["curate", "solve", "record"]).fine_bar == 0.184
+    assert solve.DEFAULT_FINE_BAR == 0.030242
+    assert parse(["curate", "solve", "run", "--n", "150"]).fine_bar == 0.030242
+    assert parse(["curate", "solve", "record"]).fine_bar == 0.030242
     assert parse(["curate", "solve", "run", "--fine-bar", "0.75"]).fine_bar == 0.75
     assert parse(["curate", "solve", "record", "--fine-bar", "0.75"]).fine_bar == 0.75
 

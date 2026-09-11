@@ -63,8 +63,9 @@ record names is still resolved.
 The pool a solve seats over is narrowed by [`DEFAULT_FINE_BAR`] first, and since
 2026-09-08 that is a bar rather than no bar at all. **The level is only readable
 beside the head it is stated on**: `0.50` on `auc_ge4_more_seed2` until
-2026-09-09 and `0.184` on the corrected refit since, which are the same gate on
-two columns.
+2026-09-09, `0.184` on the corrected refit until 2026-09-10, and `0.030242` on
+the `drop_high_asymmetric` k=3 ensemble since — three levels, one gate, 27.76% of
+the pool at each of them.
 
 **A filled floor outranks the worst seat, and that is the ruling.** Matt's, and
 it is what "grab where possible" means: a mode this pool *can* represent is
@@ -338,9 +339,9 @@ SWAP_DROPS = 8
 #: a rule is the reason.
 PRECHECK_REMOVALS = 256
 
-#: **The fine head's quality bar on the seatable pool, unasked: 0.184**, Matt's
-#: ruling of 2026-09-08 that there be one, at the level the ⚠ below moved it to
-#: on 2026-09-09 when the head under it changed.
+#: **The fine head's quality bar on the seatable pool, unasked: 0.030242**,
+#: Matt's ruling of 2026-09-08 that there be one, at the level the last ⚠ below
+#: moved it to on 2026-09-10 when the head under it changed again.
 #:
 #: A bar on `p_fine(>=4)` — the gallery-grade head's own `P(>=4)`, the column its
 #: acceptance is stated on and the column [`cascade_order`] orders the top of the
@@ -398,7 +399,24 @@ PRECHECK_REMOVALS = 256
 #: information about the pool rather than as a reason to nudge the number.
 #: `models/gallery_grade/README.md`'s *Adopted 2026-09-09* carries the derivation
 #: and the alternatives that were measured and rejected.
-DEFAULT_FINE_BAR = 0.184
+#:
+#: ⚠ **0.184 -> 0.030242 on 2026-09-10**, in the act that adopted the
+#: `drop_high_asymmetric` k=3 ensemble. **The same matched fraction, re-derived,
+#: and the column moved under it.** 27.76% of the day's whole above-bar pool —
+#: 11,743 of 42,300 rows, not a sample — read through the ensemble's own column,
+#: which is what a k=3 average does to a scale: averaging pulls the tails in, so
+#: the mass sits an order lower than a single head's and the span runs [0,
+#: 0.998005]. Nothing here raised or lowered the gate; the admitted count is the
+#: same 27.76% it has been since 2026-09-09.
+#:
+#: **A level is not transferable between two runs of ONE recipe**, which is the
+#: fact this constant now exists to carry. `adopt_and_record_20260910` refitted
+#: the adopted recipe at its own seeds and derived **0.083975** for the same
+#: fraction of the same pool where the approved column derives 0.030242 — a
+#: factor of 3.7 between two runs of eleven identical lines. Derive it, always,
+#: and `models/gallery_grade/README.md`'s *A fit here does not reproduce* says
+#: what closed that.
+DEFAULT_FINE_BAR = 0.030242
 
 #: **Whether the augmenting-chain stage runs, unasked. ON**, Matt's ruling of
 #: 2026-09-04 off the chains sheet.
@@ -2178,8 +2196,9 @@ def solve(
 
     `fine_bar` narrows the pool to the rows the gallery-grade head reads at
     `p_fine(>=4) >= fine_bar`, **before anything else runs** — [`at_fine_bar`].
-    [`DEFAULT_FINE_BAR`] is `0.184` since 2026-09-09 and was `0.50` for the day
-    before it, so a pass that names nothing is barred; `fine_bar=None` is the
+    [`DEFAULT_FINE_BAR`] is `0.030242` since 2026-09-10, was `0.184` for the day
+    before it and `0.50` for the day before that, so a pass that names nothing is
+    barred; `fine_bar=None` is the
     unbarred population. The value is on the
     record whether or not one was applied, so a record is never silent about it:
     `config.fine_bar` is `None` for a pass that ran unbarred, which is what every
@@ -2873,14 +2892,17 @@ def _config(
         "BEFORE anything else runs — the per-mode bars, the neutral pre-selection and the "
         "view are all taken over what it leaves. `null` is NO bar; the flag is `--fine-bar` "
         "and `solve.at_fine_bar` is the door. A record that does not name the field at all "
-        "was taken before 2026-09-07 and ran unbarred. THE DEFAULT HAS MOVED TWICE: null "
-        "until 2026-09-08, 0.50 until 2026-09-09, 0.184 since — and the last move was a "
-        "MATCHED level under a new head and not a change of strictness, so `fine_bar` is "
-        "only readable beside `fine_head` below",
+        "was taken before 2026-09-07 and ran unbarred. THE DEFAULT HAS MOVED THREE TIMES: "
+        "null until 2026-09-08, 0.50 until 2026-09-09, 0.184 until 2026-09-10, 0.030242 "
+        "since — and every move since the first was a MATCHED level under a new head "
+        "rather than a change of strictness, so `fine_bar` is only readable beside "
+        "`fine_head` below",
         # A `p_fine` level means nothing without the head that produced the
-        # column. 0.50 under `auc_ge4_more_seed2` and 0.184 under
-        # `corrected_auc_ge4_more_seed1` admit the same fraction of one pool;
-        # 0.50 under the second admits a third of it. A record naming only the
+        # column. 0.50 under `auc_ge4_more_seed2`, 0.184 under
+        # `corrected_auc_ge4_more_seed1` and 0.030242 under the k=3 ensemble admit
+        # the same fraction of one pool; 0.50 under the second admits a third of
+        # it, and under the third almost nothing — an average pulls the tails in.
+        # A record naming only the
         # number would read as a tightening that never happened, so the run is
         # on `config` beside it and not left to the date.
         "fine_head": fine_head,

@@ -1,0 +1,9 @@
+{
+ "torch": "2.6.0+cu124",
+ "cuda": "12.4",
+ "cudnn": 90100,
+ "device": "NVIDIA GeForce RTX 2060 SUPER",
+ "deterministic_algorithms": true,
+ "cublas_workspace_config": ":4096:8",
+ "cudnn_benchmark": false
+}

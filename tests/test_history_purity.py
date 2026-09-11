@@ -103,9 +103,20 @@ ALLOWLIST: frozenset[str] = frozenset()
 # arranging the record around the guard, which is what the note above rejects.
 #
 # Reversing this is one line here plus whatever is decided about the record.
+#
+# The fine-tier head's frozen corpus is the third, added 2026-09-10 on Matt's
+# instruction to copy it "somewhere durable and tracked". Two of its five files are
+# over the limit — a 2,829-row join at 2.16 MiB and the target fit at 1.09 MiB — and
+# neither can be split or trimmed, because the point of tracking them is that their
+# sha256 still checks against the column fitted on them. `gallery-grade population`
+# reads the LIVE store, so the day another sheet is graded it returns a different,
+# larger corpus and the adopted run stops being rebuildable with nothing looking
+# broken. `data/gallery_grade/corpus/README.md` is the reason in full, including why
+# a corpus that is still regenerable does not come here.
 LARGE_TEXT_ALLOWLIST = (
     "data/palette_choice/rows/",
     "data/curation/rank_key/population.jsonl",
+    "data/gallery_grade/corpus/",
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

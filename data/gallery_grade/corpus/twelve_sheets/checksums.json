@@ -1,0 +1,48 @@
+{
+ "corpus": "twelve_sheets",
+ "rows": 2829,
+ "renders": 2829,
+ "split_seed": 20260910,
+ "sides": {
+  "stopping": 566,
+  "train": 2263
+ },
+ "sheets": [
+  "aug_sweep_A_20260910",
+  "aug_sweep_B_20260910",
+  "gallery_tail_20260910",
+  "gallery_top_20260910_1",
+  "gallery_top_20260910_2",
+  "gallery_top_20260910_3",
+  "n1000_0906_1",
+  "n1000_0906_2",
+  "n1000_0906_3",
+  "p_fine_correction_20260909_1",
+  "p_fine_correction_20260909_2",
+  "p_fine_correction_20260909_3"
+ ],
+ "files": {
+  "population.jsonl": {
+   "sha256": "06c8b7c2bae64f99db22fcb721c0c0862450bebdb8930decad4f5fb4b5c8b79f",
+   "bytes": 2210896
+  },
+  "split.json": {
+   "sha256": "36a4f67d082d9926d3a2ff4d14259f5bdf98db490568855b6de73faf393a9128",
+   "bytes": 120781
+  },
+  "targets.json": {
+   "sha256": "d84d3f08f278b6875cf3fbaf478946f68e9857c3e307dd2849b23e55b0f2b63e",
+   "bytes": 1139720
+  },
+  "render_key_of.json": {
+   "sha256": "f70320e28c23561c3854f061d457e19d945fe9a803b0071bbdb14b7f0a8d4c15",
+   "bytes": 1015448
+  },
+  "environment.json": {
+   "sha256": "e00512ebb654fb4852639c73bd943b1e9676819e2208e20fe8afe23bc751f58f",
+   "bytes": 207
+  }
+ },
+ "is": "the corpus `best_head_20260910` built and `deterministic_refit_20260910` fitted on, byte for byte. Kept because `build_corpus.py` reads the LIVE store and cannot give these rows back once another sheet is graded",
+ "environment_is": "the box the deterministic promise is about. Determinism is a promise about one build and one device, not about the recipe"
+}
