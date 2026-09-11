@@ -36,6 +36,26 @@ rewriting the field would break the checksum that makes the file worth keeping. 
 pictures it names are ignored candidate JPEGs and were never going to resolve in a
 fresh clone regardless.
 
+**The guard was not told, and that cost a red for a day.** All 2,829 rows tripped
+`test_no_absolute_paths_in_tracked_records`, and because that test is slow-only,
+nine green fast lanes went past it. The decision above stands — it is the *guard*
+that was wrong, not the file — and it is now written where the guard can see it:
+`RECORD_EXEMPT_PREFIXES` names this directory, and a second test holds the exemption
+to a directory that actually carries a `checksums.json`, so it cannot spread to a
+record somebody merely has not re-spelled. Every regenerable corpus is still held to
+the rule; `gallery_grade_train.write_population` spells its picture member through
+`paths.tracked_name` like everything else.
+
+**What that exemption is buying, stated plainly**, since the two claims above are not
+equally strong. `paths.rehome` on an absolute path under this checkout returns it
+unchanged — it resolves 2,829 of 2,829 here and would resolve none of them on a box
+whose checkout is anywhere else, where a `tracked_name` spelling would at least
+re-home across tiers. The reason that is acceptable is the freeze and not the
+re-homing: the alternative is re-taking a sha256 whose whole stated purpose is *this
+is the file the column was fitted on, byte for byte*, and a checksum re-taken after
+an edit says nothing. The `curation` subtree these point into can never move anyway —
+`CLAUDE.md`'s three-way decision names it as the live pool.
+
 **The target is not the row's own grade.** `population.jsonl`'s `score` is the verdict
 as cast; the band trains on `targets.json`'s per-render **`raw`**, which is the same
 scale de-duplicated across a render's repeat gradings. `models/gallery_grade/README.md`'s

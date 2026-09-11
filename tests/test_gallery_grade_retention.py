@@ -211,12 +211,34 @@ def test_the_protection_is_wired_into_the_prune_and_not_only_declared() -> None:
 # --------------------------------------------------------------------------- #
 # It reaches the real store.
 # --------------------------------------------------------------------------- #
-def graded_by_candidate() -> dict[str, dict]:
-    """`{the candidate the draw named: its graded row}` over the tracked store."""
-    return {
-        str((row.get("selected_on") or {}).get("candidate")): row
-        for row in gallery_grade.resolved().graded()
-    }
+def graded_by_candidate() -> tuple[dict[str, dict], list[dict]]:
+    """`({the candidate the draw named: its graded row}, the rows that name none)`.
+
+    **Two populations and not one.** Most graded rows are verdicts about a
+    candidate the seating pool drew, and everything below is about those: the
+    ledger still holds the row, a label protection marks it, its picture is on
+    disk. A minority were never candidates — `p_fine_correction_20260909`'s
+    `low_anchor` block is coarse-3 verdicts about 1280x720 pictures pulled from
+    the finished-render corpus to anchor the sheet's scale, and
+    `models/gallery_grade_train.py`'s `gate_column_is` says the same thing from
+    the training side. They have no ledger row to protect and their pictures are
+    the coarse store's, which `retention.labeled_renders` protects through
+    `finished.HEADS`.
+
+    They were one population until 2026-09-10, keyed on `str(candidate)` — so all
+    of them collapsed onto the single key `"None"`, which is how a hundred rows
+    hid inside one dictionary entry and why the guard below read them as one row
+    naming no candidate.
+    """
+    drawn: dict[str, dict] = {}
+    anchors: list[dict] = []
+    for row in gallery_grade.resolved().graded():
+        candidate = (row.get("selected_on") or {}).get("candidate")
+        if candidate is None:
+            anchors.append(row)
+        else:
+            drawn[str(candidate)] = row
+    return drawn, anchors
 
 
 @pytest.mark.slow
@@ -229,11 +251,23 @@ def test_every_graded_row_is_protected_on_the_real_store(tracked_ledger) -> None
     this costs on top of it is one pass of the label stores and a stat per graded
     row.
     """
-    drawn = graded_by_candidate()
+    drawn, anchors = graded_by_candidate()
     if not drawn:
         pytest.skip("this machine holds no gallery grades")
-    assert None not in drawn and "None" not in drawn, (
-        "a graded row names no drawn candidate, so nothing can say which picture it was cast on"
+
+    # A row that names no candidate has to SAY what it is instead, and the one
+    # thing it may be is an anchor drawn from a coarse label batch. That keeps the
+    # guard's teeth on the case it was written for — a row whose candidate went
+    # missing — while letting through the case it was written before.
+    unaccounted = [
+        f"{row.get('sheet')}/{row.get('unit')}"
+        for row in anchors
+        if not (row.get("selected_on") or {}).get("coarse_batch")
+    ]
+    assert not unaccounted, (
+        f"{len(unaccounted)} graded rows name neither a drawn candidate nor the coarse batch "
+        f"they were anchored from, so nothing can say which picture they were cast on: "
+        f"{unaccounted[:5]}"
     )
 
     marked = retention.labeled_renders()
@@ -276,8 +310,13 @@ def test_the_plans_that_name_the_levelled_colormaps_are_still_there() -> None:
 
     Off the store's own accessor and not a path spelled here, because
     `tests/test_gallery_grade.py`'s addressing guard is about exactly that.
+
+    The anchor rows are not asked about: a row that named no candidate used to key
+    as `"None"` on both sides of this join and match itself, which was an agreement
+    about nothing. An anchor's picture comes from the coarse corpus and was never
+    cut from one of these plans.
     """
-    drawn = graded_by_candidate()
+    drawn, _anchors = graded_by_candidate()
     plans = gallery_grade.plan_paths()
     if not drawn or not plans:
         pytest.skip("this machine holds no gallery grades, or no plan they were cut from")

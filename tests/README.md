@@ -402,6 +402,45 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**All three closed, and the lane is whole for the first time since the colour floor.**
+`palette_variant_smoke_ckpt120` part 2, 2026-09-10. **Fast: 4,228 selected, 133
+deselected — 4,361 collected — in 140.64 s. Slow: 4,361 of 4,361 in 482.87 s (8:02),
+zero skips, zero failures.** Idle box. **The two lanes agree on 4,361**, which is what
+that number is for.
+
+The **+6 over the reading below is two prompts' and not one**: five tests from
+`a3a48ea`, which landed while this one was running, and one here — the guard that
+holds the new frozen-file exemption to a directory that actually carries a
+`checksums.json`.
+
+What each red turned out to be, because **two of the three were the guard and not the
+tree**:
+
+* **The absolute paths were a decision nobody had told the guard about.**
+  `data/gallery_grade/corpus/README.md` already argued them out — the corpus is frozen
+  so that its sha256 still checks against the column fitted on it, and a file
+  re-spelled on the way in verifies nothing. Rewriting all 2,829 rows to satisfy a
+  lint would have destroyed the one thing tracking the file buys. So the exemption is
+  the fix: `RECORD_EXEMPT_PREFIXES`, by **file prefix** and not by key, with a second
+  test refusing to let it cover any directory without a `checksums.json` beside it.
+* **The store-addressing red was real and the fix is a line moved.**
+  `models/gallery_grade_train.py` built `Path("data") / "gallery_grade" / "corpus"`
+  itself, which is the store's own directory in a second module's hand.
+  `labeling.gallery_grade.corpus_dir` owns it now and `frozen_dir` asks.
+* **The retention red was a guard written before anchors existed.** 99 graded rows of
+  `p_fine_correction_20260909` carry `selected_on.candidate: null` — the `low_anchor`
+  block, coarse-3 verdicts about 1280x720 pictures that were never candidates and have
+  no ledger row to protect. They had all been keying as the single string `"None"`, so
+  a hundred rows hid in one dictionary entry. The guard now splits the two populations
+  and still refuses a row that names **neither** a candidate nor the coarse batch it
+  was anchored from — teeth kept, case admitted.
+
+★ The lesson is not *the slow lane found bugs*. It is that **a red is a claim to be
+read and not a task to be closed**: two of these three were fixed by teaching a guard
+what had already been written down, and the one that looked most like corrupt data —
+a hundred rows naming no candidate — was the guard counting a deliberate second
+provenance as a hole.
+
 **The first slow lane since the colour floor, and it is RED in three places that are
 nobody's fast lane.** `palette_variant_smoke_ckpt120`, 2026-09-10. **Fast: 4,223
 selected, 132 deselected — 4,355 collected — in 145.67 s, green. Slow: 4,352 of

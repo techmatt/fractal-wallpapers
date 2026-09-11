@@ -68,6 +68,26 @@ RECORD_SUFFIXES = (".json", ".jsonl")
 # file is still held to the rule.
 RECORD_EXEMPT_KEYS = frozenset({"prereg"})
 
+# Exempt by FILE PREFIX, and it is a different exception from the one above rather
+# than a second spelling of it. A key exemption says *this member is allowed to be
+# a wart wherever it appears*; this says *this file cannot be rewritten at all*.
+#
+# A frozen corpus is the only thing that needs it. Its files are kept byte for byte
+# so that `checksums.json` still checks against the column that was fitted on them
+# — `models/gallery_grade_train.read_frozen_population` and
+# `data/gallery_grade/corpus/README.md` both say so, and a copy that re-spelled a
+# member on the way in would verify nothing. So the rule and the freeze genuinely
+# cannot both hold, and the freeze is the one worth keeping: the paths point at
+# ignored candidate JPEGs that no clone was going to resolve under either spelling,
+# while the checksum is the only thing that says a shipped column was fitted on
+# these rows and not on some later join.
+#
+# ⚠ This is NOT interchangeable with `LARGE_TEXT_ALLOWLIST` below, which happens to
+# name the same prefix today. That one excuses a file from the SIZE rule and still
+# holds it to being text; this one excuses it from the absolute-path rule and holds
+# it to nothing else. Two rules, two lists, and a file has to earn each separately.
+RECORD_EXEMPT_PREFIXES = ("data/gallery_grade/corpus/",)
+
 # Deliberately empty. Every entry here is a permanent exception to the rule above.
 ALLOWLIST: frozenset[str] = frozenset()
 
@@ -217,9 +237,48 @@ def test_no_absolute_paths_in_tracked_records() -> None:
     offenders = [
         f"{name}: {key} = {value}"
         for name, key, value in absolute_paths_in_records()
-        if key not in RECORD_EXEMPT_KEYS
+        if key not in RECORD_EXEMPT_KEYS and not name.startswith(RECORD_EXEMPT_PREFIXES)
     ]
     assert not offenders, f"absolute paths in tracked records: {offenders}"
+
+
+@pytest.mark.slow
+def test_the_frozen_exemption_is_not_dead_and_does_not_reach_a_live_record() -> None:
+    """The file-prefix exemption has to be earned, and by a FROZEN file only.
+
+    Two halves, for the two ways this goes wrong. A prefix nobody needs any more is
+    a rule nobody reads — the same reasoning as the size exemption. And a prefix
+    that grew to cover a file the writers still rewrite would be the rule quietly
+    switched off for live records: `write_population` spells its own picture member
+    through `paths.tracked_name` and is held to it like everything else, so the only
+    thing under here that may carry an absolute path is a corpus that is frozen and
+    checksummed.
+    """
+    covered = {
+        name
+        for name, _key, _value in absolute_paths_in_records()
+        if name.startswith(RECORD_EXEMPT_PREFIXES)
+    }
+    unused = [
+        prefix
+        for prefix in RECORD_EXEMPT_PREFIXES
+        if not any(name.startswith(prefix) for name in covered)
+    ]
+    assert not unused, (
+        f"RECORD_EXEMPT_PREFIXES exempts {unused}, which no tracked record needs any more. "
+        f"An exception nobody needs is a rule nobody reads — delete it."
+    )
+    unchecked = sorted(
+        name
+        for name in covered
+        if not (REPO_ROOT / name).parent.joinpath("checksums.json").is_file()
+    )
+    assert not unchecked, (
+        f"{unchecked} carries an absolute path under an exempt prefix and has no "
+        f"checksums.json beside it, so nothing makes it frozen. The exemption is for a file "
+        f"that cannot be rewritten without destroying what makes it worth keeping, not for "
+        f"a file somebody has not got round to re-spelling."
+    )
 
 
 @pytest.mark.slow

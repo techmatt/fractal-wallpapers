@@ -56,12 +56,19 @@ These were decided once, at the first commit, because each is expensive to rever
   label *and* the complete render parameters in the same row — so a labeled example
   is never split across files. Every random draw is seeded, and the seed is recorded.
 - **Git history stays text.** `tests/test_history_purity.py` fails the build if a
-  tracked file is binary-by-nature or exceeds 1 MiB. Its two allowlists are not
-  interchangeable: `ALLOWLIST` excuses a file from both rules and is empty;
-  `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and still
-  holds it to being text, its two entries being `data/palette_choice/rows/` and
-  `data/curation/rank_key/population.jsonl`, each on Matt's call and each with its
-  reason written at the site. Adding to either is a decision, not a fix.
+  tracked file is binary-by-nature or exceeds 1 MiB, or if a tracked *record* names
+  an absolute path. Its **three** exemption lists are not interchangeable and each
+  excuses a different rule: `ALLOWLIST` excuses a file from the first two and is
+  empty; `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and
+  still holds it to being text, its three entries being `data/palette_choice/rows/`,
+  `data/curation/rank_key/population.jsonl` and `data/gallery_grade/corpus/`;
+  `RECORD_EXEMPT_PREFIXES` excuses a *prefix* from the absolute-path rule alone and
+  holds it to carrying a `checksums.json`, its one entry being the same frozen
+  corpus — kept byte for byte because that sha256 is the only thing saying which
+  rows a shipped column was fitted on, and re-spelling a member would verify
+  nothing. `RECORD_EXEMPT_KEYS` is the fourth and is by key rather than by file.
+  Each is on Matt's call and each has its reason written at the site. Adding to any
+  of them is a decision, not a fix.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
@@ -178,20 +185,21 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,355 collected — 4,223 fast,
-132 slow — since `palette_variant_smoke_ckpt120` landed on 2026-09-10**, and the
-pair was taken on this machine on an idle box after a render leg, on a
-`.[dev,models]` install with a release engine built: the **fast** lane **145.67 s**,
-green, and the **slow** lane **4,352 of 4,355 in 502.58 s (8:22)**, **zero skips**
-and **three failures**.
+Both are measured, not estimated. The tree holds **4,361 collected — 4,228 fast,
+133 slow — since `a3a48ea` and `palette_variant_smoke_ckpt120` landed on
+2026-09-10**, and the pair was taken on this machine on an idle box after a render
+leg, on a `.[dev,models]` install with a release engine built: the **fast** lane
+**140.64 s** and the **slow** lane **4,361 of 4,361 in 482.87 s (8:02)**, both
+**green**, **zero skips**.
 
-**Those three are `5665ae6`'s and they are the first thing a slow lane found after
-nine fast lanes could not**: a tracked corpus naming `C:\Code\...` in
-`data/gallery_grade/corpus/twelve_sheets/population.jsonl`,
-`models/gallery_grade_train.py` addressing the gallery-grade store's directory
-itself, and a `p_fine_correction_20260909` graded row naming no drawn candidate.
-None is reachable from the fast lane. They are **attributed and open**, which is not
-the same thing as expected — see the rule below.
+**`5665ae6` left three reds that only the slow lane could see, and they are closed.**
+Nine green fast lanes went past them. Two were the *guard* and not the tree — the
+frozen corpus's absolute paths are a decision `data/gallery_grade/corpus/README.md`
+had already argued out and the guard had never been told, and the 99
+`p_fine_correction_20260909` rows naming no candidate are the `low_anchor` block,
+which was never drawn from the pool. The third was real: `gallery_grade_train` spelled
+the gallery-grade store's own directory itself, and
+`labeling.gallery_grade.corpus_dir` owns it now.
 
 The idle pair before it, 2026-09-09 at **4,277 collected**: **fast** 129.99 s over
 the 4,145 it holds, 132 deselected; **slow** 4,277 of 4,277 green in 459.94 s (7:39),
