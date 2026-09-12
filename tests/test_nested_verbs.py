@@ -530,6 +530,9 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "census": ("--n", "--out"),
         "check": (),
         "free-slots": ("--keep", "--mode", "--min-slots", "--out"),
+        # The accepted-recipe count per rendering type. One flag: it reads the
+        # store whole and decides nothing, so there is nothing to aim it with.
+        "modes": ("--out",),
         "orphans": ("--apply", "--leg", "--include-unmerged"),
         "pictures": (),
         "prune": ("--keep", "--dry-run"),
@@ -743,6 +746,12 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "merge": ("--name",),
         "read": ("--name",),
     },
+    "repeat-ab": {
+        # No `--device`: this leg renders nothing and runs no head, so there is
+        # no model to place. The sheet does both, through `label build`.
+        "plan": ("--name", "--units", "--seed", "--bar"),
+        "read": ("--name",),
+    },
     "repetition": {
         "plan": ("--name", "--tiles", "--seed", "--folded-share", "--device"),
         "run": (
@@ -891,14 +900,18 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     twenty and eighty-nine until `rotate` and its five arrived to ask the phases
     nothing ever asked and to take out the rows they replace; and twenty-one and
     ninety-nine until `repetition` and its five arrived to ask an eye how many times
-    a gradient should be traversed, which is the axis neither head has been shown."""
+    a gradient should be traversed, which is the axis neither head has been shown; and
+    one hundred until `candidate-ledger modes` arrived to count the accepted recipes per
+    rendering type; and twenty-two and one hundred and two until `repeat-ab` and its two
+    arrived to ask the one repetition question `repetition` left open, which is whether
+    a repeat improves a picture that is already good at 1x."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 99
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 102
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

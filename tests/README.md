@@ -402,6 +402,32 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A store declared rather than built, and nineteen fast tests for it.**
+`repeat_ab_count_themed_ckpt121`, 2026-09-11, idle box after a 620 s sheet build.
+**Fast: 4,336 selected, 136 deselected — 4,472 collected — in 146.92 s. Slow:
+4,472 of 4,472 in 553.62 s (9:13), zero skips, zero failures.** The two lanes
+agree on 4,472.
+
+**The +19 is all fast and cost nothing measurable** — 146.92 s against
+`score_and_resume_ckpt120`'s 148.91 s, which is 2 s *down* and is the box. All nineteen are
+`tests/test_repeat_ab.py`: a three-point comparative scale declared as a second
+`labeling.attributes.Attribute`, the composite tile its sheet cuts, and the seam
+where a page of ordinals becomes a store of classes. **None of them renders and
+none of them sweeps a store**, which is why a whole new store's guards are free:
+the sheet tests go through a stub renderer that writes a 16x9 JPEG, the scores
+are handed in, and the draw is exercised over hand-built `Baseline` objects
+rather than over the ledger.
+
+**The slow lane did not move and no slow test was added.** 553.62 s against
+542.82 s is the box — the two readings are 2% apart on a lane that spans 8:47 to
+9:13 across three consecutive prompts that added no slow test between them.
+
+**The 500 renders this prompt spent did NOT shorten the render cache**, and that
+is worth knowing before the next lane is read: a sheet's pictures land in
+`artifacts/sheet/<batch>/` and nothing is ingested, so no store gains a row and
+no `test_render_*` file goes short. Zero skips on the first slow lane after a
+620 s render leg. What shortens the cache is an **ingest** — see the entry about
+`repeat_axis_ingest_ckpt121`'s 19 — and this prompt collected no labels.
 **An ingest with no test in it, and the 19 skips it owed.** `repeat_axis_ingest_ckpt121`,
 2026-09-11, idle box. **Fast: 4,317 selected, 136 deselected — 4,453 collected — in
 149.15 s. Slow: 4,453 of 4,453 in 527.61 s (8:47), zero skips, zero failures.** Both

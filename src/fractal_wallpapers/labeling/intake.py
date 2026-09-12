@@ -246,6 +246,15 @@ def _attribute_row(sheet, unit: str, ordinal: int, labeler: str, recorded_at: st
     travels whole so the sitting can be rebuilt, and `selected_on` travels with
     it: an attribute row is the input to a probe, and a probe that could not see
     which reading its population was drawn on could not say what it had measured.
+
+    **`reading` travels for a PAIRED attribute**, where the sheet served two
+    renders and a head read both — [`labeling.sheets.comparison_source`]. It is a
+    covariate of the verdict and never a verdict: the row's `render` block is the
+    baseline half, the other half is named on `selected_on`, and this is what each
+    of them scored at the geometry the labeler saw. Without it, reading the head's
+    direction against the labeler's a month later would mean re-rendering the
+    sitting. Carried on the same rule the other two are — only where the source
+    set it, so a sheet that had no second reading writes no null column.
     """
     from fractal_wallpapers.supply.partitions import partition_of_family
 
@@ -281,6 +290,7 @@ def _attribute_row(sheet, unit: str, ordinal: int, labeler: str, recorded_at: st
         unit=unit,
         suggested=source.get("suggestion"),
         **({"selected_on": source["selected_on"]} if source.get("selected_on") else {}),
+        **({"reading": source["reading"]} if source.get("reading") else {}),
     )
 
 

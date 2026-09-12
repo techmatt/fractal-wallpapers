@@ -1144,6 +1144,288 @@ def attribute_source(
 
 
 # --------------------------------------------------------------------------- #
+# The comparison source.
+# --------------------------------------------------------------------------- #
+#: How wide the bar between a comparison tile's two halves is, in pixels of the
+#: composite. Thin enough to read as a join rather than as a third element, wide
+#: enough to survive the page's own downscale — a one-pixel rule disappears the
+#: moment the browser fits a 2560-wide picture to a window.
+SEPARATOR_WIDTH = 6
+
+#: What that bar is painted. A mid grey, because the two halves are wallpapers
+#: and a white or a black rule would read as part of whichever one it touched.
+SEPARATOR_COLOUR = (154, 154, 154)
+
+#: What a comparison page tells a labeler about its own prefills. It is neither
+#: of the two the page knows — not a head's decode and not an incumbent verdict —
+#: and saying so is the whole reason [`Source.prefill_note`] exists: the default
+#: sentence would claim a model had an opinion here, and the premise of this
+#: sheet is that no model has one.
+COMPARISON_PREFILL_NOTE = (
+    "every unit is prefilled at the neutral class and nothing else touched it — not a "
+    "head's decode, not a stored verdict, not the order of the page. Mark the ones that "
+    "differ and leave the rest."
+)
+
+
+def composite(left: Path, right: Path, output: Path) -> Path:
+    """The two halves of one comparison, side by side, as the single tile served.
+
+    **One picture and not two, which is the unit.** A page that served two
+    pictures under one card would let a labeler scroll one out of view and answer
+    from memory, and the comparison this sheet asks for is the one the eye makes
+    in a single glance.
+
+    Equal halves at their own rendered size, so the crop is the same crop and
+    neither side is favoured by a resample. The only mark is [`SEPARATOR_WIDTH`]
+    pixels of [`SEPARATOR_COLOUR`] between them — no caption, no label, no
+    border, because anything printed on the picture is a thing the labeler reads
+    instead of looking.
+
+    Written to a temporary and renamed, so a killed build leaves no half-written
+    composite for the resume to count as finished.
+    """
+    from PIL import Image
+
+    from fractal_wallpapers.paths import writing_path
+
+    with Image.open(left) as opened:
+        first = opened.convert("RGB")
+        with Image.open(right) as other:
+            second = other.convert("RGB")
+            if first.size != second.size:
+                raise SheetError(
+                    f"the two halves of this comparison are {first.size} and {second.size}. "
+                    f"They are rendered at one geometry through one recipe differing in one "
+                    f"knob, so two sizes means two different renders and the tile would be "
+                    f"asking about a resample."
+                )
+            width = first.width + SEPARATOR_WIDTH + second.width
+            tile = Image.new("RGB", (width, first.height), SEPARATOR_COLOUR)
+            tile.paste(first, (0, 0))
+            tile.paste(second, (first.width + SEPARATOR_WIDTH, 0))
+    scratch = writing_path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    scratch.unlink(missing_ok=True)
+    tile.save(scratch, "JPEG", quality=92, subsampling=0)
+    scratch.replace(output)
+    return output
+
+
+def comparison_source(
+    name: str,
+    resolution=LABEL_RESOLUTION,
+    supersample: int = LABEL_SUPERSAMPLE,
+    renderer=None,
+    scores=None,
+) -> Source:
+    """The source that asks which of TWO renders of one place is the better picture.
+
+    The paired half of [`attribute_source`], and it is the same store underneath:
+    ordered classes, an ordinal at the page, a class at ingest, a location key,
+    latest-wins. [`fractal_wallpapers.labeling.attributes.Attribute.paired`] is
+    what selects it, so a second comparative attribute needs no second branch.
+
+    Four things differ from every other sheet here, and each is what a within-pair
+    comparison needs:
+
+    * **A unit is one composite picture**, [`composite`], with the two halves at
+      equal size and the same crop. The side order is the plan's and is FIXED
+      across the sitting; the manifest records it in `render.sides` so a drop read
+      back a month later cannot be read the wrong way round.
+    * **Neither half is scored to select it and neither reading reaches the
+      page.** The judge still reads both halves at the geometry this sheet
+      renders, and both readings travel on the row under `reading` — a key the
+      page has never heard of. That is what lets the head's own direction be read
+      against the labeler's afterwards without re-rendering the sitting.
+    * **The prefill is a constant the plan states**, not a decode. A page whose
+      premise is that no head can read this axis must not import a head's opinion
+      into the box the labeler corrects.
+    * **The order is a seeded shuffle**, never good→bad. Score-ordering a page
+      about an axis the heads cannot read would put the same error into page
+      position, where drift turns it into a result.
+
+    A unit states its whole picture twice over: the recipe **and** the map the
+    baseline was recorded against, plus the `variant_recipe` the other half is
+    rendered through. Deriving either would serve a picture the plan did not
+    choose.
+    """
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    held = attributes.attribute(name)
+    if not held.paired:
+        raise SheetError(
+            f"{name!r} is not a paired attribute, so a unit of it is one picture and not "
+            f"two. `attribute_source` is that sheet; this one composites two renders into "
+            f"one tile and would serve the same picture twice."
+        )
+    render = render_finished if renderer is None else renderer
+    notes: dict = {"rendered": 0, "composited": 0}
+
+    def _join(unit: dict, recipe_block: dict, map_name: str) -> dict:
+        from fractal_wallpapers.curation import colorize
+
+        return {
+            "family": unit["family"],
+            "viewport": unit["viewport"],
+            "mode": unit["mode"],
+            "mode_params": unit.get("mode_params") or {},
+            "curve": unit.get("curve") or colorize.CURVE,
+            "colormap": map_name,
+            "recipe": stated_recipe(recipe_block),
+            "render": {
+                "resolution": list(resolution),
+                "supersample": supersample,
+                "maxiter": int(unit["maxiter"]),
+                "filter": LABEL_FILTER,
+            },
+            "partition": partition_of_family(unit["family"]),
+        }
+
+    def cut(unit: dict, directory: Path, picture_name: str) -> dict:
+        missing = [key for key in ("recipe", "variant_recipe", "colormap") if not unit.get(key)]
+        if missing:
+            raise SheetError(
+                f"a comparison unit names no {', '.join(missing)}. Both halves are stated "
+                f"whole — the map, the baseline's palette pass and the variant's — because "
+                f"deriving either would serve a picture the plan did not choose."
+            )
+        map_name = colormap(unit["colormap"])
+        # The BASELINE's join is the row's join: it is the picture the store's
+        # `render` block records, and the variant is the same block with one knob
+        # moved. Both recipe keys are on `selected_on`, which is what makes the
+        # pair recoverable from the row after this directory is swept.
+        join = _join(unit, unit["recipe"], map_name)
+        variant = _join(unit, unit["variant_recipe"], map_name)
+        if join["recipe"] == variant["recipe"]:
+            raise SheetError(
+                f"unit {picture_name}'s two halves carry the same palette pass, so the tile "
+                f"would be one picture beside itself. A comparison whose halves do not "
+                f"differ answers nothing and cannot be told from one that does."
+            )
+        # Both halves take the BASELINE's levelled colormap where it has one. The
+        # operator's curve is a fact about the place and the mode rather than
+        # about the traversal, and levelling the two halves apart would move a
+        # second thing between them.
+        leveled = unit.get("leveled")
+        band = Path(leveled) if leveled else None
+        halves = {}
+        for side, held_join in (("left", join), ("right", variant)):
+            picture = directory / side / f"{picture_name}.jpg"
+            if not picture.is_file():
+                render(held_join, picture, band)
+                notes["rendered"] += 1
+            halves[side] = picture
+        tile = directory / "full" / f"{picture_name}.jpg"
+        if not tile.is_file():
+            composite(halves["left"], halves["right"], tile)
+            notes["composited"] += 1
+        return {
+            "join": join,
+            "section": unit.get("section") or "",
+            # No caption. What reaches the card is what the plan chose to print,
+            # and nothing about how good either half is.
+            "pictures": [{"caption": "", "path": f"full/{picture_name}.jpg"}],
+            "thumb": f"thumb/{picture_name}.jpg",
+            "facts": [str(line) for line in (unit.get("facts") or [])],
+            "selected_on": unit.get("selected_on") or None,
+            "_picture": tile,
+            "_left": halves["left"],
+            "_right": halves["right"],
+            "_thumb": directory / "thumb" / f"{picture_name}.jpg",
+        }
+
+    def suggest(rows: list[dict], units: list[dict], log) -> str:
+        for row in rows:
+            thumbnail(row["_picture"], row["_thumb"])
+        lefts = [row.pop("_left") for row in rows]
+        rights = [row.pop("_right") for row in rows]
+        for row in rows:
+            row.pop("_picture")
+            row.pop("_thumb")
+        if scores is None:
+            log(f"reading {len(lefts)} pair(s) of halves through the shipped render judge")
+            # The argument names a KIND and not a model, exactly as
+            # [`gallery_grade_source`] passes it: one judge reads both kinds, and
+            # this sheet's verdicts land in neither store, so there is no kind to
+            # name. It is spent on `finished.head_of`'s check and nothing else.
+            left_read, _classes = score_pictures(finished.HEADS[0], lefts)
+            right_read, _classes = score_pictures(finished.HEADS[0], rights)
+        else:
+            left_read, right_read = scores
+        stated = stated_suggestions(units, held.tiers)
+        if any(value is None for value in stated):
+            raise SheetError(
+                "a comparison page states its prefill on every unit — the neutral class, so "
+                "that a labeler marks only what differs. A unit with none would be one whose "
+                "empty box meant something different from its neighbour's."
+            )
+        for row, left, right, incumbent in zip(rows, left_read, right_read, stated, strict=True):
+            # `reading` and not `columns`: the page renders `columns` under the
+            # picture, and the whole premise of this sheet is that a head's
+            # opinion of either half must not reach the labeler. It is a covariate
+            # of the answer and it travels on the row, where `intake` copies it
+            # onto the stored verdict.
+            row["reading"] = {
+                "baseline": {
+                    f"p_ge{index + 2}": round(float(value), 6) for index, value in enumerate(left)
+                },
+                "variant": {
+                    f"p_ge{index + 2}": round(float(value), 6) for index, value in enumerate(right)
+                },
+                "read_at": {
+                    "resolution": list(resolution),
+                    "supersample": supersample,
+                    "judge": "the shipped render judge, on the two halves this sheet "
+                    "rendered — label geometry and not the candidate's",
+                },
+            }
+            row["columns"] = {}
+            row["suggestion"] = int(incumbent)
+            # No head ordered this page, so there is no expected tier. Null rather
+            # than zero: zero is a reading and this is the absence of one.
+            row["suggestion_score"] = None
+        return "none"
+
+    def order(rows: list[dict], seed: int) -> tuple[list[int], str]:
+        """A seeded shuffle, sections in the order the plan introduced them."""
+        sections: list[str] = []
+        for row in rows:
+            if row["section"] not in sections:
+                sections.append(row["section"])
+        indices = list(range(len(rows)))
+        random.Random(seed).shuffle(indices)
+        if len(sections) > 1:
+            indices.sort(key=lambda i: sections.index(rows[i]["section"]))
+            return indices, "sections, shuffle"
+        return indices, "shuffle"
+
+    return Source(
+        kind="comparison",
+        head=held.name,
+        cut=cut,
+        suggest=suggest,
+        order=order,
+        tiers=held.tiers,
+        rubric=held.rubric,
+        words=held.word_map(),
+        classes=held.classes,
+        prefill_note=COMPARISON_PREFILL_NOTE,
+        render_record={
+            "resolution": list(resolution),
+            "supersample": supersample,
+            "filter": LABEL_FILTER,
+            "composite": [resolution[0] * 2 + SEPARATOR_WIDTH, resolution[1]],
+            # The one thing a reader of a drop cannot recover from the pictures,
+            # and the one a reversed reading would turn into the opposite result.
+            "sides": {"left": "baseline", "right": "variant"},
+            "separator": SEPARATOR_WIDTH,
+        },
+        notes=notes,
+    )
+
+
+# --------------------------------------------------------------------------- #
 # The gallery-grade source.
 # --------------------------------------------------------------------------- #
 #: What a blind gallery-grade page tells a labeler about its own prefills, which
@@ -1780,6 +2062,7 @@ def read(directory: Path) -> Sheet:
 
 __all__ = [
     "CANONICAL_COLORMAP",
+    "COMPARISON_PREFILL_NOTE",
     "CUT_PREFIX",
     "EXCLUDED_NAME",
     "FINISHED_RUBRIC",
@@ -1795,6 +2078,8 @@ __all__ = [
     "MANIFEST_NAME",
     "ROWS_NAME",
     "SCHEMA",
+    "SEPARATOR_COLOUR",
+    "SEPARATOR_WIDTH",
     "SHEET_RESOLUTION",
     "SHEET_SUPERSAMPLE",
     "Screen",
@@ -1807,6 +2092,8 @@ __all__ = [
     "attribute_source",
     "build",
     "colormap",
+    "comparison_source",
+    "composite",
     "cut_name",
     "family_line",
     "finished_source",

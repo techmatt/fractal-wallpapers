@@ -1,7 +1,7 @@
 Tracked text records that the project is built from: labels, palettes, anchors,
 and the tracked inputs to the training-tile build.
 
-Five label stores, because five questions are being asked. `labels/` holds
+Six label stores, because six questions are being asked. `labels/` holds
 verdicts on **places** — is this worth rendering — one row per location.
 `smooth_render/` and `strange_render/` hold verdicts on **finished pictures** —
 does this colouring of that place work — one row per picture, because a place
@@ -18,7 +18,16 @@ corpus of tiers the day somebody pooled the stores by field name. Its own README
 says how the reservation in its `eval_split.jsonl` differs from a finished
 store's pin.
 
-`gallery_grade/` is a fifth store and the second one that is not a judge's. It is
+`repeat_ab/` is a fifth store and the second **attribute** one — the same
+machinery, the same absent `score`, a different shape of question. It asks which
+of **two** renders of one place is the better picture, on a three-point
+comparative scale, and its unit is a single composite tile carrying both. A `3`
+there says *the repeat won*, never *tier 3*, and no transformation makes the two
+commensurable; its README and `batch_caveats.md`'s *NOT-A-TIER* both say so
+because a verdict from it in a quality store corrupts every reading taken off
+that store.
+
+`gallery_grade/` is a sixth store and the second one that is not a judge's. It is
 cast on the same four ordinals as the three above and asks a **conditional**
 question: how good is this picture *given* that the render judge already let it
 through. A 1 there is "this does not work"; a 1 here is "genuinely surprised this

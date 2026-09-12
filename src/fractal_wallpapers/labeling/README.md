@@ -8,6 +8,7 @@ split.py          the seeded draw over those groups, shipped as data
 pins.py           the evaluation pin, asserted on the location coordinate
 finished.py       the finished-render stores: one per judge, keyed on the picture
 attributes.py     the location-attribute stores: named classes, never a tier
+                  (`spiral` asks about a place, `repeat_ab` about a PAIR)
 gallery_grade.py  1..4 GIVEN the bar was cleared: an order inside a gate's own top
 sheets.py         THE generator: two row sources, one cut, one manifest, one page
 server.py         serve one sheet, to one browser, on the first free port at or above
@@ -49,6 +50,7 @@ label build --from-plan artifacts/places.jsonl --batch NAME
 label build --from-plan artifacts/promotion.jsonl --head strange_render --batch NAME
 label build --from-plan <plan> --head smooth_render --batch NAME --order-by top
 label build --from-plan <plan> --head spiral --batch NAME
+label build --from-plan <plan> --head repeat_ab --batch NAME
 label sheets
 label serve --sheet artifacts/sheet
 label ingest --sheet artifacts/sheet --labeler matt --write
@@ -98,6 +100,51 @@ fractal-wallpapers label pin --head spiral --from-plan artifacts/pool_draw/spira
     --batch <batch> --reserve 100 --seed <seed> --write
 ```
 
+### A PAIRED attribute: one tile, two renders, a comparative scale
+
+`repeat_ab` is the second attribute store and the first whose unit is two
+pictures. `Attribute.paired` is the whole switch — `label build` reads it and cuts
+through `sheets.comparison_source` instead of `attribute_source`, so a second
+comparative store needs no second branch anywhere. Everything underneath is the
+same store machinery: ordered classes, an ordinal at the page, a class at ingest,
+a location key, latest-wins.
+
+What the paired source does differently:
+
+* **A unit is one composite picture.** `sheets.composite` puts the two halves side
+  by side at equal size and the same crop, with a 6-pixel separator and nothing
+  written on the image. One picture and not two, because the comparison is the one
+  an eye makes in a single glance — two cards would let a labeler scroll one out of
+  view and answer from memory.
+* **The side order is fixed and the manifest records it**, under `render.sides`. A
+  reading that assumed the halves alternated would report the opposite result with
+  nothing looking wrong, and the pictures cannot say which way round they are.
+* **Both halves are read by the judge and neither reading reaches the page.** They
+  travel on the row under `reading`, the same key `gallery_grade` uses, and
+  `intake` copies it onto the stored verdict. That is what lets the head's own
+  direction be read against the labeler's later without re-rendering the sitting.
+* **The prefill is a constant the plan states, not a decode**, and the order is a
+  seeded shuffle. Both are refusals rather than defaults: `comparison_source`
+  raises if a unit states no suggestion, because an empty box that meant something
+  different from its neighbour's is worse than no prefill at all.
+
+⚠ **A comparative ordinal is not a tier.** `repeat_ab`'s `3` means *the repeat is
+the better picture*; `smooth_render`'s `3` means tier 3. The absent-`score` guard
+is what keeps them from pooling by field name, and `data/repeat_ab/README.md` says
+the rest.
+
+`--reuse-renders` is refused on a paired head: the cache holds neither composites
+nor the variant half's recipe.
+
+```
+fractal-wallpapers curate repeat-ab plan --name <batch> --seed <seed> --units 250
+fractal-wallpapers label register --head repeat_ab --batch <batch> --method "…" --why "…"
+fractal-wallpapers label build --head repeat_ab --batch <batch> \
+    --from-plan artifacts/curation/repeat_ab/<batch>/plan.jsonl \
+    --out-dir artifacts/sheet/<batch> --seed <seed>
+fractal-wallpapers label serve --sheet artifacts/sheet/<batch> --port 8020
+fractal-wallpapers label ingest --sheet artifacts/sheet/<batch> --labeler matt --write
+```
 ## The fourth kind of sheet: a gallery grade
 
 `--head gallery_grade` cuts a page that asks how good a finished picture is **given
