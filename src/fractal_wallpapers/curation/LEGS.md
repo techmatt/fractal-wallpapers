@@ -537,6 +537,48 @@ leaves. `direct_trap_screen` on that same leg is the cheapest mode of the night 
 **17.6 engine s a q4 clear** — cheaper than any recolour — and `direct_trap_lines`
 the second-worst at 3.3%; the direct traps are not one thing.
 
+#### Sweeping PAST the roster's cells buys nothing, measured 2026-09-12
+
+`dtm_pilot_ckpt121` and `dtm_sweep_ckpt121`, **6,885 candidates, 13,463 engine
+seconds**, one axis moved at a time off `mode.rs`'s catalogued `opacity` 0.2 and
+`threshold` 0.1, with `@opacity=0.6` carried as the on-population control and the
+retired both-knobs corner left out. Floor draw at `--floor-width 1` over places
+`--floor-untried direct_trap_multiply` says have never been asked, so the five cells
+are one draw at one place and their rates **can** be differenced — 1,375-1,378
+candidates each, and the merge kept all 6,885 with **nothing pruned**.
+
+| cell | n | engine s/cand | clear @0.50 | 95% CI | engine s a clear |
+|---|--:|--:|--:|---|--:|
+| `@threshold=0.3` | 1,377 | 2.408 | 5.74% | [4.63, 7.09] | 41.9 |
+| `@opacity=0.6` *(control)* | 1,378 | 1.361 | **5.15%** | [4.10, 6.45] | **26.4** |
+| `@opacity=0.8` | 1,378 | 1.331 | 4.21% | [3.27, 5.40] | 31.6 |
+| `@threshold=0.45` | 1,375 | 3.371 | 3.64% | [2.77, 4.76] | 92.6 |
+| `@opacity=1` | 1,377 | 1.310 | 2.54% | [1.83, 3.51] | 51.6 |
+
+**Nothing new beats the incumbent and the incumbent is the cheapest clear on the
+sweep**, so no cell is proposed for the roster. The one cell that outreads it,
+`@threshold=0.3` at 5.74% against 5.15%, has an interval that covers the control
+comfortably and costs 1.8x as much a candidate — so on engine seconds a clear it is
+**37% worse**, and that is the column a supply decision is made on.
+
+**Both knobs are past their useful range at the roster's own values, and they fail
+differently.** Opacity falls monotonically above 0.6 and `@opacity=1` halves the
+control's rate on disjoint intervals — at full alpha the sample replaces the ground
+at the trap's centre and the figure stops reading as ink on a field. Threshold peaks
+somewhere at or under 0.3 and 0.45 is well past it, which is the value
+`direct_trap_ring` and `direct_trap_lines` both ship and is evidently a *screened*
+trap's range rather than a multiplied one's.
+
+⚠ **The threshold axis is the dear one, which is the sizing fact.** A candidate at
+`threshold=0.45` costs **2.57x** one at `opacity=1` — a wider trap admits more of
+each orbit, so the per-hit compositing in [`direct_trap::trace`] runs more often —
+and the cost is paid whether or not the extra ink helps. A sweep that spends equal
+*candidates* on the two axes spends 1.9x the *clock* on threshold.
+
+None of these rates is differenceable against `night_d`'s above. That leg drew 56
+already-proven places and this one draws places the mode has never been asked at
+all; the comparison this table supports is the one **inside** it.
+
 **Nothing in code ever excluded it**, which is worth stating so nobody goes looking
 for the switch: a roster is what a leg passes in `--modes` / `--floor-modes`, the
 standing rosters ([`depth.dear_modes`], [`depth.centered_modes`]) derive from
@@ -2761,7 +2803,32 @@ roster — which is the three shareable modes and not the policy's twelve — an
 clock it has left plans a smaller draw and starts it at the beginning. A resumed
 leg says **both**: `--plan-budget` is the first leg's budget, which rebuilds its
 block plan exactly so that block N here is block N there, and `--budget` is what is
-left to spend on it. `--from-block` is the first leg's own `blocks_done`.
+left to spend on it.
+
+⚠ **`--rate` is part of rebuilding the plan and is the one that is silently
+wrong.** The plan is `PLAN_HEADROOM * workers * plan_budget / rate`, so a resume
+that names `--plan-budget` and leaves `--rate` on its default rebuilds a different
+plan — `mine_ckpt120` ran at 6.0 and the flag defaults to `MINE_RATE` 2.5, which is
+11,520 shots against 27,648. **Restate every flag the first leg's record carries**;
+`--width`, `--rotations`, `--seed`, `--shares` and `--modes` happen to default to
+what that leg used, and `--rate` is the one that does not.
+
+⚠ **`blocks_done` is NOT the resume index, and the record does not carry one.**
+`blocks_done` is incremented by `len(block)` once a whole **chunk** returns, while
+each worker's `render_draw_group` breaks out of its own block list at the deadline
+— so a leg cut mid-chunk counts the entire chunk as done. `mine_ckpt120` reports
+`blocks_done: 400` against a `CHUNK_GROUPS` of 400 and a plan of 960, and its
+`decisions.jsonl` holds **247** locations: block 245 with 11 of its 12 shots, block
+246 with 3, and blocks 247-399 with nothing at all. `--from-block 400` would have
+thrown away 153 never-rendered locations, about 1,836 shots. The index a resume
+wants is the count of **distinct locations in `decisions.jsonl`** — the first block
+that is not whole — and it is read off that file rather than off the record.
+
+Between the two there is one shot's worth of judgement. Resuming at the first
+*incomplete* block re-renders the shots it already did, and a shot whose winner was
+a rotation comes back as the best-of-four this section warns about; resuming at the
+first *untouched* block abandons them. `overnight_ckpt121` took the second — 247
+rather than 245, giving up ten shots to keep every decision a whole best-of-five.
 
 Re-drawing is not the same act and the dedupe does not save it. Each shot's four
 losers are recorded and **freed** rather than merged, so nothing in the store stops
@@ -2771,9 +2838,9 @@ the same name. The record carries `plan_budget_seconds`, `from_block` and
 `blocks_skipped` beside `blocks_planned`, so the halves read back as one leg.
 
 ```
-fractal-wallpapers curate rotate mine --name m1 --budget 14400                       # 400 of 960
-fractal-wallpapers curate rotate mine --name m2 --plan-budget 14400 --from-block 400 \
-    --budget 20000                                                                   # the rest
+fractal-wallpapers curate rotate mine --name m1 --rate 6 --budget 14400   # 247 of 960 rendered
+fractal-wallpapers curate rotate mine --name m2 --rate 6 --plan-budget 14400 \
+    --from-block 247 --budget 20000                                       # the rest
 ```
 
 ### The chunk is the interruption point, and it is what bounds the disk

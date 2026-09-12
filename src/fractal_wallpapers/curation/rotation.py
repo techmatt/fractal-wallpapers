@@ -1514,10 +1514,20 @@ def mine(
     rotation won and its control did not merge, the shot comes back as a
     best-of-*four* read against the same control, which is a different number
     under the same name. So a resumed leg says `plan_budget` — the first leg's
-    budget, which rebuilds its block plan exactly — and `from_block`, the count its
-    record reports as `blocks_done`. `budget` is then only the clock. The record
-    carries both, and `blocks_skipped` beside `blocks_planned`, so the two legs read
-    back as one.
+    budget, which rebuilds its block plan exactly — and `from_block`. `budget` is
+    then only the clock. The record carries both, and `blocks_skipped` beside
+    `blocks_planned`, so the two legs read back as one.
+
+    ⚠ **`rate` rebuilds the plan too, and `from_block` is not `blocks_done`.**
+    The plan is `PLAN_HEADROOM * workers * plan_budget / rate`, so a resume that
+    leaves `rate` on [`MINE_RATE`] while the first leg ran at another one rebuilds
+    a *different* plan under the resume's name. And `blocks_done` is incremented
+    by the whole chunk once [`render_draw_group`] returns, while each worker
+    breaks out of its own block list at the deadline — so a leg cut mid-chunk
+    counts blocks it never rendered. `mine_ckpt120` reported 400 against a chunk
+    of 400 and had rendered 247. The index to resume at is the count of distinct
+    locations in the first leg's `decisions.jsonl`, and `curation/LEGS.md`'s
+    *A clock-bound leg is resumed by INDEX, never by re-drawing* has the reading.
     """
     from fractal_wallpapers.curation import candidate_ledger as ledger
     from fractal_wallpapers.curation import colorize, depth, hunt, mode_policy, release
