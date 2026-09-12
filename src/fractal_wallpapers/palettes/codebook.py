@@ -259,6 +259,36 @@ def swatches() -> tuple[dict, ...]:
     return tuple(built)
 
 
+def cell_names() -> tuple[str, ...]:
+    """The forty-eight chromatic swatch **names**, in the codebook's own order.
+
+    [`swatches`] without the swatches. The names are a pure product of [`HUES`],
+    [`TONES`] and [`CHROMA_TARGETS`] — the colours are not, and [`max_chroma`]
+    bisects the sRGB gamut 40 steps a combination through `numpy` to find them.
+    So a caller that wants only the spelling pays **0.164 s and an import of
+    numpy** for it, measured on this machine, and pays it at the moment it asks.
+
+    That is affordable in a report and not affordable in a **parser**:
+    `cli.build_parser` builds every group on every invocation, so
+    `choices=dominance.cells()` on `--themed` would put a gamut bisection and
+    numpy behind `fractal-wallpapers --help` and behind `fetch-weights --check`
+    — which is the one import graph `tests/test_base_install.py` spawns a
+    subprocess to keep stdlib-only. This is the reader that makes the closed list
+    free.
+
+    **It is a second spelling of an order [`swatches`] owns**, which that
+    function's own docstring is right to warn about, so
+    `tests/test_palette_codebook.py` holds the two to agreeing rather than
+    trusting the loop nesting to stay copied correctly.
+    """
+    return tuple(
+        f"{tone_name}_{chroma_name}_{hue_name}"
+        for hue_name, _degrees in HUES
+        for tone_name, _lightness in TONES
+        for chroma_name, _target in CHROMA_TARGETS
+    )
+
+
 def names() -> tuple[str, ...]:
     """Every swatch name, in the codebook's own order."""
     return tuple(entry["swatch"] for entry in swatches())

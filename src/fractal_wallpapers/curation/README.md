@@ -1794,19 +1794,25 @@ apart, under `swept_unmerged`, so a person who named a leg can read back what na
 it cost. The listing stays the default precisely so that taking one is a sentence
 somebody typed after reading it.
 
-⚠ **Sweeping a leg does not un-decide it, and the leftover is a loaded gun.** The
+⚠ **Sweeping a leg does not un-decide it, and the leftover was a loaded gun.** The
 sweep takes pictures and nothing else, so a swept leg keeps the files a merge reads
 — for a rotation leg `rows.jsonl`, `scores.jsonl` and `removed.jsonl` — and
-`curate <leg> merge` will still run: it would upsert rows naming pictures that are
-gone and remove live rows in exchange, and neither the leg's merge nor
-`candidate_ledger.merge` asks whether a picture is on disk. **So naming a leg to the
-sweep means deleting its merge inputs too**, which leaves the record — the leg's own
-`.json`, its `decisions.jsonl` and its `plan.jsonl` — and makes a later merge refuse
-cleanly on *two empty files mean no row was decided* rather than half-succeed.
-`owed_smoke_ckpt120` is the worked example: 34 pictures and 15 levelled colormaps
-swept, inputs deleted, record kept, and its now-empty `pictures/` removed so the leg
-stops appearing in the listing as a decision nobody has taken. Whether the sweep
-should do that itself is Matt's call and has not been taken.
+`curate <leg> merge` would still run: it upserts rows naming pictures that are gone
+and removes live rows in exchange, and neither the leg's merge nor
+`candidate_ledger.merge` asks whether a picture is on disk. `owed_smoke_ckpt120` is
+the worked example: 34 pictures and 15 levelled colormaps swept, and a later
+`curate rotate merge` would have upserted 34 rows against 19 live rows removed.
+
+**Closed on 2026-09-11 by a marker and not by a deletion.** A sweep that actually
+takes pictures from a leg writes `swept.json` into the leg's own directory, and
+`sweep.refuse_swept` stands in front of **both** merge paths reading it: the door
+(`candidate_ledger.merge`, which every leg's own `merge` comes through, and which
+derives the leg from the rows' own picture paths so no caller has to tell it) and
+`rotation.merge`, which removes rows **before** it reaches that door and would
+otherwise do the irreversible half anyway. Leg granularity, no per-row disk check,
+and written after the unlink and under `--apply` only. **The records stay** — they
+are a rounding error on disk next to pictures and they are the leg's own history.
+Delete the marker only if the pictures have been re-rendered.
 
 The safety is three properties and none of them is a promise made in a comment: the
 enumeration is `<subtree>/<leg>/pictures` at a **fixed depth**, so a leg's `fields/` is

@@ -1628,6 +1628,76 @@ def test_a_levelled_colormap_whose_picture_is_gone_is_swept_too(swept):
     assert not (pictures / "half_gone.leveled").exists()
 
 
+def test_the_sweep_declares_the_leg_swept_so_a_later_merge_can_refuse_it(swept):
+    """The first end of the two-ended guard. A sweep takes pictures and leaves
+    `rows.jsonl` and `scores.jsonl` where they were, so nothing on disk said the
+    leg had stopped being mergeable — `owed_smoke_ckpt120` kept all three merge
+    inputs after its 34 pictures went. The declaration is what says it."""
+    pictures = a_leg(swept, "depth", "a_leg", ("in_the_ledger", "named_by_nothing"))
+    untouched = a_leg(swept, "depth", "all_named", ("in_the_ledger_too",))
+    candidate_ledger.write(
+        [
+            a_ledger_row("artifacts/curation/depth/a_leg/pictures/in_the_ledger.jpg"),
+            a_ledger_row("artifacts/curation/depth/all_named/pictures/in_the_ledger_too.jpg"),
+        ]
+    )
+
+    record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
+
+    assert record["declared_swept"] == [{"leg": "artifacts/curation/depth/a_leg", "pictures": 1}], (
+        "one leg lost a picture and one did not"
+    )
+    held = candidate_ledger.swept(pictures.parent)
+    assert held["pictures"] == 1
+    assert held["sweeps"][0]["taken_at"] == record["taken_at"]
+    assert candidate_ledger.swept(untouched.parent) is None
+
+
+def test_a_dry_run_declares_nothing_because_it_took_nothing(swept):
+    """The declaration is a claim that the pictures are gone, so it may not be
+    written by the run that deletes none of them. Written after the unlink for the
+    same reason in the other direction."""
+    a_leg(swept, "depth", "a_leg", ("in_the_ledger", "gone_if_applied"))
+    candidate_ledger.write(
+        [a_ledger_row("artifacts/curation/depth/a_leg/pictures/in_the_ledger.jpg")]
+    )
+
+    record = candidate_ledger.orphans(log=lambda *_: None)
+
+    assert record["declared_swept"] == []
+    assert not candidate_ledger.swept_path(swept / "curation" / "depth" / "a_leg").exists()
+
+
+def test_both_merge_paths_refuse_a_leg_whose_pictures_were_swept(swept, monkeypatch):
+    """The second end. `curate rotate merge` would have upserted 34 rows naming
+    pictures that are gone AND removed 19 live rows in exchange, and the removal is
+    the irreversible half — so the refusal has to stand in front of the removal as
+    well as in front of the door."""
+    from fractal_wallpapers.curation import rotation
+    from fractal_wallpapers.curation.candidate_ledger import door
+    from fractal_wallpapers.curation.candidate_ledger import sweep as sweep_module
+
+    leg = swept / "curation" / "rotation" / "a_pass"
+    (leg / "pictures").mkdir(parents=True)
+    candidate_ledger.declare_swept({leg: 34}, "2026-09-11T00:00:00Z", log=lambda *_: None)
+    row = a_ledger_row("artifacts/curation/rotation/a_pass/pictures/gone.jpg")
+
+    # The door, which every leg's own `merge` comes through, and it needs nobody
+    # to tell it which leg: the row names the picture and the picture names the leg.
+    with pytest.raises(candidate_ledger.LedgerError, match="had its pictures swept"):
+        door.merge([row], [], log=lambda *_: None)
+
+    # And the rotation path, whose removal runs BEFORE that door. It must refuse
+    # without ever reaching `sweep.remove`.
+    monkeypatch.setattr(
+        sweep_module,
+        "remove",
+        lambda *_a, **_k: pytest.fail("the removal ran on a swept pass"),
+    )
+    with pytest.raises(candidate_ledger.LedgerError, match="had its pictures swept"):
+        rotation.merge("a_pass", log=lambda *_: None)
+
+
 def test_the_sweep_deletes_through_the_one_deleter_and_grows_no_second_one():
     """`test_nothing_but_the_ledger_deletes_a_candidate_picture` owns the rule; this
     is the sweep's half of it. A destructive writer that unlinked for itself would

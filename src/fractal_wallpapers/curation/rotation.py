@@ -1869,10 +1869,16 @@ def merge(name: str, apply: bool = True, log=print) -> dict:
 
     Then [`candidate_ledger.merge`] — THE door, and the same one every leg comes
     through: the upsert, the flatness sweep, the prune and all four manifests.
+
+    **A pass whose pictures have been swept is refused before the removal**, which
+    is why the door's own copy of that guard is not enough: the removal above runs
+    first and is the irreversible half, so a swept pass caught only at the door
+    would already have taken its 19 live rows out. See [`sweep.refuse_swept`].
     """
     from fractal_wallpapers.curation import hunt
     from fractal_wallpapers.curation.candidate_ledger import sweep
 
+    sweep.refuse_swept([rotation_dir(name)])
     rows = hunt._read(rows_path(name))
     scores = hunt._read(scores_path(name))
     removing = hunt._read(removed_path(name))

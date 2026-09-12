@@ -55,6 +55,21 @@ def test_the_order_is_the_hues_then_the_neutrals_and_it_never_moves() -> None:
     assert codebook.names()[-4:] == ("black", "dark_gray", "light_gray", "white")
 
 
+def test_the_cheap_cell_names_are_the_built_swatches_own_order() -> None:
+    """`cell_names` is a SECOND spelling of the order above, and it exists because
+    `--themed`'s argparse `choices` is built on every `fractal-wallpapers`
+    invocation while `swatches` costs a gamut bisection and an import of numpy.
+    Two spellings of one order is exactly what the order's own contract warns
+    about, so they are held to agreeing here rather than by the loop nesting
+    having been copied correctly."""
+    from fractal_wallpapers.palettes import dominance
+
+    built = tuple(entry["swatch"] for entry in codebook.swatches() if entry["kind"] == "hue")
+    assert codebook.cell_names() == built
+    assert len(codebook.cell_names()) == 48
+    assert dominance.cells() == built
+
+
 def test_every_swatch_is_a_colour_sRGB_can_actually_show() -> None:
     """The failure a fixed vivid chroma caused: an out-of-gamut swatch is a bucket
     no pixel can ever land in, and a census through one reports a colour as absent

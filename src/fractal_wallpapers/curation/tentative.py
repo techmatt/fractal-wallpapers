@@ -430,6 +430,14 @@ def manifest_of(
     constant the leg read is already spelled there, and a second spelling here
     would be a second thing to keep true.
 
+    **The diversity rule is the one thing beside it**, since 2026-09-11, and for
+    the reason that sentence implies rather than against it: `config` carries no
+    `rules` block, so the rule that decided two seats were different enough lived
+    only on the solve record — which a published stamp does not carry. A themed
+    record could not say which rule chose it. Carried whole from
+    `record["rules"]["diversity"]`, so it is still one spelling; what changed is
+    where it can be read.
+
     The **pool stamp** is taken here rather than read off the solve record, which
     does not carry one — [`growth.pool_stamp`] over the candidates the solve was
     handed, which is the same digest the growth sweep compares its runs on. A
@@ -453,6 +461,21 @@ def manifest_of(
             "taken_at": record.get("taken_at"),
             "seconds": record.get("seconds"),
             "config": record.get("config"),
+            # The diversity rule, beside `config` and not inside it, because it is
+            # the solve record's own `rules.diversity` block carried whole — the
+            # rule's name, its threshold and its neighbour count — and restating
+            # any of those here would be the second spelling the docstring above
+            # refuses. It is on the MANIFEST because `config` never carried a
+            # `rules` block and the solve record a published stamp does not carry
+            # is the only other place it lives, so a themed record could not say
+            # which rule chose it. `null` is a real answer and is written rather
+            # than omitted: it is a pass that ran with no diversity rule at all.
+            "diversity": (record.get("rules") or {}).get("diversity"),
+            "diversity_is": "which rule decided two seats were different enough, as "
+            "`rules.State.record` spells it. A gallery chosen under a different rule is "
+            "not comparable with this one. A manifest with no `diversity` key at all was "
+            "written before 2026-09-11; an explicit `null` is a pass that ran without the "
+            "rule",
         },
         "pool": {
             "stamp": None if candidates is None else growth.pool_stamp(candidates),
