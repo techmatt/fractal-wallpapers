@@ -2371,7 +2371,14 @@ def solve(
       anything. `themed_cap` names a number instead;
     * nothing else. The caller still owns the target and the floor rule, and a
       themed pass without `--target <cell>=1.0` is a pass the cell allowance
-      refuses at nine seats — see [`ceiling.Rule.allowed`].
+      refuses at **thirteen** seats — `floor(K * t * n) + 1` at `K = 3`, the
+      uniform `t = 1/48` and `n = 200`, see [`ceiling.Rule.allowed`]. It read
+      *nine* here until 2026-09-12, which was the same formula at the `K = 2` that
+      Matt's ruling of 2026-09-09 replaced; `20260906T133559Z` is the record taken
+      under it and it filled 200 of 200 because it carried its target. The number
+      moves with `K` and with `n`, so **ask `allowed` rather than read it here** —
+      what does not move is that the ceiling binds long before the stock does, and
+      a themed pass missing its target reports a shortfall that looks like supply.
 
     Rows outside the cell are recorded [`OFF_THEME`], which is pool construction
     and not a refusal, so the rejection ledger stays a partition of the ledger.
