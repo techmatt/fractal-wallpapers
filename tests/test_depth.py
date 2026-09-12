@@ -276,6 +276,124 @@ def test_the_near_band_draws_a_place_the_framing_scan_has_never_held_a_row_for()
     assert (frame["maxiter"], frame["adopted"], frame["from_scan"]) == (100, False, False)
 
 
+def test_a_place_the_ledger_stands_on_but_the_EMBEDDING_store_does_not_is_refused():
+    """★ What emptied `general_leg_0909`'s three band arms, and it was silent.
+
+    `world["by_key"]` is `hunt.scanned()` — the **embedded** locations less the
+    ones now under the junk floor — and the ledger runs ahead of it: measured
+    2026-09-12 over the live store, 1,636 of 34,010 opened locations (4.9%) have
+    never been embedded, and they are not spread evenly. Of the 255 places band 2
+    was handed, **168 (66%) were never-embedded `julia:mandelbrot` locations**, so
+    the arm logged `255 of 255 named place(s) hold a candidate in a mode this run
+    can afford` and planned 87.
+
+    The refusal itself is not new; being able to *name* it is. A rule nothing can
+    report is a rule that empties an arm and reads as a budget running out.
+    """
+    rows = [ledger_row("a", "place", mode="smooth")]
+    best = depth.best_field_by_location(rows, {"a": 0.60}, roster={"smooth"})
+    assert depth.near_admits("place", best["place"], {"place": {"key": "place"}}) == ""
+    assert depth.near_admits("place", best["place"], {}) == "not_admitted"
+    assert not depth.near_places(best, {}, seed=1, count=5)
+
+    over = depth.best_field_by_location(rows, {"a": 0.97}, roster={"smooth"})
+    assert depth.near_admits("place", over["place"], {"place": {}}) == "out_of_band"
+
+
+def test_the_near_bands_population_says_which_test_took_each_place():
+    """An arm that ran out of places and an arm that ran out of clock want
+    opposite fixes, and the second is what an empty plan reads as."""
+    rows = [
+        ledger_row("a", "in_band", mode="smooth"),
+        ledger_row("b", "too_good", mode="smooth"),
+        ledger_row("c", "never_embedded", mode="smooth"),
+    ]
+    best = depth.best_field_by_location(rows, {"a": 0.60, "b": 0.97, "c": 0.60}, roster={"smooth"})
+    by_key = {one: {"key": one} for one in ("in_band", "too_good")}
+    pools, refused = depth.near_population(best, by_key)
+    assert [row["key"] for row in pools["mandelbrot"]] == ["in_band"]
+    assert refused == {"out_of_band": 1, "not_admitted": 1}
+
+
+# --------------------------------------------------------------------------- #
+# The manifest a near band is cut from, and the draw, are one rule.
+# --------------------------------------------------------------------------- #
+def a_near_world(rows, scores, admitted):
+    return {
+        "rows": rows,
+        "ledger_scores": scores,
+        "by_key": {one: {"key": one} for one in admitted},
+    }
+
+
+def test_the_manifest_names_exactly_the_places_the_draw_will_stand_on():
+    """★ The band's two ends, made one rule. Every place this names is a place
+    `near_places` draws, and every place it drops is one the draw would have."""
+    rows = [
+        ledger_row("a", "keeps", mode="smooth"),
+        ledger_row("b", "too_good", mode="smooth"),
+        ledger_row("c", "never_embedded", mode="smooth"),
+        ledger_row("d", "composite", mode="smooth_stripe"),
+    ]
+    scores = {"a": 0.60, "b": 0.97, "c": 0.60, "d": 0.60}
+    every = ("keeps", "too_good", "never_embedded", "composite")
+    world = a_near_world(rows, scores, every)
+    named, census = depth.near_manifest(world, roster=["smooth"])
+    assert [row["key"] for row in named] == ["keeps", "never_embedded"]
+    assert (census["out_of_band"], census["not_admitted"]) == (1, 0)
+    assert census["places_with_a_roster_candidate"] == 3, "the composite is not one"
+
+    # The same store with one of them out of the embedding store, which is the
+    # only thing that moved.
+    world = a_near_world(rows, scores, ("keeps", "too_good", "composite"))
+    named, census = depth.near_manifest(world, roster=["smooth"])
+    assert [row["key"] for row in named] == ["keeps"]
+    assert census["not_admitted"] == 1
+    best = depth.best_field_by_location(rows, scores, roster={"smooth"})
+    drawn = depth.near_places(best, world["by_key"], seed=1, count=9)
+    assert {row["key"] for row in drawn} == {row["key"] for row in named}
+
+
+def test_the_room_is_counted_at_the_pair_the_draw_will_render_into():
+    """⚠ Room in `stripe` buys nothing at a place whose incumbent is `smooth`: the
+    near band holds the incumbent's mode, so that is the only pair it can fill.
+    Summing a place's room over every pair it holds is the other way to get this
+    wrong, and it is how `free-slots` reports by place."""
+    from fractal_wallpapers.curation import retention
+
+    keep = 2
+    rows = [
+        ledger_row("a", "full", mode="smooth"),
+        ledger_row("b", "full", mode="smooth"),
+        ledger_row("c", "full", mode="stripe"),
+        ledger_row("d", "room", mode="smooth"),
+    ]
+    # `full`'s incumbent is the smooth row, and smooth is the pair with no room.
+    scores = {"a": 0.60, "b": 0.61, "c": 0.55, "d": 0.60}
+    world = a_near_world(rows, scores, ("full", "room"))
+    named, census = depth.near_manifest(world, roster=["smooth", "stripe"], keep=keep)
+    assert [row["key"] for row in named] == ["room"]
+    assert [row["incumbent"] for row in named] == ["smooth"]
+    assert census["at_the_keep"] == 1
+    # And the place that was dropped really does have room — somewhere else.
+    slots = retention.free_slots(rows, keep=keep)
+    assert slots[("full", "stripe")] == 1
+
+
+def test_the_manifests_roster_defaults_to_the_three_shareable_modes():
+    """Not `mode_policy.mined()`'s twelve. The near band holds its incumbent's
+    mode, so a composite incumbent is about 175s a location — `armB1_0906`
+    measured the arm 6.2x dearer on the wide roster. Narrow the manifest; what the
+    planner admits is a different question and moving it re-prices the band."""
+    rows = [ledger_row("a", "place", mode="threads")]
+    world = a_near_world(rows, {"a": 0.60}, ("place",))
+    named, census = depth.near_manifest(world)
+    assert census["roster"] == depth.field_modes()
+    assert "threads" not in census["roster"] and named == []
+    named, _census = depth.near_manifest(world, roster=["threads"])
+    assert [row["key"] for row in named] == ["place"]
+
+
 # --------------------------------------------------------------------------- #
 # What a plan offers one place.
 # --------------------------------------------------------------------------- #

@@ -1473,6 +1473,113 @@ def drawn_rotations(shot, seed: int, count: int = MINE_ROTATIONS) -> list:
     return made
 
 
+def resolve_shots(
+    intended: list, world: dict, maker, *, seed: int, rotations: int, known: set, log=print
+) -> tuple[list, dict]:
+    """Every drawn shot given its recipes and its keys, in location blocks. `(blocks, census)`.
+
+    [`_resolve`] one arm over: the store arm resolves rows it already has and this
+    resolves shots that do not exist yet, but both turn a plan into keys and both
+    have to answer the ledger before anything renders.
+
+    ⚠ **The unit of the dedupe is the SHOT and not the candidate**, and that is
+    the whole of what makes a hit safe to act on. A shot *is* one comparison — a
+    phase-0 control against [`drawn_rotations`]' rotations, best of them merged —
+    so dropping the one member the ledger already holds does not leave four
+    candidates, it leaves a **different question answered under the same name**.
+    Both halves of that ran before 2026-09-12. On `mine_ckpt120` leg 1's split,
+    a re-entered block lost **38.5%** of its shots outright, because the held key
+    was the `k=0` control and a shot with no control is discarded; the other
+    **61.5%** came back as a best-of-*four* read against a control that was never
+    rendered beside them, recorded under the same column as every honest
+    best-of-five in the store.
+
+    **A skipped shot claims none of its keys.** Nothing was rendered under them
+    here, so a later shot that draws one has exactly the same right to be refused
+    for exactly the same reason — and a shot the plan holds twice is dropped
+    twice rather than dropped once and silently re-priced.
+
+    ⚠ **`already_in_ledger` reads 0 on a wholly RANKED leg however the draw
+    goes, and that is arithmetic rather than a clean bill of health.** The ranked,
+    flat and aimed draws all come out of `world["pools"]`, which is
+    [`hunt.drawable`] — the admitted population less [`hunt.opened_locations`] —
+    so a shot is always at a location the ledger has never stood on and its keys
+    cannot be ones the ledger holds. Measured 2026-09-12 on a rebuild over the
+    live store: 46,080 keys drawn, 0 hits, against 2,950 of `mine_ckpt120`'s
+    2,954 adopted keys present in that very `known` set. It counts something real
+    only where the split spends on `near_band`, `mode_floor` or `conditioned`,
+    which draw at OPENED locations.
+
+    `known` is read **and written**: a shot this accepts claims its five keys, so
+    that two arms of one plan drawing the same (location, mode, colormap) make it
+    once. It is the caller's set, and a caller that wants the plan's own
+    collisions counted apart hands a copy.
+    """
+    from fractal_wallpapers.curation import hunt
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    order: dict = {}
+    census = {
+        "shots": 0,
+        "candidates": 0,
+        "already_in_ledger": 0,
+        "shots_already_in_ledger": 0,
+        "no_control": 0,
+        "unresolvable": 0,
+        "bare": 0,
+    }
+    at = 0
+    for shot in intended:
+        place = world["by_key"].get(shot.location)
+        if place is None:
+            census["unresolvable"] += 1
+            continue
+        frame = hunt.frame_for(place, world["index"])
+        made = []
+        held = 0
+        for intention in drawn_rotations(shot, int(seed), int(rotations)):
+            recipe = maker.recipe_for(intention, place, frame)
+            key = recipes_module.key_of(recipe)
+            held += int(key in known)
+            made.append((intention, recipe, key, place, frame))
+        if held:
+            # `already_in_ledger` keeps its meaning — candidates the ledger holds
+            # — and `shots_already_in_ledger` is what was given up for them. Two
+            # numbers because they answer two questions, and folding them into one
+            # is what hid the 38.5%.
+            census["already_in_ledger"] += held
+            census["shots_already_in_ledger"] += 1
+            continue
+        if not made or int(made[0][0].k) != 0:
+            # No control, no comparison — see [`render_draw_group`].
+            # [`drawn_rotations`] puts the `k=0` control first on every shot it
+            # returns, so nothing reaches this now: the only thing that ever did
+            # was a partial dedupe eating the control, which is the branch above.
+            census["no_control"] += 1
+            continue
+        for _intention, _recipe, key, _place, _frame in made:
+            known.add(key)
+        at += 1
+        census["shots"] += 1
+        census["candidates"] += len(made)
+        census["bare"] += int(len(made) == 1)
+        order.setdefault(shot.location, []).append((at, shot, made))
+    blocks = list(order.values())
+    log(
+        f"[rotation] {census['shots']:,} shot(s) over {len(blocks):,} location block(s) "
+        f"resolved to {census['candidates']:,} candidate(s), {census['bare']:,} of them a "
+        f"direct trap drawn bare"
+    )
+    if census["shots_already_in_ledger"]:
+        log(
+            f"[rotation] {census['shots_already_in_ledger']:,} shot(s) skipped whole on "
+            f"{census['already_in_ledger']:,} candidate(s) the ledger already holds: a shot "
+            f"is one best-of-{int(rotations) + 1} comparison and a partial one is a "
+            f"different question under the same name"
+        )
+    return blocks, census
+
+
 def decided_blocks(name: str) -> int:
     """How many location blocks `name` actually decided. Off `decisions.jsonl`.
 
@@ -1574,14 +1681,18 @@ def identity_of(record: dict) -> tuple:
     )
 
 
-def resumable(identity: tuple) -> dict:
-    """`{name: resume_index}` over every mine leg on record that ran this plan.
+def legs_of(identity: tuple) -> dict:
+    """`{name: record}` over every mine leg on record that ran this plan.
 
     The store's own legs, read off their records — [`rotation_dir`]'s siblings —
     because a resume names no first leg and there is nothing else to ask. A leg
     whose [`plan_identity`] differs is not a half of this plan and is not offered,
     which is what makes the guard in [`mine`] refuse a resume whose `--rate` or
     `--plan-budget` was left on the default.
+
+    The whole record and not one field, because two guards read it for two
+    different things: [`resumable`] wants how far each leg got, and
+    [`refuse_moved_pool`] wants the pool each was planned against.
     """
     root = store_root()
     if not root.is_dir():
@@ -1597,8 +1708,13 @@ def resumable(identity: tuple) -> dict:
             continue
         if str(read.get("arm")) != "mine" or identity_of(read) != identity:
             continue
-        out[held.name] = resume_index(held.name)
+        out[held.name] = read
     return out
+
+
+def resumable(identity: tuple) -> dict:
+    """`{name: resume_index}` over every mine leg on record that ran this plan."""
+    return {name: resume_index(name) for name in legs_of(identity)}
 
 
 def refuse_unreachable_resume(from_block: int, *, log=print, **identity) -> dict:
@@ -1644,6 +1760,117 @@ def refuse_unreachable_resume(from_block: int, *, log=print, **identity) -> dict
         f"{reached:,}: {', '.join(f'{name} {at:,}' for name, at in sorted(held.items()))}"
     )
     return held
+
+
+def pool_of(record: dict) -> dict:
+    """The `pool` block off a mine record, or `{}` where the record predates it.
+
+    Written from 2026-09-12. A record without one cannot say which pool its plan
+    was drawn against, and [`refuse_moved_pool`] says so out loud rather than
+    reading the absence as agreement.
+    """
+    return dict(((record.get("plan") or {}).get("pool")) or {})
+
+
+def refuse_moved_pool(
+    from_block: int,
+    legs: dict,
+    *,
+    stores: dict | None = None,
+    digest: dict | None = None,
+    log=print,
+) -> dict:
+    """Refuse a resume whose POOL is not the one its plan was drawn against.
+
+    **The block plan is a deterministic function of the pool, and a merge moves
+    the pool.** [`refuse_unreachable_resume`] above matches a resume on its
+    *flags* — the seed, the rate, the budget, the width, the workers, the roster
+    and the split — and every one of them can be restated correctly while the
+    plan underneath has been re-cut. Reconstructed 2026-09-12 over the live store:
+    put `mine_ckpt120`'s locations back in the pool and its 247 blocks come back
+    247 of 247 in order; take them out again and its resume's 129 come back at
+    indices 248-376, with **none of the first leg's 247 in that plan at all**. So
+    `--from-block 247` skipped 247 blocks of a plan nobody had rendered. No
+    restated flag can make that index sound, which is why this is a refusal and
+    not a warning printed beside one.
+
+    **Two readings, both of them this.** `stores` is [`depth.pool_stamp`] — five
+    tracked manifests, free to read, taken *before the population read* so an
+    unattended leg fails in its first second. `digest` is [`depth.pool_digest`] —
+    the pool itself, taken the moment `population` returns and still before any
+    field is dumped or any candidate rendered. The first is a proxy that can
+    refuse a resume whose pool did not actually move (a prune rewrites the rows
+    file without moving a plan); the second is the fact. Both are recorded, so
+    both can be checked, and the message names which of them disagreed.
+
+    `legs` is [`legs_of`]'s `{name: record}` — the legs whose *flags* already
+    matched. What comes back is the subset whose pool matches too, which is who a
+    resume may continue. A leg whose record carries no `pool` block at all cannot
+    answer; if none of them can, this says so and allows the resume, because a
+    guard that refused every record written before it existed would be a new way
+    for an unattended leg to fail rather than a fix.
+    """
+    if int(from_block) <= 0 or not legs:
+        return {}
+    reading = "stores" if stores is not None else "digest"
+    seen = dict(stores) if stores is not None else dict(digest or {})
+    held, mute = {}, []
+    for name, record in legs.items():
+        recorded = pool_of(record).get(reading)
+        if not recorded:
+            mute.append(name)
+            continue
+        if reading == "stores":
+            agrees = dict(recorded) == seen
+        else:
+            agrees = str(dict(recorded).get("sha256")) == str(seen.get("sha256"))
+        if agrees:
+            held[name] = record
+    if held:
+        return held
+    if len(mute) == len(legs):
+        log(
+            f"[rotation] {len(mute)} leg(s) of this plan recorded no pool identity "
+            f"({', '.join(sorted(mute))}), so the {reading} check has nothing to compare "
+            f"against and this resume is unguarded on the one thing --from-block depends "
+            f"on. Records written from 2026-09-12 carry it."
+        )
+        return {}
+    if reading == "stores":
+        recorded = [dict(pool_of(record).get("stores") or {}) for record in legs.values()]
+        moved = sorted(
+            tag for tag in seen if any(held.get(tag) != seen[tag] for held in recorded if held)
+        )
+        detail = (
+            f"the store(s) {moved} have changed since, and the candidate ledger is the one "
+            f"that matters: every location a merge adopted left `hunt.drawable` for good, so "
+            f"`depth.build_plan` re-cuts its bands over what is left and block N is no longer "
+            f"the block N that was rendered"
+        )
+    else:
+        was = sorted(
+            (str(name), dict(pool_of(record).get("digest") or {})) for name, record in legs.items()
+        )
+        detail = (
+            f"the pool now holds {int(seen.get('drawable') or 0):,} drawable location(s) "
+            f"over {int(seen.get('opened') or 0):,} opened, against "
+            + "; ".join(
+                f"{name} {int(held_pool.get('drawable') or 0):,}/"
+                f"{int(held_pool.get('opened') or 0):,}"
+                for name, held_pool in was
+                if held_pool
+            )
+            + ". The counts are beside the point where they agree — the digest is over the "
+            "keys, and a leg that merged 376 locations while a backfill admitted 376 more "
+            "reports the same total over a pool with none of the same places in it"
+        )
+    raise RotationRefused(
+        f"--from-block {int(from_block):,} names a plan drawn against a pool that no longer "
+        f"stands ({reading}): {detail}. A resume is a slice of ONE plan, so there is nothing "
+        f"to continue here — start a fresh leg, which will draw what is actually left. See "
+        f"`curation/LEGS.md`'s `--from-block` cannot continue a mining plan, because a merge "
+        f"moves it."
+    )
 
 
 def resumed(
@@ -1706,6 +1933,14 @@ def mine(
     phase-0 control plus [`MINE_ROTATIONS`] rotations, all five are read through
     the fine head, and the best of them is the row that merges.
 
+    ⚠ **A shot is the unit of the dedupe**, because a shot is the unit of the
+    comparison: five candidates read together, best of them merged. A key the
+    ledger already holds therefore skips the **whole shot** and not that one
+    candidate — see the census below — and the shot's other keys are not claimed
+    on the way past. Dropping one member leaves a best-of-four read against a
+    control nobody rendered beside it, which is a different question wearing the
+    same name, and where the held key *was* the control it left no question at all.
+
     ⚠ **The four that lose are recorded and not merged, and both halves matter.**
     Merging all five would put four near-duplicates of one picture in the pool at
     one (location, mode), which the retention rule would then spend its keep on.
@@ -1723,10 +1958,11 @@ def mine(
     sizes the plan *and* is the deadline, so a second leg handed the clock it has
     left would plan a smaller draw and start it at the beginning — and the dedupe
     does not save it: each shot's four losers are recorded and **freed** rather
-    than merged, so nothing in the store says they were made. Worse, where a
-    rotation won and its control did not merge, the shot comes back as a
-    best-of-*four* read against the same control, which is a different number
-    under the same name. So a resumed leg says `plan_budget` — the first leg's
+    than merged, so nothing in the store says they were made, and a re-drawn shot
+    whose winner *did* merge is now skipped whole rather than re-priced. Skipped
+    whole is the correct answer to a re-draw and it is still not a resume: what
+    the first leg paid for is given up either way. So a resumed leg says
+    `plan_budget` — the first leg's
     budget, which rebuilds its block plan exactly — and `from_block`. `budget` is
     then only the clock. The record carries both, and `blocks_skipped` beside
     `blocks_planned`, so the two legs read back as one.
@@ -1745,6 +1981,15 @@ def mine(
     anything either: the index skips fresh blocks. `curation/LEGS.md`'s
     *`--from-block` cannot continue a mining plan, because a merge moves it* has
     the measurement and names the arms where it does bite.
+
+    **Since 2026-09-12 that is REFUSED rather than described.** The plan records
+    the pool it was cut over — [`depth.pool_stamp`] and [`depth.pool_digest`] —
+    and [`refuse_moved_pool`] checks both, the cheap one before the population
+    read and the exact one the moment `population` returns. A resume after a merge
+    is now a refusal in the leg's first second naming which store moved, not four
+    hours spent rendering the wrong blocks. **It does not make the resume work**:
+    there is no way to continue a plan whose pool is gone, and the honest answer
+    is a fresh leg over what is actually left.
 
     ⚠ **`rate` rebuilds the plan too, and `from_block` is not `blocks_done`.**
     The plan is `PLAN_HEADROOM * workers * plan_budget / rate`, so a resume that
@@ -1765,11 +2010,13 @@ def mine(
     **An over-large `from_block` is refused here, before the population read.**
     [`resumable`] offers the legs on record that ran *this* plan and what each of
     them reached; an index above the best of those discards rendered work every
-    time it is passed, and four hours is the wrong place to find that out.
+    time it is passed, and four hours is the wrong place to find that out. The
+    pool check runs beside it and then again once there is a pool to check —
+    [`refuse_moved_pool`] — because the flags and the population are two different
+    ways for a resume to be into a plan nobody rendered.
     """
     from fractal_wallpapers.curation import candidate_ledger as ledger
     from fractal_wallpapers.curation import colorize, depth, hunt, mode_policy, release
-    from fractal_wallpapers.curation import recipes as recipes_module
     from fractal_wallpapers.curation.candidate_ledger import sweep
 
     started = time.monotonic()
@@ -1784,18 +2031,29 @@ def mine(
     # the last producing leg zeroed. `palette_variant_mine_ckpt120`'s shape.
     shares = dict(shares) if shares else dict(MINE_SHARES)
     sized_for = float(budget if plan_budget is None else plan_budget)
-    refuse_unreachable_resume(
-        int(from_block),
-        seed=int(seed),
-        rate=float(rate),
-        plan_budget=sized_for,
-        width=int(width),
-        workers=int(workers),
-        roster=roster,
-        shares=shares,
-        log=log,
-    )
+    identity = {
+        "seed": int(seed),
+        "rate": float(rate),
+        "plan_budget": sized_for,
+        "width": int(width),
+        "workers": int(workers),
+        "roster": roster,
+        "shares": shares,
+    }
+    refuse_unreachable_resume(int(from_block), log=log, **identity)
+    # **The legs whose FLAGS match, held for the two pool checks below.** Read
+    # once here rather than twice inside them: the records are small, but the
+    # question each asks is of the same set and a second scan could answer a
+    # different one if a leg landed between them.
+    legs = legs_of(plan_identity(**identity))
+    # The cheap half, and the reason it is here and not four lines down: five
+    # tracked manifests against a population read that is a minute of disk.
+    stores = depth.pool_stamp()
+    refuse_moved_pool(int(from_block), legs, stores=stores, log=log)
     world = depth.population(log=log)
+    # The fact, the moment there is one — still before any field is dumped.
+    digest = depth.pool_digest(world)
+    refuse_moved_pool(int(from_block), legs, digest=digest, log=log)
     intended, shape = depth.build_plan(
         world,
         seed=int(seed),
@@ -1811,52 +2069,8 @@ def mine(
     artifact = hunt._artifact()
     maker = hunt.Maker(name, device=device, log=log, fields=fields_dir(name))
     known = set(world["known"]) | {str(row["key"]) for row in world["rows"]}
-
-    # The plan resolved: every shot's five recipes and keys, in the parent.
-    order: dict = {}
-    # ⚠ **`already_in_ledger` reads 0 on a wholly RANKED leg however the draw
-    # goes, and that is arithmetic rather than a clean bill of health.** The
-    # ranked, flat and aimed draws all come out of `world["pools"]`, which is
-    # `hunt.drawable` — the admitted population less `hunt.opened_locations` — so
-    # a shot is always at a location the ledger has never stood on and its keys
-    # cannot be ones the ledger holds. Measured 2026-09-12 on a rebuild over the
-    # live store: 46,080 keys drawn, 0 hits, against 2,950 of `mine_ckpt120`'s
-    # 2,954 adopted keys present in this very `known` set. It counts something
-    # real only where the split spends on `near_band`, `mode_floor` or
-    # `conditioned`, which draw at OPENED locations — and there it catches
-    # exactly the one candidate of five that merged, dropping the shot outright
-    # when that was the k=0 control. See the docstring.
-    census = {"shots": 0, "candidates": 0, "already_in_ledger": 0, "unresolvable": 0, "bare": 0}
-    at = 0
-    for shot in intended:
-        place = world["by_key"].get(shot.location)
-        if place is None:
-            census["unresolvable"] += 1
-            continue
-        frame = hunt.frame_for(place, world["index"])
-        made = []
-        for intention in drawn_rotations(shot, int(seed), int(rotations)):
-            recipe = maker.recipe_for(intention, place, frame)
-            key = recipes_module.key_of(recipe)
-            if key in known:
-                census["already_in_ledger"] += 1
-                continue
-            known.add(key)
-            made.append((intention, recipe, key, place, frame))
-        if not made or int(made[0][0].k) != 0:
-            # No control, no comparison — see [`render_draw_group`].
-            census["already_in_ledger"] += len(made)
-            continue
-        at += 1
-        census["shots"] += 1
-        census["candidates"] += len(made)
-        census["bare"] += int(len(made) == 1)
-        order.setdefault(shot.location, []).append((at, shot, made))
-    blocks = list(order.values())
-    log(
-        f"[rotation] {census['shots']:,} shot(s) over {len(blocks):,} location block(s) "
-        f"resolved to {census['candidates']:,} candidate(s), {census['bare']:,} of them a "
-        f"direct trap drawn bare"
+    blocks, census = resolve_shots(
+        intended, world, maker, seed=int(seed), rotations=int(rotations), known=known, log=log
     )
     planned_blocks = len(blocks)
     blocks, skipped = resumed(blocks, from_block, sized_for, float(budget), log=log)
@@ -2119,7 +2333,27 @@ def mine(
         "fine_column": fine_column,
         "engine": build,
         "judge_artifact": artifact,
-        "plan": {**shape, **census},
+        "plan": {
+            **shape,
+            **census,
+            # **What the plan was drawn against, so a resume can be refused when
+            # it no longer stands.** The flags rebuild the plan's *size* and the
+            # pool decides its *contents*; a resume that matched on the first
+            # alone skipped 247 blocks nobody had rendered. Both readings are
+            # kept because both are checked, at two points in start-up —
+            # [`refuse_moved_pool`].
+            "pool": {
+                "stores": stores,
+                "digest": digest,
+                "pool_is": (
+                    "the drawable pool and the opened set this plan was cut over. `stores` "
+                    "is the sha256 of each tracked manifest the pool is a function of, read "
+                    "before the population read; `digest` is over the location keys "
+                    "themselves. A resume whose pool differs is a resume into a DIFFERENT "
+                    "plan under the same flags — depth.pool_stamp, depth.pool_digest"
+                ),
+            },
+        },
         "counts": counts,
         "budget": {
             "render_seconds": round(float(budget), 1),
@@ -2285,6 +2519,7 @@ __all__ = [
     "removed_path",
     "render_draw_group",
     "render_group",
+    "resolve_shots",
     "resumed",
     "rotation_dir",
     "rows_path",

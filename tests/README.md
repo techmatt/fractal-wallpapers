@@ -587,6 +587,33 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### mining_prep_ckpt122
+
+**Twenty-two fast tests for three mining fixes, and the previous entry's suspicion
+that its own reading was the box is confirmed.** `mining_prep_ckpt122`, 2026-09-12,
+box idle. **Fast: 4,402 selected, 136 deselected — 4,538 collected — in 163.36 s.
+Slow: 4,538 of 4,538 in 598.84 s (9:58), zero skips, zero failures.** The two lanes
+agree on 4,538.
+
+**The +22 is one prompt's and all of it is arithmetic.** `test_rotation.py` gains 17
+— eleven on the shot-level dedupe (five of them one parametrize over which of a
+shot's five candidates the ledger holds) and six on the pool identity a resume is
+refused against — and `test_depth.py` gains five on the near-band manifest. Not one
+renders, trains or sweeps a store: the dedupe guards resolve recipe keys through a
+`pixels()` duck rather than through `hunt.Maker`, and the manifest guards build
+four-row pools by hand. `tests/test_rotation.py` alone runs in **4.05 s** and
+`tests/test_depth.py` in **16.58 s**.
+
+**The slow lane came DOWN 3.2 s on 22 more tests**, 602.08 → 598.84, while the fast
+lane rose 7.1 s. That is the shape the entry below predicted: it argued its own
++33.2 s was a page cache left cold by a nine-agent documentation move rather than
+anything in the tree, and asked for a re-take on a quiet box before 602 s was
+treated as a floor. This is that re-take, and 598.84 s is within 5.2 s of
+`dedupe_and_resume_index_ckpt121`'s 568.91 s plus what two prompts of tests cost.
+**The fast lane's +7.1 s is not yet explained by 22 tests costing under 3 s
+together**, and is the number to watch on the next reading rather than to explain
+away twice.
+
 #### codebase_review_ckpt122
 
 **Twenty-five fast tests for two new guards, and the slow lane's advertised figure
