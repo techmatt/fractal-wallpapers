@@ -2295,6 +2295,38 @@ half of the point: the cost of leaving one is neither the seat count nor zero, a
 not knowable without deleting the record. **This is a note and not a behaviour**; the
 sweep is a person deleting the stamp, which is the only thing that releases a seat.
 
+**The sweep that paragraph asks for ran on 2026-09-12** and took the early-September
+diagnostic series with it: the 42 `themed_<cell>_n200_<label>` records over seven
+labels, the five `n1000_<before|after>_<label>` baselines recorded beside them, and the
+fourteen `themed_dark_vivid_{green,lime}_n<N>` solve directories the n-ladder left with
+no tentative record at all. Fifty-nine of the sixty-one went, 64.55 MiB, and
+`protected_keys()` fell 8,320 → 6,738 — **1,582 seats** released, against the 8,200 a
+sum of the records' own seat counts would have claimed. The gap is enormous here for a
+reason worth keeping: the same six cells were re-solved under seven labels, so the
+series seats the same keys over and over and nearly all of that sum is one key counted
+many times. **The fourteen released none of it** — only the tentative store is swept for
+protection, so a solve directory with no record beside it confers nothing and frees
+nothing; it was taken as garbage, not as a release.
+
+**Staleness is the argument and misreading is the harm, not disk.** These ran under a
+different head and different constants, and a record predating a field cannot say
+whether it ran under it — so a stamp named *before* or *after* invites exactly the
+comparison the *objective's SUM is denominated in the fine column* section refuses.
+**A record's own reading survives it**: the n-ladder's numbers are in
+`artifacts/curation/solve/themed_ladder{,_high}.json`, which are not records and stay.
+
+**A citation outranks staleness, and it is checked against both repositories.** Two of
+the sixty-one were kept on it. `20260906T133559Z` is named by the site's `modes-gallery`
+figure for its curvature panel, and `fractal-website` keeps no copy of this store —
+`builder/picks.py` resolves `<stamp>|<key>` out of this checkout — so deleting it would
+have broken a figure and `builder check`'s `seats`. `20260906T133236Z` is the sharper
+one and a **website-only** check would have taken it: `data/gallery_grade/batches.jsonl`
+names it as the draw behind all three batches of the gallery-grade label corpus, and
+`k_sweep.py` reproduces its seating as the `K = 2` arm. A shipped label store's
+provenance and a source file's reproduction target are both citations, which is why the
+rule is a grep of **tracked files in both repositories** rather than a look at the
+figures.
+
 **The record is a protection class in the prune.** `candidate_ledger.RETAINED_TENTATIVE`
 joins the four that were already there. It is needed for a sharper reason than the
 release row's: a seat is chosen on the *gallery's* objective, over a view, against the
