@@ -2362,7 +2362,7 @@ def solve(
       pixel-cloud twin test, because a single-cell pool is a near-duplicate pool
       under a metric over colour and the twin test would be refusing the theme;
     * the palette-group cap is [`ceiling.themed_group_cap`],
-      `max(1, floor(0.05 n))` — twice the main gallery's rate, because over a pool
+      `max(1, floor(0.075 n))` — three times the main gallery's rate, because over a pool
       holding a few dozen maps rather than hundreds the general cap was the
       **binding** rule at every shipping size: 90 of 150 lime seats, with the cap
       refusing 360 rows against the diversity rule's 12. It was `ceil(2n/P)` until
@@ -2793,10 +2793,11 @@ def solve(
             "pixel-cloud twin test is over a picture's COLOUR cloud, so a single-cell pool "
             "is a near-duplicate pool under exactly it",
             "group_cap": cap,
-            "group_cap_is": f"max(1, floor({ceiling.THEMED_GROUP_CAP_RATE} x n)), twice "
-            "the main gallery's rate and a share of n alone. It was ceil(2n/P) until "
+            "group_cap_is": f"max(1, floor({ceiling.THEMED_GROUP_CAP_RATE} x n)), three "
+            "times the main gallery's rate and a share of n alone. It was ceil(2n/P) until "
             "2026-09-05, so a themed record taken before that ran under a cap its own "
-            "pool set"
+            "pool set; and the share was 0.05 until 2026-09-12, so a record taken before "
+            "THAT ran at two thirds of this cap"
             if themed_cap is None
             else "named by the caller, overriding ceiling.themed_group_cap",
             "P": len(capable),
@@ -3115,8 +3116,8 @@ def _config(
             "group_cap_from": {
                 ceiling.IDENTITY: "ceiling.GROUP_CAP",
                 ceiling.THEMED: "ceiling.themed_group_cap: max(1, floor("
-                f"{ceiling.THEMED_GROUP_CAP_RATE} * n)), twice the main gallery's rate — "
-                "see the `theme` block",
+                f"{ceiling.THEMED_GROUP_CAP_RATE} * n)), three times the main gallery's "
+                "rate — see the `theme` block",
             }.get(str(group_cap), f"max(1, floor({ceiling.GROUP_CAP_RATE} * n))"),
             "targets": dict(sorted(rule.targets.items())),
             "target_rule": target_rule(),
@@ -3423,6 +3424,9 @@ def _shortfalls(
             # cap of three if something spent it.
             "realized_max": max(groups.values(), default=0),
             "at_the_cap": sum(1 for count in groups.values() if count >= rule.group_cap),
+            # The busiest twenty and never all of them: this is a readout and not a
+            # census. `held` above is the group count — `len(counts)` looks like it
+            # and is 20 on any pass with more groups than that.
             "counts": dict(sorted(groups.items(), key=lambda item: (-item[1], item[0]))[:20]),
             "over_cap": {
                 group: count for group, count in sorted(groups.items()) if count > rule.group_cap

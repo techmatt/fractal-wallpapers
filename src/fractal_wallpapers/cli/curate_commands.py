@@ -2462,7 +2462,8 @@ def themed_flags(container):
         metavar="SEATS",
         help="the palette-group cap a THEMED pass runs under, overriding the computed "
         "one. Unset is ceiling.themed_group_cap: max(1, floor("
-        f"{ceiling_module.THEMED_GROUP_CAP_RATE:g} x n)), twice the main gallery's rate. A "
+        f"{ceiling_module.THEMED_GROUP_CAP_RATE:g} x n)), three times the main gallery's "
+        "rate, raised from twice it on 2026-09-12. A "
         "themed pool holds a few dozen palette groups against the whole pool's hundreds, "
         "so the general cap was measured as the BINDING rule over a themed pool at every "
         "shipping size, which is why a themed pass gets its own. It was ceil(2 x n / P) "

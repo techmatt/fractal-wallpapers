@@ -149,11 +149,20 @@ THEMED = "themed"
 
 #: The **themed** cap's rate: a share of `n`, as the main gallery's cap is.
 #:
-#: **0.05**, Matt's ruling of 2026-09-05 — `max(1, floor(0.05 * n))`, so 10 at
-#: n=200 and 50 at n=1000. **Twice [`GROUP_CAP_RATE`]**, which is the whole of the
-#: argument: a themed pool holds a few dozen palette groups against the whole
-#: pool's hundreds, so the general cap is the binding rule at every shipping size
-#: over a theme, and the themed pass is given room for exactly that and no more.
+#: **0.075**, Matt's value of 2026-09-12 — `max(1, floor(0.075 * n))`, so 15 at
+#: n=200 and 75 at n=1000. **Three times [`GROUP_CAP_RATE`]**, which is the whole
+#: of the argument: a themed pool holds a few dozen palette groups against the
+#: whole pool's hundreds, so the general cap is the binding rule at every shipping
+#: size over a theme, and the themed pass is given room for exactly that and no
+#: more.
+#:
+#: It was **0.05** from his ruling of 2026-09-05 until then, and what raised it is
+#: that a share of a twentieth turned out to be the wall at the size a theme ships
+#: at. At n=200 it put the cap at **10**, and on 2026-09-12 five cells were solved
+#: at that rung and the cap bound at **10 of 10 in four of the five** — refusing
+#: **100 rows in `dark_vivid_green` alone**, which finished 165/200. A rule that
+#: binds in four passes of five is not a ceiling holding a runaway back, it is the
+#: rule choosing the gallery. Three twentieths gives 15 at that rung.
 #:
 #: It **replaced** `ceil(2n/P)` — twice the even share across the `P` groups that
 #: could field the theme, measured off the pool at solve time. What that bought
@@ -162,7 +171,7 @@ THEMED = "themed"
 #: before it, so a before/after on a theme was never a controlled read. A rate on
 #: `n` is a number written down once, and P stays on the record as a **reading**
 #: of the pool rather than as the denominator of a rule.
-THEMED_GROUP_CAP_RATE = 0.05
+THEMED_GROUP_CAP_RATE = 0.075
 
 #: How many distinct **places** a palette group has to field in the themed pool
 #: before it counts towards `P`.
@@ -220,11 +229,13 @@ def capable_groups(candidates, places: int = THEMED_CAP_PLACES) -> dict:
 def themed_group_cap(n: int) -> int:
     """`max(1, floor(THEMED_GROUP_CAP_RATE * n))` — the themed cap.
 
-    [`group_cap`]'s [`PROPORTIONAL`] arithmetic at twice its rate, and the
-    `max(1, ...)` is the same argument that one makes: `floor(0.05 * n)` is zero
-    below twenty seats and a cap of zero is a program with no seats in it. So a
-    debug themed gallery at n=10 keeps the identity cap, and a before/after on
-    this has to be taken at n=20 or above.
+    [`group_cap`]'s [`PROPORTIONAL`] arithmetic at three times its rate, and the
+    `max(1, ...)` is the same argument that one makes: `floor(0.075 * n)` is zero
+    below fourteen seats and a cap of zero is a program with no seats in it. So a
+    debug themed gallery at n=10 keeps the identity cap. **A before/after has to
+    be taken at n=27 or above**, which is where the floor stops holding the cap at
+    one and the two rules first give different numbers — not at the fourteen the
+    `max(1, ...)` comes off, where this still returns the identity cap's one.
 
     It takes `n` alone. The pool it will be applied over is not an argument, which
     is the point of the 2026-09-05 ruling: see [`THEMED_GROUP_CAP_RATE`].

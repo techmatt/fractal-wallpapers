@@ -373,7 +373,7 @@ def test_of_block_carries_the_names_and_does_not_re_derive_them():
 
 
 # --------------------------------------------------------------------------- #
-# The themed cap: twice the main gallery's rate, on `n` alone.
+# The themed cap: three times the main gallery's rate, on `n` alone.
 # --------------------------------------------------------------------------- #
 class Row:
     """The two fields [`ceiling.capable_groups`] reads off a candidate."""
@@ -396,27 +396,37 @@ def pool_of(sizes: dict) -> list:
     return rows
 
 
-def test_the_themed_cap_is_twice_the_main_gallerys_rate_on_n_alone():
-    """Matt's ruling of 2026-09-05. It replaced `ceil(2n/P)`, which moved with the
-    pool: two themes at one `n` ran under two caps and one theme ran under two
-    caps either side of a night's mining, so no before/after on a theme was a
-    controlled read."""
-    assert ceiling.THEMED_GROUP_CAP_RATE == 0.05 == 2 * ceiling.GROUP_CAP_RATE
-    assert ceiling.themed_group_cap(200) == 10
-    assert ceiling.themed_group_cap(1000) == 50
-    assert ceiling.themed_group_cap(150) == 7
+def test_the_themed_cap_is_three_times_the_main_gallerys_rate_on_n_alone():
+    """A share of `n` since Matt's ruling of 2026-09-05, which replaced `ceil(2n/P)`
+    — that moved with the pool, so two themes at one `n` ran under two caps and one
+    theme ran under two caps either side of a night's mining, and no before/after on
+    a theme was a controlled read. The share is Matt's value of 2026-09-12: at a
+    twentieth the cap was 10 at n=200 and bound at 10 of 10 in four of the five
+    cells solved that day."""
+    assert ceiling.THEMED_GROUP_CAP_RATE == 0.075
+    # Three times the general rate, and `0.075 != 3 * 0.025` in binary floating
+    # point — the multiple is the argument and the literal is the constant, so the
+    # two are asserted apart rather than chained.
+    assert pytest.approx(3 * ceiling.GROUP_CAP_RATE) == ceiling.THEMED_GROUP_CAP_RATE
+    assert ceiling.themed_group_cap(200) == 15
+    assert ceiling.themed_group_cap(1000) == 75
+    assert ceiling.themed_group_cap(150) == 11
     # It takes `n` and nothing else — the pool is not an argument any more, which
     # is the whole of the ruling.
     assert list(inspect.signature(ceiling.themed_group_cap).parameters) == ["n"]
 
 
 def test_the_themed_cap_never_reaches_zero():
-    """A cap of zero is a program with no seats in it. `floor(0.05 n)` is zero
-    below twenty seats, so a debug themed gallery keeps the identity cap and a
-    before/after on this has to be taken at n=20 or above."""
-    assert ceiling.themed_group_cap(19) == 1
-    assert ceiling.themed_group_cap(20) == 1
-    assert ceiling.themed_group_cap(40) == 2
+    """A cap of zero is a program with no seats in it. `floor(0.075 n)` is zero
+    below fourteen seats, so a debug themed gallery keeps the identity cap there.
+    A before/after on this rule has to be taken at **n=27 or above** — fourteen is
+    where the floor stops acting, and from there to twenty-six the cap is one
+    seat, which is what the identity cap says too."""
+    assert ceiling.themed_group_cap(13) == 1
+    assert ceiling.themed_group_cap(14) == 1
+    assert ceiling.themed_group_cap(26) == 1, "still the identity cap's answer"
+    assert ceiling.themed_group_cap(27) == 2, "the first n where the two rules differ"
+    assert ceiling.themed_group_cap(40) == 3
     assert ceiling.themed_group_cap(0) == 1
     assert ceiling.themed_group_cap(-5) == 1
 
@@ -616,7 +626,7 @@ def test_the_ceiling_is_in_force_on_a_themed_pass_too():
 
     from fractal_wallpapers.curation import solve
 
-    # One palette group each: the THEMED group cap is `max(1, floor(0.05 n))`,
+    # One palette group each: the THEMED group cap is `max(1, floor(0.075 n))`,
     # which is one seat a group at n=6, and a pool sharing one group would come up
     # short for that reason rather than for this one.
     pool = [
