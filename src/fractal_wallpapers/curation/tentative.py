@@ -83,6 +83,7 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.curation import page as page_module
 from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 
 #: The schema every row and every manifest here carries.
@@ -123,7 +124,11 @@ RECORDED_SEATS = 1000
 #: Recording a gallery and publishing one used to be a single act: the hole was
 #: spelled per FILE across every stamp, so every record ever made was committed,
 #: and a record too large to track was a record that could not be made without
-#: breaking `tests/test_history_purity.py`. Matt's ruling of 2026-09-04 split
+#: breaking `tests/test_history_purity.py` — an n=2000 record's `gallery.jsonl` is
+#: over `MAX_TRACKED_BYTES`. **`LARGE_TEXT_ALLOWLIST` was not the answer and was
+#: not touched**: widening the size rule would have tracked every record ever made
+#: rather than the ones worth pointing at, which is the wrong question. Matt's
+#: ruling of 2026-09-04 split
 #: them. A record is published when he names it; every other record stays in the
 #: store, kept and readable **by naming its stamp**, and what it does not get is a
 #: Durable-class save, check or restore and a place in an archive copy. It keeps
@@ -717,59 +722,64 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
 #: to drive, and a second file would be a second thing to find. The substitutions
 #: are `__ROWS__`, `__STAMP__`, `__SEATS__`, `__ASKED__` and `__MISSING__`, all
 #: filled by [`page`] and none of them by the reader.
-_PAGE = """<!doctype html>
+_PAGE = (
+    """<!doctype html>
 <meta charset="utf-8">
 <title>tentative gallery __STAMP__</title>
-<style>
+<style>"""
+    + page_module.STYLE
+    + """
   :root { color-scheme: dark; }
-  body { margin: 0; background: #14161a; color: #e6e8eb;
+  body { margin: 0; background: var(--ground); color: var(--ink);
          font: 13px/1.45 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
-  header { position: sticky; top: 0; z-index: 2; background: #1b1e24;
-           border-bottom: 1px solid #2c313a; padding: 10px 14px; }
+  header { position: sticky; top: 0; z-index: 2; background: var(--raised);
+           border-bottom: 1px solid var(--rule); padding: 10px 14px; }
   h1 { font-size: 14px; margin: 0 0 8px; font-weight: 600; letter-spacing: .02em; }
-  h1 span { color: #8a939f; font-weight: 400; }
+  h1 span { color: var(--muted); font-weight: 400; }
   .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
-  fieldset { border: 1px solid #2c313a; border-radius: 5px; margin: 0; padding: 5px 8px 7px;
+  fieldset { border: 1px solid var(--rule); border-radius: 5px; margin: 0; padding: 5px 8px 7px;
              max-height: 132px; overflow-y: auto; }
-  legend { color: #8a939f; font-size: 11px; text-transform: uppercase;
+  legend { color: var(--muted); font-size: 11px; text-transform: uppercase;
            letter-spacing: .06em; padding: 0 4px; }
   label { display: block; white-space: nowrap; cursor: pointer; }
   label input { vertical-align: -1px; margin-right: 4px; }
-  label b { color: #8a939f; font-weight: 400; }
-  input[type=search], select { background: #14161a; color: #e6e8eb; border: 1px solid #2c313a;
+  label b { color: var(--muted); font-weight: 400; }
+  input[type=search], select { background: var(--ground); color: var(--ink);
+                               border: 1px solid var(--rule);
                                border-radius: 4px; padding: 5px 7px; font: inherit; }
-  button { background: #2b313b; color: #e6e8eb; border: 1px solid #3a414d; border-radius: 4px;
+  button { background: #2b313b; color: var(--ink); border: 1px solid #3a414d; border-radius: 4px;
            padding: 5px 9px; font: inherit; cursor: pointer; }
   button:hover { background: #3a414d; }
   #tray { margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-          color: #8a939f; }
+          color: var(--muted); }
   #tray code { color: #cfd4db; }
   main { display: grid; gap: 10px; padding: 12px 14px 60px;
          grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); }
   h2 { grid-column: 1 / -1; margin: 14px 0 0; padding-bottom: 5px; font-size: 12px;
        font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #9fc2ff;
-       border-bottom: 1px solid #2c313a; }
+       border-bottom: 1px solid var(--rule); }
   h2:first-child { margin-top: 0; }
-  h2 b { color: #8a939f; font-weight: 400; text-transform: none; letter-spacing: 0; }
-  .tile { border: 1px solid #2c313a; border-radius: 6px; overflow: hidden; background: #1b1e24; }
+  h2 b { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .tile { border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+          background: var(--raised); }
   .tile.picked { border-color: #6f9ef8; box-shadow: 0 0 0 1px #6f9ef8; }
   .tile img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;
-              background: #0e1013; cursor: zoom-in; }
+              background: var(--well); cursor: zoom-in; }
   .tile .gone { display: grid; place-items: center; width: 100%; aspect-ratio: 16/9;
-                background: #0e1013; color: #6b7280; cursor: pointer; }
+                background: var(--well); color: #6b7280; cursor: pointer; }
   .meta { padding: 6px 8px 8px; }
   .meta .line { display: flex; justify-content: space-between; gap: 8px; }
   .pick { vertical-align: -1px; margin-right: 5px; cursor: pointer; }
   .alias { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: #9fc2ff;
            cursor: pointer; border-bottom: 1px dotted #47536b; }
   .alias.flash { color: #7ee08a; border-bottom-color: #7ee08a; }
-  .dim { color: #8a939f; }
+  .dim { color: var(--muted); }
   .floor { margin-top: 4px; font-size: 11px; border-radius: 3px; padding: 1px 5px;
            display: inline-block; }
   .floor.mandated { background: #3a2a14; color: #f0b45e; border: 1px solid #6b4a1d; }
   .floor.holding { background: #1d2a20; color: #7ec294; border: 1px solid #33513d; }
   .num { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
-  #empty { padding: 24px 14px; color: #8a939f; }
+  #empty { padding: 24px 14px; color: var(--muted); }
   /* The full-size view. A candidate picture is 640x360, so `contain` scales it up
      to whatever the screen gives rather than pinning it at its stored pixels: the
      point of opening one is judging it larger than a 224px tile, not counting its
@@ -780,7 +790,7 @@ _PAGE = """<!doctype html>
   #lb.open { display: grid; }
   #lb img { min-width: 0; min-height: 0; width: 100%; height: 100%;
             object-fit: contain; }
-  #lb .bar { padding: 8px 14px 12px; text-align: center; color: #8a939f; }
+  #lb .bar { padding: 8px 14px 12px; text-align: center; color: var(--muted); }
   #lb .bar b { color: #9fc2ff; font-weight: 600; }
 </style>
 <header>
@@ -1097,6 +1107,7 @@ document.getElementById("drop").addEventListener("click", () => { picked.clear()
 draw();
 </script>
 """
+)
 
 
 __all__ = [

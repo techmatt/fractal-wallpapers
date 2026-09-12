@@ -2777,7 +2777,15 @@ def solve(
         # record that forced nothing carries `asked: 0`, which is every shipped
         # pass and is the answer a reader needs rather than a missing field.
         "forced": fine.record,
-        "theme": None
+        # `theme_pool` and not `theme`, since 2026-09-12. This is a description of
+        # the POOL a themed pass drew from — how many rows were in the cell, what
+        # made them members, what the cap was — and the theme itself is a string on
+        # `config`, which is the block a tracked manifest carries whole. Two keys
+        # named `theme` in one record, one a dict here and one a string there, made
+        # `config.get("theme")` look exactly right: it returns the cell name, and
+        # then every `.get()` on it raises. A record taken before that spells this
+        # block `theme`.
+        "theme_pool": None
         if theme is None
         else {
             "cell": str(theme),
@@ -2990,12 +2998,14 @@ def _config(
         # defect this was found by. `fine_bar` above is the EFFECTIVE bar — what
         # the pass actually ran — and this says how it got there. `null` on every
         # unthemed pass and on a themed pass with no bar at all.
-        "themed_bar": themed_bar,
-        "themed_bar_is": "the themed path takes the lower of the shipped fine bar and the "
+        "theme_bar": themed_bar,
+        "theme_bar_is": "the themed path takes the lower of the shipped fine bar and the "
         "p_fine of its cell's `multiple * n`-th best candidate, floored at `floor` — see "
         "solve.themed_fine_bar. `null` is a pass that was not themed or ran unbarred. A "
         "record that does not name the field at all was taken before 2026-09-11, when a "
-        "themed pass inherited the general bar and drew from 3.7% of the pool",
+        "themed pass inherited the general bar and drew from 3.7% of the pool; one that "
+        "spells it `themed_bar` was taken before 2026-09-12, when it was renamed to sort "
+        "beside `theme` here",
         # On `config` for the fine bar's own reason: this block is what
         # `tentative.manifest` carries WHOLE into a tracked manifest, and whether
         # a gallery was handed a set of rows to seat ahead of the pool is not
@@ -3068,6 +3078,10 @@ def _config(
         "THE ONLY STAGE THAT RAISES THE SEAT COUNT: a 1-swap conserves it. On since "
         "2026-09-04, so a record that does not name the flag ran WITH it and is not "
         "comparable to one taken before that",
+        # The CELL NAME and nothing else — a string, or `null` on an unthemed pass.
+        # The pool that name described is `theme_pool` at the top level of the
+        # record, which was called `theme` too until 2026-09-12; a reader that
+        # `.get()`s into this one is reading a string a character at a time.
         "theme": None if theme is None else str(theme),
         "method": "a stratified view, a greedy seed, 1-swap improvement to exhaustion, "
         "augmenting chains, then the 1-swap loop again. ANYTIME at every stage: the gallery "
@@ -3424,10 +3438,14 @@ def _shortfalls(
             # cap of three if something spent it.
             "realized_max": max(groups.values(), default=0),
             "at_the_cap": sum(1 for count in groups.values() if count >= rule.group_cap),
-            # The busiest twenty and never all of them: this is a readout and not a
-            # census. `held` above is the group count — `len(counts)` looks like it
-            # and is 20 on any pass with more groups than that.
-            "counts": dict(sorted(groups.items(), key=lambda item: (-item[1], item[0]))[:20]),
+            # The busiest twenty and never all of them: this is a readout and not
+            # a census, and it is the ONE truncated `counts` in this record —
+            # `cells.counts` and `families.counts` are complete. So it does not
+            # get to be called `counts`: on the name alone, `len()` of it looks
+            # like the group count, reads 20 on every shipping pass, and the habit
+            # picked up on the two complete siblings is what makes it wrong. `held`
+            # above is the group count. Named `counts` until 2026-09-12.
+            "counts_top20": dict(sorted(groups.items(), key=lambda item: (-item[1], item[0]))[:20]),
             "over_cap": {
                 group: count for group, count in sorted(groups.items()) if count > rule.group_cap
             },

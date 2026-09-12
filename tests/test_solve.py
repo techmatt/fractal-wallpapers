@@ -2431,9 +2431,9 @@ def test_a_themed_pass_seats_only_the_cell_and_calls_the_rest_pool_construction(
     assert record["filled"] == 6
     assert all(seat["key"].startswith("in") for seat in record["seated"])
     assert record["rejection"]["reasons"][solve.OFF_THEME] == 12
-    assert record["theme"]["cell"] == "dark_vivid_lime"
-    assert record["theme"]["in_the_cell"] == 12
-    assert record["theme"]["outside_the_cell"] == 12
+    assert record["theme_pool"]["cell"] == "dark_vivid_lime"
+    assert record["theme_pool"]["in_the_cell"] == 12
+    assert record["theme_pool"]["outside_the_cell"] == 12
 
 
 def test_a_themed_pass_takes_the_relaxed_bar_and_an_unthemed_one_does_not():
@@ -2460,7 +2460,7 @@ def test_a_themed_pass_takes_the_relaxed_bar_and_an_unthemed_one_does_not():
         log=quiet,
     )
     assert plain["config"]["bars"]["smooth"] == headroom.DEFAULT_COLUMN
-    assert plain["theme"] is None
+    assert plain["theme_pool"] is None
     assert all(seat["key"].startswith("out") for seat in plain["seated"])
 
 
@@ -2562,7 +2562,7 @@ def test_a_themed_pass_takes_the_themed_cap_and_measures_P_off_its_own_pool():
         key=solve.JUDGE_KEY,
         log=quiet,
     )
-    theme = record["theme"]
+    theme = record["theme_pool"]
     assert theme["P"] == 4
     assert theme["groups_in_the_pool"] == 5, "the fluke group is in the pool, not in P"
     assert theme["group_cap"] == ceiling.themed_group_cap(20) == 1
@@ -2586,10 +2586,10 @@ def test_the_themed_cap_can_be_named_and_then_it_is_the_cap():
         key=solve.JUDGE_KEY,
         log=quiet,
     )
-    assert record["theme"]["group_cap"] == 2
+    assert record["theme_pool"]["group_cap"] == 2
     assert record["filled"] == 2
     assert record["rejection"]["reasons"]["group_cap"] == 7
-    assert "caller" in record["theme"]["group_cap_is"]
+    assert "caller" in record["theme_pool"]["group_cap_is"]
 
 
 def test_an_unthemed_pass_is_untouched_by_any_of_it():
@@ -2602,14 +2602,14 @@ def test_an_unthemed_pass_is_untouched_by_any_of_it():
         key=solve.JUDGE_KEY,
         log=quiet,
     )
-    assert record["theme"] is None
+    assert record["theme_pool"] is None
     assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.PROPORTIONAL
     assert record["config"]["ceiling"]["group_cap"] == ceiling.group_cap(150, ceiling.PROPORTIONAL)
     # And the bar the general path runs is the shipped one, unrelaxed: the themed
     # relaxation is a rule about ONE cell and the shipped bar is fitted to all
     # forty-eight, so a pass that inherited the cell's answer would be a main
     # gallery chosen at a level nobody set.
-    assert record["config"]["themed_bar"] is None
+    assert record["config"]["theme_bar"] is None
 
 
 # --------------------------------------------------------------------------- #
@@ -2706,13 +2706,13 @@ def test_a_themed_solve_runs_the_relaxed_bar_and_puts_the_gate_on_config(monkeyp
         log=quiet,
     )
 
-    gate = record["config"]["themed_bar"]
+    gate = record["config"]["theme_bar"]
     assert gate["shipped_bar"] == 0.5
     assert gate["effective_bar"] == solve.THEMED_BAR_FLOOR
     assert gate["floor"] == solve.THEMED_BAR_FLOOR
     assert gate["multiple"] == solve.THEMED_BAR_MULTIPLE == 4
     assert gate["cell_at_bar"] == 6
-    assert "2026-09-11" in record["config"]["themed_bar_is"]
+    assert "2026-09-11" in record["config"]["theme_bar_is"]
     # `config.fine_bar` is the bar the pass RAN, so the two agree and a reader is
     # never left deciding which of them the seats came out of.
     assert record["config"]["fine_bar"] == gate["effective_bar"]

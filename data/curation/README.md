@@ -177,7 +177,7 @@ measured at that picture's own frame: a census taken over one `release_geometry`
 and one taken over another are two populations, and the field above is the only
 thing that tells them apart. The last such census over this store, what it read
 and why the measurement was retired, are in
-[`curation/MEASUREMENTS.md`](../../src/fractal_wallpapers/curation/MEASUREMENTS.md)'s
+[`curation/MEASUREMENTS_decisions.md`](../../src/fractal_wallpapers/curation/MEASUREMENTS_decisions.md)'s
 *What the finished collection expressed, measured 2026-09-06*.
 
 **There are two autolevel stamps per released row, and only one of them is here.**

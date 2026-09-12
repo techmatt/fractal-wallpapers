@@ -76,6 +76,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.curation import page as page_module
 from fractal_wallpapers.curation import recipes as recipes_module
 from fractal_wallpapers.labeling import finished
 from fractal_wallpapers.paths import repo_root
@@ -1600,27 +1601,27 @@ def _features(place: dict, p_ge3: float, p_ge4: float, flat: float, rank_key, fl
 # --------------------------------------------------------------------------- #
 PAGE = """<!doctype html>
 <meta charset="utf-8"><title>judged recipes at candidate geometry</title>
-<style>
+<style>{style}
  body {{ font: 13px/1.45 system-ui, sans-serif; margin: 1.5rem;
-         background: #14161a; color: #dfe3e8; }}
+         background: var(--ground); color: var(--ink); }}
  h1 {{ font-size: 1.15rem; margin: 0 0 .35rem; }}
- .lede {{ max-width: 64rem; color: #9aa4b1; margin: 0 0 1.25rem; }}
- .lede b {{ color: #dfe3e8; }}
- .lede em {{ color: #d8b45a; font-style: normal; }}
- .row {{ background: #1c1f26; border-radius: 6px; margin: 0 0 1rem; overflow: hidden;
+ .lede {{ max-width: 64rem; color: var(--muted); margin: 0 0 1.25rem; }}
+ .lede b {{ color: var(--ink); }}
+ .lede em {{ color: var(--warn); font-style: normal; }}
+ .row {{ background: var(--panel); border-radius: 6px; margin: 0 0 1rem; overflow: hidden;
          max-width: 84rem; }}
- .pair {{ display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #0e1013; }}
+ .pair {{ display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--well); }}
  figure {{ margin: 0; position: relative; }}
  img {{ display: block; width: 100%; }}
  figcaption {{ position: absolute; left: 0; top: 0; background: rgba(10,12,15,.78);
                padding: .15rem .45rem; font-size: .68rem; letter-spacing: .04em;
-               text-transform: uppercase; color: #9aa4b1; }}
- .judged figcaption {{ color: #d8b45a; }}
+               text-transform: uppercase; color: var(--muted); }}
+ .judged figcaption {{ color: var(--warn); }}
  .facts {{ display: flex; flex-wrap: wrap; gap: .15rem 1.1rem; padding: .55rem .7rem .65rem; }}
  .facts span {{ white-space: nowrap; }}
- .lab {{ color: #6b7480; }}
- .key {{ font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }}
- .gone {{ padding: 4rem 1rem; text-align: center; color: #6b7480; }}
+ .lab {{ color: var(--faint); }}
+ .key {{ font-family: ui-monospace, monospace; color: var(--faint); font-size: .72rem; }}
+ .gone {{ padding: 4rem 1rem; text-align: center; color: var(--faint); }}
 </style>
 <h1>Judged recipes at candidate geometry</h1>
 <p class="lede">{lede}</p>
@@ -1671,7 +1672,9 @@ def page(store=None, classes=KEPT_CLASSES, log=print) -> dict:
     page_path = _path(store, PAGE_NAME)
     page_path.parent.mkdir(parents=True, exist_ok=True)
     page_path.write_text(
-        PAGE.format(lede=_lede(len(entries), read), cards="\n".join(cards)),
+        PAGE.format(
+            style=page_module.STYLE, lede=_lede(len(entries), read), cards="\n".join(cards)
+        ),
         encoding="utf-8",
         newline="\n",
     )

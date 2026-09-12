@@ -929,10 +929,14 @@ def test_a_themed_record_and_a_themed_run_ask_for_the_same_two_demands() -> None
     reach two different galleries. A record's whole claim is that it is a `run`
     taken once and kept, and a themed record that floored differently would be a
     stamp nobody could reproduce from the command it names."""
-    from fractal_wallpapers.cli import curate_commands
+    from fractal_wallpapers import cli
     from fractal_wallpapers.curation import ceiling, solve
 
-    targets, floor = curate_commands.themed_demands("dark_vivid_green", 200)
+    # Through the package rather than through `curate_solve_commands`, which is
+    # where the helper lives since the 2026-09-12 cut: `cli.<name>` resolving to
+    # the ONE module that defines it is the arrangement, and a test that named the
+    # module would have to be repointed by every later cut.
+    targets, floor = cli.themed_demands("dark_vivid_green", 200)
     assert targets == {"dark_vivid_green": 1.0}
     assert floor == solve.mode_floor(200)
 
