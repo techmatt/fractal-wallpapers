@@ -692,6 +692,158 @@ def test_a_mined_shots_phases_are_seeded_off_the_shot_and_not_the_stream():
     assert first != [one.phase for one in rotation.drawn_rotations(a_shot(place="p1"), seed=5)]
 
 
+# --------------------------------------------------------------------------- #
+# The dedupe, whose unit is the shot.
+# --------------------------------------------------------------------------- #
+class NamedRecipe:
+    """The one thing `resolve_shots` asks a recipe: what decides its pixels.
+
+    A duck for `recipes.key_of`, which digests `pixels()` and reads nothing else.
+    Real enough that the keys are real sha256s over the four fields a rotation
+    moves, and cheap enough that a hundred shots cost nothing.
+    """
+
+    def __init__(self, intention):
+        self.intention = intention
+
+    def pixels(self) -> dict:
+        one = self.intention
+        return {
+            "location": one.location,
+            "mode": one.mode,
+            "colormap": one.colormap,
+            "phase": one.phase,
+        }
+
+
+class Maker:
+    def recipe_for(self, intention, _place, _frame):
+        return NamedRecipe(intention)
+
+
+def keys_of(shot, seed=11):
+    """The five keys one shot resolves to, in `drawn_rotations`' own order."""
+    return [
+        recipes.key_of(NamedRecipe(one))
+        for one in rotation.drawn_rotations(shot, seed, rotation.MINE_ROTATIONS)
+    ]
+
+
+def resolved(intended, known, seed=11):
+    world = {
+        "by_key": {
+            one.location: {"key": one.location, "viewport": VIEWPORT, "maxiter": 500}
+            for one in intended
+        },
+        "index": {},
+    }
+    return rotation.resolve_shots(
+        intended,
+        world,
+        Maker(),
+        seed=seed,
+        rotations=rotation.MINE_ROTATIONS,
+        known=known,
+        log=lambda *_a: None,
+    )
+
+
+@pytest.mark.parametrize("at", range(rotation.MINE_ROTATIONS + 1))
+def test_a_shot_is_skipped_whole_when_the_ledger_holds_any_one_of_its_five(at):
+    """★ The fix of 2026-09-12, and it is a fix in both directions at once.
+
+    A shot **is** the comparison — a phase-0 control against four rotations, best
+    of them merged — so a shot minus one member is not a cheaper shot, it is a
+    different question wearing the same name. Before this, a hit on the control
+    (`at == 0`) discarded the shot outright and a hit on any rotation left a
+    best-of-**four** read against the same control, recorded in the same column
+    as every honest best-of-five in the store. On `mine_ckpt120` leg 1's split
+    that was 38.5% of a re-entered block's shots dropped and 61.5% re-priced.
+
+    Whichever member is held, the answer is now the same one.
+    """
+    shot = a_shot()
+    held = {keys_of(shot)[at]}
+    blocks, census = resolved([shot], set(held))
+    assert blocks == []
+    assert census["shots"] == 0 and census["candidates"] == 0
+    assert census["shots_already_in_ledger"] == 1
+    assert census["already_in_ledger"] == 1
+    assert census["no_control"] == 0, "the control branch is not what refused this"
+
+
+def test_a_skipped_shot_claims_none_of_the_keys_it_resolved():
+    """Nothing was rendered under them, so a later shot that draws one has the
+    same right to be refused for the same reason. Claiming them would make the
+    plan's second copy of a shot look fresh — which is the partial dedupe again,
+    one level up."""
+    shot = a_shot()
+    known = {keys_of(shot)[2]}
+    resolved([shot], known)
+    assert known == {keys_of(shot)[2]}, "the four it did not hold are still unclaimed"
+
+
+def test_an_untouched_shot_resolves_to_its_five_and_claims_them():
+    shot = a_shot()
+    known: set = set()
+    blocks, census = resolved([shot], known)
+    assert census["shots"] == 1
+    assert census["candidates"] == rotation.MINE_ROTATIONS + 1
+    assert census["already_in_ledger"] == 0 and census["shots_already_in_ledger"] == 0
+    assert known == set(keys_of(shot))
+    (block,) = blocks
+    (one,) = block
+    at, held, made = one
+    assert at == 1 and held is shot
+    assert [intention.k for intention, *_rest in made] == [0, 1, 2, 3, 4]
+
+
+def test_a_plan_holding_one_shot_twice_makes_it_once_and_says_so():
+    """Two arms of one plan can draw the same (location, mode, colormap). The
+    second copy is a duplicate of work this leg is about to do rather than of work
+    the ledger holds, and it is refused the same way and counted the same way."""
+    shot = a_shot()
+    blocks, census = resolved([shot, a_shot()], set())
+    assert census["shots"] == 1 and census["shots_already_in_ledger"] == 1
+    assert census["already_in_ledger"] == rotation.MINE_ROTATIONS + 1
+    assert len(blocks) == 1 and len(blocks[0]) == 1
+    assert len(keys_of(shot)) == rotation.MINE_ROTATIONS + 1
+
+
+def test_a_direct_traps_bare_shot_dedupes_whole_on_its_one_key():
+    """`phase` is a no-op on a trap figure, so the shot is one candidate and the
+    two rules meet: skipping it whole and skipping its only candidate are the same
+    act, and the census must still say a shot was given up."""
+    shot = a_shot(mode="direct_trap_ring")
+    keys = keys_of(shot)
+    assert len(keys) == 1
+    blocks, census = resolved([shot], set(keys))
+    assert blocks == []
+    assert census["shots_already_in_ledger"] == 1 and census["already_in_ledger"] == 1
+    assert census["bare"] == 0, "nothing was made, so nothing was made bare"
+
+
+def test_a_shot_at_a_place_the_population_does_not_hold_is_unresolvable_and_not_a_dedupe():
+    """Three ways a shot leaves the plan and the census tells them apart: the
+    ledger already holds it, the population cannot place it, or it came back with
+    no control. Folding any two of them is what hid the 38.5%."""
+    blocks, census = resolved([a_shot(place="p0")], set())
+    assert census["shots"] == 1
+    world = {"by_key": {}, "index": {}}
+    _blocks, census = rotation.resolve_shots(
+        [a_shot(place="gone")],
+        world,
+        Maker(),
+        seed=11,
+        rotations=rotation.MINE_ROTATIONS,
+        known=set(),
+        log=lambda *_a: None,
+    )
+    assert census["unresolvable"] == 1
+    assert census["shots_already_in_ledger"] == 0 and census["no_control"] == 0
+    assert blocks
+
+
 def test_a_resumed_leg_takes_a_slice_of_the_whole_plan_and_not_a_smaller_plan():
     """The two halves of a clock-bound leg are one leg or they are not comparable.
 
@@ -799,7 +951,7 @@ def two_legs(tmp_path, monkeypatch):
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
     monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
 
-    def a_leg(name, *, from_block, decided, before_the_protocol=False):
+    def a_leg(name, *, from_block, decided, before_the_protocol=False, pool=None):
         rotation.rotation_dir(name).mkdir(parents=True)
         with rotation.decisions_path(name).open("w", encoding="utf-8", newline="\n") as handle:
             for at in range(decided):
@@ -839,12 +991,31 @@ def two_legs(tmp_path, monkeypatch):
             record["from_block"] = from_block
             record["shares"]["conditioned"] = 0.0
             record["resume_from_block"] = from_block + decided
+            # The pool the plan was cut over, written from 2026-09-12. `None`
+            # here means a record from before it, which is the third state the
+            # guard has to have an answer for.
+            record["plan"]["pool"] = THE_POOL if pool is None else pool
         rotation.record_path(name).write_text(
             json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
         )
         return record
 
     return a_leg
+
+
+#: The pool `mine_ckpt120` was planned against, in the shape the record carries.
+#: Five stores because [`depth.pool_stores`] names five, and a digest over the
+#: keys because counts collide — see `test_the_pool_digest_is_over_keys`.
+THE_POOL = {
+    "stores": {
+        "candidate_ledger": "ledger-sha",
+        "candidate_scores": "scores-sha",
+        "embeddings": "embeddings-sha",
+        "supply_scores": "supply-sha",
+        "amendment": "amendment-sha",
+    },
+    "digest": {"sha256": "pool-sha", "drawable": 9_642, "opened": 24_113},
+}
 
 
 def the_plan(**over):
@@ -955,6 +1126,119 @@ def test_a_zero_share_added_after_a_leg_ran_does_not_unmake_its_resume(two_legs)
     assert set(first["shares"]) != set(second["shares"]), "the fixture is the real shape"
     assert rotation.identity_of(first) == rotation.identity_of(second)
     assert rotation.identity_of(first) == rotation.plan_identity(**the_plan())
+
+
+# --------------------------------------------------------------------------- #
+# The pool a plan was cut over, which the flags cannot speak for.
+# --------------------------------------------------------------------------- #
+def legs(**over):
+    return rotation.legs_of(rotation.plan_identity(**the_plan(**over)))
+
+
+def pool_check(at, *, stores=None, digest=None, **over):
+    return rotation.refuse_moved_pool(
+        at, legs(**over), stores=stores, digest=digest, log=lambda *_a: None
+    )
+
+
+def test_a_resume_whose_POOL_has_moved_is_refused_though_every_flag_agrees(two_legs):
+    """★ The defect `--from-block` could not see, made mechanical.
+
+    The plan is `PLAN_HEADROOM * workers * plan_budget / rate` **shots drawn out
+    of the pool**, and `refuse_unreachable_resume` above matches only the first
+    half. Every location a merge adopts leaves `hunt.drawable` for good, so
+    `depth.ranked_bands` re-cuts its bands over what is left: put `mine_ckpt120`'s
+    locations back and its 247 blocks come back 247 of 247 in order; take them out
+    again and its resume's 129 come back at indices 248-376 with none of the first
+    leg's 247 anywhere in that plan. So `--from-block 247` skipped 247 blocks
+    nobody had rendered, under flags that were all correct.
+    """
+    two_legs("mine_ckpt120", from_block=0, decided=247)
+    moved = {**THE_POOL["stores"], "candidate_ledger": "after-the-merge"}
+    with pytest.raises(rotation.RotationRefused, match="candidate_ledger"):
+        pool_check(247, stores=moved)
+    # And on the exact reading, which is what answers when a store moved without
+    # the pool moving with it.
+    with pytest.raises(rotation.RotationRefused, match="drawable location"):
+        pool_check(247, digest={"sha256": "another-pool", "drawable": 9_266, "opened": 24_489})
+
+
+def test_a_resume_onto_the_pool_its_plan_was_cut_over_is_allowed_by_both_readings(two_legs):
+    two_legs("mine_ckpt120", from_block=0, decided=247)
+    assert set(pool_check(247, stores=dict(THE_POOL["stores"]))) == {"mine_ckpt120"}
+    assert set(pool_check(247, digest=dict(THE_POOL["digest"]))) == {"mine_ckpt120"}
+
+
+def test_a_first_leg_is_asked_nothing_about_the_pool_either(two_legs):
+    two_legs("mine_ckpt120", from_block=0, decided=247)
+    assert pool_check(0, stores={"candidate_ledger": "anything"}) == {}
+
+
+def test_a_record_written_before_the_pool_was_recorded_leaves_the_resume_unguarded(two_legs):
+    """⚠ And it says so rather than passing quietly. A guard that refused every
+    record written before it existed would be a *new* way for an unattended leg to
+    fail at 02:00, which is the failure this whole protocol is about."""
+    two_legs("mine_ckpt120", from_block=0, decided=247, before_the_protocol=True)
+    said: list = []
+    assert (
+        rotation.refuse_moved_pool(
+            247,
+            legs(),
+            stores={**THE_POOL["stores"], "candidate_ledger": "after-the-merge"},
+            log=said.append,
+        )
+        == {}
+    )
+    assert any("recorded no pool identity" in line for line in said)
+
+
+def test_one_leg_of_a_plan_still_standing_is_enough_to_continue_it(two_legs):
+    """Two legs of one plan, and only the later one was cut over today's pool: the
+    resume is into that one's plan and the stale record is simply not offered."""
+    two_legs("mine_ckpt120", from_block=0, decided=247, pool={**THE_POOL, "digest": {}})
+    two_legs("m2", from_block=247, decided=129)
+    assert set(pool_check(376, digest=dict(THE_POOL["digest"]))) == {"m2"}
+
+
+def test_the_pool_digest_is_over_keys_and_not_over_counts():
+    """⚠ Counts collide, and the collision is not exotic: a leg that merged 376
+    locations while a backfill admitted 376 more reports the same total over a
+    pool with none of the same places in it."""
+    from fractal_wallpapers.curation import depth
+
+    def a_pool(keys, opened):
+        return {
+            "pools": {"mandelbrot": [{"key": one} for one in keys]},
+            "opened": set(opened),
+        }
+
+    first = depth.pool_digest(a_pool(["a", "b", "c"], {"x"}))
+    second = depth.pool_digest(a_pool(["a", "b", "d"], {"x"}))
+    assert (first["drawable"], first["opened"]) == (second["drawable"], second["opened"])
+    assert first["sha256"] != second["sha256"]
+    # The opened set is the other half a merge moves, and it moves on its own too.
+    assert first["sha256"] != depth.pool_digest(a_pool(["a", "b", "c"], {"y"}))["sha256"]
+    # Read order is not part of it: `hunt.drawable` sorts each partition by key
+    # and this sorts the opened set, so one pool has one digest.
+    assert first["sha256"] == depth.pool_digest(a_pool(["a", "b", "c"], {"x"}))["sha256"]
+
+
+def test_every_store_the_pool_is_a_function_of_is_stamped():
+    """The five are not interchangeable: the rows say which locations are opened,
+    the scores decide which incumbent wins the band's argmax, the embedding store
+    is the admitted population, and the sidecar with its amendment is the junk
+    floor admission is read at. The frame index is deliberately not one of them —
+    it decides what a shot renders, not which shots the plan holds."""
+    from fractal_wallpapers.curation import depth
+
+    assert [tag for tag, _durable in depth.pool_stores()] == [
+        "candidate_ledger",
+        "candidate_scores",
+        "embeddings",
+        "supply_scores",
+        "amendment",
+    ]
+    assert set(depth.pool_stamp()) == {tag for tag, _durable in depth.pool_stores()}
 
 
 def test_only_a_mine_legs_record_is_offered_to_a_mine_resume(two_legs):

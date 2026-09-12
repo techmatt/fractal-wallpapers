@@ -736,6 +736,10 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "merge": ("--name",),
         "sheet": ("--name",),
+        # No `--name`: this cuts a manifest off the live population and records
+        # nothing under a leg's name. `--modes` is the incumbent roster and
+        # defaults to `depth.field_modes()` rather than to the twelve a leg runs.
+        "near-places": ("--out", "--modes", "--min-slots", "--keep"),
     },
     # The mode pair is on `plan` and `run` and on neither of the other two: a
     # merge reads the rows the run already wrote and a read reads its record, so
@@ -904,14 +908,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     one hundred until `candidate-ledger modes` arrived to count the accepted recipes per
     rendering type; and twenty-two and one hundred and two until `repeat-ab` and its two
     arrived to ask the one repetition question `repetition` left open, which is whether
-    a repeat improves a picture that is already good at 1x."""
+    a repeat improves a picture that is already good at 1x; and one hundred and two until
+    `depth near-places` arrived to cut a near-band manifest by the draw's own rule, which
+    a leg rig outside the checkout had been doing by a different one."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 102
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 103
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

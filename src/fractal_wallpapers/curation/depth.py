@@ -48,6 +48,7 @@ from __future__ import annotations
 import collections
 import dataclasses
 import functools
+import hashlib
 import json
 import math
 import random
@@ -655,6 +656,67 @@ def best_field_by_location(rows: list, scores: dict, roster: set) -> dict:
     return out
 
 
+def near_admits(key: str, held: dict, places: dict) -> str:
+    """Why the near band cannot draw at `key`, or `""` where it can. **The predicate.**
+
+    Every test [`near_places`] applies, named so that a caller can apply the same
+    ones and get the same answer. There are two and they are not the same kind of
+    thing:
+
+    * `out_of_band` — the place's best candidate in a mode this run can afford is
+      not in `[SEATING_BAR, PRIMED_BAR)`. That is what the arm *is*.
+    * `not_admitted` — `places` is the admitted population keyed by location,
+      `world["by_key"]`, which is [`hunt.scanned`]: the **embedded** locations
+      less the ones now under the junk floor. A key it does not hold is a place
+      this draw has no population row for.
+
+    ⚠ **The second one used to be silent and it is not small.** A manifest is cut
+    over the ledger and the ledger runs ahead of the embedding store: measured
+    2026-09-12 over the live store, **1,636 of 34,010 opened locations (4.9%)
+    have never been embedded** — and they are not spread evenly. Of the 255
+    places `general_leg_0909`'s band 2 was handed, **168 (66%) were never-embedded
+    `julia:mandelbrot` locations**, so that arm was planned over 87 places out of
+    a manifest naming 255 and stopped on an empty plan with clock left. The arm
+    reported `255 of 255 named place(s) hold a candidate in a mode this run can
+    afford`, which was true and was not the question.
+
+    **Widening the draw to take them is a different change and is not this one.**
+    A location with no scan row already draws at the frame it carries, through
+    [`hunt.frame_for`] — but a location with no *embedding* row is one the
+    admission rule has never passed, and letting the near band stand on it would
+    put the mining draw and the seating on two different populations. What this
+    buys is that both ends of the band ask the same question and the answer is
+    reported rather than lost.
+    """
+    if not (SEATING_BAR <= held["best"] < PRIMED_BAR):
+        return "out_of_band"
+    if key not in places:
+        return "not_admitted"
+    return ""
+
+
+def near_population(best_field: dict, places: dict) -> tuple[dict, dict]:
+    """`({partition: [rows]}, why the rest were refused)` — the near band's whole population.
+
+    [`near_admits`] over every place `best_field` holds, in partition pools sorted
+    by key so that the draw is a function of the population and not of the order
+    the ledger was read in. The census is the half that was missing: an arm that
+    plans nothing can now say which test took its places.
+    """
+    pools: dict = {}
+    refused = {"out_of_band": 0, "not_admitted": 0}
+    for key, held in best_field.items():
+        why = near_admits(key, held, places)
+        if why:
+            refused[why] += 1
+            continue
+        pools.setdefault(held["partition"], []).append({**held, "key": key})
+    return (
+        {name: sorted(rows, key=lambda row: str(row["key"])) for name, rows in pools.items()},
+        refused,
+    )
+
+
 def near_places(best_field: dict, places: dict, seed: int, count: int) -> list:
     """`count` locations whose best field candidate sits in `[SEATING_BAR, PRIMED_BAR)`.
 
@@ -662,16 +724,97 @@ def near_places(best_field: dict, places: dict, seed: int, count: int) -> list:
     per partition and a draw that spent itself on one of them prices one of them.
 
     `places` is the admitted population keyed by location — `world["by_key"]`.
-    A key it does not hold has no row to render from; a key no framing scan holds
-    is drawn at the frame it already carries, through [`hunt.frame_for`].
+    What it will and will not stand on is [`near_admits`], which is also what a
+    manifest is cut by, so the two ends of the band agree by construction.
     """
-    pools: dict = {}
-    for key, held in best_field.items():
-        if not (SEATING_BAR <= held["best"] < PRIMED_BAR) or key not in places:
-            continue
-        pools.setdefault(held["partition"], []).append({**held, "key": key})
-    pools = {name: sorted(rows, key=lambda row: str(row["key"])) for name, rows in pools.items()}
+    pools, _refused = near_population(best_field, places)
     return hunt.spread(pools, count, seed)
+
+
+def near_manifest(
+    world: dict, *, roster=None, keep: int | None = None, min_slots: int = 1
+) -> tuple[list, dict]:
+    """The places a near-band leg should be handed, and the census behind them.
+
+    **The band's two ends, written once.** The population is [`near_population`]
+    — the same [`near_admits`] the draw applies — and the room is
+    [`retention.free_slots`] at the pair the draw will actually render into. A
+    manifest cut any other way names places the leg then drops in silence, which
+    is what `general_leg_0909`'s three band arms were: 328, 255 and 236 places
+    handed over, 160, 87 and 68 planned, all three stopped on an empty plan at
+    41%, 13% and 33% of their clock while being the cheapest work of the night.
+
+    **The pair is the INCUMBENT's, and it is spelled bare.** [`plan_held_mode`]
+    emits its shots at `best_mode` with no `mode_params`, so the pair a near-band
+    row lands in is `(place, colorize.spelled(best_mode, None))` — which is *not*
+    the pair `free-slots` counts when the incumbent itself carried settings.
+    Summing a place's room over every pair it holds is the other way to get this
+    wrong: room in `stripe` buys nothing at a place whose incumbent is `smooth`,
+    because the draw is not going to render `stripe` there.
+
+    **`roster` unsaid is [`field_modes`]**, the three shareable modes, and not
+    [`mode_policy.mined`]'s twelve. The near band holds its incumbent's mode and a
+    composite incumbent costs about 175 s a location against a field mode's
+    fraction of a second — `armB1_0906` measured the arm **6.2x dearer** on the
+    twelve-mode roster. A manifest cut over twelve modes therefore prices an arm
+    nobody budgeted for even where every place on it is real. Narrow the manifest;
+    widening what the planner admits is a different change and re-prices the band
+    by moving which incumbent wins the argmax.
+    """
+    from fractal_wallpapers.curation import colorize, retention
+
+    named = [str(one) for one in (roster if roster is not None else field_modes())]
+    best_field = best_field_by_location(world["rows"], world["ledger_scores"], set(named))
+    pools, refused = near_population(best_field, world["by_key"])
+    slots = retention.free_slots(world["rows"], keep=keep)
+    wanted = max(1, int(min_slots))
+    rows, full = [], 0
+    for held in (row for pool in pools.values() for row in pool):
+        pair = (str(held["key"]), colorize.spelled(str(held["best_mode"]), None))
+        room = int(slots.get(pair, 0))
+        if room < wanted:
+            full += 1
+            continue
+        rows.append(
+            {
+                "schema": PLACES_SCHEMA,
+                "key": str(held["key"]),
+                "free_slots": room,
+                "partition": str(held["partition"]),
+                "incumbent": pair[1],
+                "p_ge4": round(float(held["best"]), 6),
+            }
+        )
+    # Best-stocked first, so a manifest truncated to fit a budget keeps the places
+    # with the most room — [`curation.retention`]'s own ordering, one verb over.
+    rows.sort(key=lambda row: (-row["free_slots"], row["key"]))
+    census = {
+        "roster": named,
+        "keep": retention.keep_per_pair() if keep is None else int(keep),
+        "min_slots": wanted,
+        "band": [SEATING_BAR, PRIMED_BAR],
+        "places_with_a_roster_candidate": len(best_field),
+        "out_of_band": refused["out_of_band"],
+        "not_admitted": refused["not_admitted"],
+        "not_admitted_is": (
+            "in the ledger and NOT in the admitted embedded population, which is what "
+            "`depth.near_places` stands on. A manifest cut over the ledger alone names "
+            "these and the draw then drops them in silence — 168 of general_leg_0909's "
+            "band 2, all julia:mandelbrot, none of them ever embedded"
+        ),
+        "in_band_and_admitted": sum(len(pool) for pool in pools.values()),
+        "at_the_keep": full,
+        "places": len(rows),
+        "free_slots": sum(row["free_slots"] for row in rows),
+        "by_partition": {name: len(pool) for name, pool in sorted(pools.items())},
+        "by_incumbent": dict(
+            sorted(
+                collections.Counter(row["incumbent"] for row in rows).items(),
+                key=lambda item: -item[1],
+            )
+        ),
+    }
+    return rows, census
 
 
 def ranked_bands(pools: dict, head_scores: dict, bands: int = RANK_BANDS) -> dict:
@@ -1684,31 +1827,52 @@ def build_plan(
     # [`near_places`] so that a manifest naming nothing this run can afford is
     # refused against the manifest.
     #
-    # **Cut the manifest with `curate candidate-ledger free-slots --out FILE`.**
-    # This narrows to what a manifest names and asks nothing about whether those
-    # places have room; that half is the caller's, it is a subtraction rather
-    # than a scan ([`retention.free_slots`]), and inferring it instead of
-    # computing it is what cost `thin2_b_near` 13,265 renders for 39 kept rows.
+    # **Cut the manifest with `curate depth near-places --out FILE`**, which is
+    # [`near_manifest`] — the same [`near_admits`] this draw applies, plus room at
+    # the incumbent's pair ([`retention.free_slots`]). This narrows to what a
+    # manifest names and asks nothing about whether those places have room; that
+    # half is the caller's, it is a subtraction rather than a scan, and inferring
+    # it instead of computing it is what cost `thin2_b_near` 13,265 renders for 39
+    # kept rows.
     near_pool = best_field
+    near_attrition: dict = {}
     if near_named:
         wanted = {str(one) for one in near_named}
         absent = wanted - set(near_pool)
         near_pool = {key: held for key, held in near_pool.items() if key in wanted}
+        # **Every test the draw applies, counted here rather than lost below.**
+        # This used to report the roster test alone and then hand what was left to
+        # [`near_places`], which silently dropped whatever was out of band or not
+        # in the admitted population — so `general_leg_0909`'s band 2 logged
+        # `255 of 255` and planned 87. A manifest's attrition is the leg's own
+        # business: it is the difference between an arm that ran out of clock and
+        # one that ran out of places, and those want opposite fixes.
+        _pools, refused = near_population(near_pool, world["by_key"])
+        near_attrition = {
+            "named": len(wanted),
+            "no_roster_candidate": len(absent),
+            **refused,
+            "drawable": sum(len(pool) for pool in _pools.values()),
+        }
         log(
-            f"[depth] --near-places: {len(near_pool):,} of {len(wanted):,} named place(s) "
-            f"hold a candidate in a mode this run can afford"
+            f"[depth] --near-places: {len(wanted):,} named -> {len(near_pool):,} hold a "
+            f"candidate in a mode this run can afford -> {near_attrition['drawable']:,} the "
+            f"draw can stand on ({refused['out_of_band']:,} out of band, "
+            f"{refused['not_admitted']:,} not in the admitted population)"
         )
         if absent:
             log(
                 f"[depth] {len(absent):,} named place(s) hold no candidate in one of "
                 f"{len(roster)} roster mode(s): skipped"
             )
-        if not near_pool and want.get(NEAR):
+        if not near_attrition["drawable"] and want.get(NEAR):
             raise DepthRefused(
-                f"none of the {len(wanted):,} place(s) in --near-places holds a candidate in a "
-                f"mode this run can afford, so the near band has no incumbent to hold. The "
-                f"draw reads the best FIELD candidate per place over --modes; a manifest of "
-                f"places opened only in modes this leg is not running is the usual cause."
+                f"none of the {len(wanted):,} place(s) in --near-places is one this draw can "
+                f"stand on: {len(absent):,} hold no candidate in a mode this run can afford, "
+                f"{refused['out_of_band']:,} are out of [{SEATING_BAR:g}, {PRIMED_BAR:g}) and "
+                f"{refused['not_admitted']:,} are not in the admitted embedded population. "
+                f"Cut the manifest with `curate depth near-places`, which applies these same "
+                f"three tests — `depth.near_manifest`."
             )
     near = (
         near_places(near_pool, world["by_key"], seed, max(1, want[NEAR] // max(1, near_width)))
@@ -1910,6 +2074,11 @@ def build_plan(
         "floor_population": len(floor_pool),
         "near_places_named": len(near_named or []),
         "near_population": len(near_pool),
+        # **What the manifest lost and to which test**, empty where no manifest
+        # was named. `near_population` is the roster test alone and was the only
+        # figure on the record until 2026-09-12, which is why three arms could
+        # report a full manifest and plan a third of it.
+        "near_attrition": near_attrition,
         "roster": roster,
         "breadth_roster": [colorize.spelled(mode, settings) for mode, settings in breadth],
         "mode_policy": mode_policy.record(),
@@ -2134,6 +2303,98 @@ def population(margin: float = framing.MARGIN, log=print) -> dict:
     world = mine.population(margin=margin, log=log)
     world["rows"] = candidate_ledger.read()
     return world
+
+
+def pool_stores() -> tuple:
+    """The tracked manifests the drawable pool is a function of. `(tag, Durable)`.
+
+    **Five stores, and each one of them moves the plan.** [`build_plan`] draws the
+    breadth arms out of `world["pools"]` — [`hunt.drawable`], the admitted
+    population less the locations the ledger stands on — and the near-band and
+    floor arms out of `world["best"]`, which is those same ledger rows read
+    through the score sidecar. So: the **ledger rows** (a merge takes locations
+    out of the pool for good), the **ledger scores** (a rescore moves which
+    incumbent wins the argmax and therefore which places are in the band), the
+    **embedding store** (the admitted population itself), and the **supply
+    sidecar** with its **amendment** (the junk floor that admission is read at).
+
+    Each is a `durability.Durable`, so each carries a tracked manifest holding the
+    live file's sha256 — which is what makes [`pool_stamp`] free. The frame index
+    is deliberately absent: it decides what a shot *renders*, not which shots the
+    plan holds, and this is a statement about the plan.
+    """
+    from fractal_wallpapers.curation import amend, durables, embeddings
+    from fractal_wallpapers.curation.candidate_ledger import store
+
+    return (
+        ("candidate_ledger", store.durable_rows()),
+        ("candidate_scores", store.durable_scores()),
+        ("embeddings", embeddings.store()),
+        ("supply_scores", durables.sidecar()),
+        ("amendment", amend.durable()),
+    )
+
+
+def pool_stamp() -> dict:
+    """`{tag: sha256}` over [`pool_stores`]' manifests. **Costs five small reads.**
+
+    The cheap half of the pool's identity, and the reason a resume can be refused
+    **before the population read** rather than a minute into it: every one of
+    those files is written through `durability.save`, which records the sha256 as
+    the second half of the write, so the manifest answers what the live file is
+    without opening it. `curation/candidate_ledger/door.py` is why that holds for
+    the one that moves most — a merge records what it wrote, rather than leaving
+    it to somebody to remember.
+
+    A store with no manifest yet answers `None`, which compares equal to nothing
+    and unequal to nothing: it is a store this machine cannot speak for, and
+    [`curation.rotation.refuse_moved_pool`] says so rather than guessing.
+
+    ⚠ **This is a proxy and [`pool_digest`] is the fact.** It moves whenever any
+    of those files does, which is *more often* than the drawable pool moves — a
+    prune that drops a row at a location the ledger already stood on changes the
+    rows file and changes no plan. That direction is the safe one for a guard
+    that costs nothing to run; the exact question is asked after the population
+    read, where the pool itself is in hand.
+    """
+    from fractal_wallpapers.curation import durability
+
+    out: dict = {}
+    for tag, durable in pool_stores():
+        record = durability.read_manifest(durable)
+        out[tag] = None if record is None else str(record.get("sha256") or "")
+    return out
+
+
+def pool_digest(world: dict) -> dict:
+    """The pool a plan was drawn against, as one sha256 and the counts behind it.
+
+    **The drawable pool and the opened set, which are the two halves every arm
+    draws from**: the breadth arms cut bands over `world["pools"]` and the
+    near-band and floor arms pick places out of `world["opened"]`. A merge moves
+    both at once — the locations it adopted leave the first and join the second —
+    and either on its own is enough to re-cut a plan.
+
+    Keys and not counts, because counts collide: a leg that merged 376 locations
+    while a backfill admitted 376 more would report the same total over a pool
+    with none of the same places in it. [`hunt.drawable`] sorts each partition by
+    key and the opened set is sorted here, so the digest is a function of the pool
+    and not of the order it was read in.
+    """
+    outer = hashlib.sha256()
+    for name in sorted(world["pools"]):
+        outer.update(f"{name}\n".encode())
+        for row in world["pools"][name]:
+            outer.update(f"{row['key']}\n".encode())
+    outer.update(b"--opened--\n")
+    for key in sorted(world["opened"]):
+        outer.update(f"{key}\n".encode())
+    return {
+        "sha256": outer.hexdigest(),
+        "drawable": sum(len(held) for held in world["pools"].values()),
+        "opened": len(world["opened"]),
+        "by_partition": {name: len(held) for name, held in sorted(world["pools"].items())},
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -3168,11 +3429,17 @@ __all__ = [
     "fields_dir",
     "flat_places",
     "merge",
+    "near_admits",
+    "near_manifest",
     "near_places",
+    "near_population",
     "pictures_dir",
     "plan_cycled_modes",
     "plan_held_mode",
     "plan_floor",
+    "pool_digest",
+    "pool_stamp",
+    "pool_stores",
     "population",
     "proven_places",
     "ranked_bands",

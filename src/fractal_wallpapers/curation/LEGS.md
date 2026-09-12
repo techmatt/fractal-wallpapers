@@ -799,21 +799,55 @@ is not running — and a manifest that leaves none is **refused**, on
 `--floor-places`' reason: a leg that quietly planned a near band over a population
 nobody chose would report its rate over that one.
 
-⚠ **Cut the manifest over `smooth`/`stripe`/`tia`, not over the leg's roster** —
-`free-slots --mode smooth --mode stripe --mode tia`, and note the flag is `--mode`
-repeated rather than a `--modes` list, which is the spelling the measurement below
-was first written down in and which argparse refuses.
-The draw holds the incumbent's mode and `plan_held_mode` skips any place whose
-incumbent is not in [`field_modes`] — a location whose best candidate is a composite
-has no field to hand over — so a manifest cut over a twelve-mode roster names places
-the draw then drops in silence. Measured over `general_leg_0909`, whose band arms
-were handed 328, 255 and 236 places and planned **160, 87 and 68**: at the middle
-cut, 284 places had room and **219 of them had a `smooth`/`stripe`/`tia`
-incumbent**. All three arms ran out of planned work at 41%, 13% and 33% of their
-clock while being the cheapest work of the night, so this is a third to a half of
-the best arm there is, given away to a manifest that names the wrong population. It
-has widened since `curvature` left the mines on 2026-09-06 and took that roster from
-four modes to three.
+### Cut the manifest with `curate depth near-places`, and with nothing else
+
+★ **The manifest and the draw were two rules, they disagreed, and the difference
+was silent.** Landed 2026-09-12 as [`depth.near_manifest`], which applies the three
+tests [`near_places`] applies — the place holds a candidate in a **roster mode**,
+its best one is inside `[SEATING_BAR, PRIMED_BAR)`, and it is in the **admitted
+embedded population** — and then counts free slots at the pair the draw will
+actually render into. One population read, and `--out` writes the file
+`--near-places` reads:
+
+```
+fractal-wallpapers curate depth near-places --min-slots 1 --out scratch/near_places.jsonl
+```
+
+**The third test is the one that had never been asked anywhere, and it is the one
+that bit.** `world["by_key"]` is `hunt.scanned()` — the *embedded* locations less
+the ones now under the junk floor — while a manifest is cut over the **ledger**,
+and the ledger runs ahead of the embedding store. Measured 2026-09-12 over the
+live store: **1,636 of 34,010 opened locations (4.9%) have never been embedded**,
+and they are not spread evenly. `general_leg_0909`'s three band arms were handed
+328, 255 and 236 places and planned **160, 87 and 68**; of band 2's **168 lost
+places, every one was a never-embedded `julia:mandelbrot` location** — 66% of that
+manifest. All three arms then ran out of planned work at 41%, 13% and 33% of their
+clock while being the cheapest work of the night. The arm's own log said
+`255 of 255 named place(s) hold a candidate in a mode this run can afford`, which
+was true and was not the question; `build_plan` now reports every test's toll and
+the record carries it as `near_attrition`.
+
+⚠ **Letting the draw stand on them is a DIFFERENT change and has not been made.**
+A location with no *framing* row draws at the frame it carries, by design — but a
+location with no *embedding* row has never passed admission, and a near band
+standing on one would put the mining draw and the seating on two populations. The
+open question is the supply one: 1,636 opened locations are outside every draw
+that reads `hunt.scanned`, and `curate embed` is what would close it.
+
+⚠ **The roster is the second test and it is real but smaller.** The draw holds the
+incumbent's mode, so a composite incumbent costs about 175 s a location — the arm
+measured **6.2x dearer** on the twelve-mode roster — which is why
+[`near_manifest`]'s roster defaults to [`field_modes`]'s three and not to
+`mode_policy.mined()`'s twelve. Narrow the *manifest*; widening what the planner
+admits re-prices the band by moving which incumbent wins the argmax, and that is
+not this change. At band 2's cut, 284 places had room and **219 of them had a
+`smooth`/`stripe`/`tia` incumbent**. The roster has been three since `curvature`
+left the mines on 2026-09-06.
+
+**`free-slots` is still the right verb for the free-slot census** and is unchanged;
+what it is not is a near-band manifest, because it asks neither the band nor
+admission and it sums a place's room over **every** pair it holds rather than the
+incumbent's. Room in `stripe` buys nothing at a place whose incumbent is `smooth`.
 
 ⚠ **A near band over a PRUNE-FREE breadth arm's own places is the one shape that
 buys nothing, and the two settings are in direct tension.** A breadth arm sized to
@@ -852,11 +886,12 @@ of the night's whole 18,464-row prune drop.
 **The rule is `free slot AND not taken`, never `not taken` alone.** A place is
 worth a near-band pass because it has room, and "the floor arm did not take it" is
 evidence of the opposite where the floor arm's own manifest was cut on free slots.
-Both halves are cheap to compute, and since 2026-09-06 the free-slot half is one
-command:
+Both halves are cheap to compute, and since 2026-09-12 both of them plus the band
+and the admission test are one command — see *Cut the manifest with `curate depth
+near-places`* above:
 
 ```
-fractal-wallpapers curate candidate-ledger free-slots --mode smooth --min-slots 2     --out scratch/near_places.jsonl
+fractal-wallpapers curate depth near-places --min-slots 2 --out scratch/near_places.jsonl
 ```
 
 `--out` writes the manifest `--near-places` reads, best-stocked first, so the
@@ -909,9 +944,10 @@ incumbent's mode, and either can bind first.**
 
 **Cut the manifest as free slots at the INCUMBENT's pair, not as free slots.** The
 band and the room are different questions and the second is per (place, incumbent
-coloring): `curate candidate-ledger free-slots --mode X` answers it one mode at a
-time, and a leg holding a whole roster wants the intersection taken per place. Done
-that way the arithmetic is exact — `armB1_0906`'s manifest named **1,192 free slots
+coloring). `curate depth near-places` is that rule since 2026-09-12 and it is the
+only spelling of it; `free-slots --mode X` answers one mode at a time and sums a
+place's room over every pair it holds, which is the same trap one level down. Done
+at the incumbent's pair the arithmetic is exact — `armB1_0906`'s manifest named **1,192 free slots
 and its merge grew the ledger by 1,188**, four rows in twelve hundred. Everything
 else it made, 5,775 rows, was displacement the prune resolved inside the pair.
 `armB_0907` reproduced it a day later at a fifth the size: **460 free slots named,
@@ -1675,9 +1711,11 @@ weakest and keeps the leg's best.
 **Which pairs are fresh is a subtraction, and that is the cheap half nobody
 spends.** `retention.decide` keeps `min(K, attempts)`, so a pair holding fewer
 than the keep has never had more — free slots are `K - len(pair)` over the rows
-already in hand, never a scan. **`retention.free_slots` is the one spelling and
-`curate candidate-ledger free-slots --out FILE` cuts the manifest**, which is the
-arithmetic the inverted manifest two sections below did without.
+already in hand, never a scan. **`retention.free_slots` is the one spelling**, and
+`curate candidate-ledger free-slots --out FILE` is the census over it, which is the
+arithmetic the inverted manifest two sections below did without. A **near-band**
+manifest wants `curate depth near-places` instead: free slots at the *incumbent's*
+pair, intersected with the band and with the admitted population.
 
 At the keep of 3 that was: 43,255 of 114,744 pairs, 37.7%, for 60,316 free slots.
 **At the keep of 5 it is 114,709 pairs — 100.0% — for 289,210 free slots over

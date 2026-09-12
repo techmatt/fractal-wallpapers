@@ -262,8 +262,11 @@ fractal-wallpapers curate candidate-ledger backfill   # from what already exists
 fractal-wallpapers curate candidate-ledger census --n 20 --out scratch/ledger_census.json
 fractal-wallpapers curate candidate-ledger prune      # back to the rule, ~35 s. RUNS FROM `merge`
 fractal-wallpapers curate candidate-ledger prune --dry-run   # THE dry run. Touches nothing
-fractal-wallpapers curate candidate-ledger free-slots --mode smooth --min-slots 2 \
-    --out scratch/near_places.jsonl                   # where a leg has ROOM, and the manifest
+fractal-wallpapers curate candidate-ledger free-slots --mode smooth --min-slots 2
+                                                      # the free-slot census, per pair
+fractal-wallpapers curate depth near-places --min-slots 1 \
+    --out scratch/near_places.jsonl                   # THE near-band manifest. Room at the
+                                                      # INCUMBENT's pair, in band, admitted
 fractal-wallpapers curate candidate-ledger pictures   # rows naming a picture that is not there
 fractal-wallpapers curate candidate-ledger ratchet    # the high-water mark and what took rows off it
 fractal-wallpapers curate candidate-ledger ratchet --census   # ...counted against the live store, ~15 s
@@ -343,10 +346,19 @@ it. A free slot is therefore `K - len(pair)`, a subtraction over rows already in
 hand, and never a scan of what a leg might once have rendered.
 
 **`retention.free_slots` is the one spelling of it**, and
-`fractal-wallpapers curate candidate-ledger free-slots` is how a manifest is cut
-from it — `--out` writes the places file `--near-places` and `--floor-places`
-read, so the population a leg draws is the one that was counted rather than one
-re-derived beside it. Nothing sizes an opener or counts a slot by hand any more.
+`fractal-wallpapers curate candidate-ledger free-slots` is the census over it —
+`--out` writes a places file `--floor-places` reads, so the population a leg draws
+is the one that was counted rather than one re-derived beside it. Nothing sizes an
+opener or counts a slot by hand any more.
+
+⚠ **A NEAR-BAND manifest is `curate depth near-places` and not this**, since
+2026-09-12. Room alone is the wrong cut there three times over: the near band holds
+the *incumbent's* mode, so only that pair's room counts; the place has to be in
+`[SEATING_BAR, PRIMED_BAR)`; and it has to be in the **admitted embedded
+population**, which the ledger runs ahead of by 1,636 of 34,010 opened locations.
+[`LEGS.md`](LEGS.md)'s *Cut the manifest with `curate depth near-places`* has what
+that cost — three arms of one night planned 160, 87 and 68 places out of manifests
+naming 328, 255 and 236.
 
 Measured over the ledger on 2026-09-06, at the keep of the day and at the keep
 that replaced it. The store did not move between the two readings; only K did:

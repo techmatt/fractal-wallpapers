@@ -172,14 +172,11 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,516 collected — 4,380 fast,
-136 slow — since `codebase_review_ckpt122` landed on 2026-09-12**, and the pair was
-taken on this machine on a `.[dev,models]` install with a release engine built: the
-**fast** lane **156.23 s** and the **slow** lane **4,516 of 4,516 in 602.08 s
-(10:02)**, both **green**, **zero skips**. That pair was taken on a box that had
-just finished a nine-agent documentation move rather than on a quiet one, and both
-lanes read 3-6% above the reading before them — `tests/README.md` argues why that is
-the machine and not the tree, and says so as an exception rather than assuming it.
+Both are measured, not estimated. The tree holds **4,538 collected — 4,402 fast,
+136 slow — since `mining_prep_ckpt122` landed on 2026-09-12**, and the pair was
+taken on this machine on an idle box, on a `.[dev,models]` install with a release
+engine built: the **fast** lane **163.36 s** and the **slow** lane **4,538 of 4,538
+in 598.84 s (9:58)**, both **green**, **zero skips**.
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box

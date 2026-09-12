@@ -618,6 +618,43 @@ def _remode_partitions(units: list) -> dict:
     }
 
 
+def _near_places(args: argparse.Namespace) -> int:
+    """Cut the places manifest a near-band arm is handed, by the draw's own rule.
+
+    **The manifest and the draw were two rules and they disagreed.** A manifest
+    cut over the ledger — which is how every band arm to date has been cut, by a
+    leg rig beside the checkout — names places `depth.near_places` will not stand
+    on, and the arm then drops them in silence: `general_leg_0909`'s three bands
+    were handed 328, 255 and 236 places and planned **160, 87 and 68**, stopping
+    on an empty plan at 41%, 13% and 33% of their clock. Of band 2's 168 lost
+    places, every one was a `julia:mandelbrot` location the embedding store has
+    never held. [`depth.near_manifest`] applies the three tests the draw applies —
+    a roster incumbent, the band, the admitted population — and counts the room at
+    the pair the draw will actually render into.
+
+    It costs one population read, which is what a leg pays anyway, and `--out`
+    writes the file `--near-places` reads.
+    """
+    from fractal_wallpapers.curation import depth
+
+    rows, census = depth.near_manifest(
+        depth.population(),
+        roster=args.modes,
+        keep=args.keep,
+        min_slots=args.min_slots,
+    )
+    print(json.dumps(census, indent=2))
+    if not args.out:
+        return 0
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    print(f"{display_path(out)}  {len(rows):,} place(s)")
+    return 0
+
+
 def curate_depth(args: argparse.Namespace) -> int:
     """Plan a depth run, run one, merge it, or redraw its autopsy sheet."""
     from fractal_wallpapers.curation import depth
@@ -630,6 +667,8 @@ def curate_depth(args: argparse.Namespace) -> int:
         if args.what == "merge":
             print(json.dumps(depth.merge(args.name), indent=2))
             return 0
+        if args.what == "near-places":
+            return _near_places(args)
         if args.rate is None:
             print(
                 "a depth run is sized off a rate measured at ITS width, and none was given. "
@@ -1487,6 +1526,53 @@ def add_steps(steps) -> None:
             help="what to call this run. Its rows, its pictures, its sequence and its record "
             "live under it, and `merge` names it again",
         )
+    near_manifest = depth_verbs.add_parser(
+        "near-places",
+        help="cut the places manifest a near-band arm is handed, by the draw's own rule",
+        description=(
+            "The near band is bounded by ROOM at the incumbent's pair and by what the draw "
+            "will stand on, and a manifest cut any other way names places the leg drops in "
+            "silence. This applies the three tests `depth.near_places` applies - the place "
+            "holds a candidate in a roster mode, its best one is inside [SEATING_BAR, "
+            "PRIMED_BAR), and it is in the ADMITTED embedded population - and then counts "
+            "free slots at the pair the draw will render into, which is the incumbent's "
+            "mode spelled bare. `general_leg_0909`'s three band arms were handed 328, 255 "
+            "and 236 places by a cut that asked only the first, planned 160, 87 and 68, and "
+            "stopped on an empty plan at 41%, 13% and 33% of their clock; of band 2's 168 "
+            "lost places every one was a julia:mandelbrot location the embedding store has "
+            "never held. Costs one population read. --out writes what --near-places reads."
+        ),
+    )
+    near_manifest.add_argument(
+        "--out",
+        metavar="FILE",
+        help="where to write the manifest, best-stocked first. Unsaid, the census is printed "
+        "and nothing is written",
+    )
+    near_manifest.add_argument(
+        "--modes",
+        nargs="+",
+        metavar="MODE",
+        help="the incumbent modes the manifest may name. Unsaid, `depth.field_modes()` - the "
+        "three shareable modes, NOT the twelve `mode_policy.mined()` holds. The near band "
+        "holds its incumbent's mode, so a composite incumbent costs about 175s a location "
+        "and measured the arm 6.2x dearer on the twelve-mode roster",
+    )
+    near_manifest.add_argument(
+        "--min-slots",
+        type=int,
+        default=1,
+        metavar="N",
+        help="how much room a place must have at its incumbent pair to be named (default 1). "
+        "A near-band pass over a pair already at the keep is ranked out as it lands",
+    )
+    near_manifest.add_argument(
+        "--keep",
+        type=int,
+        default=None,
+        metavar="N",
+        help="price the room against another retention keep. Unsaid, the standing one",
+    )
 
     shrinkage_step = steps.add_parser(
         "shrinkage",
