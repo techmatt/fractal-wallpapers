@@ -853,7 +853,10 @@ held by a protection, 26 where none of the five beat phase 0, and the tolerance
 refused none, as it structurally cannot. Too few rows to read as a mode effect.
 
 The transaction resolves on this arm exactly as on the other: a dry-run merge found
-all 19 named removals in the store and would upsert 34 rows over 26 locations.
+all 19 named removals in the store and would upsert 34 rows over 26 locations. It was
+**not** applied — merging the smoke would carve its 60 rows out of the deferred full
+leg's population as already-rotated — so the leg was swept instead and holds its
+record and no pictures. `curation/README.md`'s *Sweeping a leg does not un-decide it*.
 
 ## Every per-candidate rate this project has measured
 
