@@ -503,28 +503,48 @@ and not a surprise.
 
 ### A roster entry is a mode, or a mode with its own settings
 
-**The five `direct_trap_multiply` cells are all in the production roster**, ruled
-2026-09-04. The bare mode plus four settings cells — `@opacity=0.4`,
-`@opacity=0.6`, `@threshold=0.2` and `@opacity=0.6,threshold=0.2` — and the last of
-them is in on the same rule as the rest: **a settings cell leaves only at zero
-clears.** Over every candidate-ledger row carrying both knobs above their catalogued
-defaults, 1,023 rows at 869 places, **80 clear the pool bar (7.8%)** and 20 clear
-the primed bar (2.0%); it is the best of the five at the pool bar. The label sheet
-reads it worst — mean tier 1.93 against 2.92-2.95 — and `data/batch_caveats.md`'s
-ARGMAX-PER-PLACE entry is why those two facts do not contradict: the cells there
-stand on four disjoint, judge-selected populations, so a cell's human rate cannot
-be differenced against another's. The clear rate is over the whole ledger and is
-what decides a roster.
+**Four of the five `direct_trap_multiply` cells are in the production roster**:
+the bare mode plus `@opacity=0.4`, `@opacity=0.6` and `@threshold=0.2`, ruled
+2026-09-04 on the rule that **a settings cell leaves only at zero clears**.
+
+⚠ **`@opacity=0.6,threshold=0.2` is RETIRED and the rule did not retire it.**
+Matt retired the both-knobs corner **by eye at ckpt 117, 2026-09-08**, reading the
+whitewash sitting page — 40 places, five adjacent tiles a row, each cell against
+its own row's bare — and that ruling stands and is the live one. It is not a clear
+rate being overruled by a second clear rate: the zero-clears rule is a floor on
+what the *judge* will admit, and Matt's eye is the instrument above it. So the
+retirement leaves the rule untouched and takes one cell out from over it, and the
+two 2026-09-04 readings below are the record of a decision that has since been
+made a different way rather than an argument still standing. Every leg since has
+run with the corner left out, including the 2026-09-12 sweep one heading down.
+
+**The retirement is a ruling about what legs draw and not a code change**, which
+is the same thing *Nothing in code ever excluded it* says one heading down about
+the reinstatement it superseded: there is no switch to find either way. A roster
+is what a leg passes in `--modes` / `--floor-modes`, and a retired cell is a cell
+nobody names. So the check is that a leg's own record says which cells it ran, and
+it does: `dtm_sweep_ckpt121`'s `plan.floor_modes` lists its five by name and the
+corner is not one of them.
+
+**What the retired cell reads, for the record.** Over every candidate-ledger row
+carrying both knobs above their catalogued defaults, 1,023 rows at 869 places,
+**80 clear the pool bar (7.8%)** and 20 clear the primed bar (2.0%) — the best of
+the five at the pool bar. The label sheet reads it worst, mean tier 1.93 against
+2.92-2.95, and `data/batch_caveats.md`'s ARGMAX-PER-PLACE entry is why those two
+facts do not contradict: the cells there stand on four disjoint, judge-selected
+populations, so a cell's human rate cannot be differenced against another's. Read
+beside the retirement, the tier column is the reading that turned out to agree
+with the eye.
 
 **The head-to-head that caveat says the label sheet cannot give was taken on
-2026-09-05, and the ruling holds.** `night_d` ran all eleven dear-mode entries
+2026-09-05.** `night_d` ran all eleven dear-mode entries
 through one floor draw at the same 56 places under one seed, so the five cells stand
 on **one population** and their rates *can* be differenced. Roughly 212 candidates
 each:
 
 | entry | q4 clear rate | engine s a clear |
 |---|--:|--:|
-| `direct_trap_multiply@opacity=0.6,threshold=0.2` | **7.5%** | 49.7 |
+| `direct_trap_multiply@opacity=0.6,threshold=0.2` *(retired since)* | **7.5%** | 49.7 |
 | `direct_trap_multiply@opacity=0.6` | 6.1% | 56.4 |
 | `direct_trap_multiply@opacity=0.4` | 5.2% | 70.4 |
 | `direct_trap_multiply` (shipped) | 3.8% | 94.2 |
@@ -532,8 +552,10 @@ each:
 
 **Three of the four settings cells outclear the shipped mode and the both-knobs cell
 doubles it**, which is the ledger-wide reading of 2026-09-04 reproduced on a matched
-draw rather than on the whole store. None is anywhere near zero clears, so none
-leaves. `direct_trap_screen` on that same leg is the cheapest mode of the night at
+draw rather than on the whole store. None is anywhere near zero clears, so the rule
+took none of them out — and three days later the eye took the top row out anyway,
+which is what *the rule is a floor and not the decision* means in practice.
+`direct_trap_screen` on that same leg is the cheapest mode of the night at
 **17.6 engine s a q4 clear** — cheaper than any recolour — and `direct_trap_lines`
 the second-worst at 3.3%; the direct traps are not one thing.
 
@@ -2813,16 +2835,29 @@ plan — `mine_ckpt120` ran at 6.0 and the flag defaults to `MINE_RATE` 2.5, whi
 `--width`, `--rotations`, `--seed`, `--shares` and `--modes` happen to default to
 what that leg used, and `--rate` is the one that does not.
 
-⚠ **`blocks_done` is NOT the resume index, and the record does not carry one.**
+⚠ **`blocks_done` is NOT the resume index. `resume_from_block` is.**
 `blocks_done` is incremented by `len(block)` once a whole **chunk** returns, while
 each worker's `render_draw_group` breaks out of its own block list at the deadline
 — so a leg cut mid-chunk counts the entire chunk as done. `mine_ckpt120` reports
 `blocks_done: 400` against a `CHUNK_GROUPS` of 400 and a plan of 960, and its
 `decisions.jsonl` holds **247** locations: block 245 with 11 of its 12 shots, block
 246 with 3, and blocks 247-399 with nothing at all. `--from-block 400` would have
-thrown away 153 never-rendered locations, about 1,836 shots. The index a resume
-wants is the count of **distinct locations in `decisions.jsonl`** — the first block
-that is not whole — and it is read off that file rather than off the record.
+thrown away 153 never-rendered locations, about 1,836 shots.
+
+Since 2026-09-12 every mine record carries **`resume_from_block`** — `blocks_skipped`
+plus the distinct locations its `decisions.jsonl` actually holds, which is
+[`rotation.resume_index`] and is recomputable off the files for a record written
+before the field existed. It is printed in the leg's own closing summary beside the
+flags to restate, so the number never needs the record read for it, and
+`blocks_done` keeps its own meaning: the blocks handed to the pool.
+`mine_ckpt120` answers 247 and the leg that resumed it, 247 skipped plus 129
+decided, answers **376** — not the 647 `blocks_skipped + blocks_done` gives.
+**An index above what any leg of this plan reached is refused at start-up**, before
+the population read: passing one always discards work that was paid for, and four
+hours in is the wrong place to find out. The refusal is `resumable`'s, matched on
+the plan's identity — seed, rate, plan budget, width, workers, roster and the
+non-zero shares — so a resume that left `--rate` on the default is refused too, by
+the same guard and for the same reason.
 
 Between the two there is one shot's worth of judgement. Resuming at the first
 *incomplete* block re-renders the shots it already did, and a shot whose winner was
@@ -2840,8 +2875,63 @@ the same name. The record carries `plan_budget_seconds`, `from_block` and
 ```
 fractal-wallpapers curate rotate mine --name m1 --rate 6 --budget 14400   # 247 of 960 rendered
 fractal-wallpapers curate rotate mine --name m2 --rate 6 --plan-budget 14400 \
-    --from-block 247 --budget 20000                                       # the rest
+    --from-block 247 --budget 20000                              # and reports 376 at the end
 ```
+
+#### ⚠ `--from-block` cannot continue a mining plan, because a merge moves it
+
+**Everything the section above says about restating the flags is necessary and it
+is not sufficient**, measured 2026-09-12. *Block N here is block N there* holds for
+the flags and fails on the population: the block plan is a deterministic function
+of the **drawable pool**, and merging a location takes it out of that pool for good.
+
+The ranked draw — `banded_places` over `ranked_bands` over `world["pools"]` — is
+`hunt.drawable`, which is the admitted population **less
+`hunt.opened_locations`**. A leg's merge opens every location it decided, so those
+locations leave the pool, `ranked_bands` re-cuts its bands over what is left, and
+each `(partition, band)` cell is re-shuffled by `random.Random(...).sample(held,
+len(held))` over changed membership. The plan that comes back is a different plan
+of the same size.
+
+Reconstructed both ways over the live store, and it reproduces exactly. Put
+`mine_ckpt120`'s 247 locations and its resume's 129 back into the drawable pool and
+rebuild: **247 of 247** of the first leg's blocks come back in order, block for
+block. Take the first leg's own 247 out again and rebuild: its resume's 129 blocks
+come back at indices 248-376, **129 of 129**, and **none of the first leg's 247
+appears anywhere in that plan at all**.
+
+Two things follow and they pull opposite ways:
+
+- **No resume on this arm can re-render merged work**, which is why last night's
+  leg was harmless and why the dedupe census reads zero. `already_in_ledger` counts
+  a drawn recipe key the ledger already holds, and the ranked draw takes only
+  locations the ledger has never stood on — so on a wholly ranked leg the count is
+  **0 by construction** and is not evidence of anything. Rebuilt over the live
+  pool: 46,080 candidate keys drawn, 0 already in the ledger, against 2,950 of
+  `mine_ckpt120`'s 2,954 adopted keys sitting in the same `known` set the check
+  reads. The set is right, the lookup is right, and the arm cannot produce a hit.
+- **Nor can it continue anything.** `--from-block 247` skipped 247 blocks of the
+  *resume's own* plan — 247 never-opened locations, about 2,964 shots, that nobody
+  had rendered — and spent the clock on blocks 248-376 instead of 1-129. Nothing
+  was lost for good, since an unrendered location stays drawable, but the index
+  bought nothing either. **On a wholly ranked leg, `--from-block` is a way of
+  taking a different slice of the same pool**, and the honest way to continue such
+  a leg is to run it again with no index at all.
+
+**Where it does bite is the arms that draw at OPENED locations** — `near_band`
+(`near_places` over `world["best"]`), `mode_floor` (`floor_pool = world["best"]`)
+and `conditioned`. There a location stays drawable after it merges, a re-run can
+re-draw the same `(location, mode, colormap)`, and the dedupe fires — on exactly
+**one of the five** candidates, the winner, because the four losers were freed and
+no row names them. That is the worst of the five to drop: if the winner was the
+`k=0` control, `made[0].k != 0` discards the whole shot, and if it was a rotation
+the shot comes back as a best-of-four against the same control. On
+`mine_ckpt120`'s own split — control won 1,136 of 2,954, a rotation 1,818 — a
+re-entered block would silently drop **38.5%** of its shots and re-price the other
+**61.5%**. `depth.SHARES` defaults `near_band` to 0.25, so a leg that does not
+spell `--shares` puts a quarter of its clock on that arm. ⚠ **The right act on a
+re-entered shot is to skip the whole shot, not one candidate of it**, and that is
+what a fix has to change.
 
 ### The chunk is the interruption point, and it is what bounds the disk
 

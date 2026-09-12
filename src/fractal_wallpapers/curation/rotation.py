@@ -172,6 +172,11 @@ class RotationRefused(RuntimeError):
 # --------------------------------------------------------------------------- #
 # Where it keeps things.
 # --------------------------------------------------------------------------- #
+def store_root() -> Path:
+    """The subtree every pass of this module keeps a directory under."""
+    return under("curation", UNIT)
+
+
 def rotation_dir(name: str) -> Path:
     """The subtree one pass owns: its rows, its pictures, its fields, its record."""
     return under("curation", UNIT, str(name))
@@ -1033,6 +1038,26 @@ def run(
     and [`merge`] is the transaction. Same split as every other leg — the ledger
     is rewritten whole on every upsert, and that is not something to do once a
     chunk.
+
+    ## What a second leg reads is `rows_remaining`, and it is neither count of
+    ## groups
+
+    **This arm takes no resume index and needs none.** A clock-bound pass is
+    continued by running it again: [`population`] re-reads the store, an adopted
+    row's incumbent has been removed and the adoption stands in its place, so what
+    the plan comes back holding is what is left. The figure that says how much
+    that is — and the only one a next leg or a sizing estimate should be read off
+    — is **`counts.rows_remaining`**, which is the resolved passing set less the
+    rows actually decided.
+
+    ⚠ **`groups_done` is not it**, and the arithmetic does not convert. It is
+    incremented by the whole chunk once the pool returns while each worker breaks
+    out of its own group list at the deadline, so it rounds **up** to the chunk:
+    `owed_ckpt121` recorded `groups_done: 1600`, exactly four chunks of 400,
+    against an honest `rows_remaining: 237` — and 237 rows do not divide into the
+    5 groups that arithmetic leaves. `counts.groups_decided` is the honest count
+    of groups this pass wrote a decision for, kept beside it for exactly that
+    comparison; `groups_done` keeps its meaning, which is what the pool was handed.
     """
     from fractal_wallpapers.curation import candidate_ledger as ledger
     from fractal_wallpapers.curation import colorize, hunt, release
@@ -1083,6 +1108,11 @@ def run(
     counts |= {
         "groups_planned": len(resolved),
         "groups_done": 0,
+        # **What came back, against `groups_done`'s what went out**, and the same
+        # rounding the mine arm's `blocks_done` has: `owed_ckpt121` recorded
+        # `groups_done: 1600`, four whole chunks, against 237 rows left undone.
+        # Neither of the two is the figure a second leg reads — see the docstring.
+        "groups_decided": 0,
         "rows_visited": 0,
         "rotations_made": 0,
         "rotations_failed": 0,
@@ -1102,6 +1132,13 @@ def run(
     render_started = time.monotonic()
     deadline = render_started + float(budget)
     by_at: dict = {}
+    #: Which group each `at` belongs to, so a decision can be counted against the
+    #: group it came out of. The mine arm reads the location off the shot; here
+    #: the group is [`plan_of`]'s (location, mode) cut and is not on the row.
+    group_of = {at: which for which, group in enumerate(resolved) for at, *_rest in group}
+    #: The groups this pass has written a decision for. `groups_done` counts the
+    #: groups handed to the pool, which a chunk rounds up.
+    decided: set = set()
 
     def payload_of(group: list) -> tuple:
         return (
@@ -1298,6 +1335,9 @@ def run(
                     ],
                 },
             )
+            # After the append and never before it: what this counts is the file.
+            decided.add(group_of[at])
+        counts["groups_decided"] = len(decided)
         if freed:
             counts["rotations_freed"] += len(freed)
             sweep.delete_pictures(list(freed), log=log)
@@ -1433,6 +1473,179 @@ def drawn_rotations(shot, seed: int, count: int = MINE_ROTATIONS) -> list:
     return made
 
 
+def decided_blocks(name: str) -> int:
+    """How many location blocks `name` actually decided. Off `decisions.jsonl`.
+
+    **The file and never the record.** `blocks_done` is incremented by the whole
+    chunk once [`render_draw_group`] returns while each worker breaks out of its
+    own block list at the deadline, so a leg cut mid-chunk counts blocks it never
+    rendered — `mine_ckpt120` recorded 400 against the 247 locations its
+    `decisions.jsonl` holds. A decision row is written only after a shot's five
+    candidates have been read and one of them adopted, so a location that appears
+    in that file was rendered and a location that does not was not.
+
+    A block is the **location**, which is [`depth.blocks_of`]'s cut, so this
+    counts distinct `location` values and not rows: a location at 11 of its 12
+    shots counts once, and resuming past it gives up those 11.
+    """
+    path = decisions_path(name)
+    if not path.is_file():
+        return 0
+    seen: set[str] = set()
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                seen.add(str(json.loads(line)["location"]))
+    return len(seen)
+
+
+def resume_index(name: str) -> int:
+    """The index `--from-block` wants to continue `name`. **The honest figure.**
+
+    Where `name` picked up plus what it decided — `from_block` off its record and
+    [`decided_blocks`] off its decisions — because `--from-block` indexes the
+    **whole** plan and a resumed leg's own file holds only its own half. So
+    `mine_ckpt120` resumes at 247 and the leg that resumed it, having skipped 247
+    and decided 129, resumes at 376.
+
+    Every mine record carries this as `resume_from_block`; this recomputes it from
+    the files so that a record written before that field existed still answers.
+    """
+    record = record_path(name)
+    at = 0
+    if record.is_file():
+        at = int(json.loads(record.read_text(encoding="utf-8")).get("from_block") or 0)
+    return at + decided_blocks(name)
+
+
+def plan_identity(
+    *,
+    seed: int,
+    rate: float,
+    plan_budget: float,
+    width: int,
+    workers: int,
+    roster,
+    shares: dict,
+) -> tuple:
+    """What has to agree for two mine legs to be halves of one block plan.
+
+    Everything [`depth.build_plan`] is sized and drawn off:
+    `PLAN_HEADROOM * workers * plan_budget / rate` for the count, and the seed,
+    the width, the roster and the split for the draw. A leg that changed any of
+    them rebuilt a **different** plan under the resume's name, which is the defect
+    `overnight_ckpt121` caught by restating `--rate`: the flag defaults to
+    [`MINE_RATE`] 2.5 where `mine_ckpt120` ran at 6.0, so an unrestated resume
+    would have planned 27,648 shots against the first leg's 11,520.
+
+    ⚠ **A zero share is not part of the identity.** The resolved table grows a key
+    whenever a draw is added to [`depth.DRAWS`] — `conditioned` landed between
+    these two legs — so comparing the tables whole would refuse a legitimate
+    resume over an arm neither leg spent a second on.
+    """
+    spent = {arm: float(value) for arm, value in dict(shares).items() if float(value)}
+    return (
+        int(seed),
+        float(rate),
+        float(plan_budget),
+        int(width),
+        int(workers),
+        tuple(str(one) for one in roster),
+        tuple(sorted(spent.items())),
+    )
+
+
+def identity_of(record: dict) -> tuple:
+    """[`plan_identity`] off a record, so the live leg and the recorded one agree.
+
+    `plan_budget_seconds` and `from_block` landed with the resume protocol on
+    2026-09-12, so a record written before it answers off `plan.budget_seconds` —
+    which is the same number for a first leg, being the only budget it had.
+    """
+    plan = dict(record.get("plan") or {})
+    return plan_identity(
+        seed=int(record.get("seed") or 0),
+        rate=float(plan.get("rate_seconds") or 0.0),
+        plan_budget=float(record.get("plan_budget_seconds") or plan.get("budget_seconds") or 0.0),
+        width=int(plan.get("width") or record.get("width") or 0),
+        workers=int(plan.get("workers_sized_for") or 0),
+        roster=record.get("roster") or (),
+        shares=record.get("shares") or {},
+    )
+
+
+def resumable(identity: tuple) -> dict:
+    """`{name: resume_index}` over every mine leg on record that ran this plan.
+
+    The store's own legs, read off their records — [`rotation_dir`]'s siblings —
+    because a resume names no first leg and there is nothing else to ask. A leg
+    whose [`plan_identity`] differs is not a half of this plan and is not offered,
+    which is what makes the guard in [`mine`] refuse a resume whose `--rate` or
+    `--plan-budget` was left on the default.
+    """
+    root = store_root()
+    if not root.is_dir():
+        return {}
+    out: dict = {}
+    for held in sorted(root.iterdir()):
+        record = held / RECORD_NAME
+        if not held.is_dir() or not record.is_file():
+            continue
+        try:
+            read = json.loads(record.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if str(read.get("arm")) != "mine" or identity_of(read) != identity:
+            continue
+        out[held.name] = resume_index(held.name)
+    return out
+
+
+def refuse_unreachable_resume(from_block: int, *, log=print, **identity) -> dict:
+    """Refuse a `--from-block` above what any leg of this plan actually rendered.
+
+    **Passing one always discards work that was paid for**, which is what makes
+    this an error and not a warning: the blocks between what was rendered and the
+    index asked for are blocks the first leg drew, dumped fields for and rendered
+    candidates into, and skipping them throws that away with nothing in the store
+    to say it happened — each shot's four losers are freed rather than merged.
+    `overnight_ckpt121` was handed `--from-block 400` off `blocks_done` against
+    247 rendered: 153 locations, about 1,836 shots.
+
+    Run **before the population read**, so an unattended leg fails in its first
+    seconds rather than four hours in. `{name: index}` of the legs it accepted is
+    returned so a caller can say which one it is continuing.
+    """
+    if int(from_block) <= 0:
+        return {}
+    held = resumable(plan_identity(**identity))
+    if not held:
+        raise RotationRefused(
+            f"--from-block {int(from_block):,} names a plan no mine leg on record ran, so "
+            f"there is nothing to continue and every block skipped would be a block nobody "
+            f"rendered. A resume rebuilds the first leg's plan exactly, which means "
+            f"restating its --seed, --rate, --plan-budget, --width, --workers, --roster and "
+            f"--shares: the plan is PLAN_HEADROOM * workers * plan_budget / rate, and --rate "
+            f"defaulting to {MINE_RATE:g} where the first leg ran at another value is the "
+            f"usual cause."
+        )
+    reached = max(held.values())
+    if int(from_block) > reached:
+        raise RotationRefused(
+            f"--from-block {int(from_block):,} is above the {reached:,} location block(s) "
+            f"this plan has actually rendered, so {int(from_block) - reached:,} block(s) of "
+            f"paid-for work would be skipped and never merged. Pass `resume_from_block` off "
+            f"the record and not `blocks_done`, which counts the blocks handed to the pool "
+            f"and not the ones that came back: "
+            f"{', '.join(f'{name} {at:,}' for name, at in sorted(held.items()))}."
+        )
+    log(
+        f"[rotation] resuming a plan {len(held)} leg(s) have run, the furthest to block "
+        f"{reached:,}: {', '.join(f'{name} {at:,}' for name, at in sorted(held.items()))}"
+    )
+    return held
+
+
 def resumed(
     blocks: list, from_block: int, plan_budget: float, budget: float, log=print
 ) -> tuple[list, int]:
@@ -1518,6 +1731,21 @@ def mine(
     then only the clock. The record carries both, and `blocks_skipped` beside
     `blocks_planned`, so the two legs read back as one.
 
+    ⚠⚠ **"Rebuilds its block plan exactly" is true of the flags and FALSE of the
+    population, and that is the bigger of the two defects here.** The plan is a
+    deterministic function of the **drawable pool**, and `hunt.drawable` is the
+    admitted population less `hunt.opened_locations` — so every location this leg
+    merges leaves the pool, `depth.ranked_bands` re-cuts its bands over what is
+    left, and each cell is re-shuffled. Reconstructed 2026-09-12 over the live
+    store: put `mine_ckpt120`'s locations back in the pool and its 247 blocks come
+    back 247 of 247 in order; take them out again and its resume's 129 come back
+    at indices 248-376, with **none of the first leg's 247 in that plan at all**.
+    So a resume cannot re-render merged work on this arm — which is why the
+    `already_in_ledger` census below reads 0 by construction — and cannot continue
+    anything either: the index skips fresh blocks. `curation/LEGS.md`'s
+    *`--from-block` cannot continue a mining plan, because a merge moves it* has
+    the measurement and names the arms where it does bite.
+
     ⚠ **`rate` rebuilds the plan too, and `from_block` is not `blocks_done`.**
     The plan is `PLAN_HEADROOM * workers * plan_budget / rate`, so a resume that
     leaves `rate` on [`MINE_RATE`] while the first leg ran at another one rebuilds
@@ -1525,9 +1753,19 @@ def mine(
     by the whole chunk once [`render_draw_group`] returns, while each worker
     breaks out of its own block list at the deadline — so a leg cut mid-chunk
     counts blocks it never rendered. `mine_ckpt120` reported 400 against a chunk
-    of 400 and had rendered 247. The index to resume at is the count of distinct
-    locations in the first leg's `decisions.jsonl`, and `curation/LEGS.md`'s
-    *A clock-bound leg is resumed by INDEX, never by re-drawing* has the reading.
+    of 400 and had rendered 247. `curation/LEGS.md`'s *A clock-bound leg is
+    resumed by INDEX, never by re-drawing* has the reading.
+
+    **The field to pass is `resume_from_block` and nothing else.** It is written
+    on every record beside `from_block` — where this leg picked up against where
+    the next one should — and it is [`resume_index`]: the blocks this leg skipped
+    plus the locations its `decisions.jsonl` actually holds. `blocks_done` is
+    kept, unchanged, as what it has always been: the blocks handed to the pool.
+
+    **An over-large `from_block` is refused here, before the population read.**
+    [`resumable`] offers the legs on record that ran *this* plan and what each of
+    them reached; an index above the best of those discards rendered work every
+    time it is passed, and four hours is the wrong place to find that out.
     """
     from fractal_wallpapers.curation import candidate_ledger as ledger
     from fractal_wallpapers.curation import colorize, depth, hunt, mode_policy, release
@@ -1546,6 +1784,17 @@ def mine(
     # the last producing leg zeroed. `palette_variant_mine_ckpt120`'s shape.
     shares = dict(shares) if shares else dict(MINE_SHARES)
     sized_for = float(budget if plan_budget is None else plan_budget)
+    refuse_unreachable_resume(
+        int(from_block),
+        seed=int(seed),
+        rate=float(rate),
+        plan_budget=sized_for,
+        width=int(width),
+        workers=int(workers),
+        roster=roster,
+        shares=shares,
+        log=log,
+    )
     world = depth.population(log=log)
     intended, shape = depth.build_plan(
         world,
@@ -1565,6 +1814,18 @@ def mine(
 
     # The plan resolved: every shot's five recipes and keys, in the parent.
     order: dict = {}
+    # ⚠ **`already_in_ledger` reads 0 on a wholly RANKED leg however the draw
+    # goes, and that is arithmetic rather than a clean bill of health.** The
+    # ranked, flat and aimed draws all come out of `world["pools"]`, which is
+    # `hunt.drawable` — the admitted population less `hunt.opened_locations` — so
+    # a shot is always at a location the ledger has never stood on and its keys
+    # cannot be ones the ledger holds. Measured 2026-09-12 on a rebuild over the
+    # live store: 46,080 keys drawn, 0 hits, against 2,950 of `mine_ckpt120`'s
+    # 2,954 adopted keys present in this very `known` set. It counts something
+    # real only where the split spends on `near_band`, `mode_floor` or
+    # `conditioned`, which draw at OPENED locations — and there it catches
+    # exactly the one candidate of five that merged, dropping the shot outright
+    # when that was the k=0 control. See the docstring.
     census = {"shots": 0, "candidates": 0, "already_in_ledger": 0, "unresolvable": 0, "bare": 0}
     at = 0
     for shot in intended:
@@ -1611,6 +1872,10 @@ def mine(
         "blocks_planned": planned_blocks,
         "blocks_skipped": skipped,
         "blocks_done": 0,
+        # **What came back, against `blocks_done`'s what went out.** Filled from
+        # [`decided`] at the end, and the record's `resume_from_block` is this
+        # plus `blocks_skipped`. See [`decided_blocks`].
+        "blocks_decided": 0,
         "shots_visited": 0,
         "candidates_made": 0,
         "candidates_failed": 0,
@@ -1628,6 +1893,11 @@ def mine(
     engine_seconds = 0.0
     fine_column = ""
     freed: list = []
+    #: The locations this leg has written a decision for, which is the only thing
+    #: that says where it got to: `blocks_done` counts what was handed to the
+    #: pool and a worker breaks out of its own block list at the deadline.
+    #: Distinct locations rather than shots, because the block is the location.
+    decided: set = set()
     render_started = time.monotonic()
     deadline = render_started + float(budget)
     by_at = {at: (shot, made) for block in blocks for at, shot, made in block}
@@ -1798,6 +2068,9 @@ def mine(
                     ],
                 },
             )
+            # After the append and never before it: what this counts is the file.
+            decided.add(str(shot.location))
+        counts["blocks_decided"] = len(decided)
         if freed:
             counts["candidates_freed"] += len(freed)
             sweep.delete_pictures(list(freed), log=log)
@@ -1836,6 +2109,12 @@ def mine(
         # the whole of what makes two clock-bound halves one leg.
         "plan_budget_seconds": sized_for,
         "from_block": skipped,
+        # **Where the NEXT leg starts, and the only field `--from-block` takes.**
+        # `blocks_skipped` plus the locations `decisions.jsonl` actually holds —
+        # [`resume_index`] recomputes exactly this off the files. It is not
+        # `blocks_skipped + blocks_done`: that counts the blocks handed to the
+        # pool, and a leg cut mid-chunk is handed more than it renders.
+        "resume_from_block": skipped + counts["blocks_decided"],
         "width": int(width),
         "fine_column": fine_column,
         "engine": build,
@@ -1862,6 +2141,15 @@ def mine(
     log(
         f"[rotation] {counts['shots_visited']:,} shot(s), {counts['candidates_made']:,} "
         f"candidate(s) made, {counts['rotation_won']:,} won by a rotation"
+    )
+    # ⚠ **Printed, because the number a resume needs should not need the record.**
+    # `blocks_done` is what the pool was handed and reads as progress; this is what
+    # came back. `mine_ckpt120` logged 400 and had decided 247.
+    log(
+        f"[rotation] resume this plan at --from-block {record['resume_from_block']:,} "
+        f"({skipped:,} skipped + {counts['blocks_decided']:,} decided of "
+        f"{counts['blocks_done']:,} handed to the pool), with --plan-budget "
+        f"{sized_for:,.0f} --rate {float(rate):g} --seed {int(seed)} --width {int(width)}"
     )
     return record
 

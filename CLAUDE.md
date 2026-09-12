@@ -185,18 +185,18 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,472 collected — 4,336 fast,
-136 slow — since `repeat_ab_count_themed_ckpt121` landed on 2026-09-11**, and the
-pair was taken on this machine on an idle box after a 620 s sheet build, on a
-`.[dev,models]` install with a release engine built: the **fast** lane **146.92 s**
-and the **slow** lane **4,472 of 4,472 in 553.62 s (9:13)**, both **green**,
-**zero skips**.
+Both are measured, not estimated. The tree holds **4,491 collected — 4,355 fast,
+136 slow — since `dedupe_and_resume_index_ckpt121` landed on 2026-09-12**, and the
+pair was taken on this machine on an idle box, on a `.[dev,models]` install with a
+release engine built: the **fast** lane **150.93 s** and the **slow** lane
+**4,491 of 4,491 in 568.91 s (9:28)**, both **green**, **zero skips**.
 
-The nineteen over the previous reading are all that prompt's and **all of them are
-fast**, for **−2.0 s** — which is the box, not a saving: a comparative label store
-declared as a second attribute, the composite tile its sheet cuts, and the seam
-where a page of ordinals becomes a store of classes. None of them renders or
-sweeps a store. No slow test was added and the slow lane's +11 s is the box.
+**Nineteen over the previous reading and only seven of them are this prompt's.**
+The other **twelve landed in four prompts that never re-measured** — the figure
+here said 4,472 while the tree collected 4,484 — so a reading is only ever a
+reading of the tree in front of it, and *the two lanes agree on the count* is the
+check that catches a stale one. Take the pair whether or not the prompt wrote a
+test. All nineteen are **fast**: fast +4.0 s and slow +15 s are both the box.
 
 **A sheet build does not shorten the render cache, and an ingest does.** This
 prompt spent 500 renders and the first slow lane after it skipped nothing: a
