@@ -236,6 +236,11 @@ The 19 were worth roughly forty seconds of engine renders and a training loop, s
 6:45 is not a regression against the 5:52 that skipped them. **A lane that skips
 again is a short cache**, `--slow -rs` names them, and they are all inside the
 slow-only tests over six `test_render_*` and `test_finished_train` files.
+**An ingest is what shortens it**, by exactly the rows it lands, and the skip
+message names the count per store — so run `renders plan` then `renders build
+--workers 3` after one. **Forty seconds is not the price**; it is the store's:
+`repeat_axis_ingest_ckpt121`'s 242 rows cost **68 s** for the smooth head's 68 crops
+and **916 s** for the strange head's 174, 1.00 s against 5.27 s a crop.
 **`data/palettes` is a
 parametrized guard**, so a drop moves both counts: `classic-pairs-2026-09` added
 120 maps and therefore 120 collected tests with no test written, and a reading

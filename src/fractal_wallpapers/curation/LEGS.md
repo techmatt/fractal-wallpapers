@@ -2871,6 +2871,20 @@ score-pool` writes `p_fine` only for rows clearing the render bar — **42,300 o
 `rotation.score_fine`, and writes nothing: an ungated reading does not belong in a
 column every downstream reader takes as bar-cleared. 248 pictures read in 2 s.
 
+**So the card's `p_fine` is a reading of the CANDIDATE, and the page has no
+label-geometry `p_fine` to recover.** The two numbers on a finished-render sheet
+come off two geometries and there is no third: `columns` — `p_ge2/3/4`, and
+`p_coarse` is that head's `p_ge4` — is the render judge on the 1280x720 tile the
+page serves, while `selected_on.p_fine` and `selected_on.p_ge4` are the pool's own
+640x360ss2 regime, which is where the fine head was fitted. A prompt asking for
+`p_fine` *at label geometry* is therefore asking for something the build never
+produced; the reading exists only if the sheet's own `full/cut####.jpg` are handed
+back to `rotation.score_fine`, which costs 246 pictures in 6 s and is worth naming
+as a re-score rather than passing off as recovered. It is not the same column:
+on `repeat_axis_*_20260911` the candidate reading agrees with Matt's within-pair
+sign on **43 of 56** decided pairs and the label-geometry re-score on **40 of 56**,
+so the geometry the head was fitted at reads its own axis better.
+
 ### A pair whose row the prune took comes off the page whole
 
 The merge is an upsert through the ordinary door and the door prunes, so a repeat
