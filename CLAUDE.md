@@ -191,70 +191,36 @@ pair was taken on this machine on an idle box, on a `.[dev,models]` install with
 release engine built: the **fast** lane **150.93 s** and the **slow** lane
 **4,491 of 4,491 in 568.91 s (9:28)**, both **green**, **zero skips**.
 
-**Nineteen over the previous reading and only seven of them are this prompt's.**
-The other **twelve landed in four prompts that never re-measured** — the figure
-here said 4,472 while the tree collected 4,484 — so a reading is only ever a
-reading of the tree in front of it, and *the two lanes agree on the count* is the
-check that catches a stale one. Take the pair whether or not the prompt wrote a
-test. All nineteen are **fast**: fast +4.0 s and slow +15 s are both the box.
+**Every reading this lane has taken is in
+[`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box
+was doing at the time. They are there and not here because this file loads into every
+session and a chronological log is not a rule. What follows is the current figure above
+and the rules that log produced.
 
-**A sheet build does not shorten the render cache, and an ingest does.** This
-prompt spent 500 renders and the first slow lane after it skipped nothing: a
-sheet's pictures land under `artifacts/sheet/` and no store gains a row until
-`label ingest` runs.
-
-**A fixture that reads one tracked answer once can be worth more than the tests it
-serves cost.** `models.palette_sets.cyclic` parses all 1,021 colormap documents on
-every call — 0.85 s — and anything that builds a recipe reaches it, so a test file
-that resolves one per test pays it per test. `conftest.shipped_cyclic_maps` took
-`tests/test_repetition.py` from **9.45 s to 2.79 s** over the same 17 tests. Ask
-what a new file is paying per test before accepting its clock.
-
-**`5665ae6` left three reds that only the slow lane could see, and they are closed.**
-Nine green fast lanes went past them. Two were the *guard* and not the tree — the
-frozen corpus's absolute paths are a decision `data/gallery_grade/corpus/README.md`
-had already argued out and the guard had never been told, and the 99
-`p_fine_correction_20260909` rows naming no candidate are the `low_anchor` block,
-which was never drawn from the pool. The third was real: `gallery_grade_train` spelled
-the gallery-grade store's own directory itself, and
-`labeling.gallery_grade.corpus_dir` owns it now.
-
-The idle pair before it, 2026-09-09 at **4,277 collected**: **fast** 129.99 s over
-the 4,145 it holds, 132 deselected; **slow** 4,277 of 4,277 green in 459.94 s (7:39),
-zero skips. **200.85 s over 4,295** on the same era was a busy box and not the tree.
-The two before that were 4,271 in 450.28 s and 4,235 in 448.94 s.
-**The two lanes normally agree on the collected count**, which is what that
-number is for, and they **do**: the pair above is one tree read twice.
-
-**The long-standing red is closed and there is no expected failure any more**: a
-lane with any red in it is a lane to read. `test_leveled_identity.py`'s census
-held `run_index_named >= 13,526` as a **floor**, and a floor reads *the store only
-grows* over a store that deletes by design — so it went red the first time mining
-displaced rows and the gap widened with every merge. It is a **ratchet** since
-2026-09-07: the count now, plus every deletion a transaction wrote down since the
-high-water mark, still reaches that mark, with the mark advanced by `prune`
-mechanically. **Repointing a census constant at today's reading is still the
-forbidden edit**, and the ratchet is what makes it unnecessary rather than what
-excuses it. **Zero skips is the normal reading now and 19 was the render cache
-being short** — a **store** condition, not a tree fault, confirmed by the first
-lane to read a full cache: `renders plan` then `renders build` is what fills it.
-The 19 were worth roughly forty seconds of engine renders and a training loop, so
-6:45 is not a regression against the 5:52 that skipped them. **A lane that skips
-again is a short cache**, `--slow -rs` names them, and they are all inside the
-slow-only tests over six `test_render_*` and `test_finished_train` files.
-**An ingest is what shortens it**, by exactly the rows it lands, and the skip
-message names the count per store — so run `renders plan` then `renders build
---workers 3` after one. **Forty seconds is not the price**; it is the store's:
-`repeat_axis_ingest_ckpt121`'s 242 rows cost **68 s** for the smooth head's 68 crops
-and **916 s** for the strange head's 174, 1.00 s against 5.27 s a crop.
-**`data/palettes` is a
-parametrized guard**, so a drop moves both counts: `classic-pairs-2026-09` added
-120 maps and therefore 120 collected tests with no test written, and a reading
-taken across a drop is not comparable with one taken before it. Every reading this lane has taken is in
-[`tests/README.md`](tests/README.md#the-lanes-readings-in-order), with what the box
-was doing at the time — they are there and not here because this file loads into
-every session and a chronological log is not a rule. What stays here is the current
-figure and the rules the log produced.
+- **Take the pair whether or not the prompt wrote a test**, and *the two lanes agree on
+  the collected count* is the check that catches a stale figure — a reading is only ever
+  a reading of the tree in front of it, and counts have drifted here across prompts that
+  never re-measured.
+- **A lane with any red in it is a lane to read.** There is no expected failure any more.
+- **Repointing a census constant at today's reading is the forbidden edit.** A census
+  that went red because a store deletes by design is fixed by a **ratchet** —
+  `test_leveled_identity.py` is the worked example — and the ratchet is what makes the
+  repoint unnecessary rather than what excuses it.
+- **Zero skips is the normal reading, and a lane that skips is a short render cache** —
+  a store condition, not a tree fault. `--slow -rs` names them; they are all slow-only
+  tests over six `test_render_*` and `test_finished_train` files. **An ingest shortens
+  the cache by exactly the rows it lands and a sheet build does not** (a sheet's pictures
+  land under `artifacts/sheet/` and no store gains a row until `label ingest` runs), so
+  run `renders plan` then `renders build --workers 3` after an ingest. The per-crop cost
+  is the store's and varies by head; `tests/README.md` has the measurements.
+- **A fixture that reads one tracked answer once can be worth more than the tests it
+  serves cost.** `models.palette_sets.cyclic` parses all 1,021 colormap documents on
+  every call, and anything that builds a recipe reaches it, so a file that resolves one
+  per test pays it per test — `conftest.shipped_cyclic_maps` is the fix and it cut
+  `tests/test_repetition.py` by two thirds. Ask what a new file pays per test before
+  accepting its clock.
+- **`data/palettes` is a parametrized guard**, so a colormap drop moves both counts with
+  no test written, and a reading taken across a drop is not comparable with one before it.
 
 - **A reading is comparable only against one taken on the same install**, and
   [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) defines the
