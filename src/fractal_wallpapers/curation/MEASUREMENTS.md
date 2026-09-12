@@ -830,9 +830,30 @@ a row against the 2.0–2.4 s a single full render of these modes costs at this 
 
 **Only four of the eight field modes are in it**, and that is the population rather
 than the operation: `smooth`, `stripe`, `tia` and `curvature` are the only field
-modes with rows above the shipped fine bar. 1,915 passing rows are on a mode with
-no field to dump — the composites and `itinerary` — and are **owed** at full render
-price, which is six iteration passes a row rather than one.
+modes with rows above the shipped fine bar. The passing rows on a mode with no field
+to dump — the composites and `itinerary` — are **owed** at full render price, which
+is six iteration passes a row rather than one.
+
+### What the OWED arm costs, measured 2026-09-11
+
+`owed_smoke_ckpt120`, 40 whole groups of the owed population, idle box, three
+below-normal workers: **60 rows, 300 rotations, 1,086.3 engine seconds in 416.3 s of
+wall — 18.105 engine seconds a row and 3.621 a rotation.** No field is dumped and
+none is swept, so every one of the five rotations pays its own iteration pass.
+
+**7.0x the dumpable arm's 2.579 s a row**, which is the prediction — six iteration
+passes a row against one and a quarter — arriving within a rounding error of it. At
+that rate the whole owed population of **1,989 rows is 36,011 engine seconds, about
+3 h 50 m of wall on three workers**, against the 2 h 32 m the dumpable arm spent on
+nearly five times as many rows.
+
+**The rotation wins a little more often here, not less**: 34 of 60 rows, **56.7%**,
+against the dumpable arm's 51.7% over 9,402 — 19 adopted with the row removed, 15
+held by a protection, 26 where none of the five beat phase 0, and the tolerance
+refused none, as it structurally cannot. Too few rows to read as a mode effect.
+
+The transaction resolves on this arm exactly as on the other: a dry-run merge found
+all 19 named removals in the store and would upsert 34 rows over 26 locations.
 
 ## Every per-candidate rate this project has measured
 

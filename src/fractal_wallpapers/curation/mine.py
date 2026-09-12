@@ -785,6 +785,17 @@ def build_plan(
     """
     from fractal_wallpapers.curation import colorize
 
+    # **Stated at start, like [`depth.resolve_split`]'s.** The split here is not a
+    # caller's to merge — it is [`SHARES`] and nothing else — so there is no silent
+    # merge to close. What is stated is the same fact for the same reason: a leg's
+    # output says what its arms and its roster came to before it spends anything.
+    roster = list(_mined_modes())
+    log(
+        "[mine] resolved shares: "
+        + " · ".join(f"{arm} {float(SHARES[arm]):.2f}" for arm in ARMS)
+        + " (mine.SHARES, not a caller's — this plan takes no --shares)"
+    )
+    log(f"[mine] resolved roster: {len(roster)} mode(s) — {', '.join(roster)}")
     maps = list(colorize.pool(seed))
     planned = PLAN_HEADROOM * budget / max(rate, 1e-6)
     want = {arm: int(planned * share) for arm, share in SHARES.items()}
@@ -837,6 +848,18 @@ def build_plan(
         "per_location": int(per_location),
         "maps_in_pool": len(maps),
         "partition_draw_weights": weights,
+        # The split as it was announced, so a past leg reads back the same two
+        # facts a live one prints — [`depth.resolve_split`] for the argument.
+        "split": {
+            "shares": {arm: float(SHARES[arm]) for arm in ARMS},
+            "shares_asked": {},
+            "shares_resolved_by": "mine.SHARES — this plan takes no --shares, so there is "
+            "nothing merged and nothing inherited",
+            "roster": roster,
+            "roster_asked": None,
+            "roster_defaulted": True,
+            "roster_default_is": "mine._mined_modes(), which is mode_policy.mined()",
+        },
         "wanted": want,
         "ranked_by_partition": dict(sorted(counts.items())),
         "flat_wanted_by_partition": dict(sorted(flat_want.items())),

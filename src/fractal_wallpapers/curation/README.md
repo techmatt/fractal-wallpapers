@@ -668,7 +668,16 @@ from and the store's name locates its pictures in the pool.
 **`gallery-grade score-pool` has to run after any merge**, before a solve on the
 cascade key: `pool_scores.jsonl` is written whole in one pass and merged rows carry
 no `p_fine` until it is rewritten, which makes them unseatable rather than merely
-unranked. Measured 2026-09-08: 41,407 above-bar pictures in **362.5 s**.
+unranked. Measured 2026-09-08: 41,407 above-bar pictures in **362.5 s**; again
+2026-09-11 after a pass that both removed and added rows, **43,022 in 402.5 s**.
+
+**A refresh moves MEMBERSHIP and not readings**, and that is worth knowing before
+reading a leg against a column: the 2026-09-11 pass dropped 3,487 keys the store no
+longer holds, added 4,209 it does, and of the 38,813 rows in both **13 moved at
+all**, by about 1e-7. The run is the same run and the pictures are the same
+pictures, so a reading that moves by more than float noise is a re-render and not a
+refresh. The superseded file is kept under its run's own name, which is what lets
+every solve taken before a refresh still resolve the order it was taken under.
 
 **And `retention.decide` prices the rank alone, so it over-predicts a merge's
 losses.** The same leg priced **241 of 5,329 rows pruned on arrival** and the door's

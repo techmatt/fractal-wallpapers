@@ -402,6 +402,22 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Three defaults made to say themselves out loud.** `score_and_resume_ckpt120`,
+2026-09-11, idle box after a 416 s render smoke. **Fast: 4,317 selected, 136
+deselected — 4,453 collected — in 148.91 s. Slow: 4,453 of 4,453 in 542.82 s
+(9:02), zero skips, zero failures.** The two lanes agree on 4,453.
+
+**The +18 is all fast and cost +1.32 s.** A leg's resolved shares and roster stated
+and recorded, a refusal swapped between the two sides of a dump, a rotation that
+carries its incumbent's palette knobs, and a resume that is a list slice — none of
+it renders, trains or sweeps a store. The slow lane's **+23 s** is the box: the
+smoke's three workers had only just come off the machine.
+
+⚠ **The one red was `test_nested_verbs.py`'s surface table**, and it is the guard
+doing its job rather than a fault: three flags were added to parsers and the table
+that pins *which flags each verb's handler actually reads* had not been told. It is
+the only thing in the tree that catches a flag wired to a parser and never read.
+
 **A leg, a sheet ordering and a fixture that made the file it was added for three
 times faster.** `repeat_label_batch_ckpt120`, 2026-09-11, idle box after a 145 s
 render leg and a merge. **Fast: 4,299 selected, 136 deselected — 4,435 collected —
