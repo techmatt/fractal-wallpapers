@@ -80,12 +80,30 @@ def label_build(args: argparse.Namespace) -> int:
 
     if args.head in attributes.NAMES:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
-        source = sheets.attribute_source(
-            args.head,
-            resolution=tuple(args.resolution),
-            supersample=args.supersample,
-            reuse_cache=args.reuse_renders,
-        )
+        # PAIRED or not is the attribute's own answer and never a flag: a unit of
+        # a paired store is two renders composited into one tile, and a page that
+        # could be asked for the wrong shape would serve one half of every
+        # comparison. See `attributes.Attribute.paired`.
+        if attributes.attribute(args.head).paired:
+            if args.reuse_renders:
+                print(
+                    f"--reuse-renders reads a finished-render cache and {args.head!r} is a "
+                    "paired store: a comparison tile is a composite of two renders and the "
+                    "cache holds neither composites nor the variant half's recipe"
+                )
+                return 1
+            source = sheets.comparison_source(
+                args.head,
+                resolution=tuple(args.resolution),
+                supersample=args.supersample,
+            )
+        else:
+            source = sheets.attribute_source(
+                args.head,
+                resolution=tuple(args.resolution),
+                supersample=args.supersample,
+                reuse_cache=args.reuse_renders,
+            )
     elif args.head == gallery_grade.NAME:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
         # Blind or correction is the PLAN's answer and never a second flag's: the

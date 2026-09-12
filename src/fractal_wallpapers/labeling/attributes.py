@@ -5,14 +5,32 @@ one 1..4 scale — the location corpus and the two finished-render corpora. This
 module owns a different kind of question entirely:
 
 ```text
-spiral    is this location a pure enough spiral that a gallery cap should count it
+spiral     is this location a pure enough spiral that a gallery cap should count it
+repeat_ab  shown the 1x render beside the repeated one, which is the better picture
 ```
 
-An **attribute** is a fact about a place, cast into named classes, and it exists
-to be *counted* rather than to be maximized: the answer feeds a share cap in the
-solve and a linear probe on the neutral embeddings. Nothing here is a tier,
-nothing here is a floor, and nothing here may ever be pooled with a quality
-store.
+An **attribute** is a verdict cast into named classes, keyed on a place, and it
+exists to be *counted* rather than to be maximized: a share cap in the solve, a
+linear probe on the neutral embeddings, a rate about one axis of the recipe.
+Nothing here is a tier, nothing here is a floor, and nothing here may ever be
+pooled with a quality store.
+
+## The second store asks about a PAIR, and that is a shape and not an exception
+
+`spiral` asks what one place is. `repeat_ab` asks which of two renders of one
+place is better, and the difference is [`Attribute.paired`]: the unit is a single
+composite picture with the two renders side by side, and the row carries **both**
+recipe keys rather than one. Everything else is unchanged — ordered classes, an
+ordinal at the page and a class in the store, a location key, latest-wins.
+
+That the classes are *comparative* rather than descriptive is the reason the
+absent-`score` guard below matters more here than it does for `spiral`, not less.
+`repeat_ab`'s ordinals run 1..3 and its `3` means *the repeat is the better
+picture* — a sentence about two renders — where a `3` in `smooth_render` means
+tier 3 on the quality scale. Written as a number into a quality store, rescaled,
+offset or otherwise, it would corrupt every reading taken off that store, and
+there is no transformation that makes the two commensurable because they are
+answers to different questions.
 
 ## The guard is an absent field, and it is asserted at the writer
 
@@ -87,6 +105,12 @@ class Attribute:
     words: tuple[str, ...]
     #: The sentence the page puts under the buttons.
     rubric: str
+    #: Whether one unit is **two** renders judged against each other rather than
+    #: one render judged on its own. A paired attribute's tile is a single
+    #: composite picture and its row carries two recipe keys; a sheet source picks
+    #: itself off this rather than off the store's name, so a second paired store
+    #: needs no second branch anywhere. See the module docstring.
+    paired: bool = False
 
     @property
     def tiers(self) -> tuple[int, ...]:
@@ -112,8 +136,33 @@ SPIRAL = Attribute(
     ),
 )
 
+#: The comparative store, and the one paired attribute there is.
+#:
+#: **Its `3` is not a tier 3 and must never enter a quality store.** The scale
+#: answers *which of these two pictures is better*, so it is not the 1..4 quality
+#: scale under another name and no transformation makes it into one — see the
+#: module docstring. The guard is [`check`]'s refusal of a `score` key, which is
+#: the same guard `spiral` stands behind and is why this store could be declared
+#: rather than built.
+REPEAT_AB = Attribute(
+    name="repeat_ab",
+    classes=("repeat_worse", "neutral", "repeat_better"),
+    words=("the repeat is worse", "no difference", "the repeat is better"),
+    rubric=(
+        "<b>Which picture is better — and this is not the 1–4 quality scale.</b> "
+        "The <b>left</b> half is always the single traversal; the right half repeats the "
+        "gradient. Same place, same mode, same map, same frame: the traversal count is the "
+        "only thing that moves. "
+        "<span class='s1'>1</span> <b>the repeat is worse</b> · "
+        "<span class='s2'>2</span> <b>no difference</b> · "
+        "<span class='s3'>3</span> <b>the repeat is better</b>. "
+        "Every unit starts at 2, so mark only the ones that differ."
+    ),
+    paired=True,
+)
+
 #: Every attribute store this module owns, by name.
-ATTRIBUTES: dict[str, Attribute] = {SPIRAL.name: SPIRAL}
+ATTRIBUTES: dict[str, Attribute] = {SPIRAL.name: SPIRAL, REPEAT_AB.name: REPEAT_AB}
 
 #: Every attribute store's name, for a caller building a choice list.
 NAMES: tuple[str, ...] = tuple(sorted(ATTRIBUTES))
@@ -483,6 +532,7 @@ def assert_pin_holds(name: str, train_rows: list[dict]) -> dict:
 __all__ = [
     "ATTRIBUTES",
     "NAMES",
+    "REPEAT_AB",
     "SCHEMA",
     "SPIRAL",
     "Attribute",

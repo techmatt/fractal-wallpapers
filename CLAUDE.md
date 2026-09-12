@@ -185,17 +185,23 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,453 collected — 4,317 fast,
-136 slow — since `score_and_resume_ckpt120` landed on 2026-09-11**, and the pair
-was taken on this machine on an idle box after a render smoke, on a `.[dev,models]`
-install with a release engine built: the **fast** lane **148.91 s** and the
-**slow** lane **4,453 of 4,453 in 542.82 s (9:02)**, both **green**, **zero
-skips**.
+Both are measured, not estimated. The tree holds **4,472 collected — 4,336 fast,
+136 slow — since `repeat_ab_count_themed_ckpt121` landed on 2026-09-11**, and the
+pair was taken on this machine on an idle box after a 620 s sheet build, on a
+`.[dev,models]` install with a release engine built: the **fast** lane **146.92 s**
+and the **slow** lane **4,472 of 4,472 in 553.62 s (9:13)**, both **green**,
+**zero skips**.
 
-The eighteen over the previous reading are all that prompt's and **all of them are
-fast**, for **+1.32 s**: a leg's resolved split stated and recorded, a refusal
-swapped between two arms, and a resume that is a list slice. No slow test was added
-and the slow lane's +23 s is the box.
+The nineteen over the previous reading are all that prompt's and **all of them are
+fast**, for **−2.0 s** — which is the box, not a saving: a comparative label store
+declared as a second attribute, the composite tile its sheet cuts, and the seam
+where a page of ordinals becomes a store of classes. None of them renders or
+sweeps a store. No slow test was added and the slow lane's +11 s is the box.
+
+**A sheet build does not shorten the render cache, and an ingest does.** This
+prompt spent 500 renders and the first slow lane after it skipped nothing: a
+sheet's pictures land under `artifacts/sheet/` and no store gains a row until
+`label ingest` runs.
 
 **A fixture that reads one tracked answer once can be worth more than the tests it
 serves cost.** `models.palette_sets.cyclic` parses all 1,021 colormap documents on

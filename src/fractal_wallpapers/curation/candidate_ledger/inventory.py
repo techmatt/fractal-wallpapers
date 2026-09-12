@@ -54,6 +54,153 @@ def census(rows=None, n: int = FIRST_SOLVE, log=print) -> dict:
     }
 
 
+def modes(candidates=None, log=print) -> dict:
+    """The accepted-recipe count **per rendering type**, as a table over the live ledger.
+
+    One row per mode in the [`mode_policy.routed_mode`] spelling — the mode a
+    picture *counts as*, so a modulate whose texture said nothing is counted where
+    its pixels are and not where its recipe says. Every other census here reports
+    a fill against a constraint; this one reports what the store holds, because
+    the question it answers is whether a mode is thinly represented and that is a
+    count rather than a feasibility.
+
+    Five columns and each is a different question:
+
+    * **`rows`** — how many recipes the ledger holds in this mode, everything
+      included: rejected, off-regime, pictureless, weighted 0.
+    * **`accepted`** — how many of them [`solve.pool`] would let a seating reach.
+      That rule is asked of its owner rather than restated here, which is the one
+      reason this takes two passes of the store instead of one.
+    * **`above_render_bar`** — of the accepted, how many clear their own mode's
+      bar under [`headroom.bars`]. The rule is per mode and is reported beside the
+      count, because `P(>=4)` and `P(>=3)` are two different columns and a table
+      printing only the number would be adding them up.
+    * **`above_fine_bar`** — how many read at or above [`solve.DEFAULT_FINE_BAR`]
+      on the fine head's `p_fine`. `pool_scores.jsonl` is one-shot and covers the
+      rows above the render bar alone, so a row merged since the last `score-pool`
+      is unread and counts here as if it were under the bar. The coverage is on
+      the record.
+    * **`human_labeled`** — how many carry a verdict a *person* cast in either
+      finished store, joined on [`retention.render_key_of`]. The two gate corpora
+      only: `gallery_grade` asks how good a picture is **given** the gate and is
+      not the same question, and its count is reported apart rather than folded in.
+
+    Plus `locations`, distinct places, which is what one-wallpaper-per-place makes
+    the binding quantity, and each column as a share of its own total.
+
+    **It decides nothing and proposes nothing.** A count is a decision input.
+    """
+    from fractal_wallpapers.curation import headroom, mode_policy, retention, solve
+    from fractal_wallpapers.models import gallery_grade_train as grade
+
+    from_pool = solve.pool(log=log)[0] if candidates is None else list(candidates)
+    fine = grade.read_pool_scores() if grade.pool_scores_path().is_file() else {}
+    bar = float(solve.DEFAULT_FINE_BAR)
+    table = headroom.bars(from_pool)
+    labeled = retention.labeled_renders()
+    from_the_two = _human_keys_of_the_gates()
+    held: dict = {}
+
+    def row_for(mode: str) -> dict:
+        return held.setdefault(
+            mode,
+            {
+                "weight": mode_policy.MODE_POLICY.get(mode),
+                "unmined": mode in mode_policy.UNMINED,
+                "rows": 0,
+                "accepted": 0,
+                "above_render_bar": 0,
+                "above_fine_bar": 0,
+                "human_labeled": 0,
+                "human_labeled_incl_gallery_grade": 0,
+                "_places": set(),
+                "bar_rule": (table["modes"].get(mode) or {}).get("rule"),
+            },
+        )
+
+    read = 0
+    for stored in store.stream():
+        read += 1
+        mode = mode_policy.routed_mode_of(stored)
+        entry = row_for(mode)
+        entry["rows"] += 1
+        entry["_places"].add(str((stored.get("location") or {}).get("key")))
+        key = retention.render_key_of(stored)
+        if key in from_the_two:
+            entry["human_labeled"] += 1
+        if key in labeled:
+            entry["human_labeled_incl_gallery_grade"] += 1
+    for candidate in from_pool:
+        entry = row_for(candidate.mode)
+        entry["accepted"] += 1
+        if headroom.clears(candidate, entry["bar_rule"]):
+            entry["above_render_bar"] += 1
+        # `read_pool_scores` hands back the whole row per key, not a number: the
+        # column this bar is on is `p_ge4`, which is what `solve.at_fine_bar`
+        # reads and what DEFAULT_FINE_BAR was derived against.
+        reading = fine.get(str(candidate.key))
+        if reading is not None and float(reading.get("p_ge4") or 0.0) >= bar:
+            entry["above_fine_bar"] += 1
+    for entry in held.values():
+        entry["locations"] = len(entry.pop("_places"))
+    columns = (
+        "rows",
+        "accepted",
+        "above_render_bar",
+        "above_fine_bar",
+        "human_labeled",
+        "locations",
+    )
+    totals = {name: sum(entry[name] for entry in held.values()) for name in columns}
+    for entry in held.values():
+        entry["share"] = {
+            name: round(entry[name] / totals[name], 4) if totals[name] else None for name in columns
+        }
+    log(f"[modes] {read:,} ledger row(s) over {len(held)} routed mode(s)")
+    return {
+        "schema": SCHEMA,
+        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ledger_rows": read,
+        "fine_bar": bar,
+        "fine_bar_is": "solve.DEFAULT_FINE_BAR, read off gallery_grade_train's own pool "
+        "column. That column is written above the render bar and nowhere else, so a row "
+        "the fine head has never read counts here exactly as a row it read under the bar",
+        "fine_readings": len(fine),
+        "fine_run": grade.pool_scores_run() if fine else None,
+        "render_bar_is": "curation.headroom.bars over the ACCEPTED pool: P(>=4) at "
+        "solve.Q4_BAR for a mode with enough distinct places above it, P(>=3) at the "
+        "release advisory for one without. The rule is per mode and is on every row here",
+        "human_labeled_is": "a verdict a PERSON cast in smooth_render or strange_render, "
+        "joined on the render key. `human_labeled_incl_gallery_grade` is the wider set "
+        "retention protects, which counts the conditional store as well",
+        "modes": dict(sorted(held.items(), key=lambda item: (-item[1]["rows"], item[0]))),
+        "totals": totals,
+    }
+
+
+def _human_keys_of_the_gates() -> set:
+    """Every render key a person judged in the **two finished stores**.
+
+    [`retention.labeled_renders`] with the third store left out, and the two are
+    reported side by side rather than one standing in for the other: a gallery
+    grade is a verdict about a picture that already cleared the gate, on a scale
+    conditional on that, and counting it under *has a human label* would answer a
+    different question from the one asked.
+    """
+    from fractal_wallpapers.labeling import finished
+    from fractal_wallpapers.labeling import store as label_store
+
+    out: set = set()
+    for head in finished.HEADS:
+        for row in finished.read(head):
+            if row.get("origin") != label_store.HUMAN:
+                continue
+            key = finished.render_key(row)
+            if key is not None:
+                out.add(key)
+    return out
+
+
 def _population(stored: list) -> dict:
     runs: dict = {}
     partitions: dict = {}

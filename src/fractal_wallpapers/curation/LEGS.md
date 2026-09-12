@@ -2913,6 +2913,86 @@ on the way in. **246 tiles on the page in 123 pairs**, split 70 `smooth_render` 
 **It holds the pool** three times — the population read, the merge, and the sheet
 plan's ledger check — and the one-pool-holding-process rule binds on all three.
 
+## `curate repeat-ab` — the one repetition question the leg above left open
+
+`curate repetition` **closed repetition as a general draw**: 121 matched pairs,
+mean within-pair delta −0.273 tiers, `cycles = 3` a rout at −0.634 (p = 3e−6), and
+the best arm exactly neutral. What it could not answer is what repetition does to
+a picture that is **already good**, because that page gated on nothing and only 4
+of its 121 baselines cleared `solve.DEFAULT_FINE_BAR` at all. That is the only
+repetition Matt will consider, and it is what this leg draws.
+
+**It renders nothing and merges nothing**, which is the sharpest difference from
+the leg above. There is no variant candidate: the verdict keys on the location,
+the baseline is already a ledger row, and the variant's recipe key is derived so
+the row can name it. So there is no merge, no prune that can take a tile, no
+`score-pool` owed afterwards, and no picture in a pool subtree the orphan sweep
+has to know about. The leg writes `plan.jsonl` and `label build` renders the tiles
+once, into the sheet directory, like every other sheet's pictures.
+
+### The unit is one picture carrying two renders
+
+One composite tile: the 1× render **left**, the same recipe at `cycles = 2`
+**right**, equal halves at `sheets.LABEL_RESOLUTION`, the same crop, a 6-pixel
+separator, nothing written on the image. One picture and not two because the
+comparison is the one an eye makes in a single glance — two cards would let a
+labeler scroll one out of view and answer from memory. **The side order is fixed
+across a sitting** and is on the manifest under `render.sides`; a reading that
+assumed the halves alternated would report the opposite result with nothing
+looking wrong.
+
+Both halves take the **baseline's** levelled colormap where it has one. The
+operator's curve is a fact about the place and the mode rather than about the
+traversal, and levelling the halves apart would move a second thing between them.
+
+### The population is conditional, and that is the leg
+
+Smooth-routed, above `solve.DEFAULT_FINE_BAR` on `p_fine` at candidate geometry,
+`cycles = 1`, `phase = 0`, at the candidate regime, with a picture on disk, and
+**no human verdict in either finished store**. So a rate read here is a rate about
+pictures that already work at 1× and a **ceiling** on any rate about the pool.
+The freshness rule is the `aug_sweep_A` failure being avoided: a page mixing
+already-judged rows against fresh ones cannot be repaired afterwards, because a
+difference between the two halves could be the axis or the history.
+
+One unit per location, and at a place holding several qualifying rows the draw
+picks one **seeded-uniform rather than the best** — the bar already made the
+quality claim and a second one would aim the sitting at the top of a column it is
+not about.
+
+### Two deliberate deviations from this rig's defaults, both recorded
+
+**The page is a seeded shuffle and every unit is prefilled at the neutral class.**
+The premise of the sitting is that the heads cannot read this axis, so ordering
+good→bad by a head or prefilling its decode would import exactly that error into
+page position and into the anchor. `anchored` is `false` on the registration for
+that reason and it is true rather than lenient. The render judge does read both
+halves at label geometry and its readings ride on the row under `reading`, where
+the page never sees them — which is what lets the head's direction be read against
+Matt's later without re-rendering the sitting.
+
+⚠ **The scale is comparative and is not a tier.** `1` the repeat is worse, `2`
+neutral, `3` the repeat is better. The verdicts land in the `repeat_ab` attribute
+store, whose rows carry `class` and no `score`, and they may never enter
+`smooth_render`, `strange_render` or `gallery_grade` as themselves or transformed.
+`data/repeat_ab/README.md` and `data/batch_caveats.md`'s *NOT-A-TIER* both say so.
+
+### What the first sitting came to
+
+`repeat_ab_ckpt121`, 2026-09-11, seed 20260911. 374,309 ledger rows, 11,985 above
+the bar, **2,549 askable at 2,082 places** after four refusals (7,647 not smooth
+routed, 1,447 already rotated, 273 already labelled, 69 already repeated; nothing
+lost to a rejection, a regime or a missing picture). **250 tiles at 250 places**,
+189 cyclic (a 2× traversal) and 61 folded (4×) — the split is whatever the
+population above the bar holds, 20.3% folded, and balancing it would have spent
+the reading. 172 distinct maps, 9 partitions, every tile `smooth`.
+
+**500 renders in 595 s of wall on one engine — 2.38 s a tile**, plus 25 s for 500
+judge reads and 250 thumbnails: 620 s and 535 MB for the sheet. The draw itself is
+10 s of ledger stream.
+
+**It holds the pool once**, in the population read, and the one-pool-holding-process
+rule binds on it.
 ## `curate manufacture` — the one population here that is made rather than found
 
 Everything else in this stage spends supply. This makes some. The colour-expression

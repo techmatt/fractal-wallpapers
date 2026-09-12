@@ -502,6 +502,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
             out=resolve_output(args.out) if args.out else None
         ),
         "census": lambda: candidate_ledger.census(n=args.n),
+        "modes": lambda: candidate_ledger.modes(),
         "save": candidate_ledger.save,
         "check": candidate_ledger.check,
         "orphans": lambda: candidate_ledger.orphans(
@@ -530,7 +531,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
     except (candidate_ledger.LedgerError, durability.DurableLost) as refusal:
         print(refusal)
         return 1
-    if args.what == "census" and args.out:
+    if args.what in {"census", "modes"} and args.out:
         out = Path(args.out)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -1723,6 +1724,25 @@ def curate_repetition(args) -> int:
         return 1
     print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
     print(f"\nrecord {display_path(repetition.record_path(args.name))}")
+    return 0
+
+
+def curate_repeat_ab(args) -> int:
+    """Draw the A/B repeat sitting: one composite tile a place, and nothing rendered."""
+    from fractal_wallpapers.curation import repeat_ab
+
+    try:
+        if args.what == "read":
+            record = repeat_ab.read(args.name)
+            print(json.dumps({**record["draw"], **record["plan"]}, indent=2))
+            return 0
+        record = repeat_ab.run(args.name, units=args.units, seed=args.seed, bar=args.bar)
+    except repeat_ab.RepeatAbRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({**record["population"], "draw": record["draw"]}, indent=2))
+    print(f"\nplan {display_path(repeat_ab.plan_path(args.name))}")
+    print(f"record {display_path(repeat_ab.record_path(args.name))}")
     return 0
 
 
@@ -3253,6 +3273,7 @@ def add_commands(subcommands) -> None:
     from fractal_wallpapers.curation import pool_draw as pool_draw_module
     from fractal_wallpapers.curation import release as release_module
     from fractal_wallpapers.curation import remode as remode_module
+    from fractal_wallpapers.curation import repeat_ab as repeat_ab_module
     from fractal_wallpapers.curation import rotation as rotation_module
     from fractal_wallpapers.curation import run as run_module
     from fractal_wallpapers.curation import shrinkage as shrinkage_module
@@ -3898,6 +3919,31 @@ def add_commands(subcommands) -> None:
         "which is evidence of the opposite, and spent 13,265 renders to keep 39",
     )
 
+    counting = ledger_verbs.add_parser(
+        "modes",
+        help="the accepted-recipe count per rendering type, so representation is read "
+        "from counts rather than from impression",
+        description=(
+            "One row per mode in the `routed_mode` spelling — the mode a picture COUNTS "
+            "as, so a modulate whose texture said nothing is counted where its pixels "
+            "are. Five columns and each is a different question: `rows` is everything the "
+            "ledger holds in that mode; `accepted` is what `solve.pool` would let a "
+            "seating reach; `above_render_bar` is what clears its own mode's bar under "
+            "`headroom.bars`, with the rule (P(>=4) or P(>=3)) printed beside the count "
+            "because the two are different columns; `above_fine_bar` is what reads at or "
+            "above solve.DEFAULT_FINE_BAR on the fine head, where a row merged since the "
+            "last `score-pool` counts as unread; and `human_labeled` is what carries a "
+            "verdict a PERSON cast in either finished store, with the wider set retention "
+            "protects reported apart. Plus distinct locations and each column's share of "
+            "its own total. It DECIDES NOTHING and proposes no roster change. It HOLDS "
+            "THE POOL and reads the store twice."
+        ),
+    )
+    counting.add_argument(
+        "--out",
+        metavar="PATH",
+        help="write the table there instead of printing it",
+    )
     sweeping = ledger_verbs.add_parser(
         "orphans", help="sweep the pool subtrees for pictures no record names"
     )
@@ -5108,6 +5154,71 @@ def add_commands(subcommands) -> None:
     )
     device_flag(running_remode)
 
+    repeat_ab_step = steps.add_parser(
+        "repeat-ab",
+        help="the one repetition question still open: on a picture already good at 1x, is "
+        "the repeat better? One composite tile a place, the 1x on the left",
+        description=(
+            "`curate repetition` closed repetition as a general draw — 121 matched pairs, "
+            "mean within-pair delta -0.273 tiers, cycles 3 a rout at -0.634. What it could "
+            "not answer is what repetition does to a picture that is ALREADY GOOD, because "
+            "that page gated on nothing and only 4 of its 121 baselines cleared the fine "
+            "bar at all. This draws that page. Every unit is a smooth-routed row above "
+            "solve.DEFAULT_FINE_BAR at cycles 1 and phase 0, at the candidate regime, with "
+            "its picture on disk and NO human verdict in either finished store — a page "
+            "mixing judged rows with unjudged ones is the aug_sweep_A failure and cannot be "
+            "repaired afterwards. One unit per location. The rung is cycles 2 and one rung "
+            "only, which is a 2x traversal on a cyclic map and 4x on a folded one: the two "
+            "arms the ckpt-121 labels did not reject. Phase is held at 0 on both halves. It "
+            "RENDERS NOTHING and MERGES NOTHING — the variant is not a candidate, the "
+            "verdict keys on the place, and the two halves are rendered once by the sheet. "
+            "The verdicts land in the `repeat_ab` attribute store on a three-point "
+            "COMPARATIVE scale that is not the 1..4 quality scale and never pools with one. "
+            "It HOLDS THE POOL."
+        ),
+    )
+    repeat_ab_step.set_defaults(handler=curate_repeat_ab)
+    repeat_ab_verbs = repeat_ab_step.add_subparsers(dest="what", required=True)
+    planning_repeat_ab = repeat_ab_verbs.add_parser(
+        "plan",
+        help="draw the sitting and write its sheet plan, rendering nothing",
+        description=(
+            "The whole leg: this command writes `plan.jsonl`, and `label build --head "
+            "repeat_ab --from-plan <it>` is what renders the tiles. The plan states BOTH "
+            "halves whole — the map, the baseline's palette pass and the variant's — and "
+            "prefills every unit at the neutral class, because a page whose premise is that "
+            "no head can read this axis must not carry a head's opinion into the box the "
+            "labeler corrects."
+        ),
+    )
+    reading_repeat_ab = repeat_ab_verbs.add_parser("read", help="a drawn sitting's readout")
+    for a_verb in (planning_repeat_ab, reading_repeat_ab):
+        a_verb.add_argument(
+            "--name",
+            required=True,
+            help="what to call this sitting. Its plan and its records live under it, and "
+            "the other verb names it again",
+        )
+    planning_repeat_ab.add_argument(
+        "--units",
+        type=int,
+        default=repeat_ab_module.UNITS,
+        help=f"composite tiles in the sitting (default {repeat_ab_module.UNITS}). A unit is "
+        f"ONE tile carrying two renders, so this is also the number of places drawn and "
+        f"twice this many renders",
+    )
+    planning_repeat_ab.add_argument(
+        "--seed", type=int, required=True, help="the draw's seed, recorded with it"
+    )
+    planning_repeat_ab.add_argument(
+        "--bar",
+        type=float,
+        default=None,
+        help=f"the p_fine(>=4) the population is taken above (default "
+        f"{solve_module.DEFAULT_FINE_BAR:g}, solve.DEFAULT_FINE_BAR). The selection is "
+        f"CONDITIONAL on it and that is the leg: a rate measured here is a rate about "
+        f"pictures already good at 1x and a ceiling on any rate about the pool",
+    )
     repetition_step = steps.add_parser(
         "repetition",
         help="ask an eye what the heads have never been shown: every repeated traversal "

@@ -159,6 +159,7 @@ __all__ = [
     "read_keys",
     "recolour",
     "merge",
+    "modes",
     "read",
     "read_scores",
     "stream",
