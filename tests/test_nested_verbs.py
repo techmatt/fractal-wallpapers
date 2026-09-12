@@ -946,6 +946,26 @@ def test_a_themed_record_and_a_themed_run_ask_for_the_same_two_demands() -> None
     assert ceiling.Rule().allowed("dark_vivid_green", 200) == 4 * ceiling.K + 1 == 13
 
 
+def test_a_misspelt_themed_cell_is_refused_at_the_parser_on_both_verbs() -> None:
+    """`--themed not_a_real_cell` used to be accepted, spend about forty seconds
+    reading the whole candidate pool, and then fail on a message that reads *the
+    pool holds none of that* — the right sentence for a cell the pool is thin in
+    and the wrong one for a typo. The cells are a closed list of 48, so argparse
+    can say so before anything is read."""
+    from fractal_wallpapers.palettes import dominance
+
+    parse = cli.build_parser().parse_args
+    for verb in ("run", "record"):
+        assert parse(["curate", "solve", verb, "--n", "9", "--themed", "dark_vivid_lime"]).themed
+        with pytest.raises(SystemExit):
+            parse(["curate", "solve", verb, "--n", "9", "--themed", "not_a_real_cell"])
+        # A family is the near miss worth pinning: `green` is a real name in this
+        # project and is not a cell, which is `ceiling.parse_target`'s case too.
+        with pytest.raises(SystemExit):
+            parse(["curate", "solve", verb, "--n", "9", "--themed", "green"])
+    assert len(dominance.cells()) == 48
+
+
 def test_a_themed_record_reaches_the_same_three_flags_the_run_carries() -> None:
     """One helper builds them, so `--help` cannot describe one flag two ways."""
     groups = nested_groups(cli.build_parser())

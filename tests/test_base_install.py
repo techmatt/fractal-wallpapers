@@ -86,6 +86,12 @@ def test_the_check_runs_without_the_models_extra(tmp_path) -> None:
     It may well report gaps: a working tree that has not fetched its weights has
     no artifact to hash, and saying so is the command doing its job. What it may
     not do is fail to *run*, which is the only thing asserted here.
+
+    **It covers every parser, not just this command's.** `cli.main` builds them
+    all, so an argparse `choices` that computes something is in this graph:
+    `--themed`'s closed list of 48 cells is here, and it reaches
+    [`codebook.cell_names`] rather than the built swatches for exactly that
+    reason.
     """
     result = run_without_the_extra(tmp_path, "check")
     assert "Traceback" not in result.stderr, result.stderr

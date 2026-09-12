@@ -2605,6 +2605,119 @@ def test_an_unthemed_pass_is_untouched_by_any_of_it():
     assert record["theme"] is None
     assert record["config"]["ceiling"]["group_cap_rule"] == ceiling.PROPORTIONAL
     assert record["config"]["ceiling"]["group_cap"] == ceiling.group_cap(150, ceiling.PROPORTIONAL)
+    # And the bar the general path runs is the shipped one, unrelaxed: the themed
+    # relaxation is a rule about ONE cell and the shipped bar is fitted to all
+    # forty-eight, so a pass that inherited the cell's answer would be a main
+    # gallery chosen at a level nobody set.
+    assert record["config"]["themed_bar"] is None
+
+
+# --------------------------------------------------------------------------- #
+# A themed pass relaxes the bar inside its own cell.
+# --------------------------------------------------------------------------- #
+def test_a_rich_cell_keeps_the_shipped_bar_exactly(monkeypatch):
+    """A cell that can field `4n` candidates above the shipped bar is a cell the
+    shipped bar was never wrong about, so `min` returns the shipped bar and the
+    pass is the pass it was. The relaxation must not be a discount everybody gets."""
+    cell = "dark_vivid_lime"
+    pool = [candidate(f"in{at}", cells=(cell,)) for at in range(20)]
+    scored({f"in{at}": 0.90 for at in range(20)}, monkeypatch)
+
+    bar, gate = solve.themed_fine_bar(pool, cell, 0.5, n=5, log=quiet)
+
+    assert bar == 0.5, "the 20th best reads 0.90, well over the shipped bar"
+    assert gate["relaxed"] is False
+    assert gate["wanted"] == 20 == 4 * 5
+    assert gate["reachable"] == 0.90
+    assert gate["cell_at_bar"] == 20
+
+
+def test_a_thin_cell_relaxes_to_what_its_own_4n_th_best_reads(monkeypatch):
+    """The 51-row cell. The shipped bar is fitted to the whole pool and a cell is a
+    forty-eighth of it, so inheriting it left the thinnest cell 51 rows at 48
+    places to fill 200 seats — two hundred that were never available."""
+    cell = "dark_vivid_lime"
+    pool = [candidate(f"in{at}", cells=(cell,)) for at in range(8)]
+    # Descending, so the 4n-th best at n=2 is the 8th and reads 0.08.
+    scored({f"in{at}": 0.80 - at * 0.09 for at in range(8)}, monkeypatch)
+
+    bar, gate = solve.themed_fine_bar(pool, cell, 0.5, n=2, log=quiet)
+
+    assert bar == pytest.approx(0.17), "the 8th best, which is under the shipped bar"
+    assert gate["relaxed"] is True
+    assert gate["shipped_bar"] == 0.5
+    assert gate["reachable"] == pytest.approx(0.17)
+    assert gate["cell_at_bar"] == 8, "roughly 4n to choose from, which is the point"
+
+
+def test_the_relaxation_stops_at_the_floor_and_a_thinner_cell_ships_small(monkeypatch):
+    """Below the floor the column is not saying much about a picture, so a gallery
+    seated out of what is left is one the head never endorsed. A cell that cannot
+    reach `4n` even at the floor takes what is there — **unfilled beats padded and
+    there is no padding branch**."""
+    cell = "dark_vivid_lime"
+    pool = [candidate(f"in{at}", cells=(cell,)) for at in range(6)]
+    scored({"in0": 0.40, "in1": 0.30, "in2": 0.02, "in3": 0.005, "in4": 0.001}, monkeypatch)
+
+    bar, gate = solve.themed_fine_bar(pool, cell, 0.5, n=5, log=quiet)
+
+    assert bar == solve.THEMED_BAR_FLOOR == 0.01
+    assert gate["wanted"] == 20
+    assert gate["reachable"] is None, "the cell holds five scored rows and wants twenty"
+    assert gate["cell_scored"] == 5, "in5 has no reading at all"
+    # Three of five clear the floor. The gallery ships small and says so.
+    assert gate["cell_at_bar"] == 3 < 5
+
+
+def test_the_cell_is_measured_before_any_bar_and_not_after_one(monkeypatch):
+    """The defect was ordering: the bar ran on the whole pool and the cell was
+    taken out of what survived, so the cell's own stock was never the thing
+    measured. Rows outside the cell may not move the answer at all."""
+    cell = "dark_vivid_lime"
+    inside = [candidate(f"in{at}", cells=(cell,)) for at in range(4)]
+    outside = [candidate(f"out{at}", cells=("dark_vivid_red",)) for at in range(50)]
+    readings = {f"in{at}": 0.20 for at in range(4)}
+    readings.update({f"out{at}": 0.99 for at in range(50)})
+    scored(readings, monkeypatch)
+
+    alone, _ = solve.themed_fine_bar(inside, cell, 0.5, n=1, log=quiet)
+    crowded, gate = solve.themed_fine_bar(inside + outside, cell, 0.5, n=1, log=quiet)
+
+    assert alone == crowded == pytest.approx(0.20)
+    assert gate["cell_scored"] == 4, "fifty well-read rows in another cell count for nothing"
+
+
+def test_a_themed_solve_runs_the_relaxed_bar_and_puts_the_gate_on_config(monkeypatch):
+    """`tentative.manifest` carries `config` WHOLE, and a record that cannot say
+    which gate it ran under is the defect this was found by — so the effective bar,
+    the floor, the multiple and what the cell held are all on it."""
+    cell = "dark_vivid_lime"
+    pool = [candidate(f"in{at}", p_ge3=0.90, cells=(cell,), mode="smooth") for at in range(6)]
+    scored({f"in{at}": 0.02 + at / 1000 for at in range(6)}, monkeypatch)
+
+    record = solve.solve(
+        pool,
+        n=2,
+        theme=cell,
+        targets={cell: 1.0},
+        floor=0,
+        key=solve.JUDGE_KEY,
+        fine_bar=0.5,
+        log=quiet,
+    )
+
+    gate = record["config"]["themed_bar"]
+    assert gate["shipped_bar"] == 0.5
+    assert gate["effective_bar"] == solve.THEMED_BAR_FLOOR
+    assert gate["floor"] == solve.THEMED_BAR_FLOOR
+    assert gate["multiple"] == solve.THEMED_BAR_MULTIPLE == 4
+    assert gate["cell_at_bar"] == 6
+    assert "2026-09-11" in record["config"]["themed_bar_is"]
+    # `config.fine_bar` is the bar the pass RAN, so the two agree and a reader is
+    # never left deciding which of them the seats came out of.
+    assert record["config"]["fine_bar"] == gate["effective_bar"]
+    assert record["fine_bar"]["bar"] == gate["effective_bar"]
+    assert record["filled"] == 2, "at the shipped bar this cell had no pool at all"
 
 
 # --------------------------------------------------------------------------- #

@@ -749,6 +749,104 @@ def in_theme(candidates, cell: str) -> list:
     return [candidate for candidate in candidates if wanted in candidate.cells]
 
 
+#: How many candidates a themed pass wants to choose its `n` seats from, as a
+#: multiple of `n`. **Four**, Matt's ruling of 2026-09-11.
+#:
+#: A shipped bar that admits 3.7% of the pool is a bar fitted to the pool as a
+#: whole, and a themed pass is not solving over the pool as a whole — it is
+#: solving over one of forty-eight cells. On 2026-09-11 the general bar left
+#: 11,985 rows of the 326,556 the pool holds, and the thinnest cell had **51 of
+#: them at 48 places**: two hundred seats that were never available, refused by a
+#: level nobody had asked whether the cell could reach.
+#:
+#: Four rather than one because a bar that admits exactly `n` is not a choice, it
+#: is the cell's whole stock in seat order, and every rule below — the modes, the
+#: colour cells, the diversity radius — needs something to refuse.
+THEMED_BAR_MULTIPLE = 4
+
+#: How far a themed pass may relax the bar and no further. **0.01**, Matt's
+#: ruling of 2026-09-11, on the same column [`DEFAULT_FINE_BAR`] is stated on.
+#:
+#: It is the honest floor and not a tuned one: below it the column is not saying
+#: much about a picture, and a gallery seated out of what is left would be a
+#: gallery the head never endorsed. **A cell that cannot reach `4n` even here
+#: ships small — unfilled beats padded, and there is no padding branch.**
+THEMED_BAR_FLOOR = 0.01
+
+
+def themed_fine_bar(
+    candidates, theme: str, bar: float, n: int, fine: FineColumn | None = None, log=print
+) -> tuple[float, dict]:
+    """`(the bar this themed pass actually runs, the gate that says so)`.
+
+    **The lower of the shipped bar and what the cell can reach, floored.** The
+    `4n`-th best `p_fine` among the rows dominant in the cell — see
+    [`THEMED_BAR_MULTIPLE`] — taken over the pool *before* any bar, and then
+    `max(`[`THEMED_BAR_FLOOR`]`, min(shipped, that))`. A rich cell's `4n`-th
+    reads well above the shipped bar, `min` returns the shipped bar, and the pass
+    is unchanged; a thin cell's reads below it and the bar comes down to meet the
+    stock.
+
+    **Themed path only.** The general path never calls this and its bar is
+    [`DEFAULT_FINE_BAR`] as it has been.
+
+    A cell holding fewer than `4n` scored rows has no `4n`-th best, so the bar
+    goes to the floor and takes what is there. That is the small gallery the
+    ruling asks for and not an error: **there is no padding branch anywhere below
+    this.**
+
+    The gate it returns goes on `config` and therefore onto the tracked manifest.
+    A record that cannot say which gate it ran under is the defect this was found
+    by, so the effective bar, the floor, the multiple and what the cell actually
+    held at that bar are all on it.
+    """
+    column = _column(fine, log=log)
+    read_at = column.read
+    wanted = max(1, int(n) * THEMED_BAR_MULTIPLE)
+    in_cell = in_theme(candidates, theme)
+    readings = sorted(
+        (float(read_at[str(held.key)]) for held in in_cell if str(held.key) in read_at),
+        reverse=True,
+    )
+    # `None` where the cell cannot field `4n` rows at all. The floor is then the
+    # whole of the answer, and the cell ships what it has.
+    reachable = readings[wanted - 1] if len(readings) >= wanted else None
+    # `reachable is None` relaxes all the way to the floor rather than holding the
+    # shipped bar: a cell that cannot field `4n` at ANY level is precisely the one
+    # the ruling is about, and leaving it at the shipped bar would be the 51-row
+    # cell again.
+    lowered = THEMED_BAR_FLOOR if reachable is None else min(float(bar), reachable)
+    effective = max(THEMED_BAR_FLOOR, lowered)
+    held_at_bar = sum(1 for reading in readings if reading >= effective)
+    gate = {
+        "of": "a themed pass takes the LOWER of the shipped fine bar and what its own cell "
+        "can reach, floored. The shipped bar is fitted to the whole pool and a cell is a "
+        "forty-eighth of it, so inheriting it left the thinnest cell 51 rows at 48 places "
+        "to fill 200 seats",
+        "shipped_bar": float(bar),
+        "effective_bar": float(effective),
+        "relaxed": bool(effective < float(bar)),
+        "floor": THEMED_BAR_FLOOR,
+        "multiple": THEMED_BAR_MULTIPLE,
+        "wanted": wanted,
+        "reachable": None if reachable is None else float(reachable),
+        "reachable_is": f"the p_fine of the {wanted}th best candidate dominant in this "
+        f"cell, over the pool BEFORE any bar. `null` is a cell that holds fewer than that "
+        f"many scored rows at all, in which case the bar is the floor and the gallery "
+        f"ships small — unfilled beats padded and there is no padding branch",
+        "cell_scored": len(readings),
+        "cell_at_bar": held_at_bar,
+        "cell_at_bar_is": "how many rows dominant in this cell clear the effective bar. "
+        "This is the population the seats are chosen from, and a number under `n` is a "
+        "record that could not fill",
+    }
+    log(
+        f"[themed-bar] {theme}: {len(readings):,} scored row(s) in the cell, wanting "
+        f"{wanted:,}; bar {float(bar):g} -> {effective:g} leaves {held_at_bar:,}"
+    )
+    return effective, gate
+
+
 def picture_of(candidate: Candidate) -> Path:
     """Where one candidate's 640x360 render is on this machine."""
     return Path(rehome(candidate.picture))
@@ -2317,6 +2415,15 @@ def solve(
             f"asked for {len(set(forced))}. Resolve one column and hand it to both "
             "`ranking_for` and `solve`, or hand neither and let this pass resolve it."
         )
+    # The themed path's own bar, and the general path is untouched: a themed pass
+    # solves over one of forty-eight cells and the shipped bar is fitted to all of
+    # them at once. [`themed_fine_bar`] carries the argument and the gate it
+    # returns goes on `config`, so the record says which bar it ran under.
+    themed_bar = None
+    if theme is not None and fine_bar is not None:
+        fine_bar, themed_bar = themed_fine_bar(
+            candidates, theme, float(fine_bar), int(n), fine=fine, log=log
+        )
     if fine_bar is not None:
         candidates, narrowed = at_fine_bar(candidates, float(fine_bar), fine=fine, log=log)
     if order is None and str(key) != JUDGE_KEY:
@@ -2629,6 +2736,7 @@ def solve(
             len(fine.forced),
             held_cell_floor,
             _fine_head(),
+            themed_bar,
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -2851,6 +2959,7 @@ def _config(
     forced: int = 0,
     cell_floor: bool = DEFAULT_CELL_FLOOR,
     fine_head: str | None = None,
+    themed_bar: dict | None = None,
 ) -> dict:
     return {
         "n": n,
@@ -2874,6 +2983,18 @@ def _config(
         # that made them. A missing field would put a reader back on the date.
         "fine_bar": None if fine_bar is None else float(fine_bar),
         "fine_bar_default": DEFAULT_FINE_BAR,
+        # The gate a THEMED pass ran under, on `config` for the fine bar's own
+        # reason: this block is what `tentative.manifest` carries whole into the
+        # tracked manifest, and a record that cannot say which bar chose it is the
+        # defect this was found by. `fine_bar` above is the EFFECTIVE bar — what
+        # the pass actually ran — and this says how it got there. `null` on every
+        # unthemed pass and on a themed pass with no bar at all.
+        "themed_bar": themed_bar,
+        "themed_bar_is": "the themed path takes the lower of the shipped fine bar and the "
+        "p_fine of its cell's `multiple * n`-th best candidate, floored at `floor` — see "
+        "solve.themed_fine_bar. `null` is a pass that was not themed or ran unbarred. A "
+        "record that does not name the field at all was taken before 2026-09-11, when a "
+        "themed pass inherited the general bar and drew from 3.7% of the pool",
         # On `config` for the fine bar's own reason: this block is what
         # `tentative.manifest` carries WHOLE into a tracked manifest, and whether
         # a gallery was handed a set of rows to seat ahead of the pool is not
@@ -4092,6 +4213,8 @@ __all__ = [
     "SEATED",
     "BOTTOM_QUARTILE",
     "DEFAULT_FINE_BAR",
+    "THEMED_BAR_FLOOR",
+    "THEMED_BAR_MULTIPLE",
     "DEFAULT_GROUP_CAP",
     "DEFAULT_KEY",
     "JUDGE_KEY",
@@ -4123,6 +4246,7 @@ __all__ = [
     "FORCED_LIFT",
     "FineColumn",
     "at_fine_bar",
+    "themed_fine_bar",
     "fine_column",
     "attribution",
     "autolevel_rate",

@@ -22,6 +22,12 @@ def merge(rows, scores, log=print) -> dict:
     copies of an upsert followed by a save each of them has to remember. It is
     also the only door the retention rule needs to stand at.
 
+    **A leg whose pictures have been swept is refused here**, before any of it —
+    [`sweep.refuse_swept`], on the declaration [`orphans`] leaves in the leg's own
+    directory. This is one of the two paths that guard stands in front of, and
+    it is the one every leg's own `merge` comes through; [`curation.rotation`] is
+    the other, because it removes rows before it reaches here.
+
     **The tracking is the point.** The manifests are the only thing about this
     store the history keeps, and they went stale for an era: three merge legs and
     the backfill all wrote the rows and none of them recorded what they wrote, so
@@ -73,6 +79,10 @@ def merge(rows, scores, log=print) -> dict:
     """
     from fractal_wallpapers.curation import colorize, flatness, retention, signatures
 
+    # Before anything at all, and the leg is derived from the rows rather than
+    # handed in: a candidate row names its picture, and the picture names the leg
+    # that rendered it. See [`sweep.refuse_swept`].
+    sweep.refuse_swept(sweep.legs_of(rows))
     # Before the upsert, because it is a reading of what the store held BEFORE
     # this leg's own rows joined it — see [`retention.repeat_draws`].
     standing = retention.drawn_before(store.stream())

@@ -2419,10 +2419,20 @@ def themed_flags(container):
     from fractal_wallpapers.curation import ceiling as ceiling_module
     from fractal_wallpapers.curation import headroom as headroom_module
     from fractal_wallpapers.curation import rules as rules_module
+    from fractal_wallpapers.palettes import dominance as dominance_module
 
     container.add_argument(
         "--themed",
         metavar="CELL",
+        # A closed list of 48 and therefore `choices`, which exits before any pool
+        # is read. `--themed not_a_real_cell` used to be accepted, spend ~40 s
+        # loading the whole pool, and then fail on `solve.SolveRefused` — whose
+        # message reads *the pool holds none of that*, which is the right sentence
+        # for a cell that IS one and is the wrong sentence for a typo.
+        # [`dominance.cells`] is stdlib-only for this: see
+        # [`codebook.cell_names`], which is what keeps a gamut bisection and numpy
+        # out of every `fractal-wallpapers --help`.
+        choices=dominance_module.cells(),
         help="choose a THEMED gallery: one dominant colour cell, over a pool of the rows "
         "that cell's dominance block claims, at the RELAXED bar — P(>=3) >= "
         f"{headroom_module.FALLBACK_BAR} for every accepted mode rather than the per-mode "

@@ -112,6 +112,118 @@ def picture_dirs() -> list[Path]:
     return found
 
 
+# --------------------------------------------------------------------------- #
+# The declaration a sweep leaves behind, and the two merges that read it.
+# --------------------------------------------------------------------------- #
+#: What a swept leg's declaration is called: a file beside its `rows.jsonl`, one
+#: directory above the `pictures/` [`orphans`] emptied.
+#:
+#: **A sweep takes pictures and nothing else, so a swept leg stays mergeable
+#: unless something says otherwise.** `owed_smoke_ckpt120` is the worked example:
+#: the sweep took its 34 pictures and left `rows.jsonl`, `scores.jsonl` and
+#: `removed.jsonl` exactly where they were, and `curate rotate merge` would still
+#: have upserted 34 rows naming pictures that are gone **and removed 19 live rows
+#: in exchange**. The removal is the irreversible half and it happens at merge
+#: time, so the guard has to stand in front of the merge rather than behind it.
+#:
+#: **This is a marker and not a deletion.** The records stay — they are a rounding
+#: error on disk next to pictures and they are the leg's own history, which is the
+#: only account of what it decided. What they stop being is an input.
+SWEPT_NAME = "swept.json"
+
+
+def swept_path(leg) -> Path:
+    """Where one leg's declaration sits, given the leg's own directory."""
+    return Path(leg) / SWEPT_NAME
+
+
+def swept(leg) -> dict | None:
+    """One leg's declaration, or `None` where no sweep has taken its pictures.
+
+    **Leg granularity, and deliberately not per row.** The alternative is asking
+    the disk about every picture a merge is about to name, which is a `stat` a
+    row over a store this size and answers a different question anyway: a row
+    whose picture a *prune* took is an ordinary row of a healthy leg, and only a
+    leg-wide declaration separates that from a leg whose pictures are gone.
+    """
+    path = swept_path(leg)
+    if not path.is_file():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def declare_swept(taken: dict, when: str, log=print) -> list[dict]:
+    """Write the declaration into every leg this sweep actually took pictures from.
+
+    `taken` is `{leg directory: pictures deleted}`. Written **after** the unlink
+    and only under `apply`, so a dry run declares nothing and a sweep that failed
+    to delete does not leave a leg refusing merges over pictures it still has.
+
+    Re-swept legs accumulate: the file carries `sweeps`, so a leg swept twice says
+    both times rather than forgetting the first.
+    """
+    written = []
+    for leg, count in sorted(taken.items()):
+        path = swept_path(leg)
+        held = swept(leg) or {"schema": SCHEMA, "leg": tracked_name(Path(leg)), "sweeps": []}
+        held["sweeps"].append({"taken_at": when, "pictures": int(count)})
+        held["pictures"] = sum(one["pictures"] for one in held["sweeps"])
+        path.write_text(json.dumps(held, indent=2) + "\n", encoding="utf-8", newline="\n")
+        written.append({"leg": held["leg"], "pictures": held["pictures"]})
+        log(
+            f"[orphans] {tracked_name(path)} — this leg's pictures are gone and no merge "
+            f"will read its records again"
+        )
+    return written
+
+
+def legs_of(rows, tiers=None) -> list[Path]:
+    """The leg directories one merge's rows were rendered into, deduplicated.
+
+    What lets [`door.merge`] ask the swept question without any caller having to
+    tell it which leg it is merging: a candidate row names its picture, the
+    picture sits in `<subtree>/<leg>/pictures`, and the leg is that directory's
+    parent. Deduplicated on the **stored** directory before re-homing, so a merge
+    of ten thousand rows out of one leg pays one [`rehome`] rather than ten
+    thousand — [`rehome`]'s own docstring is where that ratio is written down.
+
+    A row naming nothing under an artifacts tree contributes no leg rather than a
+    guess, which is [`rehome`]'s `None` carried straight through.
+    """
+    seen: dict = {}
+    for row in rows:
+        stored = row.get("picture")
+        if not stored:
+            continue
+        holder = str(stored).replace("\\", "/").rsplit("/", 1)[0]
+        if holder not in seen:
+            where = rehome(holder, tiers)
+            seen[holder] = None if where is None else where.parent
+    return sorted({where for where in seen.values() if where is not None})
+
+
+def refuse_swept(legs) -> None:
+    """Raise if any of these legs has had its pictures swept. The guard itself.
+
+    Called from **both** merge paths: [`door.merge`], which every leg's own
+    `merge` comes through, and [`curation.rotation.merge`], which takes rows
+    **out** of the store before it reaches that door and so would do the
+    irreversible half even if only the door asked.
+    """
+    for leg in legs:
+        held = swept(leg)
+        if held is None:
+            continue
+        raise LedgerError(
+            f"{held['leg']} had its pictures swept — {held['pictures']:,} of them, most "
+            f"recently {held['sweeps'][-1]['taken_at']} — so merging it would upsert rows "
+            f"naming pictures that are gone, and on a pass that removes rows it would take "
+            f"live ones out in exchange. {tracked_name(swept_path(leg))} is the "
+            f"declaration. Its records are kept as history; delete that file only if the "
+            f"pictures have been re-rendered."
+        )
+
+
 def _decision_rows(tiers) -> tuple[list[dict], dict]:
     """Every decision row this project keeps, slimmed to the four fields that
     identify a picture, with `{store: rows read}` beside it.
@@ -320,6 +432,14 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     whole of what it rendered, and deleting them is a judgement about keeping a
     superseded era's attempts, not garbage collection.
 
+    ## What it leaves behind, so the leg stops being mergeable
+
+    A leg this sweep actually took pictures from gets [`SWEPT_NAME`] written into
+    its own directory, and [`refuse_swept`] stands in front of **both** merge
+    paths reading it. Under `apply` only, and after the unlink. Its records are
+    untouched: this declares that the pictures are gone, which is the thing a
+    merge has no other way to find out.
+
     ## Where the safety actually lives
 
     Three places, none of them a promise made in a comment:
@@ -355,8 +475,9 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
 
     by_subtree: dict = {}
     doomed: list = []
+    taken_from: dict = {}
     unmerged: list = []
-    swept: list = []
+    swept_legs: list = []
     unreferenced: Counter = Counter()
     for where in picture_dirs():
         # The check at the point of decision, and not carried over from the
@@ -417,7 +538,7 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
             # Named by the caller, so swept under the merged rule — and counted
             # apart, because "you asked for this leg" and "the retention rule
             # already decided about this file" are different sentences.
-            swept.append(
+            swept_legs.append(
                 {
                     "leg": leg_name,
                     "pictures": len(stems),
@@ -433,6 +554,10 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
         cell["named_by_nothing"] += len(unnamed)
         cell["bytes"] += sum(stems[name] for name in unnamed)
         doomed.extend(tracked_name(where / name) for name in unnamed)
+        # Leg granularity, and the count is per leg because the declaration is:
+        # this directory's pictures are gone, and a merge reading its records
+        # would name them.
+        taken_from[where.parent] = taken_from.get(where.parent, 0) + len(unnamed)
 
     record = {
         "schema": SCHEMA,
@@ -448,10 +573,11 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
         "unmerged": sorted(unmerged, key=lambda held: -held["pictures"]),
         "unmerged_legs": len(unmerged),
         "skipped_unmerged": sum(cell["skipped_unmerged"] for cell in by_subtree.values()),
-        "swept_unmerged": sorted(swept, key=lambda held: -held["deleting"]),
-        "swept_unmerged_legs": len(swept),
-        "swept_unmerged_pictures": sum(held["deleting"] for held in swept),
-        "swept_unmerged_bytes": sum(held["bytes"] for held in swept),
+        "swept_unmerged": sorted(swept_legs, key=lambda held: -held["deleting"]),
+        "swept_unmerged_legs": len(swept_legs),
+        "swept_unmerged_pictures": sum(held["deleting"] for held in swept_legs),
+        "swept_unmerged_bytes": sum(held["bytes"] for held in swept_legs),
+        "declared_swept": [],
     }
     log(
         f"[orphans] {record['pictures_on_disk']:,} pictures; "
@@ -476,6 +602,10 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
         return record
 
     record["pictures"] = delete_pictures(doomed, log=log)
+    # After the unlink and never before it: a declaration written ahead of a
+    # delete that then failed is a leg refusing merges over pictures it still
+    # holds, which is the one way this guard could cost work rather than save it.
+    record["declared_swept"] = declare_swept(taken_from, record["taken_at"], log=log)
     record["seconds"] = round(time.time() - started, 1)
     return record
 

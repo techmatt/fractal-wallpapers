@@ -216,8 +216,15 @@ def family_of(cell: str) -> str | None:
 
 
 def cells() -> tuple[str, ...]:
-    """Every chromatic cell name, in the codebook's own order. Forty-eight of them."""
-    return tuple(entry["swatch"] for entry in codebook.swatches() if entry["kind"] == "hue")
+    """Every chromatic cell name, in the codebook's own order. Forty-eight of them.
+
+    Through [`codebook.cell_names`] since 2026-09-11, which spells the names off
+    the three constants rather than off the built swatches: this is a closed list
+    an argparse `choices` reads at parser-build time, and the swatches cost a
+    gamut bisection and an import of numpy. The order is the same one and
+    `tests/test_palette_codebook.py` is what keeps it so.
+    """
+    return codebook.cell_names()
 
 
 def families() -> tuple[str, ...]:

@@ -335,6 +335,42 @@ def test_a_recorded_gallery_holds_its_rows_its_manifest_and_the_shortfall(store)
     assert len(tentative.read_rows(stamp)) == 2
 
 
+def test_the_manifest_names_the_diversity_rule_the_solve_ran(store):
+    """`config` carries no `rules` block, so the rule that decided two seats were
+    different enough lived only on the solve record — which a published stamp does
+    not carry. A themed record could not say which rule chose it, and two
+    galleries chosen under different rules are not comparable."""
+    record = record_of(seat("k0"), n=10)
+    record["rules"] = {
+        "diversity": {"rule": "geometry", "threshold": 0.3, "neighbours": 8},
+    }
+    stamp = tentative.write(record, stamp="20260911T000000Z", log=quiet).name
+
+    held = tentative.read_manifest(stamp)["solve"]
+    assert held["diversity"] == {"rule": "geometry", "threshold": 0.3, "neighbours": 8}
+    assert "rules.State.record" in held["diversity_is"]
+    # Carried WHOLE off the record rather than restated, which is the same rule
+    # `config` is carried under: a second spelling is a second thing to keep true.
+    # Asked of `manifest_of` directly, before the JSON round trip can hide it.
+    built = tentative.manifest_of(record, rows=[], stamp="x")
+    assert built["solve"]["diversity"] is record["rules"]["diversity"]
+
+
+def test_a_manifest_says_null_diversity_out_loud_rather_than_going_quiet(store):
+    """A pass that ran with no diversity rule at all is a real answer, and the
+    `fine_bar` lesson is that a missing field puts a reader back on the date."""
+    written = tentative.write(record_of(seat("k0")), stamp="20260911T000001Z", log=quiet)
+    silent = tentative.read_manifest(written.name)
+    assert silent["solve"]["diversity"] is None
+
+    record = record_of(seat("k1"))
+    record["rules"] = {"diversity": None}
+    asked = tentative.read_manifest(
+        tentative.write(record, stamp="20260911T000002Z", log=quiet).name
+    )
+    assert asked["solve"]["diversity"] is None
+
+
 def test_a_stamp_is_written_once_and_never_over(store):
     """The IDs in a record are what a figure prompt names, so re-recording under
     a stamp somebody is already holding would move the aliases under a reader.

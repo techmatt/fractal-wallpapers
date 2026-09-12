@@ -800,7 +800,10 @@ is not running — and a manifest that leaves none is **refused**, on
 `--floor-places`' reason: a leg that quietly planned a near band over a population
 nobody chose would report its rate over that one.
 
-⚠ **Cut the manifest with `--modes smooth stripe tia`, not with the leg's roster.**
+⚠ **Cut the manifest over `smooth`/`stripe`/`tia`, not over the leg's roster** —
+`free-slots --mode smooth --mode stripe --mode tia`, and note the flag is `--mode`
+repeated rather than a `--modes` list, which is the spelling the measurement below
+was first written down in and which argparse refuses.
 The draw holds the incumbent's mode and `plan_held_mode` skips any place whose
 incumbent is not in [`field_modes`] — a location whose best candidate is a composite
 has no field to hand over — so a manifest cut over a twelve-mode roster names places

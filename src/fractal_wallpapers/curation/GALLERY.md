@@ -1531,6 +1531,49 @@ Rows outside the cell are recorded `not_dominant_in_the_theme`, which is pool
 construction and sits beside `below_its_mode_bar` rather than among the rules:
 the row was not refused a seat, it was never eligible for one.
 
+**A misspelt cell is refused at the parser.** `dominance.cells()` is a closed list
+of 48, so it is `--themed`'s argparse `choices` and `--themed not_a_real_cell`
+exits before any pool is read. It used to be accepted, spend about forty seconds
+loading the pool and then fail on *no candidate in the ledger is dominant in …* —
+the right sentence for a cell the pool is thin in and the wrong one for a typo,
+which still says the former for a correctly spelt cell. The list reaches
+`codebook.cell_names`, which spells the names off `HUES` x `TONES` x
+`CHROMA_TARGETS` rather than off the built swatches: the swatches cost a gamut
+bisection and an import of numpy, and `cli.build_parser` builds every group on
+every invocation, so the other spelling would put numpy behind
+`fractal-wallpapers --help` and behind the torch-free `fetch-weights --check` path
+`tests/test_base_install.py` exists to keep.
+
+### A themed pass relaxes the bar inside its own cell
+
+**Matt's ruling of 2026-09-11**, and it is on the themed path alone — the general
+path's bar is `solve.DEFAULT_FINE_BAR` as it has been.
+
+> the effective bar is the lower of the shipped `fine_bar` and the `p_fine` of the
+> **4n-th** best candidate among rows dominant in the cell, **floored at 0.01**.
+
+`solve.themed_fine_bar` is the door, `THEMED_BAR_MULTIPLE` is 4 and
+`THEMED_BAR_FLOOR` is 0.01. A **rich** cell's `4n`-th best reads above the shipped
+bar, so `min` returns the shipped bar and the pass is unchanged; a **thin** cell's
+reads below it and the bar comes down to meet the stock. A cell that cannot field
+`4n` scored rows at any level goes to the floor and takes what is there — **the
+gallery ships small. Unfilled beats padded, and there is no padding branch.**
+
+**What it was fitted against.** The shipped bar is fitted to the pool as a whole
+and a themed pass solves over one of forty-eight cells: on 2026-09-11 it left
+11,985 rows of the 326,556 the pool holds — **3.7%** — and the thinnest cell had
+**51 of them at 48 places**, so 200 seats were never available. Four rather than
+one because a bar admitting exactly `n` is not a choice, it is the cell's whole
+stock in seat order, and the modes, the colour cells and the diversity radius all
+need something to refuse.
+
+**The gate is on the manifest.** `config.themed_bar` carries the effective bar, the
+floor, the multiple, the `4n`-th reading and how many rows the cell held at that
+bar; `config.fine_bar` is the bar the pass actually ran, so the two agree and a
+reader is never left deciding which the seats came out of. `null` on every unthemed
+pass. A record that cannot say which gate it ran under is the defect this was found
+by.
+
 **Why a themed pass needs its own cap.** The main gallery's
 `max(1, floor(0.025 n))` is a share of `n` alone. Over a pool holding a few dozen
 maps rather than hundreds that is the **binding** rule at every size a themed
@@ -2161,6 +2204,15 @@ of the processes the one-pool-holding-process rule counts.
 **The ID is the ledger recipe key**, and the alias is its first eight characters,
 lengthened only for the group that collides. Both resolve; a click on the alias in the
 page copies the full key.
+
+**The manifest carries the solve's `config` whole, and the diversity rule beside
+it.** `solve.diversity` — the rule's name, its threshold and its neighbour count —
+since 2026-09-11, because `config` carries no `rules` block and the solve record
+that does is not what a published stamp holds: a themed record could not say which
+rule chose it, and two galleries chosen under different rules are not comparable.
+It is `rules.State.record`'s own block carried across rather than restated, so it
+is still one spelling. An explicit `null` is a pass that ran with no diversity rule
+at all; a manifest with no `diversity` key was written before that date.
 
 **The solve half is stamped too, with the same stamp.** `record` writes its solve record
 to `artifacts/curation/solve/tentative_n<N>_<stamp>/`, not to `tentative_n<N>/` — the
