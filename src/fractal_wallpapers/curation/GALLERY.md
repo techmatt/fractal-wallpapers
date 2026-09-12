@@ -1518,10 +1518,11 @@ Per `solver_design` §Themed, and they are one decision rather than four flags:
   bars against 1,209 at the crossing, `dark_vivid_lime` 266 against 457. At the
   per-mode bars a themed gallery has no pool;
 * the **diversity rule** is `rules.Places` rather than the twin test;
-* the **palette-group cap** is `ceiling.themed_group_cap` — `max(1, floor(0.05 n))`,
-  twice the main gallery's rate. It was `ceil(2n/P)` until 2026-09-05, when the
-  denominator went; `P` is still measured and recorded. `--themed-cap` names a
-  number instead;
+* the **palette-group cap** is `ceiling.themed_group_cap` — `max(1, floor(0.075 n))`,
+  three times the main gallery's rate, so **15 seats at n=200**. It was `ceil(2n/P)`
+  until 2026-09-05, when the denominator went, and the share was a twentieth until
+  2026-09-12; `P` is still measured and recorded. `--themed-cap` names a number
+  instead;
 * `--target <cell>=1.0` and `--flat-floor`, which the flag sets as **defaults**
   and not as overrides — a themed pass naming its own target or its own floor
   keeps it. Without the target the cell allowance is `floor(K x (1/48) x n) + 1`
@@ -1581,8 +1582,24 @@ gallery would ship at — measured 2026-09-01, `dark_vivid_lime` seated 38 of 50
 90 of 150 and 124 of 200 with the cap refusing 300-435 rows against the diversity
 rule's 1-27, and `sum_g min(cap, places g fields)` predicted the whole column.
 
-**`max(1, floor(0.05 n))` since 2026-09-05. Matt's ruling.** Twice the main
-gallery's rate, on `n` alone, so the two caps are one rule with two numbers.
+**A share of `n` alone since 2026-09-05. Matt's ruling.** So the two caps are one
+rule with two numbers, and the themed number is the one that has moved.
+
+**`max(1, floor(0.075 n))` since 2026-09-12. Matt's value.** Three times the main
+gallery's rate — **15 seats at n=200**, 75 at n=1000 — raised from the twentieth
+below because a twentieth turned out to be the wall rather than the ceiling. Five
+cells were solved at n=200 on 2026-09-12 and the cap bound at **10 of 10 in four of
+the five**, refusing **100 rows in `dark_vivid_green` alone**, which finished
+165/200 with the group cap its largest single refusal — ahead of geometry's 62,
+one-per-location's 40 and the spiral cap's 33. A rule that binds in four passes of
+five is not holding a runaway back, it is choosing the gallery.
+
+⚠ **It does not help the thin case, which is where the repetition actually is.**
+The same five cells put `dark_vivid_lime` at 39 seats with the cap never binding
+(realized max 8 of 10) and `map:Emerald Ingot` holding 8 of those 39 — top group
+20.5%, top three 46.2%. A cap above the seat count is not a cap, so raising it
+changes nothing there and the thin cell's only working defence stays the
+geometry-only `Places` rule.
 
 It **replaced `ceil(2n/P)`** — twice the even share across the `P` groups that
 could field the theme, `P` measured off the pool at solve time. What that bought
@@ -3204,6 +3221,15 @@ of 1 was a quality mechanism as well as a ceiling — it forced an n-seat galler
 distinct maps and pushed the seating down the map-quality tail by construction — so
 the realized maximum per map is a number the record now **reports** rather than
 assumes: `shortfalls.groups.realized_max` and `at_the_cap` beside the cap itself.
+
+⚠ **`shortfalls.groups.counts` is the busiest twenty and never all of them.** The
+group count is `held`, in the same block. `len(counts)` looks like the count and is
+not — it reads 20 on every pass with more than twenty groups, which is every
+shipping pass — and it is the one key in that block whose shape is not stated where
+it is written, `realized_max` and `at_the_cap` both carrying a comment. It is the
+**only** truncated `counts` in the block: the sibling `cells.counts` and
+`families.counts` are complete, so `len` agrees with `held` there and the habit
+picked up on those two is what makes this one wrong.
 
 ⚠ **And at n=1000 it is not a live constraint — it has now refused nothing in three
 independent measurements.** A counterfactual over one pool at cap 25, cap 50 and no

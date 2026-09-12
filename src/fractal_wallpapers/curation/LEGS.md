@@ -1174,7 +1174,10 @@ the themed cap and the mode floors all have to be identical, and the assertion i
 dimension off `config` on each `manifest.json` — a record that does not *name* a knob
 ran without it. The themed group cap is the one that used to move on its own: while it
 was `ceil(2n/P)` the grown pool changed it, so no themed pair taken before 2026-09-05 is
-a comparison of one rule.
+a comparison of one rule. It is a share of `n` since, but the **share** moved on
+2026-09-12 — `0.05` to `0.075`, 10 seats to 15 at n=200 — so a pair straddling that date
+is not one rule either, and a themed record made before it ran at two thirds of today's
+cap. The assertion catches both: `config.ceiling.group_cap` is the number on each side.
 
 ⚠ **"One seat per location, so a new-map seat displaced some map" is false in practice.**
 Of `classic-pairs-2026-09`'s 54 general seats, **4** took a place off another row; **33**

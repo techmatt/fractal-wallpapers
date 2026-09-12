@@ -2540,7 +2540,7 @@ def test_a_themed_pass_takes_the_themed_cap_and_measures_P_off_its_own_pool():
     """`P` is read after the bar and the pre-selection, over exactly the rows the
     leg may seat — not off the ledger, and not off a flag. It denominated the cap
     until 2026-09-05 and is a reading of the pool now, so the two claims are worth
-    keeping apart: the cap is `max(1, floor(0.05 n))` and P is still measured."""
+    keeping apart: the cap is `max(1, floor(0.075 n))` and P is still measured."""
     pool = [
         candidate(
             f"{group}_{at}",
