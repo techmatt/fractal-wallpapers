@@ -362,6 +362,15 @@ have grown a blind sheet by nine anchored rows and broken every paired compariso
 against it. `tests/test_finished_store.py` holds the invariant this protects: no
 non-`eval_only` row sits on a pinned place. The pin is never the thing that moves.
 
+**A withheld sitting loses whole PAIRS and never half of one**, which is what makes
+the rule safe on a matched-pair page. The pin keys on the location and a matched
+pair is two recipes at one place, so both members are caught or neither: the
+`repeat_axis_*_20260911` sitting lost `p0001` on the smooth sheet and `p0099` on the
+strange one, two rows apiece at one location apiece, and every surviving pair was
+still whole. Reading the sitting is therefore an exclusion of two pairs and not a
+repair — count the *pairs* off the resolved store rather than assuming 246 rows
+means 123 comparisons.
+
 **The check runs before the write, and again after it.** It used to run only after,
 so a drop that trespassed left the rows behind and raised — a store the suite
 forbids, produced by the command that refuses to produce it. Both assertions stay:

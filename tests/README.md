@@ -402,6 +402,24 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**An ingest with no test in it, and the 19 skips it owed.** `repeat_axis_ingest_ckpt121`,
+2026-09-11, idle box. **Fast: 4,317 selected, 136 deselected — 4,453 collected — in
+149.15 s. Slow: 4,453 of 4,453 in 527.61 s (8:47), zero skips, zero failures.** Both
+counts are the reading below's exactly, which is what a prompt that writes no test
+should read.
+
+⚠ **The first slow lane after the ingest was 4,434 passed, 19 skipped in 478.87 s**, and
+the 19 are the entry worth having: **landing 242 label rows shortens the render cache by
+exactly those rows**, and the skip message says so — *the render cache is short
+`{'smooth_render': 68, 'strange_render': 174}`*, over `test_render_deploy`,
+`test_render_dose`, `test_render_grade`, `test_render_head`, `test_renders` and
+`test_finished_train`. So **19 is not a constant**; it is however many crops the store
+is owed, and 2026-09-07's 19 matching this one is a coincidence of two ingests of
+similar size. `renders plan` then `renders build --workers 3` closes it, at **68 crops
+in 68.1 s** for the smooth head and **174 in 916.2 s** for the strange — 1.00 s against
+**5.27 s** a crop, which is the partition's depth and not the count. Budget an ingest's
+follow-on build by which store the rows landed in.
+
 **Three defaults made to say themselves out loud.** `score_and_resume_ckpt120`,
 2026-09-11, idle box after a 416 s render smoke. **Fast: 4,317 selected, 136
 deselected — 4,453 collected — in 148.91 s. Slow: 4,453 of 4,453 in 542.82 s
