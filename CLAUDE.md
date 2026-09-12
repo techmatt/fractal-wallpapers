@@ -185,19 +185,26 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,408 collected — 4,272 fast,
-136 slow — since `rotation_pass_ckpt120` landed on 2026-09-11**, and the pair was
-taken on this machine on an idle box after a render leg, on a `.[dev,models]`
-install with a release engine built: the **fast** lane **142.40 s** and the
-**slow** lane **4,408 of 4,408 in 517.94 s (8:38)**, both **green**, **zero
+Both are measured, not estimated. The tree holds **4,435 collected — 4,299 fast,
+136 slow — since `repeat_label_batch_ckpt120` landed on 2026-09-11**, and the pair
+was taken on this machine on an idle box after a render leg, on a `.[dev,models]`
+install with a release engine built: the **fast** lane **147.59 s** and the
+**slow** lane **4,435 of 4,435 in 519.58 s (8:39)**, both **green**, **zero
 skips**.
 
-The thirty-seven over the previous reading are all that prompt's and **all of them
-are fast**, for **+1.12 s** between them: a leg whose whole substance away from the
-render is a filter over the ledger, a seeded draw and a `max` needs a fake ledger
-and never a picture. It added **no** slow test at all, and it did not need to —
-it draws its pictures through `mine.make`, so `tests/test_renderer_agreement.py`
-covers it without a registry entry.
+The twenty-seven over the previous reading are all that prompt's and **all of them
+are fast**, for **+5.19 s**: twenty-one for a leg that draws, renders and sheets a
+matched labelling batch, three for a finished page read in a column the plan
+states, and three for a repeated traversal's round trip into the label store and
+back out to a renderer. No slow test was added and the slow lane's +1.64 s is the
+box.
+
+**A fixture that reads one tracked answer once can be worth more than the tests it
+serves cost.** `models.palette_sets.cyclic` parses all 1,021 colormap documents on
+every call — 0.85 s — and anything that builds a recipe reaches it, so a test file
+that resolves one per test pays it per test. `conftest.shipped_cyclic_maps` took
+`tests/test_repetition.py` from **9.45 s to 2.79 s** over the same 17 tests. Ask
+what a new file is paying per test before accepting its clock.
 
 **`5665ae6` left three reds that only the slow lane could see, and they are closed.**
 Nine green fast lanes went past them. Two were the *guard* and not the tree — the

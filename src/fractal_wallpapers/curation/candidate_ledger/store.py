@@ -335,6 +335,13 @@ def present_pictures(rows=None) -> set:
 #: more here rather than less: a pass killed between rendering a chunk and
 #: deciding it leaves five-sixths of that chunk named by nothing.
 #: `tests/test_rotation.py` pins the membership.
+#:
+#: **`repetition` joined on 2026-09-11.** [`curation.repetition`] renders a repeat
+#: beside every control it draws and merges them through the ordinary door, so its
+#: pictures are ledger pictures like a mine's — and the door *prunes*, so some of
+#: what it makes is deleted in the same act that admits it. A leg killed between
+#: its render and its merge leaves the whole batch named by nothing.
+#: `tests/test_repetition.py` pins the membership.
 POOL_SUBTREES = (
     "depth",
     "runs",
@@ -344,6 +351,7 @@ POOL_SUBTREES = (
     "remode",
     "label_migration",
     "rotation",
+    "repetition",
 )
 
 

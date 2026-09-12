@@ -797,3 +797,48 @@ def test_the_second_reading_survives_the_reorder_onto_its_own_row(tmp_path) -> N
     assert first["suggestion_score"] > second["suggestion_score"], "good to bad"
     assert first["selected_on"] == {"p_ge4": 0.9}
     assert second["selected_on"] == {"p_ge4": 0.1}
+
+
+# --------------------------------------------------------------------------- #
+# `plan` — a finished page read in a column this page never scored.
+# --------------------------------------------------------------------------- #
+def test_a_finished_page_can_be_read_in_the_plans_own_column(tmp_path) -> None:
+    """The fine head reads the CANDIDATE at 640x360 and this page serves 1280x720,
+    so a batch cut to ask about one axis of the recipe has to bring its order with
+    it. What moves is the order and not the prefill."""
+    units = [finished_unit(index, order_score=score) for index, score in enumerate([0.1, 0.9, 0.5])]
+    sheet = finished_sheet(
+        tmp_path,
+        units,
+        probabilities=[[0.9, 0.6], [0.2, 0.1], [0.5, 0.3]],
+        order_by="plan",
+    )
+    assert sheet.manifest["order"] == "the plan's own column"
+    # Good→bad by the PLAN's column, which is not the judge's order — the judge
+    # would have put the first unit first and the plan puts it last.
+    assert [row["join"]["viewport"]["center_re"] for row in sheet.rows] == ["0.1", "0.2", "0.0"]
+    assert [row["columns"]["p_ge2"] for row in sheet.rows] == [0.2, 0.5, 0.9]
+    # The prefill and the reported score stay the judge's own, on this store's scale.
+    assert [row["suggestion_score"] for row in sheet.rows] == [0.30000000000000004, 0.8, 1.5]
+
+
+def test_a_row_the_plans_column_cannot_read_sorts_after_every_row_it_can(tmp_path) -> None:
+    """`solve.at_fine_bar`'s rule: an absent reading is no opinion, not a low one."""
+    units = [
+        finished_unit(0, order_score=0.2),
+        finished_unit(1),
+        finished_unit(2, order_score=0.8),
+    ]
+    sheet = finished_sheet(tmp_path, units, probabilities=[[0.1, 0.1]] * 3, order_by="plan")
+    assert [row["join"]["viewport"]["center_re"] for row in sheet.rows] == ["0.2", "0.0", "0.1"]
+
+
+def test_a_page_asked_for_the_plans_column_with_none_stated_is_refused(tmp_path) -> None:
+    """Otherwise it serves the plan's own order under a manifest claiming a reading."""
+    with pytest.raises(sheets.SheetError, match="order_score"):
+        finished_sheet(
+            tmp_path,
+            [finished_unit(index) for index in range(3)],
+            probabilities=[[0.1, 0.1]] * 3,
+            order_by="plan",
+        )

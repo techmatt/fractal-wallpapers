@@ -644,7 +644,6 @@ def _row_of(source_row: dict, head: str, modes: set, cyclic: set) -> dict:
             params,
             bool(provenance.get("transfer_dropped")),
             colormap in cyclic,
-            colormap,
             finished_import.rolloff_of(render, provenance),
         ),
         "render": finished_import.render_of(render),

@@ -165,7 +165,7 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `artifacts/top_slice_probe/` | the probe's features, scores and held-out split |
 | `artifacts/gallery_grade/n1000_0906/*/plan.jsonl` | the only thing that can rebuild those levelled pictures as they were judged |
 | `data/curation/candidate_ledger/ratchet.jsonl` | tracked and append-only: the census asserts against it, and a lost row is a lost deletion |
-| `artifacts/curation/{depth,rotation}/*/fields` | Matt's ruling. Both **are** pool subtrees, so these are the entries the sweep walks past — `fields` is not `pictures`, so they are unreachable by name at that depth rather than by subtree. Each is bounded while its leg runs by `colorize.FIELDS_KEPT`, which is 64 dumps or about 226 MB, and neither is swept after it |
+| `artifacts/curation/{depth,rotation,repetition}/*/fields` | Matt's ruling. All three **are** pool subtrees, so these are the entries the sweep walks past — `fields` is not `pictures`, so they are unreachable by name at that depth rather than by subtree. Each is bounded while its leg runs by `colorize.FIELDS_KEPT`, which is 64 dumps or about 226 MB, and none is swept after it |
 | `artifacts/curation/gallery/` | 14,438 gate attempt rows over four retired passes, and `orphans` is their only reader — see [`curation/README.md`](curation/README.md)'s *The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT* |
 
 **The Durables are ten and not five**, all of them under `artifacts/curation/`:

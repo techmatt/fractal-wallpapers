@@ -47,6 +47,7 @@ from fractal_wallpapers.curation import backfill as backfill_module
 from fractal_wallpapers.curation import label_fate as label_fate_module
 from fractal_wallpapers.curation import label_migration as label_migration_module
 from fractal_wallpapers.curation import manufacture as manufacture_module
+from fractal_wallpapers.curation import repetition as repetition_module
 from fractal_wallpapers.paths import (
     repo_root,
 )
@@ -1648,6 +1649,76 @@ def curate_rotate(args):
         return 1
     print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
     print(f"\nrecord {display_path(rotation.record_path(args.name))}")
+    return 0
+
+
+def curate_repetition(args) -> int:
+    """Draw the matched repeat batch, render it, merge it, and cut its sheet plan."""
+    from fractal_wallpapers.curation import hunt, repetition
+
+    try:
+        if args.what == "merge":
+            print(json.dumps(repetition.merge(args.name), indent=2))
+            return 0
+        if args.what == "read":
+            record = repetition.read(args.name)
+            print(json.dumps({**record["draw"], **record["counts"]}, indent=2))
+            return 0
+        if args.what == "sheet":
+            print(json.dumps(repetition.sheet_plan(args.name, device=args.device), indent=2))
+            return 0
+        if args.what == "plan":
+            # Renders nothing and HOLDS THE POOL, which is what makes it the
+            # honest place to read the draw's composition — and the oversampling
+            # ratio — before any engine time is spent. It resolves every key, so
+            # `repeats_already_in_ledger` here is exactly what the run will skip.
+            world = repetition.population()
+            # The plan resolves keys and renders nothing, so this maker never
+            # dumps a field and never loads the judge. It is named at the leg's
+            # own fields directory all the same — a maker pointed somewhere else
+            # would be one whose cache a later `run` could not reuse.
+            maker = hunt.Maker(
+                args.name,
+                device=args.device,
+                log=lambda *_a: None,
+                fields=repetition.fields_dir(args.name),
+            )
+            pairs, drawn = repetition.draw(
+                world, tiles=args.tiles, seed=args.seed, share=args.folded_share
+            )
+            _units, shape = repetition.plan_of(maker, pairs, world["known"])
+            print(
+                json.dumps(
+                    {
+                        "population": {
+                            "ledger_rows": world["ledger_rows"],
+                            "controls": len(world["controls"]),
+                            "refused": world["refused"],
+                            "fine_readings": world["fine_readings"],
+                        },
+                        "draw": drawn,
+                        "plan": {
+                            key: value for key, value in shape.items() if key != "repeat_keys"
+                        },
+                    },
+                    indent=2,
+                )
+            )
+            return 0
+        record = repetition.run(
+            args.name,
+            tiles=args.tiles,
+            seed=args.seed,
+            share=args.folded_share,
+            budget=args.budget,
+            workers=args.workers,
+            device=args.device,
+        )
+    except repetition.RepetitionRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
+    print(f"\nrecord {display_path(repetition.record_path(args.name))}")
     return 0
 
 
@@ -5032,6 +5103,116 @@ def add_commands(subcommands) -> None:
         f"with fewer location blocks than workers runs on one worker a block",
     )
     device_flag(running_remode)
+
+    repetition_step = steps.add_parser(
+        "repetition",
+        help="ask an eye what the heads have never been shown: every repeated traversal "
+        "of a gradient beside its own unrepeated twin at the same place, mode and map",
+        description=(
+            "`Palette.cycles` is how many times a render walks its colormap across the "
+            "field, and the pool has almost no opinion about it: 2,262 of 374,186 rows "
+            "stand at anything but one and 44 of those are seated, so neither head was "
+            "fitted on a population containing the axis and neither head's reading of it "
+            "is evidence. This renders a labelling set instead. Every repeated tile sits "
+            "beside its own unrepeated twin at the same place, mode, settings, map and "
+            "frame, and the match is PROVED rather than promised — the control's own "
+            "recipe key is re-derived through the same call that made it and checked "
+            "against the store, and a control that does not reproduce is dropped. Phase "
+            "is held at 0 on both sides: 1,713 of the store's repeat rows carry a "
+            "rotation too, so the axis as the pool holds it is confounded with the one "
+            "`curate rotate` just measured. Cyclic maps draw cycles 2 and 3; sequential "
+            "maps are baked folded, so their one rung of 2 is FOUR passes of the base "
+            "ramp and the card prints the traversal count rather than the cycles value. "
+            "The direct traps are excluded — the axis is a byte-for-byte no-op there. It "
+            "GATES ON NOTHING: both columns are recorded on every tile and neither "
+            "selects one, because the repeats the current heads tolerate are exactly the "
+            "wrong sample. Repeats are deliberately oversampled far above any rate "
+            "production draws and the ratio is on the record. It HOLDS THE POOL."
+        ),
+    )
+    repetition_step.set_defaults(handler=curate_repetition)
+    repetition_verbs = repetition_step.add_subparsers(dest="what", required=True)
+    planning_repetition = repetition_verbs.add_parser(
+        "plan", help="draw the batch and census it, rendering nothing"
+    )
+    running_repetition = repetition_verbs.add_parser("run", help="draw, render, read")
+    merging_repetition = repetition_verbs.add_parser(
+        "merge",
+        help="this batch's rows into the candidate pool, through THE door",
+        description=(
+            "`gallery-grade score-pool` must run afterwards or the merged repeats carry "
+            "no p_fine, pool_scores.jsonl being a one-shot file — and p_fine is what the "
+            "sheet is ordered in."
+        ),
+    )
+    sheeting_repetition = repetition_verbs.add_parser(
+        "sheet",
+        help="both tiles of every pair as finished-render sheet plans, split by store",
+        description=(
+            "One plan per label store, because a mode routes to one of them and a batch's "
+            "rows all belong to one. Every unit carries the fine head's reading of the "
+            "CANDIDATE as `order_score` — which is what `label build --order-by plan` "
+            "reads the page good->bad in — and a card naming whether the tile is the "
+            "repeat or the control, the TRUE traversal count, and both columns. The "
+            "prefill is left to the render judge's own decode: the fine head's tier is a "
+            "gallery grade and this page's scale is not that one."
+        ),
+    )
+    reading_repetition = repetition_verbs.add_parser("read", help="a finished batch's readout")
+    # --name first and required on all five, the shape every leg group here has.
+    for a_verb in (
+        planning_repetition,
+        running_repetition,
+        merging_repetition,
+        reading_repetition,
+        sheeting_repetition,
+    ):
+        a_verb.add_argument(
+            "--name",
+            required=True,
+            help="what to call this batch. Its rows, its pictures, its fields, its draw "
+            "and its records live under it, and every other verb names it again",
+        )
+    # The draw's own knobs are on `plan` and `run` and on neither of the other
+    # three: a draw is settled when it is made, and a merge or a sheet that could
+    # be handed a different tile count would be one that could disagree with the
+    # record it is reading.
+    for a_verb in (planning_repetition, running_repetition):
+        a_verb.add_argument(
+            "--tiles",
+            type=int,
+            default=repetition_module.TILES,
+            help=f"tiles in the sitting, CONTROLS INCLUDED (default "
+            f"{repetition_module.TILES}), so half this many pairs",
+        )
+        a_verb.add_argument(
+            "--seed", type=int, required=True, help="the draw's seed, recorded with it"
+        )
+        a_verb.add_argument(
+            "--folded-share",
+            type=float,
+            default=repetition_module.FOLDED_SHARE,
+            help=f"what share of the pairs the sequential arm gets (default "
+            f"{repetition_module.FOLDED_SHARE:g}), against its 15.3%% of the library. A "
+            f"deliberate over-share, not the pool's own proportion",
+        )
+    running_repetition.add_argument(
+        "--budget",
+        type=float,
+        default=repetition_module.BUDGET_SECONDS,
+        help=f"wall seconds of rendering (default {repetition_module.BUDGET_SECONDS:g})",
+    )
+    running_repetition.add_argument(
+        "--workers",
+        type=int,
+        default=repetition_module.WORKERS,
+        help=f"engines at once (default {repetition_module.WORKERS}, this machine's render pool)",
+    )
+    device_flag(planning_repetition)
+    device_flag(running_repetition)
+    # The sheet step RUNS the fine head over every tile, which is the half of
+    # "score everything and gate on nothing" the pool's own column cannot do.
+    device_flag(sheeting_repetition)
 
     rotate_step = steps.add_parser(
         "rotate",

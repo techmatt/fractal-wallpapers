@@ -145,7 +145,23 @@ LABEL_FILTER = "lanczos3"
 #: run's released smooth rows had a median `P(>=3)` of 0.9999, so at the good end
 #: of a page — which is the end a correction sheet is read from — `P(>=3)` cannot
 #: separate two rows and `P(>=4)` still can.
-ORDERINGS: tuple[str, ...] = ("rank", "top")
+#:
+#: `plan` is the third and it is not a reading of this page at all: the plan
+#: states `order_score` per unit and the page is read in that. It exists because
+#: the judge that *scores* a finished page is not always the judge whose opinion
+#: a sitting is about — a batch cut to ask about one axis of the recipe wants the
+#: fine head's reading of the **candidate**, which is a column no scorer here can
+#: produce because this page serves 1280x720 and that head was fitted at the
+#: ledger's 640x360. [`grade_source`] already takes its order off the plan for
+#: exactly that reason; this is the same arrangement on the other source.
+#:
+#: **It moves the ORDER and never the prefill.** `suggestion` and
+#: `suggestion_score` stay the scoring head's own decode on this source, because
+#: they are a tier on *this* store's scale and a number off another head is not
+#: one. A row the plan has no `order_score` for sorts after every row it does —
+#: [`curation.solve.at_fine_bar`]'s rule, which [`grade_source.order`] already
+#: spends on the same column.
+ORDERINGS: tuple[str, ...] = ("rank", "top", "plan")
 
 #: The overview grid's thumbnails. Small on purpose: three hundred full renders
 #: in one page's sidebar is a page that never finishes loading.
@@ -868,6 +884,10 @@ def finished_source(
             # let a reader attribute a disagreement to the labeler that belongs
             # to the regime. Passed through untouched — nothing here re-reads it.
             "selected_on": unit.get("selected_on") or None,
+            # What the PLAN wants this page read in, where it states one. Private,
+            # popped in `suggest` like the two paths above it: the page has no use
+            # for it and `_order_score` is where an order lives. See [`ORDERINGS`].
+            "_stated_order": unit.get("order_score"),
             "_picture": picture,
             "_thumb": directory / "thumb" / f"{name}.jpg",
         }
@@ -877,13 +897,22 @@ def finished_source(
         thumbs = [row.pop("_thumb") for row in rows]
         for picture, thumb in zip(pictures, thumbs, strict=True):
             thumbnail(picture, thumb)
+        stated_order = [row.pop("_stated_order", None) for row in rows]
+        if order_by == "plan" and not any(value is not None for value in stated_order):
+            raise SheetError(
+                "this page was asked to be read in the plan's own column and not one unit "
+                "states an `order_score`. A page ordered by a column nobody supplied would "
+                "serve the plan's own order under a manifest claiming a reading."
+            )
         incumbent = stated_suggestions(units, finished.tiers(head))
         if scores is None:
             log(f"scoring {len(pictures)} pictures through the shipped {head}")
             probabilities, classes = score_pictures(head, pictures)
         else:
             probabilities, classes = scores
-        for row, probability, stated in zip(rows, probabilities, incumbent, strict=True):
+        for row, probability, stated, planned in zip(
+            rows, probabilities, incumbent, stated_order, strict=True
+        ):
             row["columns"] = {
                 f"p_ge{index + 2}": float(value) for index, value in enumerate(probability)
             }
@@ -892,10 +921,14 @@ def finished_source(
             row["suggestion_score"] = float(sum(probability))
             # What the page is READ in, which is a separate choice from what the
             # row reports. `suggestion_score` is the head's expected tier and is
-            # on every row of every sheet; this is the one the order is taken on.
-            row["_order_score"] = (
-                float(probability[-1]) if order_by == "top" else float(sum(probability))
-            )
+            # on every row of every sheet; this is the one the order is taken on,
+            # and on `plan` it is a column this page never read — see [`ORDERINGS`].
+            if order_by == "plan":
+                row["_order_score"] = None if planned is None else float(planned)
+            elif order_by == "top":
+                row["_order_score"] = float(probability[-1])
+            else:
+                row["_order_score"] = float(sum(probability))
             if stated is None:
                 # The decode reaches as far as the CHECKPOINT can, never as far as
                 # the page can: this head emits `classes - 1` cutpoints and a tier
@@ -908,7 +941,14 @@ def finished_source(
         return head
 
     def order(rows: list[dict], seed_: int) -> tuple[list[int], str]:
-        """Sections in the order the plan introduced them, each good→bad inside."""
+        """Sections in the order the plan introduced them, each good→bad inside.
+
+        A row with no order score sorts after every row that has one, which only
+        `plan` can produce — the two scored readings are on every row by
+        construction. [`grade_source.order`]'s rule on the same column, and
+        [`curation.solve.at_fine_bar`]'s before that: an unread row is the head
+        having no opinion rather than a low one.
+        """
         del seed_
         sections: list[str] = []
         for row in rows:
@@ -917,9 +957,14 @@ def finished_source(
         scores = [row.pop("_order_score") for row in rows]
         indices = sorted(
             range(len(rows)),
-            key=lambda i: (sections.index(rows[i]["section"]), -scores[i], i),
+            key=lambda i: (
+                sections.index(rows[i]["section"]),
+                scores[i] is None,
+                -(scores[i] or 0.0),
+                i,
+            ),
         )
-        reading = "score" if order_by == "rank" else "p_ge4"
+        reading = {"rank": "score", "top": "p_ge4", "plan": "the plan's own column"}[order_by]
         return indices, reading if len(sections) == 1 else f"sections, {reading}"
 
     return Source(

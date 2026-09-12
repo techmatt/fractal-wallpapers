@@ -22,6 +22,63 @@ spelled as those files spell them.
 
 ---
 
+## OVERSAMPLED-AXIS — `repeat_axis_smooth_render_20260911` and `repeat_axis_strange_render_20260911`
+
+**Half of this batch is a repeated traversal, against 0.605% of the pool.** The
+two batches are one draw — `curate repetition`, `repeat_ckpt120`, seed 20260911 —
+cut in two only because a mode routes to one finished store and a batch's rows all
+belong to one. 246 tiles in **123 matched pairs**, 70 `smooth_render` and 176
+`strange_render`.
+
+**The oversampling ratio is about 82x and it is the point of the batch.** The
+candidate ledger stood at **2,262 of 374,186 rows** (0.605%) carrying
+`Palette.cycles != 1` when this was drawn; this page is 50%. Production draws it
+lower still: `--vary-palette` is **off by default**, and when it is on
+`depth.PALETTE_REPEATS` puts 0.3 of the *varied* shots at a repeat. So anything
+later fitted on these rows inherits a prior about how common repeats are that is
+two orders of magnitude off the pool's, and a rate quoted off this batch is a rate
+about a deliberately enriched sample.
+
+**Every tile is one half of a matched pair, so the rows are not independent.** The
+repeat and its control share place, mode, mode settings, map, frame, cap, curve
+and autolevel stamp, and differ in `Palette.cycles` alone — checked rather than
+asserted, by re-deriving each control's recipe key through the call that made it.
+A statistic over these 246 rows that treats them as 246 draws is wrong by roughly
+the pair correlation; the readable quantity is the **within-pair** difference.
+
+**No bar of any kind selected it, which is unlike every other batch in this file.**
+Both heads read every tile and neither excluded one — including rows the render
+judge scores at the floor. That is deliberate: the repeats the current heads
+happen to tolerate are exactly the wrong sample for a sitting about whether the
+axis is worth anything. It also means the usual conditioning sentence does not
+apply here and the opposite one does — these are **not** rows that cleared
+anything.
+
+**The order is the fine head RUN over the tiles, not the pool's `p_fine` column.**
+`gallery-grade score-pool` writes that column only for rows clearing the render
+bar — 42,300 of 374,186 — which covered 8 of the 125 controls. So the page's order
+comes from reading every tile through the shipped gallery-grade ensemble at
+candidate geometry, and nothing was written back to `pool_scores.jsonl`. A reader
+joining these rows to that column will find most of them absent from it.
+
+**The prefill is the render judge's own decode and not the fine head's tier.** A
+tier is a claim on one store's scale; the fine head's is a gallery grade.
+
+**`cycles` is not the traversal count on the folded arm.** 40 of the 123 pairs use
+a sequential map, which is baked as an out-and-back, so their `cycles = 2` is
+**four** passes of the base ramp and their control's `cycles = 1` is two. The card
+printed the traversal count; the row records `cycles`. The 83 cyclic pairs are at
+`cycles` 2 (42) and 3 (41) and there the two numbers agree. The folded arm is
+**32%** of the pairs against sequential maps' 15.3% of the library — a deliberate
+over-share, not the pool's proportion.
+
+**Two pairs were drawn and are not here.** The merge is an upsert through a door
+that prunes, and the retention rule took 2 of the 125 repeats at locations already
+holding a full keep. Both pairs came off the page whole, so the batch is 123 pairs
+rather than 125 and no tile on it lacks a ledger row.
+
+---
+
 ## DISJOINT-DRAW — `threads_promotion` and `itinerary_promotion`
 
 *Registry: `strange_render/batches.jsonl`. 110 locations each, verified overlap 0.*

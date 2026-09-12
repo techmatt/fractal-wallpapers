@@ -743,6 +743,25 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "merge": ("--name",),
         "read": ("--name",),
     },
+    "repetition": {
+        "plan": ("--name", "--tiles", "--seed", "--folded-share", "--device"),
+        "run": (
+            "--name",
+            "--tiles",
+            "--seed",
+            "--folded-share",
+            "--budget",
+            "--workers",
+            "--device",
+        ),
+        "merge": ("--name",),
+        # The sheet step RUNS the fine head over every tile, which is what a
+        # device is for. The draw's own knobs are deliberately NOT here: a draw
+        # is settled when it is made, and a sheet that could be handed a
+        # different tile count could disagree with the record it reads.
+        "sheet": ("--name", "--device"),
+        "read": ("--name",),
+    },
     "rotate": {
         "plan": ("--name", "--bar", "--seed", "--rotations"),
         "run": (
@@ -867,14 +886,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     beat each refused one; and eighty-eight until `solve k-sweep-plot` arrived to draw a
     colour-ceiling sweep's per-cell figures off the readings it already wrote; and
     twenty and eighty-nine until `rotate` and its five arrived to ask the phases
-    nothing ever asked and to take out the rows they replace."""
+    nothing ever asked and to take out the rows they replace; and twenty-one and
+    ninety-nine until `repetition` and its five arrived to ask an eye how many times
+    a gradient should be traversed, which is the axis neither head has been shown."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 94
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 99
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

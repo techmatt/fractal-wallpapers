@@ -16,7 +16,29 @@ export_control.js what an export is called and where it goes — one file, every
 intake.py         THE ingest: a page's export resolved against its sheet, into either store
 corpus_import.py  the one-time import of the source project's location corpus
 finished_import.py the one-time import of its two finished-render corpora
+                  (and NOT on any new label's path — see the note below)
 ```
+
+**`finished_import` is not on the path a new label travels, and reading it as if
+it were has cost a prompt.** It is reachable from `import-finished` and from
+`models.renders.verify`, both of which read the source project. A verdict cast
+today goes `label build` → `sheets.finished_source` (`stated_recipe` →
+`engine_spec.recipe`) → the page → `label ingest` → `intake` → `finished.append`
+→ `renders.plan`, and the recipe is carried whole at every step. So a constraint
+written into `finished_import.recipe_of` governs the **maker-era corpora only**
+and never what the rig collects.
+
+One such constraint was there until 2026-09-11 and was simply wrong: a repeated
+traversal (`cycles != 1`) or a rotation (`phase != 0`) on a sequential map was
+refused, on the argument that folding a repeated traversal is two seam fixes
+fighting. `mirror` writes the opening colour again at position 1.0, so the folded
+table **closes** and a repeat of it has no junction — measured over the whole
+tracked library, the folded wrap step is exactly zero on all 156 sequential maps
+against an inside step of up to 7.0e-3, and the same maps unfolded wrap at up to
+1.0. `engine/src/colormap.rs`'s
+`every_folded_map_closes_so_a_repeat_has_no_seam` is the guard, and
+`tests/test_label_round_trip.py`'s *the repeated traversal* section carries one
+such row from a plan unit to the store and back out to a renderer.
 
 Everything runnable here is a `fractal-wallpapers label` subcommand:
 
@@ -1046,6 +1068,24 @@ run's released smooth rows had a median `P(≥3)` of 0.9999, so at the good end 
 page — the end a correction sheet is read from — `P(≥3)` cannot separate two rows
 and `P(≥4)` still can. Only the ordering moves; `suggestion_score` on a row is the
 expected tier either way.
+
+**`plan` is the third and it is not a reading of the page at all.** The plan
+states `order_score` per unit and the page is read in that. It exists because the
+judge that *scores* a finished page is not always the judge whose opinion a
+sitting is about: a batch cut to ask about one axis of the recipe wants the fine
+head's reading of the **candidate**, which no scorer here can produce — the page
+serves 1280×720 and that head was fitted at the ledger's 640×360, so a re-read
+here would be a different number wearing the same name. A gallery-grade sheet has
+taken its order off the plan since the correction page existed; this is the same
+arrangement on the other source.
+
+It moves the order and **never** the prefill. `suggestion` and `suggestion_score`
+stay the scoring head's own decode, because they are a tier on *this* store's
+scale and a number off another head is not one. A row the plan has no
+`order_score` for sorts after every row it does — `solve.at_fine_bar`'s rule,
+which the gallery-grade page already spends on the same column — and a page asked
+for `plan` where no unit states one is refused rather than quietly served in draw
+order. `curate repetition sheet` is the first caller.
 
 **Five sites resolve a checkpoint through `floors.SCORING_HEAD`, and a judge
 adoption has to re-check all five.** They are `sheets.score_pictures` (this one —
