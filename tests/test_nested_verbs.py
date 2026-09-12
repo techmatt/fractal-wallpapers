@@ -763,12 +763,13 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "read": ("--name",),
     },
     "rotate": {
-        "plan": ("--name", "--bar", "--seed", "--rotations"),
+        "plan": ("--name", "--bar", "--seed", "--rotations", "--owed"),
         "run": (
             "--name",
             "--bar",
             "--seed",
             "--rotations",
+            "--owed",
             "--tolerance",
             "--budget",
             "--chunk",
@@ -781,6 +782,8 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "mine": (
             "--name",
             "--budget",
+            "--plan-budget",
+            "--from-block",
             "--rate",
             "--width",
             "--rotations",

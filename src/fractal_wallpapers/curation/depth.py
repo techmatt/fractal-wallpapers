@@ -1344,6 +1344,83 @@ def weave(plans: dict, shares: dict | None = None) -> list:
     return [shot for _at, _arm, _index, shot in sorted(placed, key=lambda item: item[:3])]
 
 
+def resolve_split(shares: dict | None, roster: list | None, *, log=print) -> tuple:
+    """The resolved shares and roster, announced before a leg plans anything.
+
+    `(shares, roster, stated)` — the share table merged over every draw in
+    [`DRAWS`], the roster with its default filled in, and what goes on the record
+    under `split` so a past leg can be read back.
+
+    **The defect this closes is silence, not the default.** Merging what a caller
+    named over [`SHARES`] is the better default — a prompt names what it changes
+    and inherits the rest — so `{"ranked_bands": 1.0}` leaves the near-band and
+    flat draws on their 0.25 each, and `rotation_pass_ckpt120` found nothing in a
+    leg's output that said so. The same shape one level over is the roster:
+    `curate depth` defaults to [`field_modes`]'s three SHAREABLE modes where a
+    mining leg wants [`mode_policy.mined`]'s twelve, and a pilot that took the
+    default by accident lost 229 of 726 rows at the merge. Both are announced,
+    and an inherited **non-zero** share beside an asked one is announced as a
+    warning, because that is the case where a leg spends clock on an arm nobody
+    named.
+
+    This is the same class as a builder that narrows a spec by naming some
+    members and dropping the rest: what is wrong is that it is quiet.
+    """
+    from fractal_wallpapers.curation import mode_policy
+
+    asked_shares = {str(arm): float(value) for arm, value in dict(shares or {}).items()}
+    unknown = [arm for arm in asked_shares if arm not in set(DRAWS)]
+    if unknown:
+        raise DepthRefused(
+            f"--shares names {sorted(unknown)}, which is not a draw. The draws are "
+            f"{list(DRAWS)}, and a misspelt entry would be merged over nothing and leave "
+            f"the draw it meant to set on its default."
+        )
+    resolved = {arm: float(asked_shares.get(arm, SHARES[arm])) for arm in DRAWS}
+    inherited = {arm: value for arm, value in resolved.items() if arm not in asked_shares}
+    asked_roster = None if roster is None else [str(one) for one in roster]
+    mined = mode_policy.mined()
+    resolved_roster = list(asked_roster if asked_roster is not None else field_modes())
+    log(
+        "[depth] resolved shares: "
+        + " · ".join(f"{arm} {resolved[arm]:.2f}" for arm in DRAWS)
+        + f" (asked {sorted(asked_shares) or 'nothing'}, "
+        + f"{len(inherited)} inherited from depth.SHARES)"
+    )
+    spending = {arm: value for arm, value in inherited.items() if value}
+    if spending and asked_shares:
+        log(
+            f"[depth] ⚠ {len(spending)} draw(s) nobody named take a share of this leg: "
+            + ", ".join(f"{arm} {value:.2f}" for arm, value in spending.items())
+            + " — --shares MERGES over depth.SHARES, so spell the table whole to zero them"
+        )
+    log(
+        f"[depth] resolved roster: {len(resolved_roster)} mode(s) — "
+        f"{', '.join(resolved_roster)}"
+        + (
+            ""
+            if asked_roster is not None
+            else f" (DEFAULTED to depth.field_modes(), the shareable modes; "
+            f"mode_policy.mined() holds {len(mined)})"
+        )
+    )
+    stated = {
+        "shares": resolved,
+        "shares_asked": asked_shares,
+        "shares_inherited": inherited,
+        "shares_default": dict(SHARES),
+        "shares_resolved_by": "--shares MERGED over depth.SHARES — a draw the caller did "
+        "not name keeps its default, and a non-zero one spends the leg's clock",
+        "roster": resolved_roster,
+        "roster_asked": asked_roster,
+        "roster_defaulted": asked_roster is None,
+        "roster_default_is": "depth.field_modes(), the shareable modes — NOT "
+        "mode_policy.mined(), which is what a mining leg draws",
+        "mined_roster": list(mined),
+    }
+    return resolved, resolved_roster, stated
+
+
 def build_plan(
     world: dict,
     *,
@@ -1396,6 +1473,11 @@ def build_plan(
     from fractal_wallpapers.curation import colorize, mode_policy
     from fractal_wallpapers.palettes import color_mass, dominance
 
+    # **The resolved split is announced before anything is planned**, which is
+    # the whole of [`resolve_split`]'s reason: both of these are merged or
+    # defaulted, and a leg whose output did not say so has spent clock on arms
+    # nobody named. What it returns goes on the record under `split`.
+    shares, roster, split = resolve_split(shares, roster, log=log)
     # **The standing draw-weight table is resolved here and nowhere lower**, so
     # every arm below draws under one table and the record reports the table the
     # leg actually ran. `--partition-weights` is merged over it rather than
@@ -1436,7 +1518,6 @@ def build_plan(
     def weights_for(draw: str) -> dict:
         return banded_weights.get(FLAT if draw == AIMED else draw, partition_weights)
 
-    roster = list(roster if roster is not None else field_modes())
     if not roster:
         raise DepthRefused(
             "no shareable mode survives curation.mode_policy, so a depth run has "
@@ -1534,7 +1615,6 @@ def build_plan(
             f"[depth] the cells {sorted(wanted_cells)} at >= {bar} draw {len(maps):,} of "
             f"{after_manifest:,}: {after_manifest - len(maps):,} map(s) out of the draw"
         )
-    shares = {**SHARES, **dict(shares or {})}
     if cell is None:
         asked_cells: list[str] = []
     else:
@@ -1835,6 +1915,12 @@ def build_plan(
         "mode_policy": mode_policy.record(),
         "breadth_demoted": list(breadth_demoted),
         "maps_in_pool": len(maps),
+        # **What the caller named, apart from what it came to.** `shares` and
+        # `roster` above are the resolved tables and have been since this record
+        # existed; what no reader could recover was whether an arm's share was
+        # asked for or inherited, which is the only question worth asking of a leg
+        # that spent its clock somewhere nobody meant. [`resolve_split`].
+        "split": split,
         "shares": {arm: float(value) for arm, value in shares.items()},
         "band_weights": dict(band_weights or {}),
         "wanted_candidates": want,
@@ -3095,6 +3181,7 @@ __all__ = [
     "read_sequence",
     "record_path",
     "rejects",
+    "resolve_split",
     "route_to",
     "rows_path",
     "run",

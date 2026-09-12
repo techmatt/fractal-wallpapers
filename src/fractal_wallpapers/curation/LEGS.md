@@ -421,8 +421,49 @@ The help says *every shareable mode `curation.mode_policy` mines*, and both halv
 of that bind: the default roster is `mined()` **intersected with** the modes a
 dumped field can serve, which is `smooth`, `tia` and `stripe`. A leg meaning the
 policy's roster names all twelve on the command line, the way `smoke_mine_20260910`
-and `palette_variant_mine_ckpt120` both do. Nothing warns, and the two legs look
-identical in the log until the per-mode tally comes out three rows long.
+and `palette_variant_mine_ckpt120` both do.
+
+**Something warns now**, since `score_and_resume_ckpt120`: `depth.resolve_split`
+states the resolved roster before a plan is built and says `DEFAULTED to
+depth.field_modes(), the shareable modes; mode_policy.mined() holds 12` when the
+default was taken. It cost a pilot 229 of 726 rows at the merge to find out the
+other way.
+
+### The resolved split and the resolved roster are STATED, and both are merged
+
+Two knobs here fill themselves in, and the defect was that neither said so.
+`--shares` is **merged over `depth.SHARES`** rather than replacing it — which is
+the better default, since a prompt names what it changes and inherits the rest —
+so `{"ranked_bands": 1.0}` runs with the near-band and flat draws on 0.25 each and
+spends a third of the leg on arms the caller thought it had turned off. The roster
+is the paragraph above.
+
+`depth.resolve_split` is where both are resolved and where both are announced,
+before anything is planned:
+
+```
+[depth] resolved shares: near_band 0.25 · ranked_bands 1.00 · flat 0.25 · mode_floor 0.00 · conditioned 0.00 (asked ['ranked_bands'], 4 inherited from depth.SHARES)
+[depth] ⚠ 2 draw(s) nobody named take a share of this leg: near_band 0.25, flat 0.25 — --shares MERGES over depth.SHARES, so spell the table whole to zero them
+[depth] resolved roster: 3 mode(s) — smooth, tia, stripe (DEFAULTED to depth.field_modes(), the shareable modes; mode_policy.mined() holds 12)
+```
+
+The warning line fires only where an **inherited non-zero** share stands beside an
+asked one, which is exactly the case where clock goes somewhere nobody chose. The
+record carries `split` — the resolved table, what was asked, what was inherited,
+the roster and whether it was defaulted — so a past leg reads back the same two
+facts a live one prints. `shares` and `roster` on the record were always the
+resolved tables; what no reader could recover was which entries the caller chose.
+
+**The durable fix is the statement and not a change to the merge.** This is the
+same class as a builder that narrows a spec by naming some members and dropping
+the rest: what is wrong is the silence, not the default. A misspelt draw is now
+refused too — merged over nothing, it would leave the draw it meant to set on its
+default and report the misspelling as a share.
+
+### `--vary-palette` — moving the palette block, and nothing else
+
+Off by default. On, every candidate draws a `phase` and a `repeat` alongside its
+map — `Palette.phase` and `Palette.cycles`, the engine's own knobs for where the
 
 ### `--vary-palette` — moving the palette block, and nothing else
 
@@ -2588,6 +2629,52 @@ ground, so a rotation of one would take a second recipe key for the same picture
 Everything else refused is recorded as **owed**: rotatable at full render price,
 which is six iteration passes a row, and not done here.
 
+### `--owed` — the other side of the dump, at full render price
+
+The bound above is the engine's and the debt it leaves is real, so the flag that
+takes it is a **swap** and not a widening: `--owed` takes the rows with no field to
+dump and refuses the dumpable ones as `dumpable_not_owed`, which is the other arm's
+work rather than a debt. The two arms partition the passing set.
+
+Swapped, because the two are priced an order apart — six iteration passes a row
+against one — so an arm holding both would report one seconds-a-row over two
+prices, and would re-run the cheap half nobody asked for. The dedupe does not stop
+that: a dumpable row's four losing rotations are recorded and **freed** rather than
+merged, so nothing in the store says they were ever made.
+
+It buys clock and no new code. `colorize.render` already renders these — a mode
+with no field to dump falls through to the render path, which is where every direct
+trap already is — so the flag lifts one refusal and nothing else about the pass
+moves. The direct traps stay refused in **both** arms: `phase` is a byte-for-byte
+no-op on a trap figure over a flat ground.
+
+```
+fractal-wallpapers curate rotate plan --name owed1 --owed                  # the census
+fractal-wallpapers curate rotate run  --name owed1 --owed --budget 24000   # at full price
+```
+
+### A rotation carries its incumbent's own palette knobs
+
+The rebuilt phase 0 has to digest back to the key the row is filed under — that is
+`_resolve`'s guard and the proof a pass moved *only* the phase. It refused 43 rows
+of `rotation_pass_ckpt120`, and **none of the 43 was misfiled**: every one digests
+back to its own key out of its own stored recipe, as all 374,309 rows in the store
+do. What did not reproduce was the *rebuild*, which was built at
+`labeling.finished.recipe`'s defaults where those rows carry a tuned `gamma` —
+every one of them, with `reverse` on 20 and a different `transfer` on 18. No
+candidate leg draws those knobs; the label-import path wrote them, and all 43 carry
+a human label, which is why they are in the passing set at all.
+
+`Incumbent.pass_knobs` carries the **difference from the plain pass** forward onto
+each rotation, so the rebuilt phase 0 is the row again and the rotations are that
+row's pass with the phase moved. The difference and not the whole pass: an
+intention's `palette` is what the draw *moved*, recorded on the row as
+`palette_drawn`, and handing back the six knobs a plain pass already has would make
+every row look like a varied draw. `mirror` is never in it — the colormap's bake,
+derived off the map and refused as a draw — and `mirror_cycles_audit_ckpt120` proved
+the derivation agrees with every row in the store in both directions. After the
+change all 6,036 rotatable rows reproduce and the guard refuses none.
+
 ### Levelling: each candidate derives its own, which is the cheap answer and the sound one
 
 Matt's ruling is that the curve is close enough either way — share the dump's, take
@@ -2664,6 +2751,27 @@ drawn phases and both columns.
 `palette_variant_mine_ckpt120`'s pilot ran width 12 over `curate depth`'s *default*
 roster — which is the three shareable modes and not the policy's twelve — and lost
 229 of 726 rows at the merge. `--modes` defaults to the policy here for that reason.
+
+#### A clock-bound leg is resumed by INDEX, never by re-drawing
+
+`--budget` sizes the plan *and* is the deadline, so a second leg handed only the
+clock it has left plans a smaller draw and starts it at the beginning. A resumed
+leg says **both**: `--plan-budget` is the first leg's budget, which rebuilds its
+block plan exactly so that block N here is block N there, and `--budget` is what is
+left to spend on it. `--from-block` is the first leg's own `blocks_done`.
+
+Re-drawing is not the same act and the dedupe does not save it. Each shot's four
+losers are recorded and **freed** rather than merged, so nothing in the store stops
+them being made again; and a shot whose *control* never merged comes back as a
+best-of-**four** read against the same control, which is a different number under
+the same name. The record carries `plan_budget_seconds`, `from_block` and
+`blocks_skipped` beside `blocks_planned`, so the halves read back as one leg.
+
+```
+fractal-wallpapers curate rotate mine --name m1 --budget 14400                       # 400 of 960
+fractal-wallpapers curate rotate mine --name m2 --plan-budget 14400 --from-block 400 \
+    --budget 20000                                                                   # the rest
+```
 
 ### The chunk is the interruption point, and it is what bounds the disk
 

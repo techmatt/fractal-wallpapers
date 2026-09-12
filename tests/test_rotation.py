@@ -152,6 +152,35 @@ def test_the_draw_moves_the_phase_and_leaves_the_repeat_at_the_identity():
     assert rotation.REPEAT == 1
 
 
+def test_a_rotation_carries_the_knobs_its_incumbents_pass_carries():
+    """The 43 rows `rotation_pass_ckpt120` refused, and why they were not misfiled.
+
+    All 43 digest back to their own key out of their own stored recipe, as all
+    374,309 rows in the store do. What did not reproduce was the REBUILD, which
+    was built at `finished.recipe`'s defaults where their pass carries a tuned
+    `gamma` — no candidate leg draws one, the label-import path wrote it, and all
+    43 carry a human label. So the rotation carries the difference forward and the
+    rebuilt phase 0 is the row again.
+    """
+    tuned = a_recipe(palette=finished.recipe(mirror=True, gamma=1.2778, reverse=True))
+    incumbent = an_incumbent(recipe=tuned)
+    assert incumbent.pass_knobs() == {"gamma": 1.2778, "reverse": True}
+    groups, _shape = rotation.plan_of([incumbent], seed=3, known=set())
+    ((_source, made),) = groups[0]
+    for rotation_of in made:
+        assert rotation_of.palette == {
+            "gamma": 1.2778,
+            "reverse": True,
+            "phase": rotation_of.phase,
+        }
+
+
+def test_an_ordinary_rows_rotation_carries_its_phase_and_nothing_else():
+    """The overrides are the DIFFERENCE from the plain pass and not the pass, so a
+    row nobody tuned does not come out looking like a varied draw on its record."""
+    assert an_incumbent().pass_knobs() == {}
+
+
 def test_a_rotation_names_the_row_it_rotates_because_nothing_else_records_it():
     """A rotation differs from its incumbent in the palette and in nothing else,
     so the ledger's own shape has no field that says *made from*. The `hunt` block
@@ -240,6 +269,59 @@ def test_a_direct_trap_is_refused_and_is_not_owed():
     assert rotation.owed(refused) == {"mode_cannot_dump": 1915}
 
 
+@pytest.mark.parametrize("mode", ["threads", "itinerary"])
+def test_the_owed_arm_takes_the_rows_whose_mode_cannot_dump(mode):
+    """The one refusal that is a PRICE and not a fact about the picture, so the one
+    the flag may lift. `colorize.render` already renders these — a mode with no
+    field to dump falls through to the render path — so what `--owed` buys is six
+    iteration passes a row against a dumpable row's one, and nothing else moves."""
+    row = a_row(recipe=a_recipe(mode=mode))
+    assert rotation.refusal_of(row, KINDS) == "mode_cannot_dump"
+    assert rotation.refusal_of(row, KINDS, owed=True) is None
+
+
+@pytest.mark.parametrize("mode", ["smooth", "stripe"])
+def test_the_two_arms_partition_the_passing_set_rather_than_overlapping(mode):
+    """Swapped and not widened. The two are priced an order apart — six iteration
+    passes a row against one — so an arm holding both would report one
+    seconds-a-row over two prices, and would re-run the cheap half nobody asked
+    for: a dumpable row's four losers were freed rather than merged, so the dedupe
+    does not stop it."""
+    row = a_row(recipe=a_recipe(mode=mode))
+    assert rotation.refusal_of(row, KINDS) is None
+    assert rotation.refusal_of(row, KINDS, owed=True) == "dumpable_not_owed"
+
+
+def test_the_other_arms_work_is_not_counted_as_a_debt():
+    refused = dict.fromkeys(rotation.REFUSALS, 0)
+    refused["dumpable_not_owed"] = 6036
+    refused["direct_trap"] = 299
+    refused["already_rotated"] = 3632
+    assert rotation.owed(refused) == {"already_rotated": 3632}
+
+
+def test_a_direct_trap_stays_refused_under_the_owed_arm():
+    """A debt the owed arm does not take, because it is not a debt: `phase` is a
+    byte-for-byte no-op on a trap figure over a flat ground, so there is no
+    rotation of one for a full-price pass to go and get."""
+    row = a_row(recipe=a_recipe(mode="direct_trap_ring"))
+    assert rotation.refusal_of(row, KINDS, owed=True) == "direct_trap"
+
+
+@pytest.mark.parametrize(
+    ("over", "why"),
+    [
+        ({"palette": finished.recipe(mirror=True, phase=0.3)}, "already_rotated"),
+        ({"curve": "log"}, "curve_override"),
+    ],
+)
+def test_the_owed_arm_lifts_one_refusal_and_not_the_others(over, why):
+    """It is not a `--force`. Every other refusal is a fact about the recipe that a
+    full-price render does not change."""
+    row = a_row(recipe=a_recipe(mode="threads", **over))
+    assert rotation.refusal_of(row, KINDS, owed=True) == why
+
+
 def test_every_refusal_the_census_counts_is_one_this_module_can_produce():
     """A reason in the tuple that nothing returns would be a column of zeroes
     nobody could act on, and a reason returned that is not in the tuple would be a
@@ -256,6 +338,21 @@ def test_every_refusal_the_census_counts_is_one_this_module_can_produce():
         )
     }
     assert produced <= set(rotation.REFUSALS)
+    # **Both arms, and every name reached.** One refusal is only ever produced on
+    # the owed arm and one only ever off it, so a sweep over one of them would
+    # leave a name in the tuple that nothing returns.
+    both = produced | {
+        rotation.refusal_of(a_row(recipe=a_recipe(mode=mode)), KINDS, owed=True)
+        for mode in ("smooth", "threads", "direct_trap_ring")
+    }
+    # `off_candidate_regime` and `no_picture` are asked of the row and not of the
+    # recipe, and are the two lines below; `key_does_not_reproduce` is `_resolve`'s
+    # and is the one name here no population read can return.
+    assert set(rotation.REFUSALS) - both == {
+        "off_candidate_regime",
+        "no_picture",
+        "key_does_not_reproduce",
+    }
     assert rotation.refusal_of(a_row(at_candidate_regime=False), KINDS) == "off_candidate_regime"
     assert rotation.refusal_of(a_row(picture=None), KINDS) == "no_picture"
 
@@ -595,6 +692,32 @@ def test_a_mined_shots_phases_are_seeded_off_the_shot_and_not_the_stream():
     assert first != [one.phase for one in rotation.drawn_rotations(a_shot(place="p1"), seed=5)]
 
 
+def test_a_resumed_leg_takes_a_slice_of_the_whole_plan_and_not_a_smaller_plan():
+    """The two halves of a clock-bound leg are one leg or they are not comparable.
+
+    Re-drawing is not the same act: each shot's four losers are recorded and
+    **freed** rather than merged, so nothing in the store stops them being made
+    again, and a shot whose control never merged comes back as a best-of-four read
+    against the same control — a different number under the same name.
+    """
+    blocks = [[f"block{at}"] for at in range(10)]
+    held, skipped = resumed_quietly(blocks, 4)
+    assert skipped == 4
+    assert held == blocks[4:], "block 4 of the resumed leg is block 4 of the plan"
+    assert resumed_quietly(blocks, 0) == (blocks, 0)
+
+
+def test_a_leg_told_to_resume_past_its_own_plan_has_finished_rather_than_failed():
+    blocks = [[f"block{at}"] for at in range(10)]
+    assert resumed_quietly(blocks, 10) == ([], 10)
+    assert resumed_quietly(blocks, 99) == ([], 10), "clamped, because it is a fact to report"
+    assert resumed_quietly(blocks, -3) == (blocks, 0)
+
+
+def resumed_quietly(blocks, at):
+    return rotation.resumed(blocks, at, 14400.0, 3600.0, log=lambda *_a: None)
+
+
 def test_a_mined_shot_carries_the_arm_and_the_band_it_was_drawn_under():
     """A row that has forgotten which arm and which rank band drew it cannot be in
     the readout a mining leg exists to produce, and `hunt_block` is where a
@@ -621,7 +744,13 @@ def test_the_mining_shares_are_spelled_whole_because_build_plan_merges():
     zeroed, with its record reporting a share it did not run."""
     from fractal_wallpapers.curation import depth
 
-    assert set(rotation.MINE_SHARES) >= set(depth.SHARES) - {depth.AIMED}
+    assert set(rotation.MINE_SHARES) == set(depth.DRAWS), "every draw, so nothing is inherited"
     assert rotation.MINE_SHARES[depth.RANKED] == 1.0
     merged = {**depth.SHARES, **rotation.MINE_SHARES}
     assert sum(value for arm, value in merged.items() if arm != depth.RANKED) == 0.0
+    from fractal_wallpapers.curation import mode_policy
+
+    _shares, _roster, stated = depth.resolve_split(
+        rotation.MINE_SHARES, mode_policy.mined(), log=lambda *_a: None
+    )
+    assert stated["shares_inherited"] == {}, "a whole table inherits nothing to be surprised by"

@@ -148,7 +148,13 @@ MINE_RATE = 2.5
 #: and the leg spends half its clock on arms the last producing leg zeroed. This is
 #: `palette_variant_mine_ckpt120`'s own shape, which is what *standard process*
 #: means here — the ranked draw is the only one that produces a curve.
-MINE_SHARES = {"ranked_bands": 1.0, "flat": 0.0, "near_band": 0.0, "mode_floor": 0.0}
+MINE_SHARES = {
+    "ranked_bands": 1.0,
+    "flat": 0.0,
+    "near_band": 0.0,
+    "mode_floor": 0.0,
+    "conditioned": 0.0,
+}
 
 #: The width a mining leg draws at, and it is arithmetic rather than a knob.
 #: Twelve modes cycled at width 12 is **one map per (location, mode)** — and a
@@ -287,6 +293,44 @@ class Incumbent:
         the place. [`curation.remode.frame_of`]'s rule, one leg over."""
         return {"viewport": self.recipe["viewport"], "maxiter": int(self.recipe["maxiter"])}
 
+    def pass_knobs(self) -> dict:
+        """Where this row's palette pass differs from the plain one. The overrides.
+
+        **The difference and not the whole pass**, because an intention's `palette`
+        is what the draw *moved* — it is recorded on the row as `palette_drawn`,
+        [`depth`]'s distinction — and handing back the six knobs a plain pass
+        already has would make every row look like a varied draw. On an ordinary
+        row this is empty and the rotation carries its phase alone, which is what
+        5,993 of 6,036 rotatable rows are.
+
+        **`mirror` is never in it.** It is the colormap's bake —
+        [`hunt.Maker.palette_for`] derives it off the map and refuses a draw that
+        names it — and `mirror_cycles_audit_ckpt120` proved the derivation agrees
+        with every row in the store, in both directions, so dropping it here loses
+        nothing. A row where it ever stopped agreeing would fail the zero-key guard
+        in [`_resolve`], which is where a disagreement belongs.
+
+        **This is what the 43 rows of `rotation_pass_ckpt120` were.** They were
+        refused as `key_does_not_reproduce`, and they were not misfiled: all 43
+        digest back to their own key out of their stored recipe. What did not
+        reproduce was the *rebuild*, because it was built at
+        [`labeling.finished.recipe`]'s defaults and their pass carries a tuned
+        `gamma` — every one of them, with `reverse` on 20 and a different
+        `transfer` on 18. No candidate leg draws those knobs; the label-import path
+        wrote them, and all 43 rows carry a human label. Rebuilding one at the
+        defaults would have been a different picture under its key, so the guard
+        was right to refuse and the plan was wrong to ask.
+        """
+        from fractal_wallpapers.labeling import finished
+
+        held = dict(self.recipe.get("palette") or {})
+        plain = finished.recipe(mirror=bool(held.get("mirror")))
+        return {
+            name: value
+            for name, value in held.items()
+            if name != "mirror" and plain.get(name) != value
+        }
+
 
 # --------------------------------------------------------------------------- #
 # The population.
@@ -414,6 +458,7 @@ def holder_of(row: dict, held: dict) -> str | None:
 #: sized off.
 REFUSALS = (
     "mode_cannot_dump",
+    "dumpable_not_owed",
     "direct_trap",
     "already_rotated",
     "repeated_gradient",
@@ -425,12 +470,28 @@ REFUSALS = (
 )
 
 
-def refusal_of(row: dict, kinds: dict) -> str | None:
+def refusal_of(row: dict, kinds: dict, owed: bool = False) -> str | None:
     """Which of [`REFUSALS`] keeps this row out, or `None`. First one wins.
 
     The order is the order a reader wants them counted in: the mode first,
     because that is a property of the coverage rather than of the row, and the
     recipe's own members after it.
+
+    **`owed` swaps which side of the dump the pass is about, and the two arms
+    partition the passing set.** The dumpable arm takes the `field` colorings and
+    records the rest as owed — the composites and `itinerary`, whose coloring has
+    no single scalar field to dump and recolour. The owed arm takes exactly those
+    and refuses the dumpable ones as `dumpable_not_owed`, which is the other arm's
+    work rather than a debt. Swapped and not widened, because the two are priced an
+    order apart: an owed row is six iteration passes against a dumpable row's one,
+    so a leg holding both would report one seconds-a-row over two prices and a
+    re-run of the cheap arm nobody asked for.
+
+    Nothing else about the pass changes. [`colorize.render`] already renders these
+    — a mode with no field to dump falls through to the render path — so the flag
+    buys clock and no new code. The direct traps stay refused in both arms, because
+    `phase` is a no-op on a trap figure over a flat ground and there is nothing
+    there to come back for.
     """
     from fractal_wallpapers.curation import colorize
 
@@ -439,7 +500,10 @@ def refusal_of(row: dict, kinds: dict) -> str | None:
     kind = kinds.get(mode)
     if kind == colorize.DIRECT_KIND:
         return "direct_trap"
-    if kind != colorize.FIELD_KIND:
+    if owed:
+        if kind == colorize.FIELD_KIND:
+            return "dumpable_not_owed"
+    elif kind != colorize.FIELD_KIND:
         return "mode_cannot_dump"
     palette = recipe.get("palette") or {}
     if float(palette.get("phase") or 0.0):
@@ -457,7 +521,14 @@ def refusal_of(row: dict, kinds: dict) -> str | None:
     return None
 
 
-def population(bar: float | None = None, log=print) -> dict:
+def _undumpable(sources: list, kinds: dict) -> int:
+    """How many of a population's rows are on a mode with no field to dump."""
+    from fractal_wallpapers.curation import colorize
+
+    return sum(1 for one in sources if kinds.get(one.mode) != colorize.FIELD_KIND)
+
+
+def population(bar: float | None = None, owed: bool = False, log=print) -> dict:
     """Everything this pass acts on, out of **one** stream of the ledger.
 
     The ledger is half a gigabyte read whole, so it is read once: the passing
@@ -486,7 +557,7 @@ def population(bar: float | None = None, log=print) -> dict:
         value = admitted.get(key)
         if value is None:
             continue
-        why = refusal_of(row, kinds)
+        why = refusal_of(row, kinds, owed=bool(owed))
         if why is not None:
             refused[why] += 1
             continue
@@ -513,6 +584,13 @@ def population(bar: float | None = None, log=print) -> dict:
         f"{len(sources):,} rotatable, {sum(refused.values()):,} refused, "
         f"{sum(protected.values()):,} of the rotatable held by a protection"
     )
+    log(
+        f"[rotation] the OWED arm: {len(sources):,} row(s) on a mode with no field to "
+        f"dump, at full render price; the dumpable rows are the other arm's"
+        if owed
+        else "[rotation] the dumpable arm: a row whose mode cannot dump is refused and "
+        "recorded as owed"
+    )
     return {
         "ledger_rows": read,
         "passing": len(admitted),
@@ -521,19 +599,29 @@ def population(bar: float | None = None, log=print) -> dict:
         "protected": protected,
         "known": known,
         "bar": float(bar) if bar is not None else None,
+        # **On the population and not only on the record**, so the arm a leg ran
+        # is readable off the thing every other number here was counted over.
+        "owed": bool(owed),
     }
 
 
-def owed(refused: dict) -> dict:
-    """What this pass could not reach and a full-price render could. A census.
+#: What a refusal census counts and does **not** owe. A direct trap because
+#: `phase` is a no-op on a trap figure over a flat ground, so there is no
+#: rotation of one to come back for; a dumpable row on the owed arm because it is
+#: the other arm's work and is priced an order cheaper. Everything else in
+#: [`REFUSALS`] is a row some renderer could rotate.
+NOT_OWED = ("direct_trap", "dumpable_not_owed")
 
-    The direct traps are **not** owed and are not in it: `phase` is a no-op on a
-    trap figure over a flat ground, so there is nothing there to come back for.
-    Everything else in [`REFUSALS`] is a row a renderer could rotate at the price
-    of an iteration pass a candidate, which is six times this pass's per-row cost
-    and is the reason it is recorded rather than done.
+
+def owed(refused: dict) -> dict:
+    """What this pass could not reach and another could. A census.
+
+    Everything in [`REFUSALS`] but [`NOT_OWED`] is a row a renderer could rotate,
+    the composites at the price of an iteration pass a candidate — six times a
+    dumpable row's per-row cost, which is why they are recorded rather than taken
+    by the arm that finds them.
     """
-    return {name: int(count) for name, count in refused.items() if name != "direct_trap" and count}
+    return {name: int(count) for name, count in refused.items() if name not in NOT_OWED and count}
 
 
 # --------------------------------------------------------------------------- #
@@ -580,7 +668,10 @@ def plan_of(sources: list, seed: int, known: set, count: int = ROTATIONS) -> tup
                 colormap=source.colormap,
                 k=at,
                 phase=float(phase),
-                palette={"phase": float(phase)},
+                # **The incumbent's own pass with the phase moved**, and not the
+                # default pass at a drawn phase. [`Incumbent.pass_knobs`] is the
+                # difference and the 43 rows it recovers are its whole reason.
+                palette={**source.pass_knobs(), "phase": float(phase)},
             )
             made.append(rotation)
         shape["rotations"] += len(made)
@@ -844,6 +935,13 @@ def _resolve(maker, groups: list, known: set, log=print) -> tuple[list, dict]:
     rather than rotated: its six candidates would be six pictures of something
     else, compared against a column read on the row it is not.
 
+    **The rebuild carries the row's own palette knobs** — [`Incumbent.pass_knobs`]
+    — so what this guard now catches is a real disagreement and not a row whose
+    pass the plan could not spell. It refused 43 rows of
+    `rotation_pass_ckpt120` on a tuned `gamma` the candidate path never draws, and
+    none of those 43 was misfiled: every one digests back to its own key out of its
+    own stored recipe, as all 374,309 rows in the store do.
+
     **A rotation whose key the store already holds is dropped.** All but
     unreachable on a continuous draw, and the same guard every other leg here
     runs.
@@ -865,6 +963,7 @@ def _resolve(maker, groups: list, known: set, log=print) -> tuple[list, dict]:
                 colormap=source.colormap,
                 k=0,
                 phase=0.0,
+                palette=source.pass_knobs(),
             )
             again = recipes_module.key_of(maker.recipe_for(zero, place, frame))
             if again != source.key:
@@ -912,6 +1011,10 @@ def run(
     device: str = "auto",
     chunk: int = CHUNK_GROUPS,
     groups: int | None = None,
+    # `take_owed` and not `owed`, which is what the flag is called: the census
+    # [`owed`] is read below and a parameter of that name would shadow it for the
+    # whole of this function. [`depth.build_plan`]'s `near_named`, same reason.
+    take_owed: bool = False,
     world: dict | None = None,
     log=print,
 ) -> dict:
@@ -937,7 +1040,7 @@ def run(
 
     started = time.monotonic()
     began_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    world = population(bar, log=log) if world is None else world
+    world = population(bar, owed=bool(take_owed), log=log) if world is None else world
     planned, shape = plan_of(world["sources"], seed, world["known"], rotations)
     build = ledger.live_engine()
     artifact = hunt._artifact()
@@ -1229,6 +1332,10 @@ def run(
         "rotations_a_row": int(rotations),
         "repeat": REPEAT,
         "bar": world.get("bar"),
+        # **Which arm this was**, and it is the one knob that changes what the
+        # per-row cost means: the owed arm renders six iteration passes a row
+        # where the dumpable arm pays one and recolours.
+        "owed_arm": bool(world.get("owed", take_owed)),
         "fine_column": fine_column,
         "engine": build,
         "judge_artifact": artifact,
@@ -1326,6 +1433,35 @@ def drawn_rotations(shot, seed: int, count: int = MINE_ROTATIONS) -> list:
     return made
 
 
+def resumed(
+    blocks: list, from_block: int, plan_budget: float, budget: float, log=print
+) -> tuple[list, int]:
+    """The block plan with the blocks a first leg already did dropped. `(blocks, n)`.
+
+    **A slice of the whole plan and nothing else.** The plan is rebuilt entire —
+    which is what [`mine`]'s `plan_budget` is for — so that block N here is the
+    same block N the first leg had, and then the ones it finished come off the
+    front. Everything downstream is unchanged: the phases are seeded off each
+    shot's own `(location, mode, colormap)`, so a block draws what it would have
+    drawn whenever it is reached.
+
+    An index past the end leaves nothing on the table rather than raising, and says
+    so: a leg told to resume past its own plan has finished, and that is a fact to
+    report and not an error to handle.
+    """
+    planned = len(blocks)
+    skipped = max(0, min(int(from_block), planned))
+    if not skipped:
+        return blocks, 0
+    held = blocks[skipped:]
+    log(
+        f"[rotation] resumed at block {skipped:,} of {planned:,}: {len(held):,} block(s) "
+        f"on the table, the plan sized off {float(plan_budget):,.0f}s and the clock "
+        f"{float(budget):,.0f}s"
+    )
+    return held, skipped
+
+
 def mine(
     name: str,
     *,
@@ -1336,6 +1472,14 @@ def mine(
     rotations: int = MINE_ROTATIONS,
     roster: list | None = None,
     shares: dict | None = None,
+    #: The budget the PLAN is sized off, where that is not the clock this leg has.
+    #: Unsaid it is `budget`, which is every first leg. A **resumed** leg says both:
+    #: the plan budget rebuilds the same block plan and `budget` is what is left to
+    #: spend on it.
+    plan_budget: float | None = None,
+    #: Whole blocks of that plan to skip, so a second leg continues the first
+    #: rather than re-drawing it. See the docstring.
+    from_block: int = 0,
     workers: int = WORKERS,
     device: str = "auto",
     chunk: int = CHUNK_GROUPS,
@@ -1361,6 +1505,19 @@ def mine(
     The block is the **location** rather than the (location, mode) pair, because
     that is [`depth.blocks_of`]'s cut and a location's every mode shares one
     worker and therefore one field cache.
+
+    **A clock-bound leg is resumed by INDEX and never by re-drawing.** `budget`
+    sizes the plan *and* is the deadline, so a second leg handed the clock it has
+    left would plan a smaller draw and start it at the beginning — and the dedupe
+    does not save it: each shot's four losers are recorded and **freed** rather
+    than merged, so nothing in the store says they were made. Worse, where a
+    rotation won and its control did not merge, the shot comes back as a
+    best-of-*four* read against the same control, which is a different number
+    under the same name. So a resumed leg says `plan_budget` — the first leg's
+    budget, which rebuilds its block plan exactly — and `from_block`, the count its
+    record reports as `blocks_done`. `budget` is then only the clock. The record
+    carries both, and `blocks_skipped` beside `blocks_planned`, so the two legs read
+    back as one.
     """
     from fractal_wallpapers.curation import candidate_ledger as ledger
     from fractal_wallpapers.curation import colorize, depth, hunt, mode_policy, release
@@ -1378,12 +1535,13 @@ def mine(
     # near-band and flat draws on their defaults and spend half this leg on arms
     # the last producing leg zeroed. `palette_variant_mine_ckpt120`'s shape.
     shares = dict(shares) if shares else dict(MINE_SHARES)
+    sized_for = float(budget if plan_budget is None else plan_budget)
     world = depth.population(log=log)
     intended, shape = depth.build_plan(
         world,
         seed=int(seed),
         rate=float(rate),
-        budget=float(budget),
+        budget=sized_for,
         width=int(width),
         roster=roster,
         shares=shares,
@@ -1429,6 +1587,8 @@ def mine(
         f"resolved to {census['candidates']:,} candidate(s), {census['bare']:,} of them a "
         f"direct trap drawn bare"
     )
+    planned_blocks = len(blocks)
+    blocks, skipped = resumed(blocks, from_block, sized_for, float(budget), log=log)
 
     rows_file = rows_path(name)
     rows_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1436,7 +1596,10 @@ def mine(
     scores_file = scores_path(name)
     decisions_file = decisions_path(name)
     counts = {
-        "blocks_planned": len(blocks),
+        # **The whole plan's count, not the slice's**, so `blocks_done` and
+        # `blocks_skipped` add up against it across both halves of one leg.
+        "blocks_planned": planned_blocks,
+        "blocks_skipped": skipped,
         "blocks_done": 0,
         "shots_visited": 0,
         "candidates_made": 0,
@@ -1631,7 +1794,7 @@ def mine(
             freed.clear()
         counts["fields_swept"] += colorize.sweep_fields(maker.fields)
         log(
-            f"[rotation] {counts['blocks_done']:,} of {len(blocks):,} block(s), "
+            f"[rotation] {skipped + counts['blocks_done']:,} of {planned_blocks:,} block(s), "
             f"{counts['shots_visited']:,} shot(s): {counts['rotation_won']:,} won by a "
             f"rotation, {counts['control_won']:,} by phase 0; "
             f"{time.monotonic() - render_started:.0f}s of {budget:.0f}s"
@@ -1653,7 +1816,16 @@ def mine(
         "rotations_a_shot": int(rotations),
         "repeat": REPEAT,
         "roster": roster,
-        "shares": shares,
+        # **The resolved table here and what was asked beside it**, not the ask
+        # alone: this line used to be the caller's dict, which reads as the split
+        # the leg ran and is only that when the caller spelled it whole.
+        # [`depth.resolve_split`] is where both come from.
+        "shares": dict(shape["split"]["shares"]),
+        "shares_asked": dict(shares),
+        # **What the plan was sized off and where this leg picked it up**, which is
+        # the whole of what makes two clock-bound halves one leg.
+        "plan_budget_seconds": sized_for,
+        "from_block": skipped,
         "width": int(width),
         "fine_column": fine_column,
         "engine": build,
@@ -1769,6 +1941,7 @@ __all__ = [
     "MINE_SHARES",
     "MINE_WIDTH",
     "NOTHING_MADE",
+    "NOT_OWED",
     "PLAN_NAME",
     "RECORD_NAME",
     "REFUSALS",
@@ -1808,6 +1981,7 @@ __all__ = [
     "removed_path",
     "render_draw_group",
     "render_group",
+    "resumed",
     "rotation_dir",
     "rows_path",
     "run",

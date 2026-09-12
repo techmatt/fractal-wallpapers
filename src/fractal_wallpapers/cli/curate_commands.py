@@ -1600,6 +1600,8 @@ def curate_rotate(args):
                 rotations=args.rotations,
                 roster=args.modes,
                 shares=json.loads(args.shares) if args.shares else None,
+                plan_budget=args.plan_budget,
+                from_block=args.from_block,
                 workers=args.workers,
                 device=args.device,
                 chunk=args.chunk,
@@ -1613,7 +1615,7 @@ def curate_rotate(args):
             # It resolves no recipe - that needs the group table and the band, and
             # is `run`'s first act - so `rotations` here is what the draw intends
             # rather than what survives the dedupe.
-            world = rotation.population(args.bar)
+            world = rotation.population(args.bar, owed=args.owed)
             _groups, shape = rotation.plan_of(
                 world["sources"], args.seed, world["known"], args.rotations
             )
@@ -1623,6 +1625,7 @@ def curate_rotate(args):
                         "ledger_rows": world["ledger_rows"],
                         "passing": world["passing"],
                         "rotatable": len(world["sources"]),
+                        "owed_arm": bool(args.owed),
                         "refused": world["refused"],
                         "owed": rotation.owed(world["refused"]),
                         "protected": world["protected"],
@@ -1643,6 +1646,7 @@ def curate_rotate(args):
             device=args.device,
             chunk=args.chunk,
             groups=args.groups,
+            take_owed=args.owed,
         )
     except rotation.RotationRefused as refusal:
         print(refusal)
@@ -5307,6 +5311,15 @@ def add_commands(subcommands) -> None:
             help=f"phases drawn a row beside the one it has (default "
             f"{rotation_module.ROTATIONS}, so a row is six candidates)",
         )
+        a_draw.add_argument(
+            "--owed",
+            action="store_true",
+            help="take the rows a dumpable pass recorded as OWED — the composites and "
+            "itinerary, whose coloring has no single scalar field to dump and recolour. "
+            "They render at six iteration passes a row against a dumpable row's one, "
+            "which is the whole of what the flag buys and the whole of what it costs. "
+            "The direct traps stay refused: phase is a no-op on a trap figure",
+        )
     running_rotate.add_argument(
         "--tolerance",
         type=float,
@@ -5356,6 +5369,27 @@ def add_commands(subcommands) -> None:
         metavar="SECONDS",
         help="wall seconds of RENDERING (default 3600). The population read and the plan "
         "sit outside it, and what it truncates is whole chunks of location blocks",
+    )
+    mining_rotate.add_argument(
+        "--plan-budget",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="the budget the PLAN is sized off, where that is not the clock this leg has "
+        "(default: --budget). A RESUMED leg says both — this rebuilds the first leg's "
+        "block plan exactly, so its block N is this leg's block N, and --budget is only "
+        "what is left to spend on it",
+    )
+    mining_rotate.add_argument(
+        "--from-block",
+        type=int,
+        default=0,
+        metavar="INDEX",
+        help="skip this many whole blocks of the plan, so a second leg continues the first "
+        "rather than re-drawing it. Pass the first leg's `blocks_done`. Re-drawing is not "
+        "the same thing: each shot's four losers are freed rather than merged, so nothing "
+        "in the store stops them being made again, and a shot whose control was never "
+        "merged comes back as a best-of-FOUR under the same name",
     )
     mining_rotate.add_argument(
         "--rate",

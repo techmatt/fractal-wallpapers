@@ -628,6 +628,83 @@ def test_a_run_with_no_cell_reports_no_hit_rate_rather_than_an_empty_one():
     assert depth.hit_rate([{"arm": depth.FLAT, "location": "a", "cells": []}], None) is None
 
 
+# --------------------------------------------------------------------------- #
+# The resolved split, stated. The defect was silence and not the default.
+# --------------------------------------------------------------------------- #
+def spoken(shares=None, roster=None):
+    """`resolve_split`'s lines and what it resolved to."""
+    said: list[str] = []
+    resolved, roster_out, stated = depth.resolve_split(shares, roster, log=said.append)
+    return "\n".join(said), resolved, roster_out, stated
+
+
+def test_a_leg_states_every_draws_share_and_names_the_ones_it_inherited():
+    """The trap this closes, in the spelling that fell into it: a table naming the
+    ranked draw alone leaves the near-band and flat draws on 0.25 each, which is
+    half the leg, and nothing in `rotation_pass_ckpt120`'s output said so."""
+    said, resolved, _roster, stated = spoken(shares={depth.RANKED: 1.0})
+    assert resolved == {**depth.SHARES, depth.RANKED: 1.0}
+    assert stated["shares_asked"] == {depth.RANKED: 1.0}
+    assert stated["shares_inherited"] == {
+        depth.NEAR: 0.25,
+        depth.FLAT: 0.25,
+        depth.FLOOR: 0.0,
+        depth.AIMED: 0.0,
+    }
+    for arm in depth.DRAWS:
+        assert arm in said, "every draw is named, not only the ones with a share"
+    warned = [line for line in said.splitlines() if "⚠" in line]
+    assert len(warned) == 1, "one warning, and only where an unnamed draw takes clock"
+    assert depth.NEAR in warned[0] and depth.FLAT in warned[0]
+    assert depth.FLOOR not in warned[0], "a zero inherited share spends nothing"
+
+
+def test_a_table_spelled_whole_inherits_nothing_and_is_not_warned_about():
+    said, _resolved, _roster, stated = spoken(
+        shares={arm: (1.0 if arm == depth.RANKED else 0.0) for arm in depth.DRAWS}
+    )
+    assert stated["shares_inherited"] == {}
+    assert "⚠" not in said
+
+
+def test_a_misspelt_draw_is_refused_rather_than_merged_over_nothing():
+    """The quiet failure it replaces is the worse one: an unknown key merges over
+    no draw at all, so the draw the caller meant to set keeps its default and the
+    record reports the misspelling as if it were a share."""
+    with pytest.raises(depth.DepthRefused, match="ranked_band"):
+        spoken(shares={"ranked_band": 1.0})
+
+
+def test_a_defaulted_roster_says_which_default_it_took_and_how_big_the_other_is():
+    """`curate depth` defaults to the three shareable modes and a mining leg wants
+    `mode_policy.mined()`'s twelve; a pilot that took the default by accident lost
+    229 of 726 rows at the merge."""
+    from fractal_wallpapers.curation import mode_policy
+
+    said, _resolved, roster, stated = spoken()
+    assert roster == depth.field_modes() == stated["roster"]
+    assert stated["roster_defaulted"] is True
+    assert stated["mined_roster"] == mode_policy.mined()
+    assert "DEFAULTED" in said and str(len(mode_policy.mined())) in said
+
+
+def test_a_named_roster_is_reported_as_asked_for_and_not_as_a_default():
+    said, _resolved, roster, stated = spoken(roster=["smooth", "stripe"])
+    assert roster == stated["roster"] == stated["roster_asked"] == ["smooth", "stripe"]
+    assert stated["roster_defaulted"] is False
+    assert "DEFAULTED" not in said
+
+
+def test_the_record_carries_what_was_asked_beside_what_it_came_to():
+    """`shares` and `roster` on the record have always been the resolved tables.
+    What no reader could recover is whether an arm's share was asked for."""
+    _plan, shape = build_a_plan(shares={depth.RANKED: 1.0})
+    assert shape["shares"] == shape["split"]["shares"] == {**depth.SHARES, depth.RANKED: 1.0}
+    assert shape["split"]["shares_asked"] == {depth.RANKED: 1.0}
+    assert shape["split"]["roster"] == shape["roster"] == depth.field_modes()
+    assert shape["split"]["roster_defaulted"] is True
+
+
 def test_a_production_plan_spends_its_floor_share_on_the_modes_that_are_short():
     plan, shape = build_a_plan(
         shares={depth.NEAR: 0.3, depth.RANKED: 0.4, depth.FLAT: 0.0, depth.FLOOR: 0.3},
