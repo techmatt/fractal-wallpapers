@@ -402,6 +402,27 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**Seven fast tests, and twelve the log had lost.** `dedupe_and_resume_index_ckpt121`,
+2026-09-12, idle box. **Fast: 4,355 selected, 136 deselected — 4,491 collected — in
+150.93 s. Slow: 4,491 of 4,491 in 568.91 s (9:28), zero skips, zero failures.** The
+two lanes agree on 4,491.
+
+⚠ **The +19 is not one prompt's, and that is the entry worth having.** This prompt
+added **seven** — the mine arm's resume index against its own `decisions.jsonl`, and
+the start-up refusal of a `--from-block` above it. The other **twelve arrived in the
+four prompts between this reading and the one below**, none of which re-measured: the
+tree collected **4,484** with this prompt's test file stashed, against the 4,472
+`CLAUDE.md` was still quoting. Measured by stashing the one file and collecting, which
+is the cheap way to attribute a delta and is worth doing before writing one down.
+**The lesson is the pair, not the arithmetic**: *the two lanes agree on the count* is
+what catches a figure that has drifted, and it only fires if somebody takes both.
+
+**Neither lane moved for the tests.** Fast 150.93 s against 146.92 s and slow 568.91 s
+against 553.62 s — +4.0 s and +15 s over nineteen more tests, which is the box at this
+lane's 2% spread. All nineteen are fast; none renders, trains or sweeps a store. This
+prompt's seven read two small JSON records and a synthetic `decisions.jsonl` out of
+`tmp_path` with the tier roots redirected, so they cost arithmetic.
+
 **A store declared rather than built, and nineteen fast tests for it.**
 `repeat_ab_count_themed_ckpt121`, 2026-09-11, idle box after a 620 s sheet build.
 **Fast: 4,336 selected, 136 deselected — 4,472 collected — in 146.92 s. Slow:

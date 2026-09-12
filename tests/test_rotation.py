@@ -754,3 +754,217 @@ def test_the_mining_shares_are_spelled_whole_because_build_plan_merges():
         rotation.MINE_SHARES, mode_policy.mined(), log=lambda *_a: None
     )
     assert stated["shares_inherited"] == {}, "a whole table inherits nothing to be surprised by"
+
+
+# --------------------------------------------------------------------------- #
+# Resuming a clock-bound mining leg.
+# --------------------------------------------------------------------------- #
+#: The mined roster, spelled out because the fixture's records are the ones that
+#: landed on 2026-09-11 and a record is a record of what a leg was given.
+ROSTER = (
+    "smooth",
+    "tia",
+    "stripe",
+    "smooth_mean_angle",
+    "smooth_angle_min",
+    "smooth_stripe",
+    "smooth_curvature",
+    "direct_trap_screen",
+    "direct_trap_multiply",
+    "direct_trap_lines",
+    "threads",
+    "itinerary",
+)
+
+
+@pytest.fixture
+def two_legs(tmp_path, monkeypatch):
+    """A leg builder over an empty store: `mine_ckpt120`'s shape and its numbers.
+
+    The real ones, from 2026-09-11: a first leg handed four chunks of 400 by the
+    pool and cut at its 14,400 s budget with 247 location blocks decided, and a
+    second told `--from-block 247` that was handed 400 again and decided 129.
+    Redirected at the **tier roots**, which is `a_store`'s rule.
+
+    A record asked for `before_the_protocol` is written **without**
+    `plan_budget_seconds`, `from_block`, `shares_asked` or the `conditioned`
+    share, because `mine_ckpt120`'s carries none of them: they landed with the
+    resume protocol after it ran, and a guard that holds only for records written
+    since is a guard that does not hold.
+    """
+    from fractal_wallpapers import paths
+
+    root = tmp_path / "artifacts"
+    (root / "curation").mkdir(parents=True)
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
+
+    def a_leg(name, *, from_block, decided, before_the_protocol=False):
+        rotation.rotation_dir(name).mkdir(parents=True)
+        with rotation.decisions_path(name).open("w", encoding="utf-8", newline="\n") as handle:
+            for at in range(decided):
+                # Several shots a location, because a block is the location and
+                # `MINE_WIDTH` maps go over the roster at each one: what the
+                # index counts is distinct locations and never decision rows.
+                for mode in ("smooth", "stripe", "threads"):
+                    handle.write(
+                        json.dumps(
+                            {"schema": 1, "location": f"place{from_block + at}", "mode": mode}
+                        )
+                        + "\n"
+                    )
+        record = {
+            "schema": 1,
+            "name": name,
+            "arm": "mine",
+            "seed": 0,
+            "roster": list(ROSTER),
+            "shares": {"ranked_bands": 1.0, "flat": 0.0, "near_band": 0.0, "mode_floor": 0.0},
+            "width": 12,
+            "plan": {
+                "rate_seconds": 6.0,
+                "budget_seconds": 14400.0,
+                "width": 12,
+                "workers_sized_for": 3,
+            },
+            "counts": {
+                "blocks_planned": 960,
+                "blocks_skipped": from_block,
+                "blocks_done": 400,
+                "blocks_decided": decided,
+            },
+        }
+        if not before_the_protocol:
+            record["plan_budget_seconds"] = 14400.0
+            record["from_block"] = from_block
+            record["shares"]["conditioned"] = 0.0
+            record["resume_from_block"] = from_block + decided
+        rotation.record_path(name).write_text(
+            json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
+        )
+        return record
+
+    return a_leg
+
+
+def the_plan(**over):
+    """The flags `mine_ckpt120` ran, which is what a resume of it has to restate."""
+    return {
+        "seed": 0,
+        "rate": 6.0,
+        "plan_budget": 14400.0,
+        "width": 12,
+        "workers": 3,
+        "roster": list(ROSTER),
+        "shares": dict(rotation.MINE_SHARES),
+        **over,
+    }
+
+
+def quietly(at, **over):
+    return rotation.refuse_unreachable_resume(at, log=lambda *_a: None, **the_plan(**over))
+
+
+def test_the_recorded_resume_index_is_the_locations_the_leg_actually_decided(two_legs):
+    """⚠ The record's own claim held against its own file, which is the point.
+
+    `blocks_done` is incremented by the whole chunk once the pool returns while
+    each worker breaks out of its block list at the deadline, so it rounds up to
+    `CHUNK_GROUPS`: `mine_ckpt120` recorded 400 and had decided 247. Passing that
+    400 to `--from-block` would have discarded 153 rendered locations, about 1,836
+    shots. So `resume_from_block` is pinned to a **re-read of the decisions**, and
+    pinned against the arithmetic it is not.
+    """
+    first = two_legs("mine_ckpt120", from_block=0, decided=247, before_the_protocol=True)
+    assert rotation.decided_blocks("mine_ckpt120") == 247
+    assert rotation.resume_index("mine_ckpt120") == 247
+    handed = first["counts"]["blocks_skipped"] + first["counts"]["blocks_done"]
+    assert handed == 400, "what the pool was handed, which is what blocks_done means"
+    assert rotation.resume_index("mine_ckpt120") != handed
+
+    # The resumed half. `--from-block` indexes the WHOLE plan while this leg's own
+    # decisions file holds only its own 129, so the index is both halves.
+    second = two_legs("m2", from_block=247, decided=129)
+    assert rotation.decided_blocks("m2") == 129
+    assert rotation.resume_index("m2") == 376
+    assert second["resume_from_block"] == rotation.resume_index("m2")
+    assert second["counts"]["blocks_skipped"] + second["counts"]["blocks_done"] == 647
+
+
+def test_a_leg_that_decided_nothing_resumes_where_it_was_told_to_start(two_legs):
+    """A leg killed before its first chunk came back has rendered nothing, so the
+    index to continue it at is the one it was given — never the blocks the pool
+    was holding when it died."""
+    two_legs("killed", from_block=376, decided=0)
+    assert rotation.decided_blocks("killed") == 0
+    assert rotation.resume_index("killed") == 376
+
+
+def test_a_from_block_above_what_this_plan_rendered_is_refused_at_start_up(two_legs):
+    """Passing one **always** discards work that was paid for, so it is an error.
+
+    Four hours in is the wrong place to find that out: this runs before the
+    population read, which is a minute on its own, and before any render at all.
+    400 is what `blocks_done` gives against the 376 two legs between them reached.
+    """
+    two_legs("mine_ckpt120", from_block=0, decided=247, before_the_protocol=True)
+    two_legs("m2", from_block=247, decided=129)
+    with pytest.raises(rotation.RotationRefused, match="above the 376"):
+        quietly(400)
+    # `blocks_skipped + blocks_done` — the arithmetic the record's own fields
+    # invite and the one the report had to talk the next leg out of.
+    with pytest.raises(rotation.RotationRefused, match="647"):
+        quietly(647)
+    held = quietly(376)
+    assert held == {"mine_ckpt120": 247, "m2": 376}
+    assert quietly(247) == held, "the first leg's own index is still reachable"
+
+
+def test_a_first_leg_is_asked_nothing_because_it_continues_nothing(two_legs):
+    assert quietly(0) == {}
+    assert quietly(-1) == {}
+
+
+def test_a_resume_that_would_rebuild_a_different_plan_is_refused_rather_than_run(two_legs):
+    """★ `overnight_ckpt121`'s finding, made mechanical. The plan is
+    `PLAN_HEADROOM * workers * plan_budget / rate`, so a resume that leaves
+    `--rate` on `MINE_RATE` while the first leg ran at 6.0 plans 27,648 shots
+    against 11,520 and then skips 247 blocks of a draw nobody has rendered."""
+    two_legs("mine_ckpt120", from_block=0, decided=247, before_the_protocol=True)
+    for over in (
+        {"rate": rotation.MINE_RATE},
+        {"plan_budget": 8000.0},
+        {"seed": 1},
+        {"width": 8},
+        {"workers": 2},
+        {"roster": list(ROSTER[:3])},
+        {"shares": {**rotation.MINE_SHARES, "flat": 0.25}},
+    ):
+        with pytest.raises(rotation.RotationRefused, match="no mine leg on record ran"):
+            quietly(247, **over)
+
+
+def test_a_zero_share_added_after_a_leg_ran_does_not_unmake_its_resume(two_legs):
+    """⚠ The resolved share table grows a key whenever a draw joins `depth.DRAWS`
+    — `conditioned` landed between these two legs — so an identity over the table
+    whole would refuse a legitimate resume over an arm neither leg spent a second
+    of clock on. Only the arms carrying a share are part of it.
+    """
+    first = two_legs("mine_ckpt120", from_block=0, decided=247, before_the_protocol=True)
+    second = two_legs("m2", from_block=247, decided=129)
+    assert set(first["shares"]) != set(second["shares"]), "the fixture is the real shape"
+    assert rotation.identity_of(first) == rotation.identity_of(second)
+    assert rotation.identity_of(first) == rotation.plan_identity(**the_plan())
+
+
+def test_only_a_mine_legs_record_is_offered_to_a_mine_resume(two_legs):
+    """The store arm keeps its records in the same subtree and takes no resume
+    index at all — its figure is `rows_remaining` — so an `arm` that is not
+    `mine` is not a half of a block plan however well its plan block matches."""
+    two_legs("mine_ckpt120", from_block=0, decided=247, before_the_protocol=True)
+    record = json.loads(rotation.record_path("mine_ckpt120").read_text(encoding="utf-8"))
+    rotation.record_path("mine_ckpt120").write_text(
+        json.dumps({**record, "arm": "store"}, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    with pytest.raises(rotation.RotationRefused, match="no mine leg on record ran"):
+        quietly(247)

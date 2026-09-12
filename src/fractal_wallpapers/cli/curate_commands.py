@@ -1607,7 +1607,19 @@ def curate_rotate(args):
                 device=args.device,
                 chunk=args.chunk,
             )
-            print(json.dumps({**record["counts"], **record["budget"]}, indent=2))
+            # `resume_from_block` is top-level on the record and is the one figure
+            # the next leg has to have, so it is printed with the counts rather
+            # than left to a reader of the file.
+            print(
+                json.dumps(
+                    {
+                        **record["counts"],
+                        "resume_from_block": record["resume_from_block"],
+                        **record["budget"],
+                    },
+                    indent=2,
+                )
+            )
             print(f"\nrecord {display_path(rotation.record_path(args.name))}")
             return 0
         if args.what == "plan":
@@ -5507,10 +5519,12 @@ def add_commands(subcommands) -> None:
         default=0,
         metavar="INDEX",
         help="skip this many whole blocks of the plan, so a second leg continues the first "
-        "rather than re-drawing it. Pass the first leg's `blocks_done`. Re-drawing is not "
-        "the same thing: each shot's four losers are freed rather than merged, so nothing "
-        "in the store stops them being made again, and a shot whose control was never "
-        "merged comes back as a best-of-FOUR under the same name",
+        "rather than re-drawing it. Pass the first leg's `resume_from_block` and NEVER its "
+        "`blocks_done`, which counts the blocks handed to the render pool and not the ones "
+        "that came back. An index above what this plan has actually rendered is refused at "
+        "start-up, because skipping a rendered block throws that work away with nothing in "
+        "the store to say so: each shot's four losers are freed rather than merged, and a "
+        "shot whose control never merged comes back as a best-of-FOUR under the same name",
     )
     mining_rotate.add_argument(
         "--rate",
