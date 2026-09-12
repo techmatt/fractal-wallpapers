@@ -44,6 +44,7 @@ import csv
 import html
 from pathlib import Path
 
+from fractal_wallpapers.curation import page
 from fractal_wallpapers.palettes import codebook
 
 #: The share of a map's ramp a swatch must hold to count as *carried* by it. The
@@ -158,19 +159,24 @@ def write_csv(table: list[dict], path: Path) -> Path:
     return path
 
 
-_STYLE = """
-body { background:#12141a; color:#e8e8ea; font:13px/1.5 system-ui, sans-serif; margin:24px; }
+_STYLE = (
+    page.STYLE
+    + """
+body { background:var(--ground); color:var(--ink); font:13px/1.5 system-ui, sans-serif;
+       margin:24px; }
 h1 { font-size:20px; margin:0 0 4px; }
-p.note { color:#9aa0aa; max-width:64em; }
+p.note { color:var(--muted); max-width:64em; }
 table { border-collapse:collapse; margin-top:16px; }
 th, td { padding:4px 10px; text-align:right; border-bottom:1px solid #23262e; white-space:nowrap; }
-th { text-align:right; color:#9aa0aa; font-weight:600; position:sticky; top:0; background:#12141a; }
+th { text-align:right; color:var(--muted); font-weight:600; position:sticky; top:0;
+     background:var(--ground); }
 th.name, td.name { text-align:left; }
 td.chip { padding:0; }
 td.chip div { width:56px; height:20px; border:1px solid #444; border-radius:3px; }
 tr.zero td { color:#c98b8b; }
-td.dim { color:#6f7681; }
+td.dim { color:var(--faint); }
 """
+)
 
 
 def _page(table: list[dict], renders: int, taken_at: str | None) -> str:

@@ -36,16 +36,8 @@ SEEDS = (
 )
 
 
-def engine_is_built() -> bool:
-    try:
-        engine.engine_path()
-    except FileNotFoundError:
-        return False
-    return True
-
-
 needs_engine = pytest.mark.skipif(
-    not engine_is_built(),
+    not engine.is_built(),
     reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
 )
 
@@ -102,7 +94,7 @@ def corpus(tmp_path, monkeypatch):
     well as a large one.
     """
     widths = ["0.2", "0.01", "0.0004", "3.1e-06"]
-    caps = engine.maxiter_for(widths) if engine_is_built() else [4000, 5000, 6000, 7000]
+    caps = engine.maxiter_for(widths) if engine.is_built() else [4000, 5000, 6000, 7000]
     path = tmp_path / "manifest.jsonl"
 
     def write(overrides: dict | None = None) -> None:

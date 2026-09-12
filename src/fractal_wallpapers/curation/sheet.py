@@ -51,6 +51,8 @@ import io
 from collections.abc import Iterable
 from pathlib import Path
 
+from fractal_wallpapers.curation import page
+
 #: The long edge of an embedded thumbnail. Big enough to tell two wallpapers
 #: apart at a glance, small enough that a dozen of them are one page.
 THUMBNAIL_WIDTH = 480
@@ -359,36 +361,39 @@ LINE_STYLES = ("plain", "strong", "muted", "mono")
 #: thumbnails are embedded in both.
 SCORE_THUMBNAIL_WIDTH = 320
 
-SCORE_STYLE = """
-body { background:#14161a; color:#e6e8eb; margin:0;
+SCORE_STYLE = (
+    page.STYLE
+    + """
+body { background:var(--ground); color:var(--ink); margin:0;
        font:13px/1.45 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
-header { padding:14px 16px; background:#1b1e24; border-bottom:1px solid #2c313a; }
+header { padding:14px 16px; background:var(--raised); border-bottom:1px solid var(--rule); }
 h1 { font-size:16px; margin:0 0 6px; }
-.lede { color:#9aa4b1; max-width:78rem; margin:0 0 6px; }
-.lede b { color:#e6e8eb; }
-code { font-family:ui-monospace, monospace; color:#c8b98a; }
+.lede { color:var(--muted); max-width:78rem; margin:0 0 6px; }
+.lede b { color:var(--ink); }
+code { font-family:ui-monospace, monospace; color:var(--accent); }
 h2.band { position:sticky; top:0; z-index:2; margin:0; padding:8px 16px;
-          background:#22262e; border-top:1px solid #3a4150;
-          border-bottom:1px solid #2c313a; font-size:13px; font-weight:600;
+          background:var(--raised); border-top:1px solid var(--rule_strong);
+          border-bottom:1px solid var(--rule); font-size:13px; font-weight:600;
           letter-spacing:.04em; text-transform:uppercase; }
-h2.band span { float:right; color:#8a939f; font-weight:400; text-transform:none;
+h2.band span { float:right; color:var(--muted); font-weight:400; text-transform:none;
                letter-spacing:0; }
 .grid { display:grid; gap:12px; padding:12px 16px;
         grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); }
-figure { margin:0; background:#1c1f26; border:1px solid #2c313a; border-radius:6px;
+figure { margin:0; background:var(--panel); border:1px solid var(--rule); border-radius:6px;
          overflow:hidden; }
-img { display:block; width:100%; background:#0e1013; }
-.missing { padding:40px 10px; text-align:center; color:#6b7480; }
+img { display:block; width:100%; background:var(--well); }
+.missing { padding:40px 10px; text-align:center; color:var(--faint); }
 figcaption { display:flex; flex-direction:column; gap:2px; padding:7px 9px 9px; }
 .top { display:flex; justify-content:space-between; align-items:baseline; }
 .score { font-size:17px; font-weight:600; font-family:ui-monospace, monospace;
          color:#d8e4f0; }
-.rank { color:#6b7480; font-family:ui-monospace, monospace; }
-.strong { color:#8fc7a0; font-weight:600; }
-.muted { color:#8a939f; }
-.mono { font-family:ui-monospace, monospace; font-size:10.5px; color:#6b7480;
+.rank { color:var(--faint); font-family:ui-monospace, monospace; }
+.strong { color:var(--good); font-weight:600; }
+.muted { color:var(--muted); }
+.mono { font-family:ui-monospace, monospace; font-size:10.5px; color:var(--faint);
         white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 """
+)
 
 
 def by_score(rows: Iterable[dict], score) -> list[dict]:

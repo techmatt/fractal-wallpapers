@@ -12,6 +12,7 @@ import json
 
 import pytest
 
+from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import lineage_distribution
 from fractal_wallpapers.supply import currency as money
@@ -462,18 +463,8 @@ def test_only_the_junk_floor_kills_a_share_candidate() -> None:
 # --------------------------------------------------------------- end to end
 
 
-def engine_is_built() -> bool:
-    from fractal_wallpapers import engine
-
-    try:
-        engine.engine_path()
-    except FileNotFoundError:
-        return False
-    return True
-
-
 needs_engine = pytest.mark.skipif(
-    not engine_is_built(),
+    not engine.is_built(),
     reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
 )
 

@@ -57,46 +57,33 @@ These were decided once, at the first commit, because each is expensive to rever
   is never split across files. Every random draw is seeded, and the seed is recorded.
 - **Git history stays text.** `tests/test_history_purity.py` fails the build if a
   tracked file is binary-by-nature or exceeds 1 MiB, or if a tracked *record* names
-  an absolute path. Its **three** exemption lists are not interchangeable and each
-  excuses a different rule: `ALLOWLIST` excuses a file from the first two and is
-  empty; `LARGE_TEXT_ALLOWLIST` excuses a *prefix* from the size rule alone and
-  still holds it to being text, its three entries being `data/palette_choice/rows/`,
-  `data/curation/rank_key/population.jsonl` and `data/gallery_grade/corpus/`;
-  `RECORD_EXEMPT_PREFIXES` excuses a *prefix* from the absolute-path rule alone and
-  holds it to carrying a `checksums.json`, its one entry being the same frozen
-  corpus — kept byte for byte because that sha256 is the only thing saying which
-  rows a shipped column was fitted on, and re-spelling a member would verify
-  nothing. `RECORD_EXEMPT_KEYS` is the fourth and is by key rather than by file.
-  Each is on Matt's call and each has its reason written at the site. Adding to any
-  of them is a decision, not a fix.
+  an absolute path. It carries **four** exemption lists and **no two of them excuse
+  the same rule**, so an entry earns each one separately and moving a name between
+  them changes what it is held to. Each is on Matt's call, each has its reason
+  written at the site in full, and adding to any of them is a decision, not a fix.
+  The lists and the argument for every entry are in `test_history_purity.py` at
+  the constants themselves.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
   tracked file inside an ignored tree is how these rules rot. **There is exactly
-  one hole and it is deliberate**, decided in `SET_twin_tau_0p65_and_geometry_gate`:
-  a tentative gallery's two *text* files
-  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`)
-  come through, because a clone that cannot resolve the IDs the site's figures name
-  cannot rebuild the site. The pictures stay ignored, the un-ignore names the two
-  files one by one rather than by pattern, and it is not an oversight to tidy up.
-  **`index.html` was the third until 2026-09-05** and is not tracked for any stamp:
-  Matt's ruling that a record is its rows plus its manifest and the page is a
-  browse view `curate solve browse <stamp>` regenerates from them.
+  one hole and it is deliberate**: a published tentative gallery's two *text*
+  files (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`)
+  come through, because a clone that cannot resolve the IDs the site's figures
+  name cannot rebuild the site. The pictures stay ignored, the un-ignore names the
+  two files one by one rather than by pattern, and it is not an oversight to tidy
+  up. `index.html` is not tracked for any stamp.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
-  2026-09-04, and the hole above is per *stamp* because of it: the store is
-  ignored by default and each published stamp is one negation line. Recording a
-  gallery and committing it used to be a single act, which meant a record too
-  large to track was a record that could not be made — an n=2000 record's
-  `gallery.jsonl` is over `MAX_TRACKED_BYTES`. Now every
-  other record **stays in the store, ignored and kept**; what it does not get is
-  a Durable-class save, check or restore and a place in an archive copy. It is
-  read by naming its stamp, `tentative.latest()` resolves over published stamps
-  only, and `curate solve list` marks each line. **Publication and durability
-  are different questions**: `tentative.protected_keys()` sweeps the whole store
-  published or not, so deleting a record is the only thing that releases its
-  seats to the prune. `tentative.PUBLISHED` and `.gitignore`'s negation lines
-  are one list written twice and `tests/test_tentative.py` holds them to
-  agreeing. **`LARGE_TEXT_ALLOWLIST` was not the answer and was not touched.**
+  2026-09-04, and the hole above is per *stamp* because of it. Every unpublished
+  record **stays in the store, ignored and kept**, read by naming its stamp; what
+  it does not get is a Durable-class save, check or restore and a place in an
+  archive copy. **Publication and durability are different questions** —
+  `tentative.protected_keys()` sweeps the whole store published or not, so deleting
+  a record is the only thing that releases its seats to the prune.
+  `tentative.PUBLISHED` and `.gitignore`'s negation lines are one list written
+  twice and `tests/test_tentative.py` holds them to agreeing. The ruling, what it
+  replaced and why `LARGE_TEXT_ALLOWLIST` was not the answer are at
+  `curation/tentative.PUBLISHED`.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
@@ -185,11 +172,14 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,491 collected — 4,355 fast,
-136 slow — since `dedupe_and_resume_index_ckpt121` landed on 2026-09-12**, and the
-pair was taken on this machine on an idle box, on a `.[dev,models]` install with a
-release engine built: the **fast** lane **150.93 s** and the **slow** lane
-**4,491 of 4,491 in 568.91 s (9:28)**, both **green**, **zero skips**.
+Both are measured, not estimated. The tree holds **4,516 collected — 4,380 fast,
+136 slow — since `codebase_review_ckpt122` landed on 2026-09-12**, and the pair was
+taken on this machine on a `.[dev,models]` install with a release engine built: the
+**fast** lane **156.23 s** and the **slow** lane **4,516 of 4,516 in 602.08 s
+(10:02)**, both **green**, **zero skips**. That pair was taken on a box that had
+just finished a nine-agent documentation move rather than on a quiet one, and both
+lanes read 3-6% above the reading before them — `tests/README.md` argues why that is
+the machine and not the tree, and says so as an exception rather than assuming it.
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box

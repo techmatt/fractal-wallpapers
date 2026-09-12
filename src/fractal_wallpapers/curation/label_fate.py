@@ -147,6 +147,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.curation import page
 from fractal_wallpapers.labeling import gallery_grade
 from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 
@@ -1271,50 +1272,53 @@ PAGE_SIZE = 150
 #: the population.
 NOT_SHOWN = (OFF_THE_ROSTER,)
 
-STYLE = """
+STYLE = (
+    page.STYLE
+    + """
  body { font: 13px/1.45 system-ui, sans-serif; margin: 1.5rem;
-        background: #14161a; color: #dfe3e8; }
- a { color: #7fa6d8; }
+        background: var(--ground); color: var(--ink); }
+ a { color: var(--link); }
  h1 { font-size: 1.2rem; margin: 0 0 .4rem; }
  h2 { font-size: 1rem; margin: 1.8rem 0 .3rem; }
- .lede, .rung-note { max-width: 66rem; color: #9aa4b1; margin: 0 0 1rem; }
- .lede b, .rung-note b { color: #dfe3e8; }
- .lede em { color: #d8b45a; font-style: normal; }
+ .lede, .rung-note { max-width: 66rem; color: var(--muted); margin: 0 0 1rem; }
+ .lede b, .rung-note b { color: var(--ink); }
+ .lede em { color: var(--warn); font-style: normal; }
  .legend { max-width: 66rem; margin: 0 0 1.5rem; padding: .7rem .9rem;
-           background: #1c1f26; border-radius: 6px; color: #9aa4b1; }
+           background: var(--panel); border-radius: 6px; color: var(--muted); }
  .legend li { margin: .3rem 0; }
- .legend b { color: #dfe3e8; }
- .legend .warn { color: #d8b45a; }
- .nav { margin: 0 0 1.2rem; padding: .5rem .7rem; background: #1c1f26;
+ .legend b { color: var(--ink); }
+ .legend .warn { color: var(--warn); }
+ .nav { margin: 0 0 1.2rem; padding: .5rem .7rem; background: var(--panel);
         border-radius: 6px; display: flex; gap: 1.2rem; flex-wrap: wrap;
         max-width: 84rem; }
- .nav .here { color: #dfe3e8; font-weight: 600; }
+ .nav .here { color: var(--ink); font-weight: 600; }
  .idx { max-width: 72rem; border-collapse: collapse; }
  .idx td { padding: .25rem .9rem .25rem 0; vertical-align: top; }
- .idx .n { color: #d8b45a; text-align: right; }
+ .idx .n { color: var(--warn); text-align: right; }
  .idx .pages a { margin-right: .35rem; }
- .row { background: #1c1f26; border-radius: 6px; margin: 0 0 1rem; overflow: hidden;
+ .row { background: var(--panel); border-radius: 6px; margin: 0 0 1rem; overflow: hidden;
         max-width: 84rem; }
- .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: #0e1013; }
+ .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--well); }
  figure { margin: 0; position: relative; }
  img { display: block; width: 100%; }
  figcaption { position: absolute; left: 0; top: 0; background: rgba(10,12,15,.78);
               padding: .15rem .45rem; font-size: .68rem; letter-spacing: .04em;
-              text-transform: uppercase; color: #9aa4b1; }
- .judged figcaption { color: #d8b45a; }
+              text-transform: uppercase; color: var(--muted); }
+ .judged figcaption { color: var(--warn); }
  .facts { display: flex; flex-wrap: wrap; gap: .15rem 1.1rem; padding: .5rem .7rem; }
- .facts.seat { padding-top: 0; color: #8f98a4; }
+ .facts.seat { padding-top: 0; color: var(--muted); }
  .facts span { white-space: nowrap; }
- .lab { color: #6b7480; }
+ .lab { color: var(--faint); }
  .gap { color: #e07b53; font-weight: 600; }
  .leg { color: #f0b45e; font-weight: 600; }
- .key { font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }
+ .key { font-family: ui-monospace, monospace; color: var(--faint); font-size: .72rem; }
  .flag { color: #e07b53; }
- .staged { color: #7fa6d8; }
- .gone { padding: 4rem 1rem; text-align: center; color: #6b7480; }
- .empty { padding: 3.5rem 1rem; text-align: center; color: #8f98a4;
-          background: #191c22; }
+ .staged { color: var(--link); }
+ .gone { padding: 4rem 1rem; text-align: center; color: var(--faint); }
+ .empty { padding: 3.5rem 1rem; text-align: center; color: var(--muted);
+          background: var(--panel); }
 """
+)
 
 PAGE = """<!doctype html>
 <meta charset="utf-8"><title>{title}</title>

@@ -3,8 +3,8 @@
 The test suite, including the guard that keeps this history text-only and small.
 
 ```
-python -m pytest                                    # the fast lane, ~2m45s
-python -m pytest --slow                             # every test, ~6m30s
+python -m pytest                                    # the fast lane, ~2m36s
+python -m pytest --slow                             # every test, ~10m
 cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 ```
 
@@ -17,6 +17,145 @@ everywhere but Matt's machine — CI included.
 `engine/Cargo.toml`). The tests render, and unoptimized they take eight times as
 long to run as the optimization costs to compile.
 
+- [The two lanes](#the-two-lanes)
+  - [The line is the point of the arrangement](#the-line-is-the-point-of-the-arrangement)
+  - [Measure the fast lane after marking, not before](#measure-the-fast-lane-after-marking-not-before)
+- [A lane sharing the box with a render leg](#a-lane-sharing-the-box-with-a-render-leg)
+  - [Beside a leg the lane is killed on commit charge](#beside-a-leg-the-lane-is-killed-on-commit-charge)
+  - [The guard that turns red under load rather than slow](#the-guard-that-turns-red-under-load-rather-than-slow)
+  - [A votes build can share the box and a solve cannot, and the parent is why](#a-votes-build-can-share-the-box-and-a-solve-cannot-and-the-parent-is-why)
+  - [A lane that survived beside a leg is still not a timing](#a-lane-that-survived-beside-a-leg-is-still-not-a-timing)
+  - [Commit charge drifts upward on uptime alone](#commit-charge-drifts-upward-on-uptime-alone)
+- [What "the fast-lane count" means](#what-the-fast-lane-count-means)
+  - [A reading is comparable only against the same install](#a-reading-is-comparable-only-against-the-same-install)
+  - [The lane now refuses the wrong interpreter at the door](#the-lane-now-refuses-the-wrong-interpreter-at-the-door)
+  - [The 3,383, resolved](#the-3383-resolved)
+- [Shared readings of the tracked records](#shared-readings-of-the-tracked-records)
+  - [`shipped_label_pool` hands back fresh pictures on every call](#shipped_label_pool-hands-back-fresh-pictures-on-every-call)
+  - [`tracked_ledger` is the dear one and the one to reach for by reflex](#tracked_ledger-is-the-dear-one-and-the-one-to-reach-for-by-reflex)
+- [Redirecting a store: at the roots, never per accessor](#redirecting-a-store-at-the-roots-never-per-accessor)
+  - [Three times bitten by a per-accessor redirect](#three-times-bitten-by-a-per-accessor-redirect)
+  - [Two accessors still have to be patched, and both are the tracked half](#two-accessors-still-have-to-be-patched-and-both-are-the-tracked-half)
+  - [The backstop hashes every tracked manifest twice a session](#the-backstop-hashes-every-tracked-manifest-twice-a-session)
+  - [The same question asked of the regenerable tier](#the-same-question-asked-of-the-regenerable-tier)
+  - [The sidecar patch undoes an autouse the roots cannot reach](#the-sidecar-patch-undoes-an-autouse-the-roots-cannot-reach)
+- [Where the time goes](#where-the-time-goes)
+  - [The 563.5s lane that became 345.8s, with no guard deleted](#the-5635s-lane-that-became-3458s-with-no-guard-deleted)
+  - [The list to read before touching this again](#the-list-to-read-before-touching-this-again)
+  - [A cost paid once per test scales with the suite, and hides from every reading](#a-cost-paid-once-per-test-scales-with-the-suite-and-hides-from-every-reading)
+    - [Numbering a temporary directory is quadratic in the tests](#numbering-a-temporary-directory-is-quadratic-in-the-tests)
+    - [It could not have been found from this log](#it-could-not-have-been-found-from-this-log)
+  - [A derivation paid twice is the thing to look for](#a-derivation-paid-twice-is-the-thing-to-look-for)
+  - [A lane that moves right after code landed is the code until measured otherwise](#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise)
+  - [The candidate ledger is the thing that grows](#the-candidate-ledger-is-the-thing-that-grows)
+    - [The wide store is gone and reading is no longer what this lane pays for](#the-wide-store-is-gone-and-reading-is-no-longer-what-this-lane-pays-for)
+    - [The store has a ceiling now, so the digit should stop moving on its own](#the-store-has-a-ceiling-now-so-the-digit-should-stop-moving-on-its-own)
+    - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
+    - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
+  - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [codebase_review_ckpt122](#codebase_review_ckpt122)
+    - [dedupe_and_resume_index_ckpt121](#dedupe_and_resume_index_ckpt121)
+    - [repeat_ab_count_themed_ckpt121](#repeat_ab_count_themed_ckpt121)
+    - [repeat_axis_ingest_ckpt121](#repeat_axis_ingest_ckpt121)
+    - [score_and_resume_ckpt120](#score_and_resume_ckpt120)
+    - [repeat_label_batch_ckpt120](#repeat_label_batch_ckpt120)
+    - [rotation_pass_ckpt120](#rotation_pass_ckpt120)
+    - [palette_variant_mine_ckpt120](#palette_variant_mine_ckpt120)
+    - [palette_variant_smoke_ckpt120, part 2](#palette_variant_smoke_ckpt120-part-2)
+    - [palette_variant_smoke_ckpt120](#palette_variant_smoke_ckpt120)
+    - [adopt_deterministic_20260910](#adopt_deterministic_20260910)
+    - [deterministic_refit_20260910](#deterministic_refit_20260910)
+    - [adopt_and_record_20260910](#adopt_and_record_20260910)
+    - [cell_deltas_20260910](#cell_deltas_20260910)
+    - [best_head_20260910](#best_head_20260910)
+    - [aug_sweep_sheets_ingest_20260910](#aug_sweep_sheets_ingest_20260910)
+    - [augmentation_sweep_20260910](#augmentation_sweep_20260910)
+    - [seats_ingest_20260910](#seats_ingest_20260910)
+    - [votes_kit_randomize_20260909](#votes_kit_randomize_20260909)
+    - [tentative_solve_20260909](#tentative_solve_20260909)
+    - [pre_closeout_20260909](#pre_closeout_20260909)
+    - [p_fine_ingest_20260909](#p_fine_ingest_20260909)
+    - [p_fine_sitting_20260909](#p_fine_sitting_20260909)
+    - [k3_floor_20260909](#k3_floor_20260909)
+    - [k_sweep_20260909](#k_sweep_20260909)
+    - [forced_seating_20260909](#forced_seating_20260909)
+    - [PRECLOSEOUT_ckpt117_strongest_locations_fate_split_and_docs_0909](#precloseout_ckpt117_strongest_locations_fate_split_and_docs_0909)
+    - [POOL_ckpt117_fold_merges_instead_of_deletes_0909](#pool_ckpt117_fold_merges_instead_of_deletes_0909)
+    - [PRESELECT_ckpt117_fold_on_the_seating_key_0909](#preselect_ckpt117_fold_on_the_seating_key_0909)
+    - [SOLVE_ckpt117_resolve_and_fate_0908](#solve_ckpt117_resolve_and_fate_0908)
+    - [PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908](#precloseout_ckpt116_renderer_holes_and_repair_0908)
+    - [SHOW_ckpt116_label4_fate_v2_0908](#show_ckpt116_label4_fate_v2_0908)
+    - [SHOW_ckpt116_label4_fate_0908](#show_ckpt116_label4_fate_0908)
+    - [FIX_ckpt116_mine_mode_params_0908](#fix_ckpt116_mine_mode_params_0908)
+    - [MERGE_ckpt116_label_rows_and_resolve_0908](#merge_ckpt116_label_rows_and_resolve_0908)
+    - [FIX_ckpt116_autolevel_replay_0908](#fix_ckpt116_autolevel_replay_0908)
+    - [MIGRATE_ckpt116_label_recipes_0908](#migrate_ckpt116_label_recipes_0908)
+    - [FIX_ckpt115_feasibility_group_cap_0908](#fix_ckpt115_feasibility_group_cap_0908)
+    - [FIX_ckpt114_recorded_p_fine_bar_0907](#fix_ckpt114_recorded_p_fine_bar_0907)
+    - [FIX_ckpt114_wallpapers_leftovers_0907](#fix_ckpt114_wallpapers_leftovers_0907)
+    - [FIX_ckpt114_named_picture_ratchet_0907](#fix_ckpt114_named_picture_ratchet_0907)
+    - [FIX_ckpt113_cascade_records_and_pool_reads_0907](#fix_ckpt113_cascade_records_and_pool_reads_0907)
+    - [MINE_ckpt113_band_weighted_with_displacement_0907](#mine_ckpt113_band_weighted_with_displacement_0907)
+    - [ADOPT_ckpt113_cascade_and_cleanups_0907](#adopt_ckpt113_cascade_and_cleanups_0907)
+    - [The census floor that went red, and the ratchet that closed it](#the-census-floor-that-went-red-and-the-ratchet-that-closed-it)
+    - [FIX_ckpt113_legs_k_rot_and_retirements_0906](#fix_ckpt113_legs_k_rot_and_retirements_0906)
+    - [REFIT_ckpt113_fine_tier_head_and_seat_sheet_0906](#refit_ckpt113_fine_tier_head_and_seat_sheet_0906)
+    - [TRAIN_ckpt113_fine_tier_head_0906](#train_ckpt113_fine_tier_head_0906)
+    - [PROTECT_ckpt112_gallery_grade_keys_0906](#protect_ckpt112_gallery_grade_keys_0906)
+    - [FOLLOWUP_ckpt112_identity_pin_rehome_dedup_0906](#followup_ckpt112_identity_pin_rehome_dedup_0906)
+    - [REMOVE_ckpt112_stratum_score_0906](#remove_ckpt112_stratum_score_0906)
+    - [BUILD_ckpt112_gallery_grade_sheets_0906](#build_ckpt112_gallery_grade_sheets_0906)
+    - [BUILD_ckpt112_retention_freeslots_and_TODOs_0906](#build_ckpt112_retention_freeslots_and_todos_0906)
+    - [GUARD_score_regime_0906](#guard_score_regime_0906)
+    - [SHOW_n1000_gallery_0906](#show_n1000_gallery_0906)
+    - [SWEEP_color_mass_and_MINE_thin_themes_0906](#sweep_color_mass_and_mine_thin_themes_0906)
+    - [PRE_CLOSEOUT_wallpapers_0906](#pre_closeout_wallpapers_0906)
+    - [INGEST_new_maps_labels_0905](#ingest_new_maps_labels_0905)
+    - [SHEET_new_palettes_0905](#sheet_new_palettes_0905)
+    - [INGEST_new_palettes_0905](#ingest_new_palettes_0905)
+    - [FIX_owed_minor_0905](#fix_owed_minor_0905)
+    - [The τ ruling, 2026-09-05](#the-τ-ruling-2026-09-05)
+    - [The voting kit, 2026-09-04](#the-voting-kit-2026-09-04)
+    - [The publication ruling, 2026-09-04](#the-publication-ruling-2026-09-04)
+    - [The augmenting chain, 2026-09-04](#the-augmenting-chain-2026-09-04)
+    - [The CLAUDE.md tidy, 2026-09-04](#the-claudemd-tidy-2026-09-04)
+    - [The temporary-directory fix, 2026-09-04](#the-temporary-directory-fix-2026-09-04)
+    - [The re-mode leg, 2026-09-04](#the-re-mode-leg-2026-09-04)
+    - [The solve speedups, 2026-09-04](#the-solve-speedups-2026-09-04)
+    - [The exp_smoothing drop, 2026-09-04](#the-exp_smoothing-drop-2026-09-04)
+    - [The line-ending guard, 2026-09-04](#the-line-ending-guard-2026-09-04)
+    - [The nested-subparser split, 2026-09-04](#the-nested-subparser-split-2026-09-04)
+    - [The seconds-share fix, 2026-09-04](#the-seconds-share-fix-2026-09-04)
+    - [The rare-cell mine, 2026-09-04](#the-rare-cell-mine-2026-09-04)
+    - [The wrapup, 2026-09-04](#the-wrapup-2026-09-04)
+    - [The 57, closed](#the-57-closed)
+    - [The help grouping, 2026-09-04](#the-help-grouping-2026-09-04)
+    - [The manifest guard, 2026-09-04](#the-manifest-guard-2026-09-04)
+    - [The `cli` split, 2026-09-04](#the-cli-split-2026-09-04)
+    - [The census follow-ups, 2026-09-04](#the-census-follow-ups-2026-09-04)
+    - [The candidate-ledger split, 2026-09-04](#the-candidate-ledger-split-2026-09-04)
+    - [The `run_layout` extraction, 2026-09-04](#the-run_layout-extraction-2026-09-04)
+    - [The depth record's autolevel stamp, 2026-09-02](#the-depth-records-autolevel-stamp-2026-09-02)
+    - [The phoenix band sitting, 2026-09-02](#the-phoenix-band-sitting-2026-09-02)
+    - [MINE_diverse_0903](#mine_diverse_0903)
+    - [The texture-route tidy, 2026-09-03](#the-texture-route-tidy-2026-09-03)
+    - [The reframe defaults, 2026-09-03](#the-reframe-defaults-2026-09-03)
+    - [The spiral share cap, 2026-09-04](#the-spiral-share-cap-2026-09-04)
+    - [The `render_cv` delete, 2026-09-04](#the-render_cv-delete-2026-09-04)
+    - [The spiral probe, 2026-09-03](#the-spiral-probe-2026-09-03)
+    - [The spiral attribute store, 2026-09-03](#the-spiral-attribute-store-2026-09-03)
+    - [The `--draw-cells` build, 2026-09-03](#the---draw-cells-build-2026-09-03)
+    - [The weights-v6 flip, 2026-09-03](#the-weights-v6-flip-2026-09-03)
+    - [The `artifacts` sweep, 2026-09-02](#the-artifacts-sweep-2026-09-02)
+    - [The commit that cut the lane, 2026-08-31](#the-commit-that-cut-the-lane-2026-08-31)
+    - [The history that got it here](#the-history-that-got-it-here)
+    - [`renders deploy`, 2026-08-30](#renders-deploy-2026-08-30)
+    - [The 2026-08-30 doubling, recorded unsolved](#the-2026-08-30-doubling-recorded-unsolved)
+    - [The doubling came back on its own](#the-doubling-came-back-on-its-own)
+- [On a parallel runner](#on-a-parallel-runner)
+  - [The deciding fact was never the clock](#the-deciding-fact-was-never-the-clock)
+  - [What is left of the lane does not parallelise](#what-is-left-of-the-lane-does-not-parallelise)
+
 ## The two lanes
 
 `--slow` is the whole suite; the default run holds back the eighty-odd tests
@@ -27,9 +166,13 @@ in the fast lane however much of it there is, and a slow guard **moves lanes rat
 being deleted or weakened**. The marker, the flag and the line the fast lane
 prints all live in `conftest.py`; `CLAUDE.md` states the rule.
 
+### The line is the point of the arrangement
+
 The line is the part that matters. Every run that holds anything back says how
 much, because a lane that went quiet would be a set of guards nobody would
 notice had stopped running.
+
+### Measure the fast lane after marking, not before
 
 Marking is not free of surprises: several of these guards share a cached
 derivation — `absolute_paths_in_records`, `shipped_render_cache`, the engine
@@ -43,6 +186,8 @@ marking, not before.
 `CLAUDE.md` states the rule — run the lane on an idle machine, and after a leg
 rather than beside one. This is what was measured to get it.
 
+### Beside a leg the lane is killed on commit charge
+
 **Beside a leg the lane does not merely slow, it dies.** Run twice while a leg's
 three engines held the pool, it was killed at **77%** with no summary and no
 traceback both times. That is the commit charge rather than any guard: the leg's
@@ -50,12 +195,16 @@ parent holds ~3.3 GB and each of three workers ~0.9 GB, against a box whose comm
 limit `models/render/README.md` works through for the trainer under *The band, and
 the study that adopted it*.
 
+### The guard that turns red under load rather than slow
+
 **Short of dying it crawls, and one guard turns red rather than slow.** The same
 lane sharing this box with a leg reached 41% in the time it normally takes to
 finish, and under load
 `test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
 **fails** — it runs a refill loop against a wall clock. A red there on a busy box
 is worth re-running alone before it is worth reading.
+
+### A votes build can share the box and a solve cannot, and the parent is why
 
 **But it survived beside `curate votes build`, and the difference is the parent
 rather than the engines.** 2026-09-04, on Matt's say-so: **339.71 s over 3,589,
@@ -68,9 +217,13 @@ hundred rows, where a solve's release leg is still holding the pool it selected
 from. So the question to ask of a leg before sharing the box with it is what its
 **parent** holds, not how many workers it has.
 
+### A lane that survived beside a leg is still not a timing
+
 **It is still not a timing.** The same suite on the same install read **99.51 s**
 an hour later once that leg had finished — so beside a leg it survives and tells
 you nothing about the tests, which is why the rule stands unchanged.
+
+### Commit charge drifts upward on uptime alone
 
 **And the box's own commit charge drifts upward whether anything runs or not.**
 The kernel leaks about **4 GiB a day**, attributed to no process, and a reboot is
@@ -100,6 +253,8 @@ spent two commits arguing about it. `pytest -q` ends on a line of the shape
   imported, so its tests are absent rather than skipped — 8 modules gate that way
   on `torch`, 5 on `PIL`, both of them the `models` extra. The lane now prints a
   red line naming them and what is missing; before it did, they were silent.
+
+### A reading is comparable only against the same install
 
 **A reading is comparable only against another taken on `.[dev,models]` with a
 release engine built.** Anything else is a different suite wearing the same name.
@@ -144,6 +299,8 @@ file asks. They are fixtures rather than module caches so the sharing is opt-in:
 a test that redirects a store to `tmp_path` does not ask for them and cannot be
 handed a reading of the tracked corpus by accident. Nothing writes to them.
 
+### `shipped_label_pool` hands back fresh pictures on every call
+
 `shipped_label_pool` is the second one to reach for by reflex, and it is a factory
 rather than a value on purpose. `render_deploy.sides_for` assigns `picture.side`
 **in place**, so one shared list would carry whichever file ran last into
@@ -153,6 +310,8 @@ is exactly the independence a second `pool()` call used to buy. Its `assignment`
 is the real `render_folds.assignment` with the shared pool patched under it, for
 `shipped_render_cache`'s reason: a fixture that dealt the folds itself would be a
 second opinion about the deal.
+
+### `tracked_ledger` is the dear one and the one to reach for by reflex
 
 `tracked_ledger` is the dear one and the one to reach for by reflex. It carries
 `.rows`, `.scores`, `.pool`, `.costs` and `.refused` — one reading, about 40s and
@@ -171,6 +330,8 @@ whole redirect: the candidate ledger's two row files, the flatness and signature
 sidecars, the supply sidecar and every durable copy all address a root, so setting
 the two moves all of them at once. **Set them with
 `monkeypatch.setenv` and redirect nothing else you do not have to.**
+
+### Three times bitten by a per-accessor redirect
 
 A per-accessor redirect is complete only against the call graph on the day it was
 written, and this suite has now been bitten by that twice.
@@ -196,6 +357,8 @@ written, and this suite has now been bitten by that twice.
   for. Both fixtures set the two root variables now. **A store has two tiers and
   a fixture is not done when it has moved one of them.**
 
+### Two accessors still have to be patched, and both are the tracked half
+
 **Two accessors still have to be patched, and both are the tracked half.**
 `candidate_ledger.store.manifest_dir()` resolves off `repo_root()`, not off a
 tier, and there is no root to set because `repo_root` is imported *by value* into
@@ -208,11 +371,15 @@ to `prune` and not to whichever tests happen to call it today; the two guards th
 mean to read the tracked log take the session-scoped `tracked_ratchet_log` fixture
 and pass the path in, which is one binding rather than an un-patch.
 
+### The backstop hashes every tracked manifest twice a session
+
 Under both sits the same backstop: `conftest` hashes every git-tracked
 `*manifest.json` — discovered, so a durable added tomorrow is covered — plus the
 names in `HELD_STILL`, at session start, re-hashes at session finish, and fails the
 run naming any that moved (`pytest_sessionfinish`). 20 files, 104 KB; the cost does
 not show up against a three-minute lane.
+
+### The same question asked of the regenerable tier
 
 **It asks the same question on the regenerable tier since 2026-09-07, through the
 same hook.** `LIVE_LEG_DIRS` lists the immediate children of
@@ -228,6 +395,8 @@ same class of fault through a second writer is what goes quiet when somebody mov
 one of them. `tests/test_lanes.py` guards the detector, including that it stays a
 `scandir`.
 
+### The sidecar patch undoes an autouse the roots cannot reach
+
 `signatures.sidecar_path` is patched in
 those fixtures for an unrelated reason: to undo the autouse
 `no_signature_sidecar`, which the roots cannot reach because the function has
@@ -242,6 +411,8 @@ between them. So the question to ask of a slow lane that has grown is never
 "what got slower"; it is **which store grew**, or **which derivation is being
 paid twice**, and never a broad hunt.
 
+### The 563.5s lane that became 345.8s, with no guard deleted
+
 That 563.5s is now **345.8s**, over the same 3,152 tests on the same machine the
 same day, and no guard was deleted or moved lanes to get there. Four things came
 out of the durations list, in the order they were worth:
@@ -252,6 +423,8 @@ out of the durations list, in the order they were worth:
 | 29.5s | — | its fallback leg, the same |
 | 52.4s | 6.3s | eight derivations of `render_folds.pool` collapsed to one — `conftest.shipped_label_pool` |
 | ~10.5s a call | 9ms | `served_locations.build` asking `current_pass` once instead of once a row |
+
+### The list to read before touching this again
 
 And what is left, which is the list to read before touching this again:
 
@@ -274,6 +447,8 @@ sixty were **49.7 s of 119.92 s** and the other 3,505 tests were **70.2 s betwee
 them** — a broad tax, which is exactly what the paragraph above says never
 happens here. Most of it was one line.
 
+#### Numbering a temporary directory is quadratic in the tests
+
 `tmp_path_factory.mktemp` is `numbered=True`, and pytest numbers a new directory
 by iterating the whole basetemp for the highest suffix already there.
 `conftest.no_signature_sidecar` is autouse, so it called that once per test:
@@ -292,6 +467,8 @@ run:
 The scaling is what proves it is the listing rather than the directory: 2,000
 trivial tests cost 5.4 s of it and 4,000 cost 19.7 s — twice the tests, 3.6x the
 price. On the real lane it was **12.86 s of 119.92 s**.
+
+#### It could not have been found from this log
 
 **It could not have been found from this log.** A store that grows steps the
 digit on the day it grows; this grew three milliseconds at a time, with the
@@ -344,12 +521,16 @@ test. One `candidate_ledger.read()` of that file was 21.9s, `read_scores()` 4.2s
 `present_pictures()` 13.0s and laying the pool out over them 13.4s, so a cold
 `headroom.population()` was about 46 seconds.
 
+#### The wide store is gone and reading is no longer what this lane pays for
+
 **Those figures are the wide store's, and it was deleted on 2026-08-29.** What
 stands in its place is 122,516 rows and 150.8 MiB — the top three per (location,
 mode) under five protections, each row cut to what the readers consume.
 Re-measured on this machine: `read()` **3.9s**, `read_scores()` **0.8s**,
 `solve.pool()` end to end **7.1s** against **29.3s** over the wide file. Reading
 is no longer what this lane pays for.
+
+#### The store has a ceiling now, so the digit should stop moving on its own
 
 **And it now has a ceiling, which is new.** `candidate_ledger.prune` runs inside
 `candidate_ledger.merge`, so rows per (location, mode) are bounded by
@@ -358,6 +539,8 @@ function of the attempts made. A leg that opens new locations still grows the
 file; a leg that deepens old ones no longer does. The two rules below stand as
 written — a bound is not a licence to read the store in a fast test — but the
 digit is no longer expected to move on its own.
+
+#### The ledger is read once a session, and a sweep takes a budget
 
 Two rules follow, and they are why this lane is 7 minutes instead of 18:
 
@@ -375,6 +558,8 @@ Two rules follow, and they are why this lane is 7 minutes instead of 18:
   actually filled. This is the one place the
   suite trades coverage for time, and it is written down at each site rather than
   implied.
+
+#### Four things that used to dominate and no longer do
 
 Four things that used to dominate and no longer do, in case they come back:
 
@@ -402,6 +587,42 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### codebase_review_ckpt122
+
+**Twenty-five fast tests for two new guards, and the slow lane's advertised figure
+was 45% wrong.** `codebase_review_ckpt122`, 2026-09-12, box idle after a nine-agent
+documentation split. **Fast: 4,380 selected, 136 deselected — 4,516 collected — in
+156.23 s. Slow: 4,516 of 4,516 in 602.08 s (10:02), zero skips, zero failures.** The
+two lanes agree on 4,516.
+
+**The +25 is one prompt's and all of it is arithmetic.** `test_help_tiers.py` (13)
+holds every `help=` string to summarising to a real sentence that fits a screen, and
+`test_page_vocabulary.py` (12) holds the instrument pages to one colour vocabulary.
+Measured alone they cost **0.91 s and 1.41 s**. Neither renders, trains or sweeps a
+store; the most either does is build the parser three times at 35 ms and `rglob` the
+package's 400 source files.
+
+⚠ **The rest of the movement is the box, and the shape of it is the argument.** Fast
++5.3 s over `dedupe_and_resume_index_ckpt121`'s 150.93 s and slow +33.2 s over its
+568.91 s — +3.5% and +5.8%, against 2.3 s of new tests that are in *both* lanes. A
+per-file regression shows up in one lane as one file; a rise that **scales with lane
+length** in both is the machine. This box had just finished nine subagents and a
+2,277-line documentation move, so the page cache was not the one the reading below
+was taken against. Worth re-taking on a genuinely quiet box before anybody treats
+602 s as the new floor — *[A lane that moves right after code landed is the code
+until measured otherwise](#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise)*
+is the rule, and this entry is its exception being argued rather than assumed.
+
+⚠ **The header of this file said `~6m30s` for the slow lane and had for a long
+time.** The actual reading below it was 568.91 s — **9:28** — so the advertised
+figure was 45% low and nothing caught it, because a prose figure in a header is not
+a census constant and no guard reads it. Corrected to the measured pair. The lesson
+is the one this section already carries, arriving from the other direction: *the two
+lanes agree on the collected count* catches a stale **count**, and nothing at all
+was watching the stale **clock**.
+
+#### dedupe_and_resume_index_ckpt121
+
 **Seven fast tests, and twelve the log had lost.** `dedupe_and_resume_index_ckpt121`,
 2026-09-12, idle box. **Fast: 4,355 selected, 136 deselected — 4,491 collected — in
 150.93 s. Slow: 4,491 of 4,491 in 568.91 s (9:28), zero skips, zero failures.** The
@@ -422,6 +643,8 @@ against 553.62 s — +4.0 s and +15 s over nineteen more tests, which is the box
 lane's 2% spread. All nineteen are fast; none renders, trains or sweeps a store. This
 prompt's seven read two small JSON records and a synthetic `decisions.jsonl` out of
 `tmp_path` with the tier roots redirected, so they cost arithmetic.
+
+#### repeat_ab_count_themed_ckpt121
 
 **A store declared rather than built, and nineteen fast tests for it.**
 `repeat_ab_count_themed_ckpt121`, 2026-09-11, idle box after a 620 s sheet build.
@@ -449,6 +672,9 @@ is worth knowing before the next lane is read: a sheet's pictures land in
 no `test_render_*` file goes short. Zero skips on the first slow lane after a
 620 s render leg. What shortens the cache is an **ingest** — see the entry about
 `repeat_axis_ingest_ckpt121`'s 19 — and this prompt collected no labels.
+
+#### repeat_axis_ingest_ckpt121
+
 **An ingest with no test in it, and the 19 skips it owed.** `repeat_axis_ingest_ckpt121`,
 2026-09-11, idle box. **Fast: 4,317 selected, 136 deselected — 4,453 collected — in
 149.15 s. Slow: 4,453 of 4,453 in 527.61 s (8:47), zero skips, zero failures.** Both
@@ -467,6 +693,8 @@ in 68.1 s** for the smooth head and **174 in 916.2 s** for the strange — 1.00 
 **5.27 s** a crop, which is the partition's depth and not the count. Budget an ingest's
 follow-on build by which store the rows landed in.
 
+#### score_and_resume_ckpt120
+
 **Three defaults made to say themselves out loud.** `score_and_resume_ckpt120`,
 2026-09-11, idle box after a 416 s render smoke. **Fast: 4,317 selected, 136
 deselected — 4,453 collected — in 148.91 s. Slow: 4,453 of 4,453 in 542.82 s
@@ -482,6 +710,8 @@ smoke's three workers had only just come off the machine.
 doing its job rather than a fault: three flags were added to parsers and the table
 that pins *which flags each verb's handler actually reads* had not been told. It is
 the only thing in the tree that catches a flag wired to a parser and never read.
+
+#### repeat_label_batch_ckpt120
 
 **A leg, a sheet ordering and a fixture that made the file it was added for three
 times faster.** `repeat_label_batch_ckpt120`, 2026-09-11, idle box after a 145 s
@@ -512,6 +742,8 @@ the docstring's running sentence — which is the opposite of the forbidden edit
 the difference is that this number is a claim about *what the CLI is*, not a floor
 asserting a store only grows.
 
+#### rotation_pass_ckpt120
+
 **Thirty-seven tests for one new leg and every one of them is in the fast lane.**
 `rotation_pass_ckpt120`, 2026-09-11, idle box after a 4h03m render leg. **Fast:
 4,272 selected, 136 deselected — 4,408 collected — in 142.40 s. Slow: 4,408 of
@@ -529,6 +761,8 @@ The one thing that did *not* need a new guard is the renderer: this leg makes it
 pictures through `mine.make`, so `test_renderer_agreement.py` covers it without a
 registry entry — the sweep there is for modules that call `colorize.render`
 directly, and a leg that goes through the maker is not one.
+
+#### palette_variant_mine_ckpt120
 
 **A new renderer route costs nine seconds and it is the slow lane's, not the fast
 one's.** `palette_variant_mine_ckpt120`, 2026-09-11, idle box after an 5h20m render
@@ -551,6 +785,8 @@ and went 8.0 s to 16.6 s without adding a test.
 earlier, 2.4x the idle figure. That is this file's *A lane sharing the box with a
 render leg* again and it was run for pass/fail rather than for a number; it is here
 so nobody reads it as a regression.
+
+#### palette_variant_smoke_ckpt120, part 2
 
 **All three closed, and the lane is whole for the first time since the colour floor.**
 `palette_variant_smoke_ckpt120` part 2, 2026-09-10. **Fast: 4,228 selected, 133
@@ -591,6 +827,8 @@ what had already been written down, and the one that looked most like corrupt da
 a hundred rows naming no candidate — was the guard counting a deliberate second
 provenance as a hole.
 
+#### palette_variant_smoke_ckpt120
+
 **The first slow lane since the colour floor, and it is RED in three places that are
 nobody's fast lane.** `palette_variant_smoke_ckpt120`, 2026-09-10. **Fast: 4,223
 selected, 132 deselected — 4,355 collected — in 145.67 s, green. Slow: 4,352 of
@@ -623,6 +861,8 @@ any red in it is a lane to read**, and a red that only the slow lane can see is 
 that survives every fast lane taken in the meantime. Nine fast-lane readings sit
 between the colour floor and this one.
 
+#### adopt_deterministic_20260910
+
 **A new count, and fourteen tests that cost the lane a second.**
 `adopt_deterministic_20260910`, 2026-09-10. **4,207 selected, 132 deselected —
 4,339 collected — in 137.90 s**, green, nothing running beside it. The **+14 over
@@ -634,6 +874,8 @@ written an n=1000 record — so re-hashing 4.5 MB of tracked corpus every fast l
 is not a cost worth arranging around. ⚠ The count moved because tests were
 **added**, which is the one reason a moved count needs no investigation; the
 entries below are what a moved count with no test added has to answer to.
+
+#### deterministic_refit_20260910
 
 **The fastest of the 4,325 readings, on a box that had just done more work than any
 of the others.** `deterministic_refit_20260910`, 2026-09-10. **4,193 selected, 132
@@ -647,6 +889,8 @@ ends of that. What the log actually shows is that a lane sharing the box with a
 leg is killed or distorted, and a lane taken **after** one is a lane on an idle box
 however hard that box was working a minute earlier.
 
+#### adopt_and_record_20260910
+
 **Three fits, a 42,300-picture scoring pass and two pool holds before it, and the
 clock did not notice.** `adopt_and_record_20260910`, 2026-09-10. **4,193 selected,
 132 deselected — 4,325 collected — in 140.62 s**, green, nothing running beside it.
@@ -659,6 +903,8 @@ which is the same *box settling* band those two describe and not a fourth story.
 deliberately left alone for the reason the entries below give: **no slow lane has
 run since the colour floor**, and this change adds no test of either kind.
 
+#### cell_deltas_20260910
+
 **The slowest of the 4,325 readings, and eleven n=1000 solves are what was before it.**
 `cell_deltas_20260910`, 2026-09-10. **4,193 selected, 132 deselected — 4,325 collected —
 in 145.84 s**, green, nothing running beside it and no pool held. The tree changed by two
@@ -668,6 +914,8 @@ a 308,885-row candidate pool eleven times looks like — the lane's own stores a
 with a page cache full of somebody else's pool. That is the shape *measure on an idle
 machine* is about: the leg had finished, and the box had not. ⚠ `CLAUDE.md` still reads
 4,301 / 4,169, now four trees behind.
+
+#### best_head_20260910
 
 **A docs-only commit, and the clock landed on the busy-box reading rather than the
 idle one.** `best_head_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
@@ -679,6 +927,8 @@ the four readings below's exactly and the 1.4–2.7 s over them is the box settl
 solves all landed under `scratch/`, which is why a leg that ran for two hours moves
 this lane by two seconds.
 
+#### aug_sweep_sheets_ingest_20260910
+
 **A second 400-row ingest, and the count still did not move.**
 `aug_sweep_sheets_ingest_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
 4,325 collected — in 139.29 s**, green, idle box, no render leg and no pool held. The
@@ -689,6 +939,8 @@ answer to *which store grew* stated once for all of them: no guard parametrizes 
 that store's rows. The clock is 1.3 s under the reading below and inside the band the
 idle readings sit in, against a store 16% larger than that reading saw. ⚠ `CLAUDE.md`
 still reads 4,301 / 4,169, one tree behind, for the reason the entries below give.
+
+#### augmentation_sweep_20260910
 
 **The fastest reading this tree has given, and it was taken on the least idle box.**
 `augmentation_sweep_20260910`, 2026-09-10. **4,193 selected, 132 deselected —
@@ -704,6 +956,8 @@ with, it was not the thing anybody suspected. ⚠ `CLAUDE.md`'s current figure i
 tree behind — it still says 4,301 / 4,169, which was true until
 `gallery_top_20260910` landed.
 
+#### seats_ingest_20260910
+
 **A store grew by 27% and the count did not move at all.** `seats_ingest_20260910`,
 2026-09-10. **4,193 selected, 132 deselected — 4,325 collected — in 158.28 s**,
 green, no render leg and no pool held, on the commit that landed
@@ -715,6 +969,8 @@ and the answer to *which store grew* is on the record rather than guessed at —
 `gallery_grade` went 2,000 → 2,545 rows, so every guard that sweeps it reads a
 quarter more. That is the expected direction and the size is not worth a profile;
 what would be worth one is the same clock with the store unchanged.
+
+#### votes_kit_randomize_20260909
 
 **+15 fast, and the box was worth 20 s while the change was worth 2.8.**
 `votes_kit_randomize_20260909`, 2026-09-09. **4,193 selected, 132 deselected —
@@ -751,6 +1007,8 @@ a slow one, no slow lane has run since the colour floor on Matt's instruction,
 and this change adds no slow test — all fifteen are arithmetic and JPEG encodes
 in `tmp_path`. Whoever takes the next paired reading moves both halves at once.
 
+#### tentative_solve_20260909
+
 **Three labelling servers on the box cost the lane 0.7 s.** `tentative_solve_20260909`,
 2026-09-09. **4,178 selected, 132 deselected — 4,310 collected — in 131.52 s**, green,
 with three `label serve` processes up on ports 8020–8022 and no render leg. The count is
@@ -760,6 +1018,8 @@ which is worth saying because a new stamp in `artifacts/curation/tentative/` mov
 inside the half-second band the last four readings sit in, so a **labelling server is not
 a render leg**: the rule is *measure on an idle machine*, and an idle server is idle. The
 one that kills a lane holds the pool or drives the engine.
+
+#### pre_closeout_20260909
 
 **A docs-only pass, and it caught up a log that was two commits behind.**
 `pre_closeout_20260909`, 2026-09-09. **4,178 selected, 132 deselected — 4,310
@@ -780,6 +1040,8 @@ with a slow one, **no slow lane has run since the colour floor** on Matt's
 instruction, and moving half of a paired figure breaks the claim it exists to
 make. Whoever takes the next paired reading moves both halves at once.
 
+#### p_fine_ingest_20260909
+
 **750 rows landed and the lane did not notice.** `p_fine_ingest_20260909`,
 2026-09-09. **4,169 selected, 132 deselected — 4,301 collected — in 129.30 s**,
 green, on an idle box with no server and no render leg. Nothing was added: the
@@ -789,6 +1051,8 @@ part — the gallery-grade store went from 1,000 rows to **1,750** and no guard 
 sweeps it got measurably dearer, which is the *which store grew* question answered
 in the cheap direction. A data commit takes the fast lane and not `--slow`, and
 this is why.
+
+#### p_fine_sitting_20260909
 
 **+6 fast, and the clock did not move.** `p_fine_sitting_20260909`, 2026-09-09.
 The fast lane read **4,169 selected, 132 deselected — 4,301 collected — in
@@ -807,6 +1071,8 @@ was a busy box and nothing else, as it said it was — and this one was taken wi
 a **labeling server** on the box and no render leg, which costs nothing measurable.
 **No slow lane has been run since the colour floor still stands**: this prompt took
 none either, on the same instruction.
+
+#### k3_floor_20260909
 
 **+18 fast, and NO slow reading — the clock here is not comparable.**
 `k3_floor_20260909`, 2026-09-09. The fast lane read **4,163 selected, 132
@@ -836,6 +1102,8 @@ them asserts. They read `ONE_SEAT = 48 // (ceiling.K + 1)` now, and
 `test_rules.py` and `test_view.py` took the same edit. That is the shape to copy:
 a guard about *the size where a rule binds* states the rule, not the size.
 
+#### k_sweep_20260909
+
 **+6, and the two lanes agree again.** `k_sweep_20260909`, 2026-09-09, idle box,
 taken after the six-arm colour-ceiling sweep rather than beside it. The **slow**
 lane read **4,277 of 4,277 green in 459.94 s (7:39)**, zero skips, and the **fast**
@@ -858,6 +1126,8 @@ where the guard said 88. That constant is *meant* to move when a verb lands and
 its docstring is the log of every time it has — unlike a census pinned at a store
 size, moving it is the edit the guard exists to force.
 
+#### forced_seating_20260909
+
 **+12, and the two lanes agree again.** `forced_seating_20260909`, 2026-09-09,
 idle box, taken after the forced solve leg rather than beside it. The **slow**
 lane read **4,271 of 4,271 green in 450.28 s (7:30)**, zero skips, and the
@@ -875,6 +1145,8 @@ key that is not lifted, and the offer-not-a-seat guard — and one in
 All twelve are arithmetic over synthetic candidates and none earns the mark. The
 clock did not move: **126.42 s against 122.63 s and 124.03 s**, inside this box's
 spread on an invariant lane, and **450.28 s against 448.94 s** on the slow one.
+
+#### PRECLOSEOUT_ckpt117_strongest_locations_fate_split_and_docs_0909
 
 **+7, and the wrong interpreter caught on the way in.**
 `PRECLOSEOUT_ckpt117_strongest_locations_fate_split_and_docs_0909`, 2026-09-09,
@@ -897,6 +1169,8 @@ comparable to anything and is written down only because it is what
 `conftest`'s new interpreter guard now refuses at the door; see *The lane now
 refuses the wrong interpreter at the door*, above.
 
+#### POOL_ckpt117_fold_merges_instead_of_deletes_0909
+
 **+17, and the slow lane deliberately not taken.**
 `POOL_ckpt117_fold_merges_instead_of_deletes_0909`, 2026-09-09, idle box, taken
 after both solve legs. The tree held **124.03 s over the 4,120 it holds, 132
@@ -913,6 +1187,8 @@ mark.
 **not** agree on the collected count for this entry and the slow figure below is the
 one from the entry under it. That is a reading this repository is missing rather
 than one it took: the next slow lane closes it.
+
+#### PRESELECT_ckpt117_fold_on_the_seating_key_0909
 
 **+6, and a store the lane started reading once a test.**
 `PRESELECT_ckpt117_fold_on_the_seating_key_0909`, 2026-09-09, idle box, taken after
@@ -933,6 +1209,8 @@ reading of the real store and hands it back, which is `tracked_ledger`'s
 arrangement at a smaller scale, and it took the lane back under where it started.
 **A call naming a `path` is left alone** — a test writing its own column is asking
 about that file.
+
+#### SOLVE_ckpt117_resolve_and_fate_0908
 
 **+10, and one of them exists because the other four nearly cost the lane ten
 seconds.** `SOLVE_ckpt117_resolve_and_fate_0908`, 2026-09-09, idle box, taken after
@@ -958,6 +1236,8 @@ which is *[A derivation paid twice is the thing to look for](#a-derivation-paid-
 answered at the derivation instead of at the reader.
 `test_the_census_never_reads_the_pool_scores_store_itself` is the guard, and it
 monkeypatches the reader to raise.
+
+#### PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908
 
 **+18, and the slow lane has a count but no clock — deliberately.**
 `PRECLOSEOUT_ckpt116_renderer_holes_and_repair_0908`, 2026-09-08. Fast:
@@ -989,12 +1269,16 @@ selector, five over `colorize.is_candidate_path`. `test_nested_verbs.py`'s decla
 surface caught both new `candidate-ledger` verbs before either lane did, which is
 the cheaper guard doing its job first.
 
+#### SHOW_ckpt116_label4_fate_v2_0908
+
 **+12 more, for the pairing and the split.** `SHOW_ckpt116_label4_fate_v2_0908`,
 2026-09-08, idle box. **129.82 s over 4,060, 129 deselected** — **4,189**. The twelve
 are `label-fate`'s second pass: the rule-by-rule pairing, the page split, and the
 guard that pins which of two definitions of *the row that beat it* the page uses.
 Clock 127.81 -> 129.82 s for 12 more arithmetic tests, which is the same page-cache
 spread the entries below argue about.
+
+#### SHOW_ckpt116_label4_fate_0908
 
 **+32, and the clock did not move at all.** `SHOW_ckpt116_label4_fate_0908`,
 2026-09-08, idle box, `.[dev,models]` with a release engine. **127.81 s over 4,048,
@@ -1011,6 +1295,8 @@ green again in 1.96 s re-run alone. That is the documented load failure behaving
 exactly as documented, on a box whose three engines were busy, and it is the second
 time it has been the thing that goes red first.
 
+#### FIX_ckpt116_mine_mode_params_0908
+
 **+1, and it is the deselected count that moves.**
 `FIX_ckpt116_mine_mode_params_0908`, 2026-09-08, idle box, `.[dev,models]` with a
 release engine. **126.04 s over 4,016, 129 deselected** fast — **4,145** against the
@@ -1026,6 +1312,8 @@ working: a guard that drives the engine earns the mark whatever it is guarding.
 
 The clock came back to 126.04 s from the 127.93 s below it with nothing removed,
 which is the page-cache reading that entry warned about being right.
+
+#### MERGE_ckpt116_label_rows_and_resolve_0908
 
 **+8, fast lane only, and four seconds nobody should read as a regression.**
 `MERGE_ckpt116_label_rows_and_resolve_0908`, 2026-09-08, idle box, `.[dev,models]`
@@ -1050,6 +1338,8 @@ sidecar and a 42 MB flatness sidecar, and after a pass that decoded 41,407 JPEGs
 taken in the wake of half a gigabyte of writes is reading the disk, not the tree.
 Worth a re-run before anybody prices a guard off it.
 
+#### FIX_ckpt116_autolevel_replay_0908
+
 **+45, both lanes, and the two counts agree.**
 `FIX_ckpt116_autolevel_replay_0908`, 2026-09-08, idle box, `.[dev,models]` with a
 release engine, both taken **after** the backfill and comparison legs rather than
@@ -1073,6 +1363,8 @@ tests** is the one worth a sentence: it is not a saving anything here bought, it
 is the render cache being warm where the earlier reading had paid for
 `renders plan`/`renders build` inside its own window. Zero skips on both, which
 is the normal reading now.
+
+#### MIGRATE_ckpt116_label_recipes_0908
 
 **+28 that reconciles exactly, fast lane only, and the surface table caught the
 group.** `MIGRATE_ckpt116_label_recipes_0908`, 2026-09-08, idle box,
@@ -1104,6 +1396,8 @@ decision somebody writes down. It went to 18 groups and 77 verbs, and the count
 assertion moved 71 → 77 with it. Matt skipped the slow lane, so **4,091 is a
 derivation and not a reading**, on the same terms as the entry below.
 
+#### FIX_ckpt115_feasibility_group_cap_0908
+
 **+14 that reconciles exactly, fast lane only, and the slow lane deliberately not
 run.** `FIX_ckpt115_feasibility_group_cap_0908`, 2026-09-08, idle box,
 `.[dev,models]` with a release engine. **121.32 s over 3,935, 128 deselected**
@@ -1116,6 +1410,8 @@ cost. Matt skipped the slow lane mid-prompt, so **4,063 is a derivation and not 
 reading** — it is the fast lane's own collected total, which is what the slow
 lane counts when nothing skips.
 
+#### FIX_ckpt114_recorded_p_fine_bar_0907
+
 **+6 that reconciles exactly, fast lane only, and one flag table caught it.**
 `FIX_ckpt114_recorded_p_fine_bar_0907`, 2026-09-07, idle box, `.[dev,models]` with
 a release engine. **122.86 s over 3,925, 124 deselected** fast — 4,049 against the
@@ -1127,6 +1423,8 @@ instruction, so 4,043 is still the last slow reading and the next one should rea
 took was `test_nested_verbs.py`'s `SURFACE` table, which pins each verb's flag
 list in printed order — it is the guard doing its job on a new flag and the fix
 was the two table entries, not the parser.
+
+#### FIX_ckpt114_wallpapers_leftovers_0907
 
 **+7 that reconciles exactly, and both lanes moved less than the spread.**
 `FIX_ckpt114_wallpapers_leftovers_0907`, 2026-09-07, idle box, `.[dev,models]`
@@ -1144,6 +1442,8 @@ read 6:43 to 7:38 across idle boxes with fewer tests in it than this — and the
 diff's own engine work happened **before** the lane rather than beside it
 (`curate re-render` of 38 pictures, 23.3 s, finished and confirmed idle), so this
 is the box's spread and not a leg sharing it.
+
+#### FIX_ckpt114_named_picture_ratchet_0907
 
 **+23 that reconciles exactly, and the long-standing red is closed rather than
 retaken.** `FIX_ckpt114_named_picture_ratchet_0907`, 2026-09-07, idle box,
@@ -1170,6 +1470,8 @@ an explicit reconciliation with the mark left at 13,526. It reconciles at exactl
 zero headroom, which is what an honest close looks like: no slack invented to make
 it comfortable. The full entry is on the red below.
 
+#### FIX_ckpt113_cascade_records_and_pool_reads_0907
+
 **+4 in one prompt, and the clock did not move.**
 `FIX_ckpt113_cascade_records_and_pool_reads_0907`, 2026-09-07, idle box,
 `.[dev,models]` with a release engine. **120.37 s over 3,886, 124 deselected**
@@ -1184,6 +1486,8 @@ known red still fails, at **13,504** against its floor of 13,526, having moved
 DOWN 6 from 13,510 under last night's merges. **The next slow lane should read
 4,010** and that red should still be the only one.
 
+#### MINE_ckpt113_band_weighted_with_displacement_0907
+
 **+1, and the first reading of this file taken right after a four-hour render
 leg rather than before one.**
 `MINE_ckpt113_band_weighted_with_displacement_0907`, 2026-09-07, box idle again
@@ -1195,6 +1499,8 @@ half a second over a lane that ran 130.15 once on a disturbed disk. Slow lane no
 run — the tracked diff is two documents, one module and its test, and Matt's
 standing rule is the fast lane for a diff of that shape. **The next slow lane
 should read 4,006** and the one red below should still be the only red.
+
+#### ADOPT_ckpt113_cascade_and_cleanups_0907
 
 **+2 that reconciles exactly, and a first reading taken 8 s dear right after a
 sweep.** `ADOPT_ckpt113_cascade_and_cleanups_0907`, 2026-09-07, idle box,
@@ -1216,6 +1522,8 @@ reading was `curate candidate-ledger orphans --apply` deleting **1,032 pictures
 and 555 colormap directories**; *suspect the disk after anything that moves
 hundreds of thousands of paths* covers it at a smaller scale. Attributed to the
 sweep by elimination and not by measurement.
+
+#### The census floor that went red, and the ratchet that closed it
 
 **One slow guard is RED and it predates this prompt.**
 `test_leveled_identity.py::test_no_two_ledger_rows_name_one_picture` asserts
@@ -1246,6 +1554,8 @@ ckpt 113–114 era; the mark stayed at 13,526 rather than being re-based to 13,5
 so the store now reconciles at exactly zero headroom on that counter (13,504 + 22)
 and the history of the loss is a committed line rather than a changed constant.
 
+#### FIX_ckpt113_legs_k_rot_and_retirements_0906
+
 **-17 that reconciles exactly, and the 8 s of the entry below came back.**
 `FIX_ckpt113_legs_k_rot_and_retirements_0906`, 2026-09-07, idle box,
 `.[dev,models]` with a release engine. **118.80 s over 3,879, 124 deselected**
@@ -1267,6 +1577,8 @@ unchanged. **The 8.45 s the entry below could not attribute is gone**, on a lane
 17 tests smaller — which is not enough to call it, and the honest reading is still
 that both figures sit inside this lane's idle spread.
 
+#### REFIT_ckpt113_fine_tier_head_and_seat_sheet_0906
+
 **+20 that reconciles exactly, and a fast lane that moved 8 s with no slow test
 added.** `REFIT_ckpt113_fine_tier_head_and_seat_sheet_0906`, 2026-09-07, idle box,
 `.[dev,models]` with a release engine. **126.99 s over 3,896, 124 deselected**
@@ -1287,6 +1599,8 @@ reading taken on a box that has been busy rather than one that is busy — worth
 re-taking before anything is concluded from it, and worth not concluding anything
 from meanwhile.
 
+#### TRAIN_ckpt113_fine_tier_head_0906
+
 **+28 that reconciles exactly, and the first slow lane in five prompts.**
 `TRAIN_ckpt113_fine_tier_head_0906`, 2026-09-06, idle box, `.[dev,models]` with a
 release engine. **118.54 s over 3,876, 124 deselected** fast — 4,000 against the
@@ -1301,6 +1615,8 @@ price of one engine-bound test. And the **slow lane did not move**: 6:43 over
 3,958 then, 7:12 over 4,000 now, with 42 more tests and none of them slow. The
 29 s is not attributed and is inside the noise this lane has shown between idle
 readings; nothing here added a render, a training loop or a store sweep.
+
+#### PROTECT_ckpt112_gallery_grade_keys_0906
 
 **+6 that reconciles exactly, and one of the two new fast guards is worth its
 second.** `PROTECT_ckpt112_gallery_grade_keys_0906`, 2026-09-06, idle box,
@@ -1318,6 +1634,8 @@ the whole of the +1.23 s and it is the shape *A cost paid once per test scales
 with the suite* warns about — three tests is fine, and a fourth wanting the same
 reader should take it from a fixture rather than call it again.
 
+#### FOLLOWUP_ckpt112_identity_pin_rehome_dedup_0906
+
 **+13 that reconciles exactly, on a box serving three label pages.**
 `FOLLOWUP_ckpt112_identity_pin_rehome_dedup_0906`, 2026-09-06, `.[dev,models]`
 with a release engine, three `label serve` processes up on 8020-8022 while it ran.
@@ -1328,6 +1646,8 @@ slow) plus three in `test_rank_key.py`. The new file's fast half is 1.36 s of th
 candidate — this is a reading taken beside something, which is why it says so.
 No slow lane; the one slow guard added was run alone, **32.47 s over 10** with the
 fast nine beside it.
+
+#### REMOVE_ckpt112_stratum_score_0906
 
 **A -11 that reconciles exactly, and the first reading here with no slow lane
 beside it.** `REMOVE_ckpt112_stratum_score_0906`, 2026-09-06, idle box,
@@ -1353,6 +1673,8 @@ sits inside it. Nothing in this prompt could plausibly cost time: the removal
 takes a store read *out* of `features_for`, which no longer opens
 `expressed.json` at all.
 
+#### BUILD_ckpt112_gallery_grade_sheets_0906
+
 **A +35 that is entirely one new store's, and the slow lane got *faster*.**
 `BUILD_ckpt112_gallery_grade_sheets_0906`, 2026-09-06, idle box (both lanes run
 after the render legs, never beside them), `.[dev,models]` with a release engine.
@@ -1367,6 +1689,8 @@ lane moving the *right* way for once and is worth writing down as noise rather
 than as a win: nothing in this prompt made anything faster, and `carriers.jsonl`
 losing 191 KB is not a store any slow guard sweeps. Nine seconds on a seven-minute
 lane is inside the spread this log already shows.
+
+#### BUILD_ckpt112_retention_freeslots_and_TODOs_0906
 
 **Two readings a prompt apart, and the second is the first plus this prompt's own
 tests.** `BUILD_ckpt112_retention_freeslots_and_TODOs_0906`, 2026-09-06, idle box,
@@ -1387,6 +1711,8 @@ other direction. `RETAIN_PER_PAIR` moved 3 → 5 in the same commit and no lane
 guard reads the value, only the constant. Compare the next lane against 3,923 and
 zero skips.
 
+#### GUARD_score_regime_0906
+
 **Zero skips, and that is the store condition confirmed rather than argued.**
 `--slow -rs` at `GUARD_score_regime_0906`, 2026-09-06, read **6:45 over 3,917, 0
 skipped** on an idle box, on the same `.[dev,models]` install with a release
@@ -1406,6 +1732,8 @@ other twenty landed in the three commits that went in beside it — 19 of them t
 two new files `test_top_slice_probe.py` and `test_activations.py`, collected
 directly. Compare the next lane against 3,917 and zero skips.
 
+#### SHOW_n1000_gallery_0906
+
 **The 19 slow-lane skips are named, and they are one cause.** `--slow -rs` at
 `SHOW_n1000_gallery_0906`, 2026-09-06, read **6:05 over 3,896, 19 skipped** — the
 3,894 below plus this prompt's two — on an idle box, and every one of the 19 is
@@ -1417,6 +1745,8 @@ against what the guards want, over `test_render_deploy.py` (5), `test_render_dos
 before this one said the skips were unexplained; they are a **store** condition,
 so a clone with a full cache sees 19 fewer skips and no count change. 6:05 against
 5:52 is the two added tests and noise, not a regression.
+
+#### SWEEP_color_mass_and_MINE_thin_themes_0906
 
 It read **112.44 s over 3,778, 116 deselected** fast and **5:52 over 3,894, 19
 skipped** slow at `SWEEP_color_mass_and_MINE_thin_themes_0906`, 2026-09-06, on the
@@ -1442,6 +1772,8 @@ fixed here: the finish time is three hours from `now`, which fits the reservatio
 at every hour. Nothing in that test was ever about seven o'clock. **A red in that
 one file is worth checking the wall clock before it is worth checking the tree.**
 
+#### PRE_CLOSEOUT_wallpapers_0906
+
 It read **114.16 s over 3,763, 116 deselected** fast and **6:03 over 3,879, 19
 skipped** slow at `PRE_CLOSEOUT_wallpapers_0906`, 2026-09-06, on the same
 `.[dev,models]` install with a release engine. **Six tests were written** — the
@@ -1465,6 +1797,8 @@ minutes, then the remaining 95% in one. A lane whose progress is that lumpy is a
 lane whose total is a poor summary, and the reason the total is quoted anyway is
 that it is what the gate reads.
 
+#### INGEST_new_maps_labels_0905
+
 It read **111.54 s over 3,757, 116 deselected** fast at
 `INGEST_new_maps_labels_0905`, 2026-09-05, on a box idle but for the two-store
 ingest that had just finished — no render leg, no probe, the sitting's four modes
@@ -1476,6 +1810,8 @@ to the three questions, and it is where a guard that sweeps either store would p
 spread is 3.8%**, so the movement is not separable from the box at this size and
 is recorded rather than attributed. The slow lane was not run: the diff is label
 rows and two store READMEs.
+
+#### SHEET_new_palettes_0905
 
 It read **107.97 s over 3,757, 116 deselected** fast and **6:34 over 3,873,
 nothing skipped** slow at `SHEET_new_palettes_0905`, 2026-09-05, on the same
@@ -1494,6 +1830,8 @@ through a slow lane. 4.1 s, 3.8%, on an unchanged tree — which is the size of 
 "re-run before believing a lane that moves right after a leg" rule, measured
 rather than asserted. The figure carried forward is the settled one.
 
+#### INGEST_new_palettes_0905
+
 It read **107.65 s over 3,757, 116 deselected** fast at `INGEST_new_palettes_0905`,
 2026-09-05, on an idle box. **Every one of the 120 added tests is the colormap
 guard's**: `classic-pairs-2026-09` put 120 files into `data/palettes` and
@@ -1501,6 +1839,8 @@ guard's**: `classic-pairs-2026-09` put 120 files into `data/palettes` and
 no test written. The 2.21 s over the reading below is those 120 well-formedness
 checks and the two carrier and ceiling guards this prompt re-read, and it is the
 one lane movement in this log that is a *data* diff rather than a code one.
+
+#### FIX_owed_minor_0905
 
 It read **105.44 s over 3,637, 116 deselected** fast at `FIX_owed_minor_0905`,
 same day, on an idle box once that prompt's counterfactual solves had finished.
@@ -1511,6 +1851,8 @@ of tests when the reading they would be differenced against was taken two
 prompts ago on a different tree. HEAD held 3,622 before them. The slow lane was
 not run: the diff is a rule, a cap, an un-ignore and a task rebuild, all of them
 guarded in the fast lane.
+
+#### The τ ruling, 2026-09-05
 
 It read **101.72 s over 3,600, 116 deselected** fast and **6:11 over 3,716, nothing
 skipped** slow at the τ ruling, 2026-09-05, both on an idle box once the n40 kit's
@@ -1531,6 +1873,8 @@ A red lane still gives a count; it gives it in two numbers.
 it is *20 s faster over 35 more tests*. Nothing was marked and no store moved
 between them, so on this file's own rule that is the box rather than the tree.
 
+#### The voting kit, 2026-09-04
+
 It read **99.51 s over 3,589, 116 deselected, nothing skipped** at the voting kit,
 2026-09-04 — **ten tests more** than the reading below and **3.34 s over** its
 96.17 s, on an idle box once the forty-seat kit's leg had finished. The ten are six
@@ -1546,6 +1890,8 @@ say-so** — three and a half times, all green, `test_twins` included. That read
 is in *A lane sharing the box with a render leg* above, where it says something
 about legs rather than about tests.
 
+#### The publication ruling, 2026-09-04
+
 It read **96.17 s over 3,579, 116 deselected, nothing skipped** at the publication
 ruling, 2026-09-04 — **six tests more** than the reading below and **1.44 s under**
 its 97.61 s, taken on an idle box minutes after a 34-minute n=2000 solve leg had
@@ -1555,6 +1901,8 @@ checkout (`.gitignore`, and each published stamp's three names) and neither open
 record. A lane that moved *down* while gaining tests is the box being quieter than
 the reading below, not the guards paying for themselves — the honest reading is
 that the six cost nothing measurable.
+
+#### The augmenting chain, 2026-09-04
 
 It read **97.61 s over 3,573, 116 deselected, nothing skipped** at the augmenting
 chain, 2026-09-04 — **eight tests more** than the reading below and **1.17 s under**
@@ -1573,6 +1921,8 @@ written down because the first instinct — a new stage had just landed in exact
 that file — was wrong, and the cheap check that settled it was re-running the one
 file rather than reasoning about the change.
 
+#### The CLAUDE.md tidy, 2026-09-04
+
 It read **104.29 s over 3,565, 116 deselected, nothing skipped** at the `CLAUDE.md`
 tidy, 2026-09-04 — the same 3,565 as the reading below and **5.51 s over it**, on a
 diff of three tracked `.md` files and no code at all. It is recorded rather than
@@ -1581,6 +1931,8 @@ here nothing the lane prices changed, so what is left is the box. 5.6% is at the
 of the spread this log has carried between adjacent readings of an unchanged tree
 (3% and 1% are the two below it), which is worth knowing the next time a reading of
 this size is taken for a signal.
+
+#### The temporary-directory fix, 2026-09-04
 
 The **fast** lane read **98.78 s over 3,565, 116 deselected, nothing skipped** at
 the temporary-directory fix, 2026-09-04 — the same 3,565 as the reading below and
@@ -1604,6 +1956,8 @@ tenth either way on an invariant guard is the whole of the anomaly. **Re-run one
 untouched engine-bound guard before believing a lane** — forty seconds against
 seven minutes, and it answers *box or tree* by itself.
 
+#### The re-mode leg, 2026-09-04
+
 It read **122.97 s over 3,565, 116 deselected** at the re-mode leg,
 idle, 2026-09-04 — twenty-seven tests more than the reading below it and 2.68 s
 over it, which is about a tenth of a second a test and the ordinary shape. Twenty
@@ -1623,6 +1977,8 @@ it rose on its own. Worth recording because the standing rule is to suspect a
 defect when the lane moves with no test added: that rule is about a lane getting
 *slower*, and this is the counter-example.
 
+#### The solve speedups, 2026-09-04
+
 It read **120.29 s over 3,538, 116 deselected** at the solve
 speedups, idle, 2026-09-04 — six tests more than the reading below it and 1.12 s
 under it. The six are the identity pins on the three changes, and the reading is
@@ -1631,6 +1987,8 @@ pass over the real candidate pool, and the fast lane never builds one. A lane th
 had got faster here would have meant a guard stopped running, not that the solve
 got quicker. The wall clock those changes did move is in
 `curation/GALLERY.md`'s *Three prunes in the swap loop, and all three are sound*.
+
+#### The exp_smoothing drop, 2026-09-04
 
 The **slow** lane read **6:54 (414.76 s) over 3,648, nothing skipped** at the
 `exp_smoothing` drop, idle, 2026-09-04 — seventy-four tests more than the reading
@@ -1643,6 +2001,8 @@ which is the point of recording it: a roster ruling that shrinks the accepted mo
 from fourteen to thirteen does **not** show up as a lane that got cheaper, because
 what the guards read is the stores and the stores did not move.
 
+#### The line-ending guard, 2026-09-04
+
 It read **6:54 (414.69 s) over 3,574, nothing skipped** at the
 line-ending guard, idle, 2026-09-04 — the first slow reading since the `run_layout`
 extraction's 7:14 over 3,552, twenty-two tests later and twenty seconds under it. Two
@@ -1651,6 +2011,8 @@ between the two readings. The guard costs ~1.1 s, one `git ls-files --eol` sweep
 tree shared by both its tests, which is what puts it in this lane rather than the fast
 one. Nothing here moved the digit: a slow lane flat across twenty-two added tests is
 the expected shape, and it is recorded because the figure above it had gone stale.
+
+#### The nested-subparser split, 2026-09-04
 
 It read **121.41 s over 3,532, 116 deselected, nothing skipped** at the nested-subparser
 split, idle, 2026-09-04 — seventy-four tests more than the reading below and 1.55 s over
@@ -1662,10 +2024,14 @@ and why they are still fast-lane tests — a parser build reads no store and mak
 picture. The two extra deselected are not theirs: they are `test_line_endings.py`'s two
 slow guards, which landed between this reading and the one below it.
 
+#### The seconds-share fix, 2026-09-04
+
 It read **119.86 s over 3,458, 114 deselected, nothing skipped** at the seconds-share
 fix, idle, 2026-09-04 — four tests more than the reading below and 0.56 s over it,
 which is noise. Three of the four are the ruling's own guards and the fourth pins
 that every prefix of a weighted round leans the way the round does.
+
+#### The rare-cell mine, 2026-09-04
 
 It read **119.30 s over 3,454, 114 deselected, nothing skipped** at the rare-cell mine,
 idle, 2026-09-04 — three tests more than the reading below, all three the guards on
@@ -1674,10 +2040,14 @@ legs and four merges had put 16,731 rows into the candidate ledger: the store gr
 8.6% and the lane did not move, which is the first reading that says so since the
 tier-root redirect took the ledger out of the lane's price.
 
+#### The wrapup, 2026-09-04
+
 It read **121.82 s over 3,451, 114 deselected, nothing skipped** at the wrapup, idle,
 2026-09-04. Nine tests more than the reading below — five for the lane's own new
 reporting, one for the pool, three for the recorded gallery — and 0.23 s under it,
 which is flat.
+
+#### The 57, closed
 
 **And it closes the 57.** They were an interpreter without `torch`. Masking `torch`
 and `timm` on this tree collects 3,377 / 3,486 with 109 deselected and runs `3371
@@ -1698,6 +2068,8 @@ a drop is not comparable with one before it, and the drop is the whole differenc
 lane now prints a red line naming the missing import; before this it went short in
 silence, which is the only reason a reading like that could be written down.
 
+#### The help grouping, 2026-09-04
+
 It read **122.05 s over 3,442** at the help grouping, idle, 2026-09-04 — 3.55 s over
 the reading below, across the two guards that prompt added, which is what a change that
 only regroups `--help` text should cost. **The collection count is the interesting
@@ -1712,6 +2084,8 @@ over the colormaps on disk and is the one collection here that data could move �
 is not that. Left unexplained rather than edited — and it was right not to be: the
 entry above resolves it, and this one had already narrowed it to everything except the
 interpreter.
+
+#### The manifest guard, 2026-09-04
 
 It read **118.50 s over 3,383** at the manifest guard, idle, 2026-09-04 — against
 **177.48 s over the same 3,383**, measured the same evening on the same idle box by
@@ -1732,6 +2106,8 @@ change should cost.
 below records 3,440. Nothing since has added or removed a test — HEAD collects the same
 3,375. The 57 are unaccounted for.
 
+#### The `cli` split, 2026-09-04
+
 It read **170.30 s over 3,440** at the `cli` split, idle, 2026-09-04 — 0.9% over the
 reading below, across two more collected tests, one of which is the guard this split
 added: that no two modules of the package define one name and no module is named after
@@ -1741,10 +2117,14 @@ through a `__getattr__` instead of off the module, `build_parser` builds by impo
 nineteen modules rather than running one function, and the lane did not notice. The
 slow lane was not re-run and its **7:14 over 3,552** stands.
 
+#### The census follow-ups, 2026-09-04
+
 It read **168.70 s over 3,438** at the census follow-ups, idle, 2026-09-04 — the same
 3,438 as the reading below, 1.2% apart, which is noise and not a figure to restate.
 The commit renamed a command, moved twenty-five run directories into a map and
 re-routed one constant; none of it added or removed a test, and the lane says so.
+
+#### The candidate-ledger split, 2026-09-04
 
 It read **167.79 s over 3,439** at the candidate-ledger split, idle, 2026-09-04 — 0.7%
 over the reading below across the one test the split added, which is the guard that no
@@ -1753,6 +2133,8 @@ the reading is *of*: 2,738 lines became a package of seven modules and a resolvi
 `__init__`, every name now reached through a `__getattr__` rather than off the module
 directly, and the lane did not notice. The slow lane was not re-run and its **7:14 over
 3,552** stands.
+
+#### The `run_layout` extraction, 2026-09-04
 
 It read **166.63 s over 3,438** fast and **7:14 over 3,552** slow at the `run_layout`
 extraction, idle, 2026-09-04. The fast lane is flat — 0.5% over the reading below
@@ -1763,6 +2145,8 @@ those two was a fast-lane reading, which is how a slow lane drifts a tenth witho
 anybody seeing it. Re-run the slow lane on its own schedule, not only when the fast
 one moves.
 
+#### The depth record's autolevel stamp, 2026-09-02
+
 Both are measured, not estimated. The fast lane is **142.06 s over the 3,307 it
 holds**, of 3,423 there are — on this machine, idle, 2026-09-02, at the commit
 that gave the depth record its autolevel stamp. It read **140.12 s over 3,302**
@@ -1772,16 +2156,22 @@ its reading stands: **6:27** over 3,388 tests. So the fast lane is flat across 3
 more tests — 3.1 s and 2.2% apart — and this entry is re-measured rather than
 moved.
 
+#### The phoenix band sitting, 2026-09-02
+
 It read **156.01 s over 3,336** immediately after the phoenix band sitting landed
 200 rows across both finished-render stores, idle, 2026-09-02 — 9.8% over the
 figure above across 29 more tests, which is the per-test cost holding flat and is
 recorded here because it is a reading taken right after a store grew.
+
+#### MINE_diverse_0903
 
 It read **157.21 s over 3,345** at the end of the `MINE_diverse_0903` leg, idle,
 2026-09-03 — four more tests than the reading below and 2.2% *under* it, taken right after a
 session that put **18,940 candidates into the ledger (182,235 -> 201,174 recipes)** and grew
 the score sidecar past half a million rows. Two store growths in one day and the lane has not
 moved for either.
+
+#### The texture-route tidy, 2026-09-03
 
 It read **170.45 s over 3,362** at the texture-route tidy, idle, 2026-09-03 — 4.0%
 over the reading below across **one** more test. The new guard is 1.49 s of that and
@@ -1795,15 +2185,21 @@ rather than a store, hiding one call deep inside production code rather than in 
 test — every merge test in `tests/test_ledger_tracking.py` pays 4.5-10 s of the same
 read today.
 
+#### The reframe defaults, 2026-09-03
+
 It read **165.17 s over 3,420** at the reframe defaults, idle, 2026-09-03 —
 fifteen more tests than the reading below and **1.4% under** it. The thirteen new
 guards cost 1.4 s between them: they decide two defaults off ledgers that are two
 rows each in `tmp_path`, and neither reads a store. Nothing grew this session.
 
+#### The spiral share cap, 2026-09-04
+
 It read **165.85 s over 3,437** at the spiral share cap, idle, 2026-09-04 — 0.6%
 over the reading below across **23 more tests**, which is thirty-one new guards over a
 new location store, a new solve rule and the seconds-share conversion costing this lane
 nothing.
+
+#### The `render_cv` delete, 2026-09-04
 
 It read **164.85 s over 3,414** at the `render_cv` delete, idle, 2026-09-04 — 0.2%
 under the reading below across **six fewer** tests, which is `test_render_cv.py`'s six
@@ -1819,6 +2215,8 @@ started — and is 5.2% over this one. That is the "measure it on an idle machin
 paragraph below priced at its cheapest: the other process does not have to be a
 render leg, and two pytest lanes are enough to move the digit.
 
+#### The spiral probe, 2026-09-03
+
 It read **167.53 s over 3,405** at the spiral probe, idle, 2026-09-03 — nine more
 tests than the reading below and **1.8% under** it, taken right after the spiral
 store's first sitting landed: 500 verdicts, 472 KB of rows, and the store went
@@ -1827,6 +2225,8 @@ store's *first drop* is the growth this lane has historically noticed, and it di
 not notice this one — five hundred rows is three orders off the ledger the seven
 ledger guards sweep, which is the thing that actually prices this lane.
 
+#### The spiral attribute store, 2026-09-03
+
 It read **170.58 s over 3,396** at the spiral attribute store, idle, 2026-09-03 —
 4.1% over the reading below across thirty-five more tests, of which thirty-one are
 new guards over a store that did not exist that morning. A fourth label store,
@@ -1834,10 +2234,14 @@ a fourth `--head`, and the lane did not notice: an attribute store is four track
 files and a hundred pinned rows, which is nothing beside the corpora the seven
 ledger guards already sweep.
 
+#### The `--draw-cells` build, 2026-09-03
+
 It read **163.85 s over 3,361** at the `--draw-cells` build, idle, 2026-09-03 —
 1.9% over the reading below across twenty more tests, taken right after a
 ten-minute near-band leg merged 4,204 candidates and the prune took the ledger
 194,037 -> 198,241 -> 194,114. Another merge, another flat lane.
+
+#### The weights-v6 flip, 2026-09-03
 
 It read **160.75 s over 3,341** at the weights-v6 flip, idle, 2026-09-03 — 3.0%
 over that across five more tests. This one is worth having because of what had just
@@ -1856,6 +2260,8 @@ which is 2.9x the idle figure over the same tests. That is the paragraph below
 about an idle machine, priced: before believing a lane has slowed, check what else
 is on the box, and re-run it alone.
 
+#### The `artifacts` sweep, 2026-09-02
+
 It read **3,371 tests in 6:41** with the fast lane at **136.2 s over 3,260**,
 idle, 2026-09-02, at the commit that swept `artifacts/`. That reading was taken
 **right after** 41.5 GiB
@@ -1864,6 +2270,8 @@ conditions the paragraphs below say to suspect — and it did not move: it is 16
 over the 5:45 below across 219 more tests, which is the per-test cost holding
 flat. So the 2026-08-30 doubling stays attributed to the disk settling and not to
 anything a sweep does on its own.
+
+#### The commit that cut the lane, 2026-08-31
 
 The reading it replaces was **3,152 tests in 5:45** with the fast lane at **98.3 s
 over 3,039**, idle, 2026-08-31, at the commit that cut the lane — which is still
@@ -1877,8 +2285,12 @@ here is that `served_locations.build` was asking `current_pass`
 once per row instead of once, which was ~10.5 s on every merge, seating and
 gallery build in **production** and not only under test.
 
+#### The history that got it here
+
 The figures below are the history that got it here, and they are kept because
 each is a way this lane has moved without code moving.
+
+#### `renders deploy`, 2026-08-30
 
 It read **3,121 tests in 8:23** at the commit that added `renders deploy`, idle,
 2026-08-30, with the fast lane at 116.8 s.
@@ -1893,6 +2305,8 @@ later the same day; what happened in between and what undid it are the next two
 paragraphs, and they are why a stale figure here is worth correcting rather than
 living with.
 
+#### The 2026-08-30 doubling, recorded unsolved
+
 **A third move on 2026-08-30 went the other way and is recorded unsolved.** The
 fast lane went 163.6 s to 289.8 s and the slow lane 8:22 to 16:25, over the same
 tests on an idle machine, right after 194,058 levelled colormap directories and
@@ -1903,6 +2317,8 @@ was checked by measuring 317.5 s at `7383b63` with the working tree stashed.
 Suspected: NTFS metadata after a bulk small-directory delete. So also re-measure
 after anything that moves hundreds of thousands of paths, and suspect the **disk**
 as well as the stores.
+
+#### The doubling came back on its own
 
 **And it came back on its own, later the same day, with nobody doing anything to
 it.** The slow lane read 8:23 and the fast lane 116.8 s over twenty *more* tests
@@ -1929,12 +2345,16 @@ The fast lane gains seven seconds at four workers and gets *slower* at eight,
 because per-process imports are paid again and torch is most of them. That has
 not changed and it is the lane that gets run all day.
 
+### The deciding fact was never the clock
+
 The deciding fact was never the clock. Under xdist the held-back count **does not
 print**, and neither does the deselection: `pytest_collection_modifyitems` and
 the stash live in the workers, so the controller reports `4 passed` where the
 serial run reports `4 passed, 2 deselected` and names the number. A runner that
 makes the lane go quiet is buying seven seconds with the one property the lane
 exists for.
+
+### What is left of the lane does not parallelise
 
 That objection does not reach `--slow`, which deselects nothing and so has
 nothing to go quiet about — which is why it was worth asking again at 18 minutes.

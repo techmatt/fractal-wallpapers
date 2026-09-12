@@ -35,6 +35,7 @@ import html
 import random
 from pathlib import Path
 
+from fractal_wallpapers.curation import page
 from fractal_wallpapers.palettes import codebook
 
 #: How many pictures one cell may show on the by-swatch sheet. A glance-sheet
@@ -81,21 +82,25 @@ def _tile(row: dict) -> str:
     )
 
 
-STYLE = """
-body { background:#12141a; color:#e8e8ea; font:13px/1.5 system-ui, sans-serif; margin:24px; }
+STYLE = (
+    page.STYLE
+    + """
+body { background:var(--ground); color:var(--ink); font:13px/1.5 system-ui, sans-serif;
+       margin:24px; }
 h1 { font-size:20px; margin:0 0 4px; }
-p.note { color:#9aa0aa; max-width:62em; }
+p.note { color:var(--muted); max-width:62em; }
 section { margin:28px 0; }
 h2 { font-size:15px; display:flex; align-items:center; gap:10px; margin:0 0 8px; }
 .chip { width:30px; height:16px; border-radius:3px; border:1px solid #444; display:inline-block; }
-.count { color:#9aa0aa; font-weight:400; }
+.count { color:var(--muted); font-weight:400; }
 .grid { display:flex; flex-wrap:wrap; gap:10px; }
 .tile { margin:0; width:200px; }
 .tile img { width:200px; border-radius:3px; display:block; }
-figcaption { color:#9aa0aa; font-size:11px; margin-top:3px; word-break:break-word; }
-.share { color:#6f7681; }
+figcaption { color:var(--muted); font-size:11px; margin-top:3px; word-break:break-word; }
+.share { color:var(--faint); }
 .empty { color:#c98b8b; font-style:italic; }
 """
+)
 
 
 def _page(title: str, note: str, sections: list[str]) -> str:

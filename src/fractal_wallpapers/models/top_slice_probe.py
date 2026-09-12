@@ -84,6 +84,7 @@ import json
 import time
 from pathlib import Path
 
+from fractal_wallpapers.curation import page
 from fractal_wallpapers.paths import under
 
 #: The schema every record this module writes carries.
@@ -931,17 +932,21 @@ def _slice_record(rows: list[dict], cut: float) -> dict:
 #: the picture rather than at its colour.
 THUMBNAIL_WIDTH = 240
 
-STYLE = """
-body { background:#12141a; color:#e8e8ea; font:13px/1.5 system-ui, sans-serif; margin:24px; }
+STYLE = (
+    page.STYLE
+    + """
+body { background:var(--ground); color:var(--ink); font:13px/1.5 system-ui, sans-serif;
+       margin:24px; }
 h1 { font-size:20px; margin:0 0 4px; }
-p.note { color:#9aa0aa; max-width:70em; }
+p.note { color:var(--muted); max-width:70em; }
 .grid { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
 .tile { margin:0; width:240px; }
 .tile img { width:240px; border-radius:3px; display:block; }
-figcaption { color:#9aa0aa; font-size:11px; margin-top:3px; word-break:break-word; }
-.rank { color:#e8e8ea; font-weight:600; }
+figcaption { color:var(--muted); font-size:11px; margin-top:3px; word-break:break-word; }
+.rank { color:var(--ink); font-weight:600; }
 .t4 { color:#8fd18f; } .t3 { color:#d1c48f; } .t2 { color:#d1a08f; } .t1 { color:#d18f8f; }
 """
+)
 
 
 def sheet(rows: list[dict], best: dict, output: Path | None = None, log=print) -> Path:

@@ -31,10 +31,13 @@ def test_one_module_defines_each_name_and_no_module_is_named_like_one() -> None:
     import ast
     from pathlib import Path
 
-    #: The one name every group is meant to define. `build_parser` reaches it on
-    #: the module object it just imported, never through the package, so it is
-    #: the single name a scan is never asked to disambiguate.
-    shared = {"add_commands"}
+    #: The two names a module is meant to define as well as its own: the group
+    #: entry point and, for a `curate` family, the step entry point. Both are
+    #: reached on the module object the caller just imported — `build_parser`
+    #: imports a group and calls `add_commands`, `curate_commands.add_commands`
+    #: imports each family and calls `add_steps` — never through the package, so
+    #: they are the names a scan is never asked to disambiguate.
+    shared = {"add_commands", "add_steps"}
 
     package = Path(cli.__file__).parent
     defined: dict[str, str] = {}

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 from pathlib import Path
 
 from fractal_wallpapers import paths
@@ -21,6 +23,114 @@ from fractal_wallpapers.paths import (
 #: the same default and would apply it to a spec with no `mode` key at all; it is
 #: written here too so the spec a command built says what it rendered.
 DEFAULT_MODE = "smooth"
+
+
+# --------------------------------------------------------------------------- #
+# `--help`, in two tiers.
+# --------------------------------------------------------------------------- #
+#: Print every `help=` whole rather than summarised. Read once, at parse time.
+HELP_ENV = "FRACTAL_WALLPAPERS_HELP"
+
+#: What the note at the foot of a trimmed `--help` says. It has to be there: a
+#: reader who cannot tell that a screen is a summary is a reader who thinks the
+#: flag's contract is one sentence long.
+TRIMMED_NOTE = f"… marks help trimmed to its contract. {HELP_ENV}=full prints the reasoning whole."
+
+#: A sentence ends at a period that follows a letter, a digit, a closing bracket
+#: or a backtick and is followed by space or end of string. Written as a
+#: lookbehind so it cannot fire inside `0.65`, `e.g`, `--n`, `1e-9` or a version
+#: number, each of which is in a help string here and each of which a naive
+#: `split(". ")` cuts in half. **Uppercase counts**: this project shouts a word
+#: it means literally, so a sentence ends `must be expected to DELIVER.` and a
+#: class of lowercase-only ran on past it into the next one.
+_SENTENCE_END = re.compile(r"(?<=[A-Za-z0-9)`\]\"%])\.(?=\s|$)")
+
+#: A sentence opening with one of these is the other half of the contract rather
+#: than the reasoning, so the summary keeps it. `DEFAULT:` is this project's own
+#: spelling and appears in 40-odd help strings; the lowercase forms catch the
+#: parenthetical `(default 3)` shape written as its own sentence.
+_CONTRACT_OPENERS = ("DEFAULT", "Default", "default")
+
+
+def help_summary(text: str) -> str:
+    """One help string trimmed to its contract: what it does, and the default.
+
+    The two-tier rule. Every `help=` in this package is written as the contract
+    first and the reasoning after — the ruling that set the flag, the date it
+    changed, the measurement behind the number — and that reasoning is genuinely
+    the best explanation of those flags anywhere, so it is kept. It is just not
+    what a person reaching for `--help` is asking for. 798 help strings carry
+    72,280 characters between them and `curate solve record --help` spent about
+    forty lines on `--themed`, `--themed-cap` and `--themed-radius` alone, which
+    is how a session came to need four `--help` invocations to find that
+    `--no-render` is on `solve run` and not on `solve record`.
+
+    Trimmed here rather than by rewriting all 798, because a rewrite either
+    throws the reasoning away or moves it one file from the flag it is about, and
+    because a second copy of a contract is a copy that drifts. [`TieredHelp`]
+    applies this at format time and `FRACTAL_WALLPAPERS_HELP=full` turns it off,
+    so both tiers come out of ONE string and no reader is stuck with the summary.
+
+    `tests/test_help_tiers.py` holds every summary to being a real sentence and
+    to fitting a screen, which is the guard that keeps a newly written help
+    string's first sentence from being a paragraph.
+    """
+    flat = " ".join(text.split())
+    end = _SENTENCE_END.search(flat)
+    if end is None:
+        return flat
+    summary, rest = flat[: end.end()], flat[end.end() :].strip()
+    if rest.startswith(_CONTRACT_OPENERS):
+        following = _SENTENCE_END.search(rest)
+        summary = f"{summary} {rest if following is None else rest[: following.end()]}"
+    return summary
+
+
+class TieredHelp(argparse.HelpFormatter):
+    """The default formatter: `help=` summarised, with a footer saying so.
+
+    Summarises in `_expand_help` and not in `_get_help_string`, because that is
+    the hook that runs AFTER argparse's own `%(default)s` substitution — a
+    summary taken before it would cut a `%`-escape in half and raise on the
+    half. Truncation is recorded on the instance rather than returned, and the
+    footer is added in `format_help`, so a screen with nothing trimmed on it
+    carries no note.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._trimmed = False
+
+    def _expand_help(self, action) -> str:
+        expanded = super()._expand_help(action)
+        if os.environ.get(HELP_ENV, "").lower() == "full":
+            return expanded
+        summary = help_summary(expanded)
+        if len(summary) < len(" ".join(expanded.split())):
+            self._trimmed = True
+            return f"{summary} …"
+        return summary
+
+    def format_help(self) -> str:
+        assembled = super().format_help()
+        if not self._trimmed:
+            return assembled
+        return f"{assembled}\n{TRIMMED_NOTE}\n"
+
+
+class Parser(argparse.ArgumentParser):
+    """An `ArgumentParser` that formats its help in two tiers, and so do its kin.
+
+    A subclass rather than `formatter_class=` at every site, because
+    `add_subparsers` defaults `parser_class` to `type(self)`: one class named
+    once at the root reaches all 48 `curate` steps and all 102 nested verbs,
+    where the keyword argument would have to be repeated at every `add_parser`
+    call and would be silently missing from the next one written.
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("formatter_class", TieredHelp)
+        super().__init__(*args, **kwargs)
 
 
 def resolve_input(named: str) -> Path:
@@ -451,3 +561,37 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
 NON_LOCATION_HEADS: tuple[str, ...] = tuple(
     sorted({*FINISHED_HEADS, *ATTRIBUTE_NAMES, GALLERY_GRADE})
 )
+
+
+# --------------------------------------------------------------------------- #
+# The durability trio, shared by seven groups.
+# --------------------------------------------------------------------------- #
+def keeping_verbs(verbs, *, noun: str, force: str, order=("check", "save", "restore")):
+    """`check`, `save`, `restore` — the three verbs every durable store shares.
+
+    Seven groups spell them and only the noun and the order move, so they are
+    written once here for the reason [`common.device_flag`] gives: a copied
+    `add_argument` costs nothing until somebody edits one of them, and then
+    `--help` carries a difference that reads like a difference in behaviour.
+
+    A REAL subparser per verb rather than one `choices=` positional, which is
+    what every one of them did before: a positional puts the whole group's flags
+    on every verb, so `--force` was accepted by `check` and dropped on the floor,
+    and `--help` at the group was every verb's flags at once with nothing saying
+    which belonged to which.
+
+    Takes the subparsers action rather than the parser, because three of the
+    groups register another verb first — `spiral-scores` builds, `flatness` and
+    `signatures` sweep — and the registration order is the `--help` surface.
+    """
+    for name in order:
+        if name == "check":
+            verbs.add_parser("check", help=f"check the live {noun} against the manifest")
+        elif name == "save":
+            verbs.add_parser("save", help="save a fresh copy and manifest")
+        else:
+            restoring = verbs.add_parser(
+                "restore", help="restore the archived copy, counted before it is believed"
+            )
+            restoring.add_argument("--force", action="store_true", help=force)
+    return verbs

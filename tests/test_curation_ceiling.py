@@ -674,10 +674,9 @@ def test_the_ceiling_is_in_force_on_a_themed_pass_too():
 def folded(*flags) -> dict:
     """`--mode-ceiling`'s repeated arguments, parsed and folded as a handler does."""
     from fractal_wallpapers import cli
-    from fractal_wallpapers.cli import curate_commands
 
     parsed = cli.build_parser().parse_args(["curate", "solve", "run", "--n", "150", *flags])
-    return curate_commands.mode_ceilings_named(parsed.mode_ceiling)
+    return cli.mode_ceilings_named(parsed.mode_ceiling)
 
 
 def test_the_flag_folds_onto_the_shipped_ceiling_left_to_right():
@@ -706,13 +705,13 @@ def test_a_mode_no_gallery_can_seat_is_refused_at_the_flag_and_not_at_the_seat()
     a guard that held — `ceiling.parse_target`'s argument, one rule over."""
     import argparse
 
-    from fractal_wallpapers.cli import curate_commands
+    from fractal_wallpapers import cli
 
     with pytest.raises(argparse.ArgumentTypeError, match="not a mode"):
-        curate_commands.mode_ceiling_value("thredas=0.2")
+        cli.mode_ceiling_value("thredas=0.2")
     with pytest.raises(argparse.ArgumentTypeError, match="MODE=SHARE"):
-        curate_commands.mode_ceiling_value("threads")
+        cli.mode_ceiling_value("threads")
     with pytest.raises(argparse.ArgumentTypeError, match="not a share"):
-        curate_commands.mode_ceiling_value("threads=x")
+        cli.mode_ceiling_value("threads=x")
     with pytest.raises(argparse.ArgumentTypeError, match="not a share"):
-        curate_commands.mode_ceiling_value("threads=-1")
+        cli.mode_ceiling_value("threads=-1")

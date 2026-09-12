@@ -41,6 +41,7 @@ __all__ = [
     "engine_path",
     "expand",
     "home_view",
+    "is_built",
     "maxiter_for",
     "modes",
     "pixel_is_z0",
@@ -71,6 +72,26 @@ def engine_path() -> Path:
     raise FileNotFoundError(
         f"{name} is not built. Run: cargo build --release --manifest-path engine/Cargo.toml"
     )
+
+
+def is_built() -> bool:
+    """Whether [`engine_path`] would find a binary — the probe, answering in a bool.
+
+    [`engine_path`] **raises** rather than returning None, because every caller
+    that wants the path wants a path and a message naming the cargo line is
+    worth more to them than a None to check. A caller that wants only the
+    *question* is a different caller, and asking it through the raising form is
+    the mistake this exists to remove: a guard spelled `not
+    engine.engine_path().is_file()` at a test module's top level explodes while
+    pytest is still collecting, which interrupts the whole lane rather than
+    skipping one file. Sixteen test modules wrote the try/except by hand before
+    this was here.
+    """
+    try:
+        engine_path()
+    except FileNotFoundError:
+        return False
+    return True
 
 
 class EngineTimeout(RuntimeError):

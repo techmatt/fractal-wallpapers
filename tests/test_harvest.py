@@ -37,16 +37,8 @@ POOL_FED = [
 ]
 
 
-def engine_is_built() -> bool:
-    try:
-        engine.engine_path()
-    except FileNotFoundError:
-        return False
-    return True
-
-
 needs_engine = pytest.mark.skipif(
-    not engine_is_built(),
+    not engine.is_built(),
     reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
 )
 

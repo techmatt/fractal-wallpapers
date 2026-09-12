@@ -41,6 +41,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from fractal_wallpapers.curation import page as page_module
 from fractal_wallpapers.paths import under
 
 #: The schema every record here carries.
@@ -183,27 +184,27 @@ def _number(value) -> str:
 
 PAGE = """<!doctype html>
 <meta charset="utf-8"><title>seats the cascade moves &mdash; {name}</title>
-<style>
+<style>{style}
  body {{ font: 13px/1.45 system-ui, sans-serif; margin: 1.5rem;
-         background: #14161a; color: #dfe3e8; }}
+         background: var(--ground); color: var(--ink); }}
  h1 {{ font-size: 1.15rem; margin: 0 0 .35rem; }}
- .lede {{ max-width: 62rem; color: #9aa4b1; margin: 0 0 1.25rem; }}
- .lede b {{ color: #dfe3e8; }}
+ .lede {{ max-width: 62rem; color: var(--muted); margin: 0 0 1.25rem; }}
+ .lede b {{ color: var(--ink); }}
  .grid {{ display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }}
- figure {{ margin: 0; background: #1c1f26; border-radius: 6px; overflow: hidden;
+ figure {{ margin: 0; background: var(--panel); border-radius: 6px; overflow: hidden;
            border: 2px solid transparent; }}
  figure.arriving {{ border-color: #3f8f5c; }}
  figure.departing {{ border-color: #96434a; }}
  img {{ display: block; width: 100%; }}
- .gone {{ padding: 3rem 1rem; text-align: center; color: #6b7480; }}
+ .gone {{ padding: 3rem 1rem; text-align: center; color: var(--faint); }}
  figcaption {{ display: flex; flex-direction: column; gap: .15rem; padding: .5rem .6rem .6rem; }}
  .badge {{ align-self: flex-start; font-weight: 600; letter-spacing: .03em;
            text-transform: uppercase; font-size: .7rem; padding: .1rem .4rem;
            border-radius: 3px; margin-bottom: .2rem; }}
  .badge.arriving {{ background: #3f8f5c; color: #0b1410; }}
  .badge.departing {{ background: #96434a; color: #1a0c0d; }}
- .key {{ font-family: ui-monospace, monospace; color: #6b7480; font-size: .72rem; }}
- .place.both {{ color: #d8b45a; }}
+ .key {{ font-family: ui-monospace, monospace; color: var(--faint); font-size: .72rem; }}
+ .place.both {{ color: var(--warn); }}
  .place.one {{ color: #7fa8d8; }}
 </style>
 <h1>Seats the cascade moves &mdash; {name}</h1>
@@ -240,7 +241,9 @@ def build(name: str, diff: dict, cap: int = CAP, log=print) -> tuple[Path, dict]
         + ". Sorted good to bad by the fine head. Pictures are the ledger's stored 640&times;360 "
         "candidates &mdash; nothing was re-rendered, and this page ingests nowhere."
     )
-    page = PAGE.format(name=name, lede=lede, cards="".join(_card(row) for row in shown))
+    page = PAGE.format(
+        style=page_module.STYLE, name=name, lede=lede, cards="".join(_card(row) for row in shown)
+    )
     where = page_path(name)
     where.parent.mkdir(parents=True, exist_ok=True)
     where.write_text(page, encoding="utf-8", newline="\n")

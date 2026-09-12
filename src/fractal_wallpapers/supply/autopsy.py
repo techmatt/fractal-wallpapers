@@ -60,6 +60,7 @@ import random
 from collections import Counter
 from pathlib import Path
 
+from fractal_wallpapers.curation import page
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import views_dir
 from fractal_wallpapers.supply import novelty
@@ -325,8 +326,11 @@ def _card(row: dict, directory: Path, reason: str | None = None) -> str:
     return f"<figure>{image}<figcaption>{body}</figcaption></figure>"
 
 
-_STYLE = """
-body { font: 13px/1.45 system-ui, sans-serif; margin: 2rem; background: #14161a; color: #e8e8ea; }
+_STYLE = (
+    page.STYLE
+    + """
+body { font: 13px/1.45 system-ui, sans-serif; margin: 2rem; background: var(--ground);
+       color: var(--ink); }
 h1 { font-size: 1.2rem; } h2 { font-size: 1rem; margin-top: 2rem; color: #9fd3ff; }
 .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 figure { margin: 0; background: #1d2027; padding: .5rem; border-radius: 4px; }
@@ -338,6 +342,7 @@ figcaption { font-size: 11px; color: #a9adb8; margin-top: .4rem; word-break: bre
 table { border-collapse: collapse; margin: 1rem 0; }
 td, th { padding: .2rem .8rem .2rem 0; text-align: left; }
 """
+)
 
 
 def write(run_dir: Path, summary: dict, sample: int = SAMPLE) -> Path | None:
