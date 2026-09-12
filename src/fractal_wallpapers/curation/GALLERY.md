@@ -2230,6 +2230,19 @@ seats. What publication buys is a clone; what it does not buy is protection, bec
 was never scarce. What an unpublished record gives up is a Durable-class save, check or
 restore and a place in an archive copy.
 
+**So a DIAGNOSTIC solve either writes no record or has its records swept at the
+checkpoint boundary**, and the reason is the paragraph above rather than tidiness: the
+protection is unconditional, so a throwaway smoke run silently pins candidate rows
+against retention for as long as nobody remembers to delete it, and nothing in a prune's
+output says which record is holding a key or whether anybody meant it to. A smoke solve
+is run to find out whether a thing works and its findings live in the report; its seats
+are an accident of the run. `repeat_ab_count_themed_ckpt121` left eight of them — one
+per cell, 1,131 seats — and deleting them on 2026-09-12 released **712** keys to the
+prune, the other 354 being seats another record holds anyway. That gap is the second
+half of the point: the cost of leaving one is neither the seat count nor zero, and it is
+not knowable without deleting the record. **This is a note and not a behaviour**; the
+sweep is a person deleting the stamp, which is the only thing that releases a seat.
+
 **The record is a protection class in the prune.** `candidate_ledger.RETAINED_TENTATIVE`
 joins the four that were already there. It is needed for a sharper reason than the
 release row's: a seat is chosen on the *gallery's* objective, over a view, against the

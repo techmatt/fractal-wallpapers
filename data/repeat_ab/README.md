@@ -85,19 +85,20 @@ there is no split to protect and `eval_split.jsonl` does not exist. A sitting th
 was ever going to train something would draw one first, through `label pin`, the
 same way — see `data/spiral/README.md`.
 
-## What is in here today
+## What is in here today — NOTHING, and that is the current state
 
-`repeat_ab_ckpt121` — 250 composite tiles at 250 places, drawn at seed 20260911
-over the 2,549 smooth-routed rows at 2,082 places reading `p_fine(>=4) ≥ 0.030242`
-at cycles 1 and phase 0, with a picture on disk and **no human verdict in either
-finished store**. 189 cyclic tiles (2× traversal) and 61 folded (4×). Every unit
-prefilled at `2` and the page a seeded shuffle, both deliberate: the premise is
-that the heads cannot read this axis, so a score order or a head prefill would
-import that error into page position and into the anchor.
+**No batch is registered and no row has ever been written.** `batches.jsonl` does
+not exist, which `labeling.registry.read` treats as an empty registry — the state
+a fresh checkout is in. The store is *declared* and unused, which is the shape the
+absent-`score` guard above made possible in the first place.
 
-The population is **conditional on the fine bar** and that is the sitting rather
-than a defect — the only repetition Matt will consider is an improvement on a
-picture already good at 1×, after `repeat_axis_*_20260911` closed repetition as a
-general draw at −0.273 tiers over 121 matched pairs. So a rate measured here is a
-rate about pictures above the bar and a **ceiling** on any rate about the pool.
-`data/batch_caveats.md`'s *NOT-A-TIER* carries the rest.
+One sitting was drawn and let go. `repeat_ab_ckpt121` cut 250 composite tiles at
+250 places on 2026-09-11, was part-labelled, and Matt parked palette replication
+and ruled the partial verdicts released rather than kept — so the sheet, its 1,000
+pictures and the registration were deleted on 2026-09-12 without a row ever being
+ingested. The draw's own numbers survive in
+[`curation/LEGS.md`](../../src/fractal_wallpapers/curation/LEGS.md)'s *What the
+first sitting came to*; nothing here depends on them.
+
+A later sitting registers its own batch before its rows exist, the way every other
+store does.

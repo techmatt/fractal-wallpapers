@@ -2993,6 +2993,14 @@ judge reads and 250 thumbnails: 620 s and 535 MB for the sheet. The draw itself 
 
 **It holds the pool once**, in the population read, and the one-pool-holding-process
 rule binds on it.
+
+⚠ **That sitting was part-labelled and then let go, on 2026-09-12.** Matt parked
+palette replication and ruled the partial verdicts released rather than kept, so the
+sheet, its 1,000 pictures and the registration were deleted and **no row was ever
+ingested** — `data/repeat_ab/` is a declared and empty store. The numbers above are a
+reading about the *draw* and stand; there are no verdicts to read. The command is
+unchanged and a later sitting registers its own batch.
+
 ## `curate manufacture` — the one population here that is made rather than found
 
 Everything else in this stage spends supply. This makes some. The colour-expression
