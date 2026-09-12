@@ -429,17 +429,35 @@ def color_params_of(provenance: dict) -> dict:
     return params
 
 
-def recipe_of(
-    params: dict, dropped: bool, cyclic: bool, colormap: str, rolloff: dict | None = None
-) -> dict:
+def recipe_of(params: dict, dropped: bool, cyclic: bool, rolloff: dict | None = None) -> dict:
     """The palette pass, in this repository's shape.
 
     Gamma, the traversal and the flip are carried as the row recorded them.
     **Folding is not**: it is a property of the map rather than of the render —
     over there a sequential map is baked folded and a cyclic one is not, and that
     decision is never written on a row. It is re-read from the map's own kind
-    here, and asserted against the traversal, because a folded map traversed more
-    than once would be two seam fixes fighting.
+    here.
+
+    ## A folded map repeats cleanly, and this used to refuse it
+
+    Until 2026-09-11 a `cycles != 1` or a `phase != 0` on a sequential map was
+    refused here, on the argument that folding a repeated traversal is two seam
+    fixes fighting. It is not. [`mirror`] in `engine/src/colormap.rs` writes the
+    opening colour again at position 1.0, so the folded table **opens and closes
+    on the same colour** and a repeat of it has no junction to fix. Measured over
+    the whole tracked library: on all 156 sequential maps the folded table's wrap
+    step is **exactly zero** in OKLab against an inside step of up to 7.0e-3, and
+    the same maps unfolded wrap at up to 1.0 against the same inside step — 284x
+    to 956x their own gradient, which is what a seam looks like and what folding
+    exists to remove. `phase` falls with it: a closed table has no privileged
+    place to start.
+
+    So the refusal contradicted this project's own draw — `depth.palette_drawn`
+    and `hunt.recipe_for` build exactly that pair, and 226 mirrored `cycles=2`
+    rows stand in the candidate ledger — and the draw was the half that was
+    right. **Nothing replaces it.** The invariant worth asserting runs the other
+    way, `mirror` refused on a *cyclic* map, and the engine already enforces that
+    at the bake in `Colormap::from_stops_baked`.
 
     The edge transfer is carried at the weight the row recorded **unless** the
     row stamps that its own render dropped it — that render path could not
@@ -448,12 +466,6 @@ def recipe_of(
     """
     cycles = float(params.get("n_cycles", 1) or 1)
     phase = float(params.get("phase", 0.0) or 0.0)
-    if not cyclic and (cycles != 1.0 or phase != 0.0):
-        raise FinishedImportError(
-            f"a row asks to traverse {colormap!r} {cycles}x from {phase}, but that map does not "
-            f"close on the color it opened with — it is folded to hide its seam, and folding a "
-            f"repeated traversal is two seam fixes fighting."
-        )
     transfer = {"kind": "value"}
     if params.get("transfer") == "grad" and not dropped:
         transfer = {"kind": "edge", "weight": float(params.get("transfer_gamma") or 0.0)}
@@ -596,7 +608,6 @@ def read_batch(
                     params,
                     dropped,
                     colormap in cyclic_maps,
-                    colormap,
                     rolloff_of(render, provenance),
                 ),
                 render=render_of(render),

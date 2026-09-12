@@ -538,6 +538,26 @@ def registered(store_dir):
 # The tracked records, read once.
 # --------------------------------------------------------------------------- #
 @pytest.fixture(scope="session")
+def shipped_cyclic_maps():
+    """The maps production does not fold, read **once** for the session.
+
+    `models.palette_sets.cyclic` parses every one of the 1,021 tracked colormap
+    documents on every call — **0.85 s** on this machine, measured 2026-09-11 —
+    and it is reached by anything that builds a recipe, because the fold is the
+    map's own kind. So a file whose every test resolves a recipe pays that per
+    test: `tests/test_repetition.py` was 9.45 s over 17 tests before this and
+    1.3 s after, with nothing else changed.
+
+    A test that wants it in a module's own namespace patches `colorize.cyclic` to
+    hand this back. That is not a stub — it is the tracked answer, read at the
+    same accessor, once.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    return colorize.cyclic()
+
+
+@pytest.fixture(scope="session")
 def shipped_labels():
     """The tracked label store, resolved once."""
     return store.resolved()

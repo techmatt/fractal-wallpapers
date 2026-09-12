@@ -469,7 +469,7 @@ mod tests {
         let closing = folded.lookup(1.0);
         for channel in 0..3 {
             assert!(
-                (opening[channel] - closing[channel]).abs() < 0.02,
+                (opening[channel] - closing[channel]).abs() < 1e-12,
                 "a folded map does not close on the color it opened with"
             );
         }
@@ -484,6 +484,62 @@ mod tests {
                 "the original far end should sit at the fold"
             );
         }
+    }
+
+    /// **Every tracked sequential map, folded, closes on the colour it opened
+    /// with** — so repeating one has no junction to fix.
+    ///
+    /// The one above proves the construction on a synthetic ramp; this proves the
+    /// claim on the data the renderer is actually pointed at, and it is the
+    /// property a caller repeating a folded map relies on. It exists because
+    /// `labeling/finished_import.py` refused that pair until 2026-09-11 on the
+    /// argument that folding a repeated traversal is two seam fixes fighting.
+    /// Measured while removing the refusal: the wrap step is **exactly zero** on
+    /// all 156 of them, against an inside step of up to 7.0e-3 — and the same
+    /// maps unfolded wrap at up to 1.0, which is 284x to 956x their own gradient
+    /// and is what a seam looks like.
+    #[test]
+    fn every_folded_map_closes_so_a_repeat_has_no_seam() {
+        let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("data")
+            .join("palettes");
+        let mut folded_maps = 0;
+        for entry in std::fs::read_dir(&directory).expect("the tracked palette library") {
+            let path = entry.expect("a palette entry").path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            let name = path.file_stem().unwrap().to_str().unwrap().to_string();
+            let plain = Colormap::load(&directory, &name)
+                .unwrap_or_else(|e| panic!("loading {name}: {e}"));
+            if plain.kind() != Kind::Sequential {
+                continue;
+            }
+            let folded = Colormap::load_baked(
+                &directory,
+                &name,
+                Bake {
+                    reverse: false,
+                    mirror: true,
+                },
+            )
+            .unwrap_or_else(|e| panic!("folding {name}: {e}"));
+            folded_maps += 1;
+            let (opening, closing) = (folded.lookup(0.0), folded.lookup(1.0));
+            for channel in 0..3 {
+                assert!(
+                    (opening[channel] - closing[channel]).abs() < 1e-12,
+                    "{name} folded does not close on the color it opened with, so repeating \
+                     it would show a seam at the junction"
+                );
+            }
+        }
+        assert!(
+            folded_maps >= 150,
+            "only {folded_maps} sequential maps swept; the library holds about 156 and a \
+             guard that sweeps none of them passes for the wrong reason"
+        );
     }
 
     /// Folding a cyclic map would halve the cycle it was drawn to have, so it is

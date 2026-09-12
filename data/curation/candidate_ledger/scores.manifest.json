@@ -2,9 +2,9 @@
   "schema": 1,
   "path": "artifacts/curation/candidate_ledger/scores.jsonl",
   "copy": "artifacts/curation_backup/candidate_ledger/scores.jsonl",
-  "rows": 374186,
-  "bytes": 183778463,
-  "sha256": "a2346886e4fe8e1e26f144e2ab5cb05dca77b8d3135d3eb1c766e04c802e4bde",
+  "rows": 374309,
+  "bytes": 183838838,
+  "sha256": "63b14107af5c7ac966179fcd8fafd0458227509e632bb5ec559e398d37cb5452",
   "recorded": "2026-09-11",
   "why_not_tracked": "one row per recipe per judge artifact, so it grows with the ledger and again with every judge this project ships. Same guard, same answer as the rows."
 }

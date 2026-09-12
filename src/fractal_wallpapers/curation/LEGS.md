@@ -2705,6 +2705,92 @@ so a winner has already beaten 1.0x it. That is what the knob is *for* — it is
 guard against a levelling, a head or a picture having moved, and a pass where it
 starts refusing is a pass to read rather than a factor to lower.
 
+## `curate repetition` — the axis neither head has been shown, put to an eye
+
+`curate rotate` moves where a traversal starts. This moves **how many times it
+happens**, and it does not decide anything: it renders a labelling set and stops.
+
+The reason it cannot decide is the reason it exists. `Palette.cycles` stands at
+something other than 1 on **2,262 of 374,186** ledger rows — 0.605%, 44 of them
+seated — and every one of those arrived in the last few days or came in with the
+maker-era corpora. So neither head was fitted on a population containing the axis,
+and a head's reading of a picture whose defining property it has never been trained
+against is not evidence about that property. `palette_variant_mine_ckpt120`
+measured the heads preferring repeat 1 (36.4% of matched pairs won at repeat 3
+against 52.6% at repeat 1) and `rotation.REPEAT` holds the axis at 1 on that
+reading — which is a policy its own measurement makes self-confirming.
+
+### The pair is proved, not promised
+
+Every repeated tile sits beside its own unrepeated twin at the same place, mode,
+settings, map and frame. `plan_of` re-derives each control's key through
+`hunt.Maker.recipe_for` with no overrides and checks it against the key the store
+holds it under; a control that does not reproduce is dropped and counted. The
+repeat is the same call with `palette={"cycles": n}`, so the two tiles are two runs
+of one derivation differing in one member.
+
+On the first draw **0 of 125 controls failed to reproduce**, which is a stronger
+statement about the pool than about this leg: every row it drew stands at exactly
+the recipe `hunt.Maker` builds today.
+
+**Phase is held at 0 on both sides.** 1,713 of the 2,262 repeat rows carry a
+rotation too, so the axis as the pool holds it is confounded with the one
+`curate rotate` just measured, and a sitting that inherited that confound would
+answer neither question.
+
+### The rungs, and the folded arm's own share
+
+A cyclic map meets itself, so `cycles` is the traversal count exactly: rungs 2 and
+3. A sequential map is baked folded, so one pass is already two traversals and its
+one rung of 2 is **4x** the base ramp. The card prints the traversal count and the
+row records `cycles`, because those are different numbers on one arm and the same
+on the other.
+
+Sequential maps are 156 of the library's 1,021 (15.3%), so `FOLDED_SHARE = 0.32`
+over-shares them deliberately rather than letting the pool decide. A thin arm is
+reported short rather than topped up from the other — the share is a claim about
+what the page holds.
+
+### It gates on nothing, which costs a second scoring pass
+
+Every other draw here is aimed at a band, a bar or the top of a queue. This one may
+not be: the repeats the current heads tolerate are exactly the wrong sample.
+
+That collides with *sorted good→bad by the fine head*, because `gallery-grade
+score-pool` writes `p_fine` only for rows clearing the render bar — **42,300 of
+374,186**, which covered **8 of the first 125 controls**. So `repetition.fine_for`
+**runs** the head over every tile at candidate geometry through
+`rotation.score_fine`, and writes nothing: an ungated reading does not belong in a
+column every downstream reader takes as bar-cleared. 248 pictures read in 2 s.
+
+### A pair whose row the prune took comes off the page whole
+
+The merge is an upsert through the ordinary door and the door prunes, so a repeat
+can land and be taken in the same act — `repeat_ckpt120` lost **2 of 125** that
+way, at locations already holding a full keep of better-ranked rows. A tile with no
+ledger row is a label with nowhere to land, so `sheet_plan` checks every drawn key
+against the store and drops the whole pair, not just the missing tile.
+
+### The sharing is given up on purpose, and it costs 145 seconds
+
+A repeat is in principle a recolour off a dumped field. This leg gets none of that:
+the draw takes **one pair a location** so no place can carry the page, so every
+block holds one candidate and shares its dump with nothing. Measured on
+`repeat_ckpt120`: 125 repeats at **3.03 engine-seconds each**, 145 s of wall on
+three workers. Full price for every tile, and the page wins the trade outright.
+
+### What the first batch came to
+
+`repeat_ckpt120`, 2026-09-11, seed 20260911. 311,494 controls at 32,144 locations
+after five exclusions (50,492 direct traps, 2,234 already repeated, 9,918 rotated,
+48 rejected, 0 off-regime). 125 pairs drawn — 40 folded, 85 cyclic at 43/42 over
+the two rungs — across 14 modes and 9 partitions. 125 rendered, 0 failed, 2 pruned
+on the way in. **246 tiles on the page in 123 pairs**, split 70 `smooth_render` /
+176 `strange_render` at deliberately unequal sizes.
+
+**It holds the pool** three times — the population read, the merge, and the sheet
+plan's ledger check — and the one-pool-holding-process rule binds on all three.
+
 ## `curate manufacture` — the one population here that is made rather than found
 
 Everything else in this stage spends supply. This makes some. The colour-expression

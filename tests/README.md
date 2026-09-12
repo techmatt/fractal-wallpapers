@@ -402,6 +402,35 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+**A leg, a sheet ordering and a fixture that made the file it was added for three
+times faster.** `repeat_label_batch_ckpt120`, 2026-09-11, idle box after a 145 s
+render leg and a merge. **Fast: 4,299 selected, 136 deselected — 4,435 collected —
+in 147.59 s. Slow: 4,435 of 4,435 in 519.58 s (8:39), zero skips, zero failures.**
+The two lanes agree on 4,435.
+
+**The +27 is +21 for the new leg, +3 for a finished page read in the plan's own
+column, and +3 for the repeated traversal's round trip, and every one is fast.**
+The clock moved **+5.19 s** fast and **+1.64 s** slow — that second number is the
+box, since no slow test was added and the new leg renders nothing in a test.
+
+The fast lane's +5.19 s would have been nearer +14 without
+[`conftest.shipped_cyclic_maps`]. `models.palette_sets.cyclic` parses all 1,021
+tracked colormap documents on every call — **0.85 s** — and it is reached by
+anything that builds a recipe, because the fold is the map's own kind. So a file
+whose every test resolves one paid it per test: `tests/test_repetition.py` ran
+**9.45 s over 17 tests** before the fixture and **2.79 s** after, with nothing else
+changed. The fixture hands back the tracked answer, read at the same accessor,
+once; it is not a stub.
+
+**Two reds came out of the slow lane and both were `test_nested_verbs.py`'s census,
+which is the one census here that is *meant* to move.** A new command group is
+exactly what that table exists to notice: `curate repetition` and its five verbs
+took the surface from twenty groups and ninety-four verbs to twenty-one and
+ninety-nine. That is a constant repointed on purpose and with the addition named in
+the docstring's running sentence — which is the opposite of the forbidden edit, and
+the difference is that this number is a claim about *what the CLI is*, not a floor
+asserting a store only grows.
+
 **Thirty-seven tests for one new leg and every one of them is in the fast lane.**
 `rotation_pass_ckpt120`, 2026-09-11, idle box after a 4h03m render leg. **Fast:
 4,272 selected, 136 deselected — 4,408 collected — in 142.40 s. Slow: 4,408 of
