@@ -847,6 +847,28 @@ that rate the whole owed population of **1,989 rows is 36,011 engine seconds, ab
 3 h 50 m of wall on three workers**, against the 2 h 32 m the dumpable arm spent on
 nearly five times as many rows.
 
+#### The full arm ran 34% dearer than the smoke priced it, measured 2026-09-12
+
+`owed_ckpt121`, the same population and the same three below-normal workers, stopped
+by its 14,400 s budget at **1,600 of 1,605 groups: 1,752 rows, 8,760 rotations,
+42,566 engine seconds in 14,455 s of wall.** That is **24.296 engine seconds a row
+and 4.859 a rotation** against the smoke's 18.105 and 3.621 — the smoke under-priced
+the arm by a third, and the whole 1,989 rows is about **4 h 33 m** rather than the
+3 h 50 m above. The 237 rows it did not reach are the arm's remainder.
+
+**A 40-group smoke prices the concurrency as badly as it prices the row.** The gap
+is not all in the row: the smoke ran at **2.61** engine seconds a wall second and
+the full leg at **2.945**, so the smoke was simultaneously slow per row and slow to
+overlap, and the two errors point opposite ways. Size an owed leg off a leg, and
+where only a smoke exists, take its seconds-a-row and its concurrency as **separate**
+estimates with separate error bars rather than multiplying one wall figure out.
+
+**What the arm decides reproduced almost exactly, which is the part a smoke can
+carry.** 528 adopted with the row removed, 450 adopted beside a row a guard held,
+774 where phase 0 won and 0 refused by the tolerance — **55.8%** of visited rows won
+by a rotation against the smoke's 56.7% over 60. So a smoke is worth running for the
+verdict rate and is not worth running for the clock.
+
 **The rotation wins a little more often here, not less**: 34 of 60 rows, **56.7%**,
 against the dumpable arm's 51.7% over 9,402 — 19 adopted with the row removed, 15
 held by a protection, 26 where none of the five beat phase 0, and the tolerance

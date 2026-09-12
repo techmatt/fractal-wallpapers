@@ -9,6 +9,6 @@
     "4x1024": 172,
     "4x256": 61892
   },
-  "recorded": "2026-09-11",
+  "recorded": "2026-09-12",
   "why_not_tracked": "one packed vector per recipe key at about six kilobytes a row, which is tens of megabytes against a 1 MiB per-file history guard. Same guard, same answer as the rows, the scores and the flatness sidecar."
 }
