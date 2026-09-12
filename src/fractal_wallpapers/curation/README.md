@@ -1794,6 +1794,20 @@ apart, under `swept_unmerged`, so a person who named a leg can read back what na
 it cost. The listing stays the default precisely so that taking one is a sentence
 somebody typed after reading it.
 
+⚠ **Sweeping a leg does not un-decide it, and the leftover is a loaded gun.** The
+sweep takes pictures and nothing else, so a swept leg keeps the files a merge reads
+— for a rotation leg `rows.jsonl`, `scores.jsonl` and `removed.jsonl` — and
+`curate <leg> merge` will still run: it would upsert rows naming pictures that are
+gone and remove live rows in exchange, and neither the leg's merge nor
+`candidate_ledger.merge` asks whether a picture is on disk. **So naming a leg to the
+sweep means deleting its merge inputs too**, which leaves the record — the leg's own
+`.json`, its `decisions.jsonl` and its `plan.jsonl` — and makes a later merge refuse
+cleanly on *two empty files mean no row was decided* rather than half-succeed.
+`owed_smoke_ckpt120` is the worked example: 34 pictures and 15 levelled colormaps
+swept, inputs deleted, record kept, and its now-empty `pictures/` removed so the leg
+stops appearing in the listing as a decision nobody has taken. Whether the sweep
+should do that itself is Matt's call and has not been taken.
+
 The safety is three properties and none of them is a promise made in a comment: the
 enumeration is `<subtree>/<leg>/pictures` at a **fixed depth**, so a leg's `fields/` is
 unreachable however large it gets; every directory is checked against the tier roots
