@@ -53,6 +53,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [preclose_ckpt122](#preclose_ckpt122)
     - [page_order_stratified_ckpt122](#page_order_stratified_ckpt122)
     - [embed_and_small_fixes_ckpt122](#embed_and_small_fixes_ckpt122)
     - [codebase_review_ckpt122](#codebase_review_ckpt122)
@@ -588,6 +589,33 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### preclose_ckpt122
+
+**The owed slow re-take, and the two lanes agree again at 4,590.** `preclose_ckpt122`,
+2026-09-13. **Fast: 4,454 selected, 136 deselected — 4,590 collected — in 167.64 s
+(2:47). Slow: 4,590 of 4,590 in 577.08 s (9:37).** Both green, zero skips, zero
+failures. The entry below predicted 4,590 for the slow lane and that is what it
+collected, so the one-count disagreement it left is closed and nothing had gone
+missing between the lanes.
+
+**This prompt wrote no test**, and both lanes still moved — fast +9.3 s on an
+identical count, slow +27.0 s on 21 more tests than
+`embed_and_small_fixes_ckpt122`'s 550.08 s. **It is the box, and the cheap check is
+what says so rather than the argument that nothing changed**: this prompt touched
+docstrings, markdown and one floor constant, so *a lane that moves right after code
+landed is the code* had nothing to point at — but that rule is not satisfied by an
+alibi, it is satisfied by a reading. `test_autolevel_identity` came back **36.08 s**
+against its recorded 31.08 / 34.24 / 32.31, which is **above the band**, and +5% on
+an invariant engine-bound guard is the same +5% both lanes took (167.64/158.36 =
++5.9%, 577.08/550.08 = +4.9%). Forty seconds settled what a re-run of either lane
+would have cost minutes to guess at.
+
+⚠ **`NOTES_AT_LEAST` in `test_schema_notes.py` went 110 → 109**, which is the one
+direction that constant's own comment refuses. It is a **deliberate deletion** —
+`gallery_grade_train`'s two spellings of `held_out_is` were reconciled into one note
+— and it is named at the constant, because a floor that comes down without a name on
+it is exactly the silent-deletion case the floor exists to catch.
 
 #### page_order_stratified_ckpt122
 

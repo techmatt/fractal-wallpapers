@@ -315,9 +315,10 @@ whole arrangement exists for.
 Until 2026-09-12 each sentence was written at the record site, so the source
 carried one copy per *write* and a module's own two records could disagree about
 the same field — `models/gallery_grade_train.py` had two spellings of
-`held_out_is` differing in three words. The prose now lives in a module-level
-**`SCHEMA_NOTES: dict[str, str]` beside that module's `SCHEMA`**, and the builder
-reads it at write time.
+`held_out_is` differing in three words. Standing them beside each other is what got
+them read, and reading them found both wrong: see the dated entry below. The prose
+now lives in a module-level **`SCHEMA_NOTES: dict[str, str]` beside that module's
+`SCHEMA`**, and the builder reads it at write time.
 
 **Three things this is deliberately not.**
 
@@ -350,12 +351,25 @@ face value.
   `julia:mandelbrot`, and **166 of them have no supply-sidecar row at all** — so
   they were never an embedding backlog either. A `curate depth near-places` census
   written under `727733d` carries the wrong sentence.
+* **2026-09-12 — `gallery_grade_train.SCHEMA_NOTES["held_out_is"]`**, both
+  spellings of it, and `bar_<band>.json`'s `population.is` with them. They said
+  every number in a run record is *optimistic by one early stop* (or *by one
+  choice*). Read against the trainer: **three** choices land on the stopping
+  slice, not one — the epoch inside every run, and then in `band` the arm, by the
+  mean of the band's statistic over its seeds, and the seed, by the median of the
+  winning arm, both off the records' own `held_out` numbers. So every
+  `metrics.json` in `models/gallery_grade/` (21) and all three tracked bars
+  understate their own optimism by two choices. Nothing on those rows is
+  re-measured by this: the numbers stand, the caveat over them was too small.
 
 *Not a rewrite.* The lift moved 104 sentences and edited none of them. Where two
-of a module's records wrote one field two ways, both notes are kept under
-`<field>.<which>` — `held_out_is.fit` and `held_out_is.drop_high_asymmetric` — so
-the near-duplicates are now visible to whoever wants to reconcile them, and
-reconciling them is a separate decision.
+of a module's records write one field two ways, both notes are kept under
+`<field>.<which>` — `solve.py`'s `group_cap_is.shipped` against
+`group_cap_is.named` is one — so the near-duplicates are visible to whoever wants
+to reconcile them, and reconciling them is a separate decision. The lift's own
+near-duplicate, `gallery_grade_train`'s two spellings of `held_out_is`, was
+reconciled on 2026-09-12 into a **single** note: once read side by side, neither
+was true.
 
 **A sentence that names a runtime number is a `str.format` template**, formatted
 at the site: `SCHEMA_NOTES["reachable_is"].format(wanted=wanted)`. A field written

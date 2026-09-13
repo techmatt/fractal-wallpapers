@@ -256,8 +256,9 @@ pays for it in the worst seat alone** —
 [`MEASUREMENTS_decisions.md`](MEASUREMENTS_decisions.md)'s *What `K = 3` and a
 colour floor of one fair share cost together, measured 2026-09-09*.
 
-**A thin cell is carrier-bound and spiral-bound rather than held down by another
-cell's allowance**, which is a mining instruction —
+**A thin cell is stock-bound and spiral-bound rather than held down by another
+cell's allowance — and NOT carrier-bound**, 942 of 942 drawable maps carrying a
+carrier row, which is a mining instruction —
 [`MEASUREMENTS_decisions.md`](MEASUREMENTS_decisions.md)'s *The deadlock the floor
 was expected to hit, and did not*.
 

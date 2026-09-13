@@ -507,9 +507,18 @@ Over the six cells that landed exactly on the floor it is 3, 2, 2, 6, 38 and 0
 rows. What actually refuses a thin cell's rows here is `spiral` and
 `the_leg_had_no_seat_left`, not another cell's allowance — `dark_vivid_lime`'s 50
 clearing rows go 9 `spiral`, 7 `twin`, 6 out of seats. So the thin cells are
-**carrier-bound and spiral-bound**, which is a mining instruction rather than a
+**stock-bound and spiral-bound**, which is a mining instruction rather than a
 ceiling one, and the `K` sweep's feasibility reading — taken against each cell's
 `K = 2` deficit — did not answer the question a target of 20 asks.
+
+⚠ **This said "carrier-bound" until 2026-09-12 and that half was wrong.** Aiming
+is not what bounds a thin cell: **942 of 942** drawable maps carry a carrier row,
+every one of the 942 sits in a group with colour-mass rows, and at
+`dominance.CELL_LEAD` the thinnest cell of all, `dark_vivid_lime`, is still
+offered **42** maps — above `colorize.CANDIDATES` (32) — while holding 19 palette
+groups above the bar. The eight shortest cells offer **42 to 253**. What is short
+is the cell's own scored stock, which is a mining instruction all the same and a
+different one: buy rows in the cell, not maps to aim with.
 
 ## What the OWED arm costs, measured 2026-09-11
 
@@ -531,7 +540,15 @@ by its 14,400 s budget at **1,600 of 1,605 groups: 1,752 rows, 8,760 rotations,
 42,566 engine seconds in 14,455 s of wall.** That is **24.296 engine seconds a row
 and 4.859 a rotation** against the smoke's 18.105 and 3.621 — the smoke under-priced
 the arm by a third, and the whole 1,989 rows is about **4 h 33 m** rather than the
-3 h 50 m above. The 237 rows it did not reach are the arm's remainder.
+3 h 50 m above. The 237 rows it did not reach are what `rows_remaining` recorded.
+
+⚠ **`rows_remaining` is not what the continuation cost, and 237 was not what the
+next leg planned.** Only an adopted row falls out of the population; a `kept` or
+`held` row carries no mark and is drawn again. `owed_ckpt122` planned **1,464**
+rows against that 237, **1,223 of them already decided by `owed_ckpt121`** — 773
+`kept`, 450 `held`, zero adopted — so 83.5% of a 3 h 25 m leg, about **2 h 51 m**,
+re-asked questions already answered. Size a continuation off the passing set less
+the adoptions; `rotation.run`'s docstring carries the mechanism.
 
 **A 40-group smoke prices the concurrency as badly as it prices the row.** The gap
 is not all in the row: the smoke ran at **2.61** engine seconds a wall second and

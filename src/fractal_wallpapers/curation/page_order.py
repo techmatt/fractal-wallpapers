@@ -154,8 +154,11 @@ MARK_COLUMNS: frozenset[str] = frozenset({"spiral"})
 #: do not overlap much: at a cap of 0.07, **96%** of the general page's minimums and
 #: **100%** of the themed page's were already at or past it, so the reward was
 #: saturated almost everywhere and the term discriminated between nothing. Measured
-#: on `20260911T022330Z` and `20260913T001955Z`, whose within-window minimums run
-#: p10 0.0724 / 0.0790 and p90 0.1587 / 0.1635.
+#: on `20260911T022330Z` and on a themed n=200 record, whose within-window minimums
+#: run p10 0.0724 / 0.0790 and p90 0.1587 / 0.1635. **The themed record is gone**:
+#: it was solved on 2026-09-12 to have a themed page to read this against and
+#: deleted the same day, so the reading stands and the record it was taken on is
+#: not on any machine. The general one is in the store.
 #:
 #: So the cap sits at the p90 of that, which leaves the term live across the body of
 #: the range and saturated only in its tail. It is **not** the whole distance

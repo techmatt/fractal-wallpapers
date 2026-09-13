@@ -71,9 +71,11 @@ every row*, written so the pointer does not get re-proposed.
 **28** in `solve.py`, not 27; at `HEAD` it is 121, of which 104 were inline prose and 17
 already read a roster their module keeps. The move made two near-duplicate spellings
 visible that the per-site copies had hidden: `gallery_grade_train`'s two `held_out_is`
-differ in three words ("one early stop" against "one choice") and are kept apart as
-`held_out_is.fit` and `held_out_is.drop_high_asymmetric`. Reconciling them is a separate
-decision and was not taken.
+differed in three words ("one early stop" against "one choice") and were kept apart as
+`held_out_is.fit` and `held_out_is.drop_high_asymmetric`. **Reconciled on 2026-09-12, and
+reading them settled it against both**: three choices land on that stopping slice, not
+one. They are a single `held_out_is` now and the shipped rows carrying the old sentence
+are on `fractal_wallpapers/README.md`'s *Notes corrected after they shipped*.
 
 ---
 

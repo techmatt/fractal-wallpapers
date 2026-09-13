@@ -134,12 +134,18 @@ or under the cut, the nearest of them at 0.0313. Re-cutting is a ruling rather t
 `tests/test_palette_groups.py`'s pinned header says out loud.
 
 **And the ruling is dearer than the pin makes it look, because `color_mass` is keyed
-on the group id.** Read 2026-09-06. A re-cut renumbers: `record` sorts the groups
-tightest-first and numbers them `m01…mNN` in that order, so a merge anywhere in the
-table shifts every id after it. `data/palettes/color_mass/*.jsonl` — 18 tracked
-files, 822 rows each, 65 of them `mNN` and 757 `map:<name>` — would silently be
+on the group id.** Read 2026-09-06, counts re-read 2026-09-12. A re-cut renumbers:
+`record` sorts the groups tightest-first and numbers them `m01…mNN` in that order,
+so a merge anywhere in the table shifts every id after it.
+`data/palettes/color_mass/*.jsonl` — 18 tracked files, **942 rows each** (16,956
+pair rows in all), 65 of them `mNN` and **877** `map:<name>` — would silently be
 keyed to groups that mean something else, and a map merged out of singleton status
-loses the row it had under its own name. **The sources are keyed the same way**: the
+loses the row it had under its own name. **The drop's 120 maps are measured**, so
+what stands between here and a re-cut is the re-keying and the re-derivation below,
+never a hole in the mass map: every one of the **942** drawable maps has a row, and
+the one library map that does not is `blue_orange`, which `colorize.pool` never
+offers. (The counts read **822 and 757** until 2026-09-12, from before
+`classic-pairs-2026-09` was swept in.) **The sources are keyed the same way**: the
 sweep log is one row per `(group, mode, location)`, so re-keying it is not enough
 either — the sweep *measured one member per group*, so a group that gains a member
 was measured without it and two singletons that merge arrive with two rows and no
