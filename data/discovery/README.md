@@ -58,6 +58,21 @@ fractal-wallpapers derive-plane-seeds --write  # re-derive and replace it
 The verify is the default because the file's only real claim is that the
 procedure still produces it. Roughly fifteen minutes of Newton either way.
 
+**What the absence costs, measured 2026-09-13.** Deliberate is not free. Because
+there is no sampler, this file *is* the parameter planes' whole standing supply —
+**1,922 rows: 1,912 `nucleus_grid` (mandelbrot 500, multibrot3 412, multibrot4
+500, multibrot5 500), 4 `home_view`, 6 `hand_picked`** — and `derive` is
+deterministic, so a run gets exactly those rows back and never a new one. A walk's
+cursor only moves forward, so a plane that has drawn its 500 has no fresh roots for
+the rest of that leg. `RUN_ckpt123_overnight_harvest` walked `mandelbrot` and
+`multibrot5` out and stopped on `nothing servable` with 94 active minutes of its
+budget unspent; `supply/README.md`'s *With no root channel named, the whole
+standing root supply is small enough to walk out in a night* is the reading. The
+pinned planes are the contrast — `discovery.viewport_sampler` re-derives its ladder
+every run and `--sampler-rungs` extends it — and there is no equivalent here:
+**more plane roots means raising `COLUMNS` or `PER_PARTITION` and regenerating this
+file**, which is a tracked-data change and a decision, not a flag on a leg.
+
 This pool is load-bearing rather than convenient: without it `has_channel` is
 false for all four parameter-plane partitions, they can never be refilled once
 their queues drain, and a harvest that intended two thirds of its clock for them

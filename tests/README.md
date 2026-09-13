@@ -28,6 +28,7 @@ long to run as the optimization costs to compile.
   - [Commit charge drifts upward on uptime alone](#commit-charge-drifts-upward-on-uptime-alone)
 - [What "the fast-lane count" means](#what-the-fast-lane-count-means)
   - [A reading is comparable only against the same install](#a-reading-is-comparable-only-against-the-same-install)
+  - [A fast subset of a slow run is not comparable to a real fast run](#a-fast-subset-of-a-slow-run-is-not-comparable-to-a-real-fast-run)
   - [The lane now refuses the wrong interpreter at the door](#the-lane-now-refuses-the-wrong-interpreter-at-the-door)
   - [The 3,383, resolved](#the-3383-resolved)
 - [Shared readings of the tracked records](#shared-readings-of-the-tracked-records)
@@ -47,12 +48,14 @@ long to run as the optimization costs to compile.
     - [It could not have been found from this log](#it-could-not-have-been-found-from-this-log)
   - [A derivation paid twice is the thing to look for](#a-derivation-paid-twice-is-the-thing-to-look-for)
   - [A lane that moves right after code landed is the code until measured otherwise](#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise)
+  - [A count is not a cost](#a-count-is-not-a-cost)
   - [The candidate ledger is the thing that grows](#the-candidate-ledger-is-the-thing-that-grows)
     - [The wide store is gone and reading is no longer what this lane pays for](#the-wide-store-is-gone-and-reading-is-no-longer-what-this-lane-pays-for)
     - [The store has a ceiling now, so the digit should stop moving on its own](#the-store-has-a-ceiling-now-so-the-digit-should-stop-moving-on-its-own)
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [PRECLOSEOUT_ckpt123_wallpapers](#precloseout_ckpt123_wallpapers)
     - [lane_speedup_ckpt122](#lane_speedup_ckpt122)
     - [page_order_min_gap_ckpt122](#page_order_min_gap_ckpt122)
     - [preclose_ckpt122](#preclose_ckpt122)
@@ -263,6 +266,27 @@ spent two commits arguing about it. `pytest -q` ends on a line of the shape
 
 **A reading is comparable only against another taken on `.[dev,models]` with a
 release engine built.** Anything else is a different suite wearing the same name.
+
+### A fast subset of a slow run is not comparable to a real fast run
+
+**Taking `--slow`'s durations, dropping the slow-marked rows and comparing what is
+left against a real fast lane is invalid**, and it cost `lane_speedup_ckpt122` a
+measurement cycle. It reported the `palette_sets.cyclic` memo as worth **0.0 s**
+and showed four files getting *slower* — which a cache cannot do, and that
+impossibility is the only reason the method was caught at all. A shared derivation
+is paid by whichever test reads it first, and which test that is differs between
+the two lanes, so the subset is a different apportionment of the same work rather
+than a smaller run of it. The rule above and this one are the same rule about
+different variables: same install, and same *kind of run*.
+
+**The honest comparison is a stashed re-baseline on the same tree** — stash the
+change, take the lane, restore it, take the lane again, same box, same install,
+nothing else moved. That gave the memo its real **-10.13 s**. It is the expensive
+option: a stash-and-re-read is the whole lane, against the one-file profile
+[the code-until-measured rule](#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise)
+recommends, so it is for attributing a change you made and not for answering *box
+or tree*. And it wants a clean `git status` — the caveats are under
+`votes_kit_randomize_20260909` in the readings log.
 
 ### The lane now refuses the wrong interpreter at the door
 
@@ -514,6 +538,23 @@ goes with it.
 So the cheap check when a lane moves right after a commit is **to re-run one slow
 file under a profile**, not to re-run the whole lane hoping for a quieter box.
 
+### A count is not a cost
+
+**Collected-item share predicts nothing about run time, and sizing a pass off
+counts wastes a cycle.** `test_colormaps.py`'s parametrize is **1,021 of the
+4,625 collected — 22% of the suite's count** and the first thing anybody reaches
+for. It costs **0.00 s to run over 3,066 entries and about 0.1 s to collect**:
+7.35 s against 7.21 s with the whole file ignored. A shared parsed-package
+fixture was refused on the same reading — eight guards each sweep the package's
+223 files and that sweep is **35 ms**, because `rglob` plus `ast.parse` is
+1,185 ms and the only guard that parses package-wide already caches it.
+
+The thing a count *does* predict is what a reading is comparable with, which is
+why [the lanes' own count](#what-the-fast-lane-count-means) is kept — a colormap
+drop moves both lane counts with no test written. Two different questions off one
+number, and only one of them is about time. **Read a durations list, not a
+collection summary.**
+
 ### The candidate ledger is the thing that grows
 
 It went from 15,362 rows and 41 MB on 2026-08-26 to **366,236 rows and 1.11 GB on
@@ -626,6 +667,34 @@ the **location** store, which that plan never opens. **No `renders plan` / `rend
 build` was needed and none was run.** A location ingest and a sheet build are the same
 shape here for the opposite reasons — the sheet lands pictures no store has a row for,
 and this lands rows no render cache reads.
+
+#### PRECLOSEOUT_ckpt123_wallpapers
+
+**The pair, on one tree, agreeing at 4,630 — which is what this log was waiting for.**
+`PRECLOSEOUT_ckpt123_wallpapers`, 2026-09-13. **Fast: 4,477 selected, 153 deselected —
+4,630 collected — in 134.31 s (2:14). Slow: 4,630 of 4,630 in 483.23 s (8:03).** Both
+green, zero skips, zero failures, taken back to back. The disagreement `CLAUDE.md` had
+carried since 2026-09-13's ingest — a fast count from one lane and a slow clock from
+`lane_speedup_ckpt122` — is closed, and **the arithmetic was right**: 4,477 + 153 is
+exactly the 4,630 the slow lane collected.
+
+**Both clocks are a little over and it is the box, not the tree.** +9.19 s on the fast
+lane against 125.12 s and +11.57 s on the slow against 471.66 s. The diff those lanes
+covered is **four README files and no code at all**, so there is nothing in the tree that
+could have moved either; six subagents were still finishing when the fast lane started.
+Recorded rather than chased, which is what *A lane that moves right after code landed is
+the code until measured otherwise* says to do when no code landed.
+
+⚠ **A short render cache was suspected and disproved.** A live `fractal-engine.exe` inside
+the lane read as CLAUDE.md's *an ingest shortens the cache*, and it is not:
+`renders.missing` is **0 of 6,539** (`smooth_render`) and **0 of 5,669**
+(`strange_render`). The engine there is `test_renderer_agreement`'s own work. Worth the
+line because the inference was reasonable and wrong, and the check is two calls.
+
+**The decode cache does not exist on this box** — `artifacts/renders/<head>/decoded/` is
+absent — so every training test in this lane decodes JPEGs. Not taken: it buys training
+throughput, this lane's training tests are two epochs at ~7 s, and the cache is ~2.7 MB a
+picture over 12,208 pictures, **about 33 GB**. A storage decision, not a lane fix.
 
 #### lane_speedup_ckpt122
 

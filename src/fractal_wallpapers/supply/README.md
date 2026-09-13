@@ -402,16 +402,39 @@ and `data/anchors.jsonl`'s one classic row feeds engine comparison rather than
 supply. `pools.classic_phoenix_pool()` is that missing row and there will never be
 a second: the plane is one parameter point, so the only thing a fresh root can
 vary is the frame, and varying the frame is what the walk does. Every further
-*place* comes from the proven channel.
+*place* comes from the proven channel or from the viewport sampler — **and
+measured over the partition's whole stock it is overwhelmingly the sampler.** The
+222 admitted locations `phoenix:classic` holds resolve, through each admission's
+root row, to **183 off 56 `viewport_sampler` roots, 39 off 4 `proven` roots, and
+0 off the one `home_view` root**, all three runs 2026-09-02. So the home-view row
+has never produced an admission on this partition in any leg that has ever walked
+it, and the channel that opened the plane is the one that is off by default.
 
 **So a leg that names `phoenix:classic` and no root channel hands it a floor it
-cannot spend**, and `RUN_ckpt123_overnight_harvest` is the measurement: one queue
-entry at launch, queue **0** in all 1,710 quota traces, one slot served in 2,290
-batches, and a realized share of **0.0001** against an intended **0.05** and a
-standing deficit of **83.7**. The floor's minutes are not lost — the allocator
+cannot spend**, and `RUN_ckpt123_overnight_harvest` is the measurement. Recounted
+off `quota.jsonl` itself: **2,290 batch traces**, `phoenix:classic`'s queue **1 at
+batch 0 and 0 in the other 2,289**, **one slot served in the night**, and a
+realized share decaying from 0.0262 to **0.000** against an intended **0.05** and
+a standing deficit of **83.743** that never moved. (The figures this paragraph
+carried until 2026-09-13 — *queue 0 in all 1,710 quota traces*, realized 0.0001 —
+came from the run report rather than the file; the file has 2,290 rows and the
+conclusion is unchanged.) The floor's minutes are not lost — the allocator
 gives them to whoever can take them — but the partition is on the invocation as a
 partition that cannot move. Naming it costs nothing and buys nothing;
 `--root-channel viewport_sampler` is what makes the name mean something.
+
+**Generally: naming no root channel leaves a one-root partition unservable, and
+nothing in the run reports it as starved.** `Refill.has_channel` returns True for
+`phoenix:classic` unconditionally — the home-view pool is always on, and it is one
+row — so the partition enters the census, is allocated against and draws its floor
+on a queue that can never hold a second entry. `starved()` then declines to refill
+it, correctly and silently, because `remaining()` is zero rather than because
+anything is wrong. So the two states *served and thin* and *named and immovable*
+are the same state to every reader downstream. **A mix cannot be served where
+there is nothing to mix**, and the fix is on the invocation rather than in the
+allocator. The warning that exists is `pool_state`'s launch lines: read them
+before a long leg, and treat a partition opening at a single-digit pool as a leg
+that has to name a channel or drop the partition.
 
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
@@ -574,6 +597,24 @@ that partition alone, and its census, its price and its refill census all cover
 it alone. That is a different object from a full run with a thin mix, and the
 summary says which it was.
 
+**A named-partition LIST aims a leg; it does not overrule the census share.** The
+one-partition case above keeps the books; the list case does not divide the clock,
+and `RUN_ckpt123_overnight_harvest` is the measurement. It named four julia twins,
+two parameter planes and one pinned plane, and the four twins **stood at a
+standing deficit of exactly
+0.00** — labelled stock already at what the release mix says they are owed — so
+they ran on the 0.05 floor alone and took **0.179 of the realized clock between
+them**, against **0.821** for `mandelbrot` (deficit 624.06) and `multibrot5`
+(196.37). Off the last `quota.jsonl` row of that run, batch 2289. Naming a
+partition buys it a seat in the allocation and the floor that comes with the seat;
+what it cannot buy is minutes, because the intent is `deficit ÷ price` and a
+partition at zero deficit is asking for nothing. **To move the clock, move the
+census** — label the partition, or change `release_mix`; `--partition` says which
+books a leg may open and nothing else. This is a different claim from *the
+partition list aims a leg, it does not extend one* below, which is about roots:
+that one is about running out of supply, this one about never being owed the
+clock in the first place.
+
 **Every batch reconciles, and a batch that does not balance ends the run.** Three
 identities have to close: every candidate the engine reported was written with a
 fate this project knows, everything that reached the frontier was either admitted
@@ -682,6 +723,32 @@ did not appear: it derives from admitted plane locations, the plane pools were
 themselves walked out, so nothing fed it. Budget a channel-less leg at about
 five hours on this supply and expect the clock to outlast the roots — the
 partition list aims a leg, it does not extend one.
+
+**There is no continuous boundary sampler for a parameter plane, and
+`nucleus_grid` is a finite enumerated pool that empties permanently.** The four
+planes have no sampler on purpose — an unscreened draw over the higher degrees
+measured zero good locations in 144 — so what they run on is the tracked file
+`data/discovery/plane_seed_pool.jsonl`, and it is **1,922 rows: 1,912
+`nucleus_grid` (mandelbrot 500, multibrot3 412, multibrot4 500, multibrot5 500),
+4 `home_view`, 6 `hand_picked`**, counted off the file. `plane_seeds.derive` is
+deterministic and `verify` asserts byte equality against that file, so re-running
+a harvest gets exactly those rows back and never a new one; a run's cursor only
+moves forward, so a plane that has walked its 500 has no fresh supply for the
+rest of the night. The only lever is a **regeneration** — `derive-plane-seeds
+--columns N --per-partition M --write`, a tracked-data change — not a run flag.
+
+**The pinned planes are the exception, and the difference is a file against a
+derivation.** `viewport_sampler` is re-derived at every build and never
+checkpointed, so it cannot empty permanently the way a pool does: its ladder is
+`(4^(R+1) - 4) / 3` frames — 340 at the default four rungs, 1,364 at five, 5,460
+at six — and `--sampler-rungs` moves it, which is why `ViewportSampler.starvation`
+is the one exhaustion message in this package that names a knob. Two cautions
+against reading that as unlimited. The **per-frame yield turns over past rung 4**
+(`discovery/README.md`'s *The viewport sampler*), and a fresh `--seed` redraws the
+same ground rather than new ground: every seed samples the same `4^k` cells of the
+same home box, and the jitter is at most a quarter of a cell width while a frame's
+width *is* the cell width, so two seeds' frames in one cell overlap by at least
+half. **Re-drawable, extendable, and not a source of unbounded novelty.**
 
 **A sitting can add proven roots and no parameters at all, and `julia_supply_ckpt123`
 is the measured case.** All 48 of its rows came back q3+, so all 48 became proven
