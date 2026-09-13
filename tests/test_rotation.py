@@ -401,6 +401,7 @@ def test_a_seat_reached_through_also_recorded_holds_the_row():
     assert rotation.holder_of(row, held) == store_module.RETAINED_SEATED
 
 
+@pytest.mark.slow
 def test_the_pass_honours_every_protection_the_prune_does():
     """The prompt names two and this honours five, which is the safe direction:
     a pass that protects more rows than it was asked to cannot take one it should

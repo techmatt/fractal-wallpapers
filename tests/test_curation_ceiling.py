@@ -618,6 +618,7 @@ def test_a_growth_rung_says_which_side_of_the_ruling_it_was_drawn_on():
     assert '"mode_ceilings": dict(record["config"].get("mode_ceilings") or {})' in body
 
 
+@pytest.mark.slow
 def test_the_ceiling_is_in_force_on_a_themed_pass_too():
     """A theme narrows the COLOUR and says nothing about the mode, so a runaway is
     a runaway there as well — which is why this is not one of the three things

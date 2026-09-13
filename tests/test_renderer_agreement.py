@@ -539,6 +539,10 @@ EXEMPT: dict[str, str] = {
     "curation.mine": "`mine.bench` prices the render and recolour paths against each other "
     "over a place, a mode and N maps. It stores nothing and names no recipe. `mine.make` "
     "is in the registry above and is the module's renderer.",
+    "curation.phase_response": "renders one recipe at several phases over a stated panel "
+    "and reads the pixels for what `Palette.phase` moves. A measurement rig in this "
+    "table's own sense: it names no recipe key, no row reaches the pool, and levelling "
+    "is off throughout, so its pictures are read for their differences and thrown away.",
     "curation.release": "`release.render_task` is the worker the registry drives; the module "
     "has one other call and it is that function.",
     "palettes.mass_sweep": "measures a colour census over (map, mode, place). Its pictures "

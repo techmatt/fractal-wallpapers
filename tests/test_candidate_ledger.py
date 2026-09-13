@@ -300,6 +300,7 @@ def isolated(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.mark.slow
 def test_backfill_holds_one_row_per_render_not_one_per_decision(isolated, monkeypatch):
     """A re-stamp is dropped and a duplicate render is merged, both on the picture.
 
@@ -338,6 +339,7 @@ def test_backfill_holds_one_row_per_render_not_one_per_decision(isolated, monkey
     assert [other["run"] for other in stored["provenance"]["also_rendered"]] == ["run9"]
 
 
+@pytest.mark.slow
 def test_a_second_backfill_over_an_unchanged_pool_writes_the_same_bytes(isolated, monkeypatch):
     """A store that churned on a re-read would make every manifest a moving target."""
     monkeypatch.setattr(
@@ -665,6 +667,7 @@ def test_a_row_with_no_colour_ask_carries_the_two_fields_it_always_carried():
     assert candidate_ledger.hunt_block(None) == {"seconds": None, "k": None}
 
 
+@pytest.mark.slow
 def test_the_colour_ask_survives_a_merge_and_the_whole_store_rewrite_that_deleted_it_once(
     isolated, monkeypatch
 ):
@@ -947,6 +950,7 @@ def test_a_name_this_project_did_not_write_reaches_neither_half(tmp_path, monkey
     assert (tmp_path / "elsewhere" / "a.leveled" / "viridis.json").is_file()
 
 
+@pytest.mark.slow
 def test_a_prune_reads_the_store_through_the_accessors_and_never_off_the_root(
     isolated, monkeypatch
 ):
@@ -1056,6 +1060,7 @@ def test_a_dry_run_prune_writes_no_row_at_all(isolated):
     assert ratchet.entries() == []
 
 
+@pytest.mark.slow
 def test_the_prune_writes_to_a_redirected_ratchet_and_never_to_the_tracked_one(isolated):
     """The autouse redirect, asserted rather than assumed.
 
@@ -2152,6 +2157,7 @@ def test_every_leg_that_makes_a_row_names_the_build_it_drew_with():
         )
 
 
+@pytest.mark.slow
 def test_a_backfill_carries_a_stamp_rather_than_erasing_or_inventing_one(isolated, monkeypatch):
     """A backfill rewrites every row from the decision stores, which say nothing
     about a build. Stamping with the live one would be a lie about an old
