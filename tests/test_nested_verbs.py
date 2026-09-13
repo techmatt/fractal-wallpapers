@@ -603,7 +603,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
-        "browse": ("--stamp", "--out"),
+        "browse": ("--stamp", "--spacing", "--out"),
         "resolve": ("--stamp",),
         "list": (),
     },
