@@ -2627,6 +2627,7 @@ def test_a_rich_cell_keeps_the_shipped_bar_exactly(monkeypatch):
 
     assert bar == 0.5, "the 20th best reads 0.90, well over the shipped bar"
     assert gate["relaxed"] is False
+    assert gate["bar_from"] == solve.BAR_FROM_SHIPPED
     assert gate["wanted"] == 20 == 4 * 5
     assert gate["reachable"] == 0.90
     assert gate["cell_at_bar"] == 20
@@ -2645,6 +2646,7 @@ def test_a_thin_cell_relaxes_to_what_its_own_4n_th_best_reads(monkeypatch):
 
     assert bar == pytest.approx(0.17), "the 8th best, which is under the shipped bar"
     assert gate["relaxed"] is True
+    assert gate["bar_from"] == solve.BAR_FROM_REACHABLE
     assert gate["shipped_bar"] == 0.5
     assert gate["reachable"] == pytest.approx(0.17)
     assert gate["cell_at_bar"] == 8, "roughly 4n to choose from, which is the point"
@@ -2664,9 +2666,48 @@ def test_the_relaxation_stops_at_the_floor_and_a_thinner_cell_ships_small(monkey
     assert bar == solve.THEMED_BAR_FLOOR == 0.01
     assert gate["wanted"] == 20
     assert gate["reachable"] is None, "the cell holds five scored rows and wants twenty"
+    assert gate["bar_from"] == solve.BAR_FROM_FLOOR_UNREACHABLE
     assert gate["cell_scored"] == 5, "in5 has no reading at all"
     # Three of five clear the floor. The gallery ships small and says so.
     assert gate["cell_at_bar"] == 3 < 5
+
+
+def test_the_two_ways_onto_the_floor_are_one_number_and_bar_from_tells_them_apart(monkeypatch):
+    """A cell with no `4n`-th best at all and a cell whose `4n`-th best is under
+    the floor both land on the floor, and `effective_bar`, `relaxed` and `floor`
+    are the same in both — so every other field in the gate reads identically. Over
+    the 48 themed cells the split is 7 the first way and 22 the second, and a
+    record could not say which until `bar_from`."""
+    cell = "dark_vivid_lime"
+    # Twenty scored rows, so the cell reaches its 4n-th best — and that best reads
+    # 0.001, under the 0.01 floor. This is the branch `reachable is None` hides.
+    pool = [candidate(f"in{at}", cells=(cell,)) for at in range(20)]
+    scored({f"in{at}": 0.005 - at * 0.0002 for at in range(20)}, monkeypatch)
+
+    bar, gate = solve.themed_fine_bar(pool, cell, 0.5, n=5, log=quiet)
+
+    assert bar == solve.THEMED_BAR_FLOOR == 0.01
+    assert gate["bar_from"] == solve.BAR_FROM_FLOOR_BELOW
+    assert gate["reachable"] is not None, "this cell DOES field 4n scored rows"
+    assert gate["cell_scored"] == 20 == gate["wanted"]
+    # The two branches are indistinguishable everywhere else, which is the point.
+    assert gate["effective_bar"] == solve.THEMED_BAR_FLOOR
+    assert gate["relaxed"] is True
+    assert gate["cell_at_bar"] == 0, "nothing in the cell clears even the floor"
+    assert solve.BAR_FROM_FLOOR_BELOW in gate["bar_from_is"]
+    assert solve.BAR_FROM_FLOOR_UNREACHABLE in gate["bar_from_is"]
+
+
+def test_every_bar_from_a_pass_can_write_is_named_in_the_roster():
+    """`BAR_FROM` is the vocabulary, and a value outside it is a record a reader
+    has no way to interpret."""
+    assert set(solve.BAR_FROM) == {
+        solve.BAR_FROM_SHIPPED,
+        solve.BAR_FROM_REACHABLE,
+        solve.BAR_FROM_FLOOR_UNREACHABLE,
+        solve.BAR_FROM_FLOOR_BELOW,
+    }
+    assert len(solve.BAR_FROM) == 4, "four spellings, no duplicates"
 
 
 def test_the_cell_is_measured_before_any_bar_and_not_after_one(monkeypatch):

@@ -82,6 +82,21 @@ from fractal_wallpapers.curation import candidate_ledger
 #: The schema every record here carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "bound_is": "how many of these rows COULD be a repeat: a draw at a location "
+    "with nothing invisible cannot be, and a location cannot repeat more than it hides",
+    "expected_is": "the sum over drawn rows of invisible / (pool - retained), which is "
+    "the repeat rate if the maps a location has not been offered are exchangeable",
+}
+
+
 #: What the rank says about one row, in the spelling the record uses. The five
 #: protections are [`candidate_ledger.RETAINED_REASONS`] and are applied there;
 #: this is the ranking's own verdict, and there are only two of them.
@@ -514,11 +529,9 @@ def repeat_draws(drawn: list, standing: dict, pool: int) -> dict:
         "at_locations_with_deleted_rows": at_risk,
         "locations": len(per_place),
         "bound": bound,
-        "bound_is": "how many of these rows COULD be a repeat: a draw at a location "
-        "with nothing invisible cannot be, and a location cannot repeat more than it hides",
+        "bound_is": SCHEMA_NOTES["bound_is"],
         "expected": round(expected, 2),
-        "expected_is": "the sum over drawn rows of invisible / (pool - retained), which is "
-        "the repeat rate if the maps a location has not been offered are exchangeable",
+        "expected_is": SCHEMA_NOTES["expected_is"],
         "pool": int(pool),
     }
 

@@ -71,6 +71,61 @@ import time
 
 from fractal_wallpapers.curation import ceiling
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "directions_are": "the slice count the metric estimates over, and part of the "
+    "rule's identity: two galleries chosen at different counts are measured in "
+    "different metrics and are not comparable, the same way two chosen under "
+    "different diversity rules are not. pixel_clouds.DIRECTIONS, which is the twin "
+    "metric's own and not groups.DIRECTIONS",
+    "seconds_are": "wall time inside the rule itself, over every call: the reduced "
+    "bound, the norm screen, the decodes and the measured pairs. It is the stage "
+    "that opens pictures and the one that grows when the pool does",
+    "seated_pictures_decoded_is": "the seats something actually had to measure "
+    "against. A seat's full cloud is read on first need and not at seat time — see "
+    "rules.Twins.hold",
+    "reduced_store_is": "one reduced signature a candidate, kept for the life of the "
+    "pass. It is what stops a view larger than the bounded cache re-decoding the "
+    "same pictures on every pass — see rules.Twins.reduced_of",
+    "unembedded_are": "admitted and counted, the ruling distinct.preselect already "
+    "made for this store. Safe here because this rule runs underneath "
+    "one-per-location, so an unembedded place still takes at most one seat",
+    "location_is": "the `location` rule reads solve.Candidate.cluster — a place's "
+    "own key, or the key of the place distinct.preselect folded it into. It is "
+    "one-per-location exactly when nothing folded, which is every record before "
+    "2026-09-09 and every record taken under distinct.DELETE",
+    "group_cap_is": "a COUNT of seats one palette group may take. There is no "
+    "same-group distance rule and no second threshold anywhere in this leg",
+    # Two notes apiece, because the two caps are each written one way when they
+    # ran and another when they did not. The branch is the record's, not this
+    # dict's: the site picks, and the row still carries the sentence whole.
+    "spiral_cap_is.uncapped": "no spiral share cap ran; every location was seatable "
+    "whatever the probe said about it, and the `spiral` refusal column is zero by "
+    "construction",
+    "spiral_cap_is.capped": "at most ceil({share} * seats filled) seats may sit at a "
+    "location the spiral probe calls a spiral. A share of the REALIZED count, "
+    "ceiling.share_of, which is the one spelling a colour target is stated in. The "
+    "verdict is off curation.spiral_scores at the cut models/spiral/manifest.json "
+    "carries, and a location with NO score counts toward nothing: unknown is not "
+    "not_spiral",
+    "mode_ceilings_is.uncapped": "no per-mode ceiling ran; every mode could take as "
+    "many seats as the other rules left it, and the `mode_ceiling` refusal column is "
+    "zero by construction",
+    "mode_ceilings_is.capped": "at most ceil(share * seats filled) of the seats may be "
+    "of the named mode. The spiral share cap's own arithmetic, ceiling.share_of, which "
+    "is the one spelling a colour target is stated in. A mode NOT named here is not "
+    "capped by this rule, and a ceiling is a guard rather than a target: it is set "
+    "above what the gallery does unaided, so a zero in the refusal column is the "
+    "reading it is there to give",
+}
+
+
 #: The rules, in the order [`State.refuses`] applies them. The first to fail
 #: names the refusal, which is what makes the rejection ledger a partition of the
 #: pool rather than a tally that double-counts.
@@ -676,18 +731,12 @@ class Twins:
             "neighbours": self.neighbours,
             "metric": "pixel-cloud sliced Wasserstein-1 between two finished pictures",
             "directions": pixel_clouds.DIRECTIONS,
-            "directions_are": "the slice count the metric estimates over, and part of the "
-            "rule's identity: two galleries chosen at different counts are measured in "
-            "different metrics and are not comparable, the same way two chosen under "
-            "different diversity rules are not. pixel_clouds.DIRECTIONS, which is the twin "
-            "metric's own and not groups.DIRECTIONS",
+            "directions_are": SCHEMA_NOTES["directions_are"],
             "bound_blocks": BOUND_BLOCKS,
             "bound": BOUND,
             "candidates_tested": self.tested,
             "seconds": round(self.seconds, 3),
-            "seconds_are": "wall time inside the rule itself, over every call: the reduced "
-            "bound, the norm screen, the decodes and the measured pairs. It is the stage "
-            "that opens pictures and the one that grows when the pool does",
+            "seconds_are": SCHEMA_NOTES["seconds_are"],
             "seat_comparisons_settled_by_the_bound": self.settled_by_the_bound,
             "seat_comparisons_settled_by_the_norm_screen": self.settled_by_the_norm_screen,
             "norm_screen": "the reverse triangle inequality on the L1 norm, a scalar a seat "
@@ -696,16 +745,12 @@ class Twins:
             "gallery are unchanged and only the arithmetic is",
             "seat_comparisons_measured": self.measured,
             "seated_pictures_decoded": len(self._decoded),
-            "seated_pictures_decoded_is": "the seats something actually had to measure "
-            "against. A seat's full cloud is read on first need and not at seat time — see "
-            "rules.Twins.hold",
+            "seated_pictures_decoded_is": SCHEMA_NOTES["seated_pictures_decoded_is"],
             "reduced_signatures_kept": len(self._mine),
             "reduced_signatures_made": self.reduced_made,
             "reduced_signature_hits": self.reduced_hits,
             "full_signatures_fetched": self.full_signatures_fetched,
-            "reduced_store_is": "one reduced signature a candidate, kept for the life of the "
-            "pass. It is what stops a view larger than the bounded cache re-decoding the "
-            "same pictures on every pass — see rules.Twins.reduced_of",
+            "reduced_store_is": SCHEMA_NOTES["reduced_store_is"],
             "signatures_made": self.clouds.made,
             "signature_cache_hits": self.clouds.hits,
             "refused_without_a_picture_on_disk": self.without_a_picture,
@@ -897,9 +942,7 @@ class Places:
             "pictures_opened": 0,
             "admitted_without_a_descriptor": self.without_a_descriptor,
             "seated_without_a_descriptor": self.seated_without_a_descriptor,
-            "unembedded_are": "admitted and counted, the ruling distinct.preselect already "
-            "made for this store. Safe here because this rule runs underneath "
-            "one-per-location, so an unembedded place still takes at most one seat",
+            "unembedded_are": SCHEMA_NOTES["unembedded_are"],
             "seated_places_held": len(self.held),
         }
 
@@ -1260,10 +1303,7 @@ class State:
         return {
             "rules": list(rules_for(self.diversity)),
             "hard": ["one wallpaper per cluster", "the diversity rule"],
-            "location_is": "the `location` rule reads solve.Candidate.cluster — a place's "
-            "own key, or the key of the place distinct.preselect folded it into. It is "
-            "one-per-location exactly when nothing folded, which is every record before "
-            "2026-09-09 and every record taken under distinct.DELETE",
+            "location_is": SCHEMA_NOTES["location_is"],
             "counted": [
                 "the palette group cap",
                 "the per-cell allowance",
@@ -1274,8 +1314,7 @@ class State:
             "no_fallback": "nothing is seated by relaxing a rule it failed, and no seat is "
             "padded. Unfilled beats padded",
             "group_cap": self.rule.group_cap,
-            "group_cap_is": "a COUNT of seats one palette group may take. There is no "
-            "same-group distance rule and no second threshold anywhere in this leg",
+            "group_cap_is": SCHEMA_NOTES["group_cap_is"],
             "k": self.rule.k,
             "cell_share": ceiling.CELL_SHARE,
             "family_share": ceiling.FAMILY_SHARE,
@@ -1283,33 +1322,16 @@ class State:
             "targets": dict(sorted(self.rule.targets.items())),
             "spiral_cap": self.spiral_cap,
             "spiral_cap_is": (
-                "no spiral share cap ran; every location was seatable whatever the probe "
-                "said about it, and the `spiral` refusal column is zero by construction"
+                SCHEMA_NOTES["spiral_cap_is.uncapped"]
                 if self.spiral_cap is None
-                else (
-                    f"at most ceil({self.spiral_cap:g} * seats filled) seats may sit at a "
-                    f"location the spiral probe calls a spiral. A share of the REALIZED "
-                    f"count, ceiling.share_of, which is the one spelling a colour target "
-                    f"is stated in. The verdict is off curation.spiral_scores at the cut "
-                    f"models/spiral/manifest.json carries, and a location with NO score "
-                    f"counts toward nothing: unknown is not not_spiral"
-                )
+                else SCHEMA_NOTES["spiral_cap_is.capped"].format(share=f"{self.spiral_cap:g}")
             ),
             "spiral_seats": len(self.spirals),
             "spiral_allowance": self.spiral_allowance(),
             "mode_ceilings": dict(sorted(self.mode_ceilings.items())),
-            "mode_ceilings_is": (
-                "no per-mode ceiling ran; every mode could take as many seats as the "
-                "other rules left it, and the `mode_ceiling` refusal column is zero by "
-                "construction"
-                if not self.mode_ceilings
-                else "at most ceil(share * seats filled) of the seats may be of the named "
-                "mode. The spiral share cap's own arithmetic, ceiling.share_of, which is "
-                "the one spelling a colour target is stated in. A mode NOT named here is "
-                "not capped by this rule, and a ceiling is a guard rather than a target: "
-                "it is set above what the gallery does unaided, so a zero in the refusal "
-                "column is the reading it is there to give"
-            ),
+            "mode_ceilings_is": SCHEMA_NOTES[
+                "mode_ceilings_is.uncapped" if not self.mode_ceilings else "mode_ceilings_is.capped"
+            ],
             "mode_ceiling_seats": {
                 mode: len(self.modes.get(mode, ())) for mode in sorted(self.mode_ceilings)
             },

@@ -87,6 +87,13 @@ carry `"schema": 2` plus a pointer. Same information, one copy, and it gains a v
 number — which the current arrangement cannot have, since editing the prose in the builder
 silently makes old and new records disagree about their own fields.
 
+⚠ **Landed 2026-09-12, and half of this proposal was refused.** The `SCHEMA_NOTES` half is
+the design; the pointer and the version integer are not, and the counts above are one low
+in both places — 119 sites and 28 in `solve.py` at the commit this was written against, of
+which 104 were prose at the record site. `codebase_review_followup.md`'s *§4* has the
+ruling and `src/fractal_wallpapers/README.md`'s *A record's prose has one copy in the
+source and a whole copy on every row* has the argument.
+
 ## 5. Fourteen modules write an HTML page and twelve carry their own CSS
 
 `below_bar`, `color_sheets`, `distinct`, `hunt`, `label_fate`, `label_migration`, `mine`,

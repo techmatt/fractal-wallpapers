@@ -99,6 +99,21 @@ from fractal_wallpapers.models.head import decode
 #: The schema the pre-registration, the yardstick and the read all carry.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "auc_is": "the seed its own trainer staged, chosen on its pooled evaluation "
+    "side rather than on this sheet",
+    "picked_is": "the seed the adoption chose BY THIS SHEET'S OWN statistic — a "
+    "selected maximum, which its adoption record says outright",
+}
+
+
 #: Draws in the cluster bootstrap, and its seed.
 DRAWS, BOOTSTRAP_SEED = 5000, 0
 
@@ -257,11 +272,9 @@ def extract(head: str, root: Path) -> dict:
         adopted = {
             "auc": cell["v4b"][f"auc_{boundary}"],
             "ap": cell["v4b"][f"ap_{boundary}"],
-            "auc_is": "the seed its own trainer staged, chosen on its pooled evaluation "
-            "side rather than on this sheet",
+            "auc_is": SCHEMA_NOTES["auc_is"],
             "picked": max(band),
-            "picked_is": "the seed the adoption chose BY THIS SHEET'S OWN statistic — a "
-            "selected maximum, which its adoption record says outright",
+            "picked_is": SCHEMA_NOTES["picked_is"],
             "seeds": band,
             "picked_from": len(band),
             "selected": True,

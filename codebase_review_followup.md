@@ -6,9 +6,14 @@ items that did **not**, each with the finding that stopped it — and in two cas
 finding is that the proposal as written collides with a locked convention, so the item is
 a decision for Matt rather than a fix somebody can pick up.
 
+**§4 has since landed**, later the same day and not as the review proposed it: the prose
+was lifted to `SCHEMA_NOTES` and the record still carries it whole, with no pointer and no
+version integer. Its section below keeps the finding that stopped it and records the
+ruling. §7 and §8 stand as they are.
+
 ---
 
-## §4 — the record format's own documentation, unresolved
+## §4 — the record format's own documentation, **landed 2026-09-12**
 
 **The proposal.** 118 `*_is` / `*_are` prose keys are written into JSON records across
 `src/`, 27 in `solve.py` alone; a tentative `manifest.json` is roughly half explanation by
@@ -43,6 +48,32 @@ is not the mechanical move — it is deciding whether a *changed* note is a sche
 note corrected for a typo is not; a note that now describes a different rule is. That rule
 has to be written before the guard can hold anything to it, and it is a call about what a
 record's schema number means, which is Matt's.
+
+**What landed, and Matt's ruling on the version number.** `embed_and_small_fixes_ckpt122`
+lifted **104** inline-prose sites across **25** modules into a module-level `SCHEMA_NOTES`
+beside each `SCHEMA`, and `tests/test_schema_notes.py` is the guard: no `*_is` / `*_are`
+value may be prose at a record site, every `SCHEMA_NOTES[...]` must name a note its module
+holds, and every note must be read. The record still carries the sentence **whole** and
+nothing became a pointer.
+
+⚠ **There is no version number and there is not going to be one.** The ruling: a record
+carrying the note that was true *when it was written* is correct about itself — that is the
+isolated-readability property working, not drifting, and two records whose notes differ are
+two records taken under two readings, which is what a reader wants to see. The only genuine
+defect is a note that was **wrong when written** and later corrected, which leaves earlier
+rows asserting something false; that is rare enough to want a dated line in
+`src/fractal_wallpapers/README.md` when it happens rather than a maintained integer. The
+argument is at that file's *A record's prose has one copy in the source and a whole copy on
+every row*, written so the pointer does not get re-proposed.
+
+⚠ **Both counts above are wrong and neither was ever a reading of this tree.** At `bda55b5`
+— the commit this document was written against — the sweep was **119** sites, not 118, and
+**28** in `solve.py`, not 27; at `HEAD` it is 121, of which 104 were inline prose and 17
+already read a roster their module keeps. The move made two near-duplicate spellings
+visible that the per-site copies had hidden: `gallery_grade_train`'s two `held_out_is`
+differ in three words ("one early stop" against "one choice") and are kept apart as
+`held_out_is.fit` and `held_out_is.drop_high_asymmetric`. Reconciling them is a separate
+decision and was not taken.
 
 ---
 

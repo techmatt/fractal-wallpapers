@@ -55,6 +55,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "cell_floors_are": "the colour floor at this n, read for the SIZING alone and "
+    "never applied here: a cell that owes seats must be able to reach rows that "
+    "could fill them. `{}` is a pass carrying no colour floor",
+}
+
+
 #: A stratum this small is taken whole rather than sliced. Below it a stride is
 #: meaningless — a stratum of six sampled at stride two is a top-by-score cut
 #: with extra arithmetic — and the rows are cheap enough that keeping them all
@@ -244,9 +258,7 @@ def stratify(
             "and to the cell's floor, times rows_per_seat. A stratum at or below "
             "small_stratum is taken whole",
             "cell_floors": dict(sorted(cell_floors.items())),
-            "cell_floors_are": "the colour floor at this n, read for the SIZING alone and "
-            "never applied here: a cell that owes seats must be able to reach rows that "
-            "could fill them. `{}` is a pass carrying no colour floor",
+            "cell_floors_are": SCHEMA_NOTES["cell_floors_are"],
             "slice": "a seeded stride across the stratum's OWN rank order — band-blind, and "
             "never a top-by-score cut: the worst seated score and the floors are what the "
             "leg maximizes after the seat count, and neither is found at the top of a stratum",

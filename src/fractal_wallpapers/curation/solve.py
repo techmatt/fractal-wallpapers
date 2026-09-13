@@ -133,6 +133,141 @@ from fractal_wallpapers.paths import rehome, tracked_name, under
 #: one, and that is a different diversity rule rather than a different schema.
 SCHEMA = 2
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "cell_at_bar_is": "how many rows dominant in this cell clear the effective bar. "
+    "This is the population the seats are chosen from, and a number under `n` is a "
+    "record that could not fill",
+    "lift_is": "added to p_fine, so the forced set keeps its OWN order among itself. "
+    "A flat constant would make the tie-break inside one colour cell arbitrary, which "
+    "is the comparison a forced pass exists to observe",
+    "unread_are": "not lifted. The head has no reading to raise and unknown never "
+    "outranks measured, so the row is as unforced as it was and the fine bar drops it",
+    "unscored_are": "excluded. The head has read exactly the clearing set, so an "
+    "unread row is one the render judge's per-mode bar refuses anyway",
+    "forced_over_the_bar_is": "rows this bar admitted that were FORCED over it — their "
+    "column reading carries solve.FORCED_LIFT and is not a probability. Zero on every "
+    "pass that forced nothing, which is every shipped pass",
+    "drops_are": "the weakest seated by the leg's own key, inside the set of seats "
+    "whose departure would admit the candidate. Every one of them is offered: what a "
+    "swap may give back is the objective's business. The one heuristic here, and it is "
+    "about which removals are OFFERED and never about which are accepted",
+    "met_demands_are": "kept by the tier ORDER and by no guard. A removal that takes a "
+    "met demand short loses tier 2, and tiers 3 and 4 cannot pay for one. This carried "
+    "a `protected` set and a `demands_kept` flag while the worst seat outranked the "
+    "shortfall; the tiers were swapped on 2026-08-31 and both went with them",
+    "fold_is": "what the neutral pre-selection did with a place it folded into another. "
+    "`pool` relabels — the rows stay and the seat constraint reads one seat per CLUSTER "
+    "— and `delete` destroys them, which is what shipped until 2026-09-09. `null` is a "
+    "pass with no pre-selection. A record whose config is silent either predates "
+    "2026-09-09 and folded `delete`, or carries the answer on `preselection.fold`, "
+    "which the walk writes itself. See distinct.POOL",
+    "theme_bar_is": "the themed path takes the lower of the shipped fine bar and the "
+    "p_fine of its cell's `multiple * n`-th best candidate, floored at `floor` — see "
+    "solve.themed_fine_bar. `null` is a pass that was not themed or ran unbarred. A "
+    "record that does not name the field at all was taken before 2026-09-11, when a "
+    "themed pass inherited the general bar and drew from 3.7% of the pool; one that "
+    "spells it `themed_bar` was taken before 2026-09-12, when it was renamed to sort "
+    "beside `theme` here",
+    "forced_is": "how many rows --forced lifted to the top of the fine column BEFORE "
+    "the bar, the neutral pre-selection and the cascade — solve.FORCED_LIFT, an "
+    "order-preserving `1 + p_fine` so the forced set keeps its own order. STAGED and "
+    "off by default: `0` is a pass that forced nothing, and a record that does not "
+    "name the field at all was taken before 2026-09-09. It forces an OFFER and never "
+    "a seat: every rule still applies",
+    "fine_bar_is": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool "
+    "BEFORE anything else runs — the per-mode bars, the neutral pre-selection and the "
+    "view are all taken over what it leaves. `null` is NO bar; the flag is `--fine-bar` "
+    "and `solve.at_fine_bar` is the door. A record that does not name the field at all "
+    "was taken before 2026-09-07 and ran unbarred. THE DEFAULT HAS MOVED THREE TIMES: "
+    "null until 2026-09-08, 0.50 until 2026-09-09, 0.184 until 2026-09-10, 0.030242 "
+    "since — and every move since the first was a MATCHED level under a new head "
+    "rather than a change of strictness, so `fine_bar` is only readable beside "
+    "`fine_head` below",
+    "fine_head_is": "the gallery-grade run whose `p_ge4` this pass could read — the "
+    "run named on every row of `gallery-grade score-pool`'s output. `null` is a "
+    "machine that has never scored the pool, and a record that does not name the "
+    "field was taken before 2026-09-09, under `auc_ge4_more_seed2`",
+    "mode_ceilings_is": "at most ceil(share * seats filled) seats of the named mode — "
+    "ceiling.share_of, the spiral cap's own arithmetic and the one spelling a colour "
+    "target is stated in. A GUARD against a runaway and not a target: it is set above "
+    "what the gallery does unaided, so the reading it gives is the `mode_ceiling` "
+    "refusal column, and a zero there is the expected answer. On since 2026-09-05, so "
+    "a record that does not name it ran with NO per-mode ceiling",
+    "augment_is": "augmenting chains — one seat ejected and two inserted in its room. "
+    "THE ONLY STAGE THAT RAISES THE SEAT COUNT: a 1-swap conserves it. On since "
+    "2026-09-04, so a record that does not name the flag ran WITH it and is not "
+    "comparable to one taken before that",
+    "deadlocked_is": "a row dominant in a starving cell that the ALLOWANCE refused for "
+    "a DIFFERENT cell it is also dominant in — a seat charges about 2.1 cells, so the "
+    "companion being full is a way to starve a cell that neither its own allowance nor "
+    "its own supply can show. `deadlocked_on` names the cells that were full",
+    "q4_bar_is": "a statistic on this record and not the pool rule. What the pool "
+    "is is headroom.bars, which puts a mode without enough places above P(>=4) on "
+    "P(>=3) instead — so a fallback mode's seats sit below this legitimately",
+    "truncation_is": "the --locations cut. It runs AFTER the neutral "
+    "pre-selection and cuts CLUSTERS since 2026-09-09; before that it ran one "
+    "line after the fine bar and cut places, so a record carrying "
+    "`reachable_locations` instead of `reachable_clusters` was taken under the "
+    "old placement",
+    "unranked_are": "sorted last and never refused: no rule acted on them",
+    "floor_is": "SOFT, and one demand per chromatic cell on the objective's "
+    "shortfall tier — it never refuses a candidate and never makes a solve "
+    "infeasible. A cell the pool cannot fill is a row in `shortfalls.cell_floors`. "
+    "`null` is a pass that carried no colour floor: every record before 2026-09-09, "
+    "and every themed pass since, a theme being one cell by construction",
+    "starved_are": "a floor above zero that went unfilled. Read `per_mode` for "
+    "which: a mode with `clearing` above `seated` lost its seats to a rule named "
+    "in `refused_by`, and one with `clearing` at `seated` had nothing left to seat",
+    "floor_never_needed_are": "asked for nothing, so they cannot have gone short",
+    "forced_are": "lifted whatever the bar says, their reading already carrying "
+    "solve.FORCED_LIFT. Zero on every shipped pass",
+    # The rest name a number the pass only knows at write time, or say one of two
+    # things depending on which branch ran. A template is formatted at the site
+    # and a branch is chosen there: either way the row carries the finished
+    # sentence, which is the whole property, and the prose still has one copy.
+    "bar_from_is": "which of the three inputs settled `effective_bar`, so nothing "
+    "has to be recomputed to know. `shipped` is a cell rich enough that `min` "
+    "returned the shipped bar; `reachable` is its `multiple * n`-th best coming in "
+    "under that bar and above the floor; `floor_unreachable` is a cell that cannot "
+    "field `multiple * n` scored rows at all, which is `reachable: null`; "
+    "`floor_below` is a cell that can and whose `multiple * n`-th best is itself "
+    "under the floor. THE LAST TWO ARE THE SAME NUMBER in `effective_bar`, "
+    "`relaxed` and `floor`, and that is the whole reason this field exists — see "
+    "solve.themed_fine_bar. A record that does not name it at all was taken before "
+    "2026-09-12",
+    "reachable_is": "the p_fine of the {wanted}th best candidate dominant in this "
+    "cell, over the pool BEFORE any bar. `null` is a cell that holds fewer than that "
+    "many scored rows at all, in which case the bar is the floor and the gallery "
+    "ships small — unfilled beats padded and there is no padding branch",
+    "key_is": "which key this cut ranked clusters on. {fine} is the "
+    "fine-tier head's reading, {coarse} the raw judge column, 'both' a "
+    "cut where some clusters had a reading and some did not. **A record carrying no "
+    "`key` here cut on {coarse}**, and on places rather than clusters",
+    "explained_is": "one entry per key ASKED about: `{seated}` is in this gallery, "
+    "`{gone}` is not in this pool at all any more, and anything else is the rule "
+    "that refused it — the same vocabulary `reasons` counts",
+    "bars_are": "the pool definition. curation.headroom.bars: P(>=4) for a mode with "
+    "enough places above it, P(>=3) for one without",
+    "bars_are.relaxed": ". RELAXED for this themed pass: every accepted mode on the "
+    "P(>=3) crossing",
+    "group_cap_is.shipped": "max(1, floor({rate} x n)), three "
+    "times the main gallery's rate and a share of n alone. It was ceil(2n/P) until "
+    "2026-09-05, so a themed record taken before that ran under a cap its own "
+    "pool set; and the share was 0.05 until 2026-09-12, so a record taken before "
+    "THAT ran at two thirds of this cap",
+    "group_cap_is.named": "named by the caller, overriding ceiling.themed_group_cap",
+    "floors_are.uniform": "one floor for every mode",
+    "floors_are.per_mode": "per mode",
+}
+
+
 #: The subtree this leg's record and its sheet land in.
 UNIT = "solve"
 
@@ -773,6 +908,26 @@ THEMED_BAR_MULTIPLE = 4
 #: ships small — unfilled beats padded, and there is no padding branch.**
 THEMED_BAR_FLOOR = 0.01
 
+#: Which of the three inputs settled a themed pass's effective bar. The gate
+#: carries it as `bar_from`, and it exists because the two ways of landing on
+#: [`THEMED_BAR_FLOOR`] are a different fact about the cell and read identically
+#: without it: `floor_unreachable` is a cell that cannot field `multiple * n`
+#: scored rows at any bar, `floor_below` a cell that can and whose
+#: `multiple * n`-th best is itself under the floor. Over the 48 themed cells
+#: that is 7 the first way and 22 the second.
+BAR_FROM_SHIPPED = "shipped"
+BAR_FROM_REACHABLE = "reachable"
+BAR_FROM_FLOOR_UNREACHABLE = "floor_unreachable"
+BAR_FROM_FLOOR_BELOW = "floor_below"
+
+#: Every value [`themed_fine_bar`] can write, in the order the branch is taken.
+BAR_FROM = (
+    BAR_FROM_FLOOR_UNREACHABLE,
+    BAR_FROM_FLOOR_BELOW,
+    BAR_FROM_SHIPPED,
+    BAR_FROM_REACHABLE,
+)
+
 
 def themed_fine_bar(
     candidates, theme: str, bar: float, n: int, fine: FineColumn | None = None, log=print
@@ -799,6 +954,17 @@ def themed_fine_bar(
     A record that cannot say which gate it ran under is the defect this was found
     by, so the effective bar, the floor, the multiple and what the cell actually
     held at that bar are all on it.
+
+    ## The two ways onto the floor are different facts, and `bar_from` names them
+
+    A pass lands on [`THEMED_BAR_FLOOR`] either because the cell cannot field
+    `4n` scored rows at all — `reachable` is `null` — or because it can and its
+    `4n`-th best is itself under the floor. The first is a cell with no stock to
+    read a bar off; the second is a cell with stock the head scores near zero.
+    `effective_bar`, `relaxed` and `floor` are the same number in both, so a
+    reader had to recompute the branch out of `reachable` and `shipped_bar` to
+    tell them apart. [`BAR_FROM`] states it instead, and over the 48 themed cells
+    the split is 7 the first way and 22 the second.
     """
     column = _column(fine, log=log)
     read_at = column.read
@@ -817,6 +983,16 @@ def themed_fine_bar(
     # cell again.
     lowered = THEMED_BAR_FLOOR if reachable is None else min(float(bar), reachable)
     effective = max(THEMED_BAR_FLOOR, lowered)
+    # Taken from the inputs rather than from `effective`, which is where the two
+    # floor branches have already become one number.
+    if reachable is None:
+        bar_from = BAR_FROM_FLOOR_UNREACHABLE
+    elif lowered < THEMED_BAR_FLOOR:
+        bar_from = BAR_FROM_FLOOR_BELOW
+    elif reachable >= float(bar):
+        bar_from = BAR_FROM_SHIPPED
+    else:
+        bar_from = BAR_FROM_REACHABLE
     held_at_bar = sum(1 for reading in readings if reading >= effective)
     gate = {
         "of": "a themed pass takes the LOWER of the shipped fine bar and what its own cell "
@@ -826,23 +1002,21 @@ def themed_fine_bar(
         "shipped_bar": float(bar),
         "effective_bar": float(effective),
         "relaxed": bool(effective < float(bar)),
+        "bar_from": bar_from,
+        "bar_from_is": SCHEMA_NOTES["bar_from_is"],
         "floor": THEMED_BAR_FLOOR,
         "multiple": THEMED_BAR_MULTIPLE,
         "wanted": wanted,
         "reachable": None if reachable is None else float(reachable),
-        "reachable_is": f"the p_fine of the {wanted}th best candidate dominant in this "
-        f"cell, over the pool BEFORE any bar. `null` is a cell that holds fewer than that "
-        f"many scored rows at all, in which case the bar is the floor and the gallery "
-        f"ships small — unfilled beats padded and there is no padding branch",
+        "reachable_is": SCHEMA_NOTES["reachable_is"].format(wanted=wanted),
         "cell_scored": len(readings),
         "cell_at_bar": held_at_bar,
-        "cell_at_bar_is": "how many rows dominant in this cell clear the effective bar. "
-        "This is the population the seats are chosen from, and a number under `n` is a "
-        "record that could not fill",
+        "cell_at_bar_is": SCHEMA_NOTES["cell_at_bar_is"],
     }
     log(
         f"[themed-bar] {theme}: {len(readings):,} scored row(s) in the cell, wanting "
-        f"{wanted:,}; bar {float(bar):g} -> {effective:g} leaves {held_at_bar:,}"
+        f"{wanted:,}; bar {float(bar):g} -> {effective:g} from {bar_from} leaves "
+        f"{held_at_bar:,}"
     )
     return effective, gate
 
@@ -923,10 +1097,7 @@ def strongest_clusters(
         "key": distinct.FINE_KEY
         if fell_back == 0
         else (distinct.COARSE_KEY if not on_fine else "both"),
-        "key_is": f"which key this cut ranked clusters on. {distinct.FINE_KEY} is the "
-        f"fine-tier head's reading, {distinct.COARSE_KEY} the raw judge column, 'both' a "
-        f"cut where some clusters had a reading and some did not. **A record carrying no "
-        f"`key` here cut on {distinct.COARSE_KEY}**, and on places rather than clusters",
+        "key_is": SCHEMA_NOTES["key_is"].format(fine=distinct.FINE_KEY, coarse=distinct.COARSE_KEY),
         "ordered_on": {distinct.FINE_KEY: len(on_fine), distinct.COARSE_KEY: fell_back},
         "clusters_on_the_fallback": fell_back,
         "order": "each cluster's strongest clearing candidate, on the fine-tier head's "
@@ -1037,14 +1208,11 @@ def fine_column(forced=None, scores: dict | None = None, log=print) -> FineColum
         "every unforced row. STAGED and off by default: a record carrying `asked: 0` "
         "forced nothing and is the shipped pass",
         "lift": FORCED_LIFT,
-        "lift_is": "added to p_fine, so the forced set keeps its OWN order among itself. "
-        "A flat constant would make the tie-break inside one colour cell arbitrary, which "
-        "is the comparison a forced pass exists to observe",
+        "lift_is": SCHEMA_NOTES["lift_is"],
         "asked": len(asked),
         "lifted": len(lifted),
         "unread": len(asked) - len(lifted),
-        "unread_are": "not lifted. The head has no reading to raise and unknown never "
-        "outranks measured, so the row is as unforced as it was and the fine bar drops it",
+        "unread_are": SCHEMA_NOTES["unread_are"],
         "scores_read": len(read),
         "keys": lifted,
     }
@@ -1124,13 +1292,10 @@ def at_fine_bar(
         "kept": len(kept),
         "dropped": len(candidates) - len(kept),
         "unscored": unscored,
-        "unscored_are": "excluded. The head has read exactly the clearing set, so an "
-        "unread row is one the render judge's per-mode bar refuses anyway",
+        "unscored_are": SCHEMA_NOTES["unscored_are"],
         "scores_read": len(read_at),
         "forced_over_the_bar": sum(1 for candidate in kept if str(candidate.key) in column.forced),
-        "forced_over_the_bar_is": "rows this bar admitted that were FORCED over it — their "
-        "column reading carries solve.FORCED_LIFT and is not a probability. Zero on every "
-        "pass that forced nothing, which is every shipped pass",
+        "forced_over_the_bar_is": SCHEMA_NOTES["forced_over_the_bar_is"],
         "locations": len({candidate.location for candidate in kept}),
     }
     log(
@@ -1334,8 +1499,7 @@ def cascade_order(
             "second_stage": (
                 "models/gallery_grade — fitted on verdicts about rows already past the gate"
             ),
-            "forced_are": "lifted whatever the bar says, their reading already carrying "
-            "solve.FORCED_LIFT. Zero on every shipped pass",
+            "forced_are": SCHEMA_NOTES["forced_are"],
             **counted,
         },
     }
@@ -2142,14 +2306,8 @@ def improve(
         "settled_by_the_value_bound": skipped,
         "settled_by_scoring_the_counted_removals": priced,
         "drops_tried_per_candidate": int(drops),
-        "drops_are": "the weakest seated by the leg's own key, inside the set of seats "
-        "whose departure would admit the candidate. Every one of them is offered: what a "
-        "swap may give back is the objective's business. The one heuristic here, and it is "
-        "about which removals are OFFERED and never about which are accepted",
-        "met_demands_are": "kept by the tier ORDER and by no guard. A removal that takes a "
-        "met demand short loses tier 2, and tiers 3 and 4 cannot pay for one. This carried "
-        "a `protected` set and a `demands_kept` flag while the worst seat outranked the "
-        "shortfall; the tiers were swapped on 2026-08-31 and both went with them",
+        "drops_are": SCHEMA_NOTES["drops_are"],
+        "met_demands_are": SCHEMA_NOTES["met_demands_are"],
         "passes": at_pass,
         "pass_cap": int(passes),
         "candidates_considered": walked,
@@ -2759,20 +2917,14 @@ def solve(
             "above_q4_bar": sum(1 for row in seated_rows if row["p_ge4"] >= Q4_BAR),
             "q4_bar": Q4_BAR,
             "q4_basis": Q4_BASIS,
-            "q4_bar_is": "a statistic on this record and not the pool rule. What the pool "
-            "is is headroom.bars, which puts a mode without enough places above P(>=4) on "
-            "P(>=3) instead — so a fallback mode's seats sit below this legitimately",
+            "q4_bar_is": SCHEMA_NOTES["q4_bar_is"],
         },
         "pool": {
             "refused": pool_refused,
             "reachable_clusters": len(reachable),
             "truncated_to": locations,
             "truncation": truncation,
-            "truncation_is": "the --locations cut. It runs AFTER the neutral "
-            "pre-selection and cuts CLUSTERS since 2026-09-09; before that it ran one "
-            "line after the fine bar and cut places, so a record carrying "
-            "`reachable_locations` instead of `reachable_clusters` was taken under the "
-            "old placement",
+            "truncation_is": SCHEMA_NOTES["truncation_is"],
         },
         # What the bar cost, where one ran. The VALUE is on `config` — which is
         # the block a tentative gallery's tracked manifest carries whole — and the
@@ -2808,13 +2960,11 @@ def solve(
             "pixel-cloud twin test is over a picture's COLOUR cloud, so a single-cell pool "
             "is a near-duplicate pool under exactly it",
             "group_cap": cap,
-            "group_cap_is": f"max(1, floor({ceiling.THEMED_GROUP_CAP_RATE} x n)), three "
-            "times the main gallery's rate and a share of n alone. It was ceil(2n/P) until "
-            "2026-09-05, so a themed record taken before that ran under a cap its own "
-            "pool set; and the share was 0.05 until 2026-09-12, so a record taken before "
-            "THAT ran at two thirds of this cap"
-            if themed_cap is None
-            else "named by the caller, overriding ceiling.themed_group_cap",
+            "group_cap_is": (
+                SCHEMA_NOTES["group_cap_is.shipped"].format(rate=ceiling.THEMED_GROUP_CAP_RATE)
+                if themed_cap is None
+                else SCHEMA_NOTES["group_cap_is.named"]
+            ),
             "P": len(capable),
             "P_is": f"palette groups fielding {ceiling.THEMED_CAP_PLACES} or more distinct "
             "PLACES in this pool. Places and not rows, because one wallpaper per location "
@@ -2835,7 +2985,7 @@ def solve(
             "columns",
             "ranked": len(kept) - unranked,
             "unranked": unranked,
-            "unranked_are": "sorted last and never refused: no rule acted on them",
+            "unranked_are": SCHEMA_NOTES["unranked_are"],
             "unranked_allowed": bool(allow_unranked),
             "coverage": coverage,
         },
@@ -2986,12 +3136,7 @@ def _config(
         # pass that ran no pre-selection at all and folded nothing.
         "fold": None if fold is None else str(fold),
         "fold_default": distinct.FOLD,
-        "fold_is": "what the neutral pre-selection did with a place it folded into another. "
-        "`pool` relabels — the rows stay and the seat constraint reads one seat per CLUSTER "
-        "— and `delete` destroys them, which is what shipped until 2026-09-09. `null` is a "
-        "pass with no pre-selection. A record whose config is silent either predates "
-        "2026-09-09 and folded `delete`, or carries the answer on `preselection.fold`, "
-        "which the walk writes itself. See distinct.POOL",
+        "fold_is": SCHEMA_NOTES["fold_is"],
         # On `config` for the spiral cap's reason below, and **written whether or
         # not a bar ran**: `None` is an explicit value saying this pass solved over
         # the whole pool, so a record can never be silent about the quality bar the
@@ -3006,13 +3151,7 @@ def _config(
         # the pass actually ran — and this says how it got there. `null` on every
         # unthemed pass and on a themed pass with no bar at all.
         "theme_bar": themed_bar,
-        "theme_bar_is": "the themed path takes the lower of the shipped fine bar and the "
-        "p_fine of its cell's `multiple * n`-th best candidate, floored at `floor` — see "
-        "solve.themed_fine_bar. `null` is a pass that was not themed or ran unbarred. A "
-        "record that does not name the field at all was taken before 2026-09-11, when a "
-        "themed pass inherited the general bar and drew from 3.7% of the pool; one that "
-        "spells it `themed_bar` was taken before 2026-09-12, when it was renamed to sort "
-        "beside `theme` here",
+        "theme_bar_is": SCHEMA_NOTES["theme_bar_is"],
         # On `config` for the fine bar's own reason: this block is what
         # `tentative.manifest` carries WHOLE into a tracked manifest, and whether
         # a gallery was handed a set of rows to seat ahead of the pool is not
@@ -3021,21 +3160,8 @@ def _config(
         # block on the solve record, which is not tracked.
         "forced": int(forced),
         "forced_default": 0,
-        "forced_is": "how many rows --forced lifted to the top of the fine column BEFORE "
-        "the bar, the neutral pre-selection and the cascade — solve.FORCED_LIFT, an "
-        "order-preserving `1 + p_fine` so the forced set keeps its own order. STAGED and "
-        "off by default: `0` is a pass that forced nothing, and a record that does not "
-        "name the field at all was taken before 2026-09-09. It forces an OFFER and never "
-        "a seat: every rule still applies",
-        "fine_bar_is": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool "
-        "BEFORE anything else runs — the per-mode bars, the neutral pre-selection and the "
-        "view are all taken over what it leaves. `null` is NO bar; the flag is `--fine-bar` "
-        "and `solve.at_fine_bar` is the door. A record that does not name the field at all "
-        "was taken before 2026-09-07 and ran unbarred. THE DEFAULT HAS MOVED THREE TIMES: "
-        "null until 2026-09-08, 0.50 until 2026-09-09, 0.184 until 2026-09-10, 0.030242 "
-        "since — and every move since the first was a MATCHED level under a new head "
-        "rather than a change of strictness, so `fine_bar` is only readable beside "
-        "`fine_head` below",
+        "forced_is": SCHEMA_NOTES["forced_is"],
+        "fine_bar_is": SCHEMA_NOTES["fine_bar_is"],
         # A `p_fine` level means nothing without the head that produced the
         # column. 0.50 under `auc_ge4_more_seed2`, 0.184 under
         # `corrected_auc_ge4_more_seed1` and 0.030242 under the k=3 ensemble admit
@@ -3045,10 +3171,7 @@ def _config(
         # number would read as a tightening that never happened, so the run is
         # on `config` beside it and not left to the date.
         "fine_head": fine_head,
-        "fine_head_is": "the gallery-grade run whose `p_ge4` this pass could read — the "
-        "run named on every row of `gallery-grade score-pool`'s output. `null` is a "
-        "machine that has never scored the pool, and a record that does not name the "
-        "field was taken before 2026-09-09, under `auc_ge4_more_seed2`",
+        "fine_head_is": SCHEMA_NOTES["fine_head_is"],
         # **On `config` and not only in the `spiral` block**, because `config` is
         # the block a tentative gallery's tracked manifest carries whole
         # ([`tentative.manifest`]) and the `spiral` block is not. Until 2026-09-04
@@ -3066,12 +3189,7 @@ def _config(
             str(mode): float(share) for mode, share in sorted((mode_ceilings or {}).items())
         },
         "mode_ceilings_default": dict(sorted(DEFAULT_MODE_CEILINGS.items())),
-        "mode_ceilings_is": "at most ceil(share * seats filled) seats of the named mode — "
-        "ceiling.share_of, the spiral cap's own arithmetic and the one spelling a colour "
-        "target is stated in. A GUARD against a runaway and not a target: it is set above "
-        "what the gallery does unaided, so the reading it gives is the `mode_ceiling` "
-        "refusal column, and a zero there is the expected answer. On since 2026-09-05, so "
-        "a record that does not name it ran with NO per-mode ceiling",
+        "mode_ceilings_is": SCHEMA_NOTES["mode_ceilings_is"],
         # On `config` for the spiral cap's reason: this block is what
         # [`tentative.manifest`] carries WHOLE into the tracked manifest, and the
         # `augment` block beside it is not tracked at all. A gallery that cannot
@@ -3081,10 +3199,7 @@ def _config(
         "augment_default": DEFAULT_AUGMENT,
         "augment_depth": int(augment_depth),
         "augment_seconds": None if augment_seconds is None else float(augment_seconds),
-        "augment_is": "augmenting chains — one seat ejected and two inserted in its room. "
-        "THE ONLY STAGE THAT RAISES THE SEAT COUNT: a 1-swap conserves it. On since "
-        "2026-09-04, so a record that does not name the flag ran WITH it and is not "
-        "comparable to one taken before that",
+        "augment_is": SCHEMA_NOTES["augment_is"],
         # The CELL NAME and nothing else — a string, or `null` on an unthemed pass.
         # The pool that name described is `theme_pool` at the top level of the
         # record, which was called `theme` too until 2026-09-12; a reader that
@@ -3098,13 +3213,8 @@ def _config(
         "order": "the mandated demands from their own subpools, scarcest first; then the "
         "general pool by the rank key; then swaps; then augmenting chains; then swaps again",
         "bars": {name: block["rule"] for name, block in sorted(table["modes"].items())},
-        "bars_are": "the pool definition. curation.headroom.bars: P(>=4) for a mode with "
-        "enough places above it, P(>=3) for one without"
-        + (
-            ". RELAXED for this themed pass: every accepted mode on the P(>=3) crossing"
-            if theme is not None
-            else ""
-        ),
+        "bars_are": SCHEMA_NOTES["bars_are"]
+        + (SCHEMA_NOTES["bars_are.relaxed"] if theme is not None else ""),
         # `k` and `kf` are ONE PAIR and are written together, on `config` — which
         # is the block [`tentative.manifest`] carries whole into a tracked
         # manifest, the same reason `spiral_cap` and `fold` sit there. A record
@@ -3127,11 +3237,7 @@ def _config(
             "walk that has to seat its first row somewhere and a floor has nothing to warm "
             "up. At the uniform cell share the pair reads: every chromatic cell gets at "
             "least kf fair shares of the gallery and at most k",
-            "floor_is": "SOFT, and one demand per chromatic cell on the objective's "
-            "shortfall tier — it never refuses a candidate and never makes a solve "
-            "infeasible. A cell the pool cannot fill is a row in `shortfalls.cell_floors`. "
-            "`null` is a pass that carried no colour floor: every record before 2026-09-09, "
-            "and every themed pass since, a theme being one cell by construction",
+            "floor_is": SCHEMA_NOTES["floor_is"],
             "group_cap": rule.group_cap,
             "group_cap_rule": str(group_cap),
             "group_cap_from": {
@@ -3341,10 +3447,7 @@ def _cell_floors(gallery: Gallery, rule: ceiling.Rule, cleared: list, refused: d
         "below_the_floor_count": len(short),
         "short_total": sum(row["short"] for row in rows.values()),
         "deadlocked_total": sum(rows[cell]["deadlocked"] for cell in short),
-        "deadlocked_is": "a row dominant in a starving cell that the ALLOWANCE refused for "
-        "a DIFFERENT cell it is also dominant in — a seat charges about 2.1 cells, so the "
-        "companion being full is a way to starve a cell that neither its own allowance nor "
-        "its own supply can show. `deadlocked_on` names the cells that were full",
+        "deadlocked_is": SCHEMA_NOTES["deadlocked_is"],
         "per_cell": rows,
     }
 
@@ -3398,19 +3501,19 @@ def _shortfalls(
         "modes": {
             "floor": uniform,
             "floors": {name: per_mode[name]["floor"] for name in modes},
-            "floors_are": "one floor for every mode" if uniform is not None else "per mode",
+            "floors_are": SCHEMA_NOTES[
+                "floors_are.uniform" if uniform is not None else "floors_are.per_mode"
+            ],
             "asked": sum(per_mode[name]["floor"] for name in modes),
             "represented": sum(1 for name in modes if state.modes.get(name)),
             "of": len(modes),
             "per_mode": per_mode,
             "starved": starved,
             "starved_count": len(starved),
-            "starved_are": "a floor above zero that went unfilled. Read `per_mode` for "
-            "which: a mode with `clearing` above `seated` lost its seats to a rule named "
-            "in `refused_by`, and one with `clearing` at `seated` had nothing left to seat",
+            "starved_are": SCHEMA_NOTES["starved_are"],
             "floor_never_needed": never,
             "floor_never_needed_count": len(never),
-            "floor_never_needed_are": "asked for nothing, so they cannot have gone short",
+            "floor_never_needed_are": SCHEMA_NOTES["floor_never_needed_are"],
             "below_the_floor": starved,
             "below_the_floor_count": len(starved),
             "counts": dict(sorted(held_modes.items(), key=lambda item: -item[1])),
@@ -3772,9 +3875,7 @@ def explained(keys, refused: dict, gallery) -> dict:
             out[key_name] = str(refused.get(key_name, GONE))
     return {
         "explained": out,
-        "explained_is": f"one entry per key ASKED about: `{SEATED}` is in this gallery, "
-        f"`{GONE}` is not in this pool at all any more, and anything else is the rule "
-        "that refused it — the same vocabulary `reasons` counts",
+        "explained_is": SCHEMA_NOTES["explained_is"].format(seated=SEATED, gone=GONE),
     }
 
 
@@ -4244,6 +4345,11 @@ __all__ = [
     "DEFAULT_FINE_BAR",
     "THEMED_BAR_FLOOR",
     "THEMED_BAR_MULTIPLE",
+    "BAR_FROM",
+    "BAR_FROM_FLOOR_BELOW",
+    "BAR_FROM_FLOOR_UNREACHABLE",
+    "BAR_FROM_REACHABLE",
+    "BAR_FROM_SHIPPED",
     "DEFAULT_GROUP_CAP",
     "DEFAULT_KEY",
     "JUDGE_KEY",
@@ -4261,6 +4367,7 @@ __all__ = [
     "ROW_BACKSTOP",
     "SAME_PLACE",
     "SCHEMA",
+    "SCHEMA_NOTES",
     "SEATS_PER_MODE_FLOOR",
     "SHOWN",
     "SWAP_DROPS",

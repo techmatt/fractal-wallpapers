@@ -89,6 +89,26 @@ from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 #: The schema every row and every manifest here carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "diversity_is": "which rule decided two seats were different enough, as "
+    "`rules.State.record` spells it. A gallery chosen under a different rule is "
+    "not comparable with this one. A manifest with no `diversity` key at all was "
+    "written before 2026-09-11; an explicit `null` is a pass that ran without the "
+    "rule",
+    "stamp_is": "sha256 over the sorted candidate keys, as `growth.pool_stamp` takes "
+    "it. Two records carrying the same stamp were chosen over the same pool — over "
+    "the same POOL and not necessarily the same seatable rows, because a quality "
+    "bar narrows what a pass may seat and is on `solve.config.fine_bar` instead",
+}
+
+
 #: The subtree a recorded gallery's stamped folder lands in.
 UNIT = "tentative"
 
@@ -476,18 +496,11 @@ def manifest_of(
             # which rule chose it. `null` is a real answer and is written rather
             # than omitted: it is a pass that ran with no diversity rule at all.
             "diversity": (record.get("rules") or {}).get("diversity"),
-            "diversity_is": "which rule decided two seats were different enough, as "
-            "`rules.State.record` spells it. A gallery chosen under a different rule is "
-            "not comparable with this one. A manifest with no `diversity` key at all was "
-            "written before 2026-09-11; an explicit `null` is a pass that ran without the "
-            "rule",
+            "diversity_is": SCHEMA_NOTES["diversity_is"],
         },
         "pool": {
             "stamp": None if candidates is None else growth.pool_stamp(candidates),
-            "stamp_is": "sha256 over the sorted candidate keys, as `growth.pool_stamp` takes "
-            "it. Two records carrying the same stamp were chosen over the same pool — over "
-            "the same POOL and not necessarily the same seatable rows, because a quality "
-            "bar narrows what a pass may seat and is on `solve.config.fine_bar` instead",
+            "stamp_is": SCHEMA_NOTES["stamp_is"],
             "candidates": None if candidates is None else len(candidates),
             "locations": places,
             # `reachable_clusters` since 2026-09-09, when the `--locations` cut moved

@@ -95,6 +95,26 @@ from __future__ import annotations
 
 import time
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "exhaustive_is": "never claimed at this depth: the fan-out bounds the scan",
+    "two_or_more_is": "a seat whose ejection leaves two rows every rule would admit "
+    "SEPARATELY. Beside an EXHAUSTED search that means they conflict with each "
+    "other — saturation on cells, not a shortage of waiting rows. Beside a search "
+    "that ran out of budget it means nothing: read the depth block's `exhaustive`",
+    "incidences_are": "(seat, row) pairs summed over the seats, never distinct rows. "
+    "`never_asked` is counted inside `cut` because this block opens no picture of "
+    "its own: a row there is one no chain ever reached, which is a fact about the "
+    "search rather than about the row",
+}
+
+
 #: What [`Pass.insert`] calls the seat-count ceiling. **Not one of
 #: [`rules.RULES`]** and spelled apart from them on purpose: `n` is this leg's
 #: budget and never a fact about the wallpaper, so a refusal here must not land in
@@ -596,7 +616,7 @@ class Pass:
             "fan_out": fan_out,
             "pairs_tried": pairs,
             "exhaustive": False,
-            "exhaustive_is": "never claimed at this depth: the fan-out bounds the scan",
+            "exhaustive_is": SCHEMA_NOTES["exhaustive_is"],
             "stopped_because": stopped,
             "seconds": round(time.monotonic() - started, 2),
         }
@@ -710,10 +730,7 @@ class Pass:
             "seats_offering_no_insertable_row": offering[0],
             "seats_offering_exactly_one": offering[1],
             "seats_offering_two_or_more": offering[2],
-            "two_or_more_is": "a seat whose ejection leaves two rows every rule would admit "
-            "SEPARATELY. Beside an EXHAUSTED search that means they conflict with each "
-            "other — saturation on cells, not a shortage of waiting rows. Beside a search "
-            "that ran out of budget it means nothing: read the depth block's `exhaustive`",
+            "two_or_more_is": SCHEMA_NOTES["two_or_more_is"],
             # The next three are (seat, row) INCIDENCES summed over every seat, not
             # row counts: one row reachable from forty seats is forty here. Named
             # for what they are, because "rows" on a number thirty times the pool
@@ -721,10 +738,7 @@ class Pass:
             "reachable_incidences": reachable,
             "incidences_the_diversity_rule_cut": cut,
             "incidences_never_asked_about": unasked,
-            "incidences_are": "(seat, row) pairs summed over the seats, never distinct rows. "
-            "`never_asked` is counted inside `cut` because this block opens no picture of "
-            "its own: a row there is one no chain ever reached, which is a fact about the "
-            "search rather than about the row",
+            "incidences_are": SCHEMA_NOTES["incidences_are"],
             "rows_out_of_reach_of_one_ejection": len(self.index.deep),
             "seconds": round(time.monotonic() - started, 2),
         }

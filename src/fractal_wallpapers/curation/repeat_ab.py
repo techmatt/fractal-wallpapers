@@ -79,6 +79,27 @@ from fractal_wallpapers.paths import tracked_name, under
 #: The schema every record and every plan unit this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "leveled_is": "the baseline's own <stem>.leveled/ colormap, given to BOTH halves. "
+    "The operator's curve is a fact about the place and the mode, not about the "
+    "traversal, and levelling the halves apart would move a second thing between them",
+    "phase_is": "held at 0 on BOTH halves. 1,713 of the store's 2,262 repeat rows "
+    "carry a rotation too, so a rotated variant would confound this with the axis "
+    "`curate rotate` measured",
+    "bar_is": "p_fine(>=4) under the shipped fine head, at CANDIDATE geometry. It "
+    "is a CONDITIONAL selection and the whole point of the leg: a rate measured "
+    "here is a rate about pictures that are already good at 1x, and is a ceiling "
+    "on any rate about the pool",
+}
+
+
 #: The subtree this leg's plan and record live under. **No pictures land here**
 #: — see the module docstring — so it is deliberately not a member of
 #: [`candidate_ledger.POOL_SUBTREES`]: that list is what the orphan sweep
@@ -519,9 +540,7 @@ def plan_of(drawn: list, seed: int = 0) -> tuple[list[dict], dict]:
         f"{int(seed)}. Deliberately NOT good->bad: the premise is that the heads cannot "
         "read this axis, so a score order would put that error into page position",
         "leveled_units": sum(1 for unit in units if unit["leveled"]),
-        "leveled_is": "the baseline's own <stem>.leveled/ colormap, given to BOTH halves. "
-        "The operator's curve is a fact about the place and the mode, not about the "
-        "traversal, and levelling the halves apart would move a second thing between them",
+        "leveled_is": SCHEMA_NOTES["leveled_is"],
     }
     if len(keys) != len(units):
         raise RepeatAbRefused(
@@ -573,14 +592,9 @@ def run(
             "seed": int(seed),
             "cycles": CYCLES,
             "phase": PHASE,
-            "phase_is": "held at 0 on BOTH halves. 1,713 of the store's 2,262 repeat rows "
-            "carry a rotation too, so a rotated variant would confound this with the axis "
-            "`curate rotate` measured",
+            "phase_is": SCHEMA_NOTES["phase_is"],
             "bar": float(solve.DEFAULT_FINE_BAR if bar is None else bar),
-            "bar_is": "p_fine(>=4) under the shipped fine head, at CANDIDATE geometry. It "
-            "is a CONDITIONAL selection and the whole point of the leg: a rate measured "
-            "here is a rate about pictures that are already good at 1x, and is a ceiling "
-            "on any rate about the pool",
+            "bar_is": SCHEMA_NOTES["bar_is"],
             "routed_kind": "smooth. `hunt.kind_of` routes the mode, so a modulate whose "
             "texture was flat counts as smooth here exactly as it does everywhere else",
             "freshness": "no row carrying a human verdict in EITHER finished store. A page "

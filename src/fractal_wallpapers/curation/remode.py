@@ -75,6 +75,30 @@ from fractal_wallpapers.paths import tracked_name, under
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "crossed_is": "a twin on the other side of the bar from its own source. crossed_up "
+    "is 0 BY CONSTRUCTION — every source is in the plan because it cleared, so the only "
+    "crossing available is downward, and this is not a symmetry test. A non-zero "
+    "crossed_up means a source that did not clear reached the plan",
+    "source_rule_is": "the column the SOURCE mode's rows cleared on, by "
+    "headroom.rule_of. It selects the population and is not the bar a twin is "
+    "read against",
+    "target_rule_is": "the column the TARGET mode clears on in the pool the twins "
+    "join, by headroom.bars over solve.pool. `clears` on every made row is this",
+    "wall_seconds_is": "the whole call, the population read included. `render_wall` "
+    "is what the budget governs and it starts at the first block",
+    "seconds_per_candidate_is": "per ENGINE, which is what MEASUREMENTS.md's table "
+    "is denominated in. Wall a candidate is this over `concurrency`",
+}
+
+
 #: The subtree this leg's output lands in, under the regenerable tree. It is a
 #: member of [`candidate_ledger.POOL_SUBTREES`], which is what makes its pictures
 #: reachable by `curate candidate-ledger orphans`: a leg whose subtree that sweep
@@ -768,12 +792,9 @@ def run(
             "from_mode": str(from_mode),
             "to_mode": str(to_mode),
             "source_rule": world["rule"],
-            "source_rule_is": "the column the SOURCE mode's rows cleared on, by "
-            "headroom.rule_of. It selects the population and is not the bar a twin is "
-            "read against",
+            "source_rule_is": SCHEMA_NOTES["source_rule_is"],
             "target_rule": held_rule,
-            "target_rule_is": "the column the TARGET mode clears on in the pool the twins "
-            "join, by headroom.bars over solve.pool. `clears` on every made row is this",
+            "target_rule_is": SCHEMA_NOTES["target_rule_is"],
             "budget_seconds": float(budget),
             "workers": counts["workers"],
             "workers_asked": int(workers),
@@ -798,14 +819,12 @@ def run(
             "allowed": float(budget),
             "render_wall": round(wall, 2),
             "wall_seconds": round(time.monotonic() - started, 2),
-            "wall_seconds_is": "the whole call, the population read included. `render_wall` "
-            "is what the budget governs and it starts at the first block",
+            "wall_seconds_is": SCHEMA_NOTES["wall_seconds_is"],
             "engine_seconds": round(spent, 2),
             "concurrency": round(spent / max(1e-9, wall), 3),
             "engine_threads": release.engine_threads_for(counts["workers"]),
             "seconds_per_candidate": round(spent / max(1, counts["made"]), 4),
-            "seconds_per_candidate_is": "per ENGINE, which is what MEASUREMENTS.md's table "
-            "is denominated in. Wall a candidate is this over `concurrency`",
+            "seconds_per_candidate_is": SCHEMA_NOTES["seconds_per_candidate_is"],
         },
         "price": price.table(),
         "profile": clock.table(),
@@ -877,10 +896,7 @@ def carry_readout(made: list) -> dict:
         "clearing_locations": len({row["location"] for row in clearing}),
         "crossed_down": sum(1 for row in made if row["crossed"] and not row["clears"]),
         "crossed_up": sum(1 for row in made if row["crossed"] and row["clears"]),
-        "crossed_is": "a twin on the other side of the bar from its own source. crossed_up "
-        "is 0 BY CONSTRUCTION — every source is in the plan because it cleared, so the only "
-        "crossing available is downward, and this is not a symmetry test. A non-zero "
-        "crossed_up means a source that did not clear reached the plan",
+        "crossed_is": SCHEMA_NOTES["crossed_is"],
         "delta": {
             "mean": round(statistics.fmean(deltas), 6),
             "median": round(statistics.median(deltas), 6),

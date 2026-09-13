@@ -172,11 +172,14 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,538 collected — 4,402 fast,
-136 slow — since `mining_prep_ckpt122` landed on 2026-09-12**, and the pair was
-taken on this machine on an idle box, on a `.[dev,models]` install with a release
-engine built: the **fast** lane **163.36 s** and the **slow** lane **4,538 of 4,538
-in 598.84 s (9:58)**, both **green**, **zero skips**.
+Both are measured, not estimated. The tree holds **4,569 collected — 4,433 fast,
+136 slow — since `embed_and_small_fixes_ckpt122` landed on 2026-09-12**, on a
+`.[dev,models]` install with a release engine built. The **slow** lane is **4,569
+of 4,569 in 550.08 s (9:10)** on an idle box, **green**, **zero skips**. ⚠ **The
+fast lane has no current idle reading**: its only one at this count was taken
+beside a render leg at 427.95 s, which is 2.6x and is the leg rather than the tree.
+The last comparable fast figure is `mining_prep_ckpt122`'s **163.36 s at 4,538
+collected**, and the next prompt owes an idle re-take.
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box

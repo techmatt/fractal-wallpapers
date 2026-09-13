@@ -73,6 +73,22 @@ from fractal_wallpapers.paths import tracked_name, under
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "pool_is": "the drawable pool and the opened set this plan was cut over. `stores` "
+    "is the sha256 of each tracked manifest the pool is a function of, read "
+    "before the population read; `digest` is over the location keys "
+    "themselves. A resume whose pool differs is a resume into a DIFFERENT "
+    "plan under the same flags — depth.pool_stamp, depth.pool_digest",
+}
+
+
 #: The subtree this pass's pictures land in, under the regenerable tree. It is a
 #: member of [`candidate_ledger.POOL_SUBTREES`], which is what makes them
 #: reachable by `curate candidate-ledger orphans`: a leg whose subtree that sweep
@@ -2345,13 +2361,7 @@ def mine(
             "pool": {
                 "stores": stores,
                 "digest": digest,
-                "pool_is": (
-                    "the drawable pool and the opened set this plan was cut over. `stores` "
-                    "is the sha256 of each tracked manifest the pool is a function of, read "
-                    "before the population read; `digest` is over the location keys "
-                    "themselves. A resume whose pool differs is a resume into a DIFFERENT "
-                    "plan under the same flags — depth.pool_stamp, depth.pool_digest"
-                ),
+                "pool_is": SCHEMA_NOTES["pool_is"],
             },
         },
         "counts": counts,

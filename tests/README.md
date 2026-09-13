@@ -587,6 +587,38 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### embed_and_small_fixes_ckpt122
+
+**Thirty-one tests for the `SCHEMA_NOTES` lift, and the fast lane's unexplained
++7.1 s reversed on its own.** `embed_and_small_fixes_ckpt122`, 2026-09-12. **Slow:
+4,569 of 4,569 in 550.08 s (9:10), zero skips, zero failures, box idle.** The two
+lanes agree on 4,569.
+
+⚠ **The fast lane was taken BESIDE a render leg at Matt's instruction and its clock
+is not a reading.** 4,433 selected, 136 deselected — 4,569 collected — in **427.95
+s**, against 163.36 s idle: **2.6x**, and the whole of it is `owed_ckpt122`'s three
+engines and its parent resident beside it. Recorded because the *count* and the
+*colour* are good — green, zero skips, and the collected figure is the one the slow
+lane then agreed with — and struck as a timing. Two things worth having from it:
+the lane **was not killed on commit charge**, and
+[the guard that turns red under load](#the-guard-that-turns-red-under-load-rather-than-slow)
+passed. Neither is a licence; both are cheaper to know than to rediscover.
+
+**The +31 is one prompt's and all of it is arithmetic.** `test_schema_notes.py` (29)
+sweeps the package's 221 modules with `ast` — four guards plus one parametrize over
+the 25 modules that hold a block — and `test_solve.py` gains two on the themed
+bar's fourth branch. Nothing renders, trains or sweeps a store; the whole file runs
+in **3.23 s**, and its one cost is parsing the package once, cached across all 29.
+
+★ **The slow lane came down 48.8 s — 598.84 → 550.08 — on 31 MORE tests**, an 8.1%
+fall with no guard deleted or weakened. Two entries ago this log asked for the fast
+lane's unexplained +7.1 s to be watched rather than explained away twice; it cannot
+be read this time, because the only fast lane taken was the one beside the leg. What
+can be said is that the slow lane has now moved **down** twice running (602.08 →
+598.84 → 550.08) while the tree only grew, which retires the idea that 602 s was a
+floor. **The next prompt owes an idle fast-lane reading**, and until it is taken the
+last comparable one is `mining_prep_ckpt122`'s 163.36 s at 4,538 collected.
+
 #### mining_prep_ckpt122
 
 **Twenty-two fast tests for three mining fixes, and the previous entry's suspicion

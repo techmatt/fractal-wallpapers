@@ -66,6 +66,18 @@ from pathlib import Path
 from fractal_wallpapers import paths
 from fractal_wallpapers.curation import records, run_layout
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "seconds_per_picture_is": "per ENGINE. Wall a picture is this over the concurrency",
+}
+
+
 #: The block a re-read writes. Named for what it is rather than for when it was
 #: written: `scores` is the run's own reading and this is the live head's, and a
 #: name like `scores_v2` would need a paragraph of history to place.
@@ -452,7 +464,7 @@ def re_render(
         "wall_seconds": round(wall, 1),
         "engine_seconds": round(engine_seconds, 1),
         "seconds_per_picture": round(engine_seconds / max(1, made), 4),
-        "seconds_per_picture_is": "per ENGINE. Wall a picture is this over the concurrency",
+        "seconds_per_picture_is": SCHEMA_NOTES["seconds_per_picture_is"],
         "concurrency": round(engine_seconds / max(1e-9, wall), 2),
     }
     path = paths.under("curation", RE_RENDER_UNIT) / "re_render.json"

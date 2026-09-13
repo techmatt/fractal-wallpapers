@@ -117,6 +117,36 @@ from fractal_wallpapers.paths import repo_root, tracked_name, under
 #: The schema every record here carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "held_out_is.fit": "the stopping slice. It is the shipped recipe's only holdout and "
+    "the epoch was chosen on it, so every number here is optimistic by one early stop, "
+    "and the store is not eval-eligible — this is a within-store reading and nothing more",
+    "offset_is": "a learned scalar per sitting, centred at every use and DROPPED at inference — "
+    "the column a seating reads is the model without it, which is the average "
+    "sitting's scale",
+    "held_out_is.drop_high_asymmetric": "the stopping slice. It is the shipped recipe's "
+    "only holdout and the epoch was chosen on it, so every number here is optimistic by "
+    "one choice, and the store is not eval-eligible — this is a within-store reading and "
+    "nothing more",
+    "below_the_bar_is": "where this head's output is undefined. A score written there "
+    "would exist only to be misread, so it is not written",
+    "superseded_is": "the scores this write replaced, kept under the name of the run that made "
+    "them. Every solve record taken before this one resolves its cascade order "
+    "out of that file",
+    "baseline_is": "the two incumbents over these same rows — the shipped judge's own "
+    "`candidate_p_ge4`, which is the column, and `rank_key`, which is what a seating "
+    "actually ranks on. An arm beating the column and losing to the key would have "
+    "improved nothing anybody ships",
+}
+
+
 #: What this head is called, everywhere it is named. The store's own name, because
 #: the corpus is what makes it a different head — not [`roster.HEADS`], which is
 #: what a release carries, and this ships nothing.
@@ -2116,11 +2146,7 @@ def fit(
         "freezing": freezing,
         "held_out": read,
         "held_out_on_the_gate_column": gate_read,
-        "held_out_is": (
-            "the stopping slice. It is the shipped recipe's only holdout and the epoch was "
-            "chosen on it, so every number here is optimistic by one early stop, and the "
-            "store is not eval-eligible — this is a within-store reading and nothing more"
-        ),
+        "held_out_is": SCHEMA_NOTES["held_out_is.fit"],
         "pictures": {"train": len(training), "stopping": len(stopping), "total": len(units)},
         "class_counts": {
             "train": finished_train.histogram(training),
@@ -2405,11 +2431,7 @@ def _fit_drop_high_asymmetric(
         "neg_weight": float(knobs["neg_weight"]),
         "offset": knobs["offset"],
         "offset_groups": sittings,
-        "offset_is": (
-            "a learned scalar per sitting, centred at every use and DROPPED at inference — "
-            "the column a seating reads is the model without it, which is the average "
-            "sitting's scale"
-        ),
+        "offset_is": SCHEMA_NOTES["offset_is"],
         "checkpoint_rule": knobs["checkpoint"],
         "determinism": train.determinism_record(),
         "initialised_from": {
@@ -2480,11 +2502,7 @@ def _fit_drop_high_asymmetric(
         "freezing": freezing,
         "held_out": read,
         "held_out_on_the_gate_column": gate_read,
-        "held_out_is": (
-            "the stopping slice. It is the shipped recipe's only holdout and the epoch was "
-            "chosen on it, so every number here is optimistic by one choice, and the store "
-            "is not eval-eligible — this is a within-store reading and nothing more"
-        ),
+        "held_out_is": SCHEMA_NOTES["held_out_is.drop_high_asymmetric"],
         "pictures": {"train": len(training), "stopping": len(stopping), "total": len(units)},
         "class_counts": {
             "train": finished_train.histogram(training),
@@ -3011,19 +3029,12 @@ def score_pool(
         "averaged_on": "the probability scale",
         "candidates": len(keys),
         "below_the_bar_and_not_read": below,
-        "below_the_bar_is": (
-            "where this head's output is undefined. A score written there would exist only "
-            "to be misread, so it is not written"
-        ),
+        "below_the_bar_is": SCHEMA_NOTES["below_the_bar_is"],
         "no_picture_on_disk": absent,
         "seconds": round(time.time() - began, 1),
         "wrote": str(path),
         "superseded": None if superseded is None else str(superseded),
-        "superseded_is": (
-            "the scores this write replaced, kept under the name of the run that made "
-            "them. Every solve record taken before this one resolves its cascade order "
-            "out of that file"
-        ),
+        "superseded_is": SCHEMA_NOTES["superseded_is"],
     }
     log(f"[{HEAD}] {len(keys):,} rows in {record['seconds']}s -> {path}")
     return record
@@ -3331,12 +3342,7 @@ def band(
             "that the best seed of three is a coin flip rather than a fact about the arm"
         ),
         "baseline": _baselines_or_reason(corpus),
-        "baseline_is": (
-            "the two incumbents over these same rows — the shipped judge's own "
-            "`candidate_p_ge4`, which is the column, and `rank_key`, which is what a seating "
-            "actually ranks on. An arm beating the column and losing to the key would have "
-            "improved nothing anybody ships"
-        ),
+        "baseline_is": SCHEMA_NOTES["baseline_is"],
         "runs": sorted(rows, key=lambda row: (-row["selection"], row["run"])),
     }
 
