@@ -1209,6 +1209,26 @@ Rows outside the cell are recorded `not_dominant_in_the_theme`, which is pool
 construction and sits beside `below_its_mode_bar` rather than among the rules:
 the row was not refused a seat, it was never eligible for one.
 
+⚠ **`TAU` is not adopted on the themed path, and that is a CLOSED question.**
+Measured 2026-09-12 on the two cells that bracket the range, each solved at
+`--target <cell>=1.0`:
+
+| | seats | pairs | inside τ | seats in a close pair | a sequential τ refuses |
+|---|--:|--:|--:|--:|--:|
+| `dark_vivid_red` (fills) | 200/200 | 19,900 | 142 (0.71%) | 104 | **60 (30%)** |
+| `dark_vivid_lime` (thin) | 39/200 | 741 | 28 (3.78%) | 21 | **13 (33%)** |
+
+**The pairwise share is the wrong number and it reads harmless.** `Twins` refuses
+*sequentially* against the seats already held, so what a τ test costs is about a
+**third of the seats in both** — not the sub-4% the pair census suggests.
+`dark_vivid_red` could absorb it (1,803 rows over 1,451 clusters in the view);
+`dark_vivid_lime` has 75 rows over 69 clusters and no substitution headroom at
+all, so 39 seats become 26. And the reason is structural rather than a matter of
+tuning τ down: **inside one colour cell every picture shares a hue by
+construction, so the pixel-cloud metric is reading the theme and not
+repetition.** Do not re-propose it as a tidying pass — it is a cull. The themed
+path's diversity rule stays the geometry-only `rules.Places`.
+
 **A misspelt cell is refused at the parser.** `dominance.cells()` is a closed list
 of 48, so it is `--themed`'s argparse `choices` and `--themed not_a_real_cell`
 exits before any pool is read. It used to be accepted, spend about forty seconds
@@ -1263,6 +1283,33 @@ it: `shipped`, `reachable`, `floor_unreachable`, `floor_below` — `solve.BAR_FR
 is the roster. Over the 48 cells the two floor branches are **7 the first way and
 22 the second**. A record that does not name the field was taken before 2026-09-12.
 
+**The census at n=200, over all 48 cells, measured 2026-09-12.** The whole
+distribution, because the four branches are not evenly used:
+
+| `bar_from` | cells | what it means |
+|---|--:|---|
+| `shipped` | **13** | rich enough that the `4n`-th reads above the shipped bar; the pass is unchanged |
+| `reachable` | 6 | the cell's own `4n`-th, above the floor |
+| `floor_below` | **22** | it can field `4n` and its 800th-best `p_fine` is under 0.01 |
+| `floor_unreachable` | **7** | it cannot field `4n` scored rows at all |
+
+So **35 of 48 cells relax** at n=200 and 29 of them go all the way to the floor.
+Above the shipped bar a cell holds **55 to 1,925** rows. Four cannot fill 200 at
+**any** bar: `dark_vivid_lime` **79**, `light_vivid_lime` **100**,
+`light_vivid_teal` **191**, `dark_muted_lime` **192** — the aimed-mining target
+list, and it is lime-and-teal shaped.
+
+⚠ **The `4n` rule makes the SEAT COUNT the knob that decides whether a themed
+collection ships at full quality**, and nothing else on this path is. `n` sets the
+bar through `4n`, so asking for fewer seats asks for a higher bar over the same
+stock: at n=200 thirty-five cells relax, and the same cells at a smaller `n` need
+less stock to reach `4n` and keep more of the shipped bar. That is the lever to
+reach for when a theme comes out thin — not `THEMED_BAR_FLOOR`, which only decides
+how far a pass falls once the cell has already failed `4n`, and not the group cap,
+which does not bind below its own seat count. A themed gallery at full quality is
+a **smaller** themed gallery; unfilled beats padded and there is still no padding
+branch.
+
 ⚠ **Three keys, three questions, and two of them were both called `theme`.** A
 themed pass writes the cell name at `config.theme` (a **string**), the pool that
 name selected at `theme_pool` (a **dict**: `cell`, `membership`, `in_the_cell`,
@@ -1308,10 +1355,19 @@ caps of **3 to 8**, and the richer the theme the tighter its cap —
 backwards from where the room is wanted. A rate on `n` is a number written down
 once.
 
-**What the move costs, priced before it was taken.** `FIX_owed_minor_0905` ran the
-six `themed_<cell>_n200_after_8h_0905` populations again through the pool-view
-door, one pool, both arms under the per-mode ceiling, `P` read off the pool and
-handed back as `--themed-cap` for the OLD arm so the two differ in the cap alone:
+**What the 2026-09-05 move cost, priced before it was taken — and the `10` in this
+table is DATED, not the cap.** Everything below prices `ceil(2n/P)` against the
+**0.05** rate, which gave 10 at n=200 and was Matt's value only until 2026-09-12;
+the cap is `0.075` and **15** now. Read the table as the argument for leaving
+`P` behind, which still stands, and not as a reading of today's rule — and note
+that its conclusion was overtaken: *the cap stops being the wall* was true against
+`ceil(2n/P)` and false a week later, when five cells at n=200 bound at **10 of 10
+in four of the five**, which is what took the rate to three twentieths.
+
+`FIX_owed_minor_0905` ran the six `themed_<cell>_n200_after_8h_0905` populations
+again through the pool-view door, one pool, both arms under the per-mode ceiling,
+`P` read off the pool and handed back as `--themed-cap` for the OLD arm so the two
+differ in the cap alone:
 
 | theme | P | cap | seats over the q4 bar | median | p10 | worst | `group_cap` refusals | seats turned over |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|

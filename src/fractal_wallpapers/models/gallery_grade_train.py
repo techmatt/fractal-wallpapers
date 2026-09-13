@@ -66,11 +66,18 @@ training seed moves the initialisation's dropout draw and the sampler's order an
 nothing else, and every run of the grid is read on identical rows.
 
 **The 20% is the stopping slice and it is also the only held-out number there
-is.** That is the shipped recipe's own trade, carried: the holdout's one job is
-to stop the run. Every AP and AUC below is therefore optimistic by exactly one
-early stop, it is *within-store* held out, and the store is not eval-eligible —
-its population is 700 seats plus 300 runners-up at one location apiece with no
-colour-ceiling representation, so no number here is a base rate about anything.
+is.** That is the shipped recipe's own trade, carried. **Three choices land on
+it, not one**, and a note saying *optimistic by one early stop* undercounted its
+own optimism until 2026-09-12: the epoch inside every run ([`fit`]'s early stop,
+[`_fit_drop_high_asymmetric`]'s AUC(>=4) checkpoint over a fixed horizon), and
+then in [`band`] the **arm** — the highest mean of the band's statistic over its
+seeds — and the **seed** — that arm's median — both read off these very numbers.
+The bar is the one thing that is not: [`write_bar`] refuses to run after a band
+precisely so the height is not chosen here too. Every AP and AUC below is
+therefore optimistic by all three, it is *within-store* held out, and the store is
+not eval-eligible — its population is 700 seats plus 300 runners-up at one
+location apiece with no colour-ceiling representation, so no number here is a base
+rate about anything.
 
 ## Stratified by batch, because the three sittings are three scales
 
@@ -125,16 +132,15 @@ SCHEMA = 1
 #: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
 #: and a whole copy on every row*.
 SCHEMA_NOTES: dict[str, str] = {
-    "held_out_is.fit": "the stopping slice. It is the shipped recipe's only holdout and "
-    "the epoch was chosen on it, so every number here is optimistic by one early stop, "
-    "and the store is not eval-eligible — this is a within-store reading and nothing more",
+    "held_out_is": "the stopping slice. It is the shipped recipe's only holdout and THREE "
+    "things are chosen on it rather than one: the epoch inside every run, and then — off "
+    "these very numbers, in `band` — the arm, by the mean of the band's statistic over its "
+    "seeds, and the seed, by the median of the winning arm. So every number here is "
+    "optimistic by all three, and the store is not eval-eligible — this is a within-store "
+    "reading and nothing more",
     "offset_is": "a learned scalar per sitting, centred at every use and DROPPED at inference — "
     "the column a seating reads is the model without it, which is the average "
     "sitting's scale",
-    "held_out_is.drop_high_asymmetric": "the stopping slice. It is the shipped recipe's "
-    "only holdout and the epoch was chosen on it, so every number here is optimistic by "
-    "one choice, and the store is not eval-eligible — this is a within-store reading and "
-    "nothing more",
     "below_the_bar_is": "where this head's output is undefined. A score written there "
     "would exist only to be misread, so it is not written",
     "superseded_is": "the scores this write replaced, kept under the name of the run that made "
@@ -2146,7 +2152,7 @@ def fit(
         "freezing": freezing,
         "held_out": read,
         "held_out_on_the_gate_column": gate_read,
-        "held_out_is": SCHEMA_NOTES["held_out_is.fit"],
+        "held_out_is": SCHEMA_NOTES["held_out_is"],
         "pictures": {"train": len(training), "stopping": len(stopping), "total": len(units)},
         "class_counts": {
             "train": finished_train.histogram(training),
@@ -2502,7 +2508,7 @@ def _fit_drop_high_asymmetric(
         "freezing": freezing,
         "held_out": read,
         "held_out_on_the_gate_column": gate_read,
-        "held_out_is": SCHEMA_NOTES["held_out_is.drop_high_asymmetric"],
+        "held_out_is": SCHEMA_NOTES["held_out_is"],
         "pictures": {"train": len(training), "stopping": len(stopping), "total": len(units)},
         "class_counts": {
             "train": finished_train.histogram(training),
@@ -3130,7 +3136,8 @@ def write_bar(
             "gate_column_rows": read.get("gate_column_rows"),
             "gate_column_is": read.get("gate_column_is"),
             "is": (
-                "the stopping slice — within-store held out, optimistic by one early stop, "
+                "the stopping slice — within-store held out, optimistic by the three choices "
+                "taken on it (the epoch in every run, then the arm and the seed in `band`), "
                 "and drawn from a store that is not eval-eligible. This bar says which of "
                 "three quantities orders these rows best and nothing about any other rows. "
                 "Where `slice` is `gate_column` the heights and the arm are both read on "

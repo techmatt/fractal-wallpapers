@@ -1148,8 +1148,11 @@ a pool cut to the maps serving all five thin cells at once is a handful of maps
 spread over five cells, which is not a leg aimed at five colours but a leg aimed at
 whatever those few maps happen to carry. The probability is
 `palettes.color_mass.delivering`: **mode-conditional mass where there is a row for
-the map's palette group, the carrier prior where there is not** (822 of 823 groups
-are measured), and the **max** over `mode_policy.accepted()` rather than the mean,
+the map's palette group, the carrier prior where there is not** (942 of 943 groups
+are measured, and the one that is not — `blue_orange` — is not drawable, so **the
+prior branch never fires on a map a leg can offer**; re-read 2026-09-12, the
+reading was 822 of 823 before `classic-pairs-2026-09` was swept in), and the
+**max** over `mode_policy.accepted()` rather than the mean,
 because the pool is shared by every arm and every mode in the leg — a map dropped
 for failing on modes the leg will not run is a map narrowed away for nothing.
 
@@ -1693,7 +1696,8 @@ serve out of the run's own map pool is **dropped at the plan and named** in
 a flat draw is right for one cell of many going thin mid-run and wrong as a plan,
 because it would spend an aimed share on a second control and report it as a cell
 that was served and bought nothing. On 2026-09-01 the table served **all 48** cells
-out of the 822-map pool, so the drop has never fired in production.
+out of the 822-map pool, so the drop has never fired in production — and it still
+serves all 48 out of the 942-map pool, re-read 2026-09-12.
 
 **A dear roster beside a field roster is what arm A is, and the warning above still
 holds for prices.** "Do not put a composite on a roster beside field modes" is about

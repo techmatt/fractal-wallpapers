@@ -174,14 +174,12 @@ fast lane is for the edit-run loop and nothing else.
 
 Both are measured, not estimated. The tree holds **4,590 collected — 4,454 fast,
 136 slow — since `page_order_stratified_ckpt122` landed on 2026-09-13**, on a
-`.[dev,models]` install with a release engine built. The **fast** lane is **4,454
-of 4,454 in 158.36 s (2:38)** on an idle box, **green**, **zero skips** — the idle
-re-take the entry below owed. ⚠ **The slow lane has no reading at this count**: it
-was skipped at Matt's instruction mid-prompt, so its last is
-`embed_and_small_fixes_ckpt122`'s **4,569 of 4,569 in 550.08 s (9:10)**, one count
-behind. **The two lanes therefore do not agree and the next prompt owes the slow
-re-take** — all 21 of the tests between them are fast-lane, so 4,569 + 21 is the
-count to expect.
+`.[dev,models]` install with a release engine built. **The two lanes agree at that
+count**, both green with **zero skips**, taken at `preclose_ckpt122`: **fast 4,454
+of 4,454 in 167.64 s (2:47)**, **slow 4,590 of 4,590 in 577.08 s (9:37)**. Both
+ran about 5% over the readings before them with no test written, and
+`test_autolevel_identity` at **36.08 s** against its 31–34 band said box rather
+than tree — which is the check, not the clock.
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box

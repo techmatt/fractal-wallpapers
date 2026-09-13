@@ -1058,13 +1058,26 @@ def run(
     ## What a second leg reads is `rows_remaining`, and it is neither count of
     ## groups
 
-    **This arm takes no resume index and needs none.** A clock-bound pass is
-    continued by running it again: [`population`] re-reads the store, an adopted
-    row's incumbent has been removed and the adoption stands in its place, so what
-    the plan comes back holding is what is left. The figure that says how much
-    that is — and the only one a next leg or a sizing estimate should be read off
-    — is **`counts.rows_remaining`**, which is the resolved passing set less the
-    rows actually decided.
+    **This arm takes no resume index.** `counts.rows_remaining` is the resolved
+    passing set less the rows actually decided — how much of **this** plan the
+    clock did not reach, and the only honest reading of that, which is what the
+    two ⚠ below are each about.
+
+    ⚠ **Re-running does NOT continue where the last pass stopped, and the figure
+    is not what the next plan will hold.** Only an **adopted** row falls out:
+    [`population`] re-reads the store, the adoption stands in the incumbent's
+    place carrying a non-zero `palette.phase`, and [`refusal_of`] refuses it as
+    `already_rotated`. A row decided `kept` or `held` carries **no mark at all**
+    and is drawn again, whole, at the same price. Measured over the two owed legs:
+    `owed_ckpt121` recorded `rows_remaining: 237` after adopting 528 of 1,752, and
+    `owed_ckpt122` then planned **1,464** rows, of which **1,223 (83.5%) had
+    already been decided** — 773 `kept` and 450 `held`, and **zero adoptions among
+    them**. At 24.6 engine-seconds a row that re-ask was **2h51m of a 3h25m leg**.
+
+    **Do not size a continuation off `rows_remaining`.** Size it off the passing
+    set less the adoptions, which is what the next `population` will hand back.
+    The mark that would make re-running a real resume is not built: it changes
+    what [`population`] refuses and is a separate decision.
 
     ⚠ **`groups_done` is not it**, and the arithmetic does not convert. It is
     incremented by the whole chunk once the pool returns while each worker breaks

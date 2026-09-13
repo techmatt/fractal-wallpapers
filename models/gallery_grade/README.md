@@ -349,9 +349,19 @@ into a cut, that is a second ruling and a `Restatement`.
 ## What every number here is, and is not
 
 * **The 20% is the stopping slice and it is also the only held-out number there
-  is.** That is the shipped recipe's own trade, carried unchanged: the holdout's
-  one job is to stop the run. Every figure above is optimistic by exactly one
-  early stop.
+  is.** That is the shipped recipe's own trade, carried unchanged. ⚠ **Three
+  choices land on that slice and not one**, read off the trainer on 2026-09-12:
+  the epoch inside every run — `fit`'s early stop, and for
+  `drop_high_asymmetric`, which has no early stop at all, the AUC(>=4) checkpoint
+  taken anywhere on a fixed 30-epoch horizon — and then in `band` the **arm**, by
+  the mean of the band's statistic over its seeds, and the **seed**, by the
+  median of the winning arm, both off these very figures. So every figure above
+  is optimistic by all three. Every `metrics.json` and every bar in this
+  directory carries a note that says *one*, which is the whole of what
+  `fractal_wallpapers/README.md`'s *Notes corrected after they shipped* records;
+  the figures themselves are unaffected. The **bar** is the one thing not chosen
+  here — `write_bar` refuses to run after a band, which is what pre-registration
+  is for.
 * **The store is not eval-eligible and nothing here is a base rate.** Its
   population is 700 seats plus 300 runners-up, one row per location, with no
   colour-ceiling representation — a ranker among rows at one location and nothing

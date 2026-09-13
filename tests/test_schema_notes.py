@@ -34,9 +34,12 @@ PACKAGE = Path(__file__).resolve().parents[1] / "src" / "fractal_wallpapers"
 FIELD = re.compile(r"^[a-z0-9_]+_(is|are)$")
 
 #: What a note may be filed under: the field, or the field and which of a module's
-#: records writes it where one module writes the field two ways. `held_out_is.fit`
-#: against `held_out_is.drop_high_asymmetric` is the case, and the two notes differ
-#: by three words — which is the disagreement this arrangement makes visible.
+#: records writes it where one module writes the field two ways — `<field>_is` or
+#: `<field>_is.<which>`. The point of the second spelling is that it makes a
+#: disagreement *visible*: two notes on one field sit next to each other in the
+#: block, and a pair differing by three words reads as the near-duplicate it is.
+#: One such pair has since been reconciled into a single note, which is the
+#: arrangement working rather than the spelling falling out of use.
 NOTE = re.compile(r"^[a-z0-9_]+_(is|are)(\.[a-z0-9_]+)?$")
 
 #: Fields whose value is a NUMBER and not prose, so nothing about them belongs in
@@ -55,8 +58,13 @@ NOT_PROSE = frozenset({"one_swap_is"})
 #: and say so exactly as loudly as one that checked all 121. Raise them as records
 #: are added; a reading that comes in UNDER one is a deletion to look at rather
 #: than a number to repoint.
+#:
+#: `NOTES_AT_LEAST` came **down** by one on 2026-09-12, which is the one move this
+#: comment does not licence and is why it is written here: reconciling
+#: `gallery_grade_train`'s two spellings of `held_out_is` into one deleted a note
+#: on purpose. A drop that nobody can name like this is still a deletion to look at.
 SWEPT_AT_LEAST = 121
-NOTES_AT_LEAST = 110
+NOTES_AT_LEAST = 109
 
 
 @functools.cache

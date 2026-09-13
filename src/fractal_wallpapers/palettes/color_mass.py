@@ -217,9 +217,9 @@ def read(directory: Path | None = None) -> dict[tuple[str, str], dict]:
     """The whole map as `{(group, mode): row}`, the shape a lookup wants.
 
     `noisy` is attached to every row on the way out, from its file's header. The
-    record says it once per file — it is a property of the mode and true of all
-    822 rows or none of them — and a reader holding one row still has to be able
-    to see it, which is what this join is for.
+    record says it once per file — it is a property of the mode and true of every
+    row in that file or of none of them — and a reader holding one row still has
+    to be able to see it, which is what this join is for.
     """
     out: dict[tuple[str, str], dict] = {}
     for mode in stored_modes(directory):
