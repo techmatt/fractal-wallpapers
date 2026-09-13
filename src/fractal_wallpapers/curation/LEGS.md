@@ -819,10 +819,10 @@ the ones now under the junk floor — while a manifest is cut over the **ledger*
 and the ledger runs ahead of the embedding store. Measured 2026-09-12 over the
 live store: **1,636 of 34,010 opened locations (4.9%) have never been embedded**,
 and they are not spread evenly. `general_leg_0909`'s three band arms were handed
-328, 255 and 236 places and planned **160, 87 and 68**; of band 2's **168 lost
-places, every one was a never-embedded `julia:mandelbrot` location** — 66% of that
-manifest. All three arms then ran out of planned work at 41%, 13% and 33% of their
-clock while being the cheapest work of the night. The arm's own log said
+328, 255 and 236 places and planned **160, 87 and 68**; band 2 lost **168** of its
+255 — 66% of that manifest. All three arms then ran out of planned work at 41%,
+13% and 33% of their clock while being the cheapest work of the night. The arm's
+own log said
 `255 of 255 named place(s) hold a candidate in a mode this run can afford`, which
 was true and was not the question; `build_plan` now reports every test's toll and
 the record carries it as `near_attrition`.
@@ -832,7 +832,44 @@ A location with no *framing* row draws at the frame it carries, by design — bu
 location with no *embedding* row has never passed admission, and a near band
 standing on one would put the mining draw and the seating on two populations. The
 open question is the supply one: 1,636 opened locations are outside every draw
-that reads `hunt.scanned`, and `curate embed` is what would close it.
+that reads `hunt.scanned`.
+
+★ **One set of 168 places cost all three arms, and it is the same 168 each time.**
+Measured 2026-09-12: the places band 1's manifest names and the draw will not
+stand on are *exactly* the ones band 2's and band 3's name, and 328 − 168 = 160,
+255 − 168 = 87, 236 − 168 = 68 — every one of the three shortfalls, to the place.
+That follows from what they are: an unadmitted place is never drawn on, so its
+room never falls and it is named again by the next cut. **166 of the 168 have no
+supply row at all**, 2 are scored under the junk floor, and **none is embedded**.
+
+⚠ **They are not one partition.** An earlier reading recorded band 2's 168 as
+*every one a `julia:mandelbrot` location*; that is wrong and the sentence stood in
+this file, in `depth.near_admits` and in the `near-places` help until 2026-09-12.
+They span **ten** partitions — `multibrot3` **60**, `mandelbrot` 27,
+`julia:multibrot3` 20, `julia:mandelbrot` **14 (8.3%)**, `multibrot5` 12,
+`julia:multibrot5` 9, `julia:multibrot4` 8, `multibrot4` 8, `phoenix` 8,
+`phoenix:classic` 2 — so the gap is a supply-phase one across the whole harvest
+and not a quirk of one family.
+
+★ **It is a SCORING backlog and not an embedding one, and `curate embed` closes
+none of it.** Measured 2026-09-12, after the sentence above was written: the
+embedding store holds **41,415** rows against **40,454** admitted, `curate embed`
+reports `missing: 0, wrote: 0, complete: true`, and there is **nothing
+outstanding at all**. Of the 1,636, **1,607 have no supply-sidecar row of any
+kind**, 29 are scored and sit *under* the junk floor (`p_ge3` 0.0011 to 0.0989,
+median 0.0512), and **0 are over the floor and unembedded** — which is the only
+bucket `curate embed` can act on. [`embeddings.admitted`] is the sidecar read
+through `floors.passes_junk_floor`, so a location the sidecar has never scored is
+invisible to that command by construction: **`curate score` is what has to run,
+and it has to run first.** The 29 want nothing done — a location the judge calls
+junk is not one this collection may ship, which is what admission is for.
+
+⚠ **Ordering, and it is the whole of the mistake above.** `curate score` fills the
+sidecar, `curate embed` embeds what the sidecar admits. `discovery/README.md`'s
+merge recipe already runs them in that order and says *and nothing else*; a
+diagnosis that reaches for the second without asking whether the first has run
+will price a backlog at zero and find nothing to do, which is exactly what
+happened here.
 
 ⚠ **The roster is the second test and it is real but smaller.** The draw holds the
 incumbent's mode, so a composite incumbent costs about 175 s a location — the arm

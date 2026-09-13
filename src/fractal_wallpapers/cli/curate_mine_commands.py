@@ -626,9 +626,10 @@ def _near_places(args: argparse.Namespace) -> int:
     leg rig beside the checkout — names places `depth.near_places` will not stand
     on, and the arm then drops them in silence: `general_leg_0909`'s three bands
     were handed 328, 255 and 236 places and planned **160, 87 and 68**, stopping
-    on an empty plan at 41%, 13% and 33% of their clock. Of band 2's 168 lost
-    places, every one was a `julia:mandelbrot` location the embedding store has
-    never held. [`depth.near_manifest`] applies the three tests the draw applies —
+    on an empty plan at 41%, 13% and 33% of their clock. The **same 168 places**
+    cost all three — an unadmitted place is never drawn on, so its room never falls
+    and the next cut names it again — and 166 of them have no supply row at all.
+    [`depth.near_manifest`] applies the three tests the draw applies —
     a roster incumbent, the band, the admitted population — and counts the room at
     the pair the draw will actually render into.
 
@@ -1538,9 +1539,9 @@ def add_steps(steps) -> None:
             "free slots at the pair the draw will render into, which is the incumbent's "
             "mode spelled bare. `general_leg_0909`'s three band arms were handed 328, 255 "
             "and 236 places by a cut that asked only the first, planned 160, 87 and 68, and "
-            "stopped on an empty plan at 41%, 13% and 33% of their clock; of band 2's 168 "
-            "lost places every one was a julia:mandelbrot location the embedding store has "
-            "never held. Costs one population read. --out writes what --near-places reads."
+            "stopped on an empty plan at 41%, 13% and 33% of their clock; the SAME 168 "
+            "places cost all three, 166 of them locations the supply sidecar has never "
+            "scored. Costs one population read. --out writes what --near-places reads."
         ),
     )
     near_manifest.add_argument(
