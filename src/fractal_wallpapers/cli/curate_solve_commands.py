@@ -1402,9 +1402,11 @@ def add_steps(steps) -> None:
         action="store_true",
         help="print what the PRESENTATION ORDER bought this record, and write no page. "
         "The gap between seats sharing a cell, a mode, a hue family or a spiral verdict, "
-        "the spiral clumping, and the within-window embedding distance — each of them "
-        "under the order the page shipped with and under the derived one, measured by one "
-        "function so the pair is a comparison rather than two instruments",
+        "how many pairs of each TOUCH beside the floor their own counts impose on every "
+        "order there is, where those pairs sit in the page, the spiral clumping, and the "
+        "within-window embedding distance — each of them under the order the page shipped "
+        "with and under the derived one, measured by one function so the pair is a "
+        "comparison rather than two instruments",
     )
     browsing.add_argument(
         "--out",

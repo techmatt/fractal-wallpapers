@@ -146,6 +146,111 @@ def test_an_abundant_value_is_allowed_what_a_window_cannot_avoid_holding():
     assert shares[("mode", "smooth")] == pytest.approx(0.75)
 
 
+def test_no_column_s_touch_penalty_can_outweigh_the_cheapest_window_repeat():
+    """*It must not come out of the colour terms*, as an inequality between the
+    constants rather than a hope about a distribution — the same bound
+    [`page_order.DISTANCE_WEIGHT`] is under, for the same reason."""
+    most = (
+        page_order.ADJACENCY_WEIGHT
+        * page_order._taper(page_order.ADJACENCY_REACH, page_order.ADJACENCY_REACH)
+        * max(page_order.ATTRIBUTE_WEIGHTS.values())
+    )
+
+    assert most < min(page_order.ATTRIBUTE_WEIGHTS.values())
+    # And it is a SHORT range: a term reaching as far as the window would be the
+    # window term with a second name on it.
+    assert page_order.ADJACENCY_REACH < page_order.WINDOW
+
+
+def test_the_adjacency_term_separates_a_repeat_the_window_allowance_forgives():
+    """The gap the term exists to close. A value at a quarter of the seating is
+    allowed what a window cannot avoid holding, so the window term is indifferent
+    between spreading its copies and stacking them — and stacked is what a reader
+    sees. Eight `tia` in thirty-two seats, every other column constant so the mode
+    column is the only thing in play."""
+    rows = [
+        seat(f"{at:016x}", mode="tia" if at < 8 else "smooth", cell="azure", hue_family="blue")
+        for at in range(32)
+    ]
+
+    placement = page_order.order(rows)
+    modes = [rows[at]["mode"] for at in placement]
+    touching = sum(1 for at in range(1, len(modes)) if modes[at] == modes[at - 1] == "tia")
+
+    assert touching == 0, modes
+    # Without the term the same rows stack them: the allowance forgives every one.
+    assert page_order.ADJACENCY_WEIGHT > 0.0
+
+
+def test_a_value_that_cannot_avoid_touching_degrades_to_its_floor_and_does_not_thrash():
+    """The themed case, at the smallest size that shows it. A value holding more than
+    half the seats MUST touch itself — `_forced_touches` says how often — and the
+    order has to spend that floor and no more rather than refusing to place it and
+    stacking the whole majority at the end, which is what an unallowanced term did:
+    47 touching cell pairs to 54 on a 176-seat themed record, and its share of the
+    closing tenth from 7 to 17."""
+    rows = [seat(f"{at:016x}", cell="green" if at < 13 else "rose") for at in range(20)]
+
+    floor = page_order._forced_touches(rows, "cell")
+    placement = page_order.order(rows)
+    cells = [rows[at]["cell"] for at in placement]
+    touching = sum(1 for at in range(1, len(cells)) if cells[at] == cells[at - 1])
+
+    # 13 of 20 leaves 7 others opening 8 slots, so five copies have nowhere to go.
+    assert floor == 5
+    assert touching == floor, cells
+    # And the page is still whole: degrading is placing, never dropping.
+    assert sorted(placement) == list(range(len(rows)))
+
+
+def test_the_floor_is_what_the_counts_impose_and_not_what_an_order_managed():
+    """[`page_order._forced_touches`]: `n - k` others open `n - k + 1` slots, so a
+    value fits without touching itself while `k <= n - k + 1` and each copy past
+    that forces one. The off-by-one is the whole content of it — two of three
+    touches nothing, `X . X`, and a floor of `2k - n` would have said one."""
+    three = [seat(f"{at:016x}", cell="azure" if at < 2 else "rose") for at in range(3)]
+    both = [seat(f"{at:016x}", cell="azure") for at in range(2)]
+
+    assert page_order._forced_touches(three, "cell") == 0
+    assert page_order._forced_touches(both, "cell") == 1
+    # `tia` is 263 of the 1,000 seats of `20260911T022330Z` and its floor is ZERO,
+    # which is what made every pair the allowance alone left an avoidable one. The
+    # rest is spread the way that record's is, because a column's floor is a fact
+    # about whichever value exceeds half a page and `tia` is not it there.
+    spread = ["tia"] * 263 + ["smooth"] * 263 + ["stripe"] * 263 + ["threads"] * 211
+    assert (
+        page_order._forced_touches(
+            [seat(f"{at:016x}", mode=mode) for at, mode in enumerate(spread)], "mode"
+        )
+        == 0
+    )
+    # And a value that IS more than half a page carries the whole column's floor,
+    # because two values cannot both be.
+    lopsided = [seat(f"{at:016x}", mode="tia" if at < 737 else "smooth") for at in range(1000)]
+    assert page_order._forced_touches(lopsided, "mode") == 2 * 737 - 1000 - 1
+    # A silent value is not a repeat and so cannot force one: 899 non-spirals in a
+    # row is the gallery rather than a clump.
+    assert page_order._forced_touches([seat(f"{at:016x}") for at in range(8)], "spiral") == 0
+
+
+def test_the_touching_pairs_are_reported_with_the_floor_and_where_they_LAND():
+    """The readout the before/after is read on. `_gaps` can only say a minimum of 1,
+    which a page with one touching pair and a page with fifty both report — and the
+    closing tenth is the number that says whether a tail clump was removed or moved
+    there."""
+    rows = [seat(f"{at:016x}", cell="azure" if at in (0, 1, 8, 9) else "rose") for at in range(10)]
+
+    held = page_order.spacing(rows, list(range(10)))["adjacent"]["cell"]
+
+    # `azure azure rose rose rose rose rose rose azure azure`: one touch closing the
+    # opening pair, five down the rose run, one closing the last pair.
+    assert held["pairs"] == 7
+    assert held["worst"] == ["rose", 5]
+    # rose holds 6 of 10, so four others open five slots and one copy must touch.
+    assert held["forced"] == 1
+    assert held["last_tenth"] == 1  # the pair closing at position 9
+
+
 def test_the_allowance_is_scaled_to_the_window_that_exists_and_not_to_a_full_one():
     """A page opens with an empty window and fills it one seat at a time, so an
     allowance sized for 32 placed seats is far larger than four placed seats can

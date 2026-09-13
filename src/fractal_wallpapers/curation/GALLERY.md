@@ -1805,13 +1805,14 @@ a 1920px viewport by 4 rows of card under the sticky header. It is deliberately 
 a global farthest-point traversal, which front-loads the variety and leaves the
 leftovers adjacent at the end — the clump moved rather than removed.
 
-**Three terms, in this order.** A repeat of `cell`, `mode`, `hue_family` or `spiral`
+**Four terms, in this order.** A repeat of `cell`, `mode`, `hue_family` or `spiral`
 inside the window costs, tapered so a repeat nearer the end of the window costs more
-than one at its far edge; the neutral-embedding distance to the window is a
-tie-breaker bounded below the cheapest attribute weight, so it can never buy back a
-repeat; and `p_ge4` descending seeds the page and breaks every remaining tie, so the
-strongest row still opens it and quality still orders it wherever spread is
-indifferent. **No RNG** — one seating produces one order.
+than one at its far edge; **touching** — sharing a value with either of the last two
+placed — costs separately and at a short range; the neutral-embedding distance to the
+window is a tie-breaker bounded below the cheapest attribute weight, so it can never
+buy back a repeat; and `p_ge4` descending seeds the page and breaks every remaining
+tie, so the strongest row still opens it and quality still orders it wherever spread
+is indifferent. **No RNG** — one seating produces one order.
 
 **A repeat is priced on its excess over what a window cannot avoid holding.** A
 value holding a share `s` of the seating appears about `s x 32` times in every
@@ -1821,6 +1822,44 @@ second appearance made a plain greedy spend its scarce rows early: all 47 of the
 first draft's adjacent-mode pairs landed at position 864 or later. The allowance is
 the fix, and it is scaled to the window **in force** rather than to a full one,
 without which the order is inert across the first screenful.
+
+### The allowance is a count rule and adjacency is a spacing one
+
+**Since 2026-09-13.** The allowance settles *how many* of a value a window holds and
+says nothing about **where inside it** they fall, and the two come apart: eight `tia`
+in a screenful can be piled in one corner or laid one tile in four, both score the
+same, and only one of them reads as a clump. So a second term prices **touching** —
+sharing a value with the last `page_order.ADJACENCY_REACH` placed, two seats, at
+`ADJACENCY_WEIGHT` times the column's own weight. Two is the smallest reach that
+empties both colour columns; swept 1 to 4 the surviving mode pairs run 11, 13, 12, 10,
+flat inside the greedy's noise, while a reach of 1 leaves 2 touching cells and 3
+touching hue families where the rest leave none.
+
+**It must not come out of the colour terms, and that is an inequality between
+constants**: the most any one column can charge is `0.15 x 1.5 x 1.0 = 0.225`, under
+the smallest attribute weight of `0.4`, so no touch buys back a window repeat. The
+empirical half is the table below — every gap median holds and the spiral window and
+embedding distance are unmoved.
+
+⚠ **The new term needs the allowance as much as the window term does, and finding out
+cost a themed record.** Written without one it hoards, and worse than a plain greedy:
+`dark_vivid_green` is 106 of the 176 seats of a themed page, so it *cannot* be kept
+off its own neighbours, and refusing to place it beside itself drains the other 70
+seats first and stacks the majority at the end. Measured, an unallowanced term took
+that record's touching cell pairs from **47 to 54** and their share of the closing
+tenth from **7 to 17** — the tail clump this whole module exists to remove,
+reintroduced by the term meant to remove it. With the allowance at the reach's scale
+the same record reads **46**, and its tail sits *at* the floor: the last 50 seats
+realize 21 touches against a floor of 21, the last 25 realize 14 against 14.
+
+**So the page reports the floor beside the count**, `page_order._forced_touches`: `k`
+copies among `n` seats leave `n - k` others opening `n - k + 1` slots, so the floor is
+`max(0, 2k - n - 1)` and a column's floor is the dominant value's term. It is what
+tells a residue from a defect, and **the two products answer it oppositely**. `tia`
+holds 263 of 1,000 general seats and its floor is **zero** — every pair the allowance
+alone left behind was avoidable. `dark_vivid_green`'s floor on the themed page is
+**35** of its 46, and `green` as a hue family is 139 of 176 seats with a floor of
+**135** against 136 realized, which is nothing left to win.
 
 **`palette_group` is not on a gallery row** — it is on the solve seat and
 `tentative.rows_of` does not copy it — so `cell` is the colour axis, which is the
@@ -1839,12 +1878,22 @@ collect at either end of the page.
 
 | | n=1000 general | themed `dark_vivid_green`, 176 seats |
 |---|---|---|
+| touching pairs sharing a cell *(floor)* | 32 → **0** *(0)* | 73 → **46** *(35)* |
+| sharing a mode | 164 → **13** *(0)* | 49 → **1** *(0)* |
+| sharing a hue family | 97 → **0** *(0)* | 140 → **136** *(135)* |
+| sharing a spiral verdict | 15 → **0** *(0)* | 0 → 0 *(0)* |
+| of those mode pairs, in the closing tenth | 17 → **13**, all in the last 17 seats | 7 → **1** |
 | spirals in a window of 32 | **13 → 5** | **7 → 5** |
-| longest consecutive spiral run | **3 → 1** | 1 → 2 |
-| gap between seats sharing a cell, min/median | 1/23 → **2/31** | 1/2 → 1/2 |
-| sharing a hue family, min/median | 1/8 → **1/10** | 1/1 → 1/1 |
+| longest consecutive spiral run | **3 → 1** | 1 → 1 |
+| gap between seats sharing a cell, min/median | 1/23 → **3/31** | 1/2 → 1/2 |
+| sharing a hue family, min/median | 1/8 → **2/10** | 1/1 → 1/1 |
 | sharing a mode, min/median | 1/4 → **1/5** | 1/3 → 1/3 |
-| mean within-window min distance | 0.0961 → **0.1193** | 0.1175 → **0.1349** |
+| mean within-window min distance | 0.0961 → **0.1187** | 0.1175 → **0.1337** |
+
+The themed column is `20260913T011105Z`, solved on 2026-09-13 for this reading at
+`--themed dark_vivid_green --n 200`, 176 of 200 filled. Its rank-order column
+reproduces the deleted record the row above it was first measured on, seat count and
+every figure, which is the closest thing to a control this comparison has.
 
 **The two products do not behave alike, and not for the reason expected.** A themed
 gallery is one cell by construction — 106 of its 176 seats are `dark_vivid_green` and
@@ -1862,10 +1911,21 @@ p10 0.072/0.079 and p90 0.159/0.164. `page_order.DISTANCE_CAP` is 0.16 for that
 reason, and the check that it is not over-reaching is that the *attribute* spacings
 improve rather than degrade: at 0.20 the minimum cell gap falls back to 1.
 
-**What it did not fix, and the number is on the record.** `tia` holds 26.3% of the
-general page and 37 of the 41 remaining adjacent-mode pairs are `tia` beside `tia`,
-17 of them in the last tenth. The allowance prices that as unavoidable on purpose;
-spacing it further would have to come out of the colour terms, which are worth more.
+**What is left, and where the number it used to carry came from.** `tia` holds 26.3%
+of the general page and all 13 surviving mode pairs are `tia` beside `tia` — and all
+13 sit in the **last 17 seats**, positions 983 to 999, where the leftover stock is 76%
+`tia` and that suffix's own floor is 12. The body of the page has none. That is the
+greedy's endgame rather than a term that gave up: it is one pair off what the stock it
+was left with allows.
+
+⚠ **This paragraph used to read *37 of 41 adjacent-mode pairs, 17 in the last tenth*,
+and none of those three numbers was reproducible.** The committed order gives **53,
+33 of them `tia`, 13 in the last tenth** — measured on the same record, whose rows and
+embedding store have not moved since. No cap, weight or basis reproduces 41/37/17; the
+closest is `DISTANCE_CAP` at 0.20, which gives 41 pairs but 8 in the last tenth. They
+were a reading of a draft that did not ship, carried into the prose as if it had, and
+the lesson is the cheap one: **a number in a paragraph is worth re-measuring before it
+is built on**, because the next prompt reads it as the baseline it is not.
 
 **Two files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl` and
 `manifest.json`, through a narrow un-ignore in `.gitignore` that names them one at a

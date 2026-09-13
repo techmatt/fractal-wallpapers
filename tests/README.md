@@ -53,6 +53,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [page_order_min_gap_ckpt122](#page_order_min_gap_ckpt122)
     - [preclose_ckpt122](#preclose_ckpt122)
     - [page_order_stratified_ckpt122](#page_order_stratified_ckpt122)
     - [embed_and_small_fixes_ckpt122](#embed_and_small_fixes_ckpt122)
@@ -589,6 +590,29 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### page_order_min_gap_ckpt122
+
+**Five tests for the adjacency term, and a lane that got faster on more of them.**
+`page_order_min_gap_ckpt122`, 2026-09-13. **Fast: 4,459 selected, 136 deselected —
+4,595 collected — in 163.76 s (2:43).** Green, zero skips, zero failures, box idle.
+That is 5 more tests than `preclose_ckpt122` and **3.9 s less clock**, which is the
+other half of the entry below: that prompt's +9.3 s on an identical count was read as
+the box, and a count going up while the clock comes down is what confirms it. No
+engine-bound re-run was needed — the rule is for a lane that *moves the wrong way*.
+
+⚠ **The slow lane was skipped at Matt's instruction mid-prompt**, so the two lanes do
+not agree at this count: the standing slow figure is `preclose_ckpt122`'s 4,590. All
+five new tests are fast-lane arithmetic in `tests/test_page_order.py` — no render, no
+store, no training — so the slow lane should collect **4,595**, and the next prompt to
+take a pair settles it.
+
+**Two of the five failed first and both were the test's arithmetic, not the code's.**
+A floor assertion read `_forced_touches` as a statement about one value when it is a
+sum over the column — `tia` at 263 of 1,000 has a floor of zero but `smooth` at 737
+carries 473 — and a touching count was written for the wrong string. Worth the note
+because both are the same mistake in opposite directions: hand-counted expectations on
+a function whose whole job is counting.
 
 #### preclose_ckpt122
 
