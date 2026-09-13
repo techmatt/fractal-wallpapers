@@ -44,8 +44,11 @@ channel is not making up for a missing sampler; it is handing the walk a *place*
 where the pool can only hand it a parameter, and one seed can be proven at several
 frames without the `c`-spacing floor having anything to say about it.
 
-`phoenix:classic` is out, as it is out of every channel: it is one pinned
-parameter point filled by another leg of the project entirely.
+`phoenix:classic` is served too, and since 2026-09-02 — see [`SERVED`]. It was out
+until then on the ground that another leg of the project filled it, which was
+`externally_supplied`, which had no supplier and is deleted. A pinned plane is the
+partition this channel is worth most to: one fresh root exists in the world for it,
+so a labelled place is most of what it can ever be handed.
 
 ## Why the order is a digest and not a shuffle
 
