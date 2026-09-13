@@ -23,6 +23,18 @@ A new entry goes beside the readings for its own leg, and the chronology is in t
 dates the sections carry rather than in their order. A heading here is cited the way
 everything in this tree is cited — by heading and file, never by line number.
 
+### `hunt.wants_framing`'s centered branch is dead over the admitted population
+
+It asks [`framing.is_centered`] of a [`hunt.scanned`] row, and the embedding store and
+the supply sidecar both drop the `centered` flag — [`depth.centered_locations`]'s own
+docstring says so one module over. So the predicate reduces to *not in the frame index*
+and reports every unindexed place as wanting a framing. Measured 2026-09-13 over the
+6,821 never-opened admitted locations left after `mine_pilot_ckpt124_armB`: 3,891 (57.0%)
+carry no scan row, `wants_framing` calls all 3,891 of them incomplete, and the
+walk-ledger join says **2,104 are centered** — their framing was decided by the rung
+their head picked. The number that wants a fresh framing is **1,787 (26.2%)**, and 445 of
+those are `phoenix:classic`, which has no scan row at all.
+
 ### What a floor leg may stand on is a FREE SLOT, and `smooth` has almost none
 
 Measured 2026-09-05 over 9,901 proven unpinned places, which is the population
@@ -64,6 +76,68 @@ where the room is thin; it is not the rule. `general_leg_0909`'s band cuts held
 quarters of the room unspent. All three of that leg's band merges kept **every row
 they rendered**. The room per place is
 `curate candidate-ledger free-slots --min-slots N`'s question, asked once per `N`.
+
+### The floor draw takes NO partition weights, so a manifest is its only lever
+
+Stated in [`LEGS.md`](LEGS.md)'s *The floor draw is the one that takes a named
+population* as the ⚠ about re-flattening; what `mine_pilot_ckpt124` added is the
+planner saying so out loud and the price of ignoring it. `build_plan` logs
+
+```
+[weights] mode_floor: ['phoenix', 'phoenix:classic'] declare a seconds share and nothing in this band has priced them.
+```
+
+and then runs that draw at the **unconverted** table, which `hunt.spread` ignores
+anyway. So a floor unit over ten partitions gives `phoenix:classic` a tenth of its
+places. Arm B, which *does* run under the converted table, priced the plane at **24.86 s
+a candidate against the leg's 4.16** — 7.1x — for 3.26% of its seconds against a
+declared 3%. **Excluding a partition from the manifest is durable where leaning one is
+not**: the re-flattening ⚠ bends a lean back whenever the plan is smaller than the
+manifest, and arm A's plan was 80 places against a manifest of 8,440, but a partition
+the manifest does not name cannot be drawn at any plan size.
+
+### `--floor-places` narrows the population and the SEATING BAR still cuts it
+
+`build_plan` narrows `world["best"]` to the manifest and then passes it through
+[`proven_places`], which applies `SEATING_BAR` — so a manifest may only ever *remove*
+places from the above-bar population, never add one below it. Measured 2026-09-13 over
+the two finished stores: **3,808 places carry a human q3/q4 verdict**, 1,102 of them are
+in the admitted drawable population, and **275 are opened and drawable and still under
+the seating bar** — 219 of those untried in the angle modes. Those 219 cannot be reached
+by a floor leg however the manifest is cut. A leg wanting *evidence* to mean the union of
+`p_ge4 >= 0.50` and a human verdict needs `proven_places` to take the bar as a set rather
+than as a number; nothing here does that today.
+
+### What the DEAR nine buy at a proven place against a fresh one, measured 2026-09-13
+
+`mine_pilot_ckpt124`, two 1,800 s arms on one box, one roster — [`depth.dear_modes`]'s
+nine, which is what *the angle modes and the dear kinds* resolves to, since `tia`,
+`stripe` and `curvature` are all shareable and none of them is in it.
+
+| arm | draw | population | made | clears@.50 | eng s a clear | clears a wall minute |
+|---|---|--:|--:|--:|--:|--:|
+| A | `mode_floor`, width 3 a mode | 8,440 proven places untried in the angle modes | 1,883 / 72 places | 111 (5.89%) | **48.7** | **3.68** |
+| B | `ranked_bands`, width 1 | 8,103 never-opened admitted | 1,282 / 1,282 places | 36 (2.81%) | 148.1 | 1.20 |
+
+**Going wide on palettes at a place with evidence has a real tail, and a third of the
+places have none.** Arm A offered every place 27 palettes (3 a mode over 9 modes) and
+the above-bar rows per place came out **0 at 24 places (33.3%), 1 at 21, 2 at 9, 3 at 8,
+4 at 7, 6 at 1 and 7 at 2** — mean 1.54, median 1, and 66.7% of places yielding at least
+one. Arm B at width 1 can only ever report 0 or 1 and reported 1 at 2.8%.
+
+⚠ **The mode spread inside that roster is wider than the spread between the arms.** On
+arm A's own rows `threads` cleared **17.79% at 2.46 s** — **13.8 engine seconds a
+clear** — and `smooth_angle_min` **0.95% at 4.07 s**, which is **429.7**, a 31x gap
+inside one leg. `direct_trap_screen` 17.8, `itinerary` 34.1, `direct_trap_lines` 52.0,
+`direct_trap_multiply` 66.0, `smooth_stripe` 72.0, `smooth_curvature` 83.6,
+`smooth_mean_angle` 91.8. A leg meaning *feed the modes at their seat floors* and a leg
+meaning *buy clears* are not the same leg, and the roster is where they part.
+
+**The head's rank buys little on virgin ground at width 1.** Arm B's ten rank bands
+read 5.26 / 4.58 / 0.78 / 7.03 / 3.12 / 2.33 / 2.34 / 0.00 / 1.61 / 0.81 percent — the
+top three together **3.56%** against bands 3–9's **2.47%**, on ~130 candidates a band.
+Band 2 at 0.78% sits between two of the best, so the ordering is inside the noise at
+this n and a leg cannot be aimed off it yet.
 
 ### What the twelve modes cost and what they buy, measured 2026-09-10
 
