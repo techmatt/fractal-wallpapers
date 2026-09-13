@@ -861,7 +861,8 @@ def test_an_unstamped_read_lands_on_the_newest_PUBLISHED_record(tentative_store,
     assert tentative.latest() == "20260202T000000Z"
     assert tentative.published() == ["20260101T000000Z", "20260202T000000Z"]
     # The unpublished one is still READ, by naming it. That is the whole way it
-    # is reached, and it is kept rather than swept.
+    # is reached for as long as it exists — and since 2026-09-13 it exists only
+    # until whatever it was recorded to measure has been measured.
     assert tentative.read_rows("20260303T000000Z") == [{"key": "20260303T000000Z"}]
 
 
@@ -890,9 +891,11 @@ def test_an_unpublished_record_is_named_in_the_refusal_rather_than_ignored(
 
 
 def test_the_protection_keeps_an_unpublished_record_too(tentative_store, monkeypatch):
-    """**Publication and durability are different questions**, Matt's ruling. An
-    unpublished record is kept: deleting it is the only thing that releases its
-    seats, so `protected_keys` sweeps the whole store and never `PUBLISHED`."""
+    """**Publication, durability and retention are three questions**, Matt's
+    ruling. While an unpublished record exists it is protected: deleting it is the
+    only thing that releases its seats, so `protected_keys` sweeps the whole store
+    and never `PUBLISHED`. That is why a record nobody needs is deleted rather
+    than left — the protection does not care whether anybody meant it."""
     recorded(tentative_store, "20260101T000000Z", "k0")
     recorded(tentative_store, "20260303T000000Z", "k1")
     monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))

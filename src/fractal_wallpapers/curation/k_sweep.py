@@ -54,9 +54,9 @@ allowance at all. [`tones`] reports both and says which is which.
 
 [`curation.k_sweep_plot`] — `curate solve k-sweep-plot <sweep stamp>` — draws the
 per-cell figures off the readings, into `scratch/`. Apart from this module because
-it is disposable and this is not: the durable product of a sweep is its readings
-and its records, and the drawing needs `matplotlib`, which the base install does
-not carry. **The chart is what a collapse is visible in**: a colour that falls as
+it is disposable and this is not: the durable product of a sweep is its readings —
+its records go once they are taken — and the drawing needs `matplotlib`, which the
+base install does not carry. **The chart is what a collapse is visible in**: a colour that falls as
 the ceiling loosens is a shape across 48 cells and not a number in a column.
 
 ## What it found the first time
@@ -363,7 +363,9 @@ def sweep(rungs=RUNGS, n: int = SEATS, control: str | None = None, log=print) ->
     stamp, with its page. Every rung is **unpublished** — a tentative record is
     published only when Matt names it — and every one holds prune protection
     through [`tentative.protected_keys`] until its folder is deleted, published or
-    not. A sweep is disposable and this is the thing to remember about deleting it.
+    not. **A sweep's records are deleted once its readings are in**, which is the
+    default for any unpublished record since 2026-09-13: the tables below are the
+    durable product and the rungs are the working that got there.
 
     Then [`readings`] over what was written, into [`readings_path`]. The tables
     are here and not in a scratch script because they are what the sweep is *for*

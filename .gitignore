@@ -22,9 +22,11 @@ scratch/
 # 2026-09-04. It used to be per-file across every stamp, so recording a gallery
 # and committing it were one act and a record too large to track was a record
 # that could not be made without breaking the build. Now a record is PUBLISHED
-# only when Matt names it, which is one negation line below; every other record
-# stays in the store, kept and readable by naming its stamp, with no durability
-# guarantee. `curation.tentative.PUBLISHED` is the same list in code and
+# only when Matt names it, which is one negation line below; every other record is
+# read by naming its stamp, with no durability guarantee, and is DISCARDED once
+# whatever it was made to measure has been measured — Matt's ruling of 2026-09-13,
+# and `CLAUDE.md` carries it as a rule a leg has to follow.
+# `curation.tentative.PUBLISHED` is the same list in code and
 # `tests/test_tentative.py` holds the two to agreeing.
 artifacts/*
 !artifacts/curation/
