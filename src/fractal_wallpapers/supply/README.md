@@ -404,6 +404,15 @@ a second: the plane is one parameter point, so the only thing a fresh root can
 vary is the frame, and varying the frame is what the walk does. Every further
 *place* comes from the proven channel.
 
+**So a leg that names `phoenix:classic` and no root channel hands it a floor it
+cannot spend**, and `RUN_ckpt123_overnight_harvest` is the measurement: one queue
+entry at launch, queue **0** in all 1,710 quota traces, one slot served in 2,290
+batches, and a realized share of **0.0001** against an intended **0.05** and a
+standing deficit of **83.7**. The floor's minutes are not lost — the allocator
+gives them to whoever can take them — but the partition is on the invocation as a
+partition that cannot move. Naming it costs nothing and buys nothing;
+`--root-channel viewport_sampler` is what makes the name mean something.
+
 **The mix is decided where the batch is popped.** Weighting the *root draw* by
 family cannot enforce a mix: anything that only changes what enters the frontier
 is diluted by whatever multiplies fastest inside it. In the source project an
@@ -503,8 +512,11 @@ have been archived builds both memories out of whatever happens to be local.
 **No `--ledgers` value reaches the whole history, and naming the archive root is
 not the way to.** The flag takes one root and a root is one tier, so naming the
 archive trades the hot ledgers for the archived ones rather than adding them:
-measured 2026-09-13, `ledger_paths` with no root finds **49**, the hot root **15**
-and the archive root **34**, and 15 + 34 is the 49 no invocation can ask for. A
+measured again on 2026-09-13 by `RUN_ckpt123_overnight_harvest`, `ledger_paths`
+with no root finds **53**, the hot root **19** and the archive root **34**, and
+19 + 34 is the 53 no invocation can ask for. The hot count is the one that moves:
+it was 15 before the four ckpt-123 legs wrote their run directories, and the
+archive's 34 has not changed. A
 leg that wants the whole population has to be given it another way — the three
 builders take `paths`, and `cli.harvest` is the one caller that turns the flag
 into them. `ledgers.ledger_paths` is the one place that answers how many there
@@ -655,6 +667,21 @@ following morning. The proven count is beside the pool count because a queue two
 channels deep exhausts two ways — `pool julia:mandelbrot: 1036 of 1036 entries
 left, 827 of them proven roots` — and running out of `c` and running out of
 labelled places are fixed by different things.
+
+**With no root channel named, the whole standing root supply is small enough to
+walk out in a night, and 2026-09-13 is the night that did it.**
+`RUN_ckpt123_overnight_harvest` ran the four julia twins plus `mandelbrot`,
+`multibrot5` and `phoenix:classic` on the pools and the twin channel alone. It
+stopped `nothing servable` at **311 of 405 active minutes**, 2,290 batches, with
+`frontier: 0` and every one of the seven queues at zero — not a stall inside a
+cooldown but every channel reporting itself exhausted at once: the three plane
+pools *every entry has been walked* (507, 501 and 1 row), and each twin *all N
+parameters it derived have been handed over and walked*. **1,401 roots is what
+those seven partitions had**, and the twin channel's own message says why more
+did not appear: it derives from admitted plane locations, the plane pools were
+themselves walked out, so nothing fed it. Budget a channel-less leg at about
+five hours on this supply and expect the clock to outlast the roots — the
+partition list aims a leg, it does not extend one.
 
 **A sitting can add proven roots and no parameters at all, and `julia_supply_ckpt123`
 is the measured case.** All 48 of its rows came back q3+, so all 48 became proven
