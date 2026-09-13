@@ -1015,6 +1015,29 @@ altogether, and every gate survivor under a plane root records its rung and its
 raw junk-floor verdict — which is the survival-by-rung table a depth-aware floor
 would have to be shaped from.
 
+**Dynamical roots are untouched because they have no cliff, and that is measured
+rather than assumed.** On the same statistic the 1.2% above is — the share of a
+root's own children reaching the frontier — julia manages **59.9%** over 7,030
+rung-1 candidates, and a `twin:labels` root at the julia home view of width 3.0
+manages **55.3%**, a third of them admitted outright. That is fifty times the rate
+the grace exists to fill, and those roots reach median depth 7 with a ceiling of
+13. Across all 50 ledgers **no julia root has ever been graced — 0 of 2,400** — and
+widening the grace to reach one would buy nothing, because the floor is not what
+stops a julia lineage. **`Limits.root_expansions` is.** The 1,714 roots at that cap
+pay a median of exactly 12, 60.9% reach it, and **98.0% of those were still
+producing standable nodes at their deepest rung** — a budget closing live
+lineages, holding 28.59 admissions a root against 2.85 for the roots that stopped
+on their own. The field itself carries the rest of the reading and the reason it
+is still 12.
+
+The two virgin `c`-pool channels fail differently again, and also not at this
+floor: `near_boundary` and `near_minibrot` roots die at rung 1 — median one
+expansion, median max depth 2 — but their rung-1 refusals are dominated by the
+**structural gates**, 43.4% `flat` for `near_minibrot` and 11.1% `flat` plus 10.4%
+`interior_cap` for `near_boundary`. Those carry no score at all, so the grace
+could not waive them even if it reached them: what is wrong there is the
+parameter, not the depth.
+
 **Below `min_width` is another mode, not a lower floor here.** The walk's
 `1e-9` stays where it is. What is under it —
 [the deep run mode](../deep/README.md) — reuses this package's engine door,
