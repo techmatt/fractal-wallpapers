@@ -16,15 +16,22 @@ Three bounds on that, and each one exists because the unbounded version fails:
 * **the pool is finite and the cursor only moves forward**, so a refill hands over
   roots the run has not seen rather than re-seeding the same ones.
 
-**A Julia twin's pool is manufactured, not shipped.** The degree-2 twin draws
-from a tracked `c`-pool; the higher-degree twins have none, and used to be
-deferred forever with "fed by reframing only" — which reached them never, because
-a reframing operator is undefined on a dynamical viewport. Their channel is
-[`fractal_wallpapers.supply.twins`]: an admitted location of the degree-`d`
-parameter plane *is* a `c` for the degree-`d` Julia family, so serving the parent
-manufactures the twin's supply. It hands over the same seed object the tracked
-pool does, through the same cursor and the same low-water mark; the only
-difference is that its list grows during the run.
+**A Julia twin's pool is manufactured, not shipped.** The higher-degree twins have
+no tracked `c`-pool, and used to be deferred forever with "fed by reframing only"
+— which reached them never, because a reframing operator is undefined on a
+dynamical viewport. Their channel is [`fractal_wallpapers.supply.twins`]: an
+admitted location of the degree-`d` parameter plane *is* a `c` for the degree-`d`
+Julia family, so serving the parent manufactures the twin's supply. It hands over
+the same seed object the tracked pool does, through the same cursor and the same
+low-water mark; the only difference is that its list grows during the run.
+
+**The degree-2 twin draws from both, and its queue is where they meet.** It has a
+tracked `c`-pool *and* a parent plane, and the channel was kept off it until
+2026-09-12 because [`Refill._twin_queue`] did not exist and this class read its
+twin branch first — so serving the twin would have handed over the derived list in
+place of the pool. A queue that holds both is what made lifting it safe, and the
+c-spacing floor that keeps the two apart is the twin channel's, with the pool's
+own parameters reserved into it.
 
 **A pinned plane gets fresh places from a sampler over its own view.** A pool
 hands over a parameter and a pinned plane has none left to vary, so its fresh
@@ -73,6 +80,7 @@ from pathlib import Path
 
 from fractal_wallpapers.discovery import pools
 from fractal_wallpapers.supply import proven as proven_channel
+from fractal_wallpapers.supply import twins
 from fractal_wallpapers.supply.partitions import (
     ALL_PARTITIONS,
     CLASSIC_PHOENIX,
@@ -161,6 +169,10 @@ class Refill:
         self.last_refill: dict = {}
         self.cursor: dict = {}
         self._pools: dict = {}
+        #: How much of a twin's derived list is already in its built queue. A twin
+        #: queue is the one thing here that grows after it is built, and this is
+        #: what says where it grew to — see [`_twin_queue`].
+        self._twin_mark: dict = {}
         # The tracked pool is the default channel for the parameter planes, not a
         # fallback nobody reaches: a run that had to be handed a seed file to
         # refill four of its ten partitions is a run that silently does not, and
@@ -185,14 +197,11 @@ class Refill:
         partition: two cursors served in whatever order a queue drains would
         decide the mix between the channels by accident.
         """
-        # The twin channel's list is never cached: it grows as the run books
-        # parent-plane admissions, and a snapshot of it would freeze a channel
-        # whose whole point is that serving the parent fills it. The interleave
-        # is re-made with it and that is safe under the cursor — `interleave`
-        # only ever appends when the pool side grows, so everything already
-        # drawn stays where it was.
+        # A twin's queue is the one that grows after it is built, because serving
+        # the parent plane is what fills it. It is extended rather than re-made —
+        # see [`_twin_queue`], which carries what re-making it cost.
         if self._is_twin(partition):
-            return self._with_proven(partition, self.twins.seeds(partition))
+            return self._with_proven(partition, self._twin_queue(partition))
         if partition in self._pools:
             return self._pools[partition]
         if partition == "julia:mandelbrot":
@@ -211,6 +220,53 @@ class Refill:
         rows = self._with_proven(partition, rows)
         self._pools[partition] = rows
         return rows
+
+    def _twin_queue(self, partition: str) -> list:
+        """A twin's queue: its tracked `c`-pool, if it has one, its derived list, and
+        its proven roots — **built once and extended, never re-interleaved.**
+
+        **Interleaved and not substituted, which is the whole of what the degree-2
+        exclusion protected.** This branch is read before the `julia:mandelbrot`
+        one below it, so a served degree-2 twin used to get the derived list
+        *instead of* the pool's 209 rows — and "a derived parameter must not
+        displace the tracked pool" was exactly true, as a fact about this method
+        rather than about the coarseness of a parameter-plane centre.
+
+        The pool goes in 1:1 rather than at the proven channel's 2:1. The two
+        sides are one pool of a couple of hundred and a derived list that grows
+        all run, so the ratio decides how deep a leg must draw to reach the pool's
+        back half — where this project's only virgin dynamical roots sit — and
+        one-for-one adds a leg's worth of derived parameters without doubling it.
+
+        **Built once because an interleave is not stable under a growing side, and
+        the cursor is an index.** `interleave` was documented as only ever
+        appending when its second argument grew; it does, until that argument runs
+        out before the first one, and a twin's few derived parameters always run
+        out before a partition's hundreds of proven roots. Re-interleaving one
+        more parameter then moved every entry past that point down a slot: under a
+        cursor at 6 the entry at 5 had been handed over and the new parameter took
+        its index, so the run walked one root twice and never walked the new one at
+        all. Any run with both a twin channel and `--root-channel proven` was doing
+        this before 2026-09-12. Growing the built list is what the cursor's
+        semantics actually ask for, and it puts a parameter derived mid-run at the
+        tail — which is where it belongs, since it did not exist when the entries
+        ahead of it were handed out.
+        """
+        built = self._pools.get(partition)
+        seeds = self.twins.seeds(partition)
+        if built is None:
+            pool = list(twins.tracked_pool(partition))
+            rows = list(seeds)
+            if pool:
+                rows = proven_channel.interleave(pool, rows, ratio=1)
+            built = self._with_proven(partition, rows)
+            self._pools[partition] = built
+            self._twin_mark[partition] = len(seeds)
+            return built
+        if len(seeds) > self._twin_mark[partition]:
+            built.extend(seeds[self._twin_mark[partition] :])
+            self._twin_mark[partition] = len(seeds)
+        return built
 
     def _with_proven(self, partition: str, rows: list) -> list:
         """`rows` with this partition's proven roots interleaved through them.
@@ -247,11 +303,13 @@ class Refill:
         return self.sampler is not None and partition in self.sampler.partitions
 
     def _is_twin(self, partition: str) -> bool:
-        """Whether the twin channel is this partition's channel.
+        """Whether the twin channel is one of this partition's channels.
 
-        The channel names the twins it serves, and it deliberately leaves out the
-        degree-2 one: that twin has a tracked `c`-pool a three-stage screen
-        produced, and a derived parameter must not displace it.
+        One of, since 2026-09-12, and not the only one: the channel serves the
+        degree-2 twin as well now, and that twin also has a tracked `c`-pool a
+        three-stage screen produced. What kept the two apart was that this class
+        read the twin branch first and handed over the derived list *instead of*
+        the pool — see [`_twin_queue`], which is where the two became one queue.
         """
         return self.twins is not None and partition in self.twins.partitions
 
@@ -460,9 +518,18 @@ class Refill:
         """
         if isinstance(entry, dict):
             return self._root_of_row(entry, index)
-        if isinstance(entry, pools.JuliaSeed) and self._is_twin(partition):
-            # The same seed object and the same call the degree-2 channel makes,
-            # at the degree its parent plane carries. That is what keeps this one
+        if (
+            isinstance(entry, pools.JuliaSeed)
+            and self._is_twin(partition)
+            # **On the seed and not on the partition.** A pooled twin's queue holds
+            # both kinds of `JuliaSeed` — its tracked pool's and this channel's —
+            # so a branch that asked which partition it was would call every
+            # degree-2 pool row a derived parameter, and the run record would
+            # credit the twin channel with what a three-stage screen found.
+            and entry.channel.startswith(twins.SEED_CHANNEL)
+        ):
+            # The same seed object and the same call the degree-2 pool makes, at
+            # the degree its parent plane carries. That is what keeps this one
             # channel more rather than a second mechanism.
             return {
                 "family": entry.family(self.twins.degree_of(partition)),

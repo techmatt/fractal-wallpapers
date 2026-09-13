@@ -592,6 +592,22 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### FIX_ckpt123_pooled_twins_degree2
+
+**A half reading, and it is labelled one.** `FIX_ckpt123_pooled_twins_degree2`,
+2026-09-13, box idle after the leg. **Fast: 4,477 selected, 153 deselected — 4,630
+collected — in 125.12 s (2:05), green, zero skips.** The **slow lane was skipped at
+Matt's instruction**, so *the two lanes agree on the collected count* was **not**
+checked here — the total is arithmetic off one lane, not two measurements meeting.
+The clock is the reading below's to a tenth of a percent on five more tests.
+
+Five tests were added and the count moved by exactly five, all fast: the diff's
+engine-bound guards are the two that were already slow-marked in `test_twins.py`, and
+those were run on their own (`pytest tests/test_twins.py --slow`, 18 of 18 in 0.94 s)
+rather than by taking the lane. That is the shape to reuse when the lane is skipped
+and the diff is *not* prose — run the slow guards over the file you changed, and say
+which ones, rather than reporting a fast lane alone as though it covered the change.
+
 #### INGEST_ckpt123_julia_supply_labels
 
 **An ingest that owed the render cache nothing, because it was a LOCATION ingest.**
