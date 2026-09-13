@@ -480,6 +480,17 @@ pictures under one key. Every variant is therefore named mechanically —
 `<base>~<axis>-<dose>`, `~` because no map in the tracked library carries one, so
 `base_of` is total over both populations.
 
+⚠ **This module's `phase` is not the engine's `Palette.phase`**, and the two are easy to
+read as one. Here a phase rolls a map's stops and writes a **new map**, which is how a
+rotated gradient gets its own recipe key; there it moves where the traversal of an
+*unchanged* map starts, and it is a member of the recipe rather than a document on disk.
+On a cyclic map at `cycles = 1` the two land on near enough the same picture; on a folded
+one they do not, because the engine bakes the out-and-back and the traversal reads the
+folded result. What the recipe member does to each production mode is measured in
+[`curation/MEASUREMENTS.md`](../curation/MEASUREMENTS.md)'s *What `Palette.phase` moves, by
+mode* — every mode but the four direct traps, and the folded maps about twice as far as
+the cyclic ones.
+
 Six axes: phase, reversal, repetition, cyclicity, Oklab chroma, Oklab lightness. **Nothing
 is resampled.** Every tracked map sits on an even grid with an explicit closing stop, so
 the four positional axes are exact permutations and tilings of the stop colours the base

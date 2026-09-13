@@ -1,4 +1,4 @@
-"""`curate`'s legs: the thirteen verbs that drive the render pool.
+"""`curate`'s legs: the fourteen verbs that drive the render pool.
 
 A leg makes pictures. That is what these have in common and why they are one
 module: each of them plans a batch, renders it three-wide at below-normal
@@ -10,6 +10,8 @@ helpers ([`depth_leg_flags`], [`mine_draw_flags`], [`hunt_draw_flags`],
 `hunt` and `mine` find candidates; `depth`, `rotate`, `remode`, `repetition`,
 `repeat-ab` and `shrinkage` ask an axis nothing has asked yet; `flatness`,
 `signatures`, `rank-key`, `distinct` and `retention` sweep the pool and report.
+`phase-response` is the one that touches neither — it renders a stated panel to
+measure what an axis *does*, holds no pool and merges nothing.
 [`curation/LEGS.md`] is the reference for what each one costs.
 
 Cut out of `curate_commands` on 2026-09-12 with four sibling families; that
@@ -362,6 +364,67 @@ def curate_shrinkage(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     print(json.dumps(record, indent=2))
+    return 0
+
+
+def curate_phase_response(args):
+    """Measure what `Palette.phase` moves, mode by mode, off the pixels."""
+    from fractal_wallpapers import engine
+    from fractal_wallpapers.curation import phase_response
+
+    try:
+        if args.what == "read":
+            rows, record = phase_response.read(args.name)
+        else:
+            modes = args.modes or engine.production_modes()
+            phases = tuple(args.phases) if args.phases else phase_response.PHASES
+            panel = phase_response.places(args.places, seed=args.seed)
+            library = phase_response.maps(args.maps, seed=args.seed)
+            print(f"panel   {', '.join(place['partition'] for place in panel)}")
+            print(f"maps    {', '.join(library)}")
+            print(f"phases  {', '.join(f'{phase:g}' for phase in phases)}")
+            rows, report = phase_response.run(
+                modes,
+                panel,
+                library,
+                phase_response.pass_dir(args.name),
+                phases=phases,
+                workers=args.workers,
+                budget=args.budget,
+            )
+            report["seed"] = args.seed
+            record = phase_response.write(args.name, rows, report)
+    except phase_response.PhaseResponseRefused as refusal:
+        print(refusal)
+        return 1
+
+    summary = phase_response.summarise(rows)
+    checked = phase_response.control(rows)
+    print()
+    # ASCII, and the delta is spelled out: this prints to a Windows console whose
+    # default code page is cp1252, where a bare U+0394 is a UnicodeEncodeError and
+    # not a mojibake — the whole command dies after the renders are paid for.
+    print(f"{'mode':24} {'kind':10} {'mean dE':>9} {'p99':>8} {'moved':>7} {'map low/high':>17}")
+    for entry in summary:
+        print(
+            f"{entry['mode']:24} {entry['mode_kind']:10} {entry['mean']:9.5f} "
+            f"{entry['p99']:8.5f} {entry['moved']:7.3f} "
+            f"{entry['map_low']:8.5f}/{entry['map_high']:8.5f}"
+        )
+    print()
+    print(json.dumps({"control": checked, "split": phase_response.split(summary)}, indent=2))
+    print(f"\nrecord {display_path(phase_response.record_path(record['name']))}")
+    # The control is the harness and not a column: a trap that moved means the
+    # palette pass reached a picture it cannot reach, and then no row above is a
+    # reading of the axis. Reported and then refused, so nothing downstream takes
+    # the table as sound.
+    if not checked["passed"]:
+        print(
+            f"\nCONTROL FAILED: {checked['identical']} of {checked['cells']} direct-trap cells "
+            f"came back byte-identical. The axis cannot reach a trap figure, so the harness is "
+            f"wrong and the table above means nothing."
+        )
+        return 1
     return 0
 
 
@@ -1186,6 +1249,7 @@ def add_steps(steps) -> None:
     from fractal_wallpapers.curation import flatness as flatness_module
     from fractal_wallpapers.curation import hunt as hunt_module
     from fractal_wallpapers.curation import mine as mine_module
+    from fractal_wallpapers.curation import phase_response as phase_response_module
     from fractal_wallpapers.curation import remode as remode_module
     from fractal_wallpapers.curation import repeat_ab as repeat_ab_module
     from fractal_wallpapers.curation import rotation as rotation_module
@@ -1861,6 +1925,96 @@ def add_steps(steps) -> None:
     # The sheet step RUNS the fine head over every tile, which is the half of
     # "score everything and gate on nothing" the pool's own column cannot do.
     device_flag(sheeting_repetition)
+
+    phase_response_step = steps.add_parser(
+        "phase-response",
+        help="which production modes Palette.phase actually moves, and by how much, "
+        "measured off the pixels rather than off what a head thinks of them",
+        description=(
+            "A varied mining draw spends phase on every mode that is not a direct trap, so "
+            "on a mode the shift cannot move those renders buy nothing. This renders one "
+            "recipe at several phases over a small stated panel and reads the pictures: "
+            "the share of variants byte-identical to phase 0, and where they are not, the "
+            "per-pixel Oklab difference as a mean, a p95, a p99 and the share of the frame "
+            "past a just-noticeable 0.02. THE FOUR DIRECT TRAPS ARE THE HARNESS CONTROL - "
+            "the axis cannot reach a trap figure, so they must come back byte-identical and "
+            "the command FAILS if they do not, because then no other row is a reading of "
+            "the axis. Levelling is OFF throughout: the autolevel operator derives its "
+            "curve off the picture's own histogram, so a phase shift measured with the "
+            "switch on would be phase plus re-levelling. Both a place and a map are varied "
+            "- the interior is hard black and outside the map, so how much of a frame the "
+            "axis can reach is a property of the place, and mirror is read off a map's kind "
+            "so the two kinds are different ramps to traverse. This CHANGES NO DRAW: it "
+            "writes rows and a record under artifacts/curation/phase_response/<name> and "
+            "reads depth's shares without touching them."
+        ),
+    )
+    phase_response_step.set_defaults(handler=curate_phase_response)
+    phase_response_verbs = phase_response_step.add_subparsers(dest="what", required=True)
+    running_phase_response = phase_response_verbs.add_parser(
+        "run", help="render the grid, read the pixels, write the rows"
+    )
+    reading_phase_response = phase_response_verbs.add_parser(
+        "read", help="a finished pass's table, control and split"
+    )
+    for a_phase_response in (running_phase_response, reading_phase_response):
+        a_phase_response.add_argument(
+            "--name", required=True, metavar="NAME", help="the pass's own directory"
+        )
+    running_phase_response.add_argument(
+        "--places",
+        type=int,
+        default=phase_response_module.DEFAULT_PLACES,
+        metavar="COUNT",
+        help=f"places drawn from the shallow half of {phase_response_module.PANEL_RUN}, at most "
+        f"one a partition (default {phase_response_module.DEFAULT_PLACES})",
+    )
+    running_phase_response.add_argument(
+        "--maps",
+        type=int,
+        default=phase_response_module.DEFAULT_MAPS,
+        metavar="COUNT",
+        help=f"maps drawn off the drawable pool, half cyclic and half folded "
+        f"(default {phase_response_module.DEFAULT_MAPS})",
+    )
+    running_phase_response.add_argument(
+        "--phases",
+        type=float,
+        nargs="+",
+        metavar="TURNS",
+        help="the phases asked beside 0, in turns of the gradient (default "
+        + " ".join(f"{phase:g}" for phase in phase_response_module.PHASES)
+        + ")",
+    )
+    running_phase_response.add_argument(
+        "--modes",
+        nargs="+",
+        metavar="MODE",
+        help="the roster (default every production mode, which is what the table is of)",
+    )
+    running_phase_response.add_argument(
+        "--seed",
+        type=int,
+        default=phase_response_module.DEFAULT_SEED,
+        metavar="SEED",
+        help=f"the seed for the place draw, the map draw and the pool collapse "
+        f"(default {phase_response_module.DEFAULT_SEED})",
+    )
+    running_phase_response.add_argument(
+        "--budget",
+        type=float,
+        metavar="SECONDS",
+        help="wall seconds, checked at each phase boundary - a phase is finished or not "
+        "started and NO MODE IS EVER CUT, because the table is a per-mode one",
+    )
+    running_phase_response.add_argument(
+        "--workers",
+        type=int,
+        default=phase_response_module.DEFAULT_WORKERS,
+        metavar="COUNT",
+        help=f"render workers (default {phase_response_module.DEFAULT_WORKERS}, this "
+        f"machine's pool)",
+    )
 
     rotate_step = steps.add_parser(
         "rotate",

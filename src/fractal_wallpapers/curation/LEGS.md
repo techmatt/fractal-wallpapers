@@ -469,11 +469,6 @@ default and report the misspelling as a share.
 
 Off by default. On, every candidate draws a `phase` and a `repeat` alongside its
 map — `Palette.phase` and `Palette.cycles`, the engine's own knobs for where the
-
-### `--vary-palette` — moving the palette block, and nothing else
-
-Off by default. On, every candidate draws a `phase` and a `repeat` alongside its
-map — `Palette.phase` and `Palette.cycles`, the engine's own knobs for where the
 traversal of the gradient starts and how many times it is traversed. **No map is
 derived, written or admitted**: both are in `recipes.KEYED`, so a varied candidate
 is a new picture beside the plain one and the library is the library the leg
@@ -492,6 +487,16 @@ no field for a traversal to start anywhere in, so the axis is a no-op on those
 modes — `engine/src/direct_trap.rs` on purpose, measured by the eye sheet of
 2026-09-10 at eleven varied tiles to one sha256. A varied draw there would take a
 second recipe key for a byte-identical picture.
+
+**And the exclusion is the whole of what is wasted here: every other mode moves.**
+`phase_flatness_ckpt122` rendered all nineteen production modes at three phases over
+two places and two maps and found **0 of 180 non-trap cells byte-identical**, the
+smallest mean Oklab ΔE 0.056 over 85.6% of the frame, and **no gap** in the ranking
+of the fifteen — 1.51x end to end. So there is no accepted mode this draw spends
+phase on for nothing, and no case here for narrowing the roster it draws over.
+`MEASUREMENTS.md`'s *What `Palette.phase` moves, by mode* is the table, and what
+moves the reading is the **map's kind** rather than the mode: a folded map responds
+about twice as far as a cyclic one. `curate phase-response` is the leg.
 
 **Every varied shot gets its phase-0 twin**, at the same location, mode and map and
 immediately after it in the plan so the pair lands in one location block. *Does
@@ -2513,6 +2518,59 @@ Its subtree is in `candidate_ledger.POOL_SUBTREES`, which is half of shipping a
 leg here: `curate candidate-ledger orphans` enumerates those names and no others,
 so a subtree missing from the tuple leaves a killed run's pictures on disk with no
 row anywhere and nothing able to find them.
+
+## `curate phase-response` — what the axis DOES, before anything asks what it is worth
+
+Every other leg here adds to the pool or sweeps it. This one does neither: it renders a
+small stated panel, reads the pixels, and writes a table. No head reads anything, no row
+reaches the ledger, and nothing about the draw moves — which is what makes it the thing to
+run before a ruling on what mining spends, rather than after.
+
+```
+fractal-wallpapers curate phase-response run  --name p1     # render the grid, read the pixels
+fractal-wallpapers curate phase-response read --name p1     # the table, the control, the split
+```
+
+```
+src/fractal_wallpapers/curation/phase_response.py          the panel, the metric, the cut
+artifacts/curation/phase_response/<name>/rows.jsonl        one row a (mode, place, map, phase)
+artifacts/curation/phase_response/<name>/record.json       the panel, the seed, the clock
+```
+
+**The four direct traps are the harness control and the command fails on them.** The axis
+cannot reach a trap figure — `coloring::shade`'s `Direct` arm never receives the `Palette`
+at all — so they must come back byte-identical, and a pass where they do not has a fault
+rather than a finding. The table is still printed and the exit code is still 1, because a
+reader who sees only the table cannot tell that it is void.
+
+**Levelling is off, and that is what makes it a reading of the axis.** The autolevel
+operator derives its curve off the picture's own histogram, so a phase shift moves the
+histogram, which moves the curve, which moves the picture a second time. With the switch
+on the column would be phase *plus* re-levelling and nothing in the reading could separate
+them — the trap `palettes/README.md` records for the baked lightness axis, where the
+operator acted on 100% of one dose's rows. **So the levelled arm is unmeasured**, and
+production draws levelled.
+
+**Both a place and a map are varied, and neither is decoration.** `coloring.rs`'s
+`INTERIOR` is hard black and outside the map, so how much of a frame the axis can reach is
+a property of the **place**; `mirror` is read off a map's own kind, so a folded ramp and a
+cyclic one are different objects to traverse. The first pass found the second of those
+carries nearly the whole spread and the first almost none of it — which is a finding about
+the panel as much as about the axis, since a panel drawn from `gallery3`'s shallow half is
+deep exterior views with almost no interior in them.
+
+**A phase is finished or not started and no mode is ever cut.** `run` renders the grid's
+baselines, then sweeps one phase at a time over the whole grid, so a `--budget` that binds
+takes the largest doses from every mode at once. A mode-major sweep would have taken whole
+rows out of a table whose whole question is per-mode.
+
+`MEASUREMENTS.md`'s *What `Palette.phase` moves, by mode* is the reading: 304 renders in
+108.5 s of wall, the control at 48 of 48, and **no accepted mode flat**.
+
+**The whole pass is deterministic and it was checked rather than assumed**: run twice over
+the same seed, every ΔE, percentile and identity in all 228 rows reproduced exactly, and
+only the clock moved (268.5 engine seconds against 282.4). Which is the property the
+byte-identity control needs to mean anything.
 
 ## `curate rotate` — the phases nothing ever asked, and the rows they replace
 

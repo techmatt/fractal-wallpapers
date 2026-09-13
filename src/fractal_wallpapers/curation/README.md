@@ -73,6 +73,8 @@ shrinkage  re-read a candidate set's winner at label geometry, and price the win
 remode     a retired mode's clearing rows, rendered again in a mode still bought
 rotation   the phases nothing ever asked: every passing recipe against five
            rotations of its own gradient, best of the six, and the row it replaces gone
+phase_response  which production modes `Palette.phase` actually moves, off the pixels —
+           the four direct traps as the harness control, and no head reads anything
 headroom   what each selection constraint needs, holds, and costs to buy — no solver
 growth     what more mining buys, at every gallery size — measured by subsampling the pool
 growth_plot  six pictures of one growth sweep. Matplotlib, scratch only, legibility only

@@ -422,6 +422,93 @@ estimates with separate error bars —
 dearer than the smoke priced it, measured 2026-09-12*, under *What the OWED arm
 costs, measured 2026-09-11* there.
 
+## What `Palette.phase` moves, by mode, measured 2026-09-12
+
+`phase_flatness_ckpt122`, seed 0, `curate phase-response` the leg. **228 rows over 76
+cells — all 19 production modes at 2 places, 2 maps and 3 phases against phase 0 — in
+268.5 engine seconds and 108.5 s of wall** on three below-normal workers, 2.48 engine
+seconds a wall second, 304 renders in all. Candidate geometry, and **levelling off throughout**: the
+autolevel operator derives its curve off the picture's own histogram, so a phase shift
+measured with the switch on is phase *plus* re-levelling and nothing in the reading could
+separate them.
+
+**The control passed. 48 of 48 direct-trap cells came back byte-identical** — all four
+traps, worst mean exactly 0.0 — which is what the rest of the table rests on: the axis
+cannot reach a trap figure, so a pass whose traps had moved would have a harness fault
+and no reading at all. `curate phase-response` **fails** on that check rather than only
+printing it.
+
+**And nothing else is flat. 0 of 180 non-trap cells were byte-identical**, the smallest
+mean ΔE over all of them is **0.056** — 2.8× the 0.02 the `moved` column is counted
+against — and the smallest share of frame past that is **0.856**. The axis reaches every
+mode the engine gives a field to, at both places, both maps and all three phases.
+
+| mode | kind | mean ΔE | p99 | moved | map low / high |
+|---|---|--:|--:|--:|--:|
+| the four `direct_trap_*` | direct | **0.00000** | 0.00000 | 0.000 | — |
+| `smooth_angle_min` | composite | 0.16681 | 0.43833 | 0.981 | 0.120 / 0.213 |
+| `gaussian_int` | field | 0.16800 | 0.44395 | 0.985 | 0.115 / 0.232 |
+| `smooth_mean_angle` | composite | 0.17243 | 0.39109 | 0.987 | 0.124 / 0.257 |
+| `curvature` | field | 0.20429 | 0.40850 | 0.982 | 0.156 / 0.264 |
+| `stripe` | field | 0.21051 | 0.39085 | 0.986 | 0.143 / 0.277 |
+| `tail_itinerary` | modulate | 0.22153 | 0.46069 | 0.987 | 0.147 / 0.312 |
+| `smooth_stripe` | composite | 0.22510 | 0.38149 | 0.985 | 0.144 / 0.305 |
+| `smooth_curvature` | composite | 0.22878 | 0.40250 | 0.989 | 0.155 / 0.317 |
+| `threads` | composite | 0.23203 | 0.42859 | 0.992 | 0.156 / 0.314 |
+| `smooth_trap_circle` | composite | 0.23378 | 0.43576 | 0.983 | 0.154 / 0.315 |
+| `tia` | field | 0.24072 | 0.41193 | 0.986 | 0.155 / 0.344 |
+| `itinerary` | modulate | 0.24151 | 0.42603 | 0.985 | 0.155 / 0.333 |
+| `trap_circle` | field | 0.24299 | 0.44676 | 0.987 | 0.149 / 0.347 |
+| `smooth` | field | 0.25248 | 0.45539 | 0.993 | 0.154 / 0.393 |
+| `exp_smoothing` | field | 0.25276 | 0.45525 | 0.993 | 0.154 / 0.394 |
+
+Per-mode figures are the **median over that mode's cells**, and `map low / high` is the
+smallest and largest per-map median inside the mode.
+
+**The verdict is two groups and not three, and the ranking above does not separate.** The
+fifteen run 1.51x end to end, and the widest multiplicative step between neighbours is
+**1.185x against a runner-up of 1.052x** — no gap anywhere in it, so nothing here
+supports calling any accepted mode flatter on this axis than any other. `flat` is the
+four traps, `live` is the other fifteen, and `uncertain` is **empty**: not one mode landed
+near enough to a no-op to be hard to call.
+
+**The spread inside a mode is the MAP'S KIND and not the mode.** Over the non-trap cells
+the folded map reads **0.305** against the cyclic map's **0.148**, a 2.07x difference that
+accounts for nearly the whole of every `map low / high` pair in the table; the place
+barely registers by comparison (0.204 at `julia:mandelbrot`'s cap of 8,306 against 0.176
+at `julia:multibrot5`'s 15,819), and the *coloring* kind not at all — field 0.187,
+composite 0.182, modulate 0.224.
+
+**The dose is not monotone, and which way it runs is the fold.** Median mean ΔE by phase,
+non-trap cells, split on `mirror`:
+
+| phase | cyclic | folded |
+|--:|--:|--:|
+| 0.05 | 0.115 | 0.084 |
+| 0.25 | 0.351 | 0.321 |
+| 0.50 | **0.148** | **0.408** |
+
+A folded map is baked as an out-and-back, so a half-turn lands the traversal on the
+ramp's reflection and is the **largest** change there; on the cyclic map the half-turn
+comes back toward where it started and reads less than half what a quarter-turn does. ⚠
+**Two maps is a range and not a distribution** — the direction is mechanism and the
+magnitudes are this pair's.
+
+**The interior mechanism is real in the engine and this panel cannot exercise it.**
+`coloring.rs`'s `INTERIOR` is hard black and never goes through the map, so the share of
+frame the axis can reach is bounded by `1 − interior_fraction` — but every non-trap mode
+here reads a median exactly-black share **at or under 1.6%**, because the panel is drawn
+from `gallery3`'s shallow half and those are deep exterior views with almost no interior.
+A mode flat *at a place with a large interior* is consistent with every row above and is
+**not measured**. The traps are the only rows with much black ground (`direct_trap_lines`
+21.7%), and they are identical anyway.
+
+**What this does NOT answer**, each because it was out of scope rather than overlooked:
+the levelled arm, `Palette.cycles` (the other knob `--vary-palette` draws), and whether a
+phase shift a judge can *see* is a phase shift a judge **prefers** — this measures pixels
+and reads no head. `curate rotate`'s own passes are the adoption question, and
+[`LEGS_decisions.md`](LEGS_decisions.md)'s *What the first pass found* has that reading.
+
 ## Every per-candidate rate this project has measured
 
 ⚠ **These are historical, measured under different conditions, and not comparable
