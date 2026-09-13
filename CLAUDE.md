@@ -187,11 +187,14 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,625 collected — 4,472 fast,
-153 slow — since `lane_speedup_ckpt122` landed on 2026-09-12**, on a `.[dev,models]`
-install with a release engine built. **Fast: 4,472 of 4,472 in 125.23 s (2:05). Slow:
-4,625 of 4,625 in 471.66 s (7:51).** Both green, both **zero skips**, box idle, and
-**the two lanes agree on 4,625**.
+Both are measured, not estimated. The tree holds **4,630 collected — 4,477 fast,
+153 slow — since `FIX_ckpt123_pooled_twins_degree2` added five fast tests on
+2026-09-13**, on a `.[dev,models]` install with a release engine built. **Fast: 4,477
+of 4,477 in 125.12 s (2:05)**, green, zero skips, box idle. **The slow lane's clock is
+still `lane_speedup_ckpt122`'s — 4,625 of 4,625 in 471.66 s (7:51)** — because the
+lane was skipped at Matt's instruction there, so the count above is arithmetic off one
+lane and **the two lanes have not been made to agree since 2026-09-13's ingest**. The
+next prompt to take the pair repoints this whole paragraph to one reading.
 
 That pair is **34.3 s and 80.8 s faster** than the baseline taken on the same tree an
 hour before it, and **no guard was deleted or weakened** to get there: one production

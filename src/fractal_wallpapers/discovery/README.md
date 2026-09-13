@@ -903,6 +903,16 @@ That is a supply-engine channel, so `fractal-wallpapers walk` cannot reach these
 three: a harvest is where they get roots, and a run that never serves their parent
 plane never serves them either.
 
+**The degree-2 twin has both, since 2026-09-12.** It keeps the tracked pool and it
+is served by the same channel, its queue holding the two interleaved one for one.
+What held the channel off it was that a served twin used to get the derived list
+*instead of* its pool; the pool's 209 parameters are now reserved into the
+channel's c-spacing floor instead, so a derived `c` cannot land on a curated one.
+The reading that came back is worth having: measured over 51 ledgers, **7,286
+offers from the mandelbrot plane's whole admitted history produced 12 parameters,
+7,185 of them refused by a pool row.** At a 3.2e-2 tolerance the curated pool has
+already claimed 98.6% of everywhere this project has found on that plane.
+
 **A seed pool cannot ask for anywhere else.** `JuliaSeed` carries a `c` and
 `PhoenixSeed` a `(c, p, z₋₁)`; both are *parameters*, so every dynamical root
 either pool hands over comes home — the whole plane at width 3.0, the classic

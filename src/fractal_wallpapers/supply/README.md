@@ -74,6 +74,40 @@ family, and it becomes a root through the same seed object and the same cursor
 the tracked degree-2 pool uses. Parameters closer than the pool's own c-spacing
 floor to one already taken are skipped and recorded.
 
+**The degree-2 twin is served too, since 2026-09-12, and what it produced is the
+finding.** It was held out on the ground that a derived parameter must not
+displace the tracked pool a three-stage screen left. That was true as a fact about
+`Refill._pool` — it reads its twin branch first, so a served degree-2 twin would
+have been handed the derived list *instead of* the pool's 209 rows — and not as a
+fact about coarseness: inside `julia:mandelbrot` the pool's own screened virgin
+rows return 0.71 and 1.24 admissions a root against 19.05 and 30.57 for the two
+channels fed by admitted stock. The queue now holds both, one for one, and the
+pool's parameters are reserved into the channel's c-spacing floor so a derived `c`
+cannot land on a curated one.
+
+**What the floor then said is that there is almost nowhere left to derive.** Primed
+over 51 ledgers, the mandelbrot plane's whole admitted history offers 7,286
+locations and 12 become parameters: **7,185 are refused by a tracked pool row** and
+89 by another offer in the same prime. Ten of the twelve are themselves inside the
+floor of a `c` this project has already walked. So the exclusion was guarding a
+door almost nothing was coming through — and the 209-row pool, which has no writer
+and no re-derivation command, has claimed 98.6% of the plane at a 3.2e-2 tolerance.
+The channel is wired, it says why it produces so little, and it grows whenever the
+mandelbrot plane is mined into ground the pool does not already hold.
+
+**Two cautions this exposed, both wider than degree 2.** A `c` inside the floor of
+one already walked is **counted, not refused** — `near_walked` in the readout —
+because the proven channel dedups on the location key alone and enforcing history
+in the twin channel alone would be an asymmetric rule dressed as an invariant; the
+count is the case for fixing it where the gap is. And `proven.interleave` is **not
+stable under a growing second argument**, which it was documented as being: once
+that side runs out before the other — a twin's tens of parameters against a
+partition's hundreds of proven roots, i.e. always — one more entry moves everything
+past the old exhaustion point down a slot. Under a cursor that walks one root twice
+and never walks the new parameter. Any run with both a twin channel and
+`--root-channel proven` did this until `_twin_queue` began building the queue once
+and extending it.
+
 **The best mandelbrot supply this project has found came from its own labels.**
 A dedicated 95-minute leg rooted the walk at the 471 distinct locations a human
 had scored q3+ and interleaved them 2:1 with never-walked plane-pool roots. The

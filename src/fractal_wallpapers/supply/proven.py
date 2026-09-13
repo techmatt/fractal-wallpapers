@@ -349,9 +349,21 @@ def interleave(proven: list, other: list, ratio: int = RATIO) -> list:
     Nothing here reads either, so the mismatch is the refill's to resolve, once —
     and it does, at the door where an entry becomes a root.
 
-    Only ever appends when `other` grows, which is what lets the twin channel's
-    list keep growing under a cursor: a queue re-made with one more parent
-    admission in it is the old queue with one more entry at the end.
+    **This is not stable under a growing `other`, and it was documented as if it
+    were.** The claim here read *only ever appends when `other` grows, which is
+    what lets the twin channel's list keep growing under a cursor*. It holds only
+    while both sides last: once `other` runs out first — a twin's tens of derived
+    parameters against a partition's hundreds of proven roots, which is every real
+    case — the loop stops leaving slots for it, and one more entry on that side
+    then moves everything past the old exhaustion point down by one. `[P0 P1 T0 P2
+    P3 P4 …]` becomes `[P0 P1 T0 P2 P3 T1 P4 …]`, so a cursor at 6 has handed over
+    `P3`…`P5` and is about to hand `P5` again while `T1` sits behind it forever.
+
+    So a caller holding a cursor over the result must **build once and extend**
+    rather than re-interleave; [`fractal_wallpapers.supply.refill.Refill._twin_queue`]
+    is the one that has to, and it says so. Nothing here can fix it: interleaving a
+    growing list into fixed positions and never moving anything are two different
+    requests.
     """
     step = max(1, int(ratio))
     out: list = []
