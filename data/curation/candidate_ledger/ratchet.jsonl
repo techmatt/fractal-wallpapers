@@ -37,3 +37,6 @@
 {"schema": 1, "event": "deleted", "at": "2026-09-12T23:50:51Z", "why": "rotation/owed_ckpt122", "counts": {"rows": 53, "recipe_key_named": 53}}
 {"schema": 1, "event": "mark", "at": "2026-09-12T23:52:30Z", "why": "prune", "counts": {"rows": 383389, "recipe_key_named": 370067}}
 {"schema": 1, "event": "deleted", "at": "2026-09-12T23:52:30Z", "why": "prune", "counts": {"rows": 80, "recipe_key_named": 75, "run_index_named": 5}}
+{"schema": 1, "event": "mark", "at": "2026-09-13T15:40:23Z", "why": "prune", "counts": {"rows": 385192, "recipe_key_named": 371875}}
+{"schema": 1, "event": "deleted", "at": "2026-09-13T15:40:23Z", "why": "prune", "counts": {"rows": 33, "recipe_key_named": 31, "run_index_named": 2}}
+{"schema": 1, "event": "mark", "at": "2026-09-13T16:15:28Z", "why": "prune", "counts": {"rows": 386441, "recipe_key_named": 373126}}

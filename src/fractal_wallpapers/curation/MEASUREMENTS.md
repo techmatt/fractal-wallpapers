@@ -603,6 +603,17 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | **0.795** | the same roster, near band, mode held, places **AT THE KEEP** | 3 | 12 | 09-07 | 16,200 cand / 1,350 places | `armB2_0907` |
 | 0.516 | **a rotation of a stored recipe**, 4 field modes, one dump a pair | 3 | 5 rot | 09-11 | 47,010 rot / 9,402 rows / 6,764 pairs | `rotation_pass_ckpt120` |
 | 1.593 | **a mined best-of-five**, whole `mined()` roster, per CANDIDATE | 3 | 5 | 09-11 | its own pilot, 177 cand / 45 shots | `rotation_pass_ckpt120` |
+| 2.870 | **the 9 dear modes**, floor draw over proven places untried in the angle modes | 3 | 3/mode | 09-13 | 1,883 cand / 72 places, `phoenix:classic` out | `mine_pilot_ckpt124_armA` |
+| 4.160 | the same 9, **breadth** over never-opened places | 3 | 1 | 09-13 | 1,282 cand / 1,282 places | `mine_pilot_ckpt124_armB` |
+
+⚠ **Those last two rows are the same roster on two populations and they differ 1.45x in
+price and 3.0x in what a clear costs**, measured back to back on one box on 2026-09-13:
+the floor draw over proven places returned **111 clears at `SEATING_BAR` in 1,883
+candidates (5.89%)** for **48.7 engine seconds a clear**, and breadth over never-opened
+places **36 in 1,282 (2.81%)** for **148.1**. Width is part of the first number and
+none of the second — a dear mode dumps no field, so its price is flat in width and the
+1.45x is the places. **A dear-mode leg is priced by where it stands, not by how wide it
+goes.**
 
 ⚠ **The displacement half of the near band is the CHEAPEST arm this project has
 measured on the full roster — 0.795 against the with-room half's 2.444 and breadth's
