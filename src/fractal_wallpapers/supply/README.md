@@ -430,12 +430,16 @@ wide as it.** Both `saturation` and `novelty` read the tree that flag points at,
 and the flag's default is the literal string `artifacts`, which resolves through
 `cli.resolve_output` to the **hot** tier — so a checkout whose production runs
 have been archived builds both memories out of whatever happens to be local.
-Naming the archive root explicitly is how a run gets the whole history, and it
-costs one pass per index over every ledger there. `ledgers.ledger_paths` is the
-one place that answers how many that is: with no root it searches **both** tiers,
-with a root it searches that one, and the three counts move every time a subtree
-changes tier — so ask it rather than quoting a number, and a run that prints a
-ledger count smaller than expected is a run pointed at one tier.
+**No `--ledgers` value reaches the whole history, and naming the archive root is
+not the way to.** The flag takes one root and a root is one tier, so naming the
+archive trades the hot ledgers for the archived ones rather than adding them:
+measured 2026-09-13, `ledger_paths` with no root finds **49**, the hot root **15**
+and the archive root **34**, and 15 + 34 is the 49 no invocation can ask for. A
+leg that wants the whole population has to be given it another way — the three
+builders take `paths`, and `cli.harvest` is the one caller that turns the flag
+into them. `ledgers.ledger_paths` is the one place that answers how many there
+are, the three counts move every time a subtree changes tier, and a run that
+prints a ledger count smaller than expected is a run pointed at one tier.
 
 **A finished run's saturation verdict is re-derivable, exactly, and that is what
 makes "novel" a readable property of a frame afterwards.** The index is a pure

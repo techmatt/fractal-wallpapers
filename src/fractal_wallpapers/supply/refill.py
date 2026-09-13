@@ -258,9 +258,10 @@ class Refill:
     def _is_proven(self, partition: str) -> bool:
         """Whether the proven channel holds roots for this partition.
 
-        It serves every partition but `phoenix:classic`, so on the dynamical
-        side it shares a queue with a `c`-pool rather than standing in for a
-        missing sampler. It does not compete with one: a pool row is a
+        It serves every registered partition — `phoenix:classic` included, since
+        2026-09-02 — so on the dynamical side it shares a queue with a `c`-pool
+        rather than standing in for a missing sampler. It does not compete with
+        one: a pool row is a
         parameter and starts at the home view, a proven row is a whole place,
         and the interleave is what keeps either from crowding the other out.
         """

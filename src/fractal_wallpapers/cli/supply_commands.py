@@ -935,8 +935,9 @@ def add_commands(subcommands) -> None:
         "derive-proven-seeds",
         help="build the proven-label seed set from the label store",
         description=(
-            "One root per location a human scored a keeper, on every partition but the "
-            "pinned classic phoenix. Not a tracked file: the seed set is a query over the "
+            "One root per location a human scored a keeper, on every registered partition — "
+            "the pinned classic phoenix included, since 2026-09-02. Not a tracked file: the "
+            "seed set is a query over the "
             "label store, re-derived whenever it is asked for, and a harvest draws it live "
             "with `--root-channel proven`. Printing one is for reading it, diffing it, or "
             "passing it as --seeds."
