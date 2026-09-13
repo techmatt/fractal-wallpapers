@@ -380,6 +380,13 @@ FIELD_KIND = "field"
 #: sha256 — so a leg varying that axis draws these modes bare rather than taking
 #: a second recipe key for a byte-identical picture. The engine's word, like
 #: [`FIELD_KIND`]: [`kind_of`] reads it out of the catalog.
+#:
+#: **These four are also the harness control for anything measuring that axis**, and
+#: [`curation.phase_response`] is what uses them that way: the no-op is exact rather
+#: than small, so a pass whose traps move has a fault and no reading. It has held at
+#: 48 of 48 cells over all four traps — `curation/MEASUREMENTS.md`'s *What
+#: `Palette.phase` moves, by mode*, which is also where the finding that **no other
+#: production mode is flat** is written down.
 DIRECT_KIND = "direct"
 
 #: Modes whose dump the engine has refused in this process, so the refusal is
