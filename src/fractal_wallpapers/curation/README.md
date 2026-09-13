@@ -355,10 +355,12 @@ opener or counts a slot by hand any more.
 2026-09-12. Room alone is the wrong cut there three times over: the near band holds
 the *incumbent's* mode, so only that pair's room counts; the place has to be in
 `[SEATING_BAR, PRIMED_BAR)`; and it has to be in the **admitted embedded
-population**, which the ledger runs ahead of by 1,636 of 34,010 opened locations.
-[`LEGS.md`](LEGS.md)'s *Cut the manifest with `curate depth near-places`* has what
-that cost — three arms of one night planned 160, 87 and 68 places out of manifests
-naming 328, 255 and 236.
+population**, which the ledger runs ahead of by 1,636 of 34,010 opened locations —
+**1,607 of them locations the supply sidecar has never scored**, which is
+`curate score`'s work and not `curate embed`'s. [`LEGS.md`](LEGS.md)'s *Cut the
+manifest with `curate depth near-places`* has what that cost — three arms of one
+night planned 160, 87 and 68 places out of manifests naming 328, 255 and 236 — and
+the reading that says which command owes it.
 
 Measured over the ledger on 2026-09-06, at the keep of the day and at the keep
 that replaced it. The store did not move between the two readings; only K did:
