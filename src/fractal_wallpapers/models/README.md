@@ -123,6 +123,23 @@ the same size as `discovery.scoring`'s fan-out and the flip leg's, now measured 
 third time. A cache built from nothing is **about five hours** and it is the
 dominant cost of any retrain that starts without one.
 
+**A derivation reached from every builder is paid per entry point.** The shape to
+look for, twice found here and worth a third look: a pure function that *looks*
+cheap because it answers one small question, that is in fact a whole-store read,
+and that is reached from every builder rather than once per run — so its price is
+multiplied by the entry points rather than by anything a profile of one leg would
+show. [`palette_sets.cyclic`] is the worked example and carries its own numbers in
+its docstring: **877 ms** of `json.loads` over the tracked colormap library,
+reached from **31 call sites across 24 modules** because the fold is a property of
+the map and everything that builds a recipe asks. Memoized, it took **10.13 s** off
+the fast lane and an unmeasured larger share off every production leg.
+`hunt.recorded_prices` was the same shape a week earlier — `curation/LEGS.md`'s
+*The two phoenix planes are declared in SECONDS now, and the price is per band*.
+**Both memos ship with an un-memo** ([`palette_sets.forget_cyclic`],
+[`hunt.forget_recorded_prices`]), because the thing that makes the cache sound is
+that its input does not move inside a process, and a guard that redirects a store
+is exactly the caller that breaks that.
+
 **`renders decode` is the lever that speeds every arm at once.** The training
 loop is data-loading bound — the GPU sits near 10% while a worker decodes a
 1280x720 JPEG — and on this machine the decode is **12.3 ms of a 29.6 ms

@@ -189,12 +189,14 @@ fast lane is for the edit-run loop and nothing else.
 
 Both are measured, not estimated. The tree holds **4,630 collected — 4,477 fast,
 153 slow — since `FIX_ckpt123_pooled_twins_degree2` added five fast tests on
-2026-09-13**, on a `.[dev,models]` install with a release engine built. **Fast: 4,477
-of 4,477 in 125.12 s (2:05)**, green, zero skips, box idle. **The slow lane's clock is
-still `lane_speedup_ckpt122`'s — 4,625 of 4,625 in 471.66 s (7:51)** — because the
-lane was skipped at Matt's instruction there, so the count above is arithmetic off one
-lane and **the two lanes have not been made to agree since 2026-09-13's ingest**. The
-next prompt to take the pair repoints this whole paragraph to one reading.
+2026-09-13**, on a `.[dev,models]` install with a release engine built. **Both lanes
+were taken back to back on one tree by `PRECLOSEOUT_ckpt123_wallpapers`, and they
+agree at 4,630**: **fast 4,477 of 4,477 in 134.31 s (2:14)** with 153 deselected, and
+**slow 4,630 of 4,630 in 483.23 s (8:03)**. Both green, zero skips, zero failures.
+That closes the disagreement this paragraph carried since 2026-09-13's ingest. The two
+clocks sit ~9 s and ~12 s over `lane_speedup_ckpt122`'s 125.12 s and 471.66 s, which
+is the box rather than the tree — subagents were still finishing when the fast lane
+started, and the diff those lanes covered was four README files and no code.
 
 That pair is **34.3 s and 80.8 s faster** than the baseline taken on the same tree an
 hour before it, and **no guard was deleted or weakened** to get there: one production
