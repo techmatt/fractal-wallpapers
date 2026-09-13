@@ -586,6 +586,17 @@ channels deep exhausts two ways — `pool julia:mandelbrot: 1036 of 1036 entries
 left, 827 of them proven roots` — and running out of `c` and running out of
 labelled places are fixed by different things.
 
+**A sitting can add proven roots and no parameters at all, and `julia_supply_ckpt123`
+is the measured case.** All 48 of its rows came back q3+, so all 48 became proven
+roots — but its 24 julia-side roots stand on **9 distinct `c`**, 12 of them on one
+degree-2 `c`, and every one of those 9 already carried a proven root from an earlier
+batch. **48 new roots, 0 new `c`.** The two counts are not proxies for each other and
+a report that gives only the first says a sitting widened the twin channel when it
+deepened it: the `c` are what the parameter channel derives and a root is one view
+inside one of them. Those 9 already stood under 229 earlier roots, which is why
+labelling the head's top offer is the wrong instrument for the julia channel's
+per-night dryness — it draws from where the labels already are.
+
 **Redirect a harvest's stdout through `python -u`.** It is block-buffered
 otherwise, so a backgrounded leg writes an empty log for its whole first stretch
 and there is no way to tell a run that is loading its ledgers from one that has

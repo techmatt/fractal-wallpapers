@@ -592,6 +592,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### INGEST_ckpt123_julia_supply_labels
+
+**An ingest that owed the render cache nothing, because it was a LOCATION ingest.**
+`INGEST_ckpt123_julia_supply_labels`, 2026-09-13, box idle. **Fast: 4,472 selected, 153
+deselected — 4,625 collected — in 128.03 s (2:08). Slow: 4,625 of 4,625 in 484.62 s
+(8:04), zero skips, zero failures.** Both counts are the reading below's exactly, which
+is what a prompt that writes no test should read; the clock is 2.2% and 2.7% above it,
+which is the box.
+
+**Zero skips after landing 48 label rows, and that is the entry worth having.**
+`repeat_axis_ingest_ckpt121` below says an ingest shortens the render cache by exactly
+the rows it lands, and `CLAUDE.md` carries that rule unqualified — but `renders.plan`
+reads `finished.resolved(head)` over `finished.HEADS` and nothing else, so the cache is
+owed crops by a **finished-render** ingest and by no other kind. These 48 rows went into
+the **location** store, which that plan never opens. **No `renders plan` / `renders
+build` was needed and none was run.** A location ingest and a sheet build are the same
+shape here for the opposite reasons — the sheet lands pictures no store has a row for,
+and this lands rows no render cache reads.
+
 #### lane_speedup_ckpt122
 
 **The fast lane is 21.5% faster, the slow lane 14.6%, and no guard was deleted or
