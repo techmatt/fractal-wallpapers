@@ -14,7 +14,6 @@ import pytest
 
 from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import viewport_sampler as sampler
-from fractal_wallpapers.discovery.walk import Limits
 from fractal_wallpapers.supply.partitions import (
     ALL_PARTITIONS,
     CLASSIC_PHOENIX,
@@ -228,55 +227,13 @@ def test_an_exhausted_ladder_says_so_in_the_sampler_s_own_words() -> None:
 
 
 # --------------------------------------------------------------------------- #
-# The raised expansion budget.
+# The raised expansion budget lived here, and does not any more.
 # --------------------------------------------------------------------------- #
-def test_a_pinned_plane_root_gets_a_larger_expansion_budget_than_any_other() -> None:
-    """Pinned because the reason is theirs. Every other partition answers a dead
-    lineage with a fresh root carrying a fresh parameter; a pinned plane has no
-    parameter to vary, so what a root does not reach, nothing else will.
-
-    The numbers are pinned: 12 everywhere, 36 on a pinned plane. The crawl that
-    bought the second one stopped at 0.66 of a 30-minute budget with its two
-    productive roots on 12 expansions each — the cap — and six others on one."""
-    limits = Limits()
-    assert (limits.root_expansions, limits.pinned_root_expansions) == (12, 36)
-    assert limits.pinned_root_expansions > limits.root_expansions
-
-
-@needs_engine
-def test_the_walk_reads_the_budget_off_each_root_s_own_family(tmp_path) -> None:
-    """One walk, two roots, two budgets — so a mixed run does not have to choose
-    which policy it is under. Derived from the root record the checkpoint already
-    keeps, which is what makes it survive a resume without a new state field."""
-    from fractal_wallpapers.discovery.walk import Policy, Walk
-
-    walk = Walk(
-        out_dir=tmp_path / "run",
-        seed=SEED,
-        limits=Limits(batch=2, batches=1, root_expansions=3, pinned_root_expansions=9),
-        policy=Policy(candidates=2, node_width=96),
-    )
-    pinned = walk.add_root(
-        sampler.family_of(CLASSIC_PHOENIX),
-        {"center_re": "0.1", "center_im": "0.1", "width": "0.3"},
-        source=sampler.SOURCE,
-        provenance={"channel": sampler.CHANNEL},
-    )
-    varied = walk.add_root(
-        {"kind": "julia", "degree": 2, "c": ["-0.75", "0.1"]},
-        source="julia_c_pool",
-        provenance={"channel": "shell_draw"},
-    )
-    assert walk.root_budget(pinned["root_id"]) == 9
-    assert walk.root_budget(varied["root_id"]) == 3
-
-    # And the eviction acts on each root's own number rather than on one of them.
-    walk.expansions[pinned["root_id"]] = 4
-    walk.expansions[varied["root_id"]] = 4
-    walk.evict_capped()
-    standing = {node["root_id"] for node in walk.frontier}
-    assert pinned["root_id"] in standing
-    assert varied["root_id"] not in standing
+# It was a pinned-plane rule when it was written — a plane with no free parameter
+# has no second root to answer a dead lineage with — and the varied dynamical
+# planes have since measured their way onto the same number. It is keyed on the
+# family kind now, so its guards are `test_walk.py`'s *the two expansion budgets*
+# and a pinned plane is one of the four families they cover.
 
 
 # --------------------------------------------------------------------------- #

@@ -55,10 +55,16 @@ DYNAMICAL_PLANES = tuple(f"julia:{plane}" for plane in PARAMETER_PLANES)
 #: rewrite. It is what separates the two kinds of dynamical partition wherever
 #: that difference decides something: a `julia:*` partition is a *different
 #: fractal per `c`* and is fed by a pool of parameters, and a pinned plane is one
-#: fractal whose whole supply is places on it. Two consequences hang off this
-#: tuple — [`fractal_wallpapers.discovery.viewport_sampler`], which is the only
-#: fresh-root channel a pinned plane can have, and the walk's raised expansion
-#: budget, because a pinned plane's frontier cannot be fed by a second root.
+#: fractal whose whole supply is places on it. One consequence hangs off this
+#: tuple: [`fractal_wallpapers.discovery.viewport_sampler`], which is the only
+#: fresh-root channel a pinned plane can have.
+#:
+#: **The walk's raised expansion budget used to be the second one and is not any
+#: more.** It was raised here first, for the reason above — a pinned plane's
+#: frontier cannot be fed by a second root — and the varied dynamical planes then
+#: measured the same cap closing live lineages for a reason of their own. It is
+#: keyed on the family kind now, not on this tuple; see
+#: [`fractal_wallpapers.discovery.walk.Limits.dynamical_root_expansions`].
 PINNED_PLANES = (CLASSIC_PHOENIX,)
 
 #: Every partition that can reach a release, in canonical report order.
@@ -95,8 +101,10 @@ def is_pinned(partition: str) -> bool:
 
     Asked rather than tested against the one name, because everything that turns
     on it is a rule about *pinned planes* and not about classic phoenix: a pool
-    that can only ever hold one row, a sampler that draws places instead of
-    parameters, and an expansion budget raised because no second root is coming.
+    that can only ever hold one row, and a sampler that draws places instead of
+    parameters. The expansion budget was a third until the varied dynamical
+    planes measured their way onto it too — that one is keyed on the family kind
+    now, and this predicate is not what decides it.
     """
     return partition in PINNED_PLANES
 

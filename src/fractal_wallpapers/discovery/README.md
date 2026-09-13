@@ -1033,12 +1033,19 @@ manages **55.3%**, a third of them admitted outright. That is fifty times the ra
 the grace exists to fill, and those roots reach median depth 7 with a ceiling of
 13. Across all 50 ledgers **no julia root has ever been graced — 0 of 2,400** — and
 widening the grace to reach one would buy nothing, because the floor is not what
-stops a julia lineage. **`Limits.root_expansions` is.** The 1,714 roots at that cap
-pay a median of exactly 12, 60.9% reach it, and **98.0% of those were still
-producing standable nodes at their deepest rung** — a budget closing live
-lineages, holding 28.59 admissions a root against 2.85 for the roots that stopped
-on their own. The field itself carries the rest of the reading and the reason it
-is still 12.
+stops a julia lineage. **The expansion budget is.** The 1,714 roots walked at
+`root_expansions = 12` pay a median of exactly 12, 60.9% reach it, and **98.0% of
+those were still producing standable nodes at their deepest rung** — a budget
+closing live lineages, holding 28.59 admissions a root against 2.85 for the roots
+that stopped on their own.
+
+**So the budget was split in two, and the dynamical families were moved off 12.**
+`Limits.dynamical_root_expansions = 36` — the number pinned planes had already
+been raised to — now covers every family whose pixel is `z₀`: `julia:*`, varied
+`phoenix`, and pinned `phoenix:classic`. The parameter planes keep 12. The two
+fields carry the measurements and the reason they meet at one number; the split
+is read off the family **kind** through `engine.DYNAMICAL_KINDS` rather than off
+the partition, so a render-only family cannot make a policy lookup raise.
 
 The two virgin `c`-pool channels fail differently again, and also not at this
 floor: `near_boundary` and `near_minibrot` roots die at rung 1 — median one
