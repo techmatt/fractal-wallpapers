@@ -78,7 +78,15 @@ at rung N+1. Four things bound it.
 * **Expansion only.** Booking still happens at the good floor everywhere, so
   grace can put a node on the frontier and can never put a find in the books.
 * **Plane provenance only.** Julia, twin and phoenix roots are dynamical — their
-  home view *is* where their material lives — and are untouched.
+  home view *is* where their material lives — and are untouched. **Measured, and
+  the numbers are the whole argument.** On the one statistic the plane cliff is
+  quoted in — the share of a root's own children reaching the frontier — a plane
+  root manages **1.2%** and julia manages **59.9%** over 7,030 rung-1 candidates,
+  a `twin:labels` root at the home view of width 3.0 **55.3%**, of which 33.4% are
+  admitted outright. Fifty times the rate the grace was built to fill, so there is
+  no cliff under a dynamical root to compensate for. Across all 50 ledgers **no
+  julia root has ever been graced: 0 of 2,400.** What bounds a julia lineage is
+  [`Limits.root_expansions`] and not this floor; see that field.
 * **A waived floor, not a waived verdict.** A candidate with no score at all has
   a failed render behind it rather than a low opinion, and there is no opinion for
   grace to overrule; it stays refused.
@@ -196,6 +204,29 @@ class Limits:
     #: Batches to run.
     batches: int = 4
     #: Expansions any one root may pay for, its reframings included.
+    #:
+    #: **This is what bounds descent on a dynamical root, and it closes live
+    #: lineages rather than dead ones.** Measured over all 50 ledgers, the 1,714
+    #: `julia:*` roots walked under this cap pay a **median of exactly 12** — the
+    #: cap itself — and 1,043 of them (60.9%) reach it. Of those, **1,022 (98.0%)
+    #: were still producing standable nodes at their deepest rung**: the frontier
+    #: under them had not died, the budget closed it. They hold **28.59 admissions
+    #: a root against 2.85** for the roots that stopped on their own, so what this
+    #: number closes is precisely the productive lineages.
+    #:
+    #: That is the same shape [`pinned_root_expansions`] below was raised for, now
+    #: measured on the richest partitions this project has rather than on one
+    #: crawl. The one leg that ever walked julia at **24** (`harvest_run9`, 56
+    #: roots) reached **depth 18 against this cap's 13** and roughly doubled
+    #: admissions a root — suggestive and **not sized**: one leg, n=56, and most of
+    #: its roots never came near their cap.
+    #:
+    #: It is left at 12 because raising it is an allocation decision and not a
+    #: fix: expansions spent going deeper in one lineage are expansions not spent
+    #: on a fresh root, and `AUDIT_ckpt123_julia_supply` found julia's stock is
+    #: already 278 Julia sets seen seventy times each. Depth per lineage and
+    #: distinct parameters are the two things this number trades against each
+    #: other, and which one julia wants is Matt's call.
     root_expansions: int = 12
     #: The same, for a root on a **pinned plane** — one with no free parameter,
     #: so every place on it has to come out of the frame.

@@ -319,6 +319,20 @@ expansions, every one of them a sampled viewport and every one in the productive
 tail — against **75 of 160 roots that died at one expansion**. The cap is doing
 what it was raised to do and is not this leg's constraint.
 
+**On `julia:*` the ordinary cap is the constraint, and the contrast with the line
+above is the point.** `root_expansions = 12` binds on **1,043 julia roots of
+1,714** across all 50 ledgers — a median root paying exactly 12 — where 36 binds on
+4 of 160 pinned-plane roots. And it closes lineages that were still alive:
+**98.0% of the capped roots were producing standable nodes at their deepest rung**,
+and they hold **28.59 admissions a root against 2.85** for the roots that stopped
+on their own. So a julia root's per-root yield in the channel tables above is a
+reading of the cap as much as of the channel, and the ceiling on julia depth —
+13 rungs at this cap, 18 on the one leg that walked 24 — is the budget's and not
+the scorer's. `FIX_ckpt123_dynamical_expansion_grace` took that measurement while
+ruling out the expansion grace, which is denied to dynamical roots for a reason
+that holds: see [`discovery/README.md`](../discovery/README.md)'s *A parameter-plane
+root starts above the depths its material lives at*.
+
 **58 lineages booked, against the smoke's 7.** `top5_share` fell 0.913 → 0.342,
 so the admissions are spread rather than piled on two roots. Basin overlap went
 the other way and is the thing to watch: **0.683 of admissions sit inside an

@@ -536,8 +536,19 @@ class Refill:
             # other half is the family, and `operators.degree_of` is `None` for
             # julia and for phoenix, so a dynamical row comes through this same
             # door and is not graced. That is the right answer rather than an
-            # oversight: the grace pays for the descent out of a home frame
-            # nobody chose, and a row did not start at one.
+            # oversight, and **the reason is the head's reading of a dynamical
+            # home view, not this row's framing**: a Julia set's material is at
+            # its home view, so nothing here starts above its own depths. The
+            # measurement is in [`fractal_wallpapers.discovery.walk`]'s *A
+            # parameter-plane root starts above the depths its material lives
+            # at*, which carries julia's rung-1 admission share against the
+            # plane's 1.2% frontier rate.
+            #
+            # It is **not** that a row starts at a place rather than a home
+            # frame. A proven *plane* row starts at a labelled place too, comes
+            # through this same default, and is graced — so that argument would
+            # prove the wrong thing about the parameter planes, and it stood here
+            # until `FIX_ckpt123_dynamical_expansion_grace` measured the grace.
             # A row may name its own, and one that does not came out of the seed
             # file. The passthrough is what lets a *synthesized* row — the pinned
             # plane's single home view — say where it came from instead of
