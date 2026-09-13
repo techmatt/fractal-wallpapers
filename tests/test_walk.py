@@ -76,6 +76,67 @@ def test_a_root_whose_budget_is_spent_is_evicted_not_skipped(tmp_path) -> None:
     assert run.frontier == [], "the capped nodes are gone, not merely passed over"
 
 
+# --------------------------------------------------------------------------- #
+# the two expansion budgets
+# --------------------------------------------------------------------------- #
+def test_a_dynamical_root_gets_a_larger_expansion_budget_than_a_plane_one() -> None:
+    """The numbers are pinned: 12 on a parameter plane, 36 on a dynamical one.
+
+    Both halves were measured. The crawl that first bought 36 stopped at 0.66 of
+    a 30-minute budget with its two productive `phoenix:classic` roots on 12
+    expansions each — the cap — and six others on one. The varied dynamical
+    planes then measured the same signature harder: of 1,714 julia roots walked
+    at 12, 1,043 reached the cap and 98.0% of those were still producing
+    standable nodes at their deepest rung."""
+    limits = Limits()
+    assert (limits.root_expansions, limits.dynamical_root_expansions) == (12, 36)
+    assert limits.dynamical_root_expansions > limits.root_expansions
+
+
+def test_the_walk_reads_the_budget_off_each_root_s_own_family(tmp_path) -> None:
+    """One walk, two budgets — so a mixed run does not have to choose which
+    policy it is under. Derived from the root record the checkpoint already
+    keeps, which is what makes it survive a resume without a new state field.
+
+    Read off the family **kind** and not the partition, so every family whose
+    pixel is `z₀` gets the same answer: a julia twin, a varied phoenix and the
+    pinned classic point alike."""
+    run = walk(tmp_path, limits=Limits(batch=2, root_expansions=3, dynamical_root_expansions=9))
+    roots = {
+        "julia": {"kind": "julia", "degree": 2, "c": ["-0.75", "0.1"]},
+        "phoenix_classic": {"kind": "phoenix"},
+        "phoenix_varied": {"kind": "phoenix", "c": ["0.4", "0.1"], "p": ["-0.3", "0.0"]},
+        "mandelbrot": {"kind": "mandelbrot"},
+        "multibrot": {"kind": "multibrot", "degree": 4},
+        "render_only": {"kind": "fractional_multibrot", "degree": 2.5},
+    }
+    added = {
+        name: run.add_root(family, VIEW, source="test", provenance={})
+        for name, family in roots.items()
+    }
+    budgets = {name: run.root_budget(node["root_id"]) for name, node in added.items()}
+    assert budgets == {
+        "julia": 9,
+        "phoenix_classic": 9,
+        "phoenix_varied": 9,
+        "mandelbrot": 3,
+        "multibrot": 3,
+        # A family the engine renders into pictures and nothing else must not
+        # make a policy lookup raise; it takes the ordinary budget.
+        "render_only": 3,
+    }
+
+    # And the eviction acts on each root's own number rather than on one of them.
+    for node in added.values():
+        run.expansions[node["root_id"]] = 4
+    run.evict_capped()
+    standing = {node["root_id"] for node in run.frontier}
+    assert added["julia"]["root_id"] in standing
+    assert added["phoenix_classic"]["root_id"] in standing
+    assert added["mandelbrot"]["root_id"] not in standing
+    assert added["render_only"]["root_id"] not in standing
+
+
 def test_the_breadth_floor_reserves_slots_for_roots_nothing_has_touched(tmp_path) -> None:
     """Without it the triggered channel starves fresh roots: a view produced by
     snapping to a nucleus is centered on a nucleus, so snapping it again nearly

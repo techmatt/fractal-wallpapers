@@ -272,7 +272,7 @@ def harvest(args: argparse.Namespace) -> int:
     limits = Limits(
         batch=args.batch,
         root_expansions=args.root_expansions,
-        pinned_root_expansions=args.pinned_root_expansions,
+        dynamical_root_expansions=args.dynamical_root_expansions,
         plane_grace_rungs=args.plane_grace_rungs,
         **refine_limits(args),
         # `None` and not `0`: zero is a real answer to "how many admissions may a
@@ -655,18 +655,19 @@ def add_commands(subcommands) -> None:
         "--root-expansions",
         type=int,
         default=walk_default("root_expansions"),
-        help=f"expansions any one root may pay for, its reframings included "
+        help=f"expansions a root on a PARAMETER plane may pay for, its reframings included "
         f"(default: {walk_default('root_expansions')})",
     )
     budget.add_argument(
-        "--pinned-root-expansions",
+        "--dynamical-root-expansions",
         type=int,
-        default=walk_default("pinned_root_expansions"),
-        help=f"the same, for a root on a pinned plane. Higher because a pinned plane has no "
-        f"free parameter, so a lineage the cap closes is not replaced by a fresh root "
-        f"somewhere else. Measured on the first leg that ever walked one: its two "
-        f"productive roots hit the ordinary cap while still finding "
-        f"(default: {walk_default('pinned_root_expansions')})",
+        default=walk_default("dynamical_root_expansions"),
+        help=f"the same, for a root on a DYNAMICAL plane — julia and phoenix alike. Higher "
+        f"because the ordinary cap was measured closing lineages that were still alive: on "
+        f"a pinned plane the two roots that booked everything hit it while still finding, "
+        f"and across 50 ledgers 98.0%% of the julia roots that reached it were still "
+        f"producing standable nodes at their deepest rung "
+        f"(default: {walk_default('dynamical_root_expansions')})",
     )
     budget.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
     gate_render.add_argument(

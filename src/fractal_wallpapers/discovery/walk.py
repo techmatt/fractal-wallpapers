@@ -86,7 +86,7 @@ at rung N+1. Four things bound it.
   admitted outright. Fifty times the rate the grace was built to fill, so there is
   no cliff under a dynamical root to compensate for. Across all 50 ledgers **no
   julia root has ever been graced: 0 of 2,400.** What bounds a julia lineage is
-  [`Limits.root_expansions`] and not this floor; see that field.
+  [`Limits.dynamical_root_expansions`] and not this floor; see that field.
 * **A waived floor, not a waived verdict.** A candidate with no score at all has
   a failed render behind it rather than a low opinion, and there is no opinion for
   grace to overrule; it stays refused.
@@ -203,49 +203,47 @@ class Limits:
     batch: int = 8
     #: Batches to run.
     batches: int = 4
-    #: Expansions any one root may pay for, its reframings included.
+    #: Expansions any one root may pay for, its reframings included — on a
+    #: **parameter plane**, which is the only kind this number still reaches.
     #:
-    #: **This is what bounds descent on a dynamical root, and it closes live
-    #: lineages rather than dead ones.** Measured over all 50 ledgers, the 1,714
-    #: `julia:*` roots walked under this cap pay a **median of exactly 12** — the
-    #: cap itself — and 1,043 of them (60.9%) reach it. Of those, **1,022 (98.0%)
-    #: were still producing standable nodes at their deepest rung**: the frontier
-    #: under them had not died, the budget closed it. They hold **28.59 admissions
-    #: a root against 2.85** for the roots that stopped on their own, so what this
-    #: number closes is precisely the productive lineages.
-    #:
-    #: That is the same shape [`pinned_root_expansions`] below was raised for, now
-    #: measured on the richest partitions this project has rather than on one
-    #: crawl. The one leg that ever walked julia at **24** (`harvest_run9`, 56
-    #: roots) reached **depth 18 against this cap's 13** and roughly doubled
-    #: admissions a root — suggestive and **not sized**: one leg, n=56, and most of
-    #: its roots never came near their cap.
-    #:
-    #: It is left at 12 because raising it is an allocation decision and not a
-    #: fix: expansions spent going deeper in one lineage are expansions not spent
-    #: on a fresh root, and `AUDIT_ckpt123_julia_supply` found julia's stock is
-    #: already 278 Julia sets seen seventy times each. Depth per lineage and
-    #: distinct parameters are the two things this number trades against each
-    #: other, and which one julia wants is Matt's call.
+    #: Twelve, and it is not a measurement of the planes: it is the number every
+    #: root paid until the dynamical families were moved off it, kept here because
+    #: a plane answers a dead lineage with a fresh root carrying a fresh place, so
+    #: nothing on a plane has been shown to want more. What it used to do to a
+    #: julia lineage, and why that is now somebody else's number, is at
+    #: [`dynamical_root_expansions`].
     root_expansions: int = 12
-    #: The same, for a root on a **pinned plane** — one with no free parameter,
-    #: so every place on it has to come out of the frame.
+    #: The same, for a root on a **dynamical plane** — julia and phoenix alike,
+    #: the families whose pixel is `z₀` (`engine.DYNAMICAL_KINDS`).
     #:
-    #: **Three times the ordinary budget, and the number is a measurement.** The
-    #: first leg that ever walked `phoenix:classic` (`CRAWL_phoenix_classic_30min`,
-    #: 2026-09-02) stopped on `nothing servable` at 0.66 of its 30 minutes, and the
-    #: ledger says why: of its 8 roots, 6 were expanded once each and the **two
-    #: that booked every admission hit 12 expansions exactly** — the cap — while
-    #: still producing expandable nodes at depth 6. The frontier did not die on
-    #: its own; the cap closed the only two lineages that were feeding it.
+    #: **Three times the ordinary budget, and both halves of the reason are
+    #: measurements.**
     #:
-    #: Raised for pinned planes alone because the reason is theirs: every other
-    #: partition answers a dead lineage with a fresh root carrying a fresh
-    #: parameter, and a pinned plane has no parameter to vary — so what a root
-    #: does not reach, nothing else will. At the crawl's measured ~45 expansions
-    #: an active minute, 36 is about a twelfth of a ten-minute leg in one lineage,
-    #: which is a bound rather than a licence.
-    pinned_root_expansions: int = 36
+    #: *Pinned planes bought the number.* The first leg that ever walked
+    #: `phoenix:classic` (`CRAWL_phoenix_classic_30min`, 2026-09-02) stopped on
+    #: `nothing servable` at 0.66 of its 30 minutes, and the ledger says why: of
+    #: its 8 roots, 6 were expanded once each and the **two that booked every
+    #: admission hit 12 expansions exactly** — the cap — while still producing
+    #: expandable nodes at depth 6. A pinned plane has no parameter to vary, so
+    #: what a root does not reach, nothing else will. At 36 it binds on **4 roots
+    #: of 160** (`LEG_phoenix_classic_supply`), every one in the productive tail.
+    #:
+    #: *The varied dynamical planes then measured the same signature, harder.*
+    #: Over all 50 ledgers the 1,714 `julia:*` roots walked at 12 paid a **median
+    #: of exactly 12** and 1,043 (60.9%) reached it; of those, **1,022 (98.0%)
+    #: were still producing standable nodes at their deepest rung**, and they hold
+    #: **28.59 admissions a root against 2.85** for the roots that stopped on
+    #: their own. The admission rate *rises* with depth rather than decaying —
+    #: 53.4% at depth 2 to 64.3% at depth 11 over one 30-minute leg — so what
+    #: closed those lineages was the budget and not the material.
+    #:
+    #: The julia reason is not the pinned one — a julia root's parameter *can* be
+    #: replaced by a fresh `c` — and they arrive at one number anyway, because
+    #: `AUDIT_ckpt123_julia_supply` found julia's stock is already 278 Julia sets
+    #: seen seventy times each: variety **within** one `c` is the thing in short
+    #: supply, which is Matt's ruling of 2026-09-12 and what raised this from a
+    #: pinned-plane field to a dynamical one.
+    dynamical_root_expansions: int = 36
     #: Share of a batch's slots reserved for roots nothing has expanded yet.
     breadth_floor: float = 0.25
     #: Slots per batch reserved for reframing-originated nodes.
@@ -766,34 +764,32 @@ class Walk:
     def root_budget(self, root_id: int) -> int:
         """Expansions this particular root may pay for.
 
-        [`Limits.root_expansions`] everywhere but a pinned plane, which gets
-        [`Limits.pinned_root_expansions`] for the reason that field states.
-        Derived from the root's own family rather than stored beside it, so a
-        resumed session — which restores `roots` and rebuilds nothing else — gets
-        the same answer for a root the first session drew.
+        [`Limits.root_expansions`] on a parameter plane and
+        [`Limits.dynamical_root_expansions`] on a dynamical one, for the reasons
+        those fields state. Derived from the root's own family rather than stored
+        beside it, so a resumed session — which restores `roots` and rebuilds
+        nothing else — gets the same answer for a root the first session drew.
 
-        A family the registry does not recognize takes the ordinary budget. This
-        is a *policy* lookup on a walk that may be pointed at anything, so a
-        render-only family must not make it raise.
+        Asked of the **family kind** and not of the partition, because that is
+        what the split is: `engine.DYNAMICAL_KINDS` is this side's mirror of the
+        engine's `Family::pixel_is_z0`, and every partition on the dynamical side
+        of it — `julia:*`, varied `phoenix`, pinned `phoenix:classic` — wants the
+        same answer. Membership rather than `engine.pixel_is_z0`, which *raises*
+        on a kind that is neither: this is a policy lookup on a walk that may be
+        pointed at anything, so a render-only family must not make it raise and
+        takes the ordinary budget instead.
         """
         cached = self._root_budgets.get(root_id)
         if cached is not None:
             return cached
-        from fractal_wallpapers.supply.partitions import (
-            UnregisteredPartition,
-            is_pinned,
-            partition_of_family,
-        )
-
-        budget = self.limits.root_expansions
         record = self.roots.get(root_id) or {}
         family = record.get("family")
-        if isinstance(family, dict):
-            try:
-                if is_pinned(partition_of_family(family)):
-                    budget = self.limits.pinned_root_expansions
-            except UnregisteredPartition:
-                budget = self.limits.root_expansions
+        kind = family.get("kind") if isinstance(family, dict) else None
+        budget = (
+            self.limits.dynamical_root_expansions
+            if kind in engine.DYNAMICAL_KINDS
+            else self.limits.root_expansions
+        )
         self._root_budgets[root_id] = budget
         return budget
 

@@ -64,7 +64,7 @@ def walk(args: argparse.Namespace) -> int:
             batch=args.batch,
             batches=args.batches,
             root_expansions=args.root_expansions,
-            pinned_root_expansions=args.pinned_root_expansions,
+            dynamical_root_expansions=args.dynamical_root_expansions,
             probe_probability=args.probe,
             plane_grace_rungs=args.plane_grace_rungs,
             **refine_limits(args),
@@ -184,16 +184,17 @@ def add_commands(subcommands) -> None:
         "--root-expansions",
         type=int,
         default=walk_default("root_expansions"),
-        help=f"expansions any one root may pay for, its reframings included "
+        help=f"expansions a root on a PARAMETER plane may pay for, its reframings included "
         f"(default: {walk_default('root_expansions')})",
     )
     budget.add_argument(
-        "--pinned-root-expansions",
+        "--dynamical-root-expansions",
         type=int,
-        default=walk_default("pinned_root_expansions"),
-        help=f"the same, for a root on a pinned plane, which has no free parameter and "
-        f"therefore no second root to answer a dead lineage with "
-        f"(default: {walk_default('pinned_root_expansions')})",
+        default=walk_default("dynamical_root_expansions"),
+        help=f"the same, for a root on a DYNAMICAL plane — julia and phoenix alike. Higher "
+        f"because a dynamical lineage the ordinary cap closes is measurably still alive: "
+        f"98.0%% of the julia roots that reached 12 were still producing standable nodes "
+        f"(default: {walk_default('dynamical_root_expansions')})",
     )
     budget.add_argument("--candidates", type=int, default=4, help="candidates drawn per node")
     gate_render.add_argument(

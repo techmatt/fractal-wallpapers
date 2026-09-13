@@ -229,11 +229,19 @@ def walk_limits(limits: Limits, *, batches: int | None = None) -> walk_module.Li
     quota that cannot be filled is slots the batch does not get — and the plane
     grace goes to zero because a deep root starts *inside* the band its material
     lives in, which is the one thing the grace exists to compensate for.
+
+    [`Limits.root_expansions`] is passed to **both** of the walk's budgets for the
+    same class of reason: the shallow walk raises the dynamical one because a
+    dynamical lineage it closes at 12 is still alive, and a deep run has already
+    answered that question its own way — its seats are sized from the wall budget
+    against this number, so a julia seat silently taking three times it is the
+    seat arithmetic wrong rather than a deeper walk. One knob here, on purpose.
     """
     return walk_module.Limits(
         batch=limits.batch,
         batches=DEFAULT_BATCHES if batches is None else int(batches),
         root_expansions=limits.root_expansions,
+        dynamical_root_expansions=limits.root_expansions,
         breadth_floor=limits.breadth_floor,
         operator_quota=0,
         plane_grace_rungs=0,

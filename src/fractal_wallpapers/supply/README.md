@@ -348,24 +348,46 @@ root was drawn at: rung 2 **3** off 2 roots, rung 3 **9** off 8, rung 4 **52** o
 rung 5 and 1.16 at rung 6 — and the deeper rungs buy volume rather than yield. A
 leg wanting places cheaply should widen rung 4 before it adds a rung.
 
-**`pinned_root_expansions = 36` binds, on 4 roots of 160**, at 37, 37, 38 and 40
+**The raised budget binds, on 4 roots of 160**, at 37, 37, 38 and 40
 expansions, every one of them a sampled viewport and every one in the productive
 tail — against **75 of 160 roots that died at one expansion**. The cap is doing
 what it was raised to do and is not this leg's constraint.
 
-**On `julia:*` the ordinary cap is the constraint, and the contrast with the line
-above is the point.** `root_expansions = 12` binds on **1,043 julia roots of
-1,714** across all 50 ledgers — a median root paying exactly 12 — where 36 binds on
-4 of 160 pinned-plane roots. And it closes lineages that were still alive:
-**98.0% of the capped roots were producing standable nodes at their deepest rung**,
-and they hold **28.59 admissions a root against 2.85** for the roots that stopped
-on their own. So a julia root's per-root yield in the channel tables above is a
-reading of the cap as much as of the channel, and the ceiling on julia depth —
-13 rungs at this cap, 18 on the one leg that walked 24 — is the budget's and not
-the scorer's. `FIX_ckpt123_dynamical_expansion_grace` took that measurement while
-ruling out the expansion grace, which is denied to dynamical roots for a reason
-that holds: see [`discovery/README.md`](../discovery/README.md)'s *A parameter-plane
-root starts above the depths its material lives at*.
+**On `julia:*` the ordinary cap was the constraint, and the contrast with the line
+above is what moved it.** At 12, the budget bound **1,043 julia roots of 1,714**
+across all 50 ledgers — a median root paying exactly 12 — where 36 bound 4 of 160
+pinned-plane roots. And it closed lineages that were still alive: **98.0% of the
+capped roots were producing standable nodes at their deepest rung**, and they hold
+**28.59 admissions a root against 2.85** for the roots that stopped on their own.
+So every julia per-root yield in the channel tables above is a reading of the cap
+as much as of the channel, and the ceiling on julia depth — 13 rungs at 12, 18 on
+the one leg that walked 24 — was the budget's and not the scorer's.
+`FIX_ckpt123_dynamical_expansion_grace` took that measurement while ruling out the
+expansion grace, which is denied to dynamical roots for a reason that holds: see
+[`discovery/README.md`](../discovery/README.md)'s *A parameter-plane root starts
+above the depths its material lives at*.
+
+**Every dynamical family now walks at 36**, `FIX_ckpt123_dynamical_root_expansions`
+on Matt's ruling that variety within one `c` is real and wanted — the pinned
+planes' number, extended to `julia:*` and varied `phoenix` because they measured
+the same signature harder. The parameter planes keep 12. The two numbers and the
+kind-keyed door are at `discovery/walk.py`'s `Limits.dynamical_root_expansions`;
+the tables above this line were all measured at 12 and are not comparable with a
+leg walked since.
+
+**And at 36 the cap still binds, on 71.2% of roots.** The first `julia:*` leg
+walked at the raised budget (`--minutes 15 --batch 8 --seed 123 --root-channel
+proven`, all four julia partitions, 287 batches, 2,296 expansions) put **57 of 80
+roots at the cap with a median of exactly 36**, and **91.2% of those were still
+admitting at their deepest rung** — the same signature as 12, later. What moved:
+the **depth ceiling 13 → 21**, admissions **25.12 → 66.92 a root**, and the
+admission rate still climbing rather than decaying (56.6% at depth 2, 62.7% at 13,
+72.8% at 16). What it cost: **42 distinct `c` touched and 42 booked against 229 and
+206**, 127.48 admissions per booking parameter against 50.73, and saturation
+discounting **92.4% of admissions against 43.5%** — depth inside one `c` buys
+admissions that sit inside each other. Both legs refuse nothing at a floor
+(`no_score` zero in each), so the depth is real and not a floor change. Different
+populations and different clocks: a sanity read, not a rate.
 
 **58 lineages booked, against the smoke's 7.** `top5_share` fell 0.913 → 0.342,
 so the admissions are spread rather than piled on two roots. Basin overlap went
