@@ -597,6 +597,7 @@ def a_world(places=PLACES, near=6):
     }
 
 
+@pytest.mark.slow
 def test_a_measuring_plan_takes_the_three_draws_and_leaves_the_floor_empty():
     plan, shape = build_a_plan()
     assert {shot.arm for shot in plan} == set(depth.MEASURING)

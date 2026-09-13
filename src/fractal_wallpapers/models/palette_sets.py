@@ -58,6 +58,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 from fractal_wallpapers.labeling import finished
@@ -265,15 +266,44 @@ def _one(out, missed, key, batch, index, source_row, flavours, order, finished_i
     )
 
 
-def cyclic() -> set[str]:
-    """Which tracked maps close on the colour they opened with."""
+@lru_cache(maxsize=1)
+def _cyclic_names() -> frozenset[str]:
+    """[`cyclic`]'s answer, derived once. See that function for why it is a memo."""
     names = {path.stem for path in colormap_dir().glob("*.json")}
     out = set()
     for name in names:
         document = json.loads((colormap_dir() / f"{name}.json").read_text(encoding="utf-8"))
         if document.get("kind") == "cyclic":
             out.add(name)
-    return out
+    return frozenset(out)
+
+
+def cyclic() -> set[str]:
+    """Which tracked maps close on the colour they opened with.
+
+    **Memoized, and the memo is what makes this affordable to reach for.** The
+    answer is a `json.loads` of every one of the tracked colormap documents —
+    **877 ms**, measured 2026-09-12 — and the fold is a property of the map, so
+    everything that builds a recipe asks: `hunt.Maker`, `mine`, `rescore`,
+    `repetition`, `release`, `label_migration`, `sheets`, `neutral`, `backfill`,
+    `rerender`, `colors`, `palette_coverage`, `manufacture` and a dozen more.
+    Uncached, a leg that colours a thousand candidates re-read the library once
+    per entry point and the test lane paid it per test.
+
+    A fresh `set` on every call, not the cached `frozenset` itself: callers have
+    always been handed something they may mutate, and a memo is not a licence to
+    change that. The copy is microseconds against the read it replaces.
+
+    The library does not move inside a process, which is what makes this sound. A
+    guard that redirects `colormap_dir` calls [`forget_cyclic`] first — the rule
+    [`hunt.forget_recorded_prices`] established for the same reason.
+    """
+    return set(_cyclic_names())
+
+
+def forget_cyclic() -> None:
+    """Drop [`cyclic`]'s memo. For a guard that redirects the colormap library."""
+    _cyclic_names.cache_clear()
 
 
 def recipe_for(colormap: str, cyclic_maps: set[str]) -> dict:
@@ -487,6 +517,7 @@ __all__ = [
     "candidate_row",
     "cyclic",
     "extract",
+    "forget_cyclic",
     "members_of",
     "places",
     "pool",

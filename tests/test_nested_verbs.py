@@ -775,6 +775,21 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "sheet": ("--name", "--device"),
         "read": ("--name",),
     },
+    "phase-response": {
+        "run": (
+            "--name",
+            "--places",
+            "--maps",
+            "--phases",
+            "--modes",
+            "--seed",
+            "--budget",
+            "--workers",
+        ),
+        # No `--device`: nothing here reads a head. The pass renders a grid and
+        # reads the pixels, which is the whole of it.
+        "read": ("--name",),
+    },
     "rotate": {
         "plan": ("--name", "--bar", "--seed", "--rotations", "--owed"),
         "run": (
@@ -910,14 +925,17 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     arrived to ask the one repetition question `repetition` left open, which is whether
     a repeat improves a picture that is already good at 1x; and one hundred and two until
     `depth near-places` arrived to cut a near-band manifest by the draw's own rule, which
-    a leg rig outside the checkout had been doing by a different one."""
+    a leg rig outside the checkout had been doing by a different one; and twenty-three
+    and one hundred and three until `phase-response` and its two arrived to measure what
+    `Palette.phase` moves mode by mode off the pixels, which is the axis a varied mining
+    draw spends a third of its shots on and nothing in the tree could price."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 103
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 105
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

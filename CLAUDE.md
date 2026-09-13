@@ -187,16 +187,21 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,595 collected — 4,459 fast,
-136 slow — since `page_order_min_gap_ckpt122` landed on 2026-09-13**, on a
-`.[dev,models]` install with a release engine built. The **fast** lane is **4,459 of
-4,459 in 163.76 s (2:43)** on an idle box, **green**, **zero skips** — 5 more tests
-than `preclose_ckpt122` and 3.9 s *less* clock, which is what confirmed that
-prompt's +9.3 s on an identical count was the box. ⚠ **The slow lane has no reading
-at this count**: it was skipped at Matt's instruction mid-prompt, so its last is
-`preclose_ckpt122`'s **4,590 of 4,590 in 577.08 s (9:37)**, five behind. **The two
-lanes therefore do not agree and the next prompt owes the slow re-take** — all five
-of the tests between them are fast-lane, so 4,595 is the count to expect.
+Both are measured, not estimated. The tree holds **4,625 collected — 4,472 fast,
+153 slow — since `lane_speedup_ckpt122` landed on 2026-09-12**, on a `.[dev,models]`
+install with a release engine built. **Fast: 4,472 of 4,472 in 125.23 s (2:05). Slow:
+4,625 of 4,625 in 471.66 s (7:51).** Both green, both **zero skips**, box idle, and
+**the two lanes agree on 4,625**.
+
+That pair is **34.3 s and 80.8 s faster** than the baseline taken on the same tree an
+hour before it, and **no guard was deleted or weakened** to get there: one production
+derivation was memoized and sixteen guards that cost a second or more of real store
+work moved to the lane the marking rule already put them in. **A slow lane that
+absorbed sixteen guards and still fell** is the shape to expect from that trade.
+`tests/README.md`'s *lane_speedup_ckpt122* carries the measurements, and the two
+speedups it **refused** — collapsing `test_colormaps.py`'s 1,021-case parametrize,
+which is 22% of the suite's count and **0.00 s** of its clock, and sharing the package
+sweep, which is **35 ms**. **A count is not a cost.**
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box

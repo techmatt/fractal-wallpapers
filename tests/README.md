@@ -3,8 +3,8 @@
 The test suite, including the guard that keeps this history text-only and small.
 
 ```
-python -m pytest                                    # the fast lane, ~2m36s
-python -m pytest --slow                             # every test, ~10m
+python -m pytest                                    # the fast lane, ~2m05s
+python -m pytest --slow                             # every test, ~7m51s
 cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 ```
 
@@ -53,6 +53,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [lane_speedup_ckpt122](#lane_speedup_ckpt122)
     - [page_order_min_gap_ckpt122](#page_order_min_gap_ckpt122)
     - [preclose_ckpt122](#preclose_ckpt122)
     - [page_order_stratified_ckpt122](#page_order_stratified_ckpt122)
@@ -590,6 +591,56 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### lane_speedup_ckpt122
+
+**The fast lane is 21.5% faster, the slow lane 14.6%, and no guard was deleted or
+weakened to get there.** `lane_speedup_ckpt122`, 2026-09-12, box idle. **Fast: 4,472
+selected, 153 deselected — 4,625 collected — in 125.23 s (2:05). Slow: 4,625 of 4,625
+in 471.66 s (7:51).** Both green, zero skips, zero failures; the two lanes agree on
+4,625. Against a baseline taken on this same tree an hour earlier — **fast 159.54 s,
+slow 552.50 s** — that is **-34.31 s and -80.84 s**.
+
+Two changes, each measured against a lane taken immediately before it rather than
+against the log:
+
+* **`palette_sets.cyclic()` is memoized** — fast 159.54 -> 149.41 s, **-10.13 s**. It
+  `json.loads` every one of the 1,021 tracked colormap documents on every call, **877 ms
+  measured**, and the fold is the map's own kind, so everything that builds a recipe
+  asks it: thirty-odd production sites, `hunt.Maker` and `mine` and `rescore` among
+  them. `test_curation_release` -3.87 s, `test_depth` -2.56 s, `test_neutral_embeddings`
+  -1.73 s. **Production legs get it too**, which is the larger half and is not in these
+  numbers. `forget_cyclic()` is the un-memo, on [`hunt.forget_recorded_prices`]' rule.
+* **Sixteen guards earned the slow marker** — fast 149.41 -> 122.81 s, **-26.60 s**.
+  Each costs a second or more of real store work over a merge, a backfill or a prune,
+  which is what `CLAUDE.md`'s marking rule already calls a slow test; they had outgrown
+  the fast lane without anybody re-reading them. Nothing was deleted and nothing was
+  weakened — all sixteen run in `--slow` and in CI, which is why the slow lane still
+  carries their cost and fell anyway.
+
+⚠ **The realized 26.60 s is 7 s short of the 33.6 s the durations predicted**, which is
+[Measure the fast lane after marking, not before](#measure-the-fast-lane-after-marking-not-before)
+arriving exactly on schedule: a marked guard's shared derivation is handed to whichever
+sibling reads it next. The prediction was still worth making — it named the right
+sixteen — and **two candidates were dropped before marking for the same reason**, both
+whose cost was a shared `setup` rather than their own `call`.
+
+**The two refusals are the more useful half of this entry, because both were obvious
+and both were wrong.** `test_colormaps.py`'s parametrize is **1,021 of the 4,625
+collected — 22% of the suite's count** and the first thing anybody would collapse. It
+costs **0.00 s to run over 3,066 entries and ~0.1 s to collect** (7.35 s against 7.21 s
+with the file ignored). **A count is not a cost**, and nothing in this log said so until
+now. A shared parsed-package fixture was refused the same way: eight guards each sweep
+the package's 223 files, and that sweep is **35 ms** — `rglob` plus `ast.parse` is
+1,185 ms, but the only guard that parses package-wide already caches it.
+
+**What is left, for whoever comes next.** The fast lane's wall is 125.23 s against
+**105.7 s of accounted test time**, so **~19 s is collection and import** — 7.2 s of it
+collection proper, the rest interpreter start and the torch/PIL import graph, and none
+of it reachable by touching a test. Of the tests, `test_solve.py` (13.0 s over 167) and
+`test_depth.py` (12.4 s over 134) are the two largest and neither has a hot spot: they
+are ~80 ms and ~92 ms per test of synthetic solving and planning, which is the broad
+kind and wants a different tool than this pass used.
 
 #### page_order_min_gap_ckpt122
 

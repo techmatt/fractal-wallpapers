@@ -712,6 +712,7 @@ def test_retention_keeps_a_recorded_seat_the_rank_would_have_dropped(
     assert {row["key"] for row in candidate_ledger.read()} == {"k0", "k1"}
 
 
+@pytest.mark.slow
 def test_the_protection_reads_every_record_and_not_only_the_newest(tentative_store):
     """An older record's IDs are exactly the ones somebody is still holding. A
     protection that read only the latest would sweep last week's page silently."""

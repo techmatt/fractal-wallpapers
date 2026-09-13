@@ -191,6 +191,7 @@ def test_the_door_records_both_files_and_says_what_it_recorded(monkeypatch, tmp_
     assert verdicts["scores"]["verdict"] == "ok"
 
 
+@pytest.mark.slow
 def test_a_second_merge_of_the_same_rows_leaves_the_manifest_saying_the_same_thing(
     monkeypatch, tmp_path
 ) -> None:
@@ -217,6 +218,7 @@ def test_every_merge_leg_reaches_the_ledger_through_the_door(leg: str) -> None:
     assert "candidate_ledger.merge(" in text
 
 
+@pytest.mark.slow
 def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
     tmp_path, monkeypatch
 ) -> None:
@@ -263,6 +265,7 @@ def test_the_one_door_fills_the_flatness_sidecar_as_well_as_the_two_files(
     assert again["flatness"]["swept"] == 0, "incremental: a row already read costs no decode"
 
 
+@pytest.mark.slow
 def test_the_door_records_the_flatness_sidecar_with_the_other_two(tmp_path, monkeypatch) -> None:
     """The third file of the store, recorded by the same write that fills it.
 

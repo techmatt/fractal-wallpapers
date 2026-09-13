@@ -529,6 +529,7 @@ def test_the_summary_says_the_channel_was_wired_and_at_what_floor(tmp_path, monk
 # --------------------------------------------------------------------------- #
 
 
+@pytest.mark.slow
 def test_a_harvest_reaches_the_channel_by_name() -> None:
     """The whole point of registering it: `--root-channel proven` and the
     run holds the channel, with no seed file built by hand anywhere."""

@@ -193,6 +193,7 @@ def test_a_forced_row_is_lifted_whatever_the_coarse_bar_says(monkeypatch) -> Non
 # --------------------------------------------------------------------------- #
 # An offer and never a seat.
 # --------------------------------------------------------------------------- #
+@pytest.mark.slow
 def test_forcing_offers_a_row_first_and_the_rules_still_refuse_it(monkeypatch) -> None:
     """★ The claim a forced record is read under. Two rows at one place: forcing
     the weaker one makes it the offer, and the one-seat rule still allows exactly

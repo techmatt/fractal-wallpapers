@@ -598,6 +598,7 @@ def a_ledger_row(key: str = "aaaa") -> dict:
     )
 
 
+@pytest.mark.slow
 def test_merging_a_hunt_twice_writes_the_same_ledger(monkeypatch, tmp_path):
     """The ledger upserts by recipe, so a partial and a finished hunt merge alike."""
     from fractal_wallpapers import paths
