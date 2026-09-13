@@ -38,6 +38,44 @@ The embedding is a **tie-breaker with a ceiling**: two candidates that repeat no
 are ordered by how far each is from the window, and [`DISTANCE_WEIGHT`] is set below
 the smallest attribute weight so that no distance can buy back an attribute repeat.
 
+## The allowance is a count rule and adjacency is a spacing one
+
+[`_unavoidable`] prices a repeat by its excess over what a window cannot avoid
+holding, and that much is arithmetic: a value at share `s` appears about `s x W`
+times in every window in every order. But a count says nothing about *where inside
+the window* the repeats fall, and the two questions come apart. 263 of the 1,000
+seats of `20260911T022330Z` are `tia`, so a screenful holds eight of them however
+they are arranged — piled in one corner of the screen or laid out one tile in four,
+both score the same on the allowance, and only one of them is what a reader sees as
+a clump.
+
+So there is a **second, short-range term**: [`ADJACENCY_WEIGHT`] on sharing a value
+with the last [`ADJACENCY_REACH`] placed, over the same four columns. It does not
+replace the allowance — that one governs how many of a value a window holds, this
+one governs whether they touch. On `20260911T022330Z` it takes the adjacent-mode
+pairs from **53 to 13** and the adjacent hue families from **9 to 0** while every
+gap median holds, and the 13 that remain sit in the **last 17 seats**: the body of
+the page, positions 0 to 982, has none.
+
+**It carries the allowance too, at the reach's scale, and that is not optional.**
+Written without one it hoards, for the same reason a plain greedy hoards and worse:
+a value at 60% of a page cannot be kept off its own neighbours, so refusing to
+place it beside itself drains the *other* values first and stacks the majority at
+the end. Measured on a themed record — `dark_vivid_green`, 106 of 176 seats — an
+unallowanced term took the touching cell pairs from 47 to **54** and the share of
+them in the closing tenth from 7 to **17**, which is the tail clump this module
+exists to remove, reintroduced by the term meant to remove it. With the allowance
+in, the same record reads **46** and its tail sits *at* the floor. So the rule is
+one rule written twice: a value at share `s` is expected to hold about `s` of any
+run of seats, over a reach exactly as over a window, and only the excess is a fault.
+
+Above the allowance it **degrades rather than thrashes**, and that needs no branch
+of its own: the loop takes the cheapest candidate there is, so a step with no
+untouching option left pays and places. What makes that readable rather than merely
+true is [`_forced_touches`] — the floor a column's own counts impose on every order
+there is — reported beside the realized count, so a residue can be told from a
+defect. The two products answer that oppositely and the same page says so.
+
 **`p_ge4` descending seeds the page and breaks every remaining tie**, so the strongest
 row opens the gallery and quality still orders it wherever spread is indifferent. The
 row's `p_ge4` is the fine head's `p_fine(>=4)` — [`solve._seated`] writes the reading
@@ -73,6 +111,8 @@ import json
 from pathlib import Path
 
 __all__ = [
+    "ADJACENCY_REACH",
+    "ADJACENCY_WEIGHT",
     "ATTRIBUTE_WEIGHTS",
     "DISTANCE_CAP",
     "DISTANCE_WEIGHT",
@@ -140,6 +180,51 @@ ATTRIBUTE_WEIGHTS: dict[str, float] = {
 #: [`_unavoidable`]'s allowance beneath it does it reach **5** — the two are one
 #: correction and neither is worth much without the other.
 MARK_COLUMNS: frozenset[str] = frozenset({"spiral"})
+
+#: How far back a seat counts as **touching** the one being placed. **Two**, and it
+#: is a different question from [`WINDOW`]: the window is a screenful, this is the
+#: eye's own grouping — two tiles side by side read as one picture twice, and the
+#: pair one tile apart is the next thing a reader sees.
+#:
+#: **Two is the smallest reach that empties both colour columns**, and that is the
+#: whole of the argument, because past it the measurements stop separating. Swept 1
+#: to 4 on `20260911T022330Z` at the weight below, the surviving adjacent-mode pairs
+#: run **11, 13, 12, 10** — flat inside the greedy's own noise — while a reach of 1
+#: leaves **2 touching cells and 3 touching hue families** where 2, 3 and 4 leave
+#: none. `cell` and `hue_family` are the two columns this module prices highest, so
+#: the smallest reach that costs them nothing is the reach, and preferring 4 for its
+#: one fewer mode pair would be fitting the constant to two records.
+#:
+#: It is a different question from [`WINDOW`] and not a smaller version of it: the
+#: window is a screenful, this is the eye's own grouping — two tiles side by side
+#: read as one picture twice, and the pair one tile apart is the next thing a reader
+#: sees.
+ADJACENCY_REACH = 2
+
+#: What a touch costs, as a multiple of the column's own [`ATTRIBUTE_WEIGHTS`]
+#: weight — so `cell` leads here for the reason it leads there, and the four columns
+#: keep one ordering between them rather than two that could disagree.
+#:
+#: **0.15, and the magnitude barely matters**, which is the point of the term being
+#: separate rather than a louder allowance. Where it does its work the candidates it
+#: chooses between all cost *zero* on the window term — `tia` being no more present
+#: than it has to be — so any positive weight breaks that tie: 0.15, 0.4 and 1.0
+#: give **13, 15 and 14** adjacent-mode pairs on `20260911T022330Z`, which is one
+#: reading three times. What the magnitude decides is what this term can
+#: **overrule**, and there 0.15 is not arbitrary: at 0.4 the general page's colour
+#: columns stop being empty — 1 touching cell and 1 touching hue family come back —
+#: so the term is set as low as the tie-breaking needs and no lower.
+#:
+#: The bound that keeps it there: the most any one column can charge is the weight
+#: times [`_taper`] over the reach times the largest attribute weight, **0.225**,
+#: which does not reach the *smallest* attribute weight, **0.4**. So no touch can
+#: buy back a full repeat inside the window.
+#:
+#: That inequality is *it must not come out of the colour terms* stated between
+#: constants rather than hoped about, exactly as [`DISTANCE_WEIGHT`]'s is, and
+#: `tests/test_page_order.py` holds it. The empirical half of the same check is that
+#: the gap medians and window counts [`spacing`] reports hold or improve.
+ADJACENCY_WEIGHT = 0.15
 
 #: The distance at which two locations are simply *far* and further buys nothing.
 #:
@@ -387,6 +472,25 @@ def order(rows, vectors: dict | None = None, window: int = WINDOW) -> list[int]:
                     continue
                 key = (column, value)
                 penalty[key] = penalty.get(key, 0.0) + weight
+        # The touching seats, on their own short taper: the seat one back weighs 1
+        # and the seat `ADJACENCY_REACH` back weighs 1/reach. A separate dict rather
+        # than a heavier weight in `penalty`, because this term is **not** allowanced
+        # and that one is — mixing them would hand the abundant value its allowance
+        # here too, which is the whole gap this term closes.
+        touching: dict = {}
+        beside = placed[-ADJACENCY_REACH:]
+        for back, at in enumerate(reversed(beside), start=1):
+            weight = (ADJACENCY_REACH - back + 1) / ADJACENCY_REACH
+            for column in ATTRIBUTE_WEIGHTS:
+                value = _value(rows[at], column)
+                if value is SILENT:
+                    continue
+                key = (column, value)
+                touching[key] = touching.get(key, 0.0) + weight
+        # The allowance again, at the reach's scale rather than the window's, and
+        # scaled to the reach in force for [`_taper`]'s reason — a page opens with
+        # nothing behind it.
+        reach = _taper(len(beside), ADJACENCY_REACH)
         # The allowance in force NOW, which is the share scaled to the window that
         # actually exists at this step rather than to a full one — see [`_taper`].
         taper = _taper(len(held), window)
@@ -405,6 +509,11 @@ def order(rows, vectors: dict | None = None, window: int = WINDOW) -> list[int]:
                     over = seen - taper * shares.get(key, 0.0)
                     if over > 0.0:
                         cost += weight * over
+                near = touching.get(key)
+                if near:
+                    over = near - reach * shares.get(key, 0.0)
+                    if over > 0.0:
+                        cost += ADJACENCY_WEIGHT * weight * over
             if not placed:
                 reward = 0.0
             elif far is None or not has_vector[at]:
@@ -458,6 +567,67 @@ def _gaps(rows, placement: list[int], column: str) -> dict:
     middle = len(found) // 2
     median = float(found[middle]) if len(found) % 2 else (found[middle - 1] + found[middle]) / 2.0
     return {"values": len(seen), "pairs": len(found), "min": found[0], "median": median}
+
+
+def _forced_touches(rows, column: str) -> int:
+    """How many touching pairs one column's counts impose on **every** order there is.
+
+    A value held by `k` of `n` seats can be laid out with no two of it touching for
+    exactly as long as there are enough other seats to separate them: `n - k` others
+    open `n - k + 1` slots, so the floor is `max(0, 2k - n - 1)`, and a column's floor
+    is the sum over its values — at most one value can exceed half a page, so the sum
+    is the dominant value's term and nothing else.
+
+    **It is what tells a residue from a defect**, and the two products answer it
+    oppositely. `tia` holds 263 of the 1,000 seats of `20260911T022330Z` and its floor
+    is **zero**, so every adjacent-mode pair the allowance alone left behind was
+    avoidable and none of them had to be there. A themed record is one colour cell by
+    construction and its dominant cell is most of the page, so the same arithmetic
+    says a large number of touches is arithmetic rather than a fault — and the page
+    that reports both is the only one a reader can tell those apart on.
+    """
+    counts: dict = {}
+    for row in rows:
+        value = _value(row, column)
+        if value is SILENT:
+            continue
+        counts[value] = counts.get(value, 0) + 1
+    total = len(rows)
+    return sum(max(0, 2 * held - total - 1) for held in counts.values())
+
+
+def _adjacent(rows, placement: list[int], column: str) -> dict:
+    """The touching pairs one column realized, beside the floor it could not avoid.
+
+    `pairs` counts the positions whose seat shares this column's value with the seat
+    **immediately** before it, which is the defect [`_gaps`] can only report as a
+    minimum of 1 — a page with one touching pair and a page with fifty read the same
+    there. `forced` is [`_forced_touches`].
+
+    `last_tenth` is how many fall in the closing tenth of the page, and it is the
+    number to read second: a greedy order's leftovers collect at the end, so a total
+    that fell while the concentration rose means the clump was moved rather than
+    removed. `worst` names the value holding the most of them, because a residue
+    sitting in one abundant value is a different reading from one spread thin.
+    """
+    pairs = []
+    for position in range(1, len(placement)):
+        here = _value(rows[placement[position]], column)
+        if here is SILENT:
+            continue
+        if here == _value(rows[placement[position - 1]], column):
+            pairs.append((position, here))
+    held: dict = {}
+    for _position, value in pairs:
+        held[value] = held.get(value, 0) + 1
+    worst = max(held.items(), key=lambda pair: (pair[1], str(pair[0]))) if held else None
+    opens = len(placement) - len(placement) // 10
+    return {
+        "pairs": len(pairs),
+        "forced": _forced_touches(rows, column),
+        "last_tenth": sum(1 for position, _value_at in pairs if position >= opens),
+        "worst": None if worst is None else [worst[0], worst[1]],
+    }
 
 
 def _spirals(rows, placement: list[int], window: int) -> dict:
@@ -548,6 +718,7 @@ def spacing(rows, placement: list[int], vectors: dict | None = None, window: int
         "seats": len(rows),
         "window": window,
         "gaps": {column: _gaps(rows, placement, column) for column in ATTRIBUTE_WEIGHTS},
+        "adjacent": {column: _adjacent(rows, placement, column) for column in ATTRIBUTE_WEIGHTS},
         "spiral": _spirals(rows, placement, window),
         "distance": _distances(rows, placement, vectors or {}, window),
     }
