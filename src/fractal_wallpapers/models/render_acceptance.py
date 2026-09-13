@@ -77,6 +77,27 @@ from fractal_wallpapers.paths import repo_root
 #: The schema every record here carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "what_it_is.ablations": "one kind's share of exactly the pooled split, at exactly the "
+    "candidate's recipe. Paired seed for seed against the candidate, so the only thing "
+    "that moves is whether the other kind's rows were in the batch. NO BAR is attached",
+    "what_it_is.scale_against_order": "REPORTED, never gated. Each cutpoint's "
+    "cross-entropy split into what an in-sample isotonic recalibration removes (the "
+    "scale) and what survives it (the order). The same fit the release floors are placed "
+    "by, so a gap that lives in the scale term is a gap adoption re-derives anyway",
+    "what_they_are": "the candidate with ONE thing moved. REPORTED, never gated: this bar was "
+    "written about the registered candidate, and a bar a different design could "
+    "satisfy is not a bar. Seed counts are stated because they are not bands",
+}
+
+
 #: Draws in every interval here, and its seed. Part of the bar.
 DRAWS, BOOTSTRAP_SEED = 5000, 0
 
@@ -1060,11 +1081,7 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
             kind: [run for run in ABLATIONS[kind] if run not in present[kind]]
             for kind in render_train.KINDS
         },
-        "what_it_is": (
-            "one kind's share of exactly the pooled split, at exactly the candidate's "
-            "recipe. Paired seed for seed against the candidate, so the only thing that "
-            "moves is whether the other kind's rows were in the batch. NO BAR is attached"
-        ),
+        "what_it_is": SCHEMA_NOTES["what_it_is.ablations"],
         "not_read_because": withheld_arms,
         "arms": [
             ablation_arm(arm, contexts[arm["kind"]], candidate_runs, present[arm["kind"]])
@@ -1117,12 +1134,7 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         "refused": dict(REFUSED),
         "gain_on_the_smooth_side": _gain(arms),
         "scale_against_order": {
-            "what_it_is": (
-                "REPORTED, never gated. Each cutpoint's cross-entropy split into what an "
-                "in-sample isotonic recalibration removes (the scale) and what survives it "
-                "(the order). The same fit the release floors are placed by, so a gap that "
-                "lives in the scale term is a gap adoption re-derives anyway"
-            ),
+            "what_it_is": SCHEMA_NOTES["what_it_is.scale_against_order"],
             "read_on": {kind: band_run_of[kind] for kind in render_train.KINDS},
             "cutpoints": {
                 kind: decomposition(
@@ -1139,11 +1151,7 @@ def read(runs: list[str] | None = None, candidate: str = render_train.CURRENT) -
         "loss_parity": LOSS_PARITY,
         "multiplicity": _multiplicity(arms, candidate_runs),
         "variants": {
-            "what_they_are": (
-                "the candidate with ONE thing moved. REPORTED, never gated: this bar was "
-                "written about the registered candidate, and a bar a different design could "
-                "satisfy is not a bar. Seed counts are stated because they are not bands"
-            ),
+            "what_they_are": SCHEMA_NOTES["what_they_are"],
             "read": {
                 name: {
                     "runs": runs,

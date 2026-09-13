@@ -116,6 +116,28 @@ from fractal_wallpapers.paths import tracked_name, under
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "sizes_differ_is": "the rig binds a drop to a cut by unit count, so two cuts of "
+    "one day's work at equal sizes are interchangeable and neither can be checked",
+    "no_coarse_reading_is": "a tile neither this leg nor the sidecar has a render-judge "
+    "reading for. Its card says so in words rather than printing a defaulted zero, and "
+    "the row is on the page all the same — gating on nothing means gating on this too",
+    "phase_is": "held at 0 on BOTH sides throughout. 1,713 of the store's 2,262 "
+    "repeat rows carry a rotation too, so the axis as the pool holds it is "
+    "confounded with the one `curate rotate` measured",
+    "seconds_per_candidate_is": "per ENGINE, and it is a FULL render rather than "
+    "a recolour: the draw takes one pair a location, so every block holds one "
+    "candidate and shares its dump with nothing. See the module docstring",
+}
+
+
 #: The subtree this leg's output lands in, under the regenerable tree. It is a
 #: member of [`candidate_ledger.POOL_SUBTREES`], which is what makes its pictures
 #: reachable by `curate candidate-ledger orphans`: a leg whose subtree that sweep
@@ -853,9 +875,7 @@ def run(
             "cyclic_rungs": list(CYCLIC_RUNGS),
             "folded_rungs": list(FOLDED_RUNGS),
             "phase": 0.0,
-            "phase_is": "held at 0 on BOTH sides throughout. 1,713 of the store's 2,262 "
-            "repeat rows carry a rotation too, so the axis as the pool holds it is "
-            "confounded with the one `curate rotate` measured",
+            "phase_is": SCHEMA_NOTES["phase_is"],
             "gated_on": "nothing. Both columns are recorded on every tile and neither "
             "selects one — the repeats the current heads tolerate are the wrong sample",
             "budget_seconds": float(budget),
@@ -885,9 +905,7 @@ def run(
             "engine_seconds": round(spent, 2),
             "concurrency": round(spent / max(1e-9, wall), 3),
             "seconds_per_candidate": round(spent / max(1, counts["made"]), 4),
-            "seconds_per_candidate_is": "per ENGINE, and it is a FULL render rather than "
-            "a recolour: the draw takes one pair a location, so every block holds one "
-            "candidate and shares its dump with nothing. See the module docstring",
+            "seconds_per_candidate_is": SCHEMA_NOTES["seconds_per_candidate_is"],
         },
         "price": price.table(),
         "profile": clock.table(),
@@ -1136,8 +1154,7 @@ def sheet_plan(name: str, device: str = "auto", log=print) -> dict:
         "tiles": sum(len(units) for units in by_head.values()),
         "by_head": {head: len(units) for head, units in sorted(by_head.items())},
         "sizes_differ": len({len(units) for units in by_head.values()}) == len(by_head),
-        "sizes_differ_is": "the rig binds a drop to a cut by unit count, so two cuts of "
-        "one day's work at equal sizes are interchangeable and neither can be checked",
+        "sizes_differ_is": SCHEMA_NOTES["sizes_differ_is"],
         "pairs": len(held["pairs"]),
         "dropped_for_having_no_ledger_row": dropped,
         "arms": {
@@ -1147,9 +1164,7 @@ def sheet_plan(name: str, device: str = "auto", log=print) -> dict:
         "rungs": _tally(f"{entry['cycles']:g}" for entry in held["pairs"]),
         "tiles_the_fine_head_has_not_read": missing_fine,
         "no_coarse_reading": no_coarse,
-        "no_coarse_reading_is": "a tile neither this leg nor the sidecar has a render-judge "
-        "reading for. Its card says so in words rather than printing a defaulted zero, and "
-        "the row is on the page all the same — gating on nothing means gating on this too",
+        "no_coarse_reading_is": SCHEMA_NOTES["no_coarse_reading_is"],
         "plans": {
             head: tracked_name(repetition_dir(name) / f"plan.{head}.jsonl") for head in by_head
         },

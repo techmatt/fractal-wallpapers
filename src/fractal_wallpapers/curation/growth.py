@@ -116,6 +116,26 @@ from fractal_wallpapers.paths import repo_root, tracked_name, under
 #: The schema every row and every manifest this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "stamp_is": "sha256 over the sorted candidate keys. Two runs carrying the same "
+    "stamp were taken over the same pool and their rows compare directly",
+    "seeds_are": "one draw seed per rung below the full pool. The full pool is not "
+    "drawn and carries seed null",
+    # The keep is READ at the site and not written out as a word here: this string
+    # lands in a record, and a record that states a policy constant it did not ask
+    # for is a second spelling that goes stale the day the policy moves.
+    "attempts_are": "surviving ledger rows in the drawn visits. Retention keeps {keep} "
+    "rows per (location, mode), so this is a FLOOR on what was attempted",
+}
+
+
 #: The subtree a sweep's stamped folders land in.
 UNIT = "growth"
 
@@ -333,11 +353,7 @@ def row_of(
         # The keep is READ and not written out as a word: this string lands in a
         # record, and a record that states a policy constant it did not ask for
         # is a second spelling that goes stale the day the policy moves.
-        "attempts_are": (
-            f"surviving ledger rows in the drawn visits. Retention keeps "
-            f"{retention.keep_per_pair()} rows per (location, mode), so this is a FLOOR on "
-            f"what was attempted"
-        ),
+        "attempts_are": SCHEMA_NOTES["attempts_are"].format(keep=retention.keep_per_pair()),
         "mining_seconds": spent["mining_seconds"],
         "mining_seconds_rows": int(spent["mining_seconds_rows"]),
         "eligible": int(record["population"]["clearing"]),
@@ -604,8 +620,7 @@ def sweep(
         "fraction of the VISITS that made this pool and solving over what they produced",
         "pool": {
             "stamp": pool_stamp(candidates),
-            "stamp_is": "sha256 over the sorted candidate keys. Two runs carrying the same "
-            "stamp were taken over the same pool and their rows compare directly",
+            "stamp_is": SCHEMA_NOTES["stamp_is"],
             "candidates": len(candidates),
             "locations": len({held.location for held in candidates}),
             "refused": refused,
@@ -621,8 +636,7 @@ def sweep(
             "denominators": [int(each) for each in denominators],
             "sizes": [int(each) for each in sizes],
             "seeds": [int(each) for each in seeds],
-            "seeds_are": "one draw seed per rung below the full pool. The full pool is not "
-            "drawn and carries seed null",
+            "seeds_are": SCHEMA_NOTES["seeds_are"],
             "cells": len(plan),
             "rows": len(out),
         },

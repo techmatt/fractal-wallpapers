@@ -16,6 +16,25 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
     LedgerError,
 )
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "fine_bar_is": "solve.DEFAULT_FINE_BAR, read off gallery_grade_train's own pool "
+    "column. That column is written above the render bar and nowhere else, so a row "
+    "the fine head has never read counts here exactly as a row it read under the bar",
+    "render_bar_is": "curation.headroom.bars over the ACCEPTED pool: P(>=4) at "
+    "solve.Q4_BAR for a mode with enough distinct places above it, P(>=3) at the "
+    "release advisory for one without. The rule is per mode and is on every row here",
+    "human_labeled_is": "a verdict a PERSON cast in smooth_render or strange_render, "
+    "joined on the render key. `human_labeled_incl_gallery_grade` is the wider set "
+    "retention protects, which counts the conditional store as well",
+}
+
 
 def census(rows=None, n: int = FIRST_SOLVE, log=print) -> dict:
     """What the ledger holds, over the axes a constraint acts on. Decides nothing.
@@ -162,17 +181,11 @@ def modes(candidates=None, log=print) -> dict:
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "ledger_rows": read,
         "fine_bar": bar,
-        "fine_bar_is": "solve.DEFAULT_FINE_BAR, read off gallery_grade_train's own pool "
-        "column. That column is written above the render bar and nowhere else, so a row "
-        "the fine head has never read counts here exactly as a row it read under the bar",
+        "fine_bar_is": SCHEMA_NOTES["fine_bar_is"],
         "fine_readings": len(fine),
         "fine_run": grade.pool_scores_run() if fine else None,
-        "render_bar_is": "curation.headroom.bars over the ACCEPTED pool: P(>=4) at "
-        "solve.Q4_BAR for a mode with enough distinct places above it, P(>=3) at the "
-        "release advisory for one without. The rule is per mode and is on every row here",
-        "human_labeled_is": "a verdict a PERSON cast in smooth_render or strange_render, "
-        "joined on the render key. `human_labeled_incl_gallery_grade` is the wider set "
-        "retention protects, which counts the conditional store as well",
+        "render_bar_is": SCHEMA_NOTES["render_bar_is"],
+        "human_labeled_is": SCHEMA_NOTES["human_labeled_is"],
         "modes": dict(sorted(held.items(), key=lambda item: (-item[1]["rows"], item[0]))),
         "totals": totals,
     }

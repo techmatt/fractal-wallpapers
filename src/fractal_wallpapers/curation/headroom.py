@@ -128,6 +128,21 @@ from fractal_wallpapers.curation import (
 #: carries `cap` and `cap_rule`.
 SCHEMA = 4
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "relaxed_is": "every accepted mode on the fallback column, which is what a THEMED "
+    "leg's pool is: the P(>=3) crossing rather than the per-mode rule",
+    "unread_are": "unseatable at any fine bar until `gallery-grade score-pool` runs "
+    "again — pool_scores.jsonl is one-shot and no ordering is enforced",
+}
+
+
 #: The subtree a census lands in, under the regenerable tree.
 UNIT = "headroom"
 
@@ -344,8 +359,7 @@ def bars(candidates, relaxed: bool = False, fine: dict | None = None) -> dict:
         }
     return {
         "relaxed": bool(relaxed),
-        "relaxed_is": "every accepted mode on the fallback column, which is what a THEMED "
-        "leg's pool is: the P(>=3) crossing rather than the per-mode rule",
+        "relaxed_is": SCHEMA_NOTES["relaxed_is"],
         "default": {"column": DEFAULT_COLUMN, "at": DEFAULT_BAR, "from": "solve.Q4_BAR"},
         "fallback": {
             "column": FALLBACK_COLUMN,
@@ -373,8 +387,7 @@ def bars(candidates, relaxed: bool = False, fine: dict | None = None) -> dict:
                 None if not fine else sum(block["with_p_fine"] for block in out.values())
             ),
             "q4_unread": None if not fine else sum(block["q4_unread"] for block in out.values()),
-            "unread_are": "unseatable at any fine bar until `gallery-grade score-pool` runs "
-            "again — pool_scores.jsonl is one-shot and no ordering is enforced",
+            "unread_are": SCHEMA_NOTES["unread_are"],
         },
         "still_thin": [name for name in modes if out[name]["thin"]],
         "off_roster": dict(sorted(off_roster.items())),

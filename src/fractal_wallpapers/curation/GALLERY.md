@@ -1252,6 +1252,17 @@ reader is never left deciding which the seats came out of. `null` on every unthe
 pass. A record that cannot say which gate it ran under is the defect this was found
 by. The key was `themed_bar` until 2026-09-12.
 
+⚠ **Landing on the floor is two different facts, and `bar_from` is which.** A pass
+reaches `THEMED_BAR_FLOOR` either because the cell cannot field `4n` scored rows at
+all — `reachable` is `null`, a cell with no stock to read a bar off — or because it
+can and its `4n`-th best is itself under the floor, a cell with stock the head
+scores near zero. `effective_bar`, `relaxed` and `floor` are the **same number** in
+both, so until 2026-09-12 the two read identically and a reader had to recompute
+the branch out of `reachable` and `shipped_bar`. `config.theme_bar.bar_from` states
+it: `shipped`, `reachable`, `floor_unreachable`, `floor_below` — `solve.BAR_FROM`
+is the roster. Over the 48 cells the two floor branches are **7 the first way and
+22 the second**. A record that does not name the field was taken before 2026-09-12.
+
 ⚠ **Three keys, three questions, and two of them were both called `theme`.** A
 themed pass writes the cell name at `config.theme` (a **string**), the pool that
 name selected at `theme_pool` (a **dict**: `cell`, `membership`, `in_the_cell`,

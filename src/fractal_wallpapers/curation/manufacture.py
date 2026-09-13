@@ -103,6 +103,19 @@ from fractal_wallpapers.palettes import codebook
 #: The artifact's schema, carried from the first row.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "fields_redumped_are": "the batch's field cache is regenerable, so a swept `fields/` "
+    "tree costs one dump a group here and never the step",
+}
+
+
 #: How many rows each kind's sheet holds.
 ROWS_PER_KIND = 250
 
@@ -1615,8 +1628,7 @@ def probe_knobs(sample: int = 120, batch: str = BATCH, seed: int = SEED, log=pri
         ),
         "sampled": len(drawn),
         "fields_redumped": dumped,
-        "fields_redumped_are": "the batch's field cache is regenerable, so a swept `fields/` "
-        "tree costs one dump a group here and never the step",
+        "fields_redumped_are": SCHEMA_NOTES["fields_redumped_are"],
         "rescued": rescued,
         "rescue_rate": round(rescued / len(drawn), 4),
         "median_gain": round(

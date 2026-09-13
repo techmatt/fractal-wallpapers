@@ -154,6 +154,32 @@ from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMP
 #: The schema every row and record this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "refused_by_a_seat_the_pass_later_moved_is": "the record's refusal map is the rule "
+    "that refused a row THE LAST TIME IT WAS OFFERED, and the search is anytime — so a "
+    "swap or an augmenting chain can eject the seat that refused it afterwards, and the "
+    "final state refuses it by nothing. Both are right; they are answers about two "
+    "moments. These cards have no competitor to name and say so",
+    "one_removal_is_never_enough_is": "the candidate fails a second rule as well, so "
+    "`removals` — the intersection across every failing rule — is empty. It still lost "
+    "to the row named on the card; no single departure would have admitted it",
+    "leg_is": "which leg of the pass placed this seat, off the record's own "
+    "`seated_for`. `general_pool` is the ranked walk and is the ONLY leg the seating "
+    "key ordered; `swap` and `augment` accept on the lexicographic objective and a "
+    "mandate walks one demand's subpool scarcest-first, so a seat from any of those "
+    "three says nothing about how the two rows would have compared",
+    "forward_is": "further along RUNGS before something stopped it — `seated` is as "
+    "far as forward goes, and every other forward move still holds no seat",
+}
+
+
 #: Where a store lands unless a caller names one. Under the ignored scratch tree
 #: for [`label_migration.DEFAULT_STORE`]'s reason: what this leg makes is a
 #: reading, and nothing in the pipeline may find a reading by accident.
@@ -863,19 +889,15 @@ def competitors(stamp: str, store=None, log=print) -> dict:
         ),
         "distinct_competitors": len(distinct),
         "refused_by_a_seat_the_pass_later_moved": len(vacated),
-        "refused_by_a_seat_the_pass_later_moved_is": "the record's refusal map is the rule "
-        "that refused a row THE LAST TIME IT WAS OFFERED, and the search is anytime — so a "
-        "swap or an augmenting chain can eject the seat that refused it afterwards, and the "
-        "final state refuses it by nothing. Both are right; they are answers about two "
-        "moments. These cards have no competitor to name and say so",
+        "refused_by_a_seat_the_pass_later_moved_is": SCHEMA_NOTES[
+            "refused_by_a_seat_the_pass_later_moved_is"
+        ],
         "moved": vacated,
         "already_rendered": len(distinct & _on_disk(store)),
         "one_removal_would_be_enough": sum(
             1 for row in paired if (row["competitor"] or {}).get("enough")
         ),
-        "one_removal_is_never_enough_is": "the candidate fails a second rule as well, so "
-        "`removals` — the intersection across every failing rule — is empty. It still lost "
-        "to the row named on the card; no single departure would have admitted it",
+        "one_removal_is_never_enough_is": SCHEMA_NOTES["one_removal_is_never_enough_is"],
         "path": str(_write_jsonl(_path(store, POPULATION_NAME), rows)),
         "seconds": round(time.time() - began, 1),
     }
@@ -1097,11 +1119,7 @@ def _competitor(key, held: dict, order, why: str, placed: dict, alternatives: in
         "location": str(candidate.location),
         "seated_for": why_seated,
         "leg": None if why_seated is None else solve.leg_of(why_seated),
-        "leg_is": "which leg of the pass placed this seat, off the record's own "
-        "`seated_for`. `general_pool` is the ranked walk and is the ONLY leg the seating "
-        "key ordered; `swap` and `augment` accept on the lexicographic objective and a "
-        "mandate walks one demand's subpool scarcest-first, so a seat from any of those "
-        "three says nothing about how the two rows would have compared",
+        "leg_is": SCHEMA_NOTES["leg_is"],
     }
 
 
@@ -1680,8 +1698,7 @@ def movement(rows, against) -> dict | None:
         "changed": forward + back,
         "forward": forward,
         "back": back,
-        "forward_is": "further along RUNGS before something stopped it — `seated` is as "
-        "far as forward goes, and every other forward move still holds no seat",
+        "forward_is": SCHEMA_NOTES["forward_is"],
         "transitions": dict(sorted(moved.items(), key=lambda pair: -pair[1])),
     }
 

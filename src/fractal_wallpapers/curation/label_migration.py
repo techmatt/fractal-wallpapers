@@ -84,6 +84,31 @@ from fractal_wallpapers.paths import repo_root
 #: The schema every row and record this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "expressible_is.derive": "the row's curve is colorize.CURVE and its palette is the "
+    "plain recipe, so a candidate leg could have made this picture at all. The overlap "
+    "is bounded above by it",
+    "levelling_is": "curation.depth.levelling_of over each render's own stamp",
+    "seconds_per_picture_is": "per ENGINE over the pictures this run made; wall a picture "
+    "is this over the concurrency",
+    "regime_is": "every score in this readout was read at candidate geometry, which is "
+    "the regime the ledger's sidecar and both heads already stand at. Nothing was "
+    "scored at label geometry and rerender.rescore was not touched",
+    "expressible_is.expressibility": "the row's curve is colorize.CURVE and its palette is "
+    "finished.recipe(mirror=colormap not in cyclic) — what every candidate leg "
+    "spends. A recipe outside it is one no mine could ever draw",
+    "not_submitted_is": "a key the pool already holds is left alone: records.upsert_file "
+    "REPLACES a stored row, so submitting one would rewrite a row this leg does not own",
+}
+
+
 #: Where a staging store lands unless a caller names one, under the checkout's
 #: ignored scratch tree. **Not `artifacts/`**: a staged row is not runtime output
 #: of the pipeline, it is a reading nothing in the pipeline may find by accident,
@@ -514,11 +539,7 @@ def derive(store=None, log=print) -> dict:
         "already_in_the_candidate_ledger": overlap,
         "already_in_the_candidate_ledger_share": round(overlap / max(1, len(rows)), 4),
         "expressible_by_the_candidate_path": plain,
-        "expressible_is": (
-            "the row's curve is colorize.CURVE and its palette is the plain recipe, so a "
-            "candidate leg could have made this picture at all. The overlap is bounded "
-            "above by it"
-        ),
+        "expressible_is": SCHEMA_NOTES["expressible_is.derive"],
         "label_regimes": dict(sorted(label_regimes.items(), key=lambda item: -item[1])),
         "candidate_regime": recipes_module.CANDIDATE_REGIME.spelled,
         "autolevel_on_the_derived_key": (
@@ -808,13 +829,12 @@ def render(
         "operator_applies": sum(1 for row in rows if row.get("operator_applies")),
         "levelled_colormaps_written": sum(1 for row in rows if row.get("leveled_colormap")),
         "levelling": dict(sorted(levelling.items())),
-        "levelling_is": "curation.depth.levelling_of over each render's own stamp",
+        "levelling_is": SCHEMA_NOTES["levelling_is"],
         "workers": int(workers),
         "wall_seconds": round(time.time() - began, 1),
         "engine_seconds": round(engine_seconds, 1),
         "seconds_per_picture": round(engine_seconds / fresh, 4),
-        "seconds_per_picture_is": "per ENGINE over the pictures this run made; wall a picture "
-        "is this over the concurrency",
+        "seconds_per_picture_is": SCHEMA_NOTES["seconds_per_picture_is"],
         "wrote": str(path),
     }
     log(f"[render] {made:,} made, {failed:,} failed in {record['wall_seconds'] / 60:.1f} min")
@@ -1067,9 +1087,7 @@ def readout(store=None, stamp: str | None = None, classes=KEPT_CLASSES, log=prin
         "taken_at": _now(),
         "store": str(store_root(store)),
         "regime": recipes_module.CANDIDATE_REGIME.spelled,
-        "regime_is": "every score in this readout was read at candidate geometry, which is "
-        "the regime the ledger's sidecar and both heads already stand at. Nothing was "
-        "scored at label geometry and rerender.rescore was not touched",
+        "regime_is": SCHEMA_NOTES["regime_is"],
         "population": {
             "classes": [int(name) for name in classes],
             "derived_recipes": len(every),
@@ -1245,11 +1263,7 @@ def expressibility(derived: dict, cyclic=None, log=print) -> dict:
     return {
         "expressible": len(derived) - outside,
         "not_expressible": outside,
-        "expressible_is": (
-            "the row's curve is colorize.CURVE and its palette is "
-            "finished.recipe(mirror=colormap not in cyclic) — what every candidate leg "
-            "spends. A recipe outside it is one no mine could ever draw"
-        ),
+        "expressible_is": SCHEMA_NOTES["expressible_is.expressibility"],
         "by_label_class": dict(sorted(by_class.items())),
         "by_store": dict(sorted(by_store.items())),
         "label_4_the_candidate_path_cannot_produce": {
@@ -1921,10 +1935,7 @@ def merge(store=None, log=print) -> dict:
         "offered": len(offered),
         "already_in_the_pool": len(standing),
         "submitted": len(rows),
-        "not_submitted_is": (
-            "a key the pool already holds is left alone: records.upsert_file REPLACES a "
-            "stored row, so submitting one would rewrite a row this leg does not own"
-        ),
+        "not_submitted_is": SCHEMA_NOTES["not_submitted_is"],
         "pictures_moved": moved,
         "pictures_absent": absent,
         "colour_refused": no_colour,

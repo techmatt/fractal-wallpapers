@@ -64,6 +64,18 @@ from fractal_wallpapers.paths import tracked_name, under
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "roster_default_is": "mine._mined_modes(), which is mode_policy.mined()",
+}
+
+
 #: The subtree a mine's own output lands in, under the regenerable tree.
 UNIT = "mine"
 
@@ -858,7 +870,7 @@ def build_plan(
             "roster": roster,
             "roster_asked": None,
             "roster_defaulted": True,
-            "roster_default_is": "mine._mined_modes(), which is mode_policy.mined()",
+            "roster_default_is": SCHEMA_NOTES["roster_default_is"],
         },
         "wanted": want,
         "ranked_by_partition": dict(sorted(counts.items())),

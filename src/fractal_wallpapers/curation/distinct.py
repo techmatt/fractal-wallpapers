@@ -76,6 +76,33 @@ from fractal_wallpapers.paths import tracked_name
 #: The schema every record this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "directions_are": "the slice count every distance in this sweep was measured at. "
+    "A sweep replayed through `curate headroom --twin-from` at another count is a "
+    "count of twins in a different metric, which nothing about its shape would give "
+    "away — see headroom.twin_constraint, which refuses on it",
+    "fold_is": "pool: an absorbed place's rows stay and carry the surviving place's "
+    "key as their cluster, and the seat constraint reads one seat per cluster. "
+    "delete: the absorbed place and every row it carries leave the pass, which is "
+    "what shipped until 2026-09-09. **A record carrying no `fold` deleted**",
+    "key_is": "which key this fold picked its survivors on. {fine} is the fine-tier "
+    "head's reading, {coarse} the raw judge column, 'both' a walk where some places "
+    "had a reading and some did not. **A record carrying no `key` folded on {coarse}**, "
+    "the way a record carrying no `augment` ran without one",
+    "clusters_are": "a star forest of depth one and never a transitive closure. suppress "
+    "compares each place only against places already KEPT, so an absorbed place always "
+    "points at a kept one; a place inside the radius of an absorbed place but outside "
+    "its survivor's stands as its own cluster",
+}
+
+
 #: The subtree this module's records and sheets land in.
 UNIT = "distinct"
 
@@ -570,16 +597,10 @@ def preselect(
         "radius": radius,
         "metric": METRIC,
         "fold": fold,
-        "fold_is": "pool: an absorbed place's rows stay and carry the surviving place's "
-        "key as their cluster, and the seat constraint reads one seat per cluster. "
-        "delete: the absorbed place and every row it carries leave the pass, which is "
-        "what shipped until 2026-09-09. **A record carrying no `fold` deleted**",
+        "fold_is": SCHEMA_NOTES["fold_is"],
         "store": tracked_name(embeddings.store_path()),
         "key": FINE_KEY if fell_back == 0 else (COARSE_KEY if not on_fine else "both"),
-        "key_is": f"which key this fold picked its survivors on. {FINE_KEY} is the fine-tier "
-        f"head's reading, {COARSE_KEY} the raw judge column, 'both' a walk where some places "
-        f"had a reading and some did not. **A record carrying no `key` folded on {COARSE_KEY}**, "
-        "the way a record carrying no `augment` ran without one",
+        "key_is": SCHEMA_NOTES["key_is"].format(fine=FINE_KEY, coarse=COARSE_KEY),
         "order": "each place's strongest clearing candidate, on the fine-tier head's "
         "p_fine(>=4) where it has read that row and raw P(>=4) where it has not, descending, "
         "ties by key. The two scales are stacked and never mixed: a place with a fine reading "
@@ -592,10 +613,7 @@ def preselect(
         "— absorbed under `pool`, refused outright under `delete`. Geometric distinctness "
         "only: this asks whether two places are the same place, and it is NOT the diversity "
         "rule — the twin test at ceiling.TAU is",
-        "clusters_are": "a star forest of depth one and never a transitive closure. suppress "
-        "compares each place only against places already KEPT, so an absorbed place always "
-        "points at a kept one; a place inside the radius of an absorbed place but outside "
-        "its survivor's stands as its own cluster",
+        "clusters_are": SCHEMA_NOTES["clusters_are"],
         "places_asked": len(order),
         "places_kept": len(kept),
         "places_folded": len(folds),
@@ -898,10 +916,7 @@ def twins(
     return {
         "tau": tau,
         "directions": pixel_clouds.DIRECTIONS,
-        "directions_are": "the slice count every distance in this sweep was measured at. "
-        "A sweep replayed through `curate headroom --twin-from` at another count is a "
-        "count of twins in a different metric, which nothing about its shape would give "
-        "away — see headroom.twin_constraint, which refuses on it",
+        "directions_are": SCHEMA_NOTES["directions_are"],
         "places": len(usable),
         "pairs_screened": screened,
         "survived_the_bound": len(survivors),

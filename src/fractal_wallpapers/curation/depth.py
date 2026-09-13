@@ -73,6 +73,44 @@ from fractal_wallpapers.paths import tracked_name, under
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    # CORRECTED 2026-09-12, and the only note in this tree that has been. It said
+    # `168 of general_leg_0909's band 2, all julia:mandelbrot`; measured, they span
+    # ten partitions and only 14 are julia:mandelbrot. A record written between
+    # 727733d and this commit carries the wrong sentence — see
+    # `fractal_wallpapers/README.md`'s *Notes corrected after they shipped*.
+    "not_admitted_is": "in the ledger and NOT in the admitted embedded population, which is what "
+    "`depth.near_places` stands on. A manifest cut over the ledger alone names "
+    "these and the draw then drops them in silence — the same 168 places cost all "
+    "three of general_leg_0909's band arms, over ten partitions, and 166 of them "
+    "have no supply-sidecar row at all rather than no vector",
+    "roster_default_is": "depth.field_modes(), the shareable modes — NOT "
+    "mode_policy.mined(), which is what a mining leg draws",
+    "maps_narrowed_is": "a DRAW FILTER and nothing else — see `read_maps`. The pool is "
+    "`colorize.pool` at this seed; a narrowed run re-marks no map and writes nothing "
+    "back to the tracked colour records",
+    "cells_narrowed_is": "the same DRAW FILTER, cut by rule instead of by hand: the maps "
+    "`palettes.color_mass.delivering` expects to put >= the cutoff of the picture's "
+    "colour in ANY listed cell, mode-conditional mass where there is one and the carrier "
+    "prior where there is not. It composes with the manifest and re-marks nothing",
+    "wall_seconds_is": "the whole call, setup included. `render_wall` is what the "
+    "budget governs and it starts at the first block",
+    "concurrency_is": "engine seconds over wall, which OVER-READS the benefit: an "
+    "engine sharing the machine is slower per candidate, so some of this ratio is "
+    "inflation rather than work. Candidates a wall second against a serial leg is "
+    "the number that means something",
+    "seconds_per_candidate_is": "per ENGINE, which is what --rate is and what a "
+    "pilot measures. Wall a candidate is this over `concurrency`",
+}
+
+
 #: The subtree a depth run's own output lands in, under the regenerable tree.
 UNIT = "depth"
 
@@ -671,14 +709,32 @@ def near_admits(key: str, held: dict, places: dict) -> str:
       this draw has no population row for.
 
     ⚠ **The second one used to be silent and it is not small.** A manifest is cut
-    over the ledger and the ledger runs ahead of the embedding store: measured
+    over the ledger and the ledger runs ahead of the admitted population: measured
     2026-09-12 over the live store, **1,636 of 34,010 opened locations (4.9%)
     have never been embedded** — and they are not spread evenly. Of the 255
-    places `general_leg_0909`'s band 2 was handed, **168 (66%) were never-embedded
-    `julia:mandelbrot` locations**, so that arm was planned over 87 places out of
-    a manifest naming 255 and stopped on an empty plan with clock left. The arm
-    reported `255 of 255 named place(s) hold a candidate in a mode this run can
-    afford`, which was true and was not the question.
+    places `general_leg_0909`'s band 2 was handed, **168 (66%)** were places this
+    draw will not stand on, so that arm was planned over 87 out of a manifest
+    naming 255 and stopped on an empty plan with clock left. The arm reported
+    `255 of 255 named place(s) hold a candidate in a mode this run can afford`,
+    which was true and was not the question.
+
+    **The same 168 cost all three of that night's arms**, to the place: 328 − 168,
+    255 − 168 and 236 − 168 are exactly the 160, 87 and 68 they planned. An
+    unadmitted place is never drawn on, so its room never falls and the next cut
+    names it again. They span **ten** partitions — `multibrot3` 60, `mandelbrot`
+    27, `julia:multibrot3` 20, `julia:mandelbrot` 14 — and an earlier reading that
+    called them all `julia:mandelbrot` was wrong.
+
+    ★ **What is behind them is the SUPPLY SIDECAR and not the embedding store**,
+    and the distinction decides which command closes the gap. Measured the same
+    day: the store holds 41,415 rows against 40,454 admitted and `curate embed`
+    has **nothing outstanding**. Of the 1,636, **1,607 have no sidecar row at
+    all**, 29 are scored under the junk floor, and **none** is over the floor
+    and unembedded. [`embeddings.admitted`] reads the sidecar through the junk
+    floor, so an unscored location is invisible to `curate embed` by
+    construction — `curate score` is the leg that owes work here, and it runs
+    first. `LEGS.md`'s *Cut the manifest with `curate depth near-places`* carries
+    the reading.
 
     **Widening the draw to take them is a different change and is not this one.**
     A location with no scan row already draws at the frame it carries, through
@@ -796,12 +852,7 @@ def near_manifest(
         "places_with_a_roster_candidate": len(best_field),
         "out_of_band": refused["out_of_band"],
         "not_admitted": refused["not_admitted"],
-        "not_admitted_is": (
-            "in the ledger and NOT in the admitted embedded population, which is what "
-            "`depth.near_places` stands on. A manifest cut over the ledger alone names "
-            "these and the draw then drops them in silence — 168 of general_leg_0909's "
-            "band 2, all julia:mandelbrot, none of them ever embedded"
-        ),
+        "not_admitted_is": SCHEMA_NOTES["not_admitted_is"],
         "in_band_and_admitted": sum(len(pool) for pool in pools.values()),
         "at_the_keep": full,
         "places": len(rows),
@@ -1557,8 +1608,7 @@ def resolve_split(shares: dict | None, roster: list | None, *, log=print) -> tup
         "roster": resolved_roster,
         "roster_asked": asked_roster,
         "roster_defaulted": asked_roster is None,
-        "roster_default_is": "depth.field_modes(), the shareable modes — NOT "
-        "mode_policy.mined(), which is what a mining leg draws",
+        "roster_default_is": SCHEMA_NOTES["roster_default_is"],
         "mined_roster": list(mined),
     }
     return resolved, resolved_roster, stated
@@ -2017,9 +2067,7 @@ def build_plan(
         "maps_after_the_manifest": after_manifest,
         "maps_drawn_from": len(maps),
         "maps_narrowed": draw_maps is not None,
-        "maps_narrowed_is": "a DRAW FILTER and nothing else — see `read_maps`. The pool is "
-        "`colorize.pool` at this seed; a narrowed run re-marks no map and writes nothing "
-        "back to the tracked colour records",
+        "maps_narrowed_is": SCHEMA_NOTES["maps_narrowed_is"],
         # The cell cut is reported apart from the manifest cut because the two are
         # different facts about the same pool: one is a list somebody wrote down,
         # the other is a rule with a threshold, and a reader pricing a narrowed leg
@@ -2031,10 +2079,7 @@ def build_plan(
             else (dominance.CELL_LEAD if draw_cutoff is None else float(draw_cutoff))
         ),
         "cells_narrowed": bool(wanted_cells),
-        "cells_narrowed_is": "the same DRAW FILTER, cut by rule instead of by hand: the maps "
-        "`palettes.color_mass.delivering` expects to put >= the cutoff of the picture's "
-        "colour in ANY listed cell, mode-conditional mass where there is one and the carrier "
-        "prior where there is not. It composes with the manifest and re-marks nothing",
+        "cells_narrowed_is": SCHEMA_NOTES["cells_narrowed_is"],
         # Every draw here is seeded and the seeds are not one seed: a place draw
         # and a palette draw at the same arm are taken under different ones, and
         # a run nobody can re-take is a measurement nobody can check.
@@ -2744,20 +2789,15 @@ def run(
             "render_wall": round(wall, 2),
             "share": round(wall / float(budget), 4) if budget else None,
             "wall_seconds": round(time.monotonic() - started, 2),
-            "wall_seconds_is": "the whole call, setup included. `render_wall` is what the "
-            "budget governs and it starts at the first block",
+            "wall_seconds_is": SCHEMA_NOTES["wall_seconds_is"],
             "engine_seconds": round(spent, 2),
             "workers": counts["workers"],
             "location_blocks": counts["location_blocks"],
             "concurrency": round(spent / max(1e-9, wall), 3),
-            "concurrency_is": "engine seconds over wall, which OVER-READS the benefit: an "
-            "engine sharing the machine is slower per candidate, so some of this ratio is "
-            "inflation rather than work. Candidates a wall second against a serial leg is "
-            "the number that means something",
+            "concurrency_is": SCHEMA_NOTES["concurrency_is"],
             "engine_threads": release.engine_threads_for(counts["workers"]),
             "seconds_per_candidate": round(spent / max(1, counts["made"]), 4),
-            "seconds_per_candidate_is": "per ENGINE, which is what --rate is and what a "
-            "pilot measures. Wall a candidate is this over `concurrency`",
+            "seconds_per_candidate_is": SCHEMA_NOTES["seconds_per_candidate_is"],
         },
         "price": price.table(),
         # **What the leg SPENT, beside what it declared.** `plan.seconds_share_declared`

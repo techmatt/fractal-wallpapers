@@ -55,6 +55,20 @@ a mode's standing needs saying anywhere else, it is said by reading this one.
 
 from __future__ import annotations
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "unmined_is": "accepted in every respect but the draw: seated, censused, barred "
+    "and floored like any other mode, and drawn by no mining leg unasked. A standing "
+    "about what a mine spends and not a weight; see UNMINED.",
+}
+
+
 #: Out of every draw and out of the gallery. Its existing material stands.
 NICHE = 0
 
@@ -594,9 +608,7 @@ def record() -> dict:
         "rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` "
         "floors a promoted mode at twice a normal one and is the default floor of both "
         "the greedy and the solver since 2026-08-31.",
-        "unmined_is": "accepted in every respect but the draw: seated, censused, barred "
-        "and floored like any other mode, and drawn by no mining leg unasked. A standing "
-        "about what a mine spends and not a weight; see UNMINED.",
+        "unmined_is": SCHEMA_NOTES["unmined_is"],
     }
 
 

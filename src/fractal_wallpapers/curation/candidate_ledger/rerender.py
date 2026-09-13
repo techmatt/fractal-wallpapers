@@ -19,6 +19,20 @@ from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import SCHEMA
 from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 
+#: The prose this module's records carry on their `*_is` / `*_are` fields, in
+#: one place. The builder reads it at write time and the row still carries the
+#: sentence WHOLE — nothing here is a pointer, and a record read years later off
+#: the archive tier needs no checkout to resolve. Not versioned either. The
+#: argument for both, and the reason not to re-propose the pointer, is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "unchanged_is": "the picture reads as the census already on the row, which a repair "
+    "that moved no pixels for this recipe is: the settings make no difference to it",
+    "seconds_per_picture_is": "per ENGINE. Wall a picture is this over the concurrency",
+}
+
+
 # --------------------------------------------------------------------------- #
 # Putting back a picture the row still names.
 # --------------------------------------------------------------------------- #
@@ -206,8 +220,7 @@ def recolour(keys, limit: int | None = None, log=print) -> dict:
         "read": len(wanted) - no_picture,
         "changed": changed,
         "unchanged": len(wanted) - no_picture - changed,
-        "unchanged_is": "the picture reads as the census already on the row, which a repair "
-        "that moved no pixels for this recipe is: the settings make no difference to it",
+        "unchanged_is": SCHEMA_NOTES["unchanged_is"],
         "ledger_rows": total,
         "ledger_new": new,
         "wall_seconds": round(time.time() - started, 1),
@@ -548,7 +561,7 @@ def re_render(
         "wall_seconds": round(wall, 1),
         "engine_seconds": round(engine_seconds, 1),
         "seconds_per_picture": round(engine_seconds / max(1, made), 4),
-        "seconds_per_picture_is": "per ENGINE. Wall a picture is this over the concurrency",
+        "seconds_per_picture_is": SCHEMA_NOTES["seconds_per_picture_is"],
         "concurrency": round(engine_seconds / max(1e-9, wall), 2),
     }
     path = re_render_dir() / "re_render.json"

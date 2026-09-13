@@ -300,3 +300,68 @@ that patches the name still re-exported from `models/renders.py` is holding a na
 is checking is silently over the real checkout instead of over the field the
 fixture set up. `tests/test_curation_colorize.py`'s field-name digests are the
 ones that depend on this, and they name `engine_spec`.
+
+
+## A record's prose has one copy in the source and a whole copy on every row
+
+Every record this package writes explains itself in place. Beside `reachable` is
+`reachable_is`, beside `theme_bar` is `theme_bar_is`: a sentence saying what the
+number means, what `null` means, and what a record that does not carry the field
+at all was taken before. There are 104 of them across 25 modules, 22 in
+`curation/solve.py` alone, and **a row read years from now off the archive tier
+still says what it ran under with no checkout present.** That is the property the
+whole arrangement exists for.
+
+Until 2026-09-12 each sentence was written at the record site, so the source
+carried one copy per *write* and a module's own two records could disagree about
+the same field — `models/gallery_grade_train.py` had two spellings of
+`held_out_is` differing in three words. The prose now lives in a module-level
+**`SCHEMA_NOTES: dict[str, str]` beside that module's `SCHEMA`**, and the builder
+reads it at write time.
+
+**Three things this is deliberately not.**
+
+*Not a pointer.* Nothing on a row became a key, a reference, or a note the reader
+needs this repository to resolve. `SCHEMA_NOTES` is read at **write** time and the
+finished sentence goes on the row. A scheme where the row carries `reachable_is:
+"solve.reachable_is"` and a reader resolves it against a checkout is the one thing
+this must never become — it trades the isolated-readability property for source
+tidiness, and the tidiness was never the point. Do not re-propose it.
+
+*Not versioned.* There is no `schema: 2`, no note version, no bump rule when a
+sentence is edited. A record carrying the note that was true **when it was
+written** is correct about itself; that is the property working, not drifting, and
+two records whose notes differ are two records taken under two readings — which is
+what a reader wants to see. The one genuine defect is a note that was *wrong when
+written* and later corrected, which leaves earlier rows asserting something false.
+That is rare enough to want a dated line here when it happens rather than an
+integer nobody maintains, and the list below is that line.
+
+### Notes corrected after they shipped
+
+Rows written before the date carry a sentence that was **wrong**, not merely
+older. This is the whole of the list; anything not on it, a reader may take at
+face value.
+
+* **2026-09-12 — `depth.SCHEMA_NOTES["not_admitted_is"]`.** Landed in `727733d`
+  saying the places `general_leg_0909`'s band 2 lost were *all*
+  `julia:mandelbrot`. Measured the same day: the same 168 places cost all three of
+  that night's arms, they span **ten** partitions, only **14** are
+  `julia:mandelbrot`, and **166 of them have no supply-sidecar row at all** — so
+  they were never an embedding backlog either. A `curate depth near-places` census
+  written under `727733d` carries the wrong sentence.
+
+*Not a rewrite.* The lift moved 104 sentences and edited none of them. Where two
+of a module's records wrote one field two ways, both notes are kept under
+`<field>.<which>` — `held_out_is.fit` and `held_out_is.drop_high_asymmetric` — so
+the near-duplicates are now visible to whoever wants to reconcile them, and
+reconciling them is a separate decision.
+
+**A sentence that names a runtime number is a `str.format` template**, formatted
+at the site: `SCHEMA_NOTES["reachable_is"].format(wanted=wanted)`. A field written
+one of two ways picks between two notes at the site the same way. Either way the
+row carries the finished sentence and the prose still has one copy.
+
+`tests/test_schema_notes.py` is the guard. It refuses a `*_is` / `*_are` value
+written as prose at a record site, a `SCHEMA_NOTES` lookup that names no note, and
+a note nothing reads.
