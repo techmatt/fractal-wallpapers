@@ -83,6 +83,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
                 print(f"two different stamps were named: {named[0]} and {args.stamp}.")
                 return 1
             named_stamp = args.stamp or (named[0] if named else None)
+            if args.spacing:
+                print(json.dumps(_spacing_readout(named_stamp), indent=2))
+                return 0
             out = resolve_output(args.out) if args.out else None
             print(f"{display_path(tentative.page(named_stamp, out=out))}")
             return 0
@@ -96,6 +99,33 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
         return 1
     print(json.dumps(answers, indent=2))
     return 0 if all(held["found"] for held in answers) else 1
+
+
+def _spacing_readout(stamp: str | None) -> dict:
+    """What the presentation order bought this record, beside what it replaced.
+
+    `before` is the order the page shipped with — `rank` descending, which was the
+    first option in its sort control — and `after` is [`page_order.order`]'s. Both
+    are measured by the same function over the same rows, which is the only way the
+    pair is a comparison rather than two instruments.
+
+    It writes nothing: a reader asking what the ordering did has not asked for the
+    page to be rebuilt, and `browse` with no flag is still how that is asked for.
+    """
+    from fractal_wallpapers.curation import page_order, tentative
+
+    rows = tentative.read_rows(stamp)
+    vectors = page_order.vectors_for(rows)
+    # `-1` for an unranked row, which is where the page's own sort puts it, and the
+    # index second so the before-order is total rather than dict-ordered.
+    shipped = sorted(range(len(rows)), key=lambda at: (-(rows[at].get("rank") or -1), at))
+    return {
+        "stamp": stamp or tentative.latest(),
+        "basis": page_order.basis(vectors),
+        "window": page_order.WINDOW,
+        "before": page_order.spacing(rows, shipped, vectors),
+        "after": page_order.spacing(rows, page_order.order(rows, vectors), vectors),
+    }
 
 
 def _record_a_solve(args: argparse.Namespace) -> int:
@@ -1366,6 +1396,15 @@ def add_steps(steps) -> None:
     browsing.add_argument(
         "--stamp",
         help="which record to write again (default the newest)",
+    )
+    browsing.add_argument(
+        "--spacing",
+        action="store_true",
+        help="print what the PRESENTATION ORDER bought this record, and write no page. "
+        "The gap between seats sharing a cell, a mode, a hue family or a spiral verdict, "
+        "the spiral clumping, and the within-window embedding distance — each of them "
+        "under the order the page shipped with and under the derived one, measured by one "
+        "function so the pair is a comparison rather than two instruments",
     )
     browsing.add_argument(
         "--out",

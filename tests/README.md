@@ -53,6 +53,8 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [page_order_stratified_ckpt122](#page_order_stratified_ckpt122)
+    - [embed_and_small_fixes_ckpt122](#embed_and_small_fixes_ckpt122)
     - [codebase_review_ckpt122](#codebase_review_ckpt122)
     - [dedupe_and_resume_index_ckpt121](#dedupe_and_resume_index_ckpt121)
     - [repeat_ab_count_themed_ckpt121](#repeat_ab_count_themed_ckpt121)
@@ -586,6 +588,30 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### page_order_stratified_ckpt122
+
+**Twenty-one tests for the derived presentation order, and the idle fast reading
+the entry below owed.** `page_order_stratified_ckpt122`, 2026-09-13. **Fast: 4,454
+selected, 136 deselected — 4,590 collected — in 158.36 s (2:38), zero skips, zero
+failures, box idle.**
+
+Against `mining_prep_ckpt122`'s 163.36 s at 4,538 collected, that is **52 more
+tests and 5 s less clock** — the new file is arithmetic over rows built in itself,
+and the two guards added to `tests/test_tentative.py` cost nothing because that
+file's new `no_embedding_store` fixture keeps every page build in it off the 71 MB
+neutral-embedding store. A page test that reached it would pay 1.4 s cold, per
+test; the fixture is `no_walk_ledgers`' argument applied to a second machine-sized
+store, and it is the third such redirect this file carries.
+
+⚠ **The slow lane was skipped at Matt's instruction mid-prompt**, so this is a
+reading of one lane and **the two do not agree on the collected count**: the slow
+figure standing is the entry below's 4,569, one count behind. All 21 new tests are
+fast-lane, so the slow lane should collect 4,590 and the next prompt to take a pair
+is what settles it. The first fast attempt at this count came back **2 failed** —
+both from this prompt's own `--spacing` flag, one a surface table in
+`test_nested_verbs.py` and one a help string with no short first sentence — and the
+158.36 s above is the clean re-take after those were fixed.
 
 #### embed_and_small_fixes_ckpt122
 

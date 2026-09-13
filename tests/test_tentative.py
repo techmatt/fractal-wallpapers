@@ -22,7 +22,13 @@ import pytest
 from tests.test_candidate_ledger import decision, isolated  # noqa: F401  (a fixture)
 
 from fractal_wallpapers import cli
-from fractal_wallpapers.curation import candidate_ledger, colorize, recipes, tentative
+from fractal_wallpapers.curation import (
+    candidate_ledger,
+    colorize,
+    page_order,
+    recipes,
+    tentative,
+)
 
 
 def seat(key: str, **over) -> dict:
@@ -114,6 +120,26 @@ def no_walk_ledgers(monkeypatch):
     from fractal_wallpapers.curation import depth
 
     monkeypatch.setattr(depth, "centered_locations", frozenset)
+
+
+@pytest.fixture(autouse=True)
+def no_embedding_store(monkeypatch, tmp_path):
+    """No page here reaches the neutral embedding store, for `no_walk_ledgers`' reason.
+
+    [`page`] joins it for [`page_order`]'s distance term, and this machine's copy is
+    **71 MB over 41,415 rows** — 1.4 s to stream cold. A fixture row carrying a
+    `location` would pay that per test, silently, and the tests in this file are
+    about the store of records rather than about the order.
+
+    Redirected at the accessor [`page_order.vectors_for`] reads, which is the tier
+    root for this one store: `embeddings.store_path` is `under("curation") /
+    STORE_NAME` and is the module's single spelling of it, so a path under
+    `tmp_path` cannot be read past. The order still runs — on its attribute terms,
+    which is what a clone gets — so these tests exercise the shipped fallback.
+    """
+    from fractal_wallpapers.curation import embeddings
+
+    monkeypatch.setattr(embeddings, "store_path", lambda: tmp_path / "no_embeddings.jsonl")
 
 
 # --------------------------------------------------------------------------- #
@@ -466,6 +492,46 @@ def test_the_page_is_self_contained_and_opens_from_the_file_system(store):
     assert "http://" not in page and "https://" not in page
     assert "<script src" not in page and "fetch(" not in page
     assert '<link rel="stylesheet"' not in page
+
+
+def test_the_page_opens_in_the_presentation_order_and_says_what_it_ordered_on(store):
+    """The seats carry a derived position and the sort control opens on it.
+
+    Both halves, because either alone passes for the wrong reason: a column nothing
+    sorts by is dead weight, and a default option with no column behind it sorts by
+    `undefined`. The basis is on the page for the reason [`page_order.basis`] gives —
+    the same rows order two ways depending on whether this machine holds the store,
+    and under this file's `no_embedding_store` it is always the clone's answer.
+    """
+    tentative.write(record_of(seat("k0"), seat("k1"), seat("k2")), log=quiet)
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+    embedded = json.loads(page.split("const ROWS = ", 1)[1].split(";\n", 1)[0])
+
+    assert sorted(row["order"] for row in embedded) == [0, 1, 2]
+    # The FIRST option is what the page opens on, and it has to be this one.
+    assert (
+        page.split('<select id="sort">', 1)[1]
+        .lstrip()
+        .startswith('<option value="order">presentation order</option>')
+    )
+    assert f"presented on {page_order.ATTRIBUTES_ONLY}" in page
+
+
+def test_the_presentation_order_is_a_column_on_the_PAGE_and_never_on_the_record(store):
+    """The claim that makes this safe: the order changes no record, no identity and
+    no digest. `gallery.jsonl` is what it was and the column lives on the embedded
+    copy alone, so an existing record gets today's order on its next build and a
+    published stamp's two tracked files do not move."""
+    tentative.write(record_of(seat("k0"), seat("k1")), stamp="20260902T000000Z", log=quiet)
+    rows_before = tentative.rows_path("20260902T000000Z").read_bytes()
+
+    page = tentative.page("20260902T000000Z", log=quiet).read_text(encoding="utf-8")
+    embedded = json.loads(page.split("const ROWS = ", 1)[1].split(";\n", 1)[0])
+
+    assert tentative.rows_path("20260902T000000Z").read_bytes() == rows_before
+    assert all("order" not in row for row in tentative.read_rows("20260902T000000Z"))
+    assert all("order" in row for row in embedded)
 
 
 def test_every_tile_names_its_picture_relatively_and_carries_the_full_id(store):

@@ -11,7 +11,9 @@ row per seat, carrying the ledger recipe key that IS the ID, a short alias for
 typing, and the few columns a person filters on — `manifest.json` saying what pool
 it was taken over and how it did, and `index.html`, a self-contained browser over
 the pool's own 640x360 candidate pictures — filterable on seven facets, groupable
-on five, and opening any picture at the size the screen gives.
+on five, sortable on four, and opening any picture at the size the screen gives.
+It opens in [`page_order`]'s **presentation order**, which is derived from the rows
+at build time and moves none of them.
 
 **The record is the rows and the manifest; the page is a derivation of them.**
 Matt's ruling of 2026-09-05, and it is what publication tracks: `gallery.jsonl`
@@ -84,6 +86,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import page as page_module
+from fractal_wallpapers.curation import page_order
 from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 
 #: The schema every row and every manifest here carries.
@@ -692,11 +695,18 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     script is loaded from anywhere, because the page is opened over `file://`
     where both fail.
 
-    **Reads `gallery.jsonl` and `manifest.json` and nothing else**, which is what
-    makes the page a derivation rather than part of the record: `curate solve
-    browse <stamp>` writes it again on any clone that has the two tracked files,
-    which is why the page itself is not tracked. `record` calls this too, so a
-    fresh record still lands with its page beside it.
+    **The two tracked files are all it REQUIRES**, which is what makes the page a
+    derivation rather than part of the record: `curate solve browse <stamp>` writes
+    it again on any clone that has them, which is why the page itself is not
+    tracked. `record` calls this too, so a fresh record still lands with its page
+    beside it.
+
+    It *reads* one more thing where this machine has it — the neutral embedding
+    store, for [`page_order`]'s distance term — and reads it **optionally**: with no
+    store the presentation order is the attribute terms alone and the page's header
+    says which basis it used. That is the one way the claim above is narrower than
+    it was, and it is narrower on purpose: an order that needed an untracked store
+    would make the page undroppable.
 
     `out` writes the same page somewhere else — a sheet under `scratch/` for one
     reading, say — with every thumbnail resolved **relative to where it lands**,
@@ -715,12 +725,19 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     tiers = Tiers.current()
     shown = [{**row, "src": thumbnail_href(row.get("picture"), directory, tiers)} for row in rows]
     missing = sum(1 for row in rows if _on_disk(row, tiers) is not True)
+    # The presentation order: derived here, from the rows, changing none of them.
+    # `order` is a column on the EMBEDDED copy and never on `gallery.jsonl` — the
+    # record is untouched and an existing one gets today's order on its next build.
+    vectors = page_order.vectors_for(rows)
+    for at, held in enumerate(page_order.order(rows, vectors)):
+        shown[held]["order"] = at
     writing = Path(str(path) + ".writing")
     writing.write_text(
         _PAGE.replace("__STAMP__", html.escape(str(stamp)))
         .replace("__SEATS__", str(len(rows)))
         .replace("__ASKED__", str(manifest["seats"]["asked"]))
         .replace("__MISSING__", str(missing))
+        .replace("__ORDERED_BY__", html.escape(page_order.basis(vectors)))
         .replace("__ROWS__", json.dumps(shown, ensure_ascii=False)),
         encoding="utf-8",
         newline="\n",
@@ -730,11 +747,11 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     return path
 
 
-#: The browser, as one string with four substitutions. Kept here rather than in a
+#: The browser, as one string with six substitutions. Kept here rather than in a
 #: tracked asset file because it is the only page this project writes for a person
 #: to drive, and a second file would be a second thing to find. The substitutions
-#: are `__ROWS__`, `__STAMP__`, `__SEATS__`, `__ASKED__` and `__MISSING__`, all
-#: filled by [`page`] and none of them by the reader.
+#: are `__ROWS__`, `__STAMP__`, `__SEATS__`, `__ASKED__`, `__MISSING__` and
+#: `__ORDERED_BY__`, all filled by [`page`] and none of them by the reader.
 _PAGE = (
     """<!doctype html>
 <meta charset="utf-8">
@@ -808,7 +825,8 @@ _PAGE = (
 </style>
 <header>
   <h1>tentative gallery __STAMP__ <span>&middot; __SEATS__ of __ASKED__ seat(s) filled
-      &middot; __MISSING__ without a picture on this disk</span></h1>
+      &middot; __MISSING__ without a picture on this disk
+      &middot; presented on __ORDERED_BY__</span></h1>
   <div class="controls">
     <fieldset id="f-mode"><legend>mode</legend></fieldset>
     <fieldset id="f-hue_family"><legend>hue family</legend></fieldset>
@@ -828,6 +846,7 @@ _PAGE = (
         <option value="floor">group by colour floor</option>
       </select>
       <select id="sort">
+        <option value="order">presentation order</option>
         <option value="rank">rank, best first</option>
         <option value="seat">seat order</option>
         <option value="p_ge4">P(&ge;4), best first</option>
@@ -1023,7 +1042,12 @@ let shown = [];
 function draw() {
   const held = ROWS.filter(matches);
   const key = document.getElementById("sort").value;
-  held.sort((a, b) => key === "seat" ? a.seat - b.seat : (b[key] ?? -1) - (a[key] ?? -1));
+  // `order` and `seat` are positions and read ASCENDING; `rank` and `p_ge4` are
+  // scores and read best-first. A row with no position sorts to the end rather than
+  // to the front, which is where a record written before this column existed goes.
+  held.sort((a, b) => key === "seat" ? a.seat - b.seat
+    : key === "order" ? (a.order ?? Infinity) - (b.order ?? Infinity)
+    : (b[key] ?? -1) - (a[key] ?? -1));
   const facet = document.getElementById("group").value;
   const bins = new Map();
   for (const row of held) {

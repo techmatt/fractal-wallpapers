@@ -1663,6 +1663,7 @@ artifacts/curation/solve/tentative_n<N>_<stamp>/     that record's own solve, un
 fractal-wallpapers curate solve record                    # the production solve, recorded
 fractal-wallpapers curate solve record --n 150            # a smaller one
 fractal-wallpapers curate solve browse <stamp>            # write the page again
+fractal-wallpapers curate solve browse <stamp> --spacing  # what the presentation order bought
 fractal-wallpapers curate solve resolve 49616c4b,a71f     # an ID or alias back to a recipe
 fractal-wallpapers curate solve list                      # every record on this machine
 ```
@@ -1731,6 +1732,84 @@ with `esc` to close, so a filtered or grouped set is walked without returning to
 grid. **Selecting is the checkbox beside the alias, not the picture** — the two were one
 gesture while a 224px tile was the only size there was, and a click that both opened and
 selected put a stray ID in the copy tray on every look.
+
+### The page opens in a derived presentation order, and it moves nothing
+
+**Since 2026-09-13.** The page used to open in `rank` order, best first, and the
+strongest rows of this pool look alike — a screenful of azure spirals, then a
+screenful of orange threads. [`page_order`](page_order.py) replaces that with an
+order **derived at page build from the rows**, and it is a permutation and nothing
+else: no seat moves, no record is rewritten, no ID or digest changes, nothing is
+re-solved. An existing record gets today's order on its next `browse`, and the
+column lives on the page's embedded copy of the rows rather than on `gallery.jsonl`.
+
+Seats are placed one at a time against a **window of the last 32 placed** — about a
+screenful, read off the grid the page renders: 8 columns at `minmax(224px, 1fr)` on
+a 1920px viewport by 4 rows of card under the sticky header. It is deliberately not
+a global farthest-point traversal, which front-loads the variety and leaves the
+leftovers adjacent at the end — the clump moved rather than removed.
+
+**Three terms, in this order.** A repeat of `cell`, `mode`, `hue_family` or `spiral`
+inside the window costs, tapered so a repeat nearer the end of the window costs more
+than one at its far edge; the neutral-embedding distance to the window is a
+tie-breaker bounded below the cheapest attribute weight, so it can never buy back a
+repeat; and `p_ge4` descending seeds the page and breaks every remaining tie, so the
+strongest row still opens it and quality still orders it wherever spread is
+indifferent. **No RNG** — one seating produces one order.
+
+**A repeat is priced on its excess over what a window cannot avoid holding.** A
+value holding a share `s` of the seating appears about `s x 32` times in every
+window in every order — `tia` is 263 of the 1,000 seats of `20260911T022330Z`, so a
+screenful holds eight of it whatever anything does. Charging that like a rare value's
+second appearance made a plain greedy spend its scarce rows early: all 47 of the
+first draft's adjacent-mode pairs landed at position 864 or later. The allowance is
+the fix, and it is scaled to the window **in force** rather than to a full one,
+without which the order is inert across the first screenful.
+
+**`palette_group` is not on a gallery row** — it is on the solve seat and
+`tentative.rows_of` does not copy it — so `cell` is the colour axis, which is the
+closer measurement anyway: a palette group is a fact about the colormap and a cell
+is a reading of the picture that came out.
+
+**The distance term is optional and the page says which basis it used.** The neutral
+embedding store is 71 MB under `artifacts/` and a clone has none of it, while the
+page has to stay a derivation of two tracked files — so with no store the order is
+the attribute terms alone, still deterministic, and the header reads *attributes
+only* instead of *attributes + embedding*. 968 of `20260911T022330Z`'s 1,000 seated
+locations carry a vector; the 32 without take the term's midpoint so they cannot
+collect at either end of the page.
+
+**What it bought, `curate solve browse <stamp> --spacing`, before and after:**
+
+| | n=1000 general | themed `dark_vivid_green`, 176 seats |
+|---|---|---|
+| spirals in a window of 32 | **13 → 5** | **7 → 5** |
+| longest consecutive spiral run | **3 → 1** | 1 → 2 |
+| gap between seats sharing a cell, min/median | 1/23 → **2/31** | 1/2 → 1/2 |
+| sharing a hue family, min/median | 1/8 → **1/10** | 1/1 → 1/1 |
+| sharing a mode, min/median | 1/4 → **1/5** | 1/3 → 1/3 |
+| mean within-window min distance | 0.0961 → **0.1193** | 0.1175 → **0.1349** |
+
+**The two products do not behave alike, and not for the reason expected.** A themed
+gallery is one cell by construction — 106 of its 176 seats are `dark_vivid_green` and
+every one of the rest is another green — so the colour terms have nothing to space
+and the cell and family rows above are flat *by construction*. What moves there is
+the spiral clumping and the distance. The embedding was expected to go quiet on a
+themed page because a single-cell pool collapses onto texture; the measured cause is
+different and it applies to **both** products: at the old cap of 0.07, `gallery.RADIUS`,
+**96%** of the general page's within-window minimums and **100%** of the themed page's
+already sat past it, so the reward was saturated and discriminated between nothing.
+That radius was calibrated on *nearest-neighbour distances over the whole admitted
+population*, median 0.024, and this term consumes a *within-window minimum over 32
+seats of a gallery already chosen for diversity* — a different distribution, running
+p10 0.072/0.079 and p90 0.159/0.164. `page_order.DISTANCE_CAP` is 0.16 for that
+reason, and the check that it is not over-reaching is that the *attribute* spacings
+improve rather than degrade: at 0.20 the minimum cell gap falls back to 1.
+
+**What it did not fix, and the number is on the record.** `tia` holds 26.3% of the
+general page and 37 of the 41 remaining adjacent-mode pairs are `tia` beside `tia`,
+17 of them in the last tenth. The allowance prices that as unavoidable on purpose;
+spacing it further would have to come out of the colour terms, which are worth more.
 
 **Two files a stamp are TRACKED, and the pictures are not.** `gallery.jsonl` and
 `manifest.json`, through a narrow un-ignore in `.gitignore` that names them one at a
