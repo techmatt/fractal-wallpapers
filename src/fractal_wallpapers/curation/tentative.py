@@ -152,11 +152,22 @@ RECORDED_SEATS = 1000
 #: not touched**: widening the size rule would have tracked every record ever made
 #: rather than the ones worth pointing at, which is the wrong question. Matt's
 #: ruling of 2026-09-04 split
-#: them. A record is published when he names it; every other record stays in the
-#: store, kept and readable **by naming its stamp**, and what it does not get is a
-#: Durable-class save, check or restore and a place in an archive copy. It keeps
-#: everything else, including its seats: [`protected_keys`] sweeps the whole store
-#: and deleting the record is the only thing that releases them.
+#: them. A record is published when he names it; every other record is read **by
+#: naming its stamp**, and what it does not get is a Durable-class save, check or
+#: restore and a place in an archive copy.
+#:
+#: **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13,
+#: which reversed a default that had read the other way. **Keeping needs a reason
+#: and discarding does not**: a leg that recorded a gallery to measure something
+#: against deletes it once the measurement is taken and says so in its report,
+#: because a solve is cheap to run again and what a leftover record costs is
+#: misreading hazard and prune protection rather than bytes. The keep list is the
+#: stamps below, any record a published or upcoming figure cites, and the current
+#: official n=1000 record — `20260911T022330Z`, unpublished, the one
+#: [`page_order`]'s constants were measured on. **Retention is a third question
+#: after publication and durability, and the protection is why**: [`protected_keys`]
+#: sweeps the whole store whatever this list says, so a record that exists pins its
+#: seats and deleting it is the only thing that releases them.
 #:
 #: **This list and `.gitignore`'s negation lines are one list written twice**, and
 #: `tests/test_tentative.py` fails if they disagree. Two spellings because git

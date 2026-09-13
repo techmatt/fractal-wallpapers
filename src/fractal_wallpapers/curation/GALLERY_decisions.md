@@ -731,3 +731,29 @@ curate solve run --n 150 [--release-regime WxHssN] [--workers 3]
 `solve.ranking_for` is the one place a pass pays for its key — it reads the
 flatness sidecar and the location scores, once per pool. `seat(order=...)` overrides
 it, which is what a sweep seating one pool four ways passes.
+
+### A record is discarded by default — 2026-09-13
+
+**Reverses what the tree said.** Until this ruling, `CLAUDE.md`, `.gitignore`,
+`tentative.PUBLISHED`, [`GALLERY.md`](GALLERY.md) and `curate solve list` all said an
+unpublished record *stays in the store, kept*. The rule Matt actually operates by is the
+opposite: a record is discarded once whatever it was made to measure has been measured,
+and it is kept only when he says so — which he says for a record a published or upcoming
+figure cites, and for the current official n=1000 record, and otherwise does not.
+
+**What the stale sentence cost.** It was applied as an *action* twice this checkpoint —
+the 2026-09-12 sweep of the early-September diagnostic series, 59 records and 64.55 MiB,
+and the deletion of `20260913T001955Z` the same day — without ever being written where a
+leg could read it. So the next leg read the doc, concluded the opposite, and left
+`20260913T011105Z` in the store as a kept record. **A ruling that governs what a leg does
+belongs in `CLAUDE.md`**: the handoff documents are not visible from inside a Claude Code
+session, and a decision that lives only in them is a decision the next leg will contradict
+in good faith.
+
+**Keeping needs a reason and discarding does not**, and the wording everywhere is
+deliberate about that — it is not a balance of considerations a leg is invited to weigh at
+the end of its run. The cost of a leftover is misreading hazard and prune protection, not
+bytes: `tentative.protected_keys` sweeps published and unpublished stamps alike, so an
+unmeant record pins candidate rows against retention until somebody remembers it exists,
+and no prune's output says which record is holding a key. Publication, durability and
+retention are three questions and this ruling is the third one.

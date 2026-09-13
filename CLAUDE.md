@@ -74,16 +74,31 @@ These were decided once, at the first commit, because each is expensive to rever
   two files one by one rather than by pattern, and it is not an oversight to tidy
   up. `index.html` is not tracked for any stamp.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
-  2026-09-04, and the hole above is per *stamp* because of it. Every unpublished
-  record **stays in the store, ignored and kept**, read by naming its stamp; what
-  it does not get is a Durable-class save, check or restore and a place in an
-  archive copy. **Publication and durability are different questions** —
-  `tentative.protected_keys()` sweeps the whole store published or not, so deleting
-  a record is the only thing that releases its seats to the prune.
-  `tentative.PUBLISHED` and `.gitignore`'s negation lines are one list written
-  twice and `tests/test_tentative.py` holds them to agreeing. The ruling, what it
-  replaced and why `LARGE_TEXT_ALLOWLIST` was not the answer are at
+  2026-09-04, and the hole above is per *stamp* because of it. An unpublished
+  record is read by naming its stamp, and what it does not get is a Durable-class
+  save, check or restore and a place in an archive copy. `tentative.PUBLISHED` and
+  `.gitignore`'s negation lines are one list written twice and
+  `tests/test_tentative.py` holds them to agreeing. The ruling, what it replaced
+  and why `LARGE_TEXT_ALLOWLIST` was not the answer are at
   `curation/tentative.PUBLISHED`.
+- **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13,
+  which reverses what this file said until then. **Keeping needs a reason;
+  discarding does not** — it is not a balance a leg weighs at the end of its run.
+  A leg that recorded a gallery to measure something against **deletes it when the
+  measurement is taken and says so in its report**: a solve is cheap to run again,
+  and what a leftover record costs is misreading hazard and prune protection, not
+  bytes. **The keep list, so the floor is concrete**: every stamp in
+  `tentative.PUBLISHED`; any record a published or upcoming figure cites; and the
+  current official n=1000 record, `20260911T022330Z`, which is unpublished and is
+  what `curation/page_order.py`'s constants were measured on. Everything else goes
+  unless Matt says otherwise.
+- **Publication, durability and retention are three questions and not one.**
+  `tentative.protected_keys()` sweeps the whole store published or not, so a record
+  that exists pins its seats against the prune whatever its status, and deleting it
+  is the only thing that releases them. That unconditional protection is the
+  *reason* discarding is the default rather than an argument against it: a record
+  nobody meant to keep holds candidate rows against retention until somebody
+  remembers it, and no prune's output says which record is holding a key.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.

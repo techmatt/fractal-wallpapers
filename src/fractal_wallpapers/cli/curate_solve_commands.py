@@ -53,10 +53,13 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
             )
         if len(published) != len(held):
             print(
-                f"\n{len(held) - len(published)} unpublished record(s): kept and read by "
-                f"naming the stamp, but not tracked and never what an unstamped read means. "
-                f"Publishing one is Matt's decision — `curation.tentative.PUBLISHED` and the "
-                f"negation lines in `.gitignore` are the list."
+                f"\n{len(held) - len(published)} unpublished record(s): read by naming the "
+                f"stamp, but not tracked and never what an unstamped read means. An "
+                f"unpublished record is DISCARDED once what it was made to measure has been "
+                f"measured — keeping one needs a reason, and the keep list is a figure's "
+                f"citation or the official n=1000 record. Publishing one is Matt's decision "
+                f"— `curation.tentative.PUBLISHED` and the negation lines in `.gitignore` "
+                f"are the list."
             )
         return 0
 

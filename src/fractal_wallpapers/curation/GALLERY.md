@@ -1890,10 +1890,13 @@ collect at either end of the page.
 | sharing a mode, min/median | 1/4 → **1/5** | 1/3 → 1/3 |
 | mean within-window min distance | 0.0961 → **0.1187** | 0.1175 → **0.1337** |
 
-The themed column is `20260913T011105Z`, solved on 2026-09-13 for this reading at
-`--themed dark_vivid_green --n 200`, 176 of 200 filled. Its rank-order column
-reproduces the deleted record the row above it was first measured on, seat count and
-every figure, which is the closest thing to a control this comparison has.
+The themed column was solved at `--themed dark_vivid_green --n 200`, 176 of 200 filled,
+and its rank-order column reproduced the earlier themed record the row above it was first
+measured on — seat count and every figure — which is the closest thing to a control this
+comparison has. **Both themed records are gone**: each was solved to have a themed page to
+read this against and deleted once it had been read, so the readings stand and the records
+they were taken on are not on any machine. The general column is `20260911T022330Z`, which
+is in the store.
 
 **The two products do not behave alike, and not for the reason expected.** A themed
 gallery is one cell by construction — 106 of its 176 seats are `dark_vivid_green` and
@@ -1952,18 +1955,26 @@ Recording a gallery and committing it were one act until then, so a record too l
 track was a record that could not be made — an n=2000 record's `gallery.jsonl` is **over
 the 1 MiB `tests/test_history_purity.py` allows**, at 1.06 MB for the 1,795 seats of
 `20260904T234133Z` (its page was 1.18 MB and is now beside the question). Every
-unpublished record stays in
-the store, kept and read **by naming its stamp**; `tentative.latest()` — what an unstamped
-`browse` or `resolve` means — walks published stamps only, so an experiment can never
-become the default answer for a figure prompt and hand out IDs that exist on one machine.
-`curate solve list` marks every line.
+unpublished record is read **by naming its stamp**; `tentative.latest()` — what an
+unstamped `browse` or `resolve` means — walks published stamps only, so an experiment can
+never become the default answer for a figure prompt and hand out IDs that exist on one
+machine. `curate solve list` marks every line.
 
-**Publication and durability are different questions, and the protection below is the
-durable one.** An unpublished record is *kept*: `protected_keys` sweeps the whole store
-whatever `PUBLISHED` says, so deleting the record is the only thing that releases its
-seats. What publication buys is a clone; what it does not buy is protection, because that
-was never scarce. What an unpublished record gives up is a Durable-class save, check or
-restore and a place in an archive copy.
+**And an unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13.
+**Keeping needs a reason and discarding does not** — a leg that recorded a gallery to
+measure something against deletes it once the measurement is taken, and says so in its
+report. A solve is cheap to re-run; what a leftover record costs is misreading hazard and
+prune protection. **The keep list**: the published stamps, any record a published or
+upcoming figure cites, and the current official n=1000 record `20260911T022330Z`, which
+is unpublished and is what `page_order`'s constants were measured on. `CLAUDE.md` carries
+the rule, because a leg reads that file and not this one before it acts.
+
+**Publication, durability and retention are three questions, and the protection below is
+the durable one.** While a record exists it is *protected*: `protected_keys` sweeps the
+whole store whatever `PUBLISHED` says, so deleting the record is the only thing that
+releases its seats. What publication buys is a clone; what it does not buy is protection,
+because that was never scarce. What an unpublished record gives up is a Durable-class
+save, check or restore and a place in an archive copy.
 
 **So a DIAGNOSTIC solve either writes no record or has its records swept at the
 checkpoint boundary**, and the reason is the paragraph above rather than tidiness: the
@@ -1975,8 +1986,18 @@ are an accident of the run. `repeat_ab_count_themed_ckpt121` left eight of them 
 per cell, 1,131 seats — and deleting them on 2026-09-12 released **712** keys to the
 prune, the other 354 being seats another record holds anyway. That gap is the second
 half of the point: the cost of leaving one is neither the seat count nor zero, and it is
-not knowable without deleting the record. **This is a note and not a behaviour**; the
-sweep is a person deleting the stamp, which is the only thing that releases a seat.
+not knowable without deleting the record. **This was a note when it was written and the
+2026-09-13 ruling made it the rule**; there is still no behaviour behind it — the sweep is
+a person deleting the stamp, which is the only thing that releases a seat.
+
+⚠ **A record is two directories and deleting the stamp takes only one.** The tentative
+record is `artifacts/curation/tentative/<stamp>/` and the solve record it names is
+`artifacts/curation/solve/<name>/`, where `<name>` is `manifest.json`'s `solve.name` —
+`tentative_n<N>_<stamp>` from `curate solve record`, or whatever `--name` a `run` was
+given. Only the tentative half holds prune protection: `sweep._prune_protections` reads
+`tentative.protected_keys()` and nothing reads the solve store, so a stranded `solve.json`
+pins nothing and is invisible — which is how `tentative_n200_20260913T001955Z` outlived
+its record by a day. Take both.
 
 **The sweep that paragraph asks for ran on 2026-09-12** and took the early-September
 diagnostic series with it: the 42 `themed_<cell>_n200_<label>` records over seven
