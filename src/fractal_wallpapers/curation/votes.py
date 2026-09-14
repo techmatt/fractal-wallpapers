@@ -5,21 +5,32 @@ seat, one HTML file and a paragraph of instructions -- and what comes back is on
 small JSON file per person. Nothing in between needs a server, an account, or this
 repository.
 
-## The picture a friend sees is made here, never copied
+## The picture a friend sees is never the candidate
 
 A seat's stored candidate is 640x360, the size the judges read, and it is far too
-small to vote on. So every seat in a kit is **rendered again** at [`FRAME`]
-through [`curation.release`], exactly the way a shipped wallpaper is, and the
-thumbnail is a downscale of *that*. Never of the candidate: the two are different
-pictures at different sizes, and a grid of candidate thumbnails over a fullscreen
-of fresh renders would be asking people to vote on one picture while showing them
-another.
+small to vote on. So every seat in a kit is a picture at [`FRAME`] made through
+[`curation.release`], exactly the way a shipped wallpaper is, and the thumbnail is
+a downscale of *that*. Never of the candidate: the two are different pictures at
+different sizes, and a grid of candidate thumbnails over a fullscreen of fresh
+renders would be asking people to vote on one picture while showing them another.
 
 **[`FRAME`] and [`SUPERSAMPLE`] are the gallery rejection sheet's**, `1280x720ss2`
 since Matt's ruling of 2026-09-14, so the two passes a seat can go through show
-one picture and not two renders of one recipe. They are also the reason a kit over
-a record whose seats were already cut for a rejection pass mostly reuses pictures
-instead of making them.
+one picture and not two renders of one recipe.
+
+**Found before made, since 2026-09-14.** That shared geometry is worth a render
+leg and not only a consistency argument: [`curation.fulls`] indexes every picture
+any built sheet drew at a regime, so a kit over a record that has been through a
+gallery rejection pass finds all thousand of its seats and renders none of them —
+minutes against five hours. [`standing_fulls`] is the lookup and it matches on the
+recipe key **and** the regime, exactly, so what it hands back is the picture this
+module's own leg would have made.
+
+**Found is not copied.** A found file is the engine's JPEG at the engine's
+quality; the kit re-encodes it at [`QUALITY`] and [`CHROMA`] like anything else,
+because a kit whose fulls came from two encoders depending on which sheet happened
+to hold the seat would be asking a friend to compare encoders. What that costs is
+measured at [`standing_fulls`].
 
 **A kit inherits the candidate's levelling curve and does not measure its own**,
 since 2026-09-08 — [`_borrowed`], and [`curation.stamps`] for where the curve is
@@ -459,6 +470,46 @@ def _borrowed(rows: dict, log=print) -> dict:
     return out
 
 
+def standing_fulls(jobs, log=print) -> dict:
+    """`{key: picture}` for the jobs something has **already drawn** at their regime.
+
+    [`curation.fulls`], which answers exactly this question for a record and
+    answers it off the built sheets as well as its own pictures. A kit's frame is
+    [`FRAME`] and a kit's supersample is per seat ([`seat_supersample`]), so the
+    ask is one per distinct supersample rather than one overall — a kit at
+    `--ss 2 --ss-for smooth_mean_angle=4` may find its cheap seats and not its
+    fine ones, and a single lookup at the kit's default would hand the fine ones a
+    picture at the wrong supersample.
+
+    **The match is the recipe key AND the regime, exact**, because that is what
+    `fulls` matches on: the key already carries everything that decides pixels
+    except the frame, and the frame is checked against the picture that was
+    actually drawn. So a picture found here is the same picture the render leg
+    below would have made, and reusing it is not an approximation of that leg —
+    it is that leg's output, made earlier by somebody else.
+
+    What it is *not* is the same bytes. The found file is the engine's own JPEG at
+    its quality and this kit re-encodes it at [`QUALITY`] and [`CHROMA`]
+    ([`encode_pair`]), so a reused seat has been through two encoders. **Measured
+    2026-09-14** over six sheet-sourced seats of `20260914T171846Z`, against each
+    seat's own PNG: the engine's file is 3.71 of mean absolute difference from it,
+    a kit that renders and encodes is 4.53, and a kit that reuses is 5.47. So
+    reuse costs **0.94**, a fifth of what the kit's own encoding cell already
+    costs and well under the 6.28 the ss2-against-ss4 decision was priced at.
+    `curation/GALLERY.md`'s *What reuse costs the picture* has the table.
+    """
+    from fractal_wallpapers.curation import fulls as fulls_store
+
+    found: dict = {}
+    for value in sorted({int(job["ss"]) for job in jobs}):
+        wanted = [job["key"] for job in jobs if int(job["ss"]) == value]
+        regime = release.Regime(FRAME, value)
+        at = fulls_store.index(wanted, regime, log=lambda _line: None)
+        log(f"[votes] {len(at)}/{len(wanted)} seat(s) already drawn at {regime.spelled}")
+        found.update(at)
+    return found
+
+
 def render_fulls(jobs, staging: Path, regime, workers: int, arrived, log=print) -> dict:
     """Render each job's full-size PNG into `staging`, `arrived(job, png)` per row.
 
@@ -525,29 +576,43 @@ def render_fulls(jobs, staging: Path, regime, workers: int, arrived, log=print) 
     }
 
 
-def cut(png: Path, job: dict, fulls: Path, thumbs: Path, quality: int, chroma: str) -> dict:
-    """One render into the two JPEGs a kit ships, and the PNG gone after.
+def encode_pair(picture: Path, job: dict, fulls: Path, thumbs: Path, quality, chroma) -> dict:
+    """One picture into the two JPEGs a kit ships. **Nothing is deleted here.**
 
-    The thumbnail is a `LANCZOS` reduction of the **full render** and there is no
+    The thumbnail is a `LANCZOS` reduction of the **full picture** and there is no
     path here that reads the candidate: that is the claim the fast lane checks by
     building a kit whose candidates do not exist on disk at all.
+
+    Split out of [`cut`] on 2026-09-14 for [`standing_fulls`]: a picture the kit
+    made is the kit's to delete and a picture it *found* belongs to somebody
+    else's sweep, so the deleting is one line above this rather than inside it.
+    Both paths encode here, which is what keeps a kit ONE encoding cell — the two
+    JPEGs a friend sees are made at the `quality` and `chroma` the manifest names
+    whether the picture was rendered for this kit or gathered from a sheet.
+    """
+    from PIL import Image
+
+    with Image.open(picture) as opened:
+        opened.load()
+        full_bytes = encode(opened, fulls / f"{job['name']}.jpg", quality, chroma)
+        height = max(1, round(opened.height * THUMB_WIDTH / opened.width))
+        small = opened.resize((THUMB_WIDTH, height), Image.LANCZOS)
+    thumb_bytes = encode(small, thumbs / f"{job['name']}.jpg", quality, chroma)
+    return {"full_bytes": full_bytes, "thumb_bytes": thumb_bytes}
+
+
+def cut(png: Path, job: dict, fulls: Path, thumbs: Path, quality: int, chroma: str) -> dict:
+    """One **render** into the two JPEGs a kit ships, and the PNG gone after.
 
     The `<stem>.leveled/` directory goes with the PNG. `colorize.render` writes one
     beside every acted render -- the operator's overriding colormap, ~76 KiB --
     and it is spelled here the way the writer spells it, because a staging tree
     that kept a thousand of those would be most of what a deleted PNG saved.
     """
-    from PIL import Image
-
-    with Image.open(png) as opened:
-        opened.load()
-        full_bytes = encode(opened, fulls / f"{job['name']}.jpg", quality, chroma)
-        height = max(1, round(opened.height * THUMB_WIDTH / opened.width))
-        small = opened.resize((THUMB_WIDTH, height), Image.LANCZOS)
-    thumb_bytes = encode(small, thumbs / f"{job['name']}.jpg", quality, chroma)
+    sizes = encode_pair(png, job, fulls, thumbs, quality, chroma)
     png.unlink(missing_ok=True)
     shutil.rmtree(png.parent / f"{png.stem}.leveled", ignore_errors=True)
-    return {"full_bytes": full_bytes, "thumb_bytes": thumb_bytes}
+    return sizes
 
 
 # --------------------------------------------------------------------------- #
@@ -813,9 +878,18 @@ def build(
     friends: Sequence[str] = (),
     per_page: int = PAGE,
     seed: int | None = None,
+    reuse: bool = True,
     log=print,
 ) -> dict:
-    """The whole kit: render, encode, thumbnail, page, paragraph, decks, zip.
+    """The whole kit: find, render, encode, thumbnail, page, paragraph, decks, zip.
+
+    **Found before made**, since 2026-09-14: a seat [`curation.fulls`] already has
+    a picture of at that seat's own regime is encoded from it and never rendered
+    again ([`standing_fulls`], which carries what that costs the picture). Over a
+    record whose seats have been through a gallery rejection pass that is every
+    seat, and the leg is minutes rather than the five hours it used to be.
+    `reuse=False` renders them all, which is how a picture somebody suspects a
+    sheet of is checked against a fresh one.
 
     Resumable at the seat: a seat whose two JPEGs are already there is not
     rendered again, so a killed leg picks up where it stopped and a kit rebuilt at
@@ -863,6 +937,28 @@ def build(
     def arrived(job, png):
         sizes.append({"name": job["name"], **cut(png, job, fulls, thumbs, quality, chroma)})
 
+    # Found before made, [`curation.fulls`]' rule and this leg's largest saving:
+    # a record whose seats were cut for a gallery rejection pass has every one of
+    # them at this frame already, and rendering them again is five hours to
+    # arrive at the same pictures. The found file is encoded here like any other
+    # and never copied, so the kit is one encoding cell whatever made the picture.
+    adopted: list[dict] = []
+    if reuse and wanted:
+        at_hand = standing_fulls(wanted, log)
+        for job in wanted:
+            picture = at_hand.get(job["key"])
+            if picture is None:
+                continue
+            sizes.append(
+                {
+                    "name": job["name"],
+                    **encode_pair(Path(picture), job, fulls, thumbs, quality, chroma),
+                }
+            )
+            adopted.append(job)
+        taken = {job["name"] for job in adopted}
+        wanted = [job for job in wanted if job["name"] not in taken]
+
     seats_at = {
         value: len([job for job in jobs if job["ss"] == value])
         for value in sorted({job["ss"] for job in jobs})
@@ -870,7 +966,8 @@ def build(
     log(
         f"[votes] {stamp}: {len(jobs)} seat(s), "
         f"{', '.join(f'{count} at ss{value}' for value, count in seats_at.items())}, "
-        f"{len(standing)} already encoded, {len(wanted)} to render on {workers} worker(s)"
+        f"{len(standing)} already encoded, {len(adopted)} reused at this geometry, "
+        f"{len(wanted)} to render on {workers} worker(s)"
     )
     legs = []
     for value in sorted({job["ss"] for job in wanted}):
@@ -882,6 +979,14 @@ def build(
         "regime": regime.spelled,
         "planned": sum(int(leg.get("planned", 0)) for leg in legs),
         "made": sum(int(leg.get("made", 0)) for leg in legs),
+        # What `curation.fulls` already held at each seat's own regime, and what
+        # share of the seats this leg had to make a picture for that is. Both are
+        # here because the pair is the reading: a hit rate near 1 says the kit and
+        # the labeling sheets agree about geometry, and one well under it says
+        # they do not and is worth knowing before a friend sees the kit.
+        "reused": len(adopted),
+        "reuse_rate": round(len(adopted) / max(1, len(adopted) + len(wanted)), 4),
+        "encoded_already": len(standing),
         "failed": [row for leg in legs for row in leg.get("failed", ())],
         # One entry per supersample the leg actually rendered at, cheapest first.
         # The aggregate above is what the resume reads and the legs are what a
@@ -1812,6 +1917,7 @@ __all__ = [
     "decks",
     "draw_seed",
     "encode",
+    "encode_pair",
     "master_order",
     "page",
     "parse_supersample_for",
@@ -1824,5 +1930,6 @@ __all__ = [
     "seat_name",
     "seat_supersample",
     "slug_for",
+    "standing_fulls",
     "write_orders",
 ]

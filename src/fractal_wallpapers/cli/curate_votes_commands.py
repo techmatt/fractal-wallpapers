@@ -36,6 +36,7 @@ def curate_votes(args: argparse.Namespace) -> int:
             friends=tuple(args.friend or ()),
             per_page=args.page,
             seed=args.seed,
+            reuse=not args.no_reuse,
         )
     except (votes.VotesRefused, tentative.TentativeRefused) as refusal:
         print(refusal)
@@ -140,6 +141,15 @@ def add_steps(steps) -> None:
         help="the master permutation's seed. Drawn and recorded if not given, and a rebuild "
         "into a kit that already exists reads its own back — a re-drawn seed would move every "
         "page a friend had not reached yet",
+    )
+    building_votes.add_argument(
+        "--no-reuse",
+        action="store_true",
+        help="render every seat, even one a built sheet already drew at its regime. The "
+        "default finds them first — a record that has been through a gallery rejection "
+        "pass has all of them, which is minutes against hours — and a found picture is the "
+        "one this leg would have made, matched on the recipe key AND the regime. This is "
+        "for checking a sheet's picture against a fresh one, and it is the whole leg",
     )
     building_votes.add_argument(
         "--ss-for",

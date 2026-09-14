@@ -55,6 +55,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [publish_gallery_ckpt124](#publish_gallery_ckpt124)
     - [rejection_ingest_ckpt124](#rejection_ingest_ckpt124)
     - [veto_model_ckpt124](#veto_model_ckpt124)
     - [PRECLOSEOUT_ckpt123_wallpapers](#precloseout_ckpt123_wallpapers)
@@ -634,6 +635,32 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### publish_gallery_ckpt124
+
+**Both lanes, idle box, and they agree at 4,694.** `publish_gallery_ckpt124`,
+2026-09-14, taken after the voting kit finished rather than beside it. **Fast: 4,541
+selected, 153 deselected — 4,694 collected — in 125.25 s (2:05). Slow: 4,694 of 4,694
+in 477.33 s (7:57).** Both green, zero skips, zero failures.
+
+**Nine tests added, all fast, and the slow count moved by zero.** Six in
+`test_votes.py` for *found before made* — a picture planted in the fulls store through
+`fulls.store_dir`, so the tier redirect reaches it — and three in `test_tentative.py`
+for the viewer path. Every one is a `tmp_path` tree of stub JPEGs or an assertion on a
+path, so none earned `@pytest.mark.slow`.
+
+**The fast lane's one red was the surface table, and it was the right red.**
+`test_nested_verbs.py::test_a_nested_verb_carries_only_the_flags_its_handler_reads`
+failed on `--viewer` and `--no-reuse` being absent from `SURFACE`. Two new flags on
+two verbs, caught in the same run that added them — which is what that table is for,
+and it is the second consecutive prompt it has caught.
+
+**Both clocks came in UNDER `rejection_ingest_ckpt124`'s on nine more tests** —
+125.25 s against 127.53 s and 477.33 s against 481.08 s, and the fast lane is back on
+`lane_speedup_ckpt122`'s 125.12 s to a tenth for the second time. **A count is not a
+cost**, again, and the three consecutive fast lanes now inside half a second of each
+other over the 28 tests those three prompts added say the box is steady rather
+than that the tree is.
 
 #### rejection_ingest_ckpt124
 

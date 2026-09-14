@@ -1025,7 +1025,8 @@ def _prune_protections(meta: list, log=print) -> dict:
     named = ", ".join(f"{name} {len(found):,}" for name, found in out.items())
     log(
         f"[prune] protections: {named}; the population file names {len(fitted):,} recipe(s) "
-        f"and {len(tentative.stamps())} recorded gallery/ies name {len(recorded):,}"
+        f"and the {len(tentative.kept())} KEPT recorded gallery/ies name {len(recorded):,} "
+        f"of the {len(tentative.stamps())} on this machine"
     )
     return out
 
