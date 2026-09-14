@@ -839,7 +839,12 @@ def add_steps(steps) -> None:
             "reads a unit vector off it and the vector is kept forever, keyed by the exact "
             "location key. Incremental and idempotent: what is already stored is subtracted "
             "before anything is drawn, so a later harvest's admissions are a second run of "
-            "this. Exits non-zero when the store does not cover the admitted population."
+            "this. Exits non-zero when the store does not cover the admitted population. "
+            "NEEDS THE NETWORK THE FIRST TIME ON A MACHINE: the encoder is the only "
+            "third-party weight here and is not re-hosted, so it comes from Hugging Face — "
+            "84.2 MB into ~/.cache/huggingface, once, pinned to the hub revision "
+            "`models/embedding.py` names. Every run after it is local, and "
+            "`models.embedding.verify()` hashes what was cached against the pin."
         ),
     )
     device_flag(embedding_step)

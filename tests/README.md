@@ -55,6 +55,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [repo_bootstrap_fixes_ckpt124](#repo_bootstrap_fixes_ckpt124)
     - [publish_gallery_ckpt124](#publish_gallery_ckpt124)
     - [rejection_ingest_ckpt124](#rejection_ingest_ckpt124)
     - [veto_model_ckpt124](#veto_model_ckpt124)
@@ -635,6 +636,58 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### repo_bootstrap_fixes_ckpt124
+
+**Both lanes, idle box, and they agree at 4,726.** `repo_bootstrap_fixes_ckpt124`,
+2026-09-14. **Fast: 4,570 selected, 156 deselected — 4,726 collected — in 123.51 s
+(2:03). Slow: 4,726 of 4,726 in 478.06 s (7:58).** Both green, zero skips, zero
+failures. **+32 tests on the fast lane's clock FALLING 1.74 s**, against a slow lane
+0.73 s up.
+
+#### ★ A lane that moved was the code, and a worktree at HEAD is what proved it
+
+**The first two readings of this tree were 161.07 s and 160.02 s** against
+`publish_gallery_ckpt124`'s 125.25 s, before a single test had been added — so the
+rule fired: *a lane that moves right after code landed is the code until measured
+otherwise*. The box was 10% busy and collection was 10.4 s, neither of which
+explains 35 seconds.
+
+**What settled it was a second tree, not a second run.** `git worktree add` at
+`HEAD` with `FRACTAL_WALLPAPERS_HOT_ROOT` pointed at the real store, the same venv,
+the same release engine copied in: **140.58 s**. So ~15 s was the box and ~20 s was
+the tree, and the tree's share was now a number rather than a suspicion. A worktree
+is the cheap version of this and it is worth reaching for before a re-run: it
+measures the OLD code on TODAY's box, which is the comparison a repeated run of the
+new code cannot make.
+
+**Then per-file, both trees, nine files.** One answered:
+
+```text
+                            mine      HEAD
+test_solve.py              43.40s    14.03s     <- +29.4 s
+test_neutral_embeddings.py  8.57s     1.81s     <- +6.8 s
+test_tentative.py           5.95s     3.03s
+test_renderer_agreement.py  0.58s     1.70s
+```
+
+**`solve._fine_weights` swept a fifteen-megabyte file to read one string.** It was
+added this prompt to put the fine head's weights sha256 on a solve record, and it
+called `pool_scores_weights()` — every distinct stamp, which is 46,090 `json.loads`
+— **once per record built**, and `test_solve.py` builds one per test. The fix is
+`pool_scores_stamp()`, the first row alone, which is exactly what `pool_scores_run`
+next to it already did for the run name. *Which derivation is paid twice* and *what
+is paid once per test*, and this was both.
+
+**The other 7 s was two new tests earning their marks.** `embedding.verify()` is
+88,240,510 bytes through sha256 (6.8 s) and `describe()` imports timm to read the
+normalization off the checkpoint (3.9 s). Both moved to the slow lane under the
+marking rule, and the published record's thousand-key recompute went with them —
+that one is slow because recomputing all thousand IS the assertion, and a sample
+would leave the file's coverage unasserted.
+
+**160.02 − 29.4 − 7 = 123.6, against a measured 123.51.** The arithmetic closing to
+a tenth is what says the two causes were the whole of it and nothing else moved.
 
 #### publish_gallery_ckpt124
 

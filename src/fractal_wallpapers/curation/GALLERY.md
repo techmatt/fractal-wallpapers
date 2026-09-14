@@ -713,6 +713,37 @@ is arithmetic over what it is given and never reads that store itself, since
 Read 41,457 / 41,457 / 0 unread on 2026-09-09, which is what sent
 `SOLVE_ckpt117_resolve_and_fate_0908` straight to its solve.
 
+#### A `p_fine` row says which WEIGHTS wrote it, since 2026-09-14
+
+**A run NAME is what a retrain keeps.** `pool_scores.jsonl` carried `head` and a
+run name and no hash at all, so a refit under
+`twelve_sheets_drop_high_asymmetric_auc_ge4_more` would have changed every
+`p_fine` in the pool with nothing in the tree able to detect it — and `p_fine`
+gates the seating bar, the cascade order, the vetoes and growth. The render judge
+has had the answer since the ledger was built: its score rows are keyed
+`recipe_key|judge_artifact|regime` where `judge_artifact` is the weights sha256,
+so a swapped head writes new keys instead of overwriting and `floors.release_cut`
+refuses on a moved sha.
+
+Every row now carries `weights`, and a solve record carries `config.fine_weights`
+beside `config.fine_head` — which puts it in the block a published stamp's
+manifest holds **whole**, so a published record can say which fit of a head chose
+its seats. The 46,090 rows already written were backfilled by `gallery-grade
+stamp-scores`: one run behind them, its three checkpoints unmoved since, every row
+stamped and nothing else touched. It refuses a file already carrying a different
+stamp or written by another run, and a second blind run is a no-op.
+
+**For the k=3 ensemble it is a digest OF the members' digests**
+(`gallery_grade_train.weights_digest`), in seed order — no single file produces
+the column, so no single file's hash identifies it.
+
+⚠ **A fresh clone's rows will not match this repository's, and that is the guard
+working.** These record the **fp32** checkpoints that produced the scores; what
+`fetch-weights` hands a clone is the **fp16** release artifact, a different file
+with a different hash by design. Differently-stamped rows there are two artifacts
+being named correctly, not a mismatch to repair. What the stamp is for is the
+*same* file name holding *different* weights.
+
 **Verified by running both**, 2026-09-07, against the digests
 `FIX_ckpt114_solve_profiling_and_speedups_0907` took over the same pool: an
 unbarred `curate solve run --n 1000` reproduces 1000 / 0 / 1.001752 / 1786.467343
@@ -1788,6 +1819,8 @@ never a proof that rows can lower an optimum.
 src/fractal_wallpapers/curation/tentative.py   the store, the aliases, the page
 artifacts/curation/tentative/<stamp>/gallery.jsonl   one row per seat
 artifacts/curation/tentative/<stamp>/manifest.json   what pool, what settings, what shortfall
+artifacts/curation/tentative/<stamp>/recipes.jsonl   what each seat is MADE of — see below
+artifacts/curation/tentative/<stamp>/fulls/          its own 1280x720ss2 pictures, pinned
 artifacts/curation/tentative/<stamp>/index.html      the browser, NOT tracked — `browse` writes it
 artifacts/curation/solve/tentative_n<N>_<stamp>/     that record's own solve, under the same stamp
 ```
@@ -1798,8 +1831,68 @@ fractal-wallpapers curate solve record --n 150            # a smaller one
 fractal-wallpapers curate solve browse <stamp>            # write the page again
 fractal-wallpapers curate solve browse <stamp> --spacing  # what the presentation order bought
 fractal-wallpapers curate solve resolve 49616c4b,a71f     # an ID or alias back to a recipe
+fractal-wallpapers curate solve recipes --write           # the tracked {key, recipe} file
+fractal-wallpapers curate solve fulls --pin               # give the record its own fulls
 fractal-wallpapers curate solve list                      # every record on this machine
 ```
+
+### A published record must be redrawable from what is published
+
+**`recipes.jsonl`, one `{key, recipe}` row per seat, and it landed 2026-09-14.**
+Until then a published record said which pictures were seated and not what they
+are: the ID is a one-way sha256 prefix, the recipe behind it lives in the
+untracked candidate ledger, and 529 of a thousand seats carry a continuous
+`palette.phase` — so recovery by search is out. Measured on a real clone: **994 of
+the 1,000 published seats could not be drawn at all**, the six that could being an
+accident of overlap with a tracked decision store. What a clone *could* draw was
+the *place* — `render --family julia --c … --mode stripe` gives the right geometry
+through the default palette, which is a different wallpaper wearing the record's
+name.
+
+The file is [`recipes.Recipe.record`] verbatim, so `recipes.of_record` reads it
+back and `recipes.key_of` of that is the row's own key — **every row is checked to
+recompute before it is written**, because a recipe file whose keys do not
+recompute names different pictures under the record's names, which is worse than
+having none. **0.68 MiB for a thousand seats** (716,688 bytes), under
+`test_history_purity.py`'s 1 MiB ceiling and smaller than the `gallery.jsonl`
+beside it.
+
+**`render --recipe FILE --key <seat>` is the door**, and there was none before:
+`--location` takes a place and a geometry and has no member for the curve, the
+fold, the palette pass, the trap's settings or the levelling band. A seat's
+levelling is **re-derived rather than replayed** — the operator measures the base
+render it just made, which is what the candidate path did — and the band the
+recipe names is checked against this checkout's before anything is drawn.
+Verified on 2026-09-14: one seat per mode, **13 of 13 byte-identical** to the
+gallery's own JPEGs.
+
+⚠ **97 seats carry no `band_sha256` and that is not a gap.** They are the
+`itinerary` and direct-trap modes, where `autolevel.applies_to` is false and the
+operator never acted — there is no band in those pictures' identity to record.
+All four of those modes are in the 13 verified above.
+
+⚠ **Tracked for `20260914T171846Z` alone.** `.gitignore` names that one path
+rather than a pattern: the other seven published stamps predate the decision, and
+writing theirs is a question about how big this history should be rather than a
+fix. `tentative.write_recipes` resolves for any stamp; what is per-stamp is only
+whether git carries it.
+
+### A record's fulls are pinned, because a gather is a borrow
+
+`curate solve fulls` resolves each seat at `1280x720ss2` and most of what it finds
+is somebody else's labelling sheet. Measured on the published record on
+2026-09-14: **923 of 1,000 were borrowed and 895 of those came from one sheet**,
+`gallery_rejection_20260914`. Deleting a spent sheet is ordinary housekeeping and
+would have taken nine tenths of the published gallery's full-resolution pictures
+with it, silently.
+
+`--pin` gives each one a second name under the record's own `fulls/` directory and
+**costs nothing**: a hard link is another directory entry for bytes that already
+exist, and a name survives the other one being deleted. The published record's
+thousand pinned as **1,000 links and 0 bytes copied**; a copy is the fallback
+across volumes and the readout says which it did. `fulls.index` then prefers the
+record's own copies over the borrow, so the viewer points at them —
+`borrowed_from_elsewhere` went 1000 → 0.
 
 **Renamed 2026-09-04, and there was an unrelated `curate gallery` before it.** These
 four verbs were spelled `curate gallery <verb>` until this file documented that name

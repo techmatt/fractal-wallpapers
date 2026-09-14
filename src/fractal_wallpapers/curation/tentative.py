@@ -146,6 +146,34 @@ ROWS_NAME = "gallery.jsonl"
 MANIFEST_NAME = "manifest.json"
 PAGE_NAME = "index.html"
 
+#: The third file of a published record, and the one that makes it **redrawable**.
+#:
+#: A seat row says which picture was seated and carries the key that names it; it
+#: does not say what the picture is made of. The key is a one-way digest, the
+#: recipe behind it lives in the untracked candidate ledger, and 529 of a
+#: thousand seats carry a continuous `palette.phase` — so recovery by search is
+#: out and a clone could draw the *place* a seat stands on and nothing else. That
+#: was measured on 2026-09-14: 994 of 1,000 published seats could not be redrawn
+#: from tracked data, the six that could being the ones a tracked decision store
+#: happens to overlap.
+#:
+#: One `{key, recipe}` row per seat closes it, at 0.68 MiB for a thousand — under
+#: `tests/test_history_purity.py`'s 1 MiB ceiling and smaller than the
+#: `gallery.jsonl` beside it. The `recipe` block is [`recipes.Recipe.record`]
+#: verbatim, so `recipes.of_record` reads it back and `recipes.key_of` of that is
+#: the row's own key; `render --recipe` is the door that draws one.
+#:
+#: ⚠ **Tracked for `20260914T171846Z` alone**, and `.gitignore` names that one
+#: path rather than a pattern. The other seven published stamps predate the
+#: decision and their rows are on this machine; writing theirs is a decision about
+#: history's size, not a fix. [`recipes_path`] resolves for any stamp and
+#: [`write_recipes`] writes for any stamp — what is per-stamp is only whether git
+#: carries it.
+RECIPES_NAME = "recipes.jsonl"
+
+#: The record's own directory of full-resolution pictures — see [`fulls_dir`].
+FULLS_NAME = "fulls"
+
 #: How many characters of the recipe key an alias is, before a collision makes it
 #: longer. Eight of sixteen: short enough to read out loud, and over a gallery of
 #: a thousand seats a birthday collision on those 32 bits is about one in ten
@@ -338,6 +366,28 @@ def page_path(stamp: str) -> Path:
     return gallery_dir(stamp) / PAGE_NAME
 
 
+def recipes_path(stamp: str) -> Path:
+    return gallery_dir(stamp) / RECIPES_NAME
+
+
+def fulls_dir(stamp: str) -> Path:
+    """Where this record's own full-resolution pictures live. **Untracked, and pinned.**
+
+    A gather resolves most of a record's fulls to somebody else's labelling
+    sheet — 923 of the published record's 1,000 on 2026-09-14, and 895 of those
+    to one sheet — so the sheet's ordinary cleanup would take nine tenths of the
+    published gallery's full-resolution pictures with it. [`fulls.pin`] gives each
+    one a second name in here, which is a hard link and costs no disk, and the
+    record then owns a set of pictures nothing else's retention decides.
+
+    **Ignored, like every other picture.** `.gitignore` excludes a stamp's
+    contents and un-ignores the text files one path at a time, so a directory
+    appearing inside a published stamp is ignored without a rule being written —
+    which is the shape that decision was given on 2026-09-04.
+    """
+    return gallery_dir(stamp) / FULLS_NAME
+
+
 def stamps() -> list[str]:
     """Every recorded gallery on this machine, oldest first.
 
@@ -422,6 +472,97 @@ def read_manifest(stamp: str | None = None) -> dict:
     if not path.is_file():
         raise TentativeRefused(f"no manifest at {path}")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def read_recipes(stamp: str | None = None) -> dict:
+    """`{key: recipe block}` for one record, off its own tracked [`RECIPES_NAME`].
+
+    The **tracked** answer to what a seat is made of: no ledger, no pool, no
+    store on this machine. A record that has not been written one refuses and
+    names the command, because the alternative — falling through to the ledger —
+    is exactly the silence this file exists to end. A clone would get an answer
+    on the machine that has the pool and `null` everywhere else.
+    """
+    stamp = latest() if stamp is None else str(stamp)
+    path = recipes_path(stamp)
+    if not path.is_file():
+        raise TentativeRefused(
+            f"no recipe file at {tracked_name(path)}, so this record says which pictures "
+            f"were seated and not what they are made of. `curate solve recipes --stamp "
+            f"{stamp} --write` builds one out of the candidate ledger."
+        )
+    held: dict[str, dict] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        held[str(row["key"])] = row["recipe"]
+    return held
+
+
+def build_recipes(stamp: str | None = None) -> tuple[list[dict], dict]:
+    """`(rows, readout)` — one `{schema, key, recipe}` per seat, off the ledger.
+
+    **Every seat is checked before it is written**, twice. The stored block has to
+    read back through [`recipes.of_record`] — which refuses a member that was
+    defaulted rather than recorded — and the key that comes out of
+    [`recipes.key_of`] has to be the seat's own. A row that fails either is not
+    written and is counted with its reason: a recipe file whose keys do not
+    recompute is a file that names different pictures under the record's names,
+    which is worse than the record having no recipe file at all.
+
+    A seat the ledger does not hold is the one gap this cannot close, and it is
+    reported rather than skipped silently.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    stamp = latest() if stamp is None else str(stamp)
+    keys = [str(row["key"]) for row in read_rows(stamp)]
+    held = candidate_ledger.by_key(keys)
+
+    rows, absent, refused, autolevel_off = [], [], [], 0
+    for key in keys:
+        row = held.get(key)
+        if row is None or not row.get("recipe"):
+            absent.append(key)
+            continue
+        block = row["recipe"]
+        try:
+            recomputed = recipes_module.key_of(recipes_module.of_record(block))
+        except recipes_module.RecipeError as why:
+            refused.append({"key": key, "why": str(why)})
+            continue
+        if recomputed != key:
+            refused.append({"key": key, "why": f"recomputes to {recomputed}"})
+            continue
+        if block.get("autolevel") is None:
+            autolevel_off += 1
+        rows.append({"schema": SCHEMA, "key": key, "recipe": block})
+    return rows, {
+        "stamp": stamp,
+        "seats": len(keys),
+        "written": len(rows),
+        "not_in_the_ledger": absent,
+        "refused": refused,
+        # Not a gap. The operator acts on a mode KIND — `autolevel.applies_to` —
+        # and the direct traps and the itinerary are not among them, so a seat in
+        # one of those modes has no band in its identity to record. It re-renders
+        # from this row exactly as it was made.
+        "no_autolevel_because_the_mode_takes_none": autolevel_off,
+    }
+
+
+def write_recipes(stamp: str | None = None) -> tuple[Path, dict]:
+    """Write one record's [`RECIPES_NAME`] out of the ledger, and say what it holds."""
+    stamp = latest() if stamp is None else str(stamp)
+    rows, readout = build_recipes(stamp)
+    path = recipes_path(stamp)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return path, {**readout, "bytes": path.stat().st_size, "wrote": tracked_name(path)}
 
 
 # --------------------------------------------------------------------------- #
@@ -778,33 +919,72 @@ def resolve(names, stamp: str | None = None) -> list[dict]:
     aliases with one typo in it should still answer for the nine, and what a miss
     is worth is the caller's decision.
 
-    The recipe comes from the candidate ledger and not from the record, because a
-    seat row is what a *rule* reads and a figure prompt needs what a *render*
-    reads. One streamed pass of the ledger for the whole list.
-    """
-    from fractal_wallpapers.curation import candidate_ledger
+    The recipe comes from the record's own [`RECIPES_NAME`] where it has one and
+    from the candidate ledger where it does not — a seat row is what a *rule*
+    reads and a figure prompt needs what a *render* reads, and the tracked file is
+    the only one of the two a clone has. The ledger is one streamed pass for the
+    whole list.
 
+    **It refuses rather than answering `"recipe": null`.** A record with neither
+    file behind it used to return a row per name with a null recipe and exit 0,
+    which reads as *this seat has no recipe* where the truth is *this machine has
+    nothing to look it up in* — the first is a fact about a picture and the second
+    is a missing store, and the command said the wrong one. [`_recipe_source`]
+    names what is absent.
+    """
     stamp = latest() if stamp is None else str(stamp)
     rows = read_rows(stamp)
     by_alias = {str(row["alias"]): row for row in rows}
     by_key = {str(row["key"]): row for row in rows}
     wanted = [str(name).strip() for name in names if str(name).strip()]
     found = {name: by_key.get(name) or by_alias.get(name) for name in wanted}
-    recipes = candidate_ledger.by_key({row["key"] for row in found.values() if row})
+    source, recipes = _recipe_source(stamp, {row["key"] for row in found.values() if row})
     return [
         {
             "name": name,
             "stamp": stamp,
             "found": found[name] is not None,
             "row": found[name],
-            "recipe": (recipes.get(str(found[name]["key"])) or {}).get("recipe")
-            if found[name]
-            else None,
+            "recipe": recipes.get(str(found[name]["key"])) if found[name] else None,
+            "recipe_from": source,
             "picture": (found[name] or {}).get("picture"),
             "picture_on_disk": _on_disk(found[name]),
         }
         for name in wanted
     ]
+
+
+def _recipe_source(stamp: str, keys) -> tuple[str, dict]:
+    """`(where it came from, {key: recipe})` — the tracked file, else the ledger.
+
+    The tracked file first, because it is what a clone has and because it is the
+    record's own statement about its seats rather than a lookup in a store that
+    has moved since. The ledger is the fallback for the seven published stamps
+    that have no recipe file and for every unpublished record.
+
+    Refuses when neither is there. The two absences are named separately: one is
+    fixed by a command in this repository and the other by having the pool.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
+    if recipes_path(stamp).is_file():
+        held = read_recipes(stamp)
+        return tracked_name(recipes_path(stamp)), {
+            key: held[key] for key in map(str, keys) if key in held
+        }
+    ledger = candidate_ledger.rows_path()
+    if not ledger.is_file():
+        raise TentativeRefused(
+            f"a recipe was asked for and there is nothing on this machine to read one out "
+            f"of. {stamp} has no {RECIPES_NAME} ({tracked_name(recipes_path(stamp))}) and "
+            f"the candidate ledger is not here either ({tracked_name(ledger)}). A clone gets "
+            f"the recipe file for a record that was written one — `curate solve recipes "
+            f"--stamp {stamp} --write` writes it on a machine that holds the pool. It is NOT "
+            f"a fact about these seats: every one of them was made from a recipe."
+        )
+    return tracked_name(ledger), {
+        key: (row or {}).get("recipe") for key, row in candidate_ledger.by_key(keys).items()
+    }
 
 
 def _on_disk(row: dict | None, tiers: Tiers | None = None) -> bool | None:
@@ -879,7 +1059,9 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     # than by the page, because `file://` cannot look in a directory: a seat with
     # no full picture has to arrive with an empty string and be laid out as the
     # candidate alone. `curate solve fulls <stamp>` is what fills that in.
-    full = fulls.index([row.get("key") for row in rows], log=lambda _line: None)
+    full = fulls.index(
+        [row.get("key") for row in rows], log=lambda _line: None, pin_dir=fulls_dir(stamp)
+    )
     shown = [
         {
             **row,
@@ -1351,8 +1533,10 @@ __all__ = [
     "FLOOR_FREE",
     "FLOOR_HOLDING",
     "FLOOR_MANDATED",
+    "FULLS_NAME",
     "MANIFEST_NAME",
     "PAGE_NAME",
+    "RECIPES_NAME",
     "RECORDED_SEATS",
     "ROWS_NAME",
     "SCHEMA",
@@ -1360,7 +1544,9 @@ __all__ = [
     "VIEWER_UNIT",
     "TentativeRefused",
     "aliases",
+    "build_recipes",
     "counts_of",
+    "fulls_dir",
     "gallery_dir",
     "latest",
     "ledger_rows",
@@ -1370,7 +1556,9 @@ __all__ = [
     "page_path",
     "protected_keys",
     "read_manifest",
+    "read_recipes",
     "read_rows",
+    "recipes_path",
     "resolve",
     "rows_of",
     "rows_path",
@@ -1380,4 +1568,5 @@ __all__ = [
     "thumbnail_href",
     "viewer_dir",
     "write",
+    "write_recipes",
 ]

@@ -24,12 +24,23 @@ carries too and which is therefore checked against the picture that was actually
 drawn rather than assumed. A near match is not taken: a seat whose only picture is
 at another frame is a miss and is rendered.
 
-## Nothing is copied
+## Nothing is copied, and a published record is the one exception
 
 A found picture stays where it is and the index names it. A record's seats are
 scattered across a dozen sheets and copying them into one directory would be a
 second copy of a hundred and fifty megabytes that goes stale the moment either
 side moves. What this module owns on disk is only the pictures it **made**.
+
+**Except that a gather is a borrow, and a borrow is not a place to leave a
+published record.** Measured on 2026-09-14: 923 of the published record's 1,000
+fulls were somebody else's sheet files and 895 of those were one sheet,
+`gallery_rejection_20260914` — so the ordinary cleanup of a spent labelling sheet
+would have taken nine tenths of the published gallery's full-resolution pictures
+with it, silently, at the moment the sheet stopped being interesting. [`pin`] is
+the answer and it costs nothing: a **hard link** into the record's own directory
+is a second name for the same bytes, and a name survives the other one being
+deleted. Where the two are on different volumes it copies instead and says which
+it did. [`index`] then prefers the record's own copies over the borrow.
 
 ## It is not a second picture store
 
@@ -43,6 +54,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import time
 from pathlib import Path
 
@@ -143,15 +155,78 @@ def made(regime: release.Regime | None = None) -> dict[str, Path]:
     return {held.stem: held for held in sorted(directory.glob("*.jpg"))}
 
 
-def index(keys, regime: release.Regime | None = None, log=print) -> dict[str, Path]:
-    """`{key: picture}` over `keys`, gathered from the sheets and from what was made.
+def pinned(directory: Path | None) -> dict[str, Path]:
+    """`{candidate key: picture}` for the copies a record [`pin`]ned into its own tree."""
+    if directory is None or not Path(directory).is_dir():
+        return {}
+    return {held.stem: held for held in sorted(Path(directory).glob("*.jpg"))}
 
-    What this module made wins, because a gathered picture is somebody else's file
-    under somebody else's sweep and the one here was made for this.
+
+def pin(resolved: dict, directory: Path, log=print) -> dict:
+    """Give every picture in `resolved` a second name under `directory`. `{key: path}` on it.
+
+    **A hard link where the filesystem allows one**, which is the whole point: a
+    link is another directory entry for bytes that already exist, so pinning a
+    record's thousand fulls costs no disk at all and the pictures outlive the
+    sheet that happened to draw them. A copy is the fallback across volumes, and
+    the readout says how many of each — a caller that reads `copied: 0` knows it
+    paid nothing.
+
+    A key already pinned is left alone. It is not re-linked, because a re-link
+    would silently repoint the record at whatever the gather resolves to *today*,
+    and the reason to pin at all is that the gather's answer moves.
+    """
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    standing = pinned(directory)
+    linked, copied, failed, bytes_ = 0, 0, [], 0
+    out: dict[str, Path] = dict(standing)
+    for key, source in sorted(resolved.items()):
+        if key in standing:
+            continue
+        source = Path(source)
+        destination = directory / f"{key}.jpg"
+        if not source.is_file():
+            failed.append({"key": key, "why": f"{source} is not on this machine"})
+            continue
+        try:
+            os.link(source, destination)
+            linked += 1
+        except OSError:
+            try:
+                shutil.copyfile(source, destination)
+                copied += 1
+                bytes_ += destination.stat().st_size
+            except OSError as why:
+                failed.append({"key": key, "why": str(why)})
+                continue
+        out[key] = destination
+    log(f"[fulls] pinned {linked} link(s) and {copied} copy/copies into {directory}")
+    return {
+        "directory": str(directory),
+        "already_pinned": len(standing),
+        "linked": linked,
+        "copied": copied,
+        "bytes_copied": bytes_,
+        "failed": failed,
+        "pinned": out,
+    }
+
+
+def index(
+    keys, regime: release.Regime | None = None, log=print, pin_dir: Path | None = None
+) -> dict[str, Path]:
+    """`{key: picture}` over `keys`, from the record's own copies, what was made, the sheets.
+
+    In that order of preference, weakest first. A gathered picture is somebody
+    else's file under somebody else's sweep; one this module made was made for
+    this; one the record [`pin`]ned is the record's own and is the only one a
+    sheet cleanup cannot reach.
     """
     wanted = {str(key) for key in keys}
     resolved = {key: path for key, path in gather(regime, log).items() if key in wanted}
     resolved.update({key: path for key, path in made(regime).items() if key in wanted})
+    resolved.update({key: path for key, path in pinned(pin_dir).items() if key in wanted})
     return resolved
 
 
@@ -279,6 +354,8 @@ __all__ = [
     "index",
     "index_path",
     "made",
+    "pin",
+    "pinned",
     "render",
     "sheet_roots",
     "store_dir",

@@ -133,3 +133,71 @@ def test_the_regime_is_the_release_one_and_not_a_second_spelling_of_it() -> None
 def test_a_row_with_no_recipe_is_refused_rather_than_rendered_as_something_else(tier) -> None:
     with pytest.raises(fulls.FullsRefused, match="no recipe"):
         fulls.render([{"key": "k0"}], log=lambda _line: None)
+
+
+# --------------------------------------------------------------------------- #
+# Pinning: a published record cannot be taken by somebody else's cleanup.
+# --------------------------------------------------------------------------- #
+def test_pinning_gives_the_record_its_own_name_for_a_borrowed_picture(tier) -> None:
+    """The failure this closes, measured on 2026-09-14: 923 of the published
+    record's 1,000 fulls resolved to labelling sheets and 895 of those to ONE
+    sheet, `gallery_rejection_20260914`. Deleting a spent sheet is ordinary
+    housekeeping, and doing it would have taken nine tenths of the published
+    gallery's full-resolution pictures with it, silently."""
+    directory = a_sheet(tier, "a_cut", [("k0", fulls.REGIME), ("k1", fulls.REGIME)])
+    resolved = fulls.index(["k0", "k1"], log=lambda _line: None)
+    pin_dir = tier / "curation" / "tentative" / "20260914T000000Z" / "fulls"
+
+    record = fulls.pin(resolved, pin_dir, log=lambda _line: None)
+
+    assert record["linked"] + record["copied"] == 2
+    assert not record["failed"]
+    import shutil
+
+    shutil.rmtree(directory)
+    after = fulls.pinned(pin_dir)
+    assert set(after) == {"k0", "k1"}
+    assert all(path.read_bytes() == b"not really a jpeg" for path in after.values())
+
+
+def test_a_hard_link_costs_no_bytes_and_a_copy_says_that_it_did(tier) -> None:
+    """The readout is what tells a caller which it paid for. On one volume every
+    seat is a second directory entry for bytes that already exist — the published
+    record's thousand pinned for `bytes_copied: 0` — and the fallback across
+    volumes is a real copy that has to be visible as one."""
+    a_sheet(tier, "a_cut", [("k0", fulls.REGIME)])
+    resolved = fulls.index(["k0"], log=lambda _line: None)
+
+    record = fulls.pin(resolved, tier / "pinned", log=lambda _line: None)
+
+    assert record["copied"] == record["bytes_copied"] == 0 or record["copied"] == 1
+    assert record["linked"] + record["copied"] == 1
+
+
+def test_an_already_pinned_seat_is_left_alone(tier) -> None:
+    """A re-pin must not silently repoint the record at whatever the gather
+    resolves to TODAY. The whole reason to pin is that the gather's answer
+    moves."""
+    a_sheet(tier, "a_cut", [("k0", fulls.REGIME)])
+    resolved = fulls.index(["k0"], log=lambda _line: None)
+    pin_dir = tier / "pinned"
+    fulls.pin(resolved, pin_dir, log=lambda _line: None)
+
+    again = fulls.pin(resolved, pin_dir, log=lambda _line: None)
+
+    assert again["already_pinned"] == 1
+    assert again["linked"] == again["copied"] == 0
+
+
+def test_the_records_own_copy_wins_over_the_sheets(tier) -> None:
+    """Weakest first: a gathered picture is somebody else's file under somebody
+    else's sweep, one this module made was made for this, and one the record
+    pinned is the only one a sheet cleanup cannot reach."""
+    a_sheet(tier, "a_cut", [("k0", fulls.REGIME)])
+    pin_dir = tier / "pinned"
+    pin_dir.mkdir(parents=True)
+    (pin_dir / "k0.jpg").write_bytes(b"the record's own")
+
+    resolved = fulls.index(["k0"], log=lambda _line: None, pin_dir=pin_dir)
+
+    assert resolved["k0"] == pin_dir / "k0.jpg"

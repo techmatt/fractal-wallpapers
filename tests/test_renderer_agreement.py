@@ -50,9 +50,11 @@ declared exempt with a reason.
 
 from __future__ import annotations
 
+import argparse
 import dataclasses
 import hashlib
 import inspect
+import json
 from pathlib import Path
 
 import pytest
@@ -348,6 +350,32 @@ def _draw_shrinkage(case, recipe, where: Path) -> Path:
     return Path(made["picture"])
 
 
+def _draw_from_a_recipe_file(case, recipe, where: Path) -> Path:
+    """`render --recipe FILE`, the door a published record is redrawn through.
+
+    Written as a recipe file and run through the handler, because the file is the
+    interface: a published stamp's `recipes.jsonl` is what a clone has, and what
+    this guard is asking is whether a picture drawn from that file alone is the
+    picture the leg that made it drew. It was measured byte-identical on one seat
+    per mode across the published n=1000 record on 2026-09-14; this is what keeps
+    it that way when a member is added.
+    """
+    from fractal_wallpapers.cli import draw_commands
+
+    where.mkdir(parents=True, exist_ok=True)
+    key = recipes.key_of(recipe)
+    named = where / "recipes.jsonl"
+    named.write_text(
+        json.dumps({"schema": recipes.SCHEMA, "key": key, "recipe": recipe.record()}) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    picture = where / f"{key}.jpg"
+    args = argparse.Namespace(recipe=str(named), key=key, out=str(picture))
+    assert draw_commands.render_recipe(args) == 0
+    return picture
+
+
 def _draw_release(case, recipe, where: Path) -> Path:
     from fractal_wallpapers.curation import release
 
@@ -432,6 +460,10 @@ RENDERERS: tuple[Renderer, ...] = (
     # since 2026-09-08, and `test_curation_release.py` holds them to it.
     Renderer("release", "curation.release", STORED, _draw_release),
     Renderer("manufacture", "curation.manufacture", CANDIDATE, _draw_manufacture),
+    # The CLI door, and the only entry here that is not a leg: `render --recipe`
+    # is how a published record's seat is drawn on a machine with no pool, so
+    # what it must agree with is every leg at once.
+    Renderer("recipe file", "cli.draw_commands", STORED, _draw_from_a_recipe_file),
 )
 
 

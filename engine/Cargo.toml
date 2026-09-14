@@ -2,6 +2,13 @@
 name = "fractal-engine"
 version = "0.1.0"
 edition = "2024"
+# The edition above needs rustc 1.85, and saying so here is what makes an old
+# toolchain report a VERSION rather than a feature: cargo refuses with "requires
+# rustc 1.85 or newer, while the currently active rustc version is …", where the
+# edition alone fails as `feature `edition2024` is required` and points at a
+# nightly flag. Nothing else in the crate raises the floor — the thirty
+# dependencies are pure Rust and older than this.
+rust-version = "1.85"
 
 [dependencies]
 # Complex arithmetic for family parameters and viewport geometry. The iteration

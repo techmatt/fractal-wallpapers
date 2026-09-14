@@ -8,10 +8,15 @@ exists, while a cosine between two of them is still a plausible number between
 count: a store one location short of its population is a gallery pass that
 cannot choose that place and does not say so.
 
-Nothing here builds a vector. The encoder is two hundred megabytes of downloaded
+Nothing here builds a vector. The encoder is eighty-four megabytes of downloaded
 weights and a GPU pass, and what it returns is not a property this repository
 decides; what this repository decides is the picture handed to it, the key the
 answer is filed under, and whether the file survives.
+
+The encoder is also the **one third-party weight in the project** and the only
+`pretrained=True` in the tree, so the last section here is about the pin on it:
+which hub revision, what it hashes to, and that a store records the commit rather
+than only the variant name.
 """
 
 from __future__ import annotations
@@ -407,3 +412,81 @@ def test_the_curate_group_carries_the_four_subcommands() -> None:
             ["curate", step, "check"] if step == "embeddings" else ["curate", step]
         )
         assert callable(parsed.handler)
+
+
+# --------------------------------------------------------------------------- #
+# The one third-party weight here, and the pin on it.
+# --------------------------------------------------------------------------- #
+def test_the_encoder_names_a_hub_revision_and_not_a_moving_branch() -> None:
+    """★ Until 2026-09-14 this was `pretrained=True` against the hub's `main`.
+
+    No revision, no checksum, no size, and absent from `models/weights.json` —
+    whatever that repository held on the day a machine first ran `curate embed`
+    became this project's embedding basis. A silently different revision later
+    would fill a store of vectors that cannot be compared with the ones already
+    in it, which is the only thing these vectors are for, and nothing anywhere
+    would have said so. `timm>=1.0.27` is a floor on the library, not a pin on
+    the weights.
+    """
+    from fractal_wallpapers.models import embedding
+
+    assert len(embedding.REVISION) == 40 and all(
+        character in "0123456789abcdef" for character in embedding.REVISION
+    )
+    assert embedding.hub_id() == f"{embedding.HF_REPO}@{embedding.REVISION}"
+    assert embedding.hub_id(None) == embedding.HF_REPO, "a caller can still ask for main"
+
+
+def test_the_pin_reaches_timm_through_the_spelling_timm_actually_reads() -> None:
+    """`timm.models._hub.hf_split` cuts an id on `@` and passes the tail to the
+    hub as `revision`. That is the whole mechanism — no vendored file and no
+    second download path — so this asserts the overlay carries it."""
+    import inspect
+
+    from fractal_wallpapers.models import embedding
+
+    source = inspect.getsource(embedding.build)
+    assert "pretrained_cfg_overlay" in source and "hf_hub_id" in source
+
+
+@pytest.mark.slow
+def test_a_store_records_which_commit_filled_it() -> None:
+    """A manifest naming only the variant cannot say whether two stores are
+    comparable: the variant name is stable across every revision the hub ever
+    held, which is exactly the thing that moved.
+
+    Slow for an unobvious reason and it is worth naming: `describe` reads the
+    normalization off the checkpoint through `timm.data.resolve_model_data_config`
+    rather than typing the constants, which is the right call and costs **3.9 s**
+    of importing timm the first time anything in a lane does it.
+    """
+
+    class Fake:
+        num_features = 384
+
+    from fractal_wallpapers.models import embedding
+
+    described = embedding.describe(Fake(), device="cpu")
+
+    assert described["hub"] == embedding.hub_id()
+    assert described["weights_sha256"] == embedding.SHA256
+
+
+@pytest.mark.slow
+def test_the_cached_weights_are_the_artifact_this_project_was_measured_on() -> None:
+    """Stdlib, no network, no timm: it hashes what the cache already holds. A
+    machine that has never run `curate embed` reads `fetched: False`, which is a
+    state and not a fault — the 84.2 MB download happens on first use.
+
+    Slow because it is 88,240,510 bytes through sha256: **6.8 s measured** on the
+    run that added it, which is the marking rule's threshold seven times over.
+    """
+    from fractal_wallpapers.models import embedding
+
+    read = embedding.verify()
+
+    assert read["hub"] == embedding.hub_id()
+    if not read["fetched"]:
+        pytest.skip("the encoder is not in this machine's hub cache")
+    assert read["verified"], f"cached weights hash to {read['sha256']}, not {read['expected']}"
+    assert read["bytes"] == embedding.BYTES

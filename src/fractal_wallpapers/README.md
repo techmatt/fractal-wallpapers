@@ -162,8 +162,8 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `data/coloring/texture_flat.jsonl` | the register of which renders' modulate texture carried no information, for rows written before the engine reported it |
 | `data/spiral/`, `models/spiral/` | the spiral probe's corpus and its shipped weights |
 | `models/render/` | `weights-v6` with `render.v5.fp16.pt` beside it, and the run directories every bar was read against |
-| `models/gallery_grade/` | the fine head's weights and its recipe |
-| `artifacts/gallery_grade_head/pool_scores.jsonl` | the cascade **refuses** without it |
+| `models/gallery_grade/` | the fine head's weights and its recipe. On `roster.HEADS` since 2026-09-14 and shipped as ONE asset holding k=3 members — `gallery-grade ship` |
+| `artifacts/gallery_grade_head/pool_scores.jsonl` | the cascade **refuses** without it. Every row carries the `weights` sha256 since 2026-09-14 — a run NAME is what a retrain keeps |
 | `artifacts/render_folds/` | the fold assignment every render arm is fitted against — see the note below |
 | `artifacts/top_slice_probe/` | the probe's features, scores and held-out split |
 | `artifacts/gallery_grade/n1000_0906/*/plan.jsonl` | the only thing that can rebuild those levelled pictures as they were judged |

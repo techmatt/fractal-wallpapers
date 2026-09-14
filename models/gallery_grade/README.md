@@ -14,10 +14,56 @@ store's thousand human verdicts at the ledger's 640x360 candidate geometry.
 ⚠ **One reader, and it is the seating.** `solve.DEFAULT_KEY` is
 `solve.CASCADE_KEY`, so an unflagged `curate solve run` orders on this head above
 the bar. Everything else is where it was: `curation/rank_key.py` is untouched,
-retention does not see it, `_prune_ranks` is unchanged, no bar or floor reads it,
-and it is not on `models/roster.py` — that roster is heads a **render** goes
-through. Adoption moved one constant and nothing else, which is the shape to keep:
+retention does not see it, `_prune_ranks` is unchanged and no bar or floor reads
+it. Adoption moved one constant and nothing else, which is the shape to keep:
 what a prune keeps stays a separate question from what a gallery seats.
+
+## It ships, since 2026-09-14
+
+```
+fractal-wallpapers gallery-grade ship           # halve the ensemble, measure it, write the row
+fractal-wallpapers gallery-grade stamp-scores   # the one-way weights backfill for p_fine rows
+fractal-wallpapers fetch-weights --head gallery_grade
+```
+
+It was **off `models/roster.py` until then**, on the argument that the roster is
+heads a *render* goes through and this one reads a finished picture that already
+passed one. True, and the wrong conclusion: off the roster it had no
+`weights.json` row and no release, so a clone could read these configs and these
+per-sheet scores and **could not obtain the weights at any price**. `p_fine` gates
+the seating bar, the cascade order, the vetoes and growth, so the whole scored
+half of the repository was shut behind one untracked file.
+
+**One asset, k=3 members.** `shipped_runs` averages three seeds on the probability
+scale, so no single checkpoint is the column and a release of three assets would
+let a clone fetch two and score through a head nobody judged. `export_fp16` writes
+the members into `gallery_grade.fp16.pt`, `load_shipped` reads them back, and the
+manifest row says `members: 3` and `seeds: [0, 1, 2]`. **30,498,792 → 15,415,792
+bytes**, re-read bit-identical.
+
+**What half precision costs, measured 2026-09-14** over 8,000 pool rows — the top
+6,000 by `rank_score` plus a seeded tail, because a flat draw over 46,090 spends
+itself far below the bar where a disagreement changes nothing:
+
+```text
+bar at 0.030242        6,033 above in fp32, 6,035 in fp16 — 3 in, 1 out (4 of 8,000)
+top 1,000 of the order 2 seats in, 2 out
+rank moves             6,864 rows moved at all, worst 70 places, 3,343 adjacent swaps
+p_fine                 median 3.8e-4, p99 2.7e-3, worst 5.0e-3
+```
+
+**It reports rather than gates**, and that is deliberate. The three older judges
+refuse a halved artifact that moves their decisions, on constants ratified for
+their own populations; this head's decisions are a bar crossing and a seat, and
+there is no ratified bound on either. Comparing against a number nobody chose
+would be worse than putting the reading on the record.
+
+⚠ **The `p_fine` rows in `artifacts/gallery_grade_head/pool_scores.jsonl` are
+stamped with the FP32 checkpoints' digest and not with this artifact's.** They are
+different files with different hashes on purpose, so a clone scoring the pool with
+the published head writes differently-stamped rows — that is the guard working,
+not a mismatch. `gallery_grade_train.SCHEMA_NOTES["weights_are"]` says so on every
+row that carries it.
 
 ## Two bands, and the second one is the head
 

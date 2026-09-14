@@ -84,21 +84,23 @@ CLASSES = 4
 #: noise, and it was the fastest and the smallest.
 #:
 #: **It is not "the" backbone, and reading it as one is how the render head came
-#: to be described wrongly for four days.** Three heads ship and they do not
+#: to be described wrongly for four days.** Four heads ship and they do not
 #: agree — see [`SHIPPED_BACKBONES`]. Every loader already builds from
 #: `config["backbone"]` off the checkpoint, so nothing was ever built wrong; what
 #: was wrong was the documentation, which is the harder kind to notice.
 BACKBONE = "mobilenetv4_conv_medium.e250_r384_in12k"
 
-#: What each **shipped** artifact actually carries, read off the three
-#: `models/<head>/<head>.fp16.pt` files on 2026-08-28 and asserted at load by
-#: [`assert_shipped_backbone`].
+#: What each **shipped** artifact actually carries, read off the
+#: `models/<head>/<head>.fp16.pt` files — three of them on 2026-08-28 and the
+#: fourth on 2026-09-14 — and asserted at load by [`assert_shipped_backbone`].
 #:
 #: `render` disagrees with [`BACKBONE`] because the render head's own band
 #: comparison chose the small one — `render_train`'s `small_backbone` arm, at the
 #: backbone the strange corpus is not starving at — and the pooled head that
 #: shipped came out of it. `palette` is distilled and was small from the start
-#: (`palette_head.BACKBONE`). Only `location` is [`BACKBONE`].
+#: (`palette_head.BACKBONE`). `gallery_grade` is the render judge's own artifact
+#: continued — it is initialised from `weights-v6` — so it is small for that
+#: reason and would be wrong on any other. Only `location` is [`BACKBONE`].
 #:
 #: **Experiment checkpoints are deliberately not covered.** `render_train` trains
 #: bands at *both* backbones on purpose, so asserting over every file under
@@ -108,6 +110,7 @@ SHIPPED_BACKBONES = {
     "location": BACKBONE,
     "render": "mobilenetv4_conv_small.e2400_r224_in1k",
     "palette": "mobilenetv4_conv_small.e2400_r224_in1k",
+    "gallery_grade": "mobilenetv4_conv_small.e2400_r224_in1k",
 }
 
 

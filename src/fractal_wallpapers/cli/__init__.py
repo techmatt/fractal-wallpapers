@@ -172,9 +172,55 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+#: Which extra installs each optional dependency, and the cheapest one that does.
+#:
+#: The base install is deliberately torch-free — `pip install -e .` buys the
+#: engine, the walk, the supply engine and the labeling rig, and the `models`
+#: extra is two gigabytes of CUDA wheels a clone that only renders should never
+#: pay for. The cost of that is an `ImportError` on any command that crosses the
+#: line, and on a base install `curate mine plan` raised a bare
+#: `ModuleNotFoundError: No module named 'numpy'` naming nothing a person could
+#: act on. This turns every one of those into the install command.
+#:
+#: `numpy` and `pillow` are in **two** extras and the cheaper is named: choosing a
+#: gallery reads scores off a store and never loads a head, so a machine that does
+#: it needs neither torch nor the CUDA wheels.
+EXTRA_FOR: dict[str, str] = {
+    "numpy": "solve",
+    "PIL": "solve",
+    "torch": "models",
+    "torchvision": "models",
+    "timm": "models",
+    "scipy": "dev",
+}
+
+
+def name_the_extra(missing: ModuleNotFoundError) -> str | None:
+    """The install line for an optional dependency, or `None` for anything else.
+
+    `None` where the module is not one of ours to explain: an import error inside
+    this package is a bug and must keep its traceback, and a message guessing an
+    extra for it would bury one.
+    """
+    extra = EXTRA_FOR.get(str(missing.name or "").split(".")[0])
+    if extra is None:
+        return None
+    return (
+        f"{missing.name} is not installed. It comes with the `{extra}` extra, which this "
+        f"command needs and the base install deliberately leaves out:\n"
+        f'    pip install -e ".[{extra}]"\n'
+        f"The base install is torch-free on purpose — `models` alone is about four gigabytes "
+        f"of CUDA wheels — so a clone that only renders pays for none of this."
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    from fractal_wallpapers.cli.common import speak_utf8
     from fractal_wallpapers.discovery.identity import IdentityBroken
 
+    # Before the parser, because `--help` is printed from inside `parse_args` and
+    # two of the help screens here carry a character cp1252 cannot encode at all.
+    speak_utf8()
     args = build_parser().parse_args(argv)
     try:
         return args.handler(args)
@@ -183,6 +229,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         # the walk that raises it, the message names the flag to change, and a
         # traceback would bury an instruction under a stack.
         print(refusal)
+        return 1
+    except ModuleNotFoundError as missing:
+        # Here for the same reason `StorageRefusal` is: the condition is about
+        # the machine rather than about one command's arguments, and any command
+        # that crosses into the optional half can raise it. Anything this cannot
+        # name is re-raised with its traceback intact — an import error inside
+        # this package is a bug and must not be dressed up as a missing extra.
+        said = name_the_extra(missing)
+        if said is None:
+            raise
+        print(said)
         return 1
     except StorageRefusal as refusal:
         # Handled here and nowhere else. Every other refusal in this package is

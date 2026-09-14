@@ -6,6 +6,11 @@ on:
   pull_request:
 
 jobs:
+  # The engine first, and the full lane after it. Both orders ran green before
+  # 2026-09-14 and only one of them proved anything: with `--slow` ahead of
+  # `cargo build --release`, every engine-backed test skipped itself — the walk
+  # tests look for a release binary and stand down without one — so a green badge
+  # meant the suite had been collected, not that the renderer worked.
   check:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -21,21 +26,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install the package and dev tools
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
-
-      - name: Lint
-        run: python -m ruff check .
-
-      - name: Format check
-        run: python -m ruff format --check .
-
-      # The full lane. `--slow` is what CI and a pre-checkpoint run give: the
-      # default run holds back the renders, the training loops and the store
-      # sweeps, which is right for an edit-run loop and wrong for a gate.
-      - name: Test
-        run: python -m pytest --slow
-
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -48,6 +38,7 @@ jobs:
         run: cargo clippy -- -D warnings
         working-directory: engine
 
+      # BEFORE the Python suite, which is the whole point of this ordering.
       - name: Build the engine
         run: cargo build --release
         working-directory: engine
@@ -58,3 +49,59 @@ jobs:
       - name: Test the engine
         run: cargo test --release
         working-directory: engine
+
+      - name: Install the package and dev tools
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+
+      - name: Lint
+        run: python -m ruff check .
+
+      - name: Format check
+        run: python -m ruff format --check .
+
+      # The full lane. `--slow` is what CI and a pre-checkpoint run give: the
+      # default run holds back the renders, the training loops and the store
+      # sweeps, which is right for an edit-run loop and wrong for a gate. `-rs`
+      # so a skip is NAMED: zero skips is the normal reading on a machine with a
+      # warm render cache, and a lane that quietly stopped running a file is the
+      # failure this whole arrangement exists to catch.
+      - name: Test
+        run: python -m pytest --slow -rs
+
+  # The torch half, which `.[dev]` alone never touched: nine test modules carry a
+  # module-level `importorskip` and vanish at COLLECTION without it, so the job
+  # above proves the base install and says nothing about the judges. One OS,
+  # because what is being proved is that the import graph and the heads' own
+  # guards hold — not a platform difference — and the wheels are four gigabytes.
+  models:
+    name: models extra (ubuntu-latest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build the engine
+        run: cargo build --release
+        working-directory: engine
+
+      # The CPU index explicitly. `pyproject.toml` pins torch to the cu124 index
+      # through `[tool.uv.sources]`, which **pip does not read** — so a plain
+      # install here would pull whatever PyPI's default is and spend a long time
+      # doing it. CI has no GPU and asking for the CPU build is the honest
+      # spelling of that.
+      - name: Install the package with the models extra
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[dev,models,solve]"
+
+      # Named so a reader can see the nine modules arrive. A count that falls is
+      # a module that stopped being collected, which is exactly what this job is
+      # for.
+      - name: Test
+        run: python -m pytest --slow -rs

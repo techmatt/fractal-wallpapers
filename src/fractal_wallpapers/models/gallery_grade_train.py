@@ -111,6 +111,7 @@ something nobody named.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from dataclasses import dataclass
@@ -146,6 +147,16 @@ SCHEMA_NOTES: dict[str, str] = {
     "superseded_is": "the scores this write replaced, kept under the name of the run that made "
     "them. Every solve record taken before this one resolves its cascade order "
     "out of that file",
+    "weights_are": "the sha256 of the FP32 checkpoint(s) that produced this score — for the "
+    "k=3 recipe, a digest of the three member hashes in seed order "
+    "(gallery_grade_train.weights_digest). NOT the fp16 release artifact a clone fetches, "
+    "which is a different file with a different hash by design: a clone scoring the pool with "
+    "the published head writes differently-stamped rows and that is correct, not a mismatch. "
+    "A row with no `weights` field at all was written before 2026-09-14, when p_fine carried "
+    "a run NAME and a retrain under the same name was silent",
+    "sample_is": "the top of the rank order plus a seeded random tail, not a flat draw. A flat "
+    "draw over the whole scored pool spends itself far below the bar, where a disagreement "
+    "changes no decision anybody sees — and what this measures is decisions",
     "baseline_is": "the two incumbents over these same rows — the shipped judge's own "
     "`candidate_p_ge4`, which is the column, and `rank_key`, which is what a seating "
     "actually ranks on. An arm beating the column and losing to the key would have "
@@ -2777,6 +2788,426 @@ def _rank_key_baseline(stopping, labels) -> dict:
 # --------------------------------------------------------------------------- #
 # Reading a pool through the picked run.
 # --------------------------------------------------------------------------- #
+def weights_digest(checkpoints) -> tuple[str, list[dict]]:
+    """`(one digest, one row per member)` — **which weights wrote a `p_fine`**.
+
+    The render judge has carried this since the ledger was built: every score row
+    there is keyed `recipe_key|judge_artifact|regime`, `judge_artifact` being the
+    weights sha256, so a swapped head writes new keys rather than overwriting old
+    ones and `floors.release_cut` refuses on a moved sha. `p_fine` carried a run
+    **name** and nothing else until 2026-09-14 — and a name is exactly what a
+    retrain keeps. Retrain under `twelve_sheets_drop_high_asymmetric_auc_ge4_more`
+    and every `p_fine` in the pool changes with nothing in the tree able to tell,
+    while `p_fine` gates the seating bar, the cascade order, the vetoes and
+    growth.
+
+    **For an ensemble it is a digest OF the members' digests, not of a file.** The
+    shipped recipe averages k=3 seeds on the probability scale, so no single file
+    produced the column and no single file's hash identifies it. This is the
+    sha256 of the member hashes joined by newline in the order they were read,
+    which moves if any member moves and does not move if they are merely read in
+    another order. `members` carries what went in, so the digest is always
+    re-derivable from named files rather than being a number to trust.
+
+    ⚠ **The fp32 checkpoints, not the fp16 artifact.** These are the weights that
+    actually produced the scores; the release ships a halved file with a
+    different hash, deliberately — see this module's *What a clone's rows will
+    say* below [`POOL_SCORES_WEIGHTS_NOTE`].
+    """
+    members = []
+    for path in checkpoints:
+        path = Path(path)
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(chunk)
+        members.append(
+            {
+                "checkpoint": tracked_name(path),
+                "sha256": digest.hexdigest(),
+                "bytes": path.stat().st_size,
+            }
+        )
+    if len(members) == 1:
+        return members[0]["sha256"], members
+    joined = "\n".join(member["sha256"] for member in members)
+    return hashlib.sha256(joined.encode("utf-8")).hexdigest(), members
+
+
+#: What a row's `weights` field is. **The sentence has one copy**, in
+#: [`SCHEMA_NOTES`] with every other record note this module writes — that is
+#: this project's rule and `tests/test_schema_notes.py` enforces it — and this is
+#: the name the two write sites reach it by, next to the digest it describes.
+#:
+#: ⚠ **A fresh clone's rows will not match this repository's, and that is the
+#: guard working.** These rows record the **fp32 checkpoints** that produced the
+#: scores — `models/gallery_grade/<run>/best.pt`, three of them under the shipped
+#: k=3 recipe. What `fetch-weights` hands a clone is the **fp16** release
+#: artifact, which is a different sequence of bytes with a different sha256 by
+#: design: halving is what makes the download affordable and the file is checked
+#: against the full-precision head before it ships. So a clone that scores the
+#: pool with the published head writes rows stamped with the fp16 artifact's
+#: digest, and those will differ from every row in this store. That is **not** a
+#: mismatch to repair — it is two different artifacts being named correctly.
+#: What the stamp is for is the case it was added for: the *same* file name
+#: holding *different* weights after a retrain.
+POOL_SCORES_WEIGHTS_NOTE = SCHEMA_NOTES["weights_are"]
+
+
+# --------------------------------------------------------------------------- #
+# Shipping it: one file, k members, and what half precision costs a seating.
+# --------------------------------------------------------------------------- #
+#: The release tag this head's first shipment goes to. Its own, not the three
+#: incumbents': a release is a set of bytes somebody uploaded, and adding a fourth
+#: asset to a tag that has already been cut would mean two different releases
+#: under one name.
+TAG = "weights-v7"
+
+
+def shipped_path() -> Path:
+    """The release artifact: **the whole ensemble in one file**, half precision.
+
+    One asset and not three, because what ships is a *column* and the column is
+    what k=3 heads say averaged on the probability scale — no one of those files
+    produces it, and a release of three assets would let a clone fetch two of them
+    and score with a head nobody judged. `fetch-weights` resolves one asset per
+    head and this is that asset; [`load_shipped`] is what reads it back.
+
+    At the head's root, beside the tracked per-run metadata, named for the head
+    the way every other release asset is: a release's assets share one namespace
+    and the directory that disambiguates them here does not travel.
+    """
+    return head_dir() / f"{HEAD}.fp16.pt"
+
+
+def export_fp16(which: str = "best", log=say) -> dict:
+    """Halve every member of the shipped ensemble into one artifact, and prove it re-reads.
+
+    fp16 for [`ship`]'s reasons and on [`ship.halve`]'s rule — every floating
+    tensor cast, integers left alone, because a buffer of counts is not a weight.
+    It is the last format where dequantizing is a widening cast rather than the
+    inverse of an approximation, and [`load_checkpoint`] already widens on load,
+    so the head runs in full precision and only the file is halved.
+
+    The re-read check is [`ship.convert`]'s and is not a formality: it catches a
+    truncated write, a silently skipped tensor and a serializer that helpfully
+    promoted something, and it runs before anything is hashed so a manifest entry
+    can never describe a file nobody verified.
+    """
+    import torch
+
+    from fractal_wallpapers.models import ship
+
+    arm, seeds, column = shipped_runs()
+    checkpoints = [run_dir(arm, seed) / f"{which}.pt" for seed in seeds]
+    absent = [one for one in checkpoints if not one.is_file()]
+    if absent:
+        raise GradeTrainingError(
+            f"{', '.join(tracked_name(one) for one in absent)} is not on this machine; that "
+            f"run has not been fitted and cannot be shipped."
+        )
+
+    members, configs = [], []
+    for seed, path in zip(seeds, checkpoints, strict=True):
+        saved = torch.load(path, map_location="cpu", weights_only=False)
+        configs.append(dict(saved["config"]))
+        members.append({"seed": int(seed), "state_dict": ship.halve(saved["state_dict"])})
+    shared = configs[0]
+    for other in configs[1:]:
+        differing = [
+            name
+            for name in ("classes", "backbone", "mean", "std", "interpolation", "target_dims")
+            if other.get(name) != shared.get(name)
+        ]
+        if differing:
+            raise GradeTrainingError(
+                f"the ensemble's checkpoints disagree about {differing} — a mean over two "
+                f"different transforms is not a column, and one file cannot carry two."
+            )
+
+    config = dict(shared)
+    config["precision"] = "fp16"
+    config["head"] = HEAD
+    config["run"] = column
+    config["arm"] = arm
+    config["seeds"] = [int(seed) for seed in seeds]
+    config["averaged_on"] = "the probability scale"
+    config["dequantize_at_load"] = (
+        "every floating tensor is stored as fp16 and widened to fp32 on load; the heads run "
+        "in full precision and only the file is halved"
+    )
+
+    destination = shipped_path()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    torch.save({"config": config, "members": members}, destination)
+
+    reread = torch.load(destination, map_location="cpu", weights_only=False)["members"]
+    if len(reread) != len(members):
+        raise GradeTrainingError(
+            f"the shipped artifact holds {len(reread)} member(s) and {len(members)} went in."
+        )
+    for wrote, back in zip(members, reread, strict=True):
+        mismatched = [
+            key
+            for key, tensor in wrote["state_dict"].items()
+            if key not in back["state_dict"] or not torch.equal(back["state_dict"][key], tensor)
+        ]
+        if mismatched or len(back["state_dict"]) != len(wrote["state_dict"]):
+            raise GradeTrainingError(
+                f"seed {wrote['seed']} does not re-read: {len(mismatched)} tensor(s) differ. "
+                f"Nothing about a hash of this file would be worth anything."
+            )
+
+    fp32_bytes = sum(one.stat().st_size for one in checkpoints)
+    log(f"[{HEAD}] {destination.name}: {len(members)} member(s), {destination.stat().st_size:,} B")
+    return {
+        "artifact": tracked_name(destination),
+        "run": column,
+        "members": len(members),
+        "seeds": config["seeds"],
+        "sources": [tracked_name(one) for one in checkpoints],
+        "bytes": {"fp32": fp32_bytes, "fp16": destination.stat().st_size},
+        "reread": "bit-identical",
+    }
+
+
+#: How many of the pool's scored rows the fp16 read is measured over, unless a
+#: caller says otherwise. Every row the head has a reading for would be right and
+#: costs two decode passes over 46,090 JPEGs; this is the sample the *decisions*
+#: are made on plus a margin — see [`fp16_disagreement`], which takes the top
+#: `n` by rank and a random tail rather than a flat draw, because a bar crossing
+#: and a seat reorder can only happen where the rows already are.
+DISAGREEMENT_SAMPLE = 6000
+
+
+def fp16_disagreement(
+    sample: int = DISAGREEMENT_SAMPLE,
+    bar: float | None = None,
+    seats: int = 1000,
+    device: str = "auto",
+    seed: int = 0,
+    log=say,
+) -> dict:
+    """What halving this head costs a seating, in the units a seating decides in.
+
+    **Not AUC and not a per-row probability move**, which are the wrong shape for
+    this head. `p_fine` is spent three ways and each is a decision: a **bar** at
+    `solve.DEFAULT_FINE_BAR` narrows the pool before anything else runs, the
+    **cascade order** puts the survivors in the order a seating fills from, and
+    a `p_fine` reading rides onto every veto row for a person to read. So this
+    measures exactly those — how many rows cross the bar, how many of the top `n`
+    change, and how far anything moved — and reports the probability drift beside
+    them rather than as the finding.
+
+    The sample is the top of the rank order plus a random tail, at one seed, and
+    both halves are read through **one decode pass per precision**: a flat random
+    draw over 46,090 rows would spend most of itself far below the bar, where a
+    disagreement changes nothing anybody sees.
+    """
+    import numpy
+
+    from fractal_wallpapers.curation import solve as solve_module
+    from fractal_wallpapers.models import train
+    from fractal_wallpapers.paths import Tiers, rehome
+
+    bar = float(solve_module.DEFAULT_FINE_BAR) if bar is None else float(bar)
+    live = read_pool_scores()
+    if not live:
+        raise GradeTrainingError(
+            f"{tracked_name(pool_scores_path())} holds no rows, so there is nothing to read "
+            f"this head's halving against."
+        )
+    ordered = sorted(live.items(), key=lambda item: -float(item[1]["rank_score"]))
+    taken = ordered[: min(sample, len(ordered))]
+    if len(ordered) > len(taken):
+        rest = ordered[len(taken) :]
+        extra = numpy.random.default_rng(seed).choice(
+            len(rest), size=min(len(rest), max(0, sample // 3)), replace=False
+        )
+        taken = taken + [rest[int(index)] for index in sorted(extra)]
+
+    from fractal_wallpapers.curation import candidate_ledger
+
+    tiers = Tiers.current()
+    wanted = {key for key, _ in taken}
+    pictures: dict[str, Path] = {}
+    for row in candidate_ledger.stream():
+        key = str(row.get("key"))
+        if key not in wanted:
+            continue
+        resolved = rehome(str(row.get("picture") or ""), tiers)
+        if resolved is not None and resolved.is_file():
+            pictures[key] = resolved
+    keys = [key for key, _ in taken if key in pictures]
+    paths = [pictures[key] for key in keys]
+    if not paths:
+        raise GradeTrainingError("no row of this sample has a picture on disk to read")
+    log(f"[{HEAD}] reading {len(paths):,} picture(s) twice — fp32 then fp16")
+
+    arm, seeds, column = shipped_runs()
+    checkpoints = [run_dir(arm, one) / "best.pt" for one in seeds]
+    loaded = [load_checkpoint(one, device) for one in checkpoints]
+    config, where = loaded[0][1], loaded[0][2]
+    classes = int(config["classes"])
+    transform = head.Transform(
+        tuple(config["mean"]),
+        tuple(config["std"]),
+        config["interpolation"],
+        train=False,
+        target=tuple(config["target_dims"]),
+    )
+    full = train.score_many(
+        [one[0] for one in loaded], paths, transform, where, classes, config
+    ).mean(axis=0)
+    del loaded
+    halved_models, _config, _where = load_shipped(device=device)
+    halved = train.score_many(halved_models, paths, transform, where, classes, config).mean(axis=0)
+
+    # `p_fine` is p(>=4), the last cutpoint, and `rank_score` is the sum — the
+    # two columns the bar and the cascade are stated on.
+    index = classes - 2
+    fine32, fine16 = full[:, index], halved[:, index]
+    rank32, rank16 = full.sum(axis=1), halved.sum(axis=1)
+
+    above32, above16 = fine32 >= bar, fine16 >= bar
+    crossed_in = int((~above32 & above16).sum())
+    crossed_out = int((above32 & ~above16).sum())
+
+    def order(scores):
+        return [keys[position] for position in numpy.argsort(-scores, kind="stable")]
+
+    order32, order16 = order(rank32), order(rank16)
+    top = min(seats, len(keys))
+    entering = sorted(set(order16[:top]) - set(order32[:top]))
+    place32 = {key: position for position, key in enumerate(order32)}
+    moved = [abs(place32[key] - position) for position, key in enumerate(order16)]
+    adjacent = sum(
+        1
+        for position in range(len(order32) - 1)
+        if place32.get(order16[position], -1) > place32.get(order16[position + 1], -1)
+    )
+
+    moves = numpy.abs(fine16 - fine32)
+    return {
+        "run": column,
+        "pictures": len(paths),
+        "sampled_from": len(ordered),
+        "sample_is": SCHEMA_NOTES["sample_is"],
+        "bar": {
+            "at": bar,
+            "is": "solve.DEFAULT_FINE_BAR, the p_fine gate the whole pool is narrowed by",
+            "above_fp32": int(above32.sum()),
+            "above_fp16": int(above16.sum()),
+            "crossed_in": crossed_in,
+            "crossed_out": crossed_out,
+            "crossings": crossed_in + crossed_out,
+        },
+        "seating": {
+            "top_n": top,
+            "entering_the_top_n": len(entering),
+            "leaving_the_top_n": len(entering),
+            "which_entered": entering[:10],
+            "adjacent_swaps": adjacent,
+            "worst_rank_move": int(max(moved)) if moved else 0,
+            "rows_that_moved_at_all": int(sum(1 for one in moved if one)),
+        },
+        "row_moves": {
+            "reported_only": (
+                "a moved probability is not a changed answer; the bar and the seating above "
+                "are what this used to be a proxy for"
+            ),
+            "median": float(numpy.median(moves)),
+            "p99": float(numpy.percentile(moves, 99)),
+            "worst": float(moves.max()),
+        },
+    }
+
+
+def load_shipped(path: Path | None = None, device: str = "auto"):
+    """`(models, config, where)` — the shipped ensemble, widened back to fp32.
+
+    The counterpart of [`export_fp16`], and the one thing a clone needs in order
+    to score the pool at all: the per-run checkpoints are untracked and are not in
+    any release, so [`score_pool`] falls through to this.
+    """
+    import torch
+
+    from fractal_wallpapers.models import train
+
+    where = train.device_of(device)
+    path = shipped_path() if path is None else Path(path)
+    if not path.is_file():
+        raise GradeTrainingError(
+            f"{tracked_name(path)} is not on this machine. `fractal-wallpapers fetch-weights "
+            f"--head {HEAD}` downloads it; `gallery-grade ship` makes it from the run's own "
+            f"checkpoints."
+        )
+    saved = torch.load(path, map_location="cpu", weights_only=False)
+    config = saved["config"]
+    models = []
+    for member in saved["members"]:
+        model = head.build(
+            num_classes=int(config["classes"]), backbone=config["backbone"], pretrained=False
+        )
+        model.load_state_dict({key: value.float() for key, value in member["state_dict"].items()})
+        models.append(model.to(where).eval())
+    return models, config, where
+
+
+def ship_head(
+    tag: str = TAG,
+    which: str = "best",
+    sample: int = DISAGREEMENT_SAMPLE,
+    device: str = "auto",
+    log=say,
+) -> dict:
+    """Export, measure, hash, and write the manifest row. Uploading is a person's job.
+
+    The same three steps a judge's shipment gets and in the same order — the
+    artifact re-reads, the head still says the same thing, and the hash is taken
+    of the file both checks passed — with the middle one stated in this head's own
+    units ([`fp16_disagreement`]) rather than in an ordinal AUC it is not read on.
+
+    **It reports and does not gate.** The three shipped judges refuse a halved
+    artifact that moves their decisions, on constants ratified for those
+    populations; this head's decisions are a bar crossing and a seat, and there is
+    no ratified number for either yet. So the reading goes on the record for Matt
+    rather than being compared against a constant nobody chose — which is the
+    honest version of "almost identical in practice" until there is a bar.
+    """
+    from fractal_wallpapers.models import ship
+
+    conversion = export_fp16(which, log=log)
+    measured = fp16_disagreement(sample=sample, device=device, log=log)
+    artifact = shipped_path()
+    row = {
+        "tag": str(tag),
+        "asset": artifact.name,
+        "sha256": ship.sha256_of(artifact),
+        "bytes": artifact.stat().st_size,
+        "precision": "fp16",
+        "run": conversion["run"],
+        "source_commit": ship.source_commit(),
+        "provenance": ship.provenance(HEAD),
+        # What no other row here needs to say, because no other head is k files.
+        "members": conversion["members"],
+        "seeds": conversion["seeds"],
+        "averaged_on": "the probability scale",
+    }
+    ship.write_manifest(HEAD, row)
+    return {
+        "head": HEAD,
+        "conversion": conversion,
+        "fp16_disagreement": measured,
+        "manifest_entry": row,
+        "manifest": str(ship.manifest_path()),
+        "next": (
+            f"create the GitHub release {tag} and upload {row['asset']}; "
+            "`fractal-wallpapers fetch-weights` will verify the sha256 on the way down"
+        ),
+    }
+
+
 def pool_scores_path() -> Path:
     """Where this head's read of the seating pool lands.
 
@@ -2857,6 +3288,150 @@ def pool_scores_run(path: Path | None = None) -> str | None:
             if line.strip():
                 return str(json.loads(line).get("run") or "") or None
     return None
+
+
+def pool_scores_stamp(path: Path | None = None) -> str | None:
+    """Which **weights** wrote the live pool scores, off the first row alone.
+
+    [`pool_scores_run`]'s twin, and cheap for its reason: a solve record builder
+    asks this on every pass and the file is fifteen megabytes. One line, not the
+    file — a sweep here cost `tests/test_solve.py` **29 seconds** on the run that
+    added it, 14.03 s to 43.40 s, because a record is built per test and each one
+    was parsing 46,090 rows to read one string off them.
+
+    The file is written whole in one pass by [`score_pool`], so its first row's
+    stamp is its stamp; [`pool_scores_weights`] is the sweep that proves it, and
+    the one caller that needs proof is the backfill, which pays it once.
+
+    `None` is an unscored box, or a store whose rows predate the stamp
+    (2026-09-14) and were never backfilled.
+    """
+    where = pool_scores_path() if path is None else Path(path)
+    if not where.is_file():
+        return None
+    with where.open(encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                return str(json.loads(line).get("weights") or "") or None
+    return None
+
+
+def pool_scores_weights(path: Path | None = None) -> list[str]:
+    """Every distinct `weights` stamp in the live pool scores, in first-seen order.
+
+    **The sweep**, and it costs the whole file. [`pool_scores_stamp`] is what a
+    per-pass reader takes; this is for the backfill, which has to know that one
+    run wrote the rows before it stamps them and pays the read once.
+
+    A row written before 2026-09-14 has no stamp and reads as `None` here — a real
+    state and not a gap to paper over, so it is in the list rather than filtered
+    out of it.
+    """
+    where = pool_scores_path() if path is None else Path(path)
+    if not where.is_file():
+        return []
+    seen: list[str] = []
+    with where.open(encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            stamp = json.loads(line).get("weights")
+            if stamp not in seen:
+                seen.append(stamp)
+    return seen
+
+
+def stamp_pool_scores(path: Path | None = None, log=say) -> dict:
+    """Put the weights digest onto pool score rows that were written without one.
+
+    **A one-way backfill over one run.** It reads the run name off the rows, takes
+    the checkpoints that run ships **as they stand on this machine**, digests
+    them, and writes the stamp onto every unstamped row. It is well defined here
+    and only here: there is exactly one run behind the 46,090 live rows, and its
+    three checkpoints have not been refitted since — which is the whole claim a
+    backfill makes and the reason a second one would not be safe to run blind.
+
+    It refuses on a file that already carries two different stamps, or whose run
+    is not one this module can resolve checkpoints for. Rows that already carry a
+    stamp are left exactly as they are: a stamp is a statement about which weights
+    were read, and rewriting one would be inventing that statement rather than
+    recording it.
+
+    ⚠ The stamp it writes is the **fp32** checkpoints' — see
+    [`POOL_SCORES_WEIGHTS_NOTE`].
+    """
+    where = pool_scores_path() if path is None else Path(path)
+    if not where.is_file():
+        raise GradeTrainingError(f"{where} is not there; nothing to stamp")
+    run = pool_scores_run(where)
+    standing = [stamp for stamp in pool_scores_weights(where) if stamp]
+    if len(standing) > 1:
+        raise GradeTrainingError(
+            f"{where} already carries {len(standing)} different weights stamps "
+            f"({', '.join(one[:12] for one in standing)}). A backfill assumes one run wrote "
+            f"the file and this one did not."
+        )
+
+    arm, seeds, column = shipped_runs()
+    if column != run:
+        raise GradeTrainingError(
+            f"{where} was written by run {run!r} and this checkout's shipped recipe resolves "
+            f"to {column!r}. Backfilling would stamp these rows with checkpoints that did "
+            f"not write them. Re-score, or name the run's checkpoints by hand."
+        )
+    checkpoints = [run_dir(arm, seed) / "best.pt" for seed in seeds]
+    absent = [one for one in checkpoints if not one.is_file()]
+    if absent:
+        raise GradeTrainingError(
+            f"{len(absent)} of run {run!r}'s checkpoints are not on this machine "
+            f"({', '.join(tracked_name(one) for one in absent)}), so nothing can say which "
+            f"weights wrote these scores."
+        )
+    digest, members = weights_digest(checkpoints)
+    if standing and standing[0] != digest:
+        raise GradeTrainingError(
+            f"{where} is already stamped {standing[0][:12]} and the checkpoints on disk "
+            f"digest to {digest[:12]}. Either the file is not this run's or the checkpoints "
+            f"have moved since it was written; a backfill cannot tell which and must not "
+            f"guess."
+        )
+
+    scratch = where.with_suffix(".jsonl.stamping")
+    stamped, already, rows = 0, 0, 0
+    with (
+        where.open(encoding="utf-8") as reading,
+        scratch.open("w", encoding="utf-8", newline="\n") as writing,
+    ):
+        for line in reading:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            rows += 1
+            if row.get("weights"):
+                already += 1
+            else:
+                # Beside `run`, which is where a reader looking for the head's
+                # identity will already be looking, and before `key`.
+                ordered = {}
+                for name, value in row.items():
+                    ordered[name] = value
+                    if name == "run":
+                        ordered["weights"] = digest
+                row = ordered if "weights" in ordered else {**row, "weights": digest}
+                stamped += 1
+            writing.write(json.dumps(row) + "\n")
+    scratch.replace(where)
+    log(f"[{HEAD}] stamped {stamped:,} of {rows:,} rows with {digest[:12]}")
+    return {
+        "path": tracked_name(where),
+        "run": run,
+        "rows": rows,
+        "stamped": stamped,
+        "already_stamped": already,
+        "weights": digest,
+        "weights_are": POOL_SCORES_WEIGHTS_NOTE,
+        "weights_members": members,
+    }
 
 
 def read_pool_scores(path: Path | None = None) -> dict:
@@ -2958,23 +3533,49 @@ def score_pool(
     else:
         chosen, column = [int(seed)], run_name(arm, int(seed), band, corpus, recipe)
     checkpoints = [run_dir(arm, one, band, corpus, recipe) / "best.pt" for one in chosen]
-    for checkpoint in checkpoints:
-        if not checkpoint.is_file():
-            raise GradeTrainingError(f"{checkpoint} is not there — that run has not been fitted")
-    loaded = [load_checkpoint(checkpoint, device) for checkpoint in checkpoints]
-    models = [one[0] for one in loaded]
-    config, where = loaded[0][1], loaded[0][2]
-    for _model, other, _where in loaded[1:]:
-        differing = [
-            key
-            for key in ("classes", "backbone", "mean", "std", "interpolation", "target_dims")
-            if other.get(key) != config.get(key)
-        ]
-        if differing:
-            raise GradeTrainingError(
-                f"the ensemble's checkpoints disagree about {differing} — a mean over two "
-                f"different transforms is not a column"
+    absent = [one for one in checkpoints if not one.is_file()]
+    if len(absent) == len(checkpoints) and shipped_path().is_file():
+        # **A clone has the release artifact and none of the runs.** The per-run
+        # checkpoints are untracked and no release carries them; what
+        # `fetch-weights` hands over is the halved ensemble, so falling through to
+        # it is the difference between a clone being able to score the pool at all
+        # and not. Only where NONE of the runs is here: a machine holding some of
+        # them is one where a fit was interrupted, and quietly scoring through a
+        # different artifact there would hide that rather than report it.
+        #
+        # `checkpoints` becomes the artifact, so the weights stamp on every row
+        # names what was actually read — which is the fp16 file and NOT the fp32
+        # checkpoints this repository's own rows carry. See
+        # [`POOL_SCORES_WEIGHTS_NOTE`]: differently-stamped rows there are the
+        # guard working.
+        checkpoints = [shipped_path()]
+        models, config, where = load_shipped(device=device)
+        log(f"[{HEAD}] no run checkpoint on this machine; reading through {shipped_path().name}")
+    elif absent:
+        raise GradeTrainingError(
+            f"{absent[0]} is not there — that run has not been fitted"
+            + (
+                ""
+                if shipped_path().is_file()
+                else f". `fetch-weights --head {HEAD}` downloads the shipped ensemble, which "
+                f"is what a clone scores with"
             )
+        )
+    else:
+        loaded = [load_checkpoint(checkpoint, device) for checkpoint in checkpoints]
+        models = [one[0] for one in loaded]
+        config, where = loaded[0][1], loaded[0][2]
+        for _model, other, _where in loaded[1:]:
+            differing = [
+                key
+                for key in ("classes", "backbone", "mean", "std", "interpolation", "target_dims")
+                if other.get(key) != config.get(key)
+            ]
+            if differing:
+                raise GradeTrainingError(
+                    f"the ensemble's checkpoints disagree about {differing} — a mean over two "
+                    f"different transforms is not a column"
+                )
 
     tiers = Tiers.current()
     keys, paths, absent, below = [], [], 0, 0
@@ -3013,12 +3614,17 @@ def score_pool(
     path = pool_scores_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     superseded = keep_superseded_pool_scores(log=log)
+    # Taken from the files that were just read, not from a manifest: the stamp
+    # has to name what produced these numbers, and a manifest names what the
+    # release ships.
+    digest, members = weights_digest(checkpoints)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         for key, probability in zip(keys, probabilities, strict=True):
             row = {
                 "schema": SCHEMA,
                 "head": HEAD,
                 "run": column,
+                "weights": digest,
                 "key": key,
             }
             for index in range(classes - 1):
@@ -3032,6 +3638,9 @@ def score_pool(
         "seeds": chosen,
         "ships": RECIPES[check_recipe(recipe)]["ships"],
         "checkpoints": [tracked_name(one) for one in checkpoints],
+        "weights": digest,
+        "weights_are": POOL_SCORES_WEIGHTS_NOTE,
+        "weights_members": members,
         "averaged_on": "the probability scale",
         "candidates": len(keys),
         "below_the_bar_and_not_read": below,
@@ -3422,8 +4031,19 @@ __all__ = [
     "initial_state",
     "objective",
     "population",
+    "POOL_SCORES_WEIGHTS_NOTE",
+    "DISAGREEMENT_SAMPLE",
+    "TAG",
+    "export_fp16",
+    "fp16_disagreement",
     "keep_superseded_pool_scores",
+    "load_shipped",
     "pool_scores_run",
+    "ship_head",
+    "shipped_path",
+    "pool_scores_weights",
+    "stamp_pool_scores",
+    "weights_digest",
     "read_population",
     "read_run",
     "superseded_pool_scores_path",

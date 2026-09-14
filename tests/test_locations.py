@@ -186,3 +186,55 @@ def test_a_written_manifest_reads_back_as_what_was_written(tmp_path) -> None:
     rows = [locations.record(LABEL_ROW), locations.record(LEDGER_ROW)]
     path = locations.write(rows, tmp_path / "out.jsonl")
     assert locations.read(path) == rows
+
+
+# --------------------------------------------------------------------------- #
+# A recipe this shape cannot carry is refused, not dropped.
+# --------------------------------------------------------------------------- #
+def test_a_row_whose_recipe_says_more_than_a_location_can_is_refused() -> None:
+    """★ The silent failure: `render --location <release row>` drew the right
+    coordinates through the default palette and exited 0.
+
+    A location record is a place plus a geometry. A real release row also carries
+    a curve, a fold, a palette pass and a levelling band, and this reader had
+    nowhere to put any of them — so it dropped them, which looks exactly like
+    having had nothing to drop. The picture that came out was a wallpaper nobody
+    asked for wearing the name of one somebody did.
+    """
+    row = {
+        **RELEASE_ROW,
+        "recipe": {**RELEASE_ROW["recipe"], "curve": "log", "mirror": True},
+    }
+
+    with pytest.raises(locations.LocationError) as refusal:
+        locations.record(row)
+
+    said = str(refusal.value)
+    assert "curve" in said and "mirror" in said
+    assert "--recipe" in said, "the refusal has to name the door that does take it"
+
+
+def test_the_defaults_a_candidate_path_produces_are_not_a_refusal() -> None:
+    """`mirror: false` and `mode_params: {}` are what this path draws anyway, so
+    a row saying so is saying nothing a render would do differently. Refusing
+    them would refuse most of the pool for describing the default."""
+    row = {**RELEASE_ROW, "recipe": {**RELEASE_ROW["recipe"], "mirror": False, "mode_params": {}}}
+
+    assert locations.record(row)["render"]["mode"] == "smooth_stripe"
+
+
+def test_a_recipe_this_shape_can_carry_is_read_rather_than_dropped() -> None:
+    """The other half of the same defect. A release row has no top-level `render`
+    block — its mode and its map are under `recipe` — so this reader saw neither
+    and filled in the module's defaults, drawing every release row through
+    `smooth`/`twilight_shifted` whatever it said."""
+    read = locations.record(RELEASE_ROW)
+
+    assert read["render"]["mode"] == "smooth_stripe"
+    assert read["render"]["colormap"] == "magma"
+
+
+def test_a_row_with_no_recipe_at_all_is_untouched() -> None:
+    """The ledger row and the label row, which are most of what this reads."""
+    assert locations.record(LEDGER_ROW)["render"]["mode"] == locations.DEFAULT_MODE
+    assert locations.record(LABEL_ROW)["render"]["mode"] == "smooth"

@@ -75,6 +75,28 @@ def quiet(*_args, **_rest) -> None:
     """A `log` that says nothing."""
 
 
+def recipes_beside(stamp: str, *keys: str) -> Path:
+    """The record's own `recipes.jsonl`, written for the keys named.
+
+    A record with neither this nor a candidate ledger behind it is one the
+    resolver **refuses**, and rightly: `"recipe": null` with exit 0 says *this
+    seat has no recipe* where the truth is *this machine has nothing to look it
+    up in*. So a test that wants a resolvable record gives it one of the two, and
+    this is the tracked one — the half a clone actually has.
+    """
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    recipe = recipes_module.of_decision(decision()).record()
+    path = tentative.recipes_path(stamp)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        for key in keys:
+            handle.write(
+                json.dumps({"schema": tentative.SCHEMA, "key": key, "recipe": recipe}) + "\n"
+            )
+    return path
+
+
 @pytest.fixture
 def store(tmp_path, monkeypatch):
     """The whole regenerable tree in `tmp_path`, so a record lands nowhere real.
@@ -455,7 +477,7 @@ def test_every_id_a_record_names_resolves_by_key_and_by_alias(store, isolated): 
 def test_a_comma_list_answers_for_the_names_it_knows_and_says_so_for_the_rest(store):
     """A list of ten aliases with one typo in it should answer for the nine. The
     caller decides what a miss is worth; refusing the whole call does not."""
-    tentative.write(record_of(seat("k0"), seat("k1")), log=quiet)
+    recipes_beside(tentative.write(record_of(seat("k0"), seat("k1")), log=quiet).name, "k0", "k1")
 
     answers = tentative.resolve(["k0", "not-an-id", "k1"])
 
@@ -470,7 +492,7 @@ def test_the_resolver_says_whether_the_picture_is_actually_on_this_disk(store):
     here = store / "curation" / "depth" / "a_leg" / "pictures"
     here.mkdir(parents=True)
     (here / "k0.jpg").write_bytes(b"0" * 8)
-    tentative.write(record_of(seat("k0"), seat("k1")), log=quiet)
+    recipes_beside(tentative.write(record_of(seat("k0"), seat("k1")), log=quiet).name, "k0", "k1")
 
     answers = {held["name"]: held for held in tentative.resolve(["k0", "k1"])}
 
@@ -1060,3 +1082,127 @@ def test_the_full_size_view_always_takes_the_release_geometry_picture(store):
     page = tentative.page(log=quiet).read_text(encoding="utf-8")
 
     assert 'view.querySelector("img").src = row.full || row.src || "";' in page
+
+
+# --------------------------------------------------------------------------- #
+# The recipe file: what makes a published record redrawable at all.
+# --------------------------------------------------------------------------- #
+def test_the_resolver_refuses_rather_than_answering_that_a_seat_has_no_recipe(store):
+    """`"recipe": null` with exit 0 is the wrong answer and it was the answer.
+
+    It says *this seat has no recipe*, which is a fact about a picture; the truth
+    is *this machine has nothing to look one up in*, which is a missing store.
+    Every seat of every record was made from a recipe, so the first is never true
+    and the command said it anyway — and a figure prompt reading the JSON could
+    not tell the two apart.
+    """
+    tentative.write(record_of(seat("k0")), log=quiet)
+
+    with pytest.raises(tentative.TentativeRefused) as refusal:
+        tentative.resolve(["k0"])
+
+    said = str(refusal.value)
+    assert tentative.RECIPES_NAME in said and "candidate ledger" in said
+    assert "curate solve recipes" in said
+
+
+def test_the_tracked_file_answers_and_says_it_was_the_one_that_did(store):
+    """The half a clone has. It is preferred over the ledger because it is what
+    travels — and because it is the record's own statement about its seats rather
+    than a lookup in a store that has grown and pruned since."""
+    stamp = tentative.write(record_of(seat("k0")), log=quiet).name
+    written = recipes_beside(stamp, "k0")
+
+    (answer,) = tentative.resolve(["k0"])
+
+    assert answer["recipe"] == recipes.of_decision(decision()).record()
+    assert answer["recipe_from"].endswith(tentative.RECIPES_NAME)
+    assert written.is_file()
+
+
+def test_read_recipes_names_the_command_when_a_record_has_no_file(store):
+    stamp = tentative.write(record_of(seat("k0")), log=quiet).name
+
+    with pytest.raises(tentative.TentativeRefused, match="curate solve recipes"):
+        tentative.read_recipes(stamp)
+
+
+def test_every_row_written_recomputes_its_own_key(store, isolated):  # noqa: F811
+    """A recipe file whose keys do not recompute names DIFFERENT pictures under
+    the record's own names, which is worse than the record having no recipe file
+    at all. So `build_recipes` checks each row through `recipes.of_record` and
+    `recipes.key_of` before writing it, and refuses the ones that fail rather
+    than writing them and counting them as covered."""
+    source = decision()
+    recipe = recipes.of_decision(source)
+    key = recipes.key_of(recipe)
+    candidate_ledger.write(
+        [
+            candidate_ledger.row(
+                recipe=recipe,
+                key=key,
+                source={**source, "_store": candidate_ledger.FROM_GALLERY},
+                picture=None,
+            )
+        ]
+    )
+    stamp = tentative.write(record_of(seat(key)), log=quiet).name
+
+    rows, readout = tentative.build_recipes(stamp)
+
+    assert readout["written"] == readout["seats"] == 1
+    assert not readout["refused"] and not readout["not_in_the_ledger"]
+    assert recipes.key_of(recipes.of_record(rows[0]["recipe"])) == rows[0]["key"] == key
+
+
+def test_a_seat_the_ledger_does_not_hold_is_reported_and_not_skipped(store, isolated):  # noqa: F811
+    """The one gap the file cannot close. A count that quietly omitted it would
+    read as full coverage of a record that has none."""
+    candidate_ledger.write([])
+    stamp = tentative.write(record_of(seat("nowhere")), log=quiet).name
+
+    _rows, readout = tentative.build_recipes(stamp)
+
+    assert readout["not_in_the_ledger"] == ["nowhere"]
+    assert readout["written"] == 0
+
+
+# --------------------------------------------------------------------------- #
+# The published record, against the file this repository actually tracks.
+# --------------------------------------------------------------------------- #
+@pytest.mark.slow
+def test_the_published_record_can_be_redrawn_from_tracked_data_alone():
+    """★ The claim the whole file exists to make, asserted on the real one.
+
+    `20260914T171846Z` is the official n=1000 record, and before 2026-09-14 994
+    of its 1,000 seats could not be drawn from anything a clone has: the key is a
+    one-way digest, the recipe behind it lives in the untracked ledger, and 529
+    seats carry a continuous `palette.phase` so recovery by search is out. This
+    reads the two TRACKED files and nothing else.
+
+    Slow because it recomputes all thousand keys — `of_record` then `key_of`,
+    which is a JSON round trip and a sha256 per seat — and that is the assertion
+    rather than a way of reaching it. A sample would leave the file's coverage
+    unasserted, which is the one thing about it worth asserting.
+    """
+    stamp = "20260914T171846Z"
+    assert stamp in tentative.PUBLISHED
+    seats = [str(row["key"]) for row in tentative.read_rows(stamp)]
+    held = tentative.read_recipes(stamp)
+
+    assert len(seats) == 1000
+    missing = [key for key in seats if key not in held]
+    assert not missing, f"{len(missing)} published seat(s) carry no recipe"
+    for key in seats:
+        assert recipes.key_of(recipes.of_record(held[key])) == key
+
+
+def test_the_tracked_recipe_file_stays_under_the_history_size_rule():
+    """0.68 MiB against `test_history_purity.MAX_TRACKED_BYTES`, and smaller than
+    the `gallery.jsonl` beside it. That margin is why this is a tracked file and
+    not a release asset — and it is per stamp, so it is worth knowing where it
+    sits before a second record is published."""
+    stamp = "20260914T171846Z"
+    written = tentative.recipes_path(stamp).stat().st_size
+    assert written < (1 << 20)
+    assert written < 2 * tentative.rows_path(stamp).stat().st_size

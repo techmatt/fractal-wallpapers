@@ -1,6 +1,26 @@
 {
   "schema": 1,
   "heads": {
+    "gallery_grade": {
+      "tag": "weights-v7",
+      "asset": "gallery_grade.fp16.pt",
+      "sha256": "db682d254cf7238d3ab6dd7353d9794cf0a39580ea036861ed3f4e82c8e90600",
+      "bytes": 15415792,
+      "precision": "fp16",
+      "run": "twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3",
+      "source_commit": "899f104b9f8f803c7f86a5ede749a11b564ca2ec",
+      "provenance": {
+        "supervision": "human verdicts",
+        "corpus": "data/gallery_grade"
+      },
+      "members": 3,
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "averaged_on": "the probability scale"
+    },
     "location": {
       "tag": "weights-v2",
       "asset": "location.fp16.pt",

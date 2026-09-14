@@ -35,12 +35,27 @@ from fractal_wallpapers.paths import repo_root
 #: cannot run that head at all, and the only way to notice is to have written
 #: the roster down somewhere a check can read it.
 #:
-#: **Three, not four.** `render` replaced `smooth_render` and `strange_render` on
-#: 2026-08-23: one judge over both kinds, adopted on a non-inferiority band. The
-#: two LABEL STORES keep their names and their paths — a store is a corpus and
-#: those did not merge — so the old names still appear wherever they name stored
-#: data. They are gone from the roster because a roster names what ships.
-HEADS = ("location", "render", "palette")
+#: **`render` replaced `smooth_render` and `strange_render`** on 2026-08-23: one
+#: judge over both kinds, adopted on a non-inferiority band. The two LABEL STORES
+#: keep their names and their paths — a store is a corpus and those did not merge
+#: — so the old names still appear wherever they name stored data. They are gone
+#: from the roster because a roster names what ships.
+#:
+#: **`gallery_grade` is the fourth and arrived 2026-09-14.** It is the fine head,
+#: whose `p_fine` gates the seating bar, the cascade order and every veto row's
+#: reading, and until this it was *unobtainable at any price*: off this tuple, no
+#: manifest row, its checkpoints untracked like every other head's and in no
+#: release, so a clone could read its configs and its per-sheet scores and never
+#: run it. That shut the whole scored half of this repository behind a head nobody
+#: outside this machine could get.
+#:
+#: ⚠ **Its asset is k=3 checkpoints in ONE file**, which is a shape no other row
+#: here has. The shipped recipe averages three seeds on the probability scale, so
+#: no single file produces the column — `gallery_grade_train.export_fp16` writes
+#: the members into one artifact and `load_shipped` reads them back, and a release
+#: still carries one asset per head. The manifest row says `members` and `seeds`
+#: for that reason.
+HEADS = ("location", "render", "palette", "gallery_grade")
 
 
 def manifest_path() -> Path:

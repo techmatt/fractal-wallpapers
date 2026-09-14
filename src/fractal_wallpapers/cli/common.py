@@ -26,6 +26,43 @@ DEFAULT_MODE = "smooth"
 
 
 # --------------------------------------------------------------------------- #
+# What this command line writes its text as.
+# --------------------------------------------------------------------------- #
+def speak_utf8() -> None:
+    """Make stdout and stderr UTF-8, on a Windows shell that would not be.
+
+    **Redirected output on Windows is the ANSI code page, not the console's.** A
+    help screen written to a file or a pipe here went out as cp1252, so every
+    em-dash in this project's prose landed as the byte `0x97` and every reader
+    that assumed UTF-8 — PowerShell 7, a browser, `git`, this repository's own
+    files — showed it as a replacement character. Worse where the character is
+    not in cp1252 at all: `curate derive-tau-h --help` and `label build --help`
+    carry a `τ` and a `→`, and those did not mojibake, they raised
+    `UnicodeEncodeError` and took the command down while argparse was printing.
+
+    A console that a person is looking at never went through any of this — CPython
+    writes to a Windows console with `WriteConsoleW` and the code page is not
+    consulted — so this changes nothing an interactive user sees and fixes
+    everything a pipe does.
+
+    `errors="replace"` on top, because a stream that somebody has deliberately
+    set to a narrow encoding is their decision and losing a dash is better than
+    losing the screen. Guarded on `reconfigure` being there at all: pytest's
+    capture object is a file-like that is not a `TextIOWrapper`.
+    """
+    import sys
+
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+        if encoding in ("utf8", "utf8sig") or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            continue
+
+
+# --------------------------------------------------------------------------- #
 # `--help`, in two tiers.
 # --------------------------------------------------------------------------- #
 #: Print every `help=` whole rather than summarised. Read once, at parse time.
