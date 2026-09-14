@@ -1,8 +1,22 @@
 The **fine-tier head**: an order inside the render judge's own flat top. Built
 2026-09-06 and **adopted 2026-09-07**, Matt's ruling on its pre-registered bar;
 **refitted on the corrected corpus and re-adopted 2026-09-09** — same
-architecture, same rule, 1,750 rows instead of 1,000. What ships is
-`corrected_auc_ge4_more_seed1`.
+architecture, same rule, 1,750 rows instead of 1,000 — and **refitted again on
+`twelve_sheets` under the `drop_high_asymmetric` recipe on 2026-09-10**, which is
+what ships.
+
+**What ships is `twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3`**, and the
+`_k3` is not a seed: that recipe ships an **ensemble of all three seeds** averaged
+on the probability scale, so the column is what 0/1/2 say together and no single
+checkpoint produces it. `shipped_runs()` is the one derivation of that name and
+`gallery_grade.fp16.pt` holds the three members in one file.
+
+⚠ This paragraph said `corrected_auc_ge4_more_seed1` until 2026-09-14 — the run
+adopted on 09-09 and superseded the next day — while `solve.DEFAULT_FINE_BAR`,
+every pool score row and the published record's `config.fine_head` all named the
+`twelve_sheets` ensemble. The bar moved 0.184 → 0.030242 with that refit, which is
+the matched level under the new head; a reader who took the run name from here
+would have read that move as a tightening of a head that had not changed.
 
 The render judge answers *is this picture worth keeping* and saturates at the good
 end of its own scale. This head answers *how good, given it already cleared the
@@ -25,6 +39,13 @@ fractal-wallpapers gallery-grade ship           # halve the ensemble, measure it
 fractal-wallpapers gallery-grade stamp-scores   # the one-way weights backfill for p_fine rows
 fractal-wallpapers fetch-weights --head gallery_grade
 ```
+
+It went to its own tag `weights-v7` for a day. Since 2026-09-14 it is in the single
+dated package with the other three — `roster.TAG`, `weights-2026-09-14` — and the
+argument that sent it to its own tag is what that scheme now answers: adding an
+asset to a tag already cut would mean two releases under one name, so a head
+shipped after this package is published goes into a **new** dated tag and every
+row is repointed at it.
 
 It was **off `models/roster.py` until then**, on the argument that the roster is
 heads a *render* goes through and this one reads a finished picture that already

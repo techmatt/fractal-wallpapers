@@ -55,6 +55,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [weights_release_ckpt124](#weights_release_ckpt124)
     - [repo_bootstrap_fixes_ckpt124](#repo_bootstrap_fixes_ckpt124)
     - [publish_gallery_ckpt124](#publish_gallery_ckpt124)
     - [rejection_ingest_ckpt124](#rejection_ingest_ckpt124)
@@ -636,6 +637,28 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### weights_release_ckpt124
+
+**Both lanes and they agree at 4,732.** `weights_release_ckpt124`, 2026-09-14.
+**Fast: 4,576 selected, 156 deselected — 4,732 collected — in 125.77 s (2:05). Slow:
+4,732 of 4,732 in 492.95 s (8:12).** Both green, zero skips, zero failures. Six tests
+added, all fast, all arithmetic over a manifest and a parser.
+
+**The slow lane moved +14.9 s and it was the box — measured, not assumed.** The rule
+says a lane that moves right after code landed is the code, and the shape here said
+otherwise before anything was measured: the same six tests were +2.26 s on the fast
+lane and would have had to be +14.9 s on the slow one, which is not a thing six
+identical tests can do. So two cheap readings rather than a re-run of the lane.
+`tests/test_fetch_weights.py` whole is **0.82 s** for all eleven of its tests, so the
+six new ones are about a tenth of a second. Then the untouched engine-bound guard:
+`test_renderer_agreement.py --slow` read **18.22 s and 19.05 s** against **17.02 s**
+taken an hour earlier in the same session — 7 to 11% on an invariant, which on a
+478 s lane is 33 to 52 s of headroom and puts +14.9 s comfortably inside it.
+
+**That is what "re-run one untouched, engine-bound guard" is for**, and it cost forty
+seconds against the eight minutes a second slow lane would have cost to say the same
+thing less clearly.
 
 #### repo_bootstrap_fixes_ckpt124
 

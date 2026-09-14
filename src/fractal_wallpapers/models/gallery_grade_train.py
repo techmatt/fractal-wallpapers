@@ -119,7 +119,7 @@ from datetime import UTC
 from pathlib import Path
 
 from fractal_wallpapers import storage
-from fractal_wallpapers.models import head
+from fractal_wallpapers.models import head, roster
 from fractal_wallpapers.paths import repo_root, tracked_name, under
 
 #: The schema every record here carries.
@@ -2857,11 +2857,16 @@ POOL_SCORES_WEIGHTS_NOTE = SCHEMA_NOTES["weights_are"]
 # --------------------------------------------------------------------------- #
 # Shipping it: one file, k members, and what half precision costs a seating.
 # --------------------------------------------------------------------------- #
-#: The release tag this head's first shipment goes to. Its own, not the three
-#: incumbents': a release is a set of bytes somebody uploaded, and adding a fourth
-#: asset to a tag that has already been cut would mean two different releases
-#: under one name.
-TAG = "weights-v7"
+#: The release tag this head's shipment goes to, which is [`roster.TAG`] — the one
+#: package every head is in since 2026-09-14.
+#:
+#: It was `weights-v7`, this head's own, on the argument that adding a fourth asset
+#: to a tag already cut would mean two different releases under one name. That
+#: argument is right and the scheme it defended is what changed: there is now one
+#: dated tag holding all four, and a head that is shipped after it has been
+#: published goes into a NEW dated tag rather than into this one. The constant is
+#: read through rather than restated so a stage and the manifest cannot disagree.
+TAG = roster.TAG
 
 
 def shipped_path() -> Path:

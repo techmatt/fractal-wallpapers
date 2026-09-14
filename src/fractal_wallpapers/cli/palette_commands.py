@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fractal_wallpapers.cli.common import (
     device_flag,
+    tag_flag,
 )
 
 
@@ -359,7 +360,7 @@ def add_commands(subcommands) -> None:
         ),
     )
     shipping.add_argument("--which", default="best", choices=["best", "last"])
-    shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
+    tag_flag(shipping)
     device_flag(shipping)
     shipping.add_argument("--run", help="the named training run to ship")
     shipping.add_argument(

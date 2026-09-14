@@ -51,7 +51,7 @@ def manifest(tmp_path, monkeypatch):
 
 
 def args(head=None, check=False):
-    return argparse.Namespace(head=head, check=check)
+    return argparse.Namespace(head=head, check=check, verify_release=False)
 
 
 def refusing(codes: dict):
@@ -130,3 +130,89 @@ def test_the_check_covers_every_head_the_roster_names():
         row = document["heads"][name]
         for field in weights_commands.REQUIRED_FIELDS:
             assert field in row, f"{name} names no {field}"
+
+
+# --------------------------------------------------------------------------- #
+# One package, one tag — the failure the single release introduced.
+# --------------------------------------------------------------------------- #
+def test_a_head_left_on_an_older_tag_is_a_gap(manifest, capsys):
+    """★ The failure per-head numbering could not have had.
+
+    Four heads on four tags is fine when each has its own release. One dated
+    package means a row left behind 404s while the other three come down clean,
+    so a clone gets three working judges and one that does not exist — and the
+    only symptom is an exit code somebody has to read. Caught in `--check`, which
+    is the dry run a release is cut after and where the repair is a manifest edit
+    rather than a download.
+    """
+    document = json.loads((manifest / "models" / "weights.json").read_text(encoding="utf-8"))
+    for name, entry in document["heads"].items():
+        entry["tag"] = roster.TAG if name != "beta" else "weights-v1"
+    (manifest / "models" / "weights.json").write_text(json.dumps(document), encoding="utf-8")
+
+    assert weights_commands.check_weights(document) == 1
+
+    said = capsys.readouterr().out
+    assert "3 different tags" in said or "2 different tags" in said
+    assert roster.TAG in said
+
+
+def test_one_tag_passes_the_guard(manifest, capsys):
+    document = json.loads((manifest / "models" / "weights.json").read_text(encoding="utf-8"))
+    for entry in document["heads"].values():
+        entry["tag"] = roster.TAG
+
+    weights_commands.check_weights(document)
+
+    assert "different tags" not in capsys.readouterr().out
+
+
+def test_the_shipped_manifest_names_exactly_one_tag_and_it_is_the_rosters():
+    """The real manifest, which is what a clone resolves. `roster.TAG` is the one
+    spelling — `ship`, `gallery_grade_train` and every `--tag` default read it —
+    so a row that disagrees means a stage wrote a release nothing points at."""
+    document = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
+    tags = {entry["tag"] for entry in document["heads"].values()}
+
+    assert tags == {roster.TAG}
+    assert len(document["heads"]) == len(roster.HEADS)
+
+
+def test_the_tag_is_dated_and_never_reused():
+    """Dated rather than numbered, which is the decision of 2026-09-14: a head's
+    version history is its sha256 and this file's git history, and a number
+    implies a sequence a reader has to trace back. The shape is asserted because
+    the rule that a published tag is never moved only means anything if the next
+    package gets a different name, and a date is what guarantees that."""
+    import re
+
+    assert re.fullmatch(r"weights-\d{4}-\d{2}-\d{2}", roster.TAG), roster.TAG
+
+
+def test_every_ship_verb_defaults_to_the_one_tag():
+    """Four heads ship and three of them wrote the tag out by hand, so the day the
+    scheme changed it had to be found in four places and was found in two.
+    `common.tag_flag` is the one definition and this is what holds them to it."""
+    from fractal_wallpapers import cli
+    from fractal_wallpapers.models import gallery_grade_train, ship
+
+    assert ship.TAG == gallery_grade_train.TAG == roster.TAG
+
+    parser = cli.build_parser()
+    top = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction))
+    found = 0
+    for group, verbs in (("head", "ship"), ("palette", "ship"), ("renders", "ship")):
+        steps = next(
+            a for a in top.choices[group]._actions if isinstance(a, argparse._SubParsersAction)
+        )
+        tag = next(a for a in steps.choices[verbs]._actions if a.dest == "tag")
+        assert tag.default == roster.TAG, f"{group} {verbs} defaults to {tag.default}"
+        found += 1
+    assert found == 3
+
+
+def test_verify_release_clones_the_public_url_and_not_the_push_remote():
+    """What is being verified is what a stranger gets, and a stranger has no
+    deploy key. A `git@` default would pass on this machine and on no other."""
+    assert weights_commands.PUBLIC_REPO.startswith("https://")
+    assert "git@" not in weights_commands.PUBLIC_REPO

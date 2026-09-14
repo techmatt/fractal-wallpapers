@@ -7,6 +7,7 @@ import json
 
 from fractal_wallpapers.cli.common import (
     device_flag,
+    tag_flag,
     write_tracked_json,
 )
 from fractal_wallpapers.labeling.finished import HEADS as FINISHED_HEADS
@@ -366,7 +367,7 @@ def add_commands(subcommands) -> None:
         )
     )
     shipping.add_argument("--which", default="best", choices=["best", "last"])
-    shipping.add_argument("--tag", default="weights-v1", help="the release tag to name")
+    tag_flag(shipping)
     device_flag(shipping)
     shipping.add_argument("--run", help="the named training run to ship (default: the head's own)")
     shipping.add_argument(

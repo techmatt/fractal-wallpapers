@@ -1,7 +1,23 @@
 One home per trained head: tracked metadata here, fetched `.pt` weights land beside it.
 
 `location/`, `render/`, `palette/` and `gallery_grade/` are the four the roster
-carries and a release ships. `smooth_render/` and `strange_render/` are **superseded**: one
+carries and **one release ships all of them**: `weights-2026-09-14`, Matt's decision
+of that date, replacing a per-head numbering that had reached `weights-v7` — four
+heads across four tags, three of them holding a single asset, and a clone
+resolving four different releases to assemble one set of judges. `roster.TAG` is
+the one spelling: `weights.json`'s four rows, `ship`, `gallery_grade_train` and
+every `--tag` default read it, and `fetch-weights --check` refuses a manifest whose
+rows disagree — a row left on an older tag is a head that 404s while the other
+three come down clean.
+
+⚠ **A published tag is never moved.** A later change cuts a new dated tag and
+repoints the rows; it does not replace an asset under a name a clone has already
+trusted, because a moved asset is the one failure a sha256 cannot catch — the
+manifest that names the hash moves with it. Dated rather than numbered for the
+same reason the hash is the real identity: `weights-v6` said nothing about which
+heads were in it or when.
+
+`smooth_render/` and `strange_render/` are **superseded**: one
 judge over both kinds replaced them on 2026-08-23, and their directories stay
 because a head's pre-registration, its acceptance read and its own reading of
 its blind sheet are the evidence of what was decided. Nothing fetches them.
