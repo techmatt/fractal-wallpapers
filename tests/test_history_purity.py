@@ -133,10 +133,33 @@ ALLOWLIST: frozenset[str] = frozenset()
 # larger corpus and the adopted run stops being rebuildable with nothing looking
 # broken. `data/gallery_grade/corpus/README.md` is the reason in full, including why
 # a corpus that is still regenerable does not come here.
+# The palette library's two derived records are the fourth and fifth, added
+# 2026-09-13 on Matt's dictated ceilings — `carriers.jsonl` at 2 MiB and each
+# `color_mass/<mode>.jsonl` at 1,572,864 bytes. Both are one row per drawable
+# palette group, so both grow ONLY when the library does and neither can be
+# trimmed without dropping maps the draw would then never offer. They arrive here
+# together because they are the same fact about the same library counted two ways,
+# and each keeps its own stated ceiling in its own test — `test_palette_carriers`'s
+# `MAX_RECORD_BYTES` and `test_palette_color_mass`'s `SPLIT_BYTES` — so the SIZE
+# rule stepping aside here does not leave either file unbounded.
+#
+# ⚠ Both were comfortably under the limit on the day this was written — 690,732
+# and 489,002 bytes, 66% and 47% of a mebibyte. That is the point: the ceilings
+# are being raised BEFORE the drop that would cross them, so the drop is a data
+# commit and not a data commit plus an argument about a guard. The measured growth
+# is 532 bytes a map, so 2 MiB is ~2,600 maps of headroom on `carriers.jsonl`.
+#
+# ⚠ The colour-mass map splits one file per mode BECAUSE of this rule, and that
+# split is still the right shape — `test_palette_color_mass`'s docstring is the
+# reason. What the raised ceiling says is that the NEXT axis to split on is not
+# obvious and a drop is not a reason to invent one; it does not say the split
+# stopped mattering. A rejoin into a single 7.77 MB file is still a build failure.
 LARGE_TEXT_ALLOWLIST = (
     "data/palette_choice/rows/",
     "data/curation/rank_key/population.jsonl",
     "data/gallery_grade/corpus/",
+    "data/palettes/carriers.jsonl",
+    "data/palettes/color_mass/",
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]

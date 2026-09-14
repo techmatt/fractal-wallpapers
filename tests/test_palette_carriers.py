@@ -226,18 +226,34 @@ def test_the_lead_is_taken_over_the_rows_the_table_holds_and_that_is_exact() -> 
                 assert klass in row["fields"]
 
 
-def test_the_record_sits_well_under_the_history_guard_after_the_drop() -> None:
-    """881,834 bytes at 84.1% before, 690,732 at 65.9% after — 522 maps of headroom.
+#: The ceiling this one record is held to. **2 MiB since 2026-09-13, Matt's
+#: dictated value**, and it is ABOVE `test_history_purity.py`'s
+#: `MAX_TRACKED_BYTES` — `data/palettes/carriers.jsonl` is in that file's
+#: `LARGE_TEXT_ALLOWLIST` as of the same ruling, which is what makes a record
+#: this size legal. Before that this test asserted `0.8 * MAX_TRACKED_BYTES`
+#: and the record sat at 690,732 bytes, 65.9% of a mebibyte.
+#:
+#: Stated as its own number rather than as a fraction of the history guard,
+#: because it is no longer a fraction of it: the two limits now say different
+#: things, and a reader who sees `0.8 *` would take this file to be the one that
+#: fires first when it is the one the other rule has stepped aside for.
+MAX_RECORD_BYTES = 2 * 1024 * 1024
 
-    The guard is `tests/test_history_purity.py`'s `MAX_TRACKED_BYTES`, which is a
-    plain assertion in the fast lane, so this file reaching it trips at the commit
-    gate rather than at the commit. Asserted loosely, at four fifths: the number
-    that matters is that a 120-map drop is nowhere near it, and pinning the exact
-    size would make every drop a two-line edit here.
+
+def test_the_record_sits_under_its_own_ceiling() -> None:
+    """881,834 bytes before the `classic-pairs-2026-09` drop, 690,732 after.
+
+    A plain assertion in the fast lane, so this file reaching its ceiling trips at
+    the commit gate rather than at the commit. What the number is for is unchanged:
+    a drop of any size this project has ever taken is nowhere near it, so a red
+    here means something other than a drop happened to the record.
     """
-    from tests.test_history_purity import MAX_TRACKED_BYTES
-
-    assert carriers.record_path().stat().st_size < 0.8 * MAX_TRACKED_BYTES
+    size = carriers.record_path().stat().st_size
+    assert size < MAX_RECORD_BYTES, (
+        f"{carriers.record_path().name} is {size:,} bytes, over the "
+        f"{MAX_RECORD_BYTES:,}-byte ceiling. The record holds one row per carrier "
+        f"map, so a size like this is not a drop — find what else is writing rows"
+    )
 
 
 # --------------------------------------------------------------------------- #

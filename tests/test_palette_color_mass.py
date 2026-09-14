@@ -43,7 +43,18 @@ GUARD_BYTES = 1 << 20
 #: which is the whole point of naming a second number here.
 #:
 #: It was `GUARD_BYTES // 2` until 2026-09-06.
-SPLIT_BYTES = GUARD_BYTES * 3 // 4
+#:
+#: ⚠ **It is 1,572,864 since 2026-09-13, Matt's dictated value, and that is ABOVE
+#: [`GUARD_BYTES`]** — so this line no longer fires before the history guard, and
+#: cannot: `data/palettes/color_mass/` is in `test_history_purity.py`'s
+#: `LARGE_TEXT_ALLOWLIST` as of the same ruling, which is what makes a 1.5 MiB
+#: per-mode file legal at all. The two numbers changed together and neither is
+#: readable without the other. What this line still does is the thing it was
+#: written for — say that the per-mode split has stopped being enough and wants
+#: another axis — but it now says it at 1.5 MiB rather than at three quarters of
+#: one, because the axis it would split on next is not obvious and a drop is not
+#: a reason to invent one.
+SPLIT_BYTES = 1_572_864
 
 
 def files() -> list:
