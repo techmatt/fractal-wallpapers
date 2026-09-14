@@ -85,8 +85,8 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.curation import fulls, page_order
 from fractal_wallpapers.curation import page as page_module
-from fractal_wallpapers.curation import page_order
 from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
 
 #: The schema every row and every manifest here carries.
@@ -163,8 +163,11 @@ RECORDED_SEATS = 1000
 #: because a solve is cheap to run again and what a leftover record costs is
 #: misreading hazard and prune protection rather than bytes. The keep list is the
 #: stamps below, any record a published or upcoming figure cites, and the current
-#: official n=1000 record — `20260911T022330Z`, unpublished, the one
-#: [`page_order`]'s constants were measured on. That list is [`kept`], and
+#: official n=1000 record, which is unpublished and whichever stamp
+#: [`KEPT_UNPUBLISHED`] says it is — `20260914T171846Z` as of 2026-09-14. **The
+#: role moves and the entry does not follow it**: a stamp that held it keeps its
+#: line for as long as something still resolves it, so this sentence names the
+#: rule and the tuple below names the stamps. That list is [`kept`], and
 #: [`KEPT_UNPUBLISHED`] is the half of it this tuple does not already carry.
 #:
 #: **Retention is a third question after publication and durability**, and until
@@ -228,12 +231,20 @@ PUBLISHED: tuple[str, ...] = (
 #: * `20260913T172903Z` and `20260914T144946Z` — the **before and after of the
 #:   `mine_night2_ckpt124` run**, added 2026-09-14, and they are one entry in two
 #:   lines: `curate seat-sheet --before … --after …` names both by stamp, and a
-#:   diff with one half missing is not a smaller diff, it is no diff. The after
-#:   half is also the current official n=1000 record. ⚠ The before half was
-#:   **moved out of the store by that same night's sweep and moved back** — it was
-#:   off the keep list for the hours between, which is exactly right under
+#:   diff with one half missing is not a smaller diff, it is no diff. ⚠ The before
+#:   half was **moved out of the store by that same night's sweep and moved back**
+#:   — it was off the keep list for the hours between, which is exactly right under
 #:   discard-by-default and exactly why the sweep moves records rather than
 #:   deleting them. When the pair stops being interesting, both go.
+#:   `20260914T144946Z` **earns a second line of its own**: the rejection pass was
+#:   cut over its thousand seats — `data/gallery_grade/batches.jsonl` names it as
+#:   the population `gallery_rejection_20260914` was drawn from — so it is the
+#:   before half of `rejection_ingest_ckpt124`'s diff as well, and it stays until
+#:   that batch stops being the newest thing the store learned.
+#: * `20260914T171846Z` — **the official n=1000 record since 2026-09-14**, the
+#:   first solve taken with the full rejection pass ingested: 1,000 of 1,000,
+#:   shortfall 0, 728 vetoed rows out of the pool. It replaces `20260914T144946Z`
+#:   in that role and is what an unqualified "the record" means from here.
 #:
 #: ⚠ The first four were named in `fractal_wallpapers/README.md`'s store table as
 #: hard dependencies **while the store-wide sweep made the distinction cost
@@ -253,6 +264,7 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     "20260913T172903Z",
     "20260914T144946Z",
     "20260914T152502Z",
+    "20260914T171846Z",
 )
 
 
@@ -828,8 +840,23 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     # Two resolutions a row over a record that reaches two thousand of them, so
     # the tiers are read once here rather than four thousand times below.
     tiers = Tiers.current()
-    shown = [{**row, "src": thumbnail_href(row.get("picture"), directory, tiers)} for row in rows]
+    # The release-geometry picture where the record has one. Resolved here rather
+    # than by the page, because `file://` cannot look in a directory: a seat with
+    # no full picture has to arrive with an empty string and be laid out as the
+    # candidate alone. `curate solve fulls <stamp>` is what fills that in.
+    full = fulls.index([row.get("key") for row in rows], log=lambda _line: None)
+    shown = [
+        {
+            **row,
+            "src": thumbnail_href(row.get("picture"), directory, tiers),
+            "full": (
+                fulls.href(full[row["key"]], directory, tiers) if row.get("key") in full else ""
+            ),
+        }
+        for row in rows
+    ]
     missing = sum(1 for row in rows if _on_disk(row, tiers) is not True)
+    at_full = sum(1 for row in shown if row["full"])
     # The presentation order: derived here, from the rows, changing none of them.
     # `order` is a column on the EMBEDDED copy and never on `gallery.jsonl` — the
     # record is untouched and an existing one gets today's order on its next build.
@@ -842,6 +869,8 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
         .replace("__SEATS__", str(len(rows)))
         .replace("__ASKED__", str(manifest["seats"]["asked"]))
         .replace("__MISSING__", str(missing))
+        .replace("__AT_FULL__", str(at_full))
+        .replace("__FULL_REGIME__", html.escape(fulls.REGIME.spelled))
         .replace("__ORDERED_BY__", html.escape(page_order.basis(vectors)))
         .replace("__ROWS__", json.dumps(shown, ensure_ascii=False)),
         encoding="utf-8",
@@ -855,8 +884,9 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
 #: The browser, as one string with six substitutions. Kept here rather than in a
 #: tracked asset file because it is the only page this project writes for a person
 #: to drive, and a second file would be a second thing to find. The substitutions
-#: are `__ROWS__`, `__STAMP__`, `__SEATS__`, `__ASKED__`, `__MISSING__` and
-#: `__ORDERED_BY__`, all filled by [`page`] and none of them by the reader.
+#: are `__ROWS__`, `__STAMP__`, `__SEATS__`, `__ASKED__`, `__MISSING__`,
+#: `__AT_FULL__`, `__FULL_REGIME__` and `__ORDERED_BY__`, all filled by [`page`]
+#: and none of them by the reader.
 _PAGE = (
     """<!doctype html>
 <meta charset="utf-8">
@@ -900,6 +930,9 @@ _PAGE = (
   .tile.picked { border-color: #6f9ef8; box-shadow: 0 0 0 1px #6f9ef8; }
   .tile img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;
               background: var(--well); cursor: zoom-in; }
+  #hires-label { margin-top: 6px; border-top: 1px solid var(--rule); padding-top: 5px;
+                 color: var(--muted); }
+  #hires-label b { color: var(--accent); font-weight: 400; }
   .tile .gone { display: grid; place-items: center; width: 100%; aspect-ratio: 16/9;
                 background: var(--well); color: #6b7280; cursor: pointer; }
   .meta { padding: 6px 8px 8px; }
@@ -957,6 +990,8 @@ _PAGE = (
         <option value="p_ge4">P(&ge;4), best first</option>
       </select>
       <button id="clear">clear filters</button>
+      <label id="hires-label"><input type="checkbox" id="hires">full resolution
+        <b>__FULL_REGIME__</b></label>
     </fieldset>
   </div>
   <div id="tray">
@@ -967,6 +1002,8 @@ _PAGE = (
     <span id="says"></span>
     <span class="dim">click a picture for the full size &middot;
       <code>&larr;</code> <code>&rarr;</code> step, <code>esc</code> closes</span>
+    <span class="dim" id="fulls">__AT_FULL__ of __SEATS__ seats have a __FULL_REGIME__
+      picture</span>
   </div>
 </header>
 <main id="grid"></main>
@@ -1049,6 +1086,17 @@ function copy(text) {
   }
 }
 
+// WHICH picture a tile loads. The candidate by default, because a thousand
+// 1280x720 JPEGs is a page that does not open; `#hires` swaps the grid over to
+// the release-geometry render where the record has one. A seat with no full
+// picture keeps its candidate under the toggle rather than going blank — the
+// toggle is an upgrade where one exists and never a filter.
+let hires = false;
+
+function pictureOf(row) {
+  return (hires && row.full) ? row.full : (row.src || row.full || "");
+}
+
 function tile(row) {
   const card = document.createElement("div");
   card.className = "tile" + (picked.has(row.key) ? " picked" : "");
@@ -1058,9 +1106,9 @@ function tile(row) {
     box.checked = picked.has(row.key);
     document.getElementById("picked").textContent = picked.size;
   };
-  if (row.src) {
+  if (row.src || row.full) {
     const img = document.createElement("img");
-    img.src = row.src;
+    img.src = pictureOf(row);
     img.loading = "lazy";
     img.title = "click for the full size";
     img.addEventListener("error", () => {
@@ -1190,7 +1238,10 @@ function openAt(i) {
   at = i;
   const row = shown[at];
   const view = document.getElementById("lb");
-  view.querySelector("img").src = row.src || "";
+  // ALWAYS the release-geometry picture where there is one, toggle or no toggle.
+  // The header has said "click a picture for the full size" since this page
+  // existed and could only ever show the 640x360 candidate blown up.
+  view.querySelector("img").src = row.full || row.src || "";
   const where = document.createElement("span");
   where.textContent = (at + 1) + " of " + shown.length + "  \\u00b7  ";
   const who = document.createElement("b");
@@ -1229,10 +1280,18 @@ document.addEventListener("keydown", (event) => {
 document.getElementById("q").addEventListener("input", draw);
 document.getElementById("sort").addEventListener("change", draw);
 document.getElementById("group").addEventListener("change", draw);
+// The resolution toggle is NOT a filter: it changes which picture a tile loads
+// and never which tiles there are. So it is excluded from `clear filters` by
+// name — the sweep below unchecks every box in the header, and a toggle swept by
+// it would go off on screen while `hires` stayed on underneath.
+document.getElementById("hires").addEventListener("change", (event) => {
+  hires = event.target.checked;
+  draw();
+});
 document.getElementById("clear").addEventListener("click", () => {
   for (const facet of FACETS) chosen[facet].clear();
   for (const box of document.querySelectorAll("header input[type=checkbox]")) {
-    box.checked = false;
+    if (box.id !== "hires") box.checked = false;
   }
   document.getElementById("q").value = "";
   draw();

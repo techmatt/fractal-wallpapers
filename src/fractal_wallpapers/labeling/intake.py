@@ -44,6 +44,15 @@ and it refuses one shape: a payload that does not carry every unit the file
 already holds. Everything else about a session is repeatable, and that one is
 not.
 
+**`labels/` is an inbox and holds only what is unprocessed**, Matt's ruling of
+2026-09-14. A successful `--write` ends by moving the drop to
+[`store.archive_dir`] — moved, never deleted, because the store holds the
+verdicts and the export is the only record of what a *batch* contained. The
+point is protective: the store appends, and a spent export sitting beside a
+fresh one is a double-ingest waiting to be typed. [`archive`] is the step, it
+runs last so nothing is moved out from under a refusal, and it leaves a drop
+named with `--labels` from outside the inbox where it found it.
+
 ## What reaching a store costs
 
 * **Both counts are checked, in both directions.** Every exported unit has to be
@@ -851,7 +860,30 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
     report["store after"] = after.summary()
     report["pin"] = records.assert_pin(landed) | {"asserted_before_writing": pin_report["ok"]}
     report["registry"] = registry_module.summary(known)
+    report["archived"] = archive(export_file)
     return report
+
+
+def archive(export_file: Path) -> dict:
+    """Empty the inbox of one drop, after it has resolved and read back.
+
+    Last, deliberately: everything above can refuse, and a drop moved out from
+    under a refusal is one somebody has to find again before they can retry it.
+    By the time this runs the rows are written, the count is proved and every
+    unit reads back at the verdict it was exported at.
+
+    Only a drop that actually sits in the inbox is moved. `--labels` names a file
+    anywhere — a download read out of a temporary, an export kept beside a
+    scratch note — and the rule here is about what `labels/` holds, not about
+    taking custody of every file an ingest is pointed at.
+    """
+    inbox = store.export_dir()
+    if export_file.parent.resolve() != inbox.resolve():
+        return {
+            "moved": False,
+            "why": f"{export_file} was named with --labels and does not sit in {inbox}",
+        }
+    return {"moved": True, "to": str(store.archive_export(export_file))}
 
 
 __all__ = [
@@ -865,6 +897,7 @@ __all__ = [
     "Records",
     "Sheet",
     "already_says",
+    "archive",
     "classify",
     "read_export",
     "read_sheet",

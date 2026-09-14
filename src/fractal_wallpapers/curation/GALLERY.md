@@ -69,15 +69,28 @@ shortfall rides the second objective tier, and the record says which demand went
 short. The veto wins and the floor is reported unmet — there is no rescue leg and
 no un-vetoing.
 
-**Measured 2026-09-14** over the official n=1000 record: with 720 vetoed rows out,
-the pool falls 369,832 → 369,112 candidates and 39,581 → 39,559 locations, and the
-re-solve still fills **1,000 of 1,000 at shortfall 0** — every one of the 60
-demands met. Ten have no slack at all (`curvature`, `direct_trap_lines`,
-`direct_trap_screen`, `itinerary` and `smooth_curvature` at their mode floors;
-`dark_muted_lime`, `dark_vivid_lime`, `dark_vivid_yellow`, `light_vivid_cyan` and
-`light_vivid_lime` at exactly 20 seats), and those ten are where a disagreement
-would show first. The worst seated score went **up** — 1.073328 → 1.079670 — which
-is the leg's documented non-monotonicity rather than a claim that vetoing helps.
+**Measured 2026-09-14** over the then-official `20260914T144946Z`: with 720 vetoed
+rows out, the pool falls 369,832 → 369,112 candidates and 39,581 → 39,559
+locations, and the re-solve still fills **1,000 of 1,000 at shortfall 0** — every
+one of the 60 demands met. Ten have no slack at all (`curvature`,
+`direct_trap_lines`, `direct_trap_screen`, `itinerary` and `smooth_curvature` at
+their mode floors; `dark_muted_lime`, `dark_vivid_lime`, `dark_vivid_yellow`,
+`light_vivid_cyan` and `light_vivid_lime` at exactly 20 seats), and those ten are
+where a disagreement would show first. The worst seated score went **up** —
+1.073328 → 1.079670 — which is the leg's documented non-monotonicity rather than a
+claim that vetoing helps.
+
+**Re-measured the same day** after the full rejection pass over all 1,000 seats
+landed eight more vetoes, on `20260914T171846Z`, which is the official record from
+here: 728 vetoed rows, pool 369,104 candidates over the same 39,559 locations, and
+again **1,000 of 1,000 at shortfall 0** with the same ten demands at zero slack.
+**Against `20260914T144946Z`, 89 seats changed hands: 17 the veto forced and 72 the
+solve's own non-monotonicity** — the veto moves about a fifth of the churn its own
+re-solve produces, and that ratio is the thing to remember before reading a seat
+change as a verdict. The worst seated score is the same 1.079670; the sum fell
+1542.494727 → 1541.242387 (0.081%) and mean P(≥4) 0.89119 → 0.89016. **Two rounds
+of vetoes and the floors have still never bound**, which is the reading that makes
+the paragraph above a contingency rather than a live risk.
 
 #### `curate veto` — four ways of looking at it, and none of them applies it
 
@@ -1853,6 +1866,58 @@ grid. **Selecting is the checkbox beside the alias, not the picture** — the tw
 gesture while a 224px tile was the only size there was, and a click that both opened and
 selected put a stray ID in the copy tray on every look.
 
+#### The full-resolution option, and `curate solve fulls` behind it
+
+A tile is ~224px of a **640x360 candidate** — the size the judges read — and the page has
+promised "click a picture for the full size" since it existed while having nothing but
+that candidate to blow up. It has the real thing now.
+
+```
+fractal-wallpapers curate solve fulls --stamp <stamp>              # find, then render what is missing
+fractal-wallpapers curate solve fulls --stamp <stamp> --no-render  # the hit rate alone, to size the leg
+fractal-wallpapers curate solve browse <stamp> --out <path>        # the page, with the fulls it finds
+```
+
+**`curation/fulls.py` answers one question: where is each seat at `1280x720ss2`.** That is
+[`release.RELEASE_REGIME`] read through and not restated, and it is also what a labeling
+sheet and a friend-voting kit are cut at — which is what makes the first pass a **gather**
+rather than a render. Every built sheet's row file is read for rows whose own `join.render`
+says that geometry, indexed by the candidate key in `selected_on.candidate`; only what that
+misses is rendered, on the locked three workers through the release path.
+
+**The match is the recipe key AND the regime, exact.** The key already carries family,
+viewport, `maxiter`, mode, settings, curve, map, palette and autolevel band, so two rows
+with one key differ in nothing that decides pixels except the regime — which is checked
+against what was actually drawn rather than assumed. A seat whose only picture is at
+another frame is a miss.
+
+**Nothing found is copied.** A record's seats are scattered across a dozen sheets and a
+second copy would go stale the moment either side moved; what the module owns on disk is
+only the pictures it made, under `artifacts/curation/fulls/<regime>/pictures/<key>.jpg`.
+
+**Measured 2026-09-14** over `20260914T171846Z`, the first record built this way:
+**923 of 1,000 seats were found** — 92.3%, almost all of them off the
+`gallery_rejection_20260914` sheet, which had been cut over the *previous* record's
+thousand — and the 77 misses are the seats the veto re-solve moved. Rendering them took
+**502.7 s for 74 on three workers, 6.8 s a picture**, and the record then sat at 1,000 of
+1,000. A viewer over a record whose seats have never been cut for a sheet pays about
+**1.9 h** at that rate; one built the day after a rejection pass pays minutes.
+
+⚠ **A `1` in the recipe's own autolevel block is not a levelling curve.** The leg inherits
+its curve through `stamps.for_release`, the way a kit does, because the tone of a 1280x720
+render is not the tone of the 640x360 JPEG the seat was chosen on. Handing the operator the
+candidate's *stamp* instead makes it re-measure, which needs a whole row the task never
+carries: **74 of 77 failed at `KeyError('curve')`** on the first attempt, with the pictures
+rendered and left as `.writing.jpg` temporaries.
+
+**On the page it is a toggle and the small cut is the default**, because a thousand
+1280x720 JPEGs is a page that does not open. The toggle is an **upgrade where one exists
+and never a filter** — a seat with no full picture keeps its candidate under it — and it is
+excluded from *clear filters* by name, since a control swept by that sweep would go off on
+screen while the grid went on loading fulls. **The full-size view takes the release-geometry
+picture whether the toggle is on or not**, which is what the header always said it did.
+A tray line says how many of the record's seats have one.
+
 ### The page opens in a derived presentation order, and it moves nothing
 
 **Since 2026-09-13.** The page used to open in `rank` order, best first, and the
@@ -2171,7 +2236,7 @@ and which the resolver reports as `picture_on_disk: false`.
 
 ```
 src/fractal_wallpapers/curation/votes.py   the encoder, the builder, the page
-artifacts/votes/<stamp>/full/sNNNN.jpg     2560x1440, the picture a click opens
+artifacts/votes/<stamp>/full/sNNNN.jpg     1280x720, the picture a click opens
 artifacts/votes/<stamp>/thumbs/sNNNN.jpg   512x288, downscaled from the full, never the candidate
 artifacts/votes/<stamp>/index.html         the viewer, one file, openable over file://
 artifacts/votes/<stamp>/orders/<name>.json one friend's deck, expanded
@@ -2482,9 +2547,19 @@ is a mean absolute difference of **6.28** over the six seats, **4.81** after fit
 1080p — against **3.71 to 6.09** for the entire quality axis from q95 to q80 inside the
 busiest crop. So dropping to ss2 to save eleven hours costs *more* picture than dropping
 five quality steps does, and it costs it as aliasing rather than as softness; the crops
-show it plainly on `smooth_mean_angle`. Hence the defaults: **ss4, q85, 4:2:0**, one to
-buy the picture and two to pay for it. ss4 is also 10% smaller in bytes at every cell,
-because supersampling removes exactly the noise a JPEG spends most on.
+show it plainly on `smooth_mean_angle`. That argument bought the defaults **ss4, q85,
+4:2:0**, one to buy the picture and two to pay for it, and ss4 is also 10% smaller in
+bytes at every cell because supersampling removes exactly the noise a JPEG spends most on.
+
+⚠ **Every number in that paragraph was measured at 2560x1440, and the frame moved.**
+**The kit is `1280x720ss2` since 2026-09-14**, Matt's ruling — the gallery rejection
+sheet's own geometry, so a friend and Matt look at one picture rather than two renders of
+one recipe, and a seat already cut for a rejection pass is a seat a kit does not make
+again. Nothing has re-measured ss2 against ss4 at the smaller frame and this default does
+not claim it would come out the same; it claims that matching the rejection sheet is worth
+more than an unmeasured fraction of a supersample. q85 and 4:2:0 are untouched, and
+`--ss 4` still takes the old cell. The pilot's per-picture clocks below are 2560x1440
+figures and are floors for a frame four times the area.
 
 **`--ss-for <mode>=<n>` buys that decision back per mode**, repeatable, and it makes the
 leg **one render pass per distinct supersample rather than one overall**, cheapest first

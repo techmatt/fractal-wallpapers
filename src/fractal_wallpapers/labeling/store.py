@@ -109,12 +109,56 @@ def export_dir() -> Path:
     [`fractal_wallpapers.labeling.intake`] has resolved it into rows that carry
     their own join. Nothing reads a verdict from here except the intake step.
 
+    An **inbox**: it holds the unprocessed and is empty most of the time. A
+    successful ingest moves the drop to [`archive_dir`], which is why this
+    directory is the shorter list of the two.
+
     It is spelled in this module for the same reason the records are: this is the
     one place allowed to know where anything called a label lives, and a second
     module that spelled the directory would be a second answer to where a page's
     export goes.
     """
     return repo_root() / "labels"
+
+
+def archive_dir() -> Path:
+    """Where a drop goes once it has been resolved into rows.
+
+    `labels/` is an **inbox**: it holds what is unprocessed and is empty most of
+    the time, Matt's ruling of 2026-09-14. A processed export left beside an
+    unprocessed one is a double-ingest waiting to be typed, because the store
+    appends and the only thing standing between a second `--write` and a second
+    set of rows is somebody remembering which files are spent.
+
+    Moved rather than deleted. The store holds the verdicts, but the export is
+    the only record of what a *batch* contained — which units a page put in front
+    of a labeler, including the ones they left alone — and that is a few kilobytes
+    against a question nothing else can answer.
+
+    Under the inbox and not beside it, because the whole tree is untracked by one
+    `.gitignore` line and an archive somewhere else would need a second.
+    """
+    return export_dir() / "archive"
+
+
+def archive_export(path: Path) -> Path:
+    """Move one processed drop into the archive, never over one already there.
+
+    A sheet can be exported twice — a labeler saves, the ingest runs, the page is
+    reopened and saved again — and the two files are different batches of clicks
+    under one name. So a collision is suffixed rather than resolved: `-2`, `-3`,
+    in the order they were archived.
+    """
+    path = Path(path)
+    if not path.is_file():
+        raise LabelError(f"{path} is not a file; there is no drop there to archive")
+    destination = archive_dir() / path.name
+    ordinal = 1
+    while destination.exists():
+        ordinal += 1
+        destination = archive_dir() / f"{path.stem}-{ordinal}{path.suffix}"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    return Path(path.replace(destination))
 
 
 def export_path(head: str, sheet: str = "") -> Path:
@@ -400,6 +444,8 @@ __all__ = [
     "LabelError",
     "Resolution",
     "append",
+    "archive_dir",
+    "archive_export",
     "batch_path",
     "check",
     "eval_side_batches",

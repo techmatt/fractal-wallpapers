@@ -72,6 +72,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
     if args.what == "k-sweep-plot":
         return _draw_the_ceiling_sweep(args)
 
+    if args.what == "fulls":
+        return curate_solve_fulls(args)
+
     # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
     # reader who has just seen a stamp printed will type it either way and the
     # cost of not accepting both is a page silently written for a DIFFERENT
@@ -102,6 +105,44 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
         return 1
     print(json.dumps(answers, indent=2))
     return 0 if all(held["found"] for held in answers) else 1
+
+
+def release_workers() -> int:
+    """This machine's render pool, off the module that owns the rule."""
+    from fractal_wallpapers.curation import release
+
+    return int(release.DEFAULT_WORKERS)
+
+
+def curate_solve_fulls(args: argparse.Namespace) -> int:
+    """Find or make every seat of one record at the release geometry."""
+    from fractal_wallpapers.curation import candidate_ledger, fulls, tentative
+
+    try:
+        stamp = args.stamp or tentative.latest()
+        seats = [str(row["key"]) for row in tentative.read_rows(stamp)]
+    except tentative.TentativeRefused as refusal:
+        print(refusal)
+        return 1
+    resolved = fulls.index(seats, log=lambda line: None)
+    missing = [key for key in seats if key not in resolved]
+    readout = {
+        "stamp": stamp,
+        "regime": fulls.REGIME.spelled,
+        "seats": len(seats),
+        "found": len(seats) - len(missing),
+        "missing": len(missing),
+        "hit_rate": round((len(seats) - len(missing)) / max(1, len(seats)), 4),
+    }
+    if missing and not args.no_render:
+        wanted = set(missing)
+        rows = [row for row in candidate_ledger.stream() if str(row.get("key")) in wanted]
+        readout["render"] = fulls.render(rows, workers=args.workers)
+        resolved = fulls.index(seats, log=lambda line: None)
+        readout["found_after"] = sum(1 for key in seats if key in resolved)
+    print(display_path(fulls.write_index(resolved)))
+    print(json.dumps(readout, indent=2))
+    return 0
 
 
 def _spacing_readout(stamp: str | None) -> dict:
@@ -1437,6 +1478,32 @@ def add_steps(steps) -> None:
         metavar="STAMP",
         help="the sweep's stamp, which is what `k-sweep` printed when it finished. NOT a "
         "rung's stamp: a rung is one seating and the figures are over all of them",
+    )
+
+    filling = solve_verbs.add_parser(
+        "fulls",
+        help="find or make each of a record's seats at the release geometry, for the viewer",
+        description=(
+            "The viewer shows the 640x360 candidate, which is the size the judges read and "
+            "not the size a person decides at. This finds each seat at 1280x720ss2 — the "
+            "release regime, and the geometry the labeling sheets are cut at — and renders "
+            "only what it cannot find. The match is the recipe key AND the regime, exact: a "
+            "seat whose only picture is at another frame is a miss. Nothing found is copied; "
+            "what this leg owns on disk is only the pictures it made. It holds no pool and "
+            "reads the ledger once for the recipes of the misses."
+        ),
+    )
+    filling.add_argument("--stamp", help="which record to fill (default the newest)")
+    filling.add_argument(
+        "--workers",
+        type=int,
+        default=release_workers(),
+        help=f"the render pool for the misses (default {release_workers()}, this machine's rule)",
+    )
+    filling.add_argument(
+        "--no-render",
+        action="store_true",
+        help="report the hit rate and render nothing, which is how a leg is sized before it runs",
     )
 
     browsing = solve_verbs.add_parser(

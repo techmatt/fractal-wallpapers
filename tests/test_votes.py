@@ -195,6 +195,17 @@ def test_a_thumbnail_is_a_downscale_of_the_full_render_and_never_of_the_candidat
         assert abs(right[2] - RIGHT[2]) < 25 and abs(right[0] - RIGHT[0]) < 25
 
 
+def regime(supersample: int) -> str:
+    """The regime a kit renders at, off the module rather than restated here.
+
+    Spelled from `votes.FRAME` so that moving the frame — as Matt's 2026-09-14
+    ruling did, to the rejection sheet's `1280x720ss2` — moves what these tests
+    assert rather than reddening a dozen of them on a string nobody meant to pin.
+    What each test does pin is the supersample it passed in.
+    """
+    return f"{votes.FRAME[0]}x{votes.FRAME[1]}ss{int(supersample)}"
+
+
 def test_the_kit_names_its_encoding_and_the_frame_it_was_rendered_at(
     tmp_path, store, stub_renders
 ) -> None:
@@ -203,7 +214,7 @@ def test_the_kit_names_its_encoding_and_the_frame_it_was_rendered_at(
     assert manifest["encoding"] == {
         "quality": 85,
         "chroma": "444",
-        "regime": "2560x1440ss4",
+        "regime": regime(4),
         "regime_for": {},
         "seats_at": {"ss4": 2},
     }
@@ -236,7 +247,7 @@ def test_a_per_mode_supersample_splits_the_leg_and_renders_the_cheap_pass_first(
     first — the whole point of the override is that most of a kit is cheap, so
     the fulls a person can look at have to start landing before the fine pass."""
     built(tmp_path, store, supersample=2, supersample_for={"smooth_mean_angle": 4})
-    assert [leg["regime"] for leg in stub_renders] == ["2560x1440ss2", "2560x1440ss4"]
+    assert [leg["regime"] for leg in stub_renders] == [regime(2), regime(4)]
     assert [leg["keys"] for leg in stub_renders] == [[KEYS[0]], [KEYS[1]]]
 
 
@@ -267,16 +278,16 @@ def test_the_manifest_says_what_was_overridden_and_what_that_came_to(
         supersample=2,
         supersample_for={"smooth_mean_angle": 4, "threads": 4},
     )
-    assert manifest["encoding"]["regime"] == "2560x1440ss2"
+    assert manifest["encoding"]["regime"] == regime(2)
     assert manifest["encoding"]["regime_for"] == {
-        "smooth_mean_angle": "2560x1440ss4",
-        "threads": "2560x1440ss4",
+        "smooth_mean_angle": regime(4),
+        "threads": regime(4),
     }
     # `threads` is the third seat and `--limit 2` never reaches it.
     assert manifest["encoding"]["seats_at"] == {"ss2": 1, "ss4": 1}
     assert [leg["regime"] for leg in manifest["render"]["legs"]] == [
-        "2560x1440ss2",
-        "2560x1440ss4",
+        regime(2),
+        regime(4),
     ]
     assert manifest["render"]["planned"] == 2 and manifest["render"]["made"] == 2
 
@@ -287,7 +298,7 @@ def test_an_override_that_names_no_mode_of_this_record_is_not_an_error(
     """A cut holds whatever modes its first N seats carry, so a mode missing from
     one cut is the ordinary case. The kit is the unsplit one."""
     built(tmp_path, store, supersample=2, supersample_for={"itinerary": 4})
-    assert [leg["regime"] for leg in stub_renders] == ["2560x1440ss2"]
+    assert [leg["regime"] for leg in stub_renders] == [regime(2)]
 
 
 @pytest.mark.parametrize("text", ["smooth_mean_angle", "smooth_mean_angle=", "=4", "x=four"])
@@ -321,8 +332,8 @@ def test_the_debugging_supersample_builds_a_whole_kit(tmp_path, store, stub_rend
     the frame unchanged, and the regime on the manifest and in the seat list, so
     a kit built to be driven still says what made it."""
     manifest = built(tmp_path, store, supersample=1)
-    assert [leg["regime"] for leg in stub_renders] == ["2560x1440ss1"]
-    assert manifest["encoding"]["regime"] == "2560x1440ss1"
+    assert [leg["regime"] for leg in stub_renders] == [regime(1)]
+    assert manifest["encoding"]["regime"] == regime(1)
     assert manifest["encoding"]["seats_at"] == {"ss1": 2}
     assert seat_list(tmp_path / "kit") == [{"key": KEYS[0], "ss": 1}, {"key": KEYS[1], "ss": 1}]
 

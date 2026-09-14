@@ -375,6 +375,23 @@ sheets cut for the same judge cannot overwrite each other (see [`export_control.
 against its sheet; until then the store is untouched. Drops written before sheets carried
 their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
 
+**`labels/` is an INBOX and holds only what is unprocessed**, Matt's ruling of
+2026-09-14. A successful `label ingest --write` ends by moving the drop to
+`labels/archive/` — `store.archive_export`, last of all so that nothing is moved out
+from under a refusal, and a drop named with `--labels` from outside the inbox is left
+where it is. **Moved, never deleted**: the store holds the verdicts, but the export is
+the only record of what a *batch* contained, including the units the labeler left alone.
+A second export under one name is archived beside the first as `<name>-2.json` rather
+than over it. The whole tree is untracked.
+
+**The rule is protective and the hazard is measured.** The store appends and an ingest is
+idempotent only against *the current row* — so re-ingesting a spent drop whose renders a
+later batch has since re-graded writes the older page's answers back on top. When the
+inbox was first emptied it held 43 processed drops, and **12 of them would have written
+rows: 116 of them reverting `aug_sweep_A_20260910` verdicts**, which is the gallery-grade
+store's entire supersession count. A spent export beside a fresh one is that waiting to be
+typed.
+
 **A page that is never exported leaves nothing, and a small page is how that
 happens.** The drop is a page's only record: the sheet, the renders and the levelled
 maps all survive a closed browser and none of them carries a verdict. So a sitting is
@@ -1227,7 +1244,9 @@ does not end with a file in a download directory somebody has to move, and a
 static server that refuses the endpoint gets the same file downloaded under the
 same name. The drop is untracked, ignored, and disposable; `label ingest` is what
 makes it durable, and it reads the drop by default so it does not have to be told
-where the page just wrote.
+where the page just wrote. **And it moves the drop to `labels/archive/` once it
+has** — see *Where the labels land* — so what is left in `labels/` is what nobody
+has processed yet.
 
 **`/labels/` is ignored, and the leading slash is the point.** The entry in
 `.gitignore` is anchored at the repository root, so it hides the drop directory

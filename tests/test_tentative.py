@@ -953,3 +953,68 @@ def test_the_keep_list_is_published_plus_the_named_unpublished_and_holds_no_ghos
     monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260303T000000Z", "20261111T000000Z"))
 
     assert tentative.kept() == ["20260101T000000Z", "20260303T000000Z"]
+
+
+# --------------------------------------------------------------------------- #
+# The full-resolution option.
+# --------------------------------------------------------------------------- #
+def a_full(store: Path, key: str) -> Path:
+    """The release-geometry picture of one seat, where `fulls` keeps its own."""
+    from fractal_wallpapers.curation import fulls
+
+    picture = fulls.store_dir() / "pictures" / f"{key}.jpg"
+    picture.parent.mkdir(parents=True, exist_ok=True)
+    picture.write_bytes(b"not really a jpeg")
+    return picture
+
+
+def test_the_page_carries_the_release_geometry_picture_where_the_record_has_one(store):
+    """Resolved at build time and never by the page: `file://` cannot look in a
+    directory, so a seat with no full picture has to ARRIVE with an empty string."""
+    tentative.write(record_of(seat("k0"), seat("k1")), log=quiet)
+    a_full(store, "k0")
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+    rows = json.loads(page.split("const ROWS = ", 1)[1].split(";\n", 1)[0])
+    embedded = {row["key"]: row for row in rows}
+
+    assert embedded["k0"]["full"].endswith("k0.jpg")
+    assert embedded["k1"]["full"] == "", "a seat with no full picture claimed one"
+    assert "1 of 2 seats have a 1280x720ss2" in page
+
+
+def test_the_grid_opens_on_the_candidate_and_the_toggle_swaps_it(store):
+    """The small cut is the default because a thousand 1280x720 JPEGs is a page
+    that does not open. The toggle is an UPGRADE where one exists and never a
+    filter: a seat with no full picture keeps its candidate under it."""
+    tentative.write(record_of(seat("k0")), log=quiet)
+    a_full(store, "k0")
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert "let hires = false;" in page, "the page opens on the full cut"
+    assert 'return (hires && row.full) ? row.full : (row.src || row.full || "");' in page
+    assert "img.src = pictureOf(row);" in page
+    assert 'document.getElementById("hires").addEventListener("change"' in page
+
+
+def test_the_resolution_toggle_survives_clear_filters(store):
+    """`clear filters` unchecks every box in the header, and this one is not a
+    filter — swept by it, the control would go off on screen while the page went
+    on loading full-resolution pictures underneath."""
+    tentative.write(record_of(seat("k0")), log=quiet)
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert 'if (box.id !== "hires") box.checked = false;' in page
+
+
+def test_the_full_size_view_always_takes_the_release_geometry_picture(store):
+    """The header has promised "the full size" since this page existed and could
+    only ever show the candidate blown up. The toggle governs the GRID."""
+    tentative.write(record_of(seat("k0")), log=quiet)
+    a_full(store, "k0")
+
+    page = tentative.page(log=quiet).read_text(encoding="utf-8")
+
+    assert 'view.querySelector("img").src = row.full || row.src || "";' in page
