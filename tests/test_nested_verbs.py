@@ -627,6 +627,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
+        "fulls": ("--stamp", "--workers", "--no-render"),
         "browse": ("--stamp", "--spacing", "--out"),
         "resolve": ("--stamp",),
         "list": (),
@@ -993,14 +994,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     draw spends a third of its shots on and nothing in the tree could price; and
     twenty-four and one hundred and nine until `veto` and its four arrived to read what a
     human fine-level 1 takes out of the pool and to cut the rejection pass that collects
-    the next of them."""
+    the next of them; and one hundred and ten until `solve fulls` arrived to find or make
+    every seat of a record at the release geometry, which is what the viewer's
+    full-resolution option shows."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 109
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 110
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

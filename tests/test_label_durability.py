@@ -134,9 +134,23 @@ EXPECTED_OPENS = {
 #: Verbs that end a row rather than adding one.
 DESTRUCTIVE = ("unlink", "rmdir", "rename", "replace", "truncate", "write_text", "write_bytes")
 
-#: The one place a store module may write a whole file. `write_pin` ships the
-#: pinned evaluation side, which is a view over rows that already exist.
-ALLOWED_WHOLE_FILE_WRITES = {(FINISHED_MODULE, "write_pin", "write_text")}
+#: The two places a store module may write a whole file, each a decision.
+#:
+#: * `write_pin` ships the pinned evaluation side, which is a view over rows that
+#:   already exist.
+#: * `archive_export` moves a processed DROP out of `labels/` once an ingest has
+#:   resolved it into rows, Matt's inbox ruling of 2026-09-14. It is exempt
+#:   because a drop is not a row and `labels/` is not the store: the tree it
+#:   addresses is `store.export_dir`'s, untracked and disposable, and the rows the
+#:   drop became are under `store.label_dir` and are not touched. The exemption is
+#:   held to that by
+#:   `test_the_archive_is_under_the_drop_directory_and_not_the_store` below, so
+#:   moving this function onto the row tree fails the build rather than riding on
+#:   a line in this set.
+ALLOWED_WHOLE_FILE_WRITES = {
+    (FINISHED_MODULE, "write_pin", "write_text"),
+    ("src/fractal_wallpapers/labeling/store.py", "archive_export", "replace"),
+}
 
 
 def whole_file_writes(source: str) -> set[tuple[str, str]]:
@@ -172,6 +186,27 @@ def test_a_store_module_never_deletes_or_rewrites(module: str) -> None:
         f"{module} calls {found}. A verdict that changes is a new row; nothing here removes "
         "one, and the earlier one stays readable underneath the later one forever."
     )
+
+
+def test_the_archive_is_under_the_drop_directory_and_not_the_store(tmp_path, monkeypatch) -> None:
+    """What buys `archive_export` its line in `ALLOWED_WHOLE_FILE_WRITES`.
+
+    It is allowed to move a file because the file it moves is a drop and not a
+    row. A future edit that pointed the archive at the row tree would inherit the
+    exemption silently, so the property the exemption rests on is asserted here
+    rather than left in the comment beside it.
+    """
+    monkeypatch.setattr(store, "label_dir", lambda: tmp_path / "data" / "labels")
+    monkeypatch.setattr(store, "export_dir", lambda: tmp_path / "labels")
+    assert store.archive_dir().is_relative_to(store.export_dir())
+    assert not store.archive_dir().is_relative_to(store.label_dir())
+
+    drop = store.export_dir() / "a_head.a_sheet.json"
+    drop.parent.mkdir(parents=True, exist_ok=True)
+    drop.write_text('{"u0001": {"score": 3}}', encoding="utf-8")
+    moved = store.archive_export(drop)
+    assert moved.is_relative_to(store.archive_dir()) and not drop.exists()
+    assert not store.label_dir().exists(), "archiving a drop touched the row tree"
 
 
 def test_a_revision_leaves_the_original_byte_for_byte(tmp_path, monkeypatch) -> None:

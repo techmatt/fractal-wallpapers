@@ -191,12 +191,12 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,666 collected — 4,513 fast,
-153 slow — since `veto_model_ckpt124` added 27 fast tests on 2026-09-14**, on a
+Both are measured, not estimated. The tree holds **4,685 collected — 4,532 fast,
+153 slow — since `rejection_ingest_ckpt124` added 19 fast tests on 2026-09-14**, on a
 `.[dev,models]` install with a release engine built. **Both lanes were taken back to
-back on one idle tree by that prompt, and they agree at 4,666**: **fast 4,513 of
-4,513 in 125.23 s (2:05)** with 153 deselected, and **slow 4,666 of 4,666 in
-479.79 s (7:59)**. Both green, zero skips, zero failures.
+back on one idle tree by that prompt, and they agree at 4,685**: **fast 4,532 of
+4,532 in 127.53 s (2:07)** with 153 deselected, and **slow 4,685 of 4,685 in
+481.08 s (8:01)**. Both green, zero skips, zero failures.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.

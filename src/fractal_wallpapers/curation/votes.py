@@ -15,6 +15,12 @@ pictures at different sizes, and a grid of candidate thumbnails over a fullscree
 of fresh renders would be asking people to vote on one picture while showing them
 another.
 
+**[`FRAME`] and [`SUPERSAMPLE`] are the gallery rejection sheet's**, `1280x720ss2`
+since Matt's ruling of 2026-09-14, so the two passes a seat can go through show
+one picture and not two renders of one recipe. They are also the reason a kit over
+a record whose seats were already cut for a rejection pass mostly reuses pictures
+instead of making them.
+
 **A kit inherits the candidate's levelling curve and does not measure its own**,
 since 2026-09-08 — [`_borrowed`], and [`curation.stamps`] for where the curve is
 found. This module said the opposite until then, and the opposite is what made a
@@ -186,22 +192,35 @@ from fractal_wallpapers.curation import release, tentative
 VIEWER = "3.0"
 
 #: What every seat is rendered at. The frame and not a [`release.Regime`]: the
-#: supersample under it is the caller's, priced by `scratch/votes_pilot`, and the
-#: frame is not -- a wallpaper is voted on at the size it will be used at.
-FRAME = (2560, 1440)
-
-#: The supersample a kit builds at unless told another. **4**, and it is the
-#: expensive default in this file: **76.2 s a picture** on the locked three
-#: workers, measured over the forty-seat kit, so a thousand seats is **21.2 h**
-#: against something near 5.4 at ss2.
+#: supersample under it is the caller's default rather than a fixed part of it.
 #:
-#: It is the default anyway because the supersample is the **only** decision here
-#: a person can see. ss2 against ss4 is a mean absolute difference of **6.28**
-#: over the six pilot seats and **4.81** after fitting to 1080p, where the whole
-#: quality axis from q95 to q80 moves the busiest crop by 3.71 to 6.09 — so
-#: dropping to ss2 to save fifteen hours costs more picture than dropping five
-#: quality steps does, and it costs it as aliasing rather than as softness.
-SUPERSAMPLE = 4
+#: **1280x720 since 2026-09-14, Matt's ruling**, down from the 2560x1440 this file
+#: argued for on the grounds that a wallpaper is voted on at the size it will be
+#: used at. What outweighs that is the **gallery rejection pass**, which cuts its
+#: sheet over a record's seats at exactly this geometry: one frame across both
+#: passes means a friend and Matt are looking at the same picture rather than two
+#: renders of one recipe, and it means a seat already cut for one pass is a seat
+#: the other does not re-render. The cost of the old frame was never the pixels —
+#: it was that the two passes could disagree and nothing would say which picture a
+#: verdict was about.
+FRAME = (1280, 720)
+
+#: The supersample a kit builds at unless told another. **2 since 2026-09-14**,
+#: with the frame above and for the same reason: it is the rejection sheet's, and
+#: `1280x720ss2` is one geometry spelled once rather than a frame from here and a
+#: supersample from somewhere else.
+#:
+#: **The argument that made it 4 was an argument about 2560x1440 and does not
+#: carry across.** At that frame ss2 against ss4 was a mean absolute difference of
+#: **6.28** over the six pilot seats and **4.81** after fitting to 1080p, against
+#: 3.71 to 6.09 for the whole quality axis from q95 to q80 — so ss4 bought more
+#: picture than five quality steps did, and bought it as aliasing rather than
+#: softness, which is why it was worth 21.2 h a thousand seats against 5.4.
+#: Nothing has re-measured that pair at 1280x720 and this default does not claim
+#: it would come out the same; what it claims is that matching the rejection
+#: sheet is worth more than an unmeasured fraction of a supersample. `--ss 4`
+#: still takes it, and [`SUPERSAMPLES`] still holds both.
+SUPERSAMPLE = 2
 
 #: The supersamples either flag takes. **2 and 4 are the priced pair** — the whole
 #: argument above is a comparison between those two, and they are the cells of the

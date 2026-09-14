@@ -556,3 +556,72 @@ def test_both_shapes_of_export_are_read_and_a_withdrawn_verdict_is_not(tmp_path)
         encoding="utf-8",
     )
     assert intake.read_export(path) == {"u0001": 3, "u0002": 2}
+
+
+# --------------------------------------------------------------------------- #
+# `labels/` is an inbox: it holds the unprocessed.
+# --------------------------------------------------------------------------- #
+def test_a_successful_ingest_empties_the_inbox_of_its_drop(tmp_path, head_store, drop) -> None:
+    """The store appends, so a spent drop beside a fresh one is a double-ingest."""
+    stem = a_sheet(tmp_path)
+    intake.write_export(HEAD, {"u0001": {"score": 3}, "u0002": {"score": 1}})
+    path = store.export_path(HEAD)
+    held = path.read_bytes()
+
+    report = intake.run(sheet=stem, labeler="matt", write=True)
+    assert report["written"] == 2
+    assert report["archived"]["moved"] is True
+    assert not path.exists(), "the drop is still in the inbox"
+    archived = store.archive_dir() / path.name
+    assert archived.read_bytes() == held, "the drop was not kept byte for byte"
+    assert [p.name for p in drop.glob("*.json")] == [], "the inbox is not empty"
+
+
+def test_a_dry_run_leaves_the_drop_where_it_is(tmp_path, head_store, drop) -> None:
+    stem = a_sheet(tmp_path)
+    intake.write_export(HEAD, {"u0001": {"score": 3}})
+    report = intake.run(sheet=stem, labeler="matt")
+    assert "archived" not in report
+    assert store.export_path(HEAD).is_file()
+    assert not store.archive_dir().exists()
+
+
+def test_a_refused_ingest_leaves_the_drop_where_it_is(tmp_path, head_store, drop) -> None:
+    """Archiving runs last: a drop moved out from under a refusal is one to find again."""
+    stem = a_sheet(tmp_path)
+    intake.write_export(HEAD, {"u0001": {"score": 5}})
+    with pytest.raises(intake.IntakeError):
+        intake.run(sheet=stem, labeler="matt", write=True)
+    assert store.export_path(HEAD).is_file()
+    assert not store.archive_dir().exists()
+
+
+def test_a_drop_named_from_outside_the_inbox_is_left_alone(tmp_path, head_store, drop) -> None:
+    """`--labels` names a file anywhere; the rule is about what `labels/` holds."""
+    stem = a_sheet(tmp_path)
+    labels = an_export(tmp_path, {"u0001": 3})
+    report = intake.run(sheet=stem, labels=labels, labeler="matt", write=True)
+    assert report["archived"]["moved"] is False
+    assert "--labels" in report["archived"]["why"]
+    assert labels.is_file()
+
+
+def test_a_second_drop_of_one_name_is_archived_beside_the_first(drop) -> None:
+    """A sheet exported twice is two batches of clicks under one name, not one."""
+    first = store.archive_export(a_drop(drop, "a_head.json", b"one"))
+    second = store.archive_export(a_drop(drop, "a_head.json", b"two"))
+    assert first.name == "a_head.json" and second.name == "a_head-2.json"
+    assert first.read_bytes() == b"one" and second.read_bytes() == b"two"
+
+
+def test_archiving_something_that_is_not_a_file_is_refused(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(store, "export_dir", lambda: tmp_path / "labels")
+    with pytest.raises(store.LabelError, match="no drop there"):
+        store.archive_export(tmp_path / "labels" / "never_saved.json")
+
+
+def a_drop(directory: Path, name: str, body: bytes) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    path.write_bytes(body)
+    return path

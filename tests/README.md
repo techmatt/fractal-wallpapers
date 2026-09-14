@@ -55,6 +55,8 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [rejection_ingest_ckpt124](#rejection_ingest_ckpt124)
+    - [veto_model_ckpt124](#veto_model_ckpt124)
     - [PRECLOSEOUT_ckpt123_wallpapers](#precloseout_ckpt123_wallpapers)
     - [lane_speedup_ckpt122](#lane_speedup_ckpt122)
     - [page_order_min_gap_ckpt122](#page_order_min_gap_ckpt122)
@@ -632,6 +634,31 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### rejection_ingest_ckpt124
+
+**Both lanes, idle box, and they agree at 4,685.** `rejection_ingest_ckpt124`,
+2026-09-14, taken after the 77-picture release-geometry leg rather than beside it.
+**Fast: 4,532 selected, 153 deselected — 4,685 collected — in 127.53 s (2:07). Slow:
+4,685 of 4,685 in 481.08 s (8:01).** Both green, zero skips, zero failures.
+
+**Nineteen tests added, all fast, and the slow count moved by zero.** Six in
+`test_label_intake.py` for the inbox rule, one in `test_label_durability.py` holding
+the premise of the exemption it needed, eight in the new `test_fulls.py`, and four in
+`test_tentative.py` for the viewer's resolution toggle. Every one is arithmetic, a
+`tmp_path` tree of stub JPEGs, or a source-text assertion over the page, so none
+earned `@pytest.mark.slow`.
+
+**The pair caught two reds worth having and neither was flaky.** The fast lane's first
+run failed `test_label_durability.py::test_a_store_module_never_deletes_or_rewrites` on
+a `path.replace` in `store.archive_export` — a real guard doing its job on a real new
+verb — and its second failed `test_nested_verbs.py` on `curate solve fulls` being
+absent from the surface table. Both are the shape *a lane with any red in it is a lane
+to read* is for: the fix in each case was a decision written down (an exemption with a
+new test under it, a verb registered in the printed order), not a re-run.
+
+**Both clocks are `veto_model_ckpt124`'s plus about two seconds on 19 more tests** —
+127.53 s against 125.23 s, 481.08 s against 479.79 s. **A count is not a cost**, again.
 
 #### veto_model_ckpt124
 
