@@ -29,6 +29,70 @@ nothing the pass named, so no citation points at it and none of the four was
 renamed to fit under it — a heading is a citation target here and a rename is the
 one edit that breaks one silently.
 
+### The veto — a human `1` at the fine level, and the row never comes back
+
+**Matt's ruling of 2026-09-14.** A picture he grades `1` in
+[`labeling.gallery_grade`] is excluded from seating, from the pool and from every
+future solve, permanently. [`veto.py`](veto.py) is the whole of it and its
+docstring is the argument; what a reader of this file needs is four sentences.
+
+**It is ROW-LEVEL — the exact candidate, by its recipe key.** Not the place, the
+pair, the mode or the map. A neighbouring palette at the same location is a
+different picture with its own verdict, which is what the gallery-grade store's
+whole estimand says: two rows of one place can be a 1 and a 4.
+
+**It is derived and never written.** A vetoed row is an ordinary human label on
+the ordinary path, training the fine head like any other; there is no veto ledger
+and nothing to apply. `solve.pool` reads the store on every leg that reads the
+ledger, so the veto is **retroactive** — a label already in the store counted from
+the day this landed — and **latest-wins**, so a 1 taken back is a veto lifted.
+Only a *human* label vetoes: a model score of 1 or a low `p_fine` is not one, and
+`origin == store.HUMAN` is where that is enforced.
+
+**It refuses in `solve.pool` and is counted apart**, as `vetoed` beside
+`rejected`: the two are different acts — a rejection travels on the ledger row,
+a veto is derived from the label store — and one number could not say which had
+grown. ⚠ It costs about **10.6 s** on today's 417,585 rows, all of it
+`location_key`'s `Decimal` normalization; `veto.py`'s docstring has the three-way
+measurement and the prefilter that was measured and refused.
+
+**`curate headroom` hands it through explicitly** and has to: `headroom.population`
+always passes its own `rows`, and `solve.pool` reads the store only when it is
+reading the ledger itself, so an unhanded veto there would census headroom a solve
+cannot reach.
+
+#### The veto and the seat floors can disagree, and today they do not
+
+A vetoed row that is the only thing holding a cell above its floor is a real
+possibility and the solve has an answer already: nothing is ever padded, the
+shortfall rides the second objective tier, and the record says which demand went
+short. The veto wins and the floor is reported unmet — there is no rescue leg and
+no un-vetoing.
+
+**Measured 2026-09-14** over the official n=1000 record: with 720 vetoed rows out,
+the pool falls 369,832 → 369,112 candidates and 39,581 → 39,559 locations, and the
+re-solve still fills **1,000 of 1,000 at shortfall 0** — every one of the 60
+demands met. Ten have no slack at all (`curvature`, `direct_trap_lines`,
+`direct_trap_screen`, `itinerary` and `smooth_curvature` at their mode floors;
+`dark_muted_lime`, `dark_vivid_lime`, `dark_vivid_yellow`, `light_vivid_cyan` and
+`light_vivid_lime` at exactly 20 seats), and those ten are where a disagreement
+would show first. The worst seated score went **up** — 1.073328 → 1.079670 — which
+is the leg's documented non-monotonicity rather than a claim that vetoing helps.
+
+#### `curate veto` — four ways of looking at it, and none of them applies it
+
+```
+fractal-wallpapers curate veto reach                        # store-wide: pictures, and the ledger rows they are
+fractal-wallpapers curate veto seats <stamp> --page --open  # what it takes out of one record, with the pictures
+fractal-wallpapers curate veto palettes <stamp>             # distinct maps over a record's seats, and the top share
+fractal-wallpapers curate veto sheet <stamp>                # cut the rejection pass over every seat
+```
+
+**A record already on disk is never rewritten.** A stamp seated before a label was
+cast still holds that seat, so `seats` says what a *re-solve* would drop and not
+what has already happened — a `vetoed` count read as a repair is a person
+believing a gallery has already changed.
+
 ### What an empty seat names, and why it is not the first rule that refused anything
 
 A slot that goes unfilled records **one slug** and the counts that chose it:

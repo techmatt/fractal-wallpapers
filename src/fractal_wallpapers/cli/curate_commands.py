@@ -306,6 +306,7 @@ def add_commands(subcommands) -> None:
         curate_ledger_commands,
         curate_mine_commands,
         curate_solve_commands,
+        curate_veto_commands,
         curate_votes_commands,
     )
     from fractal_wallpapers.curation import below_bar as below_bar_module
@@ -332,6 +333,7 @@ def add_commands(subcommands) -> None:
     curate_votes_commands.add_steps(steps)
     curate_mine_commands.add_steps(steps)
     curate_colors_commands.add_steps(steps)
+    curate_veto_commands.add_steps(steps)
 
     rejecting = steps.add_parser(
         "reject",
@@ -695,8 +697,9 @@ def add_commands(subcommands) -> None:
         description=(
             "THE POOL-HOLDING HALF — it streams the ledger for the population's rows and "
             "reads the score sidecar whole, which is why the rungs are decided once here "
-            "and the render and the page never open the store again. Rung 0 is `solve.pool`'s "
-            "own five exclusions read off the ROUTED mode, rung 1 is solve.Q4_BAR (the "
+            "and the render and the page never open the store again. Rung 0 is five of "
+            "`solve.pool`'s six exclusions read off the ROUTED mode — the veto is the sixth "
+            "and cannot fire on a population of 4s — rung 1 is solve.Q4_BAR (the "
             "height score-pool stops reading at) and rung 2 is solve.DEFAULT_FINE_BAR. "
             "Rungs 3 and 4 are left unset for `fates`, because only the solve knows them."
         ),

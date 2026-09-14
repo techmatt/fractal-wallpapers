@@ -263,6 +263,30 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate_votes",
         {"what": "build", "stamp": None, "out": "kit", "limit": None},
     ),
+    # The veto: four readings and no verb that applies it — `solve.pool` already
+    # does, on every leg that reads the ledger.
+    ("curate veto reach", "curate_veto", {"what": "reach"}),
+    (
+        "curate veto seats 20260101T000000Z --page --open --out scratch/veto",
+        "curate_veto",
+        {
+            "what": "seats",
+            "stamp": "20260101T000000Z",
+            "page": True,
+            "open": True,
+            "out": "scratch/veto",
+        },
+    ),
+    (
+        "curate veto palettes 20260101T000000Z --top 20",
+        "curate_veto",
+        {"what": "palettes", "stamp": "20260101T000000Z", "top": 20},
+    ),
+    (
+        "curate veto sheet 20260101T000000Z --batch a_pass --out scratch/plan",
+        "curate_veto",
+        {"what": "sheet", "stamp": "20260101T000000Z", "batch": "a_pass", "out": "scratch/plan"},
+    ),
     (
         "curate growth run --name g1 --fraction 8 --n 150 --seed 7 --swap-seconds 60",
         "curate_growth",
@@ -620,6 +644,12 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--ss-for",
         )
     },
+    "veto": {
+        "reach": (),
+        "seats": ("--page", "--open", "--out"),
+        "palettes": ("--top",),
+        "sheet": ("--batch", "--out"),
+    },
     "growth": {
         "run": ("--name", "--fraction", "--n", "--seed", "--swap-seconds"),
         "plot": (),
@@ -960,14 +990,17 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     a leg rig outside the checkout had been doing by a different one; and twenty-three
     and one hundred and three until `phase-response` and its two arrived to measure what
     `Palette.phase` moves mode by mode off the pixels, which is the axis a varied mining
-    draw spends a third of its shots on and nothing in the tree could price."""
+    draw spends a third of its shots on and nothing in the tree could price; and
+    twenty-four and one hundred and nine until `veto` and its four arrived to read what a
+    human fine-level 1 takes out of the pool and to cut the rejection pass that collects
+    the next of them."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 105
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 109
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

@@ -523,9 +523,17 @@ def population(store=None, log=print) -> dict:
 def _off_the_roster(row, routed, present, read, mode_policy) -> str | None:
     """Why [`solve.pool`] would refuse this row, or `None` where it would not.
 
-    The five exclusions in that function's own order, each a fact about the
-    candidate rather than a quality bar — so a row here never reached a bar and
-    saying it was *below* one would be false.
+    Five of that function's six exclusions, in its own order, each a fact about
+    the candidate rather than a quality bar — so a row here never reached a bar
+    and saying it was *below* one would be false.
+
+    **The sixth is the veto and it is absent by construction, not by oversight.**
+    [`curation.veto`] refuses a row whose render key currently resolves to a human
+    `1` in [`labeling.gallery_grade`]; this population is that same store's
+    currently-resolved **4s**. Latest-wins gives one answer per render key, so the
+    two sets are disjoint and a veto could never fire here — asking would be a
+    store read per row for a branch that cannot be taken. If this population ever
+    widens past the 4s, the branch comes back with it.
     """
     if row is None:
         return "no ledger row"

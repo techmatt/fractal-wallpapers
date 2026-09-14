@@ -99,6 +99,9 @@ release    the selected rows again at full size, workers rendering
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
 rejection  taking a released row back afterwards, without losing what the run did
+veto       a human `1` at the fine level, and the row never comes back: derived
+           from the gallery-grade store, applied once in `solve.pool`, and the
+           rejection pass that collects the next of them
 page       the colour vocabulary every dark instrument page is written in, and the
            four lines of document skeleton around it. Not the layout: measured,
            the ten style blocks share three rules in one pair

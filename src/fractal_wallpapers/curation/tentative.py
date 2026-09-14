@@ -217,6 +217,14 @@ PUBLISHED: tuple[str, ...] = (
 #: * `20260911T022330Z` — the record `curation/page_order.py`'s constants were
 #:   measured on. Re-measuring those against a record pruned out from under them
 #:   would read as drift in the page order rather than as a missing record.
+#: * `20260914T152502Z` — **Matt's instruction in `veto_model_ckpt124`**, and the
+#:   one entry here he named rather than something in the tree earning: it is the
+#:   first n=1000 solve taken with the veto in force, and it is the counterfactual
+#:   the veto's cost to the gallery is read off — `curation/GALLERY.md`'s *The veto
+#:   and the seat floors can disagree* quotes its shortfall, its pool counts and
+#:   its worst seat. ⚠ **Nothing resolves its rows**, which is the ordinary test
+#:   for a line here, so this one goes when the veto's cost stops being a live
+#:   question rather than waiting for a figure to stop naming it.
 #: * `20260913T172903Z` and `20260914T144946Z` — the **before and after of the
 #:   `mine_night2_ckpt124` run**, added 2026-09-14, and they are one entry in two
 #:   lines: `curate seat-sheet --before … --after …` names both by stamp, and a
@@ -244,6 +252,7 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     "20260911T022330Z",
     "20260913T172903Z",
     "20260914T144946Z",
+    "20260914T152502Z",
 )
 
 

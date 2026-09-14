@@ -220,10 +220,21 @@ def population(rows=None, scores=None, log=print) -> tuple:
     wrong pool. The cost table is read off the same rows in the same pass, because
     the seconds a candidate took live on the ledger row and not on the thinned
     [`solve.Candidate`].
+
+    **The veto is handed over explicitly and that is the whole reason this line
+    exists.** [`solve.pool`] reads the label store only when it is reading the
+    ledger itself, and this call always hands it `rows` — so an unhanded veto here
+    would make the census count seats a solve cannot take, which is exactly the
+    "headroom a solve cannot reach" this function refuses to be. A caller that
+    handed its own `rows` is building its own pool and gets no veto, same as
+    there.
     """
+    from fractal_wallpapers.curation import veto as veto_module
+
     stored = candidate_ledger.read() if rows is None else list(rows)
     read = candidate_ledger.read_scores() if scores is None else list(scores)
-    candidates, refused = solve.pool(rows=stored, scores=read, log=log)
+    vetoed = set(veto_module.render_keys()) if rows is None else None
+    candidates, refused = solve.pool(rows=stored, scores=read, vetoed=vetoed, log=log)
     return candidates, render_cost(stored), refused
 
 
