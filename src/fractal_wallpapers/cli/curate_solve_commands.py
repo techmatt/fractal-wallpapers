@@ -75,6 +75,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
     if args.what == "fulls":
         return curate_solve_fulls(args)
 
+    if args.what == "recipes":
+        return curate_solve_recipes(args)
+
     # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
     # reader who has just seen a stamp printed will type it either way and the
     # cost of not accepting both is a page silently written for a DIFFERENT
@@ -125,6 +128,37 @@ def release_workers() -> int:
     return int(release.DEFAULT_WORKERS)
 
 
+def curate_solve_recipes(args: argparse.Namespace) -> int:
+    """Write — or price — the tracked recipe file that makes a record redrawable."""
+    from fractal_wallpapers.curation import candidate_ledger, tentative
+
+    try:
+        stamp = args.stamp or tentative.latest()
+        if not candidate_ledger.rows_path().is_file():
+            print(
+                f"the candidate ledger is not on this machine "
+                f"({display_path(candidate_ledger.rows_path())}), and a recipe file is built "
+                f"out of it. Nothing was written."
+            )
+            return 1
+        if args.write:
+            path, readout = tentative.write_recipes(stamp)
+            print(display_path(path))
+        else:
+            rows, readout = tentative.build_recipes(stamp)
+            readout = {
+                **readout,
+                "bytes": sum(len(json.dumps(row, ensure_ascii=False)) + 1 for row in rows),
+                "wrote": None,
+                "would_write": display_path(tentative.recipes_path(stamp)),
+            }
+    except tentative.TentativeRefused as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(readout, indent=2))
+    return 0 if not readout["not_in_the_ledger"] and not readout["refused"] else 1
+
+
 def curate_solve_fulls(args: argparse.Namespace) -> int:
     """Find or make every seat of one record at the release geometry."""
     from fractal_wallpapers.curation import candidate_ledger, fulls, tentative
@@ -135,8 +169,10 @@ def curate_solve_fulls(args: argparse.Namespace) -> int:
     except tentative.TentativeRefused as refusal:
         print(refusal)
         return 1
-    resolved = fulls.index(seats, log=lambda line: None)
+    pin_dir = tentative.fulls_dir(stamp)
+    resolved = fulls.index(seats, log=lambda line: None, pin_dir=pin_dir)
     missing = [key for key in seats if key not in resolved]
+    borrowed = sum(1 for key, path in resolved.items() if Path(path).parent != pin_dir)
     readout = {
         "stamp": stamp,
         "regime": fulls.REGIME.spelled,
@@ -144,13 +180,37 @@ def curate_solve_fulls(args: argparse.Namespace) -> int:
         "found": len(seats) - len(missing),
         "missing": len(missing),
         "hit_rate": round((len(seats) - len(missing)) / max(1, len(seats)), 4),
+        # How many of the found pictures are somebody else's file. A sheet
+        # cleanup takes every one of them, which is what `--pin` is for.
+        "borrowed_from_elsewhere": borrowed,
     }
     if missing and not args.no_render:
+        # **The absence of the ledger is not zero misses.** `stream()` yields
+        # nothing when the file is not there, which is right for a reader asking
+        # what the pool holds and wrong here: the rows it would have found are
+        # the recipes these renders are made of, so an absent store came out as
+        # "planned: 0" and exit 0 — a leg reporting success for work it could not
+        # even describe.
+        ledger = candidate_ledger.rows_path()
+        if not ledger.is_file():
+            print(
+                f"{len(missing)} of {len(seats)} seat(s) have no picture at "
+                f"{fulls.REGIME.spelled}, and the recipes to render them are in the candidate "
+                f"ledger, which is not on this machine ({display_path(ledger)}). A recipe "
+                f"file beside the record would answer this for a clone — `curate solve "
+                f"recipes --stamp {stamp}` — and `--no-render` reports the hit rate without "
+                f"needing either."
+            )
+            return 1
         wanted = set(missing)
         rows = [row for row in candidate_ledger.stream() if str(row.get("key")) in wanted]
         readout["render"] = fulls.render(rows, workers=args.workers)
-        resolved = fulls.index(seats, log=lambda line: None)
+        resolved = fulls.index(seats, log=lambda line: None, pin_dir=pin_dir)
         readout["found_after"] = sum(1 for key in seats if key in resolved)
+    if args.pin:
+        record = fulls.pin(resolved, pin_dir, log=lambda line: None)
+        resolved = record.pop("pinned")
+        readout["pin"] = record
     print(display_path(fulls.write_index(resolved)))
     print(json.dumps(readout, indent=2))
     return 0
@@ -1516,6 +1576,15 @@ def add_steps(steps) -> None:
         action="store_true",
         help="report the hit rate and render nothing, which is how a leg is sized before it runs",
     )
+    filling.add_argument(
+        "--pin",
+        action="store_true",
+        help="give every found picture a second name under the RECORD'S OWN directory, so a "
+        "sheet cleanup cannot take it. A hard link where the filesystem allows one, which "
+        "costs no disk at all; a copy across volumes, and the readout says which it did. "
+        "It is what a published record wants: 923 of the published record's 1,000 fulls "
+        "were borrowed from labelling sheets on 2026-09-14 and 895 of those from one sheet",
+    )
 
     browsing = solve_verbs.add_parser(
         "browse", help="write a record's page again, off the rows it already holds"
@@ -1561,6 +1630,28 @@ def add_steps(steps) -> None:
         "a superseded gallery. With no stamp named it is the newest PUBLISHED record, which "
         "is what the bookmark is for. `--out` names another place and the two are not given "
         "together",
+    )
+
+    listing_recipes = solve_verbs.add_parser(
+        "recipes",
+        help="what each of a record's seats is MADE of, as a tracked file beside its rows",
+        description=(
+            "A seat row names the picture that was seated; it does not say what the picture "
+            "is. The key is a one-way digest and the recipe behind it lives in the untracked "
+            "candidate ledger, so 994 of the published record's 1,000 seats could not be "
+            "drawn from tracked data at all — the six that could being an accident of "
+            "overlap with a tracked decision store. This writes `recipes.jsonl` beside "
+            "`gallery.jsonl`: one {key, recipe} row per seat, 0.68 MiB for a thousand, every "
+            "row checked to recompute its own key before it is written. `render --recipe` is "
+            "the door that draws one back."
+        ),
+    )
+    listing_recipes.add_argument("--stamp", help="which record (default the newest published)")
+    listing_recipes.add_argument(
+        "--write",
+        action="store_true",
+        help="write the file. Without it this reads the ledger and reports what WOULD be "
+        "written, which is how a record is checked for redrawability before anything lands",
     )
 
     resolving = solve_verbs.add_parser(

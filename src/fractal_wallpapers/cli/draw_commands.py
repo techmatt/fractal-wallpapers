@@ -101,6 +101,151 @@ def refuse_impossible_location(args: argparse.Namespace) -> str | None:
     return None
 
 
+def recipe_rows(path: Path) -> list[dict]:
+    """Every `{key, recipe}` row of a recipe file, in the order it was written.
+
+    Takes both spellings, because both are on disk and neither is wrong: a
+    record's `recipes.jsonl` is a JSONL of `{schema, key, recipe}`, and a single
+    recipe copied out of one — or out of a ledger row — is the bare
+    [`recipes.Recipe.record`] object. A bare block is given the key it computes
+    to, so the two shapes answer `--key` the same way.
+    """
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    text = Path(path).read_text(encoding="utf-8").strip()
+    if not text:
+        raise recipes_module.RecipeError(f"{path} is empty")
+    held = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as bad:
+            raise recipes_module.RecipeError(f"{path}:{number}: not JSON: {bad}") from bad
+        if not isinstance(row, dict):
+            raise recipes_module.RecipeError(f"{path}:{number}: a recipe row is a JSON object")
+        block = row.get("recipe", row)
+        key = str(row.get("key") or "") or recipes_module.key_of(recipes_module.of_record(block))
+        held.append({"key": key, "recipe": block})
+    return held
+
+
+def pick_recipe(rows: list[dict], key: str | None, path: Path) -> dict:
+    """The one row a `--recipe` render is about, or a refusal naming the choice."""
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    if key:
+        matched = [row for row in rows if row["key"] == key or row["key"].startswith(key)]
+        if not matched:
+            raise recipes_module.RecipeError(
+                f"{key!r} is not in {path} ({len(rows)} recipe(s)). The key is the seat ID a "
+                f"record's rows carry, and its first eight characters are the alias."
+            )
+        if len(matched) > 1:
+            raise recipes_module.RecipeError(
+                f"{key!r} is a prefix of {len(matched)} recipes in {path}: "
+                f"{', '.join(row['key'] for row in matched[:4])}…"
+            )
+        return matched[0]
+    if len(rows) != 1:
+        raise recipes_module.RecipeError(
+            f"{path} holds {len(rows)} recipes and this draws one. Name it with --key; a "
+            f"record's `gallery.jsonl` carries the key of every seat."
+        )
+    return rows[0]
+
+
+def render_recipe(args: argparse.Namespace) -> int:
+    """Draw one picture from a stored recipe — everything, not only the place.
+
+    **The door a published record needs.** `--location` takes the place and the
+    geometry, which is all a location record carries; a picture is also its curve,
+    its palette block, its mode's settings and the levelling band it was drawn
+    onto, and there was no flag for any of those. So a seat of a published gallery
+    could be drawn at the right coordinates in the wrong colours, exit 0, and look
+    like a render.
+
+    The levelling is **re-derived rather than replayed**, which is what the
+    candidate path does too: the operator measures the base render it just made
+    and derives the curve from that, so the same recipe through the same engine
+    gives the same bytes. What is checked first is the *band* — the recipe names
+    the sha256 of the reference set it was levelled onto, and a render through a
+    different band is a different picture under the record's name. A recipe whose
+    `autolevel` is null takes none of this: the operator does not act on the
+    direct traps or the itinerary, and a seat in one of those modes has no band in
+    its identity to begin with.
+    """
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    path = resolve_output(args.recipe)
+    try:
+        rows = recipe_rows(path)
+        chosen = pick_recipe(rows, args.key, path)
+        recipe = recipes_module.of_record(chosen["recipe"])
+        recomputed = recipes_module.key_of(recipe)
+    except (OSError, KeyError, recipes_module.RecipeError) as refusal:
+        print(refusal)
+        return 1
+    if chosen["key"] and recomputed != chosen["key"]:
+        print(
+            f"{path} names this recipe {chosen['key']} and it computes to {recomputed}. The "
+            f"file describes a different picture from the one it claims, and drawing it "
+            f"would put the wrong pixels under the record's ID."
+        )
+        return 1
+
+    band = None
+    if recipe.autolevel is not None:
+        band = colorize.band()
+        wanted = str(recipe.autolevel.get("band_sha256") or "")
+        if band is None:
+            print(
+                f"this recipe was levelled onto band {wanted[:12]} and the autolevel "
+                f"operator is switched off on this machine, so the picture would come out "
+                f"unlevelled under its own name."
+            )
+            return 1
+        if wanted and str(band.get("_sha256") or "") != wanted:
+            print(
+                f"this recipe was levelled onto band {wanted[:12]} and "
+                f"data/coloring/levels_band.json is {str(band.get('_sha256'))[:12]}. A render "
+                f"onto another band is a different picture under the same key."
+            )
+            return 1
+
+    output = resolve_output(args.out)
+    picture, stamp = colorize.render(
+        {"family": recipe.family, "viewport": recipe.viewport},
+        recipe.mode,
+        recipe.colormap,
+        set(),
+        output,
+        render_geometry={**recipe.regime.geometry(), "maxiter": int(recipe.maxiter)},
+        level=recipe.autolevel is not None,
+        band=band,
+        mode_params=recipe.mode_params,
+        curve=recipe.curve,
+        palette=recipe.palette,
+    )
+    print(
+        json.dumps(
+            {
+                "key": recomputed,
+                "recipe": tracked_name(path),
+                "regime": recipe.regime.spelled,
+                "mode": recipe.mode,
+                "colormap": recipe.colormap,
+                "autolevel": None if stamp is None else recipes_module.stamp_of(stamp),
+                "output": tracked_name(picture),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def refuse_two_descriptions(args: argparse.Namespace) -> str | None:
     """Say why a record and a flag both describe this render, or `None`.
 
@@ -113,20 +258,26 @@ def refuse_two_descriptions(args: argparse.Namespace) -> str | None:
     filled in, because argparse itself does not remember the difference — see
     [`location_arguments`], which stashes the defaults it set.
     """
-    if not (args.location or args.manifest):
+    given = [name for name in ("recipe", "location", "manifest") if getattr(args, name, None)]
+    if getattr(args, "key", None) and not args.recipe:
+        return "--key names one recipe inside a --recipe file, and no --recipe was given"
+    if not given:
         return None
     typed = sorted(
         flag for flag, default in args.flag_defaults.items() if getattr(args, flag) != default
     )
     if typed:
-        given = "--location" if args.location else "--manifest"
         return (
-            f"{given} and {', '.join('--' + flag.replace('_', '-') for flag in typed)} both say "
-            f"what to render. A record already carries all of it — drop the flags, or edit "
-            f"the record."
+            f"--{given[0]} and {', '.join('--' + flag.replace('_', '-') for flag in typed)} "
+            f"both say what to render. A record already carries all of it — drop the flags, "
+            f"or edit the record."
         )
-    if args.location and args.manifest:
-        return "--location names one location and --manifest names many: give one of them"
+    if len(given) > 1:
+        return (
+            f"--{' and --'.join(given)} each name what to render: give one of them. A "
+            f"--recipe carries everything the picture is made of, a --location the place and "
+            f"the geometry, and a --manifest many locations"
+        )
     return None
 
 
@@ -138,6 +289,8 @@ def render(args: argparse.Namespace) -> int:
     if complaint is not None:
         print(complaint)
         return 1
+    if args.recipe:
+        return render_recipe(args)
     if args.manifest:
         return render_manifest(args)
     if args.location:
@@ -396,6 +549,24 @@ def add_commands(subcommands) -> None:
         help="a JSONL of location records to render, one picture per row, into --out-dir. "
         "A file rather than a list of paths, because a batch is hundreds of rows and a "
         "Windows command line is not",
+    )
+    record_input.add_argument(
+        "--recipe",
+        metavar="FILE",
+        help="a stored RECIPE — everything the picture is a function of, not only the place. "
+        "A published record's `recipes.jsonl` (one {key, recipe} row per seat, name one with "
+        "--key) or a single recipe block copied out of one. The difference from --location is "
+        "the curve, the palette block, the mode's settings and the levelling band, none of "
+        "which a location record carries — so a seat drawn through --location is the right "
+        "coordinates in the wrong colours. The levelling is re-derived the way the candidate "
+        "path derived it, and the band the recipe names is checked against this checkout's "
+        "before anything is drawn",
+    )
+    record_input.add_argument(
+        "--key",
+        metavar="KEY",
+        help="which recipe of a --recipe file to draw: a seat's full key or any unique "
+        "prefix of one, so the eight-character alias a record prints works",
     )
     written = draw.add_argument_group(
         "the output",

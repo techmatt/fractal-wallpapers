@@ -150,6 +150,10 @@ SUPERVISION = {
     "smooth_render": ("human verdicts", "data/smooth_render"),
     "strange_render": ("human verdicts", "data/strange_render"),
     "palette": ("distilled from a pretrained teacher", "data/palette_choice"),
+    # Its own store and its own scale: 1..4 verdicts cast on candidates that had
+    # already cleared the render judge's gate, which is what makes it a second
+    # stage rather than a second opinion.
+    "gallery_grade": ("human verdicts", "data/gallery_grade"),
 }
 
 #: The absolute floor on how far the shipped head's ordering may move, in AUC at
@@ -340,10 +344,46 @@ def _palette_agreement(name: str, which: str, device: str, run: str | None) -> d
     }
 
 
+def _no_single_checkpoint(name: str, which: str, run: str | None):
+    """What an ensemble head answers when something asks for *the* checkpoint.
+
+    Refuses rather than picking one. A caller here is on the single-file path —
+    [`convert`], [`agreement`], [`stage`] — and the file it would be handed is one
+    third of a column, so the picture it drew of "the head" would be of something
+    nobody ships.
+    """
+    del which, run
+    raise ValueError(
+        f"{name} ships k checkpoints averaged on the probability scale, so it has no single "
+        f"checkpoint and does not take this path. `gallery_grade_train.ship_head` stages it; "
+        f"`load_shipped` reads the artifact back."
+    )
+
+
 def shipment_for(name: str) -> Shipment:
     """Which family a head belongs to, and where its pieces live."""
     from fractal_wallpapers.labeling import finished
 
+    if name == "gallery_grade":
+        from fractal_wallpapers.models import gallery_grade_train
+
+        # **The one head here that is not one checkpoint**, so `convert`,
+        # `agreement` and `stage` are not its path: the shipped recipe averages
+        # three seeds and no single file is the column. What this Shipment is for
+        # is the two things that ARE shared — where the artifact lives, so
+        # `shipped_path` and `fetch-weights --check` resolve it, and how to load
+        # it. Its staging is `gallery_grade_train.ship_head`, and its agreement
+        # read is stated in bar crossings and seat moves rather than in an
+        # ordinal AUC it is never read on.
+        return Shipment(
+            checkpoint=_no_single_checkpoint,
+            directory=lambda _name, run=None: gallery_grade_train.head_dir(run),
+            load=gallery_grade_train.load_shipped,
+            evaluation=None,
+            agree=lambda _name, _which, device, _run: gallery_grade_train.fp16_disagreement(
+                device=device
+            ),
+        )
     if name == "palette":
         from fractal_wallpapers.models import palette_scoring, palette_train
 

@@ -627,8 +627,9 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
-        "fulls": ("--stamp", "--workers", "--no-render"),
+        "fulls": ("--stamp", "--workers", "--no-render", "--pin"),
         "browse": ("--stamp", "--spacing", "--out", "--viewer"),
+        "recipes": ("--stamp", "--write"),
         "resolve": ("--stamp",),
         "list": (),
     },
@@ -997,14 +998,18 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     human fine-level 1 takes out of the pool and to cut the rejection pass that collects
     the next of them; and one hundred and ten until `solve fulls` arrived to find or make
     every seat of a record at the release geometry, which is what the viewer's
-    full-resolution option shows."""
+    full-resolution option shows; and one hundred and eleven until `solve recipes`
+    arrived to write the tracked `{key, recipe}` file that makes a published record
+    REDRAWABLE — 994 of its 1,000 seats could not be drawn from tracked data before
+    it, the key being a one-way digest of a recipe that lives in the untracked
+    ledger."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 110
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 111
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

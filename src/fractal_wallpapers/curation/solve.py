@@ -190,6 +190,13 @@ SCHEMA_NOTES: dict[str, str] = {
     "since — and every move since the first was a MATCHED level under a new head "
     "rather than a change of strictness, so `fine_bar` is only readable beside "
     "`fine_head` below",
+    "fine_weights_is": "the sha256 of the FP32 checkpoint(s) behind `fine_head`'s column "
+    "— for the shipped k=3 recipe a digest of the three member hashes in seed order, "
+    "gallery_grade_train.weights_digest. A run NAME survives a retrain and the scores under "
+    "it do not, which is what this closes. `null` is a record taken before 2026-09-14, when "
+    "p_fine carried no hash at all, or on a box that has never scored the pool. NOT the fp16 "
+    "release artifact: a clone scoring with the published head stamps its own rows "
+    "differently and that is correct",
     "fine_head_is": "the gallery-grade run whose `p_ge4` this pass could read — the "
     "run named on every row of `gallery-grade score-pool`'s output. `null` is a "
     "machine that has never scored the pool, and a record that does not name the "
@@ -2941,6 +2948,7 @@ def solve(
             len(fine.forced),
             held_cell_floor,
             _fine_head(),
+            _fine_weights(),
             themed_bar,
         ),
         "objective": {
@@ -3142,6 +3150,32 @@ def _fine_head() -> str | None:
         return None
 
 
+def _fine_weights() -> str | None:
+    """Which WEIGHTS wrote the column this pass read, or `None` where nothing says.
+
+    [`_fine_head`] names a run and a run name is what a retrain keeps, so a record
+    naming only the run cannot tell one fit of it from the next — and `p_fine`
+    decides the bar, the cascade order, the vetoes and growth. The stamp is on the
+    score rows from 2026-09-14; `None` here is an unscored box, or a store whose
+    rows predate the stamp and were never backfilled (`gallery-grade
+    stamp-scores`).
+
+    ⚠ **One line, not the file**, through
+    [`gallery_grade_train.pool_scores_stamp`] and for [`_fine_head`]'s own reason:
+    this is asked once per pass and the score file is fifteen megabytes. It swept
+    the whole file on the day it was written and cost `tests/test_solve.py`
+    **29 seconds** — 14.03 s to 43.40 s — parsing 46,090 rows to read one string
+    off them, once per record built. The file is written whole in one pass, so its
+    first row's stamp is its stamp.
+    """
+    try:
+        from fractal_wallpapers.models import gallery_grade_train
+
+        return gallery_grade_train.pool_scores_stamp()
+    except (OSError, ValueError, KeyError):
+        return None
+
+
 def _config(
     n: int,
     rule: ceiling.Rule,
@@ -3165,6 +3199,7 @@ def _config(
     forced: int = 0,
     cell_floor: bool = DEFAULT_CELL_FLOOR,
     fine_head: str | None = None,
+    fine_weights: str | None = None,
     themed_bar: dict | None = None,
 ) -> dict:
     return {
@@ -3212,6 +3247,14 @@ def _config(
         # on `config` beside it and not left to the date.
         "fine_head": fine_head,
         "fine_head_is": SCHEMA_NOTES["fine_head_is"],
+        # And which WEIGHTS wrote that run's column, because a run name survives a
+        # retrain and the scores under it do not. On `config` beside the run for
+        # the run's own reason: this is the block a tracked manifest carries
+        # whole, and it is the only place a published record can say which fit of
+        # a head chose its seats. `null` is a box whose rows predate the stamp
+        # (2026-09-14) or have never been scored at all.
+        "fine_weights": fine_weights,
+        "fine_weights_is": SCHEMA_NOTES["fine_weights_is"],
         # **On `config` and not only in the `spiral` block**, because `config` is
         # the block a tentative gallery's tracked manifest carries whole
         # ([`tentative.manifest`]) and the `spiral` block is not. Until 2026-09-04

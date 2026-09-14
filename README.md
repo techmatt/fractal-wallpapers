@@ -2,6 +2,50 @@
 
 An ML-steered fractal wallpaper generator: a fast Rust escape-time renderer paired with neural judges trained on human taste to find, color, and select striking wallpapers across five fractal families. Companion repo to a full tutorial article (link TBD) — built with Claude.
 
+## Clone to first picture
+
+Six commands, no weights, no pool, nothing downloaded but the Rust crates. The last
+one writes a PNG.
+
+```
+git clone https://github.com/techmatt/fractal-wallpapers && cd fractal-wallpapers
+python -m venv .venv
+.venv/Scripts/pip install -e .                   # Linux/macOS: .venv/bin/pip
+cargo build --release --manifest-path engine/Cargo.toml
+.venv/Scripts/fractal-wallpapers render --family mandelbrot \
+  --center-re -0.7436438870371587 --center-im 0.13182590420531197 --width 0.00001 \
+  --out artifacts/first.png
+```
+
+About twelve seconds at 1920x1080 on a laptop, and `artifacts/first.png` is a wallpaper.
+Nothing above needs the `models` extra, a GPU, or a network round trip after `pip`.
+
+**Then draw one of the published gallery's own wallpapers**, out of tracked data alone:
+
+```
+.venv/Scripts/fractal-wallpapers render \
+  --recipe artifacts/curation/tentative/20260914T171846Z/recipes.jsonl \
+  --key b6a91061 --out artifacts/seat.jpg
+```
+
+That file holds the full recipe of every one of the record's thousand seats — the mode,
+the curve, the colormap, the palette pass and the levelling band, not just the place —
+and `gallery.jsonl` beside it says which key is which seat. A redraw is byte-identical
+to the picture in the gallery. `--location` is the weaker door and takes a place and a
+geometry only; it refuses a row whose recipe says more than that rather than drawing the
+right coordinates in the wrong colours.
+
+## Prerequisites
+
+* **Python 3.11+**.
+* **Rust 1.85 or newer**, from [rustup](https://rustup.rs). The engine is edition 2024;
+  `engine/Cargo.toml` names the floor, so an older toolchain refuses by version rather
+  than by complaining about an unstable feature.
+* **On Windows, the MSVC build tools** — the `Desktop development with C++` workload of
+  [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/),
+  which is what the default `x86_64-pc-windows-msvc` toolchain links through. Without it
+  `cargo build` fails at the linker, not at the compiler.
+
 ## Running it
 
 Python 3.11+ in a virtualenv at `.venv`, the package installed editable, and the engine built
@@ -14,6 +58,26 @@ python -m venv .venv
 .venv/Scripts/pip install -e ".[dev,models]"      # Linux/macOS: .venv/bin/pip
 cargo build --release --manifest-path engine/Cargo.toml
 ```
+
+**The base install is deliberately small.** `pip install -e .` pulls one pure-Python
+dependency and buys the engine, the walk, the supply engine and the labeling rig; the
+`models` extra is about four gigabytes of torch and CUDA wheels that a clone which only
+renders should never pay for. A command that crosses the line says which extra installs
+what it needed rather than raising a bare `ModuleNotFoundError`.
+
+⚠ **`pip install ".[models]"` gives you CPU-only torch on Windows.** `pyproject.toml`
+pins torch and torchvision to the cu124 index through `[tool.uv.sources]`, and **pip does
+not read those keys** — only `uv` does. So the documented pip line installs whatever
+PyPI's default wheel is, which on Windows is the CPU build, and training then runs at
+roughly a hundredth of the speed with no error anywhere. Either use `uv sync --extra
+models`, or ask pip for the index by hand:
+
+```
+.venv/Scripts/pip install --extra-index-url https://download.pytorch.org/whl/cu124 -e ".[dev,models]"
+```
+
+This is a note and not a lockfile: there is no `uv.lock` or `requirements.txt` tracked
+here, and adding one is a decision rather than a fix.
 
 **Everything runnable is a subcommand of one entry point**, installed into the venv as
 `fractal-wallpapers`. Activate `.venv` and call it by name, or call it by path without
@@ -36,7 +100,19 @@ Fetch the trained judges before anything that scores:
 
 ```
 .venv/Scripts/fractal-wallpapers fetch-weights
+.venv/Scripts/fractal-wallpapers fetch-weights --check    # no network: what is here, and does it hash
 ```
+
+Four heads — `location`, `render`, `palette` and `gallery_grade` — each one asset in a
+GitHub release, each verified against the sha256 in `models/weights.json` before it is
+kept. A head whose release has not been cut is reported by tag, asset and URL and the
+rest are still fetched; the exit code says whether every head arrived.
+
+**One weight here is not ours and is not re-hosted**: the DINOv2 encoder `curate embed`
+reads, which comes from Hugging Face on first use — 84.2 MB, pinned to a hub revision in
+`src/fractal_wallpapers/models/embedding.py`, cached in `~/.cache/huggingface` and never
+fetched again. That is the only command in this repository that needs the network after
+the install.
 
 To hand a built sheet to a labeler, see [the labeling rig](src/fractal_wallpapers/labeling/README.md#serving-a-sheet-to-label).
 

@@ -28,6 +28,29 @@ vectors means a nearest-neighbour read is one matrix multiply rather than a
 multiply and a division per row. It also makes `float16` safe: the components of
 a unit vector are all within a hair of zero, which is where half-precision has
 its digits.
+
+## It is fetched from Hugging Face, it is pinned, and the first read needs network
+
+This is the one **third-party** weight in the project and the only
+`pretrained=True` in the tree. Everything under `models/weights.json` is
+this repository's own: trained here, hashed, and served from a GitHub release.
+This one is not re-hosted and should not be — it is somebody else's artifact and
+the honest thing is to fetch it from where it lives and say exactly which
+revision.
+
+Which is what [`REVISION`] and [`SHA256`] are for, and what they close. Until
+2026-09-14 this said `pretrained=True` against `timm/` on the hub's `main`, with
+**no revision, no checksum and no size**: whatever that repository held on the day
+a machine first ran `curate embed` became this project's embedding basis, an
+84 MB download nothing had mentioned, and a silently different one later would
+have produced a store of vectors that cannot be compared with the ones already in
+it. `timm>=1.0.27` is a floor on the library, not a pin on the weights.
+
+The revision rides in through timm's own `hf_hub_id@revision` spelling
+([`hub_id`]), so the pin is the hub's commit and not a copy of the file. `curate
+embed` needs the network the first time on any machine and nothing after —
+`~/.cache/huggingface` holds it — and [`verify`] is how a machine checks that what
+it cached is the artifact this project was measured on.
 """
 
 from __future__ import annotations
@@ -37,6 +60,25 @@ from __future__ import annotations
 #: store whose manifest names a different one is a store of vectors nothing can
 #: be compared against.
 VARIANT = "vit_small_patch14_dinov2.lvd142m"
+
+#: Where the weights actually come from, and **which commit of it**.
+#:
+#: The repository is the one timm resolves `VARIANT` to; the revision is the pin,
+#: and it is the commit this project's every embedding store was filled from.
+#: timm takes it in the `id@revision` spelling its own `hf_split` reads, so this
+#: is the hub's pin and not a copy of the file.
+HF_REPO = "timm/vit_small_patch14_dinov2.lvd142m"
+REVISION = "4610ca143709d58a633b6397a74412c2c3842454"
+
+#: The weight file at that revision, and its sha256 — **84.2 MB, downloaded on
+#: first use**. The size is here because it is the part nobody was told: a fresh
+#: `curate embed` reached out to the internet for eighty-four megabytes with no
+#: document in the tree mentioning it. The hash is here because a pin on a
+#: mutable hub is a claim somebody should be able to check, and [`verify`] is
+#: how.
+ASSET = "model.safetensors"
+SHA256 = "04d27f3400d059fc0cfd7d17dd1909a75bf3ea8fb3eeb48b97cb99e57ee20081"
+BYTES = 88240510
 
 #: The width of one vector, and the patch size the frame has to be a multiple of.
 DIM = 384
@@ -58,15 +100,105 @@ class EmbeddingError(RuntimeError):
     """The encoder cannot be built, or cannot be read."""
 
 
-def build(variant: str = VARIANT):
+def hub_id(revision: str | None = REVISION) -> str:
+    """`repo@revision`, which is how timm takes a pin.
+
+    `timm.models._hub.hf_split` cuts an id on `@` and passes the tail to the hub
+    as `revision`, so this is the whole mechanism — no vendored file, no second
+    download path, and the pin is a hub commit rather than a copy of somebody
+    else's artifact. `None` asks for whatever `main` holds, which is what this
+    did until 2026-09-14 and is kept only so a caller can deliberately measure
+    against a newer revision.
+    """
+    return HF_REPO if not revision else f"{HF_REPO}@{revision}"
+
+
+def cached_weights(revision: str | None = REVISION):
+    """The pinned weight file in this machine's hub cache, or `None` if unfetched.
+
+    Read off the cache layout rather than by asking the hub, so it costs no
+    network and answers on a machine that is offline — which is the machine that
+    needs the answer.
+    """
+    import os
+    from pathlib import Path
+
+    home = os.environ.get("HUGGINGFACE_HUB_CACHE") or os.environ.get("HF_HOME")
+    root = Path(home) if home else Path.home() / ".cache" / "huggingface"
+    hub = root / "hub" if (root / "hub").is_dir() else root
+    named = hub / ("models--" + HF_REPO.replace("/", "--")) / "snapshots"
+    if not named.is_dir():
+        return None
+    for snapshot in sorted(named.iterdir()):
+        if revision and snapshot.name != revision:
+            continue
+        held = snapshot / ASSET
+        if held.is_file():
+            return held
+    return None
+
+
+def verify(revision: str | None = REVISION) -> dict:
+    """Whether the cached weights are the artifact this project was measured on.
+
+    Stdlib, no network and no timm: it hashes the file the cache already holds.
+    A machine that has never run `curate embed` reads `fetched: False`, which is a
+    state and not a fault — the download happens on first use.
+    """
+    import hashlib
+
+    held = cached_weights(revision)
+    if held is None:
+        return {
+            "variant": VARIANT,
+            "hub": hub_id(revision),
+            "fetched": False,
+            "says": (
+                f"not in this machine's hub cache. `curate embed` downloads it on first use: "
+                f"{BYTES:,} bytes over the network, once."
+            ),
+        }
+    digest = hashlib.sha256()
+    with held.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    actual = digest.hexdigest()
+    return {
+        "variant": VARIANT,
+        "hub": hub_id(revision),
+        "fetched": True,
+        "path": str(held),
+        "bytes": held.stat().st_size,
+        "sha256": actual,
+        "expected": SHA256,
+        "verified": actual == SHA256,
+    }
+
+
+def build(variant: str = VARIANT, revision: str | None = REVISION):
     """The frozen encoder, with its classifier head removed.
 
     `num_classes=0` is what makes `forward` return the pooled feature rather than
     logits, so the thing that comes out is the vector and not an opinion.
+
+    **Pinned to a hub revision**, through `pretrained_cfg_overlay`, which is the
+    supported way to say which commit of a hub repository timm should resolve.
+    Without it this asked for `main` and got whatever was there on the day — and a
+    store of vectors filled against one revision cannot be compared with one
+    filled against another, which is the only thing these vectors are for.
+
+    ⚠ **This is where the network is needed.** First call on a machine downloads
+    [`BYTES`] bytes into the hub cache; every call after it is local.
     """
     import timm
 
-    model = timm.create_model(variant, pretrained=True, num_classes=0, dynamic_img_size=True)
+    model = timm.create_model(
+        variant,
+        pretrained=True,
+        num_classes=0,
+        dynamic_img_size=True,
+        pretrained_cfg_overlay={"hf_hub_id": hub_id(revision)},
+    )
     return model.eval()
 
 
@@ -90,6 +222,11 @@ def describe(model, variant: str = VARIANT, device: str = "cpu") -> dict:
     """What a store's manifest records about the encoder that filled it."""
     return {
         "variant": variant,
+        # Which COMMIT of the hub repository, beside the variant name. A manifest
+        # naming only the variant cannot say whether two stores are comparable:
+        # the name is stable across every revision the hub ever held.
+        "hub": hub_id(),
+        "weights_sha256": SHA256,
         "dim": int(getattr(model, "num_features", DIM)),
         "patch": PATCH,
         "precision": PRECISION,
@@ -139,14 +276,22 @@ def encode(model, paths, device: str, mean, std, batch: int = BATCH):
 
 
 __all__ = [
+    "ASSET",
     "BATCH",
+    "BYTES",
     "DIM",
+    "HF_REPO",
     "PATCH",
     "PRECISION",
+    "REVISION",
+    "SHA256",
     "VARIANT",
     "EmbeddingError",
     "build",
+    "cached_weights",
     "data_config",
     "describe",
     "encode",
+    "hub_id",
+    "verify",
 ]

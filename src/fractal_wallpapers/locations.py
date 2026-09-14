@@ -90,6 +90,7 @@ __all__ = [
     "DEFAULT_SUPERSAMPLE",
     "RENDER_KEYS",
     "SCHEMA",
+    "UNCARRIED_RECIPE_MEMBERS",
     "LocationError",
     "frame_of",
     "maxiter_of",
@@ -97,6 +98,7 @@ __all__ = [
     "read",
     "read_one",
     "record",
+    "refuse_a_recipe_this_cannot_carry",
     "spec_of",
     "write",
 ]
@@ -104,6 +106,53 @@ __all__ = [
 
 class LocationError(RuntimeError):
     """A row that does not describe a location, or describes one impossibly."""
+
+
+#: What a `recipe` block can say that a location record has no member for, and
+#: what each of them decides. A location record is a *place plus a geometry*: the
+#: family, the frame, the cap, the resolution, the mode and the map. Everything
+#: here is also part of the picture and there is nowhere in this shape to put it.
+#:
+#: The failure this closes is a silent one. `render --location <release row>`
+#: drew the right coordinates through the default palette and exited 0 — a
+#: wallpaper nobody asked for under the name of one somebody did — because a
+#: reader that drops a member it has no slot for looks exactly like a reader that
+#: had nothing to drop. `render --recipe` is the door that takes all of it.
+UNCARRIED_RECIPE_MEMBERS: dict[str, str] = {
+    "curve": "the transform the mode reads its field through",
+    "mirror": "whether the map is folded as an out-and-back",
+    "palette": "the seven-knob palette pass — gamma, cycles, phase, reverse, mirror, "
+    "transfer, rolloff",
+    "mode_params": "the mode's own settings, which only a direct trap carries",
+    "autolevel": "the levelling band the picture was tone-mapped onto",
+}
+
+
+def refuse_a_recipe_this_cannot_carry(row: dict, where: str) -> str | None:
+    """Say why this row's recipe will not fit in a location record, or `None`.
+
+    Presence and not truthiness, with one exception: `mirror: false` and
+    `mode_params: {}` are what this path produces anyway, so a row saying so is
+    saying nothing a render would do differently. Anything else — a curve, a
+    fold, a palette pass, a trap's settings, a levelling band — changes the
+    picture and has no member here to change it through.
+    """
+    recipe = row.get("recipe")
+    if not isinstance(recipe, dict):
+        return None
+    carried = [
+        name for name in UNCARRIED_RECIPE_MEMBERS if recipe.get(name) not in (None, False, {}, "")
+    ]
+    if not carried:
+        return None
+    return (
+        f"{where}: this row carries a recipe naming "
+        + ", ".join(f"{name} ({UNCARRIED_RECIPE_MEMBERS[name]})" for name in carried)
+        + ". A location record says a place and a geometry and has nowhere to put any of "
+        "that, so rendering it here would draw the right coordinates in the wrong picture. "
+        "`render --recipe FILE` takes the whole recipe; a published record's `recipes.jsonl` "
+        "is a file of them."
+    )
 
 
 def record(row: dict, where: str = "record") -> dict:
@@ -137,6 +186,23 @@ def record(row: dict, where: str = "record") -> dict:
     block = inner.get("render") or row.get("render") or {}
     if not isinstance(block, dict):
         raise LocationError(f"{where}: render is not an object")
+    complaint = refuse_a_recipe_this_cannot_carry(row, where)
+    if complaint is not None:
+        raise LocationError(complaint)
+    # A row that carries a recipe says its mode, its map and its geometry THERE,
+    # and this took neither — a release row has no top-level `render` block, so
+    # every one of them read as the module's defaults. The refusal above has
+    # already sent back anything a location record cannot express; what is left
+    # is a recipe this shape can carry whole, and taking it is the difference
+    # between drawing the wallpaper and drawing the place it stands on.
+    recipe = row.get("recipe")
+    if isinstance(recipe, dict):
+        inherited = recipe.get("render") if isinstance(recipe.get("render"), dict) else {}
+        block = {
+            **{name: value for name, value in inherited.items() if name in RENDER_KEYS},
+            **{name: recipe[name] for name in ("mode", "colormap") if recipe.get(name) is not None},
+            **block,
+        }
     unknown = sorted(set(block) - set(RENDER_KEYS))
     if unknown:
         raise LocationError(

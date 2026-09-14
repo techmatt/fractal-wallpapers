@@ -16,9 +16,17 @@ Four things this module can get wrong quietly, and one it cannot get wrong at al
 * **The pick.** One statistic chooses the epoch inside a run and the run inside
   the band, so nothing is selected on a number nothing was stopped on.
 
-And the one it cannot: this is **not a judge**, and nothing here may become one
-by accident — it is off the roster, off `finished.HEADS`, and its weights are
-ignored by the same rule every other head's are.
+And the one it cannot get wrong: it is **not a finished-render judge** and may not
+become one by accident — a head fitted on this store is exactly the reader
+somebody will hand to `finished.head_of` thinking the two are the same shape.
+
+⚠ **It IS on the roster since 2026-09-14, and this file said the opposite until
+then.** That was right while the head was a study and stopped being right the day
+`p_fine` became the seating bar, the cascade order and every veto row's reading:
+off the roster it had no manifest row and no release, so a clone could read its
+configs and its per-sheet scores and never obtain the weights at any price. What
+it ships is **one asset holding k=3 members**, because the shipped recipe averages
+three seeds on the probability scale and no single checkpoint is the column.
 """
 
 from __future__ import annotations
@@ -73,12 +81,59 @@ def corpus(n: int = 120) -> tuple[list, list[dict]]:
 
 
 # --------------------------------------------------------------------------- #
-# It is not a judge, and cannot become one by accident.
+# It ships, and its row says the two things no other head's has to.
 # --------------------------------------------------------------------------- #
-def test_this_head_is_not_on_the_roster_and_no_release_carries_it() -> None:
-    assert trainer.HEAD not in roster.HEADS
+def test_this_head_is_on_the_roster_and_a_release_carries_it() -> None:
+    """The reverse of what this file asserted until 2026-09-14, and deliberately.
+
+    It read `HEAD not in roster.HEADS` while the head was a study. That stopped
+    being a property worth pinning the day `p_fine` became the seating bar, the
+    cascade order and every veto row's reading: a clone could read this head's
+    configs and its per-sheet scores and never obtain the weights at any price,
+    which shut the whole scored half of the repository behind one untracked file.
+    """
+    assert trainer.HEAD in roster.HEADS
     manifest = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
-    assert trainer.HEAD not in manifest["heads"]
+    assert trainer.HEAD in manifest["heads"]
+
+
+def test_the_row_says_it_is_an_ensemble_because_no_other_row_here_has_to() -> None:
+    """One asset, k members, and the row says how many.
+
+    The shipped recipe averages three seeds on the probability scale, so no
+    single checkpoint is the column and a release of three assets would let a
+    clone fetch two of them and score through a head nobody judged.
+    `export_fp16` puts the members in one file for that reason, and these two
+    fields are the only place a reader of the manifest can find it out.
+    """
+    manifest = json.loads(roster.manifest_path().read_text(encoding="utf-8"))
+    row = manifest["heads"][trainer.HEAD]
+    assert row["asset"] == trainer.shipped_path().name
+    assert row["members"] == len(row["seeds"]) == len(trainer.SEEDS)
+    assert row["averaged_on"] == "the probability scale"
+
+
+def test_the_shipped_artifact_is_not_on_the_single_checkpoint_path() -> None:
+    """`ship.convert`, `ship.agreement` and `ship.stage` refuse this head by name.
+
+    They would each be handed one third of a column and would draw a picture of
+    "the head" that is of something nobody ships, so the Shipment's `checkpoint`
+    raises rather than picking a member.
+    """
+    from fractal_wallpapers.models import ship
+
+    with pytest.raises(ValueError, match="no single checkpoint"):
+        ship.shipment_for(trainer.HEAD).checkpoint(trainer.HEAD, "best", None)
+
+
+def test_the_two_sides_agree_on_where_the_artifact_lives() -> None:
+    """`ship.shipped_path` is what `fetch-weights` resolves and what `--check`
+    hashes; `gallery_grade_train.shipped_path` is what the export writes and what
+    `load_shipped` reads. Two spellings of one path is a download that lands
+    where nothing looks for it."""
+    from fractal_wallpapers.models import ship
+
+    assert ship.shipped_path(trainer.HEAD) == trainer.shipped_path()
 
 
 def test_the_store_still_refuses_to_be_read_as_a_finished_corpus() -> None:
@@ -838,3 +893,94 @@ def test_the_live_pool_scores_are_never_named_for_a_corpus() -> None:
     """
     assert trainer.pool_scores_path().name == "pool_scores.jsonl"
     assert trainer.superseded_pool_scores_path("x").name == "pool_scores_x.jsonl"
+
+
+# --------------------------------------------------------------------------- #
+# Which weights wrote a p_fine. A run NAME is what a retrain keeps.
+# --------------------------------------------------------------------------- #
+def test_the_digest_of_one_checkpoint_is_that_files_own_hash(tmp_path) -> None:
+    import hashlib
+
+    one = tmp_path / "best.pt"
+    one.write_bytes(b"weights")
+    digest, members = trainer.weights_digest([one])
+
+    assert digest == hashlib.sha256(b"weights").hexdigest() == members[0]["sha256"]
+    assert members[0]["bytes"] == len(b"weights")
+
+
+def test_an_ensembles_digest_moves_with_any_member_and_not_with_their_order(tmp_path) -> None:
+    """No single file produces the column the k=3 recipe writes, so no single
+    file's hash identifies it. What identifies it is the members', and the digest
+    has to move when one does — a retrain of seed 1 alone is exactly the case a
+    run NAME cannot see."""
+    paths = []
+    for index, body in enumerate((b"a", b"b", b"c")):
+        one = tmp_path / f"seed{index}.pt"
+        one.write_bytes(body)
+        paths.append(one)
+
+    first, _ = trainer.weights_digest(paths)
+    paths[1].write_bytes(b"retrained")
+    moved, _ = trainer.weights_digest(paths)
+
+    assert moved != first
+    paths[1].write_bytes(b"b")
+    assert trainer.weights_digest(paths)[0] == first
+
+
+def test_the_backfill_stamps_only_the_unstamped_and_changes_nothing_else(tmp_path, monkeypatch):
+    """One-way and well defined exactly once: there is one run behind the live
+    rows and its checkpoints have not moved since. A second blind run is not
+    safe, which is why this refuses a file already carrying another stamp."""
+    scores = tmp_path / "pool_scores.jsonl"
+    rows = [
+        {"schema": 1, "head": trainer.HEAD, "run": "a_run", "key": f"k{index}", "p_ge4": 0.5}
+        for index in range(3)
+    ]
+    scores.write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8", newline="\n"
+    )
+    checkpoint = tmp_path / "best.pt"
+    checkpoint.write_bytes(b"weights")
+    monkeypatch.setattr(trainer, "pool_scores_path", lambda: scores)
+    monkeypatch.setattr(trainer, "shipped_runs", lambda *_a, **_k: ("more", [0], "a_run"))
+    monkeypatch.setattr(trainer, "run_dir", lambda *_a, **_k: tmp_path)
+
+    record = trainer.stamp_pool_scores(log=lambda *_a: None)
+
+    assert record["stamped"] == 3 and record["already_stamped"] == 0
+    back = [json.loads(line) for line in scores.read_text(encoding="utf-8").splitlines()]
+    assert {row["weights"] for row in back} == {record["weights"]}
+    assert [{k: v for k, v in row.items() if k != "weights"} for row in back] == rows
+
+    again = trainer.stamp_pool_scores(log=lambda *_a: None)
+    assert again["stamped"] == 0 and again["already_stamped"] == 3
+
+
+def test_the_backfill_refuses_a_file_a_different_run_wrote(tmp_path, monkeypatch):
+    """Stamping these rows with checkpoints that did not write them would be
+    inventing the statement rather than recording it."""
+    scores = tmp_path / "pool_scores.jsonl"
+    scores.write_text(
+        json.dumps({"schema": 1, "run": "another_run", "key": "k0"}) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    monkeypatch.setattr(trainer, "pool_scores_path", lambda: scores)
+    monkeypatch.setattr(trainer, "shipped_runs", lambda *_a, **_k: ("more", [0], "a_run"))
+
+    with pytest.raises(trainer.GradeTrainingError, match="did not write them"):
+        trainer.stamp_pool_scores(log=lambda *_a: None)
+
+
+def test_the_note_says_a_clones_rows_will_differ_and_that_it_is_correct():
+    """⚠ The thing somebody will hit and read as a bug. These rows record the
+    FP32 checkpoints; a release ships the FP16 artifact, which is a different
+    file with a different hash by design — so a clone scoring the pool with the
+    published head writes differently-stamped rows. That is the guard working."""
+    said = trainer.POOL_SCORES_WEIGHTS_NOTE
+
+    assert said is trainer.SCHEMA_NOTES["weights_are"], "the sentence has one copy"
+    assert "fp16" in said.lower() and "FP32" in said
+    assert "not a mismatch" in said

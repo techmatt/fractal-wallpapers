@@ -1,10 +1,14 @@
 """`gallery-grade`: the fine-tier head, from the ledger join to the band's pick.
 
-Seven verbs and they run in order. `population` and `split` are cheap and are
-written down, because every arm has to be fitted on one join and read on one
-slice. `preregister` writes the bar and has to run **before** any fit of its
+Nine verbs, and the first seven run in order. `population` and `split` are cheap
+and are written down, because every arm has to be fitted on one join and read on
+one slice. `preregister` writes the bar and has to run **before** any fit of its
 band. `fit` and `band` are the only ones that cost a GPU — `band` being `fit`
 over the whole grid, one run at a time. `read` and `accept` cost nothing.
+
+`ship` and `stamp-scores` came later and are about the ARTIFACT rather than the
+fit: one halves the k=3 ensemble into the single file a release carries, the
+other puts the weights sha256 onto score rows written before there was one.
 """
 
 from __future__ import annotations
@@ -46,6 +50,26 @@ def gallery_grade(args: argparse.Namespace) -> int:
         print(json.dumps(document, indent=1))
         print(f"wrote {path}")
         return 0 if document["verdict"] == "CLEARED" else 1
+
+    if args.what == "ship":
+        try:
+            record = trainer.ship_head(
+                tag=args.tag, which=args.which, sample=args.sample, device=args.device
+            )
+        except (trainer.GradeTrainingError, ValueError) as refusal:
+            print(refusal)
+            return 1
+        print(json.dumps(record, indent=1))
+        return 0
+
+    if args.what == "stamp-scores":
+        try:
+            record = trainer.stamp_pool_scores()
+        except trainer.GradeTrainingError as refusal:
+            print(refusal)
+            return 1
+        print(json.dumps(record, indent=1))
+        return 0
 
     if args.what == "score-pool":
         from fractal_wallpapers.curation import solve as solve_module
@@ -160,6 +184,12 @@ def add_commands(subcommands) -> None:
         RULES,
         SPLIT_SEED,
     )
+    from fractal_wallpapers.models.gallery_grade_train import (
+        DISAGREEMENT_SAMPLE as trainer_sample,
+    )
+    from fractal_wallpapers.models.gallery_grade_train import (
+        TAG as trainer_tag,
+    )
 
     group = subcommands.add_parser(
         "gallery-grade",
@@ -169,8 +199,9 @@ def add_commands(subcommands) -> None:
             "initialised from its weights-v6 artifact, fitted on the gallery-grade store's "
             "1..4 verdicts at the ledger's 640x360 candidate geometry. It is STAGE TWO of a "
             "cascade behind p_ge4 and its output is undefined on a row that never cleared "
-            "the gate — never a pool-wide ranker. Nothing here ships or is wired into "
-            "selection."
+            "the gate — never a pool-wide ranker. It SHIPS since 2026-09-14 — `ship`, and "
+            "roster.HEADS carries it — and its p_fine gates the seating bar, the cascade "
+            "order, the vetoes and growth."
         ),
     )
     steps = group.add_subparsers(dest="what", required=True)
@@ -260,6 +291,59 @@ def add_commands(subcommands) -> None:
     recipe_flag(scoring, RECIPE, RECIPES)
     device_flag(scoring)
     scoring.set_defaults(handler=gallery_grade)
+
+    shipping = steps.add_parser(
+        "ship",
+        help="halve the shipped ensemble into one release artifact and write its manifest row",
+        description=(
+            "This head was unobtainable at any price until 2026-09-14: off roster.HEADS, no "
+            "manifest row, its checkpoints untracked and in no release — so a clone could "
+            "read its configs and never run it, and p_fine gates the seating bar, the "
+            "cascade order and every veto row's reading. ONE asset holding k=3 members, "
+            "because the shipped recipe averages three seeds on the probability scale and "
+            "no single file is the column. The halving is checked the way every shipment "
+            "here is — the artifact re-reads bit-identically, the head is read against the "
+            "full-precision one, the hash is taken after both — but the middle check is "
+            "stated in THIS head's units: bar crossings at solve.DEFAULT_FINE_BAR and moves "
+            "in the top n of the cascade order. It reports rather than gates: there is no "
+            "ratified bound on either of those yet, and comparing against a constant nobody "
+            "chose would be worse than putting the number on the record."
+        ),
+    )
+    shipping.add_argument(
+        "--tag", default=trainer_tag, help=f"the release tag (default {trainer_tag})"
+    )
+    shipping.add_argument("--which", default="best", choices=["best", "last"])
+    shipping.add_argument(
+        "--sample",
+        type=int,
+        default=trainer_sample,
+        help=f"how many scored rows the fp16 read is measured over (default {trainer_sample}): "
+        f"the top of the rank order plus a seeded random tail, because a flat draw over the "
+        f"whole pool spends itself far below the bar where a disagreement changes nothing",
+    )
+    device_flag(shipping)
+    shipping.set_defaults(handler=gallery_grade)
+
+    stamping = steps.add_parser(
+        "stamp-scores",
+        help="put the weights sha256 onto pool score rows written before there was one",
+        description=(
+            "A p_fine row carried a run NAME and no hash until 2026-09-14, so a retrain "
+            "under the same name changed every score in the pool with nothing able to "
+            "detect it — and p_fine gates the seating bar, the cascade order, the vetoes "
+            "and growth. The render judge has carried a weights sha256 on all 417,585 of "
+            "its ledger rows since the ledger was built. This is the one-way backfill for "
+            "the rows already written: it takes the run's own checkpoints as they stand, "
+            "digests them, and stamps every row that has no stamp. It refuses if the file "
+            "already carries a different one, or if the run on the rows is not the run this "
+            "checkout resolves. The digest is of the FP32 checkpoints that produced the "
+            "scores and NOT of the fp16 artifact a release ships, which is a different file "
+            "with a different hash by design — so a clone scoring the pool with the "
+            "published head writes differently-stamped rows, and that is the guard working."
+        ),
+    )
+    stamping.set_defaults(handler=gallery_grade)
 
     fitting = steps.add_parser(
         "fit",

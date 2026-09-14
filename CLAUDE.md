@@ -67,12 +67,19 @@ These were decided once, at the first commit, because each is expensive to rever
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
   tracked file inside an ignored tree is how these rules rot. **There is exactly
-  one hole and it is deliberate**: a published tentative gallery's two *text*
-  files (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`)
-  come through, because a clone that cannot resolve the IDs the site's figures
-  name cannot rebuild the site. The pictures stay ignored, the un-ignore names the
-  two files one by one rather than by pattern, and it is not an oversight to tidy
-  up. `index.html` is not tracked for any stamp.
+  one hole and it is deliberate**: a published tentative gallery's *text* files
+  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`) come
+  through, because a clone that cannot resolve the IDs the site's figures name
+  cannot rebuild the site. The pictures stay ignored, the un-ignore names the
+  files one by one rather than by pattern, and it is not an oversight to tidy
+  up. `index.html` is not tracked for any stamp. **A third file joined it on
+  2026-09-14 and for ONE stamp only**: `20260914T171846Z`'s `recipes.jsonl`, a
+  `{key, recipe}` row per seat at 0.68 MiB, because 994 of that record's 1,000
+  seats could not be drawn from tracked data at all — the key is a one-way digest
+  and the recipe behind it lives in the untracked ledger. Its negation line names
+  that stamp's path rather than a pattern, so writing another record's is a
+  decision each time; `render --recipe FILE --key <seat>` is the door that draws
+  one back, and a redraw is byte-identical.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
   2026-09-04, and the hole above is per *stamp* because of it. An unpublished
   record is read by naming its stamp, and what it does not get is a Durable-class
@@ -199,12 +206,13 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,694 collected — 4,541 fast,
-153 slow — since `publish_gallery_ckpt124` added 9 fast tests on 2026-09-14**, on a
+Both are measured, not estimated. The tree holds **4,726 collected — 4,570 fast,
+156 slow — since `repo_bootstrap_fixes_ckpt124` added 32 tests on 2026-09-14**, on a
 `.[dev,models]` install with a release engine built. **Both lanes were taken back to
-back on one idle tree by that prompt, and they agree at 4,694**: **fast 4,541 of
-4,541 in 125.25 s (2:05)** with 153 deselected, and **slow 4,694 of 4,694 in
-477.33 s (7:57)**. Both green, zero skips, zero failures.
+back on one idle tree by that prompt, and they agree at 4,726**: **fast 4,570 of
+4,570 in 123.51 s (2:03)** with 156 deselected, and **slow 4,726 of 4,726 in
+478.06 s (7:58)**. Both green, zero skips, zero failures — **+32 tests on a fast
+clock that FELL 1.74 s**.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.
@@ -280,6 +288,11 @@ and the rules that log produced.
   than the whole lane re-run hoping for a quieter box. Reaching for the box first
   has cost a session:
   [`tests/README.md`](tests/README.md#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise).
+  **The cheapest decisive check is a `git worktree` at `HEAD`** with
+  `FRACTAL_WALLPAPERS_HOT_ROOT` pointed at the real store: it measures the OLD code
+  on TODAY's box, which is the one comparison a re-run of the new code cannot make.
+  `repo_bootstrap_fixes_ckpt124` split a 35 s move into 15 s of box and 20 s of tree
+  that way in five minutes, then found the 20 s in one file.
 - **When a lane moves with no test added, ask three questions**: **which store
   grew**, **which derivation is paid twice**, and **what is paid once per test**.
   Re-measure after a **merge**, not only after writing tests. And suspect the

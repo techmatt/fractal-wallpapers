@@ -511,8 +511,8 @@ mod tests {
                 continue;
             }
             let name = path.file_stem().unwrap().to_str().unwrap().to_string();
-            let plain = Colormap::load(&directory, &name)
-                .unwrap_or_else(|e| panic!("loading {name}: {e}"));
+            let plain =
+                Colormap::load(&directory, &name).unwrap_or_else(|e| panic!("loading {name}: {e}"));
             if plain.kind() != Kind::Sequential {
                 continue;
             }

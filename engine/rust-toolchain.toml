@@ -1,0 +1,18 @@
+# What a checkout of this crate needs from rustup, and nothing it does not.
+#
+# The floor is `rust-version = "1.85"` in `Cargo.toml` beside this, and that is
+# where it belongs: cargo reads it and refuses an old toolchain by NAMING THE
+# VERSION — "requires rustc 1.85 or newer, while the currently active rustc
+# version is 1.7x". Without it, `edition = "2024"` fails as
+# `feature `edition2024` is required`, pointing at a nightly flag, which reads as
+# a crate asking for something unstable rather than as a toolchain three releases
+# behind. That was the whole defect.
+#
+# **No `channel` on purpose.** A channel here is a PIN, not a floor: rustup would
+# download and use exactly that toolchain on every machine and in CI, overriding
+# whatever is installed, to buy nothing the `Cargo.lock` beside it does not
+# already give. What this file is for is the two components every check in
+# `README.md` and in `.github/workflows/ci.yml` spends, so a fresh `rustup`
+# install has them without a second command.
+[toolchain]
+components = ["rustfmt", "clippy"]
