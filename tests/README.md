@@ -633,6 +633,35 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### veto_model_ckpt124
+
+**Both lanes, idle box, and they agree.** `veto_model_ckpt124`, 2026-09-14, taken
+after the 1,000-tile rejection sheet finished rather than beside it. **Fast: 4,513
+selected, 153 deselected — 4,666 collected — in 125.23 s (2:05). Slow: 4,666 of
+4,666 in 479.79 s (7:59).** Both green, zero skips, zero failures. **The two lanes
+agree on 4,666.**
+
+**This prompt added 27 tests and moved the slow count by zero.** Twenty-three are
+the new `tests/test_veto.py` and four are parametrized `LINES` entries in
+`test_nested_verbs.py` for the four `curate veto` verbs. Every one is arithmetic or
+a source-text assertion — the veto's own guards build three-row pools in `tmp_path`
+and the sheet guards render 8×8 JPEGs through a stub — so nothing here earned
+`@pytest.mark.slow` and the slow lane is the fast lane's 153 unchanged.
+
+⚠ **The tree stood at 4,639 before this prompt, which is nine above the 4,630
+`CLAUDE.md` carried.** Three commits landed after `PRECLOSEOUT_ckpt123_wallpapers`
+took that pair — `b065d2f` (the seat sheet's before/after axis), `0535802` and
+`477aee4` — and each added tests without re-measuring. That is the drift *take the
+pair whether or not the prompt wrote a test* exists to catch, and it is caught here
+by the two lanes meeting rather than by anybody noticing the arithmetic.
+
+**Both clocks came in UNDER `PRECLOSEOUT_ckpt123_wallpapers`'s on 36 more tests** —
+125.23 s against 134.31 s and 479.79 s against 483.23 s. That entry's own note said
+its two clocks sat ~9 s and ~12 s over `lane_speedup_ckpt122`'s because subagents
+were still finishing when its fast lane started; this reading lands back on
+`lane_speedup_ckpt122`'s 125.12 s to a tenth of a second, which settles that it was
+the box. **A count is not a cost**, again: 36 tests arrived and neither lane moved.
+
 #### FIX_ckpt123_pooled_twins_degree2
 
 **A half reading, and it is labelled one.** `FIX_ckpt123_pooled_twins_degree2`,

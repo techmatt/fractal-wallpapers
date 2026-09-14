@@ -232,6 +232,64 @@ A graded row's *candidate* is held in the pool by the label protection —
 merge cannot take the picture or its `<stem>.leveled/` colormap out from under the
 store.
 
+### A REJECTION pass is a correction page whose population is not being reviewed
+
+**Since 2026-09-14, `label build --head gallery_grade --rejection`.** A rejection
+pass walks a whole gallery once and marks only the bad tiles — it is how the
+**veto** is collected (`curation/GALLERY.md`'s *The veto*), and the plan it runs
+over is cut by `curate veto sheet <stamp>`, one unit per seat with nothing
+sampled. Mechanically it is a correction page knob for knob: same prefill off the
+plan, same good→bad order, same store, same 1..4 scale, and a mark of any tier is
+an ordinary human label on the ordinary path. Two things change.
+
+**The sweep is off, and that is the whole point of the mode.** *Accept the
+suggestion for every unlabeled row below here* is the one gesture in this rig that
+turns an untouched row into a verdict. On a correction page it is the point — the
+labeler spends the hour on the rows the head got wrong. On a thousand-tile gallery
+sheet where nobody is reviewing the good rows, one click would write the fine
+head's own decode onto some nine hundred unmarked tiles: positives in the store,
+`origin: human`, indistinguishable from labels a person cast, poisoning the corpus
+the head is fitted on. `Source.sweep` carries the flag, the manifest carries it on
+**every** sheet (an absent key means true, which is every sheet cut before the
+date), the page does not build the button, and `sweep.onclick` refuses as well —
+hiding a control is a statement about one page and refusing the act is a statement
+about the sheet.
+
+**Everything else already refused and that is why one flag closes it.** The page
+exports one entry per row a person acted on, `intake.read_export` drops a null
+score, and a unit absent from an export is absent from the store. The sweep was
+the only path left.
+
+**The page says what it is**, in `sheets.GRADE_REJECTION_NOTE` — *a tile you leave
+alone is NOT a label*. A page identical to a correction page is one a labeler
+sweeps out of habit, and the note is the only place on the built sheet that says
+which kind it is.
+
+`tests/test_veto.py` holds all of it: the source's flag, the note, the manifest
+key on both kinds, the page's two guards, and that the full scale stays castable —
+a deliberate 2 is a real verdict and narrowing the page to one button would throw
+away information a labeler was willing to give.
+
+### Cutting a sheet on the render pool
+
+**`--workers N`, since 2026-09-14.** A cut is one engine render per unit and
+nothing else expensive, so a thousand-unit sheet is hours serially. Above 1 the
+cuts run in a `ThreadPoolExecutor` — threads and not processes, because the work
+is `subprocess.run` waiting on `fractal-engine.exe`. Measured on the
+`gallery_rejection_20260914` build: **3.72 s a picture on three workers**, so 1,000
+tiles in about **62 minutes** against roughly three hours at one.
+
+**Order, unit ids and picture names are the serial build's.** `pool.map` yields in
+argument order and `cut_name(index)` is computed before anything runs, so a
+resumed build finds the same names on disk and a re-cut assigns the same `u0001`.
+The progress line counts cuts *finished* rather than positions reached, which is
+the only thing it can honestly say once they land out of order.
+
+**The default stays 1.** Three is this machine's render pool
+(`curation.release.DEFAULT_WORKERS`) and more than three engines at once makes the
+desktop unusable — but a sheet is also cut on CI and in tests, where that rule is
+not the rule, so the ceiling is named in `--help` and not baked into the default.
+
 ## Serving a sheet to label
 
 A built sheet is a directory: `sheet.json` (the manifest), `sheet.jsonl` (the rows) and

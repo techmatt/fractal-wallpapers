@@ -177,7 +177,16 @@ function start(){
   // The sweep exists only when a head actually suggested something. With no head
   // there is nothing to accept, and a button that accepts nothing is a button that
   // will one day accept everything.
-  el("sweep").hidden = !ROWS.some(r => r.suggestion !== null && r.suggestion !== undefined);
+  //
+  // A sheet may also turn it off outright, and that is the manifest's `sweep`.
+  // The sweep is the ONE mechanism in this rig that turns an untouched row into a
+  // verdict, so a sheet whose population is not being reviewed — a rejection pass,
+  // where a person marks only the bad tiles and leaves the rest alone — says so
+  // and the button is not built. `!== false` and not a truthiness test: every
+  // sheet on disk before the key existed is a correction sheet and keeps its
+  // sweep.
+  el("sweep").hidden = MANIFEST.sweep === false
+    || !ROWS.some(r => r.suggestion !== null && r.suggestion !== undefined);
   buildButtons();
   buildOverview();
   const first = ROWS.findIndex(r => !scores[r.unit]);
@@ -281,6 +290,15 @@ function nextUnlabeled(){
 // default. It never overwrites a verdict already cast, and it skips rows the head
 // had no opinion about.
 el("sweep").onclick = () => {
+  // The button is not built on a sheet that turned the sweep off, and the handler
+  // refuses anyway. Hiding a control is a statement about a page; refusing the act
+  // is a statement about the sheet, and this is the one act that can manufacture a
+  // verdict nobody cast.
+  if (MANIFEST.sweep === false) {
+    alert("this sheet has no sweep: it is a rejection pass, so a tile you did not mark " +
+          "is not a label and must stay one.");
+    return;
+  }
   const rest = ROWS.slice(cur).filter(r =>
     !scores[r.unit] && r.suggestion !== null && r.suggestion !== undefined);
   if (!rest.length) { alert("nothing below here carries a suggestion to accept"); return; }

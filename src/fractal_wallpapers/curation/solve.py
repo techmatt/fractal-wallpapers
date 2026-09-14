@@ -719,21 +719,43 @@ class Candidate:
 
 
 def pool(
-    rows=None, scores=None, artifact=None, spirals=None, log=print
+    rows=None, scores=None, artifact=None, spirals=None, vetoed=None, log=print
 ) -> tuple[list[Candidate], dict]:
     """`(candidates, what was refused)` — everything this leg may seat.
 
-    Five exclusions, each a fact about the candidate rather than a quality bar. A
+    Six exclusions, each a fact about the candidate rather than a quality bar. A
     row in a mode [`curation.mode_policy`] weights **0** is refused: the standing
     is that this project has stopped buying that mode, and a gallery is the last
     place it would be spent. A row a **person rejected** is refused: the ledger
-    keeps it and carries the rejection precisely so that this honours it. A row at
-    a regime other than the one the pool was made at is refused, because a score
-    read at one geometry does not transfer to another. A row with **no picture on
-    disk** is refused — its recipe is complete and it could be drawn again, but
-    the diversity rule is read off pixels, and a candidate it cannot evaluate is
-    one that would be seated untested. A row with no score is refused because the
-    objective *is* the score.
+    keeps it and carries the rejection precisely so that this honours it. A row a
+    person **vetoed** is refused, which is the same principle one store further
+    on — see [`curation.veto`], and `vetoed` below. A row at a regime other than
+    the one the pool was made at is refused, because a score read at one geometry
+    does not transfer to another. A row with **no picture on disk** is refused —
+    its recipe is complete and it could be drawn again, but the diversity rule is
+    read off pixels, and a candidate it cannot evaluate is one that would be
+    seated untested. A row with no score is refused because the objective *is* the
+    score.
+
+    ## `vetoed` is this leg's whole knowledge of the veto
+
+    A human `1` at the fine level takes a picture out of every future seating, and
+    this is where that happens: one door into a solve, so no caller has to
+    remember. [`curation.veto.render_keys`] is the set and
+    [`curation.veto.refuses`] the test, both keyed on the render key rather than
+    on the recipe key, because the label store and the ledger are two spellings of
+    one picture. ⚠ It costs about **10.6 s** over today's 417,585 rows — the
+    derivation is a `Decimal` normalization apiece — and the measurement and what
+    was not done about it are at [`curation.veto`]'s docstring.
+
+    Unsaid, the store is read — but **only when this call is reading the LEDGER
+    too**, which is [`spirals`]' rule for [`spiral_scores`] and is here for the
+    same reason: a caller that handed in its own `rows` is building its own pool,
+    a pool of synthetic locations has no rows in the real label store to find, and
+    a store reached unconditionally from production code is a store a test's
+    isolation fixture cannot redirect. A caller that hands its own `rows` **and**
+    wants the veto says so by handing the set — [`curation.headroom.population`]
+    is the one that does, because its population is this one by definition.
 
     **Naming a picture and having one are two questions, and this asks both.**
     Until 2026-08-28 it asked only the first, and the gap is not small: `curate
@@ -747,15 +769,26 @@ def pool(
     are different facts about a row: one was never drawn, the other was drawn and
     swept. Only the second is expected to grow.
     """
+    from fractal_wallpapers.curation import veto as veto_module
+
     stored = candidate_ledger.stream() if rows is None else rows
     read = candidate_ledger.read_scores() if scores is None else list(scores)
     # On the LIVE judge only, for [`candidate_ledger.scores_by_recipe`]'s reason:
     # the sidecar is keyed on the artifact and a flattened join would put two
     # judges' scales into one objective.
     by_key = candidate_ledger.scores_by_recipe(read, artifact=artifact)
+    if vetoed is not None:
+        veto = set(vetoed)
+    elif rows is None:
+        veto = set(veto_module.render_keys())
+    else:
+        veto = set()
+    if veto:
+        log(f"[solve] {len(veto):,} picture(s) carry a human fine-level 1 and cannot be seated")
     refused = {
         "niche_mode": 0,
         "rejected": 0,
+        "vetoed": 0,
         "off_regime": 0,
         "no_picture": 0,
         "picture_absent": 0,
@@ -775,6 +808,13 @@ def pool(
             continue
         if row.get("rejected"):
             refused["rejected"] += 1
+            continue
+        # Beside the rejection and after it: both are a person saying no, and the
+        # order between them decides only which counter a row doubly refused
+        # lands in. `veto` empty short-circuits inside `refuses`, so a synthetic
+        # pool pays nothing at all.
+        if veto_module.refuses(row, veto):
+            refused["vetoed"] += 1
             continue
         if not row.get("at_candidate_regime"):
             refused["off_regime"] += 1

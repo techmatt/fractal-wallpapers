@@ -20,6 +20,20 @@ from fractal_wallpapers.paths import (
 )
 
 
+def sheet_workers() -> int:
+    """This machine's render pool, off the module that owns the rule.
+
+    It is the **ceiling** a sheet build is measured against and deliberately not
+    the default: a sheet is also cut on CI and in tests, where the rule about this
+    box does not apply, so `--workers` stays at 1 until somebody asks. Read
+    through a call and not re-typed here, because three is a decision about a
+    desktop rather than a number this module knows.
+    """
+    from fractal_wallpapers.curation import release
+
+    return int(release.DEFAULT_WORKERS)
+
+
 def label_stores(head: str):
     """`(read the registry, write one)` for whichever store `head` names.
 
@@ -77,6 +91,13 @@ def label_build(args: argparse.Namespace) -> int:
     if args.reuse_renders and not args.head:
         print("--reuse-renders reads a finished-render cache, so it needs --head")
         return 1
+    if args.rejection and args.head != gallery_grade.NAME:
+        print(
+            f"--rejection cuts a {gallery_grade.NAME} sheet as a rejection pass and there is no "
+            f"such thing in any other store: the two gates ask whether a picture is worth "
+            f"keeping at all, which is the question, not a pass over an answer"
+        )
+        return 1
 
     if args.head in attributes.NAMES:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
@@ -111,11 +132,17 @@ def label_build(args: argparse.Namespace) -> int:
         # geometry, so it can only come off the plan, and a flag that could
         # disagree with it is a flag that eventually does. `sheets.build` reads
         # `suggested_by` off the same test.
+        #
+        # REJECTION is the exception and it is a flag for the reason the others
+        # are not: it is not a fact about the plan at all but about what the
+        # labeler is being asked to do with it, and the same plan can legitimately
+        # be served either way.
         source = sheets.gallery_grade_source(
             resolution=tuple(args.resolution),
             supersample=args.supersample,
             reuse_cache=args.reuse_renders,
             prefilled=any(unit.get("suggestion") is not None for unit in units),
+            rejection=args.rejection,
         )
     elif args.head:
         units = sheets.units_from_plan(resolve_output(args.from_plan))
@@ -168,6 +195,7 @@ def label_build(args: argparse.Namespace) -> int:
         batch=args.batch,
         seed=args.seed,
         title=args.title,
+        workers=args.workers,
     )
     print(json.dumps(sheet.manifest, indent=2))
     return 0
@@ -485,6 +513,17 @@ def add_commands(subcommands) -> None:
         "of everything the engine is told, so a hit is the same picture",
     )
     building.add_argument(
+        "--rejection",
+        action="store_true",
+        help="cut a GALLERY-GRADE sheet as a rejection pass: the page turns its sweep off and "
+        "says what it is. A rejection pass walks a whole gallery and marks only the bad tiles, "
+        "so the sweep — accept the head's suggestion for every unlabeled row below here — is "
+        "the one gesture in this rig that could turn a thousand untouched tiles into a "
+        "thousand verdicts nobody cast. Everything else is a correction page's: same prefill, "
+        "same good→bad order, same store, same 1..4 scale, and a deliberate mark of any tier "
+        "is an ordinary human label",
+    )
+    building.add_argument(
         "--order-by",
         choices=list(sheets_module.ORDERINGS),
         default="rank",
@@ -492,6 +531,17 @@ def add_commands(subcommands) -> None:
         "head's expected tier over the whole scale (default), or `top`, its last cutpoint "
         "alone — which is what separates rows at the good end of a page, where the "
         "cutpoint below it is saturated",
+    )
+    building.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help=f"how many engines cut this sheet at once (default 1, this process). A cut is "
+        f"one render per unit and nothing else expensive, so a thousand-unit sheet is hours "
+        f"serial and about a third of that on the render pool. {sheet_workers()} is this "
+        f"machine's pool and the ceiling that matters: more than that at once, or any at "
+        f"normal priority, makes the desktop unusable while the build runs. The order, the "
+        f"unit ids and the picture names are the serial build's either way",
     )
     building.add_argument(
         "--out-dir",

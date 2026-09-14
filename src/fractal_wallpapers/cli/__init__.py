@@ -123,6 +123,7 @@ FAMILIES: tuple[str, ...] = (
     "curate_votes_commands",
     "curate_mine_commands",
     "curate_colors_commands",
+    "curate_veto_commands",
 )
 
 #: Where [`__getattr__`] looks, in order. The groups first, then the families,

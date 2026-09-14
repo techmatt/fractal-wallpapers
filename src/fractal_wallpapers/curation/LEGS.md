@@ -3279,8 +3279,12 @@ refuses a record with no `explained` block or one whose block does not name ever
 of the population — a rung recovered from the aggregate refusal columns would be a
 guess about which of several rules acted first.
 
-**Rung 0 is `solve.pool`'s own five exclusions**, decided on
-`mode_policy.routed_mode_of` and not the recipe's mode. Folding those into the
+**Rung 0 is five of `solve.pool`'s six exclusions**, decided on
+`mode_policy.routed_mode_of` and not the recipe's mode. The sixth is the **veto**
+and it is absent by construction: this population is the gallery-grade store's
+currently-resolved 4s and a veto is one of its currently-resolved 1s, so
+latest-wins makes the two disjoint — `label_fate._off_the_roster` carries the
+argument and is where it comes back if this population ever widens. Folding those into the
 coarse-bar count would say a bar refused a picture no bar ever read. It is **counted
 and not shown** on the page, Matt's call of 2026-09-08: no rule ever refused those
 rows, so there is no comparison to draw. **On the gallery-grade population it reads

@@ -88,9 +88,11 @@ These were decided once, at the first commit, because each is expensive to rever
   measurement is taken and says so in its report**: a solve is cheap to run again,
   and what a leftover record costs is misreading hazard, not bytes. **The keep list
   is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, which carries
-  its five entries with the reason for each written at the site. Everything else
+  its eight entries with the reason for each written at the site. Everything else
   goes unless Matt says otherwise. 24 off-list records were moved to
-  `scratch/retired_tentative/` on 2026-09-13 and the store now holds twelve.
+  `scratch/retired_tentative/` on 2026-09-13 and the store held twelve; it holds
+  **fifteen** on 2026-09-14, the three added since being `mine_night2_ckpt124`'s
+  before-and-after pair and `veto_model_ckpt124`'s veto-active solve.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
   `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple
@@ -189,19 +191,23 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,630 collected — 4,477 fast,
-153 slow — since `FIX_ckpt123_pooled_twins_degree2` added five fast tests on
-2026-09-13**, on a `.[dev,models]` install with a release engine built. **Both lanes
-were taken back to back on one tree by `PRECLOSEOUT_ckpt123_wallpapers`, and they
-agree at 4,630**: **fast 4,477 of 4,477 in 134.31 s (2:14)** with 153 deselected, and
-**slow 4,630 of 4,630 in 483.23 s (8:03)**. Both green, zero skips, zero failures.
-That closes the disagreement this paragraph carried since 2026-09-13's ingest. The two
-clocks sit ~9 s and ~12 s over `lane_speedup_ckpt122`'s 125.12 s and 471.66 s, which
-is the box rather than the tree — subagents were still finishing when the fast lane
-started, and the diff those lanes covered was four README files and no code.
+Both are measured, not estimated. The tree holds **4,666 collected — 4,513 fast,
+153 slow — since `veto_model_ckpt124` added 27 fast tests on 2026-09-14**, on a
+`.[dev,models]` install with a release engine built. **Both lanes were taken back to
+back on one idle tree by that prompt, and they agree at 4,666**: **fast 4,513 of
+4,513 in 125.23 s (2:05)** with 153 deselected, and **slow 4,666 of 4,666 in
+479.79 s (7:59)**. Both green, zero skips, zero failures.
 
-That pair is **34.3 s and 80.8 s faster** than the baseline taken on the same tree an
-hour before it, and **no guard was deleted or weakened** to get there: one production
+⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
+commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.
+That is what *take the pair whether or not the prompt wrote a test* is for, and the
+drift was caught by the two lanes meeting rather than by anybody noticing. Both of
+these clocks came in **under** that pair's 134.31 s and 483.23 s on 36 more tests,
+landing back on `lane_speedup_ckpt122`'s 125.12 s to a tenth — which settles that
+its ~9 s and ~12 s were the box and not the tree.
+
+`lane_speedup_ckpt122`'s own pair is **34.3 s and 80.8 s faster** than the baseline
+taken on the same tree an hour before it, and **no guard was deleted or weakened** to get there: one production
 derivation was memoized and sixteen guards that cost a second or more of real store
 work moved to the lane the marking rule already put them in. **A slow lane that
 absorbed sixteen guards and still fell** is the shape to expect from that trade.

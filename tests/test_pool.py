@@ -1,7 +1,7 @@
 """The pool: which ledger rows the gallery leg may seat at all, and the bound.
 
 Two things that are [`curation.solve`]'s and are not the choosing. The pool is the
-projection from a ledger row to a [`solve.Candidate`], and its five exclusions are
+projection from a ledger row to a [`solve.Candidate`], and its six exclusions are
 each a fact about the row rather than a quality bar — the bars are
 [`curation.headroom`]'s and they are the pool *definition*, one layer up. The bound
 is [`curation.rules.BOUND`], the sound lower bound the diversity rule prunes with,
@@ -80,7 +80,7 @@ def quiet(*_args, **_rest) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# The five exclusions.
+# The exclusions. The veto is the sixth and is `tests/test_veto.py`'s.
 # --------------------------------------------------------------------------- #
 def test_a_candidate_carries_the_recipes_own_settings_and_not_the_routed_modes():
     """The settings are a fact about how the picture was made.

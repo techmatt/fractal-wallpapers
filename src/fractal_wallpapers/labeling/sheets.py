@@ -106,7 +106,9 @@ from __future__ import annotations
 import json
 import random
 import shutil
+import threading
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -116,6 +118,22 @@ from fractal_wallpapers.paths import colormap_dir
 
 #: The schema every sheet manifest and row carries.
 SCHEMA = 1
+
+#: The lock every [`Source.notes`] counter is bumped under. **One lock for every
+#: source rather than one apiece**, deliberately: the counters are bumped a
+#: handful of times per unit against seconds of rendering, so contention is not a
+#: number anybody will ever measure, and a shared lock is one a new source cannot
+#: forget to make. `d[k] += 1` is three bytecodes and a parallel cut loses an
+#: increment between them — which would put a wrong `rendered` count on a
+#: manifest and nothing anywhere saying so.
+_NOTES_LOCK = threading.Lock()
+
+
+def _note(notes: dict, name: str, by: int = 1) -> None:
+    """Bump one of a source's `notes` counters, safely under a parallel cut."""
+    with _NOTES_LOCK:
+        notes[name] = notes.get(name, 0) + by
+
 
 #: The judge the location rig collects for.
 LOCATION_HEAD = "location"
@@ -371,6 +389,25 @@ class Source:
     #: knows — a head's decode, and an incumbent verdict — are the only two a
     #: quality sheet has; a source whose suggestion is neither says so here.
     prefill_note: str = ""
+    #: Whether the page offers *accept the suggestion for every unlabeled row
+    #: below here*. `True` is the correction sheet this rig was built for, where
+    #: the sweep is the point: the labeler spends the hour on the rows the head
+    #: got wrong and accepts the rest in one gesture.
+    #:
+    #: **`False` is for a sheet whose population is not being reviewed** — a
+    #: rejection pass, where a person walks a thousand tiles marking only the bad
+    #: ones and leaves every other tile untouched. On such a page the sweep is not
+    #: a convenience, it is the one mechanism in this rig that can turn silence
+    #: into a verdict: a single click would write the head's own decode onto every
+    #: unmarked row, which on a gallery sheet is some nine hundred manufactured
+    #: positives, indistinguishable in the store from labels a person cast. Every
+    #: other path already refuses — the page exports only what was acted on and
+    #: `intake.read_export` drops a null — so this flag closes the last one.
+    #:
+    #: It is a property of the SOURCE and not a flag on the build, for
+    #: [`prefill_note`]'s reason: what a page offers has to be decided by whoever
+    #: knows what the page is for, and a build-time flag is one a caller forgets.
+    sweep: bool = True
 
 
 @dataclass
@@ -861,10 +898,10 @@ def finished_source(
             if held is not None:
                 picture.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(held, picture)
-                notes["reused_from_cache"] += 1
+                _note(notes, "reused_from_cache")
         if not picture.is_file():
             render(join, picture, Path(leveled) if leveled else None)
-            notes["rendered"] += 1
+            _note(notes, "rendered")
         facts = [
             f"{join['partition']} · {family_line(unit['family'])}",
             viewport_line(unit["viewport"], unit["maxiter"]),
@@ -1065,11 +1102,11 @@ def attribute_source(
                 if cached is not None:
                     picture.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(cached, picture)
-                    notes["reused_from_cache"] += 1
+                    _note(notes, "reused_from_cache")
                     break
         if not picture.is_file():
             render(join, picture, Path(leveled) if leveled else None)
-            notes["rendered"] += 1
+            _note(notes, "rendered")
         facts = [
             f"{join['partition']} · {family_line(unit['family'])}",
             viewport_line(unit["viewport"], unit["maxiter"]),
@@ -1314,12 +1351,12 @@ def comparison_source(
             picture = directory / side / f"{picture_name}.jpg"
             if not picture.is_file():
                 render(held_join, picture, band)
-                notes["rendered"] += 1
+                _note(notes, "rendered")
             halves[side] = picture
         tile = directory / "full" / f"{picture_name}.jpg"
         if not tile.is_file():
             composite(halves["left"], halves["right"], tile)
-            notes["composited"] += 1
+            _note(notes, "composited")
         return {
             "join": join,
             "section": unit.get("section") or "",
@@ -1451,6 +1488,20 @@ GRADE_CORRECTION_NOTE = (
     "row it could read."
 )
 
+#: The same field on a **rejection** page. It is a correction page in every
+#: mechanical respect — same prefill, same order, same store — and what it says
+#: instead is what the labeler is being asked to do, because that is the whole
+#: difference and the page is the only place it is written down.
+GRADE_REJECTION_NOTE = (
+    "this is a REJECTION PASS. Mark a tile only if it is bad — a 1, "
+    "'genuinely surprised this cleared the bar'. A tile you leave alone is NOT a label and "
+    "nothing is written for it, which is why this page has no sweep: there is no gesture "
+    "here that turns an unmarked tile into a verdict. The suggestion under each card is the "
+    "FINE head's own decode of this picture's candidate, read at the ledger's 640x360 "
+    "candidate geometry rather than on the larger picture in front of you, and the page is "
+    "ordered good→bad by it — so the tiles most likely to be worth rejecting are at the end."
+)
+
 #: Why a correction page here may carry prefills on some rows and not others —
 #: [`stated_suggestions`]'s `gaps` argument, which refuses the mix without one.
 GRADE_GAP_REASON = (
@@ -1467,6 +1518,7 @@ def gallery_grade_source(
     scores=None,
     reuse_cache: bool = False,
     prefilled: bool = False,
+    rejection: bool = False,
 ) -> Source:
     """The source that asks how good a picture is GIVEN that it cleared the bar.
 
@@ -1535,7 +1587,38 @@ def gallery_grade_source(
     the map it was recorded against. This sheet re-serves the row a seating pass
     reached, and deriving either half would serve a picture the pool does not
     hold.
+
+    ## `rejection` is a correction page whose population is NOT being reviewed
+
+    A rejection pass walks a whole gallery and marks only the bad tiles. The
+    prefill, the order, the geometry and the store are a correction page's —
+    `rejection` implies `prefilled` and refuses without it — and the two things
+    that change are the two that have to:
+
+    * **No sweep.** [`Source.sweep`] is `False`, and that is the point of the
+      mode rather than a decoration. The sweep is the one gesture in this rig
+      that turns an untouched row into a verdict, and on a thousand-tile gallery
+      sheet one click of it would write the fine head's own decode onto every
+      unmarked row — some nine hundred manufactured positives, sitting in the
+      store as `origin: human` and indistinguishable from labels a person cast.
+      Every other path already refuses: the page exports only what was acted on,
+      and [`labeling.intake.read_export`] drops a null. This closes the last one.
+    * **The page says what it is**, in [`GRADE_REJECTION_NOTE`]. A page that
+      looked exactly like a correction page and was not is a page a labeler
+      sweeps out of habit.
+
+    Nothing else moves. A mark is an ordinary human [`labeling.gallery_grade`]
+    row on the ordinary path, the full 1..4 scale stays castable — a deliberate
+    2 is a real verdict and the store wants it — and what is forbidden is only
+    the gesture that casts for rows nobody looked at.
     """
+    if rejection and not prefilled:
+        raise SheetError(
+            "a rejection pass is a correction page whose population is not being reviewed, so "
+            "it is prefilled and score-ordered like one. A blind rejection sheet would ask a "
+            "person to walk a thousand shuffled tiles with nothing saying which end is worth "
+            "their attention."
+        )
     from fractal_wallpapers.labeling import gallery_grade
     from fractal_wallpapers.supply.partitions import partition_of_family
 
@@ -1580,11 +1663,11 @@ def gallery_grade_source(
                 if cached is not None:
                     picture.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(cached, picture)
-                    notes["reused_from_cache"] += 1
+                    _note(notes, "reused_from_cache")
                     break
         if not picture.is_file():
             render(join, picture, Path(leveled) if leveled else None)
-            notes["rendered"] += 1
+            _note(notes, "rendered")
         return {
             "join": join,
             "section": unit.get("section") or "",
@@ -1721,7 +1804,15 @@ def gallery_grade_source(
         # store's own head, read at a geometry that is not the page's — and the
         # page's other default, "the verdict this row already carries", is a
         # sentence about an incumbent label nobody here has cast.
-        prefill_note=GRADE_CORRECTION_NOTE if prefilled else GRADE_BLIND_NOTE,
+        prefill_note=(
+            GRADE_REJECTION_NOTE
+            if rejection
+            else (GRADE_CORRECTION_NOTE if prefilled else GRADE_BLIND_NOTE)
+        ),
+        # The rejection pass is the one sheet this project cuts whose population
+        # is not being reviewed — see the docstring. Everywhere else the sweep is
+        # what makes a labeling hour worth more than a blind one.
+        sweep=not rejection,
         render_record={
             "resolution": list(resolution),
             "supersample": supersample,
@@ -1876,9 +1967,31 @@ def build(
     batch: str,
     seed: int = 0,
     title: str = "",
+    workers: int = 1,
     log=print,
 ) -> Sheet:
-    """Build a sheet into `directory`. Returns what was written."""
+    """Build a sheet into `directory`. Returns what was written.
+
+    ## `workers` is engines, and the rule about how many is not this module's
+
+    A cut is one engine render per unit and nothing else expensive, so a sheet of
+    a thousand units is a thousand serial renders — hours — for a job the box can
+    do three at a time. Above 1 the cuts run in a [`ThreadPoolExecutor`]: threads
+    and not processes, because the work is `subprocess.run` waiting on
+    `fractal-engine.exe` and a process pool would pay a fork to do the waiting.
+
+    **Order is preserved and the ids do not move.** `pool.map` yields in argument
+    order, so a row's position in `rows` is its position in `units` exactly as the
+    serial loop gave it, and `cut_name(index)` is computed from the index before
+    anything runs — the picture on disk is named for the unit, not for whichever
+    worker got to it first. A resumed build finds the same names.
+
+    ⚠ **How many is a rule about this machine and it belongs to whoever calls
+    this.** `curation.release.DEFAULT_WORKERS` is three, and more than three
+    engines at once makes the desktop unusable while a leg runs. This module
+    renders whatever it is told and states no default above 1, because a sheet is
+    also cut on CI and in tests where the rule is a different one.
+    """
     if not units:
         raise SheetError("no units: there is nothing to judge")
     directory = Path(directory)
@@ -1904,8 +2017,9 @@ def build(
                 f"judge. The verdicts are the rule's and the population is the caller's."
             )
 
-    rows = []
-    for index, unit in enumerate(units):
+    done = 0
+
+    def one(index: int, unit: dict) -> dict:
         # `_index` and `_of` are how a source that draws per-unit resources — a
         # seeded palette neighbourhood — knows where in the cut it is. They are
         # read by `cut` and never reach a row.
@@ -1921,9 +2035,25 @@ def build(
                 f"unit {index} names no batch and the sheet names none either; every row "
                 f"lands in a registered batch or its population is unanswerable"
             )
-        rows.append(row)
-        if (index + 1) % 10 == 0 or index + 1 == len(units):
-            log(f"cut {index + 1}/{len(units)}")
+        # The progress line counts CUTS FINISHED and not positions reached, which
+        # is the only thing it can honestly say once the cuts run out of order.
+        nonlocal done
+        with _NOTES_LOCK:
+            done += 1
+            reached = done
+        if reached % 10 == 0 or reached == len(units):
+            log(f"cut {reached}/{len(units)}")
+        return row
+
+    workers = max(1, int(workers))
+    if workers == 1:
+        rows = [one(index, unit) for index, unit in enumerate(units)]
+    else:
+        log(f"cutting {len(units)} unit(s) on {workers} worker(s)")
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            # `map` yields in ARGUMENT order however the workers finish, so the
+            # row order and every `u0001` derived from it are the serial loop's.
+            rows = list(pool.map(one, range(len(units)), units))
 
     for record in excluded:
         # The same fallback the served rows take, and for the same reason: a
@@ -1990,6 +2120,13 @@ def build(
         "suggested_by": (
             "plan" if any(unit.get("suggestion") is not None for unit in units) else scorer
         ),
+        # Whether the page offers its sweep. Written on every manifest and not
+        # only where it is off, for [`Source.sweep`]'s reason: a sheet built for a
+        # rejection pass and a sheet built before the flag existed are different
+        # sheets, and a key that appears only sometimes is the one a reader misses.
+        # The page defaults an ABSENT key to true, which is what every sheet on
+        # disk before 2026-09-14 means.
+        "sweep": bool(source.sweep),
         "units": len(written),
         "tiers": list(source.tiers),
         "rubric": source.rubric,
