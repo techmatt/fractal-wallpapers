@@ -989,6 +989,57 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
     )
 
 
+def _seat_sheet_of_records(args: argparse.Namespace) -> int:
+    """The other axis: one rule, two POOLS — a run's own before and after.
+
+    **It holds no pool and solves nothing.** Both seatings already exist as
+    recorded galleries, so this reads two stamps and diffs them, which is what
+    makes it answerable in seconds after a night rather than being a second pair
+    of solves. The `--before`/`--after` pair is therefore NOT a variation on the
+    two-key sheet above; it is the same page over a different question, and
+    `seat_sheet.RUNS` is the wording that says so on the page itself.
+
+    ⚠ **The two records must be the same n and the same rule** or the diff is
+    reading two disagreements at once. Nothing here can check the rule — a record
+    carries its config and not its ranking — so the seat counts are compared and
+    a mismatch is refused rather than laid out.
+    """
+    from fractal_wallpapers.curation import seat_sheet, tentative
+
+    if not (args.before and args.after):
+        print("--before and --after are one pair; name both stamps")
+        return 1
+    try:
+        before = seat_sheet.of_stamp(args.before)
+        after = seat_sheet.of_stamp(args.after)
+    except tentative.TentativeRefused as refusal:
+        print(refusal)
+        return 1
+    if len(before["seated"]) != len(after["seated"]):
+        print(
+            f"--before seats {len(before['seated']):,} and --after seats "
+            f"{len(after['seated']):,}. A diff of two gallery SIZES is not a diff of "
+            f"what the run moved; solve both at one n"
+        )
+        return 1
+
+    diff = seat_sheet.difference(before, after)
+    # `rank_key` is not on a recorded row and this page does not pretend it is:
+    # the caption reads a dash there. `fine_score` is already mapped by `of_stamp`.
+    try:
+        page, record = seat_sheet.build(args.sheet_name, diff, cap=args.cap, axis=seat_sheet.RUNS)
+    except seat_sheet.SeatSheetError as nothing:
+        print(nothing)
+        return 0
+    record = {**record, "before_stamp": str(args.before), "after_stamp": str(args.after)}
+    seat_sheet.record_path(args.sheet_name).write_text(
+        json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(json.dumps(record, indent=1))
+    print(display_path(page))
+    return 0
+
+
 def seat_sheet_cap() -> int:
     """The sheet's cap, read off the module rather than restated in a help string."""
     from fractal_wallpapers.curation import seat_sheet
@@ -1000,6 +1051,9 @@ def curate_seat_sheet(args: argparse.Namespace) -> int:
     """Solve one pool twice and lay out only the seats the two keys disagree about."""
     from fractal_wallpapers.curation import seat_sheet, solve
     from fractal_wallpapers.models import gallery_grade_train
+
+    if args.before or args.after:
+        return _seat_sheet_of_records(args)
 
     # ONE pool, solved twice. Two pools would be two populations and the diff
     # would carry whatever moved between them as though the key had done it.
@@ -1597,6 +1651,21 @@ def add_steps(steps) -> None:
     )
     seating_sheet.add_argument(
         "--n", type=int, default=1000, help="gallery size both solves run at (default 1000)"
+    )
+    seating_sheet.add_argument(
+        "--before",
+        metavar="STAMP",
+        help="diff two RECORDED galleries instead of solving one pool twice: the seating "
+        "before something and the seating after it, which is what a mining night's own "
+        "before and after are. Holds no pool and solves nothing — both seatings already "
+        "exist — so it answers in seconds. Pair it with `--after`; `--n` is then ignored "
+        "and the two records must already be the same size",
+    )
+    seating_sheet.add_argument(
+        "--after",
+        metavar="STAMP",
+        help="the second half of `--before`. The page marks a seat arriving or departing "
+        "relative to this one",
     )
     seating_sheet.add_argument(
         "--cap",

@@ -76,9 +76,52 @@ def record_path(name: str) -> Path:
     return root() / str(name) / "diff.json"
 
 
+#: How a page describes the two seatings it is laying out. **The diff below is
+#: axis-agnostic and always was** — [`difference`], [`sampled`] and [`_card`] take
+#: two seatings and never ask what made them differ — so the only thing that bound
+#: this module to one question was the wording. An axis is that wording, and
+#: nothing else.
+#:
+#: [`RULES`] is the original: one pool, two ranking rules. [`RUNS`] is the other
+#: question a mining night asks, added 2026-09-14 — one rule, two POOLS, which is
+#: what a night's own before and after are.
+RULES = {
+    "title": "Seats the cascade moves",
+    "before": "under the shipped rank key",
+    "after": "under the cascade",
+    "same_place": "a place both keys seat",
+    "moved_place": "the gallery going somewhere else",
+}
+RUNS = {
+    "title": "Seats the run moves",
+    "before": "before the run",
+    "after": "after it",
+    "same_place": "a place both solves seat",
+    "moved_place": "the gallery going somewhere else",
+}
+
+
 def seats_of(record: dict) -> dict:
     """`{candidate key: the seated row}` out of one solve record."""
     return {str(row["key"]): row for row in (record.get("seated") or [])}
+
+
+def of_stamp(stamp: str) -> dict:
+    """One RECORDED gallery in the shape [`difference`] reads.
+
+    A tentative record's rows and a solve's `seated` rows are the same seats
+    spelled for different readers, and the one field this diff wants that the
+    recorded shape does not carry under that name is `fine_score` — which is
+    `p_ge4` on a recorded row, the fine head's own column and the thing the
+    cascade orders on. Mapped here rather than at the two call sites, so a page
+    built from records sorts and samples exactly as one built from solves does.
+    """
+    from fractal_wallpapers.curation import tentative
+
+    rows = tentative.read_rows(str(stamp))
+    return {
+        "seated": [{**row, "fine_score": row.get("fine_score", row.get("p_ge4"))} for row in rows]
+    }
 
 
 def difference(incumbent: dict, candidate: dict) -> dict:
@@ -183,7 +226,7 @@ def _number(value) -> str:
 
 
 PAGE = """<!doctype html>
-<meta charset="utf-8"><title>seats the cascade moves &mdash; {name}</title>
+<meta charset="utf-8"><title>{title} &mdash; {name}</title>
 <style>{style}
  body {{ font: 13px/1.45 system-ui, sans-serif; margin: 1.5rem;
          background: var(--ground); color: var(--ink); }}
@@ -207,14 +250,19 @@ PAGE = """<!doctype html>
  .place.both {{ color: var(--warn); }}
  .place.one {{ color: #7fa8d8; }}
 </style>
-<h1>Seats the cascade moves &mdash; {name}</h1>
+<h1>{title} &mdash; {name}</h1>
 <p class="lede">{lede}</p>
 <div class="grid">{cards}</div>
 """
 
 
-def build(name: str, diff: dict, cap: int = CAP, log=print) -> tuple[Path, dict]:
-    """Write the page and its readout. Returns `(page, record)`."""
+def build(name: str, diff: dict, cap: int = CAP, axis: dict | None = None, log=print) -> tuple:
+    """Write the page and its readout. Returns `(page, record)`.
+
+    `axis` is [`RULES`] or [`RUNS`] — the wording, and the only thing about this
+    page that knows which question produced the two seatings.
+    """
+    axis = dict(axis or RULES)
     rows = [{**row, "moved": "arriving"} for row in diff["arriving"]] + [
         {**row, "moved": "departing"} for row in diff["departing"]
     ]
@@ -226,13 +274,13 @@ def build(name: str, diff: dict, cap: int = CAP, log=print) -> tuple[Path, dict]
     shown, sampling = sampled(rows, cap)
     places = diff.get("places") or {}
     lede = (
-        f"<b>{diff['before']}</b> seats under the shipped rank key, <b>{diff['after']}</b> under "
-        f"the cascade, <b>{diff['kept']}</b> of them the same candidate. "
+        f"<b>{diff['before']}</b> seats {axis['before']}, <b>{diff['after']}</b> "
+        f"{axis['after']}, <b>{diff['kept']}</b> of them the same candidate. "
         f"<b>{len(diff['arriving'])}</b> arrive and <b>{len(diff['departing'])}</b> depart"
         + (
-            f", of which <b>{places['changed_at_a_shared_place']}</b> sit at a place both keys "
-            f"seat and <b>{places['changed_because_the_place_moved']}</b> are the gallery going "
-            f"somewhere else ({places['shared']} places shared)"
+            f", of which <b>{places['changed_at_a_shared_place']}</b> sit at "
+            f"{axis['same_place']} and <b>{places['changed_because_the_place_moved']}</b> are "
+            f"{axis['moved_place']} ({places['shared']} places shared)"
             if places
             else ""
         )
@@ -242,7 +290,11 @@ def build(name: str, diff: dict, cap: int = CAP, log=print) -> tuple[Path, dict]
         "candidates &mdash; nothing was re-rendered, and this page ingests nowhere."
     )
     page = PAGE.format(
-        style=page_module.STYLE, name=name, lede=lede, cards="".join(_card(row) for row in shown)
+        style=page_module.STYLE,
+        name=name,
+        title=axis["title"],
+        lede=lede,
+        cards="".join(_card(row) for row in shown),
     )
     where = page_path(name)
     where.parent.mkdir(parents=True, exist_ok=True)

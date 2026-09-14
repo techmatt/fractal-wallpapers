@@ -269,3 +269,59 @@ def test_over_the_cap_the_sample_spans_the_range_rather_than_taking_the_top() ->
 
 def test_the_cap_is_the_sheet_s_own_constant_and_the_page_says_the_true_count() -> None:
     assert seat_sheet.CAP == 150
+
+
+# --------------------------------------------------------------------------- #
+# The other axis: one rule, two pools — a run's own before and after.
+# --------------------------------------------------------------------------- #
+def test_a_recorded_gallery_reads_into_the_diff_with_the_fine_column_mapped(
+    tmp_path, monkeypatch
+) -> None:
+    """★ The diff was always axis-agnostic; what was missing was a way in.
+
+    A recorded row calls the fine head's column `p_ge4` and a solve's `seated`
+    row calls it `fine_score`, and `sampled` orders on the latter — so a page
+    built from records would have sorted every card as 0.0 and sampled the range
+    at random. `of_stamp` maps it, and this is the guard on that one line.
+    """
+    from fractal_wallpapers.curation import tentative
+
+    rows = [
+        {"key": "a", "p_ge4": 0.9, "location": "p1"},
+        {"key": "b", "p_ge4": 0.4, "location": "p2"},
+    ]
+    monkeypatch.setattr(tentative, "read_rows", lambda stamp: rows)
+
+    held = seat_sheet.of_stamp("20260101T000000Z")
+
+    assert [row["fine_score"] for row in held["seated"]] == [0.9, 0.4]
+    assert [row["p_ge4"] for row in held["seated"]] == [0.9, 0.4], "the original column stays"
+
+
+def test_the_axis_is_the_wording_and_the_diff_never_asks_which_question() -> None:
+    """`RULES` and `RUNS` differ in prose and in nothing else, which is the claim
+    that made the second axis a wording change rather than a second module."""
+    assert set(seat_sheet.RULES) == set(seat_sheet.RUNS)
+    assert seat_sheet.RULES != seat_sheet.RUNS
+    assert all(isinstance(value, str) for value in seat_sheet.RUNS.values())
+
+
+def test_a_runs_page_says_before_and_after_where_a_rules_page_says_the_two_keys(
+    tmp_path, monkeypatch
+) -> None:
+    """The page is the only thing that knows which question produced the diff, so
+    a sheet built on the wrong axis would read as a claim about the rank key when
+    it is a claim about a night's mining."""
+    monkeypatch.setattr(seat_sheet, "root", lambda: tmp_path)
+    diff = seat_sheet.difference(solved(["a", "b"]), solved(["b", "c"]))
+
+    page, _record = seat_sheet.build("runs", diff, axis=seat_sheet.RUNS, log=quiet)
+    body = page.read_text(encoding="utf-8")
+    assert "Seats the run moves" in body
+    assert "before the run" in body
+    assert "under the cascade" not in body
+
+    page, _record = seat_sheet.build("rules", diff, log=quiet)
+    body = page.read_text(encoding="utf-8")
+    assert "Seats the cascade moves" in body, "the default axis is unchanged"
+    assert "under the shipped rank key" in body
