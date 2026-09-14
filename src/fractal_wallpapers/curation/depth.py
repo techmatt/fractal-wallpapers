@@ -1110,7 +1110,14 @@ def spread_over_partitions(banded: dict, places: int, weights: dict | None = Non
     return dict(out)
 
 
-def proven_places(best: dict, places: dict, seed: int, count: int, bar: float = SEATING_BAR):
+def proven_places(
+    best: dict,
+    places: dict,
+    seed: int,
+    count: int,
+    bar: float = SEATING_BAR,
+    admitted: set | None = None,
+):
     """`count` locations that already hold a candidate over `bar`, spread over partitions.
 
     The [`FLOOR`] draw's population. A mode short of seats is short of **good**
@@ -1121,10 +1128,26 @@ def proven_places(best: dict, places: dict, seed: int, count: int, bar: float = 
     place is held at the best evidence available.
 
     `places` is `world["by_key"]`, for [`near_places`]'s reason.
+
+    **`admitted` is the bar as a SET beside the number, and it is the whole of
+    what a manifest may add.** A key in it is proven by evidence this function
+    cannot see — a human q3/q4 verdict in one of the two finished stores, which
+    is the best evidence the project holds about a place and is not a reading of
+    `p_ge4` at all — so it is drawn whatever its best field candidate reads.
+    Without it the bar was a number only, and a manifest could therefore never do
+    anything but *remove* places from the above-bar population: see
+    `LEGS_decisions.md`'s *`--floor-places` narrows the population and the
+    SEATING BAR still cuts it*, which measured 219 such places untried in the
+    angle modes and unreachable by any floor leg. Admission does not lower the
+    bar for anything else — an admitted key still has to be an opened, drawable
+    location in `places`, and every other draw reads the number as before.
     """
+    admitted = set() if admitted is None else {str(one) for one in admitted}
     pools: dict = {}
     for key, held in best.items():
-        if float(held.get("best", -1.0)) < float(bar) or key not in places:
+        if key not in places:
+            continue
+        if float(held.get("best", -1.0)) < float(bar) and key not in admitted:
             continue
         pools.setdefault(str(held.get("partition")), []).append({**held, "key": key})
     pools = {name: sorted(rows, key=lambda row: str(row["key"])) for name, rows in pools.items()}
@@ -2009,13 +2032,31 @@ def build_plan(
     # is named rather than dropped in silence: it means the place was never opened,
     # or is under the junk floor now, and a leg that quietly planned fewer places
     # than it was given would report a rate over a population nobody chose.
+    # **Naming a place IS the evidence claim, so the manifest is also the bar's
+    # set.** `proven_places` reads `admitted` beside `SEATING_BAR`; without it a
+    # manifest could only ever remove places from the above-bar population, and
+    # the best-evidenced places in the project — the ones carrying a human q3/q4
+    # verdict in a finished store — were unreachable by a floor leg whenever
+    # their best field candidate read under the bar. `LEGS_decisions.md`'s
+    # *`--floor-places` narrows the population and the SEATING BAR still cuts
+    # it* is the measurement. The under-bar count is logged rather than folded
+    # in silently: it is the difference between this leg and every one before it.
+    floor_admitted: set = set()
     if floor_places:
         wanted = {str(one) for one in floor_places}
         absent = wanted - set(floor_pool)
         floor_pool = {key: held for key, held in floor_pool.items() if key in wanted}
+        floor_admitted = set(floor_pool)
+        under = sum(
+            1 for held in floor_pool.values() if float(held.get("best", -1.0)) < float(SEATING_BAR)
+        )
         log(
             f"[depth] --floor-places: {len(floor_pool):,} of {len(wanted):,} named place(s) "
             f"are opened and drawable"
+        )
+        log(
+            f"[depth] {under:,} named place(s) sit under SEATING_BAR {SEATING_BAR:g} and are "
+            f"admitted by the manifest"
         )
         if absent:
             log(f"[depth] {len(absent):,} named place(s) are not in the opened pool: skipped")
@@ -2033,7 +2074,13 @@ def build_plan(
             f"{sorted(floor_untried)}"
         )
     proven = (
-        proven_places(floor_pool, world["by_key"], seed, max(1, want[FLOOR] // per_place))
+        proven_places(
+            floor_pool,
+            world["by_key"],
+            seed,
+            max(1, want[FLOOR] // per_place),
+            admitted=floor_admitted,
+        )
         if want.get(FLOOR)
         else []
     )

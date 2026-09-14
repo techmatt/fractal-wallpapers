@@ -807,20 +807,50 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "merge": ("--name", "--dry-run"),
         "read": ("--name",),
+        # The draw-shaping half — `--floor-places` through `--partition-weights` —
+        # arrived 2026-09-13. `curate rotate mine` IS a depth draw whose shots are
+        # best-of-five, so every draw `curate depth run` can aim it can aim too;
+        # before that the rotation search was reachable only on the draws nobody
+        # narrows, and a leg wanting rotations at a named population had to give up
+        # one or the other. They are the same flags with the same readers.
+        # ⚠ The order is the ARGUMENT GROUPS' order, not the order the calls appear
+        # in: `mine` is the only one of the five verbs past `test_cli.WALL` and so
+        # the only one that names its seams, and argparse emits a grouped parser's
+        # actions group by group. Adding a flag here means adding it to the group
+        # its job belongs to, and the position it lands in follows from that.
         "mine": (
+            # the leg and its clock
             "--name",
             "--budget",
             "--plan-budget",
             "--from-block",
             "--rate",
-            "--width",
-            "--rotations",
             "--seed",
-            "--modes",
-            "--shares",
             "--chunk",
             "--workers",
             "--device",
+            # the draws and their shares
+            "--shares",
+            "--bands",
+            "--top-bands",
+            "--band-weights",
+            "--partition-weights",
+            # how wide each draw goes
+            "--width",
+            "--rotations",
+            "--floor-width",
+            # the modes and places the draws work over
+            "--modes",
+            "--floor-places",
+            "--near-places",
+            "--floor-untried",
+            "--floor-modes",
+            "--floor-seats",
+            # the palettes the draws may offer
+            "--cell",
+            "--draw-cells",
+            "--draw-cutoff",
+            "--draw-maps",
         ),
     },
     "label-migration": {

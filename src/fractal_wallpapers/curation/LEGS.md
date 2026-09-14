@@ -2751,6 +2751,24 @@ drawn phases and both columns.
 roster — which is the three shareable modes and not the policy's twelve — and lost
 229 of 726 rows at the merge. `--modes` defaults to the policy here for that reason.
 
+**It aims like `curate depth run` does, since 2026-09-13.** This leg carries the
+whole draw-shaping surface — `--floor-places`, `--floor-untried`, `--floor-modes`,
+`--floor-width`, `--floor-seats`, `--near-places`, `--cell`, `--draw-cells`,
+`--draw-cutoff`, `--draw-maps`, `--bands`, `--top-bands`, `--band-weights`,
+`--partition-weights` — with the same readers and the same meanings. Before that it
+took `--modes`, `--shares` and `--width` alone, which meant the rotation search was
+reachable only on the draws nobody narrows: a leg wanting rotations **and** a named
+floor population, or rotations **and** an aimed cell, could have either and not
+both. `mine_night_ckpt124` is where that bit, on two of its five units at once.
+
+⚠ **Every one of those flags is part of the plan's identity**, so the resume rules
+below govern them exactly as they govern `--rate`. A leg drawn over a different
+manifest is a different plan and `--from-block` across the two would skip blocks the
+second plan never built. They ride on the record as `draw_identity`, written only
+when the leg narrowed something — a leg that narrowed nothing produces the identity
+it produced before the flags existed, which is what keeps every record written
+before this date resumable.
+
 #### A clock-bound leg is resumed by INDEX, never by re-drawing
 
 `--budget` sizes the plan *and* is the deadline, so a second leg handed only the

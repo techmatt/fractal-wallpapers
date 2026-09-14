@@ -1663,6 +1663,16 @@ def plan_identity(
     workers: int,
     roster,
     shares: dict,
+    #: The draw-shaping arguments, as one dict — the manifests, the cell filters,
+    #: the band counts and the weights that arrived 2026-09-13. One argument and
+    #: not fifteen so that a leg narrowing nothing produces the **same identity it
+    #: always did**: an empty or all-`None` dict contributes an empty tuple, so
+    #: every record written before this existed still compares equal to a fresh
+    #: leg that narrowed nothing, and no legitimate resume is refused by the
+    #: arrival of the flags. A leg that *did* narrow is a different plan and says
+    #: so here, which is the point — resuming across two different manifests would
+    #: skip `from_block` of blocks the second plan never built.
+    draw: dict | None = None,
 ) -> tuple:
     """What has to agree for two mine legs to be halves of one block plan.
 
@@ -1680,6 +1690,14 @@ def plan_identity(
     resume over an arm neither leg spent a second on.
     """
     spent = {arm: float(value) for arm, value in dict(shares).items() if float(value)}
+    # **Unsaid is not part of the identity, for the zero share's own reason one
+    # paragraph up.** A narrowing nobody asked for has to read identically to the
+    # flag not existing, or every record written before 2026-09-13 stops matching.
+    shaped = {
+        name: value
+        for name, value in dict(draw or {}).items()
+        if value is not None and value != () and value != [] and value != {}
+    }
     return (
         int(seed),
         float(rate),
@@ -1688,6 +1706,12 @@ def plan_identity(
         int(workers),
         tuple(str(one) for one in roster),
         tuple(sorted(spent.items())),
+        tuple(
+            sorted(
+                (name, json.dumps(value, sort_keys=True, default=str))
+                for name, value in shaped.items()
+            )
+        ),
     )
 
 
@@ -1707,6 +1731,9 @@ def identity_of(record: dict) -> tuple:
         workers=int(plan.get("workers_sized_for") or 0),
         roster=record.get("roster") or (),
         shares=record.get("shares") or {},
+        # Absent on every record written before 2026-09-13 and on every leg since
+        # that narrowed nothing, and those two read alike by construction.
+        draw=record.get("draw_identity") or {},
     )
 
 
@@ -1941,6 +1968,37 @@ def mine(
     rotations: int = MINE_ROTATIONS,
     roster: list | None = None,
     shares: dict | None = None,
+    #: **The draw-shaping arguments [`depth.build_plan`] takes, passed straight
+    #: through.** They were absent until 2026-09-13 and their absence was not a
+    #: decision: this leg is *a standard depth draw whose shots are best-of-five*,
+    #: so any draw `curate depth run` can aim, this one has to be able to aim, or
+    #: the rotation search is available only on the draws nobody narrows. What
+    #: forced it: the floor draw's population is named by a manifest
+    #: (`--floor-places`, which is also the seating bar's SET — see
+    #: [`depth.proven_places`]) and the conditioned and filtered draws are aimed by
+    #: cell, and a night wanting rotations at *those* had to choose between the
+    #: search and the aim. Every one of them joins `identity` below, because a leg
+    #: drawn over a different manifest or a different cell filter is a different
+    #: plan and a resume across the two would rebuild blocks that never existed.
+    #: `bands` and `floor_width` are `None` for *unsaid* rather than carrying
+    #: `depth`'s constants as defaults: this module imports `depth` inside the
+    #: functions that use it — the two are mutually reachable — so a default
+    #: evaluated at `def` time would be an import-time cycle. `build_plan` owns
+    #: both numbers and is handed them only when a caller said one.
+    cell: str | list | tuple | None = None,
+    bands: int | None = None,
+    top_bands: int | None = None,
+    band_weights: dict | None = None,
+    partition_weights: dict | None = None,
+    draw_maps: list | None = None,
+    draw_cells: list | None = None,
+    draw_cutoff: float | None = None,
+    floor_modes: list | None = None,
+    floor_untried: list | None = None,
+    floor_places: list | None = None,
+    near_named: list | None = None,
+    floor_seats: int = 10,
+    floor_width: int | None = None,
     #: The budget the PLAN is sized off, where that is not the clock this leg has.
     #: Unsaid it is `budget`, which is every first leg. A **resumed** leg says both:
     #: the plan budget rebuilds the same block plan and `budget` is what is left to
@@ -2060,6 +2118,37 @@ def mine(
     # the last producing leg zeroed. `palette_variant_mine_ckpt120`'s shape.
     shares = dict(shares) if shares else dict(MINE_SHARES)
     sized_for = float(budget if plan_budget is None else plan_budget)
+    # **Every draw-shaping argument is in the identity, not only the ones that
+    # were here first.** `plan_identity` is what `refuse_unreachable_resume` and
+    # `refuse_moved_pool` compare a resume against, so an argument that shapes the
+    # plan and sits outside this dict is one a resumed leg would silently ignore —
+    # it would rebuild a block plan from different places and skip `from_block` of
+    # somebody else's blocks. Sorted where the value is a list so that a manifest
+    # read in a different order is still the same plan.
+    # **The draw-shaping arguments, held apart and carried onto the record.** They
+    # go into `plan_identity` under one `draw` key rather than as fifteen more
+    # positions, so a leg that narrowed nothing keeps the identity it had before
+    # these flags existed — see `plan_identity`. Lists are sorted so that a
+    # manifest read in a different order is still the same plan, and
+    # `floor_seats`/`floor_width` are left out when they are the default for the
+    # same reason a zero share is left out.
+    shaping = {
+        "cell": cell,
+        "bands": bands,
+        "top_bands": top_bands,
+        "band_weights": band_weights,
+        "partition_weights": partition_weights,
+        "draw_maps": sorted(draw_maps) if draw_maps else None,
+        "draw_cells": sorted(draw_cells) if draw_cells else None,
+        "draw_cutoff": draw_cutoff,
+        "floor_modes": list(floor_modes) if floor_modes else None,
+        "floor_untried": sorted(floor_untried) if floor_untried else None,
+        "floor_places": sorted(floor_places) if floor_places else None,
+        "near_named": sorted(near_named) if near_named else None,
+        "floor_seats": None if int(floor_seats) == 10 else int(floor_seats),
+        "floor_width": floor_width,
+    }
+    shaping = {name: value for name, value in shaping.items() if value is not None}
     identity = {
         "seed": int(seed),
         "rate": float(rate),
@@ -2068,6 +2157,7 @@ def mine(
         "workers": int(workers),
         "roster": roster,
         "shares": shares,
+        "draw": shaping,
     }
     refuse_unreachable_resume(int(from_block), log=log, **identity)
     # **The legs whose FLAGS match, held for the two pool checks below.** Read
@@ -2092,7 +2182,23 @@ def mine(
         roster=roster,
         shares=shares,
         workers=int(workers),
+        cell=cell,
+        top_bands=top_bands,
+        band_weights=band_weights,
+        partition_weights=partition_weights,
+        draw_maps=draw_maps,
+        draw_cells=draw_cells,
+        draw_cutoff=draw_cutoff,
+        floor_modes=floor_modes,
+        floor_untried=floor_untried,
+        floor_places=floor_places,
+        near_named=near_named,
+        floor_seats=int(floor_seats),
         log=log,
+        # Unsaid stays unsaid: `build_plan` owns these two defaults and handing it
+        # `None` would override them with nothing.
+        **({} if bands is None else {"bands": int(bands)}),
+        **({} if floor_width is None else {"floor_width": int(floor_width)}),
     )
     build = ledger.live_engine()
     artifact = hunt._artifact()
@@ -2348,6 +2454,14 @@ def mine(
         # [`depth.resolve_split`] is where both come from.
         "shares": dict(shape["split"]["shares"]),
         "shares_asked": dict(shares),
+        # **The draw-shaping arguments this leg narrowed with, exactly as
+        # `plan_identity` hashed them.** `identity_of` reads this field back, so a
+        # resume compares the manifest and the cell filters and not only the
+        # budget and the roster. Absent-when-empty rather than written as a dict of
+        # nulls: a leg that narrowed nothing has to produce the identity it would
+        # have produced before these flags existed, or every record written before
+        # 2026-09-13 stops matching a legitimate resume.
+        **({"draw_identity": shaping} if shaping else {}),
         # **What the plan was sized off and where this leg picked it up**, which is
         # the whole of what makes two clock-bound halves one leg.
         "plan_budget_seconds": sized_for,

@@ -441,6 +441,8 @@ def curate_rotate(args):
             print(json.dumps({**record.get("population", {}), **record["counts"]}, indent=2))
             return 0
         if args.what == "mine":
+            from fractal_wallpapers.curation import depth as depth_module
+
             record = rotation.mine(
                 args.name,
                 seed=args.seed,
@@ -455,6 +457,30 @@ def curate_rotate(args):
                 workers=args.workers,
                 device=args.device,
                 chunk=args.chunk,
+                # The draw-shaping flags, read the way `curate depth run` reads
+                # them: a manifest through `depth.read_places`, the weights as
+                # JSON, and `None` left as `None` so `build_plan` keeps its own
+                # defaults rather than being handed an empty narrowing.
+                cell=args.cell,
+                bands=args.bands,
+                top_bands=args.top_bands,
+                band_weights=json.loads(args.band_weights) if args.band_weights else None,
+                partition_weights=(
+                    json.loads(args.partition_weights) if args.partition_weights else None
+                ),
+                draw_maps=depth_module.read_maps(args.draw_maps) if args.draw_maps else None,
+                draw_cells=args.draw_cells,
+                draw_cutoff=args.draw_cutoff,
+                floor_modes=args.floor_modes,
+                floor_untried=args.floor_untried,
+                floor_places=(
+                    depth_module.read_places(args.floor_places) if args.floor_places else None
+                ),
+                near_named=(
+                    depth_module.read_places(args.near_places) if args.near_places else None
+                ),
+                floor_seats=args.floor_seats,
+                floor_width=args.floor_width,
             )
             # `resume_from_block` is top-level on the record and is the one figure
             # the next leg has to have, so it is printed with the counts rather
@@ -1245,6 +1271,7 @@ def hunt_draw_flags(holder):
 def add_steps(steps) -> None:
     """The legs: the verbs that plan a batch, render it, and merge it back."""
     from fractal_wallpapers.curation import candidate_ledger as candidate_ledger_module
+    from fractal_wallpapers.curation import depth as depth_module
     from fractal_wallpapers.curation import distinct as distinct_module
     from fractal_wallpapers.curation import flatness as flatness_module
     from fractal_wallpapers.curation import hunt as hunt_module
@@ -2066,13 +2093,28 @@ def add_steps(steps) -> None:
             "no-op on them."
         ),
     )
+    # **`mine` names its seams and the other four do not**, because `mine` is the
+    # only one of the five past `test_cli.WALL` — it carries the whole draw-shaping
+    # surface since 2026-09-13 and twenty-odd flags in one undivided block is a
+    # reference nobody reads. The four group names are `curate depth run`'s own, in
+    # its order, because they are the same flags doing the same jobs and a reader
+    # moving between the two commands should not have to learn a second layout.
+    # Every flag goes in a group once there is one: argparse prints a stray
+    # optional above the named groups beside `-h`, which reads as belonging with
+    # `--help`. `tests/test_cli.py` holds both halves of that.
+    rotate_mine_clock = mining_rotate.add_argument_group("the leg and its clock")
+    rotate_mine_draws = mining_rotate.add_argument_group("the draws and their shares")
+    rotate_mine_width = mining_rotate.add_argument_group("how wide each draw goes")
+    rotate_mine_where = mining_rotate.add_argument_group("the modes and places the draws work over")
+    rotate_mine_maps = mining_rotate.add_argument_group("the palettes the draws may offer")
+
     # --name first and required on all five, the shape every leg group here has.
     for a_pass in (
         planning_rotate,
         running_rotate,
         merging_rotate,
         reading_rotate,
-        mining_rotate,
+        rotate_mine_clock,
     ):
         a_pass.add_argument(
             "--name",
@@ -2160,7 +2202,7 @@ def add_steps(steps) -> None:
         help=f"render workers (default {rotation_module.WORKERS}, this machine's pool)",
     )
     device_flag(running_rotate)
-    mining_rotate.add_argument(
+    rotate_mine_clock.add_argument(
         "--budget",
         type=float,
         default=3600.0,
@@ -2168,7 +2210,7 @@ def add_steps(steps) -> None:
         help="wall seconds of RENDERING (default 3600). The population read and the plan "
         "sit outside it, and what it truncates is whole chunks of location blocks",
     )
-    mining_rotate.add_argument(
+    rotate_mine_clock.add_argument(
         "--plan-budget",
         type=float,
         default=None,
@@ -2178,7 +2220,7 @@ def add_steps(steps) -> None:
         "block plan exactly, so its block N is this leg's block N, and --budget is only "
         "what is left to spend on it",
     )
-    mining_rotate.add_argument(
+    rotate_mine_clock.add_argument(
         "--from-block",
         type=int,
         default=0,
@@ -2191,7 +2233,7 @@ def add_steps(steps) -> None:
         "the store to say so: each shot's four losers are freed rather than merged, and a "
         "shot whose control never merged comes back as a best-of-FOUR under the same name",
     )
-    mining_rotate.add_argument(
+    rotate_mine_clock.add_argument(
         "--rate",
         type=float,
         default=rotation_module.MINE_RATE,
@@ -2200,7 +2242,7 @@ def add_steps(steps) -> None:
         f"{rotation_module.MINE_RATE:g}, a deliberate under-estimate). The surplus of a "
         f"plan is never started, so clock-bound is the correct way for a leg to end",
     )
-    mining_rotate.add_argument(
+    rotate_mine_width.add_argument(
         "--width",
         type=int,
         default=rotation_module.MINE_WIDTH,
@@ -2209,7 +2251,7 @@ def add_steps(steps) -> None:
         f"that is one map a (location, mode), and a best-of-five merges one row - so a "
         f"pair takes one against a keep of {candidate_ledger_module.RETAIN_PER_PAIR}",
     )
-    mining_rotate.add_argument(
+    rotate_mine_width.add_argument(
         "--rotations",
         type=int,
         default=rotation_module.MINE_ROTATIONS,
@@ -2217,13 +2259,13 @@ def add_steps(steps) -> None:
         help=f"phases drawn a shot beside its phase-0 control (default "
         f"{rotation_module.MINE_ROTATIONS}, so a shot is five candidates)",
     )
-    mining_rotate.add_argument(
+    rotate_mine_clock.add_argument(
         "--seed",
         type=int,
         default=0,
         help="the draw's seed (default 0), for the plan and for the phases both",
     )
-    mining_rotate.add_argument(
+    rotate_mine_where.add_argument(
         "--modes",
         nargs="+",
         default=None,
@@ -2231,7 +2273,7 @@ def add_steps(steps) -> None:
         help="the roster (default mode_policy.mined(), the policy's own). Named because "
         "`curate depth`'s default roster is the three SHAREABLE modes and not the twelve",
     )
-    mining_rotate.add_argument(
+    rotate_mine_draws.add_argument(
         "--shares",
         default=None,
         metavar="JSON",
@@ -2239,7 +2281,123 @@ def add_steps(steps) -> None:
         f"what it is given over depth.SHARES, so naming one entry leaves the rest on their "
         f"defaults. Default {json.dumps(rotation_module.MINE_SHARES)}",
     )
-    mining_rotate.add_argument(
+    # **The draw-shaping flags `curate depth run` has, on this leg too.** This is a
+    # standard depth draw whose shots are best-of-five, so a draw `depth run` can
+    # aim, this has to be able to aim: without them the rotation search was
+    # available only on the draws nobody narrows, and a leg wanting rotations at a
+    # named population or an aimed cell had to give up one or the other. Spelled
+    # out here rather than shared with `depth run`'s parser because the two help
+    # texts differ in what they say about the shot: a width here is maps a
+    # location and every one of them becomes five candidates.
+    rotate_mine_where.add_argument(
+        "--floor-places",
+        metavar="FILE",
+        help='a places MANIFEST - a JSONL of {"schema": 1, "key": ...} rows - naming '
+        "the locations the mode-floor draw may stand on. It is ALSO the seating bar's "
+        "set: a named place is drawn whatever its best candidate reads, which is how a "
+        "place carrying a human q3/q4 verdict and an under-bar field score is reached. "
+        "Needs a mode_floor share in --shares",
+    )
+    rotate_mine_where.add_argument(
+        "--near-places",
+        metavar="FILE",
+        help="the same manifest shape, naming the locations the NEAR-BAND draw may "
+        "stand on. Needs a near_band share in --shares",
+    )
+    rotate_mine_where.add_argument(
+        "--floor-untried",
+        nargs="*",
+        default=None,
+        metavar="MODE",
+        help="narrow the mode-floor draw's population to opened locations with NO "
+        "attempt in any of these modes. Given with no mode named, the dear half of "
+        "the roster",
+    )
+    rotate_mine_where.add_argument(
+        "--floor-modes",
+        nargs="+",
+        default=None,
+        metavar="MODE",
+        help="the modes the mode-floor draw serves. Unsaid, every mode the ledger says "
+        "is short of --floor-seats seats today, worst first",
+    )
+    rotate_mine_where.add_argument(
+        "--floor-seats",
+        type=int,
+        default=10,
+        metavar="COUNT",
+        help="how many distinct locations over the seating bar a mode needs before it "
+        "is no longer short (default 10)",
+    )
+    rotate_mine_width.add_argument(
+        "--floor-width",
+        type=int,
+        default=None,
+        metavar="COUNT",
+        help=f"palettes per (proven location, mode) in the mode-floor draw (default "
+        f"{depth_module.FLOOR_WIDTH})",
+    )
+    rotate_mine_maps.add_argument(
+        "--cell",
+        nargs="+",
+        default=None,
+        metavar="CELL",
+        help="the codebook cell or cells the CONDITIONED draw aims its palette ask at. "
+        "Needs a conditioned share in --shares",
+    )
+    rotate_mine_maps.add_argument(
+        "--draw-cells",
+        nargs="+",
+        default=None,
+        metavar="CELL",
+        help="codebook cells the palettes EVERY draw here offers must be expected to "
+        "deliver. A draw filter and nothing else: it re-marks no map and writes nothing "
+        "back to the tracked colour records",
+    )
+    rotate_mine_maps.add_argument(
+        "--draw-cutoff",
+        type=float,
+        default=None,
+        metavar="SHARE",
+        help="the share of a picture's colour a map's group must be expected to put in "
+        "a listed cell for --draw-cells to keep it",
+    )
+    rotate_mine_maps.add_argument(
+        "--draw-maps",
+        metavar="FILE",
+        help='a maps MANIFEST - a JSONL of {"schema": 1, "map": ...} rows - naming the '
+        "colormaps every draw here may offer",
+    )
+    rotate_mine_draws.add_argument(
+        "--bands",
+        type=int,
+        default=None,
+        metavar="COUNT",
+        help=f"how many equal-count bands the head's rank range inside one partition is "
+        f"cut into (default {depth_module.RANK_BANDS})",
+    )
+    rotate_mine_draws.add_argument(
+        "--top-bands",
+        type=int,
+        default=None,
+        metavar="COUNT",
+        help="restrict the FLAT and CONDITIONED draws to the strongest COUNT rank bands. "
+        "Unsaid, they draw over the whole range",
+    )
+    rotate_mine_draws.add_argument(
+        "--band-weights",
+        default=None,
+        metavar="JSON",
+        help="how many turns a round each rank band gets in the ranked draw, as JSON",
+    )
+    rotate_mine_draws.add_argument(
+        "--partition-weights",
+        default=None,
+        metavar="JSON",
+        help="what share of the breadth draw each PARTITION gets, as JSON. MERGED OVER "
+        "the standing table in curation.draw_weights rather than replacing it",
+    )
+    rotate_mine_clock.add_argument(
         "--chunk",
         type=int,
         default=rotation_module.CHUNK_GROUPS,
@@ -2247,14 +2405,14 @@ def add_steps(steps) -> None:
         help=f"location blocks rendered before the leg stops to read what it made "
         f"(default {rotation_module.CHUNK_GROUPS})",
     )
-    mining_rotate.add_argument(
+    rotate_mine_clock.add_argument(
         "--workers",
         type=int,
         default=rotation_module.WORKERS,
         metavar="COUNT",
         help=f"render workers (default {rotation_module.WORKERS}, this machine's pool)",
     )
-    device_flag(mining_rotate)
+    device_flag(rotate_mine_clock)
     merging_rotate.add_argument(
         "--dry-run",
         action="store_true",

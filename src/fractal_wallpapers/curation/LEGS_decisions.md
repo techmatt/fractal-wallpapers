@@ -106,7 +106,68 @@ in the admitted drawable population, and **275 are opened and drawable and still
 the seating bar** — 219 of those untried in the angle modes. Those 219 cannot be reached
 by a floor leg however the manifest is cut. A leg wanting *evidence* to mean the union of
 `p_ge4 >= 0.50` and a human verdict needs `proven_places` to take the bar as a set rather
-than as a number; nothing here does that today.
+than as a number.
+
+**Closed 2026-09-13, and the manifest is the set.** [`proven_places`] takes an
+`admitted` argument beside `bar` — a key in it is drawn whatever its best field
+candidate reads — and `build_plan` passes the whole of `--floor-places` as that set. So
+naming a place *is* the evidence claim, which is what a manifest somebody read off the
+ledger always was; the bar still governs every place nobody named, and every other draw
+reads it as a number as before. The under-bar count is logged rather than folded in
+silently, because it is the difference between a leg run this way and every leg before
+it. Re-measured on the night's own population: **1,097 verdict-carrying places are
+opened and drawable and 275 of them sit under the bar** — the 275 reproduces exactly,
+the 1,102 moved by five because the pilot's merges landed between the two readings.
+
+⚠ **The same night found the reach was only half the problem.** `curate rotate mine` —
+the forward draw, where every shot is a phase-0 control plus four rotations — carried
+`--modes`, `--shares`, `--width` and nothing else, so a leg could have the rotation
+search *or* a named floor population, never both. It now carries the whole of `curate
+depth run`'s draw-shaping surface (`--floor-places`, `--floor-untried`, `--floor-modes`,
+`--floor-width`, `--floor-seats`, `--near-places`, `--cell`, `--draw-cells`,
+`--draw-cutoff`, `--draw-maps`, `--bands`, `--top-bands`, `--band-weights`,
+`--partition-weights`), and every one of them joins `plan_identity` — a leg drawn over a
+different manifest is a different plan, and a resume across the two would skip
+`from_block` of blocks that never existed.
+
+### What the forward rotation search costs and what it buys, measured 2026-09-13
+
+`mine_night_ckpt124`, off `decisions.jsonl`, which carries all five candidates of every
+shot with their drawn phases, both columns and **each candidate's own seconds**.
+
+⚠ **There is no recolour discount on the angle pair, and the module's economics do not
+describe this path.** `rotation.py`'s opening argument is that five rotations of one
+recipe are five colormap lookups over one iteration pass, so six candidates cost about
+one and a quarter renders. Over unit 1's 962 shots — `smooth_mean_angle` and
+`smooth_angle_min`, 4,810 candidates — the cost **does not vary with the rotation
+index**: k=0 mean 5.316 s, k=1 5.335, k=2 5.425, k=3 5.355, k=4 5.365, medians all
+~3.4 s. Only **14.3%** of candidates came in under 1.5 s. A shot is therefore five
+full renders, 26.80 s, and phase 0 is 5,114 s of the leg's 25,778 against the four
+rotations' 20,664. That is the composites' documented *full render price* path, and it
+is what the angle pair takes.
+
+**What the 5x bought, on the same 962 shots**, phase-0 alone against best-of-five:
+`p_fine >= 0.10` **6.96% -> 18.09%** (2.60x), `>= 0.25` 3.53% -> 8.94% (2.53x),
+`>= 0.50` **0.83% -> 2.60%** (3.12x). Median `p_fine` 0.0008 -> 0.0075.
+
+⚠ **So at full render price the search is a net loss on rows and a win on ceiling, and
+which one matters is the leg's own question.** A shot yields at most ONE merged row;
+five candidates spent as five independent phase-0 draws would yield an expected
+5 x 0.83% = 4.15% above-bar rows against best-of-five's 2.60% — **1.6x more rows per
+engine second** — and five maps are not near-duplicates where five phases of one recipe
+are, so the retention keep and the diversity rule both prefer the independent draw. What
+the search does buy is the best row *at a place already chosen*, which is exactly what a
+floor leg at an evidenced place is for. **Read it as: rotations for depth at a named
+place, maps for volume.**
+
+**Where the discount IS real, the trade changes and nothing here measured it.** The
+shareable field modes dump a single scalar field and recolour from it; unit 1's roster
+cannot. A leg wanting the search cheaply should be run over those.
+
+**The win rate is stable across rosters and it is not the same number as the value.**
+Unit 1: 805 of 962 shots won by a rotation (83.7%). Unit 2's aimed arm: 393 of the 474
+rotatable shots (82.9%), with 282 direct-trap shots drawn bare and out of it. A rotation
+winning four shots in five says the axis moves the score, not that the move pays.
 
 ### What the DEAR nine buy at a proven place against a fresh one, measured 2026-09-13
 
