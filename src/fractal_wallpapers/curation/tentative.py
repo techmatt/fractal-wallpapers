@@ -214,10 +214,18 @@ PUBLISHED: tuple[str, ...] = (
 #:   when nobody names one, and the n=1000 gallery the site's figures resolve.
 #: * `20260908T211552Z` — two more seats `fractal-website`'s `article/figures.jsonl`
 #:   names as `<stamp>|<key>`.
-#: * `20260911T022330Z` — the current official n=1000 record, the one
-#:   `curation/page_order.py`'s constants were measured on. Re-measuring those
-#:   against a record pruned out from under them would read as drift in the page
-#:   order rather than as a missing record.
+#: * `20260911T022330Z` — the record `curation/page_order.py`'s constants were
+#:   measured on. Re-measuring those against a record pruned out from under them
+#:   would read as drift in the page order rather than as a missing record.
+#: * `20260913T172903Z` and `20260914T144946Z` — the **before and after of the
+#:   `mine_night2_ckpt124` run**, added 2026-09-14, and they are one entry in two
+#:   lines: `curate seat-sheet --before … --after …` names both by stamp, and a
+#:   diff with one half missing is not a smaller diff, it is no diff. The after
+#:   half is also the current official n=1000 record. ⚠ The before half was
+#:   **moved out of the store by that same night's sweep and moved back** — it was
+#:   off the keep list for the hours between, which is exactly right under
+#:   discard-by-default and exactly why the sweep moves records rather than
+#:   deleting them. When the pair stops being interesting, both go.
 #:
 #: ⚠ The first four were named in `fractal_wallpapers/README.md`'s store table as
 #: hard dependencies **while the store-wide sweep made the distinction cost
@@ -234,6 +242,8 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     "20260908T144844Z",
     "20260908T211552Z",
     "20260911T022330Z",
+    "20260913T172903Z",
+    "20260914T144946Z",
 )
 
 
