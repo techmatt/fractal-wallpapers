@@ -115,6 +115,26 @@ SCHEMA_NOTES: dict[str, str] = {
 #: The subtree a recorded gallery's stamped folder lands in.
 UNIT = "tentative"
 
+#: The subtree holding **the page a person opens**, as against the pages the
+#: records hold. One directory, no stamp in its name, and [`viewer_dir`] is the
+#: only spelling of it.
+#:
+#: A record's own `index.html` is beside its rows and names its stamp, which is
+#: right for a record and wrong for a bookmark: the official record moves every
+#: checkpoint and a bookmark that names a stamp is a bookmark onto a superseded
+#: gallery the day after it is made. `curate solve browse --viewer` writes the
+#: newest PUBLISHED record's page here, so the same path answers *show me the
+#: gallery* for as long as the project runs and the stamp in its title bar is how
+#: a reader tells which one they are looking at.
+#:
+#: **It is a derivation and it is not a copy.** The thumbnails and the
+#: release-geometry fulls stay where they are and the page reaches them by
+#: relative path, [`page`]'s rule, which is why moving this directory means
+#: writing it again rather than dragging it — the same reason `--out` exists at
+#: all. Under `curation` because the pictures it points at are the live pool's
+#: and a viewer on the archive tier would be a page of dead links.
+VIEWER_UNIT = "viewer"
+
 #: The two files one stamp's RECORD is, and the one derived from them.
 #:
 #: Matt's ruling of 2026-09-05 draws the line here: the rows and the manifest are
@@ -163,12 +183,20 @@ RECORDED_SEATS = 1000
 #: because a solve is cheap to run again and what a leftover record costs is
 #: misreading hazard and prune protection rather than bytes. The keep list is the
 #: stamps below, any record a published or upcoming figure cites, and the current
-#: official n=1000 record, which is unpublished and whichever stamp
-#: [`KEPT_UNPUBLISHED`] says it is — `20260914T171846Z` as of 2026-09-14. **The
-#: role moves and the entry does not follow it**: a stamp that held it keeps its
-#: line for as long as something still resolves it, so this sentence names the
-#: rule and the tuple below names the stamps. That list is [`kept`], and
+#: official n=1000 record — which is `20260914T171846Z`, and which since
+#: 2026-09-14 is a stamp in **this** tuple rather than in [`KEPT_UNPUBLISHED`].
+#: **The role moves and the entry does not follow it**: a stamp that held it keeps
+#: its line for as long as something still resolves it, so this sentence names the
+#: rule and the tuples name the stamps. That list is [`kept`], and
 #: [`KEPT_UNPUBLISHED`] is the half of it this tuple does not already carry.
+#:
+#: **`20260914T171846Z` is the project's first publication since the split**, and
+#: the eighth stamp here. It is the first solve taken with the full rejection pass
+#: ingested — 1,000 of 1,000, shortfall 0, 728 vetoed rows out of the pool — and it
+#: is what an unqualified "the record" and an unstamped [`latest`] both mean from
+#: here. It was in [`KEPT_UNPUBLISHED`] until it was published and is not in both:
+#: [`kept`] de-duplicates, so a stamp named twice would read as two decisions where
+#: there is one, and publication is the stronger of the two to state.
 #:
 #: **Retention is a third question after publication and durability**, and until
 #: 2026-09-13 the protection answered it by itself: [`protected_keys`] swept the
@@ -192,6 +220,7 @@ PUBLISHED: tuple[str, ...] = (
     "20260904T080248Z",
     "20260904T134242Z",
     "20260904T233233Z",
+    "20260914T171846Z",
 )
 
 #: **The unpublished stamps the keep list names**, which is the whole of the keep
@@ -241,10 +270,12 @@ PUBLISHED: tuple[str, ...] = (
 #:   the population `gallery_rejection_20260914` was drawn from — so it is the
 #:   before half of `rejection_ingest_ckpt124`'s diff as well, and it stays until
 #:   that batch stops being the newest thing the store learned.
-#: * `20260914T171846Z` — **the official n=1000 record since 2026-09-14**, the
-#:   first solve taken with the full rejection pass ingested: 1,000 of 1,000,
-#:   shortfall 0, 728 vetoed rows out of the pool. It replaces `20260914T144946Z`
-#:   in that role and is what an unqualified "the record" means from here.
+#:
+#: ⚠ **`20260914T171846Z` was here and is now in [`PUBLISHED`]**, from 2026-09-14.
+#: It is kept by that tuple and must not be named by this one as well: [`kept`]
+#: de-duplicates either way, so a second line would change nothing on disk and
+#: would leave two answers to *why is this record kept* where publication is the
+#: only one that still applies.
 #:
 #: ⚠ The first four were named in `fractal_wallpapers/README.md`'s store table as
 #: hard dependencies **while the store-wide sweep made the distinction cost
@@ -264,7 +295,6 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     "20260913T172903Z",
     "20260914T144946Z",
     "20260914T152502Z",
-    "20260914T171846Z",
 )
 
 
@@ -285,6 +315,11 @@ def store_root() -> Path:
     redirecting the store redirects this and a second spelling would be a path
     that reads past the redirect into this machine's real records."""
     return under("curation", UNIT)
+
+
+def viewer_dir() -> Path:
+    """Where `--viewer` writes the page. **The one accessor**, [`store_root`]'s reason."""
+    return under("curation", VIEWER_UNIT)
 
 
 def gallery_dir(stamp: str) -> Path:
@@ -1322,6 +1357,7 @@ __all__ = [
     "ROWS_NAME",
     "SCHEMA",
     "UNIT",
+    "VIEWER_UNIT",
     "TentativeRefused",
     "aliases",
     "counts_of",
@@ -1342,5 +1378,6 @@ __all__ = [
     "stamps",
     "store_root",
     "thumbnail_href",
+    "viewer_dir",
     "write",
 ]

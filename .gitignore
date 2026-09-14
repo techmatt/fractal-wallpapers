@@ -41,6 +41,7 @@ artifacts/curation/tentative/*
 !artifacts/curation/tentative/20260904T080248Z/
 !artifacts/curation/tentative/20260904T134242Z/
 !artifacts/curation/tentative/20260904T233233Z/
+!artifacts/curation/tentative/20260914T171846Z/
 # Inside a published stamp, only the two text files. An unpublished stamp is an
 # excluded directory git never descends into, so these never reach one.
 artifacts/curation/tentative/*/*

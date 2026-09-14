@@ -759,3 +759,115 @@ def test_a_page_is_twenty_five_pictures(tmp_path, store, stub_renders) -> None:
     assert manifest["deck"]["page_size"] == 10
     page = (tmp_path / "kit" / votes.PAGE_NAME).read_text(encoding="utf-8")
     assert "const PER_PAGE = 10;" in page
+
+
+# --------------------------------------------------------------------------- #
+# Found before made: the seats a sheet already drew at the kit's geometry.
+# --------------------------------------------------------------------------- #
+#: A picture planted in the fulls store is drawn in one flat colour that neither
+#: half of the stub render is, so a thumbnail says which picture it came off
+#: without a byte comparison. `LEFT` and `RIGHT` are the stub's two halves.
+FOUND = (20, 200, 90)
+
+
+@pytest.fixture
+def already_drawn(store):
+    """Plant a picture for the FIRST seat in the fulls store, at `votes.SUPERSAMPLE`.
+
+    Through `fulls.store_dir` rather than a path spelled here, for the reason
+    `store` redirects the tier roots rather than one accessor: a second spelling
+    is a path that reads past the redirect, and this one would plant the picture
+    where the lookup does not look.
+    """
+    from PIL import Image
+
+    from fractal_wallpapers.curation import fulls, release
+
+    regime_at = release.Regime(votes.FRAME, votes.SUPERSAMPLE)
+    directory = fulls.store_dir(regime_at) / "pictures"
+    directory.mkdir(parents=True, exist_ok=True)
+    picture = directory / f"{KEYS[0]}.jpg"
+    Image.new("RGB", votes.FRAME, FOUND).save(picture, quality=95)
+    return picture
+
+
+def test_a_seat_a_sheet_already_drew_is_encoded_from_that_picture_and_not_rendered(
+    tmp_path, store, stub_renders, already_drawn
+) -> None:
+    """The whole saving of the shared geometry, and it is worth five hours over a
+    thousand seats: `FRAME` and `SUPERSAMPLE` are the gallery rejection sheet's,
+    so a record that has been through one has every seat drawn already."""
+    manifest = built(tmp_path, store)
+    assert manifest["render"]["reused"] == 1
+    assert manifest["render"]["reuse_rate"] == 0.5
+    assert [leg["keys"] for leg in stub_renders] == [[KEYS[1]]]
+
+
+def test_a_found_picture_is_encoded_at_the_kits_own_cell_and_left_where_it_is(
+    tmp_path, store, stub_renders, already_drawn
+) -> None:
+    """Two halves of one rule. **Encoded**, because a kit whose fulls came from
+    two encoders depending on which sheet held the seat would be asking a friend
+    to compare encoders — so the found file's bytes are not what ships. **Left**,
+    because it is somebody else's file under somebody else's sweep, unlike the
+    staging PNG a kit makes and deletes."""
+    from PIL import Image
+
+    before = already_drawn.read_bytes()
+    built(tmp_path, store)
+    kit = tmp_path / "kit"
+    assert already_drawn.is_file() and already_drawn.read_bytes() == before
+    shipped = (kit / votes.FULLS / "s0000.jpg").read_bytes()
+    assert shipped != before
+    with Image.open(kit / votes.THUMBS / "s0000.jpg") as thumb:
+        middle = thumb.convert("RGB").getpixel((thumb.width // 2, thumb.height // 2))
+    assert all(abs(one - two) < 25 for one, two in zip(middle, FOUND, strict=True))
+
+
+def test_the_seat_beside_it_still_comes_off_the_render(
+    tmp_path, store, stub_renders, already_drawn
+) -> None:
+    """A kit that found some of its seats is still one kit: the seat nothing had
+    drawn carries the stub's two-tone render and not the found seat's colour."""
+    from PIL import Image
+
+    built(tmp_path, store)
+    with Image.open(tmp_path / "kit" / votes.THUMBS / "s0001.jpg") as thumb:
+        left = thumb.convert("RGB").getpixel((thumb.width // 4, thumb.height // 2))
+    assert abs(left[0] - LEFT[0]) < 25 and abs(left[2] - LEFT[2]) < 25
+
+
+def test_no_reuse_renders_the_seat_a_picture_was_found_for(
+    tmp_path, store, stub_renders, already_drawn
+) -> None:
+    """The escape hatch, and it is the whole leg rather than one seat: it exists
+    for checking a sheet's picture against a fresh one, which is a comparison
+    nothing else in here can make."""
+    manifest = built(tmp_path, store, reuse=False)
+    assert manifest["render"]["reused"] == 0
+    assert [leg["keys"] for leg in stub_renders] == [list(KEYS[:2])]
+
+
+def test_a_seat_at_another_supersample_does_not_take_a_picture_drawn_at_this_one(
+    tmp_path, store, stub_renders, already_drawn
+) -> None:
+    """The lookup is one per distinct supersample and the match is exact, so a
+    mode the kit renders finer is a miss rather than a seat quietly handed the
+    cheap picture. `fulls` matches on the recipe key AND the regime for the same
+    reason; this is that rule reaching the kit."""
+    manifest = built(tmp_path, store, supersample=votes.SUPERSAMPLE + 2)
+    assert manifest["render"]["reused"] == 0
+    assert [leg["keys"] for leg in stub_renders] == [list(KEYS[:2])]
+
+
+def test_a_seat_already_encoded_is_not_looked_up_either(
+    tmp_path, store, stub_renders, already_drawn
+) -> None:
+    """The resume still comes first: a kit rebuilt over its own folder neither
+    renders nor re-encodes, so the reuse count of a finished kit is zero rather
+    than the number of seats a sheet happens to hold."""
+    built(tmp_path, store)
+    again = built(tmp_path, store)
+    assert again["render"]["reused"] == 0
+    assert again["render"]["planned"] == 0
+    assert again["render"]["encoded_already"] == 2

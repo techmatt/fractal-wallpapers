@@ -643,6 +643,48 @@ def test_browse_takes_its_stamp_from_the_argument_a_reader_just_read(store, caps
     assert "20260901T000000Z" in capsys.readouterr().out
 
 
+def test_the_viewer_is_one_path_with_no_stamp_in_it(store, capsys):
+    """The bookmark. A record's own page names the stamp it is of and the official
+    record moves every checkpoint, so a page beside the rows is the wrong thing to
+    bookmark and a path Matt retypes is the wrong thing to document. `--viewer` is
+    the only spelling of it and `viewer_dir` is the only spelling of the place."""
+    tentative.write(record_of(seat("k0")), stamp="20260901T000000Z", log=quiet)
+    tentative.write(record_of(seat("k1")), stamp="20260902T000000Z", log=quiet)
+
+    args = cli.build_parser().parse_args(["curate", "solve", "browse", "--viewer"])
+    assert cli.curate_solve(args) == 0
+
+    written = tentative.viewer_dir() / tentative.PAGE_NAME
+    assert written.is_file()
+    assert "20260901T000000Z" not in tentative.viewer_dir().parts
+    # The NEWEST published record with no stamp named, which is what the bookmark
+    # is for: it answers "the gallery" rather than "that gallery".
+    assert "20260902T000000Z" in written.read_text(encoding="utf-8")
+    assert "20260902T000000Z" in capsys.readouterr().out
+
+
+def test_the_viewer_and_an_out_path_are_two_places_and_not_given_together(store, tmp_path):
+    """Either would have to be ignored, and a page written where the reader did
+    not ask for it is `browse`'s own two-stamps failure in another spelling."""
+    tentative.write(record_of(seat("k0")), log=quiet)
+
+    args = cli.build_parser().parse_args(
+        ["curate", "solve", "browse", "--viewer", "--out", str(tmp_path / "elsewhere.html")]
+    )
+
+    assert cli.curate_solve(args) == 1
+    assert not (tentative.viewer_dir() / tentative.PAGE_NAME).exists()
+
+
+def test_the_viewer_is_not_inside_the_record_store(store):
+    """A viewer under `tentative/` would be a folder among the stamped ones that
+    `stamps()` has to know is not a record, and a stamp-shaped name is the only
+    thing that store holds. It is a sibling instead."""
+    assert tentative.viewer_dir().name == tentative.VIEWER_UNIT
+    assert tentative.store_root() not in tentative.viewer_dir().parents
+    assert tentative.viewer_dir().parent == tentative.store_root().parent
+
+
 def test_two_different_stamps_are_a_refusal_rather_than_a_silent_choice(store):
     """One of the two would have to be ignored, and either choice is a page the
     reader did not ask for."""

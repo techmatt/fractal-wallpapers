@@ -80,7 +80,12 @@ These were decided once, at the first commit, because each is expensive to rever
   `.gitignore`'s negation lines are one list written twice and
   `tests/test_tentative.py` holds them to agreeing. The ruling, what it replaced
   and why `LARGE_TEXT_ALLOWLIST` was not the answer are at
-  `curation/tentative.PUBLISHED`.
+  `curation/tentative.PUBLISHED`. **`20260914T171846Z` is the published n=1000
+  record** and the official one, his ruling of 2026-09-14 and the first
+  publication since the split — what an unqualified "the record" and an unstamped
+  `tentative.latest()` both mean. **The page to open is
+  `artifacts/curation/viewer/index.html`**, `curate solve browse --viewer`, which
+  carries no stamp so the bookmark survives the role moving.
 - **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13,
   which reverses what this file said until then. **Keeping needs a reason;
   discarding does not** — it is not a balance a leg weighs at the end of its run.
@@ -91,8 +96,11 @@ These were decided once, at the first commit, because each is expensive to rever
   its eight entries with the reason for each written at the site. Everything else
   goes unless Matt says otherwise. 24 off-list records were moved to
   `scratch/retired_tentative/` on 2026-09-13 and the store held twelve; it holds
-  **fifteen** on 2026-09-14, the three added since being `mine_night2_ckpt124`'s
-  before-and-after pair and `veto_model_ckpt124`'s veto-active solve.
+  **sixteen** on 2026-09-14 and every one of them is kept — eight published and
+  eight not. The four added since are `mine_night2_ckpt124`'s before-and-after
+  pair, `veto_model_ckpt124`'s veto-active solve, and `20260914T171846Z`, which
+  is **published** and is therefore in `PUBLISHED` and not in `KEPT_UNPUBLISHED`:
+  a stamp earns its keep from exactly one of the two lists.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
   `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple
@@ -191,20 +199,21 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,685 collected — 4,532 fast,
-153 slow — since `rejection_ingest_ckpt124` added 19 fast tests on 2026-09-14**, on a
+Both are measured, not estimated. The tree holds **4,694 collected — 4,541 fast,
+153 slow — since `publish_gallery_ckpt124` added 9 fast tests on 2026-09-14**, on a
 `.[dev,models]` install with a release engine built. **Both lanes were taken back to
-back on one idle tree by that prompt, and they agree at 4,685**: **fast 4,532 of
-4,532 in 127.53 s (2:07)** with 153 deselected, and **slow 4,685 of 4,685 in
-481.08 s (8:01)**. Both green, zero skips, zero failures.
+back on one idle tree by that prompt, and they agree at 4,694**: **fast 4,541 of
+4,541 in 125.25 s (2:05)** with 153 deselected, and **slow 4,694 of 4,694 in
+477.33 s (7:57)**. Both green, zero skips, zero failures.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.
 That is what *take the pair whether or not the prompt wrote a test* is for, and the
-drift was caught by the two lanes meeting rather than by anybody noticing. Both of
-these clocks came in **under** that pair's 134.31 s and 483.23 s on 36 more tests,
-landing back on `lane_speedup_ckpt122`'s 125.12 s to a tenth — which settles that
-its ~9 s and ~12 s were the box and not the tree.
+drift was caught by the two lanes meeting rather than by anybody noticing. Every
+pair since has come in **under** `PRECLOSEOUT_ckpt123_wallpapers`'s 134.31 s and
+483.23 s while the tree grew by 64 tests, and the fast lane has landed on
+`lane_speedup_ckpt122`'s 125.12 s to a tenth twice — which settles that its ~9 s and
+~12 s were the box and not the tree.
 
 `lane_speedup_ckpt122`'s own pair is **34.3 s and 80.8 s faster** than the baseline
 taken on the same tree an hour before it, and **no guard was deleted or weakened** to get there: one production

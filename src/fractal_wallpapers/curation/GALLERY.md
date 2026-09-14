@@ -1918,6 +1918,39 @@ screen while the grid went on loading fulls. **The full-size view takes the rele
 picture whether the toggle is on or not**, which is what the header always said it did.
 A tray line says how many of the record's seats have one.
 
+#### `--viewer` — the one path to bookmark, and it carries no stamp
+
+```
+fractal-wallpapers curate solve browse --viewer          # the newest PUBLISHED record, here:
+artifacts/curation/viewer/index.html
+```
+
+**The page a person opens is not the page beside the rows.** A record's own `index.html`
+names the stamp it is of, and the official record moves every checkpoint, so a bookmark
+onto one is a bookmark onto a superseded gallery the day after it is made.
+`tentative.viewer_dir()` is one directory with no stamp in its name, `--viewer` is the only
+thing that writes it, and the stamp in the page's own title bar is how a reader tells which
+record they are looking at. The command prints the stamp beside the path for the same
+reason — it is the one thing this spelling does not say on its face.
+
+**It is a derivation and never a copy**, `browse --out`'s rule: the 640x360 candidates and
+the `1280x720ss2` fulls stay where they are and the page reaches them by relative path, so
+the directory is *rewritten* somewhere else rather than dragged there. Carrying the
+pictures instead would be **736 MB** — 163 MB of candidates and 573 MB of fulls — going
+stale the moment either side moved, which is `curation/fulls.py`'s own argument.
+
+⚠ **The fulls are the fragile half and the candidates are not.** Every candidate the page
+shows is pinned by `tentative.protected_keys()`, so no prune takes one. The fulls are not
+pinned by anything: 895 of the thousand live under `artifacts/sheet/gallery_rejection_20260914/`
+and go when that sheet does. Nothing breaks that a re-render does not fix — `curate solve
+fulls` finds or makes them again, about 1.9 h for a full thousand at 6.8 s a picture — but
+it is the one way this page degrades, and it degrades to the candidates rather than to
+broken tiles.
+
+**It lived under `scratch/deterministic_refit_20260910/page/` until 2026-09-14**, a
+directory named after an unrelated September-10 experiment inside a tree `CLAUDE.md`
+defines as disposable. The old path now holds a forwarding page rather than a dead one.
+
 ### The page opens in a derived presentation order, and it moves nothing
 
 **Since 2026-09-13.** The page used to open in `rank` order, best first, and the
@@ -2094,9 +2127,44 @@ machine. `curate solve list` marks every line.
 measure something against deletes it once the measurement is taken, and says so in its
 report. A solve is cheap to re-run; what a leftover record costs is misreading hazard and
 prune protection. **The keep list**: the published stamps, any record a published or
-upcoming figure cites, and the current official n=1000 record `20260911T022330Z`, which
-is unpublished and is what `page_order`'s constants were measured on. `CLAUDE.md` carries
-the rule, because a leg reads that file and not this one before it acts.
+upcoming figure cites, and the current official n=1000 record — which since 2026-09-14 is
+`20260914T171846Z` and is **published**, so it is kept by `PUBLISHED` rather than by
+`KEPT_UNPUBLISHED` and is named by exactly one of them. `CLAUDE.md` carries the rule,
+because a leg reads that file and not this one before it acts.
+
+#### The first publication, and what it changed — `20260914T171846Z`, 2026-09-14
+
+**Eight published stamps, up from seven**, and the first one named since the 2026-09-04
+split made publishing a decision of its own. The record is the first solve taken with the
+full rejection pass ingested: 1,000 of 1,000, shortfall 0, 728 vetoed rows out of the pool.
+
+**What publication actually did**, measured rather than assumed:
+
+* **Two text files entered the index** — `gallery.jsonl` at 670,450 B and `manifest.json`
+  at 65,642 B, both under the 1 MiB `test_history_purity.py` allows and both free of
+  absolute paths. `index.html` is still ignored, by the same per-stamp rule, at 768,620 B
+  that a `browse` writes again.
+* **`tentative.latest()` moved onto it.** Every unstamped `browse`, `resolve` and `votes
+  build` now means this record. That is the change a reader will notice first and it is
+  the change nothing else announces.
+* **The prune reclaims nothing new and nothing less.** `protected_keys()` is **5,188 keys
+  over 16 kept records**, and it was 5,188 before: the stamp moved from `KEPT_UNPUBLISHED`
+  to `PUBLISHED` and `kept()` is their union. Only **7** of its 1,000 keys are unique to
+  it — the other 993 are seated in some other kept record too — so even un-keeping it would
+  release seven candidate rows.
+* **What it costs to supersede it**: a later record takes the role by being added to
+  `PUBLISHED` with its negation line, and this stamp keeps its own line for as long as
+  anything resolves it. The two lists are one list written twice and
+  `tests/test_tentative.py` fails if they disagree, so superseding is two edits and a test,
+  not a rename.
+
+**It does not touch the ten zero-slack demands.** Publication is a line in a tuple and a
+line in `.gitignore`; it reads no pool, seats nothing and re-solves nothing. The ten
+(`curvature`, `direct_trap_lines`, `direct_trap_screen`, `itinerary` and `smooth_curvature`
+at their mode floors; `dark_muted_lime`, `dark_vivid_lime`, `dark_vivid_yellow`,
+`light_vivid_cyan` and `light_vivid_lime` at exactly 20 seats) are as *The veto and the seat
+floors can disagree* left them — met, with no slack — and the record carrying them is now
+the published one rather than a stamp somebody had to know to name.
 
 **Publication, durability and retention are three questions, and the protection below is
 the durable one.** A record on the **keep list** is *protected*: `protected_keys` reads
@@ -2272,6 +2340,81 @@ to people who are not here, and what comes back is one small JSON file per perso
 `<name>_labels.json`. **There is no ingest yet and the schema is the contract** — the
 votes have to exist before anything reads them, and `votes.VIEWER` names the shape so a
 friend's copy of a kit outlives this checkout's memory of what wrote it.
+
+### Found before made — the leg that used to be hours is 39 seconds
+
+**Since 2026-09-14.** `FRAME` and `SUPERSAMPLE` are the gallery rejection sheet's, so a
+record that has been through a rejection pass already has every seat drawn at exactly the
+kit's geometry. `votes.standing_fulls` asks `curation.fulls` for them — one lookup per
+distinct supersample, because `--ss-for` makes a kit's regime a per-seat fact — and what
+comes back is matched on the recipe key **and** the regime, exact. A found picture is not
+an approximation of the render leg's output; it *is* that leg's output, made earlier.
+
+**Measured over `20260914T171846Z`, the published n=1000 record**: **1,000 of 1,000 found,
+hit rate 1.0000, nothing rendered**. The whole kit — decode, two encodes and a LANCZOS
+downscale a seat, then the page, the paragraph and the zip — took **39.3 s wall**, of which
+36.3 s was the thousand seats at **0.036 s each** and 2.0 s was the zip. Against the
+**~1.9 h** the same thousand would take rendered at 6.8 s a picture on the locked three
+workers, which is what `curate solve fulls` measured on this record's own misses.
+
+**A hit rate well under 1 means the kit and the sheets disagree about geometry**, and that
+is worth knowing before a friend sees a kit rather than after: it is the one reading here
+that is a fault report rather than a saving. `--no-reuse` renders the whole leg anyway,
+which is how a picture somebody suspects a sheet of is checked against a fresh one.
+
+#### What reuse costs the picture
+
+**Found is not copied.** The file `fulls` hands back is the engine's own JPEG at its
+quality, and the kit re-encodes it at `QUALITY`/`CHROMA` like any other picture, because a
+kit whose fulls came from two encoders depending on which sheet happened to hold the seat
+would be asking a friend to compare encoders rather than pictures. So a reused seat has
+been through two of them.
+
+**Measured 2026-09-14**, six sheet-sourced seats of `20260914T171846Z` re-rendered to PNG
+through the same release path and compared as mean absolute difference against that PNG:
+
+| | mean | max |
+| --- | --- | --- |
+| the engine's own q90 JPEG | 3.71 | 7.64 |
+| a kit that renders, then encodes at q85/4:2:0 | 4.53 | 6.36 |
+| a kit that reuses, then encodes at q85/4:2:0 | **5.47** | 9.13 |
+
+**Reuse costs 0.94** — a fifth of what the kit's own encoding cell already costs, and well
+under the **6.28** that the ss2-against-ss4 decision was priced at and thought worth 21
+hours. It buys 1.9 h.
+
+⚠ **The second row is the surprising one**: the engine's q90 file is *closer* to the
+picture than what a kit makes itself, so shipping the found bytes verbatim would be both
+truer and free. It is not done, for the uniformity reason above and for bytes — a verbatim
+kit is **573 MB** of fulls against this one's **330 MB**. The q85/4:2:0 cell was chosen at
+**2560x1440**, where "not visibly apart from its own PNG" was measured; nothing has
+re-measured that claim at 1280x720 and these numbers do not support it there.
+
+### Handing a kit over, and what comes back
+
+**Send the zip and nothing else.** `artifacts/votes/<kit>.zip` is self-contained: the
+pictures, the page, the paragraph and the manifest. The published n=1000 kit is **384.2 MB**
+— 330.4 MB of fulls at 330 KiB mean, 53.5 MB of thumbnails, and everything else under a
+megabyte — which is a link and not an attachment. The JPEGs are **stored** rather than
+deflated, so the zip is the sum of its pictures and unzipping is a copy.
+
+**A kit built with no `--friend` names asks for a typed name**, and its deck is the master
+permutation rotated by a hash of what gets typed. That is one ordering rule with a worse
+offset, and it is the right build when the names are not known yet: naming friends buys
+*even spacing* between them, nothing else, and the pictures are paid for once either way.
+A kit built for names lists them on the first screen and the pick selects the deck.
+
+**What comes back is `<name>_labels.json` per person, and there is nowhere for it to go
+yet.** No command reads one — `votes.VIEWER` (`"3.0"`) is the whole contract, and it is
+additive by rule, so a file saved today is readable by a reader written months from now.
+Park them at `artifacts/votes/<kit>_returned/` — a **sibling** of the kit and never a
+directory inside it, because `votes.archive` rglobs the kit folder and a rebuild would zip
+one friend's votes into the copy going to the next one. The kit's own `manifest.json` is
+the other half of the join: a vote is `{recipe key: 1 | 2}` and finds the record by key,
+but *which walk it was taken on* is only in that manifest and the order files, so the two
+directories are read together. **The latest file per person wins** — an export is the
+complete state every time, so a friend who exports twice has sent one file and a newer
+copy of it.
 
 ### `<name>_labels.json`, and what 3.0 added
 

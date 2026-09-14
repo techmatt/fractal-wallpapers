@@ -92,8 +92,19 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
             if args.spacing:
                 print(json.dumps(_spacing_readout(named_stamp), indent=2))
                 return 0
-            out = resolve_output(args.out) if args.out else None
-            print(f"{display_path(tentative.page(named_stamp, out=out))}")
+            if args.out and args.viewer:
+                print("`--out` and `--viewer` name two places; give one.")
+                return 1
+            if args.viewer:
+                out = tentative.viewer_dir() / tentative.PAGE_NAME
+                # Which record it is of, said out loud. The viewer path carries no
+                # stamp on purpose, so the one thing this command has to print
+                # that `browse <stamp>` does not is the stamp it just wrote.
+                named_stamp = named_stamp or tentative.latest()
+            else:
+                out = resolve_output(args.out) if args.out else None
+            written = display_path(tentative.page(named_stamp, out=out))
+            print(f"{written} — {named_stamp}" if args.viewer else written)
             return 0
         # resolve: a comma list, so one invocation answers a whole figure prompt.
         if not named:
@@ -1539,6 +1550,17 @@ def add_steps(steps) -> None:
         "thumbnail resolved relative to where it lands. That is the difference between "
         "this and copying `index.html` afterwards, which points at nothing. The record's "
         "own page is left alone",
+    )
+    browsing.add_argument(
+        "--viewer",
+        action="store_true",
+        help="write the page to the VIEWER directory — `curation.tentative.viewer_dir()`, "
+        "one place with no stamp in its name — instead of beside the record's rows. That is "
+        "the path to bookmark: a record's own page names the stamp it is of, and the "
+        "official record moves every checkpoint, so a bookmark onto one is a bookmark onto "
+        "a superseded gallery. With no stamp named it is the newest PUBLISHED record, which "
+        "is what the bookmark is for. `--out` names another place and the two are not given "
+        "together",
     )
 
     resolving = solve_verbs.add_parser(

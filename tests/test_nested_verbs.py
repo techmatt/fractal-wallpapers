@@ -628,7 +628,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
         "fulls": ("--stamp", "--workers", "--no-render"),
-        "browse": ("--stamp", "--spacing", "--out"),
+        "browse": ("--stamp", "--spacing", "--out", "--viewer"),
         "resolve": ("--stamp",),
         "list": (),
     },
@@ -642,6 +642,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--friend",
             "--page",
             "--seed",
+            "--no-reuse",
             "--ss-for",
         )
     },
