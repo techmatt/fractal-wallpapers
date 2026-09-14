@@ -2,7 +2,7 @@
   "schema": 1,
   "heads": {
     "gallery_grade": {
-      "tag": "weights-v7",
+      "tag": "weights-2026-09-14",
       "asset": "gallery_grade.fp16.pt",
       "sha256": "db682d254cf7238d3ab6dd7353d9794cf0a39580ea036861ed3f4e82c8e90600",
       "bytes": 15415792,
@@ -22,7 +22,7 @@
       "averaged_on": "the probability scale"
     },
     "location": {
-      "tag": "weights-v2",
+      "tag": "weights-2026-09-14",
       "asset": "location.fp16.pt",
       "sha256": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
       "bytes": 17163794,
@@ -35,7 +35,7 @@
       }
     },
     "palette": {
-      "tag": "weights-v1",
+      "tag": "weights-2026-09-14",
       "asset": "palette.fp16.pt",
       "sha256": "d7edc31cbaa4f9e9c2084b3ef5892b08ecf9fa77bc1d1b330f64aeec1c5b9716",
       "bytes": 5130440,
@@ -54,7 +54,7 @@
       }
     },
     "render": {
-      "tag": "weights-v6",
+      "tag": "weights-2026-09-14",
       "asset": "render.fp16.pt",
       "sha256": "481fe0582328f0de8d64d8e0ddc9a0bde1f044419e2074af6a559239b5792d46",
       "bytes": 5135214,

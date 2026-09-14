@@ -130,13 +130,16 @@ from pathlib import Path
 
 from fractal_wallpapers.models import head, metrics, scoring, train
 from fractal_wallpapers.models.roster import HEADS, manifest_path
+from fractal_wallpapers.models.roster import TAG as roster_TAG
 from fractal_wallpapers.paths import repo_root, tracked_name
 
 #: The schema of the weights manifest.
 SCHEMA = 1
 
-#: The release tag a first shipment goes to.
-TAG = "weights-v1"
+#: The release tag a shipment goes to, which is [`roster.TAG`] and not a second
+#: spelling of it. Read through rather than restated, because a staging default
+#: that drifted from the manifest's own rows would cut a release nothing resolves.
+TAG = roster_TAG
 
 #: What supervised each head, and where the record of it lives. A hash says
 #: which file; this says what taught it — the part a download cannot verify and

@@ -103,10 +103,25 @@ Fetch the trained judges before anything that scores:
 .venv/Scripts/fractal-wallpapers fetch-weights --check    # no network: what is here, and does it hash
 ```
 
-Four heads — `location`, `render`, `palette` and `gallery_grade` — each one asset in a
-GitHub release, each verified against the sha256 in `models/weights.json` before it is
-kept. A head whose release has not been cut is reported by tag, asset and URL and the
-rest are still fetched; the exit code says whether every head arrived.
+Four heads — `location`, `render`, `palette` and `gallery_grade` — **in one release**,
+each verified against the sha256 in `models/weights.json` before it is kept. A head
+whose asset is missing is reported by tag, asset and URL and the rest are still
+fetched; the exit code says whether every head arrived.
+
+**One dated tag, and it is never moved.** Every row in `models/weights.json` names
+`weights-2026-09-14` — Matt's decision of 2026-09-14, replacing a per-head numbering
+that had reached `weights-v7` and made assembling one set of judges a matter of
+resolving four different releases. Dated rather than numbered because a head's version
+history is its `sha256` and that file's git history, not a tag name. A later change cuts
+a **new** dated tag and repoints every row; it does not replace an asset under a name a
+clone has already trusted, which is the one failure a hash check cannot catch.
+
+To check a release from outside this tree — here every head reports `already present`
+and GitHub is never asked, so a release that was never uploaded passes:
+
+```
+.venv/Scripts/fractal-wallpapers fetch-weights --verify-release
+```
 
 **One weight here is not ours and is not re-hosted**: the DINOv2 encoder `curate embed`
 reads, which comes from Hugging Face on first use — 84.2 MB, pinned to a hub revision in

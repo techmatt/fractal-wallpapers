@@ -49,6 +49,21 @@ def check_weights(manifest: dict) -> int:
     for head in roster.HEADS:
         if head not in heads:
             complaints.append(f"{head}: no manifest entry; a release cut now would omit it")
+    # **One package, one tag**, which is the failure the single-release scheme
+    # introduced and the per-head numbering could not have. A row left behind on
+    # an old tag 404s while the other three come down fine, so a clone gets three
+    # working judges and one that does not exist — and the only symptom is an exit
+    # code somebody has to read. Checked here rather than at fetch time because
+    # this is the dry run a release is cut after, and the repair is a manifest
+    # edit rather than a download.
+    tags = sorted({str(entry.get("tag") or "") for entry in heads.values()})
+    if len(tags) > 1:
+        complaints.append(
+            f"the {len(heads)} heads name {len(tags)} different tags ({', '.join(tags)}). "
+            f"Since 2026-09-14 every head ships in ONE dated release — roster.TAG is "
+            f"{roster.TAG!r} — and a row left on an older tag is a head that 404s while "
+            f"the rest come down."
+        )
     for head, entry in sorted(heads.items()):
         missing = [field for field in REQUIRED_FIELDS if field not in entry]
         if missing:
@@ -102,6 +117,134 @@ def unreachable(head: str, entry: dict, url: str, why: Exception) -> str:
     return f"{head}: {said}\n  tag {entry['tag']}  asset {entry['asset']}\n  {url}"
 
 
+#: Where a release check clones from when nobody says otherwise. The public HTTPS
+#: URL and not the `git@` remote this checkout pushes over: what is being verified
+#: is what a stranger gets, and a stranger has no deploy key.
+PUBLIC_REPO = "https://github.com/techmatt/fractal-wallpapers.git"
+
+
+def verify_release(args: argparse.Namespace) -> int:
+    """Clone fresh, fetch, and check — **because this tree passes either way**.
+
+    `fetch-weights` on this machine reports `already present` for every head: the
+    files are on disk and they hash true, so it never asks GitHub anything. That
+    makes the one question a release has to answer — *can somebody who does not
+    have these files get them* — the one question this checkout cannot answer
+    about itself. So this clones the public repository into a temporary directory,
+    where `models/` holds no weights at all, and runs the clone's own command
+    against the clone's own manifest.
+
+    **It borrows this interpreter rather than building a venv**, and that is a
+    stated limit rather than a shortcut: `fetch-weights` and `--check` are
+    stdlib-only by construction (`tests/test_base_install.py` proves it in a
+    subprocess with the optional imports refused), so `PYTHONPATH=<clone>/src` is
+    the whole install they need. What this verifies is **the release and the
+    manifest**; it does not verify that `pip install -e .` works, which is a
+    different claim with a different failure.
+
+    The clone is `--depth 1` of one ref, so it costs the pack and not the history.
+    """
+    import os
+    import shutil
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+
+    into = Path(args.into).resolve() if args.into else Path(tempfile.mkdtemp(prefix="weights-"))
+    clone = into / "clone"
+    print(f"[verify] cloning {args.repo} @ {args.ref} into {clone}")
+    cloned = subprocess.run(
+        ["git", "clone", "--depth", "1", "--branch", args.ref, args.repo, str(clone)],
+        capture_output=True,
+        text=True,
+    )
+    if cloned.returncode != 0:
+        print(cloned.stderr.strip()[-2000:])
+        print(
+            f"\nFAIL — the clone did not come down. If this says 'Remote branch {args.ref} not "
+            f"found', the branch has not been pushed; the release cannot be verified against "
+            f"code GitHub does not have."
+        )
+        return 1
+
+    # A clean environment: this machine's roots must not reach into the clone, and
+    # a `local.toml` here is not something a stranger has.
+    environment = {
+        key: value for key, value in os.environ.items() if not key.startswith("FRACTAL_WALLPAPERS_")
+    }
+    environment["PYTHONPATH"] = str(clone / "src")
+
+    def inside(*arguments) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, "-m", "fractal_wallpapers.cli", *arguments],
+            cwd=clone,
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+
+    held = sorted(str(one) for one in (clone / "models").rglob("*.pt"))
+    print(f"[verify] weights in the clone before fetching: {len(held)}")
+
+    # **Which manifest GitHub is actually serving**, said before anything is
+    # fetched. A release can be cut perfectly and this still fail, because the
+    # rows that name it live in a commit that has to be pushed too — and the two
+    # failures look identical from inside the fetch. This separates them.
+    from fractal_wallpapers.models import roster
+
+    served = json.loads((clone / "models" / "weights.json").read_text(encoding="utf-8"))
+    tags = sorted({str(row.get("tag") or "") for row in served.get("heads", {}).values()})
+    print(
+        f"[verify] the clone's manifest names {len(served.get('heads', {}))} head(s) "
+        f"on tag(s) {', '.join(tags)}"
+    )
+    stale = tags != [roster.TAG]
+    if stale:
+        print(
+            f"[verify] ⚠ this checkout names {roster.TAG!r}, so the manifest on GitHub is NOT "
+            f"the one being staged here — `git push` is outstanding, and a release cut at "
+            f"{roster.TAG!r} cannot be reached by the code a clone gets."
+        )
+
+    def say(done) -> None:
+        for stream in (done.stdout, done.stderr):
+            if stream and stream.strip():
+                print(stream.strip()[-2000:])
+
+    print("\n$ fractal-wallpapers fetch-weights")
+    fetched = inside("fetch-weights")
+    say(fetched)
+
+    print("\n$ fractal-wallpapers fetch-weights --check")
+    checked = inside("fetch-weights", "--check")
+    say(checked)
+
+    ok = fetched.returncode == 0 and checked.returncode == 0 and not stale
+    if ok:
+        print(
+            f"\nPASS — {len(roster.HEADS)} of {len(roster.HEADS)} heads downloaded from "
+            f"{roster.TAG} and hashed true against the manifest. The release is complete and "
+            f"a stranger can use it."
+        )
+    else:
+        print("\nFAIL — one or both of these:")
+        print(
+            f"  * the manifest on GitHub is stale (push `main`) — "
+            f"{'THIS ONE' if stale else 'not this one, the tags agree'}"
+        )
+        print(
+            "  * the release is missing or an asset is misnamed — every 404 above names its "
+            "tag, its asset and its URL, and a hash that did not match says so. The assets "
+            "must be attached under exactly the names `models/weights.json` gives."
+        )
+    if args.into:
+        print(f"\nthe clone is at {clone} — delete it when you are done")
+    else:
+        shutil.rmtree(into, ignore_errors=True)
+    return 0 if ok else 1
+
+
 def fetch_weights(args: argparse.Namespace) -> int:
     """Download each head's weights from GitHub Releases and verify its sha256.
 
@@ -111,6 +254,8 @@ def fetch_weights(args: argparse.Namespace) -> int:
     — and the releases this manifest names are cut by hand, so one head missing
     while the rest are there is the ordinary state rather than a rare one.
     """
+    if args.verify_release:
+        return verify_release(args)
     manifest = json.loads(manifest_path().read_text(encoding="utf-8"))
     if args.check:
         return check_weights(manifest)
@@ -170,7 +315,40 @@ def add_commands(subcommands) -> None:
         action="store_true",
         help=(
             "verify the manifest against the local tree and download nothing: every head "
-            "present, every entry complete, every named artifact on disk and hashing true"
+            "present, every entry complete, every named artifact on disk and hashing true, "
+            "and all four naming ONE tag — since 2026-09-14 every head ships in one dated "
+            "release, and a row left on an older tag is a head that 404s while the rest "
+            "come down"
         ),
+    )
+    fetch.add_argument(
+        "--verify-release",
+        action="store_true",
+        help="clone the public repository into a temporary directory and run `fetch-weights` "
+        "and `--check` THERE. The one thing this checkout cannot answer about itself: here "
+        "every head reports `already present` and GitHub is never asked, so a release that "
+        "was never uploaded passes. Borrows this interpreter through PYTHONPATH rather than "
+        "building a venv — both commands are stdlib-only by construction — so it verifies "
+        "the release and the manifest, not that `pip install` works",
+    )
+    fetch.add_argument(
+        "--repo",
+        default=PUBLIC_REPO,
+        help=f"which repository --verify-release clones (default {PUBLIC_REPO}). The public "
+        f"HTTPS URL rather than the push remote, because what is being verified is what a "
+        f"stranger gets and a stranger has no deploy key",
+    )
+    fetch.add_argument(
+        "--ref",
+        default="main",
+        help="which branch --verify-release clones (default main). A release is verified "
+        "against the manifest GitHub actually serves, which is the pushed one and not this "
+        "working tree",
+    )
+    fetch.add_argument(
+        "--into",
+        metavar="DIR",
+        help="keep the --verify-release clone here instead of a temporary directory that is "
+        "deleted afterwards. For reading what came down when something failed",
     )
     fetch.set_defaults(handler=fetch_weights)

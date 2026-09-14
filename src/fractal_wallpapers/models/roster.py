@@ -58,9 +58,35 @@ from fractal_wallpapers.paths import repo_root
 HEADS = ("location", "render", "palette", "gallery_grade")
 
 
+#: **The release every head ships in**, and there is one of it.
+#:
+#: Matt's decision of 2026-09-14, replacing a per-head numbering that had reached
+#: `weights-v1` … `weights-v7`: four heads across four tags, three of which held a
+#: single asset, and a clone's `fetch-weights` resolving four different releases to
+#: assemble one set of judges. **One package, one tag, four assets.**
+#:
+#: **Dated rather than numbered, deliberately.** The version history of a head is
+#: its `sha256` in [`manifest_path`] and that file's git history; a tag is a name
+#: for a set of bytes somebody uploaded on a day. A number implies a sequence a
+#: reader has to trace back, and `weights-v6` said nothing about *which* heads were
+#: in it or when — `weights-v2` and `weights-v6` differ by four versions and by two
+#: days.
+#:
+#: ⚠ **A published tag is NEVER moved.** A future change cuts a new dated tag and
+#: rewrites these rows to point at it; it does not replace assets under this name.
+#: That is the whole reason a clone can trust a sha256 it fetched last month — a
+#: moved asset under a trusted name is the one failure a hash check cannot catch,
+#: because the manifest that names the hash moves with it.
+#:
+#: It lives here rather than in `ship`, with [`HEADS`] and for [`HEADS`]' reason:
+#: `fetch-weights` is stdlib-only and runs on a base install, and the tag is
+#: something it has to be able to check without the training stack.
+TAG = "weights-2026-09-14"
+
+
 def manifest_path() -> Path:
     """The tracked manifest `fetch-weights` reads: which artifact each head ships."""
     return repo_root() / "models" / "weights.json"
 
 
-__all__ = ["HEADS", "manifest_path"]
+__all__ = ["HEADS", "TAG", "manifest_path"]

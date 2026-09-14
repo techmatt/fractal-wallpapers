@@ -278,6 +278,31 @@ def device_flag(parser: FlagContainer) -> FlagContainer:
     return parser
 
 
+def tag_flag(parser: FlagContainer) -> FlagContainer:
+    """Which release a shipment names, on every `ship` verb there is.
+
+    [`device_flag`]'s argument, and this one had already paid it: four heads ship
+    and three of them wrote `default="weights-v1"` out by hand, so the day the
+    scheme changed to one dated package the constant had to be found in four
+    places and was found in two. One definition off [`roster.TAG`], which is also
+    what `weights.json`'s rows and `fetch-weights --check`'s one-tag guard read,
+    so a stage cannot name a release the manifest does not.
+    """
+    from fractal_wallpapers.models import roster
+
+    parser.add_argument(
+        "--tag",
+        default=roster.TAG,
+        help=f"the release tag to name (default {roster.TAG}, the one package every head "
+        f"ships in since 2026-09-14). Dated rather than numbered: a head's version history "
+        f"is its sha256 in models/weights.json and that file's git history, not a tag name. "
+        f"A PUBLISHED TAG IS NEVER MOVED — shipping a head after this one is up means cutting "
+        f"a new dated tag and repointing every row at it, never replacing an asset under a "
+        f"name a clone has already trusted",
+    )
+    return parser
+
+
 def grace_flag(parser: FlagContainer) -> FlagContainer:
     """The expansion grace, on every command that walks.
 
