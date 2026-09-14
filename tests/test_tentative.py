@@ -671,6 +671,7 @@ def test_resolving_a_name_the_record_does_not_hold_is_a_non_zero_exit(store):
 def test_retention_keeps_a_recorded_seat_the_rank_would_have_dropped(
     isolated,  # noqa: F811
     tentative_store,
+    monkeypatch,
 ):
     """**The guard the whole store rests on.** A seat wins its place on the
     gallery's objective — over a view, against the colour rules — and none of
@@ -687,7 +688,12 @@ def test_retention_keeps_a_recorded_seat_the_rank_would_have_dropped(
     was not `RANKED`, so a 1 there is this record's seat being dropped by the rank
     and kept by the protection, in one number. A second dry run would pay the
     supply sidecar and the served-location index again for a claim already made.
+
+    The record is written at a named stamp and that stamp is put on the keep list,
+    because since 2026-09-13 the keep list is the whole of what `protected_keys`
+    reads — a record merely existing protects nothing.
     """
+    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260101T000000Z",))
     rows = []
     for key in ("k0", "k1"):
         source = decision(candidate=key)
@@ -700,7 +706,7 @@ def test_retention_keeps_a_recorded_seat_the_rank_would_have_dropped(
             )
         )
     candidate_ledger.write(rows)
-    tentative.write(record_of(seat("k1")), log=quiet)
+    tentative.write(record_of(seat("k1")), stamp="20260101T000000Z", log=quiet)
     kept = candidate_ledger.prune(keep=1, apply=True, log=quiet)
 
     assert kept["rows_kept"] == 2, "a recorded seat the rank dropped was not protected"
@@ -713,18 +719,26 @@ def test_retention_keeps_a_recorded_seat_the_rank_would_have_dropped(
 
 
 @pytest.mark.slow
-def test_the_protection_reads_every_record_and_not_only_the_newest(tentative_store):
-    """An older record's IDs are exactly the ones somebody is still holding. A
+def test_the_protection_reads_every_kept_record_and_not_only_the_newest(
+    tentative_store, monkeypatch
+):
+    """An older kept record's IDs are exactly the ones somebody is still holding. A
     protection that read only the latest would sweep last week's page silently."""
+    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260901T000000Z", "20260902T000000Z"))
     tentative.write(record_of(seat("k0")), stamp="20260901T000000Z", log=quiet)
     tentative.write(record_of(seat("k1")), stamp="20260902T000000Z", log=quiet)
 
     assert tentative.protected_keys() == {"k0", "k1"}
 
 
-def test_a_record_the_protection_cannot_parse_does_not_stop_a_prune(tentative_store):
+def test_a_record_the_protection_cannot_parse_does_not_stop_a_prune(tentative_store, monkeypatch):
     """`prune` is the only thing in this project that removes a candidate, and it
-    runs inside every merge. A browser's store must not be able to stop it."""
+    runs inside every merge. A browser's store must not be able to stop it.
+
+    The unparseable record is on the keep list, or this would pass by never
+    reading the folder at all — which is a different claim than the one here.
+    """
+    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260902T000000Z",))
     directory = tentative_store / "20260902T000000Z"
     directory.mkdir(parents=True)
     (directory / tentative.ROWS_NAME).write_text("{not json\n", encoding="utf-8")
@@ -891,14 +905,51 @@ def test_an_unpublished_record_is_named_in_the_refusal_rather_than_ignored(
         tentative.latest()
 
 
-def test_the_protection_keeps_an_unpublished_record_too(tentative_store, monkeypatch):
+def test_the_protection_keeps_an_unpublished_record_the_keep_list_names(
+    tentative_store, monkeypatch
+):
     """**Publication, durability and retention are three questions**, Matt's
-    ruling. While an unpublished record exists it is protected: deleting it is the
-    only thing that releases its seats, so `protected_keys` sweeps the whole store
-    and never `PUBLISHED`. That is why a record nobody needs is deleted rather
-    than left — the protection does not care whether anybody meant it."""
+    ruling, and this is the third one answered on its own. An unpublished record
+    is protected when `KEPT_UNPUBLISHED` names it and not otherwise — publication
+    is not the input, but neither is the folder's mere existence."""
     recorded(tentative_store, "20260101T000000Z", "k0")
     recorded(tentative_store, "20260303T000000Z", "k1")
     monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))
+    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260303T000000Z",))
 
     assert tentative.protected_keys() == {"k0", "k1"}
+
+
+def test_a_record_off_the_keep_list_pins_nothing(tentative_store, monkeypatch):
+    """**The 2026-09-13 reversal, stated as its own guard.** Before it, a solve
+    record written to measure one number against held every seat it named against
+    the prune for as long as the folder sat there — preservation conferred by an
+    ephemeral artifact, which is the policy backwards and is why sweeping the
+    store kept arriving as a recurring approval.
+
+    `k1`'s record is readable by naming its stamp and votes on nothing.
+    """
+    recorded(tentative_store, "20260101T000000Z", "k0")
+    recorded(tentative_store, "20260303T000000Z", "k1")
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))
+    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ())
+
+    assert tentative.protected_keys() == {"k0"}
+    assert tentative.kept() == ["20260101T000000Z"]
+    assert "20260303T000000Z" in tentative.stamps(), "the record is still there to be read"
+    assert [row["key"] for row in tentative.read_rows("20260303T000000Z")] == ["k1"]
+
+
+def test_the_keep_list_is_published_plus_the_named_unpublished_and_holds_no_ghost(
+    tentative_store, monkeypatch
+):
+    """`kept` is intersected with the store for the same reason `published` is: a
+    caller of it wants records it can read, and a clone holds published text files
+    for stamps whose pictures it has never rendered. A name on either list that
+    this machine does not hold is not an error and is not returned."""
+    recorded(tentative_store, "20260101T000000Z", "k0")
+    recorded(tentative_store, "20260303T000000Z", "k1")
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z", "20261212T000000Z"))
+    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260303T000000Z", "20261111T000000Z"))
+
+    assert tentative.kept() == ["20260101T000000Z", "20260303T000000Z"]

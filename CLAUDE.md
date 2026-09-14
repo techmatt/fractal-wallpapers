@@ -86,19 +86,21 @@ These were decided once, at the first commit, because each is expensive to rever
   discarding does not** — it is not a balance a leg weighs at the end of its run.
   A leg that recorded a gallery to measure something against **deletes it when the
   measurement is taken and says so in its report**: a solve is cheap to run again,
-  and what a leftover record costs is misreading hazard and prune protection, not
-  bytes. **The keep list, so the floor is concrete**: every stamp in
-  `tentative.PUBLISHED`; any record a published or upcoming figure cites; and the
-  current official n=1000 record, `20260911T022330Z`, which is unpublished and is
-  what `curation/page_order.py`'s constants were measured on. Everything else goes
-  unless Matt says otherwise.
+  and what a leftover record costs is misreading hazard, not bytes. **The keep list
+  is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, which carries
+  its five entries with the reason for each written at the site. Everything else
+  goes unless Matt says otherwise. 24 off-list records were moved to
+  `scratch/retired_tentative/` on 2026-09-13 and the store now holds twelve.
 - **Publication, durability and retention are three questions and not one.**
-  `tentative.protected_keys()` sweeps the whole store published or not, so a record
-  that exists pins its seats against the prune whatever its status, and deleting it
-  is the only thing that releases them. That unconditional protection is the
-  *reason* discarding is the default rather than an argument against it: a record
-  nobody meant to keep holds candidate rows against retention until somebody
-  remembers it, and no prune's output says which record is holding a key.
+  `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
+  `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple
+  and never a folder existing. A record off that list is readable by naming its
+  stamp and pins nothing. The test for a `KEPT_UNPUBLISHED` entry is that something
+  **resolves** the record — code reading its rows, a figure naming `<stamp>|<key>`
+  — not that something mentions it. ⚠ It swept the whole store until 2026-09-13,
+  which made an ephemeral artifact confer preservation and is why sweeping kept
+  landing on Matt's desk as a recurring approval; there is no sweep step to carry
+  forward any more.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.

@@ -465,6 +465,50 @@ the rest: what is wrong is the silence, not the default. A misspelt draw is now
 refused too — merged over nothing, it would leave the draw it meant to set on its
 default and report the misspelling as a share.
 
+### `--phase-draw` — the standing forward draw since 2026-09-13
+
+**One uniform phase per candidate, and a shot is one render.** Matt's call of
+2026-09-13, and what it replaced is the best-of-five rotation search
+(`curate rotate mine`), not `--vary-palette` below — the three are different
+questions and all three still exist. `depth.draw_phases` is the draw and
+`mine_night2_ckpt124` is the night it became standing.
+
+**Why a single draw beats a winner-keeps rule.** `mine_night_ckpt124` priced
+best-of-five on the composites at full render price: 5x the engine seconds for
+**3.12x** the above-bar rate (`p_fine >= 0.50`, 0.83% → 2.60%), with **no
+recolour discount** — k=0..k=4 cost 5.316/5.335/5.425/5.355/5.365 s and only
+14.3% of candidates came in under 1.5 s. Five candidates spent as five
+independent draws return an expected 4.15% against best-of-five's 2.60%, which is
+**1.6x more rows per engine second**. And the search is worse than expensive: a
+shot merges at most one row, so keeping the argmax of five phases biases the
+corpus toward whichever phase flattered a place. A single uniform draw is the
+unbiased realisation of the same axis at a fifth of the price.
+
+**Two things it deliberately does NOT do**, both of which `--vary-palette` does
+on purpose and for reasons that do not transfer:
+
+* **No mass held at phase 0.** `PALETTE_PHASE_HELD` is 0.3 because the varied leg
+  is a matched-pair experiment and needs unvaried rows of its own to read
+  against. This is not an experiment, it is how rows are made, and a 30% spike at
+  one point of the turn would sit in the corpus at exactly the place the draw
+  exists to spread away from.
+* **No twin.** A twin doubles a shot to answer *does moving the phase beat
+  leaving it alone*, which a production leg is not asking. Dropping it is the
+  whole of the saving.
+
+**`cycles` is left alone.** The repeat axis lost its own measurement —
+`palette_variant_mine_ckpt120` read repeat 3 at 36.4% of matched pairs won
+against repeat 1's 52.6%, monotone in the tile count — so this draw moves one
+member and the identity stays the identity on the other.
+
+**The direct traps draw bare**, for `--vary-palette`'s reason below and measured
+the same way: `phase` is a byte-for-byte no-op on a mode with no field, so no
+phase draw is spent on `direct_trap_screen`, `direct_trap_multiply` or
+`direct_trap_lines`.
+
+**Exclusive with `--vary-palette`, refused at the parser.** Both write
+`Shot.palette`, so a plan carrying the two is two draws under one name.
+
 ### `--vary-palette` — moving the palette block, and nothing else
 
 Off by default. On, every candidate draws a `phase` and a `repeat` alongside its

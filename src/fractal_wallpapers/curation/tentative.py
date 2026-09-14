@@ -164,10 +164,18 @@ RECORDED_SEATS = 1000
 #: misreading hazard and prune protection rather than bytes. The keep list is the
 #: stamps below, any record a published or upcoming figure cites, and the current
 #: official n=1000 record — `20260911T022330Z`, unpublished, the one
-#: [`page_order`]'s constants were measured on. **Retention is a third question
-#: after publication and durability, and the protection is why**: [`protected_keys`]
-#: sweeps the whole store whatever this list says, so a record that exists pins its
-#: seats and deleting it is the only thing that releases them.
+#: [`page_order`]'s constants were measured on. That list is [`kept`], and
+#: [`KEPT_UNPUBLISHED`] is the half of it this tuple does not already carry.
+#:
+#: **Retention is a third question after publication and durability**, and until
+#: 2026-09-13 the protection answered it by itself: [`protected_keys`] swept the
+#: whole store whatever any list said, so a record that merely existed pinned its
+#: seats and deleting it was the only thing that released them. That is the policy
+#: backwards — an ephemeral artifact conferring preservation — and it is why
+#: sweeping the store kept arriving on Matt's desk as a recurring approval. **The
+#: pin now reads [`kept`] and nothing else.** A record off the keep list is still
+#: perfectly readable by naming its stamp; what it no longer does is hold candidate
+#: rows against the prune on nobody's decision.
 #:
 #: **This list and `.gitignore`'s negation lines are one list written twice**, and
 #: `tests/test_tentative.py` fails if they disagree. Two spellings because git
@@ -181,6 +189,51 @@ PUBLISHED: tuple[str, ...] = (
     "20260904T080248Z",
     "20260904T134242Z",
     "20260904T233233Z",
+)
+
+#: **The unpublished stamps the keep list names**, which is the whole of the keep
+#: list that [`PUBLISHED`] does not already carry. Discarding is the default for an
+#: unpublished record, so an entry here is a stated reason and not an oversight,
+#: and it is what makes [`protected_keys`] a decision rather than a side effect of
+#: what happens to be on a disk.
+#:
+#: **The test for an entry is that something RESOLVES the record**, not that
+#: something mentions it. Every batch in `data/gallery_grade/batches.jsonl` names
+#: the record it was cut from in its `method` prose, and none of those is a reason
+#: to be here — the corpus rows carry their own join, so the record is provenance
+#: and provenance does not need the folder. What earns a line is code or a figure
+#: that reads the rows.
+#:
+#: * `20260906T133236Z` — `data/gallery_grade/batches.jsonl` names it as the draw
+#:   behind all three `n1000_0906_*` batches of the shipped label corpus, and
+#:   [`k_sweep`] reproduces its seating as the `K = 2` control arm.
+#: * `20260906T133559Z` — the site's `modes-gallery` figure stands its curvature
+#:   panel on seat `0cb93bec2bec2baf`; `fractal-website`'s `builder/picks.py`
+#:   resolves `<stamp>|<key>` out of this checkout and keeps no copy of its own.
+#: * `20260908T144844Z` — `backfill.DEFAULT_RECORD`, the record a backfill sweeps
+#:   when nobody names one, and the n=1000 gallery the site's figures resolve.
+#: * `20260908T211552Z` — two more seats `fractal-website`'s `article/figures.jsonl`
+#:   names as `<stamp>|<key>`.
+#: * `20260911T022330Z` — the current official n=1000 record, the one
+#:   `curation/page_order.py`'s constants were measured on. Re-measuring those
+#:   against a record pruned out from under them would read as drift in the page
+#:   order rather than as a missing record.
+#:
+#: ⚠ The first four were named in `fractal_wallpapers/README.md`'s store table as
+#: hard dependencies **while the store-wide sweep made the distinction cost
+#: nothing**. Now it costs everything, so they are here: the day this list became
+#: the whole input to [`protected_keys`] is the day a dependency not on it is a
+#: figure that breaks.
+#:
+#: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
+#: is deliberate: a kept record is kept, not tracked. Publication, durability and
+#: retention are three questions, and this tuple answers only the third.
+KEPT_UNPUBLISHED: tuple[str, ...] = (
+    "20260906T133236Z",
+    "20260906T133559Z",
+    "20260908T144844Z",
+    "20260908T211552Z",
+    "20260911T022330Z",
 )
 
 
@@ -241,6 +294,19 @@ def published() -> list[str]:
     """
     held = set(stamps())
     return [stamp for stamp in PUBLISHED if stamp in held]
+
+
+def kept() -> list[str]:
+    """**The keep list**: every stamp this project has decided to hold on to.
+
+    [`PUBLISHED`] plus [`KEPT_UNPUBLISHED`], intersected with the store the same
+    way and for the same reason [`published`] is — a caller wants records it can
+    read. This is the whole input to [`protected_keys`], so a record is preserved
+    because a list names it and never because a folder exists.
+    """
+    held = set(stamps())
+    named = list(PUBLISHED) + [stamp for stamp in KEPT_UNPUBLISHED if stamp not in set(PUBLISHED)]
+    return sorted(stamp for stamp in named if stamp in held)
 
 
 def latest() -> str:
@@ -607,19 +673,28 @@ def write(
 # The protection.
 # --------------------------------------------------------------------------- #
 def protected_keys() -> set:
-    """Every recipe key any recorded gallery seats. **What retention must keep.**
+    """Every recipe key a **kept** gallery seats. **What retention must keep.**
 
-    Over every stamp and not only the newest, because the point of recording a
-    gallery is that its IDs stay resolvable — an older record whose keys the rank
-    let go would be a page of broken thumbnails and a resolver answering nothing.
+    Over every stamp on [`kept`] and not only the newest, because the point of
+    recording a gallery worth keeping is that its IDs stay resolvable — an older
+    record whose keys the rank let go would be a page of broken thumbnails and a
+    resolver answering nothing.
+
+    ⚠ **Over [`kept`] and not over [`stamps`], since 2026-09-13.** It swept the
+    whole store before that, which made preservation a property of a folder
+    existing: a leg that recorded a gallery to measure one number against left
+    behind an artifact pinning thousands of candidate rows, and no prune's output
+    said which record was holding a key. Discarding an unpublished record is the
+    default and this is what makes that default cost nothing — an off-list record
+    stays readable by naming its stamp and simply stops voting on retention.
 
     Cheap by construction: a stamp is a few hundred to a few thousand short lines,
-    and there are as many stamps as there are galleries somebody decided to name.
-    Tolerant of a folder it cannot parse, because [`candidate_ledger.prune`] calls
-    this and a prune must not be stopped by a browser's store.
+    and the keep list is shorter than the store. Tolerant of a folder it cannot
+    parse, because [`candidate_ledger.prune`] calls this and a prune must not be
+    stopped by a browser's store.
     """
     out: set = set()
-    for stamp in stamps():
+    for stamp in kept():
         try:
             out |= {str(row["key"]) for row in read_rows(stamp)}
         except (TentativeRefused, ValueError, KeyError):

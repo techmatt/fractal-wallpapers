@@ -497,7 +497,7 @@ def add_steps(steps) -> None:
             default=backfill_module.DEFAULT_RECORD,
             help=f"the recorded gallery whose seats to sweep "
             f"(default {backfill_module.DEFAULT_RECORD}). "
-            f"`{backfill_module.EVERY_PROTECTED}` sweeps every seat of every recorded "
+            f"`{backfill_module.EVERY_PROTECTED}` sweeps every seat of every KEPT "
             f"gallery instead — `tentative.protected_keys`, which is what retention must "
             f"keep and therefore what has to stay replayable, de-duplicated across records "
             f"and published or not. Hours, so survey it first",

@@ -44,17 +44,17 @@ GUARD_BYTES = 1 << 20
 #:
 #: It was `GUARD_BYTES // 2` until 2026-09-06.
 #:
-#: ⚠ **It is 1,572,864 since 2026-09-13, Matt's dictated value, and that is ABOVE
-#: [`GUARD_BYTES`]** — so this line no longer fires before the history guard, and
-#: cannot: `data/palettes/color_mass/` is in `test_history_purity.py`'s
-#: `LARGE_TEXT_ALLOWLIST` as of the same ruling, which is what makes a 1.5 MiB
-#: per-mode file legal at all. The two numbers changed together and neither is
-#: readable without the other. What this line still does is the thing it was
-#: written for — say that the per-mode split has stopped being enough and wants
-#: another axis — but it now says it at 1.5 MiB rather than at three quarters of
-#: one, because the axis it would split on next is not obvious and a drop is not
-#: a reason to invent one.
-SPLIT_BYTES = 1_572_864
+#: ⚠ It was 1,572,864 for the day of 2026-09-13 and is three quarters of
+#: [`GUARD_BYTES`] again from the same night. That number was **above** the guard,
+#: which is a thing this line cannot be and still do its job: a warning line above
+#: the rule it warns about never fires, and it only stood at all because
+#: `data/palettes/color_mass/` was in `test_history_purity.py`'s
+#: `LARGE_TEXT_ALLOWLIST` for the same day. Both came out together. **1,572,864 was
+#: read as a cap and it is a split threshold** — raising it buys fewer, bigger
+#: shards, which is the opposite of what the per-mode split is for. The right answer
+#: to a mode file that outgrows this is another axis and more shards, and this line
+#: firing below the guard is what leaves room to choose one.
+SPLIT_BYTES = (GUARD_BYTES * 3) // 4
 
 
 def files() -> list:

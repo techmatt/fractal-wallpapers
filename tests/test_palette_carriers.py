@@ -228,15 +228,24 @@ def test_the_lead_is_taken_over_the_rows_the_table_holds_and_that_is_exact() -> 
 
 #: The ceiling this one record is held to. **2 MiB since 2026-09-13, Matt's
 #: dictated value**, and it is ABOVE `test_history_purity.py`'s
-#: `MAX_TRACKED_BYTES` — `data/palettes/carriers.jsonl` is in that file's
-#: `LARGE_TEXT_ALLOWLIST` as of the same ruling, which is what makes a record
-#: this size legal. Before that this test asserted `0.8 * MAX_TRACKED_BYTES`
-#: and the record sat at 690,732 bytes, 65.9% of a mebibyte.
+#: `MAX_TRACKED_BYTES`. What makes a record that size legal is that file's
+#: `PER_FILE_CAPS`, which names this path and this number — a raised ceiling for
+#: one file, not the absence of one. It spent the day of 2026-09-13 in
+#: `LARGE_TEXT_ALLOWLIST` instead and came back out the same night, because an
+#: allowlist entry on a file that grows with every palette drop hands away the
+#: only number that would catch a tenfold surprise.
+#:
+#: The two places state the same number and
+#: `test_history_purity.test_the_per_file_cap_agrees_with_the_record_s_own_test`
+#: holds them to it, so neither is the copy and either moving alone is a red.
 #:
 #: Stated as its own number rather than as a fraction of the history guard,
-#: because it is no longer a fraction of it: the two limits now say different
-#: things, and a reader who sees `0.8 *` would take this file to be the one that
-#: fires first when it is the one the other rule has stepped aside for.
+#: because it is no longer a fraction of it: the two limits say different things,
+#: and a reader who sees `0.8 *` would take this file to be the one that fires
+#: first when it is the one with the raised cap. Before 2026-09-13 this test did
+#: assert `0.8 * MAX_TRACKED_BYTES`, and the record sat — and still sits — at
+#: 690,732 bytes, 65.9% of a mebibyte, so the cap is headroom rather than a
+#: ceiling in force.
 MAX_RECORD_BYTES = 2 * 1024 * 1024
 
 

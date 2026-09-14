@@ -44,3 +44,11 @@
 {"schema": 1, "event": "mark", "at": "2026-09-13T21:45:35Z", "why": "prune", "counts": {"rows": 388159, "recipe_key_named": 374844}}
 {"schema": 1, "event": "mark", "at": "2026-09-13T21:48:19Z", "why": "prune", "counts": {"rows": 388633, "recipe_key_named": 375318}}
 {"schema": 1, "event": "mark", "at": "2026-09-14T02:15:37Z", "why": "prune", "counts": {"rows": 389752, "recipe_key_named": 376437}}
+{"schema": 1, "event": "mark", "at": "2026-09-14T06:00:54Z", "why": "prune", "counts": {"rows": 395173, "recipe_key_named": 381858}}
+{"schema": 1, "event": "deleted", "at": "2026-09-14T06:00:54Z", "why": "prune", "counts": {"rows": 3620, "recipe_key_named": 3618, "run_index_named": 2}}
+{"schema": 1, "event": "mark", "at": "2026-09-14T07:37:02Z", "why": "prune", "counts": {"rows": 395840, "recipe_key_named": 382527}}
+{"schema": 1, "event": "mark", "at": "2026-09-14T08:41:30Z", "why": "prune", "counts": {"rows": 399015, "recipe_key_named": 385702}}
+{"schema": 1, "event": "mark", "at": "2026-09-14T11:27:53Z", "why": "prune", "counts": {"rows": 408048, "recipe_key_named": 394735}}
+{"schema": 1, "event": "mark", "at": "2026-09-14T12:46:39Z", "why": "prune", "counts": {"rows": 410260, "recipe_key_named": 396947}}
+{"schema": 1, "event": "mark", "at": "2026-09-14T13:33:00Z", "why": "prune", "counts": {"rows": 427840, "recipe_key_named": 414527}}
+{"schema": 1, "event": "deleted", "at": "2026-09-14T13:33:00Z", "why": "prune", "counts": {"rows": 10255, "recipe_key_named": 10255}}
