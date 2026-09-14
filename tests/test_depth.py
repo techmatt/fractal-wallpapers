@@ -2309,6 +2309,49 @@ def test_a_direct_trap_is_drawn_bare_and_gets_no_twin():
     assert colorize.kind_of("direct_trap_screen") == colorize.DIRECT_KIND
 
 
+def test_the_phase_draw_gives_every_shot_one_uniform_phase_and_no_twin():
+    """**The standing forward draw.** One render a shot, one phase a candidate,
+    drawn uniformly over the turn — and the two things it must NOT do are the two
+    `vary_palettes` does on purpose: hold mass at exactly 0, and make a twin.
+
+    A spike at 0 is the thing this draw exists to spread away from, and a twin
+    doubles a shot to answer a question a production leg is not asking.
+    """
+    shots = _shots(60)
+    plan, tally = depth.draw_phases(shots, seed=5, log=lambda *_a: None)
+
+    assert len(plan) == len(shots), "a phase draw makes no twins, so it adds no shots"
+    assert tally == {"bare_direct_trap": 0, "phase_drawn": 60}
+    phases = [shot.palette["phase"] for shot in plan]
+    assert all(set(shot.palette) == {"phase"} for shot in plan), "`cycles` is not on the table"
+    assert all(0.0 <= one < 1.0 for one in phases)
+    assert 0.0 not in phases, "no phase is held at 0 — that is `vary_palettes`' rule"
+    assert len(set(phases)) == 60, "a continuous draw repeating itself is not continuous"
+    for before, after in zip(shots, plan, strict=True):
+        assert (before.location, before.mode, before.colormap) == (
+            after.location,
+            after.mode,
+            after.colormap,
+        ), "the draw moves the palette block and nothing else"
+
+
+def test_the_phase_draw_is_seeded_and_a_direct_trap_still_draws_bare():
+    """Seeded, because every random draw here is and the seed is recorded. Bare on
+    the traps for `vary_palettes`' own reason: `phase` is a byte-for-byte no-op on
+    a mode with no field, so a drawn phase is a second key for one picture."""
+    first, _ = depth.draw_phases(_shots(20), seed=7, log=lambda *_a: None)
+    again, _ = depth.draw_phases(_shots(20), seed=7, log=lambda *_a: None)
+    other, _ = depth.draw_phases(_shots(20), seed=8, log=lambda *_a: None)
+    assert [shot.palette for shot in first] == [shot.palette for shot in again]
+    assert [shot.palette for shot in first] != [shot.palette for shot in other]
+
+    traps, tally = depth.draw_phases(
+        _shots(40, mode="direct_trap_screen"), seed=7, log=lambda *_a: None
+    )
+    assert tally == {"bare_direct_trap": 40, "phase_drawn": 0}
+    assert all(shot.palette == {} for shot in traps)
+
+
 def test_an_unvaried_leg_is_untouched_by_the_flag_being_there():
     """The default. A plan built without `--vary-palette` is the plan that was
     built before the draw existed, shot for shot."""

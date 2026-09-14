@@ -447,6 +447,18 @@ reaches 1 MiB at about **1,051 more maps**, a library of ~2,072 against today's 
 which is roughly nine 120-map drops. At that point the answer is another axis and not a
 bigger number — the per-mode split has one row per group and no way to shed one.
 
+⚠ **786,432 was raised to 1,572,864 on 2026-09-13 and put back the same night**, and the
+round trip is worth knowing about because both halves were about the wrong reading of
+this number. It was raised *above* the 1 MiB history guard, with
+`data/palettes/color_mass/` added to `LARGE_TEXT_ALLOWLIST` to make that legal — which
+is a warning line sitting above the rule it warns about, firing never. The deeper error
+is the one the paragraph above already states: **this is a split threshold, not a cap**,
+so raising it buys fewer and bigger shards, which is the opposite of what the per-mode
+split is for. More shards is the intended answer to a file that outgrows it.
+`data/palettes/carriers.jsonl` went the same way and came back differently — it keeps
+Matt's 2 MiB, but as a named entry in `test_history_purity`'s `PER_FILE_CAPS`, a raised
+ceiling for one path rather than the absence of one, so a tenfold surprise still fires.
+
 The **ten-thousand-hour stress test** — [`curation/README.md`](../curation/README.md)'s
 *The stress test the size is read against is ten thousand hours* — reads as absurd here
 and the reading is a category error worth writing down once. Taken literally against the

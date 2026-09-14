@@ -133,34 +133,38 @@ ALLOWLIST: frozenset[str] = frozenset()
 # larger corpus and the adopted run stops being rebuildable with nothing looking
 # broken. `data/gallery_grade/corpus/README.md` is the reason in full, including why
 # a corpus that is still regenerable does not come here.
-# The palette library's two derived records are the fourth and fifth, added
-# 2026-09-13 on Matt's dictated ceilings — `carriers.jsonl` at 2 MiB and each
-# `color_mass/<mode>.jsonl` at 1,572,864 bytes. Both are one row per drawable
-# palette group, so both grow ONLY when the library does and neither can be
-# trimmed without dropping maps the draw would then never offer. They arrive here
-# together because they are the same fact about the same library counted two ways,
-# and each keeps its own stated ceiling in its own test — `test_palette_carriers`'s
-# `MAX_RECORD_BYTES` and `test_palette_color_mass`'s `SPLIT_BYTES` — so the SIZE
-# rule stepping aside here does not leave either file unbounded.
 #
-# ⚠ Both were comfortably under the limit on the day this was written — 690,732
-# and 489,002 bytes, 66% and 47% of a mebibyte. That is the point: the ceilings
-# are being raised BEFORE the drop that would cross them, so the drop is a data
-# commit and not a data commit plus an argument about a guard. The measured growth
-# is 532 bytes a map, so 2 MiB is ~2,600 maps of headroom on `carriers.jsonl`.
-#
-# ⚠ The colour-mass map splits one file per mode BECAUSE of this rule, and that
-# split is still the right shape — `test_palette_color_mass`'s docstring is the
-# reason. What the raised ceiling says is that the NEXT axis to split on is not
-# obvious and a drop is not a reason to invent one; it does not say the split
-# stopped mattering. A rejoin into a single 7.77 MB file is still a build failure.
+# ⚠ The palette library's two derived records were the fourth and fifth for one
+# day — 2026-09-13 — and came back out the same night. What they needed was a
+# ceiling, and what this list hands out is the absence of one, which on the only
+# two files that grow with every palette drop is the wrong trade in the wrong
+# direction. `carriers.jsonl` has a stated 2 MiB cap in `PER_FILE_CAPS` below
+# instead, and `color_mass/` is back under `MAX_TRACKED_BYTES` where its split
+# has something to fire against. Reversing an entry out of this list is as much
+# a decision as adding one, and this is the record of it.
 LARGE_TEXT_ALLOWLIST = (
     "data/palette_choice/rows/",
     "data/curation/rank_key/population.jsonl",
     "data/gallery_grade/corpus/",
-    "data/palettes/carriers.jsonl",
-    "data/palettes/color_mass/",
 )
+
+# A raised ceiling, which is a different thing from no ceiling and is why this is
+# not a fourth entry above. A path named here is held to its own number instead of
+# to `MAX_TRACKED_BYTES`, so a file that has quietly gone tenfold still fails — the
+# exemption keeps a shape the allowlist cannot express.
+#
+# `data/palettes/carriers.jsonl` is the only entry. It holds one row per drawable
+# palette group, so it grows only when the library does, at a measured 532 bytes a
+# map; 2 MiB is ~2,600 maps of headroom from today's 690,732 bytes, which is 66% of
+# a mebibyte and so **under `MAX_TRACKED_BYTES` today**. The cap is headroom for the
+# drop that crosses the line, not an exemption in force — Matt's number, 2026-09-13.
+#
+# The number is stated in `test_palette_carriers`'s `MAX_RECORD_BYTES` too, and
+# `test_the_per_file_cap_agrees_with_the_record_s_own_test` holds the two to agreeing:
+# one ceiling written twice, the way `tentative.PUBLISHED` and `.gitignore` are.
+PER_FILE_CAPS: dict[str, int] = {
+    "data/palettes/carriers.jsonl": 2 * 1024 * 1024,
+}
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -190,10 +194,39 @@ def test_no_tracked_file_exceeds_one_mebibyte() -> None:
     for name in tracked_files():
         if name in ALLOWLIST or name.startswith(LARGE_TEXT_ALLOWLIST):
             continue
+        cap = PER_FILE_CAPS.get(name, MAX_TRACKED_BYTES)
         path = REPO_ROOT / name
-        if path.is_file() and path.stat().st_size > MAX_TRACKED_BYTES:
-            offenders.append(f"{name} ({path.stat().st_size} bytes)")
-    assert not offenders, f"tracked files exceed {MAX_TRACKED_BYTES} bytes: {offenders}"
+        if path.is_file() and path.stat().st_size > cap:
+            offenders.append(f"{name} ({path.stat().st_size} bytes, cap {cap})")
+    assert not offenders, f"tracked files exceed their cap: {offenders}"
+
+
+def test_a_raised_cap_names_a_tracked_text_file() -> None:
+    """A raised ceiling is held to everything the allowlist is held to.
+
+    `PER_FILE_CAPS` widens the SIZE rule for one path, so the same two things that
+    keep `LARGE_TEXT_ALLOWLIST` honest apply: the path has to exist — a dead
+    exception is a rule nobody reads — and it still may not be binary, because a
+    blob is a one-way door at any size.
+    """
+    tracked = set(tracked_files())
+    for name in PER_FILE_CAPS:
+        assert name in tracked, f"{name} has a raised cap and is not tracked"
+        assert Path(name).suffix.lower() not in BINARY_SUFFIXES, (
+            f"{name} has a raised cap and is binary-by-nature"
+        )
+
+
+def test_the_per_file_cap_agrees_with_the_record_s_own_test() -> None:
+    """One ceiling written twice, held to being the same number in both places.
+
+    `test_palette_carriers` states the cap where a reader of that record will look
+    for it; this file states it where the SIZE rule is applied. Neither is the
+    copy, so either moving alone is the failure.
+    """
+    from tests.test_palette_carriers import MAX_RECORD_BYTES
+
+    assert PER_FILE_CAPS["data/palettes/carriers.jsonl"] == MAX_RECORD_BYTES
 
 
 def test_the_size_exemption_does_not_exempt_a_blob() -> None:

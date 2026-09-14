@@ -1970,11 +1970,21 @@ is unpublished and is what `page_order`'s constants were measured on. `CLAUDE.md
 the rule, because a leg reads that file and not this one before it acts.
 
 **Publication, durability and retention are three questions, and the protection below is
-the durable one.** While a record exists it is *protected*: `protected_keys` sweeps the
-whole store whatever `PUBLISHED` says, so deleting the record is the only thing that
-releases its seats. What publication buys is a clone; what it does not buy is protection,
-because that was never scarce. What an unpublished record gives up is a Durable-class
-save, check or restore and a place in an archive copy.
+the durable one.** A record on the **keep list** is *protected*: `protected_keys` reads
+`tentative.kept()` — `PUBLISHED` plus `KEPT_UNPUBLISHED` — and nothing else. What
+publication buys is a clone; what it does not buy is protection, and what protection now
+costs is a line in a tuple. What an unpublished record gives up is a Durable-class save,
+check or restore and a place in an archive copy.
+
+⚠ **Until 2026-09-13 the sweep was store-wide**, so a record pinned its seats by merely
+existing and deleting it was the only release. That made preservation a property of an
+artifact nobody had decided to keep, which is the policy backwards and is why sweeping
+the store kept arriving as a recurring approval. The night it changed, 24 off-list
+records moved to `scratch/` and `protected_keys()` fell **7,291 → 4,503 keys**. The test
+for a `KEPT_UNPUBLISHED` entry is that something *resolves* the record — code that reads
+its rows, or a figure that names `<stamp>|<key>` — and not that something mentions it:
+every `gallery_grade` batch names the record it was cut from in its prose, and none of
+those is a reason to pin anything, because the corpus rows carry their own join.
 
 **So a DIAGNOSTIC solve either writes no record or has its records swept at the
 checkpoint boundary**, and the reason is the paragraph above rather than tidiness: the

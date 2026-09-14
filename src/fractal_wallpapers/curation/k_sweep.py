@@ -361,11 +361,13 @@ def sweep(rungs=RUNGS, n: int = SEATS, control: str | None = None, log=print) ->
     Each rung writes both halves under one stamp, exactly as `curate solve record`
     does: the solve record under [`name_of`] and the tentative gallery under the
     stamp, with its page. Every rung is **unpublished** — a tentative record is
-    published only when Matt names it — and every one holds prune protection
-    through [`tentative.protected_keys`] until its folder is deleted, published or
-    not. **A sweep's records are deleted once its readings are in**, which is the
-    default for any unpublished record since 2026-09-13: the tables below are the
-    durable product and the rungs are the working that got there.
+    published only when Matt names it — and none of them holds prune protection:
+    [`tentative.protected_keys`] reads [`tentative.kept`] and nothing else since
+    2026-09-13, so a rung pins nothing whether its folder survives or not. It used
+    to pin its seats simply by existing, which is the reason the line below was
+    worth stating twice. **A sweep's records are deleted once its readings are
+    in** — the default for any unpublished record — and the tables below are the
+    durable product with the rungs as the working that got there.
 
     Then [`readings`] over what was written, into [`readings_path`]. The tables
     are here and not in a scratch script because they are what the sweep is *for*

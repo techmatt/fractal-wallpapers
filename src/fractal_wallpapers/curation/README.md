@@ -1469,7 +1469,9 @@ Three answers, each measured rather than argued, and any one of them is enough:
 - **644 of the 11,380 ledger keys in the ten legs are `tentative.protected_keys()`**
   — seats in recorded galleries, 62 stamps naming a leg picture, gallery4 330 of
   them. `protected_keys` sweeps published and unpublished stamps alike, and an
-  older record whose pictures went is a page of broken thumbnails.
+  older record whose pictures went is a page of broken thumbnails. ⚠ The 644 was
+  measured while that sweep was store-wide; it reads the keep list since
+  2026-09-13 and the same count taken today would be smaller.
 - **`absent_pictures()` would go 0 → 1,556 and `curate rescore` refuses outright.**
   The rows that name them are the **tracked** release store, so the *take the rows
   with the pictures* route is closed: those rows are decision history. All 1,050
@@ -2215,11 +2217,13 @@ and the website still ships the stored picture for a seat it cannot replay.
 
 #### The store-wide sweep: `--record all`
 
-`--record all` sweeps every seat of every recorded gallery instead of one
+`--record all` sweeps every seat of every **kept** gallery instead of one
 record's — `tentative.protected_keys`, which is what retention must keep and
 therefore exactly what has to stay replayable. **Published or not**, because an
 older record's IDs are the ones a clone resolves; and de-duplicated for free,
-because a key seated in nine galleries is one picture and one render. `curate
+because a key seated in nine galleries is one picture and one render. It swept
+every record on the machine until 2026-09-13 and reads `tentative.kept()` now, so
+it is a smaller sweep and the records it dropped are the ones nothing resolves. `curate
 autolevel survey --record all` prices it without rendering anything, and it is
 the thing to run first: the answer is hours, and the seats that need a curve are
 a fraction of the protected set rather than all of it.

@@ -798,7 +798,13 @@ def curate_depth(args: argparse.Namespace) -> int:
             "top_bands": args.top_bands,
             "workers": args.workers,
             "vary_palette": args.vary_palette,
+            "phase_draw": args.phase_draw,
         }
+        if args.vary_palette and args.phase_draw:
+            # Both write `Shot.palette`, so a plan carrying the two is two draws
+            # under one name. Refused here rather than reconciled in `build_plan`.
+            print("--vary-palette and --phase-draw both draw the palette block; name one")
+            return 1
         if args.what == "plan":
             _intended, shape = depth.build_plan(
                 depth.population(),
@@ -1022,6 +1028,18 @@ def depth_leg_flags(parser, *, device: bool):
         "which is what makes `does adjusting an existing recipe pay` a matched question. "
         "**No map is derived, written or admitted** — the palette block is part of the "
         "recipe key, so a varied candidate is a new picture beside the plain one",
+    )
+    draw_shares.add_argument(
+        "--phase-draw",
+        action="store_true",
+        help="**the standing forward draw**: every candidate gets ONE phase drawn uniformly "
+        "over the turn, and a shot stays one render. No phase is held at 0 and no twin is "
+        "made — this is how rows are made rather than a matched-pair experiment, so the "
+        "spike at 0 that `--vary-palette` needs would be a spike in the corpus here. "
+        "`cycles` is left alone: the repeat axis lost its measurement (repeat 3 won 36.4%% "
+        "of matched pairs against repeat 1's 52.6%%). The direct traps draw bare, `phase` "
+        "being a byte-for-byte no-op on them. Exclusive with `--vary-palette`, which "
+        "answers a different question and still exists",
     )
     populations.add_argument(
         "--modes",

@@ -207,6 +207,12 @@ def seats_of(stamp: str) -> list[str]:
     seat that cannot replay its levelling ships a re-measurement under a caption
     that says otherwise. It de-duplicates across records for free — one key seated
     in nine galleries is one render here.
+
+    ⚠ **Kept or not is now the question, and published or not still is not.** Since
+    2026-09-13 `protected_keys` reads [`curation.tentative.kept`] rather than the
+    whole store, so [`EVERY_PROTECTED`] is a smaller sweep than it was and the
+    records it no longer covers are the ones nothing resolves. Naming a stamp
+    directly still reads any record on this machine, on or off that list.
     """
     from fractal_wallpapers.curation import tentative
 

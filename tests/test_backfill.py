@@ -148,8 +148,8 @@ def test_every_protected_seat_is_one_word_and_de_duplicates_across_records(monke
     """The store-wide sweep, and the reason it is not `sum(len(record))`.
 
     A key seated in nine galleries is one picture and one render here.
-    `protected_keys` is already a set over every stamp, published or not, which is
-    what retention keeps and therefore what has to stay replayable.
+    `protected_keys` is already a set over every KEPT stamp, published or not,
+    which is what retention keeps and therefore what has to stay replayable.
     """
     from fractal_wallpapers.curation import tentative
 

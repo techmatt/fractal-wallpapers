@@ -244,6 +244,53 @@ def palette_drawn(rng) -> dict:
     return drawn
 
 
+def draw_phases(intended: list, seed: int, log=print) -> tuple[list, dict]:
+    """**One uniform phase per candidate**, no twin and no `cycles`. `(plan, tally)`.
+
+    The standing forward draw since 2026-09-13, Matt's call, and it replaces a
+    best-of-five rotation search rather than [`vary_palettes`] — the two answer
+    different questions and both still exist. What this is for is **proper phase
+    mixing in the corpus**: the plain draw makes every candidate at phase 0, which
+    is one arbitrary traversal of every gradient, and a winner-keeps rule over five
+    phases is worse than either because it biases the corpus toward whichever phase
+    flattered a place. A single uniform draw is the unbiased realisation and it
+    costs exactly one render a shot.
+
+    ⚠ **No phase is held at 0, unlike [`PALETTE_PHASE_HELD`].** That constant
+    exists because the varied leg is a matched-pair experiment and needs unvaried
+    rows of its own to read against; this is not an experiment, it is how rows are
+    made, and holding 30% of the mass at one point would put a spike in the
+    corpus at the very place the draw is trying to spread away from.
+
+    ⚠ **No twin, for the same reason**, and that is the whole of the saving: a
+    twin doubles a shot to answer *does moving the phase beat leaving it alone*,
+    which is not a question a production leg is asking.
+
+    **The direct traps draw bare**, exactly as in [`vary_palettes`] and for the
+    identical reason: `phase` is a byte-for-byte no-op on a mode with no field for
+    a traversal to start in, so a drawn phase there would take a second recipe key
+    for an identical picture. No phase draw is spent on them.
+    """
+    from fractal_wallpapers.curation import colorize
+
+    rng = random.Random(seed)
+    out: list = []
+    tally = {"bare_direct_trap": 0, "phase_drawn": 0}
+    for shot in intended:
+        if colorize.kind_of(shot.mode) == colorize.DIRECT_KIND:
+            tally["bare_direct_trap"] += 1
+            out.append(shot)
+            continue
+        tally["phase_drawn"] += 1
+        out.append(dataclasses.replace(shot, palette={"phase": round(rng.random(), 6)}))
+    log(
+        f"[depth] phase draw: {tally['phase_drawn']:,} shot(s) given one uniform phase, "
+        f"{tally['bare_direct_trap']:,} direct-trap shot(s) drawn bare; "
+        f"{len(intended):,} planned -> {len(out):,} (a shot is one render)"
+    )
+    return out, tally
+
+
 def vary_palettes(intended: list, seed: int, log=print) -> tuple[list, dict]:
     """Every shot given a drawn palette, and every varied one given its phase-0 twin.
 
@@ -1668,6 +1715,7 @@ def build_plan(
     floor_width: int = FLOOR_WIDTH,
     workers: int = 1,
     vary_palette: bool = False,
+    phase_draw: bool = False,
     log=print,
 ) -> tuple:
     """The draws sized off a per-candidate rate. `(plan, shape)`.
@@ -2209,6 +2257,16 @@ def build_plan(
         },
     }
     woven = weave(plans, shares)
+    if phase_draw:
+        # **Before the `vary_palette` branch and exclusive with it**, refused at
+        # the parser rather than reconciled here: both write `Shot.palette`, and a
+        # plan where some shots carry a uniform phase and others a held-at-zero
+        # phase with a twin is two draws wearing one name.
+        woven, drawn = draw_phases(woven, int(seed) + 3, log=log)
+        shape["seeds"]["palette"] = int(seed) + 3
+        shape["phase_draw"] = drawn
+        shape["planned"] = len(woven)
+        return woven, shape
     if not vary_palette:
         return woven, shape
     # **After the weave and not inside a draw.** The palette is an axis over the
@@ -2520,6 +2578,7 @@ def run(
     floor_seats: int = 10,
     workers: int = DEFAULT_WORKERS,
     vary_palette: bool = False,
+    phase_draw: bool = False,
     device: str = "auto",
     margin: float = framing.MARGIN,
     world: dict | None = None,
@@ -2597,6 +2656,7 @@ def run(
         floor_seats=floor_seats,
         workers=workers,
         vary_palette=vary_palette,
+        phase_draw=phase_draw,
         log=log,
     )
     # The parent's own Maker resolves recipes and sweeps the field cache; it never
