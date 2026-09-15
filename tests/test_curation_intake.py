@@ -257,6 +257,75 @@ def test_a_limited_pass_upserts_what_it_looked_at_and_clears_nothing(tmp_path, s
     assert len(intake.read_scores()) == 2
 
 
+def test_an_unscored_pass_reads_the_backlog_and_nothing_else(tmp_path, score) -> None:
+    """The population that had no door: bound, and with no sidecar row at all.
+
+    `curate reach --write` looks like this door and is not — it is built from
+    release decision rows, so it cannot see a location that was found, opened and
+    never scored.
+    """
+    first = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6"])
+    second = written(tmp_path / "b" / "walk.jsonl", ["-0.7", "-0.8"])
+    score([first])
+
+    report = score([first, second], unscored=True)
+    assert report["outstanding"] == 2, "the second ledger's two, and neither of the first's"
+    assert report["gate_survivors"] == 2
+    assert sorted(row["node_id"] for row in intake.read_scores().values()) == [
+        "-0.5",
+        "-0.6",
+        "-0.7",
+        "-0.8",
+    ]
+
+
+def test_an_unscored_pass_clears_nothing(tmp_path, score) -> None:
+    """It is a partial pass, like `limit` and `keys`, so it scopes no ledger."""
+    first = written(tmp_path / "a" / "walk.jsonl", ["-0.5"])
+    second = written(tmp_path / "b" / "walk.jsonl", ["-0.7"])
+    score([first])
+    score([second])
+    written(first, ["-0.5", "-0.6"])
+
+    report = score([first, second], unscored=True)
+    assert report["sidecar"]["scoped_ledgers"] == [], "a backlog pass is not a re-score"
+    assert len(intake.read_scores()) == 3, "the two already-scored rows both survive"
+
+
+def test_an_unscored_pass_with_nothing_outstanding_is_complete_and_not_an_error(
+    tmp_path, score
+) -> None:
+    """A backlog of nothing is the outcome, not a refusal to have one."""
+    ledger = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6"])
+    score([ledger])
+    before = intake.scores_path().read_bytes()
+
+    report = score([ledger], unscored=True)
+    assert (report["outstanding"], report["scored"], report["complete"]) == (0, 0, True)
+    assert report["gate_survivors"] == 2, "the denominator the backlog is nothing out of"
+    assert intake.scores_path().read_bytes() == before, "and it wrote nothing"
+
+
+def test_an_unscored_pass_reports_the_backlog_before_a_limit_truncates_it(tmp_path, score) -> None:
+    """A truncated pass that reported its own scored count as the backlog would
+    read as a finished one."""
+    ledger = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6", "-0.7"])
+    report = score([ledger], unscored=True, limit=1)
+    assert report["outstanding"] == 3, "how much the backlog IS"
+    assert report["sidecar"]["rows_scored"] == 1, "how much of it this pass took"
+
+
+def test_a_backlog_truncated_to_nothing_does_not_read_as_a_backlog_of_nothing(
+    tmp_path, score
+) -> None:
+    """`--limit 0` and `nothing outstanding` reach the same branch and are not the
+    same answer. Reporting both as `complete` would call an untouched backlog done."""
+    ledger = written(tmp_path / "a" / "walk.jsonl", ["-0.5", "-0.6", "-0.7"])
+    report = score([ledger], unscored=True, limit=0)
+    assert (report["outstanding"], report["scored"]) == (3, 0)
+    assert report["complete"] is False
+
+
 # --------------------------------------------------------------------------- #
 # The regime a row is re-scored at.
 #

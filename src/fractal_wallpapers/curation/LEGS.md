@@ -999,6 +999,42 @@ diagnosis that reaches for the second without asking whether the first has run
 will price a backlog at zero and find nothing to do, which is exactly what
 happened here.
 
+### ⚠ `curate score` cannot reach the opened-but-unscored places, and no binding can
+
+★ **The line above is right that it is a scoring backlog and wrong that `curate
+score` owes the work.** Measured 2026-09-15 over the live store: **1,607 of
+42,113 opened locations have no supply-sidecar row**, which is the same 1,607 read
+on 2026-09-12 — the number has not moved in three days, and it cannot, because
+**not one of those places is on any walk ledger**. Bind all **54** ledgers across
+both tiers, drop **every structural gate**, and take the whole **292,139-row**
+union: it holds **zero** of them. This stage reads walk ledgers and there is
+nothing there to read.
+
+**Where they came from says why.** `provenance.run` on the 2,827 candidate rows at
+those places reads **2,799 `label_migration_0908`**, 22 `ckpt120`, and six across
+three later legs. `curate label-migration merge` derives rows from the **label
+stores** at candidate geometry and never walks — so a place it opened has a
+candidate row, a picture and a human grade, and no ledger row anywhere. The join
+is sound and that is the point: 40,506 of the 42,113 opened keys *do* match a
+sidecar row, so the 1,607 are a real absence rather than a spelling mismatch.
+
+★ **So the places outside the admitted population are disproportionately Matt's
+own graded ones**, which is the opposite of what a backlog usually means. Every
+draw that stands on `hunt.scanned` steps over them, the near band's manifest cut
+names them and drops them in silence, and no amount of `curate score` changes it.
+
+**What would close it is a different leg and it is not written.** These places
+need a location-head read to earn a sidecar row, and their picture is a candidate
+render rather than a walk's gate render — so the open question is which regime
+that read happens at, not which ledger to bind. Until somebody answers it, the
+honest reading of the 1,607 is *outside the admitted population by construction*.
+`curate score --unscored` is the door for the **other** backlog, the one that is
+on the ledgers: 132,992 of 242,007 gate survivors across those 54 ledgers have no
+sidecar row, and most of them sit on smoke, dedup and demo runs
+(`dynamical_proven_smoke` 15,148, `harvest_engine_smoke` 8,581,
+`demo_neighborhood` 7,407) that are not standing supply. **The binding is what
+decides that, not the flag** — which is the whole of why there is no default.
+
 ⚠ **The roster is the second test and it is real but smaller.** The draw holds the
 incumbent's mode, so a composite incumbent costs about 175 s a location — the arm
 measured **6.2x dearer** on the twelve-mode roster — which is why

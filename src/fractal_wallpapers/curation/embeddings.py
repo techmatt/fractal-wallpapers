@@ -312,6 +312,17 @@ def unreachable(pool: dict | None = None) -> dict:
     sidecar** is a location the standing supply has no row for at all, which is
     not a judgement about anything: it is a place whose ledger was never scored
     into the sidecar, so no cut has been applied to it and none can be.
+
+    ⚠ **This is the JUDGED pool and not the opened one, and the two are nowhere
+    near the same size.** [`judged_pool`] is built from release decision rows, so
+    it is the few hundred locations a gallery pass has ruled on — read 2026-09-15
+    it was **807 judged, 0 absent from the sidecar**, while the candidate ledger
+    held **42,113 opened locations of which 1,607 had no sidecar row**. So
+    `--write` is the door for a *gallery pass's* unreached locations and is not
+    the door for the opened backlog; it writes an empty manifest for that one.
+    What the opened backlog is, and why no binding reaches it, is
+    `curation/LEGS.md`'s *`curate score` cannot reach the opened-but-unscored
+    places*.
     """
     pool = judged_pool() if pool is None else pool
     scored = {str(row["key"]): row.get("p_ge3") for row in _supply()}

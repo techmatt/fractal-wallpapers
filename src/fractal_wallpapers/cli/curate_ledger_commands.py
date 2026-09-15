@@ -46,6 +46,7 @@ def curate_score(args: argparse.Namespace) -> int:
             device=args.device,
             limit=args.limit,
             keys=intake.read_keys(resolve_output(args.key_file)) if args.key_file else None,
+            unscored=args.unscored,
         )
     except (binding.Unbound, intake.IntakeError) as refusal:
         print(refusal)
@@ -659,6 +660,17 @@ def add_steps(steps) -> None:
         help="score only the locations this key manifest names, out of the bound ledgers "
         "(`curate reach --write` writes one). Like --limit it is a partial pass, so it "
         "upserts what it looked at and clears nothing",
+    )
+    reading.add_argument(
+        "--unscored",
+        action="store_true",
+        help="score only the bound locations the sidecar has NO row for — the backlog. "
+        "A partial pass like --limit and --key-file: it upserts what it looked at and "
+        "clears nothing, and it reports `outstanding` before --limit truncates. THE "
+        "BINDING IS THE CONTROL, not this flag: measured 2026-09-15, the 54 ledgers on "
+        "both tiers hold 242,007 gate survivors of which 132,992 have no row, and most "
+        "of those sit on smoke, dedup and demo runs that are not standing supply. Name "
+        "the ledgers whose locations you mean",
     )
     reading.set_defaults(handler=curate_score)
 
