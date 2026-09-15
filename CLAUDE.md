@@ -206,14 +206,15 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,732 collected — 4,576 fast,
-156 slow — since `weights_release_ckpt124` added 6 tests on 2026-09-14**, on a
+Both are measured, not estimated. The tree holds **4,733 collected — 4,577 fast,
+156 slow — since `readme_overhaul_ckpt124` added 1 test on 2026-09-14**, on a
 `.[dev,models]` install with a release engine built. **Both lanes were taken back to
-back on one tree by that prompt, and they agree at 4,732**: **fast 4,576 of
-4,576 in 125.77 s (2:05)** with 156 deselected, and **slow 4,732 of 4,732 in
-492.95 s (8:12)**. Both green, zero skips, zero failures. The slow lane's +14.9 s is
-**the box**: the six tests cost 0.1 s measured in isolation, and an untouched
-engine-bound guard read 18.2 s against 17.0 s an hour earlier.
+back on one tree by that prompt, and they agree at 4,733**: **fast 4,577 of
+4,577 in 125.49 s (2:05)** with 156 deselected, and **slow 4,733 of 4,733 in
+480.45 s (8:00)**. Both green, zero skips, zero failures. The fast lane landed
+within 0.3 s of `weights_release_ckpt124`'s reading an hour earlier and the slow
+lane came in 12.5 s **under** it, which is the box settling rather than the tree:
+the one test added is an arithmetic guard over four `stat` calls.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.

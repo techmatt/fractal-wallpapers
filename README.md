@@ -1,231 +1,220 @@
 # fractal-wallpapers
 
-An ML-steered fractal wallpaper generator: a fast Rust escape-time renderer paired with neural judges trained on human taste to find, color, and select striking wallpapers across five fractal families. Companion repo to a full tutorial article (link TBD) — built with Claude.
+Generates fractal wallpapers and uses neural judges trained on human labels to decide
+which ones are worth keeping.
 
-## Clone to first picture
+<p align="center">
+  <img src="examples/mandelbrot_stripe.jpg" width="24%" alt="Mandelbrot set, stripe coloring">
+  <img src="examples/phoenix_threads.jpg" width="24%" alt="Phoenix set, threads coloring">
+  <img src="examples/julia_smooth.jpg" width="24%" alt="Julia set, smooth coloring">
+  <img src="examples/julia_multibrot3_threads.jpg" width="24%" alt="Cubic Julia set, threads coloring">
+</p>
 
-Six commands, no weights, no pool, nothing downloaded but the Rust crates. The last
-one writes a PNG.
+A Rust crate renders the escape-time fields. Python decides where to look, how to color
+what it finds, and which finished images survive.
+
+## What it does
+
+The search space is five families (`mandelbrot`, `multibrot` at degree 3–5, `julia` at
+degree 2–5, `phoenix`, and a render-only fractional multibrot), 20 coloring modes and
+1,021 colormaps.
+
+Four trained heads pick from that space. Each was trained on human verdicts tracked in
+this repository.
+
+| head | what it scores |
+| --- | --- |
+| `location` | whether a place is worth rendering at all |
+| `render` | whether a particular rendering of a place is good |
+| `palette` | which colormap and palette pass suit it |
+| `gallery_grade` | a finer order inside the render head's top band |
+
+The output is a gallery of a few hundred to a thousand wallpapers, chosen for quality and
+for spread across family, color and structure.
+
+## Requirements
+
+* **Python 3.11+.**
+* **Rust 1.85+**, from [rustup](https://rustup.rs). The crate is edition 2024 and names
+  that floor in `engine/Cargo.toml`.
+* **On Windows, the `Desktop development with C++` workload** of
+  [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/),
+  which the default `x86_64-pc-windows-msvc` toolchain links through.
+* **A GPU only to train.** Rendering, the search walk and gallery selection do not use one.
+
+## Install
 
 ```
-git clone https://github.com/techmatt/fractal-wallpapers && cd fractal-wallpapers
+git clone https://github.com/techmatt/fractal-wallpapers
+cd fractal-wallpapers
 python -m venv .venv
 .venv/Scripts/pip install -e .                   # Linux/macOS: .venv/bin/pip
 cargo build --release --manifest-path engine/Cargo.toml
-.venv/Scripts/fractal-wallpapers render --family mandelbrot \
-  --center-re -0.7436438870371587 --center-im 0.13182590420531197 --width 0.00001 \
-  --out artifacts/first.png
 ```
 
-About twelve seconds at 1920x1080 on a laptop, and `artifacts/first.png` is a wallpaper.
-Nothing above needs the `models` extra, a GPU, or a network round trip after `pip`.
+Build the engine in release. A debug build is found and used, but runs about ten times
+slower, and the walk tests skip themselves when no release binary exists.
 
-**Then draw one of the published gallery's own wallpapers**, out of tracked data alone:
+The base install has one dependency, `mpmath`, and covers rendering, the search walk, the
+supply engine and the labeling rig. Three extras add the rest:
 
-```
-.venv/Scripts/fractal-wallpapers render \
-  --recipe artifacts/curation/tentative/20260914T171846Z/recipes.jsonl \
-  --key b6a91061 --out artifacts/seat.jpg
-```
+| extra | for |
+| --- | --- |
+| `models` | training and running the heads (torch, torchvision, timm) |
+| `solve` | choosing a gallery (numpy, pillow) |
+| `dev` | the test suite and the linter |
 
-That file holds the full recipe of every one of the record's thousand seats — the mode,
-the curve, the colormap, the palette pass and the levelling band, not just the place —
-and `gallery.jsonl` beside it says which key is which seat. A redraw is byte-identical
-to the picture in the gallery. `--location` is the weaker door and takes a place and a
-geometry only; it refuses a row whose recipe says more than that rather than drawing the
-right coordinates in the wrong colours.
+A command that crosses one of those lines names the extra it needs instead of raising a
+bare `ModuleNotFoundError`.
 
-## Prerequisites
-
-* **Python 3.11+**.
-* **Rust 1.85 or newer**, from [rustup](https://rustup.rs). The engine is edition 2024;
-  `engine/Cargo.toml` names the floor, so an older toolchain refuses by version rather
-  than by complaining about an unstable feature.
-* **On Windows, the MSVC build tools** — the `Desktop development with C++` workload of
-  [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/),
-  which is what the default `x86_64-pc-windows-msvc` toolchain links through. Without it
-  `cargo build` fails at the linker, not at the compiler.
-
-## Running it
-
-Python 3.11+ in a virtualenv at `.venv`, the package installed editable, and the engine built
-in release. Release is not optional in practice: a debug engine is found and used, but runs
-about ten times slower, and the Python walk tests skip themselves unless a release build
-exists.
-
-```
-python -m venv .venv
-.venv/Scripts/pip install -e ".[dev,models]"      # Linux/macOS: .venv/bin/pip
-cargo build --release --manifest-path engine/Cargo.toml
-```
-
-**The base install is deliberately small.** `pip install -e .` pulls one pure-Python
-dependency and buys the engine, the walk, the supply engine and the labeling rig; the
-`models` extra is about four gigabytes of torch and CUDA wheels that a clone which only
-renders should never pay for. A command that crosses the line says which extra installs
-what it needed rather than raising a bare `ModuleNotFoundError`.
-
-⚠ **`pip install ".[models]"` gives you CPU-only torch on Windows.** `pyproject.toml`
-pins torch and torchvision to the cu124 index through `[tool.uv.sources]`, and **pip does
-not read those keys** — only `uv` does. So the documented pip line installs whatever
-PyPI's default wheel is, which on Windows is the CPU build, and training then runs at
-roughly a hundredth of the speed with no error anywhere. Either use `uv sync --extra
-models`, or ask pip for the index by hand:
+⚠ **pip installs CPU-only torch on Windows.** `pyproject.toml` routes torch and
+torchvision to the CUDA index through `[tool.uv.sources]`, and only `uv` reads those keys.
+Training then runs orders of magnitude slower with nothing reporting an error. Either use
+`uv sync --extra models`, or name the index by hand:
 
 ```
 .venv/Scripts/pip install --extra-index-url https://download.pytorch.org/whl/cu124 -e ".[dev,models]"
 ```
 
-This is a note and not a lockfile: there is no `uv.lock` or `requirements.txt` tracked
-here, and adding one is a decision rather than a fix.
+No lockfile is tracked here.
 
-**Everything runnable is a subcommand of one entry point**, installed into the venv as
-`fractal-wallpapers`. Activate `.venv` and call it by name, or call it by path without
-activating:
+## Quickstart
+
+Render one location. This needs no weights, no GPU and no network.
 
 ```
-.venv/Scripts/fractal-wallpapers --help          # Linux/macOS: .venv/bin/fractal-wallpapers
+.venv/Scripts/fractal-wallpapers render --family mandelbrot \
+  --center-re -0.7436438870371587 --center-im 0.13182590420531197 --width 0.00001 \
+  --out artifacts/first.png
 ```
 
-A bare `python -m fractal_wallpapers.cli` runs only inside that venv; from a system Python it
-fails with `No module named 'fractal_wallpapers'`. Prefer the entry point.
+That writes a 1920x1080 PNG and prints the seconds it spent painting and resampling.
 
-**The package lives under `src/` and is importable only through the editable install** —
-that is what every command and every path in this README assumes. An interpreter that
-does not carry it needs `PYTHONPATH=src` set from the checkout root instead; `pytest`
-is the one thing that never needs either, because `pythonpath = ["src"]` in
-`pyproject.toml` puts it on the path for the suite whatever interpreter runs it.
+Then redraw a wallpaper from the published gallery, out of tracked data alone:
 
-Fetch the trained judges before anything that scores:
+```
+.venv/Scripts/fractal-wallpapers render \
+  --recipe artifacts/curation/tentative/20260914T171846Z/recipes.jsonl \
+  --key 460117ee --out artifacts/seat.jpg
+```
+
+`recipes.jsonl` carries the full recipe of each of that record's thousand seats: family,
+viewport, iteration cap, mode, curve, colormap, palette pass and levelling band. A redraw
+is byte-identical to the published image. `gallery.jsonl` beside it says which key is which
+seat.
+
+`--location` is the narrower form. It takes a place and a geometry only, and refuses a row
+that says more rather than drawing the right coordinates in the wrong colors.
+
+That key is the first of the four images at the top of this file. The other three are
+seats `0275fee1`, `2fd9890d` and `5ff0ad6b`, drawn the same way and scaled down.
+
+## Weights
 
 ```
 .venv/Scripts/fractal-wallpapers fetch-weights
-.venv/Scripts/fractal-wallpapers fetch-weights --check    # no network: what is here, and does it hash
+.venv/Scripts/fractal-wallpapers fetch-weights --check    # offline: what is here, and does it hash
 ```
 
-Four heads — `location`, `render`, `palette` and `gallery_grade` — **in one release**,
-each verified against the sha256 in `models/weights.json` before it is kept. A head
-whose asset is missing is reported by tag, asset and URL and the rest are still
-fetched; the exit code says whether every head arrived.
+All four heads come from one GitHub release, and each is verified against the sha256 in
+`models/weights.json` before it is kept. A missing asset does not stop the others; the
+exit code says whether every head arrived.
 
-**One dated tag, and it is never moved.** Every row in `models/weights.json` names
-`weights-2026-09-14` — Matt's decision of 2026-09-14, replacing a per-head numbering
-that had reached `weights-v7` and made assembling one set of judges a matter of
-resolving four different releases. Dated rather than numbered because a head's version
-history is its `sha256` and that file's git history, not a tag name. A later change cuts
-a **new** dated tag and repoints every row; it does not replace an asset under a name a
-clone has already trusted, which is the one failure a hash check cannot catch.
-
-To check a release from outside this tree — here every head reports `already present`
-and GitHub is never asked, so a release that was never uploaded passes:
+Release tags are dated (`weights-2026-09-14`) and are never moved. A retrained head cuts a
+new dated tag and repoints every row in `models/weights.json`, rather than replacing an
+asset under a tag a clone has already trusted — the one substitution a hash check cannot
+catch. On a machine that already holds the files `--check` never asks GitHub, so to
+download and hash every asset from scratch instead:
 
 ```
 .venv/Scripts/fractal-wallpapers fetch-weights --verify-release
 ```
 
-**One weight here is not ours and is not re-hosted**: the DINOv2 encoder `curate embed`
-reads, which comes from Hugging Face on first use — 84.2 MB, pinned to a hub revision in
-`src/fractal_wallpapers/models/embedding.py`, cached in `~/.cache/huggingface` and never
-fetched again. That is the only command in this repository that needs the network after
-the install.
+**One weight is third party.** `curate embed` reads a frozen DINOv2 ViT-S/14 encoder
+([`timm/vit_small_patch14_dinov2.lvd142m`](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m),
+Apache-2.0), fetched from Hugging Face on first use, pinned to a hub revision in
+`src/fractal_wallpapers/models/embedding.py`, and cached in `~/.cache/huggingface`. It is
+not re-hosted here, and it is the only command that needs the network after install.
 
-To hand a built sheet to a labeler, see [the labeling rig](src/fractal_wallpapers/labeling/README.md#serving-a-sheet-to-label).
+## Workflows
 
-## The five loops
+Everything runnable is a subcommand of `fractal-wallpapers`. There are 33 top-level
+commands and around 160 counting subgroups, each with its own `--help`. Five workflows use
+most of them.
 
-There are about a hundred and fifty subcommands and they serve five jobs. Each
-block below is the spine of one; every step has its own `--help`, and the package
-README it links to is where the reasoning lives.
-
-**Find new places**, so the candidate ledger has somewhere new to render — a walk
-over parameter space, scored by the location head, and the frames worth keeping
-folded in. See [discovery](src/fractal_wallpapers/discovery/README.md) and
+**Find new places.** A walk over parameter space, scored by the location head, with what
+survives folded into the candidate ledger. See
+[discovery](src/fractal_wallpapers/discovery/README.md) and
 [supply](src/fractal_wallpapers/supply/README.md).
 
 ```
 fractal-wallpapers census                              # what each partition is owed
-fractal-wallpapers harvest --finish-by 07:00           # the production loop, all night
+fractal-wallpapers harvest --finish-by 07:00           # the production loop
 fractal-wallpapers reframe --minutes 20 --out-dir artifacts/reframe_g1
 fractal-wallpapers curate score --harvest artifacts/reframe_g1
 fractal-wallpapers curate embed                        # a vector per admitted location
 ```
 
-**Collect human taste**, which is what every judge here is trained on. See
+**Collect human labels**, which is what every head here is trained on. See
 [the labeling rig](src/fractal_wallpapers/labeling/README.md).
 
 ```
 fractal-wallpapers label register --batch NAME --method "how the population was drawn"
 fractal-wallpapers label build --from-plan artifacts/places.jsonl --batch NAME
 fractal-wallpapers label serve --sheet artifacts/sheet
-fractal-wallpapers label ingest --sheet artifacts/sheet --labeler matt --write
+fractal-wallpapers label ingest --sheet artifacts/sheet --labeler NAME --write
 ```
 
-**Find good renderings of places already found** — the same location at other
-modes, palettes and depths, priced against what the extra candidates buy. Three
-legs, same shape: plan, run, merge. See
+**Find better renderings of places already found**, meaning the same location at other
+modes, palettes and depths. Three legs, all shaped plan, run, merge. See
 [the legs](src/fractal_wallpapers/curation/LEGS.md).
 
 ```
-fractal-wallpapers curate hunt  run --name h1 --budget 1200    # breadth where the ledger is thin
+fractal-wallpapers curate hunt  run --name h1 --budget 1200
 fractal-wallpapers curate mine  run --name m1 --rate <measured> --budget 7200
 fractal-wallpapers curate depth run --name d1 --rate 0.35 --budget 5400
-fractal-wallpapers curate <leg> merge --name <name>            # fold into the ledger
-fractal-wallpapers curate candidate-ledger census              # what is still thin
+fractal-wallpapers curate <leg> merge --name <name>
+fractal-wallpapers curate candidate-ledger census
 ```
 
-**Train a judge** and ship it, against a bar written down before the candidate
-exists. See [models](src/fractal_wallpapers/models/README.md).
+**Train a head** against a bar written down before the candidate exists. See
+[models](src/fractal_wallpapers/models/README.md).
 
 ```
-fractal-wallpapers tiles build                                 # or `renders build`, per head
-fractal-wallpapers head preregister                            # the bar, first
+fractal-wallpapers tiles build                         # or `renders build`, per head
+fractal-wallpapers head preregister                    # the bar, first
 fractal-wallpapers head train --run seed0_all_regimes --seed 0
 fractal-wallpapers head score --run seed0_all_regimes
-fractal-wallpapers head accept                                 # the band, against the bar
+fractal-wallpapers head accept                         # the band, against the bar
 fractal-wallpapers head ship
-fractal-wallpapers fetch-weights                               # what a fresh clone runs
 ```
 
-**Choose a gallery** out of everything the ledger holds, and record it under a
-name that never moves.
+**Choose a gallery** out of everything the ledger holds, and record it under a stamp that
+never moves. See [the gallery pass](src/fractal_wallpapers/curation/GALLERY.md).
 
 ```
 fractal-wallpapers curate headroom                     # what is short, and what one more costs
 fractal-wallpapers curate solve run --n 150            # decide, then render the seats
-fractal-wallpapers curate solve record                 # THAT solve, recorded
-fractal-wallpapers curate solve browse <stamp>         # the page, off the rows
+fractal-wallpapers curate solve record                 # that solve, recorded
+fractal-wallpapers curate solve browse --viewer        # the page, off the rows
 ```
 
-## Putting the regenerable tree on another disk
+## Configuration
 
-Everything a run can always make again — tile caches, location views, render
-caches, the pictures a study looked at — lands under `artifacts/`, which grows to
-a hundred gigabytes or so. Everything that matters lives in the checkout instead:
-records, labels, weights, code. So the tree is a setting, in two halves, and both
-live in one untracked file at the repository root:
+Regenerable output lands under `artifacts/`: tile caches, location views, render caches,
+and the pictures a study looked at. It reaches a hundred gigabytes or so in normal use.
+Records, labels, weights and code stay in the checkout. An untracked `local.toml` at the
+repository root moves the output tree, in two tiers:
 
 ```toml
-# local.toml — gitignored, one machine's own business
-hot_root = "D:/Fast/fractal-wallpapers/artifacts"       # omit for artifacts/ in the checkout
-archive_root = "E:/Slow/fractal-wallpapers/artifacts"   # omit if this machine has one disk
+hot_root = "D:/fractal-wallpapers/artifacts"       # omit for artifacts/ in the checkout
+archive_root = "E:/fractal-wallpapers/artifacts"   # omit if this machine has one disk
 ```
 
-* **hot** is where work happens and where every write lands. Omit it and it is
-  `artifacts/` under the checkout — which is what CI and a fresh clone get, and
-  why neither has to know any of this exists.
-* **archive** is slow bulk storage for subtrees nothing is using. Optional.
-
-`FRACTAL_WALLPAPERS_HOT_ROOT` and `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` override the
-file for a one-off invocation. Setting one to *nothing* is a statement rather than
-an omission: it says this machine has no such root, whatever the file says, which
-is how a hot-only session says it does not want the archive consulted.
-
-**A top-level subtree lives in exactly one tier**, and its tier is simply where
-its files are — there is no registry to fall out of step with the disks. Reading
-resolves hot first and falls through to the archive; writing always lands hot.
-One name present in both tiers is refused by name rather than resolved by
-preference, because a stale copy that silently wins is the one failure a
-two-tier store has that nobody sees.
+Writes always land hot. Reads resolve hot first and fall through to the archive.
+`FRACTAL_WALLPAPERS_HOT_ROOT` and `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` override the file for
+one invocation; setting either to the empty string asserts that this machine has no such
+root, whatever the file says.
 
 ```
 fractal-wallpapers storage status              # every subtree, its tier, its size
@@ -233,49 +222,43 @@ fractal-wallpapers storage archive tiles       # hot -> archive
 fractal-wallpapers storage restore tiles       # archive -> hot
 ```
 
-Every move copies, verifies — per-directory counts and bytes, every manifest row
-resolving to a file that is there, a seeded sha256 sample — and only then deletes
-the source, so an interruption costs time and never data. It measures its own
-throughput on the first files and prints an estimate before it commits to the
-wait.
+Keep the hot tier on an SSD. Three refusals are worth knowing before they happen:
 
-**Restore before you train.** An archive on a USB hard drive serves a random
-small-file read at about a fiftieth the rate of an NVMe, so a training pass over
-an archived tile cache is tens of minutes an epoch with no symptom other than a
-job that looks like it hung. `head train`, `renders train` and `palette train`
-refuse outright when their cache resolves through the archive, and name the
-restore command. Output is refused there too: writing into an archived subtree
-would split it across both tiers.
+* A configured root that is not present stops the command. It does not fall back to the
+  checkout, where an empty tree would read as a cache nobody had built yet.
+* One top-level name present in both tiers is refused by name rather than resolved by
+  preference.
+* `head train`, `renders train` and `palette train` refuse to run when their cache
+  resolves through the archive tier, and name the restore command. Output paths inside an
+  archived subtree are refused for the same reason.
 
-**A configured root that is not there is refused, not worked around.** If the hot
-root names an external disk that is unplugged, every command that needs the tree
-stops and says so. It does not fall back to the checkout: an empty tree there
-would read as a cache nobody had built yet, and the next build would spend hours
-filling the wrong drive. An absent *archive* is narrower — work whose names are
-all hot proceeds, and only a name the hot tier does not hold refuses, because
-from there "archived" and "never built" are the same observation.
+Records name files under the tree as `artifacts/...` whichever root and tier they are
+really on, and resolve back on read. [The package
+README](src/fractal_wallpapers/README.md) has the rest.
 
-Records keep naming files under the tree as `artifacts/...` wherever the tree
-actually is and whichever tier a subtree is on, and are resolved back through
-`paths.rehome` when they are read — so a manifest, a ledger name or an acceptance
-record means the same thing before and after a move. See
-[the package README](src/fractal_wallpapers/README.md).
+## How it works
 
-## Where things are documented
+The Rust crate in `engine/` renders every pixel, and Python reaches it only through
+`src/fractal_wallpapers/engine.py`. The crate carries no `cfg(target_arch)`, so it also
+compiles to `wasm32-unknown-unknown` unmodified and draws identical bytes there.
 
-**Every directory explains itself, next to the code it explains.** There is no
-`docs/` tree; a paragraph about a component lives in that component's own README,
-where the thing it describes cannot move away from it.
+Records are JSONL and have carried an integer `schema` field since their first row. A
+label row carries the label and the complete render parameters together, so a labeled
+example is never split across two files. Every random draw is seeded, and the seed is
+recorded with the result.
 
-```
-engine/                     the Rust renderer: the spec it reads, what it makes
-src/                        the Python side, one README per package —
-  fractal_wallpapers/         coloring, curation, deep, discovery, labeling,
-                              models, palettes, supply
-data/                       the records: one README per store, plus what a row means
-models/                     the trained judges, one README per head
-tests/                      what the suite guards, and why each guard exists
-```
+## Documentation
+
+Every directory explains itself, next to the code it explains. There is no `docs/` tree.
+
+| where | what |
+| --- | --- |
+| [`engine/`](engine/README.md) | the Rust renderer: the spec it reads, the families, the coloring modes |
+| [`src/fractal_wallpapers/`](src/fractal_wallpapers/README.md) | the Python side, one README per package |
+| [`src/fractal_wallpapers/curation/`](src/fractal_wallpapers/curation/README.md) | the candidate ledger, the legs, the gallery pass |
+| [`data/`](data/README.md) | the tracked records, one README per store |
+| [`models/`](models/README.md) | the trained heads, one README per head |
+| [`tests/`](tests/README.md) | what the suite guards, and why each guard exists |
 
 ## Checks
 
@@ -284,3 +267,13 @@ python -m ruff check . && python -m ruff format --check .
 python -m pytest
 cargo test --manifest-path engine/Cargo.toml
 ```
+
+`python -m pytest` runs the fast lane and prints how many tests it held back.
+`python -m pytest --slow` runs everything, which is what CI runs.
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
+
+The DINOv2 encoder described under [Weights](#weights) is third-party, Apache-2.0, and is
+fetched from Hugging Face rather than redistributed here.
