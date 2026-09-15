@@ -1157,7 +1157,10 @@ def depth_leg_flags(parser, *, device: bool):
         "every cell, which is the whole of colorize.pool and what a run drew before this "
         "flag existed. The narrowed pool still has to hold a 32-map neighbourhood or the "
         "run is refused. Every row the leg writes is stamped hunt.drawn_cells, because a "
-        "colour-narrowed leg is not a base rate",
+        "colour-narrowed leg is not a base rate — which is why a cut keeping more than a "
+        f"share {depth_module.CELLS_NARROW_AT:g} of the pool is ALSO refused, at plan time "
+        "and before any render: the rule is ANY listed cell, so the filter saturates in "
+        "the length of the list and a 24-cell list at the default cutoff keeps 940 of 942",
     )
     draw_palettes.add_argument(
         "--draw-cutoff",

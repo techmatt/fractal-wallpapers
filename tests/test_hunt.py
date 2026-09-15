@@ -944,3 +944,46 @@ def test_k_is_additive_so_a_row_written_before_the_stamp_reads_none():
     assert candidate_ledger.k_of({"hunt": {"k": None}}) is None
     assert candidate_ledger.k_of({"hunt": {"k": "12"}}) == 12
     assert candidate_ledger.k_of({"hunt": {"k": 4}}) == 4
+
+
+def test_a_merge_report_is_written_beside_the_leg_and_names_itself(tmp_path):
+    """**A merge's report was printed and kept nowhere**, on the three legs that
+    come through the ledger's door — a hunt, a mine and a depth run — while
+    `rotation`, `repetition` and `label_migration` all wrote one.
+
+    So what a night's merge displaced, what it re-rendered off already-deleted
+    rows and what the manifests said afterwards lived in a terminal and died with
+    it. `merge_report` is the one writer all three reach, and it takes the leg's
+    ROWS FILE rather than its name so that no module spells *where this leg lives*
+    a second time.
+    """
+    rows = tmp_path / "a_leg" / hunt.ROWS_NAME
+    rows.parent.mkdir(parents=True)
+    report = hunt.merge_report(rows, {"schema": 1, "merged": 3}, log=lambda *_: None)
+
+    written = rows.parent / hunt.MERGE_NAME
+    assert written.is_file()
+    assert json.loads(written.read_text(encoding="utf-8")) == report
+    assert report["merged"] == 3
+    assert report["path"].endswith(hunt.MERGE_NAME), (
+        "a record that cannot say where it is is a record a reader has to already know about"
+    )
+    # Idempotent, because a merge is: the second report is the true one.
+    hunt.merge_report(rows, {"schema": 1, "merged": 4}, log=lambda *_: None)
+    assert json.loads(written.read_text(encoding="utf-8"))["merged"] == 4
+
+
+def test_all_four_legs_that_come_through_the_door_write_their_merge_report():
+    """The wiring, and it is the point rather than any one leg's body.
+
+    Four modules build the same report off `candidate_ledger.merge` and returned
+    it to a caller that printed it. A fifth will be written; this is what says the
+    report has to land somewhere.
+    """
+    import inspect
+
+    from fractal_wallpapers.curation import depth, mine, remode
+
+    for module in (hunt, mine, depth, remode):
+        source = inspect.getsource(module.merge)
+        assert "merge_report(" in source, f"{module.__name__}.merge keeps no record of itself"

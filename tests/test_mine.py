@@ -251,6 +251,54 @@ def test_both_breadth_arms_are_offered_the_same_modes_and_colours_at_a_shared_ke
     assert {u.arm for u in other} == {mine.FLAT}
 
 
+def test_a_breadth_arms_cell_ask_reaches_the_ledger_row_as_drawn_for(monkeypatch):
+    """**The ask, under the name every reader looks it up by.**
+
+    `hunt.Stratifier` asks a breadth arm for a cell, and until 2026-09-15 that ask
+    went into `Unit.band` alone — a free-text field a deepen arm fills with a band
+    name — so `hunt.drawn_for` read null on every row this module ever made, and
+    the exact separator `curation/GALLERY.md` names for reading an unconditioned
+    rate was unavailable over them. `band` still carries it for the readouts that
+    group on it; the row now carries it too.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
+    monkeypatch.setattr(mine.hunt, "Stratifier", Wheel)
+    maps = [f"map{at}" for at in range(40)]
+    drawn = mine.plan_breadth(mine.FLAT, pools({"mandelbrot": 2})["mandelbrot"], maps, 11, 3)
+    assert drawn, "the fixture has to plan something or this pins nothing"
+    assert {unit.cell for unit in drawn} == {"dark_vivid_lime"}
+    assert {unit.named()["drawn_for"] for unit in drawn} == {"dark_vivid_lime"}
+    # Through the door the row actually goes through, because `hunt_block` is what
+    # decides whether the field lands and it is the function that dropped it once.
+    block = candidate_ledger.hunt_block({"seconds": 0.1, **drawn[0].named()})
+    assert block["drawn_for"] == "dark_vivid_lime"
+
+
+def test_an_arm_that_asked_for_no_cell_writes_the_block_it_always_wrote():
+    """The unnarrowed row does not move: a falsy ask is dropped, not spelled null.
+
+    `plan_deepen` holds the place's own mode and asks for no colour at all, so its
+    rows carry the two fields this block has always carried and nothing more.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
+    unit = mine.Unit(
+        arm=mine.DEEPEN,
+        location="loc",
+        partition="mandelbrot",
+        mode="smooth",
+        colormap="viridis",
+        k=1,
+        band="band03",
+    )
+    assert unit.cell is None and unit.named()["drawn_for"] is None
+    assert candidate_ledger.hunt_block({"seconds": 0.1, **unit.named()}) == {
+        "seconds": 0.1,
+        "k": 1,
+    }
+
+
 # --------------------------------------------------------------------------- #
 # The weave: every prefix holds the arms in proportion.
 # --------------------------------------------------------------------------- #

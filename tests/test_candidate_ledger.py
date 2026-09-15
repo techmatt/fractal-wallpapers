@@ -1141,6 +1141,53 @@ def test_a_prune_advances_the_mark_and_writes_down_what_it_took(isolated):
     assert record["ratchet"]["recorded_as_lost"]["rows"] == 1
 
 
+def test_a_prune_writes_down_WHICH_rows_it_took_and_not_only_how_many(isolated):
+    """The half the ratchet cannot do, and the reason it is a second file.
+
+    `ratchet.jsonl` is tracked and keeps counts, which proves the store only
+    shrinks for reasons somebody wrote down and cannot say *which picture went*. A
+    merge's displacement was printed to stdout and kept nowhere, so the 1,443
+    incumbents one night's merge displaced are unrecoverable in principle — the
+    row gone, the picture unlinked, no file naming either. This is the smallest
+    thing that makes the next one recoverable: enough of the row to re-render it
+    and enough to ask what a night's displacement was made of.
+    """
+    import json
+
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
+    rows = _pair_of_rows(isolated)
+    candidate_ledger.write(rows)
+    record = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert record["displaced"]["rows"] == record["rows_dropped"] == 1
+    written = sorted(sweep.displaced_dir().glob("*.jsonl"))
+    assert len(written) == 1
+    held = [json.loads(line) for line in written[0].read_text(encoding="utf-8").splitlines()]
+    assert len(held) == 1
+    gone = {str(row["key"]) for row in rows} - {str(row["key"]) for row in candidate_ledger.read()}
+    assert {row["key"] for row in held} == gone
+    # Enough of the row to find it again: the recipe key IS the ID a re-render
+    # keys on, and the place and the mode are what a readout groups a night's
+    # displacement by.
+    assert held[0]["why"] == "prune"
+    assert held[0]["location"] and held[0]["mode"] and held[0]["picture"]
+
+
+def test_a_prune_that_took_nothing_writes_no_displacement_file(isolated):
+    """A store already at the rule is a fixed point, and an empty file a day is a
+    directory nobody can read. `{}` on the record, and no file."""
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
+    candidate_ledger.write(_pair_of_rows(isolated))
+    candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+    again = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert again["rows_dropped"] == 0
+    assert again["displaced"] == {}
+    assert len(sorted(sweep.displaced_dir().glob("*.jsonl"))) == 1
+
+
 def test_a_dry_run_prune_writes_no_row_at_all(isolated):
     """`--dry-run` reads and decides and touches nothing, and the ratchet is part
     of nothing. A mark raised by a prune that never happened would have the census
@@ -1148,8 +1195,12 @@ def test_a_dry_run_prune_writes_no_row_at_all(isolated):
     candidate_ledger.write(_pair_of_rows(isolated))
     record = candidate_ledger.prune(keep=1, apply=False, log=lambda *_: None)
 
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
     assert record["pictures"] == {"would_delete": 1}
     assert "ratchet" not in record
+    assert "displaced" not in record
+    assert not sweep.displaced_dir().is_dir(), "a decision nobody applied displaced nothing"
     assert ratchet.entries() == []
 
 

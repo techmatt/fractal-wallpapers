@@ -963,7 +963,8 @@ def merge(name: str, log=print) -> dict:
         f"[remode] merged {len(rows):,} row(s): the ledger holds "
         f"{written['ledger']['rows']:,} recipes, {written['ledger']['new']:,} of them new"
     )
-    return report
+    # Beside the leg, through [`hunt.merge_report`] — see [`hunt.MERGE_NAME`].
+    return hunt.merge_report(rows_path(name), report, log=log)
 
 
 def read(name: str) -> dict:

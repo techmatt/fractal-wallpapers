@@ -110,6 +110,18 @@ ROWS_NAME = "rows.jsonl"
 SCORES_NAME = "scores.jsonl"
 RECORD_NAME = "hunt.json"
 
+#: What a merge writes down about itself, beside the leg it merged.
+#:
+#: **A merge's report was printed and kept nowhere**, on every one of the three
+#: legs that come through [`candidate_ledger.merge`] — this one, [`mine`] and
+#: [`depth`] — while `rotation`, `repetition` and `label_migration` all wrote one.
+#: So what a night's merge displaced, what it re-rendered off deleted rows and
+#: what the manifests said afterwards lived in a terminal and died with it. It is
+#: a file now, written by [`merge_report`], and a second merge of the same leg
+#: writes over it because a merge is idempotent and the second report is the true
+#: one.
+MERGE_NAME = "merge.json"
+
 #: Where a hunt's candidate renders live, under its own directory. Named by
 #: **recipe key**, which is what lets a re-run find the picture it already made
 #: rather than draw it a second time.
@@ -229,6 +241,26 @@ def scores_path(name: str) -> Path:
 def record_path(name: str) -> Path:
     """What the hunt reports about itself: the plan, the price, the coverage."""
     return hunt_dir(name) / RECORD_NAME
+
+
+def merge_report(rows_file: Path, report: dict, log=print) -> dict:
+    """Write one leg's merge report beside its rows. The report, unchanged.
+
+    Takes the leg's **rows file** and not its name, so [`mine.merge`] and
+    [`depth.merge`] reach it over their own path accessors rather than over a
+    third spelling of *where this leg lives* — the shape [`_prune_meta`]'s
+    afternoon of reading an empty store argues for.
+
+    It returns the report so a caller can write it and return it in one line, and
+    it names the file **on** the report, because a record that cannot say where it
+    is is a record a reader has to already know about.
+    """
+    path = Path(rows_file).parent / MERGE_NAME
+    report["path"] = tracked_name(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
+    log(f"[merge] {tracked_name(path)}")
+    return report
 
 
 def pictures_dir(name: str) -> Path:
@@ -1834,7 +1866,7 @@ def merge(name: str, log=print) -> dict:
         f"[hunt] merged {len(rows):,} row(s): the ledger holds {total:,} recipes, "
         f"{new:,} of them new"
     )
-    return report
+    return merge_report(rows_path(name), report, log=log)
 
 
 def _read(path: Path) -> list:

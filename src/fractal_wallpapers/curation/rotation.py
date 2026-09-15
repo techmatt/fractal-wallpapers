@@ -2374,6 +2374,12 @@ def mine(
                 {
                     "seconds": won["seconds"],
                     **shot.named(),
+                    # The leg's palette narrowing, on every row it makes, exactly
+                    # as `depth.run` stamps it: this leg takes `--draw-cells`
+                    # through `depth.build_plan` like any other draw, so a row it
+                    # made out of a colour-narrowed neighbourhood is no more a
+                    # base rate than a depth run's. It was missing here alone.
+                    "drawn_cells": list(shape["draw_cells"] or ()),
                     "palette_drawn": dict(intention.palette),
                     "best_of": len(readable),
                 }

@@ -55,6 +55,8 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [targets_ckpt125](#targets_ckpt125)
+    - [silent_failures_ckpt125](#silent_failures_ckpt125)
     - [readme_overhaul_ckpt124](#readme_overhaul_ckpt124)
     - [weights_release_ckpt124](#weights_release_ckpt124)
     - [repo_bootstrap_fixes_ckpt124](#repo_bootstrap_fixes_ckpt124)
@@ -638,6 +640,48 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### targets_ckpt125
+
+**Both lanes, and they agree at 4,807.** `targets_ckpt125`, 2026-09-15. **Fast:
+4,651 selected, 156 deselected — 4,807 collected — in 131.17 s (2:11). Slow: 4,807
+of 4,807 in 513.49 s (8:33).** Both green, zero skips, zero failures. Thirty-four
+tests added: a new `tests/test_targets.py` (26, arithmetic over stubs), and two
+each in `test_depth.py`, `test_mine.py`, `test_hunt.py` and
+`test_candidate_ledger.py`.
+
+**This is the pair `silent_failures_ckpt125` could not take**, and it confirms the
+156 that entry carried forward unmeasured. It also confirms that entry's 4,773: the
+two lanes meeting says 4,807, and 4,807 − 34 is 4,773 exactly.
+
+⚠ **The slow lane broke the streak — 513.49 s against a `PRECLOSEOUT_ckpt123` bar
+of 483.23 s that every pair since had come in under.** The sentence in `CLAUDE.md`
+asserting that streak was removed rather than left to age. The accounting, as far
+as it was taken:
+
+* **+5.68 s is the 74 tests since the last measured pair**, read off the fast lane
+  (125.49 s → 131.17 s), and the slow lane pays the same tests the same way.
+* **About +3 s is the ledger.** It grew **428,175 → 457,430 rows** on the overnight
+  mine that landed the night before, +6.8%, and `test_leveled_identity.py`'s
+  whole-store sweep is the one guard that reads all of it — measured here at 36.94 s
+  of setup plus 12.50 s of call, so +6.8% of 49.4 s.
+* **The box is warm, and that was measured rather than assumed.** The rule is
+  *re-run one untouched, engine-bound guard*, and `test_renderer_agreement.py
+  --slow` read **18.70 s** against the 17.02 / 18.22 / 19.05 this file already
+  carries. That is 10% over the low on an invariant, which on a 480 s lane is tens
+  of seconds of headroom.
+
+**The residue was not chased**, and the check that would have settled it — a
+`git worktree` at the old HEAD with `FRACTAL_WALLPAPERS_HOT_ROOT` on the real store,
+which measures the OLD code on TODAY's box — was not taken. A +6.9% move with a
++10% box reading behind it did not look worth five minutes; recorded here so that
+the next entry has a number to be surprised against rather than a silence.
+
+**A red that was the point of the guard.** `test_nested_verbs.py`'s surface table
+promises which flags each verb reaches, and `--collection` was on the parser and not
+in the table, so the first fast lane failed on exactly the drift that table exists
+to catch. The fix is two entries and one more flag in the run/record agreement test,
+which now holds four rather than three.
 
 #### silent_failures_ckpt125
 

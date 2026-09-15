@@ -48,6 +48,72 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
 )
 from fractal_wallpapers.paths import rehome, tracked_name, under
 
+#: Where a prune writes down WHICH rows it took, one file a prune, named for the
+#: minute it ran.
+#:
+#: **The ratchet keeps counts and nothing else**, which is enough to prove the
+#: store only shrinks for reasons somebody wrote down and is not enough to say
+#: *which picture went*. A merge's displacement was printed to stdout and written
+#: nowhere, so the 1,443 incumbents one night's merge displaced are unrecoverable
+#: in principle — the row is gone from the store, the picture is unlinked, and no
+#: file names either. This is the smallest thing that makes the next one
+#: recoverable: the key, the place, the mode and the picture path of every row the
+#: rule took, which is enough to re-render it (`curate candidate-ledger re-render`
+#: keys on the recipe) and enough to ask what a night's displacement was made of.
+#:
+#: Beside the store rather than in the history: it is hundreds of kilobytes a
+#: prune over a store this size, and it is a forensic record rather than a claim
+#: the history has to carry. `ratchet.jsonl` stays the tracked half and stays
+#: counts.
+DISPLACED_DIR = "displaced"
+
+
+def displaced_dir() -> Path:
+    """The directory a prune writes its displacement list into.
+
+    Off `store.rows_path().parent` and never off `store_root()`, for [`prune`]'s
+    own reason: the path accessors are what a test redirects, and a writer that
+    rebuilt the path from the root would write into this machine's real store
+    from inside a temporary one.
+    """
+    return store.rows_path().parent / DISPLACED_DIR
+
+
+def write_displaced(meta: list, keys: set, when: str, log=print) -> dict:
+    """Write down which rows this prune took. `{path, rows}`, or `{}` for none.
+
+    Called inside the transaction and after the three files are renamed, so the
+    list is a claim about a store that exists — [`_record_the_ratchet`]'s order
+    and its reason.
+    """
+    taken = [held for held in meta if held["key"] not in keys]
+    if not taken:
+        return {}
+    path = displaced_dir() / f"{when.replace(':', '').replace('-', '')}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as fh:
+        for held in taken:
+            fh.write(
+                json.dumps(
+                    {
+                        "schema": SCHEMA,
+                        "taken_at": when,
+                        "why": "prune",
+                        "key": held["key"],
+                        "location": held["place"],
+                        "mode": held["mode"],
+                        "mode_params": held["settings"],
+                        "picture": held["picture"],
+                        "run": held["seat"][0],
+                        "candidate": held["seat"][1],
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    log(f"[prune] wrote {len(taken):,} displaced row(s) to {tracked_name(path)}")
+    return {"path": tracked_name(path), "rows": len(taken)}
+
 
 def picture_census(rows=None) -> dict:
     """How many rows name a picture that is not there, by mode and by run.
@@ -748,6 +814,9 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
 
     record["files"] = written
     record["ratchet"] = _record_the_ratchet(meta, keys, log=log)
+    # **Which rows, not how many.** See `DISPLACED_DIR`: the ratchet proves the
+    # store only shrinks for a written-down reason and cannot say what went.
+    record["displaced"] = write_displaced(meta, keys, record["taken_at"], log=log)
     record["seconds"] = round(time.time() - started, 1)
     return record
 
