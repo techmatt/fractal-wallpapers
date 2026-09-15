@@ -1512,25 +1512,54 @@ def test_a_target_is_a_share_of_the_seats_that_actually_got_filled():
 # --------------------------------------------------------------------------- #
 # The tracked ledger. Real rows, the real greedy.
 # --------------------------------------------------------------------------- #
-@pytest.fixture
-def tracked_pool(tracked_ledger):
-    """The session's one reading of the ledger. See `conftest.tracked_ledger`."""
-    return tracked_ledger.pool
+#: How many of the tracked pool's rows the two guards below seat over.
+#:
+#: **A sample, since 2026-09-15, and what it gives up is stated here.** The whole
+#: pool is 411,618 rows and a real greedy over it was **20.6 s** — the dearest
+#: single thing in the slow lane after the ledger read itself. At 40,000 it is
+#: **2.4 s**.
+#:
+#: What the two guards assert is a **partition**: every candidate is seated once
+#: or refused for exactly one reason, and no soft rule is exceeded. That is an
+#: invariant of the bookkeeping and not a census of the store — a double-count
+#: is a rule counting into two columns, which shows up in forty thousand rows as
+#: readily as in four hundred thousand. So this thins a claim rather than
+#: dropping one, which is the trade `CLAUDE.md` asks for.
+#:
+#: What it gives up: a defect that fires only on rows outside the sample. Seeded,
+#: so the sample is the same every run and a failure is reproducible; raise this
+#: to `len(pool)` to seat over the store again.
+SEATED_SAMPLE = 40_000
 
 
 @pytest.fixture(scope="module")
-def tracked_seating(tracked_ledger):
-    """**One** real seating of the tracked pool, read by both guards below.
+def tracked_pool(tracked_ledger):
+    """A seeded sample of the session's one reading of the ledger.
+
+    See [`SEATED_SAMPLE`] for the size and what it costs, and
+    `conftest.tracked_ledger` for the reading. Module-scoped and read-only: the
+    seating below has to partition **this** pool, so the two cannot be drawn twice.
+    """
+    import random
+
+    pool = tracked_ledger.pool
+    if len(pool) <= SEATED_SAMPLE:
+        return pool
+    return random.Random(20260915).sample(pool, SEATED_SAMPLE)
+
+
+@pytest.fixture(scope="module")
+def tracked_seating(tracked_pool):
+    """**One** real seating of [`tracked_pool`], read by both guards below.
 
     The two asked the same question of `solve.seat` with the same arguments and
     got the same answer twice, for 3.3 s and 3.1 s of the slow lane on this
     machine, 2026-08-31. They assert different things about it, which is what
-    makes them two tests; a greedy over the whole pool is not a thing to run
-    twice to find that out.
+    makes them two tests; a greedy is not a thing to run twice to find that out.
 
     Read-only, like the tracked readings in `conftest.py`.
     """
-    return solve.solve(tracked_ledger.pool, n=20, key=solve.JUDGE_KEY, log=quiet)
+    return solve.solve(tracked_pool, n=20, key=solve.JUDGE_KEY, log=quiet)
 
 
 @pytest.mark.slow

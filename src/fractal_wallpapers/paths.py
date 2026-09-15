@@ -392,7 +392,13 @@ def rehome(stored, tiers: Tiers | None = None) -> Path | None:
     announce itself: the loop is correct either way, it just sits there. Resolve
     `Tiers.current()` once above the loop.
     """
-    parts = PurePosixPath(str(stored).replace("\\", "/")).parts
+    # `str.split` and not `PurePosixPath(...).parts`. The only components this
+    # reads are the ones AFTER the artifacts name, and `resolve` already drops the
+    # empty and `.` components that pathlib was being built to drop — so the two
+    # agree here, and a root component can never be among the ones handed on. Over
+    # the candidate ledger that is 823,000 fewer `_parse_path` calls a sweep; it is
+    # the same class of cost as the `tiers` argument below. 2026-09-15.
+    parts = str(stored).replace("\\", "/").split("/")
     for index in range(len(parts) - 1, -1, -1):
         if parts[index] == ARTIFACTS_NAME:
             here = Tiers.current() if tiers is None else tiers

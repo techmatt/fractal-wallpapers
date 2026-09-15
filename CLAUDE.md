@@ -237,8 +237,13 @@ fast lane is for the edit-run loop and nothing else.
 Both are measured, not estimated. The tree holds **4,831 collected — 4,676 fast,
 155 slow — since `ci_red_ckpt125` added 8 tests on 2026-09-15**, on a
 `.[dev,models]` install with a release engine built. **Fast: 4,676 of 4,676 in
-135.26 s (2:15)** with 155 deselected. **Slow: 4,831 of 4,831 in 492.99 s (8:12).**
+135.60 s (2:15)** with 155 deselected. **Slow: 4,831 of 4,831 in 476.93 s (7:56).**
 Both green, zero skips, zero failures, and **the two lanes agree on the count**.
+
+**The slow lane came down 16.1 s on the same tree** — `lane_speed_ckpt125`, two pure
+wins in `present_pictures` and `rehome` plus one sampled fixture — and the fast lane
+did not move, because all three were slow-lane costs. The count is unchanged either
+way: a sample size is not a test.
 
 This closes `family_slot_sizing_ckpt125`'s ⚠, which asked for exactly this pair: its
 half-pair 4,667 is in the arithmetic above as 4,667 + 8 new guards + 1 test that
@@ -354,9 +359,29 @@ and the rules that log produced.
   down at each site, and it is not a licence elsewhere.
 - **A test earns `@pytest.mark.slow` by costing about a second or more of real
   work** — a render through the engine, a training loop, or a sweep of a store.
-  Arithmetic stays in the fast lane however much of it there is. **A slow guard
-  moves lanes; it is never deleted or weakened to make a lane faster** — the tests
-  are this project's memory and every pin in them was bought by an incident.
+  Arithmetic stays in the fast lane however much of it there is.
+- **A guard may be weakened or deleted to make a lane faster**, Matt's ruling of
+  2026-09-15, which reverses what this file said until then. It said *a slow guard
+  moves lanes; it is never deleted or weakened* — the tests are this project's
+  memory — and the thing that changed is that the slow lane is now too slow to run
+  as often as it should be, which costs more than a thin guard does. **Slight loss
+  of fidelity is acceptable; a 1:1 equivalent is not required.**
+  What is still required is that the trade is **named and priced**, because the
+  failure this replaces one rule with another to avoid is a suite that quietly got
+  weaker and nobody could say where:
+  - **Say what stopped being covered, at the site and in the report** — a sample
+    where there was a census, four modes where there were twenty, a claim dropped.
+  - **Price it.** A cut with no seconds beside it is not a speedup, it is a
+    deletion; `--durations=0 --durations-min=0` summed by file is how this repo
+    finds its time and `tests/README.md` carries the method.
+  - **Take the pure wins first.** They cost nothing and they are usually there:
+    `present_pictures` gave 5.1 s of the pool layout on the day this rule changed,
+    by keying a dict on a string instead of a `Path`, and it sped every production
+    solve with it. Reach for coverage only once those are gone.
+  - **Prefer thinning a claim to dropping one.** A guard pinned per mode is twenty
+    claims and cutting it to four drops sixteen of them; a guard that samples 80
+    rows of a store is one claim and sampling 20 is the same claim, cheaper. The
+    first needs a reason, the second needs a number.
 - **Measure the fast lane after marking, not before.** Several of these guards share
   a cached derivation, so moving one to the slow lane can hand its cost to whichever
   sibling reads the cache next, and a mark that bought nothing is a guard given up
