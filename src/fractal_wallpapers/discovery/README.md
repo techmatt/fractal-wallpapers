@@ -87,7 +87,15 @@ fractal-wallpapers reframe --out-dir artifacts/reframe_g6   --no-prior
 ```
 
 **Merging a run into the standing pool is `curate score --harvest <dir>` and then
-`curate embed`, in that order, and nothing else.** The union finds a ledger by
+`curate embed`, in that order, and nothing else.** ⚠ **Nothing runs it for you, and
+a leg whose merge never happened looks exactly like a leg that found nothing.**
+`curate score --ledger <run>/walk.jsonl --unscored --limit 0` answers it in about
+two seconds without scoring a row — it reports `outstanding` against `bound`, so a
+merged leg reads 0 and an unmerged one reads its whole output. Swept over the chain
+on 2026-09-15: `g1`-`g8` all read 0, and **`g9` and `g10` read 57 of 57 and 3 of 3**
+— both legs' locations had been sitting outside the standing supply since
+2026-09-06, which is also why any supply reading taken since then under-counted the
+channel. Check it at the end of a leg rather than discovering it two weeks later. The union finds a ledger by
 looking it up at `<run directory>/walk.jsonl` for every top-level name of the
 regenerable tree, so a run directory *is* in the pool the moment it exists; what
 the two commands add is the sidecar's read of it and one neutral-render vector per
@@ -359,17 +367,38 @@ was drawn from was ordered off a label store that has grown since, and no row
 names a seed the leg fired at and got nothing from. Where a record cannot tell
 "fired barren" from "not reached", the rule is to write nothing — so the seven
 legs that ran before 2026-09-06 contribute **0** fire rows and every root the
-chain offered them reads `unknown`, permanently. Of the nine legs on this machine
-(`g1`, `g2`, `g4`-`g10`; there is no `g3`) only `g9` and `g10` write them, 1,488
-and 384. What each leg *can* still say is on the record either way: `prior_run`'s
-`ladders` names the four distinct ladders the chain has run under, and
-`fires_recorded` is 0 for a leg that wrote none.
+chain offered them reads `unknown`, permanently. Of the ten legs on this machine
+(`g1`, `g2`, `g4`-`g11`; there is no `g3`) only `g9`, `g10` and `g11` write them,
+1,488, 384 and 672. What each leg *can* still say is on the record either way:
+`prior_run`'s `ladders` names the four distinct ladders the chain has run under,
+and `fires_recorded` is 0 for a leg that wrote none.
+
+**The three splits, and what they are readings OF.** Barren / unresolved /
+productive, off `fires.outcomes`:
+
+| leg | barren | unresolved | productive | locations | ran |
+|---|--:|--:|--:|--:|--|
+| `g9` | 1,078 | 374 | 36 | 57 | 18.9 of 30 min, killed |
+| `g10` | 6 | 376 | 2 | 3 | 4.4 of 11 min, killed |
+| `g11` | 449 | 83 | **140** | **190** | 30.3 min, ran out its clock |
+
+⚠ **`g10`'s split is not a reading of the channel and must not be quoted as one.**
+Two things made it: it died at 4.4 minutes on the carried-promotion pin above, and
+its whole root queue was `g9`'s 343 unresolved roots, every one of which returned
+`no_converge` again under a ceiling that had not moved. Both defects are fixed —
+`reframing.unsettled_under` now *holds* an unresolved root instead of offering it
+at the front, and `reframing.unpinned` filters the carry — so `g11`, the first leg
+to run after both, was offered **3,627** seeds rather than 343 and consumed 672 of
+them. Its 16 pinned promotions were dropped at the carry exactly as the sweep
+predicted. **A leg that reads 2 productive because it was handed nothing fireable
+is a fact about its queue, not about the supply**, and the cheap way to tell the
+two apart is `seeds_available` on the run record beside `seeds_consumed`.
 
 **One consequence, and it is about what can be tested rather than about the
-queue.** `g9` and `g10` ran the same ladder — the nine rungs `{16..256}`, the same
-two operators, `seed_max_period` 256 — so every `covers` comparison the store can
-produce today asks whether a ladder covers *itself*, which is the trivially true
-branch. The non-trivial branch, a ladder that reaches further than the one a root
+queue.** `g9`, `g10` and `g11` all ran the same ladder — the nine rungs
+`{16..256}`, the same two operators, `seed_max_period` 256 — so every `covers`
+comparison the store can produce today asks whether a ladder covers *itself*,
+which is the trivially true branch. The non-trivial branch, a ladder that reaches further than the one a root
 was barren under, is exercised by `tests/test_reframing_channel.py` and by nothing
 on disk, and it stays that way until a leg runs on a ladder that moves.
 
