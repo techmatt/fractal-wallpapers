@@ -179,10 +179,17 @@ def _caps(regime) -> dict:
         raise IdentityBroken(
             f"{manifest} is not on this machine, so the cap the head's own pictures were "
             f"drawn at cannot be checked — and the gate render is only that picture if the "
-            f"cap policy has not moved since the corpus was built. Restore the tile records "
-            f"(`fractal-wallpapers storage restore tiles`), build the {regime.spelled} regime "
-            f"(`fractal-wallpapers tiles build --tile 384x216 --supersample 1`), or pass "
-            f"--no-scoring."
+            f"cap policy has not moved since the corpus was built. Four ways out, and on a "
+            f"machine that has never built tiles it is the fourth: restore the tile records "
+            f"(`fractal-wallpapers storage restore tiles`, which wants an archive_root a "
+            f"fresh machine does not have); build the {regime.spelled} regime "
+            f"(`fractal-wallpapers tiles build --tile 384x216 --supersample 1`, the whole "
+            f"corpus unless --limit narrows it); pass --no-scoring and give up the judged "
+            f"crawl; or SPLIT the walk from the scoring — --no-scoring now, then "
+            f"`fractal-wallpapers curate "
+            f"score --harvest <out-dir>`, which reads this run's ledger through the head "
+            f"afterwards and needs no tile records at all. The split is what "
+            f"discovery/README.md already documents for `reframe`."
         ) from absent
     if not recorded:
         raise IdentityBroken(

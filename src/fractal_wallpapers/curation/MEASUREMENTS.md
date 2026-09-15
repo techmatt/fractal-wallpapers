@@ -509,6 +509,19 @@ phase shift a judge can *see* is a phase shift a judge **prefers** — this meas
 and reads no head. `curate rotate`'s own passes are the adoption question, and
 [`LEGS_decisions.md`](LEGS_decisions.md)'s *What the first pass found* has that reading.
 
+**A head does read a large spread across colorings AT ONE PLACE, measured 2026-09-15.**
+Fifty random mode/colormap draws at one fixed location, through the shipped render judge:
+a winner at `p_ge4` **0.997**, a runner-up at **0.86**, and a long tail under **0.55**.
+A second location's entire ceiling over its own fifty was **0.11**. So the coloring axis
+is discriminating *within* a place and its whole level is set *by* the place — which is
+the head-side reading the paragraph above says this panel does not take, and it does not
+replace it: these were random draws with nothing held, so no single knob is isolated.
+
+**Four different modes won somewhere across those locations** — `stripe`, `tia`, `smooth`
+and `smooth_angle_min`. That is independent evidence the coloring search does real
+location-dependent work rather than resolving to one globally-best mode, which is the
+premise a roster rests on; [`curation.mode_policy`] is where it is argued.
+
 ## Every per-candidate rate this project has measured
 
 ⚠ **These are historical, measured under different conditions, and not comparable
@@ -613,6 +626,13 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 1.010 | the same arm's SECOND pass, same manifest, same night | 3 | 5/mode | 09-15 | 9,995 cand / 2,140 blocks | `on125_recolour2` |
 | **3.872** | **`threads` alone**, floor draw over proven places untried in it | 3 | 3 | 09-15 | 2,513 cand / 2,169 blocks | `on125_threads` |
 | **20.911** | 3 shareable modes, breadth, **`phoenix:classic` alone** | 3 | 3 | 09-15 | 280 cand / 246 blocks | `on125_phoenix` |
+| 0.36–0.60 | `render --manifest`, no leg and no sharing | 1 | — | 09-15 | 500 renders / 3–5 min wall | fresh-install notes |
+
+**The judge is two orders cheaper than the engine, and that is why only training wants a
+GPU.** Those same 500 candidate-geometry pictures read through the shipped render head on
+**CPU** took **12.9 s including a 2.9 s model load** — about **26 ms a picture**, so
+scoring a whole batch costs less than one render out of it. The row above is one engine
+by construction rather than by choice: `render --manifest` takes no `--workers` at all.
 
 ⚠ **`threads` costs 3.872 and its median stored render reads 2.324 — a 67% gap, and
 the render figure is the one that misleads.** A composite dumps no field

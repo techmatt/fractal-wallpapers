@@ -45,6 +45,16 @@ list rather than a fourth weight because it is a different axis and not a rung o
 this one. Everything else — the pool, the census, the bars, the floors, the
 emission — still reads [`accepted`] and cannot tell the difference.
 
+## Why there is a roster at all
+
+The table weighs modes against each other; that a *set* of them is worth carrying is a
+separate claim, and it is measured. Fifty random mode/colormap draws at one fixed location
+read `p_ge4` from 0.997 down to under 0.55 through the shipped render judge, and across
+locations four different modes — `stripe`, `tia`, `smooth`, `smooth_angle_min` — each won
+somewhere. The winner is the place's, not the roster's, so a search that collapsed to one
+globally-best mode would be leaving that spread on the table. `MEASUREMENTS.md`'s *A head
+does read a large spread across colorings AT ONE PLACE* is the reading.
+
 ## Reading the table is not syncing it
 
 Several places read this — the mode draw, the mine and hunt rosters, the depth

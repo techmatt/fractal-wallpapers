@@ -862,9 +862,16 @@ Each stage writes a record the next one reads rather than being called from
 inside it, so a training run can be re-scored and a score can be re-judged
 without any of it happening again.
 
-Everything here needs `pip install -e ".[models]"` — torch and timm are not in
-the base install, because rendering fractals, walking the plane, running the
-supply engine and collecting labels all work without them.
+Everything here needs the `models` extra — torch and timm are not in the base
+install, because rendering fractals, walking the plane, running the supply engine
+and collecting labels all work without them.
+
+⚠ **Install it with `uv sync --extra models`, not with pip.** This is the one
+package here that cares which torch it gets, and pip cannot be made to fetch the
+CUDA build: it pools `--extra-index-url` with PyPI and takes the highest version
+across both, which is PyPI's CPU wheel. Training then runs orders of magnitude
+slower with nothing reporting an error. The root README's *pip installs CPU-only
+torch* has the pinned pip fallback for a machine without `uv`.
 
 One exception, and it is the reason the exception is written down: `roster` is
 stdlib-only on purpose, because `fetch-weights --check` runs on the base install.
