@@ -419,6 +419,16 @@ Each prompt in this project ends the same way:
   what it was estimated at, launch it in the background, and poll — a training band,
   a render leg or a sweep over the tracked records is minutes to hours, and a prompt
   that blocks on one reports nothing until it lands.
+- **Arm a completion waiter in the same breath as the launch, and wait on the REAL
+  process.** A launcher wrapper exits first and its exit code says nothing about the
+  leg — waiting on one has started a unit on top of a still-running merge twice in
+  one night, and it caught this checkout again on 2026-09-15 (`nohup … &` returned
+  instantly and reported success while the leg had barely begun). A long run also
+  carries a **15-minute heartbeat with a wall-clock timestamp**: a night once lost
+  two units to a session that went quiet for two and three quarter hours with budget
+  remaining. ⚠ **A heartbeat detects nothing on its own** — that stall wrote
+  `engines=0` six times and nothing read it — so the heartbeat is for the reader and
+  the waiter is what wakes the session.
 - **The commit gate is part of the contract, not a step after it.** Commit to `main`,
   and when another prompt is in flight in this repository — anything `git status`
   lists as modified or untracked that is not yours — commit **only your own files, by

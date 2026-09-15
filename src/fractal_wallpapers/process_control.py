@@ -78,6 +78,15 @@ def bind_children_to_parent() -> str:
     engine with it. `subprocess.run` already kills its child when the call raises;
     this covers the case where there is no exception because the process simply
     stopped existing.
+
+    **So stopping a leg means killing that leg's own processes, never every
+    `fractal-engine.exe` on the box.** The job object is what makes the narrow kill
+    sufficient: reap the leg and its engines go with it. A kill by image name
+    reaches across every checkout on the machine, and has — a website rig once took
+    out a wallpapers pytest's engine next door. This box runs legs beside each other
+    by design (see `CLAUDE.md`'s one-pool-holding-process rule for what may share
+    it), so a kill that is not scoped to your own tree is a kill of somebody else's
+    work.
     """
     global _JOB
     if not IS_WINDOWS:

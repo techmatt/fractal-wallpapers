@@ -310,6 +310,7 @@ def score(
     device: str = "auto",
     limit: int | None = None,
     keys=None,
+    unscored: bool = False,
     log=print,
 ) -> dict:
     """Read every bound location through the head, at the regime its row names.
@@ -341,16 +342,71 @@ def score(
     nothing has asked for — where the unreached locations themselves are a single
     batch. Closing a reach gap is the second thing, and scoring the ledgers whole
     is the first; they are separate legs on purpose.
+
+    `unscored` is the third of those sizes and it is the **backlog**: every bound
+    location the sidecar has no row for at all, and nothing else. It is a partial
+    pass like the other two — it clears nothing — and it exists because the
+    population it names had no door. `curate reach --write` looks like that door
+    and is not: [`embeddings.judged_pool`] is built from *release decision rows*,
+    so it sees the few hundred locations a gallery pass has ruled on and cannot
+    see a location that was found, opened and never scored. Measured 2026-09-15,
+    `curate reach` read 807 judged locations with **0 absent from the sidecar**
+    while the union held a backlog three orders of magnitude larger.
+
+    **Why a location goes unscored at all**: the binding is a decision, so a
+    sidecar only ever holds what some invocation named. Score two harvests and
+    leave a third unnamed and the third's locations have no row — not refused,
+    not junk, just never read. That is invisible downstream, because
+    [`embeddings.admitted`] reads the sidecar through the junk floor: a location
+    with no row is not admitted, so `curate embed` has nothing to do about it and
+    every draw standing on the admitted population steps over it in silence.
+
+    ⚠ **This flag does NOT reach the opened-but-unscored places, and no binding
+    does.** That population — 1,607 of 42,113 opened locations, measured
+    2026-09-15 and unmoved since 2026-09-12 — is on **no walk ledger at all**:
+    dropping every structural gate and taking the whole 292,139-row union of all
+    54 ledgers on both tiers still finds zero of them. 2,799 of the 2,827
+    candidate rows at those places were made by `label_migration_0908`, which
+    derives rows from the **label stores** at candidate geometry and never walks,
+    so there is no ledger row for this stage to read. `curation/LEGS.md`'s
+    *`curate score` cannot reach the opened-but-unscored places* carries the
+    reading and what would close it.
     """
     from fractal_wallpapers import paths as paths_module
     from fractal_wallpapers.models import scoring, ship, train
 
     rows, diagnostics = gate_survivors(paths)
+    bound = len(rows)
+    backlog = None
     if keys is not None:
         wanted = {str(key) for key in keys}
         rows = [row for row in rows if _key_text(row) in wanted]
+    if unscored:
+        held = {row["key"] for row in stored_scores()}
+        rows = [row for row in rows if _key_text(row) not in held]
+        # Read before `limit` truncates, because the two answer different
+        # questions: this is how much the backlog IS, and `limit` is how much of
+        # it this pass agreed to look at. A caller that read the backlog off the
+        # scored count would call a truncated pass a finished one.
+        backlog = len(rows)
     if limit is not None:
         rows = rows[:limit]
+    if unscored and not rows:
+        # Not an error: a backlog of nothing is the outcome this pass exists to
+        # reach, and `curate embed`'s `complete: true` is the shape for saying so.
+        # `backlog` and not 0: this branch is also where `--limit 0` lands, and a
+        # pass that truncated a real backlog to nothing must not report the same
+        # thing as one that found nothing outstanding.
+        return {
+            "schema": SCHEMA,
+            "head": "location",
+            "unscored": True,
+            "bound": bound,
+            "gate_survivors": bound,
+            "outstanding": backlog,
+            "scored": 0,
+            "complete": backlog == 0,
+        }
     if not rows:
         raise IntakeError(
             "no walk ledger holds a single gate-surviving candidate, so there is no supply to "
@@ -408,12 +464,16 @@ def score(
     # The ledgers this invocation is answerable for, named exactly as the union
     # stamps them onto a row — including one that contributed nothing, whose
     # stale rows are still this pass's to clear.
-    scoped = (
-        frozenset(diagnostics["per_ledger"]) if (limit is None and keys is None) else frozenset()
-    )
+    # `unscored` belongs with `limit` and `keys` here and not with the whole pass:
+    # all three look at a SUBSET of the binding, so none of them is entitled to
+    # clear a ledger's other rows. A backlog pass that scoped its ledgers would
+    # delete every row it deliberately skipped — which is every row that was
+    # already scored, i.e. the entire point of the filter.
+    partial = limit is not None or keys is not None or unscored
+    scoped = frozenset() if partial else frozenset(diagnostics["per_ledger"])
     path, upsert = _upsert_scores(minted, scoped)
 
-    return {
+    report = {
         "schema": SCHEMA,
         "head": "location",
         "head_sha256": stamp,
@@ -436,6 +496,16 @@ def score(
         "sidecar": upsert,
         "wrote": str(path),
     }
+    if unscored:
+        # `gate_survivors` above is what this pass READ, which a filtered pass has
+        # already narrowed. The backlog wants its own denominator beside it, or a
+        # pass that scored all 40 of 40 outstanding rows out of 242,007 bound ones
+        # reads as having scored the whole binding.
+        report["unscored"] = True
+        report["bound"] = bound
+        report["outstanding"] = backlog
+        report["complete"] = backlog == len(rows)
+    return report
 
 
 def _picture_for(row: dict, colormap: str, cyclic: set[str], tiers=None) -> tuple[Path, str, str]:
