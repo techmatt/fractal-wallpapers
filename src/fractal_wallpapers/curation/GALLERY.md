@@ -1418,6 +1418,35 @@ which does not bind below its own seat count. A themed gallery at full quality i
 a **smaller** themed gallery; unfilled beats padded and there is still no padding
 branch.
 
+⚠ **A `reachable`-bar theme is on a treadmill: mining it raises its own bar, and
+that can cost it seats.** The bar *is* the `4n`-th best row's `p_fine` over the
+theme's own stock, so rows added above that point push the bar up under the pass,
+and `cell_at_bar` stays pinned at exactly `4n` by construction while the admitted
+**locations** fall. Measured over the hue-family passes at n=500 on 2026-09-14,
+before and after 17,014 mined candidates landed:
+
+| | bar | locations admitted | filled |
+|---|---|--:|--:|
+| `rose` (`reachable`) | .02297 → **.02647** | 7,087 → **6,881** | 469 → **465** |
+| `purple` (`reachable`) | .01400 → **.01655** | 8,003 → **7,811** | 475 → **469** |
+| `azure` (`floor_below`) | .01000 → .01000 | 8,619 → 8,742 | 466 → **478** |
+| `green` (`floor_below`) | .01000 → .01000 | 8,619 → 8,742 | 287 → **303** |
+
+Those were the only two non-`lime` families on a `reachable` bar and they are the
+only two that went **backwards**, each while seating 17 and 20 of the new rows —
+a family that loses 200 places to its own rising bar loses seats even as it gains
+rows. Every `floor_below` family gained; every `shipped` family was already full.
+What the two lost was their bottom, so their medians **rose** (.173 → .179 and
+.148 → .165), which is the tell: this is the bar working, not the solve failing.
+
+**So a before/after on a themed pass has to read `config.theme_bar` on both
+sides.** A fill that fell under a bar that moved is not the same event as a fill
+that fell under a bar that held, and only the second is a reason to look at the
+solve. The lever, when a `reachable` theme has to be closed on count, is the one
+above — a smaller `n`, which asks less of `4n` — or rows at **new places** rather
+than more rows at places the theme already holds, since only the first kind
+outruns the bar it is raising.
+
 ⚠ **Three keys, three questions, and two of them were both called `theme`.** A
 themed pass writes the cell name at `config.theme` (a **string**), the pool that
 name selected at `theme_pool` (a **dict**: `cell`, `membership`, `in_the_cell`,
