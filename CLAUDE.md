@@ -215,23 +215,20 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,807 collected — 4,651 fast,
-156 slow — since `targets_ckpt125` added 34 tests on 2026-09-15**, on a
-`.[dev,models]` install with a release engine built. **Fast: 4,651 of 4,651 in
-131.17 s (2:11)** with 156 deselected. **Slow: 4,807 of 4,807 in 513.49 s (8:33).**
-Both green, zero skips, zero failures, and **the two lanes agree on the count**,
-which is the check `silent_failures_ckpt125` could not make.
+Both are measured, not estimated. The tree holds **4,821 collected — 4,665 fast,
+156 slow — since `spec_enumeration_ckpt125` added 14 tests on 2026-09-15**, on a
+`.[dev,models]` install with a release engine built. **Fast: 4,665 of 4,665 in
+134.36 s (2:14)** with 156 deselected. **Slow: 4,821 of 4,821 in 508.79 s (8:28).**
+Both green, zero skips, zero failures, and **the two lanes agree on the count**.
 
-⚠ **The slow lane is 33.0 s over the last measured pair and only a sixth of that is
-the tests.** `readme_overhaul_ckpt124` read 480.45 s at 4,733; this is 513.49 s at
-4,807, and the same +74 tests cost the fast lane **+5.68 s**. Two things account for
-most of the rest and neither is a guard getting slower: the ledger grew **428,175 →
-457,430 rows** overnight, which is +6.8% on `test_leveled_identity`'s whole-store
-sweep — 49.4 s here, so about +3 s — and the box is running warm, measured rather
-than assumed: `test_renderer_agreement.py --slow`, untouched and engine-bound, read
-**18.70 s** against the 17.02 / 18.22 / 19.05 already on record, which is 10% on the
-engine-bound share. The residue was not chased and the decisive check — a
-`git worktree` at the old HEAD against today's store — was not taken.
+**The slow lane fell 4.7 s while the tree grew by fourteen tests**, which closes
+`targets_ckpt125`'s ⚠ the cheap way: it read 513.49 s and did not chase the residue
+after finding the ledger's overnight growth and a warm box between them. Nothing
+here was done to make it faster — the fourteen are all fast-lane arithmetic and no
+guard moved lanes — so the 33.0 s it could not account for was the box, and a second
+pair on a quieter one was the decisive check rather than the `git worktree` that was
+planned. The +14 cost the fast lane **+3.19 s**, which is what fourteen guards over
+an `ast` sweep and a store-free derivation cost.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.

@@ -182,6 +182,45 @@ as *the geometry and nothing else moves*. It now reads the recipe through
 the parent. `manufacture`'s render arm passes the row's settings; its recolour arm needs
 none, settings being legal only on a direct trap, which has no field to dump.
 
+### The fourth appearance was a spec with no row behind it, and `trap_circle` is where it shows
+
+**Closed 2026-09-15.** The three sweeps above look for a caller of a **builder**:
+`colorize.render`, `locations.spec_of`, `release.Task`. A site that writes its engine
+spec out as a dict literal calls none of them and is invisible to all three. Nineteen do,
+seventeen of them not a builder, and `tests/test_renderer_agreement.py`'s `HAND_BUILT`
+is now the table that holds them — keyed by **function**, because a table keyed by module
+is what let `render --manifest` hide behind `cli.draw_commands`' other door.
+
+**What such a site drops is the curve, and it does not look like dropping anything.** A
+spec says `mode` or `coloring` and never both. `mode` alone resolves through the engine's
+catalog, which puts `Transform::Log` on `trap_circle` and on the niche `de` and
+`Transform::Linear` on the other eighteen, while every production render has
+`engine_spec.coloring_of` write `colorize.CURVE` over it. So a bare mode draws
+`trap_circle` through a transform nothing in this project renders at.
+
+`colorize.field_row`'s docstring has said so since it was written — *"a field dumped by
+mode name would carry the catalogued curve into its record and recolour every
+`trap_circle` through a curve nobody rendered"* — and three sites dumped by mode name
+anyway. A field's **binary** is unaffected (`dump-field` writes the raw scalars before
+any normalization); its **record** is not, and `engine recolor` takes
+`spec.transform.unwrap_or(record.transform)`.
+
+`manufacture` and `palette_coverage` both state the curve on their recolour, so
+`manufacture` never drew a wrong picture. `palette_coverage` has **three** other readers
+of its own dump that did not: `field_shape`, which is what the panel is *chosen* on, and
+`_make_tile` and `contact_sheet`, which draw the pictures a person sets the swatch bar by
+eye against. Three of the shipped panel's sixteen cells are `trap_circle`, and
+**3,171 of its 16,912 measured rows** came off them. Re-reading this machine's 56 dumps
+under the curve production spends moves **three of the sixteen seats** — two of the three
+dropped are `trap_circle` cells. The rows themselves were measured right; the panel they
+were measured on is not the one the rule specifies.
+
+The fix is at the **dump** and not at the three readers: `palette_coverage.dump` and
+`manufacture.field_for` build through `colorize.field_row` + `renders.spec_of` now, so
+the record is the builder's and inheriting it is inheriting the builder's answer. A
+cached field whose record disagrees is re-dumped rather than trusted — a cache must not
+be able to make a fixed command go on reporting the old number.
+
 ### The `curve`/`palette` refusal was one rule doing two jobs, and a NEW MAP is neither
 
 `render` refused a `fields=` directory beside **either** override. Read from the split

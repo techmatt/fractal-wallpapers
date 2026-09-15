@@ -874,26 +874,31 @@ def field_for(
     all: a composite and a direct trap have none and the engine refuses to dump
     one.
     """
-    from fractal_wallpapers import engine, paths
+    from fractal_wallpapers import engine
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.models import renders
 
     directory = Path(directory)
     field = directory / "fields" / f"{row['group']}.f32"
     if field.is_file() and field.with_suffix(".json").is_file():
         return field
     field.parent.mkdir(parents=True, exist_ok=True)
+    # Through [`colorize.field_row`] and [`renders.spec_of`], the one derivation
+    # of what the engine is told, rather than a spec spelled out here. A spec that
+    # names a mode and no curve takes the **catalog's** curve — `log` for
+    # `trap_circle` and `linear` for everything else — and writes it into the
+    # record every recolour of this field would otherwise inherit.
+    # `_leveled_recolor` states the curve, so nothing this module draws was ever
+    # wrong; what was wrong was the record, and a defence that lives entirely at
+    # the far end is one careless recolour from being lost. `palette_coverage`
+    # had the same dump with three readers that did not state it.
     engine.dump_field(
-        {
-            "schema": 1,
-            "family": row["family"],
-            "viewport": row["viewport"],
-            "resolution": list(resolution),
-            "supersample": int(supersample),
-            "maxiter": int(row["maxiter"]),
-            "mode": row["mode"],
-            "colormap": "twilight_shifted",
-            "colormap_dir": str(paths.colormap_dir()),
-            "output": str(field),
-        }
+        renders.spec_of(
+            colorize.field_row(
+                row, row["mode"], colorize.CURVE, _geometry(row["maxiter"], resolution, supersample)
+            ),
+            field,
+        )
     )
     return field
 

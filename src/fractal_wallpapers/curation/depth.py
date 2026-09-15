@@ -225,6 +225,41 @@ CENTERED_CHOICES = (CENTERED_ANY, CENTERED_ONLY, CENTERED_EXCLUDE)
 #: How long a depth run may spend **rendering**, in seconds.
 BUDGET_SECONDS = 5400.0
 
+#: **The rate a leg is sized off when nothing has priced its width**, in engine
+#: seconds a candidate, and a deliberate under-estimate.
+#:
+#: `--rate` refused to default until 2026-09-15, and what it told a caller to pass
+#: was "the seconds a candidate a short run at this width reported" — a number no
+#: command reports without a depth leg having already run at that width. So the
+#: one leg that structurally could not calibrate from its own first minutes was
+#: the leg every overnight prompt tells its units to calibrate from theirs.
+#:
+#: The direction is the whole of the argument, and it is [`rotation.MINE_RATE`]'s.
+#: `rate` is in the denominator of `PLAN_HEADROOM * workers * budget / rate`, the
+#: surplus of a plan is **never started**, and [`run`] stops on a wall-clock
+#: deadline — so under-estimating costs a longer plan nobody renders and
+#: over-estimating costs a leg that runs out of plan with budget left. Only one of
+#: those is a leg that did not do what it was asked.
+#:
+#: **0.4 is measured, not chosen**: the cheapest per-candidate second in the 139
+#: depth records on this machine is `u5_easy_night2`'s 0.4175 at width 12, and
+#: this is that rounded down. A width nothing has priced is exactly the case a
+#: pilot is for, and this is what a leg costs while somebody decides to run one.
+PILOT_RATE = 0.4
+
+#: How many of the newest depth records [`measured_rate`] reads. Forty, which is
+#: [`hunt.recorded_prices`]' own window and for its reason: far enough back to
+#: answer for a width that has not run this week, near enough that a rate from
+#: before an engine build is not what sizes tonight.
+RATE_RECORDS = 40
+
+#: How many candidates a record has to have made before its per-candidate mean is
+#: a price. A leg killed after four candidates reports a mean over its own
+#: startup — the pool load, the first field dump, the judge coming up — and that
+#: is the one number that would be read as *this width is dear* and shorten the
+#: next plan. Fifty, which every real leg in the store clears by two orders.
+RATE_FLOOR_MADE = 50
+
 #: How many workers a leg renders on. **Three**, read off the module that owns
 #: this machine's render pool rather than restated, because that is the rule and
 #: not a tuning knob: more than three engines at once makes the desktop unusable.
@@ -413,6 +448,79 @@ def sequence_path(name: str) -> Path:
 def record_path(name: str) -> Path:
     """What the run reports about itself: the plan, the price, the curves."""
     return depth_dir(name) / RECORD_NAME
+
+
+def measured_rate(width: int, newest: int = RATE_RECORDS) -> tuple[float, dict]:
+    """`(seconds a candidate, provenance)` for a leg at this width, off the records.
+
+    **The number `--rate`'s own help told a caller to go and read by hand.** Every
+    depth record carries `config.width` and `budget.seconds_per_candidate` — the
+    latter per engine, which is the denomination `--rate` is in — so what a short
+    run at this width reported is written down already and the flag's chicken and
+    egg was a reading nobody had automated.
+
+    **The minimum and not the median**, which is the only part of this with a
+    decision in it. Rates at one width spread by an order of magnitude — width 12
+    reads 0.42 s on `u5_easy_night2` and 5.12 s on `pvmine_0911`, because a
+    candidate's cost is the location's as much as the width's — and a plan sized
+    off the middle of that is too short half the time. Too short is the failure
+    that matters: the surplus of a long plan is never started, where a short one
+    ends the leg with budget left. So the cheapest reading at this width is what
+    sizes the plan, and the cost of being wrong is a tail nobody renders.
+
+    **What that buys, stated rather than felt.** [`PLAN_HEADROOM`] is 1.6 and sits
+    in the same formula, so the plan is 1.6x the capacity this rate implies — and
+    a leg runs out of plan only if tonight's candidates come in **cheaper than
+    0.6x the cheapest this width has ever recorded**. When that happens it is
+    visible rather than silent: `counts.stopped_for_budget` is zero and
+    `budget.share` is under one, which is the leg saying it ran out of plan and not
+    out of clock.
+
+    A leg that made almost nothing prices nothing, so a record under
+    [`RATE_FLOOR_MADE`] candidates is skipped: a run killed after four candidates
+    reports a per-candidate mean over its own startup.
+
+    Empty of records at this width, the provenance says so and the caller takes
+    [`PILOT_RATE`]. That is not an error and is not treated as one — it is the
+    first leg at a new width, which is the case the constant exists for.
+    """
+    root = under("curation", UNIT)
+    if not root.is_dir():
+        return PILOT_RATE, {"width": int(width), "why": "no depth records on this machine"}
+    records = sorted(
+        (path for path in root.glob(f"*/{RECORD_NAME}") if path.is_file()),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )[: int(newest)]
+    seen: list[tuple[float, str]] = []
+    for path in records:
+        try:
+            held = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        config, budget = held.get("config") or {}, held.get("budget") or {}
+        made = int((held.get("counts") or {}).get("made") or 0)
+        seconds = budget.get("seconds_per_candidate")
+        if int(config.get("width") or 0) != int(width) or seconds is None:
+            continue
+        if made < RATE_FLOOR_MADE:
+            continue
+        seen.append((float(seconds), path.parent.name))
+    if not seen:
+        return PILOT_RATE, {
+            "width": int(width),
+            "read": len(records),
+            "why": f"none of the newest {len(records)} depth record(s) made "
+            f"{RATE_FLOOR_MADE} candidate(s) at width {int(width)}. This leg is the pilot",
+        }
+    rate, leg = min(seen)
+    return rate, {
+        "width": int(width),
+        "leg": leg,
+        "read": len(records),
+        "priced": len(seen),
+        "is": "the CHEAPEST seconds_per_candidate recorded at this width, per engine",
+    }
 
 
 def fields_dir(name: str) -> Path:
@@ -3603,8 +3711,11 @@ __all__ = [
     "NEAR",
     "PICTURES",
     "MAPS_SCHEMA",
+    "PILOT_RATE",
     "PLAN_HEADROOM",
     "PRIMED_BAR",
+    "RATE_FLOOR_MADE",
+    "RATE_RECORDS",
     "RANKED",
     "RANK_BANDS",
     "RECORD_NAME",
@@ -3635,6 +3746,7 @@ __all__ = [
     "flat_maps",
     "fields_dir",
     "flat_places",
+    "measured_rate",
     "merge",
     "near_admits",
     "near_manifest",

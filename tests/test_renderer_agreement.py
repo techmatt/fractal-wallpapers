@@ -47,13 +47,39 @@ entry says which cases it draws and why, and [`test_every_renderer_in_the_tree_i
 holds the registry to the tree, so a renderer added later is either covered or
 declared exempt with a reason.
 
-**Two doors are swept and not one.** The registry finds its population by looking
-for callers of `colorize.render`, and a picture's inputs are enumerated in one
-other place — `locations.spec_of`, which `render --manifest` builds its spec
-through and which never touches `colorize.render` at all. Its module was in
-`RENDERERS` for a *different* door the whole time, so the name being present is
-what kept the second one out of sight. [`LOCATION_DOOR`] and
-[`test_every_caller_of_the_location_door_is_declared`] are that half.
+**Three doors are swept and not one.** The registry finds its population by
+looking for callers of `colorize.render`. A picture's inputs are enumerated in two
+other places, and each has cost a wrong picture:
+
+* `locations.spec_of`, which `render --manifest` builds its spec through and which
+  never touches `colorize.render` at all. Its module was in `RENDERERS` for a
+  *different* door the whole time, so the name being present is what kept the
+  second one out of sight. [`LOCATION_DOOR`] is that half.
+* **a spec written out as a dict literal and handed straight to the engine**,
+  which neither of the first two sweeps can see at all, because such a site calls
+  no builder to be caught calling. [`HAND_BUILT`] is that third half, and it is
+  keyed by **function and not by module**, for the reason the second one exists:
+  `cli.draw_commands` had three doors and one name.
+
+The third sweep is the one this file claimed did not need to exist. Its docstring
+said *"There are three such places and not two"*, meaning three **builders**, and
+read as a completeness claim over the class. Nineteen sites write a spec out by
+hand; two of them are the builders, so the claim was wrong by **seventeen**. What
+it should have said is that a caller holding a whole row cannot drop a member of
+it — which is true, and says nothing about a caller that never held a row.
+
+**What the third sweep found, 2026-09-15.** A spec that names a `mode` and no
+curve takes the **catalog's** transform, which is `log` for `trap_circle` and `de`
+and `linear` for the other eighteen modes, while every production render writes
+`colorize.CURVE` over it through `engine_spec.coloring_of`. `curation.colorize`
+already knew — [`colorize.field_row`]'s docstring says a field dumped by mode name
+"would carry the catalogued curve into its record and recolour every
+`trap_circle` through a curve nobody rendered" — and three sites dumped by mode
+name anyway. Two were defended at the far end by a recolour that stated the curve.
+The third, `palette_coverage`, had three readers that did not: the panel was
+selected, tiled and contact-sheeted under `log` for the three of its sixteen cells
+that are `trap_circle`, and re-reading this machine's 56 dumps under the curve
+production actually spends moves **three of the sixteen seats**.
 """
 
 from __future__ import annotations
@@ -734,17 +760,21 @@ def test_every_renderer_in_the_tree_is_in_this_registry() -> None:
     curve and the palette as separate arguments, and `release.Task`'s fields, which
     are the same list travelling to a worker.
 
-    **There are three such places and not two**, which is what this file claimed
-    until `locations.spec_of` was found to be the third — see
-    [`test_every_caller_of_the_location_door_is_declared`], which sweeps for it the
-    same way and is why the count is written here rather than left implied.
+    **This sweep covers one of the three doors, and says so.** It used to claim
+    "there are three such places and not two" and mean three *builders*, which read
+    as a completeness claim over the whole class and was not one: a site that writes
+    its spec out as a dict literal calls no builder, so neither this sweep nor
+    [`test_every_caller_of_the_location_door_is_declared`] can see it.
+    [`test_every_hand_built_engine_spec_is_declared`] is the third, and the claim
+    this docstring makes is now bounded to what it checks.
 
-    Everything else goes through `renders.spec_of(row, output)` with a **complete**
-    render-cache row — `Recipe.row`'s own output — and a caller holding the whole row
-    cannot drop a member of it. That is why `models.renders`, `coloring.texture_flat`
-    and `labeling.sheets` are not swept here and are not exemptions either: they are
-    not in the class. `release.Task` is held to one construction site by
-    `test_curation_release.py`, which is this sweep's other half.
+    A caller that goes through `renders.spec_of(row, output)` with a **complete**
+    render-cache row — `Recipe.row`'s own output — cannot drop a member of it, which
+    is why `models.renders` and `coloring.texture_flat` are not swept here and are
+    not exemptions either. `labeling.sheets` was on that list and did not belong on
+    it: `render_finished` holds a whole row, and `render_spec` beside it held none
+    and wrote its own spec. It is in the third table now. `release.Task` is held to
+    one construction site by `test_curation_release.py`.
     """
     calling = _modules_where(lambda source: "colorize.render(" in source)
     known = {renderer.module for renderer in RENDERERS} | set(EXEMPT)
@@ -858,3 +888,198 @@ def test_a_candidate_leg_is_declared_rather_than_assumed_to_drop_the_curve() -> 
     for intention in (hunt.Try, mine.Unit, depth.Shot):
         held = {field.name for field in dataclasses.fields(intention)}
         assert {"mode_params", "palette"} <= held, intention.__name__
+
+
+# --------------------------------------------------------------------------- #
+# The third door: a spec written out by hand.
+# --------------------------------------------------------------------------- #
+#: The two keys that together mean *this literal is an engine spec*. `schema` is
+#: written by a site building a whole spec and by no site overriding one member of
+#: somebody else's — `{**spec, "colormap_dir": str(where)}` carries no `schema`,
+#: and the three of those in this tree are redirections, not enumerations.
+#: `colormap_dir` is the key nothing but an engine spec has ever carried.
+SPEC_LITERAL_KEYS = frozenset({"schema", "colormap_dir"})
+
+
+def _hand_built_specs(source: str) -> set[str]:
+    """Every function in this module that writes an engine spec out as a literal.
+
+    By **function** and not by module, which is the whole lesson of
+    [`LOCATION_DOOR`]: `cli.draw_commands` is one module with three of these in it,
+    and a table keyed on the module would have been satisfied by the first and
+    blind to the other two — which is exactly how `render --manifest` went unswept
+    for as long as it existed.
+
+    Read with `ast`, so a spec assembled inside a `return` or nested in a call
+    counts the same as one in a bare assignment.
+    """
+    tree = ast.parse(source)
+    holder: dict[int, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for line in range(node.lineno, (node.end_lineno or node.lineno) + 1):
+                holder[line] = node.name
+    out: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        keys = {
+            key.value
+            for key in node.keys
+            if isinstance(key, ast.Constant) and isinstance(key.value, str)
+        }
+        if keys >= SPEC_LITERAL_KEYS:
+            out.add(holder.get(node.lineno, "<module>"))
+    return out
+
+
+#: **Every site that writes an engine spec out by hand, and what keeps it honest.**
+#:
+#: The class this file is about, reached from the far side: not a caller holding a
+#: row and naming some of its members, but a caller holding no row at all and
+#: writing the spec itself. Such a site cannot be caught calling a builder, because
+#: it calls none — so it is declared here or the sweep fails.
+#:
+#: **The question asked of each is the CURVE**, because that is the member a
+#: hand-built spec drops without looking as though it dropped anything. A spec says
+#: `mode` or `coloring` and never both; `mode` alone resolves through the engine's
+#: catalog, which puts `Transform::Log` on `trap_circle` and `de` and
+#: `Transform::Linear` on the other eighteen, while every production render has
+#: `engine_spec.coloring_of` write `colorize.CURVE` over it.
+#:
+#: A **recolor** spec asks the same question one step later: `engine recolor` takes
+#: `spec.transform.unwrap_or(record.transform)`, so a recolor that does not state
+#: the curve inherits whatever its field's record says — right when that record was
+#: written by the builder, wrong when it was written by a bare mode.
+HAND_BUILT: dict[str, str] = {
+    "engine_spec.spec_of": "the builder itself. Every other entry here is a site that does "
+    "not use it.",
+    "locations.spec_of": "the second builder, and [`LOCATION_DOOR`] is its own table. A "
+    "location record has no member for a curve, so what this cannot express it refuses "
+    "through `locations.refuse_a_picture_this_cannot_draw` rather than dropping.",
+    "cli.draw_commands.render_spec": "`render` and `dump-field` from command-line "
+    "ARGUMENTS, the one door here with no row behind it at all. It names a bare `mode` "
+    "deliberately: this is the explore-one-picture door the article teaches, `--mode "
+    "trap_circle` means the mode as the catalog describes it — 'read through a log curve' "
+    "is that mode's own catalog line — and there is no stored recipe here whose curve it "
+    "could be disagreeing with. `--discrete` takes the `coloring` door instead, an integer "
+    "escape count not being a named mode.",
+    "cli.draw_commands.recolor": "`recolor` from arguments. States no transform on purpose: "
+    "the dumped field's own record is the right default for a door whose whole job is "
+    "'colour this field again', and `--transform` is there for a caller who means otherwise.",
+    "cli.draw_commands.screen": "a `screen` spec — a coarse occupancy scan over frames. No "
+    "coloring, no recipe, no picture anybody keeps.",
+    "curation.colorize.recolored": "states no transform, and is right not to: the fields it "
+    "reads are [`colorize.field_of`]'s, dumped through `renders.spec_of` off "
+    "[`colorize.field_row`], so their records carry the row's OWN curve and inheriting it "
+    "is inheriting the builder's answer.",
+    "curation.framing.screen": "a `screen` spec. As `cli.draw_commands.screen`.",
+    "curation.manufacture._leveled_recolor": "**states** `colorize.CURVE`, and its docstring "
+    "carries why: `manufacture.verify` found the `trap_circle` disagreement here first.",
+    "curation.palette_coverage.probe_cell": "**states** `colorize.CURVE`. Three of the "
+    "shipped panel's sixteen cells are `trap_circle`.",
+    "curation.palette_coverage._make_tile": "states no transform and inherits the record's, "
+    "which is correct since `palette_coverage.dump` was routed through "
+    "[`colorize.field_row`] on 2026-09-15. It was NOT correct before: the tiles a person "
+    "sets the swatch bar by eye against were drawn at `log` for every `trap_circle` cell "
+    "while `probe_cell` measured them at `linear`.",
+    "curation.palette_coverage.contact_sheet": "as `_make_tile`, and the same fix reached "
+    "it. This is the sheet the bar is read off.",
+    "discovery.boundary.sample": "a `screen` spec. As `cli.draw_commands.screen`.",
+    "discovery.reframing.screen_rungs": "a `screen` spec over a rung ladder.",
+    "discovery.viewport_sampler.sample": "a `screen` spec.",
+    "discovery.walk.expand": "an `expand` spec: nodes, gates and a policy. It carries a "
+    "colormap for the engine's own gate renders and names no mode, no curve and no recipe "
+    "— there is no picture here a recipe could reproduce, which is why `walk` is in neither "
+    "of the other two tables either.",
+    "labeling.sheets.render_spec": "a location sheet's two renders. **Cannot** go through "
+    "`renders.spec_of`: a unit out of `units_from_ledger` may carry `maxiter` of `None` and "
+    "is meant to draw at the engine's own choice, where `spec_of` reads it through `int()`. "
+    "It takes the coloring from `engine_spec.coloring_of` instead, so the curve is named "
+    "rather than inherited — see [`sheets.SHEET_MODE`].",
+    "models.palette_corpus.recolor_spec": "states no transform and inherits the record's. "
+    "The field beside it is dumped through `renders.spec_of` in `build`, so the record is "
+    "the builder's.",
+    "models.tiles.spec": "a `tiles` spec — a mosaic over a manifest of locations. Its "
+    "recipe member is the mosaic's, not one picture's.",
+    "palettes.strip.draw": "recolors a **ramp this module wrote itself**, and it writes the "
+    "record too — `strip.record` pins `transform` to `linear` beside the bytes. It controls "
+    "both halves of the inheritance, which is why not stating the curve is safe here and is "
+    "the one entry where that is true by construction rather than by the builder.",
+}
+
+
+def test_every_hand_built_engine_spec_is_declared() -> None:
+    """The third door, swept the way the first two are.
+
+    A site that writes its spec out as a literal is invisible to both sweeps above
+    — it calls no builder to be caught calling — and it is the site most able to
+    drop a member, because there is no row in front of it whose absence would show.
+    Nineteen are in this tree — seventeen of them not a builder — and not one was
+    declared anywhere.
+
+    The population is found by the **shape of the literal** rather than by a name,
+    for the reason `_names_the_location_door` gives at length: a name is the thing a
+    module has more than one of. `{"schema": ..., "colormap_dir": ...}` is what an
+    engine spec is and what nothing else in this tree is.
+    """
+    from fractal_wallpapers import curation
+
+    root = Path(inspect.getfile(curation)).parent.parent
+    found: set[str] = set()
+    for path in sorted(root.rglob("*.py")):
+        # Package-relative, the way `_modules_where` spells it: `curation.colorize`,
+        # `cli.draw_commands`, `locations`. A function is that plus its own name.
+        module = path.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+        found |= {
+            f"{module}.{name}" for name in _hand_built_specs(path.read_text(encoding="utf-8"))
+        }
+
+    assert found <= set(HAND_BUILT), (
+        f"{sorted(found - set(HAND_BUILT))} write(s) an engine spec out as a dict literal "
+        f"and is declared nowhere. Such a site names the engine's inputs one at a time with "
+        f"no row in front of it, which is how every defect this file records began — and "
+        f"the member it drops silently is the CURVE, because a bare `mode` resolves to the "
+        f"catalog's transform and production writes `colorize.CURVE` over it. Say what this "
+        f"site draws and what keeps its curve honest."
+    )
+    stale = sorted(name for name in HAND_BUILT if name not in found)
+    assert not stale, f"{stale} is declared here and no longer writes a spec by hand"
+
+
+def test_a_field_dumped_for_the_one_log_mode_records_the_curve_production_draws(tmp_path) -> None:
+    """`trap_circle` is the mode the class was invisible on, so it is the pin.
+
+    The engine's catalog reads `trap_circle` through a log curve — its own one-line
+    description says so — and every production render of one goes through
+    `engine_spec.coloring_of`, which writes [`colorize.CURVE`] over it. A dumped
+    field's *binary* does not depend on that: `dump-field` writes the raw scalars
+    before any normalization. Its **record** does, and a recolor that states no
+    transform takes the record's.
+
+    So the two sites that dump a field for a mode they were handed are pinned to
+    recording the curve a render of that row would spend. Both named a bare mode
+    until 2026-09-15 and recorded `log`.
+
+    64x36, because what is under test is the record and not the pixels.
+    """
+    from fractal_wallpapers import engine, engine_spec
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.models import renders
+
+    assert engine_spec.catalog()["trap_circle"]["transform"] == "log", (
+        "this guard is pinned on `trap_circle` being the mode whose catalogued curve is not "
+        "the one production draws. If the catalog changed, the pin moves with it."
+    )
+    geometry = {"resolution": [64, 36], "supersample": 1, "maxiter": 400}
+    row = {**PLACE, "viewport": FRAME["viewport"], "maxiter": 400}
+    output = tmp_path / "field.f32"
+    engine.dump_field(
+        renders.spec_of(colorize.field_row(row, "trap_circle", colorize.CURVE, geometry), output)
+    )
+    record = json.loads(output.with_suffix(".json").read_text(encoding="utf-8"))
+    assert record["transform"] == colorize.CURVE, (
+        f"a field dumped for `trap_circle` records {record['transform']!r}, so every recolor "
+        f"that does not state a transform draws it through a curve no render of that row "
+        f"ever spends."
+    )

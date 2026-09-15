@@ -313,30 +313,63 @@ def cell_id(row: dict) -> str:
 
 
 def dump(row: dict) -> Path:
-    """This cell's field, dumped once. Every recolor of the cell reuses it."""
-    from fractal_wallpapers import engine, paths
+    """This cell's field, dumped once. Every recolor of the cell reuses it.
+
+    **Through [`colorize.field_row`] and [`renders.spec_of`], which is the one
+    derivation of what the engine is told.** This used to name the mode and stop
+    there, and a spec that names a mode and no curve gets the **catalog's** curve
+    — `log` for `trap_circle`, `linear` for every other probeable mode. A dumped
+    field's *binary* does not depend on it (`dump-field` writes the raw scalars
+    before any normalization) but its **record** does, and three readers here take
+    the curve off that record: [`field_shape`], which is what the panel is chosen
+    on, and [`_make_tile`] and [`contact_sheet`], which draw the pictures a person
+    sets the bar by eye against. Only [`probe_cell`] stated the curve, so the
+    panel was *selected* and *shown* under a curve it was never *measured* under,
+    for the three of sixteen cells that are `trap_circle`.
+
+    Measured before the fix, over this machine's 56 dumped cells: every
+    `trap_circle` cell's `end_mass` moves, seven of eight upward, and
+    [`choose`]'s selection moves **three of sixteen seats**.
+
+    **A record that disagrees is re-dumped rather than trusted.** A field cached
+    under the old spelling is a correct binary beside a record naming a curve
+    nothing here spends, and the cache must not be able to make a fixed command
+    go on reporting the old answer.
+    """
+    from fractal_wallpapers import engine
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.models import renders
 
     location = row["location"]
     fields_dir().mkdir(parents=True, exist_ok=True)
     output = fields_dir() / f"{cell_id(row)}.f32"
     record = output.with_suffix(".json")
-    if output.is_file() and record.is_file():
-        return record
-    engine.dump_field(
+    field = colorize.field_row(
+        location,
+        row["recipe"]["mode"],
+        colorize.CURVE,
         {
-            "schema": 1,
-            "family": location["family"],
-            "viewport": location["viewport"],
             "resolution": list(RESOLUTION),
             "supersample": SUPERSAMPLE,
             "maxiter": int(location["maxiter"]),
-            "mode": row["recipe"]["mode"],
-            "colormap": "twilight_shifted",
-            "colormap_dir": str(paths.colormap_dir()),
-            "output": str(output),
-        }
+        },
     )
+    if output.is_file() and record.is_file() and _dumped_curve(record) == field["curve"]:
+        return record
+    engine.dump_field(renders.spec_of(field, output))
     return record
+
+
+def _dumped_curve(record: Path) -> str | None:
+    """The curve a cached field's record names, or None if it cannot be read.
+
+    Unreadable reads as *disagrees*, so a truncated record is re-dumped rather
+    than raising in the middle of a build that could have fixed it.
+    """
+    try:
+        return str(json.loads(record.read_text(encoding="utf-8"))["transform"])
+    except (OSError, ValueError, KeyError):
+        return None
 
 
 def choose(measured: list[dict], cells: int = PANEL_CELLS) -> list[dict]:
