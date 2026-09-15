@@ -641,6 +641,34 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### family_slot_sizing_ckpt125
+
+⚠ **Half a pair, on Matt's instruction, and the figure is therefore NOT repointed.**
+`family_slot_sizing_ckpt125`, 2026-09-15. **Fast: 4,667 selected, 156 deselected —
+4,823 collected — in 135.69 s (2:15).** Green, zero skips, zero failures. Two tests
+added, both fast-lane and both in `test_candidate_ledger.py`, over the displacement
+list's new columns. **+2 for +1.33 s** against the entry below's 134.36 s, which is
+what two guards that each run one `prune` over a fixture store cost.
+
+**Matt said "skip the slow lane" mid-run and it was the right call on the merits, not
+a concession.** The diff is `candidate_ledger/sweep.py` — the prune's own displacement
+writer — so the reflex is `--slow`, and the reflex is wrong here: all four guards over
+`write_displaced` are fast-lane and every one of them calls `prune()` end to end, so
+the single slow-lane prune guard
+(`test_the_prune_writes_to_a_redirected_ratchet_and_never_to_the_tracked_one`) adds
+only its ratchet-redirect assertion, and the slow lane's other ledger guards are
+whole-store censuses that new columns on a writer cannot move. **Ask where the guards
+for the changed code live, not which store the file is filed under.**
+
+⚠ **So `CLAUDE.md`'s 4,821 is one pair stale and was deliberately left alone.** The
+tree is at **4,823**; a count from half a pair is how the drift before
+`PRECLOSEOUT_ckpt123` started, and `overnight_mine_ckpt125` set the precedent of
+reporting the half honestly rather than repointing off it. **Whoever takes the next
+slow lane should re-measure both and update the figure**, and should expect the slow
+lane near 510 s — the two new guards are fast-lane, but this prompt merged 10,590 rows
+and the store grew 457,430 → **459,371**, which `test_leveled_identity.py`'s
+whole-store sweep reads.
+
 #### docs_and_install_ckpt125
 
 **Both lanes, and they agree at 4,821.** `docs_and_install_ckpt125`, 2026-09-15.

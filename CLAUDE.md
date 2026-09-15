@@ -221,6 +221,14 @@ Both are measured, not estimated. The tree holds **4,821 collected — 4,665 fas
 134.36 s (2:14)** with 156 deselected. **Slow: 4,821 of 4,821 in 508.79 s (8:28).**
 Both green, zero skips, zero failures, and **the two lanes agree on the count**.
 
+⚠ **This figure is one pair stale and the tree is at 4,823.**
+`family_slot_sizing_ckpt125` added two fast-lane guards on 2026-09-15 and read
+**4,667 fast in 135.69 s**, but Matt said skip the slow lane, so no pair was taken
+and the figure was **deliberately not repointed** — a count from half a pair is how
+the drift before `PRECLOSEOUT_ckpt123` started. The same prompt merged 10,590 rows
+and the store grew to 459,371, which the slow lane's whole-store sweep reads. **Take
+the pair and repoint this on the next slow lane.**
+
 **The slow lane fell 4.7 s while the tree grew by fourteen tests**, which closes
 `targets_ckpt125`'s ⚠ the cheap way: it read 513.49 s and did not chase the residue
 after finding the ledger's overnight growth and a warm box between them. Nothing
