@@ -293,8 +293,17 @@ def present_pictures(rows=None) -> set:
         where = rehome(named, tiers)
         if where is None:
             continue
-        homed[str(row["key"])] = where
-        wanted[where.parent].add(where.name)
+        # **Split to strings once, here.** `where.parent` builds a whole new
+        # `Path` and then hashing it to key a dict normalizes the case of every
+        # component — and the old spelling did both TWICE a row, once to fill
+        # `wanted` and again in the comprehension below. Over this store that was
+        # 2.5 million `_str_normcase` calls and 1.6 million `Path.__init__`, which
+        # profiled as two thirds of a 20 s pool layout. A str is already what the
+        # comparison wants: `scandir` yields names, and the directory is only ever
+        # a dict key. 2026-09-15.
+        directory, _, base = str(where).rpartition(os.sep)
+        homed[str(row["key"])] = (directory, base)
+        wanted[directory].add(base)
 
     listing: dict = {}
     for directory in wanted:
@@ -302,7 +311,7 @@ def present_pictures(rows=None) -> set:
             listing[directory] = {entry.name for entry in os.scandir(directory)}
         except OSError:
             listing[directory] = set()
-    return {key for key, where in homed.items() if where.name in listing.get(where.parent, ())}
+    return {key for key, (directory, base) in homed.items() if base in listing.get(directory, ())}
 
 
 # --------------------------------------------------------------------------- #

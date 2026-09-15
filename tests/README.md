@@ -701,6 +701,46 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### lane_speed_ckpt125
+
+`lane_speed_ckpt125`, 2026-09-15, idle box, `.[dev,models]` with a release engine.
+**Fast: 4,676 of 4,676 in 135.60 s (2:15)**, 155 deselected. **Slow: 4,831 of 4,831
+in 476.93 s (7:56).** Both green, zero skips. **The slow lane came down 16.1 s** on
+the same tree and the same counts as the reading below, which is a like-for-like
+comparison an hour apart: a sample size is not a test, so nothing moved lanes and
+nothing was added.
+
+Two pure wins and one trade, all of them slow-lane costs, which is why the fast
+lane did not move at all.
+
+* `candidate_ledger.store.present_pictures` built `.parent` and `.name` **twice a
+  row** — once to fill the wanted set, again in the returning comprehension — and
+  keyed a dict on the `Path`, so every row paid `_str_normcase` on every component.
+  2.5 M of those and 1.6 M `Path.__init__` over this store. Strings instead:
+  **20.25 s → 15.15 s** on the pool layout.
+* `paths.rehome` built a `PurePosixPath` per row to read components `Tiers.resolve`
+  already filters. `str.split`: **15.15 s → 14.29 s**.
+* `test_solve.SEATED_SAMPLE` seats over 40,000 of 411,618 rows: **20.6 s → 2.4 s**.
+
+**The first two are `served_locations.build` again** — a derivation paid per row
+inside production code, found by profiling one fixture rather than by reading the
+lane. `present_pictures` sits in `solve.pool`, so every seating, merge and gallery
+build got the cut with the lane.
+
+**What the profile says about deleting tests: it is not where the time is.** The
+slow lane's dearest entries are session fixtures attributed to whichever test asked
+first — 37.9 s of `tracked_ledger` landed on a guard whose own call is 1.44 s — and
+the genuinely expensive tests are byte-identity pins and whole-store censuses.
+`test_autolevel_identity`'s 28 probes are one pin per mode, so trimming drops modes
+rather than thinning a claim. `test_retention`'s 11.7 s guard asserts a **non-empty**
+difference, so sampling it would make it flaky rather than cheap. Both were priced
+and left.
+
+The fast lane is the other shape entirely and worth saying here: **119.9 s accounted
+over 4,092 tests, dearest single test 6.24 s, setup 4.5 s in total.** A broad tax
+with no fixture cost behind it — `test_depth` at 15.5 s over 143 tests and
+`test_solve` at 14.2 s over 180 are the two biggest and both are ordinary arithmetic.
+
 #### ci_red_ckpt125
 
 `ci_red_ckpt125`, 2026-09-15, idle box, `.[dev,models]` with a release engine.
