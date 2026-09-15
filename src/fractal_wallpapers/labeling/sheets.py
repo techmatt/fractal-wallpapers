@@ -144,6 +144,17 @@ CANONICAL_COLORMAP = "twilight_shifted"
 #: The map a person judges a location from.
 VIVID_COLORMAP = "blue_orange"
 
+#: The coloring a location sheet is rendered through, and **both halves are
+#: named**. A spec that says `mode` and no curve takes the CATALOG's curve, which
+#: is `log` for `trap_circle` and `de` and `linear` for the other eighteen modes
+#: — so a site that names a mode and stops is one repointed constant away from
+#: drawing a picture through a transform nobody chose. `smooth` is linear in the
+#: catalog and [`curation.colorize.CURVE`] is linear too, so naming it changes no
+#: byte of any sheet ever rendered; what it changes is that the agreement is
+#: written down instead of being a coincidence between two files.
+SHEET_MODE = "smooth"
+SHEET_CURVE = "linear"
+
 #: What a location sheet renders at. Big enough to judge as a wallpaper, small
 #: enough that a thousand of them is an afternoon rather than a night.
 SHEET_RESOLUTION = (1280, 720)
@@ -438,14 +449,35 @@ class Sheet:
 # The location source.
 # --------------------------------------------------------------------------- #
 def render_spec(row: dict, name: str, output: Path, resolution, supersample: int) -> dict:
-    """The engine spec for one of a location unit's two renders."""
+    """The engine spec for one of a location unit's two renders.
+
+    **Not through `renders.spec_of`, and the reason is `maxiter`.** A sheet unit
+    out of `units_from_ledger` carries `row.get("maxiter")`, which is `None` for a
+    ledger written before the field existed — and a location rendered at the
+    engine's own chosen maxiter is what such a unit IS. `spec_of` reads
+    `render["maxiter"]` through `int()`, so routing this there would turn those
+    units into a crash instead of a picture.
+
+    What it does take from the builder is the half that can silently go wrong:
+    the coloring comes from [`engine_spec.coloring_of`], so the curve is named
+    rather than inherited from the catalog. See [`SHEET_MODE`].
+    """
+    from fractal_wallpapers import engine_spec
+
     spec: dict = {
         "schema": 1,
         "family": row["family"],
         "viewport": row["viewport"],
         "resolution": list(resolution),
         "supersample": supersample,
-        "mode": "smooth",
+        "coloring": engine_spec.coloring_of(
+            {
+                "family": row["family"],
+                "mode": SHEET_MODE,
+                "curve": SHEET_CURVE,
+                "mode_params": {},
+            }
+        ),
         "colormap": name,
         "colormap_dir": str(colormap_dir()),
         "output": str(output),

@@ -193,6 +193,7 @@ def curate_distinct(args: argparse.Namespace) -> int:
 
 def curate_hunt(args: argparse.Namespace) -> int:
     """Plan a hunt, run one, merge one into the ledger, or rebuild the frame index."""
+    from fractal_wallpapers.curation import depth as depth_module
     from fractal_wallpapers.curation import embeddings as embeddings_module
     from fractal_wallpapers.curation import hunt
 
@@ -215,10 +216,16 @@ def curate_hunt(args: argparse.Namespace) -> int:
         except ValueError as refusal:
             print(refusal)
             return 1
+        # One manifest format and one reader. `--floor-places` and `--places` name
+        # opposite populations and describe them identically, so a second parser
+        # here would be a second spelling of one file waiting to drift.
+        named = None if args.places is None else depth_module.read_places(args.places)
         if args.what == "plan":
             if args.rebuild_frames:
                 hunt.frames(rebuild=True)
             pools = hunt.drawable(hunt.scanned(), hunt.opened_locations())
+            if named is not None:
+                pools = hunt.narrowed(pools, named)
             intended = hunt.plan(
                 pools,
                 seed=args.seed,
@@ -241,9 +248,10 @@ def curate_hunt(args: argparse.Namespace) -> int:
             conditioned=args.conditioned,
             cell=args.cell,
             work_order=order,
+            named_places=named,
             device=args.device,
         )
-    except (hunt.HuntRefused, embeddings_module.StoreRefused) as refusal:
+    except (hunt.HuntRefused, depth_module.DepthRefused, embeddings_module.StoreRefused) as refusal:
         print(refusal)
         return 1
     print(f"{display_path(hunt.contact_sheet(args.name, record))}")
@@ -759,12 +767,20 @@ def curate_depth(args: argparse.Namespace) -> int:
             return 0
         if args.what == "near-places":
             return _near_places(args)
-        if args.rate is None:
-            print(
-                "a depth run is sized off a rate measured at ITS width, and none was given. "
-                "Pass --rate the seconds a candidate a short run at this width reported."
-            )
-            return 1
+        # **`--rate` defaults off the records, since 2026-09-15.** It refused
+        # without one and told the caller to pass "the seconds a candidate a short
+        # run at this width reported" — a number no command reports without a
+        # depth leg having already run at that width, which made the one leg that
+        # structurally could not calibrate from its own first minutes the leg
+        # every overnight prompt tells its units to calibrate from theirs. The
+        # number was written down the whole time, on every depth record, and this
+        # is `depth.measured_rate` going to read it. The provenance is printed and
+        # never inferred: a caller is owed whether tonight's plan was sized off a
+        # leg or off the pilot constant.
+        rate = args.rate
+        if rate is None:
+            rate, why = depth.measured_rate(args.width)
+            print(json.dumps({"rate_seconds": rate, "rate_from": why}, indent=2))
         knobs = {
             "shares": json.loads(args.shares) if args.shares else None,
             "band_weights": json.loads(args.band_weights) if args.band_weights else None,
@@ -809,7 +825,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             _intended, shape = depth.build_plan(
                 depth.population(),
                 seed=args.seed,
-                rate=args.rate,
+                rate=rate,
                 budget=args.budget,
                 width=args.width,
                 bands=args.bands,
@@ -821,7 +837,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             args.name,
             seed=args.seed,
             budget=args.budget,
-            rate=args.rate,
+            rate=rate,
             width=args.width,
             bands=args.bands,
             device=args.device,
@@ -916,10 +932,13 @@ def depth_leg_flags(parser, *, device: bool):
         type=float,
         metavar="SECONDS",
         help="seconds a candidate at this width on ONE engine, which is what sizes the "
-        "draws: the plan is `workers * budget / rate`. Required by `plan` and `run`. A rate "
-        "carried in from a pass that ran at another width prices another loop, most of a "
-        "candidate's cost here being amortised over the width. Read a pilot's "
-        "`budget.seconds_per_candidate` — per engine — and never its wall over its count",
+        "draws: the plan is `workers * budget / rate`. **Unsaid, it is read off the depth "
+        "records at this width** — the cheapest `budget.seconds_per_candidate` of the "
+        "newest forty, which is the number this flag used to tell you to go and look up — "
+        "and falls back to depth.PILOT_RATE at a width nothing has run. Either way the "
+        "resolved figure and where it came from are printed before the leg starts. Pass it "
+        "to override: a rate from a pass at another width prices another loop, most of a "
+        "candidate's cost being amortised over the width",
     )
     leg.add_argument(
         "--workers",
@@ -1281,6 +1300,16 @@ def hunt_draw_flags(holder):
         type=int,
         default=hunt_module.DEFAULT_SEED,
         help=f"the seed every draw here is taken under (default {hunt_module.DEFAULT_SEED})",
+    )
+    holder.add_argument(
+        "--places",
+        metavar="FILE",
+        help="a places manifest — the same JSONL `curate depth run --floor-places` takes, one "
+        "`{schema, key}` a line — restricting BOTH legs to the locations it names. The two "
+        "flags narrow opposite populations: --floor-places names places the ledger already "
+        "stands on, this names places it stands on none of, so the pair is the path from a "
+        "crawl to a seat. A file and never arguments: this population is hundreds of places "
+        "long",
     )
     holder.add_argument(
         "--rebuild-frames",

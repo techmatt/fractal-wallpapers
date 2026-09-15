@@ -640,6 +640,17 @@ def drawable(rows: list, opened: set, partitions=ALL_PARTITIONS) -> dict:
     36,868 admitted on 2026-09-01, 8,015 of those never opened, the whole
     reframing channel among them. A location with no scan row draws at the frame
     it already has, through [`frame_for`].
+
+    **The key sort is a determinism device and not an ordering the draw
+    inherits**, which is worth saying because it reads like one. [`spread`]
+    re-orders each partition with `random.Random(seed_of(seed, name)).sample(held,
+    len(held))` — a seeded uniform shuffle — so what this sort fixes is the *base*
+    order that shuffle is taken over, which is what makes one seed draw one set of
+    places in the next process. Sorting by score instead would change nothing.
+    Biasing the draw *toward* high-scoring places means replacing the uniform
+    shuffle, which moves the draw's statistics, the per-partition price table that
+    sizes the next budget, and the reproducibility [`plan`] rests on. Considered
+    2026-09-15 and not done: it is a real change wearing a small one's clothes.
     """
     out: dict = {p: [] for p in partitions}
     for row in rows:
@@ -831,6 +842,56 @@ def _turns(order: list, weights: dict | None) -> list:
     from fractal_wallpapers.curation import draw_weights
 
     return draw_weights.order(order, weights, floor=1)
+
+
+def narrowed(pools: dict, named, log=print) -> dict:
+    """`pools` cut to the locations `named`, the mirror of `depth`'s `--floor-places`.
+
+    **What this narrows is the population, and nothing else.** Both legs draw
+    across it afterwards exactly as they did — the same [`spread`], the same
+    seeded shuffle, the same `--per-location` — so a narrowed hunt is the hunt it
+    would have been if the pool held only these places.
+
+    The two flags are mirrors and not twins, because they narrow opposite
+    populations. `depth --floor-places` names locations the ledger **already
+    stands on**, and pointed at freshly crawled ones it reports that none are
+    opened and drawable. This names locations the ledger stands on **nothing** at
+    all, which is what [`drawable`] holds — so the two together are the path from
+    a crawl to a seat: hunt the named places open them, and `depth --floor-places`
+    picks the same names up afterwards.
+
+    Every registered partition keeps its key, empty or not, for the reason
+    [`drawable`] gives: a partition that vanished from the table could not appear
+    as a refusal anywhere in the hunt's own record.
+
+    **Called by each verb before [`plan`], rather than by `plan` itself**, which
+    is a departure from where this module puts its other refusals and is deliberate
+    — `plan` narrows a local, and every count taken off the pool afterwards would
+    then describe the population the leg did not draw from: `run`'s
+    `unopened_drawable` and `by_partition`, and `shape_of`'s whole table on the
+    `plan` verb. The refusal and the log line are still written once, here, so the
+    two verbs cannot describe different draws; what they each do for themselves is
+    hold the pool they go on to report on.
+    """
+    wanted = {str(one) for one in named}
+    out = {name: [row for row in held if str(row["key"]) in wanted] for name, held in pools.items()}
+    kept = sum(len(held) for held in out.values())
+    log(
+        f"[hunt] --places: {kept:,} of {len(wanted):,} named place(s) are admitted, unopened "
+        f"and drawable, over {sum(1 for held in out.values() if held)} partition(s)"
+    )
+    if not kept:
+        raise HuntRefused(
+            f"none of the {len(wanted):,} place(s) in --places is drawable by a hunt, so both "
+            f"legs would draw nothing. A hunt's population is locations that are ADMITTED — "
+            f"the location head's rating over `floors.JUNK_FLOOR` in the supply sidecar — and "
+            f"carry no ledger recipe yet, so a named place is missing from it for one of "
+            f"three reasons: it is not in the embedding store, it scored under the junk "
+            f"floor, or the ledger already stands on it. The last is the common one and it is "
+            f"not a fault: a place a hunt has already opened is `curate depth run "
+            f"--floor-places`'s population, not this one."
+        )
+    return out
 
 
 def plan(
@@ -1581,6 +1642,7 @@ def run(
     conditioned: int = 0,
     cell: str | None = None,
     work_order: dict | None = None,
+    named_places: list | None = None,
     device: str = "auto",
     margin: float = framing.MARGIN,
     log=print,
@@ -1603,12 +1665,34 @@ def run(
     opened = opened_locations(stored)
     known = {str(row["key"]) for row in stored}
     pools = drawable(places, opened)
+    if named_places is not None:
+        # **Narrowed here and not left to `plan`**, which would narrow a copy and
+        # leave every count below — `at_recorded`, `population`, `by_partition` —
+        # describing the pool this leg did not draw from. The refusal and the log
+        # line are still [`narrowed`]'s and nobody else's, so the two verbs share
+        # one description of the draw the way `hunt_draw_flags` requires; what
+        # differs is only that `run` has a pool it goes on to report on.
+        #
+        # The breakdown first, because it is the half `narrowed` cannot give: by
+        # the time it has the pools, the two sets that were subtracted to make
+        # them are gone. A named place is missing for one of three reasons and
+        # they are three different mistakes — nothing in the store, under the junk
+        # floor, or already opened — and the last is not a mistake at all.
+        wanted = {str(one) for one in named_places}
+        in_store = {str(row["key"]) for row in places}
+        log(
+            f"[hunt] --places: {len(wanted):,} named; {len(wanted & opened):,} already open "
+            f"(that is `curate depth run --floor-places`'s population), "
+            f"{len(wanted - in_store):,} not admitted or not in the embedding store"
+        )
+        pools = narrowed(pools, named_places, log=log)
     at_recorded = sum(1 for held in pools.values() for row in held if str(row["key"]) not in index)
     log(
         f"[hunt] {sum(len(held) for held in pools.values()):,} admitted location(s) carry no "
         f"ledger recipe, over {len(pools)} partition(s); {len(opened):,} are already open, "
         f"and {at_recorded:,} draw at the frame they already carry"
     )
+
     from fractal_wallpapers.curation import draw_weights
 
     intended = plan(
@@ -1732,6 +1816,10 @@ def run(
             "conditioned": int(conditioned),
             "cell": cell,
             "work_order": dict(work_order or {}),
+            # The COUNT and not the list: a places manifest runs to hundreds of
+            # keys and the record is read as a header. `depth` writes
+            # `floor_places_named` the same way and for the same reason.
+            "places_named": None if named_places is None else len(set(map(str, named_places))),
             "partition_draw_weights": draw_weights.table(),
             "margin": float(margin),
             "regime": recipes.CANDIDATE_REGIME.spelled,
@@ -2031,6 +2119,7 @@ __all__ = [
     "kind_of",
     "merge",
     "modes_for",
+    "narrowed",
     "opened_locations",
     "pictures_dir",
     "plan",

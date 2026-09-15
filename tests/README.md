@@ -641,6 +641,34 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### spec_enumeration_ckpt125
+
+**Both lanes, and they agree at 4,821.** `spec_enumeration_ckpt125`, 2026-09-15.
+**Fast: 4,665 selected, 156 deselected — 4,821 collected — in 134.36 s (2:14).
+Slow: 4,821 of 4,821 in 508.79 s (8:28).** Both green, zero skips, zero failures.
+Fourteen tests added, all fast-lane arithmetic: six in `test_hunt.py` over
+`--places`, six in `test_depth.py` over the `--rate` derivation, two in
+`test_renderer_agreement.py` — the hand-built-spec sweep and a `trap_circle` record
+pin. **+14 for +3.19 s.**
+
+**This closes the entry above's ⚠, and by the cheap check rather than the planned
+one.** `targets_ckpt125` read 513.49 s, accounted for about 9 s of a 33.0 s move,
+and left the residue unchased — recording that it wanted a `git worktree` at the old
+HEAD against today's store. This pair is **4.7 s under** that reading while the tree
+grew by fourteen tests, and nothing here was done to make a lane faster: no guard
+moved lanes, none was deleted or weakened, and the fourteen touch no render path. So
+the residue was the box, and *a second pair on a quieter box* settled it in the time
+the worktree would have taken to set up. The rule the last entry wrote —
+**a lane that moves right after code landed is the code until measured otherwise**
+— still stands; what this adds is that a lane which moved with *no* code behind it
+is worth one more reading before an investigation.
+
+⚠ **No engine-bound control was re-run**, and the usual one was not available:
+`test_renderer_agreement.py` is the file this prompt changed, so its 17.02 / 18.22 /
+19.05 / 18.70 series is no longer measuring an invariant. The whole-lane reading is
+what the claim above rests on, and it rests on it the right way round — a lane that
+*fell* needs less explaining than one that rose.
+
 #### targets_ckpt125
 
 **Both lanes, and they agree at 4,807.** `targets_ckpt125`, 2026-09-15. **Fast:

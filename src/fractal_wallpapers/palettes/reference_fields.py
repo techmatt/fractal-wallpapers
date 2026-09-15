@@ -70,9 +70,18 @@ CLASSES = ("smooth", "strange", "parameter_plane")
 RESOLUTION = (160, 90)
 SUPERSAMPLE = 2
 
-#: The curve the field is read through: the mode's own, unmodified, which is
-#: the engine's default and so is recorded rather than passed. A dump spec that
-#: named it would be refused — `dump-field` takes no transform.
+#: The curve the field is read through, and [`spec`] **names it** rather than
+#: leaving it to the engine.
+#:
+#: It said the opposite until 2026-09-15, and both halves of that were wrong. A
+#: dump spec *can* name the curve — `dump-field` parses the same `RenderSpec` a
+#: render does, so a spec carrying a `coloring` carries its `transform`, which is
+#: what every field the candidate path dumps has always done. And the curve left
+#: unnamed is not "the engine's default" but the **catalog's**, which is `log` for
+#: `trap_circle` and `de` and `linear` for the other eighteen modes. The three
+#: classes below happen to be `smooth`, `stripe` and `exp_smoothing`, so the
+#: recorded `linear` was right — by coincidence, and only until somebody
+#: repointed a class at the one production mode that is not.
 CURVE = "linear"
 
 #: The map the dump is nominally coloured through. A dumped field carries no
@@ -145,19 +154,38 @@ def field_path(row: dict, directory: Path | None = None) -> Path:
 
 
 def spec(row: dict, output: Path) -> dict:
-    """The engine spec that makes one reference field."""
-    return {
-        "schema": 1,
-        "family": row["family"],
-        "viewport": row["viewport"],
-        "resolution": list(RESOLUTION),
-        "supersample": SUPERSAMPLE,
-        "maxiter": int(row["maxiter"]),
-        "mode": row["mode"],
-        "colormap": DUMP_COLORMAP,
-        "colormap_dir": str(colormap_dir()),
-        "output": str(output),
-    }
+    """The engine spec that makes one reference field.
+
+    Through [`fractal_wallpapers.engine_spec.spec_of`], which is this project's
+    one derivation of what the engine is told, rather than a spec written out
+    here. The row is still assembled here — a reference field is three tracked
+    numbers and a mode, not a render-cache row — but every member `spec_of` reads
+    it reads with `[]`, so a member left out raises instead of being filled in
+    with whatever the engine would have chosen. [`CURVE`] is the member this was
+    silently leaving to the catalog.
+
+    `engine_spec` and not `models.renders`: this module's whole import graph is
+    stdlib plus the floor, and the floor is where `spec_of` lives.
+    """
+    from fractal_wallpapers import engine_spec
+
+    return engine_spec.spec_of(
+        {
+            "family": row["family"],
+            "viewport": row["viewport"],
+            "render": {
+                "resolution": list(RESOLUTION),
+                "supersample": SUPERSAMPLE,
+                "maxiter": int(row["maxiter"]),
+            },
+            "mode": row["mode"],
+            "mode_params": {},
+            "curve": CURVE,
+            "colormap": DUMP_COLORMAP,
+            "recipe": engine_spec.recipe(),
+        },
+        output,
+    )
 
 
 def dump(row: dict, directory: Path | None = None, force: bool = False) -> Path:

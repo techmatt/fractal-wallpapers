@@ -118,6 +118,7 @@ artifacts/curation/hunt/<name>/contact_sheet.html   what it made, the two legs a
 fractal-wallpapers curate hunt frames --name any         # index the scan's chosen frames
 fractal-wallpapers curate hunt plan   --name h1 --unconditional 600 --conditioned 600     --cell dark_vivid_lime --work-order julia:mandelbrot=19 --work-order mandelbrot=6
 fractal-wallpapers curate hunt run    --name h1 --budget 1200 ...   # same flags, renders
+fractal-wallpapers curate hunt run    --name h1 --budget 1200 --unconditional 600 --places tonight.jsonl   # only these places
 fractal-wallpapers curate hunt merge  --name h1                     # fold into the ledger
 fractal-wallpapers curate hunt sheet  --name h1                     # redraw the page
 ```
@@ -164,6 +165,18 @@ it. That is `hunt.drawable`, it is the one population `curate hunt`, `curate min
 and `curate depth` all take, and the three arguments it used to have are now two.
 Counted 2026-09-01: 102,552 sidecar locations, **36,868** over the junk floor and
 every one of them embedded, 19,286 already open — **17,620 minable**.
+
+**Two of the three rendering legs take a named-location filter, as of 2026-09-15,
+and they narrow opposite populations.** `curate hunt plan|run --places FILE` cuts
+both hunt legs to the locations a manifest names, out of the unopened pool above;
+`curate depth run --floor-places FILE` cuts the mode-floor draw to named locations
+out of the **opened** pool. `curate mine` takes neither. The two flags read the
+same JSONL through the same parser — `depth.read_places` — so the pair is the
+whole path from a crawl to a seat: `--places` opens the named locations, and
+`--floor-places` picks the same names up once they are open. Pointed the wrong way
+round each says so rather than drawing nothing quietly: `--floor-places` reports
+that none of the named places is opened and drawable, and `--places` refuses with
+the three reasons a named place can be missing from a hunt's population.
 
 **A framing is an attribute a location may or may not carry, never an admission
 ticket.** `hunt.frame_for` is the whole of the seam: where the pool-wide scan holds
@@ -710,8 +723,10 @@ protected, so the window is between the merge and the sitting.
 ### The floor draw is the one that takes a named population
 
 `--floor-places FILE` is a places **manifest** — a JSONL of `{"schema": 1, "key":
-...}` — and it is the only flag here that says *which* places. Every other draw
-picks its own off a rank, a band or a bar. It narrows the mode-floor draw alone,
+...}` — and it is the only flag *here* that says which places. Every other draw
+under `curate depth` picks its own off a rank, a band or a bar. It was the only
+one in the project until 2026-09-15; `curate hunt --places` is its mirror over the
+unopened pool and reads the same file through `depth.read_places`. It narrows the mode-floor draw alone,
 because that draw is already the one over opened, proven locations, and a list of
 places somebody read off the ledger is always exactly that. Keys the opened pool
 does not hold are counted and named rather than dropped in silence: a leg that
@@ -806,6 +821,41 @@ clear at ordinary prices and are worth feeding, so a leg meaning *feed the other
 names those rather than the `smooth_*` composites.
 [`LEGS_decisions.md`](LEGS_decisions.md)'s *What the twelve modes cost and what they
 buy, measured 2026-09-10* has the ordering, at about a hundred candidates a mode.
+
+### `--rate` reads itself off the records, since 2026-09-15
+
+It **refused** without a value until then, telling the caller to pass "the seconds
+a candidate a short run at this width reported" — a number no command reports
+without a depth leg having already run at that width. So the one leg that
+structurally could not calibrate from its own first minutes was the leg every
+overnight prompt tells its units to calibrate from theirs. `hunt` sizes off counts
+and truncates at the budget, which sidesteps the question; `mine` has the same
+refusal and the same width-specific rate.
+
+The number was written down the whole time. Every depth record carries
+`config.width` and `budget.seconds_per_candidate` — per engine, the denomination
+`--rate` is in — so `depth.measured_rate(width)` reads the newest forty records,
+keeps those at this width that made at least `RATE_FLOOR_MADE = 50` candidates, and
+takes the **cheapest**. The resolved figure and its provenance are printed before
+the leg starts, so a plan sized off a leg and one sized off the pilot constant are
+never the same-looking claim.
+
+**The cheapest and not the median, because of which way it is safe to be wrong.**
+`rate` is in the denominator of `PLAN_HEADROOM * workers * budget / rate` and the
+surplus of a plan is never started, so under-estimating costs a tail nobody renders
+and over-estimating ends the leg with budget in hand. Rates at one width spread by
+an order of magnitude — width 12 reads 0.42 s on `u5_easy_night2` and 5.12 s on
+`pvmine_0911` — so a middle would size half the legs short. With `PLAN_HEADROOM` at
+1.6 the plan runs out only if tonight is cheaper than **0.6x the cheapest this width
+has ever recorded**, and when that happens `counts.stopped_for_budget` is zero and
+`budget.share` under one, which is the leg saying so.
+
+`depth.PILOT_RATE = 0.4` is the fallback at a width nothing has run: the cheapest
+per-candidate second in the 139 depth records on this machine, rounded down. Passing
+`--rate` still overrides, and `depth.run` keeps it required — the resolution is the
+CLI's, so `rotation`'s `plan_identity` can never find a default appearing under a
+resume. That is `overnight_ckpt121`'s incident, and `MINE_RATE` is why it is written
+down twice.
 
 ### A candidate's price is `dump/W + rest`, and the width is half of it
 

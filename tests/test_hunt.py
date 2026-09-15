@@ -987,3 +987,92 @@ def test_all_four_legs_that_come_through_the_door_write_their_merge_report():
     for module in (hunt, mine, depth, remode):
         source = inspect.getsource(module.merge)
         assert "merge_report(" in source, f"{module.__name__}.merge keeps no record of itself"
+
+
+# --------------------------------------------------------------------------- #
+# `--places` — a named population for the breadth leg.
+# --------------------------------------------------------------------------- #
+def test_a_places_manifest_cuts_the_pool_to_what_it_names():
+    """The whole of the flag: narrow the population, change nothing else.
+
+    `depth run --floor-places` was the only one of the three legs that took a
+    named-location filter, and it narrows the OPPOSITE population — locations the
+    ledger already stands on. So "render many mode and colormap combinations at
+    exactly these N locations I just crawled" had no supported path at all, and
+    the only way to do it was to render and score outside the ledger, forfeiting
+    the merge, the retention rule and the durability bookkeeping.
+    """
+    held = pools({"mandelbrot": 3, "julia:mandelbrot": 2})
+    cut = hunt.narrowed(held, ["mandelbrot-0", "julia:mandelbrot-1"], log=lambda *_: None)
+    assert [row["key"] for row in cut["mandelbrot"]] == ["mandelbrot-0"]
+    assert [row["key"] for row in cut["julia:mandelbrot"]] == ["julia:mandelbrot-1"]
+
+
+def test_a_narrowed_pool_still_reports_every_partition():
+    """[`hunt.drawable`]'s rule, kept through the filter: a partition a manifest
+    took nothing from is a zero and not an absence, or it cannot appear as a
+    refusal anywhere in the hunt's own record."""
+    held = pools({"mandelbrot": 2, "julia:mandelbrot": 2})
+    cut = hunt.narrowed(held, ["mandelbrot-0"], log=lambda *_: None)
+    assert set(cut) == set(held)
+    assert cut["julia:mandelbrot"] == []
+
+
+def test_a_name_the_pool_does_not_hold_is_skipped_and_counted_rather_than_refused():
+    """A manifest cut from a crawl names places a hunt has since opened, and that
+    is the normal case rather than a fault. The count is logged; the leg runs."""
+    said: list = []
+    cut = hunt.narrowed(pools({"mandelbrot": 2}), ["mandelbrot-0", "not-a-place"], log=said.append)
+    assert [row["key"] for row in cut["mandelbrot"]] == ["mandelbrot-0"]
+    assert "1 of 2 named place(s)" in said[0]
+
+
+def test_a_manifest_that_admits_nothing_is_refused_by_its_own_flag():
+    """Not left to the both-legs-zero refusal, which would blame the counts.
+
+    The three reasons a named place is not drawable are three different mistakes
+    and the message names all three, because the pool alone cannot say which: by
+    the time it exists, the opened set and the admission cut have already been
+    subtracted from it.
+    """
+    with pytest.raises(hunt.HuntRefused) as refusal:
+        hunt.narrowed(pools({"mandelbrot": 2}), ["nowhere"], log=lambda *_: None)
+    said = str(refusal.value)
+    assert "--places" in said
+    assert "junk floor" in said and "already stands on it" in said
+    assert "--floor-places" in said, "a caller whose places are all open is owed the other leg"
+
+
+def test_both_hunt_verbs_take_the_places_flag_and_read_it_with_the_same_parser():
+    """`plan` IS the run with the rendering left out, which is what
+    [`hunt_draw_flags`] exists to keep true — so a filter one verb takes and the
+    other does not is two commands describing different draws under one name.
+
+    And one reader: `--places` and `--floor-places` are the same JSONL, so a
+    second parser here would be a second spelling of one file waiting to drift.
+    """
+    import inspect
+
+    from fractal_wallpapers.cli import curate_mine_commands
+
+    flags = inspect.getsource(curate_mine_commands.hunt_draw_flags)
+    assert '"--places"' in flags, "the shared helper is what makes both verbs take it"
+    handler = inspect.getsource(curate_mine_commands.curate_hunt)
+    assert "depth_module.read_places(args.places)" in handler
+
+
+def test_the_breadth_draw_over_a_narrowed_pool_is_the_draw_it_would_have_been():
+    """Narrowing the population is all it does: the same [`spread`], the same
+    seeded shuffle, the same round robin. A pool that happens to hold only these
+    places draws exactly what the filter draws out of the larger one."""
+    named = ["mandelbrot-1", "mandelbrot-3", "julia:mandelbrot-0"]
+    wide = hunt.narrowed(
+        pools({"mandelbrot": 5, "julia:mandelbrot": 3}), named, log=lambda *_: None
+    )
+    narrow = {
+        "mandelbrot": [place("mandelbrot-1", "mandelbrot"), place("mandelbrot-3", "mandelbrot")],
+        "julia:mandelbrot": [place("julia:mandelbrot-0", "julia:mandelbrot")],
+    }
+    assert [row["key"] for row in hunt.spread(wide, 3, seed=7)] == [
+        row["key"] for row in hunt.spread(narrow, 3, seed=7)
+    ]

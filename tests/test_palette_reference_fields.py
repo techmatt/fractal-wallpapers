@@ -38,7 +38,17 @@ def test_no_coloring_speaks_twice() -> None:
 def test_a_spec_carries_everything_the_engine_needs_to_make_the_field_again() -> None:
     """The whole reason the dump is not tracked. A spec missing `maxiter` or a
     viewport digit is a field nobody can remake, and a megabyte of floats that
-    only exists in one place is how these three nearly died."""
+    only exists in one place is how these three nearly died.
+
+    **`coloring` and not `mode`, since 2026-09-15.** The spec goes through
+    `engine_spec.spec_of` now, so it names the mode *and the curve it is read
+    through* rather than naming the mode and letting the engine's catalog supply
+    the curve. That was right by coincidence for these three classes — all of
+    `smooth`, `stripe` and `exp_smoothing` are `linear` in the catalog — and would
+    have stopped being right the first time a class was repointed at `trap_circle`,
+    which the catalog reads through `log`. The curve is asserted below for exactly
+    that reason: a spec that can remake the field has to name the transform, not
+    merely be drawn at a moment when the default happens to match."""
     for row in reference_fields.read():
         spec = reference_fields.spec(row, Path("out.f32"))
         assert set(spec) == {
@@ -48,11 +58,13 @@ def test_a_spec_carries_everything_the_engine_needs_to_make_the_field_again() ->
             "resolution",
             "supersample",
             "maxiter",
-            "mode",
+            "coloring",
+            "palette",
             "colormap",
             "colormap_dir",
             "output",
         }
+        assert spec["coloring"]["transform"] == reference_fields.CURVE
         assert spec["resolution"] == list(reference_fields.RESOLUTION)
         assert spec["supersample"] == reference_fields.SUPERSAMPLE
         assert spec["maxiter"] > 0

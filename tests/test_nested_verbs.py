@@ -683,6 +683,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--work-order",
             "--per-location",
             "--seed",
+            "--places",
             "--rebuild-frames",
         ),
         "run": (
@@ -694,6 +695,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--work-order",
             "--per-location",
             "--seed",
+            "--places",
             "--rebuild-frames",
             "--device",
         ),

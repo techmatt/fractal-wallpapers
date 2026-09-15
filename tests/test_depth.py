@@ -2411,3 +2411,117 @@ def test_an_unvaried_leg_is_untouched_by_the_flag_being_there():
     shots = _shots(20)
     assert all(shot.palette == {} for shot in shots)
     assert all(shot.named().get("palette_drawn") is None for shot in shots)
+
+
+# --------------------------------------------------------------------------- #
+# `--rate` reads itself off the records.
+# --------------------------------------------------------------------------- #
+def _priced(root, name: str, *, width: int, seconds: float, made: int = 500) -> None:
+    """One depth record, thinned to the three members [`depth.measured_rate`] reads."""
+    import json
+
+    record = root / name / depth.RECORD_NAME
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(
+        json.dumps(
+            {
+                "config": {"width": int(width)},
+                "counts": {"made": int(made)},
+                "budget": {"seconds_per_candidate": float(seconds)},
+            }
+        ),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+@pytest.fixture
+def depth_store(monkeypatch, tmp_path):
+    """`under('curation', 'depth')` redirected at the TIER ROOT, never per accessor.
+
+    An accessor list is a list something will be missing from, and what it misses
+    is this machine's real store — 139 records read at full size on every test.
+    """
+    monkeypatch.setattr(depth, "under", lambda *parts: tmp_path.joinpath(*map(str, parts)))
+    return tmp_path / "curation" / depth.UNIT
+
+
+def test_a_rate_is_read_off_the_cheapest_leg_recorded_at_this_width(depth_store):
+    """The chicken and egg, and the number was written down the whole time.
+
+    `--rate` refused without a value and told the caller to pass what a short run
+    at this width reported — which no command reports without a depth leg having
+    already run at that width. Every depth record carries
+    `budget.seconds_per_candidate`, per engine, which is exactly that number.
+    """
+    _priced(depth_store, "dear", width=12, seconds=5.12)
+    _priced(depth_store, "cheap", width=12, seconds=0.42)
+    _priced(depth_store, "elsewhere", width=40, seconds=0.76)
+
+    rate, why = depth.measured_rate(12)
+    assert (rate, why["leg"]) == (0.42, "cheap")
+    assert why["priced"] == 2, "the width is the filter; the other leg priced another loop"
+
+
+def test_the_cheapest_and_not_the_median_is_what_sizes_the_plan(depth_store):
+    """The one decision in the derivation, and it is about which way to be wrong.
+
+    Rates at one width spread by an order of magnitude, because a candidate's cost
+    is the location's as much as the width's. `rate` is in the denominator of
+    `PLAN_HEADROOM * workers * budget / rate` and the surplus of a plan is never
+    started — so under-estimating costs a tail nobody renders and over-estimating
+    ends the leg with budget left. Only one of those is a leg that did not do what
+    it was asked.
+    """
+    for at, seconds in enumerate((0.5, 1.0, 1.5, 9.0)):
+        _priced(depth_store, f"leg{at}", width=12, seconds=seconds)
+    rate, _why = depth.measured_rate(12)
+    assert rate == 0.5
+    assert rate < sum((0.5, 1.0, 1.5, 9.0)) / 4, "a mean would size half the legs short"
+
+
+def test_a_leg_that_made_almost_nothing_prices_nothing(depth_store):
+    """A run killed after four candidates reports a per-candidate mean over its own
+    startup — the pool load, the first field dump, the judge coming up. That is the
+    one number that would read as *this width is dear* and shorten the next plan."""
+    _priced(depth_store, "killed", width=12, seconds=48.0, made=4)
+    _priced(depth_store, "real", width=12, seconds=1.2)
+    rate, why = depth.measured_rate(12)
+    assert (rate, why["priced"]) == (1.2, 1)
+
+
+def test_a_width_nothing_has_run_takes_the_pilot_rate_and_says_so(depth_store):
+    """Not an error and not treated as one: it is the first leg at a new width,
+    which is the case the constant exists for. What matters is that the caller is
+    told, because a plan sized off the pilot and one sized off a leg are different
+    claims about tonight."""
+    _priced(depth_store, "twelve", width=12, seconds=1.2)
+    rate, why = depth.measured_rate(3)
+    assert rate == depth.PILOT_RATE
+    assert "leg" not in why and "pilot" in why["why"]
+
+
+def test_the_pilot_rate_under_estimates_rather_than_over(depth_store):
+    """The direction is the whole of the argument. [`rotation.MINE_RATE`]'s, and
+    more of it here: `run` stops on a wall-clock deadline, so a plan longer than
+    the clock is a tail nobody starts and a plan shorter than it is a leg that
+    stopped early with budget in hand."""
+    assert depth.PILOT_RATE < 1.0
+    assert depth.PLAN_HEADROOM > 1.0, "the headroom and the under-estimate pull the same way"
+
+
+def test_an_explicit_rate_still_wins_and_the_resolution_happens_in_the_cli():
+    """The flag overrides, and the reading is done where the provenance can be
+    printed — `depth.run` keeps a required `rate`, so `rotation`'s plan identity
+    can never be surprised by a default appearing under it. That is
+    `overnight_ckpt121`'s incident: `--rate` defaulting to 2.5 where the first leg
+    ran at 6.0 would have planned 27,648 shots against 11,520."""
+    import inspect
+
+    from fractal_wallpapers.cli import curate_mine_commands
+
+    handler = inspect.getsource(curate_mine_commands.curate_depth)
+    assert "rate = args.rate" in handler and "depth.measured_rate(args.width)" in handler
+    assert "rate_from" in handler, "a rate nobody can trace is a rate nobody can check"
+    assert "rate" in inspect.signature(depth.run).parameters
+    assert inspect.signature(depth.run).parameters["rate"].default is inspect.Parameter.empty
