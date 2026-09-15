@@ -2031,6 +2031,16 @@ a record that the later run overwrote, so that gallery's `config`, `shortfalls` 
 `diversity_refusals` are gone. The rows, the manifest and the page are intact — those
 were always stamped — so nothing a figure prompt names was lost.
 
+**And since 2026-09-15 a name is refused rather than written over.** The stamped default
+closed the path a caller takes without thinking about it and left the one they reach by
+typing `--solve-name` — which is the door the lost decision above actually came through.
+`solve.write_record` now refuses a name that already holds a `solve.json`, in the same
+words `tentative.write` refuses a stamp, because the two halves of a record are written by
+two functions and a reader should not have to learn which of them protects what. The one
+caller that means to replace its own record says so: `curate solve run` writes before its
+release leg and again after it so its seats carry their rendered pictures, and its
+`--name` is a working name documented as rewritten every time.
+
 **`index.html` is the standing debug tool for figure selection** — open the stamp's page
 and filter by mode, cell, hue family or partition to find the wallpaper a figure wants,
 then `curate solve resolve <alias>` to turn what you picked back into a recipe. A record

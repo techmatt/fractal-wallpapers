@@ -4271,8 +4271,34 @@ def solve_dir(name: str) -> Path:
     return under("curation", UNIT, str(name))
 
 
-def write_record(name: str, record: dict) -> Path:
+def write_record(name: str, record: dict, over: bool = False) -> Path:
+    """One solve's own record, under `name`. **A name is not written over twice.**
+
+    `over=True` is a caller saying it means to replace its own record, and there
+    is one: `curate solve run` writes before the release leg and again after it,
+    so the seats carry their rendered pictures. Every other caller is recording a
+    decision, and a decision written over is a decision lost with nothing raised.
+
+    The fault this refuses cost a real one. `20260902T161757Z` and
+    `20260902T164622Z` both named `solve/tentative_n1000`, and the second run
+    overwrote the first's `config`, `shortfalls` and `diversity_refusals` — the
+    rows, the manifest and the page survived, being stamped, so nothing looked
+    broken. The stamped default that `record` has taken since closes the common
+    path; this closes the one a caller can still reach with `--solve-name`.
+
+    Same rule and same words as [`tentative.write`], deliberately: the two halves
+    of a record are written by two functions and a reader should not have to learn
+    which of them protects what.
+    """
     path = solve_dir(name) / "solve.json"
+    if path.is_file() and not over:
+        raise SolveRefused(
+            f"{tracked_name(path)} is already a solve record. A name is written once and "
+            f"never over: what a second pass under one name destroys is the first pass's "
+            f"config, its shortfalls and its refusals, and the gallery that names it goes "
+            f"on resolving. Give --solve-name a name of its own, or leave it unsaid and "
+            f"take the stamped default."
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
     return path

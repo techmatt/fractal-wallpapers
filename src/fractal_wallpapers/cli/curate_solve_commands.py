@@ -336,12 +336,15 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     # that chose those seats.
     stamp = tentative.stamp_now()
     name = args.solve_name or f"tentative_n{seats}_{stamp}"
-    print(f"{display_path(solve.write_record(name, record))}")
+    # Both halves inside the one `try`: a `--solve-name` that already exists is
+    # refused by `write_record` now, and a refusal a caller reads as a traceback
+    # is a refusal that looks like a crash.
     try:
+        print(f"{display_path(solve.write_record(name, record))}")
         directory = tentative.write(
             record, candidates=candidates, solve_name=name, pool_refused=refused, stamp=stamp
         )
-    except tentative.TentativeRefused as refusal:
+    except (solve.SolveRefused, tentative.TentativeRefused) as refusal:
         print(refusal)
         return 1
     stamp = directory.name
@@ -511,12 +514,16 @@ def curate_solve(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     name = args.name or f"n{args.n}"
-    path = solve.write_record(name, record)
+    # `over=True` on both writes here, and only here. A `run` is a leg and its
+    # directory is a working name — `--name` is documented as rewritten every
+    # time, and the second write below is this same record gaining its rendered
+    # pictures. A `record` is the other thing and takes the refusal.
+    path = solve.write_record(name, record, over=True)
     print(f"{path}")
     if not args.no_render:
         regime = release_module.regime_of(args.release_regime)
         made = solve.render_seats(name, record, workers=args.workers, regime=regime)
-        path = solve.write_record(name, record)
+        path = solve.write_record(name, record, over=True)
         print(json.dumps({**made, "timings": f"{len(made['timings'])} row(s), not restated"}))
         print(json.dumps(solve.autolevel_rate(record), indent=2))
     if not args.no_sheet:
@@ -1570,7 +1577,8 @@ def add_steps(steps) -> None:
         "--solve-name",
         help="what to call the solve's own output directory under "
         "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
-        "stamp, so successive records at the same N coexist)",
+        "stamp, so successive records at the same N coexist). A name that already "
+        "holds a solve record is refused rather than written over",
     )
     recording.add_argument(
         "--n",

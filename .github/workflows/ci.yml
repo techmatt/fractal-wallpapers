@@ -68,11 +68,19 @@ jobs:
       - name: Test
         run: python -m pytest --slow -rs
 
-  # The torch half, which `.[dev]` alone never touched: nine test modules carry a
-  # module-level `importorskip` and vanish at COLLECTION without it, so the job
-  # above proves the base install and says nothing about the judges. One OS,
-  # because what is being proved is that the import graph and the heads' own
-  # guards hold — not a platform difference — and the wheels are four gigabytes.
+  # The torch half, which `.[dev]` alone never touches: ten test modules carry a
+  # module-level `importorskip` on torch or timm and vanish at COLLECTION without
+  # it, and a further handful reach one mid-call and skip there. So the job above
+  # proves the lean install and says nothing about the judges. One OS, because
+  # what is being proved is that the import graph and the heads' own guards hold —
+  # not a platform difference — and the wheels are four gigabytes.
+  #
+  # `pillow` is NOT part of that split any more. It sat outside `dev` until
+  # 2026-09-15, which cost the two jobs above 113 failures and, once three modules
+  # imported it at module level, the entire run at collection. It is three
+  # megabytes, the suite does not run without it, and `dev` is the suite's install
+  # — so it is in `dev` and the `check` jobs actually execute those tests now
+  # rather than skipping or failing them.
   models:
     name: models extra (ubuntu-latest)
     runs-on: ubuntu-latest

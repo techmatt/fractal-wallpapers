@@ -182,6 +182,25 @@ These were decided once, at the first commit, because each is expensive to rever
   import graph is stdlib — which is why `models/roster.py` exists apart from `ship`.
   `tests/test_base_install.py` proves it in a subprocess with those imports refused,
   because every machine that runs the suite has torch.
+- **`dev` is the suite's install and is not the base install.** It carries `numpy`
+  and `pillow` since 2026-09-15, because the suite does not run without them —
+  `pillow`'s absence was 113 failures and, once three modules imported it at module
+  level, the entire CI run at collection. Three megabytes against the `models`
+  extra's two gigabytes is the whole of the argument, and it moves nothing on the
+  package's own path. **What stays out is `torch`, `torchvision` and `timm`**, and
+  a test reaching one of those is held to skipping rather than failing, two ways:
+  `tests/test_lanes.py` sweeps every test module for an unguarded module-level
+  import — one of those aborts the **whole lane** at collection, not its own file —
+  and `conftest.pytest_runtest_call` catches the call-time arrivals, which no sweep
+  of `tests/` can see because sixteen modules under `src/` import torch inside a
+  function body. Both read their population from `cli.EXTRA_FOR` less `dev`.
+- **CI's red is readable without `gh` and without admin rights.** The repository is
+  public: `api.github.com/repos/techmatt/fractal-wallpapers/actions/runs` gives the
+  runs and `runs/<id>/jobs` gives **step-level** conclusions. Job *logs* need
+  admin and 403; step conclusions do not, and they are enough to say which step
+  failed on which job. Reproducing the failure is a mask at `sys.meta_path` —
+  `tests/test_base_install.py` already carries the finder — and the block list for
+  a `check` job is `torch,torchvision,timm`, **not** `numpy`, which `scipy` brings.
 
 ## Checks to run before committing
 
@@ -215,19 +234,24 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,821 collected — 4,665 fast,
-156 slow — since `spec_enumeration_ckpt125` added 14 tests on 2026-09-15**, on a
-`.[dev,models]` install with a release engine built. **Fast: 4,665 of 4,665 in
-134.36 s (2:14)** with 156 deselected. **Slow: 4,821 of 4,821 in 508.79 s (8:28).**
+Both are measured, not estimated. The tree holds **4,831 collected — 4,676 fast,
+155 slow — since `ci_red_ckpt125` added 8 tests on 2026-09-15**, on a
+`.[dev,models]` install with a release engine built. **Fast: 4,676 of 4,676 in
+135.26 s (2:15)** with 155 deselected. **Slow: 4,831 of 4,831 in 492.99 s (8:12).**
 Both green, zero skips, zero failures, and **the two lanes agree on the count**.
 
-⚠ **This figure is one pair stale and the tree is at 4,823.**
-`family_slot_sizing_ckpt125` added two fast-lane guards on 2026-09-15 and read
-**4,667 fast in 135.69 s**, but Matt said skip the slow lane, so no pair was taken
-and the figure was **deliberately not repointed** — a count from half a pair is how
-the drift before `PRECLOSEOUT_ckpt123` started. The same prompt merged 10,590 rows
-and the store grew to 459,371, which the slow lane's whole-store sweep reads. **Take
-the pair and repoint this on the next slow lane.**
+This closes `family_slot_sizing_ckpt125`'s ⚠, which asked for exactly this pair: its
+half-pair 4,667 is in the arithmetic above as 4,667 + 8 new guards + 1 test that
+changed lanes. **`test_forced` moved slow → fast**, which is why the held-back count
+is 155 where it was 156 — it stopped resolving a seating order over this machine's
+supply sidecar and went from a store read to 0.09 s.
+
+**The slow lane fell 15.8 s while the tree grew by ten tests**, and the likely cause
+is that same change generalized: `conftest.no_live_supply_sidecar` now stops **every**
+test reading `artifacts/curation/supply_scores.jsonl`, and `tests/README.md` prices
+that read at 4.5–10 s for each of `test_ledger_tracking`'s merges alone. ⚠ Not
+decisively measured — no profile was taken either side — so it is a lead and not a
+finding.
 
 **The slow lane fell 4.7 s while the tree grew by fourteen tests**, which closes
 `targets_ckpt125`'s ⚠ the cheap way: it read 513.49 s and did not chase the residue

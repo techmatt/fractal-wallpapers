@@ -114,10 +114,15 @@ def pytest_addoption(parser) -> None:
 
 
 def pytest_configure(config) -> None:
+    global ABSENT_EXTRAS
+
     config.addinivalue_line("markers", SLOW)
     wrong = _wrong_interpreter()
     if wrong is not None:
         raise pytest.UsageError(wrong)
+    # Resolved once, here, rather than per test: `find_spec` walks the path for
+    # every name and this lane asks the question four thousand times.
+    ABSENT_EXTRAS = _absent_extras()
 
 
 def pytest_collection_modifyitems(config, items) -> None:
@@ -142,8 +147,11 @@ def pytest_collection_modifyitems(config, items) -> None:
 #: A module-level `pytest.importorskip` does not skip its tests — it stops the
 #: module being collected at all, so its tests are absent from the collected total
 #: rather than counted and skipped. Eight modules gate on `torch` that way and five
-#: more on `PIL`, all of them extras `pip install -e .[dev]` does not buy, and the
-#: whole block leaves a single "skipped" apiece behind it.
+#: more on `PIL`, and the whole block leaves a single "skipped" apiece behind it.
+#:
+#: Since 2026-09-15 the `PIL` gates are inert on every install this project uses:
+#: `dev` buys pillow, because the suite does not run without it. What still gates
+#: here is `torch` and `timm`, which `dev` will not buy at two gigabytes.
 #:
 #: **That is how a lane reading gets written down that nothing can reproduce.** The
 #: 3,383 in `tests/README.md`'s log was this: an interpreter with no `torch`, 65
@@ -175,17 +183,93 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config) -> None:
             yellow=True,
             bold=True,
         )
-    if not SKIPPED_WHOLE:
-        return
-    modules = "module" if len(SKIPPED_WHOLE) == 1 else "modules"
-    missing = ", ".join(sorted(set(SKIPPED_WHOLE.values())))
-    terminalreporter.write_sep(
-        "=",
-        f"{len(SKIPPED_WHOLE)} test {modules} NOT COLLECTED - no {missing}. The count "
-        f"above is short and is not comparable to a `.[dev,models]` install",
-        red=True,
-        bold=True,
-    )
+    if SKIPPED_WHOLE:
+        modules = "module" if len(SKIPPED_WHOLE) == 1 else "modules"
+        missing = ", ".join(sorted(set(SKIPPED_WHOLE.values())))
+        terminalreporter.write_sep(
+            "=",
+            f"{len(SKIPPED_WHOLE)} test {modules} NOT COLLECTED - no {missing}. The count "
+            f"above is short and is not comparable to a `.[dev,models]` install",
+            red=True,
+            bold=True,
+        )
+    if SKIPPED_IN_CALL:
+        tests = "test" if len(SKIPPED_IN_CALL) == 1 else "tests"
+        wanted = ", ".join(sorted(set(SKIPPED_IN_CALL.values())))
+        terminalreporter.write_sep(
+            "=",
+            f"{len(SKIPPED_IN_CALL)} {tests} REACHED A MISSING EXTRA mid-call - no "
+            f"{wanted}. They skipped rather than failing; the count above is short",
+            red=True,
+            bold=True,
+        )
+
+
+# --------------------------------------------------------------------------- #
+# An extra that arrives in the middle of a test.
+# --------------------------------------------------------------------------- #
+#: **What this interpreter cannot import of the optional dependencies**, resolved
+#: once at `pytest_configure`. Empty on the `.[dev,models]` install this project
+#: is developed on, which makes every hook below inert there.
+#:
+#: The population is [`cli.EXTRA_FOR`]'s keys and not a second list: that table
+#: already names every optional dependency and which extra buys it, it is tracked
+#: production code, and a dependency added there is one this lane learns about
+#: without anybody editing `tests/`.
+ABSENT_EXTRAS: frozenset[str] = frozenset()
+
+#: `{nodeid: the module it wanted}` for every test that reached one mid-call.
+SKIPPED_IN_CALL: dict[str, str] = {}
+
+
+def _absent_extras() -> frozenset[str]:
+    """Which optional dependencies are missing here, without importing any of them."""
+    import importlib.util
+
+    from fractal_wallpapers.cli import EXTRA_FOR
+
+    missing = set()
+    for name in EXTRA_FOR:
+        try:
+            if importlib.util.find_spec(name) is None:
+                missing.add(name)
+        except (ImportError, ValueError):
+            # A parent package that will not even be inspected is as absent as one
+            # that is not there, and `find_spec` raises rather than answering.
+            missing.add(name)
+    return frozenset(missing)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_call(item):
+    """A test that reaches a missing extra **skips**, rather than going red.
+
+    **This is the half no guard in `tests/` can cover.** A module-level
+    `pytest.importorskip` answers for a module that names the extra itself, and
+    [`test_lanes`] holds every test module to having one — but sixteen modules
+    under `src/` carry a lazy `import torch` inside a function body, so an extra
+    can arrive four calls deep in production code no test file mentions. Nothing
+    written here can see that statically; catching it is the only spelling that
+    covers the next one as well as today's.
+
+    **It cannot hide a real failure.** An interpreter that HAS the module never
+    raises `ModuleNotFoundError` for it, so on a `.[dev,models]` install every one
+    of these tests runs exactly as it did before and this hook changes nothing at
+    all. A missing module that is not an optional dependency — a typo, a module
+    somebody deleted — is re-raised with its traceback intact.
+
+    ⚠ **A skip here is a guard that did not run.** The count is printed at the end
+    of every lane that has any, for the same reason the deselect line is: the
+    failure this whole arrangement exists to catch is a guard going quiet.
+    """
+    try:
+        return (yield)
+    except ModuleNotFoundError as missing:
+        wanted = str(missing.name or "").partition(".")[0]
+        if wanted not in ABSENT_EXTRAS:
+            raise
+        SKIPPED_IN_CALL[item.nodeid] = wanted
+        pytest.skip(f"reached the {wanted!r} extra mid-call, and it is not installed here")
 
 
 # --------------------------------------------------------------------------- #
@@ -708,6 +792,74 @@ def the_pool_scores_are_read_once(monkeypatch, _pool_scores_once):
         return _pool_scores_once if path is None else real(path)
 
     monkeypatch.setattr(gallery_grade_train, "read_pool_scores", read)
+
+
+@pytest.fixture(scope="session")
+def _absent_supply_root(tmp_path_factory):
+    """One directory to hang every test's absent supply sidecar off."""
+    return tmp_path_factory.mktemp("no_supply_sidecar")
+
+
+@pytest.fixture(scope="session")
+def _live_supply_sidecar():
+    """Where **this machine's** supply sidecar is, resolved before a test moves a root.
+
+    The one thing the fixture below has to be able to recognise. Taken once, at
+    session scope, because after the first test redirects `FRACTAL_WALLPAPERS_HOT_ROOT`
+    the question cannot be asked again.
+    """
+    from fractal_wallpapers.curation import intake
+
+    return intake.scores_path()
+
+
+@pytest.fixture(autouse=True)
+def no_live_supply_sidecar(monkeypatch, _absent_supply_root, _live_supply_sidecar):
+    """No test resolves a seating order over **this machine's** supply sidecar.
+
+    `artifacts/curation/supply_scores.jsonl` is the location head's read of the
+    standing supply. It is untracked, it is the output of a harvest, and it exists
+    on exactly one machine — so a test whose result depends on it is not testing
+    the tree. It passes here and fails everywhere else, which is the failure this
+    is written to make impossible rather than to catch later.
+
+    **It was not hypothetical.** `test_forced.py`'s offer-and-refuse guard let
+    [`solve.solve`] resolve its own order, which reaches
+    [`solve.ranking_for`] → [`curation.rank_key`] → [`intake.read_scores`], and it
+    was one of the reasons CI's `models` job was red while the same test was green
+    on Matt's box. `ranking_for`'s own docstring says what to do instead: *a caller
+    with an order already in hand passes it straight to `solve(order=...)` and
+    never reaches here*.
+
+    Same shape and same argument as [`no_signature_sidecar`]: autouse, in
+    `conftest`, pointed at a path that is not there. What is different is the
+    **failure mode** — an absent signature sidecar reads empty by design, and an
+    absent supply sidecar *refuses*, because [`intake.read_scores`] would rather
+    say "nothing has read the supply yet" than seat on nothing. That refusal is
+    the point: it arrives at the test that asked, naming the door, instead of
+    arriving on a runner nobody can read the logs of.
+
+    **It redirects one path and not the accessor.** A test that has moved
+    `FRACTAL_WALLPAPERS_HOT_ROOT` to its own `tmp_path` is asking about the store
+    it just wrote, and still gets it: only the answer that *is* this machine's live
+    sidecar is swapped for one that is not there. Replacing the accessor outright
+    was the first spelling of this and it was wrong in the direction this suite has
+    been bitten by three times — see *Redirecting a store: at the roots, never per
+    accessor* in `tests/README.md` — because it takes `test_curation_intake.py`'s
+    own three-row store away from it too, and a fixture that breaks the tests
+    about a store is not a fixture about this machine's copy of it.
+    """
+    from fractal_wallpapers.curation import intake
+
+    resolve = intake.scores_path
+
+    def scores_path():
+        where = resolve()
+        return (
+            _absent_supply_root / "supply_scores.jsonl" if where == _live_supply_sidecar else where
+        )
+
+    monkeypatch.setattr(intake, "scores_path", scores_path)
 
 
 @pytest.fixture(scope="session")

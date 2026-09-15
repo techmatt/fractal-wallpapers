@@ -27,8 +27,8 @@ A family pass and a mode pass are different measurements — the first runs the
 geometry-only distinctness rule on a relaxed bar over a spliced pool, the second
 runs the shipped twin test over a single-mode pool with the per-mode floors and
 ceilings cleared — so the numbers here are not a ranking. `tia` at 1000 and
-`lime` at 200 are two collections the pool can field that much of, not a claim
-that one is five times the other's worth. [`kind_of`] is what tells a reader
+`lime` at 150 are two collections solved at those sizes, not a claim that one is
+nearly seven times the other's worth. [`kind_of`] is what tells a reader
 which pass a name asks for, and it is derived from the codebook and the mode
 roster rather than restated, so a hue renamed in one place cannot become a mode
 here.
@@ -52,9 +52,20 @@ from __future__ import annotations
 #:   they were filling from the bottom of their own stock, and a target above
 #:   what a family can field is a shortfall reported every night rather than a
 #:   decision.
-#: * **200 for `lime`.** The thinnest family in the library: 156 of 500 at the
-#:   first reading, on 1,327 scored rows. At `4n = 800` it may now read a bar off
-#:   its own stock instead of falling to the floor for want of stock at all.
+#: * **150 for `lime`**, Matt's cut of 2026-09-15, from the 200 set the day
+#:   before. The thinnest family in the library: 156 of 500 at the first reading,
+#:   on 1,327 scored rows. At `4n = 600` it may now read a bar off its own stock
+#:   instead of falling to the floor for want of stock at all.
+#:
+#:   ⚠ **It is the one target set below what the family currently fields, and
+#:   that is known.** The cut was called against 176 of 200, but
+#:   `family_slot_sizing_ckpt125` had already moved it to **188 of 200** on the
+#:   same day, and the same reading puts `lime` at **242 places above the shipped
+#:   fine bar** — a ratio over one, so the 200 was not against a supply wall. A
+#:   target under the realized fill binds rather than relaxes: expect 150 of 150
+#:   and the `cell_allowance` refusal column to carry what a shorter seating drops,
+#:   the way `threads` at 400 does. The seating is the shorter one by decision, not
+#:   because the stock ran out.
 #: * **1000 for `tia`, 800 for `smooth` and `stripe`, 400 for `threads`.** The
 #:   mode collections, cut by what each can field a *place* for: `tia` and
 #:   `smooth` fill a thousand, `stripe` was reaching 785-981 and spending its
@@ -72,7 +83,7 @@ TARGETS: dict[str, int] = {
     "red": 400,
     "orange": 400,
     "yellow": 400,
-    "lime": 200,
+    "lime": 150,
     "green": 300,
     "teal": 300,
     "cyan": 300,

@@ -193,24 +193,38 @@ def test_a_forced_row_is_lifted_whatever_the_coarse_bar_says(monkeypatch) -> Non
 # --------------------------------------------------------------------------- #
 # An offer and never a seat.
 # --------------------------------------------------------------------------- #
-@pytest.mark.slow
 def test_forcing_offers_a_row_first_and_the_rules_still_refuse_it(monkeypatch) -> None:
     """★ The claim a forced record is read under. Two rows at one place: forcing
     the weaker one makes it the offer, and the one-seat rule still allows exactly
     one of them — so the reading a forced pass gives is which rule bit, not a
-    seat count that went up by the size of the forced set."""
+    seat count that went up by the size of the forced set.
+
+    **The order is built here and handed in.** Left to resolve its own, `solve`
+    reaches [`solve.ranking_for`] → [`curation.rank_key`] →
+    [`intake.read_scores`] and seats this synthetic pair against a supply sidecar
+    that exists on one machine — which is what it did until 2026-09-15, passing
+    here and failing on every runner. `ranking_for` says as much of itself: *a
+    caller with an order already in hand passes it straight to `solve(order=...)`
+    and never reaches here*. The two rows are given the same rank-key value, so
+    the lift the forced row gets is the only thing separating them and the claim
+    below is about the lift rather than about the order it was laid over.
+    """
     column({"weak": 0.10, "strong": 0.99}, monkeypatch)
     pool = [
         candidate("weak", location="here", score=0.9),
         candidate("strong", location="here", score=0.9),
     ]
     forced = solve.fine_column({"weak"}, log=quiet)
+    order, _cascade = solve.cascade_order(
+        pool, dict.fromkeys(("weak", "strong"), 0.5), {}, fine=forced, log=quiet
+    )
     record = solve.solve(
         pool,
         n=5,
         radius=None,
         fine=forced,
         forced={"weak"},
+        order=order,
         diversity=False,
         explain={"weak", "strong"},
         log=quiet,
