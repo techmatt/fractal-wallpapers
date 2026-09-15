@@ -2179,6 +2179,45 @@ empty and reports the shortfall as a rate. The reading is one call —
 the floor draw over proven places — [`MEASUREMENTS.md`](MEASUREMENTS.md)'s
 `easy125_wide` and `easy125_recolour` rows price the two against each other.
 
+⚠ **It was spent on 2026-09-15 and the figure above is already stale, which is the
+point of the warning rather than an exception to it.** The reading that night was
+**1,933**, not 2,470 — one leg the evening before had taken 537 — and
+`on125_wide1` + `on125_wide2` opened **all 1,662 of the drawable remainder** in
+7,805 s of render wall. What is left is `phoenix:classic` alone, and
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s `on125_phoenix` row says to write those off
+rather than queue them: 20.911 s a candidate, 390.3 engine seconds a clear, 56x
+the floor draw. **Breadth over never-opened locations is finished as an arm until
+a walk adds stock.**
+
+### A recolour manifest saturates inside one night, and the second pass buys displacement
+
+`on125_recolour1` and `on125_recolour2` are the same arm over the same
+`--floor-places` manifest, back to back on 2026-09-15 with a merge between them.
+The clear rate barely moved — 13.4% / 12.1% then 11.1% / 10.5% at `SEATING_BAR` —
+and **retention collapsed**: the first pass kept **42.6%** of its own rows, the
+second **27.7%**, and the second moved the ledger by **+27 rows net against 9,995
+made**. Every pair the first pass could fill was full when the second arrived, and
+a sixth palette at a pair holding `RETAIN_PER_PAIR` is ranked out as it lands.
+
+**That is not a wasted leg and it is not a second helping of the first one.** What
+a saturated pass buys is *displacement* — a better row taking an incumbent's slot
+— which is quality and shows up in a median rather than in a count. But it buys it
+at the arm's full price, so **plan one pass over a manifest a night**, and spend a
+second pass's clock on a population something has not already swept.
+
+### A composite is worth pointing at proven ground, by about 5x
+
+`on125_threads` drew `threads` at places a shareable mode had already proven
+(`--floor-places` over the proven set, `--floor-untried threads`) and took **328
+clearing places out of ~838 tried, 39%** — against the **8.2%** of `threads`
+places in the standing ledger that carry an above-bar row. The standing figure is
+over stock drawn blind; the prior is worth about **5x**. Per clear the leg is the
+dearest productive arm here (21.0 engine s against the floor draw's 7.0), but per
+*place* it is the cheapest after the floor draw — one clearing place every 7.7
+candidates against breadth's one every 18.9 — and a collection is bounded by
+places. **On any mode too dear for breadth, spend the draw on proven places
+untried in it rather than on fresh ones.**
+
 **On a breadth leg the never-opened pool caps the plan, not the clock.**
 2026-08-29: 28,420 admitted locations, 8,714 of them already opened, **19,415
 never opened**, and the top half of the head's rank inside each partition is

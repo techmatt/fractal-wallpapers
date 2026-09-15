@@ -276,6 +276,21 @@ and why a floor was worth adding at all. Against the realized mean the sweep's r
 are **1.12, 1.41, 1.68, 1.81, 1.95 and 2.10** for `K` of 2, 2.5, 3, 3.25, 3.5 and
 3.75 — so the shipped `K = 3` is **1.68× uniform**, not three times anything.
 
+### ⚠ A supply-bound collection seats FEWER at a smaller `n`, and the allowance is why
+
+The allowance is `floor(K · t · n) + 1`, so it scales with `n` while a thin pool's
+stock does not. Solved on the same pool on 2026-09-15, `threads` seated **484 of
+1000** and **423 of 500**: halving the ask took 61 seats off it, `cell_allowance`
+refused 122 rows in the smaller pass, and nothing about the supply changed between
+the two. A collection whose cells are pinned is being bounded by the ceiling as
+much as by the pool, and **shrinking `n` tightens the ceiling faster than it
+relaxes the demand**.
+
+So **a before-and-after pair has to be solved at the same `n`, and a record's fill
+is not comparable across `n` even on one pool.** Moving a collection's `n` between
+runs is a change of question, not of scale — take a fresh before at the new `n`
+rather than reading the old record's count across.
+
 **A `K` proposed in seat units has to be converted before it is argued about**:
 divide by the memberships-per-seat figure of the pool in hand. And read the allowance
 off `ceiling.Rule(k=K).allowed(cell, n)` rather than off the formula on paper —
