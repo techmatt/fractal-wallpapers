@@ -295,7 +295,7 @@ def render(args: argparse.Namespace) -> int:
         return render_manifest(args)
     if args.location:
         try:
-            row = locations.read_one(resolve_output(args.location))
+            row = locations.read_one(resolve_output(args.location), drawing=True)
         except locations.LocationError as refusal:
             print(refusal)
             return 1
@@ -374,10 +374,28 @@ def recolor(args: argparse.Namespace) -> int:
 
 
 def render_manifest(args: argparse.Namespace) -> int:
-    """Render every location in a manifest, and record what was drawn."""
+    """Render every location in a manifest, and record what was drawn.
+
+    `drawing=True` is what separates this door from `screen` and
+    `score-locations`, which read the same files and the same reader: a member a
+    location record cannot carry is a wrong picture here and nothing at all
+    there. [`fractal_wallpapers.locations.refuse_a_picture_this_cannot_draw`]
+    has the division.
+
+    A refused manifest prints and exits 1 like every other door on this path.
+    This one alone let the refusal out as a traceback — the same bad file
+    answered `render --location` with one line and `render --manifest` with a
+    stack, which reads as a crash in the tool rather than as a complaint about
+    the file, and scripts that branch on the exit code saw the same 1 either way
+    only by luck.
+    """
     from fractal_wallpapers import locations
 
-    rows = locations.read(resolve_output(args.manifest))
+    try:
+        rows = locations.read(resolve_output(args.manifest), drawing=True)
+    except locations.LocationError as refusal:
+        print(refusal)
+        return 1
     if args.limit is not None:
         rows = rows[: max(0, args.limit)]
     directory = resolve_output(args.out_dir)
@@ -546,7 +564,15 @@ def add_commands(subcommands) -> None:
     record_input.add_argument(
         "--manifest",
         metavar="FILE",
-        help="a JSONL of location records to render, one picture per row, into --out-dir. "
+        help="a JSONL of location records to render, one picture per row, into --out-dir — a "
+        "label row, a ledger candidate carrying its cap flat, a release decision row and a "
+        "hand-written {family, viewport, maxiter, mode, colormap} all read. "
+        "The coloring goes nested under `render` or flat beside `family`, whichever the "
+        "writer prefers, because this repository's own records are written both ways. "
+        "A row that spells one member both ways and disagrees with itself is refused, and so "
+        "is a row carrying a whole picture — a curve, a palette pass, a mode's own settings — "
+        "which belongs at --recipe FILE, because a location record is a place and a geometry "
+        "and drawing one of those would be the right coordinates in the wrong picture. "
         "A file rather than a list of paths, because a batch is hundreds of rows and a "
         "Windows command line is not",
     )

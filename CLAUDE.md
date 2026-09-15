@@ -206,15 +206,21 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,733 collected — 4,577 fast,
-156 slow — since `readme_overhaul_ckpt124` added 1 test on 2026-09-14**, on a
-`.[dev,models]` install with a release engine built. **Both lanes were taken back to
-back on one tree by that prompt, and they agree at 4,733**: **fast 4,577 of
-4,577 in 125.49 s (2:05)** with 156 deselected, and **slow 4,733 of 4,733 in
-480.45 s (8:00)**. Both green, zero skips, zero failures. The fast lane landed
-within 0.3 s of `weights_release_ckpt124`'s reading an hour earlier and the slow
-lane came in 12.5 s **under** it, which is the box settling rather than the tree:
-the one test added is an arithmetic guard over four `stat` calls.
+Both are measured, not estimated. The tree holds **4,773 collected — 4,617 fast,
+156 slow — since `silent_failures_ckpt125` added 40 tests on 2026-09-14**, on a
+`.[dev,models]` install with a release engine built. **Fast: 4,617 of 4,617 in
+126.26 s (2:06)** with 156 deselected. Green, zero skips, zero failures. Forty
+tests for +0.77 s, which is what forty guards over parsing and arithmetic cost.
+
+⚠ **That is a fast-lane reading and NOT a pair.** Matt said to skip the slow lane
+on this prompt, so the two lanes have not met on this tree and *the two lanes agree
+on the collected count* was not the check that produced the figure — the fast lane's
+own selected-plus-deselected was, which [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)
+allows and which is the same arithmetic. What went unrun is the 156 slow guards; no
+hunk in that prompt touches a render path, which is why it was a cheap thing to skip
+and is not a precedent for skipping it after one. The slow figure of 156 is carried
+forward from `readme_overhaul_ckpt124` rather than re-measured, and the next prompt
+to take a pair is the one that confirms it.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.

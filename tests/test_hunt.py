@@ -357,6 +357,195 @@ def test_a_conditioned_leg_with_no_reachable_carrier_is_refused_before_a_render(
         )
 
 
+def test_a_hunt_asked_for_neither_leg_is_refused_rather_than_reported_as_zero():
+    """`curate hunt run --name h1 --budget 1200` — the README's own worked example
+    until 2026-09-14 — exited 0 in under two seconds having planned nothing, made
+    nothing, and written a record and an empty contact sheet saying so. Both counts
+    default to 0, so naming neither asked for nothing. The refusal is in `plan`
+    because a plan of zero is indistinguishable downstream from a budget that ran
+    out at the first candidate, and it names **both** flags because a caller who
+    reached this has not decided which leg they wanted."""
+    with pytest.raises(hunt.HuntRefused) as refusal:
+        hunt.plan(pools({"a": 10}), seed=1, pool=["m"], log=lambda *_: None)
+    assert "--unconditional" in str(refusal.value)
+    assert "--conditioned" in str(refusal.value)
+
+
+def test_a_conditioned_count_with_no_cell_is_refused_and_not_quietly_dropped(monkeypatch):
+    """The same mistake wearing the other hat, and refused apart from it so the
+    caller learns which one they made. `plan` used to read `if conditioned and
+    cell:`, so `--conditioned 200` with no `--cell` planned zero conditioned
+    candidates in silence — worse than the both-zero case when `--unconditional` is
+    also named, because the breadth leg runs on and the record reads like a hunt
+    that worked while the colour it was sent for was never asked for at all."""
+    _any_map(monkeypatch)
+    with pytest.raises(hunt.HuntRefused, match="no cell to condition on"):
+        hunt.plan(
+            pools({"a": 10}),
+            seed=1,
+            unconditional=6,
+            conditioned=6,
+            pool=["m"],
+            log=lambda *_: None,
+        )
+
+
+def test_the_aimed_legs_settings_without_the_count_that_buys_it_are_refused(monkeypatch):
+    """The mirror of the refusal above, and the reason that one alone was not
+    enough. `--cell` and `--work-order` describe the conditioned leg and
+    `--conditioned` is what buys it, at a default of 0 — so naming a colour beside
+    a breadth count spent the whole budget on breadth and reported a hunt that
+    worked, with the cell never reaching the carrier table. It reads worse than the
+    both-zero case rather than better: something was drawn, so there is a record
+    and a sheet to look at, and neither says the colour was not bought."""
+    _any_map(monkeypatch)
+    for settings in ({"cell": "dark_vivid_lime"}, {"work_order": {"a": 5}}):
+        with pytest.raises(hunt.HuntRefused, match="never bought"):
+            hunt.plan(
+                pools({"a": 10}),
+                seed=1,
+                unconditional=6,
+                pool=["m"],
+                log=lambda *_: None,
+                **settings,
+            )
+    # And the pairing it exists to protect still plans: a cell with a count is the
+    # aimed leg as intended, and a breadth leg naming neither is untouched.
+    assert hunt.plan(
+        pools({"a": 10}),
+        seed=1,
+        conditioned=6,
+        cell="dark_vivid_lime",
+        pool=["m"],
+        log=lambda *_: None,
+    )
+    assert hunt.plan(pools({"a": 10}), seed=1, unconditional=6, pool=["m"], log=lambda *_: None)
+
+
+def test_a_count_below_zero_is_refused_by_name_and_not_planned_as_a_leg_of_zero(monkeypatch):
+    """The both-zero refusal above tested truth and not sign, so `--unconditional
+    -600` went straight through it — `not int(-600)` is False — and planned the
+    same nothing by another road: `spread` returns [] on `count <= 0` and `_leg`
+    finds `0 >= -600` on its first pass. Each flag is asked separately, because
+    the partial case is the worse one: a negative beside a good count leaves the
+    good leg running and the record reading like a hunt that worked."""
+    _any_map(monkeypatch)
+    held = pools({"a": 20, "b": 20})
+    with pytest.raises(hunt.HuntRefused, match="--unconditional -600"):
+        hunt.plan(held, seed=1, unconditional=-600, pool=["m"], log=lambda *_: None)
+    with pytest.raises(hunt.HuntRefused, match="--conditioned -600"):
+        hunt.plan(
+            held,
+            seed=1,
+            conditioned=-600,
+            cell="dark_vivid_lime",
+            pool=["m"],
+            log=lambda *_: None,
+        )
+    # The partial shape: one leg is exactly what the caller meant and the other is
+    # a typo. Refused on the typo, and named for it.
+    with pytest.raises(hunt.HuntRefused, match="--unconditional -600"):
+        hunt.plan(
+            held,
+            seed=1,
+            unconditional=-600,
+            conditioned=9,
+            cell="dark_vivid_lime",
+            pool=["m"],
+            log=lambda *_: None,
+        )
+
+
+def test_a_negative_conditioned_count_is_not_blamed_on_the_carrier_table(monkeypatch):
+    """`--conditioned -600 --cell dark_vivid_lime` did refuse before this, but as
+    *no map carries that cell* — `conditioned_maps` loops `while len(out) < count`
+    and hands back [] on a negative count, which the carrier refusal reads as a
+    colour the library cannot make. That sends a caller to audit the palette
+    library over a minus sign in a number, so the sign is asked first."""
+    _any_map(monkeypatch)
+    with pytest.raises(hunt.HuntRefused) as refusal:
+        hunt.plan(
+            pools({"a": 20}),
+            seed=1,
+            conditioned=-600,
+            cell="dark_vivid_lime",
+            pool=["m"],
+            log=lambda *_: None,
+        )
+    assert "carries dark_vivid_lime" not in str(refusal.value)
+
+
+def test_a_per_location_below_one_is_refused_against_its_own_flag(monkeypatch):
+    """`--unconditional 600 --per-location 0` planned **0** and logged both legs as
+    zero: `modes_for` samples `min(count, len(roster))` modes for a place, so at 0
+    it hands back nothing and `_leg`'s inner loop never runs. Both counts are
+    exactly what the caller meant here — it is a divisor and not a size — so the
+    message has to name `--per-location` and not `--unconditional`. Below zero got
+    no further but broke differently: `random.sample` raised a bare `ValueError`
+    three frames down, and the CLI catches `HuntRefused` and nothing else."""
+    _any_map(monkeypatch)
+    held = pools({"a": 20, "b": 20})
+    for depth in (0, -1):
+        with pytest.raises(hunt.HuntRefused) as refusal:
+            hunt.plan(
+                held,
+                seed=1,
+                unconditional=600,
+                per_location=depth,
+                pool=["m"],
+                log=lambda *_: None,
+            )
+        # The flag at fault is the one the message opens on, not one of the two it
+        # goes on to offer as somewhere else to take a leg's size out of.
+        assert str(refusal.value).startswith(f"`--per-location {depth}`"), refusal.value
+    # The aimed leg reaches `modes_for` by its own road and is refused on the same
+    # flag, rather than on the cell it was perfectly well given.
+    with pytest.raises(hunt.HuntRefused, match="--per-location"):
+        hunt.plan(
+            held,
+            seed=1,
+            conditioned=600,
+            cell="dark_vivid_lime",
+            per_location=0,
+            pool=["m"],
+            log=lambda *_: None,
+        )
+
+
+def test_the_shallowest_hunt_there_is_still_plans_and_is_not_caught_by_the_depth_guard(
+    monkeypatch,
+):
+    """The floor is 1 and not `PER_LOCATION`: one candidate a place is the widest
+    breadth a hunt can buy for its money, which is a real ask and not a mistake."""
+    _any_map(monkeypatch)
+    intended = hunt.plan(
+        pools({"a": 20, "b": 20}),
+        seed=1,
+        unconditional=9,
+        per_location=1,
+        pool=["m"],
+        log=lambda *_: None,
+    )
+    assert len(intended) == 9
+    assert len({one.location for one in intended}) == 9, "one candidate a place"
+
+
+def test_either_leg_alone_is_a_whole_hunt_and_neither_refusal_touches_it(monkeypatch):
+    """The two refusals above are about a draw of nothing, not about balance. A
+    breadth-only hunt is what stocks a thin ledger and an aimed-only hunt is what a
+    short solve orders, so both have to plan — a guard that demanded both legs would
+    have made the commonest two invocations in `LEGS.md` illegal."""
+    _any_map(monkeypatch)
+    held = pools({"a": 20, "b": 20})
+    breadth = hunt.plan(held, seed=1, unconditional=9, pool=["m"], log=lambda *_: None)
+    aimed = hunt.plan(
+        held, seed=1, conditioned=9, cell="dark_vivid_lime", pool=["m"], log=lambda *_: None
+    )
+    assert {one.leg for one in breadth} == {hunt.UNCONDITIONAL}
+    assert {one.leg for one in aimed} == {hunt.CONDITIONED}
+    assert (len(breadth), len(aimed)) == (9, 9)
+
+
 def test_the_two_legs_are_interleaved_so_a_budget_truncates_both():
     """A concatenated plan that ran out would answer neither of the two questions."""
     woven = hunt._interleave(list("AAAA"), list("bb"))

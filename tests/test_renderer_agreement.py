@@ -46,11 +46,20 @@ or a palette — that is what "the candidate path" means, not a member it drops.
 entry says which cases it draws and why, and [`test_every_renderer_in_the_tree_is_in_this_registry`]
 holds the registry to the tree, so a renderer added later is either covered or
 declared exempt with a reason.
+
+**Two doors are swept and not one.** The registry finds its population by looking
+for callers of `colorize.render`, and a picture's inputs are enumerated in one
+other place — `locations.spec_of`, which `render --manifest` builds its spec
+through and which never touches `colorize.render` at all. Its module was in
+`RENDERERS` for a *different* door the whole time, so the name being present is
+what kept the second one out of sight. [`LOCATION_DOOR`] and
+[`test_every_caller_of_the_location_door_is_declared`] are that half.
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
 import dataclasses
 import hashlib
 import inspect
@@ -562,6 +571,132 @@ def test_the_members_each_case_varies_actually_move_the_pixels(case_of, tmp_path
 # --------------------------------------------------------------------------- #
 # The registry is held to the tree.
 # --------------------------------------------------------------------------- #
+def _modules_where(matches) -> set[str]:
+    """Every module in the package whose source `matches`, by dotted name.
+
+    Source text and not an import graph, for the reason the sweep exists at all: a
+    module is in the class whether or not anything in this process happens to
+    import it, and a sweep that only saw what was loaded would go quiet on exactly
+    the leg nobody remembered.
+    """
+    from fractal_wallpapers import curation
+
+    root = Path(inspect.getfile(curation)).parent.parent
+    return {
+        path.relative_to(root).with_suffix("").as_posix().replace("/", ".")
+        for path in sorted(root.rglob("*.py"))
+        if matches(path.read_text(encoding="utf-8"))
+    }
+
+
+#: The door, as the two things a binding has to resolve to for a call to be one:
+#: the module by its importable name, and the attribute on it. Written out because
+#: the predicate below resolves a **binding** rather than matching a spelling, and
+#: this is what it resolves the binding against.
+LOCATIONS_MODULE = "fractal_wallpapers.locations"
+LOCATION_DOOR_ATTRIBUTE = "spec_of"
+
+
+def _dotted(node: ast.expr) -> str | None:
+    """`a.b.c` for the expression a call was made through, or None if it is not one.
+
+    Only `Name` and `Attribute`, because only those two can be a resolvable import
+    binding. Anything else — a subscript, a call's return, a `getattr` — is a
+    module this predicate cannot follow, and it says no rather than guessing.
+    """
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        head = _dotted(node.value)
+        return None if head is None else f"{head}.{node.attr}"
+    return None
+
+
+def _names_the_location_door(source: str) -> bool:
+    """Whether this module calls [`locations.spec_of`], whatever it bound the module to.
+
+    Read with `ast` rather than as text, because in this tree **every** string test
+    available is wrong in one direction or the other. `spec_of(` on its own matches
+    fifteen modules: `renders.spec_of` and `engine_spec.spec_of` are spelled the
+    same and are the *documented normal path*, which the sweep above says in as many
+    words. `locations.spec_of(` on its own would go quiet the first time somebody
+    aliased the import, and `cli/spiral_commands.py` already aliases it
+    (`as locations_module`). And pairing the two — "imports locations" **and**
+    "contains `spec_of(`" — is not the conjunction it looks like: five modules
+    import `locations` for `maxiter_of` and never go near this door, so the first of
+    them to gain a `renders.spec_of(row, output)` line would be sent to declare a
+    door it does not use. That is the very failure this file keeps recording, one
+    level up: a match on a name rather than on the act.
+
+    The pair was blind in the other direction too, and that half was found by
+    running it: `discovery/boundary.py` writes `from fractal_wallpapers import
+    engine, locations`, in which the substring `import locations` does not occur at
+    all. One more import on one line is all it took, and nothing would have gone red
+    to say so.
+
+    So bind first, then match the call against the binding. `import
+    fractal_wallpapers.locations [as X]` and `from fractal_wallpapers import
+    locations [as X]` put a name on the **module**; `from fractal_wallpapers.locations
+    import spec_of [as f]` puts one on the **function**; and a call counts only if it
+    goes through one of those. `ast.walk` reaches imports inside a function body,
+    which is where `cli/draw_commands.py` writes both of its.
+
+    A **relative** import of the name is taken at its tail: a predicate handed only
+    the source cannot resolve `..` to a package. There is one `locations` module in
+    this tree, and the two mistakes are not symmetric — guessing wrong costs a
+    declaration somebody deletes, where going quiet costs the sweep.
+
+    A file that does not parse raises here rather than reading as unmatched, which
+    is the same choice: an unparseable module in the package is a fault, and a
+    sweep that swallowed it would report the tree clean.
+    """
+    # Parsing every module in the package costs 2.0 s against the 0.04 s the
+    # sweep above spends on the same population, which is a second of real work
+    # bought for one test and squarely what `@pytest.mark.slow` is for. It is
+    # avoided rather than paid: a call that resolves to this function needs the
+    # identifier written out somewhere in the file — at the call, or in the
+    # `import ... as` that renamed it — so a module whose source never spells it
+    # cannot be one, and 211 of the package's 226 files are answered without a
+    # parse. `tests/README.md`'s *A count is not a cost* refused to share the
+    # substring sweep for 35 ms; this is the same trade at fifty times the price.
+    if LOCATION_DOOR_ATTRIBUTE not in source:
+        return False
+    tree = ast.parse(source)
+    on_the_module: set[str] = set()
+    on_the_function: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == LOCATIONS_MODULE:
+                    # No `as` binds the ROOT package, so the call site reads
+                    # `fractal_wallpapers.locations.spec_of(` and the dotted name is
+                    # what has to match.
+                    on_the_module.add(alias.asname or alias.name)
+        elif isinstance(node, ast.ImportFrom):
+            tail = (node.module or "").rsplit(".", 1)[-1]
+            relative = node.level > 0
+            from_the_package = node.module == "fractal_wallpapers" or (relative and not node.module)
+            from_the_module = node.module == LOCATIONS_MODULE or (relative and tail == "locations")
+            for alias in node.names:
+                if from_the_package and alias.name == "locations":
+                    on_the_module.add(alias.asname or alias.name)
+                elif from_the_module and alias.name == LOCATION_DOOR_ATTRIBUTE:
+                    on_the_function.add(alias.asname or alias.name)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        called = node.func
+        if isinstance(called, ast.Name) and called.id in on_the_function:
+            return True
+        if (
+            isinstance(called, ast.Attribute)
+            and called.attr == LOCATION_DOOR_ATTRIBUTE
+            and _dotted(called.value) in on_the_module
+        ):
+            return True
+    return False
+
+
 #: Call sites of [`colorize.render`] that are **not** renderers of a stored
 #: recipe, with the reason each is out. A measurement rig draws a *place* through
 #: a mode and a map: it has no recipe key to reproduce and nothing downstream
@@ -597,8 +732,12 @@ def test_every_renderer_in_the_tree_is_in_this_registry() -> None:
     a picture's inputs member by member and naming some of them —
     `colorize.render`'s signature, which takes the mode, the map, the settings, the
     curve and the palette as separate arguments, and `release.Task`'s fields, which
-    are the same list travelling to a worker. Those two are the only places in this
-    project where a picture's inputs are enumerated rather than handed over whole.
+    are the same list travelling to a worker.
+
+    **There are three such places and not two**, which is what this file claimed
+    until `locations.spec_of` was found to be the third — see
+    [`test_every_caller_of_the_location_door_is_declared`], which sweeps for it the
+    same way and is why the count is written here rather than left implied.
 
     Everything else goes through `renders.spec_of(row, output)` with a **complete**
     render-cache row — `Recipe.row`'s own output — and a caller holding the whole row
@@ -607,15 +746,7 @@ def test_every_renderer_in_the_tree_is_in_this_registry() -> None:
     not in the class. `release.Task` is held to one construction site by
     `test_curation_release.py`, which is this sweep's other half.
     """
-    from fractal_wallpapers import curation
-
-    root = Path(inspect.getfile(curation)).parent.parent
-    calling = set()
-    for path in sorted(root.rglob("*.py")):
-        source = path.read_text(encoding="utf-8")
-        if "colorize.render(" not in source:
-            continue
-        calling.add(path.relative_to(root).with_suffix("").as_posix().replace("/", "."))
+    calling = _modules_where(lambda source: "colorize.render(" in source)
     known = {renderer.module for renderer in RENDERERS} | set(EXEMPT)
     assert calling <= known, (
         f"{sorted(calling - known)} draw(s) a picture through `colorize.render` and is in "
@@ -625,6 +756,69 @@ def test_every_renderer_in_the_tree_is_in_this_registry() -> None:
     )
     stale = {name for name in EXEMPT if name not in calling}
     assert not stale, f"{sorted(stale)} is exempted and no longer renders anything"
+
+
+#: Modules that enumerate a picture's inputs through [`locations.spec_of`], the
+#: **third** site, and what holds each one honest.
+#:
+#: **Membership in `RENDERERS` deliberately does not answer for a name here.** The
+#: registry is keyed by module and a module has more than one door:
+#: `cli.draw_commands` has been in it since the `recipe file` entry landed, that
+#: entry draws through `colorize.render`, and the sweep above has been green on the
+#: strength of the name ever since — while `render --manifest`, which never touches
+#: `colorize.render` at all, went unswept for as long as it existed. A name that
+#: answers for one door is a name that hides the next one, so this table is its own
+#: and an entry is written out here or the sweep fails.
+LOCATION_DOOR: dict[str, str] = {
+    "cli.draw_commands": "`render --location` and `render --manifest`, which go "
+    "`locations.read` -> `record` -> `locations.spec_of` -> `engine.render_report` and "
+    "never reach `colorize.render`. It is NOT a registry entry drawing the three cases "
+    "above and it cannot be one: a location record is a place plus a geometry, so it has "
+    "no member for a curve, a palette pass or a mode's settings, and every case here "
+    "varies one of those. That is the point rather than a gap — what this door cannot "
+    "express it has to REFUSE rather than drop, so its guard is "
+    "`locations.refuse_a_picture_this_cannot_draw` — asked at this door and at no "
+    "other, since `screen` and `score-locations` read the same rows and draw "
+    "nothing — held by `tests/test_locations.py`, in place of byte agreement.",
+}
+
+
+def test_every_caller_of_the_location_door_is_declared() -> None:
+    """The second enumeration site gets the same treatment as the first.
+
+    `locations.spec_of` is in the class the sweep above describes: it writes
+    resolution, supersample, mode, colormap and maxiter into an engine spec member
+    by member, off a record it read, which is a caller rebuilding a picture's
+    inputs and naming some of them. It was found the way every instance of this
+    defect is found — a manifest row that spelled its coloring flat drew at the
+    module's hard-coded defaults, with exit 0 and no warning, because a key outside
+    the `render` block was read by nothing and complained about by nothing.
+
+    ## Why the location door is declared rather than registered
+
+    Because it cannot draw the cases the registry compares. A location record is a
+    place plus a geometry **by construction** — the absence of `curve`, `palette`
+    and `mode_params` is what the shape IS, and `locations.UNCARRIED_RECIPE_MEMBERS`
+    is that absence written down — so routing it through `release.task_for` would
+    mean inventing those members, which moves the defaults problem up a level and
+    changes the bytes of every `--location` render ever taken. A door that cannot
+    express a member is held to refusing it, not to agreeing about it, and that is
+    a guard in `tests/test_locations.py` rather than a digest here.
+
+    What this sweep is for is the other half: that the door is *known about*. It
+    was not, and the reason it was not is that its module was already in `RENDERERS`
+    under a different door — so [`LOCATION_DOOR`] is a separate table on purpose.
+    """
+    calling = _modules_where(_names_the_location_door)
+    assert calling <= set(LOCATION_DOOR), (
+        f"{sorted(calling - set(LOCATION_DOOR))} build(s) an engine spec through "
+        f"`locations.spec_of` and is not declared in LOCATION_DOOR. Naming resolution, "
+        f"supersample, mode, colormap and maxiter into a spec one at a time is how every "
+        f"defect this file records began; say which cases the door draws, or why it cannot "
+        f"draw them and what refuses in their place."
+    )
+    stale = sorted(name for name in LOCATION_DOOR if name not in calling)
+    assert not stale, f"{stale} is declared at the location door and no longer uses it"
 
 
 def test_a_candidate_leg_is_declared_rather_than_assumed_to_drop_the_curve() -> None:

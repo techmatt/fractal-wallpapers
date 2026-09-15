@@ -3063,6 +3063,18 @@ wallpaper per location, and the twin test; the cell and family allowances, the m
 floors and the group cap are soft with the shortfall recorded. No fallback leg, no
 least-violating rescue: unfilled beats padded.
 
+**Unfilled beats padded, and a fill far under `n` still says so out loud.**
+`solve.SHORT_FILL_SHARE` is a quarter since 2026-09-14: below it the run closes on
+a banner and the record carries a `short_fill` block. The exit code does **not**
+move and there is no new one — a thin seating is a result here, a `threads`-heavy
+pass seats under half its seats as a matter of course, and this project's own
+automation branches on exit status. The bar sits at a quarter for that reason:
+~48% fill is normal, the tracked growth records bottom out at 0.36 over 76 rungs,
+and the case this exists for is `--n 100` seating **4** and saying so in one line
+in the middle of a long log. ⚠ **A bar like this is exactly what gets repointed at
+whatever somebody just measured** — it is set against the fills this project ships,
+not against a reading, and moving it needs a new argument rather than a new number.
+
 **The scarcity leg keeps seating a mode until its floor is met.** It used not to:
 it visited each mode once and `break`ed on the first candidate nothing refused, so a
 floor above 1 was recorded as `unmet` and never acted on by this walk. Measured
