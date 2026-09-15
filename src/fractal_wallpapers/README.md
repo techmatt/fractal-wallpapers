@@ -208,16 +208,36 @@ and everything that takes a manifest goes through it: `render --location` and
 `render --manifest`, `screen`, `score-locations`, and the boundary draw's own
 output.
 
-It takes all three spellings, because all three are already on disk:
+It takes all four spellings, because all four are already on disk:
 
 ```text
 {"family": ..., "viewport": ..., "render": {...}}    a label row
 {"family": ..., "viewport": ..., "maxiter": 13140}   a walk ledger's candidate
 {"location": {"family": ..., "viewport": ...}, ...}  a release decision row
+{"family": ..., "viewport": ..., "mode": ..., ...}   a scoring corpus row
 ```
 
 A ledger row keeps its cap at the top level because it records a *frame the gates
-measured*, not a picture, and has no render block to put one in. Family and
+measured*, not a picture, and has no render block to put one in. The fourth writes
+its coloring flat beside `family`, which is what `labeling/finished.py`'s row
+builder emits and what the palette-choice, render-head and gallery-grade corpora
+are full of. **Until 2026-09-14 that one was read and its coloring silently
+dropped**: `render --manifest` over such a file drew every row at `smooth` /
+`twilight_shifted` and exited 0. It is read now, and a member answered twice with
+two different values is refused rather than resolved — there is no defensible way
+to pick, which is the argument `refuse_two_descriptions` already makes for a record
+that a flag contradicts.
+
+**Reading a row and drawing it are two different questions, and only one door asks
+the second.** `record` takes anything that names a place and a geometry, because
+two of its three callers do not draw: `screen` keeps the frame and the cap and
+throws the rest away, and `score-locations` discards the coloring entirely. A
+corpus row carrying a curve and a palette pass is a perfectly good input to both.
+So the refusal for a picture this shape cannot carry — a curve, a fold, a palette
+pass, a trap's settings, a levelling band — lives at the **render door** and
+nowhere else, and it sends you to `render --recipe FILE`, which takes the whole
+picture. Asking it in `record` would refuse tens of thousands of tracked rows to
+protect a door those rows never go through. Family and
 viewport are the identity and are required; everything else defaults to what the
 flag nobody passed would have meant, so a two-key record is a legal record.
 `maxiter` is the one field with a third answer — absent means "the depth-aware

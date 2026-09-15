@@ -333,6 +333,22 @@ def test_backfill_holds_one_row_per_render_not_one_per_decision(isolated, monkey
     assert report["restamps"] == 1
     assert report["recipes"] == 1
     assert report["duplicate_renders"] == 1
+    # Where a reader lands rather than last inside the `**counts` splat, and in
+    # `rebuilt` rather than in `stored`: this pass regenerated one row and the two
+    # blocks count different populations. The fixture's picture path is not there,
+    # so the one recipe is exactly the recipe-only row a solve cannot seat — the
+    # false summit in miniature.
+    assert report["rebuilt"]["recipes"] == 1, "the denominator is stated in its own block"
+    assert report["rebuilt"]["with_picture"] == 0
+    assert report["rebuilt"]["recipe_only"] == 1
+    assert report["rebuilt"]["most_a_solve_could_seat"] == 0
+    assert "with_picture" not in report["stored"], (
+        "`stored` counts the file after the upsert, which holds keys this pass never "
+        "regenerated, so a per-row count sitting in it invites a subtraction that is wrong"
+    )
+    assert (report["with_picture"], report["recipe_only"]) == (0, 1), (
+        "restated in `rebuilt` and not moved out of `counts`: a reader of either is right"
+    )
 
     (stored,) = candidate_ledger.read()
     assert stored["provenance"]["run"] == "gallery8"
@@ -351,6 +367,83 @@ def test_a_second_backfill_over_an_unchanged_pool_writes_the_same_bytes(isolated
     once = candidate_ledger.rows_path().read_bytes()
     candidate_ledger.backfill(log=lambda *_: None)
     assert candidate_ledger.rows_path().read_bytes() == once
+
+
+def _rebuilt(**overrides) -> dict:
+    """One backfill's counts, as [`rebuild._say_what_was_rebuilt`] reads them."""
+    counts = {
+        "recipes": 1500,
+        "with_picture": 1500,
+        "recipe_only": 0,
+        "off_regime": 0,
+        "rejected": 0,
+        "most_a_solve_could_seat": 1500,
+    }
+    return {**counts, **overrides}
+
+
+def test_a_backfill_states_an_upper_bound_on_seats_and_calls_it_one():
+    """The number a backfill can honestly answer, and the four refusals it cannot.
+
+    `with_picture` was said to be what a solve's pool is drawn from and it is not:
+    [`solve.pool`] refuses on seven rules, so a store whose rows are all pictured
+    and all off-regime would print a clean line, exit 0, and hand back the same
+    empty pool one refusal over. The intersection is taken in the rebuild loop —
+    the three answers it is already holding — and the line says out loud that it is
+    a ceiling rather than a count of seats.
+
+    No store and no rebuild here: the lines are a function of the counts, which is
+    what keeps this in the fast lane.
+    """
+    from fractal_wallpapers.curation.candidate_ledger import rebuild
+
+    said: list[str] = []
+    rebuild._say_what_was_rebuilt(
+        _rebuilt(with_picture=1200, most_a_solve_could_seat=1100), said.append
+    )
+    assert "1,200 with a picture" in said[0]
+    assert "at most 1,100" in said[1] and "UPPER BOUND" in said[1], (
+        "a ceiling named as one, so nobody reads it as the seats they are getting"
+    )
+    assert "veto" in said[1] and "no score" in said[1], "and names what it did not ask"
+    assert len(said) == 2, "1,100 of 1,500 is a healthy rebuild and warns about nothing"
+
+
+def test_a_rebuild_that_produced_nothing_seatable_names_the_repair_that_fits():
+    """The false summit, and the two shapes it comes in have different repairs.
+
+    A backfill reads the two decision stores and the pictures they point at and
+    **drives no engine**, so on a machine with tracked labels and no render leg ever
+    run it writes a healthy-looking row count where every row carries a null picture
+    — an observed rebuild came back 0 with a picture against 1,500 recipe-only,
+    exited 0, and left `curate headroom` reporting no candidates with everything
+    refused `no_picture`. A store whose rows are all pictured and all off-regime
+    arrives at the same empty pool and a hunt is the wrong answer to it: the places
+    are already found and the pictures already drawn, at the wrong geometry.
+    """
+    from fractal_wallpapers.curation.candidate_ledger import rebuild
+
+    nothing_drawn: list[str] = []
+    rebuild._say_what_was_rebuilt(
+        _rebuilt(with_picture=0, recipe_only=1500, most_a_solve_could_seat=0),
+        nothing_drawn.append,
+    )
+    pointer = " ".join(nothing_drawn[2:])
+    assert "curate hunt run" in pointer and "curate hunt merge" in pointer, (
+        "the advice that was correct and a dead end now names the leg that renders"
+    )
+    assert "drives no engine" in pointer, "and says why a second backfill cannot help"
+
+    drawn_at_the_wrong_regime: list[str] = []
+    rebuild._say_what_was_rebuilt(
+        _rebuilt(off_regime=1500, most_a_solve_could_seat=0), drawn_at_the_wrong_regime.append
+    )
+    other = " ".join(drawn_at_the_wrong_regime[2:])
+    assert "OFF-REGIME" in other and "`off_regime`" in other
+    assert "curate hunt" not in other, (
+        "a hunt is hours spent finding places this ledger already stands on, and the "
+        "pictures it would draw are the ones already here"
+    )
 
 
 def test_the_sidecar_folds_two_spellings_of_one_artifact_onto_one(monkeypatch):

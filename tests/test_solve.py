@@ -3243,3 +3243,166 @@ def test_a_pass_with_no_fine_bar_seats_exactly_what_it_seated_before():
     assert [row["key"] for row in unnamed["seated"]] == [row["key"] for row in explicit["seated"]]
     assert unnamed["objective"]["final"] == explicit["objective"]["final"]
     assert unnamed["population"] == explicit["population"]
+
+
+# --------------------------------------------------------------------------- #
+# A seating far short of `n`.
+# --------------------------------------------------------------------------- #
+def test_the_short_fill_bar_sits_under_the_fills_this_project_ships():
+    """The bar is about NOTICING and the pure function is where that is pinned.
+
+    `--n 100` seating 4 exited 0, wrote a full contact sheet and said so in one
+    line in the middle of a long log. The repair is a banner and a block, and the
+    thing that decides whether they appear is one comparison — so it is a function
+    with no pool, no store and no render behind it, which is what lets this guard
+    live in the fast lane and what keeps the constant from being repointed at
+    whatever the last pass happened to measure.
+    """
+    assert solve.SHORT_FILL_SHARE == 0.25
+    # The failure this exists to catch.
+    thin = solve.short_fill(4, 100)
+    assert thin is not None
+    assert (thin["asked"], thin["filled"], thin["bar"]) == (100, 4, 25.0)
+    assert thin["share"] == solve.SHORT_FILL_SHARE
+    # The two fills this project ships on purpose, which must stay silent: a
+    # `threads`-heavy pass at 484 of 1000, and a family on a `reachable` bar that
+    # comes in short by construction. A bar that fired on these would fire on
+    # nearly every production pass and stop being read.
+    assert solve.short_fill(484, 1000) is None
+    assert solve.short_fill(300, 1000) is None
+    # `>=` and not `>`, so a pass landing exactly on the bar is not short.
+    assert solve.short_fill(25, 100) is None
+    assert solve.short_fill(24, 100) is not None
+    # A pass that asked for no seats did not come up short of them.
+    assert solve.short_fill(0, 0) is None
+
+
+def test_a_short_seating_says_so_last_and_on_the_record_and_still_exits_normally():
+    """Both halves of the repair, and the half that is NOT part of it.
+
+    The banner closes `solve`'s own output; the block is on the record
+    so it survives into the written file rather than living only in a log somebody
+    scrolled past. **Nothing else moves** — no exception, no new refusal, and the
+    record is the same record with one key more, because a short seating is a
+    result here and this project's automation branches on exit status.
+    """
+    said: list[str] = []
+    pool = [candidate("a"), candidate("b"), candidate("c")]
+    record = solve.solve(pool, n=40, key=solve.JUDGE_KEY, log=said.append)
+
+    assert record["filled"] == 3, "three places, three seats, and nothing else to seat"
+    short = record["short_fill"]
+    assert (short["asked"], short["filled"], short["bar"]) == (40, 3, 10.0)
+    assert "484 of 1000" in short["short_fill_is"], (
+        "the note carries the precedent the bar was set against, so a later reader "
+        "moving it has to argue with the number rather than around it"
+    )
+    assert "SHORT FILL" in said[-1], (
+        "last of the lines `solve` itself says — which is NOT the last line of the run: "
+        "`curate solve run` goes on to print the record path, the render timings, the "
+        "autolevel rate, the sheet path and two blocks of indented JSON, which is why the "
+        "block on the record below is the half of this repair that survives being scrolled "
+        "past"
+    )
+    assert "not an error" in said[-1], (
+        "and it says so: a thin seating is a reading about the pool, and a caller "
+        "that started treating it as a failure would break every branch on exit status"
+    )
+    assert record["seated"] and record["objective"]["final"], "the gallery is still real"
+
+
+def test_a_pass_that_filled_enough_carries_no_short_fill_block_and_no_banner():
+    """`null` rather than a block saying nothing, and silence rather than a line.
+
+    A warning that fires on the ordinary case is a warning nobody reads, so the
+    ordinary case has to be provably silent — including a pass that filled every
+    seat it asked for.
+    """
+    said: list[str] = []
+    pool = [candidate(f"c{at:02d}", score=0.9 - at / 100) for at in range(6)]
+    record = solve.solve(pool, n=4, key=solve.JUDGE_KEY, log=said.append)
+    assert record["filled"] == 4
+    assert record["short_fill"] is None
+    assert not [line for line in said if "SHORT FILL" in line]
+
+
+def test_an_empty_ledger_names_the_render_leg_and_not_only_the_backfill():
+    """The false summit, written down.
+
+    `curate headroom` refuses and says to run a backfill; the backfill runs,
+    reports a healthy row count and exits 0; and headroom still reports nothing,
+    because a backfill reads the two decision stores and drives no engine, so on a
+    machine that has never rendered every row it writes carries a null picture and
+    comes straight back here refused `no_picture`. The advice was correct and a
+    dead end, so the refusal now names the leg that actually makes pictures.
+    """
+    with pytest.raises(solve.SolveRefused) as refusal:
+        solve.pool(rows=[], scores=[], log=quiet)
+    said = str(refusal.value)
+    assert "candidate-ledger backfill" in said, "the first step is still the first step"
+    assert "DRIVES NO ENGINE" in said, "and why it is not the whole of the answer"
+    assert "curate hunt run" in said and "curate hunt merge" in said, (
+        "the reader of this has an empty ledger and needs the command that fills it"
+    )
+
+
+def test_a_ledger_that_refused_itself_whole_is_a_different_state_from_an_empty_one():
+    """The branch the reported failure actually lands on.
+
+    `pool` counts `seen` once per row at the top of its loop, so a backfill that
+    wrote 1,500 pictureless rows leaves `seen` at 1,500 and the empty-ledger
+    refusal above never fires. What that machine got was `0 candidates; refused
+    {... 'no_picture': 1500}` and a seven-key tally to work out for itself. The
+    notice is a **string and not a raise**, because `curate headroom` is a census
+    that reports refusals as data and a solve over an empty pool seats nothing and
+    records that it did.
+    """
+    said = solve.empty_pool_notice({"no_picture": 1500, "rejected": 2})
+    assert "pool is EMPTY" in said and "1,502 row(s)" in said
+    assert "`no_picture` taking 1,500" in said, "the key to act on, named out of the seven"
+    assert "DRIVES NO ENGINE" in said and "curate hunt run" in said
+
+    # A swept picture is a DIFFERENT repair, which is the whole reason the two are
+    # counted apart: the row still names its JPEG, so the pictures can be put back
+    # without a hunt going looking for places the ledger already stands on.
+    swept = solve.empty_pool_notice({"picture_absent": 40})
+    assert "candidate-ledger re-render" in swept and "curate hunt" not in swept
+
+    # A refusal nobody can act on says so rather than inventing a command.
+    standing = solve.empty_pool_notice({"vetoed": 7})
+    assert "standing decision" in standing
+    assert "curate" not in standing, "there is no command that un-vetoes a person's `1`"
+
+    # Ties break on the order the loop refuses in, and a pool that refused nothing
+    # is not this state at all.
+    assert "`off_regime`" in solve.empty_pool_notice({"off_regime": 5, "no_score": 5})
+    assert solve.empty_pool_notice({"no_picture": 0}) is None
+
+
+def test_a_pool_of_pictureless_rows_says_which_refusal_emptied_it():
+    """End to end through `pool`, because the finding was about WHERE the line sits.
+
+    Synthetic rows and scores, so no store is read and nothing is rendered: a row
+    with a null picture never reaches the on-disk question, and a caller that hands
+    its own rows reads neither the veto store nor the spiral scores.
+    """
+    said: list[str] = []
+    rows = [
+        {
+            "key": f"row{at}",
+            "partition": "mandelbrot",
+            "location": {"key": f"place{at}"},
+            "recipe": {"mode": "smooth"},
+            "at_candidate_regime": True,
+            "picture": None,
+        }
+        for at in range(3)
+    ]
+    candidates, refused = solve.pool(rows=rows, scores=[], log=said.append)
+
+    assert candidates == [] and refused["no_picture"] == 3
+    assert "0 candidates; refused" in said[-2], "the tally is still the evidence"
+    assert "pool is EMPTY" in said[-1] and "`no_picture` taking 3" in said[-1], (
+        "and the line after it says which key in the tally to act on, which is what "
+        "the empty-ledger refusal could never say because it is never reached here"
+    )

@@ -819,9 +819,114 @@ def plan(
     at the candidate boundary: a hunt that ran out on a concatenated plan would
     have bought all of one leg and none of the other, which answers neither of the
     two questions it was sent to ask.
+
+    **Five refusals about the draw itself**, before either leg is drawn and stated
+    apart from each other because they are five different mistakes and a caller is
+    owed the flag actually at fault. They sit here rather than in [`run`] or in the
+    CLI handler for the reason `hunt_draw_flags` exists: a plan is the run with the
+    rendering left out, the two verbs take one description of the draw so they
+    cannot drift, and one site covers both.
     """
     from fractal_wallpapers.curation import colorize, draw_weights, mode_policy
     from fractal_wallpapers.palettes import dominance
+
+    # A count is a size, and the only sizes a draw has are zero and above. A
+    # negative one is not a smaller hunt: `spread` returns `[]` on `count <= 0` and
+    # `_leg` finds `0 >= -600` true on its first pass, so `--unconditional -600`
+    # walked through the both-zero refusal below — `not int(-600)` is False — and
+    # then planned exactly what a hunt asked for nothing plans. Asked **per flag**
+    # rather than folded into that refusal's `and`, because a negative beside a
+    # good count is the partial version and the worse one: the good leg runs, the
+    # record and the sheet read like a hunt that worked, and the leg the caller was
+    # counting on was never drawn at all. `--conditioned -600 --cell CELL` did
+    # refuse, but named the carrier table — `conditioned_maps` returns `[]` on a
+    # negative count and the refusal below reads that as a colour nothing carries,
+    # which sends a caller to look at the palette library over a typo in a number.
+    asked = (("--unconditional", int(unconditional)), ("--conditioned", int(conditioned)))
+    below = [f"`{flag} {count:,}`" for flag, count in asked if count < 0]
+    if below:
+        raise HuntRefused(
+            f"{' and '.join(below)}: a candidate count below zero is not a smaller hunt, it "
+            f"is a leg that draws nothing while the rest of the run reports success. A count "
+            f"is how many candidates to plan, so pass 0 to leave that leg out and a positive "
+            f"number to buy it."
+        )
+    # Both counts default to 0 apiece, so `--name h1 --budget 1200` — the shape the
+    # README taught until 2026-09-14 — asked for nothing and got it: a plan of zero,
+    # a record, an empty contact sheet, and exit 0 in under two seconds. Nothing
+    # downstream can catch that, because a plan of zero is indistinguishable from a
+    # budget that ran out at the first candidate; only here is the draw still
+    # describable as a draw rather than as a result. Reaching here both counts are
+    # zero or above, so this is the both-zero case and nothing else.
+    if not int(unconditional) and not int(conditioned):
+        raise HuntRefused(
+            "this hunt was asked for 0 unconditional and 0 conditioned candidates, so it "
+            "would plan nothing, render nothing, and report both legs as zero. The two "
+            "counts default to 0 apiece and a hunt is defined by what it buys: pass "
+            "`--unconditional COUNT` for breadth, `--conditioned COUNT --cell CELL` to aim "
+            "at one colour, or both."
+        )
+    # The same failure wearing the other hat, and named apart from it so a caller
+    # learns which mistake they made. This one is worse for being partial: the
+    # breadth leg runs on and the hunt looks like it worked, while the colour it was
+    # sent for was never asked of the carrier table at all. Asked as `> 0` and not
+    # as a truth test, so it stands on its own rather than on the sign refusal
+    # above having fired first: a negative count reaching a bare `if
+    # int(conditioned)` would be told to pass `--cell`, which is not its fault.
+    if int(conditioned) > 0 and not cell:
+        raise HuntRefused(
+            f"this hunt was asked for {int(conditioned):,} conditioned candidate(s) and names "
+            f"no cell to condition on, so the aimed leg would draw nothing while the breadth "
+            f"leg ran on and the record reported a hunt that worked. A conditioned draw IS a "
+            f"cell — its maps come from that cell's row in the carrier table — so pass "
+            f"`--cell CELL` beside `--conditioned`, or drop `--conditioned` and take the "
+            f"breadth leg alone."
+        )
+    # The mirror of the refusal above, and the reason that one is not enough on its
+    # own. `--cell` and `--work-order` are the aimed leg's entire description, and
+    # the leg is bought by `--conditioned`, which defaults to 0 — so
+    # `--unconditional 600 --cell dark_vivid_lime` spends the whole budget on
+    # breadth and reports a hunt that worked, while the colour it names is never
+    # asked of the carrier table. That reads worse than the both-zero case rather
+    # than better: something WAS drawn, so there is a record and a sheet to look at
+    # and nothing in either says the colour was not bought. Named for whichever was
+    # given, because a caller who wrote one of them meant the leg.
+    aimed_settings = [
+        f"`{flag}`" for flag, given in (("--cell", cell), ("--work-order", work_order)) if given
+    ]
+    if aimed_settings and int(conditioned) <= 0:
+        raise HuntRefused(
+            f"{' and '.join(aimed_settings)} describe(s) the conditioned leg and "
+            f"`--conditioned` is {int(conditioned):,}, so that leg was never bought: the "
+            f"breadth leg would spend the whole budget and the record would report a hunt "
+            f"that worked without the colour ever reaching the carrier table. Pass "
+            f"`--conditioned COUNT` to buy the leg these describe, or drop them to ask for "
+            f"the breadth leg alone."
+        )
+    # Its **own** refusal rather than a widening of the two above, because
+    # `--per-location` is a different kind of mistake: it is a divisor and not a
+    # size, so both counts can be exactly what the caller meant and every leg still
+    # draw nothing. A caller who passed `--per-location 0` is owed `--per-location`
+    # and not a lecture about `--unconditional`, which is the whole reason these are
+    # four messages instead of one. The mechanism is [`modes_for`], which samples
+    # `min(int(count), len(roster))` modes for a place: at 0 that is the empty list,
+    # so `_leg`'s inner loop never runs and `--unconditional 600 --per-location 0`
+    # planned 0 and logged both legs as zero. The place count below hides it rather
+    # than showing it, dividing by `max(1, per_location)` and so asking [`spread`]
+    # for a full leg's worth of places to give no candidates to.
+    # Below zero fails differently and no better: `random.sample` raises
+    # `ValueError('Sample larger than population or is negative')` three frames
+    # down, and a traceback is not a refusal — the CLI catches [`HuntRefused`] and
+    # prints it, and catches nothing else.
+    if int(per_location) < 1:
+        raise HuntRefused(
+            f"`--per-location {int(per_location):,}` gives each location "
+            f"{int(per_location):,} candidate(s), so every place drawn would be drawn for "
+            f"nothing and both legs would report zero however many candidates were asked "
+            f"for. It is how deep a hunt goes at one place, not how many places it visits, "
+            f"and the shallow end of it is 1 (the default is {PER_LOCATION}): pass 1 or more "
+            f"here and lower `--unconditional` or `--conditioned` if the leg is too big."
+        )
 
     maps = list(colorize.pool(seed) if pool is None else pool)
     # The mined roster, not the engine's production one and not `accepted()`
@@ -849,7 +954,11 @@ def plan(
         int(unconditional),
     )
     aimed: list = []
-    if conditioned and cell:
+    # `cell` is not tested alongside it any more: the refusals above have already
+    # settled that a count reaching here is positive and carries one, and testing
+    # it here instead is what let `--conditioned 200` with no `--cell` plan zero of
+    # them in silence.
+    if int(conditioned) > 0:
         drawn = conditioned_maps(str(cell), int(conditioned), maps, seed + 1)
         if not drawn:
             raise HuntRefused(

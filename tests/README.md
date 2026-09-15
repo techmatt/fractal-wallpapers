@@ -639,6 +639,35 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### silent_failures_ckpt125
+
+**Fast lane only, and that is the point of the entry.** `silent_failures_ckpt125`,
+2026-09-14. **Fast: 4,617 selected, 156 deselected — 4,773 collected — in 126.26 s
+(2:06).** Green, zero skips, zero failures. **+40 tests for +0.77 s** against the
+reading below, taken on the same box the same day.
+
+**No slow lane was taken, by Matt's instruction mid-prompt.** So this reading has no
+pair and the collected count rests on the fast lane's own selected-plus-deselected
+rather than on the two lanes meeting. It is a legal count under *What the fast-lane
+count means* and it is a weaker check: the drift that stood at 4,630 against a tree
+of 4,639 was caught by the lanes meeting, and nothing here would have caught it.
+What went unrun is 156 guards, chiefly `test_renderer_agreement.py`'s byte
+agreement — and no hunk in this prompt touches a render path, which is why the risk
+was low rather than absent.
+
+**Forty tests for three quarters of a second**, which is what this lane costs when
+the guards are parsing and arithmetic. Two things in that forty were nearly not:
+`tests/test_locations.py` gained a fixture that opens five tracked stores and reads
+**one line each** — 11 calls, 0.07 s at the slowest, against a sweep of those files
+that would have been seconds — and `test_every_caller_of_the_location_door_is_declared`
+arrived costing **2.05 s** because it `ast.parse`d all 226 files of the package. It
+was not marked slow to hide that; it was made cheap. A call that resolves to
+`locations.spec_of` needs the identifier written out somewhere in the file, so 211
+of the 226 are answered by a substring test and never parsed: **2.05 s → 0.18 s**,
+a 57× sibling gap closed to 4×. *A count is not a cost* refused to share the
+package sweep for 35 ms; this is the same trade at fifty times the price, and it
+went the other way for that reason.
+
 #### readme_overhaul_ckpt124
 
 **Both lanes, idle box, and they agree at 4,733.** `readme_overhaul_ckpt124`,

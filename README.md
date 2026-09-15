@@ -170,7 +170,7 @@ modes, palettes and depths. Three legs, all shaped plan, run, merge. See
 [the legs](src/fractal_wallpapers/curation/LEGS.md).
 
 ```
-fractal-wallpapers curate hunt  run --name h1 --budget 1200
+fractal-wallpapers curate hunt  run --name h1 --budget 1200 --unconditional 600
 fractal-wallpapers curate mine  run --name m1 --rate <measured> --budget 7200
 fractal-wallpapers curate depth run --name d1 --rate 0.35 --budget 5400
 fractal-wallpapers curate <leg> merge --name <name>

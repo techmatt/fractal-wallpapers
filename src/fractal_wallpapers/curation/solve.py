@@ -229,6 +229,15 @@ SCHEMA_NOTES: dict[str, str] = {
     "infeasible. A cell the pool cannot fill is a row in `shortfalls.cell_floors`. "
     "`null` is a pass that carried no colour floor: every record before 2026-09-09, "
     "and every themed pass since, a theme being one cell by construction",
+    "short_fill_is": "this pass seated fewer than solve.SHORT_FILL_SHARE of the seats "
+    "it was asked for, `bar` being that share of `asked`. A RESULT and never an error: "
+    "no stage was skipped, the exit status did not move, and the gallery, the record and "
+    "the contact sheet are all real. `null` is a pass that came in at or above the bar, "
+    "which is where every ORDINARY short seating here lands — a threads-heavy pass seats "
+    "484 of 1000 by design and a family on a `reachable` bar ships small on purpose, so "
+    "the bar sits well under both. What it catches is the pass that seated 4 of 100 "
+    "against a pool that had nothing in it. A record that does not name the field at "
+    "all was taken before 2026-09-14",
     "starved_are": "a floor above zero that went unfilled. Read `per_mode` for "
     "which: a mode with `clearing` above `seated` lost its seats to a rule named "
     "in `refused_by`, and one with `clearing` at `seated` had nothing left to seat",
@@ -446,6 +455,35 @@ SHOWN = 6
 #: quarter, of the seats and never of the pool: the question it answers is "which
 #: legs are placing the weakest wallpapers this gallery ships".
 BOTTOM_QUARTILE = 0.25
+
+#: How far under `n` a seating has to land before the leg says so loudly: **a
+#: quarter**. Below `SHORT_FILL_SHARE * n` filled seats, [`solve`] closes with a
+#: banner and puts a `short_fill` block on the record.
+#:
+#: ⚠ **It is a bar on NOTICING and never on accepting.** A short seating is a
+#: legitimate result here and this project runs them as a matter of course: the
+#: exit status does not move, no stage is skipped, and the gallery, the record and
+#: the contact sheet are written exactly as they would be at a full fill. The
+#: project's own automation branches on exit status, so a short pass that started
+#: failing would break every caller that treats "the pool could not fill this" as
+#: an answer.
+#:
+#: **Why it sits this far down.** Roughly half is the documented normal: a
+#: `threads`-heavy pass seats **484 of 1000** — 48% — and a family solving against
+#: a `reachable` bar comes in short by construction, because [`THEMED_BAR_FLOOR`]
+#: takes what the cell has and there is no padding branch. A bar anywhere near
+#: those fires on nearly every production pass, and a warning that fires on nearly
+#: every pass is a warning nobody reads. A quarter sits well clear of the 484 and
+#: still catches what this exists for: the `--n 100` run that seated **4** against
+#: a pool with nothing in it, wrote a full contact sheet, exited 0, and said so in
+#: one line in the middle of a long log.
+#:
+#: ⚠ **Do not repoint it at whatever the last pass measured.** It is not fitted to
+#: a pool and it moves with no pool; it is the gap between "this pool is thin",
+#: which is the ordinary reading, and "this pool is not there", which is the one a
+#: reader has to be stopped for. A pass that came in at 30% is a thin pool and the
+#: record's own `shortfalls` block is where that is read.
+SHORT_FILL_SHARE = 0.25
 
 #: How many seats the swap loop tries removing for one candidate. **Eight.**
 #:
@@ -725,6 +763,112 @@ class Candidate:
         return self.location if self.folded_into is None else self.folded_into
 
 
+#: The two commands that put pictures on this machine, spelled once because two
+#: places here have to say them: the refusal for an **empty ledger** and the
+#: notice for a pool that came back **empty with every row pictureless**. They
+#: are one answer to one question — *nothing in front of me can be seated and no
+#: re-read of a store will change that* — and a second spelling is a second
+#: answer to keep in step with `cli/curate_mine_commands.py`'s parser.
+RENDER_LEG = (
+    "`fractal-wallpapers curate hunt run --name <leg> --unconditional N` then "
+    "`fractal-wallpapers curate hunt merge --name <leg>`"
+)
+
+#: The order [`pool`]'s loop refuses in, which is what breaks a tie in
+#: [`empty_pool_notice`]: two refusals level on count read as the earlier one,
+#: because a row that would have been stopped by both was stopped by that one.
+_REFUSAL_ORDER = (
+    "niche_mode",
+    "rejected",
+    "vetoed",
+    "off_regime",
+    "no_picture",
+    "picture_absent",
+    "no_score",
+)
+
+#: What each of [`pool`]'s refusals is *fixed* by, for the one line it prints
+#: when the pool comes back empty. A refusal with no entry here is one nobody can
+#: act on — a person said no, or the roster does not buy the mode — and the
+#: notice names it and stops rather than inventing advice.
+#:
+#: ⚠ **`no_picture` and `picture_absent` have different answers and that is the
+#: point of counting them apart.** A row that was never drawn has no picture name
+#: to put back, so `re-render` cannot reach it and only a hunt can; a row that
+#: was drawn and swept still names its JPEG, so `re-render` is exactly the repair
+#: and a hunt would be a redundant leg of hours.
+_WHAT_UNSTICKS = {
+    "no_picture": (
+        "a row with no picture is a recipe and not a candidate — the diversity rule is read "
+        "off pixels — and re-running the backfill cannot change that, because a backfill "
+        "reads the two decision stores and DRIVES NO ENGINE. Pictures come from a render "
+        "leg: " + RENDER_LEG
+    ),
+    "picture_absent": (
+        "these rows still name their JPEG and the file is gone, which is `curate retention` "
+        "doing its job rather than anything broken. `fractal-wallpapers curate "
+        "candidate-ledger re-render` puts back the pictures the rows name; a hunt would be "
+        "hours spent finding places this ledger already stands on"
+    ),
+    "off_regime": (
+        "these rows were drawn under settings that are not the candidate regime, and a "
+        "score read at one geometry does not transfer to another. Nothing re-reads its way "
+        "out of that: the places have to be rendered again at the regime in force"
+    ),
+    "no_score": (
+        "the pictures are here and nothing has judged them, so the objective has no column "
+        "to read. `fractal-wallpapers curate candidate-ledger score` reads every picture "
+        "through the judge shipped now"
+    ),
+}
+
+
+def empty_pool_notice(refused: dict) -> str | None:
+    """The line [`pool`] adds when it hands back **no candidates at all**, or `None`.
+
+    ⚠ **This is the branch the false-summit message belongs on, and the
+    empty-ledger refusal above is NOT it.** The reported machine ran a backfill
+    that wrote 1,500 rows, every one of them pictureless; `seen` was 1,500, so the
+    empty-ledger refusal never fired, and `curate headroom` printed
+    `0 candidates; refused {...}` with the operator left to read a seven-key tally
+    and work out which key was the one that mattered. An empty ledger and a ledger
+    that refused itself whole are two different states and a caller has to be told
+    which it is in — so both say so, in their own words.
+
+    **A string and never an exception.** [`headroom`] is a census and reports
+    refusals as data; a solve over an empty pool seats nothing and says so on its
+    record. Turning this into a raise would make *the pool is thin* and *the pool
+    is not there* two different exit statuses in callers that have always had one.
+
+    The **dominant** refusal is named rather than all seven, because every one of
+    them is already in the tally on the line above and what the reader is missing
+    is which of them to act on. Ties break on [`_REFUSAL_ORDER`], which is the
+    order the loop refuses in, so a tie reads as the first rule that would have
+    stopped the row anyway. Not [`_WHAT_UNSTICKS`]: that one holds the four
+    refusals a command can answer, in no particular order, and reading the
+    tie-break off it would pick a different winner than the code does.
+    """
+    taken = {name: int(count) for name, count in (refused or {}).items() if int(count) > 0}
+    if not taken:
+        return None
+
+    def _ranked(name: str) -> tuple[int, int]:
+        at = _REFUSAL_ORDER.index(name) if name in _REFUSAL_ORDER else len(_REFUSAL_ORDER)
+        return taken[name], -at
+
+    worst = max(taken, key=_ranked)
+    line = (
+        f"[solve] ⚠ the pool is EMPTY: every one of the {sum(taken.values()):,} row(s) read was "
+        f"refused, `{worst}` taking {taken[worst]:,} of them. "
+    )
+    return line + _WHAT_UNSTICKS.get(
+        worst,
+        "that refusal is a standing decision about those rows rather than a state to repair — "
+        "a person said no, or the roster does not buy the mode — so a pool that is nothing but "
+        "those rows is a pool with nothing left in it to seat",
+    )
+
+
 def pool(
     rows=None, scores=None, artifact=None, spirals=None, vetoed=None, log=print
 ) -> tuple[list[Candidate], dict]:
@@ -846,10 +990,18 @@ def pool(
                 "families": tuple(colour.get("families") or ()),
             }
         )
+    # NO ROWS AT ALL, which is a different state from a ledger that refused itself
+    # whole — see [`empty_pool_notice`], which is where the second one is said. A
+    # reader here has nothing to look at, so this one raises.
     if not seen:
         raise SolveRefused(
             "the candidate ledger is empty, so there is nothing to choose over. Run "
-            "`fractal-wallpapers curate candidate-ledger backfill` first."
+            "`fractal-wallpapers curate candidate-ledger backfill` first — and read what "
+            "it says about `recipe_only`, because a backfill on its own is not enough to "
+            "get a seatable pool. It rebuilds rows out of the two decision stores and "
+            "DRIVES NO ENGINE, so on a machine that has never run a render leg every row "
+            "it writes carries a null picture and comes straight back here refused "
+            "`no_picture`. The pictures come from a hunt: " + RENDER_LEG + "."
         )
     present = candidate_ledger.present_pictures(projected)
     # The spiral verdict is a fact about a PLACE, so it is joined here, once, off
@@ -914,6 +1066,13 @@ def pool(
         )
     out.sort(key=lambda candidate: (-candidate.score, candidate.key))
     log(f"[solve] {len(out):,} candidates; refused {refused}")
+    if not out:
+        # AFTER the tally and not instead of it: the tally is the evidence and
+        # this says which key in it to act on. `0 candidates; refused {...}` was
+        # the whole of what a machine whose every row was pictureless got told.
+        notice = empty_pool_notice(refused)
+        if notice is not None:
+            log(notice)
     return out, refused
 
 
@@ -3059,6 +3218,11 @@ def solve(
         },
         "filled": gallery.filled,
         "unfilled": n - gallery.filled,
+        # On the record and not only in the closing log line, because a log line is
+        # a thing a caller scrolls past: the one-line summary said "4 of 100" in
+        # the middle of a long run and the operator read the contact sheet instead.
+        # `null` on a pass that filled enough — see [`short_fill`].
+        "short_fill": short_fill(gallery.filled, n),
         "seated": seated_rows,
         "attribution": placement,
         "shortfalls": _shortfalls(gallery, rule, modes, n, held_floors, cleared, refused),
@@ -3083,7 +3247,62 @@ def solve(
         f"{block['below_the_floor_count']} below a floor "
         f"{'of ' + str(flat) if flat is not None else 'set per mode'}"
     )
+    # Last of the lines THIS function says, which is worth having and is not the
+    # same as the last line of the run: `curate solve run` goes on to print the
+    # record path, the render timings, the autolevel rate, the contact sheet path,
+    # its own summary, `objective.final` and `rejection.reasons` — tens of lines of
+    # indented JSON. **So the banner is not load-bearing on its own**, and that is
+    # why `short_fill` is on the record as well: the record is the half that
+    # survives being scrolled past. The count was already in the summary line above
+    # and that was not enough — a seating of 4 of 100 wrote a full contact sheet and
+    # exited 0, and the one line saying so was in the middle of a long log.
+    short = record["short_fill"]
+    if short is not None:
+        log(
+            f"[solve] ⚠ SHORT FILL: {short['filled']} of {short['asked']} seat(s), under "
+            f"the {short['bar']:g} that solve.SHORT_FILL_SHARE puts the notice bar at. "
+            "This is a RESULT and not an error — nothing was skipped, the record and the "
+            "contact sheet below are real, and the exit status is unchanged — but a "
+            "gallery this far short is a gallery about the POOL rather than about the "
+            "rules. Read `shortfalls` and `rejection.reasons` on the record before "
+            "shipping it."
+        )
     return record
+
+
+def short_fill(filled: int, n: int) -> dict | None:
+    """The `short_fill` block, or `None` for a pass that filled enough.
+
+    One pure arithmetic question — *did this leg seat fewer than*
+    [`SHORT_FILL_SHARE`] *of what it was asked for* — kept apart from [`solve`] so
+    that the bar can be tested without a pool, a store or a render. A solve is the
+    pool-holding process on this box and a guard that had to run one to read this
+    number would be a guard nobody could put in the fast lane, which is how a bar
+    like this drifts.
+
+    **It decides nothing.** Nothing downstream branches on the answer: the seats
+    are already chosen when this is asked, the record is written either way, and
+    the exit status is the same. What it produces is a block on the record and the
+    banner [`solve`] closes with — see [`SHORT_FILL_SHARE`] for why the bar is
+    where it is and why moving it to meet a measurement is the wrong repair.
+
+    `n` at or below zero has no share to fall under, so nothing is claimed about
+    it: a pass that asked for no seats did not come up short of them.
+    """
+    if int(n) <= 0:
+        return None
+    bar = SHORT_FILL_SHARE * float(n)
+    if int(filled) >= bar:
+        return None
+    return {
+        "of": "this pass seated a small fraction of the seats it asked for. It is a "
+        "reading and not a refusal: nothing was skipped and the exit status did not move",
+        "asked": int(n),
+        "filled": int(filled),
+        "share": SHORT_FILL_SHARE,
+        "bar": bar,
+        "short_fill_is": SCHEMA_NOTES["short_fill_is"],
+    }
 
 
 def _spiral_block(gallery, cleared, kept, viewed, cap: float | None) -> dict:
@@ -4429,6 +4648,8 @@ __all__ = [
     "THEMED_BAR_FLOOR",
     "THEMED_BAR_MULTIPLE",
     "BAR_FROM",
+    "RENDER_LEG",
+    "SHORT_FILL_SHARE",
     "BAR_FROM_FLOOR_BELOW",
     "BAR_FROM_FLOOR_UNREACHABLE",
     "BAR_FROM_REACHABLE",
@@ -4484,6 +4705,7 @@ __all__ = [
     "ordered_by",
     "ranking_for",
     "read_record",
+    "empty_pool_notice",
     "explained",
     "rejection",
     "release_regime",
@@ -4491,6 +4713,7 @@ __all__ = [
     "rule_for",
     "samples",
     "seed",
+    "short_fill",
     "solve",
     "solve_dir",
     "strongest_clusters",

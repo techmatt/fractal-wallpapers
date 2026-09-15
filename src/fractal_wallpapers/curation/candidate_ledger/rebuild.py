@@ -142,6 +142,7 @@ def backfill(recolour: bool = False, log=print) -> dict:
             "duplicate_renders": 0,
             "off_regime": 0,
             "rejected": 0,
+            "most_a_solve_could_seat": 0,
             "recoloured": 0,
             "colour_carried": 0,
             "colour_missing": 0,
@@ -172,7 +173,8 @@ def backfill(recolour: bool = False, log=print) -> dict:
         every_row = [source for rows_ in made for source in rows_]
         primary = made[0][0]
         counts["duplicate_renders"] += len(made) - 1
-        if not recipes.is_candidate_regime(recipe):
+        at_regime = recipes.is_candidate_regime(recipe)
+        if not at_regime:
             counts["off_regime"] += 1
         rejected = next(
             (source.get("rejected") for source in every_row if source.get("rejected")), None
@@ -180,6 +182,12 @@ def backfill(recolour: bool = False, log=print) -> dict:
         counts["rejected"] += bool(rejected)
 
         picture = next((p for p in (_picture_of(rows_[0]) for rows_ in made) if p.is_file()), None)
+        # The three of [`solve.pool`]'s refusals this loop is already holding the
+        # answers to, intersected HERE rather than left for a reader to subtract.
+        # The three counts apart do not compose — a pictureless row may also be
+        # off-regime — so a report that printed them beside each other would be
+        # inviting arithmetic that is wrong in the reader's favour.
+        counts["most_a_solve_could_seat"] += int(at_regime and picture is not None and not rejected)
         colour, how = _colour_for(key, picture, known, recolour)
         counts[how] += 1
         flat, from_where = _texture_flat_for(recipe, known.get(key) or {})
@@ -219,20 +227,105 @@ def backfill(recolour: bool = False, log=print) -> dict:
     counts["with_picture"] = sum(1 for stored in rows if stored["picture"])
     counts["recipe_only"] = counts["recipes"] - counts["with_picture"]
     written = door_module.merge(rows, scores, log=log)
+    _say_what_was_rebuilt(counts, log=log)
     return {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "rows_path": written["rows_path"],
         "scores_path": written["scores_path"],
+        # ⚠ **The FILE after the upsert, and not what this backfill rebuilt.**
+        # [`door.merge`] ends at [`records.upsert_file`], which reports every key
+        # in the file — including rows this scan could not reproduce, which is
+        # ordinary on a store whose decision rows went to the archive tier. So
+        # `rows` is not the denominator of anything in `rebuilt` below, and the
+        # two blocks are kept apart precisely so nobody subtracts one from the
+        # other: a store reading `rows: 128,368` against `with_picture: 16,006`
+        # does **not** have 112k pictureless rows, it has 112k rows this pass did
+        # not look at.
         "stored": {
             "rows": written["ledger"]["rows"],
             "new": written["ledger"]["new"],
             "scores": written["scores"]["rows"],
             "scores_new": written["scores"]["new"],
         },
+        # Restated here and not only in the `**counts` splat below, because the
+        # numbers that say a rebuild produced nothing seatable arrived last inside
+        # a twenty-five key object nobody scrolls to, and a healthy `recipes` was
+        # the first thing a reader saw. One block, one population, and `of` says
+        # which population in the record itself rather than in a comment a reader
+        # of the JSON never sees.
+        "rebuilt": {
+            "of": "the rows THIS pass regenerated out of the decision stores, which is "
+            "what every count here is over — see `stored` for the file after the upsert",
+            "recipes": counts["recipes"],
+            "with_picture": counts["with_picture"],
+            "recipe_only": counts["recipe_only"],
+            "off_regime": counts["off_regime"],
+            "rejected": counts["rejected"],
+            "most_a_solve_could_seat": counts["most_a_solve_could_seat"],
+        },
         "recorded": written["recorded"],
         **counts,
     }
+
+
+def _say_what_was_rebuilt(counts: dict, log=print) -> None:
+    """The closing lines: what this pass rebuilt, and the most of it a solve could seat.
+
+    **An UPPER BOUND and never a seat count**, which is the correction that
+    matters here. `with_picture` alone was said to be "what a solve's pool is drawn
+    from" and it is not: [`solve.pool`] refuses on seven rules and a picture is one
+    of them, so a store whose rows are all pictured and all off-regime prints a
+    clean line, exits 0, and hands the operator the same empty pool one refusal
+    over. What this can honestly answer is the three refusals the rebuild loop
+    already holds the answers to — pictured, at the candidate regime, unrejected —
+    and it says out loud that a veto, a niche mode, a swept picture and a missing
+    score are four more it never asked.
+
+    Why say anything at all: a rebuild reads the decision stores and the pictures
+    they point at and **drives no engine**, so on a machine that has never run a
+    render leg every row it writes carries a null picture. An observed rebuild came
+    back 0 with a picture against 1,500 recipe-only, exited 0, and left the operator
+    to discover from [`headroom`] that the pool was empty.
+
+    The pointer fires when the seatable rows are the **minority** of what the pass
+    produced, which needs no fitted bar to justify: if most of a rebuilt ledger
+    cannot be seated, the reader is about to walk into that dead end whatever the
+    exact share is. Which pointer depends on what took the rows, because a
+    recipe-only row and an off-regime row have different repairs and only one of
+    them is a render leg's worth of hours.
+    """
+    log(
+        f"[ledger] {counts['recipes']:,} recipe(s) rebuilt: {counts['with_picture']:,} with a "
+        f"picture on this machine, {counts['recipe_only']:,} recipe-only, "
+        f"{counts['off_regime']:,} off-regime, {counts['rejected']:,} rejected"
+    )
+    log(
+        f"[ledger] at most {counts['most_a_solve_could_seat']:,} of them could be seated — "
+        "pictured, at the candidate regime and unrejected. An UPPER BOUND: a solve also "
+        "refuses a veto, a niche mode, a named picture no longer on disk and a row with no "
+        "score, and a backfill asks none of those four"
+    )
+    if counts["most_a_solve_could_seat"] * 2 >= counts["recipes"]:
+        return
+    if counts["recipe_only"] >= counts["off_regime"]:
+        log(
+            "[ledger] ⚠ most of this ledger is RECIPE-ONLY, and a recipe-only row cannot be "
+            "seated: the diversity rule is read off pixels, so a solve refuses it as "
+            "`no_picture` and `curate headroom` reports no candidates. A backfill cannot fix "
+            "that — it reads the two decision stores and drives no engine, so it can only "
+            "ever hand back the pictures that are already here. Pictures come from a render "
+            "leg: `fractal-wallpapers curate hunt run --name <leg> --unconditional N` then "
+            "`fractal-wallpapers curate hunt merge --name <leg>`"
+        )
+        return
+    log(
+        "[ledger] ⚠ most of this ledger is OFF-REGIME: the pictures are here and they were "
+        "drawn under settings that are not the candidate regime, so a solve refuses them as "
+        "`off_regime` — a score read at one geometry does not transfer to another. Nothing "
+        "re-reads its way out of that and a second backfill will report the same: the places "
+        "have to be rendered again at the regime in force"
+    )
 
 
 def _named(source: dict) -> dict:
