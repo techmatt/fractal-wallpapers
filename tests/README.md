@@ -325,6 +325,42 @@ modules plus six test-level ones. Nothing was wrong with the tree, `test_colorma
 was never the variable, and no test had been added or removed — the interpreter
 was short two gigabytes of CUDA wheels and the lane had no way to say so.
 
+### An extra reaches a lane two ways, and they are different faults
+
+This is what had CI red for twenty-four consecutive runs, and the two halves want
+different fixes. Found 2026-09-15 by masking `torch`, `timm` **and `PIL`** at
+`sys.meta_path` and running `--slow` — the previous diagnosis masked the first two
+only, saw eight failures, and missed the one that mattered.
+
+**A module-level import aborts the whole lane, not its own file.** `pytest` reports
+an uncollectable module as a collection error and stops: `Interrupted: 3 errors
+during collection`, in 3.62 s, no test executed. Three modules did a bare `from PIL
+import Image` — `test_flatness.py` from 2026-08-28, `test_label_round_trip.py` and
+`test_repeat_ab.py` from 2026-09-11 — and the `check` jobs on ubuntu had been
+exiting 2 ever since. `test_label_round_trip.py`'s own docstring says *"It runs in
+CI"*; it had not, since the day it landed. This half **is** visible in the source,
+so `test_lanes.py` sweeps every test module for it and the fix is the
+`pytest.importorskip` thirteen modules already carry.
+
+**A call-time import is visible nowhere.** Sixteen modules under `src/` carry a lazy
+`import torch` inside a function body, so an extra arrives through production code
+the test never names — `test_renderer_agreement.py`'s six parametrizations reach one
+four calls deep, and every module they import resolves clean under the mask. No
+`importorskip` and no sweep of `tests/` can cover that, which is why
+`conftest.pytest_runtest_call` catches `ModuleNotFoundError` for a genuinely-absent
+optional dependency and skips. On a `.[dev,models]` install nothing ever raises and
+the hook is inert.
+
+**And most of it was not a guard problem at all.** 113 of the 118 failures were
+`PIL`, because `pillow` sat in `models` and `solve` and not in `dev`. `dev` is the
+suite's install by its own docstring, the suite does not run without pillow, and
+pillow is three megabytes against the `models` extra's two gigabytes — so `dev`
+names it now, and those 113 tests **run** on CI rather than skipping. `numpy` went
+with it: `scipy` requires `numpy<2.8,>=2.0.0`, so the lane had always had it by
+accident of a dependency that never said so. What stays outside `dev` is `torch`,
+`torchvision` and `timm`, and `cli.EXTRA_FOR` less `dev` is where both guards read
+their population from rather than a list typed here.
+
 ## Shared readings of the tracked records
 
 `conftest.py` holds session-scoped fixtures over the records this repository
@@ -407,6 +443,30 @@ census to a guard's high-water mark. Its redirect is **autouse**
 to `prune` and not to whichever tests happen to call it today; the two guards that
 mean to read the tracked log take the session-scoped `tracked_ratchet_log` fixture
 and pass the path in, which is one binding rather than an un-patch.
+
+### The supply sidecar is refused for every test, 2026-09-15
+
+The second bullet above fixed three files that were reading this machine's supply
+sidecar through the prune. It did not close the hazard, because the hazard was
+never a property of those three files: `test_forced.py` walked straight back into
+it by letting `solve.solve` resolve its own seating order, which reaches
+`solve.ranking_for` → `curation.rank_key` → `intake.read_scores`. That test passed
+here and failed on CI's `models` job, which is the exact shape of a test that is
+not testing the tree — `artifacts/curation/supply_scores.jsonl` is untracked, is
+the output of a harvest, and exists on one machine.
+
+`conftest.no_live_supply_sidecar` is autouse for the same reason
+`no_tracked_ratchet` is: the hazard belongs to the door. **It redirects one path
+and not the accessor** — only the answer that *is* this machine's live sidecar is
+swapped for one that is not there, so a test that moved `HOT_ROOT` to its own
+`tmp_path` still reads the store it just wrote. Replacing the accessor outright was
+the first spelling and it takes `test_curation_intake.py`'s own three-row store
+away with it, which is this section's whole subject arriving from the other side.
+
+What a test should do instead is hand the order in — `ranking_for`'s docstring says
+so in terms: *a caller with an order already in hand passes it straight to
+`solve(order=...)` and never reaches here*. Doing that to `test_forced.py` took it
+from a slow-lane store read to **0.09 s**, and it left the slow lane.
 
 ### The backstop hashes every tracked manifest twice a session
 
@@ -640,6 +700,35 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### ci_red_ckpt125
+
+`ci_red_ckpt125`, 2026-09-15, idle box, `.[dev,models]` with a release engine.
+**Fast: 4,676 of 4,676 in 135.26 s (2:15)**, 155 deselected. **Slow: 4,831 of 4,831
+in 492.99 s (8:12).** Both green, zero skips, zero failures, **and the two lanes
+agree at 4,831** — which closes the ⚠ below, since that half-pair's 4,667 plus eight
+new guards plus one test changing lanes is exactly this.
+
+**One test moved slow → fast and the held-back count fell to 155.**
+`test_forced.py::test_forcing_offers_a_row_first_and_the_rules_still_refuse_it` was
+resolving its seating order over this machine's supply sidecar; handing the order in
+took it to **0.09 s**, which is arithmetic and does not earn the mark.
+
+**The slow lane fell 15.8 s against the 508.79 s below while gaining ten tests**, and
+the reading is left attributed only as far as it was measured. The plausible cause is
+`conftest.no_live_supply_sidecar` generalizing that same fix — no test reads
+`supply_scores.jsonl` any more, and *Where the time goes* prices that read at 4.5–10 s
+for each of `test_ledger_tracking`'s merges by itself. ⚠ **No profile was taken either
+side**, so this is a lead for whoever next asks where the slow lane's time goes, not a
+finding. It is the right shape for one: a store that stopped being read, which is the
+first of the three questions this file says to ask.
+
+The masked companion reading, which is the one this prompt existed for: on a
+`sys.meta_path` mask standing in for `.[dev]` — `torch`, `torchvision` and `timm`
+refused, `numpy` and `pillow` present — the full lane reads **4,735 passed, 28
+skipped, 0 failed in 468.51 s**. At HEAD before the fix the same mask with `PIL` also
+refused read **3 collection errors aborting the run in 3.62 s**, and with
+`--continue-on-collection-errors`, **79 failed, 39 errors, 4,555 passed**.
 
 #### family_slot_sizing_ckpt125
 

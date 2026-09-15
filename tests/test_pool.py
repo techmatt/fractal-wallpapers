@@ -314,3 +314,30 @@ def test_a_record_round_trips_through_its_own_directory(tmp_path, monkeypatch):
     assert solve.read_record("pilot")["schema"] == solve.SCHEMA
     with pytest.raises(solve.SolveRefused, match="no record"):
         solve.read_record("never-run")
+
+
+def test_a_solve_name_that_already_holds_a_record_is_refused(tmp_path, monkeypatch):
+    """★ What a second pass under one name destroys is the first pass's decision,
+    and nothing is raised. `20260902T161757Z` and `20260902T164622Z` both named
+    `solve/tentative_n1000` and the earlier one's `config`, `shortfalls` and
+    `diversity_refusals` are gone — its rows, manifest and page survived, being
+    stamped, so nothing looked broken."""
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path))
+    solve.write_record("shared", {"schema": solve.SCHEMA, "filled": 1})
+
+    with pytest.raises(solve.SolveRefused, match="written once and never over"):
+        solve.write_record("shared", {"schema": solve.SCHEMA, "filled": 2})
+
+    assert solve.read_record("shared")["filled"] == 1, "the first decision stands"
+
+
+def test_a_run_replacing_its_own_record_says_so(tmp_path, monkeypatch):
+    """The one caller that means it: `curate solve run` writes before its release
+    leg and again after it, so the seats carry their rendered pictures. A flag it
+    has to pass, rather than a rule that bends for whoever wrote last."""
+    monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path))
+    solve.write_record("n1000", {"schema": solve.SCHEMA, "filled": 1})
+
+    solve.write_record("n1000", {"schema": solve.SCHEMA, "filled": 2}, over=True)
+
+    assert solve.read_record("n1000")["filled"] == 2
