@@ -497,8 +497,9 @@ def write_scores(rows) -> tuple[Path, int, int]:
 RETAIN_PER_PAIR = 5
 
 
-#: Why a row survives [`prune`]. The first is [`retention.RANKED`]; the five
-#: after it are the protections, and each one keeps a row the rank let go.
+#: Why a row survives [`prune`]: it is in the top [`RETAIN_PER_PAIR`] of its pair.
+#: [`RETAINED_PROTECTIONS`] are the five that keep a row this one did not, and
+#: [`RETAINED_FAMILY`] is the rank's second keeping verdict, counted after them.
 RETAINED_RANKED = "ranked"
 
 
@@ -524,13 +525,55 @@ RETAINED_FITTED = "named_by_the_rank_key_population"
 RETAINED_TENTATIVE = "seated_in_a_tentative_gallery"
 
 
-RETAINED_REASONS = (
-    RETAINED_RANKED,
+#: A row the top-[`RETAIN_PER_PAIR`] let go and the **family allowance** kept:
+#: the best-ranked row of its pair dominant in a colour family none of the kept
+#: five is dominant in. [`curation.retention.FAMILY_ALLOWANCE`] is the rule and
+#: the argument for it; this is its spelling in a prune's own tally.
+#:
+#: **Not a protection**, and the difference is not a formality. The five below
+#: keep a row the rank let go because something outside the ranking is holding
+#: it — a seat, a verdict, a fit — and each one is answered off another store.
+#: This is the *rank term itself* keeping a second row at one pair, decided off
+#: the rows and their values and nothing else, which is why it is applied in
+#: [`retention.decide`] where the ranking is and counted here beside it.
+RETAINED_FAMILY = "best_in_a_family_the_ranked_five_miss"
+
+
+#: The five things that keep a row whatever the rank says, as their own tuple.
+#:
+#: **Named rather than sliced.** This was `RETAINED_REASONS[1:]` at four sites
+#: and the slice *meant* "the protections" at every one of them, so a sixth
+#: reason that is not a protection — [`RETAINED_FAMILY`] — would have been read
+#: as one by all four, silently: [`sweep.prune`] would have counted a
+#: family-kept row as saved by a protection, and `curation.rotation` would have
+#: asked [`rotation.protections`] for a reference set nothing fills.
+RETAINED_PROTECTIONS = (
     RETAINED_SEATED,
     RETAINED_REJECTED,
     RETAINED_LABELED,
     RETAINED_FITTED,
     RETAINED_TENTATIVE,
+)
+
+
+#: Every reason a row survives a prune, in the order a prune counts them: the
+#: rank, then [`RETAINED_PROTECTIONS`], then the family allowance. First one
+#: wins, so `kept_because` adds up to the rows kept rather than to the reasons.
+#:
+#: **[`RETAINED_FAMILY`] is LAST and that is what makes its count mean
+#: something.** A protected row is one the rank let go and a seat or a verdict
+#: kept, so it sits below the top keep — which is exactly where the allowance
+#: looks. Counted first, the allowance would take a share of every protection's
+#: count on the first prune after it landed, breaking the comparability of a
+#: series this project reads across months, and its own count would be *rows it
+#: reached* rather than rows it bought. Counted last, `kept_because[<this>]` is
+#: exactly the rows in the store that nothing else was keeping — which is the
+#: number [`retention.FAMILY_ALLOWANCE`]'s +14,933-row ceiling is about, and the
+#: number `sweep.write_kept_for_a_family` writes a row for.
+RETAINED_REASONS = (
+    RETAINED_RANKED,
+    *RETAINED_PROTECTIONS,
+    RETAINED_FAMILY,
 )
 
 

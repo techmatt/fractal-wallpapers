@@ -245,6 +245,14 @@ wins in `present_pictures` and `rehome` plus one sampled fixture — and the fas
 did not move, because all three were slow-lane costs. The count is unchanged either
 way: a sample size is not a test.
 
+⚠ **This figure is one pair stale again and the tree is at 4,840.**
+`consolidate_ckpt125` added 9 fast-lane guards on 2026-09-15 — seven for the family
+allowance, two that `test_schema_notes` derives from a new record site and its note
+— and read **4,685 fast in 135.77 s**, zero skips. Matt said skip the slow lane, so
+no pair was taken and the figure above was **deliberately not repointed**. The fast
+lane did not move: +9 guards for +0.17 s, all of it arithmetic over stub rows.
+**Take the pair and repoint this on the next slow lane.**
+
 This closes `family_slot_sizing_ckpt125`'s ⚠, which asked for exactly this pair: its
 half-pair 4,667 is in the arithmetic above as 4,667 + 8 new guards + 1 test that
 changed lanes. **`test_forced` moved slow → fast**, which is why the held-back count

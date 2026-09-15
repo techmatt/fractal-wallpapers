@@ -75,3 +75,9 @@ target/
 __pycache__/
 *.egg-info/
 .venv/
+# `uv sync` is the documented install path and it writes this into the checkout,
+# so a fresh clone grows a lockfile in a repository whose `README.md` says none
+# is tracked — see its *Install*. One line makes that claim enforce itself
+# instead of resting on the reader noticing the prose. Toolchain noise, beside
+# the rest of it: the `artifacts/` hole above is per-stamp and is untouched.
+/uv.lock

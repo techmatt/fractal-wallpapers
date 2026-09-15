@@ -1093,7 +1093,7 @@ def _pair_of_rows(isolated, place="one"):
     return _rows_at(isolated, ("keyed", "keyed"), ("indexed", "0042"), place=place)
 
 
-def _rows_at(isolated, *named, place="one"):
+def _rows_at(isolated, *named, place="one", families=None):
     """`(key, picture stem)` pairs into rows at one (location, mode).
 
     [`_pair_of_rows`]'s body, taken apart from it so a guard that needs a third
@@ -1101,6 +1101,11 @@ def _rows_at(isolated, *named, place="one"):
     row carries a colour block, because the displacement list writes `cells` and
     `families` off it and a fixture with no colour would guard those two columns
     with `[]` on every row.
+
+    `families` is `{key: [family]}` for a guard that needs the rows to differ in
+    colour — the family allowance is the only rule that reads them apart — and
+    unsaid every row carries the same block it always has, so the allowance
+    cannot bind and the guards written before it read the rank alone.
     """
     from fractal_wallpapers import paths
 
@@ -1122,7 +1127,7 @@ def _rows_at(isolated, *named, place="one"):
                     # Not the union of the cells above, which is the whole reason
                     # both columns travel: `teal` here and `cyan` from a summed
                     # mass no cell of which leads.
-                    "families": ["teal", "cyan"],
+                    "families": list((families or {}).get(key, ["teal", "cyan"])),
                 },
             )
         )
@@ -1321,6 +1326,129 @@ def test_a_prune_that_took_nothing_writes_no_displacement_file(isolated):
     assert again["rows_dropped"] == 0
     assert again["displaced"] == {}
     assert len(sorted(sweep.displaced_dir().glob("*.jsonl"))) == 1
+
+
+def test_a_prune_writes_down_which_rows_the_FAMILY_ALLOWANCE_kept(isolated):
+    """The other half of what a prune decided, and the reason it is a file.
+
+    `retention.FAMILY_ALLOWANCE` keeps a row the rank let go, so after the
+    transaction that row is in the store looking exactly like a row the rank
+    kept — and the question this store will be asked is whether the rule earned
+    the 3.3% it can cost, which is a question about *which* rows and *which*
+    colours. A count cannot answer it and the pair's kept five, which is what
+    `for_family` is measured against, are gone by the next prune.
+    """
+    import json
+
+    from fractal_wallpapers.curation import retention
+    from fractal_wallpapers.curation.candidate_ledger import store, sweep
+
+    # Two rows at one pair and a keep of 1, so the rank takes one and lets the
+    # other go; the one it lets go is the pair's only `lime`, so the allowance
+    # keeps it. Neither row is read by the judge, so both rank last and the tie
+    # falls to the key — which puts `indexed` first and `keyed` below the cut.
+    rows = _rows_at(
+        isolated,
+        ("keyed", "keyed"),
+        ("indexed", "0042"),
+        families={"indexed": ["teal"], "keyed": ["lime"]},
+    )
+    candidate_ledger.write(rows)
+
+    record = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert record["rows_dropped"] == 0, "the rank let one go and the allowance kept it"
+    assert record["kept_because"][store.RETAINED_RANKED] == 1
+    assert record["kept_because"][store.RETAINED_FAMILY] == 1
+    assert sum(record["kept_because"].values()) == record["rows_kept"], (
+        "every kept row is counted under exactly one reason"
+    )
+    assert record["displaced"] == {}, "nothing was taken, so there is no displacement list"
+    assert {str(row["key"]) for row in candidate_ledger.read()} == {"keyed", "indexed"}
+
+    held = [
+        json.loads(line)
+        for line in sorted(sweep.family_kept_dir().glob("*.jsonl"))[0]
+        .read_text(encoding="utf-8")
+        .splitlines()
+    ]
+    assert len(held) == 1
+    assert held[0]["key"] == "keyed"
+    assert held[0]["why"] == store.RETAINED_FAMILY
+    assert held[0]["for_family"] == ["lime"], (
+        "the family it EARNED its row for, which is what the rule is answerable on — "
+        "not the whole of `families`, which a later reader could get off the row"
+    )
+    assert held[0]["families"] == ["lime"]
+    # Enough of the row to find the picture again, as the displacement list carries.
+    assert held[0]["location"] and held[0]["mode"] and held[0]["picture"]
+    assert record["family_allowance"]["rows"] == 1
+    assert record["family_allowance"]["reached_a_protected_row"] == 0
+    assert record["family_allowance"]["families"] == {"lime": 1}
+    assert retention.kept(retention.FAMILY), "and the verdict keeps the picture with the row"
+
+
+def test_a_family_kept_row_a_protection_was_holding_anyway_is_not_what_the_rule_COST(isolated):
+    """**The count would otherwise lie, and it would lie worst on the first prune
+    after the rule landed.**
+
+    A protected row is one the rank let go and a seat, a verdict or a fit kept —
+    so it sits below the top keep, which is exactly where the allowance looks. The
+    rule therefore *reaches* rows it did not buy, and a whole store of them at
+    once the first time it runs. The verdict is still right, and
+    `saved_by_a_protection` correctly stops counting such a row; what must not
+    happen is `owed` counting it, because `owed` is the number the +14,933-row
+    ceiling is about.
+    """
+
+    from fractal_wallpapers.curation.candidate_ledger import store, sweep
+
+    rows = _rows_at(
+        isolated,
+        ("keyed", "keyed"),
+        ("indexed", "0042"),
+        families={"indexed": ["teal"], "keyed": ["lime"]},
+    )
+    # The row the rank drops carries a human rejection, which keeps it whatever
+    # the rank says — so the store holds it with or without the allowance.
+    rows = [{**row, "rejected": True} if str(row["key"]) == "keyed" else row for row in rows]
+    candidate_ledger.write(rows)
+
+    record = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert record["kept_because"][store.RETAINED_FAMILY] == 0, (
+        "counted after the five, so this reason counts what the rule BOUGHT"
+    )
+    assert record["kept_because"][store.RETAINED_REJECTED] == 1, (
+        "the rejection was holding it before the allowance existed and still is — a "
+        "count this project reads across months does not move because a rule landed"
+    )
+    assert record["saved_by_a_protection"][store.RETAINED_REJECTED] == 1
+    assert record["family_allowance"]["rows"] == 0
+    assert record["family_allowance"]["reached_a_protected_row"] == 1, (
+        "reached, and not bought — the record says so rather than staying silent"
+    )
+    assert not sweep.family_kept_dir().is_dir(), (
+        "and nothing is written: a file of rows the rule did not buy would answer the "
+        "question it exists for with noise"
+    )
+
+
+def test_a_prune_that_rescued_nothing_writes_no_family_allowance_file(isolated):
+    """The normal reading over a store already at the keep, and the shape that
+    makes the rule forward-only: the allowance can only keep a row BELOW the top
+    keep, so a prune with nothing beyond the keep to look at rescues nothing.
+    `{}` on the record, and no file, for the displacement list's own reason: an
+    empty file a day is a directory nobody can read."""
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
+    # Both rows in the same family, so the one the rank drops earns nothing.
+    candidate_ledger.write(_pair_of_rows(isolated))
+    record = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert record["rows_dropped"] == 1
+    assert record["family_allowance"] == {}
+    assert not sweep.family_kept_dir().is_dir()
 
 
 def test_a_dry_run_prune_writes_no_row_at_all(isolated):

@@ -337,18 +337,38 @@ average and not a per-picture constant.
 ### The growth law
 
 **Rows per location are bounded by `RETAIN_PER_PAIR` times the modes tried
-there, plus the five protections. They are no longer a function of the attempts
-made.** That sentence is the whole point of the store, and it holds because
-`candidate_ledger.prune` runs inside `candidate_ledger.merge` — THE door every
-leg comes through. A rule that ran anywhere else would be a rule the store
-stopped obeying between the times somebody remembered it.
+there, plus the five protections and one colour allowance. They are no longer a
+function of the attempts made.** That sentence is the whole point of the store,
+and it holds because `candidate_ledger.prune` runs inside
+`candidate_ledger.merge` — THE door every leg comes through. A rule that ran
+anywhere else would be a rule the store stopped obeying between the times
+somebody remembered it.
+
+**The allowance is `K + 1` at a pair and never more**, `retention.FAMILY_ALLOWANCE`,
+Matt's cut of 2026-09-15: one further row per pair that is best-in-a-colour-family
+none of the kept five is dominant in. It leaves the law one-sided — see below — and
+its ceiling is exact off the kept set at **+14,933 rows, x1.0325, 3.32 GiB**,
+because a pair can only absorb a row for a family it does not already hold and the
+kept five cover a median of 5 of the twelve. It is the rank term keeping a second
+row and not a sixth protection, which is why it is decided in `retention.decide`
+with the ranking; `candidate_ledger.sweep`'s *FAMILY_KEPT_DIR* is where a prune
+writes down which rows it kept and for which families.
 
 **The law runs one way, and that is what makes a free slot arithmetic.**
-`retention.decide` keeps `min(K, attempts)` — it sorts a pair and takes the first
-K, with no branch on how many the pair holds — so **a pair holding fewer than the
-keep has never had more attempts than it holds.** Nothing was pruned away from
-it. A free slot is therefore `K - len(pair)`, a subtraction over rows already in
-hand, and never a scan of what a leg might once have rendered.
+`retention.decide` keeps `min(K, attempts)` on the rank — it sorts a pair and
+takes the first K, with no branch on how many the pair holds — so **a pair
+holding fewer than the keep has never had more attempts than it holds.** Nothing
+was pruned away from it. A free slot is therefore `K - len(pair)`, a subtraction
+over rows already in hand, and never a scan of what a leg might once have
+rendered.
+
+**The family allowance does not cost that**, which is worth saying because it
+reads as though it must. The allowance only ever keeps a row *below* the top K,
+so it binds at a **full** pair and is never consulted at one with room: a pair
+this arithmetic reports two slots on is a pair the rule has never touched. What
+changes is the other end — a full pair may now hold `K + 1` — and `free_slots`
+reports zero there, exactly as it already did for a pair held over the keep by a
+protection.
 
 **`retention.free_slots` is the one spelling of it**, and
 `fractal-wallpapers curate candidate-ledger free-slots` is the census over it —

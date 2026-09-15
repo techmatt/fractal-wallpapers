@@ -32,8 +32,12 @@ is a row whose pixels a reader can still open.
   a seat in a **tentative gallery** —
   [`curation.tentative`], a gallery recorded under a name so that its pictures
   can be referred to by ID, which is a promise the rank would otherwise break.
-  They are spelled and applied in [`candidate_ledger.RETAINED_REASONS`], beside
-  the transaction that acts on them.
+  They are spelled and applied in [`candidate_ledger.RETAINED_PROTECTIONS`],
+  beside the transaction that acts on them.
+* **One colour allowance**, [`FAMILY_ALLOWANCE`], Matt's cut of 2026-09-15: up to
+  one further row per pair that is best-in-a-family none of the kept five is
+  dominant in. Not a protection — it is the rank term keeping a second row, so it
+  is applied in [`decide`] with the ranking rather than beside the stores.
 
 Everything else loses its row and its picture together.
 
@@ -98,11 +102,42 @@ SCHEMA_NOTES: dict[str, str] = {
 
 
 #: What the rank says about one row, in the spelling the record uses. The five
-#: protections are [`candidate_ledger.RETAINED_REASONS`] and are applied there;
-#: this is the ranking's own verdict, and there are only two of them.
+#: protections are [`candidate_ledger.RETAINED_PROTECTIONS`] and are applied
+#: there; these are the ranking's own verdicts, and there are three of them.
 RANKED = "ranked"
+FAMILY = "kept_for_a_family"
 DROPPED = "dropped"
-REASONS = (RANKED, DROPPED)
+REASONS = (RANKED, FAMILY, DROPPED)
+
+#: **How many further rows one pair may keep for a colour family its kept
+#: [`keep_per_pair`] miss.** Matt's cut of 2026-09-15, and A(K=1) is its name in
+#: the sizing that chose it.
+#:
+#: A pair's five are taken on the rank and the rank does not ask what colour a
+#: picture is, so a place can be held five times in one family and lose the only
+#: row it ever made in another. This keeps the best-ranked such row, one per
+#: pair, for a family none of the five is dominant in.
+#:
+#: **Why this and not a named scarce set.** `family_slot_sizing_ckpt125` priced
+#: both over a real pre-prune population. The scarce-set rule is far more
+#: efficient per row — 1.7 rows a conversion against this rule's 18.7 — and it
+#: was refused anyway: the set has to be hand-named, the store-derived version of
+#: it is **empty at both bars**, and a list that has to be maintained goes stale
+#: without anything failing. This rule needs no list and aims itself: **73 of its
+#: 105 conversions landed in the five weakest families unprompted**.
+#:
+#: **What it costs is bounded and small.** Exact off the kept set: at most
+#: **+14,933 rows, x1.0325 of the store, 3.32 GiB** — a pair can only absorb a
+#: row for a family it does not already hold, and the kept five cover a median of
+#: 5 of the twelve families and never all twelve. K=2 doubles the ceiling for 23
+#: more conversions at 64 rows each, which is what ruled it out.
+#:
+#: **It binds at a FULL pair and nowhere else**, which is why it is cheap and
+#: why it is not retroactive: 187,160 of 202,093 pairs have room, so the store
+#: can grow 2.2x before this rule acts anywhere new, and a store already at the
+#: keep has nothing beyond the five for an allowance to reach. The rows earlier
+#: prunes took are gone and this does not go looking for them.
+FAMILY_ALLOWANCE = 1
 
 #: The bar a candidate is counted a success at in [`by_map_mode`]. The seating
 #: bar, named here rather than imported so this module stays readable off a
@@ -257,11 +292,19 @@ def free_slots(rows, keep: int | None = None) -> dict:
     caller cannot accidentally plan onto a full pair by iterating it.
 
     **It is a subtraction and never a scan**, and that is a property of the rule
-    rather than an optimisation. [`decide`] keeps `min(keep, attempts)` — it sorts
-    a pair and takes the first `keep`, with no branch on how many the pair holds
-    — so a pair holding fewer than the keep has never had more attempts than it
-    holds and nothing was pruned away from it. There is therefore nothing to go
-    looking for.
+    rather than an optimisation. [`decide`] keeps `min(keep, attempts)` on the
+    rank — it sorts a pair and takes the first `keep`, with no branch on how many
+    the pair holds — so a pair holding fewer than the keep has never had more
+    attempts than it holds and nothing was pruned away from it. There is
+    therefore nothing to go looking for.
+
+    **[`FAMILY_ALLOWANCE`] does not change that**, and it is worth saying because
+    it looks as though it must: the allowance can only keep a row *below* the
+    top `keep`, so it acts at a full pair and never at one with room. A pair this
+    reports two slots on is a pair the allowance has never touched. What it does
+    change is the other direction — a full pair may now hold `keep + 1` — so this
+    reports zero slots there, exactly as it does for a pair held over the keep by
+    a protection.
 
     ⚠ **The keep moved 3 -> 5 on 2026-09-06 and one reading of this did not
     survive it.** Under keep 3, a pair holding fewer than the keep had never had
@@ -305,6 +348,24 @@ def free_slot_census(rows, keep: int | None = None) -> dict:
     }
 
 
+def _families_of(row: dict) -> tuple:
+    """The colour families this row is dominant in, off the row's own block.
+
+    `colour.families` is **stored and not derived**, which is why this reads it
+    rather than computing it off `colour.cells`: family dominance is a higher cut
+    against a summed mass, so a picture can be dominant in a family no cell of
+    which leads and in a cell whose family does not.
+    `candidate_ledger.sweep._prune_meta` carries the same argument at the site
+    that reads it.
+
+    A row with no block reads empty and is never kept by [`FAMILY_ALLOWANCE`],
+    which is the right answer rather than a gap: a row nothing has read a colour
+    off cannot be the row that makes a family reachable. 47 of 3,000 sampled
+    store rows are in that position.
+    """
+    return tuple((row.get("colour") or {}).get("families") or ())
+
+
 def decide(rows: list, scores: dict | None = None, keep: int | None = None) -> dict:
     """`{recipe key: reason}` over every row. Decides; deletes nothing.
 
@@ -316,29 +377,69 @@ def decide(rows: list, scores: dict | None = None, keep: int | None = None) -> d
     has an opinion about is not the same as a row something thinks little of,
     which is [`curation.solve`]'s own convention for the same case.
 
-    Two verdicts and no protections. The protections are applied by the caller
+    Three verdicts and no protections. The protections are applied by the caller
     that holds the stores which answer them, which keeps this a pure function of
     the rows and their values — and so a thing that can be pinned on arithmetic.
+
+    ## The third verdict is the family allowance
+
+    [`FAMILY_ALLOWANCE`] carries the rule and the argument for it. Here it is
+    arithmetic: below the top `keep` the rows stay in rank order, and the first
+    one carrying a family **none of the kept five is dominant in** is kept as
+    [`FAMILY`]. Taken best-ranked first, which is the only ordering that needs no
+    second rule to break a tie between two families — and each one taken adds its
+    families to the represented set, so `k > 1` cannot spend two slots on one
+    family.
+
+    **A row's families come off the row** ([`_families_of`]), so a caller handing
+    stubs that carry no colour block gets exactly today's two verdicts. That is a
+    real case rather than a defensive one: `curation.label_migration` prices a
+    merge off pair-and-value stubs, and it is written down there.
     """
     scored = {} if scores is None else scores
     by_pair: dict = {}
     for row in rows:
-        by_pair.setdefault(_pair_of(row), []).append(str(row["key"]))
+        by_pair.setdefault(_pair_of(row), []).append(row)
     limit = keep_per_pair() if keep is None else int(keep)
+    allowance = int(FAMILY_ALLOWANCE)
     out: dict = {}
-    for keys in by_pair.values():
+    for held in by_pair.values():
         # Ranked WITHIN the pair. A tie falls to the key, so the decision is the
         # same on every machine and after any re-sort of the file.
-        ordered = sorted(keys, key=lambda key: (-float(scored.get(key) or -1.0), key))
-        for at, key in enumerate(ordered):
-            out[key] = RANKED if at < limit else DROPPED
+        ordered = sorted(
+            held, key=lambda row: (-float(scored.get(str(row["key"])) or -1.0), str(row["key"]))
+        )
+        for at, row in enumerate(ordered):
+            out[str(row["key"])] = RANKED if at < limit else DROPPED
+        seated = {name for row in ordered[:limit] for name in _families_of(row)}
+        taken = 0
+        for row in ordered[limit:]:
+            if taken >= allowance:
+                break
+            missing = [name for name in _families_of(row) if name not in seated]
+            if not missing:
+                continue
+            out[str(row["key"])] = FAMILY
+            seated.update(missing)
+            taken += 1
     return out
 
 
 def kept(reason: str) -> bool:
     """Does this reason keep the row, and the picture on it? Everything but
-    [`DROPPED`] does — the five protections included, which is why this takes a
-    reason rather than testing against [`RANKED`]."""
+    [`DROPPED`] does — the five protections and [`FAMILY`] included, which is why
+    this takes a reason rather than testing against [`RANKED`].
+
+    ⚠ **`== RANKED` and this are different questions since 2026-09-15**, and
+    while the rank had one keeping verdict they read the same. A caller asking
+    *is this row kept* wants this; one asking *is this row in the top K* wants
+    `== RANKED`, and getting the second where it meant the first is a miscount
+    and not a crash. Both are live and each is right where it stands:
+    `label_migration`'s displacement test and `test_candidate_ledger.pruned_rows`
+    ask this, while [`candidate_ledger.prune`]'s `saved_by_a_protection` asks
+    `== RANKED` deliberately — a protection is credited with saving a row the
+    top K let go, whatever the allowance then did with it, so that a count read
+    across months does not move because this rule landed."""
     return reason != DROPPED
 
 
@@ -578,6 +679,8 @@ def prune_report(rows: list, values: dict, keep: int | None = None) -> dict:
 
 __all__ = [
     "DROPPED",
+    "FAMILY",
+    "FAMILY_ALLOWANCE",
     "RANKED",
     "REASONS",
     "SCHEMA",
