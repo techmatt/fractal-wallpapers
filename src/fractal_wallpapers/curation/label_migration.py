@@ -1394,6 +1394,21 @@ def _price_the_prune(
     imputed. A row the key cannot read carries no value and `decide` ranks it last
     within its pair, which is the pessimistic direction and `curation.solve`'s own
     convention for the case.
+
+    ## It prices the rank at `keep` and NOT [`retention.FAMILY_ALLOWANCE`]
+
+    The allowance reads `colour.families` off the row, and the staged side has no
+    colour block: a staged row's colour is read off its picture at ingest, and
+    what this holds is a derived row, a judge reading and a flatness fraction.
+    Rather than impute one, both sides are priced without it — the ledger stubs
+    below carry no colour either, deliberately, so the two sides are priced under
+    one rule and the comparison stays a comparison.
+
+    **That makes this a pessimistic figure and it was one already**, for the
+    reason `curation/README.md`'s *And `retention.decide` prices the rank alone*
+    gives: a prune's five protections keep rows this pricing counts as dropped.
+    The allowance is a third source of the same bias and in the same direction —
+    the real merge keeps at least what this predicts.
     """
     from fractal_wallpapers.curation import candidate_ledger, flatness, intake, rank_key, retention
 
@@ -1495,7 +1510,7 @@ def _price_the_prune(
     displaced = [
         stub["key"]
         for stub in held
-        if before.get(stub["key"]) == retention.RANKED
+        if retention.kept(before.get(stub["key"], retention.DROPPED))
         and after.get(stub["key"]) == retention.DROPPED
     ]
     at_pairs: dict = {}

@@ -36,8 +36,10 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
     PICTURES_NAME,
     POOL_SUBTREES,
     RETAIN_PER_PAIR,
+    RETAINED_FAMILY,
     RETAINED_FITTED,
     RETAINED_LABELED,
+    RETAINED_PROTECTIONS,
     RETAINED_RANKED,
     RETAINED_REASONS,
     RETAINED_REJECTED,
@@ -47,6 +49,19 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
     LedgerError,
 )
 from fractal_wallpapers.paths import rehome, tracked_name, under
+
+#: The prose this module's records carry on their `*_is` fields, in one place.
+#: The builder reads it at write time and the row still carries the sentence
+#: WHOLE — nothing here is a pointer, and a record read years later off the
+#: archive tier needs no checkout to resolve. The argument for both is at
+#: `fractal_wallpapers/README.md`'s *A record's prose has one copy in the source
+#: and a whole copy on every row*.
+SCHEMA_NOTES: dict[str, str] = {
+    "rows_is": "rows the store OWES to the family allowance - family-kept and held by no "
+    "protection. `reached_a_protected_row` is the rest, which were in the store whatever "
+    "the rank said and are not what the rule costs",
+}
+
 
 #: Where a prune writes down WHICH rows it took, one file a prune, named for the
 #: minute it ran.
@@ -70,6 +85,29 @@ from fractal_wallpapers.paths import rehome, tracked_name, under
 #: counts.
 DISPLACED_DIR = "displaced"
 
+#: Where a prune writes down which rows the **family allowance** kept, one file a
+#: prune, named for the minute it ran. [`retention.FAMILY_ALLOWANCE`] is the rule.
+#:
+#: **The rule's own effect has to be readable without re-deriving it.** A count of
+#: rows kept says how many; it cannot say which, at what places, or for which
+#: families — and the question this store will actually be asked is whether the
+#: rule earned the 3.3% it can cost, which is a question about the rows it bought.
+#: Without a list, answering it means re-running the whole simulation over a
+#: population that no longer exists, because the rows the rule saved are now
+#: indistinguishable from the rows the rank kept.
+#:
+#: **Why this and not a field on the row.** Being kept for a family is a fact
+#: about ONE prune's decision and not about the row: the same row is ranked-in
+#: the moment its pair loses a better one, and family-kept again if it lands
+#: back. A flag on the row would have to be rewritten every prune to stay true —
+#: 459,371 rows re-serialised in a transaction whose whole safety argument is
+#: that it only ever *filters* — and would still answer the question worse than a
+#: dated list does. The ratchet is the other candidate and is counts by design.
+#:
+#: Beside the store rather than in the history, for [`DISPLACED_DIR`]'s reason:
+#: this is forensic, and `ratchet.jsonl` stays the tracked half.
+FAMILY_KEPT_DIR = "family_allowance"
+
 
 def displaced_dir() -> Path:
     """The directory a prune writes its displacement list into.
@@ -80,6 +118,141 @@ def displaced_dir() -> Path:
     from inside a temporary one.
     """
     return store.rows_path().parent / DISPLACED_DIR
+
+
+def family_kept_dir() -> Path:
+    """The directory a prune writes its family-allowance list into.
+
+    Off the path accessor for [`displaced_dir`]'s reason, which is the same
+    reason and not a similar one: a test redirects the store by moving the row
+    files, and a writer that rebuilt this from `store_root()` would write into
+    this machine's real store from inside a temporary one.
+    """
+    return store.rows_path().parent / FAMILY_KEPT_DIR
+
+
+def write_kept_for_a_family(
+    meta: list, verdicts: dict, when: str, values: dict, protections: dict, log=print
+) -> dict:
+    """Write down which rows the family allowance kept. `{path, rows, owed, families}`, or `{}`.
+
+    The twin of [`write_displaced`] and deliberately the same shape: same
+    directory level, same `<stamp>.jsonl` naming, same first columns, so the two
+    halves of one prune's decision read side by side and a reader who knows one
+    knows the other. See [`FAMILY_KEPT_DIR`] for why the fact lives in a file
+    rather than on the row.
+
+    **What a row carries beyond the displacement list's columns is `for_family`**
+    — the family (or families) this row was the pair's best in that none of the
+    kept five had. That is the column the rule is answerable on: *which colours
+    did this cost buy*, asked of one prune, is `for_family` tallied. Recomputing
+    it later would need the pair's kept five as they stood at that minute, which
+    is exactly what a later prune destroys.
+
+    `rank_value` travels for the same reason it does on a displaced row: it is
+    what the row was ranked on, it is neither `p_ge3` nor `p_ge4`, and a row kept
+    under the allowance is by definition one the rank value alone let go.
+
+    ## A row a protection was holding anyway is not in here
+
+    The allowance looks below the top keep, and below the top keep is exactly
+    where a protected row sits: the rank let it go and a seat, a verdict or a fit
+    kept it. So the rule **reaches** rows it did not buy — a whole store of them
+    on the first prune after it lands — and a file that wrote those down would
+    answer the question it exists for with mostly noise.
+
+    `protections` is therefore taken and subtracted, and what is left is the rows
+    the store **owes to this rule**: the ones nothing else was keeping. That is
+    the same population `prune` counts under [`store.RETAINED_FAMILY`], which is
+    counted after the five for this reason — so the file's length and the
+    record's count are one number and cannot drift.
+    """
+    from fractal_wallpapers.curation import retention
+
+    def pair_of(held: dict) -> tuple:
+        """One `meta` row's pair, through [`retention._pair_of`] and not beside it.
+
+        The pair is `(place, colorize.spelled(mode, settings))` and a second
+        spelling of it here would be a rule written twice — which is a rule that
+        disagrees with itself the first time either copy is edited, and this one
+        would disagree about exactly the rows a mode's own settings make their
+        own pair.
+        """
+        return retention._pair_of(
+            {
+                "location": {"key": held["place"]},
+                "recipe": {"mode": held["mode"], "mode_params": held["settings"]},
+            }
+        )
+
+    held_anyway = {key for name in RETAINED_PROTECTIONS for key in protections[name]}
+    reached = [held for held in meta if verdicts.get(held["key"]) == retention.FAMILY]
+    kept = [held for held in reached if held["key"] not in held_anyway]
+    if not reached:
+        # The rule bound nowhere: no file, and `{}` on the record. A store already
+        # at the keep reads this way and it is the normal reading, not a fault.
+        return {}
+    if not kept:
+        # It bound, and bought nothing — every row it reached was already held by
+        # a protection. Said rather than left silent, because a reader who sees
+        # `{}` should be able to tell *nothing happened* from *nothing was owed*.
+        return {"rows": 0, "reached_a_protected_row": len(reached), "families": {}}
+    # The families the RANK kept at each pair the allowance acted on, and only
+    # those pairs: `for_family` is measured against the kept five and the rule
+    # keeps at most one row a pair, so this is a handful of pairs out of hundreds
+    # of thousands. Building the table over the whole store would cost a pass
+    # over `meta` for rows no row here will ever ask about.
+    wanted = {pair_of(held) for held in kept}
+    ranked_families: dict = {pair: set() for pair in wanted}
+    for held in meta:
+        if verdicts.get(held["key"]) != retention.RANKED:
+            continue
+        pair = pair_of(held)
+        if pair in ranked_families:
+            ranked_families[pair].update(held["families"])
+    families: dict = {}
+    path = family_kept_dir() / f"{when.replace(':', '').replace('-', '')}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as fh:
+        for held in kept:
+            earned = sorted(set(held["families"]) - ranked_families.get(pair_of(held), set()))
+            for name in earned:
+                families[name] = families.get(name, 0) + 1
+            rank_value = values.get(held["key"])
+            fh.write(
+                json.dumps(
+                    {
+                        "schema": SCHEMA,
+                        "kept_at": when,
+                        "why": RETAINED_FAMILY,
+                        "key": held["key"],
+                        "location": held["place"],
+                        "mode": held["mode"],
+                        "mode_params": held["settings"],
+                        "picture": held["picture"],
+                        "run": held["seat"][0],
+                        "candidate": held["seat"][1],
+                        "cells": list(held["cells"]),
+                        "families": list(held["families"]),
+                        "for_family": earned,
+                        "rank_value": None if rank_value is None else float(rank_value),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
+    named = ", ".join(f"{name} {count:,}" for name, count in sorted(families.items()))
+    log(
+        f"[prune] the family allowance kept {len(kept):,} row(s) nothing else was keeping, "
+        f"for {len(families)} famil(ies): {named or 'none'} -> {tracked_name(path)}"
+    )
+    return {
+        "path": tracked_name(path),
+        "rows": len(kept),
+        "rows_is": SCHEMA_NOTES["rows_is"],
+        "reached_a_protected_row": len(reached) - len(kept),
+        "families": dict(sorted(families.items(), key=lambda item: -item[1])),
+    }
 
 
 def write_displaced(
@@ -728,6 +901,18 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     reproducible if one of them goes), and a seat in a **tentative gallery**,
     whose whole point is that its IDs stay resolvable.
 
+    **And one allowance inside the rank**, since 2026-09-15:
+    [`retention.FAMILY_ALLOWANCE`] keeps up to one further row a pair that is
+    best-in-a-colour-family the kept five miss. It is not a protection — nothing
+    outside the ranking is consulted — so it arrives here as a second keeping
+    verdict from `decide` rather than as a sixth reference set, and
+    [`write_kept_for_a_family`] writes down which rows it took and for which
+    families. **Forward only, and the arithmetic is what makes that true rather
+    than a flag**: the allowance can only keep a row *below* the top `keep`, so
+    it binds at a full pair, and a store already at the keep holds no such row
+    for it to reach. A prune over a store nothing has just merged into rescues
+    nothing, whatever this rule says.
+
     A dropped row loses **its picture in the same call**. That is the one rule
     now: until 2026-08-29 the pictures were swept on their own ranking at their
     own K and the two were not nested, so a row could be retained with its picture
@@ -793,6 +978,11 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
             "location": {"key": held["place"]},
             "recipe": {"mode": held["mode"], "mode_params": held["settings"]},
             "picture": held["picture"],
+            # The colour block travels, and it is the whole of what
+            # `retention.FAMILY_ALLOWANCE` reads. Spelled as the ledger row
+            # spells it rather than as a bare `families` key, so `decide` has one
+            # reader for a stub and for a real row — see `retention._families_of`.
+            "colour": {"families": list(held["families"])},
         }
         for held in meta
     ]
@@ -802,15 +992,27 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     keys: set = set()
     for held in meta:
         key = held["key"]
-        ranked = verdicts.get(key) == retention.RANKED
-        because = [name for name in RETAINED_REASONS[1:] if key in protections[name]]
-        if not ranked and not because:
+        verdict = verdicts.get(key)
+        ranked = verdict == retention.RANKED
+        because = [name for name in RETAINED_PROTECTIONS if key in protections[name]]
+        # The family allowance is asked LAST — after the protections and not with
+        # the rank — and `store.RETAINED_REASONS` carries the argument: a row a
+        # protection was holding anyway is not a row this rule bought, and
+        # counting it here would both overstate the rule and take a bite out of
+        # every protection's count the first time a prune ran under it.
+        family = verdict == retention.FAMILY
+        if not ranked and not because and not family:
             continue
         keys.add(key)
-        kept_because[RETAINED_RANKED if ranked else because[0]] += 1
+        if ranked:
+            kept_because[RETAINED_RANKED] += 1
+        elif because:
+            kept_because[because[0]] += 1
+        else:
+            kept_because[RETAINED_FAMILY] += 1
     saved = {
         name: sum(1 for key in protections[name] if verdicts.get(key) != retention.RANKED)
-        for name in RETAINED_REASONS[1:]
+        for name in RETAINED_PROTECTIONS
     }
     log(f"[prune] {len(keys):,} of {len(meta):,} rows kept at K={int(keep)}; saved {saved}")
 
@@ -859,6 +1061,15 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     # rank values and the readings travel from the one read above rather than
     # being taken again — `write_displaced` says why they are not optional.
     record["displaced"] = write_displaced(meta, keys, record["taken_at"], values, readings, log=log)
+    # The other half of what this prune decided, and it is written here for the
+    # same reason: a count of rows the family allowance kept cannot say which
+    # colours it bought, and nothing else in this store records a row that was
+    # kept for a reason the rank alone would not have kept it for. See
+    # `FAMILY_KEPT_DIR`. `{}` when the rule bound nowhere, which is the normal
+    # reading over a store already at the keep.
+    record["family_allowance"] = write_kept_for_a_family(
+        meta, verdicts, record["taken_at"], values, protections, log=log
+    )
     record["seconds"] = round(time.time() - started, 1)
     return record
 

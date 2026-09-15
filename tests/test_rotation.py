@@ -408,7 +408,7 @@ def test_the_pass_honours_every_protection_the_prune_does():
     have kept. The guard is that the two lists are the same list."""
     assert set(rotation.protections(log=lambda *_a: None)) | {
         store_module.RETAINED_REJECTED
-    } == set(store_module.RETAINED_REASONS[1:])
+    } == set(store_module.RETAINED_PROTECTIONS)
 
 
 # --------------------------------------------------------------------------- #

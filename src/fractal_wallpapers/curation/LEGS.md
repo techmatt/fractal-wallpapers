@@ -466,10 +466,18 @@ before anything is planned:
 ```
 
 ⚠ **Since breadth was spent the inherited shares land somewhere specific, and it
-is the worst place in the pool.** `near_band`, `ranked_bands` and `flat` all draw
+was the worst place in the pool.** `near_band`, `ranked_bands` and `flat` all draw
 off the never-opened and near-band populations, and after `on125_wide1`/`wide2`
-took the drawable remainder there are **177** admitted never-opened locations left
+took the drawable remainder there were **177** admitted never-opened locations left
 (2026-09-15, down from 1,933 that morning), every one of them `phoenix:classic`.
+
+**That stock is now GONE — `con125_phoenix_stripe` opened the last 177 and the
+never-opened pool reads zero across all ten partitions.** So the hazard below is
+historical for `ranked_bands` and `flat`: with nothing never-opened left they draw
+nothing at all, and an inherited share on either is now clock that goes nowhere
+rather than clock spent at 56x. `near_band` still draws. **Read the resolved-shares
+line anyway** — the reason it exists is that a prompt naming one arm is not a
+prompt running one arm, and that is unchanged.
 So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
 — plans 7,080 `ranked_bands` candidates at 177 `phoenix:classic` places and 5,680
 more in the near band, which is **13,000 of 35,520 shots on the band this project
@@ -2093,6 +2101,44 @@ judge rather than as a writer with no arguments.
 the writer landed at 15:46Z and the two prunes before it ran at 10:49Z and 13:52Z.
 There is nothing earlier to compare a night against, and a displacement question
 asked of any merge before that date has no file to read.
+
+### And a second file, for the rows the rank let go and the rule kept
+
+`retention.FAMILY_ALLOWANCE` keeps up to one row a pair that is
+best-in-a-colour-family the kept five miss, so since 2026-09-15 a prune decides in
+two directions and `sweep.write_kept_for_a_family` records the other one:
+`artifacts/curation/candidate_ledger/family_allowance/<stamp>.jsonl`, written
+beside the displacement list, in the same transaction and to the same shape.
+
+**`for_family` is the column that cannot be recomputed.** It is the family this row
+earned its place with — the ones it is dominant in that *none of the pair's ranked
+five* were — and it is measured against those five as they stood at that minute.
+The next prune replaces them, so a reader asking later which colours the rule
+bought has this file or has nothing. The rest of the row is the displacement list's
+columns, which is deliberate: one prune's decision reads across the pair of files
+and a reader who knows one knows the other.
+
+**A row a protection was holding anyway is not in the file.** The allowance looks
+below the top keep, and below the top keep is exactly where a protected row sits —
+the rank let it go and a seat, a verdict or a fit kept it. So the rule *reaches*
+rows it did not buy, a whole store of them on the first prune after it lands, and
+a file that wrote those down would answer its own question with noise. They are
+subtracted, `reached_a_protected_row` counts them on the record, and `rows` is
+what the store owes to the rule — the number the **+14,933-row, 3.32 GiB** ceiling
+is about.
+
+**That is also why `kept_because` counts this reason LAST**, after the five
+protections rather than beside the rank: counted first it would take a bite out of
+every protection's count the moment the rule landed, and this project reads those
+counts across months. Counted last, the file's length and
+`kept_because[best_in_a_family_the_ranked_five_miss]` are one number.
+
+⚠ **An empty reading is the normal one and is not a fault.** The allowance can only
+keep a row *below* the top keep, so it binds at a full pair and a prune over a
+store already at the keep rescues nothing — `{}` on the record and no file written.
+A leg landing at never-opened places, where every pair is new and has room, is
+expected to rescue **zero**, and that is the rule being forward-only rather than
+the rule failing to fire.
 
 **Past the merge the arm is gone.** `candidate_ledger.hunt_block` keeps two fields
 of nine — `seconds` and `k` — so a merged row names its *run*

@@ -443,9 +443,15 @@ def protections(log=print) -> dict:
 def holder_of(row: dict, held: dict) -> str | None:
     """Which of [`protections`]' five holds this ledger row, or `None`.
 
-    First one wins and the order is [`store.RETAINED_REASONS`]', so a row held by
-    two reasons is counted once and always under the same one — which is what
-    makes the census add up to the rows rather than to the reasons.
+    First one wins and the order is [`store.RETAINED_PROTECTIONS`]', so a row
+    held by two reasons is counted once and always under the same one — which is
+    what makes the census add up to the rows rather than to the reasons.
+
+    **The rank's own verdicts are not among them and that is deliberate.**
+    `RETAINED_REASONS` also carries `ranked` and `best_in_a_family_the_ranked_five_miss`,
+    and neither is a fact this pass can ask off a row: both are decided against
+    the rest of the row's pair at the moment a prune runs. This asks only the
+    five that are answered by a reference set.
 
     The rejection is the one asked off the row itself: it is a bare boolean the
     row carries, so there is no reference set for it to be in.
@@ -568,7 +574,7 @@ def population(bar: float | None = None, owed: bool = False, log=print) -> dict:
     kinds = {mode: coloring.get("kind") for mode, coloring in catalog().items()}
     sources: list[Incumbent] = []
     refused = dict.fromkeys(REFUSALS, 0)
-    protected = dict.fromkeys(store_module.RETAINED_REASONS[1:], 0)
+    protected = dict.fromkeys(store_module.RETAINED_PROTECTIONS, 0)
     known: set = set()
     read = 0
     for row in candidate_ledger.stream():

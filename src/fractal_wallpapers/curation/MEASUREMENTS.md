@@ -355,6 +355,15 @@ the first displacement list on this machine is `fss125_recolour`'s and no merge
 before it has one. Every prune decision this project made up to that point stays
 exactly as unrecoverable as the paragraph above says.
 
+**And the same shape now covers the rows a prune KEPT against the rank**, since
+`retention.FAMILY_ALLOWANCE` landed on 2026-09-15: `sweep.write_kept_for_a_family`
+writes the key, the place, the mode, the `rank_value` and — the column that only
+exists at that moment — the **`for_family`** the row earned its place with,
+measured against the five the rank kept at that pair. A later reader cannot
+recompute it, because the next prune replaces those five. The two files are
+siblings beside the store, `displaced/` and `family_allowance/`, and one prune's
+whole decision reads across the pair of them.
+
 **The fine head reads 11,294 of the 18,760 rows in those pairs**, against 11,298
 that are above the bar — a four-row gap. `pool_scores.jsonl` covers
 `solve.pool`'s above-bar rows, so a row the pool refuses (rejected, no picture,
@@ -642,6 +651,7 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 1.010 | the same arm's SECOND pass, same manifest, same night | 3 | 5/mode | 09-15 | 9,995 cand / 2,140 blocks | `on125_recolour2` |
 | **3.872** | **`threads` alone**, floor draw over proven places untried in it | 3 | 3 | 09-15 | 2,513 cand / 2,169 blocks | `on125_threads` |
 | **20.911** | 3 shareable modes, breadth, **`phoenix:classic` alone** | 3 | 3 | 09-15 | 280 cand / 246 blocks | `on125_phoenix` |
+| **39.642** | **`stripe` alone**, breadth, the LAST 177 `phoenix:classic` places | 3 | 1 | 09-15 | 177 cand / 177 blocks | `con125_phoenix_stripe` |
 | 0.36–0.60 | `render --manifest`, no leg and no sharing | 1 | — | 09-15 | 500 renders / 3–5 min wall | fresh-install notes |
 
 **The judge is two orders cheaper than the engine, and that is why only training wants a
@@ -664,6 +674,25 @@ flat band carried**, and it splits by mode: `smooth` 7.575, `tia` 19.040, `strip
 three older `pc*` rows above priced the dear roster there; this prices the cheap one
 and the answer does not change. The partition's remaining never-opened places are a
 write-off, not a queue.
+
+**The write-off was spent anyway, on the argument that a never-opened place is
+capital rather than consumption**, and `con125_phoenix_stripe` is what that cost:
+the last **177**, stripe alone, **39.642 engine seconds a candidate** — 10% dearer
+than the pilot's own stripe arm at 35.956, on the leftovers of the same partition
+after `wide1`/`wide2` took the drawable ones. 7,016.6 engine s over 2,343.7 s of
+wall at concurrency 2.994, 177 of 177 planned and made, none stopped for budget.
+
+**What it bought reproduces the pilot's rate and beats its price.** **30 clears of
+177 at the seating bar (16.95%)** against the pilot stripe arm's 15.96%, which is
+**233.9 engine seconds a clear** — against the pilot leg's 390.3, because two
+thirds of that leg went on `smooth` and `tia` clearing nothing. And **6 candidates
+(3.39%) clear at 0.90** where the pilot's 94 stripe shots primed none. A stripe-only
+pass is the right shape for this band; it is still 33x the recolour arm's 7.0, so
+the write-off was right as a *queueing* decision and this was a closing one.
+
+**The never-opened pool now reads zero across all ten partitions** — every admitted
+location this project holds has been opened at least once. There is no breadth
+population left to price.
 
 ⚠ **`mine_pilot_ckpt124_armA` and `armB` are the same roster on two populations and
 they differ 1.45x in

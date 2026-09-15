@@ -31,8 +31,15 @@ PALETTE = {
 }
 
 
-def a_row(key, place="p", mode="smooth", colormap="viridis", cells=(), picture="a.jpg"):
-    """One ledger row, thinned to the members a retention decision reads."""
+def a_row(
+    key, place="p", mode="smooth", colormap="viridis", cells=(), picture="a.jpg", families=()
+):
+    """One ledger row, thinned to the members a retention decision reads.
+
+    `families` defaults to none, which is what every guard written before the
+    family allowance existed wants: a row dominant in nothing cannot be kept by
+    `FAMILY_ALLOWANCE`, so those guards go on reading the rank alone.
+    """
     return {
         "key": key,
         "location": {"key": place},
@@ -45,7 +52,7 @@ def a_row(key, place="p", mode="smooth", colormap="viridis", cells=(), picture="
             "colormap": colormap,
             "palette": PALETTE,
         },
-        "colour": {"cells": list(cells), "families": []},
+        "colour": {"cells": list(cells), "families": list(families)},
         "picture": picture,
     }
 
@@ -109,9 +116,106 @@ def test_every_row_gets_exactly_one_reason_and_all_of_them_are_named():
     out = retention.decide(rows, {f"k{at}": at for at in range(30)}, keep=4)
     assert set(out) == {f"k{at}" for at in range(30)}
     assert set(out.values()) <= set(retention.REASONS)
-    assert set(retention.REASONS) == {retention.RANKED, retention.DROPPED}
+    # Three since 2026-09-15: the allowance is a verdict of the RANK and not a
+    # protection, so it is named here beside the other two rather than in
+    # `candidate_ledger.RETAINED_PROTECTIONS`.
+    assert set(retention.REASONS) == {retention.RANKED, retention.FAMILY, retention.DROPPED}
     assert retention.kept(retention.RANKED)
+    assert retention.kept(retention.FAMILY)
     assert not retention.kept(retention.DROPPED)
+
+
+# --------------------------------------------------------------------------- #
+# The family allowance.
+# --------------------------------------------------------------------------- #
+def test_the_allowance_keeps_the_best_row_of_a_family_the_kept_five_miss():
+    """The rule, in the shape it was sized in: a pair held five deep in one
+    family, and the only row it ever made in another sitting below the cut.
+
+    The rank does not ask what colour a picture is, so without this the place
+    loses its one `lime` row and keeps a fifth `red` — which is the conversion
+    `family_slot_sizing_ckpt125` counted 105 of, 73 of them into the five
+    weakest families."""
+    rows = [a_row(f"r{at}", families=("red",)) for at in range(5)]
+    rows += [a_row("only_lime", families=("lime",)), a_row("sixth_red", families=("red",))]
+    scores = {f"r{at}": 1.0 - at / 100 for at in range(5)}
+    scores |= {"only_lime": 0.20, "sixth_red": 0.30}
+
+    out = retention.decide(rows, scores, keep=5)
+
+    assert [key for key, why in out.items() if why == retention.RANKED] == [
+        f"r{at}" for at in range(5)
+    ]
+    assert out["only_lime"] == retention.FAMILY, "the pair's best row in a family it does not hold"
+    assert out["sixth_red"] == retention.DROPPED, (
+        "ranked higher than the lime row and still dropped — the allowance is for a "
+        "family the five miss, not for the best row below the cut"
+    )
+
+
+def test_the_allowance_keeps_at_most_one_row_however_many_families_are_missing():
+    """`FAMILY_ALLOWANCE` is K=1, and K=2 was priced and refused: it costs 1,484
+    more rows than K=1 for 23 more conversions, 64 rows a marginal conversion."""
+    rows = [a_row(f"r{at}", families=("red",)) for at in range(5)]
+    rows += [a_row("lime", families=("lime",)), a_row("teal", families=("teal",))]
+    scores = {f"r{at}": 1.0 for at in range(5)} | {"lime": 0.3, "teal": 0.2}
+
+    out = retention.decide(rows, scores, keep=5)
+
+    assert retention.FAMILY_ALLOWANCE == 1
+    kept = [key for key, why in out.items() if why == retention.FAMILY]
+    assert kept == ["lime"], "best-ranked first, and one only"
+    assert out["teal"] == retention.DROPPED
+
+
+def test_the_allowance_cannot_bind_at_a_pair_with_room():
+    """**Why the rule is cheap, and why it is not retroactive.** It can only keep
+    a row BELOW the top keep, so a pair holding fewer than the keep has nothing
+    for it to reach — 187,160 of 202,093 pairs on the store the rule was sized
+    over. A store already at the keep therefore rescues nothing when the rule
+    lands, and the rows earlier prunes took stay taken."""
+    rows = [a_row(f"r{at}", families=("red",)) for at in range(3)]
+    rows += [a_row("lime", families=("lime",))]
+    scores = {f"r{at}": 1.0 for at in range(3)} | {"lime": 0.1}
+
+    out = retention.decide(rows, scores, keep=5)
+
+    assert set(out.values()) == {retention.RANKED}, (
+        "everything fits; the allowance is not consulted"
+    )
+
+
+def test_a_row_dominant_in_nothing_is_never_kept_by_the_allowance():
+    """Reading empty is the right answer and not a gap: a row nothing has read a
+    colour off cannot be the row that makes a family reachable. 47 of 3,000
+    sampled store rows carry no families."""
+    rows = [a_row(f"r{at}", families=("red",)) for at in range(5)] + [a_row("bare")]
+    scores = {f"r{at}": 1.0 for at in range(5)} | {"bare": 0.1}
+
+    assert retention.decide(rows, scores, keep=5)["bare"] == retention.DROPPED
+
+
+def test_the_allowance_reads_families_and_never_derives_them_from_the_cells():
+    """Family dominance is a higher cut against a summed mass, so a picture can
+    be dominant in a family no cell of which leads. A rule that derived the
+    families off `colour.cells` would miss exactly those rows — and they are the
+    rows this allowance exists for, since a family nothing leads in is a family
+    the kept five are least likely to hold."""
+    # The kept five cover `red` four times and `teal` once, so every CELL the row
+    # below the cut names is already represented.
+    rows = [a_row(f"r{at}", cells=("dark_vivid_red",), families=("red",)) for at in range(4)]
+    rows += [a_row("r4", cells=("dark_vivid_teal",), families=("teal",))]
+    # Dominant in `cyan` off a summed mass no cell of which leads: derive its
+    # families from its cells and this row is teal, which the five already hold,
+    # and it is dropped. Read the stored families and it is the pair's only cyan.
+    rows += [a_row("summed", cells=("light_vivid_teal",), families=("teal", "cyan"))]
+    scores = {f"r{at}": 1.0 for at in range(5)} | {"summed": 0.2}
+
+    out = retention.decide(rows, scores, keep=5)
+
+    assert out["summed"] == retention.FAMILY, (
+        "kept for `cyan`, which is on the row and is not the union of its cells' families"
+    )
 
 
 def test_the_module_that_decides_what_to_delete_cannot_delete():

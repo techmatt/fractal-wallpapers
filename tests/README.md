@@ -55,6 +55,9 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [consolidate_ckpt125](#consolidate_ckpt125)
+    - [lane_speed_ckpt125](#lane_speed_ckpt125)
+    - [ci_red_ckpt125](#ci_red_ckpt125)
     - [targets_ckpt125](#targets_ckpt125)
     - [silent_failures_ckpt125](#silent_failures_ckpt125)
     - [readme_overhaul_ckpt124](#readme_overhaul_ckpt124)
@@ -700,6 +703,26 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### consolidate_ckpt125
+
+`consolidate_ckpt125`, 2026-09-15, idle box after a render leg had finished,
+`.[dev,models]` with a release engine. **Fast: 4,685 of 4,685 in 135.77 s (2:15)**,
+155 deselected, zero skips. ⚠ **Half a pair, on Matt's instruction to skip the slow
+lane** — so `CLAUDE.md`'s figure was **not** repointed and carries a ⚠ naming 4,840
+as the tree's collected count. Take the pair next time.
+
+**+9 guards for +0.17 s**, which is what the fast lane costs when everything added
+is arithmetic over stub rows: seven for `retention.FAMILY_ALLOWANCE` (five on the
+rule itself, two end-to-end through `prune`) and two that `test_schema_notes`
+derives rather than anybody writing — one per record site and one per
+`SCHEMA_NOTES` entry, both new in `candidate_ledger.sweep`.
+
+**One red, and it was the suite catching the author.** The family-allowance record
+carried its `rows_is` sentence inline at the write site, which
+`test_no_record_site_writes_its_own_prose` refuses: 104 sites were exactly that
+until 2026-09-12 and two modules had gone on to write one field two ways. Moving it
+to `sweep.SCHEMA_NOTES` is what added the second derived test above.
 
 #### lane_speed_ckpt125
 
