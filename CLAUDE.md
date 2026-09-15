@@ -101,13 +101,15 @@ These were decided once, at the first commit, because each is expensive to rever
   and what a leftover record costs is misreading hazard, not bytes. **The keep list
   is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, which carries
   its eight entries with the reason for each written at the site. Everything else
-  goes unless Matt says otherwise. 24 off-list records were moved to
-  `scratch/retired_tentative/` on 2026-09-13 and the store held twelve; it holds
-  **sixteen** on 2026-09-14 and every one of them is kept — eight published and
-  eight not. The four added since are `mine_night2_ckpt124`'s before-and-after
-  pair, `veto_model_ckpt124`'s veto-active solve, and `20260914T171846Z`, which
-  is **published** and is therefore in `PUBLISHED` and not in `KEPT_UNPUBLISHED`:
-  a stamp earns its keep from exactly one of the two lists.
+  goes unless Matt says otherwise. **The keep list holds sixteen** — eight
+  published and eight not — and a stamp earns its keep from exactly one of the two
+  lists, `20260914T171846Z` being in `PUBLISHED` and therefore not in the other.
+  ⚠ **The store is not the keep list and on 2026-09-15 it held 96 records, 80 of
+  them off it** (61.4 MiB, five batches of solve records from this checkpoint's own
+  prompts). None pins anything, since `protected_keys()` reads the two tuples and
+  nothing else; what they cost is misreading hazard. **A count of folders is not a
+  count of kept records** and a leg that wants to know what is kept reads
+  `tentative.kept()`.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
   `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple

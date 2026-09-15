@@ -322,10 +322,8 @@ artifacts/curation/mine/<name>/bench.json            the loop against its cheape
 ```
 
 ```
-fractal-wallpapers curate mine run   --name pilot --rate 1.84 --budget 480   # measure the rate
-fractal-wallpapers curate mine merge --name pilot                            # fold into the ledger
-fractal-wallpapers curate mine run   --name m1 --rate <measured> --budget 7200
-fractal-wallpapers curate mine plan  --name m1 --rate <measured> --budget 7200   # renders nothing
+fractal-wallpapers curate mine run   --name m1 --budget 7200      # --rate off the records
+fractal-wallpapers curate mine plan  --name m1 --budget 7200      # renders nothing
 fractal-wallpapers curate mine bench --name m1     # price the loop's alternatives
 fractal-wallpapers curate mine sheet --name m1     # redraw the autopsy page
 ```
@@ -355,9 +353,12 @@ a plan sized exactly to a measured mean stops the mine early whenever the mean
 came in high — which it does, because every partition's median is under half its
 mean. The surplus is never started and costs nothing.
 
-**The rate is measured on the mine's own target population and is required.**
-`run` refuses without `--rate`. A rate carried in from another pass prices another
-population; the recommended shape is a short run first, then its measured figure.
+**The rate is derived from the records at this width, since 2026-09-15.** The CLI
+resolves it through `depth.measured_rate(width)` and prints the figure with its
+provenance; `--rate` still overrides and `mine.run` still requires one, for the
+reason *`--rate` reads itself off the records* gives below. A rate carried in by
+hand from another pass prices another population, which is what the derivation
+removes the occasion for.
 
 **The two breadth arms differ in the draw and in nothing else.** Same
 `per_location`, same `hunt.modes_for` roster, same `hunt.Stratifier` on the same
@@ -427,8 +428,8 @@ artifacts/curation/depth/<name>/autopsy.html         primed and rejected, sorted
 ```
 
 ```
-fractal-wallpapers curate depth plan  --name d1 --rate 0.35 --budget 5400   # renders nothing
-fractal-wallpapers curate depth run   --name d1 --rate 0.35 --budget 5400
+fractal-wallpapers curate depth plan  --name d1 --budget 5400   # renders nothing
+fractal-wallpapers curate depth run   --name d1 --budget 5400   # --rate off the records
 fractal-wallpapers curate depth merge --name d1                             # fold into the ledger
 fractal-wallpapers curate depth sheet --name d1                             # redraw the autopsy
 ```
@@ -1363,10 +1364,9 @@ At the default 0.10 a nineteen-cell list is **not a filter at all** — it keeps
 of 942 and the leg draws the untouched pool while its log reports a narrowing. It
 takes **0.30 to cut nineteen cells to 580**, and 0.30 is a *quarter* to a third of
 a picture's colour rather than the `CELL_LEAD` 0.10 at which a cell merely leads.
-**Pick the cutoff against the length of the list, and read
-`plan.maps_after_the_manifest` to check the cut actually happened** — a broad list
-at the default is an aim in name only. `easy125_recolour` ran nineteen cells at
-0.30 for this reason.
+**Pick the cutoff against the length of the list** — `easy125_recolour` ran nineteen
+cells at 0.30 for this reason. Checking afterwards that the cut happened is no
+longer the caller's job:
 
 **Since 2026-09-15 a saturating cut is REFUSED rather than reported.** A plan whose
 cell cut keeps more than [`depth.CELLS_NARROW_AT`] — **0.90** — of the maps the
@@ -1418,6 +1418,17 @@ seats on. The cell rate under-reads the family rate by 10 to 30 points here.
 **And it cost nothing in quality.** The aimed arm cleared `P(>=3) >= 0.50` at
 **44.89%** against the flat control's **40.30%** on the same leg — so conditioning
 the palette draw did not buy its colour out of the judge's pocket.
+
+**Read at the CELL the same aim runs 5.9x to 40.5x, median 14.6x, and it lands
+53.4% of the time.** `on125_wide1` drew 3,084 candidates on a gap-weighted 41-cell
+cycle against a same-leg flat control of 4,908, and **53.4% came out dominant in the
+exact cell asked for** — `light_vivid_purple` **40.5x**, `dark_vivid_yellow` 24.4x,
+`dark_vivid_cyan` 24.2x, `light_vivid_azure` 23.3x, down to `light_muted_yellow`
+5.9x. **The lift is largest where the flat rate is smallest**, which is what an aim
+is for and is why a cell table reads so much wider than the family table above it:
+the aim cannot improve on a colour the pool already makes by accident. So **aiming is
+free and it is large** — quote it at the cell when planning a cell, at the family
+when planning a family, and never mix the two columns in one comparison.
 
 ### `sequence.jsonl` carries the whole autolevel stamp, and did not until 2026-09-02
 
@@ -2355,27 +2366,23 @@ bounded location pool gives the ranked draw the bulk of the share**: at
 `0.5 / 0.25 / 0.25` the three arms planned 7,007 / 2,079 / 624 places and between
 them took all 9,710.
 
-⚠ **That pool is finite and it has nearly been spent — READ IT before planning a
-breadth leg, never carry the figure in.** On 2026-09-14 it stood at **2,470**
-against the 19,415 below and the 6,821 a prompt three weeks younger was written
-around, and it is **not spread**: `multibrot5` 1,254, `mandelbrot` 598,
-`julia:mandelbrot` 330, `phoenix:classic` 288, and **five of the ten partitions
-hold none at all**. A leg sized off a remembered number plans partitions that are
-empty and reports the shortfall as a rate. The reading is one call —
-`mine.population()["pools"]`, and a leg's own record carries it at
-`route.unopened_stock`. **Breadth is no longer the arm that scales**; what does is
-the floor draw over proven places — [`MEASUREMENTS.md`](MEASUREMENTS.md)'s
-`easy125_wide` and `easy125_recolour` rows price the two against each other.
+★ **That pool is SPENT — zero in all ten partitions since 2026-09-15 — so breadth
+is retired as an arm rather than shrunk.** `on125_wide1` and `on125_wide2` took the
+drawable remainder and `con125_phoenix_stripe` took the last 177
+`phoenix:classic` places behind them; re-read the same evening over a 459,548-row
+ledger, `hunt.drawable` returns **every partition empty**, 40,454 admitted locations
+against 42,113 opened. The arithmetic above is what a breadth leg used to be sized
+by and is kept for the shape, not for a number to reach for. **A document still
+describing never-opened stock as a lever is wrong rather than stale**, and the only
+thing that refills this pool is `fractal-wallpapers walk`.
 
-⚠ **It was spent on 2026-09-15 and the figure above is already stale, which is the
-point of the warning rather than an exception to it.** The reading that night was
-**1,933**, not 2,470 — one leg the evening before had taken 537 — and
-`on125_wide1` + `on125_wide2` opened **all 1,662 of the drawable remainder** in
-7,805 s of render wall. What is left is `phoenix:classic` alone, and
-[`MEASUREMENTS.md`](MEASUREMENTS.md)'s `on125_phoenix` row says to write those off
-rather than queue them: 20.911 s a candidate, 390.3 engine seconds a clear, 56x
-the floor draw. **Breadth over never-opened locations is finished as an arm until
-a walk adds stock.**
+**READ IT anyway before planning any leg that draws off it, never carry a figure
+in** — one call, `mine.population()["pools"]`, and a leg's own record carries it at
+`route.unopened_stock`. That rule is why this reached zero on a measurement and not
+on a surprise. What scales instead is the floor draw over proven places, which
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s `easy125_wide` and `easy125_recolour` rows
+price against each other, and a composite pointed at proven ground — *A composite is
+worth pointing at proven ground* below.
 
 ### A recolour manifest saturates inside one night, and the second pass buys displacement
 
@@ -2608,8 +2615,10 @@ cycles uniformly, so the dear mode took an equal count at four times the price a
 ate the partition's breadth. Splitting field from composite is necessary and not
 sufficient.
 
-**Pilot to a fraction of the leg, not to a fixed wall.** `--rate` has to come from a
-run at this width on this population, and a *short* one still under-reads: on
+**When a pilot IS needed, pilot to a fraction of the leg and not to a fixed wall.**
+Since 2026-09-15 `depth` and `mine` resolve `--rate` off the records at that width,
+so the case left is a width nothing has run — where the fallback is
+`depth.PILOT_RATE` and a pilot is what replaces it. A *short* one under-reads: on
 `sparse_mode_harvest` a 180 s pilot priced its direct partition 13.6% low and its
 composite partition **67%** low (1.8397 against 3.0803), every per-mode rate moving
 the same direction, because 180 s reaches only the cheap head of the draw. The field

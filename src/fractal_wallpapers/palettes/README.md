@@ -599,6 +599,16 @@ families at 0.20 / 0.30. A picture may be dominant in more than one cell and in
 none. There is no floor under the raw share — mean neutral share over gallery3's
 150 is 0.210 — which is deliberate and named in the module.
 
+**The family union is bounded at three by arithmetic, and the mean is 1.25.**
+`FAMILY_ALONE` is 0.30 over twelve shares summing to one, so at most
+`floor(1 / 0.30)` names can clear it and a fourth is impossible whatever the
+picture. Measured over 468,020 candidate rows on 2026-09-15 — the store plus one
+leg's displacement list, so pruned rows are in it too:
+**{0 families: 8,371, one: 334,309, two: 125,055, three: 285}**, mean **1.2505**.
+So a rule that asks *which families is this row the only one in* is asking about
+one family per row and occasionally two — real, small, and not the combinatorial
+object it reads as. Three families at once is 0.06% of the store.
+
 `pixel_clouds` is the palette metric on **pixels**: the same M1 `groups` uses,
 over 4,096 seeded pixels of a render at census size instead of over a ramp. Two
 pictures at distance 0.034281 are the same wallpaper by the gallery pass's twin test

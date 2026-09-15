@@ -291,6 +291,18 @@ is not comparable across `n` even on one pool.** Moving a collection's `n` betwe
 runs is a change of question, not of scale — take a fresh before at the new `n`
 rather than reading the old record's count across.
 
+⚠ **The MEDIAN is not comparable across `n` either, and it moves the flattering
+way.** A collection seating `n` has its median at its own rank `n/2`, so cutting `n`
+reads the median at a shallower rank of the same ordered pool — the new median *is*
+roughly the old record's rank-`n/2` row, and it can only be at least as good. The
+2026-09-15 cut to `curation.targets` is the worked example: **1,351 fewer seats across
+the sixteen (7,274 against 8,625) lifted fifteen medians**, `teal` by +0.116 and every
+other mover between +0.003 and +0.098. **`tia` is the control and it was not
+constructed** — it is the one collection whose target did not change, and it is the
+one that did not move. A median gain read across an `n` change is arithmetic until
+something holds `n` fixed; `family_slot_sizing`'s pair is the first in this series
+solved at the same `n` on both sides.
+
 **A `K` proposed in seat units has to be converted before it is argued about**:
 divide by the memberships-per-seat figure of the pool in hand. And read the allowance
 off `ceiling.Rule(k=K).allowed(cell, n)` rather than off the formula on paper —
@@ -349,6 +361,21 @@ landed exactly on the floor of 20 the deadlock count is 3, 2, 2, 6, 38 and 0. Ov
 the ceiling and floor together `spiral` refusals rise **754 → 1,266** and `twin`
 423 → 662, precisely because the allowance stops acting first and those are what is
 left underneath it.
+
+**And no family is scarce at either bar, which reframes the weak collections.**
+Read off the store on 2026-09-15 against the targets in
+[`curation.targets`](targets.py): at `solve.Q4_BAR` every family holds **3.6x to
+17.5x** its target in distinct above-bar places — the thinnest, `lime`, holds
+**1,522**. At the shipped **fine** bar, which is what a seating actually selects on,
+the ratios fall and **not one goes under one**: `lime` **242 places** (against a
+target that was 200 when this was read and is 150 now), `green` 649 against 300,
+`cyan` 746 against 300, up to `red` at 6.59x. So a weak family is not short of
+material. It is short of **distinct** material at places we already hold — one seat a
+cluster, and the clusters it can reach are the ones a warm-skewed supply already
+stands on. A rule that keeps *more rows per pair* therefore adds rows at places the
+family already seats, which is why a store-derived scarce set comes back **empty**
+and a weakest-five set has to be named by hand. Mining at new places is the lever;
+keeping more rows at old ones is not.
 
 ★ **Matt has ruled the spiral cap STAYS**, 2026-09-09, and it is not to be
 re-litigated as a colour lever. A thin colour bound by `spiral` is a **mining**
@@ -906,6 +933,38 @@ direct conflict, in exactly two hues — a trade to be made deliberately, not a 
 to be repaired. Both hues are also judge-disliked and light-and-cool, which is the
 `unwinnable` caveat under *The desire list is aimable at cell × mode and nowhere
 else* below.
+
+#### The published median is a 96.55th percentile, and the hue spread is a SHIFT and not a tail
+
+`20260914T171846Z`'s median `p_fine` is **0.533**, and against the pool it came out of
+— 47,430 scored rows over 13,643 places on 2026-09-15 — that is the **96.55th
+percentile**. The whole pool reads median 0.0054, mean 0.0737, d9 0.2633. Rows and
+**distinct places** above each line:
+
+| line | 0.10 | 0.15 | 0.20 | 0.25 | 0.30 | 0.40 | **0.533** |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| rows | 9,119 | 7,279 | 6,031 | 4,973 | 4,088 | 2,786 | **1,635** |
+| places | 4,863 | 4,091 | 3,523 | 2,998 | 2,544 | 1,864 | **1,170** |
+
+**So a general n=1000 record at this median is within 17% of the ceiling of what
+exists**, one seat a place being what actually bounds it. No single family reaches
+500 places at 0.533 (the best is orange at 401, green has 60) and no mode reaches
+1,000 (the best is stripe at 335). The climb is roughly a halving of places per
+0.10–0.13 of bar, evenly across every line, so **there is no knee to aim for** — a bar
+is bought in places at a steady exchange rate and not at a threshold.
+
+⚠ **And 0.533 is a different ask in each hue, because the families are
+monotone-shifted and not differently-tailed.** Orange sits above azure by **3.4x to
+4.0x at every decile from d3 to d9** and by 3.4x on the share above 0.533; a
+near-constant ratio across the range is what a shift looks like and not what a heavy
+tail looks like. Green's d9 (.2120) falls inside orange's d7-to-d8 band. The eleven
+non-`lime` families span **1.94% (azure) to 6.63% (orange)** above 0.533, so one flat
+bar asks orange for its top row in fifteen and azure for its top row in fifty-two —
+which is the same trade as the two collapsing hues above, priced per family. One
+caveat on reading it as the fine head's taste: `p_fine` exists only for rows the
+render judge already put above `Q4_BAR`, so the coarse judge's own hue preference
+decides which rows are in this population at all, and the comparison separates *worse
+pictures* from *lower-scoring hue* no better than the two judges agree.
 
 #### A short mode is read on ABSOLUTE ROWS AT THE BAR, never on pool share
 
@@ -1479,6 +1538,20 @@ how far a pass falls once the cell has already failed `4n`, and not the group ca
 which does not bind below its own seat count. A themed gallery at full quality is
 a **smaller** themed gallery; unfilled beats padded and there is still no padding
 branch.
+
+**Which makes the bar's response to a cut one-directional: cutting `n` cuts `4n`, so
+the reading is taken at a shallower rank of the same ordered stock and the bar can
+only RISE or PIN.** It pins where the clamps hold it — a cell already on
+`THEMED_BAR_FLOOR` stays there, and one already at the shipped bar stays there — and
+otherwise it rises, and a branch can only move up the table. Measured across the
+2026-09-15 cut, **five branches moved and not one fell**: `yellow`, `teal` and `cyan`
+`floor_below` → `reachable`, `purple` `reachable` → `shipped`, `lime`
+`floor_unreachable` → `floor_below`. Five of twelve families now take the shipped bar
+where three did, five read a reachable one where two did, and only `lime` and `green`
+are still floored, against seven before. ⚠ **`lime` moving is a read and not a bar**:
+at `4n = 800` its `4n`-th best row exists at last (0.00141) and that is what lifts it
+out of `floor_unreachable`, but 0.00141 is an order of magnitude under the 0.01 floor,
+so the bar it ships under did not move a point.
 
 ⚠ **A `reachable`-bar theme is on a treadmill: mining it raises its own bar, and
 that can cost it seats.** The bar *is* the `4n`-th best row's `p_fine` over the

@@ -439,6 +439,15 @@ keep rose to 5 — which leaves nearly every pair under the new keep with room i
 it, and leaves the ranking with nothing to decide. Pairs will refill and the
 surface will grow; a reading of it is dated, not structural.
 
+**Re-read nine days on, 2026-09-15: the surface has grown and it is still small.**
+Over 457,430 rows the store holds **202,093 pairs, of which 14,933 (7.4%) sit at or
+over the keep** — so 187,160 pairs have room for **551,529 more rows** and the store
+can grow **2.2x before the rule binds anywhere new**. Even on the arm that works the
+proven places hardest, `tia` is 3,723 of 23,042 pairs full (16.2%) and `stripe` 3,715
+of 23,408 (15.9%). **So the keep is not what decides whether more mining can move a
+weak collection**, and a proposal resting on that has to be priced against this number
+first: what the rule actually costs today is a rescue at one pair in thirteen.
+
 **So a pool-wide count of rank changes does not price a change to the rank key,
 and the two numbers differ by three orders of magnitude.** Dropping
 `stratum_score` moved the top-ranked row on **17,335 of the 102,169 pairs holding
@@ -2641,6 +2650,47 @@ Reading and writing are different questions about the same path, and an input
 held to an output's guard is a subtree somebody has to restore before they may so
 much as look at it.
 
+## Where colour is a dimension, and where it is not
+
+**Colour acts at the two ends of the pipeline and almost nowhere in the middle.**
+Resolved from source on 2026-09-15, stage by stage from the draw to the seat:
+
+| stage | where | what it keys on | colour? |
+|---|---|---|---|
+| draw | [`depth._plan_aimed`] → `aimed_maps` → [`hunt.conditioned_maps`] | carrier-table weight on the palette draw, one **cell** per place | **cell** |
+| draw filter | `--draw-cells` narrowing `colorize.pool` | expected share ≥ cutoff in ANY listed cell | **cell** |
+| colour read | [`palettes.dominance.of_picture`] → `candidate_ledger.colour_block` | writes `{cells, families}`; the shares are dropped | recorded only |
+| score | the render judge's `p_ge3` / `p_ge4` | pixels | no |
+| retention prune | [`retention.decide`] via `candidate_ledger.sweep.prune` | pair `(location.key, colorize.spelled(mode, mode_params))`, sorted on `(-rank_value, key)`, keep five — **plus** [`retention.FAMILY_ALLOWANCE`] | **family, one row a pair** |
+| merge | `candidate_ledger.door.merge` | calls `sweep.prune` and nothing else | no |
+| `score-pool` | `headroom.bars`' `q4_rows` (= `solve.Candidate.above_bar`) | `p_ge4 >= Q4_BAR` | no |
+| solve order | [`solve.at_fine_bar`], [`solve.cascade_order`] | `1 + p_fine` above the bar, the rank key below | no |
+| solve rules | [`ceiling.Rule.allowed`], `demands_for(cell_floor=True)`, `solve.in_theme` | cell **and** family allowances, 48 cell floors, the theme filter | **cell + family** |
+| collection | [`targets.pool_for`] | splices a family name onto `cells`, or filters on the routed mode | **family** |
+
+**The rank is colour-blind and that is deliberate.** `rank_key.COLUMNS` is
+`("loc_p_ge4", "p_ge3", "p_ge4", flatness.COLUMN)` and its own docstring says what is
+deliberately not in it: *no colormap identity, no palette group*. `sweep._Pooled`
+carries a `cells` slot and `rank_key.features_for` never reads it; none of the five
+protections is a colour either. So for a pair already at the keep, which of its rows
+survive is decided without reference to what colour they are.
+
+⚠ **The prune row above was NONE until 2026-09-15**, and an audit taken that morning
+says so. `retention.FAMILY_ALLOWANCE` landed that afternoon and is the one colour term
+in the prune: one further row a pair, best-in-a-family the kept five miss. It is narrow
+on purpose — it binds only at a **full** pair, and *The growth law* above has what it
+costs. Read a claim that the prune cannot see colour as dated rather than as structural.
+
+**What is still missing is a colour target between the draw and the solve.**
+`ceiling.parse_target` refuses a family name outright — *a target names one of the 48
+and never a family* — so a family is a **ceiling** term (`FAMILY_SHARE` 1/12) and never
+a demand, and no rule between the two ends asks a leg to go and get a colour. Two
+smaller gaps beside it: `hunt.drawn_for`, the cell a place was actually aimed at, is
+written only where there **is** an ask, so a `--shares mode_floor=1.0` leg correctly
+reads `null` on every row; and `retention.by_place_cell` — *"a targeted mine reads it to
+stop asking a place for green that has never once come out green"* — has no caller but
+the CLI print in `cli/curate_mine_commands.py`. No draw consults it.
+
 ## The colour census
 
 [`colors`](colors.py) is a standing **record-and-rank** over colour: it carries no
@@ -2790,6 +2840,21 @@ re-probe nothing; the tiles are recolored from the kept fields, because the prob
 overwrote its pictures on purpose. A tile is named by the (swatch, rung, cell, map)
 it shows, so the two sheets share files and the second costs nothing — the full 52
 is 208 tiles, about 10 s and 38 MB.
+
+⚠ **The shipped panel was chosen under a curve nothing renders, and it self-heals.**
+`field_shape` — what a cell is *picked* on — read dumps whose record carried the
+engine catalog's own transform, and the catalog puts `Transform::Log` on
+`trap_circle`; production writes `colorize.CURVE` over it. Three of the sixteen cells
+are `trap_circle` and **3,171 of the panel's 16,912 measured rows** came off them.
+Re-reading this machine's 56 dumps under production's curve **moves three of the
+sixteen seats**, two of the three dropped being `trap_circle` cells. The rows were
+measured right; the panel they were measured on is not the one `choose`'s rule
+specifies. ★ **Matt's ruling of 2026-09-15 is that this is not rebuilt**: the dump is
+fixed at the builder (`dump` goes through `colorize.field_row` + `renders.spec_of`,
+and a cached field whose record disagrees is re-dumped), so the next `--step panel`
+picks correctly on its own, and a rebuild now is a re-probe of ~900 maps x 16 cells
+to move three seats. [`README_decisions.md`](README_decisions.md)'s *The fourth
+appearance was a spec with no row behind it* has the class this came from.
 
 **Two reads, two estimands, never pooled.** *Capability* is a max over the panel —
 a map counts for a swatch if **one** cell showed it — and is bounded by the panel,
