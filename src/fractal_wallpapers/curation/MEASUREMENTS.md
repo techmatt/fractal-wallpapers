@@ -607,6 +607,27 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 4.160 | the same 9, **breadth** over never-opened places | 3 | 1 | 09-13 | 1,282 cand / 1,282 places | `mine_pilot_ckpt124_armB` |
 | 1.261 | 3 shareable modes, breadth + **aimed**, over never-opened places | 3 | 12 | 09-14 | 6,413 cand / 537 places | `easy125_wide` |
 | **0.759** | `tia`+`stripe`, **floor draw** over proven places, cells aimed | 3 | 5/mode | 09-14 | 10,601 cand / 1,062 places | `easy125_recolour` |
+| 1.164 | 3 shareable modes, breadth + **aimed**, over never-opened places | 3 | 12 | 09-15 | 16,392 cand / 1,366 places | `on125_wide1` |
+| 1.047 | the same leg on the last 296 never-opened places | 3 | 12 | 09-15 | 3,552 cand / 296 places | `on125_wide2` |
+| **0.886** | `tia`+`stripe`, floor draw over **proven** places, cells aimed | 3 | 5/mode | 09-15 | 20,979 cand / 3,945 blocks | `on125_recolour1` |
+| 1.010 | the same arm's SECOND pass, same manifest, same night | 3 | 5/mode | 09-15 | 9,995 cand / 2,140 blocks | `on125_recolour2` |
+| **3.872** | **`threads` alone**, floor draw over proven places untried in it | 3 | 3 | 09-15 | 2,513 cand / 2,169 blocks | `on125_threads` |
+| **20.911** | 3 shareable modes, breadth, **`phoenix:classic` alone** | 3 | 3 | 09-15 | 280 cand / 246 blocks | `on125_phoenix` |
+
+⚠ **`threads` costs 3.872 and its median stored render reads 2.324 — a 67% gap, and
+the render figure is the one that misleads.** A composite dumps no field
+(`fields_swept: 0`), so a leg pays a whole render a candidate plus the per-candidate
+overhead the shareable modes amortise; the ledger's median render is the render
+alone. **Size a composite leg off a leg's `seconds_per_candidate`, never off
+`hunt.seconds`.**
+
+⚠ **`phoenix:classic` at 20.911 is 18x the pool average and twice the 9.389 s the
+flat band carried**, and it splits by mode: `smooth` 7.575, `tia` 19.040, `stripe`
+**35.956**. Yield at `SEATING_BAR` is `smooth` **0**, `tia` **0**, `stripe` 15 of 94
+(15.96%) — **390.3 engine seconds a clear against the recolour arm's 7.0, 56x**. The
+three older `pc*` rows above priced the dear roster there; this prices the cheap one
+and the answer does not change. The partition's remaining never-opened places are a
+write-off, not a queue.
 
 ⚠ **`mine_pilot_ckpt124_armA` and `armB` are the same roster on two populations and
 they differ 1.45x in
