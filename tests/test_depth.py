@@ -692,15 +692,28 @@ def test_the_aimed_arm_draws_its_maps_through_the_carrier_table_and_the_flat_arm
 
 def test_every_aimed_shot_says_what_it_was_drawn_for_and_no_other_shot_does():
     """A prior about the map, on the row, so a reader can tell an aimed candidate
-    from a lucky one. It is never read as a claim about the picture."""
+    from a lucky one. It is never read as a claim about the picture.
+
+    **`named()` states the ask on every arm and the ROW carries it only where
+    there is one**, which is the split that matters and was one sentence until
+    2026-09-15. It was `if self.cell is not None: out["drawn_for"] = ...` here,
+    which comes to the same rows — `candidate_ledger.hunt_block` drops a falsy ask
+    — but reads as a rule about the aimed arm rather than about the ask, and
+    `mine.Unit.named` had the same shape and lost its ask outright.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
     plan, _shape = build_a_plan(shares=AIMED_SHARES, cell="dark_vivid_green")
     for shot in plan:
+        block = candidate_ledger.hunt_block({"seconds": 0.1, **shot.named()})
         if shot.arm == depth.AIMED:
             assert shot.cell == "dark_vivid_green"
             assert shot.named()["drawn_for"] == "dark_vivid_green"
+            assert block["drawn_for"] == "dark_vivid_green"
         else:
             assert shot.cell is None
-            assert "drawn_for" not in shot.named()
+            assert shot.named()["drawn_for"] is None
+            assert "drawn_for" not in block
 
 
 def test_a_conditioned_share_with_no_cell_is_refused_rather_than_drawn_flat():
@@ -2122,6 +2135,46 @@ def test_a_narrow_pool_plans_because_no_arm_here_asks_the_palette_head():
     assert shape["maps_drawn_from"] == len(manifest) < shape["maps_offered"]
     assert plan, "a narrow manifest is a leg, not a refusal"
     assert {shot.colormap for shot in plan} <= set(manifest)
+
+
+def test_a_cell_cut_that_keeps_essentially_everything_is_refused():
+    """The lie this closes: a filter that narrows nothing and says it narrowed.
+
+    `--draw-cells` keeps a map delivering ANY listed cell, so the cut saturates in
+    the length of the list — measured twice on the shipped library at the 0.10
+    default, a 19-cell list kept 938 of 942 maps and a 24-cell list kept 940,
+    while the log read as a narrowing both times. A leg that ran anyway stamped
+    `hunt.drawn_cells` on every row it made, which says *this is not a base rate*,
+    so the saturating cut wrote a false provenance onto tens of thousands of
+    ledger rows. The refusal is at PLAN time, before a field is dumped.
+
+    The list is built from the pool rather than written down, for the reason the
+    composition test above gives: how many maps deliver a cell moves with the mode
+    roster, and what is under test is the saturation and not any cell's breadth.
+    """
+    every = list(dominance.cells())
+    with pytest.raises(depth.DepthRefused) as refusal:
+        build_a_plan(draw_cells=every, draw_cutoff=0.0)
+    said = str(refusal.value)
+    assert "--draw-cutoff" in said
+    assert "ANY listed cell" in said
+    assert "Nothing was rendered" in said
+
+
+def test_a_cut_that_really_narrows_plans_and_records_what_it_kept():
+    """The guard above bounds a cut and does not replace it.
+
+    One cell at the shipped cutoff is a real narrowing; it plans, and the share it
+    kept goes on the record beside the bound it had to beat — so a reader pricing
+    a narrowed leg can see how hard the cut bit rather than only that it ran.
+    """
+    cell = "dark_vivid_lime"
+    _plan, shape = build_a_plan(draw_cells=[cell])
+    assert 0.0 < shape["cells_kept"] <= depth.CELLS_NARROW_AT
+    assert shape["cells_kept_at_most"] == depth.CELLS_NARROW_AT
+    assert "saturates" in shape["cells_kept_is"]
+    _plan, wide = build_a_plan()
+    assert wide["cells_kept"] is None and wide["cells_kept_is"] is None
 
 
 def test_a_misspelt_draw_cell_is_refused_rather_than_narrowing_to_nothing():

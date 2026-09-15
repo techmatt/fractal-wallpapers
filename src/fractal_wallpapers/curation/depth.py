@@ -100,6 +100,10 @@ SCHEMA_NOTES: dict[str, str] = {
     "`palettes.color_mass.delivering` expects to put >= the cutoff of the picture's "
     "colour in ANY listed cell, mode-conditional mass where there is one and the carrier "
     "prior where there is not. It composes with the manifest and re-marks nothing",
+    "cells_kept_is": "the share of the maps the manifest left that the cell cut KEPT. A "
+    "cut saturates in the length of its list — the rule is ANY listed cell, so a long "
+    "list at a low cutoff keeps the pool and stamps every row it makes as colour-narrowed "
+    "anyway. Above CELLS_NARROW_AT a plan is refused rather than run; see `build_plan`",
     "wall_seconds_is": "the whole call, setup included. `render_wall` is what the "
     "budget governs and it starts at the first block",
     "concurrency_is": "engine seconds over wall, which OVER-READS the benefit: an "
@@ -159,6 +163,31 @@ FLOOR_WIDTH = 4
 #: affordable, and the `k` the earlier mine's marginal curve was still climbing
 #: at when it ran out at twelve.
 WIDTH = 40
+
+#: **The share of the drawable pool a `--draw-cells` cut may keep and still be
+#: called a cut.** Above this the plan is REFUSED, at plan time and before any
+#: field is dumped.
+#:
+#: `--draw-cells` saturates in the length of its list and the log said the
+#: opposite. The rule is ANY listed cell ([`palettes.color_mass.delivering`]), so
+#: each cell added widens the neighbourhood: measured twice on this library at the
+#: 0.10 default, a 19-cell list kept **938 of 942** maps and a 24-cell list kept
+#: **940 of 942**, while `[depth] the cells [...] at >= 0.1 draw 940 of 942` read
+#: as a narrowing both times. One thin cell at the same cutoff offers 40.
+#:
+#: **A refusal and not a warning, because the lie is written onto the rows.** A
+#: narrowed leg stamps `hunt.drawn_cells` on every row it makes and sets
+#: `cells_narrowed` on its record, and both say *this is not a base rate* — so a
+#: saturating cut does not merely fail to narrow, it writes a false provenance
+#: onto tens of thousands of ledger rows that outlive the leg. A warning leaves
+#: the stamp; this leaves the operator a choice. It costs seconds and no renders:
+#: the cut is taken while the plan is being built, before the first field.
+#:
+#: **0.90** and not a tuned number: a cut that keeps more than nine maps in ten is
+#: not a cut under any reading, and every genuine narrowing this library has run
+#: sits far below it — the 24-cell list at `--draw-cutoff 0.30` keeps 632 of 942
+#: (67%), at 0.40 keeps 398 (42%), at 0.60 keeps 126 (13%).
+CELLS_NARROW_AT = 0.90
 
 #: How many bands the head's rank range inside one partition is cut into. Equal
 #: **counts**, not equal scores: the head's score distribution is not uniform and
@@ -701,9 +730,14 @@ class Shot:
             "k": self.k,
             "rank": self.rank,
             "rank_fraction": self.rank_fraction,
+            # **Stated on every arm, present on the row only where there is an
+            # ask.** It was set here only where `cell` was not None, which is the
+            # same rows in the end — `candidate_ledger.hunt_block` drops a falsy
+            # `drawn_for` — but it read as a rule about the AIMED arm rather than
+            # about the ask, and [`mine.Unit.named`] had the same shape and lost
+            # its ask entirely. Three intentions, one spelling.
+            "drawn_for": self.cell,
         }
-        if self.cell is not None:
-            out["drawn_for"] = self.cell
         if self.mode_params:
             out["mode_params"] = dict(self.mode_params)
         if self.palette:
@@ -1875,10 +1909,29 @@ def build_plan(
                 f"cutoff of {bar}, so no arm here has anything to colour with. Lower "
                 f"--draw-cutoff or list more cells."
             )
+        kept_share = len(maps) / max(1, after_manifest)
         log(
             f"[depth] the cells {sorted(wanted_cells)} at >= {bar} draw {len(maps):,} of "
-            f"{after_manifest:,}: {after_manifest - len(maps):,} map(s) out of the draw"
+            f"{after_manifest:,} ({kept_share:.1%}): {after_manifest - len(maps):,} map(s) "
+            f"out of the draw"
         )
+        # **A cut that keeps essentially everything is refused.** See
+        # [`CELLS_NARROW_AT`]: the rule is ANY listed cell, so the filter
+        # saturates in the length of the list, and a leg that ran one anyway
+        # stamped `hunt.drawn_cells` — *this is not a base rate* — onto every row
+        # it made. Here, at plan time, and before a single field is dumped.
+        if kept_share > CELLS_NARROW_AT:
+            raise DepthRefused(
+                f"the {len(wanted_cells)} cell(s) given to --draw-cells keep {len(maps):,} "
+                f"of {after_manifest:,} map(s) at a cutoff of {bar:g} — {kept_share:.1%}, "
+                f"over the {CELLS_NARROW_AT:.0%} a cut has to beat. --draw-cells keeps a "
+                f"map that delivers ANY listed cell, so a long list at a low cutoff is not "
+                f"a narrowing; running it anyway would stamp hunt.drawn_cells on every row "
+                f"this leg makes and put a colour-narrowed provenance on a base-rate draw. "
+                f"Raise --draw-cutoff (this library: 0.30 keeps about two thirds, 0.60 "
+                f"about an eighth), list fewer cells, or drop --draw-cells and let the leg "
+                f"say it drew the whole pool. Nothing was rendered."
+            )
     if cell is None:
         asked_cells: list[str] = []
     else:
@@ -2175,6 +2228,11 @@ def build_plan(
         ),
         "cells_narrowed": bool(wanted_cells),
         "cells_narrowed_is": SCHEMA_NOTES["cells_narrowed_is"],
+        # What the cell cut actually kept, so a reader pricing a narrowed leg can
+        # see how hard it bit rather than only that it ran. See `CELLS_NARROW_AT`.
+        "cells_kept": None if not wanted_cells else round(len(maps) / max(1, after_manifest), 4),
+        "cells_kept_at_most": None if not wanted_cells else CELLS_NARROW_AT,
+        "cells_kept_is": None if not wanted_cells else SCHEMA_NOTES["cells_kept_is"],
         # Every draw here is seeded and the seeds are not one seed: a place draw
         # and a palette draw at the same arm are taken under different ones, and
         # a run nobody can re-take is a measurement nobody can check.
@@ -2969,7 +3027,9 @@ def merge(name: str, log=print) -> dict:
         f"[depth] merged {len(rows):,} row(s): the ledger holds {total:,} recipes, "
         f"{new:,} of them new"
     )
-    return report
+    # Beside the leg, through [`hunt.merge_report`] — see [`hunt.MERGE_NAME`] for
+    # what was lost while this was a `print`.
+    return hunt.merge_report(rows_path(name), report, log=log)
 
 
 # --------------------------------------------------------------------------- #

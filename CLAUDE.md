@@ -118,6 +118,15 @@ These were decided once, at the first commit, because each is expensive to rever
   which made an ephemeral artifact confer preservation and is why sweeping kept
   landing on Matt's desk as a recurring approval; there is no sweep step to carry
   forward any more.
+- **A collection's size is in `curation/targets.py` and nowhere else**, Matt's cut
+  of 2026-09-15. Sixteen collections — twelve hue families, four modes — and a
+  prompt that names a seat count is a prompt retyping one of the sixteen, which is
+  how they drifted before the table existed. `curate solve run --collection NAME`
+  and `curate solve record --collection NAME` take `n` from it, splice a family or
+  filter a mode through `targets.pool_for`, and `--n` still overrides. **A
+  collection the table does not name refuses** rather than seating a plausible
+  number. Changing a target is a one-line edit to `TARGETS`, and the reason for
+  each tier is written at the constant.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
@@ -206,30 +215,30 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,773 collected — 4,617 fast,
-156 slow — since `silent_failures_ckpt125` added 40 tests on 2026-09-14**, on a
-`.[dev,models]` install with a release engine built. **Fast: 4,617 of 4,617 in
-126.26 s (2:06)** with 156 deselected. Green, zero skips, zero failures. Forty
-tests for +0.77 s, which is what forty guards over parsing and arithmetic cost.
+Both are measured, not estimated. The tree holds **4,807 collected — 4,651 fast,
+156 slow — since `targets_ckpt125` added 34 tests on 2026-09-15**, on a
+`.[dev,models]` install with a release engine built. **Fast: 4,651 of 4,651 in
+131.17 s (2:11)** with 156 deselected. **Slow: 4,807 of 4,807 in 513.49 s (8:33).**
+Both green, zero skips, zero failures, and **the two lanes agree on the count**,
+which is the check `silent_failures_ckpt125` could not make.
 
-⚠ **That is a fast-lane reading and NOT a pair.** Matt said to skip the slow lane
-on this prompt, so the two lanes have not met on this tree and *the two lanes agree
-on the collected count* was not the check that produced the figure — the fast lane's
-own selected-plus-deselected was, which [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means)
-allows and which is the same arithmetic. What went unrun is the 156 slow guards; no
-hunk in that prompt touches a render path, which is why it was a cheap thing to skip
-and is not a precedent for skipping it after one. The slow figure of 156 is carried
-forward from `readme_overhaul_ckpt124` rather than re-measured, and the next prompt
-to take a pair is the one that confirms it.
+⚠ **The slow lane is 33.0 s over the last measured pair and only a sixth of that is
+the tests.** `readme_overhaul_ckpt124` read 480.45 s at 4,733; this is 513.49 s at
+4,807, and the same +74 tests cost the fast lane **+5.68 s**. Two things account for
+most of the rest and neither is a guard getting slower: the ledger grew **428,175 →
+457,430 rows** overnight, which is +6.8% on `test_leveled_identity`'s whole-store
+sweep — 49.4 s here, so about +3 s — and the box is running warm, measured rather
+than assumed: `test_renderer_agreement.py --slow`, untouched and engine-bound, read
+**18.70 s** against the 17.02 / 18.22 / 19.05 already on record, which is 10% on the
+engine-bound share. The residue was not chased and the decisive check — a
+`git worktree` at the old HEAD against today's store — was not taken.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.
 That is what *take the pair whether or not the prompt wrote a test* is for, and the
-drift was caught by the two lanes meeting rather than by anybody noticing. Every
-pair since has come in **under** `PRECLOSEOUT_ckpt123_wallpapers`'s 134.31 s and
-483.23 s while the tree grew by 64 tests, and the fast lane has landed on
-`lane_speedup_ckpt122`'s 125.12 s to a tenth twice — which settles that its ~9 s and
-~12 s were the box and not the tree.
+drift was caught by the two lanes meeting rather than by anybody noticing. The fast
+lane has landed on `lane_speedup_ckpt122`'s 125.12 s to a tenth twice — which
+settles that its ~9 s and ~12 s were the box and not the tree.
 
 `lane_speedup_ckpt122`'s own pair is **34.3 s and 80.8 s faster** than the baseline
 taken on the same tree an hour before it, and **no guard was deleted or weakened** to get there: one production

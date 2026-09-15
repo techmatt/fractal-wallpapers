@@ -375,6 +375,19 @@ class Unit:
     #: stratifier asked for. A prior about the draw and never a claim about the
     #: picture, whose colour is read off its own render.
     band: str
+    #: The codebook cell this candidate's palette was drawn **for**, `None` where
+    #: nothing asked for one. [`hunt.Try.cell`] and [`depth.Shot.cell`] under the
+    #: same name, and carried onto the ledger row as `drawn_for` by [`named`].
+    #:
+    #: **It was in `band` alone until 2026-09-15 and that is why it never reached
+    #: a row.** A breadth arm's stratifier asks for a cell, `plan_breadth` wrote
+    #: the ask into `band`, and `band` is a free-text field a deepen arm fills
+    #: with `band03` — so `hunt.drawn_for` read null on every row this module ever
+    #: made and the exact separator `curation/GALLERY.md` names for reading an
+    #: unconditioned rate was unavailable over them. `band` still carries it, for
+    #: the readouts that group on it; the ask is now also on the row under the
+    #: name every other reader looks it up by.
+    cell: str | None = None
     #: The mode's own settings — [`hunt.Try.mode_params`], same name and same
     #: reason: these three intentions are one duck type and [`hunt.Maker`] reads
     #: whichever it is handed. Empty for every arm this module draws.
@@ -400,6 +413,10 @@ class Unit:
             "colormap": self.colormap,
             "band": self.band,
             "k": self.k,
+            # **The ask, on every arm that has one.** `candidate_ledger.hunt_block`
+            # keeps `drawn_for` where there is one and drops it where there is not,
+            # so an arm nothing aimed writes the block it has always written.
+            "drawn_for": self.cell,
         }
         if self.mode_params:
             out["mode_params"] = dict(self.mode_params)
@@ -468,6 +485,9 @@ def plan_breadth(arm: str, places: list, maps: list, seed: int, per_location: in
                     colormap=str(colormap),
                     k=at,
                     band=str(cell),
+                    # The stratifier's ask, under the name the ledger reads it by
+                    # as well as in `band`. See `Unit.cell`.
+                    cell=str(cell),
                 )
             )
     return out
@@ -1179,7 +1199,8 @@ def merge(name: str, log=print) -> dict:
         f"[mine] merged {len(rows):,} row(s): the ledger holds {total:,} recipes, "
         f"{new:,} of them new"
     )
-    return report
+    # Beside the leg, through [`hunt.merge_report`] — see [`hunt.MERGE_NAME`].
+    return hunt.merge_report(rows_path(name), report, log=log)
 
 
 # --------------------------------------------------------------------------- #

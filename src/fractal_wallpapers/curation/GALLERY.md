@@ -1365,6 +1365,53 @@ every invocation, so the other spelling would put numpy behind
 `fractal-wallpapers --help` and behind the torch-free `fetch-weights --check` path
 `tests/test_base_install.py` exists to keep.
 
+### `--collection <name>` — a hue family or a mode, at the size the table sets
+
+**Sixteen collections and sixteen numbers, and until 2026-09-15 the numbers lived
+in whichever prompt was running that night.** `curation.targets.TARGETS` is the
+table now — twelve hue families and the four production modes a collection is kept
+for — and `targets.seats_for` is the one read of it. `curate solve run` and
+`curate solve record` take `--collection NAME`, take `n` from the table when `--n`
+is unsaid, and `--n` still wins. **A collection the table has no target for
+refuses** rather than seating a plausible number: `itinerary` is an accepted mode
+and therefore a collection, it has no target, and a pass over it has no size until
+somebody gives one or writes one down.
+
+**A family is spliced and a mode is filtered, and the asymmetry is the two axes.**
+A mode collection is a subset — `solve.Candidate.mode` already carries
+`mode_policy.routed_mode_of` — so the pass is the general pass over the rows in
+that mode and nothing about the solver changes; what it clears is the per-mode
+floors and the per-mode ceilings, which over a single-mode population are a demand
+nothing can meet and a cap on the collection itself (the shipped `threads` ceiling
+of 0.20 would cap a threads collection at a fifth of its own seats).
+
+A hue family is not a subset of anything the solver can see. `--themed` is
+CELL-granular — `solve.in_theme` asks `cell in candidate.cells` over the 48 — and a
+family is a different axis of the same reading, carried on every ledger row's
+colour block as `families` at `dominance`'s FAMILY_LEAD / FAMILY_ALONE and onto
+`solve.Candidate.families`. So `targets.pool_for` **appends the family name to
+`cells`** on every row the store already calls dominant in it, and the pass is then
+an ordinary themed pass on a cell spelled `lime`: `in_theme`, `themed_fine_bar` and
+the off-theme marking all agree, and the per-seat `cell` is `cells[0]`, the real
+cell, untouched. The visible cost is one synthetic row in the record's cell table,
+named for the family and equal to the seat count.
+
+**`targets.rule_for` takes the allowance and gives the demand back.** `--themed`
+sets `--target CELL=1.0`, and that flag does two jobs: it raises the cell's
+allowance out of the way (`floor(k·t·n)+1` at the uniform 1/48 is 26 seats of 400,
+which would refuse the theme at seat 27) *and* it states a demand. For one cell the
+demand is free. For a family it is not — the pool spreads over four cells, and four
+quarter-demands would seed the pass scarcest-cell-first and report a shortfall
+against a distribution nobody asked for. So the rule is built with all four cells
+at 1.0 and its targets are then emptied. The mode floors are the only demands a
+family pass carries.
+
+⚠ **A family pass and a mode pass are not comparable measurements**, and neither is
+comparable with the general one: the first runs the geometry-only distinctness rule
+at `rules.GEOMETRY_RADIUS` on the relaxed bar, the second the shipped twin test at
+`ceiling.TAU`. The table's numbers are what the pool can field of each and never a
+ranking.
+
 ### A themed pass relaxes the bar inside its own cell
 
 **Matt's ruling of 2026-09-11**, and it is on the themed path alone — the general
@@ -3036,6 +3083,21 @@ restores it and `tests/test_candidate_ledger.py` pins it, which repairs the next
 aimed leg and no earlier one. The lesson is the general one and it is cheap to
 state: **a field a README tells a human to filter on is a field with a reader**, and
 the trace has to include the prose.
+
+**It reaches the row from `depth`'s aimed arm and did not reach it from `mine`'s
+breadth arms at all, and that second hole was closed on 2026-09-15.** Read over the
+store of that morning, 7,860 of 457,430 rows carry `hunt.drawn_for` and every one
+of them is `depth`'s — `easy125_wide` 3,144, `on125_wide1` 3,084, `on125_wide2`
+768, `dtm_lc_smoke` 725, `on125_phoenix` 139. `mine.plan_breadth` asks
+`hunt.Stratifier` for a cell exactly as the aimed arm asks the carrier table, and
+wrote the ask into `Unit.band` — which a deepen arm fills with `band03`, so it is
+not a colour field and nothing could read it as one. `mine.Unit` carries `cell` now
+and `named()` states it; `band` still carries it too, for the readouts that group
+on it. **What a recolour leg keeps instead is `hunt.drawn_cells`, and that is the
+leg's filter list rather than the ask** — `on125_recolour1`'s 20,979 rows carry the
+24-cell narrowing and no `drawn_for`, because a `mode_floor` arm aims at a MODE and
+asks for no colour. That is correct and is not the hole: an arm with no ask writes
+the block it has always written.
 
 **And it under-prices a win that only a non-shareable mode can deliver, by up to
 an order of magnitude.** `seconds_per_win` is `renders_per_win` — a count over the

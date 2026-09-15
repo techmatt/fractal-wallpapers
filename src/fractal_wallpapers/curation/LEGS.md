@@ -1254,7 +1254,7 @@ wants a thin cell should not spend its clock on the direct traps**, whatever
 own terms and let the colour fall where it falls.
 
 **Every row a narrowed leg writes is stamped `hunt.drawn_cells` and `drawn_for`
-beside it is the aimed arm's alone**, both `candidate_ledger.ASKED_FOR` and both
+beside it is the ASK's**, both `candidate_ledger.ASKED_FOR` and both
 written only where there is an ask — [`LEGS_decisions.md`](LEGS_decisions.md)'s *The
 aim is not what fails, and `direct_trap_multiply` has no vivid half*.
 
@@ -1278,6 +1278,18 @@ a picture's colour rather than the `CELL_LEAD` 0.10 at which a cell merely leads
 `plan.maps_after_the_manifest` to check the cut actually happened** — a broad list
 at the default is an aim in name only. `easy125_recolour` ran nineteen cells at
 0.30 for this reason.
+
+**Since 2026-09-15 a saturating cut is REFUSED rather than reported.** A plan whose
+cell cut keeps more than [`depth.CELLS_NARROW_AT`] — **0.90** — of the maps the
+manifest left raises `DepthRefused`, at plan time and before a single field is
+dumped. A warning was the other option and it is the wrong one, because the lie is
+written onto the rows and not only into the log: a narrowed leg stamps
+`hunt.drawn_cells` on every row it makes and `cells_narrowed` on its record, and
+both say *this is not a base rate* — so a 24-cell list at the default put a
+colour-narrowed provenance on 21,000 ledger rows that outlive the leg. The refusal
+names the measured share and the three ways out (raise the cutoff, list fewer
+cells, drop the flag and let the leg say it drew the whole pool); the share the cut
+actually kept is on the plan as `cells_kept`, beside the bound it had to beat.
 
 ### `--cell` is a CYCLE, so a repeated cell is a weighted aim
 
@@ -1951,6 +1963,29 @@ different roster cannot say what that roster cost there; and `curves` reads the 
 `P(>=4)` bars rather than each mode's own `headroom.bars` rule, which under-reports
 any mode on the `P(>=3)` fallback. Both are recoverable from `sequence.jsonl`, whose
 rows carry `arm`, `mode`, `seconds` and both probabilities together.
+
+**A merge writes down what it did, and until 2026-09-15 three of the four legs did
+not.** `hunt`, `mine` and `depth` each built a report off `candidate_ledger.merge`
+— the manifests, the repeat draws, the prune — and returned it to a caller that
+printed it, while `rotation`, `repetition` and `label_migration` all wrote a
+`merge.json` beside their leg. So a night's displacement lived in a terminal and
+died with it. `hunt.merge_report` is the one writer all four reach now; it takes
+the leg's **rows file** rather than its name, so no module spells *where this leg
+lives* a second time, and it names the file on the report.
+
+**And the prune writes down WHICH rows it took, not only how many.**
+`ratchet.jsonl` is tracked, keeps counts, and is what lets a census assert the
+store only shrinks for reasons somebody wrote down — it cannot say which picture
+went. So the 1,443 incumbents one night's merge displaced were unrecoverable in
+principle: row gone, picture unlinked, no file naming either.
+`sweep.write_displaced` writes the key, the place, the mode, the settings and the
+picture path of every dropped row to
+`artifacts/curation/candidate_ledger/displaced/<stamp>.jsonl`, inside the
+transaction and after the three files are renamed, which is
+`_record_the_ratchet`'s order and its reason. Untracked and beside the store: it is
+hundreds of kilobytes a prune and it is forensics rather than a claim the history
+has to carry. The recipe key is the ID a `re-render` keys on, so a displaced row is
+buyable back.
 
 **Past the merge the arm is gone.** `candidate_ledger.hunt_block` keeps two fields
 of nine — `seconds` and `k` — so a merged row names its *run*

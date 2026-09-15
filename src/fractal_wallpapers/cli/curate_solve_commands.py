@@ -246,18 +246,34 @@ def _spacing_readout(stamp: str | None) -> dict:
 def _record_a_solve(args: argparse.Namespace) -> int:
     """The production solve, run once and recorded under a stamp that never moves."""
     from fractal_wallpapers.curation import solve, tentative
+    from fractal_wallpapers.curation import targets as targets_module
 
     # `solve.pool` and not `headroom.population`, for `curate solve run`'s reason:
     # the two build the same candidate list — `population` IS `solve.pool` plus a
     # per-mode render-cost table read off every ledger row — and this handler has
     # never looked at that table. Streaming instead is 5.1 s and one fewer
     # whole-ledger copy.
-    seats = args.n if args.n is not None else tentative.RECORDED_SEATS
+    if args.collection and args.themed:
+        print(
+            "--collection names a hue family or a mode and --themed names one of the 48 "
+            "codebook cells; they are two different galleries. Name one."
+        )
+        return 1
+    # **The table first, `--n` over it, `RECORDED_SEATS` under both.** A collection
+    # the table has no target for is refused by `seats_for` rather than recorded at
+    # a thousand seats nobody chose — see `curation.targets`.
+    if args.n is not None:
+        seats = int(args.n)
+    elif args.collection:
+        seats = targets_module.seats_for(args.collection)
+    else:
+        seats = tentative.RECORDED_SEATS
     # A themed record reaches the same two demands `curate solve run --themed`
     # reaches, through the same helper. Unthemed, both are `None` and every
     # constant below is the one an unthemed record has always carried, so a
     # record taken before the themed pass could reach this verb is unchanged.
     targets, floor = ({}, None) if not args.themed else themed_demands(args.themed, seats)
+    shape: dict = {}
     try:
         explain = keys_to_explain(args)
         forced = keys_to_force(args)
@@ -265,6 +281,14 @@ def _record_a_solve(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     candidates, refused = solve.pool()
+    if args.collection:
+        candidates, held = targets_module.pool_for(candidates, args.collection)
+        shape = collection_pass(args.collection, seats)
+        targets, floor = shape["targets"], shape["floor"]
+        print(
+            f"[collection] {args.collection}: "
+            f"{targets_module.kind_of(args.collection)}, {held:,} row(s), {seats} seat(s)"
+        )
     try:
         # ONE column, resolved before the order and handed to both. The order is
         # resolved out here rather than inside `solve` — see `curate solve run` —
@@ -275,6 +299,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
         record = solve.solve(
             candidates,
             n=seats,
+            rule=shape.get("rule"),
             targets=targets,
             floor=floor,
             fine_bar=args.fine_bar,
@@ -287,9 +312,13 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             swap=not args.no_swap,
             seconds=args.swap_seconds,
             spiral_cap=args.spiral_cap,
-            mode_ceilings=mode_ceilings_named(args.mode_ceiling),
+            mode_ceilings=(
+                shape["mode_ceilings"]
+                if "mode_ceilings" in shape
+                else mode_ceilings_named(args.mode_ceiling)
+            ),
             cell_floor=args.cell_floor == "on",
-            theme=args.themed,
+            theme=shape.get("theme") or args.themed,
             geometry_radius=args.themed_radius,
             themed_cap=args.themed_cap,
             augment_chains=args.augment == "on",
@@ -359,6 +388,7 @@ def curate_solve(args: argparse.Namespace) -> int:
     """Choose the gallery, or record one: a stratified view, a greedy seed, and swaps."""
     from fractal_wallpapers.curation import candidate_ledger, ceiling, solve
     from fractal_wallpapers.curation import release as release_module
+    from fractal_wallpapers.curation import targets as targets_module
 
     if args.what != "run":
         # A flag `run` reads and this verb does not is refused BY THE PARSER, at
@@ -367,6 +397,17 @@ def curate_solve(args: argparse.Namespace) -> int:
         # against a bare re-parse of the same verb, which was the same rule
         # enforced a step too late — after argparse had already accepted the line.
         return curate_recorded_solve(args)
+    if args.collection and args.themed:
+        print(
+            "--collection names a hue family or a mode and --themed names one of the 48 "
+            "codebook cells; they are two different galleries. Name one."
+        )
+        return 1
+    # **The table, and `--n` still wins.** `seats_for` refuses a collection it has
+    # no target for rather than seating a plausible number — see
+    # `curation.targets`.
+    if args.n is None and args.collection:
+        args.n = targets_module.seats_for(args.collection)
     if args.n is None:
         args.n = candidate_ledger.FIRST_SOLVE
 
@@ -410,6 +451,20 @@ def curate_solve(args: argparse.Namespace) -> int:
         return 1
 
     candidates, _refused = solve.pool()
+    shape: dict = {}
+    if args.collection:
+        # The pool is narrowed BEFORE the rank order is resolved for a mode pass
+        # and spliced before it for a family one, so the cascade ranks the pool
+        # the pass actually seats from. `ranking_for` reads the whole pool either
+        # way — a family splice leaves every row in it — so the order below is
+        # the same order an unnarrowed pass would take.
+        candidates, held = targets_module.pool_for(candidates, args.collection)
+        shape = collection_pass(args.collection, args.n)
+        targets, floor = shape["targets"], shape["floor"]
+        print(
+            f"[collection] {args.collection}: "
+            f"{targets_module.kind_of(args.collection)}, {held:,} row(s), {args.n} seat(s)"
+        )
     try:
         fine = solve.fine_column(forced)
         order, coverage = solve.ranking_for(candidates, args.key, fine=fine)
@@ -418,6 +473,7 @@ def curate_solve(args: argparse.Namespace) -> int:
         record = solve.solve(
             candidates,
             n=args.n,
+            rule=shape.get("rule"),
             targets=targets,
             floor=floor,
             locations=args.locations,
@@ -432,13 +488,17 @@ def curate_solve(args: argparse.Namespace) -> int:
             order=order,
             coverage=coverage,
             allow_unranked=args.allow_unranked,
-            theme=args.themed,
+            theme=shape.get("theme") or args.themed,
             geometry_radius=args.themed_radius,
             themed_cap=args.themed_cap,
             rows_per_seat=args.rows_per_seat,
             draw_seed=args.draw_seed,
             spiral_cap=args.spiral_cap,
-            mode_ceilings=mode_ceilings_named(args.mode_ceiling),
+            mode_ceilings=(
+                shape["mode_ceilings"]
+                if "mode_ceilings" in shape
+                else mode_ceilings_named(args.mode_ceiling)
+            ),
             cell_floor=args.cell_floor == "on",
             swap=not args.no_swap,
             seconds=args.swap_seconds,
@@ -807,6 +867,52 @@ def themed_flags(container):
         "themed gallery reads as repetitive or as needlessly small. Ignored without "
         "`--themed`",
     )
+
+
+def collection_flag(container) -> None:
+    """`--collection`, on the two verbs that seat a gallery.
+
+    One flag and one helper for both, [`themed_flags`]' reason: `run` and
+    `record` must take the same flags or a recorded collection and a run one at
+    the same size are two different galleries.
+    """
+    from fractal_wallpapers.curation import targets as targets_module
+
+    container.add_argument(
+        "--collection",
+        metavar="NAME",
+        choices=list(targets_module.collections()),
+        help="seat ONE COLLECTION — a hue family or a production mode — at the size "
+        "`curation.targets.TARGETS` sets for it. A family pass splices the family name "
+        "onto the cells of every row the store calls dominant in it and then runs as an "
+        "ordinary themed pass (the relaxed bar, geometry-only distinctness), with the "
+        "family's four cells raised out of the colour ceiling's way and no colour demand "
+        "stated. A mode pass narrows the pool to that ROUTED mode and clears the per-mode "
+        "floors and ceilings, which over a single-mode population are a demand nothing can "
+        "meet and a cap on the collection itself. The sixteen targets are: "
+        + ", ".join(f"{name} {seats}" for name, seats in targets_module.TARGETS.items())
+        + ". `--n` overrides the table; `--themed` names a CELL and refuses beside this",
+    )
+
+
+def collection_pass(collection: str, seats: int) -> dict:
+    """The solve arguments one `--collection` pass runs under, as a dict to splat.
+
+    Both verbs read this for [`themed_demands`]' reason. The two kinds differ in
+    everything but the table they took their `n` from, so the branch is here and
+    not at each call site.
+    """
+    from fractal_wallpapers.curation import solve as solve_module
+    from fractal_wallpapers.curation import targets as targets_module
+
+    if targets_module.kind_of(collection) == targets_module.FAMILY:
+        return {
+            "theme": collection,
+            "rule": targets_module.rule_for(collection),
+            "targets": {},
+            "floor": solve_module.mode_floor(int(seats)),
+        }
+    return {"theme": None, "rule": None, "targets": {}, "floor": 0, "mode_ceilings": {}}
 
 
 def themed_demands(theme: str, n: int) -> tuple[dict, int]:
@@ -1375,6 +1481,7 @@ def add_steps(steps) -> None:
         f"solve carried is retired and not merged",
     )
     themed_flags(themed)
+    collection_flag(pool_size)
     distinctness.add_argument(
         "--neutral-radius",
         type=float,
@@ -1480,6 +1587,7 @@ def add_steps(steps) -> None:
     # themed baselines of 2026-09-05 are what noticed. The three flags are the
     # same three `run` carries, from the same helper.
     themed_flags(recording)
+    collection_flag(recording)
 
     sweeping_k = solve_verbs.add_parser(
         "k-sweep",

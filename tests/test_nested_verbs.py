@@ -575,6 +575,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--rows-per-seat",
             "--draw-seed",
             "--allow-unranked",
+            "--collection",
             "--fine-bar",
             "--forced",
             "--fold",
@@ -624,6 +625,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--themed",
             "--themed-cap",
             "--themed-radius",
+            "--collection",
         ),
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
@@ -1069,10 +1071,16 @@ def test_a_misspelt_themed_cell_is_refused_at_the_parser_on_both_verbs() -> None
 
 
 def test_a_themed_record_reaches_the_same_three_flags_the_run_carries() -> None:
-    """One helper builds them, so `--help` cannot describe one flag two ways."""
+    """One helper builds them, so `--help` cannot describe one flag two ways.
+
+    `--collection` is here with the three and from a helper for the same reason: a
+    record IS a run with nothing changed, so a collection recorded at one size and
+    a collection run at that size must be the same gallery, and two spellings of
+    the flag would be two galleries.
+    """
     groups = nested_groups(cli.build_parser())
     verbs = groups["solve"].choices
-    themed = ("--themed", "--themed-cap", "--themed-radius")
+    themed = ("--themed", "--themed-cap", "--themed-radius", "--collection")
     for verb in ("run", "record"):
         held = {
             option.option_strings[0]: option
