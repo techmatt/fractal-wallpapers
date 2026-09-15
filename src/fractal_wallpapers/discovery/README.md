@@ -33,7 +33,25 @@ implementation behind it. A walk that runs on the null scorer is a complete walk
 it admits what survives the gates, and its ledger is what the first head gets
 trained on, which is the only order the two can be built in.
 
-What follows is what to read before changing anything here.
+The table below is which command to run. What follows it is what to read before
+changing anything here.
+
+## Which of the three commands to reach for
+
+| command | what it needs to start | what it is for |
+| --- | --- | --- |
+| `walk` | the tracked seed pools for a dynamical family; an explicit `--seeds` file on a parameter plane. There is no sampler behind either | one descent, keeping what survives the structural gates |
+| `reframe` | locations a **human** already scored a keeper | the operators' own nucleus-centred views, which a walk builds and never scores |
+| `harvest` | nothing beyond the seed pools — it divides its clock by how far each partition sits below its share of the release | the production loop, and the one command for **cold exploration**: `harvest --partition FAMILY --minutes N` |
+
+These are not three alternatives at one level. A harvest **is** a walk with an economics
+layer over it — six of its nine flag groups carry `walk`'s own titles — and `reframe` fires
+the walk's operators from the outside. So a family with no labels is `harvest --partition`
+and not a choice between the three: `reframe` has no keepers to seed from there, and a bare
+`walk` keeps no books about what that family is owed.
+
+On a machine that has never built tiles, add `--no-scoring` and run `curate score --harvest
+<out-dir>` afterwards — the same two-step this file documents for `reframe` below.
 
 ## The reframing channel: `reframe`, seeded at proven roots
 

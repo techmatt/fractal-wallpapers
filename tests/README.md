@@ -641,6 +641,26 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### docs_and_install_ckpt125
+
+**Both lanes, and they agree at 4,821.** `docs_and_install_ckpt125`, 2026-09-15.
+**Fast: 4,665 selected, 156 deselected — 4,821 collected — in 140.81 s (2:21).
+Slow: 4,821 of 4,821 in 510.40 s (8:30).** Both green, zero skips, zero failures.
+**No test added** — the diff is documentation, two help strings and one refusal —
+so the count is the entry below's, unmoved, which is the point of taking the pair
+anyway.
+
+**The fast lane read +6.45 s with nothing in the tree to explain it, and the SLOW
+lane settles it as the box for free.** The rule is *a lane that moves right after
+code landed is the code until measured otherwise*, and the cheap decisive check here
+cost nothing extra: the slow lane is a superset of the fast one, so a tree change
+worth 6.45 s of fast lane is worth 6.45 s of slow lane too. The slow lane moved
+**+1.61 s** (508.79 → 510.40) across the same interval. A cost that appears in the
+subset and not in the superset is not a cost. **A pair can answer *box or tree*
+without a control re-run when only one of the two lanes moved** — which is worth
+having, because the usual engine-bound control is still unavailable after
+`spec_enumeration_ckpt125` changed `test_renderer_agreement.py`.
+
 #### spec_enumeration_ckpt125
 
 **Both lanes, and they agree at 4,821.** `spec_enumeration_ckpt125`, 2026-09-15.

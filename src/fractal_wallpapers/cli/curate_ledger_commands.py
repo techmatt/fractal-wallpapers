@@ -642,7 +642,12 @@ def add_steps(steps) -> None:
                 "ledger row names: a walk's gate render where the row's recorded digest still "
                 "describes it, the deploy view already on disk for the standing stock. No "
                 "deploy-geometry render is ever demanded for a row that was not scored at one. "
-                "Resumable in both halves: a picture already on disk is not re-made."
+                "Resumable in both halves: a picture already on disk is not re-made. "
+                "There is no --score-workers here, unlike `harvest`, `reframe` and `walk`, "
+                "and that is a decision rather than an omission: what little this renders it "
+                "renders in this process, and the fan-out was measured not to pay — 0.88x at "
+                "two workers and 1.01x at four over the same views. See supply/README.md's "
+                "*`--score-workers` is a flag with almost nothing left to do*."
             ),
         )
     )

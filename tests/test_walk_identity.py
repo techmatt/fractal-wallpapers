@@ -207,14 +207,22 @@ def test_a_corpus_that_is_not_on_this_machine_refuses_rather_than_assuming(
     tmp_path, monkeypatch
 ) -> None:
     """An unchecked identity is not a held one. The message is an instruction: the
-    two ways to get the records back, and the flag that walks without them."""
+    two ways to get the records back, the flag that walks without them, and the
+    SPLIT — walk unscored now and score the ledger afterwards — which is the only
+    one of the four a machine that has never built tiles can actually take. The
+    first wants an archive_root a fresh clone has no reason to have and the second
+    is the whole corpus, so a refusal naming only those three sends a newcomer to
+    give up the judged crawl outright."""
     monkeypatch.setattr(
         tile_module, "manifest_path", lambda regime=None: tmp_path / "gone" / "manifest.jsonl"
     )
     with pytest.raises(identity.IdentityBroken) as refusal:
         walk(tmp_path, Judge())
-    assert "--no-scoring" in str(refusal.value)
-    assert "storage restore" in str(refusal.value)
+    said = str(refusal.value)
+    assert "--no-scoring" in said
+    assert "storage restore" in said
+    assert "tiles build" in said
+    assert "curate score --harvest" in said, "the fourth way out, and the one a fresh box has"
 
 
 def test_a_scorer_that_declares_no_regime_asserts_nothing(tmp_path) -> None:

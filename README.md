@@ -67,16 +67,34 @@ supply engine and the labeling rig. Three extras add the rest:
 A command that crosses one of those lines names the extra it needs instead of raising a
 bare `ModuleNotFoundError`.
 
-⚠ **pip installs CPU-only torch on Windows.** `pyproject.toml` routes torch and
-torchvision to the CUDA index through `[tool.uv.sources]`, and only `uv` reads those keys.
-Training then runs orders of magnitude slower with nothing reporting an error. Either use
-`uv sync --extra models`, or name the index by hand:
+⚠ **pip installs CPU-only torch, and naming the CUDA index by hand does not fix it.**
+`pyproject.toml` routes torch and torchvision to that index through `[tool.uv.sources]`,
+and only `uv` reads those keys. `--extra-index-url` is not the equivalent: pip pools both
+indices and takes the highest version across the pool, and the CUDA index tops out at
+`torch 2.6.0+cu124` where PyPI is further ahead — so the pooled resolve picks PyPI's newer
+CPU build, `torch.cuda.is_available()` comes back `False`, and nothing reports an error.
+That index trails PyPI's cadence by construction, so an open range recurs on every torch
+release. Use `uv`:
 
 ```
-.venv/Scripts/pip install --extra-index-url https://download.pytorch.org/whl/cu124 -e ".[dev,models]"
+uv sync --extra dev --extra models --extra solve
 ```
 
-No lockfile is tracked here.
+All three named, because `uv sync` installs exactly what it is told. It writes a `uv.lock`
+in the checkout; no lockfile is tracked here.
+
+Failing that, pip needs the exact versions that index holds rather than an open range:
+
+```
+.venv/Scripts/pip install --extra-index-url https://download.pytorch.org/whl/cu124 \
+  -e ".[dev,models,solve]" torch==2.6.0+cu124 torchvision==0.21.0+cu124
+```
+
+**This is a training concern and nothing else.** Rendering, the search walk and choosing a
+gallery all run on CPU torch — the judge reads a candidate in about 26 ms there, measured
+in [`curation/MEASUREMENTS.md`](src/fractal_wallpapers/curation/MEASUREMENTS.md)'s *The
+judge is two orders cheaper than the engine*. A machine that will not train a head wants
+the CPU build.
 
 ## Quickstart
 
@@ -141,6 +159,40 @@ not re-hosted here, and it is the only command that needs the network after inst
 Everything runnable is a subcommand of `fractal-wallpapers`. There are 33 top-level
 commands and around 160 counting subgroups, each with its own `--help`. Five workflows use
 most of them.
+
+**They are not five independent recipes.** A fresh clone holds tracked labels and nothing
+rendered, so *Choose a gallery* has nothing to choose from until *Find new places* and
+*Find better renderings* have both run. Three of the five, in this order:
+
+```
+fractal-wallpapers fetch-weights
+fractal-wallpapers harvest --partition mandelbrot --minutes 60 --no-scoring
+fractal-wallpapers curate score --harvest artifacts/harvest
+fractal-wallpapers curate embed
+fractal-wallpapers curate hunt run --name h1 --budget 1200 --unconditional 600
+fractal-wallpapers curate hunt merge --name h1
+fractal-wallpapers curate headroom
+fractal-wallpapers curate solve run --n 150
+```
+
+`--no-scoring` on the first walk because a judged crawl checks the cap its tiles were built
+at, and a fresh machine has no tile records to check against; `curate score --harvest` then
+reads the same ledger through the head afterwards, which is the pattern
+[discovery](src/fractal_wallpapers/discovery/README.md) documents for `reframe` too.
+`curate embed` is a hard gate rather than an optional step: a hunt refuses outright against
+an empty embedding store.
+
+**The hunt is the only step above that makes pictures.** `curate candidate-ledger backfill`
+reads the two decision stores and drives no engine, so on a machine that has rendered
+nothing it writes rows with no picture — which a solve cannot seat, the diversity rule
+being read off pixels. It is how an existing pool is rebuilt, not a step toward a first
+gallery.
+
+**Merging a leg rewrites tracked manifests, and that is expected.** `curate hunt merge` and
+`candidate-ledger backfill` both update the manifests under `data/curation/`, and
+`rows.manifest.json` can *shrink* as stale history consolidates during a prune. A `git
+status` that comes back dirty after a leg is the record keeping up, not an edit you made by
+accident.
 
 **Find new places.** A walk over parameter space, scored by the location head, with what
 survives folded into the candidate ledger. See
