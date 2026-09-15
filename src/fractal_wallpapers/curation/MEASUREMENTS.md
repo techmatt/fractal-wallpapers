@@ -605,8 +605,11 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | 1.593 | **a mined best-of-five**, whole `mined()` roster, per CANDIDATE | 3 | 5 | 09-11 | its own pilot, 177 cand / 45 shots | `rotation_pass_ckpt120` |
 | 2.870 | **the 9 dear modes**, floor draw over proven places untried in the angle modes | 3 | 3/mode | 09-13 | 1,883 cand / 72 places, `phoenix:classic` out | `mine_pilot_ckpt124_armA` |
 | 4.160 | the same 9, **breadth** over never-opened places | 3 | 1 | 09-13 | 1,282 cand / 1,282 places | `mine_pilot_ckpt124_armB` |
+| 1.261 | 3 shareable modes, breadth + **aimed**, over never-opened places | 3 | 12 | 09-14 | 6,413 cand / 537 places | `easy125_wide` |
+| **0.759** | `tia`+`stripe`, **floor draw** over proven places, cells aimed | 3 | 5/mode | 09-14 | 10,601 cand / 1,062 places | `easy125_recolour` |
 
-⚠ **Those last two rows are the same roster on two populations and they differ 1.45x in
+⚠ **`mine_pilot_ckpt124_armA` and `armB` are the same roster on two populations and
+they differ 1.45x in
 price and 3.0x in what a clear costs**, measured back to back on one box on 2026-09-13:
 the floor draw over proven places returned **111 clears at `SEATING_BAR` in 1,883
 candidates (5.89%)** for **48.7 engine seconds a clear**, and breadth over never-opened
@@ -614,6 +617,20 @@ places **36 in 1,282 (2.81%)** for **148.1**. Width is part of the first number 
 none of the second — a dear mode dumps no field, so its price is flat in width and the
 1.45x is the places. **A dear-mode leg is priced by where it stands, not by how wide it
 goes.**
+
+⚠ **`easy125_wide` and `easy125_recolour` are the SHAREABLE half of that same
+comparison, taken back to back on one box on 2026-09-14, and they say it again at
+2.4x.** The floor draw over proven places cleared `P(>=3) >= 0.50` in **6,533 of
+10,601 (61.6%) for 1.2 engine seconds a clear**; breadth over never-opened places
+cleared **2,795 of 6,413 (43.6%) for 2.9**. Unlike the dear-mode pair, width *is*
+part of both numbers — a shareable mode dumps one field and recolours off it, so
+the floor draw's five recolours a (place, mode) pair amortise a dump the breadth
+arm pays once per mode at a fresh place. **The cheap arm is cheap twice over**:
+0.759 against 1.261 engine seconds a candidate, and a hit rate 1.41x higher on top
+of it. What it costs is retention — **4,981 of its 10,601 rows were pruned at the
+merge (53.0% kept) against the breadth leg's prune-free 100%**, because a proven
+place is a place with a pair already filling up. 1,443 incumbent rows were
+displaced by the survivors, so the prune is not pure loss.
 
 ⚠ **The displacement half of the near band is the CHEAPEST arm this project has
 measured on the full roster — 0.795 against the with-room half's 2.444 and breadth's

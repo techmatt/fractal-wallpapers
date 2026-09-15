@@ -1258,6 +1258,66 @@ beside it is the aimed arm's alone**, both `candidate_ledger.ASKED_FOR` and both
 written only where there is an ask — [`LEGS_decisions.md`](LEGS_decisions.md)'s *The
 aim is not what fails, and `direct_trap_multiply` has no vivid half*.
 
+⚠ **The filter SATURATES in the length of the cell list, and the default cutoff
+hides it.** A map is kept when **any** listed cell clears the cutoff, so every cell
+added makes the test easier, and `--draw-cutoff` is a per-cell bar that does not
+know how many cells it is being asked about. Measured over `colorize.pool`'s 942
+maps on 2026-09-14, on the non-`lime` cells with the most `tia`+`stripe` headroom:
+
+| cells listed | @ 0.10 | @ 0.15 | @ 0.20 | @ 0.25 | @ 0.30 |
+|---|--:|--:|--:|--:|--:|
+| 8 | 610 (65%) | 480 | 386 | 311 | 243 (26%) |
+| 19 | **938 (99.6%)** | 895 | 801 | 705 | **580 (62%)** |
+| 25 | **940 (99.8%)** | 910 | 843 | 757 | 641 (68%) |
+
+At the default 0.10 a nineteen-cell list is **not a filter at all** — it keeps 938
+of 942 and the leg draws the untouched pool while its log reports a narrowing. It
+takes **0.30 to cut nineteen cells to 580**, and 0.30 is a *quarter* to a third of
+a picture's colour rather than the `CELL_LEAD` 0.10 at which a cell merely leads.
+**Pick the cutoff against the length of the list, and read
+`plan.maps_after_the_manifest` to check the cut actually happened** — a broad list
+at the default is an aim in name only. `easy125_recolour` ran nineteen cells at
+0.30 for this reason.
+
+### `--cell` is a CYCLE, so a repeated cell is a weighted aim
+
+[`_plan_aimed`] hands place `i` the cell at `cells[i % len(cells)]`, and nothing
+between the parser and there deduplicates: `asked_cells` is built as a list, the
+unservable-cell filter is a comprehension over it, and the known-cell check is a
+membership test. **So listing a cell twice gives it twice the arm.** That is the
+only way to spell a weighted aim with a flag whose type is a set, and it needs no
+code — `--cell green_a green_a green_b cyan_a` is three-quarters green.
+
+`easy125_wide` used a **41-slot cycle** to aim eight hue families in proportion
+to each one's shortfall against n=500 (green 12 slots of 41, purple 1), split
+within a family across its four cells by that cell's own remaining headroom, and
+**woven one family at a time rather than emitted family by family** — the same
+reason [`_plan_aimed`] cycles rather than concatenates, since a clock-bound leg
+always truncates and a block layout starves whatever is last.
+
+**Measured, and the aim is worth 4.5x to 6.6x at the FAMILY.** Against the matched
+`flat` control in the same leg — same places, same bands, same width, differing in
+the palette ask alone:
+
+| aimed at | candidates | cell hit | family hit | flat control | lift |
+|---|--:|--:|--:|--:|--:|
+| green | 902 | 60.0% | 77.2% | 12.6% | **6.14x** |
+| cyan | 686 | 48.4% | 65.9% | 11.4% | 5.76x |
+| teal | 613 | 44.4% | 64.3% | 11.1% | 5.81x |
+| yellow | 324 | 54.9% | 76.8% | 17.1% | 4.49x |
+| rose | 168 | 53.6% | 70.8% | 10.8% | **6.55x** |
+| purple | 84 | 33.3% | 63.1% | 11.0% | 5.76x |
+
+**Read a family aim at the family and not at the cell.** `depth.hit_rate` counts
+*dominant in the cell it was drawn for*, which is the right question for a cell aim
+and the wrong one for a family aim: a `light_vivid_green` ask that came out
+`dark_muted_green` is a miss in that column and a hit on what an n=500 family pass
+seats on. The cell rate under-reads the family rate by 10 to 30 points here.
+
+**And it cost nothing in quality.** The aimed arm cleared `P(>=3) >= 0.50` at
+**44.89%** against the flat control's **40.30%** on the same leg — so conditioning
+the palette draw did not buy its colour out of the judge's pocket.
+
 ### `sequence.jsonl` carries the whole autolevel stamp, and did not until 2026-09-02
 
 **A boolean is not a record of what the operator did.** `band_autolevel/v1` renders
@@ -2106,6 +2166,18 @@ keeps taking from whichever still hold something. **So a leg that has to consume
 bounded location pool gives the ranked draw the bulk of the share**: at
 `0.5 / 0.25 / 0.25` the three arms planned 7,007 / 2,079 / 624 places and between
 them took all 9,710.
+
+⚠ **That pool is finite and it has nearly been spent — READ IT before planning a
+breadth leg, never carry the figure in.** On 2026-09-14 it stood at **2,470**
+against the 19,415 below and the 6,821 a prompt three weeks younger was written
+around, and it is **not spread**: `multibrot5` 1,254, `mandelbrot` 598,
+`julia:mandelbrot` 330, `phoenix:classic` 288, and **five of the ten partitions
+hold none at all**. A leg sized off a remembered number plans partitions that are
+empty and reports the shortfall as a rate. The reading is one call —
+`mine.population()["pools"]`, and a leg's own record carries it at
+`route.unopened_stock`. **Breadth is no longer the arm that scales**; what does is
+the floor draw over proven places — [`MEASUREMENTS.md`](MEASUREMENTS.md)'s
+`easy125_wide` and `easy125_recolour` rows price the two against each other.
 
 **On a breadth leg the never-opened pool caps the plan, not the clock.**
 2026-08-29: 28,420 admitted locations, 8,714 of them already opened, **19,415
