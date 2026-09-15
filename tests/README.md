@@ -55,6 +55,7 @@ long to run as the optimization costs to compile.
     - [The ledger is read once a session, and a sweep takes a budget](#the-ledger-is-read-once-a-session-and-a-sweep-takes-a-budget)
     - [Four things that used to dominate and no longer do](#four-things-that-used-to-dominate-and-no-longer-do)
   - [The lane's readings, in order](#the-lanes-readings-in-order)
+    - [readme_overhaul_ckpt124](#readme_overhaul_ckpt124)
     - [weights_release_ckpt124](#weights_release_ckpt124)
     - [repo_bootstrap_fixes_ckpt124](#repo_bootstrap_fixes_ckpt124)
     - [publish_gallery_ckpt124](#publish_gallery_ckpt124)
@@ -637,6 +638,26 @@ repository and a chronological log is not a rule. The rules the log produced
 stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
+
+#### readme_overhaul_ckpt124
+
+**Both lanes, idle box, and they agree at 4,733.** `readme_overhaul_ckpt124`,
+2026-09-14. **Fast: 4,577 selected, 156 deselected — 4,733 collected — in 125.49 s
+(2:05). Slow: 4,733 of 4,733 in 480.45 s (8:00).** Both green, zero skips, zero
+failures. One test added, fast, arithmetic over four `stat` calls: the guard that
+holds `ALLOWLIST` to the thumbnail bound the README strip was admitted on.
+
+**Nothing to attribute, which is the point of recording it.** The fast lane is 0.28 s
+under the reading below, taken an hour earlier on the same tree plus one test, and
+the slow lane is 12.5 s under it. The reading below spent forty seconds proving its
+own +14.9 s was the box; this pair is what that box looks like when it settles, and
+it is worth having the two side by side rather than only the one that moved.
+
+**A lane was killed mid-run to get this reading and that is not a failure to chase.**
+The first pair started against four tracked images that were replaced before it
+finished, which would have failed `test_history_purity.py` on names no longer in the
+tree. A lane measuring a tree that is being edited under it measures nothing — the
+pair above is a clean re-run, not a retry of a red.
 
 #### weights_release_ckpt124
 

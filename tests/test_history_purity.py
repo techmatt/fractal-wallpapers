@@ -88,8 +88,36 @@ RECORD_EXEMPT_KEYS = frozenset({"prereg"})
 # it to nothing else. Two rules, two lists, and a file has to earn each separately.
 RECORD_EXEMPT_PREFIXES = ("data/gallery_grade/corpus/",)
 
-# Deliberately empty. Every entry here is a permanent exception to the rule above.
-ALLOWLIST: frozenset[str] = frozenset()
+# Every entry here is a permanent exception to the rule above: a blob committed here
+# lives in every clone of this history forever, and no later deletion takes it back out.
+#
+# The README's example strip is the only thing that needs it, added 2026-09-14 on Matt's
+# call. The repository makes wallpapers and its front page had no picture on it, which is
+# the one thing a reader who has never heard of the project needs to see before deciding
+# whether to read further. The alternatives were both worse. Hosting them on a release
+# asset or a branch keeps the history text-only and puts the front page's images behind a
+# link that can rot independently of the commit that referenced it — and nothing in this
+# repository would notice when it did. Describing the output in prose instead is what the
+# README already did.
+#
+# The bound on the exception is that these are THUMBNAILS and there are four of them:
+# 480x270, ~43 KB each, 173,355 bytes for the set, which is a sixth of `MAX_TRACKED_BYTES`
+# for one file and well under it for all four. A gallery does not come here — the gallery
+# is `curate solve browse --viewer`, and the pictures it shows stay ignored like every
+# other render. Each of these four is a seat of the published n=1000 record and redraws
+# byte-identical from tracked data with `render --recipe … --key <seat>`, so what is
+# committed is a scaled copy of something this repository can already make again.
+#
+# Widening this is a decision, not a fix: a fifth picture, a larger one, or a picture that
+# is not derivable from a tracked record is a different exception from this one.
+ALLOWLIST: frozenset[str] = frozenset(
+    {
+        "examples/mandelbrot_stripe.jpg",
+        "examples/phoenix_threads.jpg",
+        "examples/julia_smooth.jpg",
+        "examples/julia_multibrot3_threads.jpg",
+    }
+)
 
 # Exempt from the SIZE rule only, and still held to being text. The two rules are
 # separated here because they protect different things: a binary blob is a
@@ -227,6 +255,37 @@ def test_the_per_file_cap_agrees_with_the_record_s_own_test() -> None:
     from tests.test_palette_carriers import MAX_RECORD_BYTES
 
     assert PER_FILE_CAPS["data/palettes/carriers.jsonl"] == MAX_RECORD_BYTES
+
+
+#: What the binary allowlist's stated bound is worth as a number. The strip is four
+#: 480x270 thumbnails at ~44 KB; 128 KiB apiece is room for a recompression and no room
+#: for a full-resolution wallpaper, which is the shape the exemption is written around.
+MAX_ALLOWLISTED_BYTES = 128 * 1024
+
+
+def test_the_binary_allowlist_is_not_dead_and_stays_a_thumbnail_strip() -> None:
+    """The one exception that lets a blob in is held to the bound it was granted on.
+
+    `ALLOWLIST` is the only door in this file that admits a binary, so the reasons
+    written at it have to be checkable rather than remembered. Three halves, for the
+    three ways it goes wrong: an entry nobody tracks any more is a rule nobody reads;
+    an entry that is not an image is a different exception wearing this one's name; and
+    an entry that grew to a full-resolution render is the gallery this list refuses to
+    become. `MAX_TRACKED_BYTES` would not catch that last one — a 1 MiB wallpaper
+    passes it — which is why the bound here is its own, tighter number.
+    """
+    tracked = set(tracked_files())
+    for name in sorted(ALLOWLIST):
+        assert name in tracked, f"{name} is allowlisted and not tracked — delete the entry"
+        assert Path(name).suffix.lower() in {".jpg", ".jpeg", ".png"}, (
+            f"{name} is allowlisted and is not an image; this list is the README strip's "
+            f"exception and not a general one"
+        )
+        size = (REPO_ROOT / name).stat().st_size
+        assert size <= MAX_ALLOWLISTED_BYTES, (
+            f"{name} is {size} bytes, over the {MAX_ALLOWLISTED_BYTES}-byte thumbnail "
+            f"bound this exemption was granted on"
+        )
 
 
 def test_the_size_exemption_does_not_exempt_a_blob() -> None:
