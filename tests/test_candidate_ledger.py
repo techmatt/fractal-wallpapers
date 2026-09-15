@@ -1090,12 +1090,24 @@ def _pair_of_rows(isolated, place="one"):
     One picture is stem-named by its own ledger key and the other by an attempt
     index, so a prune that drops either is visible in the counter it belongs to
     rather than only in the row total."""
+    return _rows_at(isolated, ("keyed", "keyed"), ("indexed", "0042"), place=place)
+
+
+def _rows_at(isolated, *named, place="one"):
+    """`(key, picture stem)` pairs into rows at one (location, mode).
+
+    [`_pair_of_rows`]'s body, taken apart from it so a guard that needs a third
+    row at the same pair does not have to change what the other three read. Each
+    row carries a colour block, because the displacement list writes `cells` and
+    `families` off it and a fixture with no colour would guard those two columns
+    with `[]` on every row.
+    """
     from fractal_wallpapers import paths
 
     here = isolated / "artifacts" / "curation" / "depth" / "leg" / "pictures"
     here.mkdir(parents=True, exist_ok=True)
     rows = []
-    for key, stem in (("keyed", "keyed"), ("indexed", "0042")):
+    for key, stem in named:
         picture = here / f"{stem}.jpg"
         picture.write_bytes(b"x")
         source = decision(location={**decision()["location"], "key": place})
@@ -1105,6 +1117,13 @@ def _pair_of_rows(isolated, place="one"):
                 key=key,
                 source=source,
                 picture=paths.tracked_name(picture),
+                colour={
+                    "cells": ["dark_vivid_teal", "light_vivid_teal"],
+                    # Not the union of the cells above, which is the whole reason
+                    # both columns travel: `teal` here and `cyan` from a summed
+                    # mass no cell of which leads.
+                    "families": ["teal", "cyan"],
+                },
             )
         )
     return rows
@@ -1172,6 +1191,122 @@ def test_a_prune_writes_down_WHICH_rows_it_took_and_not_only_how_many(isolated):
     # displacement by.
     assert held[0]["why"] == "prune"
     assert held[0]["location"] and held[0]["mode"] and held[0]["picture"]
+    # And enough to say what the displacement was MADE of, which a re-render does
+    # not need and a reader does. The five columns are asserted present on every
+    # row here and for their values below, because a column nobody reads the value
+    # of is a column that can go uniformly null without a guard noticing.
+    assert set(held[0]) >= {"cells", "families", "p_ge3", "p_ge4", "rank_value"}
+    assert held[0]["cells"] == ["dark_vivid_teal", "light_vivid_teal"]
+    assert held[0]["families"] == ["teal", "cyan"], (
+        "families are stored, not derived: they are not the union of the cells'"
+    )
+
+
+def test_the_displacement_list_carries_the_numbers_the_decision_was_MADE_with(
+    isolated, monkeypatch
+):
+    """`p_ge3`, `p_ge4` and `rank_value`, and a null in one is a fact about the row.
+
+    The three are not each other. The first two are the judge's own reading at the
+    live artifact; `rank_value` is what `_prune_ranks` actually ranked on, which is
+    a fitted function of those two and two more columns — so a file carrying the
+    probabilities alone could not say why the rule ordered a pair the way it did.
+
+    **The null case is asserted beside the read case, in one file.** A recipe with
+    no reading on the live judge is omitted by `scores_by_recipe` rather than
+    rescaled, and `retention.decide` ranks such a row last within its pair — so an
+    unread row is exactly the row a prune takes first, and this list will be
+    densest in precisely the rows whose columns are null. A guard that only ever
+    saw read rows would not notice the writer had started dropping the unread ones.
+    """
+    import json
+
+    from fractal_wallpapers.curation import flatness, intake
+    from fractal_wallpapers.curation.candidate_ledger import store, sweep
+
+    # The location score store is this machine's real one and the fixture does not
+    # redirect it, at ~7.5 s a prune; nothing here is about the location column, so
+    # it is stubbed rather than swept. `features_for` carries `NO_LOCATION_READING`
+    # for exactly this case, so a rank value is still built. See `tests/README.md`
+    # on the rule that a guard takes a budget rather than a store.
+    monkeypatch.setattr(intake, "read_scores", lambda *_a, **_k: {})
+
+    rows = _rows_at(isolated, ("best", "best"), ("worse", "0042"), ("unread", "0043"))
+    candidate_ledger.write(rows)
+    # Two of the three are read by the live judge and swept for flatness; the third
+    # is in the store and in neither sidecar, which is the ordinary state of a row
+    # whose picture the sweep has not reached.
+    live = store.live_artifact()
+    regime = rows[0]["recipe"]["regime"]
+    candidate_ledger.write_scores(
+        [
+            candidate_ledger.score_row(
+                key=key,
+                artifact=live,
+                regime=regime,
+                head="strange_render",
+                read={"p_ge2": 0.99, "p_ge3": p_ge3, "p_ge4": p_ge4},
+                source={},
+            )
+            for key, p_ge3, p_ge4 in (("best", 0.91, 0.72), ("worse", 0.62, 0.31))
+        ]
+    )
+    flatness.write([flatness.row("best", 0.11), flatness.row("worse", 0.42)])
+
+    record = candidate_ledger.prune(keep=1, apply=True, log=lambda *_: None)
+
+    assert record["rows_read"] == 3
+    assert record["rows_dropped"] == 2, "one seat at the pair, so two of three go"
+    written = sorted(sweep.displaced_dir().glob("*.jsonl"))
+    assert len(written) == 1
+    taken = {
+        row["key"]: row
+        for row in (
+            json.loads(line) for line in written[0].read_text(encoding="utf-8").splitlines()
+        )
+    }
+    assert set(taken) == {"worse", "unread"}, (
+        "the row the rank key could read and scored highest is the one that survived"
+    )
+
+    # The read row carries the judge's own two numbers back unrounded, and a rank
+    # value that is neither of them.
+    assert taken["worse"]["p_ge3"] == pytest.approx(0.62)
+    assert taken["worse"]["p_ge4"] == pytest.approx(0.31)
+    assert isinstance(taken["worse"]["rank_value"], float)
+    assert taken["worse"]["rank_value"] not in (0.62, 0.31)
+
+    # And the unread row says so in all three rather than carrying a zero, which
+    # would read as a judge that looked and thought nothing of it.
+    assert taken["unread"]["p_ge3"] is None
+    assert taken["unread"]["p_ge4"] is None
+    assert taken["unread"]["rank_value"] is None
+    # It still carries everything a re-render needs, because being unread is not
+    # being unrecoverable.
+    assert taken["unread"]["picture"] and taken["unread"]["location"]
+    assert taken["unread"]["families"] == ["teal", "cyan"]
+
+
+def test_a_displacement_list_cannot_be_written_without_the_numbers(isolated):
+    """The signature refuses the shape that would silently null four columns.
+
+    `write_displaced` takes `values` and `readings` as required positionals rather
+    than defaulting them, because the failure they prevent is not an exception: a
+    caller that forgot would write a file that looks complete, whose colour and
+    numeric columns are uniformly null, and which reads as a store with no judge
+    rather than as a writer with no arguments. That is the silent-empty shape this
+    module already pays for twice — see `_prune_meta` on the afternoon it was
+    handed a directory and decided over an empty store.
+    """
+    import inspect
+
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
+    taking = inspect.signature(sweep.write_displaced).parameters
+    for name in ("values", "readings"):
+        assert taking[name].default is inspect.Parameter.empty, (
+            f"{name} acquired a default, so a caller can now write a null column set"
+        )
 
 
 def test_a_prune_that_took_nothing_writes_no_displacement_file(isolated):

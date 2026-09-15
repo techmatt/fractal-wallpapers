@@ -465,6 +465,26 @@ before anything is planned:
 [depth] resolved roster: 3 mode(s) — smooth, tia, stripe (DEFAULTED to depth.field_modes(), the shareable modes; mode_policy.mined() holds 12)
 ```
 
+⚠ **Since breadth was spent the inherited shares land somewhere specific, and it
+is the worst place in the pool.** `near_band`, `ranked_bands` and `flat` all draw
+off the never-opened and near-band populations, and after `on125_wide1`/`wide2`
+took the drawable remainder there are **177** admitted never-opened locations left
+(2026-09-15, down from 1,933 that morning), every one of them `phoenix:classic`.
+So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
+— plans 7,080 `ranked_bands` candidates at 177 `phoenix:classic` places and 5,680
+more in the near band, which is **13,000 of 35,520 shots on the band this project
+decided to write off**: 20.911 engine s a candidate and 390.3 a clear, 56x the
+floor draw. The plan's own warning is what catches it, and the fix is the table
+spelled whole:
+
+```
+--shares '{"near_band": 0.0, "ranked_bands": 0.0, "flat": 0.0, "mode_floor": 1.0, "conditioned": 0.0}'
+```
+
+which plans 22,760 over 2,276 places — `PLAN_HEADROOM * workers * budget / rate`
+and nothing else. **Read the resolved-shares line before every depth leg**; a
+prompt that names one arm is not a prompt that runs one arm.
+
 The warning line fires only where an **inherited non-zero** share stands beside an
 asked one, which is exactly the case where clock goes somewhere nobody chose. The
 record carries `split` — the resolved table, what was asked, what was inherited,
@@ -1308,6 +1328,17 @@ beside it is the ASK's**, both `candidate_ledger.ASKED_FOR` and both
 written only where there is an ask — [`LEGS_decisions.md`](LEGS_decisions.md)'s *The
 aim is not what fails, and `direct_trap_multiply` has no vivid half*.
 
+**Which makes the aim's hit rate a group-by over ledger rows, and the cheap route
+agrees with the dear one.** `drawn_for` and `colour.cells` are on the same row, so
+the rate is `asked == delivered` grouped by cell, with the flat control being every
+row in the store carrying **no** ask — no leg's `sequence.jsonl` opened and no leg
+still on disk. Read that way on 2026-09-15 over 7,820 stamped rows: **median lift
+13.64x, range 5.4x to 31.27x**, against the **14.6x median** `overnight_mine_ckpt125`
+read off `sequence.jsonl` the night before. The two routes agree inside the noise of
+one prune, and only the ledger route survives the leg's directory being deleted.
+⚠ The population is every aimed leg the store still holds, not one leg — narrow on
+`provenance.run` for a single leg's rate.
+
 ⚠ **The filter SATURATES in the length of the cell list, and the default cutoff
 hides it.** A map is kept when **any** listed cell clears the cutoff, so every cell
 added makes the test easier, and `--draw-cutoff` is a per-cell bar that does not
@@ -2037,6 +2068,32 @@ hundreds of kilobytes a prune and it is forensics rather than a claim the histor
 has to carry. The recipe key is the ID a `re-render` keys on, so a displaced row is
 buyable back.
 
+**And five more columns, because buyable back is not the same as legible.**
+`cells`, `families`, `p_ge3`, `p_ge4` and `rank_value` ride beside the six above
+since 2026-09-15. The first four are copied off the row and the sidecar; the fifth
+is what `_prune_ranks` actually ranked on, which is a fitted function of the two
+probabilities and two more columns and is therefore **neither of them** — a file
+carrying the probabilities alone could not say why the rule ordered a pair the way
+it did. `families` is stored rather than derived because family dominance is not
+the union of its cells': `palettes.dominance` cuts a family at `FAMILY_LEAD` /
+`FAMILY_ALONE` against a *summed* mass and drops the shares, so a picture can be
+dominant in a family no cell of which leads, and no reader can recover the one
+column from the other.
+
+**A `null` in one of the four numbers is a fact about the row, not a gap in the
+file.** `scores_by_recipe` omits a recipe with no reading on the live judge rather
+than rescaling an old one, and `retention.decide` ranks a valueless row last within
+its pair — so an unread row is exactly the row a prune takes *first*, and this file
+is densest in precisely the rows whose columns are null. `values` and `readings`
+are required positionals on the writer for the matching reason: a caller that
+forgot one would produce a file that looks complete and reads as a store with no
+judge rather than as a writer with no arguments.
+
+⚠ **The first such file on this machine is the one written on 2026-09-15**, because
+the writer landed at 15:46Z and the two prunes before it ran at 10:49Z and 13:52Z.
+There is nothing earlier to compare a night against, and a displacement question
+asked of any merge before that date has no file to read.
+
 **Past the merge the arm is gone.** `candidate_ledger.hunt_block` keeps two fields
 of nine — `seconds` and `k` — so a merged row names its *run*
 (`provenance.run`) and its index (`provenance.candidate`, which joins to
@@ -2289,6 +2346,35 @@ a saturated pass buys is *displacement* — a better row taking an incumbent's s
 — which is quality and shows up in a median rather than in a count. But it buys it
 at the arm's full price, so **plan one pass over a manifest a night**, and spend a
 second pass's clock on a population something has not already swept.
+
+### The collapse is BETWEEN legs and not within one, and a rebuilt manifest undoes it
+
+`fss125_recolour`, 2026-09-15, is the control the two above could not be: the same
+arm at the same rate — **1.0141 s a candidate against `recolour2`'s 1.0097, 0.4%
+apart** — over a manifest rebuilt that hour instead of reused. It kept **40.2%** of
+its own rows (4,254 of 10,590) against `recolour1`'s 42.6% and `recolour2`'s 27.7%,
+and moved the ledger **+1,941 net against `recolour2`'s +27**, on 6% more
+candidates. **Rebuilding the manifest recovered essentially all of the lost
+retention.**
+
+**And retention does not decay inside a leg at all.** Kept share by decile of the
+leg's own draw order, read off the displacement list's `run` and `candidate`:
+`.395 .411 .368 .382 .415 .410 .414 .426 .376 .420` — flat, no trend, a 0.058
+spread with the last decile above the first. So a recolour leg does **not** want
+sizing differently and there is nothing to taper; what wants doing between legs is
+**rebuilding the manifest**, which costs one pool load. The 42.6% -> 27.7% fall was
+the population going stale under a reused shelf and nothing else.
+
+**Order the manifest free-slot-first.** 5,754 proven places on the night, 2,817
+carrying a free `(place, mode)` slot in the arm's two modes and 2,937 that can only
+displace; the leg is clock-bound rather than manifest-bound — it reached 2,276 of
+the 5,754 — so which half it meets first is the whole of what the ordering decides.
+`curate candidate-ledger free-slots --out` is the census, and the two halves
+concatenated are the file.
+
+⚠ **A saturated manifest reads as a full pool, not as an empty one.** The tell is
+not the clear rate — `recolour2` held 11.1%/10.5% — it is retention, and retention
+is invisible until the merge. Rebuild rather than diagnose.
 
 ### A composite is worth pointing at proven ground, by about 5x
 

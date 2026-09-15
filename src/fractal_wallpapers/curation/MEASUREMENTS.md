@@ -330,14 +330,30 @@ something, the survivor set differs in **23 of 30 (76.7%)** and the first
 deletion in **21 of 30 (70%)**. So: rare that a prune's whole decision is made
 above the bar, and near-certain that the two keys differ once it is.
 
-⚠ **Real prune decisions are not recoverable and this is why.** A merge's
+⚠ **Real prune decisions were not recoverable and this is why.** A merge's
 `pruned` block carries counts and names **no dropped key**; the same transaction
 rewrites all three store files against the surviving keys, so a dropped row's
 flatness and judge score are gone and it can have no `rank_key` value; its
 picture is deleted, so it can have no fine-head reading either — `armB2_0907`
 kept 3,210 pictures of 16,200 made. And a displaced **incumbent** appears in no
 leg's `rows.jsonl`. Both sides of the comparison are missing for exactly the rows
-a prune acted on, so the standing-pair reading above is where this stops.
+a prune acted on, so the standing-pair reading above is where this stopped.
+
+**Half of that closed on 2026-09-15 and the half that closed is the decisive
+one.** `sweep.write_displaced` now writes `p_ge3`, `p_ge4` and **`rank_value`**
+onto every row a prune drops, taken from the read the prune itself ranked on — so
+the two keys' disagreement over a *real* decision is readable at the moment it is
+made, which is the one moment the numbers exist. A displaced incumbent is
+likewise named now, with its `run` and `candidate`, so it appears in a file even
+though it appears in no leg's `rows.jsonl`. What is still gone is the **fine**
+head's reading, because that wants the picture and the picture is unlinked in the
+same transaction; the standing-pair reading above remains the only route to that
+one. See [`LEGS.md`](LEGS.md)'s *And the prune writes down WHICH rows it took*.
+
+⚠ **It is not retrospective.** The writer landed after the day's last prune, so
+the first displacement list on this machine is `fss125_recolour`'s and no merge
+before it has one. Every prune decision this project made up to that point stays
+exactly as unrecoverable as the paragraph above says.
 
 **The fine head reads 11,294 of the 18,760 rows in those pairs**, against 11,298
 that are above the bar — a four-row gap. `pool_scores.jsonl` covers

@@ -59,7 +59,10 @@ from fractal_wallpapers.paths import rehome, tracked_name, under
 #: file names either. This is the smallest thing that makes the next one
 #: recoverable: the key, the place, the mode and the picture path of every row the
 #: rule took, which is enough to re-render it (`curate candidate-ledger re-render`
-#: keys on the recipe) and enough to ask what a night's displacement was made of.
+#: keys on the recipe) — and, beside those, the row's `cells` and `families` and
+#: the three numbers the decision was made with (`p_ge3`, `p_ge4`, `rank_value`),
+#: which is what makes a night's displacement legible rather than merely
+#: reversible. [`write_displaced`] carries the argument for each.
 #:
 #: Beside the store rather than in the history: it is hundreds of kilobytes a
 #: prune over a store this size, and it is a forensic record rather than a claim
@@ -79,12 +82,42 @@ def displaced_dir() -> Path:
     return store.rows_path().parent / DISPLACED_DIR
 
 
-def write_displaced(meta: list, keys: set, when: str, log=print) -> dict:
+def write_displaced(
+    meta: list, keys: set, when: str, values: dict, readings: dict, log=print
+) -> dict:
     """Write down which rows this prune took. `{path, rows}`, or `{}` for none.
 
     Called inside the transaction and after the three files are renamed, so the
     list is a claim about a store that exists — [`_record_the_ratchet`]'s order
     and its reason.
+
+    ## What a row carries, and why it is not only enough to re-render it
+
+    The first four columns and the picture path are the *recoverability* half:
+    the recipe key is the ID `curate candidate-ledger re-render` keys on, so a
+    displaced row is buyable back. The colour and the numbers are the
+    *legibility* half, and they are here because this file is the only account
+    of what a rule took and a count cannot answer what a night's displacement
+    was made of.
+
+    `cells` **and** `families`, because family dominance is not the union of its
+    cells' and the shares are not stored — [`_prune_meta`] carries the argument.
+    `p_ge3` and `p_ge4` are the judge's own reading at the live artifact;
+    `rank_value` is what [`_prune_ranks`] actually ranked this row on, which is
+    neither of them and is the number the decision was made with.
+
+    **`values` and `readings` are required and not defaulted.** A caller that
+    forgot either would write a file whose four new columns were uniformly
+    `null` — a displacement list that looks complete, says nothing, and reads as
+    a store with no judge rather than as a writer with no arguments. That is the
+    silent-empty shape this module already pays for twice (see [`_prune_meta`]),
+    so the signature refuses to allow it.
+
+    A `null` in one of the four is therefore a fact about the *row*: a recipe
+    with no reading on the live judge, which [`rows.scores_by_recipe`] omits
+    rather than rescales, or a row the rank key could not build features for.
+    Those rank last within their pair, so they are exactly the rows a prune
+    takes first and the ones this file will be densest in.
     """
     taken = [held for held in meta if held["key"] not in keys]
     if not taken:
@@ -93,6 +126,8 @@ def write_displaced(meta: list, keys: set, when: str, log=print) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as fh:
         for held in taken:
+            reading = readings.get(held["key"]) or {}
+            rank_value = values.get(held["key"])
             fh.write(
                 json.dumps(
                     {
@@ -106,6 +141,11 @@ def write_displaced(meta: list, keys: set, when: str, log=print) -> dict:
                         "picture": held["picture"],
                         "run": held["seat"][0],
                         "candidate": held["seat"][1],
+                        "cells": list(held["cells"]),
+                        "families": list(held["families"]),
+                        "p_ge3": reading.get("p_ge3"),
+                        "p_ge4": reading.get("p_ge4"),
+                        "rank_value": None if rank_value is None else float(rank_value),
                     },
                     ensure_ascii=False,
                 )
@@ -746,7 +786,7 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
 
     # ---- one pass to decide ------------------------------------------------- #
     meta = _prune_meta(files[0], log=log)
-    values, coverage = _prune_ranks(meta, log=log)
+    values, readings, coverage = _prune_ranks(meta, log=log)
     stubs = [
         {
             "key": held["key"],
@@ -815,8 +855,10 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
     record["files"] = written
     record["ratchet"] = _record_the_ratchet(meta, keys, log=log)
     # **Which rows, not how many.** See `DISPLACED_DIR`: the ratchet proves the
-    # store only shrinks for a written-down reason and cannot say what went.
-    record["displaced"] = write_displaced(meta, keys, record["taken_at"], log=log)
+    # store only shrinks for a written-down reason and cannot say what went. The
+    # rank values and the readings travel from the one read above rather than
+    # being taken again — `write_displaced` says why they are not optional.
+    record["displaced"] = write_displaced(meta, keys, record["taken_at"], values, readings, log=log)
     record["seconds"] = round(time.time() - started, 1)
     return record
 
@@ -1004,6 +1046,16 @@ def _prune_meta(path: Path, log=print) -> list[dict]:
                 # colorings at a place were still one pair of three seats.
                 "settings": dict((held.get("recipe") or {}).get("mode_params") or {}),
                 "cells": tuple(colour.get("cells") or ()),
+                # **Both, and the second is not derivable from the first.**
+                # `dominance.of_picture` writes the thresholded `cells` and
+                # `families` and drops the shares, and family dominance is not
+                # the union of its cells' — it is a higher cut
+                # (`FAMILY_LEAD`/`FAMILY_ALONE`) against a summed mass, so a
+                # picture can be dominant in a family none of whose cells lead
+                # and in a cell whose family does not. A row's families
+                # therefore cannot be recomputed off its cells after the fact,
+                # which is why the displacement list carries the two.
+                "families": tuple(colour.get("families") or ()),
                 "rejected": bool(held.get("rejected")),
                 "picture": held.get("picture"),
                 "render_key": retention.render_key_of(held),
@@ -1034,12 +1086,19 @@ class _Pooled:
         self.p_ge3 = float(reading.get("p_ge3") or 0.0)
 
 
-def _prune_ranks(meta: list, log=print) -> tuple[dict, dict]:
-    """`({key: rank value}, coverage)` through the SHIPPED key, not a copy of it.
+def _prune_ranks(meta: list, log=print) -> tuple[dict, dict, dict]:
+    """`({key: rank value}, {key: reading}, coverage)` through the SHIPPED key.
 
     A row the key cannot read — no reading on the live judge, no flatness — has
     no value here, and [`retention.decide`] ranks it last within its pair, which
     is [`curation.solve`]'s own convention for exactly that case.
+
+    **The readings are handed back rather than re-read**, because the one caller
+    needs the same numbers twice: to rank, and to write down what the rank then
+    took. The join is [`rows.scores_by_recipe`] on the live judge artifact over a
+    sidecar this size, so a second read would be the whole of it again for rows
+    this one already has in hand — and, worse, a second read is a second chance
+    for the two to disagree about which artifact was live.
     """
     from fractal_wallpapers.curation import flatness, intake, rank_key
 
@@ -1050,16 +1109,20 @@ def _prune_ranks(meta: list, log=print) -> tuple[dict, dict]:
     features, gaps = rank_key.features_for(pooled, locations=intake.read_scores(), readings=flat)
     values = {name: held.score(row) for name, row in features.items()}
     log(f"[prune] {len(values):,} of {len(meta):,} rows carry a rank value; gaps {gaps}")
-    return values, {
-        "artifact": tracked_name(rank_key.artifact_path()),
-        "fitted_at": held.document.get("fitted_at"),
-        "columns": list(held.columns),
-        "rows": len(meta),
-        "with_a_live_score": len(pooled),
-        "ranked": len(values),
-        "unranked": len(meta) - len(values),
-        **gaps,
-    }
+    return (
+        values,
+        readings,
+        {
+            "artifact": tracked_name(rank_key.artifact_path()),
+            "fitted_at": held.document.get("fitted_at"),
+            "columns": list(held.columns),
+            "rows": len(meta),
+            "with_a_live_score": len(pooled),
+            "ranked": len(values),
+            "unranked": len(meta) - len(values),
+            **gaps,
+        },
+    )
 
 
 def _prune_protections(meta: list, log=print) -> dict:
