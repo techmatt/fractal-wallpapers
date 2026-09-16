@@ -242,6 +242,19 @@ Both are measured, not estimated. The tree holds **4,850 collected — 4,695 fas
 140.80 s (2:21)** with 155 deselected. **Slow: 4,850 of 4,850 in 486.11 s (8:06).**
 Both green, zero skips, zero failures, and **the two lanes agree on the count**.
 
+⚠ **The figure above is a pair and the tree has since moved off it.**
+`overnight_mine_ckpt126` added **8** guards for `curate score --graded` on
+2026-09-16 and read **4,703 of 4,703 fast, green, zero skips** — which is
+`4,695 + 8` exactly — but Matt said skip the slow lane, so **no pair was taken and
+the figure is deliberately left pointing at 4,850 / 4,695**. The tree is believed
+to be **4,858 — 4,703 fast, 155 slow** and that second number is *unverified*.
+Repointing the constant at a half-measurement is the forbidden edit; the next
+prompt to run both lanes closes this. That is the same shape
+`consolidate_ckpt125` left, and the five tests it cost are the argument for
+closing it sooner rather than later. ⚠ The fast lane also read **194.85 s against
+140.80**, and that is **the box and not the tree** — Matt's call, the machine was
+not quiet — so it is not comparable and no cause was chased.
+
 **This pair closes the ⚠ that stood here**, which asked for exactly it:
 `consolidate_ckpt125` read 4,685 fast on 2026-09-15 and Matt said skip the slow
 lane, so the figure was deliberately left pointing at 4,676. The arithmetic between

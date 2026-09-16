@@ -48,6 +48,7 @@ def curate_score(args: argparse.Namespace) -> int:
             keys=intake.read_keys(resolve_output(args.key_file)) if args.key_file else None,
             unscored=args.unscored,
             opened=args.opened,
+            graded=args.graded,
         )
     except (binding.Unbound, intake.IntakeError) as refusal:
         print(refusal)
@@ -684,6 +685,21 @@ def add_steps(steps) -> None:
         "a candidate row, which every draw standing on hunt.scanned stepped over because "
         "the sidecar had nothing to cut. Read at the node regime like all other stock that "
         "states no regime",
+    )
+    reading.add_argument(
+        "--graded",
+        action="store_true",
+        help="score the human-graded places nothing has ever OPENED, off the three LABEL "
+        "STORES. The fifth population and the one behind --opened: a place with a verdict "
+        "and no candidate row, so it is on no walk ledger for a binding to reach and on no "
+        "candidate ledger for --opened to reach. Takes no --ledger, --harvest, --key-file, "
+        "--limit or --unscored, and refuses beside --opened, whose population it overlaps. "
+        "3,110 of the 6,202 places at a human verdict >= 3 on 2026-09-16, of which 2,025 "
+        "are location-store only — a place and not a picture, so `curate label-migration` "
+        "has no recipe to derive and never could have reached them. Until they carry a "
+        "sidecar row they are not admitted, `curate embed` gives them no vector, and "
+        "`curate hunt --places` refuses a manifest of them outright. Best verdict first, "
+        "read at the node regime like all other stock that states no regime",
     )
     reading.set_defaults(handler=curate_score)
 

@@ -1068,8 +1068,66 @@ reaches only the opened one.** Every place carrying a human verdict ≥3 in the
 location store or either finished store, less every place any of the 55 ledgers
 names at all: **4,712**, of which **1,607 are opened and 3,105 were never opened
 at all**. The 1,607 are exactly the opened-but-unscored set — the two populations
-coincide to the row — so `--opened` closes the depth-reachable half whole, and
-the other 3,105 are `curate hunt --places`' population and not this one's.
+coincide to the row — so `--opened` closes the depth-reachable half whole.
+
+⚠ **The other 3,105 are NOT `curate hunt --places`' population**, which the line
+here claimed until 2026-09-16 and which is false for the same reason
+`--floor-places` could not reach the 1,607. See the section below.
+
+### ⚠ `curate hunt --places` cannot reach an unopened place either, and `--graded` is that door
+
+★ **A hunt's population is the ADMITTED one, so a place with no sidecar row is
+refused rather than hunted.** `hunt.scanned` is `embeddings.load` through
+`admitted_only`, and `hunt.narrowed` **raises** `HuntRefused` when a manifest
+leaves nothing. So the mirror-flag reading — *`--floor-places` names places the
+ledger already stands on, `--places` names places it stands on none of, and the
+pair is the path from a crawl to a seat* — holds only for places that are already
+**scored and embedded**. It says nothing about a place no walk ever found, and
+that is the whole of this population.
+
+**Measured 2026-09-16 over the three label stores**, at a human verdict ≥3:
+
+| | places |
+|---|--:|
+| graded, distinct | **6,202** |
+| with a supply sidecar row | 3,092 |
+| in the embedding store | 2,931 |
+| **in neither** | **3,110** |
+
+By store, the unreachable 3,110 split **2,025 location-only / 545 smooth_render /
+481 strange_render / 59 both finished**, with **no location+finished overlap at
+all**. That split is the explanation rather than a detail: a location-store row is
+a *place* and not a picture, so it carries no recipe for `curate label-migration`
+to derive a candidate from, and label-migration is what opened the 1,607. The
+location store was never its population and never could have been.
+
+★ **`curate score --graded` is the fifth population**, and it stands to `--opened`
+exactly as `--opened` stands to a binding: `intake.graded_backlog` reads the three
+label stores, mints one row a place at its best verdict — the family, the viewport
+and the maxiter the label row already carries — and refuses `--ledger`,
+`--harvest`, `--key-file`, `--limit` and `--unscored` beside it. It also refuses
+**`--opened`**, which the three filters do not have to: the two populations
+*overlap* at every place that is both graded and opened, and a pass claiming both
+would mint that place twice under two different `ledger` names. Run `--graded`
+second; a run of `--opened` shrinks it.
+
+**Ordered best verdict first** — 860 at verdict 4, 2,250 at verdict 3 — so a
+truncated pass is a pass over the better half rather than over whatever the stores
+happened to list first.
+
+⚠ **These places are dearer to score than the 1,607 were, by 5.7x.** The 1,607
+cost 106 s for 1,607 node-regime renders, about 66 ms each. The graded backlog
+smoked at **377 ms a place**: they are deep human-found zooms at 11,000–17,000
+iterations where the opened set was standing walk stock. Budget the population at
+its own rate and not at `--opened`'s.
+
+**`maxiter` is the one field two rows at one place can disagree about**, and they
+do — 205 of the 6,202 places, over 1,097 rows. **None of them is in the backlog**:
+every one is a place a walk already reached, whose sidecar row settles it. The log
+line counts the backlog's own disagreements for that reason, since quoting the
+population's number would put a four-figure count beside a pass where the question
+does not arise. A place is its family and its viewport in any case, never its
+iteration count.
 
 `curate score --unscored` is the door for the **other** backlog, the one that is
 on the ledgers: 132,992 of 242,007 gate survivors across those 54 ledgers have no
