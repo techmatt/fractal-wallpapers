@@ -2314,9 +2314,28 @@ agreeing — so every kept seat is replayable again: 5,188 protected, 464 with n
 **The rest of the rotation population was priced and not swept.** 10,040 rotation rows
 with the operator still have no curve, none of them a kept seat; at the pilot's price that
 is about 4.4 hours serial, which is a leg rather than a step. 18 of them stand behind
-*unseated* atlas dots as the place's best row, which is why that page still shows 23
+*unseated* atlas dots as the place's best row, which is why that page still showed 23
 `lost` slots after a re-run with every seated dot resolved. Seat a row and the survey
 names it; a record sweep backfills exactly those.
+
+#### The atlas's unseated dots: `--atlas PLANE`
+
+A record sweep cannot reach a row no record seats, and an unseated atlas dot stands behind
+exactly that. `--atlas mandelbrot` takes the population off the written
+`artifacts/atlas/mandelbrot/dots.json` instead — every dot's gallery key, seated or not —
+and puts it through the same `_wanted` filter, render and sidecar; a row it writes names
+the plane beside the record under `source`. By plane and not by stamp, because that is how
+the atlas directory is addressed; a key file was the other shape, and it is a list typed out
+of the record by hand rather than read off it. `--record` and `--atlas` refuse together.
+
+**Run on 2026-09-16 over `20260914T171846Z`'s atlas**: 107 gallery rows, 75 replayable, 9
+with no operator (clean, not lost), **23 to backfill** — the page's 23 `lost` slots, 18
+behind rotation best rows and 5 behind `label_migration` ones. **23 in 23.6 s, 1.03 s a
+row, zero failures**, 7 acted and all 7 agree with the ramp they shipped; 16 in band.
+`key_of(of_record(recipe))` over the 107 digests the same before and after. The atlas
+re-run reads **`lost` 23 → 0**, `curved` 28 → 35 and `clean` 56 → 72; every slot key, every
+location slot and every dot field is identical, and only the gallery slots' `tone`, `level`,
+`gap` and `refused` moved.
 
 ## A standing score is a reading of a picture, and the picture can stop existing
 

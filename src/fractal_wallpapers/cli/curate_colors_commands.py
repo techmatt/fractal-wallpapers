@@ -33,8 +33,8 @@ def curate_autolevel(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import backfill
 
     doing = {
-        "survey": lambda: backfill.survey(args.record),
-        "backfill": lambda: backfill.sweep(args.record, limit=args.limit),
+        "survey": lambda: backfill.survey(args.record, atlas=args.atlas),
+        "backfill": lambda: backfill.sweep(args.record, limit=args.limit, atlas=args.atlas),
     }[args.what]
     try:
         report = doing()
@@ -491,7 +491,15 @@ def add_steps(steps) -> None:
         "--limit", type=int, help="stop after this many seats (the whole record by default)"
     )
     for verb in (surveying, filling_curves):
-        verb.add_argument(
+        population = verb.add_mutually_exclusive_group()
+        population.add_argument(
+            "--atlas",
+            metavar="PLANE",
+            help="sweep the gallery slot of every dot in artifacts/atlas/<PLANE>/dots.json "
+            "instead of a record's seats — the unseated dots stand behind a place's best row, "
+            "which no record seats and so `--record` cannot reach",
+        )
+        population.add_argument(
             "--record",
             metavar="STAMP",
             default=backfill_module.DEFAULT_RECORD,

@@ -158,6 +158,40 @@ def test_every_protected_seat_is_one_word_and_de_duplicates_across_records(monke
     assert backfill.seats_of(backfill.EVERY_PROTECTED) == ["a", "b"]
 
 
+def test_an_atlas_is_swept_as_the_gallery_slots_its_dots_open(tmp_path):
+    """Seated or not, every dot's gallery key, once each; a dot with no gallery adds nothing.
+
+    The unseated dots are the point: they stand behind a best row no record seats.
+    """
+    dots = tmp_path / "dots.json"
+    slots = [{"key": "b", "seated": True}, {"key": "a", "seated": False}, None]
+    payload = {"record": "R", "dots": [{"slots": {"gallery": g}} for g in [*slots, slots[1]]]}
+    dots.write_text(json.dumps(payload), encoding="utf-8")
+    assert backfill.atlas_keys("mandelbrot", where=dots) == ("R", ["a", "b"])
+
+
+def test_an_atlas_that_was_never_made_refuses_rather_than_sweeping_nothing(tmp_path):
+    with pytest.raises(backfill.BackfillError, match="curate atlas"):
+        backfill.atlas_keys("mandelbrot", where=tmp_path / "dots.json")
+
+
+def test_a_row_reached_through_an_atlas_names_the_plane_and_the_record_it_was_made_from():
+    ledger_row = {"recipe": {"regime": "g"}, "provenance": {"run": "r"}}
+    made = backfill.row_for("k", acting_stamp(), backfill.AGREES, ledger_row, "R", atlas="m")
+    assert made["source"] == {"record": "R", "run": "r", "regime": "g", "atlas": "m"}
+    plain = backfill.row_for("k", acting_stamp(), backfill.AGREES, ledger_row, "R")
+    assert "atlas" not in plain["source"]
+
+
+def test_record_and_atlas_are_one_question_and_cannot_both_be_asked():
+    from fractal_wallpapers import cli
+
+    with pytest.raises(SystemExit):
+        cli.build_parser().parse_args(
+            ["curate", "autolevel", "backfill", "--record", "R", "--atlas", "mandelbrot"]
+        )
+
+
 def _never_read(stamp):
     raise AssertionError(
         "the store-wide sweep read one record's rows. It is over `protected_keys` and "
