@@ -599,6 +599,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
             limit=args.limit,
             workers=args.workers,
             keys=candidate_ledger.read_keys(resolve_output(args.keys)) if args.keys else None,
+            population=args.population,
         ),
         "recolour": lambda: candidate_ledger.recolour(
             limit=args.limit,
@@ -1415,6 +1416,24 @@ def add_steps(steps) -> None:
         "to render WHETHER OR NOT their picture is on disk. For the one case that needs it: "
         "a stored file that is not its own recipe's picture, which is worse than a missing "
         "one because nothing looks broken",
+    )
+    halves = remaking_pictures.add_mutually_exclusive_group()
+    halves.add_argument(
+        "--seatable",
+        dest="population",
+        action="store_const",
+        const=candidate_ledger_module.SEATABLE,
+        help="only the rows a solve could seat once their pictures are back — the first "
+        "pass on a fresh box after `storage import`, after which it can solve. Loads the "
+        "pool. Prints the population and an ETA first; resumable by running it again",
+    )
+    halves.add_argument(
+        "--rest",
+        dest="population",
+        action="store_const",
+        const=candidate_ledger_module.REST,
+        help="every row `--seatable` does not take: the second pass, which no seating "
+        "needs. Loads the pool; resumable the same way",
     )
 
     ledger_verbs.add_parser("save", help="save a fresh copy and manifests")

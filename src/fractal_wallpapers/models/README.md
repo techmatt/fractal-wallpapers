@@ -888,6 +888,11 @@ without pulling torch onto its own stdlib-only path. There is one derivation now
 and `fractal_wallpapers.cuts` — which every module stating a floor reaches — reads
 which artifact is shipped through it instead of importing the training stack.
 
+**`weights.json` lists shipped heads only** — one release asset per `roster.HEADS`
+entry — and never a training run's checkpoint, even one production reads: the
+gallery-grade ensemble's three fp32 `best.pt`, which `rotation.score_fine` requires
+and refuses without, travel in `storage export` instead (decided 2026-09-16).
+
 ## What a score becomes, and the figure of it
 
 `decisions` is the one place the four outcomes a location head's reading lands in

@@ -353,10 +353,14 @@ a plan sized exactly to a measured mean stops the mine early whenever the mean
 came in high — which it does, because every partition's median is under half its
 mean. The surplus is never started and costs nothing.
 
-**The rate is derived from the records at this width, since 2026-09-15.** The CLI
-resolves it through `depth.measured_rate(width)` and prints the figure with its
-provenance; `--rate` still overrides and `mine.run` still requires one, for the
-reason *`--rate` reads itself off the records* gives below. A rate carried in by
+**The rate is derived from the mine records, since 2026-09-16.** The CLI resolves
+it through `mine.measured_rate()` — the cheapest `budget.spent / counts.made` of the
+newest forty mine records that made fifty candidates, falling back to
+`mine.PILOT_RATE` (0.8) — and prints the figure with its provenance; `--rate` still
+overrides and `mine.run` still requires one, for the reason *`--rate` reads itself
+off the records* gives below. Until then this paragraph said the CLI read
+`depth.measured_rate(width)`, and it read nothing: `mine plan` without `--rate`
+raised a `TypeError` in `build_plan`. A rate carried in by
 hand from another pass prices another population, which is what the derivation
 removes the occasion for.
 

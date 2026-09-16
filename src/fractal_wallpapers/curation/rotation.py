@@ -902,6 +902,15 @@ def score_fine(paths: list, device: str = "auto", log=print) -> tuple[list, str]
 
     **The live column is never written.** `score_pool` rewrites the pool's scores
     whole; this reads and returns.
+
+    **The three fp32 run checkpoints are required, and no release carries them.**
+    `models/weights.json` names the shipped heads' release artifacts and nothing
+    else, and this does not fall back to the fp16 ensemble `fetch-weights` hands
+    over: the pool scores this pass is a factor of were read through these files,
+    and a reading through another artifact would be a comparison across two
+    stamps. On a fresh box they arrive with `storage export` / `storage import`
+    (the roster's *shipped gallery-grade run checkpoints*), so their absence is
+    refused by name rather than raised as a missing file.
     """
     from fractal_wallpapers.models import gallery_grade_train as grade
     from fractal_wallpapers.models import head, train
@@ -909,7 +918,18 @@ def score_fine(paths: list, device: str = "auto", log=print) -> tuple[list, str]
     if not paths:
         return [], ""
     arm, seeds, column = grade.shipped_runs()
-    loaded = [grade.load_checkpoint(grade.run_dir(arm, one) / "best.pt", device) for one in seeds]
+    checkpoints = [grade.run_dir(arm, one) / "best.pt" for one in seeds]
+    absent = [checkpoint for checkpoint in checkpoints if not checkpoint.is_file()]
+    if absent:
+        raise RotationRefused(
+            f"the fine head reads the shipped ensemble's {len(checkpoints)} run checkpoints "
+            f"and {len(absent)} are not on this machine, e.g. {tracked_name(absent[0])}. No "
+            "release carries them — `fetch-weights` brings the fp16 artifact, which this pass "
+            "does not read, because the pool scores it compares against were read through "
+            "these. They travel in `fractal-wallpapers storage export` (entry `shipped "
+            "gallery-grade run checkpoints`) and land with `storage import`."
+        )
+    loaded = [grade.load_checkpoint(checkpoint, device) for checkpoint in checkpoints]
     models = [one[0] for one in loaded]
     config, where = loaded[0][1], loaded[0][2]
     classes = int(config["classes"])

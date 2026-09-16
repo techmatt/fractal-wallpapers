@@ -870,7 +870,13 @@ def empty_pool_notice(refused: dict) -> str | None:
 
 
 def pool(
-    rows=None, scores=None, artifact=None, spirals=None, vetoed=None, log=print
+    rows=None,
+    scores=None,
+    artifact=None,
+    spirals=None,
+    vetoed=None,
+    require_pictures=True,
+    log=print,
 ) -> tuple[list[Candidate], dict]:
     """`(candidates, what was refused)` — everything this leg may seat.
 
@@ -919,6 +925,12 @@ def pool(
     The two are counted apart, `no_picture` against `picture_absent`, because they
     are different facts about a row: one was never drawn, the other was drawn and
     swept. Only the second is expected to grow.
+
+    **`require_pictures=False` answers what a seating COULD seat once the pictures
+    are back**, and it has exactly one caller: `candidate-ledger re-render
+    --seatable`, which on a fresh box after `storage import` has none of them and
+    has to know which to draw first. Every other rule still refuses; only
+    `picture_absent` is not asked, and no seating may pass it.
     """
     from fractal_wallpapers.curation import veto as veto_module
 
@@ -1003,7 +1015,7 @@ def pool(
             "it writes carries a null picture and comes straight back here refused "
             "`no_picture`. The pictures come from a hunt: " + RENDER_LEG + "."
         )
-    present = candidate_ledger.present_pictures(projected)
+    present = candidate_ledger.present_pictures(projected) if require_pictures else None
     # The spiral verdict is a fact about a PLACE, so it is joined here, once, off
     # the location-keyed store — the shape `tentative`'s `centered` column already
     # uses, and for the same reason: nothing under the candidate ledger carries it,
@@ -1039,7 +1051,7 @@ def pool(
         )
     out: list[Candidate] = []
     for held in projected:
-        if held["key"] not in present:
+        if present is not None and held["key"] not in present:
             refused["picture_absent"] += 1
             continue
         reading = by_key.get(held["key"])

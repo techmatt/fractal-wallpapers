@@ -503,3 +503,63 @@ def test_hours_to_target_is_seconds_a_location_over_primed_a_location():
 # which holds every renderer to one recipe's bytes and holds its own registry
 # to the tree — so the next renderer is covered without anybody remembering
 # this file.
+
+
+# --------------------------------------------------------------------------- #
+# `--rate` reads itself off the mine records.
+# --------------------------------------------------------------------------- #
+def _mined(root, name: str, *, spent: float, made: int) -> None:
+    """One mine record, thinned to the two members [`mine.measured_rate`] reads."""
+    import json
+
+    record = root / name / mine.RECORD_NAME
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(
+        json.dumps({"counts": {"made": int(made)}, "budget": {"spent": float(spent)}}),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+@pytest.fixture
+def mine_store(monkeypatch, tmp_path):
+    """`under('curation', 'mine')` redirected at the tier root, `depth_store`'s shape."""
+    monkeypatch.setattr(mine, "under", lambda *parts: tmp_path.joinpath(*map(str, parts)))
+    return tmp_path / "curation" / mine.UNIT
+
+
+def test_a_mine_rate_is_the_cheapest_spent_over_made_and_skips_a_killed_leg(mine_store):
+    """A mine record carries no per-candidate figure, so it is derived; a leg that
+    made almost nothing reports its own startup and prices nothing."""
+    _mined(mine_store, "dear", spent=7169.41, made=5684)
+    _mined(mine_store, "cheap", spent=198.17, made=247)
+    _mined(mine_store, "killed", spent=40.0, made=4)
+    rate, why = mine.measured_rate()
+    assert (rate, why["leg"], why["priced"]) == (round(198.17 / 247, 4), "cheap", 2)
+
+
+def test_a_machine_with_no_mine_record_plans_at_the_pilot_rate_and_says_so(mine_store):
+    rate, why = mine.measured_rate()
+    assert rate == mine.PILOT_RATE
+    assert "leg" not in why and "PILOT_RATE" in why["why"]
+
+
+def test_mine_plan_without_a_rate_plans_at_the_recorded_one(monkeypatch, capsys):
+    """The `TypeError` at `build_plan`: `plan` handed `None` through. It resolves
+    the rate first now, the way `curate depth plan` does, and prints where from."""
+    import argparse
+
+    from fractal_wallpapers.cli import curate_mine_commands
+
+    asked = {}
+    monkeypatch.setattr(mine, "measured_rate", lambda: (1.14, {"leg": "somewhere"}))
+    monkeypatch.setattr(mine, "population", lambda: {})
+    monkeypatch.setattr(
+        mine, "build_plan", lambda world, **knobs: (asked.update(knobs), ([], {"ok": True}))[1]
+    )
+    args = argparse.Namespace(
+        what="plan", seed=1, rate=None, budget=60.0, k=2, per_location=1, device="cpu"
+    )
+    assert curate_mine_commands.curate_mine(args) == 0
+    assert asked["rate"] == 1.14
+    assert '"rate_from"' in capsys.readouterr().out

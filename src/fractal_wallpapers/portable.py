@@ -29,7 +29,8 @@ Matt's ruling of 2026-09-16: a fresh box re-renders. A solve is **not**
 picture-free — `solve.pool` refuses every row whose JPEG is not on disk as
 `picture_absent`, and the twin test opens a picture wherever the reduced
 signature sidecar has no row — so the first leg on a fresh box is
-`curate candidate-ledger re-render`, and only then a solve. What the export
+`curate candidate-ledger re-render --seatable`, then a solve, and `--rest` whenever
+nothing else wants the render pool. What the export
 carries in their place is `pictures.jsonl`: one row per candidate the solve can
 seat, with the picture's name, size and sha256, so the re-render can be read
 against the bytes it is meant to reproduce. It also says, per row, whether the
@@ -99,6 +100,20 @@ PICTURES_NAME = "pictures.jsonl"
 #: untracked files under the checkout.
 TREE = "tree"
 CHECKOUT = "checkout"
+
+#: **The solve a fresh box compares its first seating against**, and the record
+#: that holds its seats. A tentative record at the size `curation.targets` sets,
+#: taken at HEAD on 2026-09-16 and re-run `--no-render` straight after: 300 of
+#: 300 seats in the same order. The 2026-09-15 `targets_green_n300` record it
+#: replaced had stopped reproducing (282 of 300 in common) once the pool moved
+#: under it, which is why a reference is re-taken with an export rather than
+#: carried from an older one. **It travels through the roster and not the keep
+#: list** — `tentative.KEPT_UNPUBLISHED` pins seats against a prune, and a
+#: comparison target has no business doing that.
+REFERENCE = {"stamp": "20260916T182649Z", "collection": "green"}
+
+#: Where the export writes what the reference is and how to reproduce it.
+REFERENCE_README = "reference/README.md"
 
 #: Bytes read at a time while hashing and copying.
 CHUNK = 1 << 20
@@ -256,6 +271,27 @@ ROSTER: tuple[Entry, ...] = (
         "the clone",
     ),
     Entry(
+        "reference solve",
+        TREE,
+        (
+            "curation/tentative/{reference}/gallery.jsonl",
+            "curation/tentative/{reference}/manifest.json",
+            "curation/solve/tentative_n*_{reference}/solve.json",
+        ),
+        ("curate solve run", "curate solve list"),
+        "the seating a fresh box reproduces `--no-render` before it trusts its own: "
+        "`REFERENCE` names it and the export writes `reference/README.md` saying how. Not on "
+        "the keep list, so `{kept}` never reaches it",
+    ),
+    Entry(
+        "mine leg records",
+        TREE,
+        ("curation/mine/*/mine.json",),
+        ("curate mine plan", "curate mine run"),
+        "`--rate` reads itself off these, since 2026-09-16 — `mine.measured_rate`. Without "
+        "them a fresh box plans at `mine.PILOT_RATE` rather than at what a mine here cost",
+    ),
+    Entry(
         "built label sheets",
         TREE,
         (
@@ -336,6 +372,8 @@ def _expand(pattern: str) -> list[str]:
     """`a/{b,c}/d` as `a/b/d` and `a/c/d`, and `{kept}` as every kept stamp. One group."""
     if "{kept}" in pattern:
         return [pattern.replace("{kept}", stamp) for stamp in kept_stamps()]
+    if "{reference}" in pattern:
+        return [pattern.replace("{reference}", REFERENCE["stamp"])]
     if "{gallery_grade_runs}" in pattern:
         return [pattern.replace("{gallery_grade_runs}", run) for run in gallery_grade_runs()]
     start = pattern.find("{")
@@ -558,12 +596,90 @@ def export(to: Path, roster=ROSTER, pictures: bool = True, log=print) -> dict:
                 "puts back with `curate candidate-ledger re-render` before it solves"
             ),
         }
+    reference = (
+        _write_reference(to, rows, log=log)
+        if any(entry.name == REFERENCE_ENTRY for entry in roster)
+        else None
+    )
     manifest = _manifest(rows, roster, picture_summary)
+    manifest["reference"] = reference
     (to / MANIFEST_NAME).write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     log(f"[export] wrote {to / MANIFEST_NAME}")
     return manifest
+
+
+#: The roster entry [`REFERENCE`] travels in.
+REFERENCE_ENTRY = "reference solve"
+
+
+def reference_invocation() -> str:
+    """The exact command that re-seats [`REFERENCE`] on a box holding its stores."""
+    return (
+        f"fractal-wallpapers curate solve run --name reference_{REFERENCE['collection']} "
+        f"--collection {REFERENCE['collection']} --no-render --no-sheet"
+    )
+
+
+def _write_reference(to: Path, rows: list, log=print) -> dict:
+    """Write `reference/README.md` for [`REFERENCE`]; refuse if its record did not travel.
+
+    A reference the roster resolved to nothing is an export that would send a fresh
+    box looking for a comparison target it does not have, so it refuses rather than
+    writing a README about a record that is not there.
+    """
+    stamp = REFERENCE["stamp"]
+    carried = [row for row in rows if REFERENCE_ENTRY in row["entries"]]
+    if not any(row["path"].endswith(f"tentative/{stamp}/gallery.jsonl") for row in carried):
+        raise PortableRefusal(
+            f"the reference record {stamp} is not on this machine, so the export has no "
+            "comparison target to carry. Take a fresh one (`curate solve record --collection "
+            f"{REFERENCE['collection']}`), check a `--no-render` run re-seats it, and repoint "
+            "`portable.REFERENCE`."
+        )
+    manifest_row = next(row for row in carried if row["path"].endswith("manifest.json"))
+    held = json.loads(Path(manifest_row["source"]).read_text(encoding="utf-8"))
+    n = int(held["solve"]["config"]["n"])
+    record = held["solve"]["record"]
+    text = "\n".join(
+        [
+            "# The reference solve",
+            "",
+            f"- **Stamp:** `{stamp}` (tentative record, not published)",
+            f"- **Collection:** `{REFERENCE['collection']}`, **n = {n}** (`curation/targets.py`)",
+            f"- **Taken at commit:** `{held.get('source_commit')}`",
+            f"- **Seats:** `artifacts/curation/tentative/{stamp}/gallery.jsonl`, and in order "
+            f"as `seated` in `{record}`",
+            "",
+            "After `storage import`, `fetch-weights`, the release engine build and "
+            "`curate candidate-ledger re-render --seatable`, run:",
+            "",
+            "```",
+            reference_invocation(),
+            "```",
+            "",
+            f"and compare `seated` in `artifacts/curation/solve/reference_"
+            f"{REFERENCE['collection']}/solve.json` with the record's: the same {n} keys in "
+            "the same order is a box whose stores, code and judges agree with this one. "
+            "Taken on the exporting box straight after the record, it re-seated all of them "
+            "in order. A different engine fingerprint (read `storage import`'s `engine:` line) "
+            "empties the score amendment's overlay, and that alone moves seats.",
+            "",
+        ]
+    )
+    path = to / REFERENCE_README
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+    log(f"[export] wrote {path}")
+    return {
+        "file": REFERENCE_README,
+        "sha256": sha256_of(path),
+        "stamp": stamp,
+        "collection": REFERENCE["collection"],
+        "n": n,
+        "invocation": reference_invocation(),
+    }
 
 
 def _manifest(rows: list, roster, pictures: dict | None) -> dict:
@@ -654,10 +770,14 @@ def verify_export(source: Path, manifest: dict, log=print) -> None:
     source = Path(source)
     named = {_stored_path(source, row).resolve(): row for row in manifest["files"]}
     extra = []
+    reference = manifest.get("reference")
+    beside = {(source / MANIFEST_NAME).resolve(), (source / PICTURES_NAME).resolve()}
+    if reference:
+        beside.add((source / PurePosixPath(reference["file"])).resolve())
     for here, _, files in os.walk(source):
         for name in files:
             path = (Path(here) / name).resolve()
-            if path.parent == source.resolve() and name in (MANIFEST_NAME, PICTURES_NAME):
+            if path in beside:
                 continue
             if path not in named:
                 extra.append(path)
@@ -679,6 +799,10 @@ def verify_export(source: Path, manifest: dict, log=print) -> None:
     pictures = manifest.get("pictures")
     if pictures and sha256_of(source / PICTURES_NAME) != pictures["sha256"]:
         bad.append(PICTURES_NAME)
+    if reference:
+        written = source / PurePosixPath(reference["file"])
+        if not written.is_file() or sha256_of(written) != reference["sha256"]:
+            bad.append(reference["file"])
     if bad:
         raise PortableRefusal(
             f"{len(bad)} file(s) do not match the manifest, e.g. {bad[:5]}. Nothing was written."
@@ -763,6 +887,9 @@ __all__ = [
     "CHECKOUT",
     "MANIFEST_NAME",
     "PICTURES_NAME",
+    "REFERENCE",
+    "REFERENCE_ENTRY",
+    "REFERENCE_README",
     "ROSTER",
     "SCHEMA",
     "SEQUENCE_GLOB",

@@ -1253,3 +1253,15 @@ def test_only_a_mine_legs_record_is_offered_to_a_mine_resume(two_legs):
     )
     with pytest.raises(rotation.RotationRefused, match="no mine leg on record ran"):
         quietly(247)
+
+
+def test_the_fine_head_refuses_by_name_when_the_run_checkpoints_are_absent(monkeypatch, tmp_path):
+    """No release carries the three fp32 run checkpoints and `score_fine` has no
+    fallback to the fp16 ensemble, so a fresh box without the export has to be
+    told where they come from rather than handed a missing-file traceback."""
+    from fractal_wallpapers.models import gallery_grade_train as grade
+
+    monkeypatch.setattr(grade, "shipped_runs", lambda: ("arm", [0, 1, 2], "column"))
+    monkeypatch.setattr(grade, "run_dir", lambda arm, seed: tmp_path / f"{arm}_seed{seed}")
+    with pytest.raises(rotation.RotationRefused, match="storage export"):
+        rotation.score_fine([tmp_path / "a.jpg"])

@@ -180,6 +180,49 @@ def test_the_kept_placeholder_expands_to_the_keep_list_and_nothing_else(monkeypa
     ]
 
 
+def _with_reference(box, monkeypatch, *, carried: bool = True):
+    """The fixture's roster plus the reference entry, and a record for it on hot."""
+    monkeypatch.setattr(portable, "REFERENCE", {"stamp": "S9", "collection": "green"})
+    if carried:
+        record = box["hot"] / "curation" / "tentative" / "S9"
+        record.mkdir(parents=True)
+        (record / "gallery.jsonl").write_bytes(b'{"key": "k"}\n')
+        manifest = {
+            "source_commit": "abc",
+            "solve": {"config": {"n": 1}, "record": "artifacts/curation/solve/x/solve.json"},
+        }
+        (record / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    entry = next(entry for entry in portable.ROSTER if entry.name == portable.REFERENCE_ENTRY)
+    return (*TREE_ROSTER, entry)
+
+
+def test_the_reference_travels_with_a_readme_the_manifest_names(box, monkeypatch, tmp_path):
+    roster = _with_reference(box, monkeypatch)
+    to = box["tmp"] / "export"
+    manifest = portable.export(to, roster=roster, pictures=False, log=lambda *_: None)
+    assert manifest["reference"]["n"] == 1
+    assert "--collection green --no-render" in manifest["reference"]["invocation"]
+    readme = (to / portable.REFERENCE_README).read_text(encoding="utf-8")
+    assert "`S9`" in readme and portable.reference_invocation() in readme
+    # The README is beside the manifest rather than in it, and verifying accepts it...
+    portable.verify_export(to, portable.read_manifest(to), log=lambda *_: None)
+    # ...but only as the bytes the manifest names.
+    (to / portable.REFERENCE_README).write_text("edited\n", encoding="utf-8")
+    with pytest.raises(portable.PortableRefusal, match="do not match"):
+        portable.verify_export(to, portable.read_manifest(to), log=lambda *_: None)
+
+
+def test_an_export_whose_reference_is_not_on_the_machine_refuses(box, monkeypatch) -> None:
+    roster = _with_reference(box, monkeypatch, carried=False)
+    with pytest.raises(portable.PortableRefusal, match="reference record S9"):
+        portable.export(box["tmp"] / "export", roster=roster, pictures=False, log=lambda *_: None)
+
+
+def test_the_reference_is_not_on_the_keep_list() -> None:
+    """It travels by the roster so that it pins nothing against a prune."""
+    assert portable.REFERENCE["stamp"] not in portable.kept_stamps()
+
+
 def test_the_sequence_glob_is_the_stores_stamps_declares() -> None:
     from fractal_wallpapers.curation import stamps
 

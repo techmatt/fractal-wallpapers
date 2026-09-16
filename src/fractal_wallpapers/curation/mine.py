@@ -151,6 +151,21 @@ DEFAULT_SEED = 20260826
 BUDGET_SECONDS = 7200.0
 
 
+#: What a mine is planned at when no mine record on this machine prices one — a
+#: fresh box before its first leg. **0.8 is measured, not chosen**: the cheapest
+#: per-candidate second of the four mine records here on 2026-09-16 is
+#: `valPilot`'s 198.17 s over 247 candidates, rounded. Under [`PLAN_HEADROOM`]
+#: a plan sized off the cheapest reading runs long rather than short, which is the
+#: safe way for a plan to be wrong.
+PILOT_RATE = 0.8
+
+#: How many of the newest mine records [`measured_rate`] reads, and the fewest
+#: candidates one must have made before its mean is a price. Both are depth's,
+#: for depth's reasons: [`depth.RATE_RECORDS`] and [`depth.RATE_FLOOR_MADE`].
+RATE_RECORDS = 40
+RATE_FLOOR_MADE = 50
+
+
 class MineRefused(RuntimeError):
     """A mine cannot be planned off what this checkout holds."""
 
@@ -186,6 +201,55 @@ def sequence_path(name: str) -> Path:
 def record_path(name: str) -> Path:
     """What the mine reports about itself: the plan, the price, the arms."""
     return mine_dir(name) / RECORD_NAME
+
+
+def measured_rate(newest: int = RATE_RECORDS) -> tuple[float, dict]:
+    """`(seconds a candidate, provenance)` for a mine, off the mine records.
+
+    [`depth.measured_rate`]'s rule over this leg's own records, and deliberately
+    not over depth's: a mine's candidate is a different loop — three arms, a
+    DEEPEN width of [`DEEPEN_K`] — and the rate is meant to price *this*
+    population. A mine record carries no per-candidate figure, so it is derived
+    as `budget.spent / counts.made`, which is what [`run`] enforces the budget
+    in. **The cheapest**, for depth's reason: a plan too long is a surplus nobody
+    starts, a plan too short a leg that ends with budget in hand.
+
+    Until 2026-09-16 `curate mine plan` without `--rate` passed `None` into
+    [`build_plan`] and raised a `TypeError`; `mine.run` refused. Both now read
+    this, and a machine with no priced record plans at [`PILOT_RATE`] and says so.
+    """
+    root = under("curation", UNIT)
+    if not root.is_dir():
+        return PILOT_RATE, {"why": "no mine records on this machine; planned at mine.PILOT_RATE"}
+    records = sorted(
+        (path for path in root.glob(f"*/{RECORD_NAME}") if path.is_file()),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )[: int(newest)]
+    seen: list[tuple[float, str]] = []
+    for path in records:
+        try:
+            held = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        made = int((held.get("counts") or {}).get("made") or 0)
+        spent = (held.get("budget") or {}).get("spent")
+        if made < RATE_FLOOR_MADE or spent is None:
+            continue
+        seen.append((float(spent) / made, path.parent.name))
+    if not seen:
+        return PILOT_RATE, {
+            "read": len(records),
+            "why": f"none of the newest {len(records)} mine record(s) made {RATE_FLOOR_MADE} "
+            "candidate(s); planned at mine.PILOT_RATE",
+        }
+    rate, leg = min(seen)
+    return round(rate, 4), {
+        "leg": leg,
+        "read": len(records),
+        "priced": len(seen),
+        "is": "the CHEAPEST budget.spent / counts.made among the newest mine records",
+    }
 
 
 def fields_dir(name: str) -> Path:

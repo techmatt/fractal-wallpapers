@@ -239,9 +239,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `atlas_lost_backfill_ckpt127` added 4 tests on
-2026-09-16 and read **4,744 of 4,744 fast in 151.13 s (2:31)**, 155 deselected, so the
-tree is *believed* at 4,899 collected. The slow lane was not run.
+**The newest reading is fast only**: `portable_loose_ends_ckpt127` added 13 tests on
+2026-09-16 and read **4,757 of 4,757 fast in 143.20 s (2:23)**, 155 deselected, so the
+tree is *believed* at 4,912 collected. The slow lane was not run. Before it,
+`atlas_lost_backfill_ckpt127` read 4,744 in 151.13 s, also fast only.
 
 The last pair, before it: **4,895 collected — 4,740 fast,
 155 slow — since `portable_stores_ckpt127` added 14 tests on 2026-09-16**, on a

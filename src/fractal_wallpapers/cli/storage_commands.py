@@ -112,7 +112,14 @@ def storage_import(args: argparse.Namespace) -> int:
     if (report["pictures"] or {}).get("pictures"):
         print(
             f"pictures: {report['pictures']['pictures']:,} seatable candidates carry no picture "
-            "here. Run `fractal-wallpapers curate candidate-ledger re-render` before any solve."
+            "here. Run `fractal-wallpapers curate candidate-ledger re-render --seatable` "
+            "before any solve, and `--rest` whenever."
+        )
+    if manifest_reference := portable.read_manifest(source).get("reference"):
+        print(
+            f"reference: {manifest_reference['stamp']} ({manifest_reference['collection']}, "
+            f"n={manifest_reference['n']}) — {manifest_reference['file']} in the export says "
+            "how to re-seat it and what to compare."
         )
     return 0
 
