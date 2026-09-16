@@ -425,6 +425,19 @@ Each prompt in this project ends the same way:
   remaining. ⚠ **A heartbeat detects nothing on its own** — that stall wrote
   `engines=0` six times and nothing read it — so the heartbeat is for the reader and
   the waiter is what wakes the session.
+- **What arms a waiter is a step that WAITS, not a step that LAUNCHES**, and the
+  case the rule above misses is a **handover**: waiting on another checkout to go
+  clean, on another session, or on a person. `overnight_mine_ckpt126` was staged
+  against a held tree, said it would watch `fractal-website` for the lock, and armed
+  nothing — no background job, no `until` loop, no scheduled wake-up. That checkout
+  committed twice and went clean, and **nine hours of producing budget were lost**
+  with the repository still at the same HEAD in the morning. A stated intention is
+  not a mechanism: the only thing that returns control to a session is a tool call
+  completing, so **an idle turn IS the stall**. Block in the foreground on the real
+  condition (`until [ -z "$(git -C <repo> status --short)" ]; do sleep 60; done`)
+  with a generous timeout, or background that same loop so its exit fires one
+  notification. ⚠ A handover is the one moment with **no launch to hang the waiter
+  off**, which is exactly why it is the moment it gets skipped.
 - **The commit gate is part of the contract, not a step after it.** Commit to `main`,
   and when another prompt is in flight in this repository — anything `git status`
   lists as modified or untracked that is not yours — commit **only your own files, by
