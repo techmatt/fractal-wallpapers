@@ -102,6 +102,50 @@ def test_a_mine_leg_writes_the_row_the_reader_looks_for() -> None:
     assert mine.sequence_path("x") in stamps.sequence_paths("x")
 
 
+def test_a_rotation_leg_writes_the_row_the_reader_looks_for() -> None:
+    """`rotation` joined on 2026-09-16: both arms carried `mine.make`'s whole stamp
+    back and dropped it at the write site, so 472 of the published record's seats
+    opened unlevelled. The file, the store and the members, pinned against the
+    reader rather than trusted."""
+    from fractal_wallpapers.curation import mine, rotation
+
+    assert rotation.SEQUENCE_NAME == mine.SEQUENCE_NAME
+    assert rotation.sequence_path("x").parent == rotation.rotation_dir("x")
+    assert rotation.UNIT in stamps.SEQUENCE_STORES
+    assert rotation.sequence_path("x") in stamps.sequence_paths("x")
+    row = rotation.sequence_row(
+        7, "abc123", {"acted": True, "picture": "p.jpg", "autolevel": stamp()}, mode="m"
+    )
+    assert row[stamps.KEY_FIELD] == "abc123"
+    assert row[stamps.STAMP_FIELD] == stamp()
+
+
+@pytest.mark.parametrize("arm", ["run", "mine"])
+def test_both_rotation_arms_append_the_stamp_where_they_append_the_row(arm) -> None:
+    """Two write sites, and the omission was at both. A source read rather than a
+    leg, because a leg is an engine, a judge and a fine head: what this pins is
+    that each arm that appends a ledger row appends its sequence row beside it."""
+    import inspect
+
+    from fractal_wallpapers.curation import rotation
+
+    source = inspect.getsource(getattr(rotation, arm))
+    assert source.count("hunt._append(rows_file") == 1
+    assert source.count("sequence_row(") == 1
+    assert "sequence_file = sequence_path(name)" in source
+
+
+def test_a_rotation_rows_stamp_is_lent_through_the_declared_store(store):
+    from fractal_wallpapers.curation import rotation
+
+    made = {"acted": True, "picture": "p.jpg", "autolevel": stamp()}
+    write_sequence(
+        store, "night_0916", [rotation.sequence_row(1, "abc123", made)], store=rotation.UNIT
+    )
+    found = stamps.for_rows({"abc123": ledger_row(run="night_0916")})
+    assert found["abc123"]["curve"] == {"applies": True, "identity": False}
+
+
 def test_only_the_wanted_keys_come_back_however_long_the_sequence_is(store):
     """The read is grouped by run and streams each sequence once, keeping the keys
     asked for. The largest of these files is 99.5 MiB and a per-row lookup would

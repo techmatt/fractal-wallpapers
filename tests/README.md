@@ -704,6 +704,18 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### rotation_tone_curve_ckpt127
+
+`rotation_tone_curve_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken
+right after a backfill and two atlas runs had finished (nothing running beside it but the
+website's `builder serve`). **Fast: 4,726 of 4,726 in 137.99 s (2:18)**, 155 deselected.
+**Slow: 4,881 of 4,881 in 502.25 s (8:22).** Both green, zero skips, and **the two lanes
+agree** — which closes the ⚠ `overnight_mine_ckpt126` and `preclose_atlas_maker_ckpt126`
+left: the tree they believed was 4,876 / 4,721 was, and this prompt's +5 (four guards in
+`test_stamps.py` plus `rotation` joining the `SEQUENCE_STORES` parametrize) are the rest.
+Fast is −6.1 s against 144.13 s and slow +16.1 s against 486.11 s over 31 more tests on
+another day; neither was chased.
+
 #### consolidate_ckpt125
 
 `consolidate_ckpt125`, 2026-09-15, idle box after a render leg had finished,

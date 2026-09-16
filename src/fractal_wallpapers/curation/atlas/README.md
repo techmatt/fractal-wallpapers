@@ -57,8 +57,11 @@ The gallery slot also carries what the tone operator did to that row, read throu
 words); `level` is the permalink's `level` value where the run recorded the curve —
 `band_autolevel/v1:<black>,<white>,<exponent>,<out0>,<out1>`, numbers as JavaScript spells
 them — and `null` otherwise; `gap` says what is missing when the tone is `lost`, and `from`
-names the `<store>/<run>` that was asked. **A `rotation` run records no curve**, so its
-seats are `lost` and say so; the record never re-measures one.
+names the `<store>/<run>` that was asked, and a backfilled curve is found through the same
+door (`curate autolevel backfill`'s sidecar is the overlay `for_rows` prefers). **The atlas
+never re-measures a curve itself**: a seat with none on any record is `lost` and says so,
+and the fix is a backfill followed by a re-run, not a change here. `rotation` runs recorded
+no curve until 2026-09-16 and were most of the `lost` seats before their backfill.
 
 `refused` lists what a link cannot carry, in the short forms the website's contract test
 checks: `colormap <name>`, `mirror on a cyclic map`, `curve <name>`, and

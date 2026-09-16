@@ -2208,10 +2208,20 @@ words the website's `builder/picks.py` owns did not move.
 ### `curate autolevel` — which seats can replay, and a curve for the ones that cannot
 
 `curation.stamps` is the join: a recipe key to the whole stamp the leg that made
-it wrote down, read in one pass grouped by leg. **Three** stores lend a curve now
-— `depth/<run>/sequence.jsonl`, `mine/<run>/sequence.jsonl` and
-`remode/<run>/sequence.jsonl`, one row per candidate carrying `key` and
-`autolevel`, declared in `stamps.SEQUENCE_STORES`.
+it wrote down, read in one pass grouped by leg. **Four** stores lend a curve now
+— `depth/<run>/sequence.jsonl`, `mine/<run>/sequence.jsonl`,
+`remode/<run>/sequence.jsonl` and `rotation/<run>/sequence.jsonl`, one row per
+candidate carrying `key` and `autolevel` (per *adopted* candidate for `rotation`),
+declared in `stamps.SEQUENCE_STORES`.
+
+`rotation` joined on 2026-09-16, and **its omission was `mine`'s, one module
+over**: both arms render through `mine.make`, `rotation._made` carried the whole
+stamp back to the parent, and the write site kept `acted` for the tally and
+dropped the rest. No sequence file was written and the store was not declared, so
+every rotation row was `acted_unrecoverable` the day it merged — 472 seats of
+`20260914T171846Z` and 22 of the atlas's 53 seated dots opened unlevelled. The
+arms now append `rotation.sequence_row` beside every ledger row they adopt; the
+rows merged before that were backfilled (see *The rotation backfill* below).
 
 `mine` joined on 2026-09-08 and until it did, **a mine leg lent nothing**:
 `mine.make` returned the whole stamp, the leg counted `autolevel_acted` off it and
@@ -2277,6 +2287,36 @@ record seats rows whose leg wrote no curve down, so the number moves with every
 record taken — those 60 were the three galleries recorded that afternoon. The
 survey answers in seconds and renders nothing, which is why it is the thing to run
 first and why this paragraph states a *rule* and a reading rather than a target.
+
+#### The rotation backfill, 2026-09-16
+
+The tail had refilled with a record: `20260914T171846Z` was published with **515 seats
+holding no curve** — 472 from `rotation` runs, which wrote none down (see above), and
+27 `depth`, 12 `label_migration`, 2 `reframe_draw` and 2 `runs` besides. 97 seats take no
+operator and are not a shortfall. `curate autolevel backfill --record 20260914T171846Z`
+filled all 515: a 10-seat pilot at 1.58 s a seat, then 505 in 672 s, **1.33 s a seat, zero
+failures**, 177 acted and 338 in band. Against the ramps that shipped, **175 comparable, 175
+agree, 0 differ** — and resolved back through `stamps.for_rows`, all 166 acted rotation seats
+rebuild their shipped ramp exactly. After it the survey reads 903 replayable, 97 no operator, 0 left.
+
+**Nothing entered identity**: `key_of(of_record(row["recipe"]))` over the 1,000 seats and
+over all 13,634 rotation rows in the ledger digests the same before and after, every row
+agreeing with its stored key. The record's redraw door, `render --recipe --key`, carries no
+curve and reads none — it re-derives at candidate geometry — so it levelled these seats
+before the backfill as well as after; three backfilled seats drawn through it came out
+**byte-identical** to the stored picture, their ramp equal to the resolved curve.
+
+The survey over `--record all` then found **144 more** in the other kept records (76 of
+them rotation) and `--record all` filled them in 161 s, 1.12 s a seat, 41 of 41 comparable
+agreeing — so every kept seat is replayable again: 5,188 protected, 464 with no operator,
+0 left.
+
+**The rest of the rotation population was priced and not swept.** 10,040 rotation rows
+with the operator still have no curve, none of them a kept seat; at the pilot's price that
+is about 4.4 hours serial, which is a leg rather than a step. 18 of them stand behind
+*unseated* atlas dots as the place's best row, which is why that page still shows 23
+`lost` slots after a re-run with every seated dot resolved. Seat a row and the survey
+names it; a record sweep backfills exactly those.
 
 ## A standing score is a reading of a picture, and the picture can stop existing
 

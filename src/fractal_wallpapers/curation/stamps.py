@@ -14,10 +14,11 @@ means finding the row that took it.
 
 ## What has a curve to lend, and what does not
 
-Three stores write one sequence row per candidate carrying the whole stamp, and
+Four stores write one sequence row per candidate carrying the whole stamp, and
 they write it in the same shape — `key`, and `autolevel` beside it:
-`depth/<run>/sequence.jsonl`, `mine/<run>/sequence.jsonl` and
-`remode/<run>/sequence.jsonl`. A gallery run's
+`depth/<run>/sequence.jsonl`, `mine/<run>/sequence.jsonl`,
+`remode/<run>/sequence.jsonl` and `rotation/<run>/sequence.jsonl` (one row per
+*adopted* candidate there, a loser having no row to lend to). A gallery run's
 own candidate rows carry it too, but nothing here reads those: a run releasing
 its own seats already holds them in memory, and [`curation.run`] passes the stamp
 straight across rather than going out to disk for what it just made.
@@ -57,9 +58,13 @@ from fractal_wallpapers.paths import under
 #: `mine` joined on 2026-09-08 and every mine leg before that date lends nothing:
 #: the file is written from now on, and the rows already in the store are
 #: [`curation.backfill`]'s to re-derive. A sweep does not have to know which of
-#: the three wrote a run's file — [`sequence_paths`] tries all of them and a
+#: the stores wrote a run's file — [`sequence_paths`] tries all of them and a
 #: missing one is not an error, because a run name belongs to exactly one store.
-SEQUENCE_STORES: tuple[str, ...] = ("depth", "mine", "remode")
+#:
+#: `rotation` joined on 2026-09-16, for `mine`'s reason: both of its arms render
+#: through `mine.make`, carried the whole stamp back and dropped it at the write
+#: site. Its rows merged before then are [`curation.backfill`]'s too.
+SEQUENCE_STORES: tuple[str, ...] = ("depth", "mine", "remode", "rotation")
 
 #: What one sequence row calls the two members read here.
 KEY_FIELD, STAMP_FIELD = "key", "autolevel"

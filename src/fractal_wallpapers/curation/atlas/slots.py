@@ -26,10 +26,12 @@ the website's own three words:
 * `clean` — the operator did not act (or cannot act on this mode), so the picture is the
   map's own and a link needs no `level`.
 * `lost` — the operator acted, or may have, and no record holds the numbers. `level` is
-  `null`, `gap` says what is missing, and the refusal list names the operator. A
-  `rotation` run is the standing case: it keeps a tally of how often the operator acted
-  and never the curve. **The record re-derives nothing to fill the gap**: a curve
-  re-measured off the picture is a different curve.
+  `null`, `gap` says what is missing, and the refusal list names the operator. **The
+  atlas re-derives nothing to fill the gap**: a curve re-measured off the picture is a
+  different curve, and `curate autolevel backfill` — which re-renders the base at
+  candidate geometry and says `rederived` on the stamp — is the one place a missing
+  curve is made. `rotation` runs were the standing case until 2026-09-16, when they
+  started writing `sequence.jsonl` and their seats were backfilled.
 
 ## What the refusal list says
 
