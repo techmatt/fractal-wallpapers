@@ -56,6 +56,67 @@ def storage_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def storage_export(args: argparse.Namespace) -> int:
+    """Copy everything a fresh box needs out of this one, under a manifest."""
+    from pathlib import Path
+
+    from fractal_wallpapers import portable
+
+    manifest = portable.export(Path(args.to), pictures=not args.no_pictures)
+    print(
+        json.dumps(
+            {
+                key: manifest[key]
+                for key in ("exported", "engine", "files_count", "bytes", "by_tier", "pictures")
+            }
+            | {
+                "entries": {
+                    row["name"]: [row["files"], row["bytes"]] for row in manifest["entries"]
+                }
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
+def storage_import(args: argparse.Namespace) -> int:
+    """Land an export on this box, refusing before anything is written."""
+    from pathlib import Path
+
+    from fractal_wallpapers import paths, portable
+
+    source = Path(args.source)
+    report = portable.import_(
+        source, Path(args.root), None if args.archive_root is None else Path(args.archive_root)
+    )
+    print(json.dumps(report, indent=2))
+    build, agrees = portable.engine_agrees(portable.read_manifest(source))
+    if agrees is False:
+        print(
+            f"ENGINE DIFFERS: this build fingerprints {build}, the export was taken under "
+            f"{report['exported_engine']}. The score amendment keeps only rows drawn by the "
+            "running build, so every amended location now reads its un-amended sidecar score "
+            "until `curate redraw` re-derives the amendment under this build."
+        )
+    elif agrees is None:
+        print(f"engine: could not compare ({build}); build the engine and ask again")
+    else:
+        print(f"engine: {build}, the build the export was taken under")
+    configured = (paths.hot_root(), paths.archive_root())
+    if Path(args.root).resolve() != configured[0].resolve():
+        print(
+            f"NOTE: {args.root} is not this box's hot root ({configured[0]}). Set "
+            f'hot_root = "{Path(args.root).as_posix()}" in local.toml before any verb reads it.'
+        )
+    if (report["pictures"] or {}).get("pictures"):
+        print(
+            f"pictures: {report['pictures']['pictures']:,} seatable candidates carry no picture "
+            "here. Run `fractal-wallpapers curate candidate-ledger re-render` before any solve."
+        )
+    return 0
+
+
 def add_commands(subcommands) -> None:
     """The two tiers: what is where, and moving a subtree between them."""
     storing = subcommands.add_parser(
@@ -116,3 +177,53 @@ def add_commands(subcommands) -> None:
         help="tiers only. Walking a million files for their sizes is minutes on the archive",
     )
     showing.set_defaults(handler=storage_status)
+
+    exporting = steps.add_parser(
+        "export",
+        help="copy every file a fresh box needs to continue, with a manifest proving it",
+        description=(
+            "The roster in `portable.ROSTER`: every untracked file a production verb was seen "
+            "to read, across both tiers and the checkout. Pictures do not travel; the "
+            "candidates the solve can seat are written down in pictures.jsonl instead, for the "
+            "fresh box's re-render to be read against."
+        ),
+    )
+    exporting.add_argument(
+        "--to",
+        required=True,
+        help="an empty directory to export into. It holds the manifest and nothing the "
+        "manifest does not name, which is what lets `storage import` refuse a directory "
+        "that has changed since.",
+    )
+    exporting.add_argument(
+        "--no-pictures",
+        action="store_true",
+        help="skip pictures.jsonl, and with it the pool load and the hashing. A "
+        "pool-holding step of minutes; the files themselves do not need it.",
+    )
+    exporting.set_defaults(handler=storage_export)
+
+    importing = steps.add_parser(
+        "import",
+        help="land an export on this box, refusing before anything is written",
+        description=(
+            "Every file is checked against the manifest before the first byte lands, a "
+            "destination that exists is refused, and nothing the manifest does not name is "
+            "touched. Without --archive-root every file lands under --root: a single-root box."
+        ),
+    )
+    importing.add_argument(
+        "--from", dest="source", required=True, help="an export directory `storage export` wrote"
+    )
+    importing.add_argument(
+        "--root",
+        required=True,
+        help="the tree root files land under — this box's hot root. Archive-tier files "
+        "land here too unless --archive-root names somewhere else.",
+    )
+    importing.add_argument(
+        "--archive-root",
+        default=None,
+        help="land archive-tier files here instead of under --root (default: no archive)",
+    )
+    importing.set_defaults(handler=storage_import)

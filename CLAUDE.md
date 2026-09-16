@@ -236,11 +236,17 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,881 collected — 4,726 fast,
-155 slow — since `rotation_tone_curve_ckpt127` added 5 tests on 2026-09-16**, on a
-`.[dev,models]` install with a release engine built. **Fast: 4,726 of 4,726 in
-137.99 s (2:18)** with 155 deselected. **Slow: 4,881 of 4,881 in 502.25 s (8:22).**
-Both green, zero skips, zero failures, and **the two lanes agree on the count**.
+Both are measured, not estimated. The tree holds **4,895 collected — 4,740 fast,
+155 slow — since `portable_stores_ckpt127` added 14 tests on 2026-09-16**, on a
+`.[dev,models]` install with a release engine built. **Fast: 4,740 in 153.05 s
+(2:33)** with 155 deselected. **Slow: 4,895 in 529.77 s (8:49).** The two lanes
+agree on the count and read zero skips. ⚠ Each carried **one** red, the same one — an
+`E:/` path in a README that `test_no_absolute_paths_in_source` caught — fixed and
+re-run green with its neighbours (183 of 183), not by re-taking the pair.
+`tests/README.md` carries the reading.
+
+The pair before it, `rotation_tone_curve_ckpt127`'s 4,881 / 4,726 in 137.99 s and
+502.25 s, was green throughout.
 
 **That pair closes the ⚠ two half-measurements left here** on 2026-09-16:
 `overnight_mine_ckpt126` (+8, `curate score --graded`) and
