@@ -69,6 +69,10 @@ The linearisation inside it is a 256-entry table, exact because the input is
 `uint8` (`palettes.space._srgb_to_linear`). The application is size-independent,
 because it works on the stops rather than on pixels.
 
+**Two percentiles, and `band_autolevel/v1` is numpy's.** The engine's
+`coloring::percentile` is nearest-rank; `numpy.percentile`, which `tone_stats` calls,
+interpolates linearly — so a port of the operator takes numpy's definition, not the crate's.
+
 **The second pass is a colormap swap over the same field**, which is why
 `curation.colorize.render` routes it through the shared field wherever the mode
 has one: the spec is identical but for `colormap_dir`, so on a `field` coloring

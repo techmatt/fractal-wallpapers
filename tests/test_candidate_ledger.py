@@ -810,6 +810,23 @@ def test_the_colour_ask_survives_a_merge_and_the_whole_store_rewrite_that_delete
     assert {field: rewritten["hunt"].get(field) for field in candidate_ledger.ASKED_FOR} == ask
 
 
+@pytest.mark.slow
+def test_a_merge_counts_the_leg_s_places_and_which_the_ledger_never_held(isolated, monkeypatch):
+    """`locations_new` has to be read before the upsert: after it, the leg's own rows
+    are the prior rows and every place reads as already held."""
+    import copy
+
+    monkeypatch.setattr(intake, "read_scores", lambda *_a, **_k: {})
+    first = a_row()
+    written = candidate_ledger.merge([first], [], log=lambda *_: None)
+    assert written["locations"] == {"in_leg": 1, "new": 1}
+    elsewhere = copy.deepcopy(first)
+    elsewhere["key"] = "f" * 16
+    elsewhere["location"] = {**elsewhere["location"], "key": "a place nobody has held"}
+    written = candidate_ledger.merge([first, elsewhere], [], log=lambda *_: None)
+    assert written["locations"] == {"in_leg": 2, "new": 1}
+
+
 def test_a_recipe_read_back_off_a_stored_row_recomputes_the_row_s_own_key():
     """**Invariant one.** The store's name for a picture is derivable from the
     row rather than trusted off it, which is what lets the row drop the rest."""

@@ -704,6 +704,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### preclose_wallpapers_ckpt127
+
+`preclose_wallpapers_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken
+on an idle box after a 15 s `signatures save` and a one-pass read of the ledger had
+finished. **Fast: 4,772 passed in 150.58 s (2:30)**, 156 deselected — 4,928 collected,
+which is `merge_back_ckpt127`'s believed 4,926 + 2: a `mine package` displaced-rows
+guard (fast) and the merge door's location-count guard in `test_candidate_ledger.py`
+(2.40 s through the real door, **slow**). Green throughout. **Slow not run**, so 4,928
+is believed, not read. +5.1 s against the last reading is within the box.
+
 #### merge_back_ckpt127
 
 `merge_back_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken after a

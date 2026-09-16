@@ -352,10 +352,15 @@ origin's `merge.json` to `merge.origin.json` so this machine's merge writes its 
 and writes `unpacked.json`. `--without-manifest` lands a hand-packed directory
 **unverified and says so** — the one use was `m1_freshbox`, 2026-09-16.
 
-**A package carries the rows its own prune already took**, pictures gone: `m1_freshbox`
-arrived as 586 rows with 423 pictures. Here those 163 have no flatness and so no rank,
-and the merge's prune took exactly them again, plus 21 incumbents the other 423
-displaced — against 48 on the mining box, whose pool had not moved since its export.
+**A package leaves out the rows its own prune already took.** A leg that merged at
+home and has a row with no picture in `pictures/` lost that row to the origin's prune,
+so `package` drops it from `rows.jsonl` and `scores.jsonl` (surviving lines copied
+byte for byte) and `package.json`'s `counts` names `rows_packed` and
+`rows_displaced_at_origin`. A leg with no `merge.json` packs every row. The case that
+made the rule: `m1_freshbox`, hand-packed before it, arrived as 586 rows with 423
+pictures; here those 163 had no flatness and so no rank, and the merge's prune took
+exactly them again, plus 21 incumbents the other 423 displaced — against 48 on the
+mining box, whose pool had not moved since its export.
 
 **PRIMED is derived at read time and stored in no row.** A location is primed
 when it holds at least one candidate whose render-judge `P(>=4)` clears the bar.
@@ -1327,7 +1332,18 @@ table's cells. **The hunt has no phase axis**: every candidate draws at phase 0,
 `--phase-draw`'s one-uniform-phase rule does not reach a reframe leg's first
 opening. Measured: 2,364 candidates over 197 places in **2,914 s on three
 workers**, 1.23 s a candidate; **221 over `SEATING_BAR` (9.35%) at 117 of the 197
-places**, `threads` and `smooth` 42 each down to `direct_trap_lines` 1.
+places**, `threads` and `smooth` 42 each down to `direct_trap_lines` 1. That hunt has
+no `merge.json` (its merge failed at the prune, below); reconstructed after the fact
+from the ledger and the displaced lists, **197 of its 197 places were new** to the
+ledger, as they are by construction for a reframe leg.
+
+**A merge record counts places two ways**, since `preclose_wallpapers_ckpt127`:
+`locations_in_leg` is the distinct places the leg's rows stand on, and `locations_new`
+is how many of those the ledger held no row at before the upsert — read off the same
+pre-upsert pass [`retention.drawn_before`] makes, because after the upsert the leg's
+own rows are the prior rows. The old `locations_added` was the first number under a
+name that promised the second. `m1_freshbox`'s record carries both, backfilled: 138
+and 118.
 
 ⚠ **`merge` can fail AFTER the rows land.** On that run the prune's final
 `os.replace` of `rows.jsonl` raised `PermissionError` (WinError 5) — a transient lock

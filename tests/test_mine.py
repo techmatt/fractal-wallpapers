@@ -619,13 +619,40 @@ def test_a_package_carries_the_deliverable_subset_and_names_every_byte(carried):
     assert named == {*mine.PACKED_FILES, "pictures/aaaa.jpg"}
     assert all(len(row["sha256"]) == 64 for row in manifest["files"])
     assert set(manifest["left_behind"]) == {mine.FIELDS, mine.RECORD_NAME}
-    assert manifest["counts"] == {"rows": 2, "scores": 2, "pictures": 1, "files": 5}
+    assert manifest["counts"] == {
+        "rows_packed": 1,
+        "rows_displaced_at_origin": 1,
+        "scores": 1,
+        "pictures": 1,
+        "files": 5,
+    }
     assert (manifest["name"], manifest["engine"], manifest["row_engines"]) == (
         "far",
         "e1",
-        {"e1": 2},
+        {"e1": 1},
     )
     assert (out / mine.PACKAGE_NAME).is_file() and not (out / mine.FIELDS).exists()
+
+
+def test_a_package_drops_displaced_rows_as_their_own_bytes_and_only_after_a_merge(
+    mine_store, monkeypatch, tmp_path
+):
+    """A pictureless row is a prune only when the leg merged; its survivors pack verbatim."""
+    monkeypatch.setattr(mine, "_live_engine", lambda: "e1")
+    _leg(mine_store, "far")
+    merged = mine.package("far", tmp_path / "merged", log=lambda *_: None)
+    source_line = (mine_store / "far" / mine.ROWS_NAME).read_text(encoding="utf-8").splitlines()[0]
+    assert (tmp_path / "merged" / mine.ROWS_NAME).read_text(encoding="utf-8") == source_line + "\n"
+    assert merged["counts"]["rows_displaced_at_origin"] == 1
+    (mine_store / "far" / "merge.json").unlink()
+    unmerged = mine.package("far", tmp_path / "unmerged", log=lambda *_: None)
+    assert (unmerged["counts"]["rows_packed"], unmerged["counts"]["rows_displaced_at_origin"]) == (
+        2,
+        0,
+    )
+    assert (tmp_path / "unmerged" / mine.ROWS_NAME).read_bytes() == (
+        mine_store / "far" / mine.ROWS_NAME
+    ).read_bytes()
 
 
 def test_unpack_lands_a_package_ready_for_merge_with_the_origin_merge_renamed(carried, mine_store):
@@ -633,7 +660,7 @@ def test_unpack_lands_a_package_ready_for_merge_with_the_origin_merge_renamed(ca
     record = mine.unpack(out, log=lambda *_: None)
     here = mine_store / "far"
     assert record["verified"] and record["name"] == "far" and record["engine_agrees"]
-    assert (record["rows"], record["pictures"], record["rows_with_no_picture"]) == (2, 1, 1)
+    assert (record["rows"], record["pictures"], record["rows_with_no_picture"]) == (1, 1, 0)
     assert (here / mine.ROWS_NAME).is_file() and (here / "pictures" / "aaaa.jpg").is_file()
     assert (here / mine.ORIGIN_MERGE_NAME).is_file() and not (here / "merge.json").exists()
     assert not (here / mine.PACKAGE_NAME).exists() and (here / mine.UNPACKED_NAME).is_file()

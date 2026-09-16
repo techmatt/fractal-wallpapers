@@ -1948,7 +1948,8 @@ def merge(name: str, log=print) -> dict:
         # [`retention.repeat_draws`].
         "repeat_draws": written["repeat_draws"],
         "pruned": written["pruned"],
-        "locations_added": len({str((row.get("location") or {})["key"]) for row in rows}),
+        "locations_in_leg": written["locations"]["in_leg"],
+        "locations_new": written["locations"]["new"],
     }
     log(
         f"[hunt] merged {len(rows):,} row(s): the ledger holds {total:,} recipes, "

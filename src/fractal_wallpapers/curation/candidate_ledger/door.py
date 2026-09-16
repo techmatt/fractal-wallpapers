@@ -87,6 +87,11 @@ def merge(rows, scores, log=print) -> dict:
     # this leg's own rows joined it — see [`retention.repeat_draws`].
     standing = retention.drawn_before(store.stream())
     repeated = retention.repeat_draws(rows, standing, pool=len(colorize.pool(0)))
+    # Off the same pre-upsert reading: which of the leg's places this ledger had
+    # never held a row at. Read after the merge it cannot be recovered, since the
+    # leg's own rows are then the prior rows.
+    places = {str((row.get("location") or {}).get("key")) for row in rows}
+    locations = {"in_leg": len(places), "new": len(places - set(standing))}
     log(
         f"[ledger] {repeated['at_locations_with_deleted_rows']:,} of {len(rows):,} row(s) "
         f"land at a location holding deleted recipes; at most {repeated['bound']:,} and "
@@ -133,6 +138,7 @@ def merge(rows, scores, log=print) -> dict:
             "seconds": swept["seconds"],
         },
         "repeat_draws": repeated,
+        "locations": locations,
         "pruned": pruned,
         "recorded": {
             "rows": saved["rows"]["rows"],
