@@ -106,6 +106,26 @@ def test_every_map_in_the_library_was_read_and_every_cell_has_a_carrier() -> Non
     assert carried == set(dominance.cells()), "48 cells, and a target may name any of them"
 
 
+def test_a_map_dominant_in_nothing_is_named_rather_than_absent() -> None:
+    """Every library map is either a carrier of something or an `uncarried` row.
+
+    `atlas_grey` is the case that made the row: a grey ramp has no chromatic pixel for
+    the dominance rule to count, so it carries nothing on any rebuild, and a second
+    reader of this file (the website's library page) could not tell that absence from
+    a map the build never read. It is a measurement, so it carries the neutral share
+    that explains it and is held to the rule — no uncarried map may also carry.
+    """
+    carried = {row["map"] for row in rows()}
+    uncarried = carriers.uncarried()
+    assert "atlas_grey" in uncarried
+    assert not carried & set(uncarried)
+    assert carried | set(uncarried) == set(groups.library())
+    assert header()["uncarried"] == len(uncarried)
+    for row in carriers.read():
+        if row.get("kind") == carriers.UNCARRIED_ROW:
+            assert set(row["neutral"]) == set(reference_fields.CLASSES)
+
+
 def test_the_record_never_lands_where_a_colormap_would_be_read() -> None:
     """Every reader of the library globs `data/palettes/*.json` and takes the stem."""
     assert carriers.record_path().suffix == ".jsonl"

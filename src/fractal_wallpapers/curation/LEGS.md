@@ -1275,6 +1275,39 @@ decomposed by the incumbent mode, measured 2026-09-07* — the last for the pric
 split between a dumping incumbent and a dear one, and for the check that a unit's
 mode *is* its incumbent's.
 
+### A reframe leg's places are opened by `curate hunt --places`, at phase 0
+
+A `reframe` leg writes **locations**, not pool rows, so everything it finds is
+unopened, and `curate depth run --floor-places` cannot reach an unopened place — nor
+a freshly opened one, since the floor draw stands on places already holding a
+candidate over `SEATING_BAR`. The whole path, as `reframe30_atlas_grey_ckpt127` ran
+it on 2026-09-16 over `reframe_g12`:
+
+```
+fractal-wallpapers curate score --harvest artifacts/reframe_g12   # 201 scored, 28 s
+fractal-wallpapers curate embed                                   # 197 admitted, 2m15s
+# manifest: sidecar rows whose `ledger` is that walk.jsonl, over the junk floor
+fractal-wallpapers curate hunt run --name <name> --places FILE --per-location 12 --unconditional <12 x places>
+fractal-wallpapers curate hunt merge --name <name>
+fractal-wallpapers gallery-grade score-pool
+```
+
+`--per-location 12` is every mode of `mode_policy.mined()` once — width 1 at pairs
+that are empty by construction — and the palettes are stratified over the carrier
+table's cells. **The hunt has no phase axis**: every candidate draws at phase 0, so
+`--phase-draw`'s one-uniform-phase rule does not reach a reframe leg's first
+opening. Measured: 2,364 candidates over 197 places in **2,914 s on three
+workers**, 1.23 s a candidate; **221 over `SEATING_BAR` (9.35%) at 117 of the 197
+places**, `threads` and `smooth` 42 each down to `direct_trap_lines` 1.
+
+⚠ **`merge` can fail AFTER the rows land.** On that run the prune's final
+`os.replace` of `rows.jsonl` raised `PermissionError` (WinError 5) — a transient lock
+on a 640 MB file just written. The upsert, the scores and the flatness sweep had
+already happened and the prune unlinks its temps before raising, so the store was
+whole; what was skipped was the ratchet mark and the four durability saves. The
+recovery is `curate candidate-ledger prune`, `candidate-ledger save`, `flatness
+save` and `signatures save`, in that order — not a second `merge`.
+
 ### A counterfactual by merge stamp is only clean for an arm that PRUNED NOTHING
 
 `GALLERY.md`'s *A scratch driver asks the same two questions* documents the pool-view

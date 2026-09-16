@@ -47,7 +47,8 @@ the library and confidently wrong about the rest.
 
 ## Tracked, small, and regenerable
 
-`data/palettes/carriers.jsonl`: one method row, then one row per (map, cell).
+`data/palettes/carriers.jsonl`: one method row, then one row per (map, cell), and
+one `uncarried` row for each map dominant in nothing — see [`uncarried_row`].
 3,665 rows over 1,021 maps in **690,732 bytes**, which is 65.9% of
 `test_history_purity`'s 1 MiB — small enough to keep in the history, where a
 reader of a pass record that names a carrier can find out what the pass believed
@@ -75,9 +76,11 @@ SCHEMA = 1
 #: name, so a `.json` file in there would be read as a colormap.
 RECORD_NAME = "carriers.jsonl"
 
-#: The two kinds of row: one header, then one per (map, cell).
+#: The three kinds of row: one header, one per (map, cell), and one per map that
+#: carries no cell at all — see [`uncarried_row`].
 METHOD_ROW = "method"
 CARRIER_ROW = "carrier"
+UNCARRIED_ROW = "uncarried"
 
 #: What a carrier row is **written** with. Everything a reader gets that is not
 #: here is derived at the read — see [`fill`].
@@ -492,6 +495,35 @@ def rows_for(name: str, readings: dict) -> list:
     return sorted(out, key=lambda row: (-row["mean"], row["cell"]))
 
 
+def uncarried_row(name: str, readings: dict) -> dict:
+    """The row a map gets when [`rows_for`] gives it none: dominant in nothing, anywhere.
+
+    **A measurement and not an exclusion list.** The dominance rule takes the
+    neutrals out of both sides of the share, so a ramp with no chromatic pixels on
+    any reference field — `atlas_grey`, the grey the atlas plate is drawn through —
+    can never carry a cell, however often the table is rebuilt. Without a row of its
+    own such a map is simply absent, which a second reader of this file cannot tell
+    from a map the build never read. So the row says the map was read, and carries
+    the neutral share on each field that is why nothing else was written. A reader
+    grouping the library by dominant colour skips the maps these rows name, because
+    they have no colour to be grouped under.
+    """
+    return {
+        "schema": SCHEMA,
+        "kind": UNCARRIED_ROW,
+        "map": name,
+        "neutral": {
+            klass: round(float(readings[klass].neutral), PLACES)
+            for klass in reference_fields.CLASSES
+        },
+    }
+
+
+def uncarried(directory: Path | None = None) -> list[str]:
+    """Every map the record read and found dominant in no cell on any field."""
+    return sorted(str(row["map"]) for row in read(directory) if row.get("kind") == UNCARRIED_ROW)
+
+
 def run(directory: Path | None = None, force: bool = False, log=print) -> dict:
     """Build the table over the whole library and write the tracked record.
 
@@ -513,7 +545,7 @@ def run(directory: Path | None = None, force: bool = False, log=print) -> dict:
             picture = _recoloured(field, name, name not in cyclic, klass)
             readings[klass] = dominance.of_picture(picture)
         made = rows_for(name, readings)
-        rows += made
+        rows += made or [uncarried_row(name, readings)]
         for row in made:
             counted[row["cell"]] = counted.get(row["cell"], 0) + 1
         if log and index % 200 == 199:
@@ -521,7 +553,8 @@ def run(directory: Path | None = None, force: bool = False, log=print) -> dict:
             rate = (time.perf_counter() - started) / done
             log(f"[carriers] {done}/{len(library)}, {rate * (len(library) - done):.0f}s left")
     seconds = time.perf_counter() - started
-    header = method(len(library), len(rows), seconds)
+    header = method(len(library), sum(1 for row in rows if row["kind"] == CARRIER_ROW), seconds)
+    header["uncarried"] = sum(1 for row in rows if row["kind"] == UNCARRIED_ROW)
     path = write([header, *rows], directory)
     if log:
         log(f"[carriers] {len(rows)} row(s) over {len(library)} map(s) in {seconds:.0f}s")
@@ -541,6 +574,7 @@ __all__ = [
     "PLACES",
     "RECORD_NAME",
     "SCHEMA",
+    "UNCARRIED_ROW",
     "CarrierError",
     "co_dominance",
     "deliveries",
@@ -553,5 +587,7 @@ __all__ = [
     "run",
     "table",
     "text_of",
+    "uncarried",
+    "uncarried_row",
     "write",
 ]

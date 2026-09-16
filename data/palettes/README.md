@@ -144,7 +144,10 @@ maps — every file in this directory. The **candidate pool** is 1,020: `pool.js
 next door, the library less two maps held back — `blue_orange`, the one sequential map
 kept for the tile floor and the labeler's vivid render, and `atlas_grey`, the plate ramp
 `curate atlas` draws through, which is in the library so a figure of the plate can name
-it and is never offered for a wallpaper. What a colorize actually **draws** from
+it and is never offered for a wallpaper. Being grey, it is dominant in no cell, so
+`carriers.jsonl` names it in an `uncarried` row rather than leaving it absent, and a
+reader grouping the library by colour — the website's library page — skips the maps
+those rows name. What a colorize actually **draws** from
 is 942, because 143 of the 1,020 collapse into 65 groups and each group stands one
 member up (`877 singletons + 65 = 942`). The count is seed-independent — a
 different `--seed` stands a different member up, never a different number of them
