@@ -26,7 +26,15 @@ def sha256_of(path: Path) -> str:
 #: What a manifest row has to say before a release can be cut from it. An asset
 #: nobody can hash is a download nobody checked, and one that cannot name its
 #: commit is a file nobody can rebuild.
-REQUIRED_FIELDS = ("tag", "asset", "sha256", "source_commit", "provenance")
+#:
+#: **`license` joined them on 2026-09-15.** The four assets are uploaded to a
+#: GitHub release rather than tracked here, so `LICENSE` at the repository root
+#: does not travel with the bytes a clone downloads — and a weight file with no
+#: terms beside it is one nobody can redistribute without asking. Matt ruled MIT
+#: reaches the release assets, same as the code. It is a required field rather
+#: than a constant because a head trained on a corpus with its own terms would
+#: need to say so, and the place to say it is the row.
+REQUIRED_FIELDS = ("tag", "asset", "sha256", "license", "source_commit", "provenance")
 
 
 def check_weights(manifest: dict) -> int:

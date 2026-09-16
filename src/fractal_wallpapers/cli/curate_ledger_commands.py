@@ -47,6 +47,7 @@ def curate_score(args: argparse.Namespace) -> int:
             limit=args.limit,
             keys=intake.read_keys(resolve_output(args.key_file)) if args.key_file else None,
             unscored=args.unscored,
+            opened=args.opened,
         )
     except (binding.Unbound, intake.IntakeError) as refusal:
         print(refusal)
@@ -671,6 +672,18 @@ def add_steps(steps) -> None:
         "both tiers hold 242,007 gate survivors of which 132,992 have no row, and most "
         "of those sit on smoke, dedup and demo runs that are not standing supply. Name "
         "the ledgers whose locations you mean",
+    )
+    reading.add_argument(
+        "--opened",
+        action="store_true",
+        help="score the opened locations the sidecar has no row for, off the CANDIDATE "
+        "LEDGER rather than a walk binding. A population and not a filter, so it takes no "
+        "--ledger, --harvest, --key-file, --limit or --unscored: these places are on no "
+        "walk ledger at all. 1,607 of 42,113 opened locations on 2026-09-15, nearly all of "
+        "them `curate label-migration merge`'s — a place with a human grade, a picture and "
+        "a candidate row, which every draw standing on hunt.scanned stepped over because "
+        "the sidecar had nothing to cut. Read at the node regime like all other stock that "
+        "states no regime",
     )
     reading.set_defaults(handler=curate_score)
 

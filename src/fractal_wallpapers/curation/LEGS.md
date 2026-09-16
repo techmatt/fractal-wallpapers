@@ -999,7 +999,7 @@ diagnosis that reaches for the second without asking whether the first has run
 will price a backlog at zero and find nothing to do, which is exactly what
 happened here.
 
-### ⚠ `curate score` cannot reach the opened-but-unscored places, and no binding can
+### ⚠ No BINDING reaches the opened-but-unscored places, and `curate score --opened` is the door
 
 ★ **The line above is right that it is a scoring backlog and wrong that `curate
 score` owes the work.** Measured 2026-09-15 over the live store: **1,607 of
@@ -1009,6 +1009,44 @@ on 2026-09-12 — the number has not moved in three days, and it cannot, because
 both tiers, drop **every structural gate**, and take the whole **292,139-row**
 union: it holds **zero** of them. This stage reads walk ledgers and there is
 nothing there to read.
+
+★ **`--opened` closed it the same day, and it is a POPULATION and not a fourth
+filter.** `intake.opened_backlog` reads the **candidate ledger** — one row a
+place, the family, viewport and maxiter the place's own candidate row carries —
+so no binding is resolved and `--ledger`, `--harvest`, `--key-file`, `--limit`
+and `--unscored` are all refused beside it: there is no walk binding for them to
+narrow. Everything after the population is the stage's existing code, because a
+row to stand on was the only thing these places ever lacked.
+
+**The regime question the paragraph below called open was already answered in
+`intake`.** A row that states no `score_regime` has never been scored here and is
+read at `intake.READ_REGIME`, the node regime, exactly like every other piece of
+standing stock in that position — the location head being regime-robust is what
+makes that read comparable with the rest of the pool. These rows state none,
+truthfully, so they take that path with nothing new decided. Every sidecar row
+carries the regime it was read at, so a re-read at another geometry is one
+command over the same keys if Matt wants a different answer.
+
+**What it cost and what it bought, 2026-09-15**: 1,607 places, **106 s**, 1,607
+node-regime renders and one head pass. **1,470 clear the junk floor (91.5%),
+1,249 the keeper floor (77.7%), 609 the great cut (37.9%)** — against
+**50.0% / 33.4% / 11.4%** on the same day's uniform 16,720-row pilot of fresh
+ckpt-123 harvest supply. The best-evidenced places in the project read 2.3x the
+keeper rate and 3.3x the great rate of what a walk finds, which is what *the
+places outside the admitted population are disproportionately Matt's own graded
+ones* looks like once somebody scores them.
+
+⚠ **The sidecar row is necessary and not sufficient, and the second half is
+`curate embed`.** Every draw stands on `hunt.scanned`, which is the **embedding
+store** less what the junk floor has since dropped, so a place with a fresh
+sidecar row is still invisible until it has a vector. `--opened` → `curate
+sidecar save` → `curate embed` → `curate embeddings save` is the whole of it, and
+the `--floor-places` leg that motivated this planned **0 candidates over 0
+locations** before the embed and **17,640 over 1,470** after. A manifest naming
+places `scanned` does not hold is not refused — it is silently narrowed to
+nothing, and `[depth] --floor-places: N of M named place(s) are opened and
+drawable` counts `world["best"]` rather than `world["by_key"]`, so it read
+**1,607 of 1,607** on both sides of that change.
 
 **Where they came from says why.** `provenance.run` on the 2,827 candidate rows at
 those places reads **2,799 `label_migration_0908`**, 22 `ckpt120`, and six across
@@ -1020,14 +1058,19 @@ sidecar row, so the 1,607 are a real absence rather than a spelling mismatch.
 
 ★ **So the places outside the admitted population are disproportionately Matt's
 own graded ones**, which is the opposite of what a backlog usually means. Every
-draw that stands on `hunt.scanned` steps over them, the near band's manifest cut
-names them and drops them in silence, and no amount of `curate score` changes it.
+draw that stands on `hunt.scanned` stepped over them and the near band's manifest
+cut named them and dropped them in silence, until the flag above existed; what no
+amount of `curate score` *with a binding* could do is still true, and is why the
+door is a population rather than another way of asking for one.
 
-**What would close it is a different leg and it is not written.** These places
-need a location-head read to earn a sidecar row, and their picture is a candidate
-render rather than a walk's gate render — so the open question is which regime
-that read happens at, not which ledger to bind. Until somebody answers it, the
-honest reading of the 1,607 is *outside the admitted population by construction*.
+**The judged half of the list is four times the opened half, and `curate depth`
+reaches only the opened one.** Every place carrying a human verdict ≥3 in the
+location store or either finished store, less every place any of the 55 ledgers
+names at all: **4,712**, of which **1,607 are opened and 3,105 were never opened
+at all**. The 1,607 are exactly the opened-but-unscored set — the two populations
+coincide to the row — so `--opened` closes the depth-reachable half whole, and
+the other 3,105 are `curate hunt --places`' population and not this one's.
+
 `curate score --unscored` is the door for the **other** backlog, the one that is
 on the ledgers: 132,992 of 242,007 gate survivors across those 54 ledgers have no
 sidecar row, and most of them sit on smoke, dedup and demo runs
