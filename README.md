@@ -295,70 +295,24 @@ really on, and resolve back on read.
 
 ### Continuing on another machine
 
-Most of what the pipeline reads is untracked: the walk ledgers, the candidate pool and
-its sidecars, the levelling sequences. `storage export` copies that set, about 3 GiB
-without a single picture, under a manifest of every path, size, sha256, tier and the
-verbs that read it. `storage import` lands it and refuses before writing if anything
-disagrees with the manifest or already exists:
+Most of what the pipeline reads is untracked; `storage export` carries it (about 3 GiB,
+no pictures) and the new machine re-renders before any solve:
 
 ```
-fractal-wallpapers storage export --to E:/FractalStorage/portable/<stamp>
-# on the new machine, after Install, fetch-weights and a local.toml:
-fractal-wallpapers storage import --from <export> --root <hot_root>
-fractal-wallpapers curate candidate-ledger re-render --keys <gallery.jsonl>   # minutes
+fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
+fractal-wallpapers storage import --from <part 1> --from <part 2> --root <hot_root>
+fractal-wallpapers curate candidate-ledger re-render --keys <gallery.jsonl>   # one known solve, minutes
 fractal-wallpapers curate candidate-ledger re-render --seatable               # days
 fractal-wallpapers curate candidate-ledger re-render --rest                   # whenever
-```
-
-Pictures are re-rendered, not copied, so a re-render comes before any solve. **To check
-one known solve, render only its seats**: a tentative record's `gallery.jsonl` is already
-a `--keys` manifest (one JSON object a line, a `key` field), and the export's reference
-solve's 300 seats rendered in 5.1 minutes on the first fresh box, where `--seatable` is
-about three days at three workers. The import prints whether this engine build
-fingerprints as the exporting one; if it does not, the score amendment has to be
-re-derived with `curate redraw`.
-
-**A transfer that splits the export across folders** is imported by naming each one:
-`--from <part 1> --from <part 2>`. The roots are merged by relative path before the
-manifest check, and a name under two roots with different bytes is refused.
-
-**A machine with one disk** has no archive tier, so `local.toml` names the hot root alone:
-
-```toml
-hot_root = "C:/fractal-storage"
-```
-
-**A leg mined there comes back as a package**, not by hand:
-
-```
-fractal-wallpapers curate mine package --name <leg> --out <dir>     # on the machine that mined it
-fractal-wallpapers curate mine unpack --from <dir>                  # here, then:
+fractal-wallpapers curate mine package --name <leg> --out <dir>               # there; then here:
+fractal-wallpapers curate mine unpack --from <dir>
 fractal-wallpapers curate mine merge --name <leg>
-fractal-wallpapers gallery-grade score-pool
-fractal-wallpapers curate signatures sweep
 ```
 
-The package is the leg's `rows.jsonl`, `scores.jsonl`, `sequence.jsonl`, `merge.json` and
-`pictures/`, with a `package.json` naming each file's size and sha256, the engine build,
-and the ledger it was mined against; `fields/` stays behind as a cache. `unpack` refuses
-on any file the manifest does not vouch for, and lands the origin's `merge.json` as
-`merge.origin.json` so this machine's merge writes its own. `curate mine bench` prints
-the one `--rate` a `mine run` there should take, weighted by the plan at the same `--k`
-and `--per-location`.
-
-**Fresh Windows machines, the traps seen so far:**
-
-* **`rustup show` first.** If the default host is not `x86_64-pc-windows-msvc` (a
-  machine that once installed the GNU toolchain keeps it as default), build with
-  `cargo +stable-x86_64-pc-windows-msvc build --release --manifest-path engine/Cargo.toml`.
-  The MSVC build is the one this project has been measured and fingerprinted on.
-* **The `models` extra's torch index is CUDA-only.** On a machine without an NVIDIA GPU
-  `uv sync` still installs a working torch that runs on the CPU, which is everything but
-  training: rendering, judging and solving all run there.
-* **Bare `python` and `python3` are the Microsoft Store stub** on a fresh Windows
-  install; they print an install hint and exit 49. Use `.venv/Scripts/python.exe`.
-* **Git Bash's `/c/...` paths are not paths to Python.** Bash rewrites them for its own
-  commands, not inside an argument or a script handed to `python.exe`; write `C:/...`.
+* **One disk:** `local.toml` names the hot root alone, `hot_root = "C:/fractal-storage"`.
+* **Build:** `rustup show`; if the host is not MSVC, `cargo +stable-x86_64-pc-windows-msvc build --release --manifest-path engine/Cargo.toml`.
+* **Torch:** the `models` extra's index is CUDA-only, and without an NVIDIA GPU it still installs a CPU torch that does everything but training.
+* **Paths:** Git Bash's `/c/...` is not a path to `python.exe`; write `C:/...`.
 
 [The package README](src/fractal_wallpapers/README.md)'s *Continuing on a fresh box* has
 the rest.

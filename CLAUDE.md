@@ -239,13 +239,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `merge_back_ckpt127` added 13 tests on
-2026-09-16 and read **4,771 fast in 145.46 s (2:25)**, 155 deselected, so the tree is
-*believed* at 4,926 collected. ⚠ It carried **two** reds, both
-`test_nested_verbs.py`'s surface table not yet naming `mine package`/`unpack` and
-`bench`'s new flags — fixed and that file re-run green (91 of 91), not by re-taking
-the lane. The slow lane was not run. Before it, `reframe30_atlas_grey_ckpt127` read
-4,758 in 144.93 s, also fast only.
+**The newest reading is fast only**: `preclose_wallpapers_ckpt127` added 2 tests (one
+slow) on 2026-09-16 and read **4,772 fast in 150.58 s (2:30)**, 156 deselected, green,
+so the tree is *believed* at 4,928 collected. Before it, `merge_back_ckpt127` read
+4,771 in 145.46 s with two `test_nested_verbs.py` reds fixed by re-running that file,
+and `reframe30_atlas_grey_ckpt127` 4,758 in 144.93 s — all fast only.
 
 The last pair, before it: **4,895 collected — 4,740 fast,
 155 slow — since `portable_stores_ckpt127` added 14 tests on 2026-09-16**, on a

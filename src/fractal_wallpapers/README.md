@@ -210,10 +210,10 @@ throwaway root in a `git worktree`. 501 files, **3.28 GiB**: the ten Durables, a
 55 walk ledgers on both tiers, every leg's `sequence.jsonl`, the depth legs'
 `depth.json`, the kept tentative records' text, the gallery-grade pool scores, the
 colour census, the built label sheets' text, the `labels/` inbox, and the three
-fp32 seeds of the shipped gallery-grade ensemble. **The current export is
-`portable/20260916T183452Z`**, at commit `5c5fbb2`: 508 files, 3.29 GiB, plus the
-four mine records and the reference solve that joined the roster that day. The first,
-`20260916T174253Z`, is kept beside it.
+fp32 seeds of the shipped gallery-grade ensemble. The last export, at commit `5c5fbb2`,
+was 508 files and 3.29 GiB with the four mine records and the reference solve that
+joined the roster that day; **no export is kept on the archive disk** — both were
+copied out and `portable/` deleted on 2026-09-16, so the next transfer exports afresh.
 
 ```
 fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
@@ -244,6 +244,8 @@ checkouts' modules — drop the live `src` from `sys.path` first, as
 `sys.path` (spawned workers inherit it). **`reference/README.md`** in each export names
 `portable.REFERENCE`'s record, its `n` and the `curate solve run … --no-render`
 that re-seats it, the comparison a fresh box makes before trusting its own seating.
+**The reference record is off the keep list by design**, so a boundary wipe deletes it
+and `portable.REFERENCE` must be re-pointed at a record that stands before the next export.
 
 **Pictures do not travel; the fresh box re-renders**, Matt's ruling of 2026-09-16.
 A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as

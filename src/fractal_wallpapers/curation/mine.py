@@ -1258,7 +1258,8 @@ def merge(name: str, log=print) -> dict:
         # [`retention.repeat_draws`].
         "repeat_draws": written["repeat_draws"],
         "pruned": written["pruned"],
-        "locations_added": len({str((row.get("location") or {})["key"]) for row in rows}),
+        "locations_in_leg": written["locations"]["in_leg"],
+        "locations_new": written["locations"]["new"],
     }
     log(
         f"[mine] merged {len(rows):,} row(s): the ledger holds {total:,} recipes, "
@@ -1325,6 +1326,14 @@ def package(name: str, out: Path, log=print) -> dict:
     it and the builds the rows name, and the size of the ledger the leg was
     mined against — the tracked `rows.manifest.json`'s count and digest, which is
     what `merge.json`'s prune was decided over. `out` must be empty or absent.
+
+    **A leg that merged at home drops the rows its own prune displaced**: a row
+    with no picture in the leg after that merge is a recipe the origin's ledger
+    already took back, and carrying it only hands the receiving merge an unranked
+    row to prune again — `m1_freshbox` arrived with 163 of those. They leave
+    `rows.jsonl` and `scores.jsonl` both, and `counts` says how many. A leg with
+    no `merge.json` packs every row, since a missing picture there is not a prune.
+    `sequence.jsonl` is the draw and travels whole.
     """
     source = mine_dir(name)
     if not rows_path(name).is_file():
@@ -1344,19 +1353,41 @@ def package(name: str, out: Path, log=print) -> dict:
         if pictures_dir(name).is_dir()
         else []
     )
+    all_rows = hunt._read(rows_path(name))
+    if hunt.MERGE_NAME in files:
+        pictured = {
+            path[len(PICTURES) + 1 : -len(".jpg")] for path in pictures if path.endswith(".jpg")
+        }
+        rows = [row for row in all_rows if str(row["key"]) in pictured]
+    else:
+        rows = all_rows
+    kept = {str(row["key"]) for row in rows}
+    # The origin's own lines, never re-serialized: a row packed is its bytes as mined.
+    filtered = {ROWS_NAME: "key", SCORES_NAME: "recipe_key"} if len(rows) < len(all_rows) else {}
     listed = []
     total = 0
     for at, relative in enumerate([*files, *pictures], start=1):
         here = source / PurePosixPath(relative)
         there = out / PurePosixPath(relative)
         there.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(here, there)
+        if relative in filtered:
+            lines = here.read_text(encoding="utf-8").splitlines(keepends=True)
+            there.write_text(
+                "".join(
+                    line
+                    for line in lines
+                    if line.strip() and str(json.loads(line)[filtered[relative]]) in kept
+                ),
+                encoding="utf-8",
+                newline="",
+            )
+        else:
+            shutil.copyfile(here, there)
         size = there.stat().st_size
         listed.append({"path": relative, "bytes": size, "sha256": _sha256_of(there)})
         total += size
         if at % 250 == 0:
             log(f"[package] {at:,} of {len(files) + len(pictures):,} file(s)")
-    rows = hunt._read(rows_path(name))
     ledger = candidate_ledger.store.durable_rows().manifest
     held = json.loads(ledger.read_text(encoding="utf-8")) if ledger.is_file() else {}
     manifest = {
@@ -1368,8 +1399,9 @@ def package(name: str, out: Path, log=print) -> dict:
         "row_engines": _row_engines(rows),
         "source_ledger": {"rows": held.get("rows"), "sha256": held.get("sha256")},
         "counts": {
-            "rows": len(rows),
-            "scores": len(hunt._read(scores_path(name))),
+            "rows_packed": len(rows),
+            "rows_displaced_at_origin": len(all_rows) - len(rows),
+            "scores": len(hunt._read(out / SCORES_NAME)),
             "pictures": sum(1 for path in pictures if path.endswith(".jpg")),
             "files": len(listed),
         },
