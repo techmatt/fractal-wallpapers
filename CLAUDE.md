@@ -236,30 +236,26 @@ just its own file.
 test there is, and that is what CI runs and what runs before a checkpoint. The
 fast lane is for the edit-run loop and nothing else.
 
-Both are measured, not estimated. The tree holds **4,831 collected — 4,676 fast,
-155 slow — since `ci_red_ckpt125` added 8 tests on 2026-09-15**, on a
-`.[dev,models]` install with a release engine built. **Fast: 4,676 of 4,676 in
-135.60 s (2:15)** with 155 deselected. **Slow: 4,831 of 4,831 in 476.93 s (7:56).**
+Both are measured, not estimated. The tree holds **4,850 collected — 4,695 fast,
+155 slow — since `survivors_humanplaces_ckpt126` added 5 tests on 2026-09-15**, on a
+`.[dev,models]` install with a release engine built. **Fast: 4,695 of 4,695 in
+140.80 s (2:21)** with 155 deselected. **Slow: 4,850 of 4,850 in 486.11 s (8:06).**
 Both green, zero skips, zero failures, and **the two lanes agree on the count**.
 
-**The slow lane came down 16.1 s on the same tree** — `lane_speed_ckpt125`, two pure
-wins in `present_pictures` and `rehome` plus one sampled fixture — and the fast lane
-did not move, because all three were slow-lane costs. The count is unchanged either
-way: a sample size is not a test.
+**This pair closes the ⚠ that stood here**, which asked for exactly it:
+`consolidate_ckpt125` read 4,685 fast on 2026-09-15 and Matt said skip the slow
+lane, so the figure was deliberately left pointing at 4,676. The arithmetic between
+the two is **4,685 + 5 new guards for `curate score --opened` + 5 the three commits
+after `consolidate_ckpt125` added without re-measuring**, and the five nobody
+measured are what *take the pair whether or not the prompt wrote a test* exists to
+catch — they were found by the two lanes meeting and not by anybody noticing.
 
-⚠ **This figure is one pair stale again and the tree is at 4,840.**
-`consolidate_ckpt125` added 9 fast-lane guards on 2026-09-15 — seven for the family
-allowance, two that `test_schema_notes` derives from a new record site and its note
-— and read **4,685 fast in 135.77 s**, zero skips. Matt said skip the slow lane, so
-no pair was taken and the figure above was **deliberately not repointed**. The fast
-lane did not move: +9 guards for +0.17 s, all of it arithmetic over stub rows.
-**Take the pair and repoint this on the next slow lane.**
-
-This closes `family_slot_sizing_ckpt125`'s ⚠, which asked for exactly this pair: its
-half-pair 4,667 is in the arithmetic above as 4,667 + 8 new guards + 1 test that
-changed lanes. **`test_forced` moved slow → fast**, which is why the held-back count
-is 155 where it was 156 — it stopped resolving a seating order over this machine's
-supply sidecar and went from a store read to 0.09 s.
+**Neither lane moved outside the noise.** Fast +5.03 s and slow +9.18 s against
+figures taken on other days and other box states; the five new guards are stub-row
+arithmetic and cost nothing measurable. ⚠ **This pair was taken on a box twenty
+minutes after a render leg and a pool merge**, so the page cache was warm for the
+stores and cold for nothing that matters; read the deltas as box and not as tree
+unless a third reading agrees with them.
 
 **The slow lane fell 15.8 s while the tree grew by ten tests**, and the likely cause
 is that same change generalized: `conftest.no_live_supply_sidecar` now stops **every**

@@ -124,6 +124,7 @@ run        the wiring, and nothing else
 
 ```
 fractal-wallpapers curate score --harvest artifacts/harvest_run3   # through the location head
+fractal-wallpapers curate score --opened                           # the places no walk ledger names
 fractal-wallpapers curate sidecar save                             # the supply, made durable
 fractal-wallpapers curate embed                                    # a vector per admitted location
 fractal-wallpapers curate embeddings save                          # the vectors, made durable
@@ -381,11 +382,15 @@ opener or counts a slot by hand any more.
 the *incumbent's* mode, so only that pair's room counts; the place has to be in
 `[SEATING_BAR, PRIMED_BAR)`; and it has to be in the **admitted embedded
 population**, which the ledger runs ahead of by 1,636 of 34,010 opened locations —
-**1,607 of them locations the supply sidecar has never scored**, which is
+**1,607 of them locations the supply sidecar had never scored**, which is
 `curate score`'s work and not `curate embed`'s. [`LEGS.md`](LEGS.md)'s *Cut the
 manifest with `curate depth near-places`* has what that cost — three arms of one
 night planned 160, 87 and 68 places out of manifests naming 328, 255 and 236 — and
-the reading that says which command owes it.
+the reading that says which command owes it. Those 1,607 were scored on
+2026-09-15 by `curate score --opened`, which is the door for a place no walk
+ledger names; [`LEGS.md`](LEGS.md)'s *No BINDING reaches the opened-but-unscored
+places* is the reading, and the second half of it is that a sidecar row buys
+nothing until `curate embed` has given the place a vector.
 
 Measured over the ledger on 2026-09-06, at the keep of the day and at the keep
 that replaced it. The store did not move between the two readings; only K did:

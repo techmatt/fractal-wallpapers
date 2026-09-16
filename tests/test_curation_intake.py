@@ -198,8 +198,12 @@ def score(tmp_path, monkeypatch):
     monkeypatch.setattr(
         intake.location_view,
         "render_view",
+        # Named off the viewport rather than off `node_id`: an `opened` row has no
+        # node id at all, being a location off the candidate ledger and not a
+        # walk's node, and a stub that insisted on one would fail there for a
+        # reason that says nothing about what these cases test.
         lambda row, colormap, cyclic, directory, regime=None: (
-            directory / f"{row['node_id']}.jpg",
+            directory / f"{row['viewport']['center_re']}.jpg",
             False,
         ),
     )
@@ -324,6 +328,88 @@ def test_a_backlog_truncated_to_nothing_does_not_read_as_a_backlog_of_nothing(
     report = score([ledger], unscored=True, limit=0)
     assert (report["outstanding"], report["scored"]) == (3, 0)
     assert report["complete"] is False
+
+
+# --------------------------------------------------------------------------- #
+# The population no binding reaches: opened, and on no walk ledger at all.
+# --------------------------------------------------------------------------- #
+def opened_row(center: str, family=None) -> dict:
+    """A candidate-ledger row as `curate label-migration merge` writes one."""
+    recipe = {
+        "family": family or {"kind": "mandelbrot"},
+        "viewport": {"center_re": center, "center_im": "0", "width": "0.5"},
+        "maxiter": 500,
+    }
+    place = location_module.key_text(key_of_row(recipe))
+    return {"key": f"recipe{center}", "location": {"key": place}, "recipe": recipe}
+
+
+@pytest.fixture
+def opened(monkeypatch):
+    """A candidate ledger of our own, streamed the way the real one is."""
+    rows: list[dict] = []
+    from fractal_wallpapers.curation import candidate_ledger
+
+    monkeypatch.setattr(candidate_ledger, "stream", lambda path=None: iter(list(rows)))
+    return rows
+
+
+def test_the_opened_pass_reads_the_places_no_walk_ledger_names(tmp_path, score, opened) -> None:
+    """★ The 1,607: opened by `label-migration merge`, on no ledger, so every draw
+    standing on `hunt.scanned` stepped over them and no binding could reach them."""
+    opened.extend([opened_row("-0.5"), opened_row("-0.6")])
+
+    report = score(None, opened=True)
+
+    assert (report["opened"], report["outstanding"], report["complete"]) == (True, 2, True)
+    assert report["sidecar"]["rows_scored"] == 2
+    assert {row["ledger"] for row in intake.read_scores().values()} == {intake.OPENED_LEDGER}
+
+
+def test_the_opened_pass_skips_a_place_the_sidecar_already_holds(tmp_path, score, opened) -> None:
+    """It is the backlog and not a re-score: a place with a row is not re-read."""
+    opened.extend([opened_row("-0.5"), opened_row("-0.6")])
+    score(None, opened=True)
+    opened.append(opened_row("-0.7"))
+
+    report = score(None, opened=True)
+    assert report["outstanding"] == 1, "the third place, and neither of the first two"
+    assert len(intake.read_scores()) == 3
+
+
+def test_the_opened_pass_clears_nothing_a_walk_binding_scored(tmp_path, score, opened) -> None:
+    """A partial pass like the other three, and over another population entirely."""
+    score([written(tmp_path / "a" / "walk.jsonl", ["-0.5"])])
+    opened.append(opened_row("-0.9"))
+
+    report = score(None, opened=True)
+    assert report["sidecar"]["scoped_ledgers"] == []
+    assert len(intake.read_scores()) == 2, "the walk's row survives"
+
+
+def test_a_candidate_whose_recipe_does_not_key_back_to_its_place_is_not_scored(
+    tmp_path, score, opened
+) -> None:
+    """A row scored under a key nothing joins on is worse than no row: the join is
+    what the whole sidecar is for, so it is counted and dropped."""
+    row = opened_row("-0.5")
+    row["location"]["key"] = location_module.key_text(key_of_row(opened_row("-0.6")["recipe"]))
+    opened.append(row)
+
+    report = score(None, opened=True)
+    assert (report["outstanding"], report["complete"]) == (0, True)
+
+
+def test_opened_is_a_population_and_refuses_every_flag_that_narrows_a_binding(
+    tmp_path, score, opened
+) -> None:
+    """There is no walk binding here for `--ledger`, `--limit`, `--key-file` or
+    `--unscored` to narrow, so asking for both is refused rather than resolved."""
+    opened.append(opened_row("-0.5"))
+    ledger = written(tmp_path / "a" / "walk.jsonl", ["-0.5"])
+    for asked in ({"paths": [ledger]}, {"limit": 1}, {"unscored": True}, {"keys": set()}):
+        with pytest.raises(intake.IntakeError, match="population and not a filter"):
+            score(asked.pop("paths", None), opened=True, **asked)
 
 
 # --------------------------------------------------------------------------- #

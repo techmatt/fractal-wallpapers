@@ -62,3 +62,4 @@
 {"schema": 1, "event": "deleted", "at": "2026-09-15T13:52:57Z", "why": "prune", "counts": {"rows": 9968, "recipe_key_named": 9958, "run_index_named": 10}}
 {"schema": 1, "event": "mark", "at": "2026-09-15T18:20:38Z", "why": "prune", "counts": {"rows": 468020, "recipe_key_named": 454777}}
 {"schema": 1, "event": "deleted", "at": "2026-09-15T18:20:38Z", "why": "prune", "counts": {"rows": 8649, "recipe_key_named": 8621, "run_index_named": 28}}
+{"schema": 1, "event": "deleted", "at": "2026-09-16T02:23:43Z", "why": "prune", "counts": {"rows": 12, "recipe_key_named": 12}}

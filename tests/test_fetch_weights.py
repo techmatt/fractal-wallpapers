@@ -36,6 +36,7 @@ def manifest(tmp_path, monkeypatch):
                 "sha256": "0" * 64,
                 "bytes": 4,
                 "precision": "fp16",
+                "license": "MIT",
                 "run": "a_run",
                 "source_commit": "c" * 40,
                 "provenance": {"supervision": "human verdicts", "corpus": "data/x"},

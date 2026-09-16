@@ -178,6 +178,71 @@ def gate_survivors(paths=None) -> tuple[list[dict], dict]:
     return ledgers.admitted_union(binding.resolve(paths), admit=ledgers.passes_gates)
 
 
+#: What an [`opened_backlog`] row names as its ledger. Not a walk ledger and
+#: deliberately not spelled like one: these rows were derived at candidate
+#: geometry by something that never walked, and a sidecar row claiming a
+#: `walk.jsonl` it is not in would be unjoinable in the one direction anybody
+#: ever joins it.
+OPENED_LEDGER = "artifacts/curation/candidate_ledger/rows.jsonl"
+
+
+def opened_backlog(log=print) -> list[dict]:
+    """Every opened location the sidecar has no row for, in the shape [`score`] reads.
+
+    **The population no binding reaches.** A walk ledger is not the only thing
+    that opens a place: `curate label-migration merge` derives rows from the two
+    finished stores at candidate geometry and never walks, so a place it opened
+    has a candidate row, a picture and a human grade, and no ledger row anywhere.
+    Every draw standing on [`curation.hunt.scanned`] then steps over it — not
+    because a cut refused it but because the sidecar has nothing to cut.
+
+    The row this returns is a **location** and not a candidate: the family, the
+    viewport and the maxiter the place's own candidate row carries, which is
+    everything [`_picture_for`] needs. It states no `score_regime`, which is the
+    literal truth about it and is what puts the read at [`READ_REGIME`] — the
+    node regime, like every walk node and like all the other standing stock this
+    stage has ever read at an unstated regime. That was the open question, and
+    the answer was already written here.
+
+    One row per place, taken from the place's first candidate row in ledger
+    order, because the location half of every candidate at a place is the same
+    location. A place whose candidate recipe does not key back to the location
+    key the row filed it under is counted and dropped rather than scored under a
+    key nothing will join on.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+
+    held = {row["key"] for row in stored_scores()}
+    seen: set[str] = set()
+    out: list[dict] = []
+    opened = disagreed = 0
+    for row in candidate_ledger.stream():
+        place = str((row.get("location") or {}).get("key") or "")
+        if not place or place in seen:
+            continue
+        seen.add(place)
+        opened += 1
+        if place in held:
+            continue
+        recipe = row.get("recipe") or {}
+        made = {
+            "family": recipe.get("family"),
+            "viewport": recipe.get("viewport"),
+            "maxiter": recipe.get("maxiter"),
+            "_ledger": OPENED_LEDGER,
+        }
+        key = key_of_row(made)
+        if key is None or location.key_text(key) != place:
+            disagreed += 1
+            continue
+        out.append(made)
+    log(
+        f"[intake] {opened:,} opened location(s); {len(out):,} with no sidecar row"
+        + (f"; {disagreed:,} whose recipe does not key back to its place" if disagreed else "")
+    )
+    return out
+
+
 def canonical_map() -> str:
     """The colormap the location view is drawn through, read off the tile pool."""
     try:
@@ -311,6 +376,7 @@ def score(
     limit: int | None = None,
     keys=None,
     unscored: bool = False,
+    opened: bool = False,
     log=print,
 ) -> dict:
     """Read every bound location through the head, at the regime its row names.
@@ -368,16 +434,42 @@ def score(
     54 ledgers on both tiers still finds zero of them. 2,799 of the 2,827
     candidate rows at those places were made by `label_migration_0908`, which
     derives rows from the **label stores** at candidate geometry and never walks,
-    so there is no ledger row for this stage to read. `curation/LEGS.md`'s
-    *`curate score` cannot reach the opened-but-unscored places* carries the
-    reading and what would close it.
+    so there is no ledger row for this stage to read. `curation/LEGS.md`'s *No
+    BINDING reaches the opened-but-unscored places* carries the reading.
+
+    `opened` is the door that closes it, added 2026-09-15, and it is a **fourth
+    population and not a fourth filter**: [`opened_backlog`] reads the candidate
+    ledger instead of a walk ledger, so `paths` is not resolved and no binding is
+    asked for. Everything downstream is the same code — the same picture rule,
+    the same head, the same sidecar row — because the only thing these places
+    ever lacked was a row to stand on. Exclusive with the three flags above,
+    which all narrow a walk binding this pass does not have.
     """
     from fractal_wallpapers import paths as paths_module
     from fractal_wallpapers.models import scoring, ship, train
 
-    rows, diagnostics = gate_survivors(paths)
-    bound = len(rows)
-    backlog = None
+    if opened:
+        if paths or keys is not None or limit is not None or unscored:
+            raise IntakeError(
+                "`opened` is a population and not a filter: it reads the candidate ledger "
+                "rather than a walk binding, so there is no binding for --ledger, --harvest, "
+                "--key-file, --limit or --unscored to narrow. Ask for one or the other."
+            )
+        rows = opened_backlog(log=log)
+        diagnostics = {
+            "size": len(rows),
+            "ledgers": 0,
+            "per_ledger": {OPENED_LEDGER: len(rows)},
+            "is": (
+                "the opened-but-unscored places, off the candidate ledger. Not a walk "
+                "binding: these places are on no walk ledger at all"
+            ),
+        }
+        bound = backlog = len(rows)
+    else:
+        rows, diagnostics = gate_survivors(paths)
+        bound = len(rows)
+        backlog = None
     if keys is not None:
         wanted = {str(key) for key in keys}
         rows = [row for row in rows if _key_text(row) in wanted]
@@ -391,7 +483,7 @@ def score(
         backlog = len(rows)
     if limit is not None:
         rows = rows[:limit]
-    if unscored and not rows:
+    if (unscored or opened) and not rows:
         # Not an error: a backlog of nothing is the outcome this pass exists to
         # reach, and `curate embed`'s `complete: true` is the shape for saying so.
         # `backlog` and not 0: this branch is also where `--limit 0` lands, and a
@@ -400,7 +492,8 @@ def score(
         return {
             "schema": SCHEMA,
             "head": "location",
-            "unscored": True,
+            "unscored": bool(unscored),
+            "opened": bool(opened),
             "bound": bound,
             "gate_survivors": bound,
             "outstanding": backlog,
@@ -469,7 +562,7 @@ def score(
     # clear a ledger's other rows. A backlog pass that scoped its ledgers would
     # delete every row it deliberately skipped — which is every row that was
     # already scored, i.e. the entire point of the filter.
-    partial = limit is not None or keys is not None or unscored
+    partial = limit is not None or keys is not None or unscored or opened
     scoped = frozenset() if partial else frozenset(diagnostics["per_ledger"])
     path, upsert = _upsert_scores(minted, scoped)
 
@@ -496,12 +589,13 @@ def score(
         "sidecar": upsert,
         "wrote": str(path),
     }
-    if unscored:
+    if unscored or opened:
         # `gate_survivors` above is what this pass READ, which a filtered pass has
         # already narrowed. The backlog wants its own denominator beside it, or a
         # pass that scored all 40 of 40 outstanding rows out of 242,007 bound ones
         # reads as having scored the whole binding.
-        report["unscored"] = True
+        report["unscored"] = bool(unscored)
+        report["opened"] = bool(opened)
         report["bound"] = bound
         report["outstanding"] = backlog
         report["complete"] = backlog == len(rows)

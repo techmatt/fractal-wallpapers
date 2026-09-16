@@ -1,5 +1,7 @@
 # fractal-wallpapers
 
+[![ci](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml?query=branch%3Amain)
+
 Generates fractal wallpapers and uses neural judges trained on human labels to decide
 which ones are worth keeping.
 
@@ -137,6 +139,10 @@ seats `0275fee1`, `2fd9890d` and `5ff0ad6b`, drawn the same way and scaled down.
 All four heads come from one GitHub release, and each is verified against the sha256 in
 `models/weights.json` before it is kept. A missing asset does not stop the others; the
 exit code says whether every head arrived.
+
+**All four assets are MIT**, the same terms as this repository — each row of
+`models/weights.json` says so, because a release asset travels without the `LICENSE`
+file beside it.
 
 Release tags are dated (`weights-2026-09-14`) and are never moved. A retrained head cuts a
 new dated tag and repoints every row in `models/weights.json`, rather than replacing an

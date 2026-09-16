@@ -7,6 +7,7 @@
       "sha256": "db682d254cf7238d3ab6dd7353d9794cf0a39580ea036861ed3f4e82c8e90600",
       "bytes": 15415792,
       "precision": "fp16",
+      "license": "MIT",
       "run": "twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3",
       "source_commit": "899f104b9f8f803c7f86a5ede749a11b564ca2ec",
       "provenance": {
@@ -27,6 +28,7 @@
       "sha256": "f8f805119a0ff9612b2076f0edafdb4125f0330b3fd48ace71336f93664851ba",
       "bytes": 17163794,
       "precision": "fp16",
+      "license": "MIT",
       "run": "seed0_all_regimes",
       "source_commit": "801e41e9b0d2d947cd3845c7678ac6aa5bbd961a",
       "provenance": {
@@ -40,6 +42,7 @@
       "sha256": "d7edc31cbaa4f9e9c2084b3ef5892b08ecf9fa77bc1d1b330f64aeec1c5b9716",
       "bytes": 5130440,
       "precision": "fp16",
+      "license": "MIT",
       "run": "seed2_listwise",
       "source_commit": "e3b2604b98ee29296edc70de9c54d666ae719df3",
       "provenance": {
@@ -59,6 +62,7 @@
       "sha256": "481fe0582328f0de8d64d8e0ddc9a0bde1f044419e2074af6a559239b5792d46",
       "bytes": 5135214,
       "precision": "fp16",
+      "license": "MIT",
       "run": "deploy_v6_seed0",
       "source_commit": "7e0ddc2f0aab99d90b3430b0de6659b13e1b07aa",
       "provenance": {

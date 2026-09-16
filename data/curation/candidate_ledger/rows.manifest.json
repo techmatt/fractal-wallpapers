@@ -2,9 +2,9 @@
   "schema": 1,
   "path": "artifacts/curation/candidate_ledger/rows.jsonl",
   "copy": "artifacts/curation_backup/candidate_ledger/rows.jsonl",
-  "rows": 459548,
-  "bytes": 627710357,
-  "sha256": "c243d7d5e3d0b509e3f82c5bed2163a97efbafa8cd6489fb76731ef32c1107b9",
+  "rows": 466820,
+  "bytes": 637422873,
+  "sha256": "f13d6989e5ce435e2e91e67ad1eb4131a6507803d5b9323d8e23fab72066a287",
   "runs": {
     "armA1_0906": 5956,
     "armA1_0908": 3677,
@@ -55,6 +55,7 @@
     "gallery3": 2659,
     "gallery4": 5160,
     "general20": 1744,
+    "humanplaces_ckpt126": 7272,
     "hunt1": 635,
     "label_migration_0908": 3015,
     "m1h_composite": 732,
@@ -172,16 +173,16 @@
     "wm3_lines": 111
   },
   "partitions": {
-    "julia:mandelbrot": 60344,
-    "julia:multibrot3": 51863,
-    "julia:multibrot4": 47724,
-    "julia:multibrot5": 48260,
-    "mandelbrot": 61964,
-    "multibrot3": 42503,
-    "multibrot4": 50571,
-    "multibrot5": 62275,
-    "phoenix": 28939,
-    "phoenix:classic": 5105
+    "julia:mandelbrot": 61133,
+    "julia:multibrot3": 52655,
+    "julia:multibrot4": 48516,
+    "julia:multibrot5": 49051,
+    "mandelbrot": 62752,
+    "multibrot3": 43295,
+    "multibrot4": 51362,
+    "multibrot5": 63055,
+    "phoenix": 29719,
+    "phoenix:classic": 5282
   },
   "locations": 42113,
   "colour": {
