@@ -291,7 +291,27 @@ Keep the hot tier on an SSD. Three refusals are worth knowing before they happen
   archived subtree are refused for the same reason.
 
 Records name files under the tree as `artifacts/...` whichever root and tier they are
-really on, and resolve back on read. [The package
+really on, and resolve back on read.
+
+### Continuing on another machine
+
+Most of what the pipeline reads is untracked: the walk ledgers, the candidate pool and
+its sidecars, the levelling sequences. `storage export` copies that set, about 3 GiB
+without a single picture, under a manifest of every path, size, sha256, tier and the
+verbs that read it. `storage import` lands it and refuses before writing if anything
+disagrees with the manifest or already exists:
+
+```
+fractal-wallpapers storage export --to E:/FractalStorage/portable/<stamp>
+# on the new machine, after Install, fetch-weights and a local.toml:
+fractal-wallpapers storage import --from <export> --root <hot_root>
+fractal-wallpapers curate candidate-ledger re-render     # pictures do not travel
+```
+
+Pictures are re-rendered, not copied, so the re-render comes before any solve. The
+import prints whether this engine build fingerprints as the exporting one; if it does
+not, the score amendment has to be re-derived with `curate redraw`. [The package
+README](src/fractal_wallpapers/README.md)'s *Continuing on a fresh box* has the rest. [The package
 README](src/fractal_wallpapers/README.md) has the rest.
 
 ## How it works

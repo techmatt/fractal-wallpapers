@@ -704,6 +704,19 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### portable_stores_ckpt127
+
+`portable_stores_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken after
+an export to the archive disk had finished (nothing running beside it). **Fast: 4,739 of
+4,740 in 153.05 s (2:33)**, 155 deselected. **Slow: 4,894 of 4,895 in 529.77 s (8:49).**
+The lanes agree on the count, which is 4,881 + the 14 guards in `tests/test_portable.py`.
+**Both reds were one test and one line**:
+`test_history_purity.py::test_no_absolute_paths_in_source` caught `E:/FractalStorage/...`
+spelled in the new *Continuing on a fresh box* section of `src/fractal_wallpapers/README.md`.
+Fixed, and that file re-run with `--slow` beside the other five files the change touches:
+183 of 183 green. Zero skips. Fast +15.1 s and slow +27.5 s over 14 arithmetic guards are
+the box after a 59 GiB copy and delete on the same disk an hour before, not chased.
+
 #### rotation_tone_curve_ckpt127
 
 `rotation_tone_curve_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken

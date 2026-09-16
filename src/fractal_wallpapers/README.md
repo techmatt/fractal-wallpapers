@@ -198,6 +198,70 @@ corpus has grown since, and `sides_for` refuses an assignment that does not cove
 the store — so what was lost is the record of which fold each row was in, not a
 working input.
 
+## Continuing on a fresh box: `storage export` and `storage import`
+
+The keep roster above says what is *kept*. [`portable.ROSTER`](portable.py) says
+what a fresh Windows box with a GPU and a fresh clone needs to **continue every
+stage**, and it is a different list: it was measured on 2026-09-16 by an audit
+hook over every file the production verbs opened (`curate run`/`plan`, `hunt`,
+`depth`, `mine`, `rotate`, `score`, `solve`, `atlas`, the census, the re-render,
+`label sheets`/`show`, a hunt merge and a reframe), live and then from an imported
+throwaway root in a `git worktree`. 501 files, **3.28 GiB**: the ten Durables, all
+55 walk ledgers on both tiers, every leg's `sequence.jsonl`, the depth legs'
+`depth.json`, the kept tentative records' text, the gallery-grade pool scores, the
+colour census, the built label sheets' text, the `labels/` inbox, and the three
+fp32 seeds of the shipped gallery-grade ensemble.
+
+```
+fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
+fractal-wallpapers storage import --from <that directory> --root <hot root> [--archive-root <archive>]
+```
+
+**Pictures do not travel; the fresh box re-renders**, Matt's ruling of 2026-09-16.
+A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as
+`picture_absent` — so the first leg after an import is `curate candidate-ledger
+re-render`, and only then a solve. The export writes `pictures.jsonl` instead: one
+row per candidate the solve can seat (418,339, 59.3 GiB on 2026-09-16) with its
+sha256 and whether the build that drew it is the exporting build (`same_build`) or
+unrecorded (`unknown_build`, the rows before 2026-09-02). Two seeded samples
+re-rendered from an imported root came back **byte-identical, 125 of 125** — 48 at
+one picture a (location, mode) pair, 24 of each class, and 77 as 30 whole pairs. The
+pool is 178,569 pairs at 2.34 pictures a pair, and the whole-pair sample's
+**0.66 s a picture of wall at three workers** prices the full re-render at about
+**76 hours** on this machine.
+
+**What the export proves before a byte lands.** Import checks every file's size and
+sha256 against the manifest, refuses a file the manifest does not name and a
+destination that already exists, writes through a temporary, and touches nothing
+else. Without `--archive-root` every file lands under `--root`, which is what a
+single-root box is. From a throwaway root in a worktree it wrote nothing under the
+live checkout or archive, `durables.guard()` passed, `depth plan` resolved the same
+34,160 units as live, `reframe` read all 55 ledgers, a 12-candidate hunt merged, a
+prune dropped 5,296 rows whose pictures were all absent without a failure, and a
+lime solve seated the **same 150 seats in the same order** as the live solve run
+before it, with the live stores' sha256 identical before and after the pair (the
+worktree's pool pictures were stand-in copies for that one comparison, deleted
+after).
+
+**What a fresh box needs before the import**: `uv sync --extra dev --extra models
+--extra solve`, `fetch-weights`, `cargo build --release`, and a `local.toml` naming
+the root it imports to. **The engine fingerprint is the thing to read in the import's
+output.** `amend.read` keeps only amendment rows drawn by the running build, so a build
+that fingerprints differently silently reads every amended location at its old
+sidecar score; the amendment then has to be *re-derived* with `curate redraw` and
+cannot be re-keyed, because a row is a reading of a view that build drew. A fresh
+`cargo build --release` of the same source fingerprinted identically on 2026-09-16
+(`5d97e76bb16be71d`) although the binary's bytes differed.
+
+**Why weights outside `models/weights.json` exist here, and which one travels.**
+The manifest names one asset per head in `roster.HEADS`. Untracked beside them sit
+every run's `best.pt`/`last.pt` (training output no release carries), the retired
+`smooth_render`/`strange_render` artifacts (replaced by `render` on 2026-08-23),
+`render.v5.fp16.pt` (the previous render artifact) and `render.candidate.fp16.pt`
+(`ship`'s staging output). No production verb opens any of those **except** the
+shipped gallery-grade arm's three `best.pt`: `rotation.score_fine` loads them with no
+fallback to the halved ensemble, so they are on the roster.
+
 ## One shape for a place, and one reader for it
 
 Every record here writes a location the same way — `family` with all its
