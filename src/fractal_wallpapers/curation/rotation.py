@@ -105,6 +105,19 @@ PLAN_NAME = "plan.jsonl"
 RECORD_NAME = "rotation.json"
 MERGE_NAME = "merge.json"
 
+#: One row per **adopted** candidate carrying the whole autolevel stamp, which is
+#: what [`curation.stamps`] reads a curve back out of — `mine`'s file in `mine`'s
+#: shape, `key` and `autolevel` beside it. Adopted and not every candidate made:
+#: a loser is freed, no ledger row names its key, and a stamp nothing can ask
+#: for lends nothing.
+#:
+#: ⚠ **Neither arm wrote it until 2026-09-16.** Both carried `mine.make`'s whole
+#: stamp back to the parent in [`_made`] and dropped it at the write site, keeping
+#: only the `acted` tally — `mine`'s own omission before 2026-09-08, one module
+#: over — so every rotation row merged before that date lends nothing and
+#: [`curation.backfill`] is what gives it a curve.
+SEQUENCE_NAME = "sequence.jsonl"
+
 #: How many rotations a row is asked beside the picture it already has. **Five**,
 #: so a row is six candidates and the incumbent's share of a fair draw is a sixth.
 ROTATIONS = 5
@@ -216,6 +229,29 @@ def removed_path(name: str) -> Path:
 
 def plan_path(name: str) -> Path:
     return rotation_dir(name) / PLAN_NAME
+
+
+def sequence_path(name: str) -> Path:
+    """One row an adopted candidate, carrying the whole stamp. See [`SEQUENCE_NAME`]."""
+    return rotation_dir(name) / SEQUENCE_NAME
+
+
+def sequence_row(at: int, key: str, made: dict, **named) -> dict:
+    """What both arms append to [`sequence_path`] for the row they adopt.
+
+    One spelling for the two write sites, so the arm that forgets the stamp is not
+    possible again. `made` is [`_made`]'s dict for the winner, which already holds
+    the whole stamp `mine.make` returned.
+    """
+    return {
+        "schema": SCHEMA,
+        "at": int(at),
+        "key": str(key),
+        **named,
+        "acted": bool(made.get("acted")),
+        "picture": tracked_name(Path(made["picture"])),
+        "autolevel": made.get("autolevel"),
+    }
 
 
 def record_path(name: str) -> Path:
@@ -1116,6 +1152,7 @@ def run(
     scores_file = scores_path(name)
     decisions_file = decisions_path(name)
     removed_file = removed_path(name)
+    sequence_file = sequence_path(name)
     plan_file = plan_path(name)
     with plan_file.open("w", encoding="utf-8", newline="\n") as handle:
         for group in resolved:
@@ -1312,6 +1349,18 @@ def run(
                     )
                     hunt._append(rows_file, stored)
                     hunt._append(
+                        sequence_file,
+                        sequence_row(
+                            at,
+                            key,
+                            won,
+                            of_key=source.key,
+                            location=source.location,
+                            mode=source.mode,
+                            colormap=source.colormap,
+                        ),
+                    )
+                    hunt._append(
                         scores_file,
                         ledger.score_row(
                             key=key,
@@ -1436,6 +1485,7 @@ def run(
             "rows": tracked_name(rows_file),
             "scores": tracked_name(scores_file),
             "decisions": tracked_name(decisions_file),
+            "sequence": tracked_name(sequence_file),
             "removed": tracked_name(removed_file),
             "plan": tracked_name(plan_file),
         },
@@ -2221,6 +2271,7 @@ def mine(
     pictures_dir(name).mkdir(parents=True, exist_ok=True)
     scores_file = scores_path(name)
     decisions_file = decisions_path(name)
+    sequence_file = sequence_path(name)
     counts = {
         # **The whole plan's count, not the slice's**, so `blocks_done` and
         # `blocks_skipped` add up against it across both halves of one leg.
@@ -2392,6 +2443,18 @@ def mine(
             )
             hunt._append(rows_file, stored)
             hunt._append(
+                sequence_file,
+                sequence_row(
+                    at,
+                    key,
+                    won,
+                    location=shot.location,
+                    mode=shot.mode,
+                    colormap=shot.colormap,
+                    k=int(intention.k),
+                ),
+            )
+            hunt._append(
                 scores_file,
                 ledger.score_row(
                     key=key,
@@ -2516,6 +2579,7 @@ def mine(
             "rows": tracked_name(rows_file),
             "scores": tracked_name(scores_file),
             "decisions": tracked_name(decisions_file),
+            "sequence": tracked_name(sequence_file),
         },
     }
     record_path(name).write_text(
@@ -2639,6 +2703,7 @@ __all__ = [
     "ROWS_NAME",
     "SCHEMA",
     "SCORES_NAME",
+    "SEQUENCE_NAME",
     "TOLERANCE",
     "UNIT",
     "VERDICTS",
@@ -2675,4 +2740,6 @@ __all__ = [
     "run",
     "score_fine",
     "scores_path",
+    "sequence_path",
+    "sequence_row",
 ]
