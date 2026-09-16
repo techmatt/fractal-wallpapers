@@ -302,6 +302,7 @@ def curate_replay(args: argparse.Namespace) -> int:
 def add_commands(subcommands) -> None:
     """The last stage: harvest supply in, released wallpapers out."""
     from fractal_wallpapers.cli import (
+        curate_atlas_commands,
         curate_colors_commands,
         curate_ledger_commands,
         curate_mine_commands,
@@ -334,6 +335,7 @@ def add_commands(subcommands) -> None:
     curate_mine_commands.add_steps(steps)
     curate_colors_commands.add_steps(steps)
     curate_veto_commands.add_steps(steps)
+    curate_atlas_commands.add_steps(steps)
 
     rejecting = steps.add_parser(
         "reject",

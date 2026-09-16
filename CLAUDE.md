@@ -254,6 +254,10 @@ prompt to run both lanes closes this. That is the same shape
 closing it sooner rather than later. ⚠ The fast lane also read **194.85 s against
 140.80**, and that is **the box and not the tree** — Matt's call, the machine was
 not quiet — so it is not comparable and no cause was chased.
+`preclose_atlas_maker_ckpt126` moved it again the same day and was also told to skip
+the slow lane: **4,721 of 4,721 fast, green, in 144.13 s**, which is `4,703 + 17`
+guards in `tests/test_atlas.py` `+ 1` colormap parametrize for `atlas_grey`. The tree
+is believed to be **4,876 — 4,721 fast, 155 slow**, the slow count still unverified.
 
 **This pair closes the ⚠ that stood here**, which asked for exactly it:
 `consolidate_ckpt125` read 4,685 fast on 2026-09-15 and Matt said skip the slow

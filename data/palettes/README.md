@@ -139,10 +139,12 @@ off for one run. A group's `canonical` member — the one carrying the most
 finished-render label rows — is what a record or a figure *names*; it is
 deliberately not what the pool draws.
 
-**The three counts, and none of them is the same number.** The **library** is 1,021
+**The three counts, and none of them is the same number.** The **library** is 1,022
 maps — every file in this directory. The **candidate pool** is 1,020: `pool.json`
-next door, the library less `blue_orange`, the one sequential map held back for the
-tile floor and the labeler's vivid render. What a colorize actually **draws** from
+next door, the library less two maps held back — `blue_orange`, the one sequential map
+kept for the tile floor and the labeler's vivid render, and `atlas_grey`, the plate ramp
+`curate atlas` draws through, which is in the library so a figure of the plate can name
+it and is never offered for a wallpaper. What a colorize actually **draws** from
 is 942, because 143 of the 1,020 collapse into 65 groups and each group stands one
 member up (`877 singletons + 65 = 942`). The count is seed-independent — a
 different `--seed` stands a different member up, never a different number of them
