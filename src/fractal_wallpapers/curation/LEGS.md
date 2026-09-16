@@ -324,9 +324,38 @@ artifacts/curation/mine/<name>/bench.json            the loop against its cheape
 ```
 fractal-wallpapers curate mine run   --name m1 --budget 7200      # --rate off the records
 fractal-wallpapers curate mine plan  --name m1 --budget 7200      # renders nothing
-fractal-wallpapers curate mine bench --name m1     # price the loop's alternatives
+fractal-wallpapers curate mine bench --name m1     # price the loop's alternatives, and one --rate
 fractal-wallpapers curate mine sheet --name m1     # redraw the autopsy page
+fractal-wallpapers curate mine package --name m1 --out <dir>   # carry it to another machine
+fractal-wallpapers curate mine unpack --from <dir>             # land it there, then `merge`
 ```
+
+**`bench` ends on one `--rate`**, weighted by the plan `mine run` would draw at the
+same `--k` and `--per-location`: each planned candidate priced at its own mode kind
+and its own (location, mode) width off the benched blocks — a DEEPEN candidate shares
+its dump across `k`, a breadth candidate pays one alone — plus the judge a picture.
+The colour read, the row write and the loop's overhead are not in it. The first fresh
+box hand-blended 0.5 off the table on 2026-09-16 and its leg ran at 1160 s / 586 =
+1.98 s a candidate, so the table alone was misleading by that much.
+
+**A package is the deliverable subset of a leg.** `package` copies `rows.jsonl`,
+`scores.jsonl`, `sequence.jsonl`, `merge.json` (where the leg merged at home) and
+`pictures/` with every `.leveled` beside them, and writes `package.json`: each file's
+size and sha256, the engine build that packed it and the builds the rows name, the
+tracked `rows.manifest.json`'s count and sha256 as the ledger it was mined against,
+the counts, and the names left behind — `fields/`, a regenerable cache of hundreds of
+megabytes a leg, and the run's readouts `mine.json`, `profile.jsonl`, `bench.json`
+and `autopsy.html`. `unpack` refuses before writing on a file absent, changed or not
+named, on a leg directory that already exists, and on rows whose `picture` names
+another leg; it lands through a `.unpacking` sibling renamed into place, renames the
+origin's `merge.json` to `merge.origin.json` so this machine's merge writes its own,
+and writes `unpacked.json`. `--without-manifest` lands a hand-packed directory
+**unverified and says so** — the one use was `m1_freshbox`, 2026-09-16.
+
+**A package carries the rows its own prune already took**, pictures gone: `m1_freshbox`
+arrived as 586 rows with 423 pictures. Here those 163 have no flatness and so no rank,
+and the merge's prune took exactly them again, plus 21 incumbents the other 423
+displaced — against 48 on the mining box, whose pool had not moved since its export.
 
 **PRIMED is derived at read time and stored in no row.** A location is primed
 when it holds at least one candidate whose render-judge `P(>=4)` clears the bar.
@@ -1306,7 +1335,10 @@ on a 640 MB file just written. The upsert, the scores and the flatness sweep had
 already happened and the prune unlinks its temps before raising, so the store was
 whole; what was skipped was the ratchet mark and the four durability saves. The
 recovery is `curate candidate-ledger prune`, `candidate-ledger save`, `flatness
-save` and `signatures save`, in that order — not a second `merge`.
+save` and `signatures save`, in that order — not a second `merge`. **Since
+`merge_back_ckpt127` the replace is retried** on `PermissionError`, five times over
+about ten seconds (`sweep.REPLACE_BACKOFF`), and says so on each wait; a lock held
+past that still raises and the recovery above still applies.
 
 ### A counterfactual by merge stamp is only clean for an arm that PRUNED NOTHING
 

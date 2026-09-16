@@ -704,6 +704,19 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### merge_back_ckpt127
+
+`merge_back_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken after a
+mine merge, `score-pool`, a signature sweep, sixteen `--no-render` solves and a
+24-picture re-render had all finished (nothing beside it). **Fast: 4,771 passed and 2
+failed in 145.46 s (2:25)**, 155 deselected: 4,758 + 13 (6 `mine package`/`unpack` and
+2 weighted-rate guards in `test_mine.py`, 3 multi-root import guards in
+`test_portable.py`, the prune's replace retry and the flushed re-render log in
+`test_candidate_ledger.py`). ⚠ **Both reds were `test_nested_verbs.py`'s surface
+table**, which did not yet name the two new verbs or `bench`'s `--k`/`--per-location`;
+fixed and the file re-run green, 91 of 91. **Slow not run**, so 4,926 collected is
+believed, not read. The ledger grew 469,184 → 469,586 rows before it; +0.5 s is noise.
+
 #### reframe30_atlas_grey_ckpt127
 
 `reframe30_atlas_grey_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken

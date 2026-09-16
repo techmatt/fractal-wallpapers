@@ -51,12 +51,13 @@ from __future__ import annotations
 import collections
 import json
 import random
+import shutil
 import statistics
 import time
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from fractal_wallpapers.curation import candidate_ledger, draw_weights, framing, hunt, recipes
 from fractal_wallpapers.paths import tracked_name, under
@@ -1268,6 +1269,289 @@ def merge(name: str, log=print) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Carrying a leg from one box to another.
+# --------------------------------------------------------------------------- #
+#: The manifest [`package`] writes and [`unpack`] checks, at the package's root.
+PACKAGE_NAME = "package.json"
+
+#: The leg's own files a package carries, beside `pictures/`. **The deliverable
+#: subset and nothing else**: what `mine merge` reads (the two row files), what
+#: `stamps` reads a levelled picture's curve back out of (the sequence), and the
+#: record of a merge the leg already had on the box that mined it. What stays
+#: behind is either regenerable — `fields/` is a working cache hundreds of
+#: megabytes a leg — or a readout of the run rather than a part of it:
+#: `mine.json`, `profile.jsonl`, `bench.json`, `autopsy.html`.
+PACKED_FILES = (ROWS_NAME, SCORES_NAME, SEQUENCE_NAME, hunt.MERGE_NAME)
+
+#: What an unpacked leg calls the merge record it arrived with. **Not
+#: `merge.json`**, which is the record of a merge into THIS box's ledger and is
+#: written by `mine merge` here; the two are different merges against different
+#: stores, and landing the origin's under the local name would have the first
+#: local merge overwrite the only copy of it.
+ORIGIN_MERGE_NAME = "merge.origin.json"
+
+#: What [`unpack`] writes beside the leg it landed: where it came from, whether a
+#: manifest vouched for it, and what was checked.
+UNPACKED_NAME = "unpacked.json"
+
+
+def _sha256_of(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _package_files(root: Path) -> list[str]:
+    """Every file a package directory holds, as posix names relative to it."""
+    return sorted(
+        path.relative_to(root).as_posix() for path in Path(root).rglob("*") if path.is_file()
+    )
+
+
+def _row_engines(rows: list) -> dict:
+    return dict(collections.Counter(str(row.get("engine")) for row in rows))
+
+
+def package(name: str, out: Path, log=print) -> dict:
+    """Copy one mine's deliverable subset to `out`, under a [`PACKAGE_NAME`] manifest.
+
+    The hand-back half of a leg mined on another box: `out` receives
+    [`PACKED_FILES`] (where present) and every file under `pictures/`, and a
+    manifest naming each with its size and sha256, the engine build that packed
+    it and the builds the rows name, and the size of the ledger the leg was
+    mined against — the tracked `rows.manifest.json`'s count and digest, which is
+    what `merge.json`'s prune was decided over. `out` must be empty or absent.
+    """
+    source = mine_dir(name)
+    if not rows_path(name).is_file():
+        raise MineRefused(f"{tracked_name(rows_path(name))} is not there; nothing to package.")
+    out = Path(out)
+    if out.exists() and any(out.iterdir()):
+        raise MineRefused(
+            f"{out} is not empty. A package directory holds the package and nothing else."
+        )
+    files = [held for held in PACKED_FILES if (source / held).is_file()]
+    pictures = (
+        sorted(
+            path.relative_to(source).as_posix()
+            for path in pictures_dir(name).rglob("*")
+            if path.is_file()
+        )
+        if pictures_dir(name).is_dir()
+        else []
+    )
+    listed = []
+    total = 0
+    for at, relative in enumerate([*files, *pictures], start=1):
+        here = source / PurePosixPath(relative)
+        there = out / PurePosixPath(relative)
+        there.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(here, there)
+        size = there.stat().st_size
+        listed.append({"path": relative, "bytes": size, "sha256": _sha256_of(there)})
+        total += size
+        if at % 250 == 0:
+            log(f"[package] {at:,} of {len(files) + len(pictures):,} file(s)")
+    rows = hunt._read(rows_path(name))
+    ledger = candidate_ledger.store.durable_rows().manifest
+    held = json.loads(ledger.read_text(encoding="utf-8")) if ledger.is_file() else {}
+    manifest = {
+        "schema": SCHEMA,
+        "kind": UNIT,
+        "name": str(name),
+        "packed_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "engine": _live_engine(),
+        "row_engines": _row_engines(rows),
+        "source_ledger": {"rows": held.get("rows"), "sha256": held.get("sha256")},
+        "counts": {
+            "rows": len(rows),
+            "scores": len(hunt._read(scores_path(name))),
+            "pictures": sum(1 for path in pictures if path.endswith(".jpg")),
+            "files": len(listed),
+        },
+        "bytes": total,
+        "files": listed,
+        "left_behind": sorted(
+            entry.name for entry in source.iterdir() if entry.name not in {*files, PICTURES}
+        ),
+        "unpack": f"fractal-wallpapers curate mine unpack --from {out.name}",
+    }
+    (out / PACKAGE_NAME).write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    log(f"[package] {len(listed):,} file(s), {total / 2**20:.1f} MiB — {out / PACKAGE_NAME}")
+    return manifest
+
+
+def _live_engine() -> str:
+    from fractal_wallpapers import engine_fingerprint
+
+    try:
+        return engine_fingerprint.current()
+    except Exception:  # noqa: BLE001 — an unbuilt engine is an answer here, not an error
+        return engine_fingerprint.UNKNOWN
+
+
+def unpack(
+    source: Path, name: str | None = None, without_manifest: bool = False, log=print
+) -> dict:
+    """Land a [`package`] as a leg directory under this box's hot root, ready for `merge`.
+
+    **Refuses before writing** on anything the manifest does not vouch for: a file
+    it names that is absent or has other bytes, a file it does not name, a
+    destination leg that already exists, or rows whose pictures name another
+    leg. A directory with no manifest is refused unless `without_manifest` says
+    so — the one hand-packed leg that predates [`package`] — and then the check is
+    structural only and the record says it was unverified.
+
+    The leg lands through a temporary sibling renamed into place, so an unpack
+    that fails part way leaves no half-leg for `merge` to find.
+    """
+    source = Path(source)
+    if not source.is_dir():
+        raise MineRefused(f"{source} is not a directory.")
+    present = _package_files(source)
+    manifest_path = source / PACKAGE_NAME
+    manifest: dict | None = None
+    warning = None
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest.get("schema") != SCHEMA or manifest.get("kind") != UNIT:
+            raise MineRefused(
+                f"{manifest_path}: schema {manifest.get('schema')!r} kind "
+                f"{manifest.get('kind')!r}, expected {SCHEMA} {UNIT!r}. Nothing was written."
+            )
+        named = {str(row["path"]): row for row in manifest["files"]}
+        extra = sorted(set(present) - set(named) - {PACKAGE_NAME})
+        bad = [
+            path
+            for path, row in named.items()
+            if not (source / PurePosixPath(path)).is_file()
+            or (source / PurePosixPath(path)).stat().st_size != int(row["bytes"])
+            or _sha256_of(source / PurePosixPath(path)) != str(row["sha256"])
+        ]
+        if extra or bad:
+            raise MineRefused(
+                f"{source} does not match its manifest: {len(bad)} file(s) absent or changed "
+                f"(e.g. {bad[:5]}), {len(extra)} not named (e.g. {extra[:5]}). Nothing was written."
+            )
+        if name is not None and str(name) != str(manifest["name"]):
+            raise MineRefused(
+                f"the package is leg {manifest['name']!r} and --name says {name!r}. Its rows name "
+                "their pictures under the leg they were mined as, so it lands under that name."
+            )
+        name = str(manifest["name"])
+    else:
+        if not without_manifest:
+            raise MineRefused(
+                f"{source} carries no {PACKAGE_NAME}, so nothing vouches for its bytes. "
+                "`curate mine package` writes one; pass --without-manifest to land a "
+                "hand-packed leg unverified. Nothing was written."
+            )
+        warning = (
+            f"UNVERIFIED: {source} has no {PACKAGE_NAME}. Its files are landed as found and "
+            "checked for shape only — no size or sha256 vouches for any of them."
+        )
+        log(warning)
+    allowed = {*PACKED_FILES}
+    stray = [
+        path
+        for path in present
+        if path not in allowed | {PACKAGE_NAME} and not path.startswith(f"{PICTURES}/")
+    ]
+    if stray:
+        raise MineRefused(
+            f"{source} holds {len(stray)} file(s) a package does not carry (e.g. {stray[:5]}). "
+            "Nothing was written."
+        )
+    for needed in (ROWS_NAME, SCORES_NAME):
+        if needed not in present:
+            raise MineRefused(f"{source} has no {needed}. Nothing was written.")
+    rows = hunt._read(source / ROWS_NAME)
+    runs = {str((row.get("provenance") or {}).get("run")) for row in rows}
+    if name is None:
+        if len(runs) != 1:
+            raise MineRefused(
+                f"{source}'s rows name {len(runs)} runs ({sorted(runs)[:5]}); name the leg "
+                "with --name. Nothing was written."
+            )
+        name = runs.pop()
+    wrong = [
+        str(row["key"])
+        for row in rows
+        if PurePosixPath(str(row.get("picture") or "")).parts[-4:]
+        != (UNIT, str(name), PICTURES, f"{row['key']}.jpg")
+    ]
+    if wrong:
+        raise MineRefused(
+            f"{len(wrong)} row(s) do not name their picture as leg {name!r}'s (e.g. {wrong[:5]}). "
+            "Nothing was written."
+        )
+    destination = mine_dir(name)
+    if destination.exists():
+        raise MineRefused(
+            f"{tracked_name(destination)} already exists. An unpack lands a leg this box does "
+            "not hold. Nothing was written."
+        )
+    shas = (
+        {}
+        if manifest is None
+        else {str(row["path"]): str(row["sha256"]) for row in manifest["files"]}
+    )
+    landing = destination.with_name(destination.name + ".unpacking")
+    if landing.exists():
+        shutil.rmtree(landing)
+    try:
+        for relative in present:
+            if relative == PACKAGE_NAME:
+                continue
+            there = landing / PurePosixPath(
+                ORIGIN_MERGE_NAME if relative == hunt.MERGE_NAME else relative
+            )
+            there.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source / PurePosixPath(relative), there)
+            if manifest is not None and _sha256_of(there) != shas[relative]:
+                raise MineRefused(f"{there} was written as bytes the manifest does not name.")
+        landing.rename(destination)
+    except BaseException:
+        shutil.rmtree(landing, ignore_errors=True)
+        raise
+    keys = {str(row["key"]) for row in rows}
+    on_disk = {path[len(PICTURES) + 1 : -len(".jpg")] for path in present if path.endswith(".jpg")}
+    live = _live_engine()
+    record = {
+        "schema": SCHEMA,
+        "unpacked_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "name": str(name),
+        "from": str(source),
+        "verified": manifest is not None,
+        "warning": warning,
+        "manifest": None
+        if manifest is None
+        else {key: manifest.get(key) for key in ("packed_at", "engine", "source_ledger", "counts")},
+        "rows": len(rows),
+        "scores": len(hunt._read(source / SCORES_NAME)),
+        "pictures": len(on_disk),
+        "rows_with_no_picture": len(keys - on_disk),
+        "pictures_with_no_row": len(on_disk - keys),
+        "engine": live,
+        "row_engines": _row_engines(rows),
+        "engine_agrees": set(_row_engines(rows)) == {live},
+        "origin_merge": ORIGIN_MERGE_NAME if hunt.MERGE_NAME in present else None,
+        "next": f"fractal-wallpapers curate mine merge --name {name}",
+    }
+    (destination / UNPACKED_NAME).write_text(
+        json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
+    log(f"[unpack] {tracked_name(destination)}: {len(rows):,} row(s), {len(on_disk):,} picture(s)")
+    return record
+
+
+# --------------------------------------------------------------------------- #
 # What the loop could have cost. A measurement, not a change.
 # --------------------------------------------------------------------------- #
 #: How many maps one bench location is priced over. Wide enough that the fixed
@@ -1291,6 +1575,8 @@ def bench(
     maps: int = BENCH_MAPS,
     world: dict | None = None,
     ks=BENCH_K,
+    k: int = DEEPEN_K,
+    per_location: int = PER_LOCATION,
     log=print,
 ):
     """Price one candidate against the width of the set it is drawn in.
@@ -1353,7 +1639,78 @@ def bench(
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
     out["per_candidate"] = bench_table(out["locations"], ks)
+    # The one number `mine run --rate` takes, over the plan that run would draw.
+    intended, _shape = build_plan(
+        world,
+        seed=seed,
+        rate=PILOT_RATE,
+        budget=BUDGET_SECONDS,
+        k=k,
+        per_location=per_location,
+        log=log,
+    )
+    out["rate"] = rate_for_plan(out["locations"], intended, maps=maps)
+    out["rate"].update({"k": int(k), "per_location": int(per_location)})
+    log(
+        f"[bench] --rate {out['rate']['rate_seconds']} — weighted over the "
+        f"{out['rate']['candidates']:,} candidate(s) `mine run --k {k} --per-location "
+        f"{per_location}` would plan"
+    )
     return out
+
+
+def rate_for_plan(blocks: list, units: list, maps: int = BENCH_MAPS, kind_of=None, shareable=None):
+    """One seconds-a-candidate for `mine run --rate`, weighted by the plan it would draw.
+
+    `bench_table` answers per kind and per width, and a mine is a MIX of both: the
+    DEEPEN arm spends `k` palettes at one (location, mode), so its dumped field is
+    spread over `k`, while a breadth arm draws its modes without replacement and
+    every one of its candidates pays a dump alone. So each planned candidate is
+    priced at its own kind and its own width — the count of candidates the plan
+    puts at its (location, mode) — off the benched blocks of that kind
+    ([`per_candidate_at`]'s `after`, which is the built path wherever the mode
+    has no field), and the judge's one-at-a-time cost a picture is added on top.
+    A kind the bench did not measure is priced as the shared-field blocks if its
+    mode can share a field and as the built ones if not.
+
+    **What it leaves out**: the colour read, the row write and the loop's own
+    overhead, a few hundredths of a second a candidate in every mine profile. The
+    first mine on the fresh box on 2026-09-16 hand-blended 0.5 off this table.
+    """
+    colorize = colorize_module()
+    kind_of = colorize.kind_of if kind_of is None else kind_of
+    shareable = colorize.shareable if shareable is None else shareable
+    if not blocks or not units:
+        return {"rate_seconds": None, "candidates": len(units), "why": "nothing benched or planned"}
+    widths = collections.Counter((unit.location, unit.mode) for unit in units)
+    by_kind: dict = collections.defaultdict(list)
+    for block in blocks:
+        by_kind[str(block["mode_kind"])].append(block)
+    shared = [block for block in blocks if block["shared_field"].get("available")]
+    built = [block for block in blocks if not block["shared_field"].get("available")]
+    judge = statistics.fmean(float(block["judge_one_at_a_time"]) / max(1, maps) for block in blocks)
+    priced: dict = collections.defaultdict(list)
+    for unit in units:
+        held = by_kind.get(kind_of(unit.mode)) or (shared if shareable(unit.mode) else built)
+        held = held or blocks
+        width = widths[(unit.location, unit.mode)]
+        seconds = statistics.fmean(per_candidate_at(block, width)["after"] for block in held)
+        priced[unit.arm].append(seconds)
+    every = [seconds for held in priced.values() for seconds in held]
+    render = statistics.fmean(every)
+    return {
+        "rate_seconds": round(render + judge, 4),
+        "render_seconds": round(render, 4),
+        "judge_seconds": round(judge, 4),
+        "candidates": len(every),
+        "by_arm": {
+            arm: {"candidates": len(held), "seconds": round(statistics.fmean(held) + judge, 4)}
+            for arm, held in sorted(priced.items())
+        },
+        "is": "the plan's candidates priced at their own kind and (location, mode) width off "
+        "the benched blocks, plus the judge a picture; colour read, row write and loop "
+        "overhead are not in it",
+    }
 
 
 def per_candidate_at(block: dict, k: int) -> dict:
@@ -1968,7 +2325,10 @@ __all__ = [
     "FIELDS",
     "FLAT",
     "NEAR_BAND",
+    "ORIGIN_MERGE_NAME",
     "OVER_BAND",
+    "PACKAGE_NAME",
+    "PACKED_FILES",
     "PER_LOCATION",
     "PICTURES",
     "PLAN_HEADROOM",
@@ -1984,6 +2344,7 @@ __all__ = [
     "SHARES",
     "SHEET_ROWS",
     "UNIT",
+    "UNPACKED_NAME",
     "Clock",
     "MineRefused",
     "Stages",
@@ -2003,6 +2364,7 @@ __all__ = [
     "marginal",
     "merge",
     "mine_dir",
+    "package",
     "per_candidate_at",
     "pictures_dir",
     "plan_breadth",
@@ -2010,6 +2372,7 @@ __all__ = [
     "population",
     "primed",
     "profile_path",
+    "rate_for_plan",
     "ranked_places",
     "record_path",
     "rows_path",
@@ -2017,5 +2380,6 @@ __all__ = [
     "scores_path",
     "sequence_path",
     "taken_maps",
+    "unpack",
     "weave",
 ]

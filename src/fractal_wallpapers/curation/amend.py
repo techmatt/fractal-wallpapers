@@ -47,10 +47,16 @@ from __future__ import annotations
 
 import json
 import time
+from functools import partial
 from pathlib import Path
 
 from fractal_wallpapers import engine_fingerprint
 from fractal_wallpapers.models import location_view
+
+#: Progress lines go out flushed: a leg backgrounded with stdout redirected is
+#: block-buffered on Windows, and its time-left line never reached the log.
+#: `candidate_ledger.rerender.FLUSHED` carries the incident.
+FLUSHED = partial(print, flush=True)
 
 #: The schema every amendment row carries.
 SCHEMA = 1
@@ -204,7 +210,7 @@ def refresh(
     device: str = "auto",
     limit: int | None = None,
     resume: bool = True,
-    log=print,
+    log=FLUSHED,
 ) -> dict:
     """Re-render every stale view at the node regime, re-read it, and amend.
 

@@ -563,3 +563,166 @@ def test_mine_plan_without_a_rate_plans_at_the_recorded_one(monkeypatch, capsys)
     assert curate_mine_commands.curate_mine(args) == 0
     assert asked["rate"] == 1.14
     assert '"rate_from"' in capsys.readouterr().out
+
+
+# --------------------------------------------------------------------------- #
+# `package` and `unpack`: a leg carried from one box to another.
+# --------------------------------------------------------------------------- #
+def _leg(root, name: str, keys=("aaaa", "bbbb")) -> None:
+    """A mined leg on disk: the four packed files, pictures, and what stays behind."""
+    import json
+
+    here = root / name
+    (here / mine.PICTURES).mkdir(parents=True)
+    (here / mine.FIELDS).mkdir()
+    (here / mine.FIELDS / "one.f32").write_bytes(b"field")
+    rows = [
+        {
+            "schema": 1,
+            "key": key,
+            "engine": "e1",
+            "provenance": {"run": name, "candidate": f"{at:05d}"},
+            "picture": f"artifacts/curation/mine/{name}/pictures/{key}.jpg",
+        }
+        for at, key in enumerate(keys, start=1)
+    ]
+    for file_name, held in (
+        (mine.ROWS_NAME, rows),
+        (mine.SCORES_NAME, [{"schema": 1, "recipe_key": key} for key in keys]),
+        (mine.SEQUENCE_NAME, [{"schema": 1, "key": key} for key in keys]),
+    ):
+        (here / file_name).write_text(
+            "".join(json.dumps(row) + "\n" for row in held), encoding="utf-8", newline="\n"
+        )
+    (here / "merge.json").write_text('{"name": "elsewhere"}\n', encoding="utf-8", newline="\n")
+    (here / mine.RECORD_NAME).write_text("{}\n", encoding="utf-8", newline="\n")
+    for key in keys[:-1]:
+        (here / mine.PICTURES / f"{key}.jpg").write_bytes(key.encode())
+
+
+@pytest.fixture
+def carried(mine_store, monkeypatch, tmp_path):
+    """A leg packaged out of one tree, and the tree emptied as a second box's would be."""
+    import shutil
+
+    monkeypatch.setattr(mine, "_live_engine", lambda: "e1")
+    _leg(mine_store, "far")
+    out = tmp_path / "package"
+    manifest = mine.package("far", out, log=lambda *_: None)
+    shutil.rmtree(mine_store / "far")
+    return out, manifest
+
+
+def test_a_package_carries_the_deliverable_subset_and_names_every_byte(carried):
+    out, manifest = carried
+    named = {row["path"] for row in manifest["files"]}
+    assert named == {*mine.PACKED_FILES, "pictures/aaaa.jpg"}
+    assert all(len(row["sha256"]) == 64 for row in manifest["files"])
+    assert set(manifest["left_behind"]) == {mine.FIELDS, mine.RECORD_NAME}
+    assert manifest["counts"] == {"rows": 2, "scores": 2, "pictures": 1, "files": 5}
+    assert (manifest["name"], manifest["engine"], manifest["row_engines"]) == (
+        "far",
+        "e1",
+        {"e1": 2},
+    )
+    assert (out / mine.PACKAGE_NAME).is_file() and not (out / mine.FIELDS).exists()
+
+
+def test_unpack_lands_a_package_ready_for_merge_with_the_origin_merge_renamed(carried, mine_store):
+    out, _manifest = carried
+    record = mine.unpack(out, log=lambda *_: None)
+    here = mine_store / "far"
+    assert record["verified"] and record["name"] == "far" and record["engine_agrees"]
+    assert (record["rows"], record["pictures"], record["rows_with_no_picture"]) == (2, 1, 1)
+    assert (here / mine.ROWS_NAME).is_file() and (here / "pictures" / "aaaa.jpg").is_file()
+    assert (here / mine.ORIGIN_MERGE_NAME).is_file() and not (here / "merge.json").exists()
+    assert not (here / mine.PACKAGE_NAME).exists() and (here / mine.UNPACKED_NAME).is_file()
+
+
+def test_unpack_refuses_a_changed_or_an_unnamed_file_and_writes_nothing(carried, mine_store):
+    out, _manifest = carried
+    (out / "pictures" / "aaaa.jpg").write_bytes(b"other")
+    with pytest.raises(mine.MineRefused, match="does not match its manifest"):
+        mine.unpack(out, log=lambda *_: None)
+    (out / "pictures" / "aaaa.jpg").write_bytes(b"aaaa")
+    (out / "pictures" / "stray.jpg").write_bytes(b"x")
+    with pytest.raises(mine.MineRefused, match="not named"):
+        mine.unpack(out, log=lambda *_: None)
+    assert not (mine_store / "far").exists()
+    assert not any(mine_store.glob("*.unpacking"))
+
+
+def test_unpack_refuses_a_leg_this_box_already_holds(carried, mine_store):
+    out, _manifest = carried
+    (mine_store / "far").mkdir(parents=True)
+    with pytest.raises(mine.MineRefused, match="already exists"):
+        mine.unpack(out, log=lambda *_: None)
+
+
+def test_a_manifest_less_directory_is_refused_unless_asked_and_then_said_unverified(
+    carried, mine_store
+):
+    out, _manifest = carried
+    (out / mine.PACKAGE_NAME).unlink()
+    with pytest.raises(mine.MineRefused, match="--without-manifest"):
+        mine.unpack(out, log=lambda *_: None)
+    said = []
+    record = mine.unpack(out, without_manifest=True, log=said.append)
+    assert not record["verified"] and "UNVERIFIED" in record["warning"]
+    assert any("UNVERIFIED" in line for line in said)
+    assert record["name"] == "far" and (mine_store / "far" / mine.ROWS_NAME).is_file()
+
+
+def test_unpack_refuses_a_name_the_rows_do_not_carry(carried):
+    out, _manifest = carried
+    with pytest.raises(mine.MineRefused, match="lands under that name"):
+        mine.unpack(out, name="near", log=lambda *_: None)
+
+
+# --------------------------------------------------------------------------- #
+# `bench` hands `mine run` one --rate, weighted by the plan it would draw.
+# --------------------------------------------------------------------------- #
+def _block(kind, before, dump=None, recolour=None, judge=0.8):
+    shared = (
+        {"available": True, "dump_seconds": dump, "leveled_recolour_per_map": recolour}
+        if dump is not None
+        else {"available": False}
+    )
+    return {
+        "mode_kind": kind,
+        "built_leveled_per_map": before,
+        "shared_field": shared,
+        "judge_one_at_a_time": judge,
+    }
+
+
+def _unit(arm, location, mode, k=1):
+    return mine.Unit(arm, location, "mandelbrot", mode, "viridis", k, "near")
+
+
+def test_the_weighted_rate_prices_each_candidate_at_its_kind_and_its_own_width():
+    blocks = [_block("field", 1.0, dump=0.8, recolour=0.1), _block("composite", 2.0)]
+    units = [
+        *(_unit(mine.DEEPEN, "a", "smooth", k) for k in range(1, 5)),  # width 4: 0.2 + 0.1
+        _unit(mine.RANKED, "b", "smooth"),  # width 1: 0.8 + 0.1
+        _unit(mine.FLAT, "c", "tia"),  # composite, no field: 2.0
+    ]
+    kinds = {"smooth": "field", "tia": "composite"}
+    rate = mine.rate_for_plan(
+        blocks, units, maps=8, kind_of=kinds.get, shareable=lambda mode: mode == "smooth"
+    )
+    render = (4 * 0.3 + 0.9 + 2.0) / 6
+    assert rate["render_seconds"] == round(render, 4)
+    assert rate["judge_seconds"] == 0.1
+    assert rate["rate_seconds"] == round(render + 0.1, 4)
+    assert rate["by_arm"][mine.DEEPEN] == {"candidates": 4, "seconds": 0.4}
+    assert rate["candidates"] == 6
+
+
+def test_a_kind_the_bench_did_not_measure_is_priced_by_whether_it_can_share_a_field():
+    blocks = [_block("field", 1.0, dump=0.8, recolour=0.1), _block("composite", 2.0, judge=0.0)]
+    units = [_unit(mine.FLAT, "c", "direct_trap_lines")]
+    rate = mine.rate_for_plan(
+        blocks, units, maps=8, kind_of=lambda mode: "direct", shareable=lambda mode: False
+    )
+    assert rate["render_seconds"] == 2.0

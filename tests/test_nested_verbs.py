@@ -717,8 +717,10 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "plan": ("--name", "--budget", "--rate", "--k", "--per-location", "--seed"),
         "run": ("--name", "--budget", "--rate", "--k", "--per-location", "--seed", "--device"),
         "merge": ("--name",),
-        "bench": ("--name", "--seed"),
+        "bench": ("--name", "--k", "--per-location", "--seed"),
         "sheet": ("--name",),
+        "package": ("--name", "--out"),
+        "unpack": ("--from", "--name", "--without-manifest"),
     },
     "depth": {
         "plan": (
@@ -1016,14 +1018,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     arrived to write the tracked `{key, recipe}` file that makes a published record
     REDRAWABLE — 994 of its 1,000 seats could not be drawn from tracked data before
     it, the key being a one-way digest of a recipe that lives in the untracked
-    ledger."""
+    ledger; and one hundred and eleven until `mine package` and `mine unpack`
+    arrived to carry a leg mined on another machine back to this ledger under a
+    manifest, rather than by picking its files out of the leg directory by hand."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 111
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 113
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

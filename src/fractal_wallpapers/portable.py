@@ -746,11 +746,66 @@ def _manifest(rows: list, roster, pictures: dict | None) -> dict:
 # --------------------------------------------------------------------------- #
 # Import.
 # --------------------------------------------------------------------------- #
-def read_manifest(source: Path) -> dict:
-    path = Path(source) / MANIFEST_NAME
-    if not path.is_file():
-        raise PortableRefusal(f"{path} is not there, so {source} is not an export.")
+def _stored_name(row: dict) -> str:
+    """One manifest row's name relative to an export's root, as a posix string."""
+    return _stored_path(Path(), row).as_posix()
+
+
+def _roots(source) -> tuple[Path, ...]:
+    """`source` as the roots of one export: a path, or several a transfer split it across."""
+    if isinstance(source, str | Path):
+        return (Path(source),)
+    roots = tuple(Path(root) for root in source)
+    if not roots:
+        raise PortableRefusal("no export directory was named.")
+    return roots
+
+
+def layout(source) -> dict[str, Path]:
+    """`{name relative to the export root: file}` over every root of one export.
+
+    **One export may arrive as several directories.** A transfer tool split the
+    2026-09-16 export by subtree into two sibling folders with no file in both,
+    and the manifest validated the hand-merge fine — it just would not build it.
+    So the roots are merged by relative path here, before anything is checked: a
+    name in two roots is one file only if its bytes are, and two different files
+    under one name are refused, because nothing could say which the manifest meant.
+    """
+    found: dict[str, Path] = {}
+    clashes = []
+    for root in _roots(source):
+        if not root.is_dir():
+            raise PortableRefusal(f"{root} is not a directory. Nothing was written.")
+        for here, _, files in os.walk(root):
+            for name in files:
+                path = Path(here) / name
+                relative = path.relative_to(root).as_posix()
+                held = found.get(relative)
+                if held is None:
+                    found[relative] = path
+                elif held.stat().st_size != path.stat().st_size or (
+                    sha256_of(held) != sha256_of(path)
+                ):
+                    clashes.append(relative)
+    if clashes:
+        raise PortableRefusal(
+            f"{len(clashes)} name(s) are under more than one --from root with different bytes, "
+            f"e.g. {clashes[:5]}. Nothing was written."
+        )
+    return found
+
+
+def read_manifest(source) -> dict:
+    roots = _roots(source)
+    held = [root / MANIFEST_NAME for root in roots if (root / MANIFEST_NAME).is_file()]
+    if not held:
+        raise PortableRefusal(
+            f"no {MANIFEST_NAME} under {[str(root) for root in roots]}, so it is not an export."
+        )
+    path = held[0]
     manifest = json.loads(path.read_text(encoding="utf-8"))
+    if any(json.loads(other.read_text(encoding="utf-8")) != manifest for other in held[1:]):
+        raise PortableRefusal(f"the --from roots carry different {MANIFEST_NAME} files.")
     if manifest.get("schema") != SCHEMA:
         raise PortableRefusal(f"{path}: schema {manifest.get('schema')!r}, expected {SCHEMA}")
     return manifest
@@ -765,31 +820,29 @@ def destination_of(row: dict, root: Path, archive: Path | None) -> Path:
     return Path(base) / below
 
 
-def verify_export(source: Path, manifest: dict, log=print) -> None:
-    """Every named file present at its size and sha256, and nothing else there."""
-    source = Path(source)
-    named = {_stored_path(source, row).resolve(): row for row in manifest["files"]}
-    extra = []
+def verify_export(source, manifest: dict, log=print) -> dict:
+    """Every named file present at its size and sha256, and nothing else there.
+
+    `source` is one export directory or several ([`layout`]). The merged layout is
+    returned, so an import copies from exactly the files it verified.
+    """
+    files = layout(source)
+    named = {_stored_name(row): row for row in manifest["files"]}
     reference = manifest.get("reference")
-    beside = {(source / MANIFEST_NAME).resolve(), (source / PICTURES_NAME).resolve()}
+    beside = {MANIFEST_NAME, PICTURES_NAME}
     if reference:
-        beside.add((source / PurePosixPath(reference["file"])).resolve())
-    for here, _, files in os.walk(source):
-        for name in files:
-            path = (Path(here) / name).resolve()
-            if path in beside:
-                continue
-            if path not in named:
-                extra.append(path)
+        beside.add(PurePosixPath(reference["file"]).as_posix())
+    extra = sorted(name for name in files if name not in beside and name not in named)
     if extra:
         raise PortableRefusal(
             f"{len(extra)} file(s) in {source} are not in its manifest, e.g. "
-            f"{[str(path) for path in extra[:5]]}. Nothing was written."
+            f"{extra[:5]}. Nothing was written."
         )
     bad = []
-    for number, (path, row) in enumerate(named.items(), start=1):
+    for number, (name, row) in enumerate(named.items(), start=1):
+        path = files.get(name)
         if (
-            not path.is_file()
+            path is None
             or path.stat().st_size != row["bytes"]
             or (sha256_of(path) != row["sha256"])
         ):
@@ -797,25 +850,36 @@ def verify_export(source: Path, manifest: dict, log=print) -> None:
         if number % 500 == 0:
             log(f"[import] verified {number:,}/{len(named):,}")
     pictures = manifest.get("pictures")
-    if pictures and sha256_of(source / PICTURES_NAME) != pictures["sha256"]:
+    if pictures and (
+        PICTURES_NAME not in files or sha256_of(files[PICTURES_NAME]) != pictures["sha256"]
+    ):
         bad.append(PICTURES_NAME)
     if reference:
-        written = source / PurePosixPath(reference["file"])
-        if not written.is_file() or sha256_of(written) != reference["sha256"]:
+        written = files.get(PurePosixPath(reference["file"]).as_posix())
+        if written is None or sha256_of(written) != reference["sha256"]:
             bad.append(reference["file"])
     if bad:
         raise PortableRefusal(
             f"{len(bad)} file(s) do not match the manifest, e.g. {bad[:5]}. Nothing was written."
         )
-    log(f"[import] {len(named):,} file(s) match the manifest")
+    roots = _roots(source)
+    log(
+        f"[import] {len(named):,} file(s) match the manifest"
+        + (f", merged from {len(roots)} roots" if len(roots) > 1 else "")
+    )
+    return files
 
 
-def import_(source: Path, root: Path, archive: Path | None = None, log=print) -> dict:
-    """Land an export at `root` (and `archive`, where the box has one). Refuses before writing."""
-    source, root = Path(source), Path(root)
+def import_(source, root: Path, archive: Path | None = None, log=print) -> dict:
+    """Land an export at `root` (and `archive`, where the box has one). Refuses before writing.
+
+    `source` is one export directory, or every directory a transfer split one
+    export across — merged by relative path through [`layout`] before the check.
+    """
+    root = Path(root)
     archive = None if archive is None else Path(archive)
     manifest = read_manifest(source)
-    verify_export(source, manifest, log=log)
+    files = verify_export(source, manifest, log=log)
 
     landing = [(row, destination_of(row, root, archive)) for row in manifest["files"]]
     present = [str(where) for _, where in landing if where.exists()]
@@ -845,7 +909,7 @@ def import_(source: Path, root: Path, archive: Path | None = None, log=print) ->
 
     written = 0
     for number, (row, where) in enumerate(landing, start=1):
-        copied = _hash_copy(_stored_path(source, row), where)
+        copied = _hash_copy(files[_stored_name(row)], where)
         if copied["sha256"] != row["sha256"]:
             raise PortableRefusal(f"{where} was written as bytes the manifest does not name")
         written += copied["bytes"]
@@ -854,6 +918,7 @@ def import_(source: Path, root: Path, archive: Path | None = None, log=print) ->
     return {
         "files": len(landing),
         "bytes": written,
+        "from": [str(held) for held in _roots(source)],
         "root": str(root),
         "archive": None if archive is None else str(archive),
         "by_tier_landed": dict(
@@ -900,6 +965,7 @@ __all__ = [
     "engine_agrees",
     "export",
     "import_",
+    "layout",
     "pool_pictures",
     "read_manifest",
     "resolve",

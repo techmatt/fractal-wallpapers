@@ -133,6 +133,45 @@ def test_an_existing_destination_is_refused_rather_than_overwritten(box, tmp_pat
     assert not (fresh / "run_hot").exists()
 
 
+def _split(to: Path, tmp_path: Path) -> tuple[Path, Path]:
+    """An export as a transfer tool left it: the tree in one folder, the rest in another."""
+    import shutil
+
+    first, second = tmp_path / "part-001" / to.name, tmp_path / "part-002" / to.name
+    shutil.copytree(to, first)
+    shutil.move(str(first / "tree"), str(second.parent / "tree_moving"))
+    second.mkdir(parents=True)
+    shutil.move(str(second.parent / "tree_moving"), str(second / "tree"))
+    return first, second
+
+
+def test_an_export_split_across_two_roots_imports_as_one(box, tmp_path) -> None:
+    first, second = _split(_export(box), tmp_path)
+    fresh = tmp_path / "fresh"
+    portable.repo_root = lambda: tmp_path / "co"
+    with pytest.raises(portable.PortableRefusal, match="do not match"):
+        portable.import_(first, fresh, log=lambda *_: None)
+    report = portable.import_([first, second], fresh, log=lambda *_: None)
+    assert report["files"] == 6 and len(report["from"]) == 2
+    assert (fresh / "run_cold" / "walk.jsonl").read_bytes() == b'{"w": "cold"}\n'
+
+
+def test_a_name_under_two_roots_with_different_bytes_is_refused(box, tmp_path) -> None:
+    first, second = _split(_export(box), tmp_path)
+    (first / "tree" / "curation").mkdir(parents=True)
+    (first / "tree" / "curation" / "supply.jsonl").write_bytes(b'{"a": 9}\n')
+    with pytest.raises(portable.PortableRefusal, match="different bytes"):
+        portable.import_([first, second], tmp_path / "fresh", log=lambda *_: None)
+    assert not (tmp_path / "fresh").exists()
+
+
+def test_storage_import_takes_from_more_than_once() -> None:
+    parsed = cli.build_parser().parse_args(
+        ["storage", "import", "--from", "a", "--from", "b", "--root", "r"]
+    )
+    assert parsed.source == ["a", "b"]
+
+
 def test_import_touches_nothing_the_manifest_does_not_name(box, tmp_path) -> None:
     to = _export(box)
     fresh = tmp_path / "fresh"
