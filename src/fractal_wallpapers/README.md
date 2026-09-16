@@ -210,7 +210,10 @@ throwaway root in a `git worktree`. 501 files, **3.28 GiB**: the ten Durables, a
 55 walk ledgers on both tiers, every leg's `sequence.jsonl`, the depth legs'
 `depth.json`, the kept tentative records' text, the gallery-grade pool scores, the
 colour census, the built label sheets' text, the `labels/` inbox, and the three
-fp32 seeds of the shipped gallery-grade ensemble.
+fp32 seeds of the shipped gallery-grade ensemble. **The current export is
+`portable/20260916T183452Z`**, at commit `5c5fbb2`: 508 files, 3.29 GiB, plus the
+four mine records and the reference solve that joined the roster that day. The first,
+`20260916T174253Z`, is kept beside it.
 
 ```
 fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
