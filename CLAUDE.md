@@ -208,10 +208,13 @@ These were decided once, at the first commit, because each is expensive to rever
 
 ```
 python -m ruff check . && python -m ruff format --check .
-python -m pytest --slow
+python -m pytest
 cargo build --manifest-path engine/Cargo.toml
 cargo test --manifest-path engine/Cargo.toml
 ```
+
+**The fast lane is the default for every prompt**, Matt's ruling of 2026-09-16.
+`python -m pytest --slow` runs only when a prompt names it.
 
 Run the Python suite with the checkout's own interpreter — `.venv` — rather than
 whatever `python` resolves to on the path. `pythonpath = ["src"]` in
@@ -232,11 +235,15 @@ just its own file.
 
 ### The two lanes
 
-`python -m pytest` runs the **fast lane**; `python -m pytest --slow` runs every
-test there is, and that is what CI runs and what runs before a checkpoint. The
-fast lane is for the edit-run loop and nothing else.
+`python -m pytest` runs the **fast lane**, and it is the lane every prompt runs.
+`python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
+only when the prompt names it.
 
-Both are measured, not estimated. The tree holds **4,895 collected — 4,740 fast,
+**The newest reading is fast only**: `atlas_lost_backfill_ckpt127` added 4 tests on
+2026-09-16 and read **4,744 of 4,744 fast in 151.13 s (2:31)**, 155 deselected, so the
+tree is *believed* at 4,899 collected. The slow lane was not run.
+
+The last pair, before it: **4,895 collected — 4,740 fast,
 155 slow — since `portable_stores_ckpt127` added 14 tests on 2026-09-16**, on a
 `.[dev,models]` install with a release engine built. **Fast: 4,740 in 153.05 s
 (2:33)** with 155 deselected. **Slow: 4,895 in 529.77 s (8:49).** The two lanes
@@ -260,8 +267,8 @@ was: 4,881 is that plus this prompt's five. `tests/README.md` carries the readin
 lane, so the figure was deliberately left pointing at 4,676. The arithmetic between
 the two is **4,685 + 5 new guards for `curate score --opened` + 5 the three commits
 after `consolidate_ckpt125` added without re-measuring**, and the five nobody
-measured are what *take the pair whether or not the prompt wrote a test* exists to
-catch — they were found by the two lanes meeting and not by anybody noticing.
+measured are what the rule then standing, *take the pair whether or not the prompt
+wrote a test*, existed to catch — they were found by the two lanes meeting and not by anybody noticing.
 
 **Neither lane moved outside the noise.** Fast +5.03 s and slow +9.18 s against
 figures taken on other days and other box states; the five new guards are stub-row
@@ -288,7 +295,7 @@ an `ast` sweep and a store-free derivation cost.
 
 ⚠ **The figure stood at 4,630 and the tree was already at 4,639**, because three
 commits after `PRECLOSEOUT_ckpt123_wallpapers` added tests without re-measuring.
-That is what *take the pair whether or not the prompt wrote a test* is for, and the
+That is what the rule then standing, *take the pair*, was for, and the
 drift was caught by the two lanes meeting rather than by anybody noticing. The fast
 lane has landed on `lane_speedup_ckpt122`'s 125.12 s to a tenth twice — which
 settles that its ~9 s and ~12 s were the box and not the tree.
@@ -309,10 +316,11 @@ was doing at the time. They are there and not here because this file loads into 
 session and a chronological log is not a rule. What follows is the current figure above
 and the rules that log produced.
 
-- **Take the pair whether or not the prompt wrote a test**, and *the two lanes agree on
-  the collected count* is the check that catches a stale figure — a reading is only ever
-  a reading of the tree in front of it, and counts have drifted here across prompts that
-  never re-measured.
+- **Take the fast lane whether or not the prompt wrote a test**, and the slow lane only
+  when the prompt names it. A reading is only ever a reading of the tree in front of it,
+  and counts have drifted here across prompts that never re-measured; *the two lanes
+  agree on the collected count* is the check that catches that, so a prompt that does
+  run the slow lane compares the counts.
 - **A lane with any red in it is a lane to read.** There is no expected failure any more.
 - **Repointing a census constant at today's reading is the forbidden edit.** A census
   that went red because a store deletes by design is fixed by a **ratchet** —
