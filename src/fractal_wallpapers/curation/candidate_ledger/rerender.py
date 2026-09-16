@@ -50,6 +50,34 @@ RE_RENDER_UNIT = "re_render"
 RE_RENDER_WORKERS = 3
 
 
+#: Wall seconds a picture at [`RE_RENDER_WORKERS`], which prices the leg at its
+#: start. **0.66**, `portable_stores_ckpt127`'s whole-pair sample of 77 pictures
+#: over 30 pairs from an imported root on 2026-09-16 — whole pairs because a
+#: dumped field amortises only across the maps that follow it (see `limit`).
+RE_RENDER_WALL_SECONDS = 0.66
+
+
+#: The two halves `--seatable` and `--rest` split a fresh box's re-render into.
+#: `seatable` is every row [`solve.pool`] would admit with the picture back, so a
+#: box that has drawn it can solve; `rest` is every other row, which a prune, a
+#: census or a sheet may want and no seating does.
+SEATABLE = "seatable"
+REST = "rest"
+POPULATIONS = (SEATABLE, REST)
+
+
+def seatable_keys(log=print) -> set[str]:
+    """The recipe keys a solve could seat once their pictures exist. Pool-holding.
+
+    Through [`solve.pool`] itself with the picture test off, so *seatable* means
+    what a seating means by it and a rule added there moves this with it.
+    """
+    from fractal_wallpapers.curation import solve
+
+    candidates, _refused = solve.pool(require_pictures=False, log=log)
+    return {candidate.key for candidate in candidates}
+
+
 def read_keys(path) -> set[str]:
     """The **recipe** keys a key manifest names. `{key}`.
 
@@ -369,9 +397,19 @@ def re_render(
     workers: int = RE_RENDER_WORKERS,
     share_fields: bool = True,
     keys=None,
+    population: str | None = None,
     log=print,
 ) -> dict:
     """Render every picture the store names and cannot find. Writes no row.
+
+    **`population` splits that into [`SEATABLE`] then [`REST`]**, for a fresh box
+    after `storage import`: 418,339 seatable pictures on 2026-09-16 are about three
+    days of wall at three workers, and a box that has drawn those can solve while
+    the rest are still to come. Each is a re-run of the same rule — a picture on
+    disk is skipped, and [`colorize.render`] writes through a rename, so a picture
+    on disk is a whole one — so a killed leg resumes by being run again. Nothing
+    is re-hashed on the way: the export's `pictures.jsonl` carries the sha256 of
+    each seatable picture for a leg that wants to read the result against it.
 
     **`keys` names rows to render whether or not their file is there**, and that is
     the one case for it: a stored picture that is not its own recipe's picture is
@@ -408,10 +446,34 @@ def re_render(
     from fractal_wallpapers.palettes import groups as groups_module
 
     started = time.time()
-    if keys is None:
+    if population is not None and population not in POPULATIONS:
+        raise store.LedgerError(f"population {population!r} is not one of {POPULATIONS}")
+    if population is not None and keys is not None:
+        raise store.LedgerError(
+            "a population and a key manifest are two selectors; name one. `--keys` renders "
+            "named rows whether or not their picture is there, and a population only the "
+            "absent ones"
+        )
+    if keys is None and population is None:
         selector = "rows whose picture is not on disk"
         wanted = missing_pictures()
         log(f"[re-render] {len(wanted):,} row(s) name a picture that is not on disk")
+    elif keys is None:
+        stored = store.read()
+        seat = seatable_keys(log=log)
+        inside = [row for row in stored if (str(row["key"]) in seat) == (population == SEATABLE)]
+        wanted = missing_pictures(inside)
+        selector = f"{population} rows whose picture is not on disk"
+        hours = (
+            len(wanted) * RE_RENDER_WALL_SECONDS * RE_RENDER_WORKERS / max(1, int(workers)) / 3600
+        )
+        log(
+            f"[re-render] population {population}: {len(inside):,} of {len(stored):,} row(s), "
+            f"{len(wanted):,} with no picture on disk; ETA ~{hours:.1f} h at "
+            f"{RE_RENDER_WALL_SECONDS} s a picture of wall at {RE_RENDER_WORKERS} workers"
+            + (f" (limited to {int(limit):,})" if limit is not None else "")
+        )
+        del stored, inside
     else:
         named = {str(key) for key in keys}
         selector = f"{len(named):,} named row(s), on disk or not"
@@ -548,6 +610,7 @@ def re_render(
         # sweep for absent files. `named_but_absent` keeps its name and counts the
         # population either way, which is what it always was.
         "selector": selector,
+        "population": population,
         "named_but_absent": len(wanted),
         "reproduce_their_own_key": len(jobs) if limit is None else None,
         "refused": refused[:20],

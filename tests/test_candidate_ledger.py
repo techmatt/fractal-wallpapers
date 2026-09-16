@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 from fractal_wallpapers.curation import candidate_ledger, intake, recipes, records, release
-from fractal_wallpapers.curation.candidate_ledger import ratchet
+from fractal_wallpapers.curation.candidate_ledger import ratchet, rerender
 from fractal_wallpapers.models import renders
 from fractal_wallpapers.paths import repo_root
 
@@ -1508,6 +1508,57 @@ def test_the_re_render_selects_on_the_retention_rule_and_nothing_else(isolated, 
     monkeypatch.setattr(candidate_ledger.store, "present_pictures", lambda stored: {"kept"})
     wanted = candidate_ledger.missing_pictures()
     assert [str(row["key"]) for row in wanted] == ["gone"]
+
+
+@pytest.mark.parametrize("population, expected", [("seatable", ["a"]), ("rest", ["b", "c"])])
+def test_the_seatable_and_rest_halves_partition_the_store_on_the_pool_rule(
+    isolated, monkeypatch, population, expected
+):
+    """A fresh box re-renders what a solve can seat first and everything else after,
+    so the two halves are one split of the store: no row in both, none in neither,
+    and the side a row lands on is `solve.pool`'s answer with the picture test off.
+    The picture-on-disk skip still runs inside each half, which is what makes a
+    killed leg resume by being run again."""
+    rows = []
+    for key in ("a", "b", "c"):
+        source = decision()
+        rows.append(
+            candidate_ledger.row(
+                recipe=recipes.of_decision(source), key=key, source=source, picture=f"{key}.jpg"
+            )
+        )
+    candidate_ledger.write(rows)
+    monkeypatch.setattr(rerender, "seatable_keys", lambda log=print: {"a"})
+    handed: list = []
+
+    class Stop(Exception):
+        pass
+
+    def caught(inside):
+        handed.extend(str(row["key"]) for row in inside)
+        raise Stop
+
+    monkeypatch.setattr(rerender, "missing_pictures", caught)
+    with pytest.raises(Stop):
+        rerender.re_render(population=population, log=lambda *_: None)
+    assert sorted(handed) == expected
+
+
+def test_a_population_and_a_key_manifest_are_refused_together():
+    with pytest.raises(candidate_ledger.LedgerError, match="two selectors"):
+        rerender.re_render(population="seatable", keys={"a"}, log=lambda *_: None)
+
+
+def test_the_picture_test_is_the_only_rule_a_seatable_pool_skips():
+    """`require_pictures=False` exists for the re-render's population and nothing
+    else, so every other refusal in `solve.pool` still has to be asked."""
+    import inspect
+
+    from fractal_wallpapers.curation import solve
+
+    source = inspect.getsource(solve.pool)
+    assert 'if present is not None and held["key"] not in present:' in source
+    assert source.count("require_pictures") == 3
 
 
 def test_a_row_naming_no_picture_is_not_something_to_render():

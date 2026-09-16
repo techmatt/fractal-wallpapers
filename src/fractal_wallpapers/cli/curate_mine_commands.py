@@ -279,11 +279,18 @@ def curate_mine(args: argparse.Namespace) -> int:
             print(json.dumps(report, indent=2))
             print(f"{display_path(path)}")
             return 0
+        # `--rate` defaults off the mine records, `curate depth`'s rule over this
+        # leg's own: `plan` passed `None` into `build_plan` and raised a TypeError
+        # until 2026-09-16. See `mine.measured_rate`.
+        rate = getattr(args, "rate", None)
+        if args.what in {"plan", "run"} and rate is None:
+            rate, why = mine.measured_rate()
+            print(json.dumps({"rate_seconds": rate, "rate_from": why}, indent=2))
         if args.what == "plan":
             _intended, shape = mine.build_plan(
                 mine.population(),
                 seed=args.seed,
-                rate=args.rate,
+                rate=rate,
                 budget=args.budget,
                 k=args.k,
                 per_location=args.per_location,
@@ -294,7 +301,7 @@ def curate_mine(args: argparse.Namespace) -> int:
             args.name,
             seed=args.seed,
             budget=args.budget,
-            rate=args.rate,
+            rate=rate,
             k=args.k,
             per_location=args.per_location,
             device=args.device,
@@ -1219,9 +1226,11 @@ def mine_draw_flags(holder):
         type=float,
         metavar="SECONDS",
         help="seconds a candidate, measured on THIS mine's target population, which is "
-        "what sizes the arms. Required by `plan` and `run` and by nothing else. Take it "
-        "off a short run first and pass the figure that run reported — a rate carried in "
-        "from another pass prices another population",
+        "what sizes the arms. **Unsaid, it is read off the mine records** — the cheapest "
+        "`budget.spent / counts.made` of the newest forty — and falls back to "
+        "mine.PILOT_RATE where no mine has run. The resolved figure and where it came from "
+        "are printed first. Pass it to override: a rate carried in from another pass "
+        "prices another population",
     )
     holder.add_argument(
         "--k",

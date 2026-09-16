@@ -215,7 +215,19 @@ fp32 seeds of the shipped gallery-grade ensemble.
 ```
 fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
 fractal-wallpapers storage import --from <that directory> --root <hot root> [--archive-root <archive>]
+fractal-wallpapers curate candidate-ledger re-render --seatable   # then a solve can run
+fractal-wallpapers curate candidate-ledger re-render --rest        # whenever; no seating needs it
 ```
+
+**The export's manifest (`portable.json`) is the transfer roster**; the ten
+Durables `durables.guard()` checks are its guarded subset, not the whole of what a
+fresh box needs. **`fractal_wallpapers` is a namespace package**, so a run inside a
+`git worktree` on a box with this checkout's editable install silently merges both
+checkouts' modules — drop the live `src` from `sys.path` first, as
+`portable_stores_ckpt127` did with a `sitecustomize.py` on `PYTHONPATH` that filters
+`sys.path` (spawned workers inherit it). **`reference/README.md`** in each export names
+`portable.REFERENCE`'s record, its `n` and the `curate solve run … --no-render`
+that re-seats it, the comparison a fresh box makes before trusting its own seating.
 
 **Pictures do not travel; the fresh box re-renders**, Matt's ruling of 2026-09-16.
 A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as

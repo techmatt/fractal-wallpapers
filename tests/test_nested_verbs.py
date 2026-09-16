@@ -132,6 +132,16 @@ LINES: tuple[tuple[str, str, dict], ...] = (
         "curate_candidate_ledger",
         {"what": "re-render", "limit": 500, "workers": 3},
     ),
+    (
+        "curate candidate-ledger re-render --seatable",
+        "curate_candidate_ledger",
+        {"what": "re-render", "population": "seatable"},
+    ),
+    (
+        "curate candidate-ledger re-render --rest --workers 2",
+        "curate_candidate_ledger",
+        {"what": "re-render", "population": "rest", "workers": 2},
+    ),
     ("curate candidate-ledger save", "curate_candidate_ledger", {"what": "save"}),
     (
         "curate candidate-ledger score --limit 500",
@@ -561,7 +571,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "pictures": (),
         "prune": ("--keep", "--dry-run"),
         "ratchet": ("--census",),
-        "re-render": ("--workers", "--limit", "--keys"),
+        "re-render": ("--workers", "--limit", "--keys", "--seatable", "--rest"),
         "save": (),
         "recolour": ("--keys", "--limit"),
         "score": ("--limit", "--keys"),

@@ -704,6 +704,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### portable_loose_ends_ckpt127
+
+`portable_loose_ends_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken
+after two `--no-render` green solves and a solve record had finished (nothing beside it).
+**Fast: 4,757 of 4,757 in 143.20 s (2:23)**, 155 deselected, zero skips: 4,744 + 13 —
+3 in `test_portable.py` (the reference), 3 in `test_mine.py` (`--rate` off the records),
+4 in `test_candidate_ledger.py` (`--seatable`/`--rest`), 2 parse rows in
+`test_nested_verbs.py`, 1 in `test_rotation.py` (the fine head's refusal). **Slow not
+run**, by the standing default, so 4,912 collected is believed, not read.
+
 #### atlas_lost_backfill_ckpt127
 
 `atlas_lost_backfill_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken
