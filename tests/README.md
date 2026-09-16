@@ -704,6 +704,14 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### atlas_lost_backfill_ckpt127
+
+`atlas_lost_backfill_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken
+after a 23-row backfill and an atlas re-run had finished (nothing beside it). **Fast: 4,744
+of 4,744 in 151.13 s (2:31)**, 155 deselected, zero skips: 4,740 + 4 guards in
+`tests/test_backfill.py` for `--atlas`. **Slow not run** — Matt said skip it, and the same
+day made the fast lane every prompt's default — so 4,899 collected is believed, not read.
+
 #### portable_stores_ckpt127
 
 `portable_stores_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken after

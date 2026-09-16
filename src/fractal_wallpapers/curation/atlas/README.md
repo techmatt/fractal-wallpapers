@@ -63,6 +63,13 @@ never re-measures a curve itself**: a seat with none on any record is `lost` and
 and the fix is a backfill followed by a re-run, not a change here. `rotation` runs recorded
 no curve until 2026-09-16 and were most of the `lost` seats before their backfill.
 
+**An unseated dot is not a record's seat**, so `--record` cannot reach the best row it
+stands behind. `curate autolevel backfill --atlas <plane>` sweeps every gallery slot this
+directory's `dots.json` names — `survey --atlas <plane>` counts them first, no renders — and
+a re-run of `curate atlas` then reads the curves. Run the atlas first: the population is the
+record it wrote, not a re-thinning. The mandelbrot plane read 0 `lost` after it on
+2026-09-16.
+
 `refused` lists what a link cannot carry, in the short forms the website's contract test
 checks: `colormap <name>`, `mirror on a cyclic map`, `curve <name>`, and
 `autolevel band_autolevel/v1` for a `lost` tone.

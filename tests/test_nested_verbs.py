@@ -910,8 +910,8 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "page": ("--migration-store", "--repaired-seats-of", "--against", "--store", "--out"),
     },
     "autolevel": {
-        "survey": ("--record", "--out"),
-        "backfill": ("--limit", "--record", "--out"),
+        "survey": ("--atlas", "--record", "--out"),
+        "backfill": ("--limit", "--atlas", "--record", "--out"),
     },
 }
 

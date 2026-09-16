@@ -31,7 +31,8 @@ the website's own three words:
   different curve, and `curate autolevel backfill` — which re-renders the base at
   candidate geometry and says `rederived` on the stamp — is the one place a missing
   curve is made. `rotation` runs were the standing case until 2026-09-16, when they
-  started writing `sequence.jsonl` and their seats were backfilled.
+  started writing `sequence.jsonl` and their seats were backfilled; an unseated dot's
+  best row is reached by `backfill --atlas <plane>`, which reads this record's slots.
 
 ## What the refusal list says
 

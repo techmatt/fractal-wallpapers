@@ -221,6 +221,43 @@ def seats_of(stamp: str) -> list[str]:
     return [str(row["key"]) for row in tentative.read_rows(stamp)]
 
 
+def atlas_keys(plane: str, where: Path | None = None) -> tuple[str, list[str]]:
+    """`(record, keys)`: the gallery-slot keys of every dot an atlas record draws.
+
+    **A seat is not the only row a page shows.** An atlas dot with no seat stands behind
+    its place's best row by `p_fine` ([`curation.atlas.slots.gallery_of`]), which is on
+    no record's seat list, so `--record` cannot reach it and the dot reads `lost`. This
+    reads the population off the written `dots.json` rather than re-thinning the stores:
+    it is the set of rows the page actually opens, and re-deriving it would hold the
+    pool to answer a question the record already answers.
+
+    Addressed by **plane** and not by stamp because that is how the directory is named —
+    one `artifacts/atlas/<plane>/` whose `dots.json` says which record it was made from.
+    Every gallery key comes back, not only the `lost` ones: [`_wanted`] is the filter a
+    record sweep uses and it is the same filter here.
+    """
+    from fractal_wallpapers.curation import atlas
+
+    where = (atlas.default_out(plane) / atlas.DOTS_NAME) if where is None else Path(where)
+    if not where.is_file():
+        raise BackfillError(f"{where}: no atlas record; run `curate atlas --plane {plane}` first")
+    payload = json.loads(where.read_text(encoding="utf-8"))
+    keys = {
+        str(dot["slots"]["gallery"]["key"])
+        for dot in payload.get("dots") or []
+        if (dot.get("slots") or {}).get("gallery")
+    }
+    return str(payload.get("record")), sorted(keys)
+
+
+def _population(stamp: str, atlas: str | None) -> tuple[str, list[str], dict]:
+    """`(label, keys, source extras)` for a sweep over a record's seats or an atlas's dots."""
+    if atlas is None:
+        return str(stamp), seats_of(stamp), {}
+    record, keys = atlas_keys(atlas)
+    return f"atlas:{atlas}", keys, {"atlas": str(atlas), "record": record}
+
+
 def _wanted(rows: dict, held: dict) -> list[str]:
     """The keys of `rows` that have no curve anywhere and take the operator at all.
 
@@ -239,7 +276,7 @@ def _wanted(rows: dict, held: dict) -> list[str]:
     return sorted(out)
 
 
-def survey(stamp: str = DEFAULT_RECORD) -> dict:
+def survey(stamp: str = DEFAULT_RECORD, atlas: str | None = None) -> dict:
     """What a record's seats stand at, and what filling them would cost. No renders.
 
     Read-only and cheap enough to run before deciding: it opens the record, looks
@@ -251,7 +288,7 @@ def survey(stamp: str = DEFAULT_RECORD) -> dict:
     from fractal_wallpapers.curation import candidate_ledger, tentative
     from fractal_wallpapers.curation import stamps as stamps_module
 
-    keys = seats_of(stamp)
+    _label, keys, extras = _population(stamp, atlas)
     rows = candidate_ledger.by_key(keys)
     already = read()
     held = stamps_module.for_rows(rows, already)
@@ -264,7 +301,8 @@ def survey(stamp: str = DEFAULT_RECORD) -> dict:
     )
     protected = tentative.protected_keys()
     return {
-        "record": stamp,
+        "record": extras.get("record", stamp),
+        **({"atlas": extras["atlas"]} if "atlas" in extras else {}),
         "seats": len(keys),
         "in_the_ledger": len(rows),
         "already_replayable": len(held),
@@ -309,7 +347,11 @@ def _rerender(row: dict, band: dict | None, where: Path, cyclic: set):
 
 
 def sweep(
-    stamp: str = DEFAULT_RECORD, limit: int | None = None, log=print, where: Path | None = None
+    stamp: str = DEFAULT_RECORD,
+    limit: int | None = None,
+    log=print,
+    where: Path | None = None,
+    atlas: str | None = None,
 ) -> dict:
     """Re-derive a curve for every seat of one record that has none, and record it.
 
@@ -323,6 +365,10 @@ def sweep(
     curve comes off a base render made now, the row says so under
     `provenance.curve`, and where the seat's own `.leveled/` directory survived
     the two are compared and the verdict stored per row.
+
+    `atlas` names a plane instead of a record: the population is then every gallery
+    slot of that plane's atlas ([`atlas_keys`]), seated or not, through the same
+    filter, the same render and the same sidecar.
     """
     import shutil
     import time as time_module
@@ -330,16 +376,18 @@ def sweep(
     from fractal_wallpapers.curation import candidate_ledger, colorize
     from fractal_wallpapers.curation import stamps as stamps_module
 
-    keys = seats_of(stamp)
+    label, keys, extras = _population(stamp, atlas)
+    record = extras.get("record", stamp)
     rows = candidate_ledger.by_key(keys)
     held = stamps_module.for_rows(rows, read())
     wanted = _wanted(rows, held)
     if limit is not None:
         wanted = wanted[: max(0, int(limit))]
-    scratch = Path(where) if where is not None else under("curation", "backfill", str(stamp))
+    folder = label.replace(":", "-")
+    scratch = Path(where) if where is not None else under("curation", "backfill", folder)
     scratch.mkdir(parents=True, exist_ok=True)
     band, cyclic, maps = colorize.band(), colorize.cyclic(), colormap_dir()
-    log(f"[backfill] {len(wanted)} seat(s) of {stamp} with no curve on any record")
+    log(f"[backfill] {len(wanted)} row(s) of {label} with no curve on any record")
     minted: list[dict] = []
     written = 0
     counts = {AGREES: 0, DIFFERS: 0, NO_RAMP: 0, "acted": 0, "in_band": 0, "failed": 0}
@@ -367,7 +415,7 @@ def sweep(
         verdict = agreement(fresh or {}, shipped, entry["stops"])
         counts[verdict] += 1
         counts["acted" if (fresh or {}).get("acted") else "in_band"] += 1
-        minted.append(row_for(key, fresh, verdict, row, stamp))
+        minted.append(row_for(key, fresh, verdict, row, record, atlas=extras.get("atlas")))
         # The picture and its levelled colormap were made to be measured and are
         # not a record of anything: the seat's own picture is still where it was.
         Path(made).unlink(missing_ok=True)
@@ -384,7 +432,8 @@ def sweep(
     seconds = time_module.monotonic() - started
     shutil.rmtree(scratch, ignore_errors=True)
     return {
-        "record": stamp,
+        "record": record,
+        **({"atlas": extras["atlas"]} if "atlas" in extras else {}),
         "considered": len(wanted),
         "written": written,
         "seconds": round(seconds, 1),
@@ -394,18 +443,27 @@ def sweep(
     }
 
 
-def row_for(key: str, stamp: dict | None, verdict: str, ledger_row: dict, record: str) -> dict:
-    """[`row`], with the source block a backfill of a record's seat carries."""
-    return row(
-        key,
-        stamp or {},
-        verdict,
-        {
-            "record": str(record),
-            "run": ((ledger_row.get("provenance") or {}).get("run")),
-            "regime": str(ledger_row["recipe"]["regime"]),
-        },
-    )
+def row_for(
+    key: str,
+    stamp: dict | None,
+    verdict: str,
+    ledger_row: dict,
+    record: str,
+    atlas: str | None = None,
+) -> dict:
+    """[`row`], with the source block a backfill of a record's seat carries.
+
+    A row reached through an atlas also names the plane, so the source says which
+    page asked for it and not only which record that page was made from.
+    """
+    source = {
+        "record": str(record),
+        "run": ((ledger_row.get("provenance") or {}).get("run")),
+        "regime": str(ledger_row["recipe"]["regime"]),
+    }
+    if atlas is not None:
+        source["atlas"] = str(atlas)
+    return row(key, stamp or {}, verdict, source)
 
 
 __all__ = [
@@ -420,6 +478,7 @@ __all__ = [
     "BackfillError",
     "agreement",
     "append",
+    "atlas_keys",
     "path",
     "read",
     "row",
