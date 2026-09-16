@@ -186,6 +186,136 @@ def gate_survivors(paths=None) -> tuple[list[dict], dict]:
 OPENED_LEDGER = "artifacts/curation/candidate_ledger/rows.jsonl"
 
 
+#: What a [`graded_backlog`] row names as its ledger. Not a walk ledger and not
+#: [`OPENED_LEDGER`] either: these places have no candidate row to be derived
+#: from, so the store that knows about them at all is the label side.
+GRADED_LEDGER = "data/labels+finished"
+
+#: The three label stores a human verdict can arrive in, in the order
+#: [`graded_backlog`] reads them. The location store is the one that matters
+#: here: a location-store row is a place and not a picture, so it carries no
+#: recipe for `curate label-migration` to derive a candidate from, and 2,025 of
+#: the 3,110 unreachable places on 2026-09-16 were location-store only. The two
+#: finished stores contribute the other 1,085 — rows label-migration has not
+#: reached, whose places are not in either derived population.
+GRADED_STORES: tuple[str, ...] = ("labels", "smooth_render", "strange_render")
+
+#: The lowest human verdict that puts a place in [`graded_backlog`]. Three, which
+#: is `supply.currency`'s lower paid class and the same floor `reframe
+#: --tier-floor` seeds from: both of the currency's paid classes and nothing
+#: below them.
+GRADED_FLOOR = 3
+
+
+def graded_rows(log=print):
+    """Every human label row at [`GRADED_FLOOR`] or above, over the three stores.
+
+    Yields `(place key text, row)`. One pass per store file, streamed rather than
+    read whole: the three stores together are a few hundred thousand rows and only
+    the location half of each is wanted.
+    """
+    from fractal_wallpapers.paths import repo_root
+
+    for store in GRADED_STORES:
+        directory = repo_root() / "data" / store / "rows"
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.jsonl")):
+            with path.open(encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    row = json.loads(line)
+                    if str(row.get("origin")) != "human":
+                        continue
+                    score = row.get("score")
+                    if score is None or int(score) < GRADED_FLOOR:
+                        continue
+                    text = location.text_of_row(row)
+                    if text is not None:
+                        yield text, row
+
+
+def graded_backlog(log=print) -> list[dict]:
+    """Every human-graded place the sidecar has no row for, in [`score`]'s shape.
+
+    **The population neither a binding nor the candidate ledger reaches.**
+    [`opened_backlog`] closed the places a candidate row stands on and no walk
+    ever named. This closes the one behind it: a place somebody **graded** that
+    nothing has ever opened at all. It has no ledger row, so no binding sees it;
+    it has no candidate row, so `opened` does not either; and with no sidecar row
+    it is not admitted, so `curate embed` gives it no vector and every draw
+    standing on [`curation.hunt.scanned`] steps over it — including
+    `curate hunt --places`, which **refuses** a manifest of them outright.
+
+    Measured 2026-09-16: 6,202 distinct places carry a human verdict ≥ 3 across
+    the three stores and **3,110 of them are in neither the sidecar nor the
+    embedding store**. 2,025 are location-store only — a place and not a picture,
+    so `curate label-migration` has no recipe to derive and never could have
+    reached them. That is why this is a *third* population rather than a wider
+    reading of the second.
+
+    The row is a **location**, exactly as [`opened_backlog`]'s is: the family, the
+    viewport and the maxiter the label row already carries, which is everything
+    [`_picture_for`] needs. It states no `score_regime`, truthfully — nothing has
+    ever scored these — so the read is at [`READ_REGIME`], the node regime, like
+    all other standing stock in that position.
+
+    **One row per place, at the best verdict, and the first maxiter wins.** A
+    place graded twice is one place; the verdicts are kept only to order the
+    output, best first, so a caller that can afford part of the population spends
+    it on the better half. Rows at one place that disagree about `maxiter` are
+    counted and the first is taken — zero of the 3,110 did on 2026-09-16, and a
+    place is its family and viewport in any case, never its iteration count.
+    """
+    held = {row["key"] for row in stored_scores()}
+    seen: dict[str, dict] = {}
+    disagreed: set[str] = set()
+    graded = 0
+    for text, row in graded_rows(log=log):
+        graded += 1
+        made = seen.get(text)
+        if made is None:
+            key = key_of_row(row)
+            if key is None or location.key_text(key) != text:
+                continue
+            seen[text] = {
+                "family": row.get("family"),
+                "viewport": row.get("viewport"),
+                "maxiter": (row.get("render") or {}).get("maxiter"),
+                "_ledger": GRADED_LEDGER,
+                "_verdict": int(row["score"]),
+            }
+            continue
+        if made["maxiter"] != (row.get("render") or {}).get("maxiter"):
+            disagreed.add(text)
+        made["_verdict"] = max(made["_verdict"], int(row["score"]))
+    out = [made for text, made in seen.items() if text not in held]
+    # **Counted over the BACKLOG and not over the population**, which are two
+    # denominators and the wrong one is reassuring: 205 of the 6,202 graded places
+    # disagree about maxiter, on 1,097 rows, and **none of them is in the backlog**
+    # — every one is a place a walk already reached, whose sidecar row settles it.
+    # A line quoting the population's number would put a four-figure count beside
+    # a pass where the question does not arise.
+    unsettled = len(disagreed & {text for text in seen if text not in held})
+    # Best verdict first, then the key, so a truncated pass is a pass over the
+    # better half rather than over whatever the stores happened to list first.
+    # The tie-break is the key for `rank_key`'s reason: a run has to be
+    # reproducible and verdicts tie four thousand ways.
+    out.sort(key=lambda made: (-int(made["_verdict"]), location.key_text(key_of_row(made))))
+    log(
+        f"[intake] {len(seen):,} human-graded place(s) at verdict >= {GRADED_FLOOR} "
+        f"over {graded:,} row(s); {len(out):,} with no sidecar row"
+        + (
+            f"; {unsettled:,} of those hold rows disagreeing about maxiter, first taken"
+            if unsettled
+            else ""
+        )
+    )
+    return out
+
+
 def opened_backlog(log=print) -> list[dict]:
     """Every opened location the sidecar has no row for, in the shape [`score`] reads.
 
@@ -377,6 +507,7 @@ def score(
     keys=None,
     unscored: bool = False,
     opened: bool = False,
+    graded: bool = False,
     log=print,
 ) -> dict:
     """Read every bound location through the head, at the regime its row names.
@@ -444,25 +575,48 @@ def score(
     the same head, the same sidecar row — because the only thing these places
     ever lacked was a row to stand on. Exclusive with the three flags above,
     which all narrow a walk binding this pass does not have.
+
+    `graded` is the **fifth** population and the one behind `opened`: a place
+    somebody graded that nothing has ever opened, so it carries no candidate row
+    for `opened` to find either. [`graded_backlog`] reads the three label stores.
+    Measured 2026-09-16, 3,110 of the 6,202 human-graded places were in neither
+    the sidecar nor the embedding store, which is exactly what makes `curate hunt
+    --places` refuse a manifest of them. Exclusive with `opened` as well as with
+    the three filters, and for one extra reason: the two populations overlap at
+    every place that is both graded and opened, and a pass claiming both would
+    mint that place twice under two different `ledger` names.
     """
     from fractal_wallpapers import paths as paths_module
     from fractal_wallpapers.models import scoring, ship, train
 
-    if opened:
+    if opened and graded:
+        raise IntakeError(
+            "`opened` and `graded` are two populations rather than two filters, and they "
+            "overlap: a place that is both would be minted twice under two different "
+            "`ledger` names. Run them one after the other — `graded` second, since a run "
+            "of `opened` shrinks it."
+        )
+    if opened or graded:
+        named = "opened" if opened else "graded"
+        reads = "the candidate ledger" if opened else "the label stores"
         if paths or keys is not None or limit is not None or unscored:
             raise IntakeError(
-                "`opened` is a population and not a filter: it reads the candidate ledger "
-                "rather than a walk binding, so there is no binding for --ledger, --harvest, "
-                "--key-file, --limit or --unscored to narrow. Ask for one or the other."
+                f"`{named}` is a population and not a filter: it reads {reads} rather than "
+                f"a walk binding, so there is no binding for --ledger, --harvest, "
+                f"--key-file, --limit or --unscored to narrow. Ask for one or the other."
             )
-        rows = opened_backlog(log=log)
+        rows = opened_backlog(log=log) if opened else graded_backlog(log=log)
         diagnostics = {
             "size": len(rows),
             "ledgers": 0,
-            "per_ledger": {OPENED_LEDGER: len(rows)},
+            "per_ledger": {(OPENED_LEDGER if opened else GRADED_LEDGER): len(rows)},
             "is": (
                 "the opened-but-unscored places, off the candidate ledger. Not a walk "
                 "binding: these places are on no walk ledger at all"
+                if opened
+                else "the human-graded places nothing has ever opened, off the label "
+                "stores. Not a walk binding and not the candidate ledger either: these "
+                "places are on neither"
             ),
         }
         bound = backlog = len(rows)
@@ -483,7 +637,7 @@ def score(
         backlog = len(rows)
     if limit is not None:
         rows = rows[:limit]
-    if (unscored or opened) and not rows:
+    if (unscored or opened or graded) and not rows:
         # Not an error: a backlog of nothing is the outcome this pass exists to
         # reach, and `curate embed`'s `complete: true` is the shape for saying so.
         # `backlog` and not 0: this branch is also where `--limit 0` lands, and a
@@ -494,6 +648,7 @@ def score(
             "head": "location",
             "unscored": bool(unscored),
             "opened": bool(opened),
+            "graded": bool(graded),
             "bound": bound,
             "gate_survivors": bound,
             "outstanding": backlog,
@@ -562,7 +717,7 @@ def score(
     # clear a ledger's other rows. A backlog pass that scoped its ledgers would
     # delete every row it deliberately skipped — which is every row that was
     # already scored, i.e. the entire point of the filter.
-    partial = limit is not None or keys is not None or unscored or opened
+    partial = limit is not None or keys is not None or unscored or opened or graded
     scoped = frozenset() if partial else frozenset(diagnostics["per_ledger"])
     path, upsert = _upsert_scores(minted, scoped)
 
@@ -589,13 +744,14 @@ def score(
         "sidecar": upsert,
         "wrote": str(path),
     }
-    if unscored or opened:
+    if unscored or opened or graded:
         # `gate_survivors` above is what this pass READ, which a filtered pass has
         # already narrowed. The backlog wants its own denominator beside it, or a
         # pass that scored all 40 of 40 outstanding rows out of 242,007 bound ones
         # reads as having scored the whole binding.
         report["unscored"] = bool(unscored)
         report["opened"] = bool(opened)
+        report["graded"] = bool(graded)
         report["bound"] = bound
         report["outstanding"] = backlog
         report["complete"] = backlog == len(rows)

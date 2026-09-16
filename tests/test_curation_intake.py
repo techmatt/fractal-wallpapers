@@ -413,6 +413,156 @@ def test_opened_is_a_population_and_refuses_every_flag_that_narrows_a_binding(
 
 
 # --------------------------------------------------------------------------- #
+# The population BEHIND that one: graded, and never opened at all.
+#
+# A place somebody scored a keeper that nothing has ever rendered a candidate at.
+# No walk ledger names it, so no binding reaches it; no candidate row stands on
+# it, so `opened` does not either. Measured 2026-09-16: 3,110 of the 6,202 places
+# at a human verdict >= 3 were in neither the sidecar nor the embedding store,
+# which is what makes `curate hunt --places` refuse a manifest of them outright.
+# --------------------------------------------------------------------------- #
+def graded_row(center: str, score_at: int = 4, maxiter: int = 500, family=None) -> dict:
+    """A label row as either store writes one: a verdict, a family and a viewport."""
+    return {
+        "schema": 1,
+        "origin": "human",
+        "score": score_at,
+        "family": family or {"kind": "mandelbrot"},
+        "viewport": {"center_re": center, "center_im": "0", "width": "0.5"},
+        "render": {"resolution": [1280, 720], "supersample": 2, "maxiter": maxiter},
+    }
+
+
+@pytest.fixture
+def graded(monkeypatch):
+    """Label stores of our own, streamed the way `graded_rows` streams the real three."""
+    rows: list[dict] = []
+    monkeypatch.setattr(
+        intake,
+        "graded_rows",
+        lambda log=print: iter(
+            [(location_module.text_of_row(row), row) for row in list(rows)],
+        ),
+    )
+    return rows
+
+
+def test_the_graded_pass_reads_the_places_nothing_has_ever_opened(tmp_path, score, graded) -> None:
+    """★ The 3,110. Behind the 1,607: those had a candidate row and no ledger, these
+    have neither, so `opened` cannot see them and no binding ever could."""
+    graded.extend([graded_row("-0.5"), graded_row("-0.6")])
+
+    report = score(None, graded=True)
+
+    assert (report["graded"], report["outstanding"], report["complete"]) == (True, 2, True)
+    assert report["sidecar"]["rows_scored"] == 2
+    assert {row["ledger"] for row in intake.read_scores().values()} == {intake.GRADED_LEDGER}
+
+
+def test_the_graded_pass_takes_one_row_per_place_at_its_best_verdict(score, graded) -> None:
+    """A place graded twice is one place. The verdicts survive only as the order."""
+    graded.extend(
+        [
+            graded_row("-0.5", score_at=3),
+            graded_row("-0.5", score_at=4),
+            graded_row("-0.6", score_at=3),
+        ]
+    )
+
+    rows = intake.graded_backlog(log=lambda *_args: None)
+    assert [row["_verdict"] for row in rows] == [4, 3], "best verdict first"
+    assert score(None, graded=True)["sidecar"]["rows_scored"] == 2
+
+
+def test_graded_rows_reads_all_three_stores_and_only_the_paid_human_verdicts(
+    tmp_path, monkeypatch
+) -> None:
+    """The cut is `graded_rows`' and not `graded_backlog`'s, so it is tested where it
+    lives: over files, at the three store names. `GRADED_FLOOR` is three — both of
+    the currency's paid classes and nothing below them, the same floor `reframe
+    --tier-floor` seeds from — and a row the labeling rig generated is not a human
+    verdict however high it reads."""
+    import fractal_wallpapers.paths as paths_module
+
+    monkeypatch.setattr(paths_module, "repo_root", lambda: tmp_path)
+    wrote = {
+        "labels": [graded_row("-0.1", score_at=4), graded_row("-0.2", score_at=2)],
+        "smooth_render": [graded_row("-0.3", score_at=3)],
+        "strange_render": [graded_row("-0.4", score_at=4)],
+    }
+    for store, rows in wrote.items():
+        directory = tmp_path / "data" / store / "rows"
+        directory.mkdir(parents=True)
+        (directory / "batch.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+        )
+    # A machine verdict in the store the human rows share, to prove `origin` cuts.
+    machine = dict(graded_row("-0.5", score_at=4), origin="model")
+    (tmp_path / "data" / "labels" / "rows" / "machine.jsonl").write_text(
+        json.dumps(machine) + "\n", encoding="utf-8"
+    )
+
+    held = [row for _text, row in intake.graded_rows(log=lambda *_args: None)]
+
+    assert sorted(row["viewport"]["center_re"] for row in held) == ["-0.1", "-0.3", "-0.4"]
+
+
+def test_a_store_that_is_not_there_is_not_an_error(tmp_path, monkeypatch) -> None:
+    """A clone that has never fetched a finished corpus still has a location store,
+    and a graded pass over what it does have is the right answer rather than a crash."""
+    import fractal_wallpapers.paths as paths_module
+
+    monkeypatch.setattr(paths_module, "repo_root", lambda: tmp_path)
+    directory = tmp_path / "data" / "labels" / "rows"
+    directory.mkdir(parents=True)
+    (directory / "batch.jsonl").write_text(json.dumps(graded_row("-0.1")) + "\n", encoding="utf-8")
+
+    assert len(list(intake.graded_rows(log=lambda *_args: None))) == 1
+
+
+def test_the_graded_pass_skips_a_place_the_sidecar_already_holds(score, graded) -> None:
+    """The backlog and not a re-score, exactly as the opened pass is."""
+    graded.extend([graded_row("-0.5"), graded_row("-0.6")])
+    score(None, graded=True)
+    graded.append(graded_row("-0.7"))
+
+    report = score(None, graded=True)
+    assert report["outstanding"] == 1, "the third place, and neither of the first two"
+    assert len(intake.read_scores()) == 3
+
+
+def test_the_graded_pass_clears_nothing_a_walk_binding_scored(tmp_path, score, graded) -> None:
+    """A partial pass over another population entirely, so it scopes no ledger."""
+    score([written(tmp_path / "a" / "walk.jsonl", ["-0.5"])])
+    graded.append(graded_row("-0.9"))
+
+    report = score(None, graded=True)
+    assert report["sidecar"]["scoped_ledgers"] == []
+    assert len(intake.read_scores()) == 2, "the walk's row survives"
+
+
+def test_graded_is_a_population_and_refuses_every_flag_that_narrows_a_binding(
+    tmp_path, score, graded
+) -> None:
+    """The same refusal `opened` makes, and for the same reason: no binding here."""
+    graded.append(graded_row("-0.5"))
+    ledger = written(tmp_path / "a" / "walk.jsonl", ["-0.5"])
+    for asked in ({"paths": [ledger]}, {"limit": 1}, {"unscored": True}, {"keys": set()}):
+        with pytest.raises(intake.IntakeError, match="population and not a filter"):
+            score(asked.pop("paths", None), graded=True, **asked)
+
+
+def test_graded_and_opened_are_two_populations_and_refuse_each_other(score, graded) -> None:
+    """★ They OVERLAP — at every place that is both graded and opened — so a pass
+    claiming both would mint that place twice under two different `ledger` names.
+    That is the one way these two differ from the three filters, which merely have
+    no binding to narrow."""
+    graded.append(graded_row("-0.5"))
+    with pytest.raises(intake.IntakeError, match="two populations rather than two filters"):
+        score(None, graded=True, opened=True)
+
+
+# --------------------------------------------------------------------------- #
 # The regime a row is re-scored at.
 #
 # A walk scores its own gate render now, so the sidecar reads a row at the regime
