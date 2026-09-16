@@ -704,6 +704,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### reframe30_atlas_grey_ckpt127
+
+`reframe30_atlas_grey_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken
+after a reframe leg, a 2,364-candidate hunt, its merge, `score-pool` and sixteen
+`--no-render` solves had all finished (nothing beside it). **Fast: 4,758 of 4,758 in
+144.93 s (2:25)**, 155 deselected, zero skips: 4,757 + 1 in `test_palette_carriers.py`
+(the `uncarried` row). **Slow not run**, by the standing default, so 4,913 collected is
+believed, not read. The ledger grew 466,820 → 469,184 rows before it; +1.7 s is noise.
+
 #### portable_loose_ends_ckpt127
 
 `portable_loose_ends_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken

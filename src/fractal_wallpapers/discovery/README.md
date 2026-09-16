@@ -381,6 +381,7 @@ productive, off `fires.outcomes`:
 | `g9` | 1,078 | 374 | 36 | 57 | 18.9 of 30 min, killed |
 | `g10` | 6 | 376 | 2 | 3 | 4.4 of 11 min, killed |
 | `g11` | 449 | 83 | **140** | **190** | 30.3 min, ran out its clock |
+| `g12` | 660 | 103 | **125** | **201** | 31.0 min, ran out its clock |
 
 ⚠ **`g10`'s split is not a reading of the channel and must not be quoted as one.**
 Two things made it: it died at 4.4 minutes on the carried-promotion pin above, and
