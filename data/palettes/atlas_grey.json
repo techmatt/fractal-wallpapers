@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "atlas_grey",
+  "kind": "sequential",
+  "source": "atlas_grey, authored for the atlas plate `curate atlas` draws: a linear grey ramp from black that stops at 180 rather than white, so the coloured dots drawn over the plate still read. Not in the candidate pool and never drawn for a wallpaper.",
+  "stops": [
+    [0.0, [0, 0, 0]],
+    [0.125, [24, 24, 24]],
+    [0.25, [48, 48, 48]],
+    [0.375, [71, 71, 71]],
+    [0.5, [94, 94, 94]],
+    [0.625, [116, 116, 116]],
+    [0.75, [138, 138, 138]],
+    [0.875, [159, 159, 159]],
+    [1.0, [180, 180, 180]]
+  ]
+}

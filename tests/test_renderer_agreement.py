@@ -438,6 +438,26 @@ def _draw_release(case, recipe, where: Path) -> Path:
     return picture
 
 
+def _draw_atlas(case, recipe, where: Path) -> Path:
+    """A gallery slot's thumbnail, through the job the atlas builds off a stored recipe.
+
+    At candidate geometry rather than the atlas's own 400x225, for the reason
+    `_draw_shrinkage` gives: a renderer compared at a second size is compared at nothing.
+    """
+    from fractal_wallpapers.curation.atlas import pictures
+
+    picture = where / f"{recipes.key_of(recipe)}.jpg"
+    job = pictures.job_of(
+        recipe.record(),
+        picture,
+        recipes.CANDIDATE_REGIME.resolution,
+        recipes.CANDIDATE_REGIME.supersample,
+    )
+    made = pictures.draw(job)
+    assert made["made"], made.get("failed")
+    return picture
+
+
 def _draw_manufacture(case, recipe, where: Path) -> Path:
     from fractal_wallpapers.curation import manufacture
 
@@ -495,6 +515,9 @@ RENDERERS: tuple[Renderer, ...] = (
     # since 2026-09-08, and `test_curation_release.py` holds them to it.
     Renderer("release", "curation.release", STORED, _draw_release),
     Renderer("manufacture", "curation.manufacture", CANDIDATE, _draw_manufacture),
+    # The atlas's gallery thumbnail: a stored row's recipe redrawn whole, so a reader
+    # hovering a dot sees the wallpaper the row is and not a near miss of it.
+    Renderer("atlas", "curation.atlas.pictures", STORED, _draw_atlas),
     # The CLI door, and the only entry here that is not a leg: `render --recipe`
     # is how a published record's seat is drawn on a machine with no pool, so
     # what it must agree with is every leg at once.
@@ -973,6 +996,9 @@ HAND_BUILT: dict[str, str] = {
     "reads are [`colorize.field_of`]'s, dumped through `renders.spec_of` off "
     "[`colorize.field_row`], so their records carry the row's OWN curve and inheriting it "
     "is inheriting the builder's answer.",
+    "curation.atlas.pictures.render_plate": "the atlas plate: one family's home view in "
+    "`smooth` through `atlas_grey`, a backdrop the dots are drawn over. No recipe stands "
+    "behind it, and it **states** `linear` rather than inheriting the catalog's.",
     "curation.framing.screen": "a `screen` spec. As `cli.draw_commands.screen`.",
     "curation.manufacture._leveled_recolor": "**states** `colorize.CURVE`, and its docstring "
     "carries why: `manufacture.verify` found the `trap_circle` disagreement here first.",
