@@ -2819,3 +2819,41 @@ def test_the_candidate_geometry_has_one_spelling():
 
     assert recipes.CANDIDATE_REGIME.resolution == colorize.RESOLUTION
     assert recipes.CANDIDATE_REGIME.supersample == colorize.SUPERSAMPLE
+
+
+def test_a_store_files_final_replace_waits_out_a_transient_lock(monkeypatch, tmp_path):
+    """The reframe merge of 2026-09-16 lost its ratchet mark and saves to one
+    `PermissionError` on the replace, after the rows had landed. A held file is
+    retried; a file still held after the last wait raises as it always did."""
+    from fractal_wallpapers.curation.candidate_ledger import sweep
+
+    temp, path = tmp_path / "rows.jsonl.writing", tmp_path / "rows.jsonl"
+    temp.write_text("new\n", encoding="utf-8")
+    real = Path.replace
+    held = {"left": 2}
+
+    def flaky(self, target):
+        if held["left"]:
+            held["left"] -= 1
+            raise PermissionError(13, "held")
+        return real(self, target)
+
+    monkeypatch.setattr(Path, "replace", flaky)
+    monkeypatch.setattr(sweep.time, "sleep", lambda _seconds: None)
+    said = []
+    sweep.replace_retrying(temp, path, log=said.append)
+    assert path.read_text(encoding="utf-8") == "new\n" and len(said) == 2
+    temp.write_text("again\n", encoding="utf-8")
+    held["left"] = len(sweep.REPLACE_BACKOFF) + 1
+    with pytest.raises(PermissionError):
+        sweep.replace_retrying(temp, path, log=said.append)
+
+
+def test_re_render_progress_is_flushed_by_default():
+    """A backgrounded leg's stdout is a block-buffered file on Windows, so its
+    one-shot ETA never reached the log while the leg ran for days."""
+    import inspect
+
+    for function in (rerender.re_render, rerender.rescore, rerender.recolour):
+        assert inspect.signature(function).parameters["log"].default is rerender.FLUSHED
+    assert rerender.FLUSHED.keywords == {"flush": True}

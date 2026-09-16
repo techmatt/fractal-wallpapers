@@ -271,13 +271,32 @@ def curate_mine(args: argparse.Namespace) -> int:
         if args.what == "merge":
             print(json.dumps(mine.merge(args.name), indent=2))
             return 0
+        if args.what == "package":
+            manifest = mine.package(args.name, Path(args.out))
+            print(
+                json.dumps(
+                    {key: value for key, value in manifest.items() if key != "files"}, indent=2
+                )
+            )
+            return 0
+        if args.what == "unpack":
+            record = mine.unpack(
+                Path(args.source), name=args.name, without_manifest=args.without_manifest
+            )
+            print(json.dumps(record, indent=2))
+            return 0
         if args.what == "bench":
-            report = mine.bench(seed=args.seed)
+            report = mine.bench(seed=args.seed, k=args.k, per_location=args.per_location)
             path = mine.mine_dir(args.name) / "bench.json"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
             print(json.dumps(report, indent=2))
             print(f"{display_path(path)}")
+            rate = report["rate"]
+            print(
+                f"--rate {rate['rate_seconds']}   weighted over the {rate['candidates']:,} "
+                f"candidate(s) `mine run --k {args.k} --per-location {args.per_location}` plans"
+            )
             return 0
         # `--rate` defaults off the mine records, `curate depth`'s rule over this
         # leg's own: `plan` passed `None` into `build_plan` and raised a TypeError
@@ -1622,18 +1641,69 @@ def add_steps(steps) -> None:
         "bench", help="price the loop against the cheaper shapes it could have had"
     )
     mine_sheet = mine_verbs.add_parser("sheet", help="redraw the autopsy sheet")
+    packaging = mine_verbs.add_parser(
+        "package",
+        help="copy a leg's deliverable subset out for another box to merge",
+        description=(
+            f"Writes the leg's {', '.join(mine_module.PACKED_FILES)} and pictures/ to --out, "
+            f"with {mine_module.PACKAGE_NAME} naming every file's size and sha256, the engine "
+            "build that packed it, the builds its rows name, and the ledger it was mined "
+            "against. fields/ and the run's readouts stay behind: the first is a regenerable "
+            "cache, the rest describe the run rather than carry it."
+        ),
+    )
+    unpacking = mine_verbs.add_parser(
+        "unpack",
+        help="land a packaged leg under this box's hot root, ready for `merge`",
+        description=(
+            "Refuses before writing on a file the manifest names that is absent or changed, a "
+            "file it does not name, or a leg directory that already exists. The package's "
+            f"merge.json lands as {mine_module.ORIGIN_MERGE_NAME}, because merge.json is the "
+            "record of a merge into THIS box's ledger."
+        ),
+    )
+    unpacking.add_argument(
+        "--from", dest="source", required=True, help="the directory `mine package` wrote"
+    )
+    unpacking.add_argument(
+        "--name",
+        default=None,
+        help="the leg's name. Read off the manifest, or off the rows where there is none; "
+        "a name that disagrees with either is refused",
+    )
+    unpacking.add_argument(
+        "--without-manifest",
+        action="store_true",
+        help=f"land a directory carrying no {mine_module.PACKAGE_NAME}, UNVERIFIED and said "
+        "so — for a leg packed by hand before `mine package` existed",
+    )
     # --name first and required on all five, as it was on the group before the
     # split; `merge`, `bench` and `sheet` read it and `bench` writes beside it.
-    for a_mine in (planning_mine, running_mine, merging_mine, benching, mine_sheet):
+    for a_mine in (planning_mine, running_mine, merging_mine, benching, mine_sheet, packaging):
         a_mine.add_argument(
             "--name",
             required=True,
             help="what to call this mine. Its rows, its pictures, its profile and its record "
             "live under it, and `merge` names it again",
         )
+    packaging.add_argument(
+        "--out", required=True, help="an empty or absent directory to write the package into"
+    )
     mine_draw_flags(planning_mine)
     mine_draw_flags(running_mine)
     device_flag(running_mine)
+    for flag, default, what in (
+        ("--k", mine_module.DEEPEN_K, "the DEEPEN width `mine run` will be given"),
+        ("--per-location", mine_module.PER_LOCATION, "the breadth width `mine run` will be given"),
+    ):
+        benching.add_argument(
+            flag,
+            type=int,
+            default=default,
+            metavar="COUNT",
+            help=f"{what} (default {default}). The weighted --rate is priced over the plan at "
+            "these widths, so pass the ones the run will take",
+        )
     benching.add_argument(
         "--seed",
         type=int,

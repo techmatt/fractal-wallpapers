@@ -64,9 +64,15 @@ import hashlib
 import json
 import time
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 
 from fractal_wallpapers.paths import repo_root
+
+#: Progress lines go out flushed: a leg backgrounded with stdout redirected is
+#: block-buffered on Windows, and its time-left line never reached the log.
+#: `candidate_ledger.rerender.FLUSHED` carries the incident.
+FLUSHED = partial(print, flush=True)
 
 #: The schema every register row carries, from the first row.
 SCHEMA = 1
@@ -382,7 +388,7 @@ def measure(
     partitions: dict | None = None,
     workers: int = MEASURE_WORKERS,
     limit: int | None = None,
-    log=print,
+    log=FLUSHED,
 ) -> dict:
     """Render every unmeasured identity in `rows` and write the register.
 

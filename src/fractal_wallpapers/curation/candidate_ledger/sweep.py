@@ -109,6 +109,33 @@ DISPLACED_DIR = "displaced"
 FAMILY_KEPT_DIR = "family_allowance"
 
 
+#: The waits between attempts at a store file's final replace, in seconds: five
+#: tries over about ten seconds. **The rows had already landed the one time this
+#: failed**: the reframe merge on 2026-09-16 hit `PermissionError` (WinError 5)
+#: replacing a 640 MB `rows.jsonl` it had just written, a transient lock that was
+#: gone by the time anybody looked, and lost the ratchet mark and the four saves
+#: that run after the replace. A wait is cheaper than that recovery.
+REPLACE_BACKOFF = (0.5, 1.0, 2.0, 3.0, 3.5)
+
+
+def replace_retrying(temp: Path, path: Path, backoff=REPLACE_BACKOFF, log=print) -> None:
+    """`temp.replace(path)`, retried on `PermissionError` through [`REPLACE_BACKOFF`].
+
+    Only `PermissionError`: it is what a transient Windows lock raises, and any
+    other failure is not one a wait fixes. The last attempt's error is raised
+    unchanged, so the caller's cleanup runs exactly as it did without the retry.
+    """
+    for wait in (*backoff, None):
+        try:
+            temp.replace(path)
+            return
+        except PermissionError as held:
+            if wait is None:
+                raise
+            log(f"[prune] {path.name} is held ({held}); retrying in {wait:.1f}s")
+            time.sleep(wait)
+
+
 def displaced_dir() -> Path:
     """The directory a prune writes its displacement list into.
 
@@ -1046,7 +1073,7 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
         ):
             written[name] = _prune_file(path, temp, keys, column)
         for temp, path in zip(temps, files, strict=True):
-            temp.replace(path)
+            replace_retrying(temp, path, log=log)
     except BaseException:
         for temp in temps:
             temp.unlink(missing_ok=True)
@@ -1472,7 +1499,7 @@ def remove(keys, why: str, apply: bool = True, log=print) -> dict:
         ):
             written[name] = _remove_from_file(path, temp, found, column)
         for temp, path in zip(temps, files, strict=True):
-            temp.replace(path)
+            replace_retrying(temp, path, log=log)
     except BaseException:
         for temp in temps:
             temp.unlink(missing_ok=True)

@@ -12,12 +12,20 @@ import json
 import shutil
 import time
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import SCHEMA
 from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
+
+#: Every progress and ETA line here goes out through this: `print` with the flush
+#: forced. **A leg is run backgrounded with stdout redirected to a file, and on
+#: Windows that stream is block-buffered**, so a bare `print` held the one-shot
+#: ETA and every progress line after it for the life of a days-long re-render;
+#: the fresh box on 2026-09-16 read an empty log beside a working leg.
+FLUSHED = partial(print, flush=True)
 
 #: The prose this module's records carry on their `*_is` / `*_are` fields, in
 #: one place. The builder reads it at write time and the row still carries the
@@ -66,7 +74,7 @@ REST = "rest"
 POPULATIONS = (SEATABLE, REST)
 
 
-def seatable_keys(log=print) -> set[str]:
+def seatable_keys(log=FLUSHED) -> set[str]:
     """The recipe keys a solve could seat once their pictures exist. Pool-holding.
 
     Through [`solve.pool`] itself with the picture test off, so *seatable* means
@@ -127,7 +135,7 @@ def missing_pictures(rows=None) -> list[dict]:
     return [row for row in stored if str(row["key"]) not in present and row.get("picture")]
 
 
-def bare_varied(out=None, log=print) -> dict:
+def bare_varied(out=None, log=FLUSHED) -> dict:
     """Every row whose stored picture is the **bare** mode under a varied key.
 
     The population of the repair `mine.make`'s dropped `mode_params` left behind:
@@ -183,7 +191,7 @@ def bare_varied(out=None, log=print) -> dict:
     }
 
 
-def recolour(keys, limit: int | None = None, log=print) -> dict:
+def recolour(keys, limit: int | None = None, log=FLUSHED) -> dict:
     """Re-read the **colour block** of the named rows off their pictures now on disk.
 
     The third companion of [`re_render`]'s `keys` and [`rescore`]'s, and it exists
@@ -398,7 +406,7 @@ def re_render(
     share_fields: bool = True,
     keys=None,
     population: str | None = None,
-    log=print,
+    log=FLUSHED,
 ) -> dict:
     """Render every picture the store names and cannot find. Writes no row.
 
@@ -664,7 +672,7 @@ def rescore(
     batch: int = SCORE_BATCH,
     device: str = "auto",
     keys=None,
-    log=print,
+    log=FLUSHED,
 ) -> dict:
     """Read every row whose picture is on disk through the judge shipped now.
 

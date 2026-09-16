@@ -86,7 +86,7 @@ def storage_import(args: argparse.Namespace) -> int:
 
     from fractal_wallpapers import paths, portable
 
-    source = Path(args.source)
+    source = [Path(held) for held in args.source]
     report = portable.import_(
         source, Path(args.root), None if args.archive_root is None else Path(args.archive_root)
     )
@@ -220,7 +220,13 @@ def add_commands(subcommands) -> None:
         ),
     )
     importing.add_argument(
-        "--from", dest="source", required=True, help="an export directory `storage export` wrote"
+        "--from",
+        dest="source",
+        action="append",
+        required=True,
+        help="an export directory `storage export` wrote. Repeat it for each directory a "
+        "transfer split one export across: the roots are merged by relative path before the "
+        "manifest check, and a name under two roots with different bytes is refused",
     )
     importing.add_argument(
         "--root",

@@ -218,9 +218,22 @@ four mine records and the reference solve that joined the roster that day. The f
 ```
 fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
 fractal-wallpapers storage import --from <that directory> --root <hot root> [--archive-root <archive>]
-fractal-wallpapers curate candidate-ledger re-render --seatable   # then a solve can run
+fractal-wallpapers curate candidate-ledger re-render --keys <a gallery.jsonl>   # one known solve, minutes
+fractal-wallpapers curate candidate-ledger re-render --seatable   # then any solve can run
 fractal-wallpapers curate candidate-ledger re-render --rest        # whenever; no seating needs it
 ```
+
+**`--keys <gallery.jsonl>` is the check before `--seatable`.** A tentative record's
+`gallery.jsonl` is already a key manifest, so the reference solve's seats render on
+their own — 300 in 5.1 minutes on the first fresh box, 2026-09-16, against about three
+days for `--seatable` — and `curate solve run … --no-render` can be compared against the
+record straight away. That box matched **299 of 300 seats in order**; the one miss was a
+spiral seat at the spiral share cap, refused there by the swap search. **An export a
+transfer split across folders** imports by naming each (`--from A --from B`); the roots
+merge by relative path before the manifest check and a name under two with different
+bytes is refused. **A leg mined on the fresh box comes back** through `curate mine
+package` there and `curate mine unpack` here, then the usual merge door —
+`curation/LEGS.md`'s mine section has the package's shape.
 
 **The export's manifest (`portable.json`) is the transfer roster**; the ten
 Durables `durables.guard()` checks are its guarded subset, not the whole of what a
