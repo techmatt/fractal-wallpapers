@@ -514,7 +514,11 @@ took the drawable remainder there were **177** admitted never-opened locations l
 never-opened pool reads zero across all ten partitions.** So the hazard below is
 historical for `ranked_bands` and `flat`: with nothing never-opened left they draw
 nothing at all, and an inherited share on either is now clock that goes nowhere
-rather than clock spent at 56x. `near_band` still draws. **Read the resolved-shares
+rather than clock spent at 56x. `near_band` still draws. ⚠ **That zero did not last**: on
+2026-09-16 `degree6_find_and_mine_ckpt128` read **45,844 admitted, never-opened places
+over 12 partitions** (`[mine]`'s launch line), so a breadth arm meant for one partition
+names `--partition-weights` with **every other partition at 0** — a partition left out
+keeps its standing weight. **Read the resolved-shares
 line anyway** — the reason it exists is that a prompt naming one arm is not a
 prompt running one arm, and that is unchanged.
 So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
