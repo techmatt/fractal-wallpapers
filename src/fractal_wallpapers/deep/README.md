@@ -319,3 +319,83 @@ not predict how far `z = 0` is from the julia set in the *dynamical* one.
 interior-basin frame runs to the cap, so a `1e-11` frame at eval geometry costs
 60–75 s against 0.2 s for a live one. A deep julia sweep is priced by how many of
 its frames are interior, not by how many it draws.
+
+## Tuning a good frame onto a satellite, and the width where it stops working
+
+Douady–Hubbard tuning re-aims a frame that works on the main Mandelbrot at the
+same position relative to a shallow satellite, and `discovery/nucleus.py`
+already holds every number it needs. For a seed at `c_seed` of width `w_seed`
+on the main set, whose nucleus is `0`, and a satellite at nucleus `c_sat`:
+
+```text
+lambda   = 1/A = atom.window_scale * e^(i * atom.rotation)
+c_tuned  = c_sat + lambda * c_seed
+w_tuned  = |lambda| * w_seed
+```
+
+**The instrument is right and `tuning_test_seahorse_ckpt129` checked it three
+ways.** Tuning `c = -1` and the airplane `c = -1.7548776662466928` — the main
+set's period-2 and period-3 nuclei — lands Newton on **minimal** nuclei of
+exactly period `2p` and `3p` on all three satellites tested. The copy renders
+where the aim says, and it renders **rotated by `atom.rotation`**: at a
+satellite of rotation `+31.83°` the seahorse valley's wedge arrives turned by
+that much. `rotation_ambiguity` is zero at degree 2, so nothing has to be
+resolved there.
+
+**What limits the move is the aim's accuracy, and it is a fixed fraction of
+`|lambda|` rather than of the frame.** A copy is distorted, so the linear aim
+lands near and not on, and the miss measured at the period-`2p` anchor was
+`0.0036` of `|lambda|` on a period-22 satellite and `0.0325` on a period-35 one
+— **the larger the satellite, the worse the distortion**. The miss *in tuned
+frame widths* is therefore `e / (|lambda| * w_seed)`, which does not care how
+deep the satellite is and grows without bound as the seed gets finer:
+
+```text
+w_seed   miss (frame widths)   seed interior / tuned interior   same picture?
+0.3          0.012                  0.8530 / 0.8564             yes
+0.1          0.036                  0.6344 / 0.6483             yes
+0.03         0.121                  0.2452 / 0.2883             degrading
+0.01         0.362                  0.0006 / 0.0719             no
+0.003        1.206                  0.0005 / 0.0009             no
+```
+
+**So a gallery seat is the wrong thing to tune.** A seat's width is `1e-5` and
+below — `20260914T171846Z`'s mandelbrot seats in the seahorse valley have a
+median `w_seed` of `3.16e-6` — which puts the aim hundreds to thousands of frame
+widths off the composition it was aimed at. Eight of twelve tuned seats cleared
+the `f64` floor and four of those survived the structural battery, but what
+survived is *the satellite's own valley material at that scale*, not the seat's
+composition. The move transfers a **whole-valley** view; it does not transfer a
+wallpaper. The width to tune at is `w_seed >= 0.1`, and the descent below is how
+the depth is recovered afterwards.
+
+**A `+-0.5 w_tuned` nudge cannot rescue a dead tuned frame**, because the thing
+it is short by is three decades larger than the search. `engine.screen` is the
+right instrument to ask with — its `flat` and `interior_cap` clauses named every
+dead frame here correctly on the first call, over the whole ring in one engine
+process — but on a dead frame the entire ring comes back with one fate and there
+is nothing better in it to move to.
+
+**`curation.flatness.fraction` is not a deadness reading.** A dead tuned frame
+is a smooth gradient rather than a constant field, and a smooth gradient is
+locally *planar*: the frame that is visibly a set of soft diagonal bands read
+`0.4668` against `0.2396` for the live seed it was tuned from. Read the engine's
+own battery, the way *And a dead julia frame does not look dead* above says to
+read the field's span rather than the picture.
+
+**Descending out of a tuned frame needs the relative floor, not
+`walk.Gates.min_width`.** A tuned frame is already below the shallow walk's
+`1e-9` — `w_tuned` was `3.87e-11` on the frame descended from — so an ordinary
+walk refuses every candidate at the first rung and gets nowhere. `min_width` is
+a dataclass field, so this is a **parameter and not an override**:
+`Gates(min_width=depth.deepest_releasable_width(c_re, c_im))` hands the walk the
+engine's own relative floor at that place. That bought three rungs and 20
+admissions, every one of them live and releasable, stopping at depth 4 where the
+next rung falls under the floor — deepest stop `5.37e-12`, which is `4.73` ulp
+at release geometry against the engine's refusal at `4.0`.
+
+**The reframing operators find nothing inside a copy.** All 20 firings on that
+descent refused with `nucleus_outside_frame` — `snap_to_nucleus` twelve times,
+the neighbourhood and lateral operators four each. A frame inside a satellite is
+framed on the satellite's *decorations*, and the nucleus those operators would
+snap to is the parent's, thousands of frame widths away.
