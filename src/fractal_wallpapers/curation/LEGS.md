@@ -1189,6 +1189,44 @@ population's number would put a four-figure count beside a pass where the questi
 does not arise. A place is its family and its viewport in any case, never its
 iteration count.
 
+#### What a scored graded place costs to OPEN and then to DEEPEN, measured 2026-09-17
+
+★ **Scoring a graded place does not open it, and `curate depth run` never can.** The
+`--graded` pass mints a sidecar row and `curate embed` gives it a vector; it still
+holds no candidate, so it is not in `world["best"]` and the floor draw skips it by
+name. `mine_3h_graded_d6_julia_ckpt129` found **3,061 of the 3,110 still unopened**
+five weeks after they were scored — the only 49 that had been opened were
+`m1_freshbox`'s, drawn by chance — so the route is `curate hunt --places` to open
+and `curate depth run --floor-places` to deepen, which is the same pair
+*A reframe leg's places are opened by `curate hunt --places`* names one heading down.
+
+**The prices, on 800 graded places at the top of the head's order.** The hunt opened
+them at `--per-location 1` for **831 s, 1.04 s a candidate** — the first 25 read
+5.54 s because the judge loads inside the first block, so a hunt priced off its own
+opening line reads four times its own rate. A hunt renders **one candidate at a
+time**: its `budget` is wall and engine seconds alike, where a depth leg's three
+workers run at 2.98x. The floor draw then took those 799 places at
+`--floor-width 1` over `mode_policy.mined()`'s twelve — **9,486 of 9,588 shots,
+2.39 engine s each, 7,573 s of wall** — so a graded place costs about **1 s to open
+and 29 s to give a full roster**, and the opening is 10% of the leg however dear the
+single stream looks.
+
+**What they clear.** The opened places read **10.8%** over `solve.Q4_BAR` and the
+deepening **10.0%**, against the same night's julia great-tier survivors at 11.3 /
+8.0% — so a graded place's 44.6% *location*-head great rate does not carry through to
+its candidates, and the coarse clear rate is ordinary. What is not ordinary is what
+happens above the bar: **36% of the clears cleared `solve.DEFAULT_FINE_BAR`** and the
+deepening alone put **29 rows over p_fine 0.50** and **115 wallpapers into the
+sixteen collections**, 5.3x what its own opening arm seated for 9x the clock.
+
+⚠ **A budget-stopped floor leg cannot be resumed by re-running the same command,
+and a same-seed rerun is a SECOND PASS wearing the first one's name.** The draw is
+seeded, but `mine.taken_maps` is not part of the seed: the merge puts the leg's own
+maps in the taken set, so the rerun draws different palettes and lands different
+recipe keys. Asked for the 101 shots its budget cut, the rerun planned all 9,588
+again and matched **1** key. There is no resume here — size the budget over the plan
+instead, or let the remainder go.
+
 `curate score --unscored` is the door for the **other** backlog, the one that is
 on the ledgers: 132,992 of 242,007 gate survivors across those 54 ledgers have no
 sidecar row, and most of them sit on smoke, dedup and demo runs
