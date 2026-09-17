@@ -258,10 +258,11 @@ By the walk's own saturation distance 5 of the 8 admissions sit inside an earlie
 one, so the plane converges on a few basins rather than offering variety.
 
 **The viewport sampler is the channel that gives it a second one.**
-`discovery.viewport_sampler`, `--root-channel viewport_sampler`, and it serves
-`partitions.PINNED_PLANES` and nothing else: a parameter plane and a Julia twin
-both have a fresh channel that hands over a *parameter*, and this one hands over
-a *place*. It draws a jittered grid over the family's own home box at a ladder of
+`discovery.viewport_sampler`, `--root-channel viewport_sampler`. It served
+`partitions.PINNED_PLANES` alone until 2026-09-16 and serves every parameter plane
+as well since (see *There is no continuous boundary sampler*, below); a Julia twin
+is the one kind it leaves out, since its fresh supply is a *parameter*. On the
+pinned plane it draws a jittered grid over the family's own home box at a ladder of
 octaves — rung `k` is `2^k x 2^k` frames at width `home/2^k` — screens every one
 through `engine.screen`, and keeps what clears all three gates. Nothing ranks a
 viewport before the walk sees it.
@@ -725,9 +726,11 @@ five hours on this supply and expect the clock to outlast the roots — the
 partition list aims a leg, it does not extend one.
 
 **There is no continuous boundary sampler for a parameter plane, and
-`nucleus_grid` is a finite enumerated pool that empties permanently.** The four
-planes have no sampler on purpose — an unscreened draw over the higher degrees
-measured zero good locations in 144 — so what they run on is the tracked file
+`nucleus_grid` is a finite enumerated pool that empties permanently** — ⚠ the first
+half of that is **superseded on 2026-09-16** and the paragraph is kept as the
+history of the gap. The four planes had no sampler on purpose, on an unscreened
+draw over the higher degrees that measured zero good locations in 144, so what they
+ran on was the tracked file
 `data/discovery/plane_seed_pool.jsonl`, and it is **1,922 rows: 1,912
 `nucleus_grid` (mandelbrot 500, multibrot3 412, multibrot4 500, multibrot5 500),
 4 `home_view`, 6 `hand_picked`**, counted off the file. `plane_seeds.derive` is
@@ -737,7 +740,35 @@ moves forward, so a plane that has walked its 500 has no fresh supply for the
 rest of the night. The only lever is a **regeneration** — `derive-plane-seeds
 --columns N --per-partition M --write`, a tracked-data change — not a run flag.
 
-**The pinned planes are the exception, and the difference is a file against a
+**A parameter plane's continuous channel, since 2026-09-16.**
+`--root-channel viewport_sampler` now serves all four planes with
+`discovery.viewport_sampler`'s straddle refinement: a quad-tree over the home box,
+probed through `engine.dump_field` only where the connectedness locus's boundary
+is, every straddling cell in the root-width band screened by the walk's own
+battery. It is opt-in and off by default, and the pool above is still the default
+supply. How it reaches the queue is the one new thing here:
+
+- **The queue is merged at its tail and never re-interleaved.**
+  `Refill._continuous_queue` fixes the finite side at its first call — the plane's
+  pool rows with the proven roots already interleaved through them — and
+  materializes one pair at a time, a sampled survivor then the next finite entry.
+  When the finite side runs out every further entry is sampled, which is the
+  point: a plane whose 500 pool rows are walked out keeps being served, and a plane
+  with no pool at all (`has_channel` is true on the sampler alone) is served from
+  nothing. The cursor stays an index, for the reason `_twin_queue` gives.
+- **A continuous partition is open until the channel says it is exhausted**
+  (`Refill._open`), not while `remaining` is positive: the queue is built only as
+  far as a draw asks, so `remaining` reads 0 on a channel with tens of thousands of
+  cells behind it. `pool_state` never materializes it, so the launch lines cost no
+  probe.
+- **Refinement and screening are paid inside the refill that asks**, bounded by
+  the refill share like any other draw. The first growth of a plane costs about
+  15 s of probes for roughly 700 cells a rung and 8 s to screen a batch of 64
+  (`discovery/README.md`'s *A parameter plane: straddle refinement*).
+- `LOW_WATER` 8 and `COOLDOWN` 10 stay the defaults for these partitions too; the
+  phoenix reading of 16 / 1 is a per-invocation choice.
+
+**The pinned planes were the first exception, and the difference is a file against a
 derivation.** `viewport_sampler` is re-derived at every build and never
 checkpointed, so it cannot empty permanently the way a pool does: its ladder is
 `(4^(R+1) - 4) / 3` frames — 340 at the default four rungs, 1,364 at five, 5,460

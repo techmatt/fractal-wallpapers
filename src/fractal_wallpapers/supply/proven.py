@@ -1,9 +1,11 @@
 """The proven channel: roots at the places a human already called good.
 
-The parameter planes have no sampler — an unscreened draw over the higher degrees
-measured zero good locations in a hundred and forty-four — so a plane root comes
-from the tracked nucleus-grid pool, an explicit seed file, or a reframing of
-somewhere the walk already reached. A dedicated mandelbrot leg tested a fourth
+When this channel was built the parameter planes had no sampler — an unscreened
+draw over the higher degrees had measured zero good locations in a hundred and
+forty-four — so a plane root came from the tracked nucleus-grid pool, an explicit
+seed file, or a reframing of somewhere the walk already reached. (The viewport
+sampler's screened boundary draw has served them since 2026-09-16.) A dedicated
+mandelbrot leg tested a fourth
 source and it beat all of them: **descend beside a location a human has scored a
 keeper**. Over 95 active minutes the seeded roots put 91.6% of their finds over
 the junk floor and half of the sample over the smooth head's advisory, where the
@@ -150,7 +152,7 @@ RATIO = 2
 
 #: The partitions this channel serves: every registered one. Each has a queue of
 #: its own to interleave with, and they are served for three different reasons —
-#: the planes have no sampler, the dynamical families have a sampler that cannot
+#: the planes' own supply is places nobody chose, the dynamical families have a pool that cannot
 #: express a viewport, and the pinned classic phoenix has one fresh root in
 #: existence, so a labelled place is most of what it can be handed. One
 #: consequence is shared: a partition's queue holds **two shapes of entry**, a

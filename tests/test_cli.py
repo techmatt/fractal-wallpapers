@@ -85,10 +85,10 @@ def test_the_walk_is_a_subcommand_with_a_default_seed_source() -> None:
 
 
 def test_a_parameter_plane_walk_refuses_rather_than_inventing_roots() -> None:
-    """There is no sampler for the c-plane, and there is not going to be one:
-    an unscreened draw over the higher degrees measured zero good locations in
-    144. A walk asked to source them from nothing says so, before it has built
-    anything or left a run directory behind."""
+    """A walk asked to source roots from nothing says so, before it has built
+    anything or left a run directory behind. On a parameter plane "nothing" is
+    neither a seed file nor the viewport sampler, and the sampler is the only
+    door that needs a count: it has no end."""
     parse = cli.build_parser().parse_args
     for arguments in (
         ["walk", "--family", "multibrot", "--degree", "4"],
@@ -96,6 +96,22 @@ def test_a_parameter_plane_walk_refuses_rather_than_inventing_roots() -> None:
         ["walk", "--family", "julia", "--degree", "3"],
     ):
         assert "--seeds" in (cli.refuse_impossible_walk(parse(arguments)) or "")
+
+    sampled = ["--root-channel", "viewport_sampler"]
+    assert (
+        cli.refuse_impossible_walk(
+            parse(["walk", "--family", "multibrot", "--degree", "3", *sampled, "--roots", "8"])
+        )
+        is None
+    ), "a multibrot walk with the sampler needs no --seeds"
+    assert "--roots" in cli.refuse_impossible_walk(
+        parse(["walk", "--family", "mandelbrot", *sampled])
+    )
+    for family in ("julia", "phoenix"):
+        refusal = cli.refuse_impossible_walk(
+            parse(["walk", "--family", family, *sampled, "--roots", "8"])
+        )
+        assert "parameter plane" in (refusal or "")
 
     assert cli.refuse_impossible_walk(parse(["walk"])) is None
     assert cli.refuse_impossible_walk(parse(["walk", "--family", "phoenix"])) is None

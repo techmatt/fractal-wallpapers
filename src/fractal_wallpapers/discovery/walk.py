@@ -687,12 +687,11 @@ class Walk:
         return len(seeds)
 
     def seed_from_file(self, path: Path, limit: int | None = None) -> int:
-        """Roots from an explicit seed file — the only supply for the c-plane.
+        """Roots from an explicit seed file — the parameter planes' pool, or any other.
 
-        There is deliberately no sampler behind this. An unscreened draw over the
-        higher multibrot degrees measured zero good locations in a hundred and
-        forty-four, so a walk that invented parameter-plane roots would be
-        spending its whole budget on a channel already priced at nothing.
+        Nothing is drawn here. The screened draw a parameter-plane walk can take
+        instead is `--root-channel viewport_sampler`, which the CLI seeds through
+        `add_root` directly.
         """
         rows = pools.read_seed_file(Path(path))
         if limit is not None:

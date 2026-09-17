@@ -33,15 +33,16 @@ place of the pool. A queue that holds both is what made lifting it safe, and the
 c-spacing floor that keeps the two apart is the twin channel's, with the pool's
 own parameters reserved into it.
 
-**A pinned plane gets fresh places from a sampler over its own view.** A pool
-hands over a parameter and a pinned plane has none left to vary, so its fresh
-supply used to be one home-view row and could never be a second — every further
-*place* had to come from the label store.
+**A plane gets fresh places from a sampler over its own view.** A pool hands
+over a parameter and a pinned plane has none left to vary, so its fresh supply
+used to be one home-view row and could never be a second; a parameter plane's
+nucleus pool is five hundred rows and a long leg walks it out.
 [`fractal_wallpapers.discovery.viewport_sampler`] is the channel that makes
-places: a seeded jittered grid at a ladder of scales over the family's home box,
-every frame screened by the walk's own gate battery before it becomes a root. It
-serves the pinned planes and nothing else, and like the proven channel it is off
-unless a run asks for it by name.
+places, every frame screened by the walk's own gate battery before it becomes a
+root: a fixed ladder of jittered tilings on the pinned plane, and on a parameter
+plane a boundary-refining draw whose list **grows on demand and does not run
+out** — see [`Refill._continuous_queue`] for what that asks of the cursor. Like
+the proven channel it is off unless a run asks for it by name.
 
 **Any partition can also be seeded from what a human already liked.** The proven
 channel — [`fractal_wallpapers.supply.proven`] — derives a root from every
@@ -115,11 +116,10 @@ NO_TWIN_CHANNEL = (
 
 #: Why a parameter-plane partition gets no refill when it has no pool to draw on.
 NO_SEED_FILE = (
-    "the parameter planes have no sampler: an unscreened draw over the higher degrees "
-    "measured zero good locations in 144, so roots come from the tracked plane seed pool, "
-    "an explicit --seeds file, the proven channel, or what the reframing operators "
+    "roots on a parameter plane come from the tracked plane seed pool, an explicit --seeds "
+    "file, the proven channel, the viewport sampler, or what the reframing operators "
     "reach. This run has none of them — derive the pool with `fractal-wallpapers "
-    "derive-plane-seeds --write`, or add `--root-channel proven`."
+    "derive-plane-seeds --write`, or add `--root-channel viewport_sampler`."
 )
 
 
@@ -173,6 +173,8 @@ class Refill:
         #: queue is the one thing here that grows after it is built, and this is
         #: what says where it grew to — see [`_twin_queue`].
         self._twin_mark: dict = {}
+        #: A continuous partition's merge state — see [`_continuous_queue`].
+        self._streams: dict = {}
         # The tracked pool is the default channel for the parameter planes, not a
         # fallback nobody reaches: a run that had to be handed a seed file to
         # refill four of its ten partitions is a run that silently does not, and
@@ -202,6 +204,8 @@ class Refill:
         # see [`_twin_queue`], which carries what re-making it cost.
         if self._is_twin(partition):
             return self._with_proven(partition, self._twin_queue(partition))
+        if self._is_continuous(partition):
+            return self._continuous_queue(partition, need=0)
         if partition in self._pools:
             return self._pools[partition]
         if partition == "julia:mandelbrot":
@@ -220,6 +224,46 @@ class Refill:
         rows = self._with_proven(partition, rows)
         self._pools[partition] = rows
         return rows
+
+    def _continuous_queue(self, partition: str, need: int) -> list:
+        """A parameter plane's queue when the viewport sampler serves it, grown to `need`.
+
+        **Merged at the tail and never re-interleaved**, for the reason
+        [`_twin_queue`] carries: the cursor is an index, and an interleave is not
+        stable under a side that grows. The finite side — the plane's pool with its
+        proven roots already interleaved through it — is fixed at the first call,
+        and the sampler's side is an unbounded list that screens more only when
+        asked. So the queue is materialized one pair at a time, a sampled survivor
+        and then the next finite entry, which is the order the pinned plane's
+        interleave puts them in; once the finite side runs out every further entry
+        is sampled, and **that is the point**: a plane whose nucleus pool is walked
+        out keeps being served.
+
+        `need` of zero builds nothing past what is already there, so asking how
+        big the queue is at launch never pays for a refinement.
+        """
+        state = self._streams.get(partition)
+        if state is None:
+            other = [
+                row
+                for row in (self._seed_rows() if self._seeds is not None else [])
+                if _seed_partition(row) == partition
+            ]
+            state = {"queue": [], "other": self._with_proven(partition, other), "given": 0}
+            self._streams[partition] = state
+            self._pools[partition] = state["queue"]
+        queue = state["queue"]
+        while len(queue) < need:
+            before = len(queue)
+            sampled = self.sampler.take(partition, len(queue) - state["given"])
+            if sampled is not None:
+                queue.append(sampled)
+            if state["given"] < len(state["other"]):
+                queue.append(state["other"][state["given"]])
+                state["given"] += 1
+            if len(queue) == before:
+                break
+        return queue
 
     def _twin_queue(self, partition: str) -> list:
         """A twin's queue: its tracked `c`-pool, if it has one, its derived list, and
@@ -295,12 +339,26 @@ class Refill:
     def _is_sampler(self, partition: str) -> bool:
         """Whether the viewport sampler holds roots for this partition.
 
-        It serves the pinned planes alone. A parameter plane and a Julia twin
-        both have a fresh channel that hands over a parameter, and this one
-        hands over a place — offering it to them would be a second answer to a
-        question their own pools already answer.
+        It serves every parameter plane and the pinned plane. A Julia twin is the
+        one kind it leaves out: its fresh supply is a parameter, which its pool
+        or the twin channel hands over.
         """
         return self.sampler is not None and partition in self.sampler.partitions
+
+    def _is_continuous(self, partition: str) -> bool:
+        """Whether this partition's sampler list grows on demand — a parameter plane's."""
+        return self._is_sampler(partition) and self.sampler.continuous(partition)
+
+    def _open(self, partition: str) -> bool:
+        """Whether a draw here could still hand something over.
+
+        A continuous channel counts as open until it says it is exhausted, whatever
+        is materialized: its queue is built only as far as a draw asks, so
+        `remaining` reads zero on a channel with tens of thousands of cells left.
+        """
+        if self.remaining(partition) > 0:
+            return True
+        return self._is_continuous(partition) and not self.sampler.exhausted(partition)
 
     def _is_twin(self, partition: str) -> bool:
         """Whether the twin channel is one of this partition's channels.
@@ -339,7 +397,7 @@ class Refill:
             return True
         if is_dynamical(partition):
             return self._is_twin(partition) or self._is_proven(partition)
-        return self._seeds is not None or self._is_proven(partition)
+        return self._seeds is not None or self._is_proven(partition) or self._is_sampler(partition)
 
     def remaining(self, partition: str) -> int:
         return max(0, len(self._pool(partition)) - self.cursor.get(partition, 0))
@@ -357,7 +415,7 @@ class Refill:
             last = self.last_refill.get(partition)
             if last is not None and (batch - last) < self.cooldown:
                 continue
-            if self.remaining(partition) <= 0:
+            if not self._open(partition):
                 continue
             out.append(partition)
         return out
@@ -392,6 +450,12 @@ class Refill:
         for partition in self.partitions:
             servable = self.has_channel(partition)
             pool = len(self._pool(partition)) if servable else 0
+            continuous = self._is_continuous(partition)
+            if continuous:
+                # What the finite side still holds that the queue has not merged,
+                # so a plane's pool reads as its pool at launch rather than as 0.
+                state = self._streams[partition]
+                pool += len(state["other"]) - state["given"]
             drawn = self.cursor.get(partition, 0)
             reason = (reasons.get(partition) or {}).get("reason")
             out[partition] = {
@@ -401,6 +465,7 @@ class Refill:
                 "sampled": (
                     len(self.sampler.seeds(partition)) if self._is_sampler(partition) else 0
                 ),
+                "continuous": continuous,
                 "drawn": drawn,
                 "remaining": max(0, pool - drawn),
                 "reason": reason,
@@ -417,6 +482,8 @@ class Refill:
                     line += f", {state['proven']} of them proven roots"
                 if state["sampled"]:
                     line += f", {state['sampled']} of them sampled viewports"
+                if state["continuous"]:
+                    line += ", and the viewport sampler's boundary draw behind them, unbounded"
                 out.append(line)
             else:
                 out.append(f"pool {partition}: {state['reason']}")
@@ -429,7 +496,7 @@ class Refill:
         for partition in self.partitions:
             if queues.get(partition, 0) >= self.low_water:
                 continue
-            if self.has_channel(partition) and self.remaining(partition) > 0:
+            if self.has_channel(partition) and self._open(partition):
                 continue
             if partition in DEFERRAL:
                 reason = DEFERRAL[partition]
@@ -491,8 +558,12 @@ class Refill:
         return {"refilled": starved, "roots": added}
 
     def _draw(self, partition: str) -> int:
-        rows = self._pool(partition)
         start = self.cursor.get(partition, 0)
+        rows = (
+            self._continuous_queue(partition, need=start + self.per_draw)
+            if self._is_continuous(partition)
+            else self._pool(partition)
+        )
         taken = rows[start : start + self.per_draw]
         self.cursor[partition] = start + len(taken)
         for index, entry in enumerate(taken, start=start):

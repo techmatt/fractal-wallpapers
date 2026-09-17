@@ -1,10 +1,10 @@
 """The parameter planes' seed pool, and the procedure that derives it.
 
-The four parameter-plane partitions — `mandelbrot` and `multibrot3/4/5` — have
-no sampler on purpose: an unscreened draw over the higher degrees measured zero
-good locations in a hundred and forty-four, so nothing here invents a root. What
-they run on instead is *this* pool, and the first production run showed exactly
-how load-bearing it is. Without a seed file `has_channel` is false for all four,
+The four parameter-plane partitions — `mandelbrot` and `multibrot3/4/5` — run on
+*this* pool by default, and the first production run showed exactly how
+load-bearing it is. (The viewport sampler's boundary draw is the channel that
+does not run out, and it is opt-in: `--root-channel viewport_sampler`.) Without a
+seed file `has_channel` is false for all four unless a run names that channel,
 they can never be refilled, and half the registry is unservable the moment its
 queues drain — which is the state that run stalled in.
 

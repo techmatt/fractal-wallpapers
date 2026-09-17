@@ -23,15 +23,14 @@ and the julia set is a plain basin boundary with nothing composed inside it — 
 this screen is not a proxy for something else and a channel that lets interior
 parameters through is spending renders on 1s.
 
-**For the parameter-plane families there is deliberately no draw at all.** An
+**For the parameter-plane families this module builds no raw-draw path.** An
 unscreened shell draw over the higher multibrot degrees measured zero good
-locations out of a hundred and forty-four — not a low rate, a zero — so this
-module builds no raw-draw path for them. Their pool is *solved for* instead:
+locations out of a hundred and forty-four, so their pool is *solved for* instead:
 [`fractal_wallpapers.discovery.plane_seeds`] walks a grid over each home frame
-and keeps the atoms it identifies, which is a screen rather than a draw. Beyond
-that pool those families run on what the reframing operators find from what the
-walk already reached, and a walk asked to source them from nothing says so
-instead of guessing.
+and keeps the atoms it identifies, which is a screen rather than a draw. The
+screened draw that does exist lives in
+[`fractal_wallpapers.discovery.viewport_sampler`], as a root channel rather than a
+pool.
 
 ## The `c`-spacing floor
 

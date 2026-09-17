@@ -14,6 +14,8 @@ from fractal_wallpapers.cli.common import (
     reframings_from,
     resolve_input,
     resolve_output,
+    sampler_band_flags,
+    sampler_default,
     scoring_flags,
     walk_default,
 )
@@ -25,7 +27,22 @@ def refuse_impossible_walk(args: argparse.Namespace) -> str | None:
     Checked before anything is built, because "there is no supply for this" is a
     refusal and a refusal should not leave a run directory behind it.
     """
-    if args.seeds:
+    from fractal_wallpapers.discovery import viewport_sampler
+
+    sampled = viewport_sampler.CHANNEL in (getattr(args, "root_channels", None) or ())
+    if sampled and args.family not in ("mandelbrot", "multibrot"):
+        return (
+            f"--root-channel {viewport_sampler.CHANNEL} on a walk draws over a parameter plane "
+            f"— --family mandelbrot or multibrot. The pinned phoenix plane is served through "
+            f"`harvest --partition phoenix:classic`, and a {args.family} walk's roots are "
+            f"parameters from its pool"
+        )
+    if sampled and not args.roots:
+        return (
+            f"--root-channel {viewport_sampler.CHANNEL} has no end, so a walk drawing from it "
+            f"has to say how many roots it wants: pass --roots"
+        )
+    if args.seeds or sampled:
         return None
     if args.family == "julia" and args.degree != 2:
         return (
@@ -37,14 +54,61 @@ def refuse_impossible_walk(args: argparse.Namespace) -> str | None:
         from fractal_wallpapers.discovery import plane_seeds
 
         return (
-            f"a {args.family} walk has no sampler: an unscreened draw over the parameter "
-            f"plane measured zero good locations in 144, so none is built. Its roots come "
-            f"from the tracked plane seed pool — pass --seeds {plane_seeds.pool_path()} "
-            f"(derive it with `fractal-wallpapers derive-plane-seeds --write` if it is not "
-            f"there), or let the reframing operators find them from a walk that already "
-            f"reached somewhere."
+            f"a {args.family} walk needs somewhere to start: pass --seeds "
+            f"{plane_seeds.pool_path()} for the tracked plane seed pool (derive it with "
+            f"`fractal-wallpapers derive-plane-seeds --write` if it is not there), or "
+            f"--root-channel {viewport_sampler.CHANNEL} --roots N to draw N screened "
+            f"viewports over the plane's boundary."
         )
     return None
+
+
+def seed_from_sampler(args: argparse.Namespace, run) -> int:
+    """`--roots` screened viewports from the viewport sampler, if the walk asked for it.
+
+    The same channel a harvest holds and the same root row it writes, on the
+    walk's own ledger, so a walk leg reads as a harvest's refill would: every
+    probe rung, every screened attempt and every root with its rung and scale.
+    """
+    from fractal_wallpapers.discovery import viewport_sampler
+    from fractal_wallpapers.supply.partitions import partition_of_family
+
+    if viewport_sampler.CHANNEL not in (getattr(args, "root_channels", None) or ()):
+        return 0
+    if args.family == "mandelbrot":
+        family = {"kind": "mandelbrot"}
+    else:
+        family = {"kind": "multibrot", "degree": args.degree}
+    partition = partition_of_family(family)
+    channel = viewport_sampler.build(
+        partitions=[partition],
+        seed=args.seed,
+        widest=args.sampler_widest,
+        narrowest=args.sampler_narrowest,
+        colormap=args.colormap,
+        node_width=args.node_width,
+        ledger=run.ledger,
+    )
+    added = 0
+    for index in range(int(args.roots)):
+        row = channel.take(partition, index)
+        if row is None:
+            break
+        provenance = {k: v for k, v in row["provenance"].items() if k not in ("source", "file")}
+        run.add_root(
+            row["family"],
+            dict(row["viewport"]),
+            source=viewport_sampler.SOURCE,
+            provenance={**provenance, "seed_id": row["id"]},
+        )
+        added += 1
+    record = channel.summary()["draws"][partition]
+    run.ledger.write("viewport_sampler", partition=partition, **record)
+    print(
+        f"[sampler] {added} root(s) off {record['attempts']} screened draw(s) and "
+        f"{record['probes']} probe(s) over {partition}"
+    )
+    return added
 
 
 def walk(args: argparse.Namespace) -> int:
@@ -76,12 +140,14 @@ def walk(args: argparse.Namespace) -> int:
         report_foci=args.foci,
     )
 
+    roots = 0
     if args.seeds:
         roots = run.seed_from_file(Path(args.seeds), limit=args.roots)
     elif args.family == "phoenix":
         roots = run.seed_from_phoenix_pool(limit=args.roots)
-    else:
+    elif args.family == "julia":
         roots = run.seed_from_julia_pool(limit=args.roots)
+    roots += seed_from_sampler(args, run)
 
     if roots == 0:
         print("no roots: nothing to walk")
@@ -149,8 +215,9 @@ def add_commands(subcommands) -> None:
         help="descend from seeds, keeping what survives the structural gates",
         description=(
             "Run one discovery walk. Roots come from the tracked seed pools for the "
-            "dynamical families and from an explicit --seeds file for the parameter "
-            "plane; there is no sampler behind either. Everything the walk sees — "
+            "dynamical families, and on a parameter plane from an explicit --seeds file, "
+            "the viewport sampler (--root-channel viewport_sampler --roots N), or both. "
+            "Everything the walk sees — "
             "survivors and rejects alike — lands in walk.jsonl under --out-dir, with the "
             "gate that refused it or a thumbnail if none did."
         ),
@@ -176,7 +243,22 @@ def add_commands(subcommands) -> None:
         "--seeds",
         help="JSONL file of root locations: one {family, viewport} object per line",
     )
-    roots.add_argument("--roots", type=int, help="use only this many of the available roots")
+    roots.add_argument(
+        "--roots",
+        type=int,
+        help="use only this many of the available roots; with the viewport sampler, how many "
+        "it draws",
+    )
+    roots.add_argument(
+        "--root-channel",
+        action="append",
+        dest="root_channels",
+        choices=[sampler_default("CHANNEL")],
+        help=f"draw roots from this channel as well: {sampler_default('CHANNEL')!r} refines "
+        f"a parameter plane's boundary and hands over --roots screened viewports, with or "
+        f"without --seeds",
+    )
+    sampler_band_flags(roots)
     budget.add_argument("--seed", type=int, default=0, help="run seed (default: 0)")
     budget.add_argument("--batch", type=int, default=8, help="nodes expanded per batch")
     budget.add_argument("--batches", type=int, default=4, help="batches to run")
