@@ -187,12 +187,15 @@ REFINED_ORIGIN = "refine_framing"
 #: first one 1, so a root's own children are one rung below it.
 ROOT_DEPTH = 1
 
-#: The root sources the expansion grace applies to: the parameter-plane channel,
-#: which is the tracked plane seed pool and an explicit `--seeds` file alike — one
-#: reader, one source name, and the same starting-too-shallow problem either way.
-#: A seed file may still carry a dynamical family, so provenance is necessary and
-#: not sufficient: the family has to be a parameter plane as well.
-PLANE_ROOT_SOURCES = frozenset({"seed_file"})
+#: The root sources the expansion grace applies to: the parameter-plane channels,
+#: which are the tracked plane seed pool and an explicit `--seeds` file alike — one
+#: reader, one source name — and the viewport sampler's straddle draws, which stand
+#: at the pool's widths and pay the same starting-too-shallow floor. A seed file may
+#: still carry a dynamical family and the sampler still serves `phoenix:classic`, so
+#: provenance is necessary and not sufficient: the family has to be a parameter plane
+#: as well. The sampler's spelling is its `viewport_sampler.SOURCE`, written out here
+#: because the walk does not import the channel.
+PLANE_ROOT_SOURCES = frozenset({"seed_file", "viewport_sampler"})
 
 
 @dataclass

@@ -825,6 +825,28 @@ fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
 fractal-wallpapers derive-tau-h --write
 ```
 
+## Degree 6: twelve partitions, two with no labels behind them
+
+**`multibrot6` and `julia:multibrot6` joined `partitions.PARAMETER_PLANES` on
+2026-09-16**, so `ALL_PARTITIONS` is twelve and every per-partition table carries
+their rows: `release_mix.json` at the supporting ratio 1.0, `tau_h.json` fail-open at
+0.0, and both price tables at the flat seed 3.0 with `defaulted` status. The two price
+rows were written as `derive` and `regularize` would write an unmeasured partition, and
+every existing row was checked unchanged; `harvest_run2`, the measured table's source,
+is no longer on disk to re-derive from. `CostToFind`'s default `seed_price` is left
+alone: a d=6 leg names its partition rather than being weighted in by the allocator.
+
+**Nothing label-fed will ever serve them**, by ruling (`partitions.NEVER_LABELLED`):
+the proven channel, the `c`-pool and reframing priors are empty by construction, the
+plane seed pool holds no d=6 row, and the twin is fed only by its plane's admissions.
+**The viewport sampler is the plane's one root source**; a harvest that names the pair
+without `--root-channel viewport_sampler` has nothing to draw.
+
+```
+fractal-wallpapers walk --family multibrot --degree 6 --root-channel viewport_sampler --roots 40
+fractal-wallpapers harvest --partition multibrot6 --root-channel viewport_sampler
+```
+
 ## What a run writes for a readout to price it with
 
 `summary.json` carries, beside the run-wide books:

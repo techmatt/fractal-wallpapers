@@ -189,7 +189,7 @@ def test_the_partition_rule_names_every_partition() -> None:
     """A partition that got nothing is stamped, never silently absent: a table
     that omits one and a table that reports it empty are different statements."""
     assert acceptance.MIN_POSITIVES >= 10
-    assert len(ALL_PARTITIONS) == 10
+    assert len(ALL_PARTITIONS) == 12
 
 
 def test_an_archived_extraction_source_refuses_by_name(tmp_path, monkeypatch) -> None:

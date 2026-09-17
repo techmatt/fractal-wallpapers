@@ -129,6 +129,12 @@ These were decided once, at the first commit, because each is expensive to rever
   collection the table does not name refuses** rather than seating a plausible
   number. Changing a target is a one-line edit to `TARGETS`, and the reason for
   each tier is written at the constant.
+- **Degree 6 is never labelled**, Matt's ruling of 2026-09-16: `multibrot6` and
+  `julia:multibrot6` are the mining loop's generalization test on a fractal no human
+  has labelled. `partitions.NEVER_LABELLED` is the list, sheet build, ingest and both
+  store writers refuse a row on it, and its roots come from the viewport sampler
+  alone — `plane_seeds.FAMILIES` stays at 5 unless Matt says "with pool".
+  `labeling/README.md`'s *Degree 6 is never labelled* has the doors.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
@@ -239,10 +245,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `plane_sampler_ckpt128` added 9 fast and 1 slow
-test on 2026-09-16 and read **4,784 fast in 148.37 s (2:28)**, 157 deselected, one red
-fixed and re-run green with its neighbours, so the tree is *believed* at 4,941 collected.
-Before it, `atlas_planes_ckpt128_wallpapers` read 4,775 in 141.92 s (+3), and
+**The newest reading is fast only**: `degree6_ckpt128_wallpapers` added 7 fast tests on
+2026-09-16 and read **4,791 fast in 141.00 s (2:21)**, 157 deselected, green, so the tree
+is *believed* at 4,948 collected. Before it, `plane_sampler_ckpt128` read 4,784 in
+148.37 s (+9 fast, +1 slow, one red fixed), and
+`atlas_planes_ckpt128_wallpapers` read 4,775 in 141.92 s (+3), and
 `preclose_wallpapers_ckpt127`
 read 4,772 in 150.58 s (+2, one slow), and `merge_back_ckpt127` read
 4,771 in 145.46 s with two `test_nested_verbs.py` reds fixed by re-running that file,

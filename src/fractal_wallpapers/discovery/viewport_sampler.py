@@ -126,9 +126,10 @@ SCHEMA = 1
 #: unattributable before `provenance.channel` existed.
 CHANNEL = "viewport_sampler"
 
-#: What a root drawn here names as its source. Deliberately not `seed_file`: the
-#: expansion grace is keyed on that name, and these roots did not start at a home
-#: frame nobody chose.
+#: What a root drawn here names as its source. Its own name rather than `seed_file`,
+#: so a tally by source can tell the channels apart; the walk's expansion grace
+#: names both in `walk.PLANE_ROOT_SOURCES`, since a straddle draw stands at the pool's
+#: widths and pays the same floor from its first rung.
 SOURCE = "viewport_sampler"
 
 #: The two draw schemes, as a root's provenance names them.

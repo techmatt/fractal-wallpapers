@@ -43,7 +43,7 @@ CLASSIC_PHOENIX = "phoenix:classic"
 
 #: The parameter-plane partitions, in canonical report order. `mandelbrot` is the
 #: multibrot at degree 2 and keeps its own name because that is what it is called.
-PARAMETER_PLANES = ("mandelbrot", "multibrot3", "multibrot4", "multibrot5")
+PARAMETER_PLANES = ("mandelbrot", "multibrot3", "multibrot4", "multibrot5", "multibrot6")
 
 #: The dynamical twin of each parameter plane.
 DYNAMICAL_PLANES = tuple(f"julia:{plane}" for plane in PARAMETER_PLANES)
@@ -73,6 +73,21 @@ PINNED_PLANES = (CLASSIC_PHOENIX,)
 #: with a zero rather than being silently absent — a table that omits a partition
 #: and a table that reports it empty are different statements.
 ALL_PARTITIONS = (*PARAMETER_PLANES, *DYNAMICAL_PLANES, "phoenix", CLASSIC_PHOENIX)
+
+#: The partitions no human label may ever land on, Matt's ruling of 2026-09-16:
+#: degree 6 is a generalization test of the mining loop on a fractal nobody has
+#: labelled, so its whole supply is the viewport sampler and the walk, and every
+#: label-fed channel — proven keepers, the `c`-pool, reframing priors — is empty
+#: for it by construction. The label stores refuse a row on any of these at ingest
+#: and at sheet build; see [`refuse_unlabelled`].
+NEVER_LABELLED = ("multibrot6", "julia:multibrot6")
+
+#: What the refusal says, once, so every door that refuses says the same thing.
+NEVER_LABELLED_RULING = (
+    "is never labelled: degree 6 is the mining loop's generalization test on a fractal "
+    "no human has labelled, and its supply is the viewport sampler alone "
+    "(supply/partitions.NEVER_LABELLED)"
+)
 
 
 class UnregisteredPartition(KeyError):
@@ -212,13 +227,39 @@ def partition_of_row(row: dict) -> str:
     )
 
 
+class UnlabelledPartition(ValueError):
+    """A label row, or a sheet about to draw one, named a never-labelled partition."""
+
+
+def refuse_unlabelled(record: dict, where: str) -> None:
+    """Raise if `record`'s family is on a partition no label may land on.
+
+    `record` is anything carrying a `family` record — a label row, a sheet unit —
+    and `where` names the door that refused, so the message says which one. A
+    record with no family, or one no partition registers, is left to the door's
+    own checks: this refuses one thing and says why.
+    """
+    family = record.get("family")
+    if not isinstance(family, dict):
+        return
+    try:
+        partition = partition_of_family(family)
+    except UnregisteredPartition:
+        return
+    if partition in NEVER_LABELLED:
+        raise UnlabelledPartition(f"{where}: {partition} {NEVER_LABELLED_RULING}")
+
+
 __all__ = [
     "ALL_PARTITIONS",
     "CLASSIC_PHOENIX",
     "CLASSIC_PHOENIX_POINT",
     "DYNAMICAL_PLANES",
+    "NEVER_LABELLED",
+    "NEVER_LABELLED_RULING",
     "PARAMETER_PLANES",
     "PINNED_PLANES",
+    "UnlabelledPartition",
     "UnregisteredPartition",
     "degree_of_plane",
     "dynamical_twin",
@@ -228,5 +269,6 @@ __all__ = [
     "parameter_plane_of",
     "partition_of_family",
     "partition_of_row",
+    "refuse_unlabelled",
     "registered",
 ]

@@ -634,7 +634,7 @@ mod tests {
         ] {
             assert_eq!(address(Some(&family)), with(AddressStart::Z1), "{family:?}");
         }
-        for degree in 2..=5 {
+        for degree in 2..=6 {
             let family = Family::Multibrot { degree };
             assert_eq!(address(Some(&family)), with(AddressStart::Z0), "{family:?}");
         }

@@ -23,9 +23,10 @@ from fractal_wallpapers.supply.quota import Quota
 from fractal_wallpapers.supply.refill import Refill
 
 #: Every partition a tracked pool can seed: the two dynamical `c`-pools and the
-#: four parameter planes, which are fed from the plane seed pool. Only the three
+#: four parameter planes, which are fed from the plane seed pool. The three
 #: higher-degree Julia partitions have no pool of their own, and they are fed by
-#: reframing from places a walk already reached.
+#: reframing from places a walk already reached; the degree-6 pair has none either,
+#: because its roots come from the viewport sampler alone.
 POOL_FED = [
     "julia:mandelbrot",
     "phoenix",

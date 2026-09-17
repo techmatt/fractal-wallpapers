@@ -10,6 +10,10 @@
     "multibrot3": { "ratio": 1.0, "why": "supporting family" },
     "multibrot4": { "ratio": 1.0, "why": "supporting family" },
     "multibrot5": { "ratio": 1.0, "why": "supporting family" },
+    "multibrot6": {
+      "ratio": 1.0,
+      "why": "supporting family, never labelled: the mining loop's generalization test, supplied by the viewport sampler alone"
+    },
     "julia:mandelbrot": {
       "ratio": 3.0,
       "why": "the degree-2 dynamical plane; with its parameter plane it carries the release"
@@ -17,6 +21,10 @@
     "julia:multibrot3": { "ratio": 1.0, "why": "supporting family" },
     "julia:multibrot4": { "ratio": 1.0, "why": "supporting family" },
     "julia:multibrot5": { "ratio": 1.0, "why": "supporting family" },
+    "julia:multibrot6": {
+      "ratio": 1.0,
+      "why": "supporting family, never labelled: fed only through its parameter plane's admissions"
+    },
     "phoenix": { "ratio": 1.0, "why": "varied phoenix: a swept six-dimensional parameter space" },
     "phoenix:classic": {
       "ratio": 0.2,

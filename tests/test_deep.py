@@ -91,8 +91,10 @@ def test_degree_five_stops_a_decade_early_and_no_other_plane_moves() -> None:
     that supersampling makes worse. `julia_deep_eyetest`'s second addendum put
     the onset at `1e-11` and this floor on the rung above it.
     """
-    assert depth.DEGREE_MIN_WIDTH == {5: 1e-10}
+    assert depth.DEGREE_MIN_WIDTH == {5: 1e-10, 6: 1e-10}
     assert depth.min_width(5) == 1e-10
+    # Degree 6 takes degree 5's floor by the pattern: the collapse is a high-degree failure.
+    assert depth.min_width(6) == 1e-10
     assert depth.min_width() == depth.MIN_WIDTH
     for degree in (2, 3, 4):
         assert depth.min_width(degree) == depth.MIN_WIDTH
@@ -127,7 +129,7 @@ def test_the_deep_walk_carries_the_degree_five_floor_down_every_rung() -> None:
     per-degree floors wires the payload it always did.
     """
     deep_gates = deep_run.gates()
-    assert deep_gates.min_width_by_degree == {5: 1e-10}
+    assert deep_gates.min_width_by_degree == {5: 1e-10, 6: 1e-10}
     assert deep_gates.for_family({"kind": "mandelbrot"}).min_width == depth.MIN_WIDTH
     assert deep_gates.for_family({"kind": "multibrot", "degree": 4}).min_width == depth.MIN_WIDTH
     five = deep_gates.for_family({"kind": "multibrot", "degree": 5})
@@ -141,7 +143,7 @@ def test_the_deep_walk_carries_the_degree_five_floor_down_every_rung() -> None:
     assert plain.for_family({"kind": "multibrot", "degree": 5}) is plain
     assert plain.record() == plain.wire()
     assert "min_width_by_degree" not in deep_gates.wire()
-    assert deep_gates.record()["min_width_by_degree"] == {"5": 1e-10}
+    assert deep_gates.record()["min_width_by_degree"] == {"5": 1e-10, "6": 1e-10}
 
 
 def test_a_band_ceiling_is_the_atom_whose_money_shot_lands_on_that_band_s_top() -> None:

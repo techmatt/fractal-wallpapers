@@ -463,6 +463,25 @@ check, so its drop is bound by its name and its unit count alone, which is why t
 pages cut on one day want **different batches** rather than one batch in two cuts: the rig
 writes the batch into the drop's name and the ambiguity never arises.
 
+## Degree 6 is never labelled, and every door refuses it
+
+**No row on `multibrot6` or `julia:multibrot6` is ever labelled**, Matt's ruling of
+2026-09-16. Degree 6 is the mining loop's generalization test on a fractal no human has
+labelled, so everything label-fed — proven keepers, the `c`-pool, reframing priors — is
+empty for it by construction and stays so; its roots come from the viewport sampler
+alone. The list is `supply/partitions.NEVER_LABELLED`, and four doors refuse a row on it
+with a message naming the ruling:
+
+- `sheets.build`, **before** a directory is made or a picture cut (`SheetError`);
+- `label ingest` (`intake.run`), before a row is built, so the store is untouched
+  (`IntakeError`);
+- `store.check` and `finished.check`, the two writers' row checks, so an import or a
+  backfill that skips the ingest cannot land one either.
+
+Unlike a pinned place, this is **refused and not withheld**: a withheld verdict is a
+real opinion about a place that may not train, and a verdict on degree 6 is a sheet
+that should never have been cut.
+
 ## A verdict cast on a pinned location is WITHHELD, not written
 
 A finished store's evaluation side is a **batch** — one registered `eval_only`, cut

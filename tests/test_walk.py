@@ -18,6 +18,7 @@ from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.scoring import NullScorer
 from fractal_wallpapers.discovery.walk import (
+    PLANE_ROOT_SOURCES,
     REFRAMED_ORIGINS,
     Gates,
     Limits,
@@ -605,6 +606,22 @@ def test_the_grace_is_keyed_to_plane_provenance_and_not_to_depth(tmp_path) -> No
     rows = gate_survivors(run, julia, [2])
     assert rows[0]["fate"] == ledger_module.NOT_ADMITTED
     assert rows[0]["plane_rung"] is None and rows[0]["grace"] is False
+
+
+def test_a_sampler_root_is_graced_on_a_plane_and_not_on_phoenix(tmp_path) -> None:
+    """The viewport sampler's straddle draws stand at the pool's widths, so they get
+    the pool's grace — on a parameter plane only, since the same channel serves the
+    pinned phoenix slice, which is a dynamical plane."""
+    from fractal_wallpapers.discovery import viewport_sampler
+
+    assert viewport_sampler.SOURCE in PLANE_ROOT_SOURCES
+    run = walk(tmp_path, scorer=FixedScorer(0.01), limits=Limits(plane_grace_rungs=5))
+    plane = run.add_root(
+        {"kind": "multibrot", "degree": 6}, VIEW, source=viewport_sampler.SOURCE, provenance={}
+    )
+    phoenix = run.add_root({"kind": "phoenix"}, VIEW, source=viewport_sampler.SOURCE, provenance={})
+    assert run.plane_roots == {plane["root_id"]}
+    assert phoenix["root_id"] not in run.plane_roots
 
 
 def test_a_pooled_root_is_never_graced_however_shallow_it_starts(tmp_path) -> None:

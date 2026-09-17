@@ -39,6 +39,7 @@ FAMILIES = [
     ("multibrot3", {"kind": "multibrot", "degree": 3}),
     ("multibrot4", {"kind": "multibrot", "degree": 4}),
     ("multibrot5", {"kind": "multibrot", "degree": 5}),
+    ("multibrot6", {"kind": "multibrot", "degree": 6}),
     ("julia", {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}),
     ("phoenix", {"kind": "phoenix"}),
 ]
@@ -100,14 +101,15 @@ def test_every_family_reports_a_home_view_with_its_derivation() -> None:
 
 @needs_engine
 def test_the_derived_rows_are_the_ones_the_rule_lands_on() -> None:
-    """The five rows, written down once. Not a restatement of the engine's
-    constants — there are none — but of what the one rule produces from five
+    """The six rows, written down once. Not a restatement of the engine's
+    constants — there are none — but of what the one rule produces from six
     measured sets, so a change to the rule cannot pass as a change to nothing."""
     assert {name: tuple(engine.home_view(family).values()) for name, family in FAMILIES} == {
         "mandelbrot": ("-0.77", "0.0", "4.4"),
         "multibrot3": ("0.0", "0.0", "5.2"),
         "multibrot4": ("-0.23", "0.0", "4.4"),
         "multibrot5": ("0.0", "0.0", "3.6"),
+        "multibrot6": ("-0.09", "0.0", "4.3"),
         "julia": ("0.0", "0.0", "3.0"),
         "phoenix": ("0.04", "0.0", "5.0"),
     }
