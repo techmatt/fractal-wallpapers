@@ -68,3 +68,16 @@
 {"schema": 1, "event": "deleted", "at": "2026-09-16T21:54:25Z", "why": "prune", "counts": {"rows": 184, "recipe_key_named": 184}}
 {"schema": 1, "event": "mark", "at": "2026-09-17T04:57:51Z", "why": "prune", "counts": {"rows": 470213, "recipe_key_named": 456998}}
 {"schema": 1, "event": "mark", "at": "2026-09-17T05:12:07Z", "why": "prune", "counts": {"rows": 470673, "recipe_key_named": 457458}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T07:19:15Z", "why": "prune", "counts": {"rows": 471805, "recipe_key_named": 458590}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T07:36:04Z", "why": "prune", "counts": {"rows": 473155, "recipe_key_named": 459940}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T08:48:39Z", "why": "prune", "counts": {"rows": 474382, "recipe_key_named": 461167}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T09:04:54Z", "why": "prune", "counts": {"rows": 475732, "recipe_key_named": 462517}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T09:31:22Z", "why": "prune", "counts": {"rows": 476632, "recipe_key_named": 463417}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T10:46:37Z", "why": "prune", "counts": {"rows": 477227, "recipe_key_named": 464012}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T11:02:25Z", "why": "prune", "counts": {"rows": 478127, "recipe_key_named": 464912}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T12:10:34Z", "why": "prune", "counts": {"rows": 478850, "recipe_key_named": 465635}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T12:29:57Z", "why": "prune", "counts": {"rows": 479930, "recipe_key_named": 466715}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T12:55:12Z", "why": "prune", "counts": {"rows": 480955, "recipe_key_named": 467740}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T13:20:44Z", "why": "prune", "counts": {"rows": 481648, "recipe_key_named": 468433}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T13:41:10Z", "why": "prune", "counts": {"rows": 482848, "recipe_key_named": 469633}}
+{"schema": 1, "event": "mark", "at": "2026-09-17T14:10:42Z", "why": "prune", "counts": {"rows": 483277, "recipe_key_named": 470062}}
