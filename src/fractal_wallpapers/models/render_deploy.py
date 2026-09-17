@@ -81,7 +81,7 @@ undefined, which happens only where the slice is all hits or all misses.
 Both, plus precision at 4 / 10 / 20%, are logged **every epoch** whichever one is
 choosing, so the rule's choice is inspectable against the readings it did not
 make. The three fractions are the mine's own rates: over the live judge's score
-rows in the candidate ledger, `curation.mine.SEATING_BAR` admits about a tenth
+rows in the candidate ledger, `curation.solve.Q4_BAR` on `p_ge4` admits about a tenth
 and `mine.PRIMED_BAR` about a twenty-fifth.
 
 ## Three seeds, and the seeds are the read on the rule
@@ -170,8 +170,8 @@ BANDS: dict[str, str] = {
 }
 
 #: The fractions every epoch's precision is reported at. 0.10 is about the rate
-#: the seating stage admits at (9.76% of the ledger's live score rows clear
-#: `curation.mine.SEATING_BAR`); 0.04 is about the primed bar's (3.88% clear
+#: the render judge's gate admits at (9.76% of the ledger's live score rows clear
+#: `curation.solve.Q4_BAR` on `p_ge4`); 0.04 is about the primed bar's (3.88% clear
 #: `mine.PRIMED_BAR`); 0.20 is the loose end, reported so a reader can see
 #: whether a reading turns on the choice. **None of them stops anything** — that
 #: is the whole difference between this run and the one before it.

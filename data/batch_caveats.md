@@ -676,7 +676,7 @@ was not powered for. The two arms draw 44 and 48 distinct maps, so it is also no
 a statement about any one map.
 
 `score_unconditioned` is **false** and the flag is right: the locations are the
-proven pool — places already holding a candidate over the seating bar — so a
+proven pool — places already holding a candidate at `P(>=4)` over `solve.Q4_BAR` — so a
 model score is in the population even though nothing chose *among* them. What
 protects this batch is `eval_only`, not the flag.
 

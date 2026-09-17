@@ -22,7 +22,7 @@ import random
 import pytest
 
 from fractal_wallpapers.coloring import autolevel
-from fractal_wallpapers.curation import colorize, depth, hunt, mine
+from fractal_wallpapers.curation import colorize, depth, hunt, mine, solve
 from fractal_wallpapers.palettes import color_mass, dominance
 
 PARTITIONS = ("mandelbrot", "phoenix", "julia:mandelbrot")
@@ -849,7 +849,7 @@ def test_a_production_plan_spends_its_floor_share_on_the_modes_that_are_short():
     assert shape["floor_modes"] == ["threads", "smooth_mean_angle"]
 
 
-def test_the_floor_draw_stands_on_places_that_already_cleared_the_seating_bar():
+def test_the_floor_draw_stands_on_places_that_already_cleared_the_q4_gate():
     """A mode short of seats is short of good material in it, and a proven place
     is the cheapest evidence that a place can carry one at all."""
     plan, _shape = build_a_plan(
@@ -2211,7 +2211,7 @@ def test_a_variant_is_its_own_row_in_the_by_mode_readout():
     )
     assert set(table) == {"direct_trap_multiply", "direct_trap_multiply@opacity=0.6", "smooth"}
     assert table["direct_trap_multiply"]["candidates"] == 1
-    over = depth._tag(depth.SEATING_BAR)
+    over = depth._tag(solve.Q4_BAR)
     assert table["direct_trap_multiply"][over]["candidates_clearing"] == 0
     assert table["direct_trap_multiply@opacity=0.6"]["candidates"] == 2
     assert table["direct_trap_multiply@opacity=0.6"][over]["candidates_clearing"] == 2

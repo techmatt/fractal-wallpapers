@@ -532,7 +532,7 @@ best coarse P(>=4), excluding places already deepened), `--floor-modes threads t
 --floor-width 3`. The first four of those ran at 1.5–2.4 s a candidate, and their coarse clears per
 1000 engine s went **60, 43, 25, 32** against the opening arms' **4.6, 9.1, 3.5, 7.6**.
 The price rises as the manifest reaches lower-ranked, deeper places: 10.1 s by the last. The
-places a manifest names under `SEATING_BAR` are admitted by it, so a place opened an
+places a manifest names under `Q4_BAR` are admitted by it, so a place opened an
 hour earlier is reachable once merged. On the fine head it held too: deepening arms
 made **9 of the night's 11 rows over `p_fine` 0.50**, and **6.6 rows over
 `solve.DEFAULT_FINE_BAR` per 1000 engine s against the opening arms' 2.1**. `smooth` clears the coarse bar cheaply on d=6
@@ -992,7 +992,7 @@ nobody chose would report its rate over that one.
 ★ **The manifest and the draw were two rules, they disagreed, and the difference
 was silent.** Landed 2026-09-12 as [`depth.near_manifest`], which applies the three
 tests [`near_places`] applies — the place holds a candidate in a **roster mode**,
-its best one is inside `[SEATING_BAR, PRIMED_BAR)`, and it is in the **admitted
+its best one is inside `[Q4_BAR, PRIMED_BAR)` on `P(>=4)`, and it is in the **admitted
 embedded population** — and then counts free slots at the pair the draw will
 actually render into. One population read, and `--out` writes the file
 `--near-places` reads:
@@ -1336,7 +1336,7 @@ mode *is* its incumbent's.
 A `reframe` leg writes **locations**, not pool rows, so everything it finds is
 unopened, and `curate depth run --floor-places` cannot reach an unopened place — nor
 a freshly opened one, since the floor draw stands on places already holding a
-candidate over `SEATING_BAR`. The whole path, as `reframe30_atlas_grey_ckpt127` ran
+candidate over `Q4_BAR`. The whole path, as `reframe30_atlas_grey_ckpt127` ran
 it on 2026-09-16 over `reframe_g12`:
 
 ```
@@ -1353,7 +1353,7 @@ that are empty by construction — and the palettes are stratified over the carr
 table's cells. **The hunt has no phase axis**: every candidate draws at phase 0, so
 `--phase-draw`'s one-uniform-phase rule does not reach a reframe leg's first
 opening. Measured: 2,364 candidates over 197 places in **2,914 s on three
-workers**, 1.23 s a candidate; **221 over `SEATING_BAR` (9.35%) at 117 of the 197
+workers**, 1.23 s a candidate; **221 over `Q4_BAR` (9.35%) at 117 of the 197
 places**, `threads` and `smooth` 42 each down to `direct_trap_lines` 1. That hunt has
 no `merge.json` (its merge failed at the prune, below); reconstructed after the fact
 from the ledger and the displaced lists, **197 of its 197 places were new** to the
@@ -2141,7 +2141,7 @@ and stock and rounding bind before the weight does. A share is a share of a draw
 big enough to express it.
 
 **`--floor-untried` is the opened-but-shallow population.** The floor draw stands on
-`proven_places` — a location already over the seating bar — and this narrows that to
+`proven_places` — a location already over `Q4_BAR` on `P(>=4)` — and this narrows that to
 places holding **no recipe at all** in the named modes; unsaid, `depth.dear_modes()`,
 the nine a dumped field cannot serve. The field there is known good and the whole
 dear half of the roster has never been asked. Measured 2026-09-01: **19,504** opened
@@ -2632,7 +2632,7 @@ worth pointing at proven ground* below.
 
 `on125_recolour1` and `on125_recolour2` are the same arm over the same
 `--floor-places` manifest, back to back on 2026-09-15 with a merge between them.
-The clear rate barely moved — 13.4% / 12.1% then 11.1% / 10.5% at `SEATING_BAR` —
+The clear rate barely moved — 13.4% / 12.1% then 11.1% / 10.5% at `Q4_BAR` —
 and **retention collapsed**: the first pass kept **42.6%** of its own rows, the
 second **27.7%**, and the second moved the ledger by **+27 rows net against 9,995
 made**. Every pair the first pass could fill was full when the second arrived, and
@@ -2771,7 +2771,7 @@ its ledger row so a reader can tell an aimed candidate from a lucky one.
 **`BREADTH_DEMOTED` is empty, and it is a per-run knob rather than a standing.**
 It takes a mode out of the ranked and flat draws and leaves it eligible as a
 near-band incumbent, which is the one thing a `mode_policy` weight cannot say.
-`tia` was the whole of it — it cleared the seating bar at .0208 in breadth at
+`tia` was the whole of it — it cleared `Q4_BAR` on `P(>=4)` at .0208 in breadth at
 k=20 against `smooth`'s .0515, level with them only by k=40 (`dc1`/`dc2`,
 2026-08-27), and it is the dearest dump of that three-mode roster at 0.898 s
 against `smooth`'s 0.354. `mode_policy` supersedes that: `tia` is weight 2 on 31
@@ -2839,7 +2839,7 @@ through, and `merge` folds the partial rows in exactly as a finished run's.
 measuring draws with every band on equal turns. `--shares` re-weights the draws,
 `--band-weights` gives a band extra turns a round (a weight of 0 keeps it out),
 and `--floor-modes`/`--floor-width` turn on a fourth draw, `mode_floor`, which
-holds a **proven** location — one already over the seating bar — and cycles the
+holds a **proven** location — one already over `Q4_BAR` on `P(>=4)` — and cycles the
 modes a census says are short of seats. `deficient_modes` counts a seat as a
 distinct location and not a clearing candidate, because a collection seats a
 location once.
@@ -2897,7 +2897,7 @@ is not one number.
   half pays; abandoning the bottom half does not.
 * **`curvature` and `gaussian_int` are dead in breadth** — 3 clears at 0.50 in 3,212
   candidates, 0 at 0.90 — and `gaussian_int` cleared nothing in 332 further candidates
-  at locations already over the seating bar. `tia` needs depth: level with `smooth` at
+  at locations already over `Q4_BAR` on `P(>=4)`. `tia` needs depth: level with `smooth` at
   k=40 and less than half of it at k=20.
 * **Disk.** 163-186 KB a picture, about 2 MB a cached field, 64 fields kept. `dc2` used
   9.7 GB against a 9.6 GB projection.

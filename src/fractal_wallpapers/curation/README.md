@@ -380,7 +380,7 @@ opener or counts a slot by hand any more.
 ⚠ **A NEAR-BAND manifest is `curate depth near-places` and not this**, since
 2026-09-12. Room alone is the wrong cut there three times over: the near band holds
 the *incumbent's* mode, so only that pair's room counts; the place has to be in
-`[SEATING_BAR, PRIMED_BAR)`; and it has to be in the **admitted embedded
+`[solve.Q4_BAR, PRIMED_BAR)` on `P(>=4)`; and it has to be in the **admitted embedded
 population**, which the ledger runs ahead of by 1,636 of 34,010 opened locations —
 **1,607 of them locations the supply sidecar had never scored**, which is
 `curate score`'s work and not `curate embed`'s. [`LEGS.md`](LEGS.md)'s *Cut the

@@ -96,14 +96,14 @@ not**: the re-flattening ⚠ bends a lean back whenever the plan is smaller than
 manifest, and arm A's plan was 80 places against a manifest of 8,440, but a partition
 the manifest does not name cannot be drawn at any plan size.
 
-### `--floor-places` narrows the population and the SEATING BAR still cuts it
+### `--floor-places` narrows the population and `Q4_BAR` still cuts it
 
 `build_plan` narrows `world["best"]` to the manifest and then passes it through
-[`proven_places`], which applies `SEATING_BAR` — so a manifest may only ever *remove*
+[`proven_places`], which applies `solve.Q4_BAR` on `P(>=4)` — so a manifest may only ever *remove*
 places from the above-bar population, never add one below it. Measured 2026-09-13 over
 the two finished stores: **3,808 places carry a human q3/q4 verdict**, 1,102 of them are
 in the admitted drawable population, and **275 are opened and drawable and still under
-the seating bar** — 219 of those untried in the angle modes. Those 219 cannot be reached
+`Q4_BAR`** — 219 of those untried in the angle modes. Those 219 cannot be reached
 by a floor leg however the manifest is cut. A leg wanting *evidence* to mean the union of
 `p_ge4 >= 0.50` and a human verdict needs `proven_places` to take the bar as a set rather
 than as a number.
@@ -251,7 +251,7 @@ and the three breadth arms of `general_leg_0909` **77 of 370 (20.8%)**, **87 of 
 (19.9%)** and **68 of 358 (19.0%)** — seven readings between 16 and 22%.
 The other four fifths land in
 *neither* half of the band — their best roster candidate is outside
-`[SEATING_BAR, PRIMED_BAR)` — and **none of them can land in the at-the-keep half**,
+`[Q4_BAR, PRIMED_BAR)` — and **none of them can land in the at-the-keep half**,
 because a pair a breadth arm just opened holds one row against a keep of five. A
 breadth arm moves the with-room half and leaves the other exactly where it was:
 2,369 places before `armA_0907` and 2,369 after.

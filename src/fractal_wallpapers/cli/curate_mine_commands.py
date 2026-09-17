@@ -375,7 +375,7 @@ def _sized(block: dict) -> dict:
 
 def curate_shrinkage(args: argparse.Namespace) -> int:
     """Re-read one depth run's winners at label geometry and write both curves."""
-    from fractal_wallpapers.curation import candidate_ledger, depth, hunt, shrinkage
+    from fractal_wallpapers.curation import candidate_ledger, depth, hunt, shrinkage, solve
 
     try:
         sequence = depth.read_sequence(args.name)
@@ -388,7 +388,7 @@ def curate_shrinkage(args: argparse.Namespace) -> int:
             args.name,
             sequence,
             ledger,
-            bars=(depth.SEATING_BAR, depth.PRIMED_BAR),
+            bars=(solve.Q4_BAR, depth.PRIMED_BAR),
             per_arm=args.per_arm,
             seed=args.seed,
             workers=args.workers,
@@ -1171,8 +1171,8 @@ def depth_leg_flags(parser, *, device: bool):
         type=int,
         default=10,
         metavar="COUNT",
-        help="how many distinct locations over the seating bar a mode needs before it is "
-        "no longer short (default 10, which is about N/100 at N=1000)",
+        help="how many distinct locations with a candidate at P(>=4) >= solve.Q4_BAR a mode "
+        "needs before it is no longer short (default 10, which is about N/100 at N=1000)",
     )
     draw_palettes.add_argument(
         "--draw-maps",
@@ -1754,8 +1754,9 @@ def add_steps(steps) -> None:
             "The near band is bounded by ROOM at the incumbent's pair and by what the draw "
             "will stand on, and a manifest cut any other way names places the leg drops in "
             "silence. This applies the three tests `depth.near_places` applies - the place "
-            "holds a candidate in a roster mode, its best one is inside [SEATING_BAR, "
-            "PRIMED_BAR), and it is in the ADMITTED embedded population - and then counts "
+            "holds a candidate in a roster mode, its best one's P(>=4) is inside "
+            "[solve.Q4_BAR, PRIMED_BAR), and it is in the ADMITTED embedded population - and "
+            "then counts "
             "free slots at the pair the draw will render into, which is the incumbent's "
             "mode spelled bare. `general_leg_0909`'s three band arms were handed 328, 255 "
             "and 236 places by a cut that asked only the first, planned 160, 87 and 68, and "
@@ -2422,9 +2423,10 @@ def add_steps(steps) -> None:
         "--floor-places",
         metavar="FILE",
         help='a places MANIFEST - a JSONL of {"schema": 1, "key": ...} rows - naming '
-        "the locations the mode-floor draw may stand on. It is ALSO the seating bar's "
-        "set: a named place is drawn whatever its best candidate reads, which is how a "
-        "place carrying a human q3/q4 verdict and an under-bar field score is reached. "
+        "the locations the mode-floor draw may stand on. It is ALSO the solve.Q4_BAR "
+        "gate's set: a named place is drawn whatever its best candidate's P(>=4) reads, "
+        "which is how a place carrying a human q3/q4 verdict and an under-gate field score "
+        "is reached. "
         "Needs a mode_floor share in --shares",
     )
     rotate_mine_where.add_argument(
@@ -2455,8 +2457,8 @@ def add_steps(steps) -> None:
         type=int,
         default=10,
         metavar="COUNT",
-        help="how many distinct locations over the seating bar a mode needs before it "
-        "is no longer short (default 10)",
+        help="how many distinct locations with a candidate at P(>=4) >= solve.Q4_BAR a mode "
+        "needs before it is no longer short (default 10)",
     )
     rotate_mine_width.add_argument(
         "--floor-width",
