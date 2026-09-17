@@ -965,12 +965,12 @@ mod tests {
         ]
     }
 
-    /// Every family the sampler can be handed, one instance each — the eight
+    /// Every family the sampler can be handed, one instance each — the ten
     /// integer degrees over the two planes, Phoenix, and the one family the
     /// specialization table deliberately leaves out.
     fn every_family() -> Vec<Family> {
         let mut families = Vec::new();
-        for degree in 2..=5 {
+        for degree in 2..=6 {
             families.push(Family::Multibrot { degree });
             families.push(Family::Julia {
                 degree,

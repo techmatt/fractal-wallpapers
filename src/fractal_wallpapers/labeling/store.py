@@ -50,6 +50,7 @@ from pathlib import Path
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.paths import repo_root
 from fractal_wallpapers.supply.location import key_of_row
+from fractal_wallpapers.supply.partitions import UnlabelledPartition, refuse_unlabelled
 
 #: The schema every label row carries, from the first row.
 SCHEMA = 1
@@ -241,6 +242,10 @@ def check(row: dict) -> dict:
         )
     if not isinstance(row.get("recorded_at"), str):
         raise LabelError("a label row must carry the time it was recorded; it is how latest wins")
+    try:
+        refuse_unlabelled(row, "location label store")
+    except UnlabelledPartition as refusal:
+        raise LabelError(str(refusal)) from None
     if key_of_row(row) is None:
         raise LabelError(
             "this row carries no location identity — a label needs its whole join on the same "

@@ -504,15 +504,15 @@ fn resolve_coloring(
     Ok((coloring, mode))
 }
 
-/// Degrees outside `[lowest, 5]` are refused rather than rendered: the families
-/// above 5 have not been looked at, and silently rendering one would put an
+/// Degrees outside `[lowest, 6]` are refused rather than rendered: the families
+/// above 6 have not been looked at, and silently rendering one would put an
 /// unexamined picture into the corpus under a name that implies it belongs.
 fn check_degree(degree: u32, lowest: u32) -> Result<(), String> {
-    if (lowest..=5).contains(&degree) {
+    if (lowest..=6).contains(&degree) {
         Ok(())
     } else {
         Err(format!(
-            "degree {degree} is outside the supported range {lowest}..=5"
+            "degree {degree} is outside the supported range {lowest}..=6"
         ))
     }
 }

@@ -80,10 +80,17 @@ def test_every_other_plane_places_its_partitions_the_way_the_mandelbrot_plane_do
     ]
 
 
-def test_the_plane_table_is_the_websites_five_partitions_with_their_ledger_partitions() -> None:
+def test_the_plane_table_is_the_websites_six_partitions_with_their_ledger_partitions() -> None:
     from fractal_wallpapers.curation import atlas
 
-    assert list(atlas.PLANES) == ["mandelbrot", "multibrot3", "multibrot4", "multibrot5", "phoenix"]
+    assert list(atlas.PLANES) == [
+        "mandelbrot",
+        "multibrot3",
+        "multibrot4",
+        "multibrot5",
+        "multibrot6",
+        "phoenix",
+    ]
     assert atlas.PLANES["multibrot4"]["partitions"] == ("multibrot4", "julia:multibrot4")
     assert atlas.PLANES["phoenix"] == {
         "family": {

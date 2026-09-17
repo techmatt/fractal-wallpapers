@@ -6,10 +6,12 @@
     "julia:multibrot3": 0.037,
     "julia:multibrot4": 0.0314,
     "julia:multibrot5": 0.0295,
+    "julia:multibrot6": 3.0,
     "mandelbrot": 3.0,
     "multibrot3": 0.8816,
     "multibrot4": 0.7319,
     "multibrot5": 0.8045,
+    "multibrot6": 3.0,
     "phoenix": 0.0524,
     "phoenix:classic": 3.0
   },
@@ -37,7 +39,9 @@
       "phoenix"
     ],
     "source_defaulted": [
+      "julia:multibrot6",
       "mandelbrot",
+      "multibrot6",
       "phoenix:classic"
     ],
     "columns": {
@@ -61,6 +65,11 @@
         "regularized": 0.0295,
         "status": "measured"
       },
+      "julia:multibrot6": {
+        "measured": 3.0,
+        "regularized": 3.0,
+        "status": "defaulted"
+      },
       "mandelbrot": {
         "measured": 3.0,
         "regularized": 3.0,
@@ -80,6 +89,11 @@
         "measured": 1.103,
         "regularized": 0.8045,
         "status": "measured"
+      },
+      "multibrot6": {
+        "measured": 3.0,
+        "regularized": 3.0,
+        "status": "defaulted"
       },
       "phoenix": {
         "measured": 0.053,

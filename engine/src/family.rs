@@ -246,6 +246,10 @@ macro_rules! over_written_out {
                 let $name = $crate::family::Family::Multibrot { degree: 5 };
                 $body
             }
+            $crate::family::Family::Multibrot { degree: 6 } => {
+                let $name = $crate::family::Family::Multibrot { degree: 6 };
+                $body
+            }
             $crate::family::Family::Julia { degree: 2, c } => {
                 let $name = $crate::family::Family::Julia { degree: 2, c };
                 $body
@@ -260,6 +264,10 @@ macro_rules! over_written_out {
             }
             $crate::family::Family::Julia { degree: 5, c } => {
                 let $name = $crate::family::Family::Julia { degree: 5, c };
+                $body
+            }
+            $crate::family::Family::Julia { degree: 6, c } => {
+                let $name = $crate::family::Family::Julia { degree: 6, c };
                 $body
             }
             $crate::family::Family::Phoenix { c, p, z_prev } => {
@@ -414,8 +422,8 @@ impl Family {
     pub fn is_written_out(&self) -> bool {
         matches!(
             *self,
-            Family::Multibrot { degree: 2..=5 }
-                | Family::Julia { degree: 2..=5, .. }
+            Family::Multibrot { degree: 2..=6 }
+                | Family::Julia { degree: 2..=6, .. }
                 | Family::Phoenix { .. }
         )
     }
@@ -423,7 +431,7 @@ impl Family {
     /// What this family's filled set was measured to span, or `None` for the
     /// one family that cannot be measured.
     ///
-    /// These five boxes are the **only** framing numbers in the engine. They are
+    /// These six boxes are the **only** framing numbers in the engine. They are
     /// measurements, not choices: a `MEASURE_GRID`² grid over `±MEASURE_HALF_SPAN`
     /// at a cap of [`MEASURE_CAP`], and a sample counts as filled when its orbit
     /// has not left the bailout disc by the cap.
@@ -434,12 +442,13 @@ impl Family {
     /// | multibrot d=3 | ±0.701 | ±1.323 | 4.70 | (0, 0) w 5.2 |
     /// | multibrot d=4 | [−1.259, 0.801] | ±1.116 | 3.97 | (−0.23, 0) w 4.4 |
     /// | multibrot d=5 | ±0.914 | ±0.914 | 3.25 | (0, 0) w 3.6 |
+    /// | multibrot d=6 | [−1.148, 0.963] | ±1.096 | 3.90 | (−0.09, 0) w 4.3 |
     /// | phoenix classic | [−0.679, 0.755] | ±1.271 | 4.52 | (0.04, 0) w 5.0 |
     ///
     /// Two of those numbers surprise. The Mandelbrot set reaches `re = 0.453`,
     /// well right of the main cardioid's rightmost point at `0.375`: a symmetric
     /// pair of components sits out at `0.44 ± 0.375i`, ~2 900 grid samples of it,
-    /// and they are still filled at a cap of 2 × 10⁷. And **every one of the five
+    /// and they are still filled at a cap of 2 × 10⁷. And **every one of the six
     /// is taller than a 16:9 frame three units wide** — every width in the fourth
     /// column is height-driven — so the whole-plane framing clipped all of them,
     /// not only Phoenix.
@@ -462,6 +471,7 @@ impl Family {
             Family::Multibrot { degree: 3 } => at((-0.70125, 0.70125), (-1.3225, 1.3225)),
             Family::Multibrot { degree: 4 } => at((-1.25875, 0.80125), (-1.11625, 1.11625)),
             Family::Multibrot { degree: 5 } => at((-0.91375, 0.91375), (-0.91375, 0.91375)),
+            Family::Multibrot { degree: 6 } => at((-1.1475, 0.9625), (-1.09625, 1.09625)),
             Family::Multibrot { .. } => None,
             Family::Julia { .. } => None,
             Family::Phoenix { .. } => at((-0.67875, 0.755), (-1.27125, 1.27125)),
@@ -503,7 +513,7 @@ impl Family {
 /// `z^k` for `k ≥ 1` by repeated multiplication.
 ///
 /// Repeated multiplication rather than `powc`: the exponents in play are 2
-/// through 5, so this is both faster and exact where a polar round trip is
+/// through 6, so this is both faster and exact where a polar round trip is
 /// neither. `k = 2` is a single multiply, the case that dominates every render.
 fn cpow(z: Complex<f64>, k: u32) -> Complex<f64> {
     let mut acc = z;
@@ -705,6 +715,7 @@ mod tests {
             ("multibrot3", Family::Multibrot { degree: 3 }),
             ("multibrot4", Family::Multibrot { degree: 4 }),
             ("multibrot5", Family::Multibrot { degree: 5 }),
+            ("multibrot6", Family::Multibrot { degree: 6 }),
             ("phoenix", CLASSIC_PHOENIX),
         ]
     }
@@ -725,6 +736,7 @@ mod tests {
             ("multibrot3", 0.0, 5.2),
             ("multibrot4", -0.23, 4.4),
             ("multibrot5", 0.0, 3.6),
+            ("multibrot6", -0.09, 4.3),
             ("phoenix", 0.04, 5.0),
         ];
         for ((name, family), (_, center_re, width)) in derivable().into_iter().zip(rows) {
@@ -819,6 +831,65 @@ mod tests {
                 "{name}: the recorded box claims {recorded_im:.4} of height and the \
                  recurrence finds only {im_span:.4}"
             );
+        }
+    }
+
+    /// **The measurement itself**, at full size: the filled set on the
+    /// `MEASURE_GRID`² grid over `±MEASURE_HALF_SPAN` at [`MEASURE_CAP`], its box
+    /// read off the grid samples. Ignored because it is minutes of work; run it
+    /// with `cargo test --release -- --ignored the_measured_boxes_are_the_measurement`
+    /// before adding a row, and it prints the row the new family needs.
+    ///
+    /// It checks every recorded integer-degree box against a fresh measurement
+    /// to the bit, so the degree-6 row was added by the same procedure that
+    /// reproduces the older rows rather than by a procedure beside them.
+    #[test]
+    #[ignore]
+    fn the_measured_boxes_are_the_measurement() {
+        use rayon::prelude::*;
+        let step = 2.0 * MEASURE_HALF_SPAN / (MEASURE_GRID - 1) as f64;
+        // A grid sample's coordinate, rounded to the five decimals the step
+        // (0.00125) is written in, which is how the table records it.
+        let at = |i: u32| ((-MEASURE_HALF_SPAN + step * i as f64) * 1e5).round() / 1e5;
+        for degree in 2..=6u32 {
+            let family = Family::Multibrot { degree };
+            let rows: Vec<Option<(f64, f64, f64, f64)>> = (0..MEASURE_GRID)
+                .into_par_iter()
+                .map(|row| {
+                    let im = at(row);
+                    let mut found: Option<(f64, f64, f64, f64)> = None;
+                    for col in 0..MEASURE_GRID {
+                        let re = at(col);
+                        let c = Complex::new(re, im);
+                        if crate::iterate::escape(&family, c, MEASURE_CAP).escaped {
+                            continue;
+                        }
+                        found = Some(match found {
+                            None => (re, re, im, im),
+                            Some((lo, hi, _, _)) => (lo.min(re), hi.max(re), im, im),
+                        });
+                    }
+                    found
+                })
+                .collect();
+            let (mut re_lo, mut re_hi, mut im_lo, mut im_hi) = (
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+            );
+            for (lo, hi, im, _) in rows.into_iter().flatten() {
+                re_lo = re_lo.min(lo);
+                re_hi = re_hi.max(hi);
+                im_lo = im_lo.min(im);
+                im_hi = im_hi.max(im);
+            }
+            let measured = Extent {
+                re: (re_lo, re_hi),
+                im: (im_lo, im_hi),
+            };
+            println!("degree {degree}: {measured:?} -> {:?}", measured.frame());
+            assert_eq!(family.measured_extent(), Some(measured), "degree {degree}");
         }
     }
 

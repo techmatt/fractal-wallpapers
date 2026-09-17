@@ -658,7 +658,7 @@ Three consequences fall out of render-only:
   set: one picture gets one name, and one cache identity.
 
 No integer-degree render pays for any of this. `cpow` is repeated multiplication
-over degrees 2 through 5 — faster than a polar round trip and exact where one is
+over degrees 2 through 6 — faster than a polar round trip and exact where one is
 not — and `cpowf` is reached only by this family.
 
 **One capability is deliberately absent and is not debt: normal-map shading** —
@@ -775,6 +775,20 @@ the textbook Mandelbrot view `(−0.5, 3.0)` does not survive it, because three
 units at 16:9 is 1.69 tall and the set is 2.2. Julia is the one exception, and a
 stated one: its set is a different shape for every `c`, so there is nothing to
 measure and it comes home to the whole plane.
+
+**A new row is added by re-running the measurement, not by a procedure beside
+it.** `family::tests::the_measured_boxes_are_the_measurement` is `#[ignore]`d and
+runs the full grid for every integer multibrot degree, asserting each recorded box
+to the bit (`cargo test --release --manifest-path engine/Cargo.toml -- --ignored
+the_measured_boxes_are_the_measurement --nocapture`; about 100 s on three rayon
+threads with `RAYON_NUM_THREADS=3`). Degree 6 was added that way on 2026-09-16: the
+same test reproduced rows 2–5 exactly and measured re `[−1.1475, 0.9625]`, im
+`±1.09625`, so it comes home to `(−0.09, 0)` at width 4.3.
+
+**Degree 6 is written out** in `family::over_written_out!` like 2–5, not left to
+the generic arm: the spec admits it, a walk reaches it, and the table's rule is
+*every integer degree the spec admits*, which
+`field::tests::the_render_only_family_is_the_only_one_outside_the_table` pins.
 
 Beside the pipeline sits the search — `rng`, `screen`, `foci`, `expand` — which
 uses it and does not extend it. It decides *where* to render and never *how*:

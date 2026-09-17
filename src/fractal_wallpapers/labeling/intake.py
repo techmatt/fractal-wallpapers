@@ -103,6 +103,7 @@ from pathlib import Path
 from fractal_wallpapers.labeling import attributes, finished, gallery_grade, pins, store
 from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.paths import writing_path
+from fractal_wallpapers.supply.partitions import UnlabelledPartition, refuse_unlabelled
 
 #: The schema a sheet's manifest and row file carry.
 SCHEMA = 1
@@ -730,6 +731,14 @@ def run(sheet: Path, labels=None, labeler: str = "", write: bool = False) -> dic
             f"{list(records.tiers)}. A number outside the page's own buttons is not a verdict "
             f"anybody could have meant."
         )
+    # Refused whole, before a row is built or anything written: a drop that carries a
+    # verdict on a never-labelled plane is a sheet that should not have been cut.
+    for unit in sorted(export):
+        sheet_row = read.by_unit.get(unit) or {}
+        try:
+            refuse_unlabelled(sheet_row.get("join") or sheet_row, f"label ingest ({head})")
+        except UnlabelledPartition as refusal:
+            raise IntakeError(f"{unit}: {refusal}") from None
     candidates = rows_of(read, records, export, labeler=labeler)
     if len(candidates) != len(export):
         raise IntakeError(

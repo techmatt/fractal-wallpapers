@@ -115,6 +115,7 @@ from pathlib import Path
 from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import attributes, finished, store
 from fractal_wallpapers.paths import colormap_dir
+from fractal_wallpapers.supply.partitions import UnlabelledPartition, refuse_unlabelled
 
 #: The schema every sheet manifest and row carries.
 SCHEMA = 1
@@ -2026,6 +2027,13 @@ def build(
     """
     if not units:
         raise SheetError("no units: there is nothing to judge")
+    # Before a directory exists or a picture is cut: a sheet on a never-labelled plane
+    # is a request for labels that must never be cast.
+    for unit in units:
+        try:
+            refuse_unlabelled(unit, "sheet build")
+        except UnlabelledPartition as refusal:
+            raise SheetError(str(refusal)) from None
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
 

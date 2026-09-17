@@ -1309,10 +1309,61 @@ nucleus at a comparable width, and **none of the 210 admissions over the three
 legs holds a pool nucleus in its frame.** **The yield is lineage-concentrated**:
 every leg's admissions come off three to five roots, all at rungs 9–12, and every
 leg ended on an empty frontier with **235–239 candidates refused below the floor**.
-These roots are not graced: `walk.PLANE_ROOT_SOURCES` is `seed_file` alone, so a
-sampler root on a plane pays the floor from its first rung where a pool root at
-the same width is graced for five. ⚠ That is a likely cause of the empty frontiers
-and **not a measured one** — no graced leg was run — and it is the next lever.
+
+**Sampler roots are graced now, and the grace closed the empty frontier but did not
+buy admissions.** `walk.PLANE_ROOT_SOURCES` names `viewport_sampler` beside
+`seed_file` since `degree6_ckpt128`, so a straddle draw on a parameter plane gets
+the five graced rungs a pool root at the same width gets. The chunk-256 leg re-run
+graced — same seed, the same 40 roots off the same 50 of 128 screen survivors:
+
+| chunk 256 | ungraced | graced |
+|---|--:|--:|
+| batches run | 13, frontier empty | **40 of 40, 257 left** |
+| candidates | not recorded | 1,268 |
+| refused below the floor | 239 | 83 |
+| expandable | 27 | 854 |
+| admissions | 53 | **23** |
+| roots booking any | 3 of 40 | 4 of 40 |
+| distinct admitted centres | 46 | 22 |
+| admitted width, median | 8.3e-5 | 3.1e-5 |
+
+**The leg is budget-bound rather than frontier-bound now**, and the budget went on
+graced expansion: 870 of 1,268 candidates were graced and 854 were pushed as
+expandable. The lineage concentration is untouched — **20 of the 23 admissions are
+one rung-12 root**, and admissions still come only off rungs 9–12. Grace deepens a
+root's descent; it does not widen which roots produce. A graced leg reads fewer
+admissions per candidate at this budget and is the right comparison only at a
+budget long enough to spend the frontier it now keeps.
+
+**Degree 6 is a plane nobody has labelled, and the sampler is its whole supply.**
+`multibrot6` and `julia:multibrot6` are registered everywhere a partition has to
+exist, the label stores refuse a row on either (`labeling/README.md`'s *Degree 6 is
+never labelled*), and `plane_seeds.FAMILIES` stops at 5, so the pool holds no d=6
+row and a walk on it starts from `--root-channel viewport_sampler` alone. Its home
+frame is `(−0.09, 0)` at 4.3, so its straddle band is rungs 6–11. The same leg on
+it and on `multibrot5`, graced, 1,280 candidates each, walked to the budget:
+
+| | multibrot6 | multibrot5 |
+|---|--:|--:|
+| probes / seconds | 1,559 / 9.8 | 1,661 / 10.2 |
+| screen survivors | 47 of 192 (24%) | 48 of 128 (38%) |
+| screen refusals: `interior_cap` / `flat` / `occupancy_floor` | 82 / 50 / 13 | 40 / 27 / 13 |
+| walk refusals: `interior_cap` / below the floor / `flat` / `occupancy_floor` | 277 / 76 / 29 / 12 | 256 / 102 / 22 / 9 |
+| admissions (per root) | 18 (0.45) | 25 (0.63) |
+| roots booking any | 3 of 40 | 5 of 40 |
+| largest lineage | 15, a rung-7 root | 12 and 10, rung 9–10 |
+| admitted width, median | 1.4e-7 | 2.6e-4 |
+| frontier left | 274 | 306 |
+
+**The loop runs unchanged on a plane with no labels.** Reframing is defined there —
+`snap_to_nucleus` was available 384 times, none `reframing_undefined` — and the location
+head's gate cleared 18 frames on a family it has never been shown. What differs is
+**where** the yield lives: d=6's admissions sit three decades deeper, under one root
+that descended to 1e-7 through the grace, where multibrot5's stay at pool depths. The
+deep d=6 frames are six-armed spiral clusters with bright cores; multibrot5's are
+sparser filament spirals beside black bulbs, and d=6's one shallow admission reads like
+them. The contact sheet of the first sixteen of each was a scratch page and is not
+tracked.
 
 ```
 fractal-wallpapers walk --family multibrot --degree 3 --root-channel viewport_sampler --roots 40

@@ -720,7 +720,7 @@ mod tests {
 
     #[test]
     fn the_origin_is_interior_to_every_multibrot() {
-        for degree in 2..=5 {
+        for degree in 2..=6 {
             let family = Family::Multibrot { degree };
             let sample = escape(&family, Complex::new(0.0, 0.0), 500);
             assert!(!sample.escaped, "degree {degree}: the origin escaped");
@@ -746,6 +746,7 @@ mod tests {
             Family::Multibrot { degree: 3 },
             Family::Multibrot { degree: 4 },
             Family::Multibrot { degree: 5 },
+            Family::Multibrot { degree: 6 },
             julia(c),
             Family::Julia {
                 degree: 3,

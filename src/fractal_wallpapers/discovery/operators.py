@@ -818,6 +818,7 @@ PARAMETER_PLANE_DEGREE = {
     "multibrot3": 3,
     "multibrot4": 4,
     "multibrot5": 5,
+    "multibrot6": 6,
 }
 
 
@@ -827,5 +828,5 @@ def degree_of(family: str, degree: int = 2) -> int | None:
     if family == "mandelbrot":
         return 2
     if family == "multibrot":
-        return degree if degree in (3, 4, 5) else None
+        return degree if degree in (3, 4, 5, 6) else None
     return None

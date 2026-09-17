@@ -96,7 +96,10 @@ of horizontally adjacent samples come back bit-identical — a mosaic of flat
 cells rather than fine texture. **Supersampling makes it worse**: 66.6% identical
 at ss1, 95.6% at ss8, because a finer grid puts the coordinates closer together
 and closeness is exactly what the orbit cannot keep apart. The other three
-planes keep `1e-11`; their errors are larger and invisible. The floor is wired
+planes keep `1e-11`; their errors are larger and invisible. **Degree 6 takes
+degree 5's `1e-10`** by the pattern rather than by a ladder of its own: the collapse
+is a high-degree failure, `z^(d−1)` pulling neighbouring orbits together harder as `d`
+rises, so the plane above the one that collapses is not handed the general floor. The floor is wired
 per degree in `depth.min_width`, so it reaches the seat window
 (`depth.seat_sizes`), the bands a plane is offered (`depth.open_bands` — degree
 5 loses the `floor` band outright) and the walk's own rung gate — `walk.Gates.for_family`

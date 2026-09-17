@@ -704,6 +704,17 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### degree6_ckpt128_wallpapers
+
+`degree6_ckpt128_wallpapers`, 2026-09-16, `.[dev,models]` with a release engine, taken on
+an idle box a minute after three 1,280-candidate `walk` legs had finished. **Fast: 4,791
+passed in 141.00 s (2:21)**, 157 deselected — 4,948 collected, which is
+`plane_sampler_ckpt128`'s 4,941 + 7 fast: six never-labelled refusal cases in
+`test_label_intake.py` and one sampler-grace guard in `test_walk.py`. The degree-6
+rows extended existing tables rather than adding cases. Green throughout. `--slow
+tests/test_twins.py tests/test_home_views.py` read 27 of 27. **Slow lane not run**, so
+4,948 is believed, not read. −7.4 s against the last reading is within the box.
+
 #### plane_sampler_ckpt128
 
 `plane_sampler_ckpt128`, 2026-09-16, `.[dev,models]` with a release engine, taken on an

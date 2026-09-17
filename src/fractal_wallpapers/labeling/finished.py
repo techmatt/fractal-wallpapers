@@ -105,6 +105,7 @@ from fractal_wallpapers.labeling import registry as registry_module
 from fractal_wallpapers.labeling import store
 from fractal_wallpapers.paths import repo_root
 from fractal_wallpapers.supply.location import location_key
+from fractal_wallpapers.supply.partitions import UnlabelledPartition, refuse_unlabelled
 
 #: The schema every finished-render row carries, from the first row.
 SCHEMA = 1
@@ -387,6 +388,10 @@ def check(head: str, row: dict, extend: bool = False) -> dict:
         raise FinishedError(f"origin {origin!r}: a verdict is a human's or a stated rule's")
     if not isinstance(row.get("recorded_at"), str):
         raise FinishedError("a row must carry the time it was recorded; it is how latest wins")
+    try:
+        refuse_unlabelled(row, f"{head} label store")
+    except UnlabelledPartition as refusal:
+        raise FinishedError(str(refusal)) from None
     if render_key(row) is None:
         raise FinishedError(
             "this row carries no render identity — a finished-render verdict needs the place, "

@@ -153,6 +153,66 @@ def test_a_row_whose_partition_disagrees_with_its_family_is_refused(tmp_path, he
         intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 3}), labeler="matt", write=True)
 
 
+#: The degree-6 pair, as a sheet unit and a label row carry them.
+NEVER_LABELLED_FAMILIES = (
+    ({"kind": "multibrot", "degree": 6}, "multibrot6"),
+    ({"kind": "julia", "degree": 6, "c": ["0.3", "0.15"]}, "julia:multibrot6"),
+)
+
+
+@pytest.mark.parametrize(("family", "partition"), NEVER_LABELLED_FAMILIES)
+def test_an_ingest_on_a_never_labelled_plane_is_refused_and_writes_nothing(
+    tmp_path, head_store, family, partition
+) -> None:
+    """Degree 6 is the mining loop's generalization test: no human verdict on it
+    may reach a store, and the refusal names the ruling rather than a shape."""
+    stem = a_sheet(tmp_path)
+    rows = [
+        json.loads(line)
+        for line in stem.with_suffix(".jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    rows[0]["join"]["family"] = family
+    rows[0]["join"]["partition"] = partition
+    stem.with_suffix(".jsonl").write_text(
+        "\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8"
+    )
+    with pytest.raises(intake.IntakeError, match=f"{partition} is never labelled"):
+        intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 3}), labeler="matt", write=True)
+    assert finished.resolved(HEAD).n_rows == 0
+
+
+@pytest.mark.parametrize(("family", "partition"), NEVER_LABELLED_FAMILIES)
+def test_a_sheet_on_a_never_labelled_plane_is_refused_before_anything_is_cut(
+    tmp_path, family, partition
+) -> None:
+    from fractal_wallpapers.labeling import sheets
+
+    unit = {"family": family, "viewport": {"center_re": "0", "center_im": "0", "width": "1"}}
+    with pytest.raises(sheets.SheetError, match=f"sheet build: {partition} is never labelled"):
+        # The source is never reached: the refusal comes before the screen and the cut.
+        sheets.build(object(), [unit], tmp_path / "sheet", batch="b", log=lambda *_a: None)
+    assert not (tmp_path / "sheet").exists()
+
+
+@pytest.mark.parametrize(("family", "partition"), NEVER_LABELLED_FAMILIES)
+def test_both_store_writers_refuse_a_never_labelled_row(family, partition) -> None:
+    """The writers' own row checks refuse too, so a door that skips the ingest —
+    an import, a backfill — cannot land one either."""
+    viewport = {"center_re": "0.1", "center_im": "0.2", "width": "0.5"}
+    with pytest.raises(store.LabelError, match="never labelled"):
+        store.label_row("a_batch", 3, family, viewport)
+    row = {
+        "schema": finished.SCHEMA,
+        "batch": "a_batch",
+        "recorded_at": store.now(),
+        "origin": store.HUMAN,
+        "score": 3,
+        **a_join(family=family, partition=partition),
+    }
+    with pytest.raises(finished.FinishedError, match="never labelled"):
+        finished.check(HEAD, row)
+
+
 def test_the_unit_id_travels_as_provenance_and_keys_nothing(tmp_path, head_store) -> None:
     stem = a_sheet(tmp_path)
     intake.run(sheet=stem, labels=an_export(tmp_path, {"u0001": 3}), labeler="matt", write=True)

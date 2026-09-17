@@ -40,7 +40,7 @@ PLANES: dict[str, dict] = {
             "family": {"kind": "multibrot", "degree": degree},
             "partitions": (f"multibrot{degree}", f"julia:multibrot{degree}"),
         }
-        for degree in (3, 4, 5)
+        for degree in (3, 4, 5, 6)
     },
     "phoenix": {"family": _phoenix_classic(), "partitions": ("phoenix:classic",)},
 }

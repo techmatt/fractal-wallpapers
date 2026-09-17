@@ -24,11 +24,11 @@ needs_engine = pytest.mark.skipif(
     reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
 )
 
-#: The three twins with no `c`-pool of their own. Not the channel's roster — it
-#: serves all four — but the scope most of the refill tests below are built at, so
+#: The four twins with no `c`-pool of their own. Not the channel's roster — it
+#: serves all five — but the scope most of the refill tests below are built at, so
 #: that a test's draws are the derived channel's and nothing else's. The degree-2
 #: twin gets its own tests, because what is worth guarding there is the *mixture*.
-UNPOOLED_TWINS = ("julia:multibrot3", "julia:multibrot4", "julia:multibrot5")
+UNPOOLED_TWINS = ("julia:multibrot3", "julia:multibrot4", "julia:multibrot5", "julia:multibrot6")
 
 
 def location(plane: str, re: str, im: str = "0.0", width: str = "1e-4") -> dict:
@@ -206,7 +206,7 @@ def test_the_channel_state_round_trips_with_its_floor_intact() -> None:
 
 
 def refill_of(tmp_path, live) -> tuple[Walk, Refill]:
-    """A refill over the three twins alone, so a test's draws are the twins'."""
+    """A refill over the four twins alone, so a test's draws are the twins'."""
     walk = Walk(out_dir=tmp_path / "run", seed=1, limits=Limits(batch=2))
     return walk, Refill(
         walk,
@@ -343,7 +343,12 @@ def test_a_harvest_serves_a_twin_off_a_derived_parameter(tmp_path) -> None:
     served, expands, and reconciles — the path a production run takes once its
     parent planes have admitted anything."""
     live = channel()
-    for plane, re in (("multibrot3", "0.4"), ("multibrot4", "0.3"), ("multibrot5", "0.35")):
+    for plane, re in (
+        ("multibrot3", "0.4"),
+        ("multibrot4", "0.3"),
+        ("multibrot5", "0.35"),
+        ("multibrot6", "0.3"),
+    ):
         assert live.offer(location(plane, re, "0.15"), "labels") is True
 
     walk = Walk(
@@ -369,7 +374,7 @@ def test_a_harvest_serves_a_twin_off_a_derived_parameter(tmp_path) -> None:
     summary = run.run()
 
     served = {p for p, row in summary["quota"]["mix"]["minutes"].items() if row["realized"] > 0}
-    assert served == set(UNPOOLED_TWINS), "all three twins were servable off derived parameters"
+    assert served == set(UNPOOLED_TWINS), "all four twins were servable off derived parameters"
     assert summary["tally"]["found"] > 0
     assert summary["refill"]["twins"]["c_spacing_floor"] == C_SPACING_FLOOR
     # Each twin's one derived parameter has been handed over and walked. That is a
