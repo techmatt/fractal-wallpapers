@@ -13,15 +13,36 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-#: The planes an atlas can be made of, by the name `--plane` takes: the family the plate
-#: draws and the ledger partitions whose places land on it. The multibrot and phoenix
-#: planes are this same table with a different family and home view, and are not in it
-#: until the search has places on them.
+
+def _phoenix_classic() -> dict:
+    """The classic Phoenix slice as a family spec, spelled from the partition registry's
+    own pinned point so the plate and the partition cannot name two different slices."""
+    from fractal_wallpapers.supply.partitions import CLASSIC_PHOENIX_POINT
+
+    c, p, z_prev = ([str(value) for value in pair] for pair in CLASSIC_PHOENIX_POINT)
+    return {"kind": "phoenix", "c": c, "p": p, "z_prev": z_prev}
+
+
+#: The planes an atlas can be made of, by the name `--plane` takes — the website's
+#: partition names, `builder/atlas.py`'s `PLANES_DRAWN` — with the family the plate draws
+#: and the ledger partitions whose places land on it. A parameter plane carries its Julia
+#: twin, because a Julia place is a `c` and a `c` is a point of that plane. `phoenix` is
+#: the classic slice: one pinned partition whose places are frames on the slice itself.
+#: Varied phoenix is not a plane — every place is a different point of a six-dimensional
+#: space — so no plate can draw it and it is in no row.
 PLANES: dict[str, dict] = {
     "mandelbrot": {
         "family": {"kind": "mandelbrot", "degree": 2},
         "partitions": ("mandelbrot", "julia:mandelbrot"),
     },
+    **{
+        f"multibrot{degree}": {
+            "family": {"kind": "multibrot", "degree": degree},
+            "partitions": (f"multibrot{degree}", f"julia:multibrot{degree}"),
+        }
+        for degree in (3, 4, 5)
+    },
+    "phoenix": {"family": _phoenix_classic(), "partitions": ("phoenix:classic",)},
 }
 
 #: The absorption radius, in pixels of the plate. At 4096 wide one pixel is 1.07e-3 of the
@@ -120,7 +141,10 @@ def make(
     ledger = store.by_key(wanted)
 
     canonical = location_view.canonical_map()
-    julia_home = engine.home_view(slots.julia_family(["0", "0"]))
+    degree = family.get("degree")
+    julia_home = (
+        None if degree is None else engine.home_view(slots.julia_family(["0", "0"], degree))
+    )
     library = set(groups.library())
     cyclic = colorize.cyclic()
 
@@ -162,7 +186,7 @@ def make(
             "id": index,
             "px": round(dot.px, 2),
             "py": round(dot.py, 2),
-            "kind": population.KIND[held.partition],
+            "kind": population.kind_of(held.partition),
             "dropped": dot.dropped,
             "place": {
                 "location": held.location,
