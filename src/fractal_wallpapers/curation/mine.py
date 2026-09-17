@@ -59,7 +59,14 @@ from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
-from fractal_wallpapers.curation import candidate_ledger, draw_weights, framing, hunt, recipes
+from fractal_wallpapers.curation import (
+    candidate_ledger,
+    draw_weights,
+    framing,
+    hunt,
+    recipes,
+    solve,
+)
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -109,10 +116,11 @@ SEQUENCE_NAME = "sequence.jsonl"
 #: nowhere, so a judge retrain moves the boundary with no migration.
 PRIMED_BAR = 0.90
 
-#: The other height a readout reports at: `solve.Q4_BAR`, the bar the seating
-#: stage actually counts against today. Both are reported because they are two
-#: different questions and one set of scores answers each of them.
-SEATING_BAR = 0.50
+#: The other height a readout reports at is [`solve.Q4_BAR`], the render judge's
+#: gate on raw `P(>=4)`, read from there and spelled nowhere here. It is **not**
+#: the gallery seating bar, which is `solve.DEFAULT_FINE_BAR` on `p_fine`; a
+#: second spelling of 0.50 in this module was read as that bar twice. Both heights
+#: are reported because they are two questions and one set of scores answers each.
 
 #: The three arms, in the spelling every row and every tally uses.
 DEEPEN = "deepen"
@@ -127,7 +135,7 @@ SHARES = {DEEPEN: 0.40, RANKED: 0.35, FLAT: 0.25}
 #: Two bands and not one: a location already over the bar can only say what a
 #: further palette is worth at a known-good place, and a location under it is
 #: the only kind a further palette can **convert**. Reported apart.
-NEAR_BAND = (SEATING_BAR, PRIMED_BAR)
+NEAR_BAND = (solve.Q4_BAR, PRIMED_BAR)
 OVER_BAND = (PRIMED_BAR, 1.01)
 
 #: How many new palettes a DEEPEN location is offered. Wide enough that the
@@ -1165,7 +1173,7 @@ def run(
             "per_location": int(per_location),
             "shares": dict(SHARES),
             "primed_bar": PRIMED_BAR,
-            "seating_bar": SEATING_BAR,
+            "q4_bar": {"column": "p_ge4", "at": solve.Q4_BAR, "from": "solve.Q4_BAR"},
             "margin": float(margin),
             "regime": recipes.CANDIDATE_REGIME.spelled,
             "judge_artifact": artifact,
@@ -1941,7 +1949,7 @@ def _batched(judge, pictures: list) -> list:
 # --------------------------------------------------------------------------- #
 # The readout.
 # --------------------------------------------------------------------------- #
-def arm_readout(made: list, world: dict | None = None, bars=(PRIMED_BAR, SEATING_BAR)) -> dict:
+def arm_readout(made: list, world: dict | None = None, bars=(PRIMED_BAR, solve.Q4_BAR)) -> dict:
     """Per arm: what it rendered, what it opened, and what it primed at each bar.
 
     The primed count is derived here and stored nowhere, so the same rows read at
@@ -2015,7 +2023,7 @@ BOOTSTRAP_DRAWS = 4000
 
 
 def compare(
-    made: list, bars=(PRIMED_BAR, SEATING_BAR), draws: int = BOOTSTRAP_DRAWS, seed: int = 0
+    made: list, bars=(PRIMED_BAR, solve.Q4_BAR), draws: int = BOOTSTRAP_DRAWS, seed: int = 0
 ) -> dict:
     """RANKED against FLAT at the primed boundary, **stratified on partition**.
 
@@ -2180,7 +2188,7 @@ def extrapolate(arms: dict, stock: dict, target: int = 1000, bar: float = PRIMED
     return out
 
 
-def marginal(held: list, bars=(PRIMED_BAR, SEATING_BAR)) -> dict:
+def marginal(held: list, bars=(PRIMED_BAR, solve.Q4_BAR)) -> dict:
     """The DEEPEN arm's whole point: what the k-th palette at a place is worth.
 
     Two readings at every k. **Per-candidate** is the chance the k-th palette
@@ -2263,20 +2271,22 @@ def contact_sheet(name: str, record: dict, output: Path | None = None, rows: int
             "a place this collection could seat, which is the unit the mine prices.",
         ),
         (
-            f"Spanning the bar — {SEATING_BAR} &le; P(&ge;4) &lt; {PRIMED_BAR}",
-            [row for row in made if SEATING_BAR <= row["p_ge4"] < PRIMED_BAR],
-            "Over the bar the seating stage counts against today and under the one this "
-            "mine calls primed. This is the band the two heights disagree about, and the "
-            "only one where the choice of bar changes what the mine bought.",
+            f"Between the gates — solve.Q4_BAR {solve.Q4_BAR} &le; P(&ge;4) &lt; "
+            f"PRIMED_BAR {PRIMED_BAR}",
+            [row for row in made if solve.Q4_BAR <= row["p_ge4"] < PRIMED_BAR],
+            "Over the render judge's Q4_BAR gate on P(&ge;4) and under the height this mine "
+            "calls primed. Neither is the gallery seating bar, which is "
+            "solve.DEFAULT_FINE_BAR on p_fine. This is the band the two heights disagree "
+            "about, and the only one where the choice of gate changes what the mine bought.",
         ),
         (
-            f"Rejected — P(&ge;4) &lt; {SEATING_BAR}",
+            f"Rejected — P(&ge;4) &lt; solve.Q4_BAR {solve.Q4_BAR}",
             # NOT sliced here: every band's heading says "N of M", and a band
             # that arrived pre-cut says "24 of 24" — which reads as *everything
             # was rejected and all of it is shown*, on the one band where the
             # denominator is the whole run.
-            [row for row in made if row["p_ge4"] < SEATING_BAR],
-            "The strongest of what neither bar admits. If these look like the band above "
+            [row for row in made if row["p_ge4"] < solve.Q4_BAR],
+            "The strongest of what neither gate admits. If these look like the band above "
             "them, the judge is the thing to look at next and not the draw.",
         ),
     )
@@ -2371,7 +2381,6 @@ __all__ = [
     "ROWS_NAME",
     "SCHEMA",
     "SCORES_NAME",
-    "SEATING_BAR",
     "SEQUENCE_NAME",
     "SHARES",
     "SHEET_ROWS",

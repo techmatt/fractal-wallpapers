@@ -1683,6 +1683,8 @@ names, it is the rule a themed pass has.
 
 ### The q4 bar is a statistic on the record, and the bars are the pool
 
+**The gallery is seated by `solve.DEFAULT_FINE_BAR` on `p_fine`; `solve.Q4_BAR` on raw `P(>=4)` is the render judge's gate, and no other spelling of either exists.**
+
 `solve.Q4_BAR` is **raw `P(>=4)` at 0.50**, the natural rank cutpoint of a CORN
 probability and explicitly not a measured crossover — both release heights this
 project has fitted are `P(>=3)` and neither transfers to a different cutpoint. It

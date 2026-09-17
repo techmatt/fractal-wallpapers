@@ -2050,7 +2050,7 @@ def mine(
     #: so any draw `curate depth run` can aim, this one has to be able to aim, or
     #: the rotation search is available only on the draws nobody narrows. What
     #: forced it: the floor draw's population is named by a manifest
-    #: (`--floor-places`, which is also the seating bar's SET — see
+    #: (`--floor-places`, which is also the `solve.Q4_BAR` gate's SET — see
     #: [`depth.proven_places`]) and the conditioned and filtered draws are aimed by
     #: cell, and a night wanting rotations at *those* had to choose between the
     #: search and the aim. Every one of them joins `identity` below, because a leg

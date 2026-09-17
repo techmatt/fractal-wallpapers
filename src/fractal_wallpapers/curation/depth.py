@@ -12,7 +12,7 @@ places rests on.
 Forty candidates at a location, three draws:
 
 * **NEAR-BAND** — a location whose best **field-mode** candidate already sits in
-  `[SEATING_BAR, PRIMED_BAR)`. The cheapest known ore, and the arm that says how
+  `[solve.Q4_BAR, PRIMED_BAR)`. The cheapest known ore, and the arm that says how
   much further a place that has already shown something will go. Its mode is
   held at the incumbent's, so what varies is the palette and nothing else.
 * **RANKED-BANDS** — never-opened locations drawn **across the whole of the
@@ -67,6 +67,7 @@ from fractal_wallpapers.curation import (
     mine,
     recipes,
     release,
+    solve,
 )
 from fractal_wallpapers.paths import tracked_name, under
 
@@ -128,9 +129,11 @@ PICTURES = hunt.PICTURES
 FIELDS = hunt.FIELDS
 
 #: The two heights every readout here reports at, [`curation.mine`]'s, because
-#: they are the same two questions and one set of scores answers each.
+#: they are the same two questions and one set of scores answers each: this and
+#: [`solve.Q4_BAR`], the render judge's gate on raw `P(>=4)`, read from there by
+#: that name. Neither is the gallery seating bar (`solve.DEFAULT_FINE_BAR`, on
+#: `p_fine`).
 PRIMED_BAR = mine.PRIMED_BAR
-SEATING_BAR = mine.SEATING_BAR
 
 #: The draws, in the spelling every row and every tally uses. The first three
 #: are the measurement; [`FLOOR`] is what a **production** run adds once the
@@ -155,7 +158,7 @@ SHARES = {NEAR: 0.25, RANKED: 0.50, FLAT: 0.25, FLOOR: 0.0, AIMED: 0.0}
 
 #: How many palettes one (location, mode) pair gets in the [`FLOOR`] draw. Small
 #: on purpose: that draw is short of *modes* and not of width, and the whole
-#: point of spending it at a place already over the seating bar is that a few
+#: point of spending it at a place already over `solve.Q4_BAR` is that a few
 #: shots there are worth many at a fresh one.
 FLOOR_WIDTH = 4
 
@@ -198,7 +201,7 @@ RANK_BANDS = 10
 #: **empty**, and a per-run knob rather than a standing.
 #:
 #: There was a standing one here — `tia`, on the depth curves of 2026-08-27:
-#: in breadth at k=20 it cleared the seating bar at .0208 against `smooth`'s
+#: in breadth at k=20 it cleared `solve.Q4_BAR` on `P(>=4)` at .0208 against `smooth`'s
 #: .0515, level with them only by k=40, and it is the dearest dump on the
 #: three-mode roster at 0.898 s against `smooth`'s 0.354. [`curation.mode_policy`]
 #: supersedes it. `tia` is weight 2 there, on 31 fours in 310 labeled rows, and a
@@ -891,7 +894,7 @@ def near_admits(key: str, held: dict, places: dict) -> str:
     thing:
 
     * `out_of_band` — the place's best candidate in a mode this run can afford is
-      not in `[SEATING_BAR, PRIMED_BAR)`. That is what the arm *is*.
+      not in `[solve.Q4_BAR, PRIMED_BAR)`. That is what the arm *is*.
     * `not_admitted` — `places` is the admitted population keyed by location,
       `world["by_key"]`, which is [`hunt.scanned`]: the **embedded** locations
       less the ones now under the junk floor. A key it does not hold is a place
@@ -933,7 +936,7 @@ def near_admits(key: str, held: dict, places: dict) -> str:
     buys is that both ends of the band ask the same question and the answer is
     reported rather than lost.
     """
-    if not (SEATING_BAR <= held["best"] < PRIMED_BAR):
+    if not (solve.Q4_BAR <= held["best"] < PRIMED_BAR):
         return "out_of_band"
     if key not in places:
         return "not_admitted"
@@ -963,7 +966,7 @@ def near_population(best_field: dict, places: dict) -> tuple[dict, dict]:
 
 
 def near_places(best_field: dict, places: dict, seed: int, count: int) -> list:
-    """`count` locations whose best field candidate sits in `[SEATING_BAR, PRIMED_BAR)`.
+    """`count` locations whose best field candidate sits in `[solve.Q4_BAR, PRIMED_BAR)`.
 
     Round-robin over partitions for [`hunt.spread`]'s reason: the price table is
     per partition and a draw that spent itself on one of them prices one of them.
@@ -1037,7 +1040,7 @@ def near_manifest(
         "roster": named,
         "keep": retention.keep_per_pair() if keep is None else int(keep),
         "min_slots": wanted,
-        "band": [SEATING_BAR, PRIMED_BAR],
+        "band": [solve.Q4_BAR, PRIMED_BAR],
         "places_with_a_roster_candidate": len(best_field),
         "out_of_band": refused["out_of_band"],
         "not_admitted": refused["not_admitted"],
@@ -1304,7 +1307,7 @@ def proven_places(
     places: dict,
     seed: int,
     count: int,
-    bar: float = SEATING_BAR,
+    bar: float = solve.Q4_BAR,
     admitted: set | None = None,
 ):
     """`count` locations that already hold a candidate over `bar`, spread over partitions.
@@ -1326,7 +1329,7 @@ def proven_places(
     Without it the bar was a number only, and a manifest could therefore never do
     anything but *remove* places from the above-bar population: see
     `LEGS_decisions.md`'s *`--floor-places` narrows the population and the
-    SEATING BAR still cuts it*, which measured 219 such places untried in the
+    `Q4_BAR` still cuts it*, which measured 219 such places untried in the
     angle modes and unreachable by any floor leg. Admission does not lower the
     bar for anything else — an admitted key still has to be an opened, drawable
     location in `places`, and every other draw reads the number as before.
@@ -1392,7 +1395,7 @@ def plan_floor(places: list, modes: list, taken: dict, maps: list, seed: int, wi
     return out
 
 
-def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = SEATING_BAR) -> dict:
+def deficient_modes(rows: list, scores: dict, floor: int = 10, bar: float = solve.Q4_BAR) -> dict:
     """`{mode: seats short of `floor`}` off the ledger as it stands.
 
     A seat is a **distinct location** holding a candidate over `bar` in that mode,
@@ -2151,7 +2154,8 @@ def build_plan(
             raise DepthRefused(
                 f"none of the {len(wanted):,} place(s) in --near-places is one this draw can "
                 f"stand on: {len(absent):,} hold no candidate in a mode this run can afford, "
-                f"{refused['out_of_band']:,} are out of [{SEATING_BAR:g}, {PRIMED_BAR:g}) and "
+                f"{refused['out_of_band']:,} have a best p_ge4 out of [solve.Q4_BAR "
+                f"{solve.Q4_BAR:g}, PRIMED_BAR {PRIMED_BAR:g}) and "
                 f"{refused['not_admitted']:,} are not in the admitted embedded population. "
                 f"Cut the manifest with `curate depth near-places`, which applies these same "
                 f"three tests — `depth.near_manifest`."
@@ -2242,13 +2246,13 @@ def build_plan(
     # or is under the junk floor now, and a leg that quietly planned fewer places
     # than it was given would report a rate over a population nobody chose.
     # **Naming a place IS the evidence claim, so the manifest is also the bar's
-    # set.** `proven_places` reads `admitted` beside `SEATING_BAR`; without it a
+    # set.** `proven_places` reads `admitted` beside `solve.Q4_BAR`; without it a
     # manifest could only ever remove places from the above-bar population, and
     # the best-evidenced places in the project — the ones carrying a human q3/q4
     # verdict in a finished store — were unreachable by a floor leg whenever
     # their best field candidate read under the bar. `LEGS_decisions.md`'s
-    # *`--floor-places` narrows the population and the SEATING BAR still cuts
-    # it* is the measurement. The under-bar count is logged rather than folded
+    # *`--floor-places` narrows the population and `Q4_BAR` still cuts it* is
+    # the measurement. The under-bar count is logged rather than folded
     # in silently: it is the difference between this leg and every one before it.
     floor_admitted: set = set()
     if floor_places:
@@ -2257,15 +2261,15 @@ def build_plan(
         floor_pool = {key: held for key, held in floor_pool.items() if key in wanted}
         floor_admitted = set(floor_pool)
         under = sum(
-            1 for held in floor_pool.values() if float(held.get("best", -1.0)) < float(SEATING_BAR)
+            1 for held in floor_pool.values() if float(held.get("best", -1.0)) < float(solve.Q4_BAR)
         )
         log(
             f"[depth] --floor-places: {len(floor_pool):,} of {len(wanted):,} named place(s) "
             f"are opened and drawable"
         )
         log(
-            f"[depth] {under:,} named place(s) sit under SEATING_BAR {SEATING_BAR:g} and are "
-            f"admitted by the manifest"
+            f"[depth] {under:,} named place(s) read a best p_ge4 under the render judge's "
+            f"gate solve.Q4_BAR {solve.Q4_BAR:g} and are admitted by the manifest"
         )
         if absent:
             log(f"[depth] {len(absent):,} named place(s) are not in the opened pool: skipped")
@@ -2406,7 +2410,7 @@ def build_plan(
         "near_band_pool": sum(
             1
             for held in best_field.values()
-            if SEATING_BAR <= held["best"] < PRIMED_BAR and held["best_mode"]
+            if solve.Q4_BAR <= held["best"] < PRIMED_BAR and held["best_mode"]
         ),
         "ranked_by_partition": dict(sorted(counts.items())),
         "flat_wanted_by_partition": dict(sorted(flat_want.items())),
@@ -3042,7 +3046,7 @@ def run(
             "seeds": shape["seeds"],
             "shares": shape["shares"],
             "primed_bar": PRIMED_BAR,
-            "seating_bar": SEATING_BAR,
+            "q4_bar": {"column": "p_ge4", "at": solve.Q4_BAR, "from": "solve.Q4_BAR"},
             "margin": float(margin),
             "regime": recipes.CANDIDATE_REGIME.spelled,
             "workers": counts["workers"],
@@ -3149,7 +3153,7 @@ def read_sequence(name: str) -> list:
     return hunt._read(sequence_path(name))
 
 
-def curves(made: list, bars=(SEATING_BAR, PRIMED_BAR)) -> dict:
+def curves(made: list, bars=(solve.Q4_BAR, PRIMED_BAR)) -> dict:
     """Per draw and per bar: the cumulative prime curve, and the clear rate at each `k`.
 
     **Cumulative** is the chance a location is primed by its first `k`, which is
@@ -3328,7 +3332,7 @@ def clears_its_bar(row: dict, table: dict) -> bool:
     mode = mode_policy.routed_mode(str(row["mode"]), bool(row.get("texture_flat")))
     rule = (table.get("modes") or {}).get(mode) or {
         "column": "p_ge4",
-        "bar": SEATING_BAR,
+        "bar": solve.Q4_BAR,
     }
     return float(row.get(str(rule["column"])) or 0.0) >= float(rule["bar"])
 
@@ -3445,7 +3449,7 @@ def realised_shares(table: dict) -> dict:
     return out
 
 
-def by_mode(made: list, bars=(SEATING_BAR, PRIMED_BAR)) -> dict:
+def by_mode(made: list, bars=(solve.Q4_BAR, PRIMED_BAR)) -> dict:
     """Per mode: what it cost, what it cleared, and over how many distinct locations.
 
     Keyed on the **spelled entry** — `direct_trap_multiply@opacity=0.6` is its own
@@ -3481,7 +3485,7 @@ def by_mode(made: list, bars=(SEATING_BAR, PRIMED_BAR)) -> dict:
     return out
 
 
-def rank_readout(made: list, bars=(SEATING_BAR, PRIMED_BAR), arms=(RANKED, FLAT)) -> dict:
+def rank_readout(made: list, bars=(solve.Q4_BAR, PRIMED_BAR), arms=(RANKED, FLAT)) -> dict:
     """Prime rate against the head's rank depth, pooled and per partition.
 
     The load-bearing number. The route to a thousand primed places needs the rate
@@ -3672,8 +3676,8 @@ def route_to(
     }
 
 
-def rejects(made: list, rows: int = 24, bar: float = SEATING_BAR) -> list:
-    """The strongest of what neither bar admits, sorted by `P(>=4)`."""
+def rejects(made: list, rows: int = 24, bar: float = solve.Q4_BAR) -> list:
+    """The strongest of what neither gate admits, sorted by `P(>=4)`."""
     held = [row for row in made if row["p_ge4"] < bar]
     return sorted(held, key=lambda row: -row["p_ge4"])[: int(rows)]
 
@@ -3723,7 +3727,6 @@ __all__ = [
     "ROWS_NAME",
     "SCHEMA",
     "SCORES_NAME",
-    "SEATING_BAR",
     "SEQUENCE_NAME",
     "SHARES",
     "UNIT",

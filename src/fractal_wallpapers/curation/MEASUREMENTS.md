@@ -669,7 +669,7 @@ alone. **Size a composite leg off a leg's `seconds_per_candidate`, never off
 
 ⚠ **`phoenix:classic` at 20.911 is 18x the pool average and twice the 9.389 s the
 flat band carried**, and it splits by mode: `smooth` 7.575, `tia` 19.040, `stripe`
-**35.956**. Yield at `SEATING_BAR` is `smooth` **0**, `tia` **0**, `stripe` 15 of 94
+**35.956**. Yield at `Q4_BAR` on `P(>=4)` is `smooth` **0**, `tia` **0**, `stripe` 15 of 94
 (15.96%) — **390.3 engine seconds a clear against the recolour arm's 7.0, 56x**. The
 three older `pc*` rows above priced the dear roster there; this prices the cheap one
 and the answer does not change. The partition's remaining never-opened places are a
@@ -683,7 +683,7 @@ after `wide1`/`wide2` took the drawable ones. 7,016.6 engine s over 2,343.7 s of
 wall at concurrency 2.994, 177 of 177 planned and made, none stopped for budget.
 
 **What it bought reproduces the pilot's rate and beats its price.** **30 clears of
-177 at the seating bar (16.95%)** against the pilot stripe arm's 15.96%, which is
+177 at `Q4_BAR` on `P(>=4)` (16.95%)** against the pilot stripe arm's 15.96%, which is
 **233.9 engine seconds a clear** — against the pilot leg's 390.3, because two
 thirds of that leg went on `smooth` and `tia` clearing nothing. And **6 candidates
 (3.39%) clear at 0.90** where the pilot's 94 stripe shots primed none. A stripe-only
@@ -697,7 +697,7 @@ population left to price.
 ⚠ **`mine_pilot_ckpt124_armA` and `armB` are the same roster on two populations and
 they differ 1.45x in
 price and 3.0x in what a clear costs**, measured back to back on one box on 2026-09-13:
-the floor draw over proven places returned **111 clears at `SEATING_BAR` in 1,883
+the floor draw over proven places returned **111 clears at `Q4_BAR` in 1,883
 candidates (5.89%)** for **48.7 engine seconds a clear**, and breadth over never-opened
 places **36 in 1,282 (2.81%)** for **148.1**. Width is part of the first number and
 none of the second — a dear mode dumps no field, so its price is flat in width and the
