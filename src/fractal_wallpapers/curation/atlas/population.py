@@ -22,12 +22,29 @@ from __future__ import annotations
 import json
 import time
 
-#: The two ledger partitions the Mandelbrot plane carries, and the word the record spells
-#: each with. The page colours by that word — one colour for a parameter-plane place,
-#: another for a dynamical one — so it is the shorter spelling rather than the ledger's.
+#: The two ledger partitions the Mandelbrot plane carries. Every other plane is the same
+#: pair at another degree, or one pinned partition — see [`position`].
 MANDELBROT = "mandelbrot"
 JULIA = "julia:mandelbrot"
-KIND = {MANDELBROT: "mandelbrot", JULIA: "julia"}
+
+#: The two words the record spells a place's kind with. The page colours by that word —
+#: one colour for a frame on a parameter plane, another for a frame on a dynamical one —
+#: so it is the website's short spelling rather than the ledger's partition.
+PARAMETER_KIND, DYNAMICAL_KIND = "mandelbrot", "julia"
+
+
+def kind_of(partition: str) -> str:
+    """`mandelbrot` for a parameter-plane partition, `julia` for a dynamical one.
+
+    A pinned plane (`phoenix:classic`) is dynamical — a frame on the `z` plane of one
+    parameter point — which is also how the website's `PLANE_OF_FAMILY` reads `phoenix`.
+    """
+    from fractal_wallpapers.supply import partitions
+
+    if partitions.is_dynamical(partition) or partitions.is_pinned(partition):
+        return DYNAMICAL_KIND
+    return PARAMETER_KIND
+
 
 #: How many of a place's best `p_fine` rows are kept. The gallery slot wants the best one
 #: the ledger can hand back a recipe for, and one is almost always enough; the other two
@@ -46,22 +63,28 @@ def position(key_text: str):
     A parameter-plane place is its whole location key — its frame is what it is. A
     dynamical place is its `c` alone, because the dynamical plane is a different fractal
     for every parameter and a hundred frames of one `c` are a hundred views of one point
-    of the plane the plate draws: 13,030 julia location keys land on 181 parameters.
+    of the plane the plate draws: 13,030 julia location keys land on 181 parameters. A
+    pinned plane's place is its whole key again, because its parameters never vary and
+    so its frames are all on the one plane its plate draws.
     """
+    from fractal_wallpapers.supply import partitions
+
     try:
         key = json.loads(key_text)
     except (TypeError, ValueError):
         return None
     if not isinstance(key, list) or len(key) < 6:
         return None
+    partition = key[0]
     try:
-        if key[0] == MANDELBROT:
-            return MANDELBROT, key_text, float(key[3]), float(key[4])
-        if key[0] == JULIA:
+        if partition in partitions.PARAMETER_PLANES or partitions.is_pinned(partition):
+            return partition, key_text, float(key[3]), float(key[4])
+        if partition in partitions.DYNAMICAL_PLANES:
             constants = key[2]
             if not constants or not constants[0]:
                 return None
-            return JULIA, json.dumps(constants[0]), float(constants[0][0]), float(constants[0][1])
+            c = constants[0]
+            return partition, json.dumps(c), float(c[0]), float(c[1])
     except (TypeError, ValueError, IndexError):
         return None
     return None
@@ -275,8 +298,8 @@ def thin(places, view: dict, resolution, radius_px: float) -> tuple[list[Dot], d
         "queued": len(queue),
         "dropped": dropped,
         "dots": len(dots),
-        "mandelbrot": sum(1 for d in dots if KIND[d.place.partition] == "mandelbrot"),
-        "julia": sum(1 for d in dots if KIND[d.place.partition] == "julia"),
+        "mandelbrot": sum(1 for d in dots if kind_of(d.place.partition) == PARAMETER_KIND),
+        "julia": sum(1 for d in dots if kind_of(d.place.partition) == DYNAMICAL_KIND),
         "seated": sum(1 for d in dots if d.place.seat is not None),
     }
     return dots, tally

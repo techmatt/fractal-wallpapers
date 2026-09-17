@@ -704,6 +704,16 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### atlas_planes_ckpt128_wallpapers
+
+`atlas_planes_ckpt128_wallpapers`, 2026-09-16, `.[dev,models]` with a release engine,
+taken on an idle box three minutes after a 37-minute atlas leg (five `curate atlas` builds
+and four backfills) had finished. **Fast: 4,775 passed in 141.92 s (2:21)**, 156 deselected
+— 4,931 collected, which is `preclose_wallpapers_ckpt127`'s believed 4,928 + 3 fast
+stub-row guards in `test_atlas.py` for the multibrot and phoenix planes. Green throughout.
+**Slow not run**, so 4,931 is believed, not read. −8.7 s against the last reading is
+within the box.
+
 #### preclose_wallpapers_ckpt127
 
 `preclose_wallpapers_ckpt127`, 2026-09-16, `.[dev,models]` with a release engine, taken

@@ -239,9 +239,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `preclose_wallpapers_ckpt127` added 2 tests (one
-slow) on 2026-09-16 and read **4,772 fast in 150.58 s (2:30)**, 156 deselected, green,
-so the tree is *believed* at 4,928 collected. Before it, `merge_back_ckpt127` read
+**The newest reading is fast only**: `atlas_planes_ckpt128_wallpapers` added 3 fast
+tests on 2026-09-16 and read **4,775 fast in 141.92 s (2:21)**, 156 deselected, green,
+so the tree is *believed* at 4,931 collected. Before it, `preclose_wallpapers_ckpt127`
+read 4,772 in 150.58 s (+2, one slow), and `merge_back_ckpt127` read
 4,771 in 145.46 s with two `test_nested_verbs.py` reds fixed by re-running that file,
 and `reframe30_atlas_grey_ckpt127` 4,758 in 144.93 s — all fast only.
 
@@ -429,6 +430,9 @@ Each prompt in this project ends the same way:
   under the line. Going over is fine; padding and re-editing are not.
 - Report findings, numbers, decisions, and surprises only. No process narration, no
   restating the prompt back.
+- **Every clock time is local 12-hour** — `5:25pm`, never `17:25` or UTC — in chat, ETAs,
+  heartbeats and reports alike, Matt's ask of 2026-09-16. The CLI's own `[HH:MM:SS]`
+  stamps are 24-hour, so convert before quoting one.
 - Then copy the report to `C:\Code\fractal-drive-sync\reports\`.
 - **Operational facts learned on the way — launch commands, ports, drop paths,
   conventions — get promoted into the relevant module README as you pass them**, not

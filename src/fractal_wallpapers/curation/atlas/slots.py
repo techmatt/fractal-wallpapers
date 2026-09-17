@@ -153,8 +153,8 @@ def refusals(recipe: dict, library: set[str], cyclic: set[str], tone: str | None
     return refused
 
 
-def julia_family(c) -> dict:
-    return {"kind": "julia", "degree": 2, "c": [str(c[0]), str(c[1])]}
+def julia_family(c, degree: int = 2) -> dict:
+    return {"kind": "julia", "degree": int(degree), "c": [str(c[0]), str(c[1])]}
 
 
 def viewport_of(key_text: str) -> dict:
@@ -164,10 +164,17 @@ def viewport_of(key_text: str) -> dict:
 
 
 def views_of(place, plane_family: dict, julia_home: dict, plate_width: str, canonical: str):
-    """The dot's two location views, as recipes with `maxiter` still to be asked for."""
-    from fractal_wallpapers.models import location_view
+    """The dot's two location views, as recipes with `maxiter` still to be asked for.
 
-    from .population import JULIA
+    Three shapes of place. A parameter-plane place is its own frame, beside the Julia set
+    of the same degree at that frame's centre. A Julia place is a neighbourhood plate of
+    the parameter plane around its `c`, beside its own frame. A pinned plane's place has
+    no second plane to show, so its first slot is the neighbourhood plate of the plane it
+    is a frame on — the same plate a Julia place's first slot is — beside its own frame.
+    `julia_home` is `None` exactly where the plane has no Julia twin.
+    """
+    from fractal_wallpapers.models import location_view
+    from fractal_wallpapers.supply import partitions
 
     def plain(family: dict, viewport: dict, what: str) -> dict:
         return {
@@ -182,26 +189,37 @@ def views_of(place, plane_family: dict, julia_home: dict, plate_width: str, cano
             "what": what,
         }
 
-    if place.partition == JULIA:
-        key = json.loads(place.location)
-        c = [str(key[2][0][0]), str(key[2][0][1])]
+    key = json.loads(place.location)
+    neighbourhood = plain(
+        dict(plane_family),
+        {"center_re": str(place.x), "center_im": str(place.y), "width": plate_width},
+        f"a neighborhood plate {plate_width} wide",
+    )
+    if partitions.is_pinned(place.partition):
         return {
-            "mandelbrot": plain(
-                dict(plane_family),
-                {"center_re": str(place.x), "center_im": str(place.y), "width": plate_width},
-                f"a neighborhood plate {plate_width} wide",
-            ),
+            "mandelbrot": neighbourhood,
             "julia": plain(
-                julia_family(c), viewport_of(place.location), "the place's own Julia frame"
+                dict(plane_family), viewport_of(place.location), "the place's own frame"
             ),
         }
-    key = json.loads(place.location)
+    if partitions.is_dynamical(place.partition):
+        degree = partitions.degree_of_plane(partitions.parameter_plane_of(place.partition))
+        c = [str(key[2][0][0]), str(key[2][0][1])]
+        return {
+            "mandelbrot": neighbourhood,
+            "julia": plain(
+                julia_family(c, degree),
+                viewport_of(place.location),
+                "the place's own Julia frame",
+            ),
+        }
+    degree = partitions.degree_of_plane(place.partition)
     return {
         "mandelbrot": plain(
             dict(plane_family), viewport_of(place.location), "the place's own frame"
         ),
         "julia": plain(
-            julia_family([str(key[3]), str(key[4])]),
+            julia_family([str(key[3]), str(key[4])], degree),
             dict(julia_home),
             "the Julia set at the center of that frame",
         ),

@@ -74,8 +74,32 @@ record it wrote, not a re-thinning. The mandelbrot plane read 0 `lost` after it 
 checks: `colormap <name>`, `mirror on a cyclic map`, `curve <name>`, and
 `autolevel band_autolevel/v1` for a `lost` tone.
 
-## Adding a plane
+## The five planes
 
 `PLANES` in `__init__.py` is the table: a family for the plate and the ledger partitions
-whose places land on it. The multibrot and phoenix planes are a row each, with the engine's
-own home view for the plate; they join when the search has kept places on them.
+whose places land on it, named as the website's `builder/atlas.py` names its partitions.
+
+| `--plane` | plate family | partitions | a dot's `kind` |
+| --- | --- | --- | --- |
+| `mandelbrot` | `mandelbrot`, degree 2 | `mandelbrot`, `julia:mandelbrot` | `mandelbrot` / `julia` |
+| `multibrot3`, `4`, `5` | `multibrot` at that degree | `multibrotN`, `julia:multibrotN` | `mandelbrot` / `julia` |
+| `phoenix` | the classic slice, `partitions.CLASSIC_PHOENIX_POINT` | `phoenix:classic` | `julia` |
+
+A multibrot plane is the Mandelbrot plane at another degree, and its Julia slots are drawn
+at that degree. **`phoenix` is the classic slice only**: its parameters are pinned, so a
+place is a frame on the slice itself — the whole location key, as a parameter-plane place
+is — and its `kind` is `julia` because the frame is on a `z` plane, which is how the
+website's `PLANE_OF_FAMILY` reads a phoenix family. Its first slot is a neighbourhood plate
+of the slice around the frame, as a Julia place's is of its parameter plane. **Varied
+phoenix is on no plate**: every place is a different point of a six-dimensional space, so
+there is no one plane to draw it on, and `population.position` answers `None` for it.
+
+Every plane uses the same `--radius 12` and the same `PLATE_FRACTION`, so a plate pixel is
+the plane's home-view width over 4096 and the neighbourhood plate is 0.05 of that width.
+
+```
+fractal-wallpapers curate atlas --plane multibrot3
+fractal-wallpapers curate autolevel survey --atlas multibrot3
+fractal-wallpapers curate autolevel backfill --atlas multibrot3
+fractal-wallpapers curate atlas --plane multibrot3   # the re-run that reads the curves
+```
