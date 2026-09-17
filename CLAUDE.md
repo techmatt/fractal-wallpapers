@@ -239,9 +239,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `atlas_planes_ckpt128_wallpapers` added 3 fast
-tests on 2026-09-16 and read **4,775 fast in 141.92 s (2:21)**, 156 deselected, green,
-so the tree is *believed* at 4,931 collected. Before it, `preclose_wallpapers_ckpt127`
+**The newest reading is fast only**: `plane_sampler_ckpt128` added 9 fast and 1 slow
+test on 2026-09-16 and read **4,784 fast in 148.37 s (2:28)**, 157 deselected, one red
+fixed and re-run green with its neighbours, so the tree is *believed* at 4,941 collected.
+Before it, `atlas_planes_ckpt128_wallpapers` read 4,775 in 141.92 s (+3), and
+`preclose_wallpapers_ckpt127`
 read 4,772 in 150.58 s (+2, one slow), and `merge_back_ckpt127` read
 4,771 in 145.46 s with two `test_nested_verbs.py` reds fixed by re-running that file,
 and `reframe30_atlas_grey_ckpt127` 4,758 in 144.93 s — all fast only.

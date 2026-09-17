@@ -20,6 +20,7 @@ from fractal_wallpapers.cli.common import (
     refine_limits,
     reframings_from,
     resolve_output,
+    sampler_band_flags,
     sampler_default,
     scoring_flags,
     walk_default,
@@ -54,10 +55,13 @@ def build_proven_channel(args: argparse.Namespace, partitions):
 def build_sampler_channel(args: argparse.Namespace, partitions, walk_run, log=print):
     """The viewport sampler this run asked for by name, or `None`.
 
-    Drawn and screened when the run is built rather than at the first refill: the
-    ladder is a few hundred frames through the gate battery, which is seconds,
-    and paying it inside the refill's share of the loop clock would price a
-    channel's whole supply against a bound meant for a draw.
+    A pinned plane's ladder is drawn and screened when the run is built rather
+    than at the first refill: it is a few hundred frames through the gate battery,
+    which is seconds, and paying it inside the refill's share of the loop clock
+    would price a channel's whole supply against a bound meant for a draw. A
+    parameter plane's refinement cannot be paid up front — it has no end — so it
+    is refined and screened inside the refills that ask for it, and the refill
+    share is what bounds it.
 
     The run's own seed, so two harvests at one seed sample the same viewports and
     a resumed session re-derives the list its cursor is standing in. The walk's
@@ -72,6 +76,8 @@ def build_sampler_channel(args: argparse.Namespace, partitions, walk_run, log=pr
         partitions=partitions,
         seed=args.seed,
         rungs=args.sampler_rungs,
+        widest=args.sampler_widest,
+        narrowest=args.sampler_narrowest,
         colormap=args.colormap,
         node_width=args.node_width,
         ledger=walk_run.ledger,
@@ -619,7 +625,7 @@ def add_commands(subcommands) -> None:
     # all four answer - where does the next root come from - is one question.
     roots.add_argument(
         "--seeds",
-        help="a JSONL seed file for the parameter planes, which have no sampler "
+        help="a JSONL seed file for the parameter planes "
         "(default: the tracked plane seed pool, data/discovery/plane_seed_pool.jsonl)",
     )
     roots.add_argument(
@@ -637,20 +643,23 @@ def add_commands(subcommands) -> None:
         f"repeatable. {proven_default('CHANNEL')!r} roots the walk at every location a human "
         f"has scored a keeper, interleaved with the pool rather than replacing it — on the "
         f"dynamical partitions at the labelled viewport, which is a frame their `c`-pools "
-        f"cannot express. {sampler_default('CHANNEL')!r} draws viewports over a PINNED "
-        f"plane's own home view at a ladder of scales and keeps the ones the structural "
-        f"gates pass, which is the only way a plane with no free parameter gets a fresh "
-        f"place at all",
+        f"cannot express. {sampler_default('CHANNEL')!r} draws viewports over a plane's own "
+        f"home view and keeps the ones the structural gates pass: on the pinned plane a "
+        f"ladder of scales, which is the only way a plane with no free parameter gets a "
+        f"fresh place at all, and on a parameter plane a boundary-refining draw that does "
+        f"not run out when the nucleus pool does",
     )
     roots.add_argument(
         "--sampler-rungs",
         type=int,
         default=sampler_default("RUNGS"),
-        help=f"octaves in from the home width the viewport sampler draws over, each rung a "
-        f"2^k x 2^k jittered grid at width home/2^k (default: {sampler_default('RUNGS')}, "
-        f"which is {sum(4**k for k in range(1, sampler_default('RUNGS') + 1))} frames). Read "
-        f"only with --root-channel {sampler_default('CHANNEL')}",
+        help=f"octaves in from the home width the viewport sampler draws over on the PINNED "
+        f"plane, each rung a 2^k x 2^k jittered grid at width home/2^k (default: "
+        f"{sampler_default('RUNGS')}, which is "
+        f"{sum(4**k for k in range(1, sampler_default('RUNGS') + 1))} frames). Read only "
+        f"with --root-channel {sampler_default('CHANNEL')}",
     )
+    sampler_band_flags(roots)
     budget.add_argument(
         "--root-expansions",
         type=int,

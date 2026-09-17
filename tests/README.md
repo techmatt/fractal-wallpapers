@@ -704,6 +704,19 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### plane_sampler_ckpt128
+
+`plane_sampler_ckpt128`, 2026-09-16, `.[dev,models]` with a release engine, taken on an
+idle box two minutes after three short `walk` legs and a probe pilot had finished.
+**Fast: 4,783 passed, 1 failed in 148.37 s (2:28)**, 157 deselected — 4,941 collected,
+which is `atlas_planes_ckpt128_wallpapers`' believed 4,931 + 9 fast and 1 slow in
+`test_viewport_sampler.py` (8 fast and 1 slow became 17 and 2). The one red was
+`test_renderer_agreement.py::test_every_hand_built_engine_spec_is_declared`: the
+sampler's `screen` spec moved from `sample` into `screen_batch` and the declaration
+still named the old site. Repointed and re-run green with its neighbours (101 of 101),
+not by re-taking the lane. `--slow tests/test_viewport_sampler.py` read 19 of 19.
+**Slow lane not run**, so 4,941 is believed, not read.
+
 #### atlas_planes_ckpt128_wallpapers
 
 `atlas_planes_ckpt128_wallpapers`, 2026-09-16, `.[dev,models]` with a release engine,

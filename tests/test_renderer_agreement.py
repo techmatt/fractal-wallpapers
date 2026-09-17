@@ -1013,7 +1013,7 @@ HAND_BUILT: dict[str, str] = {
     "it. This is the sheet the bar is read off.",
     "discovery.boundary.sample": "a `screen` spec. As `cli.draw_commands.screen`.",
     "discovery.reframing.screen_rungs": "a `screen` spec over a rung ladder.",
-    "discovery.viewport_sampler.sample": "a `screen` spec.",
+    "discovery.viewport_sampler.screen_batch": "a `screen` spec, for both draw schemes.",
     "discovery.walk.expand": "an `expand` spec: nodes, gates and a policy. It carries a "
     "colormap for the engine's own gate renders and names no mode, no curve and no recipe "
     "— there is no picture here a recipe could reproduce, which is why `walk` is in neither "

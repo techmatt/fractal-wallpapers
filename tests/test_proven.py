@@ -131,11 +131,12 @@ def test_a_rule_label_is_not_a_proven_root() -> None:
 
 
 def test_every_registered_partition_is_served_including_the_pinned_phoenix() -> None:
-    """The planes are served because they have no sampler; the dynamical families
-    because theirs cannot express a frame; `phoenix:classic` because one pinned
-    point has exactly one fresh root in existence, so a labelled place is most of
-    what it can be handed. It was excluded until 2026-09-02, which left its q3+
-    labels the only ones in the store that became no roots."""
+    """The planes are served because a labelled place is the one root on them a human
+    chose; the dynamical families because theirs cannot express a frame;
+    `phoenix:classic` because one pinned point has exactly one fresh root in
+    existence, so a labelled place is most of what it can be handed. It was
+    excluded until 2026-09-02, which left its q3+ labels the only ones in the store
+    that became no roots."""
     rows = corpus(
         label(JULIA, 4, "0.1"),
         label(PHOENIX, 4, "0.2"),

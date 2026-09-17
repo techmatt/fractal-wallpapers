@@ -38,8 +38,22 @@ form at a complex phase.
 
 **The plane pool is solved for, not drawn.** An unscreened shell draw over the
 higher multibrot degrees measured zero good locations out of a hundred and
-forty-four, so there is no sampler for `mandelbrot` or `multibrot3/4/5` and there
-will not be one. Instead a coarse grid — 340×191 — is laid over each family's home
+forty-four, so this pool was built without a sampler for `mandelbrot` or
+`multibrot3/4/5`, and this file used to say there would never be one.
+
+⚠ **That ruling is superseded, 2026-09-16** (`plane_sampler_ckpt128`). It rested
+on the *ungated* shell draw: the 144 were never put through the structural gates,
+and the gated draw that exists since — `sample-boundary`, and the walk's own
+`engine.screen` battery — is a different instrument. The parameter planes now have
+a continuous root channel, `discovery.viewport_sampler`'s straddle refinement
+(`--root-channel viewport_sampler`), which refines a quad-tree only where the
+connectedness locus's boundary is and screens every draw. **This pool is still the
+default supply and is unchanged**; the sampler is opt-in and is what serves a plane
+after its pool is walked out, or a plane that has no pool. The mechanism is
+`discovery/README.md`'s *The viewport sampler* and `supply/README.md`'s *There is
+no continuous boundary sampler*, which is now the history of the gap it closed.
+
+Instead of a draw, a coarse grid — 340×191 — is laid over each family's home
 frame, every point is handed to this repository's own `identify_nucleus`, and each
 distinct atom becomes one root framed at `FRAME_MULTIPLE ×` its own window scale.
 Roots are kept round-robin across periods (21–37 per family) and ranked on `f64`
@@ -58,8 +72,9 @@ fractal-wallpapers derive-plane-seeds --write  # re-derive and replace it
 The verify is the default because the file's only real claim is that the
 procedure still produces it. Roughly fifteen minutes of Newton either way.
 
-**What the absence costs, measured 2026-09-13.** Deliberate is not free. Because
-there is no sampler, this file *is* the parameter planes' whole standing supply —
+**What the absence cost, measured 2026-09-13** — before the viewport sampler
+served the planes. Deliberate is not free. With no sampler, this file *was* the
+parameter planes' whole standing supply —
 **1,922 rows: 1,912 `nucleus_grid` (mandelbrot 500, multibrot3 412, multibrot4
 500, multibrot5 500), 4 `home_view`, 6 `hand_picked`** — and `derive` is
 deterministic, so a run gets exactly those rows back and never a new one. A walk's
@@ -68,12 +83,14 @@ the rest of that leg. `RUN_ckpt123_overnight_harvest` walked `mandelbrot` and
 `multibrot5` out and stopped on `nothing servable` with 94 active minutes of its
 budget unspent; `supply/README.md`'s *With no root channel named, the whole
 standing root supply is small enough to walk out in a night* is the reading. The
-pinned planes are the contrast — `discovery.viewport_sampler` re-derives its ladder
-every run and `--sampler-rungs` extends it — and there is no equivalent here:
-**more plane roots means raising `COLUMNS` or `PER_PARTITION` and regenerating this
-file**, which is a tracked-data change and a decision, not a flag on a leg.
+pinned planes were the contrast — `discovery.viewport_sampler` re-derives its ladder
+every run and `--sampler-rungs` extends it. **More plane roots *from this pool*
+still means raising `COLUMNS` or `PER_PARTITION` and regenerating this file**, a
+tracked-data change and a decision; more plane roots *at all* is now
+`--root-channel viewport_sampler` on the leg.
 
-This pool is load-bearing rather than convenient: without it `has_channel` is
-false for all four parameter-plane partitions, they can never be refilled once
+This pool is load-bearing rather than convenient: without it, and without the
+viewport sampler named on the leg, `has_channel` is false for all four
+parameter-plane partitions, they can never be refilled once
 their queues drain, and a harvest that intended two thirds of its clock for them
 spends none of it. That is exactly how the first production run stalled.

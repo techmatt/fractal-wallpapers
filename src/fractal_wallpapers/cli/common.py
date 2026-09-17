@@ -441,6 +441,30 @@ def sampler_default(name: str):
     return getattr(viewport_sampler, name)
 
 
+def sampler_band_flags(group) -> None:
+    """`--sampler-widest` and `--sampler-narrowest`: a parameter plane's width band.
+
+    One definition for `harvest` and `walk`, because both hold the same channel
+    and a band spelled twice is a band that drifts.
+    """
+    group.add_argument(
+        "--sampler-widest",
+        type=float,
+        default=sampler_default("WIDEST"),
+        help=f"the widest root the viewport sampler hands over on a PARAMETER plane; every "
+        f"rung of the straddle refinement whose cell width lies inside the band is served "
+        f"(default: {sampler_default('WIDEST'):g})",
+    )
+    group.add_argument(
+        "--sampler-narrowest",
+        type=float,
+        default=sampler_default("NARROWEST"),
+        help=f"the narrowest, which decides how deep the refinement goes. Lower adds a rung, "
+        f"and a rung costs a probe per straddling cell above it "
+        f"(default: {sampler_default('NARROWEST'):g})",
+    )
+
+
 def build_scorer(args: argparse.Namespace, log=print):
     """The judge a walk consults, or `None` for the structural gates alone.
 

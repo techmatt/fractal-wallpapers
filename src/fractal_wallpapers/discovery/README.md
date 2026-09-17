@@ -17,7 +17,7 @@ ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
 identity   why the gate render is the picture that head was trained on
 boundary   a seeded uniform draw, screened by those same gates
-viewport_sampler  the same idea as a root channel, for a plane with no parameter
+viewport_sampler  the same idea as a root channel: a ladder on the pinned plane, a boundary refinement on a parameter plane
 ```
 
 The one thing a walk does that is not in this package: when it **closes**, it
@@ -40,7 +40,7 @@ changing anything here.
 
 | command | what it needs to start | what it is for |
 | --- | --- | --- |
-| `walk` | the tracked seed pools for a dynamical family; an explicit `--seeds` file on a parameter plane. There is no sampler behind either | one descent, keeping what survives the structural gates |
+| `walk` | the tracked seed pools for a dynamical family; on a parameter plane an explicit `--seeds` file, `--root-channel viewport_sampler --roots N`, or both | one descent, keeping what survives the structural gates |
 | `reframe` | locations a **human** already scored a keeper | the operators' own nucleus-centred views, which a walk builds and never scores |
 | `harvest` | nothing beyond the seed pools — it divides its clock by how far each partition sits below its share of the release | the production loop, and the one command for **cold exploration**: `harvest --partition FAMILY --minutes N` |
 
@@ -1165,7 +1165,7 @@ location manifest that feeds straight into `render --manifest` or
 fractal-wallpapers sample-boundary --keep 12 --attempts 1024 --seed 1
 ```
 
-## The viewport sampler: a root channel for a plane with no parameter
+## The viewport sampler: a root channel that makes places
 
 **A pinned plane's fresh supply used to be one row, by construction.** Every pool
 in this project hands over a *parameter* — a `c`, a phoenix `(c, p, z₋₁)` — and
@@ -1229,6 +1229,94 @@ cheaper way to more places than a rung below it.
 
 ```
 fractal-wallpapers harvest --minutes 10 --partition phoenix:classic     --root-channel proven --root-channel viewport_sampler
+```
+
+### A parameter plane: straddle refinement, and it does not run out
+
+**The parameter planes are served too since 2026-09-16** (`plane_sampler_ckpt128`),
+under a second draw scheme chosen by partition kind. The pinned plane keeps its
+ladder — its plane has no connectedness locus to find a boundary of — and a
+parameter plane gets a quad-tree refined only where the boundary is. The old
+ruling that there would never be a plane sampler rested on the *ungated* shell
+draw (0 good in 144); this draw is gated like everything else here.
+
+A cell at rung `r` is a cell of the same `2^r x 2^r` tiling. A **parent is probed
+once** through `engine.dump_field` at `PROBE_RESOLUTION` (64 x 36, so each child is
+an exact 32 x 18 sub-block), and a child **straddles** if its block holds both
+interior (`NaN`) and escaped samples. Only straddling children are probed further.
+Every straddling cell whose width lies inside the band — `--sampler-widest` 0.1 to
+`--sampler-narrowest` 1e-3, `boundary`'s band read as root widths — is a candidate,
+jittered by the seed as the ladder is, screened through `engine.screen`, recorded
+as a `sampler_draw` row with `scheme: straddle`, and served round-robin over the
+band's rungs. The straddle test places the probes and is not a gate: the battery
+decides.
+
+**The straddle probe**, piloted on multibrot3 (seed 1, 240 straddling parents at
+rungs 5–8, their 960 children each screened once, unjittered; three workers):
+
+| grid | maxiter | ms/probe | agrees with `interior_cap` | screen survivors the probe calls one-sided |
+|---|--:|--:|--:|--:|
+| 32 x 18 | 64 | 5.99 | 96.0% | 2 of 176 |
+| 32 x 18 | 256 | 6.25 | 99.2% | 13 of 176 |
+| 32 x 18 | width policy | 7.81 | 99.2% | 14 of 176 |
+| **64 x 36** | **256** | **6.25** | **99.2%** | **2 of 176** |
+| 64 x 36 | 1024 | 6.70 | 100% | 3 of 176 |
+| 64 x 36 | width policy | 11.85 | 99.6% | 3 of 176 |
+
+A probe this small is the engine's process start, not its iteration, so the larger
+grid costs nothing — and at 32 x 18 a 16 x 9 child misses the one filament an
+exterior child hangs on and drops that whole subtree. Maxiter 64 calls slow
+escapers interior (95–96% agreement).
+
+**A rung grows a chunk of parents at a time, and refined whole it is unaffordable.**
+The first pilot refined whole rungs: **72,800 probes and 645.6 s** before the first
+root, because rung 12 of multibrot3 holds **133,465** straddling cells (rungs 6–12:
+316, 836, 2,224, 6,004, 16,602, 46,605 — ×2.8 a rung). So a rung grows by `CHUNK`
+parents taken in the rung above's served order, and a chunk's children are served
+in digest order. The chunk trades cost against spread, read as the distinct rung-6
+cells (width 0.073) the first 128 candidates descend from:
+
+| refinement | probes | seconds | rung-6 ancestors | rung-4 ancestors |
+|---|--:|--:|--:|--:|
+| whole rungs | 72,800 | 645.6 | 105 | 43 |
+| chunk 1,024 | 5,461 | 38.1 | 97 | 42 |
+| **chunk 256** | **1,749** | **15.4** | **85** | **41** |
+| chunk 64 | 541 | 3.2 | 41 | 26 |
+
+**Per draw against the pinned ladder.** Phoenix's ladder, measured the same
+evening: 340 attempts, 37 survivors, 9.08 s — **26.7 ms an attempt, 245 ms a
+survivor**, all paid at build. Multibrot3 at chunk 256: 128 attempts, 50 survivors,
+7.78 s screening (**61 ms an attempt, 156 ms a survivor**) plus 12.5 s of probes
+paid once for the first 700-odd cells a rung. Its yield is **39%** against the
+ladder's 11%, because every candidate already straddles.
+
+**A walk leg on it** (multibrot3, seed 20260916, `--roots 40 --batches 40 --batch 8
+--candidates 4`, the channel alone, nothing merged):
+
+| | whole rungs | chunk 64 | chunk 256 |
+|---|--:|--:|--:|
+| draws surviving the screen | 60/128 | 42/128 | 50/128 |
+| batches before the frontier emptied | 17 | 12 | 13 |
+| admissions | 121 | 36 | 53 |
+| roots booking any | 5 of 40 | 3 of 40 | 3 of 40 |
+| distinct admitted centres | 96 | 32 | 46 |
+| admitted width, median | 4.2e-5 | 3.3e-4 | 8.3e-5 |
+| admissions whose frame holds a pool nucleus | 0 | 0 | 0 |
+
+**The admissions are new places, not re-finds.** The roots stand at the pool's
+widths (median 0.0046 against the pool's 0.0057), yet 2–8% of them frame a pool
+nucleus at a comparable width, and **none of the 210 admissions over the three
+legs holds a pool nucleus in its frame.** **The yield is lineage-concentrated**:
+every leg's admissions come off three to five roots, all at rungs 9–12, and every
+leg ended on an empty frontier with **235–239 candidates refused below the floor**.
+These roots are not graced: `walk.PLANE_ROOT_SOURCES` is `seed_file` alone, so a
+sampler root on a plane pays the floor from its first rung where a pool root at
+the same width is graced for five. ⚠ That is a likely cause of the empty frontiers
+and **not a measured one** — no graced leg was run — and it is the next lever.
+
+```
+fractal-wallpapers walk --family multibrot --degree 3 --root-channel viewport_sampler --roots 40
+fractal-wallpapers harvest --partition multibrot5 --root-channel viewport_sampler
 ```
 
 **A node's foci are recorded only if asked.** The focus set — the peaks of the
