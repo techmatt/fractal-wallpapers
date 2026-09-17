@@ -521,6 +521,24 @@ names `--partition-weights` with **every other partition at 0** — a partition 
 keeps its standing weight. **Read the resolved-shares
 line anyway** — the reason it exists is that a prompt naming one arm is not a
 prompt running one arm, and that is unchanged.
+
+**On a fresh partition, opening a place is dear and deepening it is cheap, so a night
+alternates the two.** `degree6_overnight_ckpt128` (2026-09-17, `multibrot6` +
+`julia:multibrot6`) opened places with `ranked_bands` arms at 4.6–9.1 engine s a
+candidate. Each candidate pays its own field dump there, even at width 2 over
+`threads tia`. It then deepened the best opened places by naming them to the floor
+draw: `--shares` `mode_floor` 1.0 spelled whole, `--floor-places FILE` (the top N by
+best coarse P(>=4), excluding places already deepened), `--floor-modes threads tia
+--floor-width 3`. The first four of those ran at 1.5–2.4 s a candidate, and their coarse clears per
+1000 engine s went **60, 43, 25, 32** against the opening arms' **4.6, 9.1, 3.5, 7.6**.
+The price rises as the manifest reaches lower-ranked, deeper places: 10.1 s by the last. The
+places a manifest names under `SEATING_BAR` are admitted by it, so a place opened an
+hour earlier is reachable once merged. On the fine head it held too: deepening arms
+made **9 of the night's 11 rows over `p_fine` 0.50**, and **6.6 rows over
+`solve.DEFAULT_FINE_BAR` per 1000 engine s against the opening arms' 2.1**. `smooth` clears the coarse bar cheaply on d=6
+but reads poorly on fine (5 of 62 over `solve.DEFAULT_FINE_BAR` at the mid-run read),
+so it was dropped from the deepening roster.
+
 So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
 — plans 7,080 `ranked_bands` candidates at 177 `phoenix:classic` places and 5,680
 more in the near band, which is **13,000 of 35,520 shots on the band this project

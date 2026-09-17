@@ -1365,6 +1365,25 @@ sparser filament spirals beside black bulbs, and d=6's one shallow admission rea
 them. The contact sheet of the first sixteen of each was a scratch page and is not
 tracked.
 
+**On `multibrot6` the sampler's yield climbs as its band narrows, down to about 1/4,000
+of the home width.** `degree6_overnight_ckpt128` (2026-09-17) ran four graced
+`harvest` arms on the pair and read plane admissions per root by the root's straddle
+rung. Each arm moved `--sampler-widest`/`--sampler-narrowest` down one rung:
+
+| arm (band) | rung 10 | 11 | 12 | 13 | 14 | plane admissions |
+|---|--:|--:|--:|--:|--:|--:|
+| 1 (0.004–0.0009) | 0.38 | 0.54 | 1.04 | | | 48 |
+| 2 (0.002–0.00045) | | 1.6 | 1.5 | 2.2 | | 86 |
+| 3 (0.001–0.00023) | | | 0.36 | 1.5 | 2.45 | 75 |
+| 4 (0.0005–0.00012) | | | | 0.22 | 0.30 | 19 |
+
+The fourth arm served no rung 15 (width 1.18e-4 is under its 1.2e-4 floor) and
+collapsed, so the knee on this plane is around **0.001–0.00023**. `--low-water 24
+--cooldown 4` is how an arm draws more roots: a refill hands over `--low-water` roots,
+so the default 8 drew 30 roots in 16 minutes and 24 drew 74–111 in 25–30. The Julia
+twin paid most of every arm (98–563) and crowded as it went: 13, 7, 12, 8 new
+parameters, with 35, 79, 63, 11 skipped inside the c-spacing floor.
+
 ```
 fractal-wallpapers walk --family multibrot --degree 3 --root-channel viewport_sampler --roots 40
 fractal-wallpapers harvest --partition multibrot5 --root-channel viewport_sampler
