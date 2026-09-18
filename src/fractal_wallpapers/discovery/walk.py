@@ -34,7 +34,8 @@ expansion cap bounds what a root may *spend*; [`Limits.lineage_admissions`] boun
 what it may *book*. A fertile lineage sits at the top of a priority queue by
 construction — it got there by admitting — so without a ceiling it takes the walk
 with it, and the finished frame set is one composition. Off by default and on for a
-deep run; nothing is retro-refused when it fires, expansion simply stops.
+deep run. It is asked per row at booking, so a lineage never books past it; nothing
+already booked is retro-refused when it fires.
 
 **Two reserved floors, both of available, and neither may stall the batch.**
 Reframings hold a floor because nothing has been trained on the views they
@@ -820,14 +821,15 @@ class Walk:
         alternative — expanding the row that reached the cap — is a lineage
         descending from its own ceiling.
 
-        **The cap bounds expansion, and a run may finish over it.** Two nodes of
-        one lineage can be in the same batch: the first closes the lineage, the
-        second was popped before that happened and its candidates are already
-        drawn, so they are booked. Recording them is not a choice — refusing a
-        row after the fact is exactly the retro-refusal this project does not do —
-        and nothing is lost by it, because the overshoot is in the count and not
-        in the walk time. What the cap actually buys is that no further batch
-        slot goes to the lineage, and that is true from the crossing.
+        **The cap bounds booking, and no lineage finishes over it.** Two nodes of
+        one lineage can be in the same batch: the first closes the lineage, and
+        the second was popped before that happened, so its candidates are already
+        drawn. They are still asked this before they are booked, one row at a
+        time, and a row the head would have admitted is recorded `not_admitted`
+        with `lineage_capped` set and its score kept. That is a refusal at the
+        gate rather than after it — no row that was booked changes its fate.
+        Until 2026-09-18 the cap was asked only when choosing what to expand, so
+        such a batch booked every row it held and lineages ran to 11 against 6.
         """
         cap = self.limits.lineage_admissions
         return cap is not None and self.admitted.get(int(root_id), 0) >= int(cap)
@@ -1246,6 +1248,17 @@ class Walk:
                 # the junk floor is not asked a second time to be told so.
                 candidate["cleared_junk"] = True
                 self._rung_counts(rung, cleared=True, grace=grace)
+                if self.lineage_full(row["root_id"]):
+                    # The cap is a gate on booking, asked row by row: a lineage
+                    # that has booked its cap books nothing more, including rows
+                    # of this same batch drawn from a node popped before it
+                    # closed. The row keeps its score and says why it was refused.
+                    candidate["fate"] = ledger_module.NOT_ADMITTED
+                    candidate["lineage_capped"] = True
+                    self._count("tier:refused")
+                    self._count("not_admitted:lineage_capped")
+                    recorded.append(self.ledger.write("candidate", node_id=None, **candidate))
+                    continue
                 self._count("tier:admitted")
                 self._book_admission(row["root_id"])
 

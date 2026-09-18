@@ -119,6 +119,9 @@ EXPANDABLE = "expandable"
 
 #: A candidate the structural gates passed and the scorer would not stand on:
 #: below the junk floor, or carrying no score at all. Recorded, never walked from.
+#: Also the fate of a row the head would have admitted from a lineage already at
+#: `Limits.lineage_admissions`; that row carries `lineage_capped: true` and keeps
+#: its score, so the two refusals are told apart by the flag and not the fate.
 NOT_ADMITTED = "not_admitted"
 
 #: The three fates of a candidate that reached the scorer — i.e. that every

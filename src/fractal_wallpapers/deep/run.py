@@ -90,10 +90,10 @@ which the lineage stops expanding and its standing frontier nodes are evicted.
 **Record-and-rank still governs.** Capped is not deleted: every row the lineage
 already wrote keeps the fate it earned, nothing is retro-refused, and the
 crossing lands in the ledger as its own row so a readout can say what the cap
-cost and what it bought. That is also why a lineage can finish a run a little
-over its cap — two of its nodes in one batch, the second already drawn when the
-first closes it — and why that costs nothing: the overshoot is in the count, and
-the batch slots stop from the crossing.
+cost and what it bought. The cap is asked per row at booking, so two of a
+lineage's nodes in one batch — the second already drawn when the first closes it
+— book up to the cap and no further; the rest are recorded `not_admitted` with
+`lineage_capped` set. Until 2026-09-18 they were booked and the count overshot.
 """
 
 from __future__ import annotations

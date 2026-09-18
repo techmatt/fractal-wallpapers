@@ -195,10 +195,12 @@ thinned. So the cap acts at supply time: past it the lineage stops expanding and
 its standing frontier nodes are evicted at the crossing, which is recorded as its
 own `lineage_capped` row. Twenty-four is half again the equal share of that run's
 own admissions over its own roots. **Record-and-rank still governs**: capped is
-not deleted, every row keeps the fate it earned, and nothing is retro-refused —
-which is also why a lineage can finish a run slightly over its cap, from nodes
-already in flight when it closed. The overshoot is in the count; the batch slots
-stop at the crossing. `--lineage-cap 0` turns it off.
+not deleted, every booked row keeps the fate it earned, and nothing is
+retro-refused. **The cap is asked per row at booking, so a lineage never finishes
+over it**: rows from a node already in flight when it closed are recorded
+`not_admitted` with `lineage_capped: true` and their score kept. Until 2026-09-18
+the cap was asked only at expansion and a crossing batch booked every row it held.
+`--lineage-cap 0` turns it off.
 
 **Seats spread over family x band, because rank hides this mode's own subject.**
 The window is read in three equal-log **depth bands** — `depth.BAND_NAMES`, from

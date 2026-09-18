@@ -160,6 +160,54 @@ def test_the_measured_table_is_what_the_deriver_produces_from_its_own_telemetry(
     assert derived["price_ema"] == prices.PRICE_EMA, "written at derivation time, not edited in"
 
 
+def test_a_carried_table_pools_with_a_new_run_and_keeps_its_own_rows(tmp_path, capsys) -> None:
+    """`derive-prices --carry` sums a measured table's provenance in as one more
+    block, which is how a source run whose directory is gone keeps its rows when a
+    new run prices a partition it never served — d=6 on 2026-09-18, against
+    `harvest_run2`. The carried rows come back as they were; the new one is
+    measured and no longer defaulted."""
+    from fractal_wallpapers import cli
+
+    carried = tmp_path / "measured.json"
+    carried.write_text(
+        json.dumps(
+            prices.derive(
+                [{"minutes_spent": {"multibrot3": 2.0}, "units_found": {"multibrot3": 4.0}}],
+                [{"name": "gone", "path": "artifacts/gone"}],
+                ALL_PARTITIONS,
+            )
+        ),
+        encoding="utf-8",
+    )
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "summary.json").write_text(
+        json.dumps(
+            {
+                "quota": {
+                    "cost": {
+                        "minutes_spent": {"multibrot6": 3.0},
+                        "units_found": {"multibrot6": 2.0},
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    out = tmp_path / "out.json"
+    args = cli.build_parser().parse_args(
+        ["derive-prices", "--run", str(run), "--carry", str(carried), "--out", str(out), "--write"]
+    )
+    assert args.handler(args) == 0
+    table = json.loads(out.read_text(encoding="utf-8"))
+    assert table["prices"]["multibrot3"] == 0.5
+    assert table["prices"]["multibrot6"] == 1.5
+    assert "multibrot6" not in table["_provenance"]["defaulted"]
+    named = [source["name"] for source in table["_provenance"]["source_runs"]]
+    assert named == ["run", "gone"]
+    assert table["_provenance"]["source_runs"][1]["carried_from"].endswith("measured.json")
+
+
 def test_the_seed_table_round_trips_through_its_real_consumer() -> None:
     """Through the price model rather than through a second parser, so the file
     and the thing that reads it cannot drift."""

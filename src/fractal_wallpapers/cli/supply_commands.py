@@ -471,6 +471,23 @@ def derive_prices(args: argparse.Namespace) -> int:
         # The table this derives is tracked, so the run it was derived from is
         # named as a tracked record names a place under the regenerable tree.
         sources.append({"name": run_dir.name, "path": tracked_name(run_dir)})
+    if args.carry:
+        # A measured table's provenance IS its pooled evidence — the summed
+        # minutes and units of every run behind it — so it pools as one more
+        # block. This is how a run whose directory is gone keeps its rows when a
+        # new run is added: the sum is re-taken over both, never hand-edited.
+        carried = price_module.load_table(Path(args.carry))
+        provenance = carried.get("_provenance") or {}
+        blocks.append(
+            {
+                "minutes_spent": provenance.get("minutes") or {},
+                "units_found": provenance.get("units") or {},
+            }
+        )
+        sources.extend(
+            {**run, "carried_from": Path(args.carry).as_posix()}
+            for run in provenance.get("source_runs") or []
+        )
 
     try:
         table = price_module.derive(blocks, sources, ALL_PARTITIONS)
@@ -1013,6 +1030,11 @@ def add_commands(subcommands) -> None:
     )
     pricing.add_argument(
         "--run", action="append", required=True, help="a finished run directory (repeatable)"
+    )
+    pricing.add_argument(
+        "--carry",
+        help="a measured table whose pooled minutes and units are summed in as one more "
+        "block, for source runs no longer on disk",
     )
     pricing.add_argument(
         "--regularize", action="store_true", help="shrink the measured table into a seed"
