@@ -704,6 +704,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### targets_raise_ckpt131
+
+`targets_raise_ckpt131`, 2026-09-18, `.[dev,models]` with a release engine.
+**Fast: 4,821 passed in 162.24 s (2:42)**, 157 deselected, green. **No test added**, and the
+count has not moved from `texture_draw_band_ckpt131`'s, so the tree is still believed at
+**4,978**. Slow not run, since the prompt did not name it. Taken a minute after three
+collection records ended, one pool load each; ⚠ it sits 7 s above the 142–155 s band and is
+read as the box, not chased — the only code change was three integers in `TARGETS`.
+
 #### d6_sampler_leg_ckpt131
 
 `d6_sampler_leg_ckpt131`, 2026-09-18, `.[dev,models]` with a release engine.
