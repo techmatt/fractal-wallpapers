@@ -104,6 +104,13 @@ from __future__ import annotations
 #:   however high `n` goes, on `location` and `spiral` rather than on colour, and
 #:   the augmenting chains exhaust well inside their budget — the supply is the
 #:   wall, not the clock. `smooth_angle_min` read 185 of 200 there, hence 100.
+#: * **500 for `threads`, 300 for `smooth_mean_angle`, 150 for `smooth_angle_min`**,
+#:   Matt's raise of 2026-09-18 off `solve_headroom_ckpt131`'s in-memory solves, which
+#:   supersedes the two bullets above for these three. All three filled at the larger
+#:   `n` on the shipped fine bar (0.0302 held), and their added rows read `p_fine`
+#:   medians of 0.130, 0.147 and 0.176 — the marginal seats were bar-grade stock, not
+#:   floor stock, which is what separated them from the families that were not raised.
+#:   The table below is the 2026-09-17 reading at the old sizes.
 #:
 #: **What the nineteen field, measured 2026-09-17** by `add_three_mode_collections_ckpt130`,
 #: every one solved by `curate solve run --collection NAME --no-render --no-sheet` on
@@ -182,9 +189,9 @@ TARGETS: dict[str, int] = {
     "tia": 1000,
     "smooth": 800,
     "stripe": 800,
-    "threads": 400,
-    "smooth_mean_angle": 200,
-    "smooth_angle_min": 100,
+    "threads": 500,
+    "smooth_mean_angle": 300,
+    "smooth_angle_min": 150,
     "smooth_stripe": 200,
 }
 
