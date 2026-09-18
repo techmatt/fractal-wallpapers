@@ -641,6 +641,26 @@ which dropped settings — so a depth row carrying a drawn weight lists as a
 `bare_varied` suspect although `hunt.Maker` rendered it with the weight. The safe
 direction; a repair leg reading that manifest should date-bound it first.
 
+#### What the drawn weight did, measured 2026-09-18
+
+`angle_modes_evening_ckpt130` drew `[0.3, 0.9]` on 12,182 rows of the three
+`smooth_*` angle/stripe modes. **The coarse clear rate falls monotonically with the
+weight on every route**: 10.1 / 7.2 / 5.4% over `solve.Q4_BAR` in thirds of the span
+on the graded places, 18.9 / 14.5 / 7.9% on places seated in `smooth`/`stripe`, and
+about half of every band's clears also clear `DEFAULT_FINE_BAR`. So the catalog's 0.85
+sits in the worst third the draw covered. ⚠ Not yet a reason to move `TEXTURE_WEIGHT`:
+a low weight is nearer the plain `smooth` picture both judges like, and the seats the
+night bought come from all three thirds (lo/mid/hi 57/50/25 at `smooth_mean_angle`'s
+ceiling, 54/53/40 at `smooth_stripe`'s). Only the render judge and the fine head have
+read these rows; no human has.
+
+**Prices on this roster, three workers.** A composite floor shot costs **4.3–4.5
+engine s** at a graded place, **5.8** at a place seated in `smooth`/`stripe`, **8.6** at
+one seated in a family collection. Opening a graded place in one of the three costs
+**1.7–1.9 s** on the hunt's single engine. ⚠ **A hunt and a depth leg side by side hold
+about 12 GB between their two parents**, which on a desktop session took commit charge
+to 41.4 of 46.7 GB and paged; run them one after another.
+
 ### `--vary-palette` — moving the palette block, and nothing else
 
 Off by default. On, every candidate draws a `phase` and a `repeat` alongside its

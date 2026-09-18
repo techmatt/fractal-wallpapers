@@ -704,6 +704,20 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### angle_modes_evening_ckpt130
+
+`angle_modes_evening_ckpt130`, 2026-09-18, `.[dev,models]` with a release engine.
+**Fast: 4,816 passed in 155.31 s (2:35)**, 157 deselected, green. **+19 tests**: 18 in
+`tests/test_texture_draw.py` and one in `tests/test_hunt.py`, so the tree is believed at
+**4,973**. Slow not run, on Matt's call. The first reading of this tree, taken right after
+the code landed, carried **one red**, `test_nested_verbs.py`'s flag table missing
+`--texture-draw`, which was fixed and its file re-run green (92 of 92). This one was taken
+after a night of render legs and a POST solve set had ended.
+
+**It settles the ⚠ below as box**: 155.31 s on a tree three tests on is 25.6 s under the
+180.94 s taken after nineteen pool loads, and within the 142–154 s band the two readings
+before that one sat in.
+
 #### add_three_mode_collections_ckpt130
 
 `add_three_mode_collections_ckpt130`, 2026-09-17, `.[dev,models]` with a release engine.
