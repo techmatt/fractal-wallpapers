@@ -1479,6 +1479,62 @@ against a distribution nobody asked for. So the rule is built with all four cell
 at 1.0 and its targets are then emptied. The mode floors are the only demands a
 family pass carries.
 
+#### A family pass floors at the DEFAULT rule, and the flat floor was costing a seat
+
+**Matt's ruling of 2026-09-17.** A family pass took `--themed`'s **flat**
+`floor(n / 100)` until then — inherited with the rest of the themed shape, and the
+rule every gallery before 2026-08-31 was seated under. It now floors at
+`mode_policy.seat_floors(n)`, which is what every other pass in this repository
+runs under and what `solve.solve` takes when it is handed no floor at all.
+
+**The flat floor was suppressing seats, which is the opposite of what a floor
+reads like it does.** `magenta` sat at 399 of 400 after `magenta_30m_ckpt130`
+bought it two seats with a 30-minute conditioned draw. The empty seat was not
+supply: over one pool load, at `n = 400`, the seat count is **not monotone** in the
+floor and the shipped flat 4 is not its best value —
+
+| floor | seats | shortfall | mandate seats |
+|---|--:|--:|--:|
+| 0 | 396 | 0 | — |
+| 1 | 395 | 0 | 10 |
+| 2 | 395 | 0 | 16 |
+| 3 | 399 | 2 | 27 |
+| **4 — the flat floor** | **399** | **2** | 34 |
+| 5 | 400 | 3 | 43 |
+| 6 | 393 | 3 | 58 |
+| **`seat_floors(400)`** | **400** | **7** | 88 |
+
+A floor is a mandate, and the mandate leg seats scarcest-first out of its own
+subpool — a better **seed** for the augmenting chain than the ranked walk is, since
+only the chain stage can move tier 1. So raising the mandate raises the seat count
+until the mandate stops being fillable, and *lowering* it to make a shortfall go
+away costs four seats. This is the non-monotonicity *The leg is a greedy seed and
+local search* already warns about, met from the other side.
+
+**The shortfall column going the other way is not a regression.** The objective is
+lexicographic with **seats first and shortfall second**, so 400 seats at a
+shortfall of 7 strictly beats 399 at 2. What the larger shortfall records is a
+demand this pool cannot meet at any floor: `magenta` holds **four**
+`direct_trap_lines` rows above the bar in the whole themed pool — one of them a
+spiral against a full cap — so the mode is short from floor 3 upward and no mining
+leg could close it. An unfilled floor beats a padded gallery.
+
+**No family loses a seat and one gains.** All twelve swept under both rules over a
+single pool load, 2026-09-17: eleven tie at their target and `magenta` goes
+**399 → 400**. Tiers 2-4 fall slightly for most of the eleven — the default rule
+re-seats toward the thin modes, `magenta`'s `smooth` going 93 → 82 against a floor
+of 0 while `itinerary` goes 4 → 9 and `tia` 92 → 100. That is the ruling behind
+`seat_floors` doing exactly what it says (*a gallery spread over the roster is the
+better gallery*, Matt, ckpt 94), and it is why this is a change of rule rather than
+a tuning: a collection was the last pass in the tree still seated under the old one.
+
+⚠ **A collection record taken before 2026-09-17 was seated under the flat floor**
+and its per-mode counts are not comparable with one taken after. The seat totals
+are, for the eleven that tie.
+
+`cli.collection_pass` is where this lives, and a **mode** collection still floors
+at 0 for the reason above. `--themed` keeps the flat floor as its default.
+
 ⚠ **A family pass and a mode pass are not comparable measurements**, and neither is
 comparable with the general one: the first runs the geometry-only distinctness rule
 at `rules.GEOMETRY_RADIUS` on the relaxed bar, the second the shipped twin test at

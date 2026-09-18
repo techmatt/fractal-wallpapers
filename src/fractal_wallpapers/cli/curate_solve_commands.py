@@ -463,7 +463,16 @@ def curate_solve(args: argparse.Namespace) -> int:
         # the same order an unnarrowed pass would take.
         candidates, held = targets_module.pool_for(candidates, args.collection)
         shape = collection_pass(args.collection, args.n)
-        targets, floor = shape["targets"], shape["floor"]
+        # **Defaults and not overrides**, the contract `--themed` is already
+        # documented under at `GALLERY.md`'s *`--themed <cell>` is the whole themed
+        # leg*. This clobbered both unconditionally until 2026-09-17, so
+        # `--mode-floor` and `--target` were accepted by the parser and silently
+        # discarded on a collection pass — which reads as a measurement of the
+        # floor it named rather than of the one it got, and is how the flat floor
+        # went unquestioned for as long as it did.
+        targets = targets or shape["targets"]
+        if args.mode_floor is None and not args.flat_floor:
+            floor = shape["floor"]
         print(
             f"[collection] {args.collection}: "
             f"{targets_module.kind_of(args.collection)}, {held:,} row(s), {args.n} seat(s)"
@@ -894,7 +903,9 @@ def collection_flag(container) -> None:
         "onto the cells of every row the store calls dominant in it and then runs as an "
         "ordinary themed pass (the relaxed bar, geometry-only distinctness), with the "
         "family's four cells raised out of the colour ceiling's way and no colour demand "
-        "stated. A mode pass narrows the pool to that ROUTED mode and clears the per-mode "
+        "stated, at the DEFAULT per-mode floor rule since 2026-09-17 — it took the flat "
+        "floor(n / 100) until then, which cost `magenta` a seat. A mode pass narrows the "
+        "pool to that ROUTED mode and clears the per-mode "
         "floors and ceilings, which over a single-mode population are a demand nothing can "
         "meet and a cap on the collection itself. The sixteen targets are: "
         + ", ".join(f"{name} {seats}" for name, seats in targets_module.TARGETS.items())
@@ -908,8 +919,50 @@ def collection_pass(collection: str, seats: int) -> dict:
     Both verbs read this for [`themed_demands`]' reason. The two kinds differ in
     everything but the table they took their `n` from, so the branch is here and
     not at each call site.
+
+    ## A FAMILY pass takes the default floor rule, Matt's ruling of 2026-09-17
+
+    `None` is [`curation.solve.solve`]'s way of asking for
+    [`curation.mode_policy.seat_floors`] — half each accepted strange mode's share
+    of the strange seat budget — which is what every other pass in this repository
+    runs under. It inherited [`solve.mode_floor`]'s **flat** `floor(n / 100)` from
+    the `--themed` path until this ruling, and that is the rule every gallery
+    before 2026-08-31 was seated under.
+
+    **The flat floor was costing seats, which is the opposite of what a floor
+    reads like it does.** Measured on `magenta` at n = 400 over one pool, the
+    seat count is not monotone in the floor and the shipped flat 4 was not its
+    best value:
+
+    | floor | seats | shortfall |
+    |---|--:|--:|
+    | 0 | 396 | 0 |
+    | 1 | 395 | 0 |
+    | 2 | 395 | 0 |
+    | 3 | 399 | 2 |
+    | **4 — the flat floor** | **399** | **2** |
+    | 5 | 400 | 3 |
+    | 6 | 393 | 3 |
+    | **`seat_floors(400)` — this** | **400** | **7** |
+
+    A floor is a mandate, and the mandate leg seats scarcest-first from its own
+    subpool; that is a better **seed** for the augmenting chain than the ranked
+    walk is, so raising the mandate raises the seat count until the mandate stops
+    being fillable. `magenta`'s mandate leg seats 16 at floor 2 and 88 here.
+
+    **The shortfall column going the other way is not a regression**, because
+    [`solve.solve`]'s objective is lexicographic with **seats first and shortfall
+    second** — 400 seats at a shortfall of 7 strictly beats 399 at 2. What the
+    larger shortfall records is a demand this pool genuinely cannot meet:
+    `magenta` holds **four** `direct_trap_lines` rows above the bar in the whole
+    themed pool, so the mode is short at every floor at or above 3 and no leg
+    could close it. An unfilled floor beats a padded gallery, and the seating
+    records the shortfall rather than repairing it.
+
+    A **mode** pass still floors at 0: over a single-mode population a per-mode
+    floor is a demand nothing but that one mode can meet, which is the reason
+    already written at `--collection`'s own help.
     """
-    from fractal_wallpapers.curation import solve as solve_module
     from fractal_wallpapers.curation import targets as targets_module
 
     if targets_module.kind_of(collection) == targets_module.FAMILY:
@@ -917,7 +970,7 @@ def collection_pass(collection: str, seats: int) -> dict:
             "theme": collection,
             "rule": targets_module.rule_for(collection),
             "targets": {},
-            "floor": solve_module.mode_floor(int(seats)),
+            "floor": None,
         }
     return {"theme": None, "rule": None, "targets": {}, "floor": 0, "mode_ceilings": {}}
 

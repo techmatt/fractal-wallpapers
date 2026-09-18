@@ -1068,6 +1068,41 @@ def test_a_themed_record_and_a_themed_run_ask_for_the_same_two_demands() -> None
     assert ceiling.Rule().allowed("dark_vivid_green", 200) == 4 * ceiling.K + 1 == 13
 
 
+def test_a_family_collection_takes_the_default_floor_rule_and_a_mode_one_takes_none() -> None:
+    """Matt's ruling of 2026-09-17, and it is the one thing the two kinds do not share.
+
+    A family pass floors at `None`, which is how [`solve.solve`] is asked for
+    `mode_policy.seat_floors` — the rule every other pass in this repository runs
+    under. It took `--themed`'s **flat** `floor(n / 100)` until then, inherited
+    along with the rest of the themed shape, and the flat floor was costing
+    `magenta` its four-hundredth seat: measured over one pool, flat 4 read 399 and
+    the default rule read 400, because a floor is a mandate and the mandate leg is
+    a better seed for the augmenting chain than the ranked walk is.
+
+    A **mode** pass still floors at 0. Over a single-mode population a per-mode
+    floor is a demand only one mode can meet, so it is cleared rather than set.
+
+    Asserted as `is None` and against `mode_floor` rather than against today's
+    numbers: what this pins is which RULE each kind asks for, and both rules are
+    free to move without this test being repointed.
+    """
+    from fractal_wallpapers import cli
+    from fractal_wallpapers.curation import solve, targets
+
+    family = cli.collection_pass("magenta", targets.seats_for("magenta"))
+    assert family["floor"] is None, "a family pass asks for the default per-mode rule"
+    assert family["theme"] == "magenta"
+
+    mode = cli.collection_pass("stripe", targets.seats_for("stripe"))
+    assert mode["floor"] == 0, "a single-mode population clears the per-mode floors"
+    assert mode["theme"] is None
+
+    # The flat floor is what this stopped being, and it is still what `--themed`
+    # defaults to — so the two paths now differ, deliberately, and a change that
+    # collapsed them again would land here.
+    assert cli.themed_demands("dark_vivid_magenta", 400)[1] == solve.mode_floor(400)
+
+
 def test_a_misspelt_themed_cell_is_refused_at_the_parser_on_both_verbs() -> None:
     """`--themed not_a_real_cell` used to be accepted, spend about forty seconds
     reading the whole candidate pool, and then fail on a message that reads *the
