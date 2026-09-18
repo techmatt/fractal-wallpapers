@@ -234,6 +234,7 @@ def curate_hunt(args: argparse.Namespace) -> int:
                 conditioned=args.conditioned,
                 cell=args.cell,
                 work_order=order,
+                mode=args.mode,
             )
             print(json.dumps(hunt.shape_of(pools, intended), indent=2))
             return 0
@@ -248,6 +249,7 @@ def curate_hunt(args: argparse.Namespace) -> int:
             conditioned=args.conditioned,
             cell=args.cell,
             work_order=order,
+            mode=args.mode,
             named_places=named,
             device=args.device,
         )
@@ -1276,7 +1278,7 @@ def mine_draw_flags(holder):
 
 
 def hunt_draw_flags(holder):
-    """The seven flags that describe a hunt's draw, which `plan` and `run` share.
+    """The eight flags that describe a hunt's draw, which `plan` and `run` share.
 
     `plan` IS the run with the rendering left out — it prints the shape the
     budget would be spent against — so the two take the same description of what
@@ -1322,6 +1324,16 @@ def hunt_draw_flags(holder):
         help=f"how many candidates one location is given (default {hunt_module.PER_LOCATION}). "
         "Shallow on purpose: a gallery seats one wallpaper per location, so a fourth "
         "candidate at a fresh place is worth more than a ninth at a stocked one",
+    )
+    holder.add_argument(
+        "--mode",
+        metavar="MODE",
+        help="draw every candidate in this ONE mode, instead of sampling `--per-location` of "
+        "them out of `mode_policy.mined()`. A different ask from the width: the width says "
+        "how many modes a place is tried in and the draw samples them, so `--per-location 1` "
+        "alone gives each place one mode out of the twelve and the leg reads as a thin slice "
+        "of all of them. A leg comparing PLACES wants the mode held, and the two compose. "
+        "Refused for a mode off the mined roster, because a hunt is a leg that buys material",
     )
     holder.add_argument(
         "--seed",

@@ -317,6 +317,55 @@ def test_the_modes_a_location_is_tried_in_are_drawn_without_replacement():
     assert drawn == hunt.modes_for("place-a", 4, seed=2, roster=roster)
 
 
+def test_one_mode_holds_the_roster_where_the_width_only_samples_it(monkeypatch):
+    """`--mode` and `--per-location` are different asks and the difference is the
+    point: the width says how many modes a place is tried in and `modes_for`
+    SAMPLES them, so width 1 alone gives each place one mode drawn out of the
+    twelve and a leg reads as a thin slice of all of them. A leg comparing places
+    rather than modes wants the mode held, and the two compose — width 1 at one
+    mode is one candidate per place, in that mode."""
+    _any_map(monkeypatch)
+    held = pools({"mandelbrot": 40})
+    loose = hunt.plan(
+        held, seed=1, unconditional=30, per_location=1, pool=["m"], log=lambda *_: None
+    )
+    assert len({one.mode for one in loose}) > 1, "width 1 alone samples the whole roster"
+
+    holding = hunt.plan(
+        held,
+        seed=1,
+        unconditional=30,
+        per_location=1,
+        mode="smooth",
+        pool=["m"],
+        log=lambda *_: None,
+    )
+    assert {one.mode for one in holding} == {"smooth"}
+    # One candidate per place either way: the mode is held, not the width.
+    assert len({one.location for one in holding}) == len(holding)
+
+
+def test_a_mode_off_the_mined_roster_is_refused_rather_than_drawn(monkeypatch):
+    """A hunt is a leg that BUYS material, so its roster is `mode_policy.mined()` and
+    a mode off it is one this project has ruled it does not buy more of — weighted 0,
+    or in `UNMINED` because the gallery seats it and no leg stocks it. Drawing one
+    here would be the single door that ignores both rulings."""
+    from fractal_wallpapers.curation import mode_policy
+
+    _any_map(monkeypatch)
+    held = pools({"mandelbrot": 20})
+    for refused in ("no_such_mode", *mode_policy.unmined()[:1]):
+        with pytest.raises(hunt.HuntRefused, match="is not a mode a hunt draws"):
+            hunt.plan(
+                held,
+                seed=1,
+                unconditional=10,
+                mode=refused,
+                pool=["m"],
+                log=lambda *_: None,
+            )
+
+
 def test_the_stratifier_walks_the_cells_in_turn_and_repeats_only_after_a_full_round(monkeypatch):
     """The head's argmax concentrates; the whole point here is that this does not."""
     import fractal_wallpapers.palettes.carriers as carrier_table

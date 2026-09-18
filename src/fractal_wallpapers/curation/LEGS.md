@@ -1388,7 +1388,23 @@ fractal-wallpapers gallery-grade score-pool
 
 `--per-location 12` is every mode of `mode_policy.mined()` once — width 1 at pairs
 that are empty by construction — and the palettes are stratified over the carrier
-table's cells. **The hunt has no phase axis**: every candidate draws at phase 0, so
+table's cells.
+
+**`--mode MODE` holds the roster where the width only samples it**, since
+`tuned_descents_1h_ckpt129` on 2026-09-17. The two are different asks and reading
+them as one spelling of the same thing is the trap: `--per-location` is how many
+modes a place is tried in and [`modes_for`] **samples** that many out of the
+twelve, so `--per-location 1` on its own gives each place one mode drawn at
+random and a leg reads as a thin slice of all of them rather than as one mode.
+A leg comparing **places** — which is what an opening at width 1 is — wants the
+mode held instead, and the two compose: width 1 at one mode is one candidate per
+place, in that mode. Refused against `mode_policy.mined()` and not the engine's
+catalog, because a hunt is a leg that buys material and a mode off that roster is
+one this project has ruled it does not buy more of. `None` is the whole roster and
+the hunt record carries it either way, so a record can say a leg drew every mode
+rather than merely predating the flag.
+
+**The hunt has no phase axis**: every candidate draws at phase 0, so
 `--phase-draw`'s one-uniform-phase rule does not reach a reframe leg's first
 opening. Measured: 2,364 candidates over 197 places in **2,914 s on three
 workers**, 1.23 s a candidate; **221 over `Q4_BAR` (9.35%) at 117 of the 197

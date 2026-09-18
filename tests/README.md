@@ -704,6 +704,21 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### tuned_descents_1h_ckpt129
+
+`tuned_descents_1h_ckpt129`, 2026-09-17, `.[dev,models]` with a release engine, taken on
+an idle box six minutes after the leg's last `score-pool` and its sixteen POST solves had
+finished. **Fast: 4,793 passed in 142.43 s (2:22)**, 157 deselected — 4,950 collected,
+which is `degree6_ckpt128_wallpapers`'s 4,948 + 2 fast, both in `tests/test_hunt.py` for
+the new `curate hunt --mode`. Zero skips. **Slow lane not run**, so 4,950 is believed, not
+read. +1.4 s against the last reading is within the box.
+
+⚠ **The first run of this lane was red, on this prompt's own change**, and it is the
+guard working rather than a fault: `test_nested_verbs.py`'s `SURFACE` pins every nested
+verb's flag list, so a flag added to `curate hunt plan`/`run` fails it until the table
+names it too. The fix is the two-line table edit and never the guard; re-run green with
+`tests/test_hunt.py` beside it, 148 of 148, then the whole lane.
+
 #### degree6_ckpt128_wallpapers
 
 `degree6_ckpt128_wallpapers`, 2026-09-16, `.[dev,models]` with a release engine, taken on

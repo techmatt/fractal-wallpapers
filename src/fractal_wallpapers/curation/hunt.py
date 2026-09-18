@@ -903,6 +903,7 @@ def plan(
     conditioned: int = 0,
     cell: str | None = None,
     work_order: dict | None = None,
+    mode: str | None = None,
     pool: list | None = None,
     log=print,
 ) -> list:
@@ -1028,6 +1029,27 @@ def plan(
     # buying at all, and `UNMINED` for one the gallery still seats and no leg
     # buys more of. Existing material stands under both.
     roster = tuple(mode_policy.mined())
+    # `--mode` narrows that roster to one name, which is a different ask from
+    # `--per-location 1`: the width says how many modes a place is tried in and
+    # [`modes_for`] samples them, so at width 1 a place gets ONE mode drawn out of
+    # the twelve and a leg reads as a thin slice of all of them. A leg comparing
+    # places rather than modes wants the mode held instead, and the two flags
+    # compose — width 1 at one mode is one candidate per place, in that mode.
+    #
+    # Refused against the mined roster and not against the engine's catalog: a
+    # hunt is a leg that BUYS material, so a mode off the roster is a mode this
+    # project has ruled it does not buy more of, and drawing it here would be the
+    # one door that ignores both of `mode_policy`'s rulings.
+    if mode is not None:
+        if mode not in roster:
+            raise HuntRefused(
+                f"`--mode {mode}` is not a mode a hunt draws. A hunt buys more of a mode, so "
+                f"its roster is `mode_policy.mined()` — {', '.join(roster)} — and a mode off "
+                f"it is either weighted 0 (this project has stopped buying it) or in "
+                f"`mode_policy.UNMINED` (the gallery seats it and no leg buys more). Existing "
+                f"material stands under both, so a place already holding this mode keeps it."
+            )
+        roster = (mode,)
     # The breadth leg draws under the standing weight table and the aimed one does
     # not: what a partition costs to render is a fact about a *breadth* draw, and
     # a leg sent at a shortage is already saying which partitions it means. See
@@ -1642,6 +1664,7 @@ def run(
     conditioned: int = 0,
     cell: str | None = None,
     work_order: dict | None = None,
+    mode: str | None = None,
     named_places: list | None = None,
     device: str = "auto",
     margin: float = framing.MARGIN,
@@ -1703,6 +1726,7 @@ def run(
         conditioned=conditioned,
         cell=cell,
         work_order=work_order,
+        mode=mode,
         log=log,
     )
     by_key = {str(row["key"]): row for row in places}
@@ -1812,6 +1836,10 @@ def run(
             "seed": seed,
             "budget_seconds": float(budget),
             "per_location": int(per_location),
+            # `None` is the whole mined roster and not an absent setting: a record
+            # read later has to be able to say a leg drew every mode, which is a
+            # different claim from a record that predates the flag.
+            "mode": mode,
             "unconditional": int(unconditional),
             "conditioned": int(conditioned),
             "cell": cell,

@@ -245,9 +245,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `degree6_ckpt128_wallpapers` added 7 fast tests on
-2026-09-16 and read **4,791 fast in 141.00 s (2:21)**, 157 deselected, green, so the tree
-is *believed* at 4,948 collected. Before it, `plane_sampler_ckpt128` read 4,784 in
+**The newest reading is fast only**: `tuned_descents_1h_ckpt129` added 2 fast tests on
+2026-09-17 and read **4,793 fast in 142.43 s (2:22)**, 157 deselected, green, so the tree
+is *believed* at 4,950 collected. Before it, `degree6_ckpt128_wallpapers` added 7 fast
+tests on 2026-09-16 and read **4,791 fast in 141.00 s (2:21)**, 157 deselected, green.
+Before it, `plane_sampler_ckpt128` read 4,784 in
 148.37 s (+9 fast, +1 slow, one red fixed), and
 `atlas_planes_ckpt128_wallpapers` read 4,775 in 141.92 s (+3), and
 `preclose_wallpapers_ckpt127`
