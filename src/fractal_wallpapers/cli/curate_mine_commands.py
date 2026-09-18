@@ -889,8 +889,36 @@ TEXTURE_DRAW = (
     "give every screened-composite candidate ONE texture weight drawn uniformly over "
     "[LOW, HIGH], in place of the catalog's settled 0.85 — how loud the texture is over "
     "the smooth base, never what it is. It rides in the row's mode_params, so a drawn "
-    "candidate is a new recipe key. Other modes pass through. Off by default"
+    "candidate is a new recipe key. Other modes pass through. Unsaid, %(default)s is "
+    "drawn — colorize.TEXTURE_DRAW_BAND, Matt's ruling of 2026-09-18; it was off unasked "
+    "until then"
 )
+
+NO_TEXTURE_DRAW = (
+    "draw no texture weight: every screened composite renders at the catalog's settled "
+    "0.85 and carries no `texture_weight`, which is what every leg did before 2026-09-18"
+)
+
+
+def texture_draw_flags(container) -> None:
+    """`--texture-draw` and its way off, which `curate hunt` and `curate depth` share."""
+    from fractal_wallpapers.curation import colorize
+
+    container.add_argument(
+        "--texture-draw",
+        nargs=2,
+        type=float,
+        default=colorize.TEXTURE_DRAW_BAND,
+        metavar=("LOW", "HIGH"),
+        help=TEXTURE_DRAW,
+    )
+    container.add_argument(
+        "--no-texture-draw",
+        dest="texture_draw",
+        action="store_const",
+        const=None,
+        help=NO_TEXTURE_DRAW,
+    )
 
 
 def _hunt_modes(named):
@@ -1106,14 +1134,7 @@ def depth_leg_flags(parser, *, device: bool):
         "being a byte-for-byte no-op on them. Exclusive with `--vary-palette`, which "
         "answers a different question and still exists",
     )
-    draw_shares.add_argument(
-        "--texture-draw",
-        nargs=2,
-        type=float,
-        default=None,
-        metavar=("LOW", "HIGH"),
-        help=TEXTURE_DRAW,
-    )
+    texture_draw_flags(draw_shares)
     populations.add_argument(
         "--modes",
         metavar="MODE",
@@ -1363,14 +1384,7 @@ def hunt_draw_flags(holder):
         "Refused for a mode off the mined roster, because a hunt is a leg that buys material. "
         "Several names narrow the roster to them, and `--per-location` samples among them",
     )
-    holder.add_argument(
-        "--texture-draw",
-        nargs=2,
-        type=float,
-        default=None,
-        metavar=("LOW", "HIGH"),
-        help=TEXTURE_DRAW,
-    )
+    texture_draw_flags(holder)
     holder.add_argument(
         "--seed",
         type=int,

@@ -379,6 +379,14 @@ SCREENED = "screen"
 #: an eye separates, and it keeps the spelled `(mode, settings)` pair short.
 TEXTURE_PLACES = 3
 
+#: The span `curate hunt` and `curate depth` draw a texture weight over when
+#: `--texture-draw` is unsaid. **[0.2, 0.9]**, Matt's ruling of 2026-09-18 after
+#: reading the seats of `angle_modes_evening_ckpt130`'s `[0.3, 0.9]` draw in the
+#: browser — the low end was the one worth opening further. The draw was off
+#: unasked until this ruling, so a composite row a leg made before it and carrying
+#: no `texture_weight` is the catalog's 0.85; `--no-texture-draw` is still that.
+TEXTURE_DRAW_BAND = (0.2, 0.9)
+
 
 def screened(mode: str) -> bool:
     """Whether this mode is a composite screened over the smooth base."""
