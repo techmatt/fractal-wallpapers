@@ -704,6 +704,22 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### magenta_30m_ckpt130
+
+`magenta_30m_ckpt130`, 2026-09-17, `.[dev,models]` with a release engine. **Fast: 4,793
+passed in 153.72 s (2:33)**, 157 deselected, zero skips, green first time. **No test was
+written by this prompt and the count did not move** — 4,793 / 157 to the test, against
+`tuned_descents_1h_ckpt129`'s reading below — so the tree is still believed at 4,950 and
+this reading says only that a leg's merges did not disturb it.
+
+⚠ **+11.29 s on a box that had been working all evening**, and it is read as box rather
+than tree on the strength of the unchanged count: nothing landed in `src/` but two
+markdown files, so there is no code for a clock to be about. The box had finished a
+30-minute render leg, two candidate-ledger merges and a 645 s `gallery-grade score-pool`
+within the previous twenty minutes, which is the warm-page-cache-and-cold-everything-else
+state `survivors_humanplaces_ckpt126` warns to discount. A third reading on a quiet box
+would settle it and none was taken.
+
 #### tuned_descents_1h_ckpt129
 
 `tuned_descents_1h_ckpt129`, 2026-09-17, `.[dev,models]` with a release engine, taken on
