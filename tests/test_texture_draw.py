@@ -135,3 +135,14 @@ def test_a_span_that_is_not_inside_the_unit_interval_is_refused(span) -> None:
 )
 def test_both_verbs_take_the_span(argv) -> None:
     assert build_parser().parse_args(argv).texture_draw == [0.3, 0.9]
+
+
+@pytest.mark.parametrize(
+    "verb", [("hunt", "run"), ("hunt", "plan"), ("depth", "run"), ("depth", "plan")]
+)
+def test_unsaid_is_the_ruled_band_and_the_way_off_is_none(verb) -> None:
+    """Matt's ruling of 2026-09-18: the draw is ON unasked, over [0.2, 0.9]."""
+    argv = ["curate", *verb, "--name", "x"]
+    assert colorize.TEXTURE_DRAW_BAND == (0.2, 0.9)
+    assert build_parser().parse_args(argv).texture_draw == colorize.TEXTURE_DRAW_BAND
+    assert build_parser().parse_args([*argv, "--no-texture-draw"]).texture_draw is None

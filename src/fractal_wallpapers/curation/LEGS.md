@@ -633,8 +633,12 @@ phase draw is spent on `direct_trap_screen`, `direct_trap_multiply` or
 ### `--texture-draw LOW HIGH` — how loud a screened composite's texture is, drawn per candidate
 
 **One uniform weight per screened-composite candidate**, on `curate hunt` and
-`curate depth` alike, and off by default. `colorize.draw_texture_weights` is the
-draw; `angle_modes_evening_ckpt130` is the leg it was added for.
+`curate depth` alike, and **on by default over `[0.2, 0.9]`** —
+`colorize.TEXTURE_DRAW_BAND`, Matt's ruling of 2026-09-18 after reading the seats of
+the `[0.3, 0.9]` draw below. It was off unasked until then; `--no-texture-draw` is
+the catalog's 0.85 and an explicit `--texture-draw LOW HIGH` still overrides.
+`colorize.draw_texture_weights` is the draw; `angle_modes_evening_ckpt130` is the
+leg it was added for.
 
 **What the knob is, from the engine.** The five screened composites
 (`smooth_mean_angle`, `smooth_angle_min`, `smooth_stripe`, `smooth_trap_circle`,
