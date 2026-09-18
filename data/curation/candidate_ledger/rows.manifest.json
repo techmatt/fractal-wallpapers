@@ -2,13 +2,20 @@
   "schema": 1,
   "path": "artifacts/curation/candidate_ledger/rows.jsonl",
   "copy": "artifacts/curation_backup/candidate_ledger/rows.jsonl",
-  "rows": 497991,
-  "bytes": 679694784,
-  "sha256": "1c8026f374307a5f8c125fc4e489e4a08caef075198fc5cd964e9b35e9b896e6",
+  "rows": 510173,
+  "bytes": 696720016,
+  "sha256": "5f90b92501940158d2f6ab4a3e5a5dde7867a620fd454058ebf90045969b9221",
   "runs": {
     "a129_graded_deep": 9486,
     "a129_graded_open": 799,
     "a129_graded_topup": 263,
+    "ame_a1_deep": 450,
+    "ame_a1_open": 150,
+    "ame_a2_deep": 6087,
+    "ame_a2_open": 2029,
+    "ame_b2_deep": 2583,
+    "ame_b_deep": 27,
+    "ame_c_deep": 856,
     "armA1_0906": 5956,
     "armA1_0908": 3677,
     "armA1_0909": 4390,
@@ -200,20 +207,20 @@
     "wm3_lines": 111
   },
   "partitions": {
-    "julia:mandelbrot": 64312,
-    "julia:multibrot3": 54430,
-    "julia:multibrot4": 50569,
-    "julia:multibrot5": 51069,
-    "julia:multibrot6": 9990,
-    "mandelbrot": 64480,
-    "multibrot3": 44260,
-    "multibrot4": 53527,
-    "multibrot5": 63927,
-    "multibrot6": 4699,
-    "phoenix": 31277,
-    "phoenix:classic": 5451
+    "julia:mandelbrot": 67076,
+    "julia:multibrot3": 55432,
+    "julia:multibrot4": 51321,
+    "julia:multibrot5": 52244,
+    "julia:multibrot6": 10056,
+    "mandelbrot": 66358,
+    "multibrot3": 45214,
+    "multibrot4": 54546,
+    "multibrot5": 64993,
+    "multibrot6": 4759,
+    "phoenix": 32657,
+    "phoenix:classic": 5517
   },
-  "locations": 44904,
+  "locations": 47083,
   "colour": {
     "rule": "chromatic share per codebook cell, neutrals out of the numerator and the denominator. A cell is DOMINANT when it is the largest chromatic cell and holds >= 0.1, or when it holds >= 0.15 on its own; a picture may have more than one and may have none. The same rule over codebook.rollup families at 0.2 / 0.3. No floor on the raw share.",
     "codebook": {
@@ -226,6 +233,6 @@
     }
   },
   "engine": "unknown",
-  "recorded": "2026-09-17",
+  "recorded": "2026-09-18",
   "why_not_tracked": "one row per recipe at about a kilobyte and a half a row, which is tens of megabytes against a 1 MiB per-file history guard, and rewritten whole on every backfill because the store upserts by key. The manifest is what the history keeps; the bytes live on both tiers."
 }

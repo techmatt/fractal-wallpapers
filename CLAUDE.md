@@ -245,7 +245,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `add_three_mode_collections_ckpt130` added 3 fast
+**The newest reading is fast only**: `angle_modes_evening_ckpt130` added 19 fast tests on
+2026-09-18 and read **4,816 fast in 155.31 s (2:35)**, 157 deselected, green, so the tree is
+*believed* at 4,973 collected; it reads the +30 s below as box. Before it,
+`add_three_mode_collections_ckpt130` added 3 fast
 tests on 2026-09-17 and read **4,797 fast in 180.94 s (3:00)**, 157 deselected, green, so
 the tree is *believed* at 4,954 collected; ⚠ the +30 s is unchased and read as box, taken
 right after nineteen pool loads (`tests/README.md` has it). Before it,
