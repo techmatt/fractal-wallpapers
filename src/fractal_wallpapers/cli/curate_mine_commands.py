@@ -234,7 +234,8 @@ def curate_hunt(args: argparse.Namespace) -> int:
                 conditioned=args.conditioned,
                 cell=args.cell,
                 work_order=order,
-                mode=args.mode,
+                mode=_hunt_modes(args.mode),
+                texture_draw=args.texture_draw,
             )
             print(json.dumps(hunt.shape_of(pools, intended), indent=2))
             return 0
@@ -249,8 +250,9 @@ def curate_hunt(args: argparse.Namespace) -> int:
             conditioned=args.conditioned,
             cell=args.cell,
             work_order=order,
-            mode=args.mode,
+            mode=_hunt_modes(args.mode),
             named_places=named,
+            texture_draw=args.texture_draw,
             device=args.device,
         )
     except (hunt.HuntRefused, depth_module.DepthRefused, embeddings_module.StoreRefused) as refusal:
@@ -843,6 +845,7 @@ def curate_depth(args: argparse.Namespace) -> int:
             "workers": args.workers,
             "vary_palette": args.vary_palette,
             "phase_draw": args.phase_draw,
+            "texture_draw": args.texture_draw,
         }
         if args.vary_palette and args.phase_draw:
             # Both write `Shot.palette`, so a plan carrying the two is two draws
@@ -880,6 +883,21 @@ def curate_depth(args: argparse.Namespace) -> int:
     print(f"{display_path(depth.contact_sheet(args.name, record))}")
     print(json.dumps(record, indent=2))
     return 0
+
+
+TEXTURE_DRAW = (
+    "give every screened-composite candidate ONE texture weight drawn uniformly over "
+    "[LOW, HIGH], in place of the catalog's settled 0.85 — how loud the texture is over "
+    "the smooth base, never what it is. It rides in the row's mode_params, so a drawn "
+    "candidate is a new recipe key. Other modes pass through. Off by default"
+)
+
+
+def _hunt_modes(named):
+    """`--mode`'s names as `hunt.plan` takes them: `None`, one name, or a tuple."""
+    if not named:
+        return None
+    return named[0] if len(named) == 1 else tuple(named)
 
 
 def hunt_refused():
@@ -1087,6 +1105,14 @@ def depth_leg_flags(parser, *, device: bool):
         "of matched pairs against repeat 1's 52.6%%). The direct traps draw bare, `phase` "
         "being a byte-for-byte no-op on them. Exclusive with `--vary-palette`, which "
         "answers a different question and still exists",
+    )
+    draw_shares.add_argument(
+        "--texture-draw",
+        nargs=2,
+        type=float,
+        default=None,
+        metavar=("LOW", "HIGH"),
+        help=TEXTURE_DRAW,
     )
     populations.add_argument(
         "--modes",
@@ -1328,12 +1354,22 @@ def hunt_draw_flags(holder):
     holder.add_argument(
         "--mode",
         metavar="MODE",
+        nargs="+",
         help="draw every candidate in this ONE mode, instead of sampling `--per-location` of "
         "them out of `mode_policy.mined()`. A different ask from the width: the width says "
         "how many modes a place is tried in and the draw samples them, so `--per-location 1` "
         "alone gives each place one mode out of the twelve and the leg reads as a thin slice "
         "of all of them. A leg comparing PLACES wants the mode held, and the two compose. "
-        "Refused for a mode off the mined roster, because a hunt is a leg that buys material",
+        "Refused for a mode off the mined roster, because a hunt is a leg that buys material. "
+        "Several names narrow the roster to them, and `--per-location` samples among them",
+    )
+    holder.add_argument(
+        "--texture-draw",
+        nargs=2,
+        type=float,
+        default=None,
+        metavar=("LOW", "HIGH"),
+        help=TEXTURE_DRAW,
     )
     holder.add_argument(
         "--seed",

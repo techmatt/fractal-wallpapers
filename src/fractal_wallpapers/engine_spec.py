@@ -146,12 +146,22 @@ def _fields_of(coloring: dict) -> list[dict]:
     return []
 
 
+#: The one setting a composite takes. See [`coloring_of`].
+TEXTURE_WEIGHT = "texture_weight"
+
+
 def coloring_of(row: dict) -> dict:
-    """The mode's coloring, with this row's curve, trap settings and plane in it.
+    """The mode's coloring, with this row's curve, settings and plane in it.
 
     The curve lands on the **base** of a composite or a modulate and nowhere else:
     the texture lies over the base and the corpora set one curve per render, which
     is the one the base is read through.
+
+    **Settings, by kind.** A direct trap takes `opacity` and `threshold`; a
+    composite takes [`TEXTURE_WEIGHT`], in `[0, 1]`, in place of the catalog's
+    settled value; every other kind takes none. A composite row without one is the
+    catalog's picture exactly, so every row written before the knob existed keeps
+    its key.
     """
     mode = row["mode"]
     known = catalog()
@@ -159,13 +169,24 @@ def coloring_of(row: dict) -> dict:
         raise RenderCacheError(f"the engine has no mode named {mode!r}")
     coloring = json.loads(json.dumps(known[mode]))
     curve = row["curve"]
-    settings = row.get("mode_params") or {}
+    # A copy: the composite branch pops what it spends, and the row is the caller's.
+    settings = dict(row.get("mode_params") or {})
     open_the_address(coloring, row["family"])
 
     if coloring["kind"] == "field":
         coloring["transform"] = curve
     elif coloring["kind"] in ("composite", "modulate"):
         coloring["base"]["transform"] = curve
+        if coloring["kind"] == "composite" and TEXTURE_WEIGHT in settings:
+            # The one knob a composite takes: how much of its texture is let
+            # through, `under + w * (blend(under, over) - under)` in the engine's
+            # `coloring::composite`. It changes how loud the texture is and never
+            # what the texture is. Checked here rather than left to the engine,
+            # whose refusal would arrive a render into a leg.
+            weight = float(settings.pop(TEXTURE_WEIGHT))
+            if not 0.0 <= weight <= 1.0:
+                raise RenderCacheError(f"{mode}: texture_weight {weight} is outside [0, 1]")
+            coloring["texture_weight"] = weight
     elif coloring["kind"] == "direct":
         # The curve is NOT set here, and that is what the corpora did. A direct
         # trap has no field: its colour key is how near the orbit came, as a

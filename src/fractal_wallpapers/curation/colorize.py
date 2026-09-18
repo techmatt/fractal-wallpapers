@@ -371,6 +371,65 @@ def anchors(members: list[str], count: int, seed: int) -> list[str]:
 #: the only one a dump can serve. The engine's own word — `renders.catalog` reads
 #: it out of the catalog — and the composites, the modulate and the direct traps
 #: are the other three. See [`shareable`].
+#: The blend a drawn texture weight is spent on. `threads` is the one composite
+#: that adds rather than screens, and its lower settled weight is a different dial.
+SCREENED = "screen"
+
+#: How finely a drawn texture weight is written. Three places is far below what
+#: an eye separates, and it keeps the spelled `(mode, settings)` pair short.
+TEXTURE_PLACES = 3
+
+
+def screened(mode: str) -> bool:
+    """Whether this mode is a composite screened over the smooth base."""
+    from fractal_wallpapers.models import renders
+
+    coloring = renders.catalog().get(mode) or {}
+    return coloring.get("kind") == "composite" and coloring.get("blend") == SCREENED
+
+
+def draw_texture_weights(intended: list, span: tuple, seed: int, log=print) -> tuple[list, dict]:
+    """Give every screened-composite candidate ONE texture weight, uniform over `span`.
+
+    `(plan, tally)`. The weight rides in the candidate's `mode_params` as
+    `texture_weight`, which [`renders.coloring_of`] spends in place of the
+    catalog's settled 0.85 — so it is in the recipe key, the job name and the
+    ledger row, and a drawn candidate is a new picture beside the plain one.
+
+    **Uniform and unheld**, for [`depth.draw_phases`]' reason: this is how rows are
+    made rather than a matched-pair experiment, so no mass is parked at the
+    settled value. A candidate in any other mode is passed through untouched —
+    a field has no texture, a direct trap no blend, and `threads` adds rather
+    than screens. Settings a candidate already carries are kept beside the draw.
+
+    Works on anything with `mode` and `mode_params` members — [`hunt.Try`] and
+    [`depth.Shot`] alike — which is why it lives here beside [`kind_of`] rather
+    than in either leg.
+    """
+    import dataclasses
+
+    low, high = (float(value) for value in span)
+    if not 0.0 <= low <= high <= 1.0:
+        raise ColorizeError(f"a texture span is 0 <= low <= high <= 1, not {low:g}..{high:g}")
+    rng = random.Random(seed)
+    out: list = []
+    tally = {"texture_drawn": 0, "not_screened": 0}
+    for shot in intended:
+        if not screened(shot.mode):
+            tally["not_screened"] += 1
+            out.append(shot)
+            continue
+        tally["texture_drawn"] += 1
+        weight = round(rng.uniform(low, high), TEXTURE_PLACES)
+        settings = {**dict(shot.mode_params or {}), "texture_weight": weight}
+        out.append(dataclasses.replace(shot, mode_params=settings))
+    log(
+        f"[texture] {tally['texture_drawn']:,} screened-composite candidate(s) given one "
+        f"texture weight over [{low:g}, {high:g}]; {tally['not_screened']:,} passed through"
+    )
+    return out, {**tally, "span": [low, high], "seed": int(seed)}
+
+
 FIELD_KIND = "field"
 
 #: The kind a **palette pass cannot reach**: a trap figure over a flat ground,

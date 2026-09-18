@@ -1861,6 +1861,7 @@ def build_plan(
     workers: int = 1,
     vary_palette: bool = False,
     phase_draw: bool = False,
+    texture_draw: tuple | None = None,
     log=print,
 ) -> tuple:
     """The draws sized off a per-candidate rate. `(plan, shape)`.
@@ -2427,6 +2428,18 @@ def build_plan(
         },
     }
     woven = weave(plans, shares)
+    if texture_draw is not None:
+        # **Before either palette draw and independent of both**: it writes
+        # `Shot.mode_params`, they write `Shot.palette`, and a `--vary-palette`
+        # twin copies its partner's settings, so a pair still differs in the
+        # palette alone. Its own seed, for the reason `seeds` above states.
+        from fractal_wallpapers.curation import colorize
+
+        woven, drawn_texture = colorize.draw_texture_weights(
+            woven, texture_draw, int(seed) + 4, log=log
+        )
+        shape["seeds"]["texture"] = int(seed) + 4
+        shape["texture_draw"] = drawn_texture
     if phase_draw:
         # **Before the `vary_palette` branch and exclusive with it**, refused at
         # the parser rather than reconciled here: both write `Shot.palette`, and a
@@ -2749,6 +2762,7 @@ def run(
     workers: int = DEFAULT_WORKERS,
     vary_palette: bool = False,
     phase_draw: bool = False,
+    texture_draw: tuple | None = None,
     device: str = "auto",
     margin: float = framing.MARGIN,
     world: dict | None = None,
@@ -2827,6 +2841,7 @@ def run(
         workers=workers,
         vary_palette=vary_palette,
         phase_draw=phase_draw,
+        texture_draw=texture_draw,
         log=log,
     )
     # The parent's own Maker resolves recipes and sweeps the field cache; it never

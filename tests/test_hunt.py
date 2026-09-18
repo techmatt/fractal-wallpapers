@@ -345,6 +345,35 @@ def test_one_mode_holds_the_roster_where_the_width_only_samples_it(monkeypatch):
     assert len({one.location for one in holding}) == len(holding)
 
 
+def test_several_modes_narrow_the_roster_and_the_width_samples_among_them(monkeypatch):
+    """`--mode A B C` at width 1 is one candidate a place in one of the three, and a
+    texture span draws a weight on every screened composite it plans."""
+    _any_map(monkeypatch)
+    three = ("smooth_mean_angle", "smooth_angle_min", "smooth_stripe")
+    planned = hunt.plan(
+        pools({"mandelbrot": 60}),
+        seed=1,
+        unconditional=60,
+        per_location=1,
+        mode=three,
+        texture_draw=(0.3, 0.9),
+        pool=["m"],
+        log=lambda *_: None,
+    )
+    assert {one.mode for one in planned} == set(three), "each of the three is drawn"
+    assert len({one.location for one in planned}) == len(planned)
+    assert all(0.3 <= one.mode_params["texture_weight"] <= 0.9 for one in planned)
+    with pytest.raises(hunt.HuntRefused, match="is not a mode a hunt draws"):
+        hunt.plan(
+            pools({"mandelbrot": 5}),
+            seed=1,
+            unconditional=5,
+            mode=("smooth_stripe", "no_such_mode"),
+            pool=["m"],
+            log=lambda *_: None,
+        )
+
+
 def test_a_mode_off_the_mined_roster_is_refused_rather_than_drawn(monkeypatch):
     """A hunt is a leg that BUYS material, so its roster is `mode_policy.mined()` and
     a mode off it is one this project has ruled it does not buy more of — weighted 0,
