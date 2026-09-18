@@ -96,6 +96,7 @@ TRACE_NAME = "quota.jsonl"
 #: data — the row's own fate, or the batch trace of the batches it sat through —
 #: and a card that fits none of them says nothing rather than guessing.
 JUNK_FLOOR = "floor-killed — below the junk floor, so the walk never stood on it"
+LINEAGE_FULL = "lineage full — its root had booked --lineage-cap admissions already"
 GOOD_FLOOR = "below the good floor — the walk expanded it and it booked nothing"
 NEVER_EXPANDED = "below the good floor — it joined the frontier and was never expanded"
 CAPPED = "capped — its partition was priced out of every batch after it"
@@ -257,7 +258,7 @@ class Reasons:
         if fate == ledger_module.SURVIVED:
             return None
         if fate == ledger_module.NOT_ADMITTED:
-            return JUNK_FLOOR
+            return LINEAGE_FULL if row.get("lineage_capped") else JUNK_FLOOR
         if fate != ledger_module.EXPANDABLE:
             # A structural gate refused it. The `fate` line on the card names the
             # gate; this says what the gate is, which is the half a reader who

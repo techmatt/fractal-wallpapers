@@ -46,11 +46,15 @@ currency is not priced at all: it carries the flat seed and is stamped
 `defaulted`, because minutes over zero units is no measurement, and dropping the
 row would make "never served" indistinguishable from "never tracked".
 
-Both tables came from the source project's last steady-state production run and
-are the only numbers in this repository that were transferred rather than
-measured here. Regenerate them from a finished run — never hand-edit a row, and
-never edit the measured table the seed is derived from. Every constant, including
-the smoothing rate, reaches a shipped table through a regeneration.
+Eight of the ten measured rows came from the source project's last steady-state
+production run, `harvest_run2`, and are the only numbers in this repository that
+were transferred rather than measured here; the two d=6 rows were measured here,
+over six finished d=6 harvests, on 2026-09-18. Regenerate from finished runs — never
+hand-edit a row, and never edit the measured table the seed is derived from. Every
+constant, including the smoothing rate, reaches a shipped table through a
+regeneration. **A source run no longer on disk is kept with `--carry`**, which pools
+an existing measured table's provenance as one more block, so adding a run never
+drops the rows of one that cannot be re-read.
 
 **`tau_h.json` is underived, and says so.** The cheap cut is a point on one
 scorer's probability scale, so a value carried in from another project's scorer
@@ -61,5 +65,6 @@ considered.
 
 ```
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
+fractal-wallpapers derive-prices --run <new run> --carry data/supply/cost_to_find_measured.json --write
 fractal-wallpapers derive-tau-h --write
 ```

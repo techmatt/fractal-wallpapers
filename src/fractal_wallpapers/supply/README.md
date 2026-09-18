@@ -498,7 +498,9 @@ batch reconcile (`admitted + expandable = nodes that reached the frontier`) did 
 know that, so `d6_sampler_leg_ckpt131` died at batch 9 with `[reconcile] … 3 admitted
 plus 6 expandable but 8 nodes reached the frontier`. The identity now subtracts rows
 whose lineage the walk reports full, and a survivor with no node from any other
-lineage still ends the run. **A crashed harvest resumes from its last checkpoint, but
+lineage still ends the run. **Since the same day the cap binds per row at booking**,
+so a lineage books exactly `--lineage-cap` admissions and no more; the crossing
+batch's further admits are recorded `not_admitted` with `lineage_capped: true`. **A crashed harvest resumes from its last checkpoint, but
 the rows the failed batch wrote stay in `walk.jsonl`** and the resumed batch writes
 them again. Cut the ledger back to the last row of the checkpointed batch before
 re-running, and keep the full copy.
@@ -841,11 +843,17 @@ fractal-wallpapers derive-tau-h --write
 **`multibrot6` and `julia:multibrot6` joined `partitions.PARAMETER_PLANES` on
 2026-09-16**, so `ALL_PARTITIONS` is twelve and every per-partition table carries
 their rows: `release_mix.json` at the supporting ratio 1.0, `tau_h.json` fail-open at
-0.0, and both price tables at the flat seed 3.0 with `defaulted` status. The two price
-rows were written as `derive` and `regularize` would write an unmeasured partition, and
-every existing row was checked unchanged; `harvest_run2`, the measured table's source,
-is no longer on disk to re-derive from. `CostToFind`'s default `seed_price` is left
-alone: a d=6 leg names its partition rather than being weighted in by the allocator.
+0.0, and both price tables at the flat seed 3.0 with `defaulted` status until
+2026-09-18. **They are measured since**: `derive-prices` over the six finished d=6
+harvests (`harvest_d6_ckpt128`, `harvest_d6o_c1`–`c4`, `harvest_d6s131`) with
+`--carry data/supply/cost_to_find_measured.json`, which pools `harvest_run2`'s
+provenance in as one more block because that run is no longer on disk. **`multibrot6`
+measures 2.736 active minutes a unit (seed 1.822) and `julia:multibrot6` 0.027 (seed
+0.0285)** — the plane dearer than any other measured partition, the twin in line with
+the other Julia twins. The six runs carry no other partition's evidence, so every
+other row came back unchanged and the shrink target stayed 0.047. These are the
+harvest's own currency and not a hunt's seconds a place — `curation/LEGS.md`'s d=6
+figures (1.1–1.7 s a place opened) price a different act.
 
 **Nothing label-fed will ever serve them**, by ruling (`partitions.NEVER_LABELLED`):
 the proven channel, the `c`-pool and reframing priors are empty by construction, the

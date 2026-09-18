@@ -249,21 +249,28 @@ def _parent(node_id: int, root_id: int) -> dict:
     return {"node_id": node_id, "root_id": root_id, "origin": walk_module.WALK_ORIGIN}
 
 
-def test_a_lineage_stops_expanding_at_its_cap_and_nothing_is_retro_refused(tmp_path) -> None:
+def test_a_lineage_books_exactly_its_cap_and_refuses_the_rest_of_the_batch(tmp_path) -> None:
+    """The cap binds per row at booking: the batch that crosses it books up to the
+    cap and not past it. Until 2026-09-18 it was asked only at expansion, so the
+    crossing batch booked every row it held and lineages reached 11 against 6."""
     run = _walk(tmp_path, cap=3)
     rows = run._record(_report(1, 10, 5), {10: _parent(10, 1)}, {"kind": "mandelbrot"})[1]
     run.ledger.close()
 
-    # Every row keeps the fate it earned. The cap stops expansion; it does not
-    # reach back and refuse what the head already admitted.
-    assert [row["fate"] for row in rows] == [ledger_module.SURVIVED] * 5
-    assert run.admitted[1] == 5
+    admitted, refused = ledger_module.SURVIVED, ledger_module.NOT_ADMITTED
+    assert [row["fate"] for row in rows] == [admitted] * 3 + [refused] * 2
+    assert run.admitted[1] == 3
+    # The refused rows say why, so they are told apart from a junk-floor refusal
+    # by the flag rather than the fate.
+    assert [bool(row.get("lineage_capped")) for row in rows] == [False] * 3 + [True] * 2
     # The row that reaches the cap is the last the lineage books and the first
     # it does not walk from. A node id is the whole of that fact: a row with
     # none behind it is a row nothing descends from.
     assert [row["node_id"] is not None for row in rows] == [True, True, False, False, False]
-    assert run.tally["lineage_capped:not_expanded"] == 3
-    assert run.tally["tier:admitted"] == 5
+    assert run.tally["lineage_capped:not_expanded"] == 1
+    assert run.tally["not_admitted:lineage_capped"] == 2
+    assert run.tally["tier:admitted"] == 3
+    assert run.lineages()["largest"] == 3
 
 
 def test_the_crossing_evicts_the_lineage_s_standing_frontier_and_says_so(tmp_path) -> None:
@@ -289,15 +296,11 @@ def test_the_crossing_evicts_the_lineage_s_standing_frontier_and_says_so(tmp_pat
     assert run.lineages()["largest"] == 2
 
 
-def test_a_lineage_may_finish_over_its_cap_from_nodes_already_in_flight(tmp_path) -> None:
-    """A stated property rather than a surprise, and it is the honest one.
-
-    Two nodes of one lineage can sit in one batch: the first closes the lineage,
-    the second was popped before that happened and its candidates are already
-    drawn. Refusing them after the fact would be exactly the retro-refusal this
-    project does not do — so they are booked, and the count ends above the cap
-    while no further batch slot goes to the lineage.
-    """
+def test_a_node_already_in_flight_when_its_lineage_closed_books_nothing(tmp_path) -> None:
+    """Two nodes of one lineage can sit in one batch: the first closes the lineage
+    and the second was popped before that happened, so its candidates are already
+    drawn. They are asked the cap before they are booked, so the count ends AT the
+    cap — no row that was booked changes its fate, and none past it is booked."""
     run = _walk(tmp_path, cap=2)
     run._record(_report(1, 10, 2), {10: _parent(10, 1)}, {"kind": "mandelbrot"})
     assert run.saturated == {1}
@@ -305,10 +308,9 @@ def test_a_lineage_may_finish_over_its_cap_from_nodes_already_in_flight(tmp_path
     rows = run._record(_report(1, 11, 2), {11: _parent(11, 1)}, {"kind": "mandelbrot"})[1]
     run.ledger.close()
 
-    assert run.admitted[1] == 4 > 2
-    assert all(row["fate"] == ledger_module.SURVIVED for row in rows)
-    # The overshoot is in the count and not in the walk time: nothing from this
-    # lineage reaches the frontier, so no later batch spends a slot on it.
+    assert run.admitted[1] == 2
+    assert all(row["fate"] == ledger_module.NOT_ADMITTED for row in rows)
+    assert all(row["lineage_capped"] for row in rows)
     assert all(row["node_id"] is None for row in rows)
     assert not [node for node in run.frontier if node["root_id"] == 1]
     # And the crossing is still recorded exactly once.

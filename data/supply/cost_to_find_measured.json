@@ -6,12 +6,12 @@
     "multibrot3": 1.221,
     "multibrot4": 0.993,
     "multibrot5": 1.103,
-    "multibrot6": 3.0,
+    "multibrot6": 2.736,
     "julia:mandelbrot": 0.041,
     "julia:multibrot3": 0.036,
     "julia:multibrot4": 0.03,
     "julia:multibrot5": 0.028,
-    "julia:multibrot6": 3.0,
+    "julia:multibrot6": 0.027,
     "phoenix": 0.053,
     "phoenix:classic": 3.0
   },
@@ -23,8 +23,33 @@
     "estimand": "sum(minutes) / sum(units), pooled across the source runs",
     "source_runs": [
       {
+        "name": "harvest_d6_ckpt128",
+        "path": "artifacts/harvest_d6_ckpt128"
+      },
+      {
+        "name": "harvest_d6o_c1",
+        "path": "artifacts/harvest_d6o_c1"
+      },
+      {
+        "name": "harvest_d6o_c2",
+        "path": "artifacts/harvest_d6o_c2"
+      },
+      {
+        "name": "harvest_d6o_c3",
+        "path": "artifacts/harvest_d6o_c3"
+      },
+      {
+        "name": "harvest_d6o_c4",
+        "path": "artifacts/harvest_d6o_c4"
+      },
+      {
+        "name": "harvest_d6s131",
+        "path": "artifacts/harvest_d6s131"
+      },
+      {
         "name": "harvest_run2",
-        "path": "artifacts/harvest_run2"
+        "path": "artifacts/harvest_run2",
+        "carried_from": "data/supply/cost_to_find_measured.json"
       }
     ],
     "minutes": {
@@ -32,12 +57,12 @@
       "multibrot3": 50.05,
       "multibrot4": 55.921,
       "multibrot5": 38.507,
-      "multibrot6": 0.0,
+      "multibrot6": 141.467,
       "julia:mandelbrot": 9.428,
       "julia:multibrot3": 11.056,
       "julia:multibrot4": 8.529,
       "julia:multibrot5": 9.003,
-      "julia:multibrot6": 0.0,
+      "julia:multibrot6": 13.103,
       "phoenix": 7.771,
       "phoenix:classic": 0.0
     },
@@ -46,12 +71,12 @@
       "multibrot3": 41.0,
       "multibrot4": 56.3,
       "multibrot5": 34.9,
-      "multibrot6": 0.0,
+      "multibrot6": 51.7,
       "julia:mandelbrot": 229.3,
       "julia:multibrot3": 303.5,
       "julia:multibrot4": 288.1,
       "julia:multibrot5": 325.5,
-      "julia:multibrot6": 0.0,
+      "julia:multibrot6": 488.3,
       "phoenix": 146.7,
       "phoenix:classic": 0.0
     },
@@ -60,26 +85,28 @@
       "multibrot3": 1.221,
       "multibrot4": 0.993,
       "multibrot5": 1.103,
+      "multibrot6": 2.736,
       "julia:mandelbrot": 0.041,
       "julia:multibrot3": 0.036,
       "julia:multibrot4": 0.03,
       "julia:multibrot5": 0.028,
+      "julia:multibrot6": 0.027,
       "phoenix": 0.053
     },
     "measured": [
       "multibrot3",
       "multibrot4",
       "multibrot5",
+      "multibrot6",
       "julia:mandelbrot",
       "julia:multibrot3",
       "julia:multibrot4",
       "julia:multibrot5",
+      "julia:multibrot6",
       "phoenix"
     ],
     "defaulted": [
       "mandelbrot",
-      "multibrot6",
-      "julia:multibrot6",
       "phoenix:classic"
     ],
     "thin": [

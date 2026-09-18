@@ -1054,8 +1054,9 @@ middle tier carries its own fate (`expandable`), so it reaches the frontier and
 no book in the project can see it.
 
 **A lineage may be capped on what it books, and off by default it is not.**
-`Limits.lineage_admissions` is the ceiling on admissions from one root; past it
-the lineage stops expanding and its standing frontier nodes are evicted at the
+`Limits.lineage_admissions` is the ceiling on admissions from one root, asked per
+row at booking; past it a row the head would admit is recorded `not_admitted` with
+`lineage_capped: true`, the lineage stops expanding and its standing frontier nodes are evicted at the
 crossing, recorded as a `lineage_capped` row. It is `None` here and set by the
 [deep run mode](../deep/README.md), where the measurement that motivated it was
 taken: 741 admissions off 15 of 48 roots, 85 on one, and a finished frame set that
@@ -1386,8 +1387,10 @@ collapsed, so the knee on this plane is around **0.001–0.00023**.
 active minutes. It made **217 walk admissions over 49 lineages; the largest held
 5.1% and the top five 22.6%**, against 85% in five on the uncapped multibrot3 pilot.
 The plane alone was 61 over 19 lineages (largest 18%, top five 57%), and the Julia
-twin 156 over 30 (top five 29.5%). The cap is on booking, so the batch that crosses
-it still books its remaining rows, which is why lineages reach 10–11. Scored and
+twin 156 over 30 (top five 29.5%). The cap was then asked only at expansion, so the
+batch that crossed it still booked its remaining rows and lineages reached 10–11;
+**since 2026-09-18 it is asked per row at booking** and a lineage books exactly its
+cap, the rest recorded `not_admitted` with `lineage_capped: true`. Scored and
 embedded, the run gave **571 admitted, never-opened places over 75 lineages** (224
 plane, 347 twin). Opened at one candidate each, 19 cleared `solve.Q4_BAR`, spread
 over 14 lineages. (Before the fix in `supply/README.md`'s ⚠ on `--lineage-cap`,

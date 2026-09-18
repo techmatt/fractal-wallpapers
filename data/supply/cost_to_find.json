@@ -6,12 +6,12 @@
     "julia:multibrot3": 0.037,
     "julia:multibrot4": 0.0314,
     "julia:multibrot5": 0.0295,
-    "julia:multibrot6": 3.0,
+    "julia:multibrot6": 0.0285,
     "mandelbrot": 3.0,
     "multibrot3": 0.8816,
     "multibrot4": 0.7319,
     "multibrot5": 0.8045,
-    "multibrot6": 3.0,
+    "multibrot6": 1.8223,
     "phoenix": 0.0524,
     "phoenix:classic": 3.0
   },
@@ -32,16 +32,16 @@
       "multibrot3",
       "multibrot4",
       "multibrot5",
+      "multibrot6",
       "julia:mandelbrot",
       "julia:multibrot3",
       "julia:multibrot4",
       "julia:multibrot5",
+      "julia:multibrot6",
       "phoenix"
     ],
     "source_defaulted": [
-      "julia:multibrot6",
       "mandelbrot",
-      "multibrot6",
       "phoenix:classic"
     ],
     "columns": {
@@ -66,9 +66,9 @@
         "status": "measured"
       },
       "julia:multibrot6": {
-        "measured": 3.0,
-        "regularized": 3.0,
-        "status": "defaulted"
+        "measured": 0.027,
+        "regularized": 0.0285,
+        "status": "measured"
       },
       "mandelbrot": {
         "measured": 3.0,
@@ -91,9 +91,9 @@
         "status": "measured"
       },
       "multibrot6": {
-        "measured": 3.0,
-        "regularized": 3.0,
-        "status": "defaulted"
+        "measured": 2.736,
+        "regularized": 1.8223,
+        "status": "measured"
       },
       "phoenix": {
         "measured": 0.053,
@@ -106,7 +106,7 @@
         "status": "defaulted"
       }
     },
-    "spread_measured": 43.607,
-    "spread_regularized": 29.885
+    "spread_measured": 101.333,
+    "spread_regularized": 63.94
   }
 }
