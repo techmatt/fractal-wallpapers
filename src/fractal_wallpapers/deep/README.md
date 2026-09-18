@@ -399,3 +399,39 @@ descent refused with `nucleus_outside_frame` — `snap_to_nucleus` twelve times,
 the neighbourhood and lateral operators four each. A frame inside a satellite is
 framed on the satellite's *decorations*, and the nucleus those operators would
 snap to is the parent's, thousands of frame widths away.
+
+### Start at the neighbourhood width and every seed clears the floor
+
+`tuned_descents_1h_ckpt129` ran the recipe above at production scale — six seeds
+by four valley satellites — and the one change that matters is that the start
+frame is cut from the seed's **neighbourhood at 0.1** rather than from the seat:
+`c_start = c_sat + lambda * c_seed`, `w_start = |lambda| * 0.1`. That makes the
+aim's miss `0.036` frame widths for *every* seed alike, because the miss in frame
+widths is `e / (|lambda| * w_seed)` and `w_seed` is now a constant. **All 24 pairs
+cleared the node floor**, against four of twelve refused when the seat's own width
+was used — and the refusals were never about the satellite, they were `w_seed`.
+
+One consequence is worth knowing before planning a window: `c_start` is within
+`|lambda|` of `c_sat`, so the release floor is the **satellite's** and not the
+seed's. All 24 pairs read the same `4.547e-12`, and headroom is set by the
+satellite alone — `3.72` decades at `|lambda| = 2.4e-7` up to `5.38` at `1.1e-5`.
+
+### A tuned descent saturates, and more batches buy nothing
+
+The walk bottoms out against that floor after **1.3 to 2.0 decades** and the
+frontier then dies, so batch count stops mattering well before it stops being
+spent. Measured over all 24 pairs at three batches, thirteen at sixteen, and all
+24 again at thirty-six: **sixteen and thirty-six return identical candidate counts
+on every pair they share** — 72 and 72, 68 and 68, 64 and 64, 52 and 52, 48 and 48.
+Three batches is genuinely short (25 candidates against 55 on one pair), so the
+width is worth raising once; past about sixteen it is a no-op.
+
+**So a leg of this shape cannot be sized by a clock.** The 24 descents cost 195 s
+at three batches and 412 s at thirty-six, and what bounds the whole leg is the
+number of places a copy holds above the junk floor — 202 over the 24 pairs here —
+not the budget pointed at it. Plan one of these by places wanted, not by hours.
+
+**Four pairs produced four candidates each and stopped**, their root expanding
+once before every child fell under the floor. They are not failures of the aim:
+they are copies whose decorations at that scale hold nothing the gates admit, and
+they cost a second apiece to find out.
