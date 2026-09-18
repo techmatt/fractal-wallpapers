@@ -704,6 +704,24 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### magenta_last_seat_ckpt130
+
+`magenta_last_seat_ckpt130`, 2026-09-17, `.[dev,models]` with a release engine. **Fast:
+4,794 passed in 150.49 s (2:30)**, 157 deselected, zero skips, green first time. **+1
+test**, a guard in `tests/test_nested_verbs.py` over which floor rule each kind of
+`--collection` pass asks for, so the tree is believed at **4,951**. Slow not run.
+
+**-3.23 s against `magenta_30m_ckpt130`'s reading below**, on the same day and the same
+install. That entry read +11.29 s and called it box rather than tree; this one lands
+between it and `tuned_descents_1h_ckpt129`'s 142.43 s, which is the third reading that
+entry asked for and it agrees with it — the +11.29 was the box. The prompt's own change
+is a CLI branch and a docstring, and the new guard is a dict lookup over two calls.
+
+⚠ Taken on a box that had just run **four solve sweeps over one pool load each** — 5
+floors, 4 floors, 12 families x 2 rules, and the recorded magenta solve — the last of
+them ending eighty seconds before the lane started. Same caveat as the entry below and
+the same direction, so read the -3.23 s as noise and not as a speedup.
+
 #### magenta_30m_ckpt130
 
 `magenta_30m_ckpt130`, 2026-09-17, `.[dev,models]` with a release engine. **Fast: 4,793
