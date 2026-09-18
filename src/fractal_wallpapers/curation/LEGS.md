@@ -539,6 +539,25 @@ made **9 of the night's 11 rows over `p_fine` 0.50**, and **6.6 rows over
 but reads poorly on fine (5 of 62 over `solve.DEFAULT_FINE_BAR` at the mid-run read),
 so it was dropped from the deepening roster.
 
+**Opening by `curate hunt --places` is 3–8x cheaper than a `ranked_bands` arm on this
+pair, and deepening still wins per second.** Measured by `d6_sampler_leg_ckpt131`
+(2026-09-18), one candidate a place over `--mode threads tia smooth`, then the floor
+draw at `--floor-width 1` over all twelve of `mode_policy.mined()`:
+
+| unit | price | coarse clear | clears over the fine bar | fine-bar rows per 1000 wall s |
+|---|--:|--:|--:|--:|
+| open: top-band never-opened stock, 142 places | 1.68 s a place | 9.2% | 2 of 13 | 6.3 |
+| open: this leg's sampler places, 571 | 1.10 s a place | 3.3% | 6 of 19 | 8.4 (1.4 with the harvest) |
+| deepen: the leg's 32 clears | 2.75 engine s | 5.5% | 7 of 21 | 13.9 |
+| deepen: 121 older clears, most modes missing | 4.35 engine s | 5.4% | 32 of 78 | 14.3 |
+
+**Sampler places clear at a third of the top band's rate**, so fresh sampler ground
+buys **4.4 deepenable places per 1000 wall seconds** once the harvest is counted
+(26.5 without it), against the top band's 40.8. That is what sizes the split: **2 hours opened 713
+places and yielded 32 clears to deepen, which is about 8 minutes of deepening.** The
+rest of the deepening share had to come from older clears with free modes. Neither
+source moves the coarse clear rate, but the older ones read better on fine.
+
 So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
 — plans 7,080 `ranked_bands` candidates at 177 `phoenix:classic` places and 5,680
 more in the near band, which is **13,000 of 35,520 shots on the band this project
