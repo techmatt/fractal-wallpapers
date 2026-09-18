@@ -47,6 +47,18 @@ nearly seven times the other's worth. [`kind_of`] is what tells a reader
 which pass a name asks for, and it is derived from the codebook and the mode
 roster rather than restated, so a hue renamed in one place cannot become a mode
 here.
+
+## Recording a collection the site will read
+
+The site's collection panel (`builder/seats.py` in the `fractal-website` checkout)
+reads a collection's record by stamp, and refuses one whose manifest's solve name
+does not start `targets_<collection>_n`. `curate solve record` names its solve
+`tentative_n<seats>_<stamp>` unless told otherwise, so a record meant for the panel
+passes `--solve-name targets_<collection>_n<seats>_<utc-stamp>`. The stamp in that
+name is the moment of launch and sits a minute or so before the record's own
+stamp, because the record's stamp is taken after the solve. Such a record is
+unpublished and is discarded by default like any other, so a re-solve means
+re-pointing the site's table, not adding to a keep list.
 """
 
 from __future__ import annotations
