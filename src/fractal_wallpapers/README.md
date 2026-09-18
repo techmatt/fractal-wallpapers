@@ -171,6 +171,27 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `artifacts/curation/{depth,rotation,repetition}/*/fields` | Matt's ruling. All three **are** pool subtrees, so these are the entries the sweep walks past — `fields` is not `pictures`, so they are unreachable by name at that depth rather than by subtree. Each is bounded while its leg runs by `colorize.FIELDS_KEPT`, which is 64 dumps or about 226 MB, and none is swept after it |
 | `artifacts/curation/gallery/` | 14,438 gate attempt rows over four retired passes, and `orphans` is their only reader — see [`curation/README.md`](curation/README.md)'s *The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT* |
 
+**The ten unmerged `runs/` legs are not a cleanup opportunity, and the listing
+says so if it is read to the end.** `curate candidate-ledger orphans` lists
+`gallery1`…`gallery4`, `run2`, `run3`, `run8h`, `run9`, `run10` and `release_v1`
+under `unmerged` with *re-merge or delete* beside each, which reads like 2.55 GiB
+of `pictures/` waiting to be freed. It is not: on 2026-09-17 **every picture on
+disk in all ten was named by a live store**, zero unread between them, and a
+`--include-unmerged` sweep of the lot would delete nothing. The number that says
+this without opening anything is **`store_named`**, which is ≥ the leg's own
+`pictures` count on all ten — the sweep's own docstring calls a large one *a
+`runs`-era leg that is in the ledger by backfill and cannot be re-merged at all*.
+The readers are two deep on each leg: `artifacts/curation/gallery/<pass>/gate.jsonl`
+names 100% of `gallery1`…`gallery4` and the tracked `data/curation/{release,gate}/`
+stores name 100% of the other six, with the candidate ledger naming 66–89% of each
+on top. `sweep._named_by_a_store` resolves a decision row to
+`runs/<run>/pictures/<candidate>.jpg` through `rescore.origin_of`, and that
+function **follows the chain** — a `gallery2` seat of a `gallery1` seat of a `run9`
+candidate keeps all three alive — which is why deleting the later legs would not
+free the earlier ones either. Deleting these pictures is available as a **named
+act of Matt's**, the way the docstring frames it; what it is not is garbage
+collection, and `would_delete: 0` at the foot of the listing is the sweep agreeing.
+
 **The Durables are ten and not five**, all of them under `artifacts/curation/`:
 the supply sidecar (`supply_scores.jsonl`), the score amendment
 (`score_amendments.jsonl`), the hunt frame index (`hunt/frames.jsonl`) — those

@@ -21,6 +21,21 @@ the kind that has to be read beside the number. A JSON file would carry sixteen
 integers and no reason for any of them, and the reason is the whole of what stops
 the next cut being retyped too.
 
+## The general pass is not a collection and has no entry here
+
+**There is no `general` key and there cannot be one.** The general gallery is the
+pass with no `--collection` at all — the whole pool, unspliced and unfiltered —
+and its size is [`tentative.RECORDED_SEATS`], which is where a prompt that wants
+to change it goes. [`kind_of`] refuses any name the codebook and the mode roster
+do not between them hold, so a `general` or `general_2000` entry added here would
+be accepted by `--collection`'s `choices` and then refused by the very next call,
+and [`check`] would fail on it. A second size for the general pool is therefore
+`--n`, never a row in this table: `curate solve record --n 2000`.
+
+This is worth saying because the table looks like the place a gallery size lives
+and for sixteen of the seventeen sizes it is. `solve_n2000_and_sweep_ckpt130` was
+told `general: 1000` was here and it never was.
+
 ## Two axes, one table, and they are not comparable
 
 A family pass and a mode pass are different measurements — the first runs the
@@ -71,6 +86,39 @@ from __future__ import annotations
 #:   `smooth` fill a thousand, `stripe` was reaching 785-981 and spending its
 #:   whole augment budget to do it, and `threads` held 550 above-bar places in
 #:   the entire ledger.
+#:
+#: **What the sixteen actually field, measured 2026-09-17** on a pool of 447,655
+#: candidates by `solve_n2000_and_sweep_ckpt130`, which re-solved every one of them
+#: in 247 s total and discarded the records. `seats` is of the target, `median` is
+#: the seated `p_fine(>=4)`, and `Δ` is against the same sixteen solved on
+#: 2026-09-15 over 411,067 candidates:
+#:
+#: | | seats | median | Δ | | | seats | median | Δ |
+#: |---|---|---|---|---|---|---|---|---|
+#: | `rose` | 400/400 | 0.9522 | +0.0022 | | `azure` | 400/400 | 0.9162 | −0.0083 |
+#: | `red` | 400/400 | 0.9656 | +0.0065 | | `blue` | 400/400 | 0.9449 | −0.0031 |
+#: | `orange` | 400/400 | 0.9320 | −0.0047 | | `purple` | 400/400 | 0.9576 | −0.0001 |
+#: | `yellow` | 400/400 | 0.8969 | −0.0032 | | `magenta` | **397**/400 | 0.9394 | +0.0025 |
+#: | `lime` | 150/150 | 0.8858 | +0.0075 | | `tia` | 1000/1000 | 0.9179 | +0.0018 |
+#: | `green` | 300/300 | 0.8814 | −0.0015 | | `smooth` | 800/800 | 0.9536 | +0.0018 |
+#: | `teal` | 300/300 | 0.8844 | −0.0014 | | `stripe` | 800/800 | 0.9428 | +0.0031 |
+#: | `cyan` | 300/300 | 0.9210 | +0.0045 | | `threads` | 400/400 | 0.9342 | −0.0015 |
+#:
+#: **Two days and 36,588 new candidates moved the mean median by +0.0004**, and no
+#: collection moved by 0.009 in either direction. That is the number to hold a
+#: mining night against: at this pool size the marginal ore is not reaching the top
+#: quarter of any of the sixteen, and a night that wanted to move a median would
+#: have to be aimed rather than general. It is **not** an argument that mining is
+#: idle — the same fortnight is what let the general pass fill n=2000 unaided —
+#: only that fill and median are two readings and the stock is buying the first.
+#:
+#: **`magenta` is the one collection that does not fill and the only one where the
+#: augmenting chains still bind**: the seed reached 356 of 400 and chains bought 41
+#: more over 66.6 s, against every other collection finishing in 6-37 s. It is
+#: second-thinnest by pool (37,316 rows against `lime`'s 29,508) while asking 400
+#: to `lime`'s 150, and the refusal is `not_dominant_in_the_theme` at 15,307 with
+#: `geometry` at 618. Short by 3 on both readings, so it is the target and not the
+#: night.
 #:
 #: **`threads` may go backwards at 400 and that is known.** The colour ceiling's
 #: allowance is proportional to `n` — about 32 seats a cell at 500 and 26 at 400

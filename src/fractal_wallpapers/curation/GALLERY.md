@@ -602,6 +602,20 @@ meant to. **The readout says which happened** — `exhaustive` on the depth bloc
 the difference between *no chain of depth ≤ 2 exists* and *none was found in the
 time given*, and the blockage block is only interpretable beside it.
 
+⚠ **The n=2000 half of that has expired, and the cause is supply.** On the pool of
+2026-09-17 — 447,655 candidates, 16,958 of them above the fine bar against 12,948
+when the published n=1000 record was taken — a general n=2000 pass **filled 2000 of
+2000 in the seed** and the chain stage found **0 chains and exhausted in 5.8 s**.
+The budget did not bind and had nothing to bind on: chains exist to buy seats a
+short seating could not fill, and at this supply nothing was short. The 574 s
+figure was taken on the pool of 2026-09-04, where the seed reached 1,621 and the
+stage was buying the other 379. **Read the sentence above as a statement about a
+pool and not about an `n`** — the same rung goes back to binding the moment the
+seating outruns the stock again, which is what the `exhaustive` flag is for.
+Measured by `solve_n2000_and_sweep_ckpt130`; the record was a measurement and was
+discarded, and `curate solve record --n 2000` takes it again in **148.78 s**
+(seed 46.99 s, three swap passes 91.03 s, chains 5.75 s).
+
 **`--augment-seconds` is read before every pair**, so a bound stage stops at a
 trial boundary — *A budget to the pair, and the two records made before it was
 one* in [`GALLERY_decisions.md`](GALLERY_decisions.md).
