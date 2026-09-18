@@ -1678,6 +1678,60 @@ names the measured share and the three ways out (raise the cutoff, list fewer
 cells, drop the flag and let the leg say it drew the whole pool); the share the cut
 actually kept is on the plan as `cells_kept`, beside the bound it had to beat.
 
+### A hue FAMILY is four cells here, and a family-aimed leg spells all four
+
+`--draw-cells` takes the codebook's 48 **cells**, so a leg aimed at a *collection*
+— which is a family, one of `targets.TARGETS`'s twelve — names the four cells the
+family spreads over and never the family. `--draw-cells magenta` is not a narrower
+list, it is a name the parser does not hold: the cells are
+`{dark,light}_{muted,vivid}_magenta`. This is the same asymmetry
+`curation/GALLERY.md`'s *`--collection <name>`* carries on the solve side, where
+`targets.pool_for` appends the family name to `cells` so a themed pass can run on
+it; **no such splice exists on the draw side**, and none is wanted — the filter is
+a question about maps and the family is four answers to it.
+
+**Four cells at the default cutoff is a real cut, so a family needs no raised
+bar.** Measured 2026-09-17 over `colorize.pool`'s 942 maps, the four magenta
+cells: **305 (32.4%)** at 0.10, 283 at 0.12, 252 at 0.15, 210 at 0.20, 148 at
+0.30. That is nowhere near [`depth.CELLS_NARROW_AT`]'s 0.90 refusal and it holds
+the 32-map neighbourhood four times over, so the saturation table above — which
+starts at eight cells — does not reach this case. A family is the short end of the
+list-length axis, not a special one.
+
+### The near band cannot reach a filled family's SEATED places
+
+★ **Measured 2026-09-17 on `magenta`, and it is a fact about the rule rather than
+about that family.** The near band admits a place whose best roster-mode candidate
+is inside `[Q4_BAR, PRIMED_BAR)` — `[0.5, 0.9)` — and a *seated* place in a
+collection that nearly fills is above 0.9 by construction. Of magenta's 397 seats,
+**13** were in the near band; of the whole pool's 14,098 above-bar places, 876 of
+the 6,675 holding no magenta-dominant row were. So a leg told *better rows where
+the collection already holds seats* cannot buy them through the cheapest arm: the
+near band is for places that have not yet cleared the keep, and a filled
+collection's seats have.
+
+**The quality half goes to the mode-floor draw**, which stands on opened proven
+places and takes `--floor-places` — the only flag that says WHICH places — at
+`--floor-width` palettes per (place, mode). That is the composition to reach for
+when a place list is *above* the band rather than inside it, and the two arms then
+partition the list: the near-band names its own admitted places and the floor
+draw takes the rest, so no place is drawn on twice.
+
+### A narrow width does not inherit a wide leg's rate
+
+⚠ **Measured 2026-09-17.** A width-2 depth leg on the three field modes priced
+itself at **2.185** then **2.326** seconds a candidate per engine, against the
+**0.7586** the planner inherited from `easy125_recolour` at width 40 — 2.9x
+optimistic, so the first unit planned 3,666 candidates and made **823** in its 610
+wall seconds. The cause is the one the roster note gives from the other side: one
+field is dumped per (location, mode) and the dump amortises over the candidates
+drawn at it, so halving the width does not halve the cost of a place — it doubles
+the share of the dump each candidate carries. `--rate` is read off the mine
+records as *the cheapest seconds_per_candidate recorded at this width*, and it
+reported `width: 40` while pricing a run at width 2, which is the reading to
+distrust. **Let the first unit calibrate and pass its realized figure to the
+next** rather than believing a plan built on another width's price.
+
 ### `--cell` is a CYCLE, so a repeated cell is a weighted aim
 
 [`_plan_aimed`] hands place `i` the cell at `cells[i % len(cells)]`, and nothing

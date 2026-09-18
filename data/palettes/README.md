@@ -240,6 +240,22 @@ on the reference fields was 551, 546 and 622 of 901 maps — so a figure pairing
 levelled wallpaper with its library ramp is showing two different gradients and
 captioning them as one.
 
+## Which maps a random pick may draw: `palettes_for_random_choice.csv`
+
+**The maps that seated more than one wallpaper in the published n=1000 gallery**,
+as `palette name,count` — 232 of the 451 distinct colormaps those 1,000 seats
+spread over, holding 781 of the seats between them. Matt's ask of 2026-09-17, and
+the website is the reader: a random palette pick wants the maps the seating has
+proven twice, not the whole library and not the 219 that seated exactly once.
+
+The derivation is the join `magenta_30m_ckpt130` wrote down: a gallery row carries
+no colormap, so the 1,000 rows of `<stamp>/gallery.jsonl` join on `key` to
+`<stamp>/recipes.jsonl` — tracked for that one stamp, for the reason `CLAUDE.md`
+gives — and `recipe.colormap` is counted off the joined row. Every key joined.
+**It is a reading of one record and not a standing rule**: a later publication
+re-derives it, and the count column is what a reader re-filters on at another
+threshold.
+
 ## Where the made maps came from: `provenance.jsonl`
 
 Two groups of maps here were *made* rather than converted, and what made them is
