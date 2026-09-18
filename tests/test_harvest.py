@@ -262,6 +262,29 @@ def test_a_survivor_that_never_reached_the_frontier_ends_the_run(tmp_path) -> No
         run._account("mandelbrot", report, 1.0, 1, {})
 
 
+def test_a_capped_lineage_is_on_the_books_and_off_the_frontier(tmp_path) -> None:
+    """`--lineage-cap` keeps a capped lineage's fates and pushes no node, so the
+    reconcile subtracts those rows — and ONLY those: a survivor with no node from a
+    lineage still under its cap ends the run as before. The first crossing ended
+    every capped harvest until 2026-09-18."""
+    run = harvest(tmp_path)
+    run.walk.limits = Limits(batch=4, lineage_admissions=1)
+    run.walk.admitted[5] = 1
+    capped = candidate(ledger_module.SURVIVED, re="0.1")
+    capped["root_id"] = 5
+    kept = candidate(ledger_module.EXPANDABLE, node_id=2, re="0.2")
+    kept["root_id"] = 6
+    counted = run._account(
+        "mandelbrot", {"candidates": [capped, kept], "survivors": [kept]}, 1.0, 1, {}
+    )
+    assert counted["admitted"] == 1
+    assert counted["expandable"] == 1
+    orphan = candidate(ledger_module.SURVIVED, re="0.3")
+    orphan["root_id"] = 6
+    with pytest.raises(ReconcileError, match="reached the frontier"):
+        run._account("mandelbrot", {"candidates": [orphan], "survivors": []}, 1.0, 1, {})
+
+
 def test_the_frontier_is_fed_by_more_than_the_books_count(tmp_path) -> None:
     """The whole of the split, in the reconcile: an expandable row reaches the
     frontier, is counted as growth, and is invisible to the books."""

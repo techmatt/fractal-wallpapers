@@ -1378,7 +1378,20 @@ rung. Each arm moved `--sampler-widest`/`--sampler-narrowest` down one rung:
 | 4 (0.0005–0.00012) | | | | 0.22 | 0.30 | 19 |
 
 The fourth arm served no rung 15 (width 1.18e-4 is under its 1.2e-4 floor) and
-collapsed, so the knee on this plane is around **0.001–0.00023**. `--low-water 24
+collapsed, so the knee on this plane is around **0.001–0.00023**.
+
+**`--lineage-cap 6` spreads the admissions without starving the arm.**
+`d6_sampler_leg_ckpt131` (2026-09-18) ran one harvest at `--sampler-widest 0.002
+--sampler-narrowest 0.00023 --low-water 24 --cooldown 4 --lineage-cap 6` for 34
+active minutes. It made **217 walk admissions over 49 lineages; the largest held
+5.1% and the top five 22.6%**, against 85% in five on the uncapped multibrot3 pilot.
+The plane alone was 61 over 19 lineages (largest 18%, top five 57%), and the Julia
+twin 156 over 30 (top five 29.5%). The cap is on booking, so the batch that crosses
+it still books its remaining rows, which is why lineages reach 10–11. Scored and
+embedded, the run gave **571 admitted, never-opened places over 75 lineages** (224
+plane, 347 twin). Opened at one candidate each, 19 cleared `solve.Q4_BAR`, spread
+over 14 lineages. (Before the fix in `supply/README.md`'s ⚠ on `--lineage-cap`,
+this flag crashed a harvest at its first crossing.) `--low-water 24
 --cooldown 4` is how an arm draws more roots: a refill hands over `--low-water` roots,
 so the default 8 drew 30 roots in 16 minutes and 24 drew 74–111 in 25–30. The Julia
 twin paid most of every arm (98–563) and crowded as it went: 13, 7, 12, 8 new

@@ -704,6 +704,15 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### d6_sampler_leg_ckpt131
+
+`d6_sampler_leg_ckpt131`, 2026-09-18, `.[dev,models]` with a release engine.
+**Fast: 4,817 passed in 149.33 s (2:29)**, 157 deselected, green. **+1 test**,
+`tests/test_harvest.py`'s guard that a capped lineage is on the books and off the frontier,
+so the tree is believed at **4,974**. Slow not run, since the prompt did not name it. Taken
+two minutes after a POST set of twenty solves, a census and an orphans sweep had ended. It
+lands in the 142–155 s band.
+
 #### record_three_modes_ckpt130
 
 `record_three_modes_ckpt130`, 2026-09-18, `.[dev,models]` with a release engine.

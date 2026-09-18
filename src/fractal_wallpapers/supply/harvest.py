@@ -574,11 +574,25 @@ class Harvest:
             )
         admitted = fates.get(ledger_module.SURVIVED, 0)
         expandable = fates.get(ledger_module.EXPANDABLE, 0)
-        if admitted + expandable != len(report["survivors"]):
+        # **A lineage at its `--lineage-cap` keeps its rows' fates and pushes no
+        # node**, so those rows are on the books and not on the frontier. Counted
+        # off the walk's own cap and not off a missing `node_id` alone, so a
+        # survivor that lost its node for any other reason still ends the run.
+        # Until 2026-09-18 this identity did not know the cap existed, and a
+        # harvest given `--lineage-cap` died at the first crossing.
+        capped = sum(
+            1
+            for row in candidates
+            if row["fate"] in (ledger_module.SURVIVED, ledger_module.EXPANDABLE)
+            and row.get("node_id") is None
+            and row.get("root_id") is not None
+            and self.walk.lineage_full(row["root_id"])
+        )
+        if admitted + expandable - capped != len(report["survivors"]):
             raise ReconcileError(
                 f"[reconcile] batch {self.batch} in {partition}: {admitted} admitted plus "
-                f"{expandable} expandable but {len(report['survivors'])} nodes reached the "
-                f"frontier."
+                f"{expandable} expandable, {capped} of them in a capped lineage, but "
+                f"{len(report['survivors'])} nodes reached the frontier."
             )
 
         for row in candidates:

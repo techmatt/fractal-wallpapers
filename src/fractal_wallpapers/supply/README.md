@@ -492,6 +492,17 @@ neighbourhood *no ledger* has ever booked an admission from, and prices that
 fraction against its own admission rate. Inside the share the head ranks and only
 the junk floor kills; the discount never reaches it.
 
+⚠ **`--lineage-cap` on a harvest ended the run at the first crossing until
+2026-09-18.** A capped lineage's rows keep their fates and push no node, and the
+batch reconcile (`admitted + expandable = nodes that reached the frontier`) did not
+know that, so `d6_sampler_leg_ckpt131` died at batch 9 with `[reconcile] … 3 admitted
+plus 6 expandable but 8 nodes reached the frontier`. The identity now subtracts rows
+whose lineage the walk reports full, and a survivor with no node from any other
+lineage still ends the run. **A crashed harvest resumes from its last checkpoint, but
+the rows the failed batch wrote stay in `walk.jsonl`** and the resumed batch writes
+them again. Cut the ledger back to the last row of the checkpointed batch before
+re-running, and keep the full copy.
+
 **The exploration share is spread evenly over the drawable partitions, and it
 carries that evenness across batches.** A partition is drawable if it has a
 novel-lineage node to spend a slot on; every drawable partition is owed the same
