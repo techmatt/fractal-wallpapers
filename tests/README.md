@@ -704,6 +704,14 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### record_three_modes_ckpt130
+
+`record_three_modes_ckpt130`, 2026-09-18, `.[dev,models]` with a release engine.
+**Fast: 4,816 passed in 143.99 s (2:24)**, 157 deselected, green. **No test added**, and the
+count has not moved, so the tree is still believed at **4,973**. Slow not run, on Matt's
+call. Taken three minutes after three collection records, each of which loads the pool and
+holds it for about a minute, one after the other. It lands in the 142–155 s band.
+
 #### angle_modes_evening_ckpt130
 
 `angle_modes_evening_ckpt130`, 2026-09-18, `.[dev,models]` with a release engine.
