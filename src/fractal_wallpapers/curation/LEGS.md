@@ -611,6 +611,36 @@ phase draw is spent on `direct_trap_screen`, `direct_trap_multiply` or
 **Exclusive with `--vary-palette`, refused at the parser.** Both write
 `Shot.palette`, so a plan carrying the two is two draws under one name.
 
+### `--texture-draw LOW HIGH` — how loud a screened composite's texture is, drawn per candidate
+
+**One uniform weight per screened-composite candidate**, on `curate hunt` and
+`curate depth` alike, and off by default. `colorize.draw_texture_weights` is the
+draw; `angle_modes_evening_ckpt130` is the leg it was added for.
+
+**What the knob is, from the engine.** The five screened composites
+(`smooth_mean_angle`, `smooth_angle_min`, `smooth_stripe`, `smooth_trap_circle`,
+`smooth_curvature`) blend `gray = under + w · over · (1 − under)` in
+`coloring::composite` — `w = 0` is the plain `smooth` picture, and `w` moves how far
+the texture pushes the base's palette position without changing what the texture
+is. The catalog pins `w` at `TEXTURE_WEIGHT = 0.85` in `engine/src/mode.rs`, whose
+own note is that at 1 the texture's normalization drowns the escape structure.
+`threads` adds rather than screens and is passed through bare.
+
+**Where it lives on a row.** `recipe.mode_params = {"texture_weight": w}`, which
+`renders.coloring_of` spends in place of the catalog's value — the only setting a
+composite takes. So it is in the recipe key and the job name, and a drawn candidate
+is a new picture beside the settled one; a composite row with no weight is the
+catalog's picture exactly, so nothing written before this re-keys. Rounded to three
+places. Seeded at `seed + 4` on both verbs (`hunt.TEXTURE_SEED_OFFSET`).
+
+⚠ **Two side effects, both accepted.** Retention's pair is
+`(location, colorize.spelled(mode, mode_params))`, so every drawn weight is its own
+pair and keep-five never binds on these rows. And `label_fate.SETTINGS_AWARE_SUBTREES`
+does **not** hold `depth` — depth rendered through `mine.make` until 2026-09-08,
+which dropped settings — so a depth row carrying a drawn weight lists as a
+`bare_varied` suspect although `hunt.Maker` rendered it with the weight. The safe
+direction; a repair leg reading that manifest should date-bound it first.
+
 ### `--vary-palette` — moving the palette block, and nothing else
 
 Off by default. On, every candidate draws a `phase` and a `repeat` alongside its

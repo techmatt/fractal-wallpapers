@@ -177,6 +177,12 @@ DEFAULT_SEED = 20260826
 #: invocation: the frame lookup, the plan and the merge sit outside it.
 BUDGET_SECONDS = 1200.0
 
+#: Where the texture draw's seed sits against the hunt's own: the breadth leg
+#: draws at `seed`, the conditioned one at `seed + 1`, and `curate depth`'s draws
+#: take `+1`..`+4` with the texture at `+4`. The same offset here keeps one
+#: flag meaning one seed on both verbs.
+TEXTURE_SEED_OFFSET = 4
+
 #: What one candidate is assumed to cost before this run has measured its
 #: partition. The ledger's own figure for an attempt at this geometry, taken at
 #: the dear end of it — over-pricing an unmeasured partition costs one candidate
@@ -903,8 +909,9 @@ def plan(
     conditioned: int = 0,
     cell: str | None = None,
     work_order: dict | None = None,
-    mode: str | None = None,
+    mode: str | tuple | None = None,
     pool: list | None = None,
+    texture_draw: tuple | None = None,
     log=print,
 ) -> list:
     """The whole plan, both legs, interleaved. Renders nothing.
@@ -1040,16 +1047,23 @@ def plan(
     # hunt is a leg that BUYS material, so a mode off the roster is a mode this
     # project has ruled it does not buy more of, and drawing it here would be the
     # one door that ignores both of `mode_policy`'s rulings.
+    #
+    # **Several names narrow it to several**, and `--per-location` then samples
+    # among them exactly as it samples the twelve: a leg buying one family of modes
+    # at fresh places wants one candidate a place in one of them, not one of each.
     if mode is not None:
-        if mode not in roster:
-            raise HuntRefused(
-                f"`--mode {mode}` is not a mode a hunt draws. A hunt buys more of a mode, so "
-                f"its roster is `mode_policy.mined()` — {', '.join(roster)} — and a mode off "
-                f"it is either weighted 0 (this project has stopped buying it) or in "
-                f"`mode_policy.UNMINED` (the gallery seats it and no leg buys more). Existing "
-                f"material stands under both, so a place already holding this mode keeps it."
-            )
-        roster = (mode,)
+        named = (mode,) if isinstance(mode, str) else tuple(dict.fromkeys(map(str, mode)))
+        for one in named:
+            if one not in roster:
+                raise HuntRefused(
+                    f"`--mode {one}` is not a mode a hunt draws. A hunt buys more of a mode, "
+                    f"so its roster is `mode_policy.mined()` — {', '.join(roster)} — and a "
+                    f"mode off it is either weighted 0 (this project has stopped buying it) or "
+                    f"in `mode_policy.UNMINED` (the gallery seats it and no leg buys more). "
+                    f"Existing material stands under both, so a place already holding this "
+                    f"mode keeps it."
+                )
+        roster = named
     # The breadth leg draws under the standing weight table and the aimed one does
     # not: what a partition costs to render is a fact about a *breadth* draw, and
     # a leg sent at a shortage is already saying which partitions it means. See
@@ -1099,7 +1113,15 @@ def plan(
     log(
         f"[hunt] planned {len(breadth):,} unconditional and {len(aimed):,} conditioned candidate(s)"
     )
-    return _interleave(breadth, aimed)
+    woven = _interleave(breadth, aimed)
+    if texture_draw is None:
+        return woven
+    # After the interleave, over the whole plan: the weight is an axis of the
+    # candidate and not of either leg. [`TEXTURE_SEED_OFFSET`] keeps it off the
+    # two legs' own seeds.
+    return colorize.draw_texture_weights(
+        woven, texture_draw, int(seed) + TEXTURE_SEED_OFFSET, log=log
+    )[0]
 
 
 def _leg(leg, places, per_location, seed, roster, draw, want) -> list:
@@ -1664,8 +1686,9 @@ def run(
     conditioned: int = 0,
     cell: str | None = None,
     work_order: dict | None = None,
-    mode: str | None = None,
+    mode: str | tuple | None = None,
     named_places: list | None = None,
+    texture_draw: tuple | None = None,
     device: str = "auto",
     margin: float = framing.MARGIN,
     log=print,
@@ -1727,6 +1750,7 @@ def run(
         cell=cell,
         work_order=work_order,
         mode=mode,
+        texture_draw=texture_draw,
         log=log,
     )
     by_key = {str(row["key"]): row for row in places}
@@ -1840,6 +1864,10 @@ def run(
             # read later has to be able to say a leg drew every mode, which is a
             # different claim from a record that predates the flag.
             "mode": mode,
+            # `None` is the catalog's settled weight on every composite; a span is
+            # one uniform draw a screened-composite candidate, seeded at
+            # `seed + TEXTURE_SEED_OFFSET` and carried on each row's `mode_params`.
+            "texture_draw": None if texture_draw is None else [float(v) for v in texture_draw],
             "unconditional": int(unconditional),
             "conditioned": int(conditioned),
             "cell": cell,
