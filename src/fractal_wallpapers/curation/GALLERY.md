@@ -1440,10 +1440,11 @@ every invocation, so the other spelling would put numpy behind
 
 ### `--collection <name>` — a hue family or a mode, at the size the table sets
 
-**Sixteen collections and sixteen numbers, and until 2026-09-15 the numbers lived
+**Nineteen collections and nineteen numbers, and until 2026-09-15 the numbers lived
 in whichever prompt was running that night.** `curation.targets.TARGETS` is the
-table now — twelve hue families and the four production modes a collection is kept
-for — and `targets.seats_for` is the one read of it. `curate solve run` and
+table now — twelve hue families and the seven production modes a collection is kept
+for, `smooth_mean_angle`, `smooth_angle_min` and `smooth_stripe` joining the first
+four on 2026-09-17 — and `targets.seats_for` is the one read of it. `curate solve run` and
 `curate solve record` take `--collection NAME`, take `n` from the table when `--n`
 is unsaid, and `--n` still wins. **A collection the table has no target for
 refuses** rather than seating a plausible number: `itinerary` is an accepted mode

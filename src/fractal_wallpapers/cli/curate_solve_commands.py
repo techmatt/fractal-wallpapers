@@ -907,7 +907,9 @@ def collection_flag(container) -> None:
         "floor(n / 100) until then, which cost `magenta` a seat. A mode pass narrows the "
         "pool to that ROUTED mode and clears the per-mode "
         "floors and ceilings, which over a single-mode population are a demand nothing can "
-        "meet and a cap on the collection itself. The sixteen targets are: "
+        "meet and a cap on the collection itself. The "
+        + str(len(targets_module.TARGETS))
+        + " targets are: "
         + ", ".join(f"{name} {seats}" for name, seats in targets_module.TARGETS.items())
         + ". `--n` overrides the table; `--themed` names a CELL and refuses beside this",
     )

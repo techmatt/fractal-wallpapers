@@ -121,9 +121,9 @@ These were decided once, at the first commit, because each is expensive to rever
   landing on Matt's desk as a recurring approval; there is no sweep step to carry
   forward any more.
 - **A collection's size is in `curation/targets.py` and nowhere else**, Matt's cut
-  of 2026-09-15. Sixteen collections — twelve hue families, four modes — and a
-  prompt that names a seat count is a prompt retyping one of the sixteen, which is
-  how they drifted before the table existed. `curate solve run --collection NAME`
+  of 2026-09-15. Nineteen collections — twelve hue families, seven modes since
+  2026-09-17 — and a prompt that names a seat count is a prompt retyping one of
+  them, which is how they drifted before the table existed. `curate solve run --collection NAME`
   and `curate solve record --collection NAME` take `n` from it, splice a family or
   filter a mode through `targets.pool_for`, and `--n` still overrides. **A
   collection the table does not name refuses** rather than seating a plausible
@@ -245,8 +245,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `magenta_last_seat_ckpt130` added 1 fast test on
-2026-09-17 and read **4,794 fast in 150.49 s (2:30)**, 157 deselected, green, so the tree
+**The newest reading is fast only**: `add_three_mode_collections_ckpt130` added 3 fast
+tests on 2026-09-17 and read **4,797 fast in 180.94 s (3:00)**, 157 deselected, green, so
+the tree is *believed* at 4,954 collected; ⚠ the +30 s is unchased and read as box, taken
+right after nineteen pool loads (`tests/README.md` has it). Before it,
+`magenta_last_seat_ckpt130` added 1 fast test on 2026-09-17 and read **4,794 fast in 150.49 s (2:30)**, 157 deselected, green, so the tree
 is *believed* at 4,951 collected. Before it, `tuned_descents_1h_ckpt129` added 2 fast tests
 on 2026-09-17 and read **4,793 fast in 142.43 s (2:22)**, 157 deselected, green.
 Before it, `degree6_ckpt128_wallpapers` added 7 fast
