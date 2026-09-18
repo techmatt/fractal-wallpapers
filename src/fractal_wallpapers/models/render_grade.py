@@ -99,6 +99,10 @@ import json
 import random
 from pathlib import Path
 
+# Aliased because `mine` is a loop variable in [`paired_folds`] — the ordinary
+# English word for *this side of a pair* — and the bare name would be shadowed
+# there. The alias is at the import so the reading site still says `mine`.
+from fractal_wallpapers.curation import mine as mine_module
 from fractal_wallpapers.models import (
     finished_train,
     head,
@@ -136,9 +140,14 @@ SHIPPED_RULE = "cutpoint_cross_entropy"
 AUC_RULE = "stop_slice_auc_ge4"
 
 #: The floor the admitted volume in [`crossovers`] is counted against:
-#: `curation.mine.PRIMED_BAR`, where a candidate is called primed. Read here and
-#: never restated — this module measures against it and moves nothing.
-PRIMED_BAR = 0.90
+#: [`curation.mine.PRIMED_BAR`], where a candidate is called primed. Read here and
+#: never restated — this module measures against it and moves nothing. **Imported
+#: rather than re-typed**, which is what the sentence above always claimed: the
+#: two spellings of `0.90` agreed by inspection and nothing held them to it, so a
+#: retrain that moved the mine's bar would have left this module grading against
+#: the old one and saying it had not. [`curation.depth`] takes the same import for
+#: the same reason.
+PRIMED_BAR = mine_module.PRIMED_BAR
 
 
 class GradingError(RuntimeError):
