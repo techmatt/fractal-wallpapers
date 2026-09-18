@@ -704,6 +704,19 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### add_three_mode_collections_ckpt130
+
+`add_three_mode_collections_ckpt130`, 2026-09-17, `.[dev,models]` with a release engine.
+**Fast: 4,797 passed in 180.94 s (3:00)**, 157 deselected, green first time. **+3 tests**,
+all from `tests/test_targets.py`'s parametrize over `TARGETS` gaining three keys, so the
+tree is believed at **4,954**. Slow not run.
+
+⚠ **+30.45 s against `magenta_last_seat_ckpt130`'s reading below, and not chased.** The
+three new cases are a dict lookup each. The lane started the minute a twenty-minute run
+of nineteen back-to-back `curate solve run` pool loads ended, and a confirming re-run on
+the idle box was stopped on Matt's call. So it reads as box, but that is **unmeasured**:
+the next reading settles it.
+
 #### magenta_last_seat_ckpt130
 
 `magenta_last_seat_ckpt130`, 2026-09-17, `.[dev,models]` with a release engine. **Fast:

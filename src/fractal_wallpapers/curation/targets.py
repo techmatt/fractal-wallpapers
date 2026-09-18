@@ -1,8 +1,8 @@
 """How many seats each collection is solved for, as one table with one owner.
 
 A **collection** is a gallery cut on one axis and solved on its own: one of the
-twelve hue families, or one of the four production modes a collection is kept
-for. Sixteen of them, sixteen numbers, and until 2026-09-15 those numbers lived
+twelve hue families, or one of the seven production modes a collection is kept
+for. Nineteen of them, nineteen numbers, and until 2026-09-15 those numbers lived
 in whichever prompt was running that night — retyped per prompt, which is how a
 target drifts without anybody deciding it had. This module is the one place they
 are written, and [`seats_for`] is the one place they are read.
@@ -17,7 +17,7 @@ plausible-looking one.
 The other three tables of this shape — [`curation.mode_policy`]'s weights,
 [`curation.floors`]' cuts, [`curation.solve`]'s mode ceilings — are module
 constants carrying their argument at the site, and a target's argument is exactly
-the kind that has to be read beside the number. A JSON file would carry sixteen
+the kind that has to be read beside the number. A JSON file would carry nineteen
 integers and no reason for any of them, and the reason is the whole of what stops
 the next cut being retyped too.
 
@@ -33,7 +33,7 @@ and [`check`] would fail on it. A second size for the general pool is therefore
 `--n`, never a row in this table: `curate solve record --n 2000`.
 
 This is worth saying because the table looks like the place a gallery size lives
-and for sixteen of the seventeen sizes it is. `solve_n2000_and_sweep_ckpt130` was
+and for nineteen of the twenty sizes it is. `solve_n2000_and_sweep_ckpt130` was
 told `general: 1000` was here and it never was.
 
 ## Two axes, one table, and they are not comparable
@@ -86,39 +86,66 @@ from __future__ import annotations
 #:   `smooth` fill a thousand, `stripe` was reaching 785-981 and spending its
 #:   whole augment budget to do it, and `threads` held 550 above-bar places in
 #:   the entire ledger.
+#: * **200 for `smooth_mean_angle` and `smooth_stripe`, 100 for `smooth_angle_min`**,
+#:   Matt's sizes of 2026-09-17 off `mode_gallery_sizing_ckpt130`'s trial solves:
+#:   the largest `n` each fills. Past it the three stop at 244, 198 and 294 seats
+#:   however high `n` goes, on `location` and `spiral` rather than on colour, and
+#:   the augmenting chains exhaust well inside their budget — the supply is the
+#:   wall, not the clock. `smooth_angle_min` read 185 of 200 there, hence 100.
 #:
-#: **What the sixteen actually field, measured 2026-09-17** on a pool of 447,655
-#: candidates by `solve_n2000_and_sweep_ckpt130`, which re-solved every one of them
-#: in 247 s total and discarded the records. `seats` is of the target, `median` is
-#: the seated `p_fine(>=4)`, and `Δ` is against the same sixteen solved on
-#: 2026-09-15 over 411,067 candidates:
+#: **What the nineteen field, measured 2026-09-17** by `add_three_mode_collections_ckpt130`,
+#: every one solved by `curate solve run --collection NAME --no-render --no-sheet` on
+#: one pool of 449,507 candidates, the twelve families under the DEFAULT floor rule
+#: (*A family pass floors at the DEFAULT rule* in `GALLERY.md`). Two quality columns,
+#: and **they are two different judges**:
 #:
-#: | | seats | median | Δ | | | seats | median | Δ |
-#: |---|---|---|---|---|---|---|---|---|
-#: | `rose` | 400/400 | 0.9522 | +0.0022 | | `azure` | 400/400 | 0.9162 | −0.0083 |
-#: | `red` | 400/400 | 0.9656 | +0.0065 | | `blue` | 400/400 | 0.9449 | −0.0031 |
-#: | `orange` | 400/400 | 0.9320 | −0.0047 | | `purple` | 400/400 | 0.9576 | −0.0001 |
-#: | `yellow` | 400/400 | 0.8969 | −0.0032 | | `magenta` | **397**/400 | 0.9394 | +0.0025 |
-#: | `lime` | 150/150 | 0.8858 | +0.0075 | | `tia` | 1000/1000 | 0.9179 | +0.0018 |
-#: | `green` | 300/300 | 0.8814 | −0.0015 | | `smooth` | 800/800 | 0.9536 | +0.0018 |
-#: | `teal` | 300/300 | 0.8844 | −0.0014 | | `stripe` | 800/800 | 0.9428 | +0.0031 |
-#: | `cyan` | 300/300 | 0.9210 | +0.0045 | | `threads` | 400/400 | 0.9342 | −0.0015 |
+#: * `p_ge4` is the **render judge's** `P(>=4)` on the seat — the gate reading, the
+#:   one [`solve.Q4_BAR`] cuts at 0.5, so it can never read under that.
+#: * `p_fine` is the **fine head's own column**, `solve.fine_column().read` — the
+#:   quality reading from here on, and the column the seating bar is drawn on.
 #:
-#: **Two days and 36,588 new candidates moved the mean median by +0.0004**, and no
-#: collection moved by 0.009 in either direction. That is the number to hold a
-#: mining night against: at this pool size the marginal ore is not reaching the top
-#: quarter of any of the sixteen, and a night that wanted to move a median would
-#: have to be aimed rather than general. It is **not** an argument that mining is
-#: idle — the same fortnight is what let the general pass fill n=2000 unaided —
-#: only that fill and median are two readings and the stock is buying the first.
+#: ⚠ **This table called `p_ge4` "the seated `p_fine(>=4)` median" until
+#: 2026-09-17**, and it was not: `smooth`'s 0.9536 there is its seated `p_ge4`, while
+#: the fine head puts the same gallery at 0.27. A median quoted from an older copy of
+#: this table, or from `solve_n2000_and_sweep_ckpt130`, is a `p_ge4`. `Δ` is `p_ge4`
+#: against that reading of the sixteen, taken the same day over 447,655 candidates:
 #:
-#: **`magenta` is the one collection that does not fill and the only one where the
-#: augmenting chains still bind**: the seed reached 356 of 400 and chains bought 41
-#: more over 66.6 s, against every other collection finishing in 6-37 s. It is
-#: second-thinnest by pool (37,316 rows against `lime`'s 29,508) while asking 400
-#: to `lime`'s 150, and the refusal is `not_dominant_in_the_theme` at 15,307 with
-#: `geometry` at 618. Short by 3 on both readings, so it is the target and not the
-#: night.
+#: | | seats | `p_ge4` median | Δ | `p_fine` median | `p_fine` q1 |
+#: |---|---|---|---|---|---|
+#: | `rose` | 400/400 | 0.9485 | −0.0037 | 0.2363 | 0.1173 |
+#: | `red` | 400/400 | 0.9557 | −0.0099 | 0.4601 | 0.2970 |
+#: | `orange` | 400/400 | 0.9301 | −0.0019 | 0.4662 | 0.2894 |
+#: | `yellow` | 400/400 | 0.8880 | −0.0089 | 0.1932 | 0.0627 |
+#: | `lime` | 150/150 | 0.8811 | −0.0047 | 0.1315 | 0.0556 |
+#: | `green` | 300/300 | 0.8789 | −0.0025 | 0.1733 | 0.0600 |
+#: | `teal` | 300/300 | 0.8936 | +0.0092 | 0.2312 | 0.0825 |
+#: | `cyan` | 300/300 | 0.9105 | −0.0105 | 0.2093 | 0.0805 |
+#: | `azure` | 400/400 | 0.9141 | −0.0021 | 0.1995 | 0.0859 |
+#: | `blue` | 400/400 | 0.9427 | −0.0022 | 0.3075 | 0.1573 |
+#: | `purple` | 400/400 | 0.9582 | +0.0006 | 0.2288 | 0.0984 |
+#: | `magenta` | 400/400 | 0.9380 | −0.0014 | 0.2255 | 0.0889 |
+#: | `tia` | 1000/1000 | 0.9174 | −0.0005 | 0.3210 | 0.1556 |
+#: | `smooth` | 800/800 | 0.9525 | −0.0011 | 0.2748 | 0.1321 |
+#: | `stripe` | 800/800 | 0.9428 | +0.0000 | 0.2985 | 0.1434 |
+#: | `threads` | 400/400 | 0.9344 | +0.0002 | 0.3621 | 0.1810 |
+#: | `smooth_mean_angle` | 200/200 | 0.8587 | new | 0.3137 | 0.1544 |
+#: | `smooth_angle_min` | 100/100 | 0.8789 | new | 0.4284 | 0.2573 |
+#: | `smooth_stripe` | 200/200 | 0.9167 | new | 0.2178 | 0.0971 |
+#:
+#: **All nineteen fill.** The families' `Δ` is the floor rule and not the pool: some
+#: 1,850 candidates arrived between the two readings, the four old modes — which
+#: floor at 0 either way — held to ±0.0011, and the families moved −0.0032 on the
+#: mean, because the default rule re-seats a family toward the thin modes it floors.
+#:
+#: **The two columns do not rank the collections alike.** `orange` and `red` lead on
+#: `p_fine` (0.47, 0.46); `purple` leads on `p_ge4` and is twelfth of nineteen on
+#: `p_fine`; `smooth_angle_min` ties for last-but-one on `p_ge4` and is third on `p_fine`.
+#: Ranking the nineteen on quality means ranking them on `p_fine`.
+#:
+#: **Where the augmenting chains still bind**: `magenta` (seed 356, 44 chains,
+#: 15.1 s), `yellow` (366, 34), `purple` (372, 28), `smooth_mean_angle` and
+#: `smooth_stripe` (177, 23 each), `stripe` (784, 16), `azure` (389, 11). Every
+#: other collection is filled by its seed.
 #:
 #: **`threads` may go backwards at 400 and that is known.** The colour ceiling's
 #: allowance is proportional to `n` — about 32 seats a cell at 500 and 26 at 400
@@ -139,11 +166,14 @@ TARGETS: dict[str, int] = {
     "blue": 400,
     "purple": 400,
     "magenta": 400,
-    # The four mode collections.
+    # The seven mode collections.
     "tia": 1000,
     "smooth": 800,
     "stripe": 800,
     "threads": 400,
+    "smooth_mean_angle": 200,
+    "smooth_angle_min": 100,
+    "smooth_stripe": 200,
 }
 
 #: What [`kind_of`] answers. A family pass and a mode pass are two different

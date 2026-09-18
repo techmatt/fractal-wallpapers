@@ -44,12 +44,15 @@ def test_every_key_in_the_table_names_a_collection_and_no_family_is_missing():
     assert targets.check() == {"collections": len(targets.TARGETS), "refusals": []}
 
 
-def test_the_sixteen_are_twelve_families_and_four_modes():
-    """The shape the prompt cut, and the one arithmetic claim worth holding."""
-    assert len(targets.collections()) == 16
+def test_the_nineteen_are_twelve_families_and_seven_modes():
+    """The shape the prompts cut, and the one arithmetic claim worth holding.
+
+    Sixteen on 2026-09-15; the three smooth-family modes joined on 2026-09-17.
+    """
+    assert len(targets.collections()) == 19
     assert set(targets.families()) <= set(targets.collections())
     assert len(targets.families()) == 12
-    assert len(targets.modes()) == 4
+    assert len(targets.modes()) == 7
     assert set(targets.modes()).isdisjoint(targets.families())
 
 
