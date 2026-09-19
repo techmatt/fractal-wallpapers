@@ -256,6 +256,53 @@ gives — and `recipe.colormap` is counted off the joined row. Every key joined.
 re-derives it, and the count column is what a reader re-filters on at another
 threshold.
 
+## Which colours a map has actually made: `palette_family_shares.csv`
+
+`carriers.jsonl` above says what a map **can** carry, and answers it by recolouring
+three pinned reference fields. This table says what it **has** made, and answers it off
+the candidate ledger — every picture this project has rendered and kept. The two are not
+the same fact: a map whose gradient is full of teal but whose every mined picture came
+out amber is a teal map by the first reading and an amber one by this one.
+
+One row per map in the library, `palette name,pictures,` then the **twelve hue families
+in the wheel's order**. `pictures` is how many ledger rows were drawn in that map; a hue
+column is how many of those the dominance rule above calls dominant in that family. A
+picture may be dominant in more than one family and in none, so the hue columns sum to
+neither more nor less than `pictures` by any rule.
+
+**Counts, not shares.** The count is what was measured; the share is `count / pictures`,
+which a reader takes exactly rather than at whatever precision a rounded column kept.
+**1,022 rows, 52,310 bytes** — 5.0% of `test_history_purity`'s 1 MiB.
+
+**The verdict is read back, never re-taken.** Every ledger row carries the reading
+`palettes.dominance` already made — `colour.families`, written when the picture was
+rendered — so the pass tallies stored answers and decodes nothing. That is the same
+reason `candidate_ledger.rows.colour_block` stores names rather than shares: a threshold
+that moved since a row was written must not quietly re-decide what that picture was.
+
+**A map with no output gets a row of zeros.** `blue_orange` and `atlas_grey` are in the
+library and out of the candidate pool, so they have made nothing; a row of zeros says
+that where an absent row could not be told from a map this library does not hold.
+
+The current table was read over **550,538 ledger rows, of which 1,020 of the 1,022 maps
+hold at least one**. Rebuild it with
+
+```
+fractal-wallpapers palettes produced
+```
+
+— one streamed pass, about nine seconds, no render and no decode. `tests/
+test_palette_produced.py` holds the committed file to its shape and to three calibration
+reads, of which the useful one is that **`Blues` reads `azure`**: the wheel is Oklab hue
+angle and matplotlib's blues sit on the azure spoke, so a table agreeing with the map's
+own name there would be a table reading names.
+
+**The website is the reader**, as it is for the random list below. It imports this file
+with `python -m builder explorer --families`, applies its own bar — a map is offered
+under a family when at least **5%** of its pictures read as that family — and freezes
+the resulting list on `explorer/palettes.jsonl`. The bar is the site's, because it is a
+choice about how wide one of its controls reaches; the measurement is this table's.
+
 ## Where the made maps came from: `provenance.jsonl`
 
 Two groups of maps here were *made* rather than converted, and what made them is

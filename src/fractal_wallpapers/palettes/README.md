@@ -6,6 +6,7 @@ fractal-wallpapers palettes provenance --source <archive> --images <pictures>
 fractal-wallpapers palettes groups
 fractal-wallpapers palettes reference-fields
 fractal-wallpapers palettes carriers
+fractal-wallpapers palettes produced
 fractal-wallpapers palettes strip --name "Bone Vault" --out artifacts/figures/bone.png
 fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120
 ```
@@ -194,6 +195,15 @@ row per (map, cell) with the cell's share on all three fields. About 90 seconds 
 3,063 recolours, which land under `artifacts/palettes/carriers/` and are kept, so a
 second run is the census alone. 3,665 rows over 1,021 maps, and every one of the 48
 chromatic cells has a carrier.
+
+`produced` answers the other half of that question — **which colours a map has
+actually made** — off the candidate ledger rather than off three fields: one row per
+map in the library, how many ledger pictures were drawn in it, and how many of those
+`dominance` calls dominant in each of the twelve hue families. It decodes nothing and
+renders nothing, because every ledger row already carries the verdict the rule made
+when the picture was drawn; one streamed pass, about nine seconds. 1,022 rows in
+`data/palettes/palette_family_shares.csv`, 1,020 of them with output — `blue_orange`
+and `atlas_grey` are in the library and out of the pool, and get rows of zeros.
 
 ### `fields` and `mean` came off the row on 2026-09-06
 
