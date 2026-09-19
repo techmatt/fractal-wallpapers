@@ -100,9 +100,10 @@ These were decided once, at the first commit, because each is expensive to rever
   measurement is taken and says so in its report**: a solve is cheap to run again,
   and what a leftover record costs is misreading hazard, not bytes. **The keep list
   is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, which carries
-  its eight entries with the reason for each written at the site. Everything else
-  goes unless Matt says otherwise. **The keep list holds sixteen** — eight
-  published and eight not — and a stamp earns its keep from exactly one of the two
+  its twenty-nine entries with the reason for each written at the site. Everything else
+  goes unless Matt says otherwise. **The keep list holds thirty-seven** — eight
+  published and twenty-nine not, twenty-one of those the pinned records of
+  2026-09-19 that `fractal-website` lists — and a stamp earns its keep from exactly one of the two
   lists, `20260914T171846Z` being in `PUBLISHED` and therefore not in the other.
   ⚠ **The store is not the keep list and on 2026-09-15 it held 96 records, 80 of
   them off it** (61.4 MiB, five batches of solve records from this checkpoint's own
@@ -245,7 +246,9 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `pins_ckpt132` added 25 fast tests on 2026-09-19 and
+**The newest reading is fast only**: `site_rebase_ckpt132` added no test on 2026-09-19 and
+read **4,853 fast in 144.50 s (2:24)**, 157 deselected, green, count unmoved; taken on a
+quiet box. Before it, `pins_ckpt132` added 25 fast tests on 2026-09-19 and
 read **4,853 fast in 150.29 s (2:30)**, 157 deselected, green, so the tree is *believed* at
 5,010 collected; taken right after twenty-one record solves. Before it,
 `viewers_ckpt132` added 6 fast tests on 2026-09-19 and

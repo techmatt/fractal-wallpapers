@@ -433,6 +433,11 @@ at three batches and 412 s at thirty-six, and what bounds the whole leg is the
 number of places a copy holds above the junk floor — 202 over the 24 pairs here —
 not the budget pointed at it. Plan one of these by places wanted, not by hours.
 
+**Deepen their places on a narrow roster only.** The 179 of the 202 not yet deepened
+cost about 17.5 wall s a shot on the full mined roster — one collection row per 88
+minutes on 2026-09-19 — so a floor leg over them names a narrow `--floor-modes`.
+`curation/LEGS.md`'s *The same recipe, run to the end of every list* has the reading.
+
 **Four pairs produced four candidates each and stopped**, their root expanding
 once before every child fell under the floor. They are not failures of the aim:
 they are copies whose decorations at that scale hold nothing the gates admit, and

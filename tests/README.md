@@ -704,6 +704,13 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### site_rebase_ckpt132
+
+`site_rebase_ckpt132`, 2026-09-19, `.[dev,models]` with a release engine.
+**Fast: 4,853 passed in 144.50 s (2:24)**, 157 deselected, green. No test added, count
+unmoved. Slow not run. Taken on a quiet box before its atlas leg; the prompt added
+twenty-one stamps to `tentative.KEPT_UNPUBLISHED`, and no guard counts that tuple.
+
 #### pins_ckpt132
 
 `pins_ckpt132`, 2026-09-19, `.[dev,models]` with a release engine.
