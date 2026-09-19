@@ -245,7 +245,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `small_fixes_open_ckpt131` added 1 fast test on
+**The newest reading is fast only**: `mine_ckpt132_completable_3h` added no test on
+2026-09-18 and read **4,822 fast in 145.74 s (2:25)**, 157 deselected, green, count unmoved;
+taken after its render leg and POST solves had ended. Before it,
+`small_fixes_open_ckpt131` added 1 fast test on
 2026-09-18 and read **4,822 fast in 147.70 s (2:28)**, 157 deselected, green, so the tree is
 *believed* at 4,979 collected; taken on a quiet box before its render leg. Before it,
 `targets_raise_ckpt131` added no test on 2026-09-18 and

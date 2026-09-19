@@ -579,6 +579,36 @@ the partitions. So "top down" is held by handing a hunt only the next rank slice
 to finish inside its budget. A slice the budget stops short leaves a random subset of
 itself unopened, not its tail.
 
+**A floor unit is made list-bound, not clock-bound, with a low `--rate`.** Measured by
+`mine_ckpt132_completable_3h` (2026-09-18) at width 1 over `mined()` plus `curvature`.
+The plan is `PLAN_HEADROOM * workers * budget / rate` and it is capped by the manifest,
+so `--rate 0.05` plans every named place, which `depth plan` confirms before anything
+renders (180 places × 13 modes = 2,340 planned). The unit then ends when the list is
+done, and `counts.stopped_for_budget` is 0 exactly when it finished. **`--floor-seats`
+is inert whenever `--floor-modes` is named**: `build_plan` reads it only to pick the
+modes itself.
+
+| population | price, 13 modes | coarse clear | fine-bar rows per 1000 wall s |
+|---|--:|--:|--:|
+| `tuned129_*`'s 202 seahorse-satellite places (widths about 1e-11) | **~10.7 wall s a shot** | — | — |
+| the 180 d=6 clears missing ≥ 6 mined modes | 1.12 wall s (3.17 engine s) | 4.4% | 14.5 |
+| graded composite-only places, head ranks 1–52 | 0.72 wall s (1.54 engine s) | 19.5% | 113 |
+| the same, ranks 53–707 | 0.84 wall s (2.47 engine s) | 8.1% | 32.8 |
+
+**The tuned-descent places cannot be deepened on the full roster in any ordinary leg.**
+At about 32 engine s a shot, 202 places × 13 modes is about 7.8 hours of wall. So that
+unit was stopped after 838 s and merged nothing. A leg for them names a narrow roster or
+a slice. **`curvature` clears almost nowhere**: 1 of 632 shots on the graded places and 3
+of 180 on d=6. **A slice sized off the slice before it runs about 15% over** when it
+reaches down the rank: 0.72 s became 0.84 s, and 283 of 8,515 shots were cut.
+
+⚠ **A merge can fail at its last step if another process holds `rows.jsonl`.** On that
+night a `fractal-website` `builder check` did, and `sweep.prune`'s retries gave up. The
+rows and scores had landed and the losers' pictures were already deleted, but the pruned
+rows file was never swapped in and no `merge.json` was written. The next merge's prune
+removed those rows again, since a prune is global. Re-running `depth merge --name` is an
+idempotent upsert, and it writes the missing record.
+
 So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
 — plans 7,080 `ranked_bands` candidates at 177 `phoenix:classic` places and 5,680
 more in the near band, which is **13,000 of 35,520 shots on the band this project
