@@ -80,6 +80,19 @@ def palettes_carriers(args: argparse.Namespace) -> int:
     return 0
 
 
+def palettes_produced(args: argparse.Namespace) -> int:
+    """Rebuild the table of which colours each map has actually made."""
+    from fractal_wallpapers.palettes import produced
+
+    try:
+        report = produced.run(log=None if args.quiet else print)
+    except produced.ProducedError as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0
+
+
 def palettes_color_mass(args: argparse.Namespace) -> int:
     """Cut the tracked colour-mass map out of the census and the sweep."""
     from fractal_wallpapers.palettes import color_mass
@@ -141,7 +154,8 @@ def add_commands(subcommands) -> None:
             "of how the made maps were made, `groups` says which maps are near enough to "
             "be one choice, "
             "`reference-fields` remakes the pictures a palette sheet is judged on, "
-            "`carriers` says which map can make a picture of which colour, and "
+            "`carriers` says which map can make a picture of which colour, "
+            "`produced` says which colours each map actually has made, and "
             "`strip` draws one map's gradient the way a render spends it."
         ),
     )
@@ -238,6 +252,21 @@ def add_commands(subcommands) -> None:
     )
     carrying.add_argument("--quiet", action="store_true", help="do not print progress")
     carrying.set_defaults(handler=palettes_carriers)
+
+    producing = steps.add_parser(
+        "produced",
+        help="rebuild the table of which colours each map has actually made",
+        description=(
+            "One row per map in the library: how many candidate-ledger pictures were drawn "
+            "in it, and how many of those the dominance rule calls dominant in each of the "
+            "twelve hue families. `carriers` asks what a map CAN carry, by recolouring three "
+            "reference fields; this asks what it HAS made, by tallying the verdict every "
+            "ledger row already carries. Decodes no picture and renders nothing — one "
+            "streamed pass over the ledger, about a minute."
+        ),
+    )
+    producing.add_argument("--quiet", action="store_true", help="do not print progress")
+    producing.set_defaults(handler=palettes_produced)
 
     massing = steps.add_parser(
         "color-mass",
