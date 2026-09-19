@@ -704,6 +704,13 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### mine_ckpt132_completable_3h
+
+`mine_ckpt132_completable_3h`, 2026-09-18, `.[dev,models]` with a release engine.
+**Fast: 4,822 passed in 145.74 s (2:25)**, 157 deselected, green. **No test added**, count
+unmoved at a believed **4,979**. Slow not run. Taken right after a 3-hour depth leg and its
+POST solve set ended, and still inside the 142–155 s band.
+
 #### small_fixes_open_ckpt131
 
 `small_fixes_open_ckpt131`, 2026-09-18, `.[dev,models]` with a release engine.
