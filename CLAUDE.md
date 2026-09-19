@@ -245,7 +245,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `targets_raise_ckpt131` added no test on 2026-09-18 and
+**The newest reading is fast only**: `small_fixes_open_ckpt131` added 1 fast test on
+2026-09-18 and read **4,822 fast in 147.70 s (2:28)**, 157 deselected, green, so the tree is
+*believed* at 4,979 collected; taken on a quiet box before its render leg. Before it,
+`targets_raise_ckpt131` added no test on 2026-09-18 and
 read **4,821 fast in 162.24 s (2:42)**, 157 deselected, green, count unmoved; taken right
 after three collection records. Before it, `texture_draw_band_ckpt131` added 4 fast tests on
 2026-09-18 and read **4,821 fast in 323.83 s (5:24)**, 157 deselected, green, so the tree is

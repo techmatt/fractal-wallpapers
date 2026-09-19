@@ -558,6 +558,27 @@ places and yielded 32 clears to deepen, which is about 8 minutes of deepening.**
 rest of the deepening share had to come from older clears with free modes. Neither
 source moves the coarse clear rate, but the older ones read better on fine.
 
+**Across all partitions, the top of the never-opened pool opens as well as deepening
+does.** Measured by `small_fixes_open_ckpt131` (2026-09-18) at one candidate a place over
+the default `mined()` roster. The 44,227 admitted, never-opened places were ranked by
+the location head's `P(>=3)`, and ranks 1–1,717 were opened top down; they were 97%
+Julia twins, and `P(>=3)` at the cut was 0.994. The floor draw then took the leg's own
+218 clears at width 1 over the twelve:
+
+| unit | price | coarse clear | clears over the fine bar | fine-bar rows per 1000 wall s |
+|---|--:|--:|--:|--:|
+| open: `c129_julia_open`'s 107 budget-stopped places | 1.85 s a place | 12.1% | 5 of 13 | 17.9 |
+| open: ranks 1–400 | 1.24 s a place | 13.8% | 26 of 55 | 45.3 |
+| open: ranks 401–1,717 | 1.21 s a place | 11.4% | 60 of 150 | 35.8 |
+| deepen: the leg's 218 clears, 802 of 2,616 shots | 3.88 engine s | 12.7% | 45 of 102 | 37.5 |
+
+**Every hunt pays about 80 s of wall before its first render** (the scan and the judge
+load), so a 107-place hunt reads 2.6 s a place in wall. **`hunt --places` ignores the
+manifest's order**: `hunt.spread` shuffles each partition's places and round-robins
+the partitions. So "top down" is held by handing a hunt only the next rank slice, sized
+to finish inside its budget. A slice the budget stops short leaves a random subset of
+itself unopened, not its tail.
+
 So `--shares '{"mode_floor": 1.0}'` — the spell a recolour prompt naturally writes
 — plans 7,080 `ranked_bands` candidates at 177 `phoenix:classic` places and 5,680
 more in the near band, which is **13,000 of 35,520 shots on the band this project

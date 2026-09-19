@@ -704,6 +704,14 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### small_fixes_open_ckpt131
+
+`small_fixes_open_ckpt131`, 2026-09-18, `.[dev,models]` with a release engine.
+**Fast: 4,822 passed in 147.70 s (2:28)**, 157 deselected, green. **+1 test**
+(`test_prices.py`'s `--carry` guard; the two lineage-cap guards in `test_deep_breadth.py`
+were rewritten, not added), so the tree is believed at **4,979**. Slow not run. Taken on an
+idle box before the leg's PRE solves, and back inside the 142–155 s band.
+
 #### targets_raise_ckpt131
 
 `targets_raise_ckpt131`, 2026-09-18, `.[dev,models]` with a release engine.
