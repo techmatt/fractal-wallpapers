@@ -256,6 +256,7 @@ fractal-wallpapers curate solve run --n 150            # decide, then render the
 fractal-wallpapers curate solve record                 # that solve, recorded
 fractal-wallpapers curate solve browse --viewer        # the page, off the rows
 fractal-wallpapers curate solve viewers <stamp> …      # a page per planned gallery
+fractal-wallpapers curate pins resolve                 # pins.txt -> rows every solve seats first
 ```
 
 ## Configuration

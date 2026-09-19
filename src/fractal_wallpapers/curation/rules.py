@@ -1012,6 +1012,12 @@ class State:
         self.refusals: dict = {name: 0 for name in rules_for(diversity)}
         #: `{key: what the diversity rule said it was too close to}`, for the record.
         self.refused_for: dict = {}
+        #: The seats that may never leave: [`curation.pins`]' rows, seated before the
+        #: seed. Held here rather than on the gallery because the removal sets are
+        #: computed here, and a pin kept out of every one of them is a pin neither the
+        #: swap loop nor the augmenting chains can offer up. Empty is every pass that
+        #: pinned nothing.
+        self.pinned: frozenset = frozenset()
 
     # ------------------------------------------------------------------ #
     # What is seated.
@@ -1254,8 +1260,12 @@ class State:
         is a **superset** of [`removals`], because the diversity rule can only ever
         narrow it, and that is what makes it useful: a caller can decide a
         candidate is not worth a pixel-cloud signature from this alone.
+
+        A **pinned** seat is never in it, so a candidate only a pin stands in the way
+        of has nothing that could leave for it — see [`pinned`].
         """
-        return _intersect(self.counted_requirements(candidate), self.seated)
+        held = _intersect(self.counted_requirements(candidate), self.seated)
+        return held - self.pinned if self.pinned else held
 
     def narrowed(self, candidate, counted: set) -> set | None:
         """[`counted_removals`] narrowed by the diversity rule. **Opens a picture.**

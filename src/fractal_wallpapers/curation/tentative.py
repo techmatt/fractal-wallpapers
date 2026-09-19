@@ -64,7 +64,9 @@ dominant colour cell and hue family, which is what a person means by "the green
 one"); `cells` and `families` (lists, every name the picture is dominant in,
 because dominance is thresholded and one picture carries more than one);
 `seated_for` (text, the demand or leg that placed the seat, as `solve` stamped it)
-and `floor` (text, [`FLOOR_MANDATED`] / [`FLOOR_HOLDING`] / [`FLOOR_FREE`] — what
+and `pinned` (bool, a row of the pinned list, seated before the seed — forward-only
+and absent before 2026-09-19, which reads as `false`) and `floor` (text,
+[`FLOOR_MANDATED`] / [`FLOOR_HOLDING`] / [`FLOOR_FREE`] — what
 the **colour floor** had to do with this seat being here, with `floor_cells`
 naming the cells that make it so; both are forward-only and absent on a record
 taken before 2026-09-09, which carried no colour floor);
@@ -684,6 +686,10 @@ def rows_of(record: dict, centered: frozenset | None = None) -> list[dict]:
                 # pass carried no colour floor rather than that every seat was free
                 # of it.
                 "seated_for": held.get("seated_for"),
+                # A row of `data/curation/pins.json`, seated before the seed without
+                # asking a rule — see `curation/pins.py`. FORWARD ONLY: absent on a
+                # record taken before 2026-09-19, and absent means `false`.
+                "pinned": bool(held.get("pinned")),
                 "floor": floor,
                 "floor_cells": floor_cells,
                 "centered": str(held.get("location")) in centered,
@@ -784,6 +790,11 @@ def manifest_of(
             # than omitted: it is a pass that ran with no diversity rule at all.
             "diversity": (record.get("rules") or {}).get("diversity"),
             "diversity_is": SCHEMA_NOTES["diversity_is"],
+            # The solve record's `pins` block whole, for `diversity`'s reason: a
+            # published stamp does not carry the solve record, and a gallery that
+            # seated rows without asking any rule has to be able to say which. Absent
+            # on a record taken before 2026-09-19, which pinned nothing.
+            "pins": record.get("pins"),
         },
         "pool": {
             "stamp": None if candidates is None else growth.pool_stamp(candidates),
@@ -880,7 +891,7 @@ def write(
 # The protection.
 # --------------------------------------------------------------------------- #
 def protected_keys() -> set:
-    """Every recipe key a **kept** gallery seats. **What retention must keep.**
+    """Every recipe key a **kept** gallery seats, and every pin. **What retention must keep.**
 
     Over every stamp on [`kept`] and not only the newest, because the point of
     recording a gallery worth keeping is that its IDs stay resolvable — an older
@@ -906,6 +917,15 @@ def protected_keys() -> set:
             out |= {str(row["key"]) for row in read_rows(stamp)}
         except (TentativeRefused, ValueError, KeyError):
             continue
+    # And every PINNED row, since 2026-09-19: a pin is a row every solve seats, so a
+    # prune that took one would empty a seat the list promises. Off the resolution,
+    # tolerant of it being unreadable for the reason above.
+    import contextlib
+
+    from fractal_wallpapers.curation import pins
+
+    with contextlib.suppress(ValueError, KeyError, TypeError):
+        out |= {str(pin["key"]) for pin in (pins.read() or {}).get("pins") or () if pin.get("key")}
     return out
 
 
@@ -1146,6 +1166,11 @@ _PAGE = (
   .tile { border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
           background: var(--raised); }
   .tile.picked { border-color: #6f9ef8; box-shadow: 0 0 0 1px #6f9ef8; }
+  .tile.pinned { border-color: #d4a73a; }
+  .tile.pinned.picked { box-shadow: 0 0 0 1px #6f9ef8; }
+  .pin { margin-top: 4px; font-size: 11px; border-radius: 3px; padding: 1px 5px;
+         display: inline-block; background: #3a3114; color: #f0cf6a;
+         border: 1px solid #6b5a1d; }
   .tile img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover;
               background: var(--well); cursor: zoom-in; }
   #hires-label { margin-top: 6px; border-top: 1px solid var(--rule); padding-top: 5px;
@@ -1192,6 +1217,7 @@ _PAGE = (
     <fieldset id="f-centered"><legend>centered</legend></fieldset>
     <fieldset id="f-spiral"><legend>spiral</legend></fieldset>
     <fieldset id="f-floor"><legend>colour floor</legend></fieldset>
+    <fieldset id="f-pinned"><legend>pinned</legend></fieldset>
     <fieldset><legend>find, group &amp; sort</legend>
       <input type="search" id="q" placeholder="ID or alias" size="18">
       <select id="group">
@@ -1230,7 +1256,8 @@ _PAGE = (
 <div id="lb"><img alt=""><div class="bar"></div></div>
 <script>
 const ROWS = __ROWS__;
-const FACETS = ["mode", "hue_family", "cell", "partition", "centered", "spiral", "floor"];
+const FACETS = ["mode", "hue_family", "cell", "partition", "centered", "spiral", "floor",
+  "pinned"];
 // `cells` and `families` are lists because dominance is thresholded: a picture
 // can be dominant in several, and filtering on the leading one alone would hide
 // a green picture from the green filter whenever teal happened to lead it.
@@ -1318,7 +1345,7 @@ function pictureOf(row) {
 
 function tile(row) {
   const card = document.createElement("div");
-  card.className = "tile" + (picked.has(row.key) ? " picked" : "");
+  card.className = "tile" + (row.pinned ? " pinned" : "") + (picked.has(row.key) ? " picked" : "");
   const pick = () => {
     if (picked.has(row.key)) { picked.delete(row.key); } else { picked.add(row.key); }
     card.classList.toggle("picked", picked.has(row.key));
@@ -1378,6 +1405,16 @@ function tile(row) {
   two.textContent = row.partition + (row.centered ? " \\u00b7 centered" : "") +
     " \\u00b7 seat " + row.seat;
   meta.append(top, one, two);
+  // A pinned seat was placed by the list and not by any rule, so it must not look
+  // like a seat the solve chose: data/curation/pins.json is where it came from.
+  if (row.pinned) {
+    const mark = document.createElement("div");
+    mark.className = "pin";
+    mark.textContent = "pinned";
+    mark.title = "a row of the pinned list (data/curation/pins.json), seated before the " +
+      "seed and never swapped out";
+    meta.append(mark);
+  }
   // The floor mark, and only where the pass carried a floor at all. A seat the
   // floor bought must not look like every other seat: that is the whole question
   // this page is being read to answer.
@@ -1471,6 +1508,7 @@ function openAt(i) {
     " \\u00b7 " + row.partition + (row.centered ? " \\u00b7 centered" : "") +
     " \\u00b7 seat " + row.seat +
     " \\u00b7 rank " + (row.rank === null ? NONE : Number(row.rank).toFixed(3)) +
+    (row.pinned ? "  \\u00b7  pinned" : "") +
     (row.floor === "mandated" ? "  \\u00b7  seated BY a colour floor"
       : row.floor === "holding" ? "  \\u00b7  held by a colour floor" : "");
   view.querySelector(".bar").replaceChildren(where, who, what);

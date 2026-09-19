@@ -588,6 +588,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--collection",
             "--fine-bar",
             "--forced",
+            "--no-pins",
             "--fold",
             "--target",
             "--mode-floor",
@@ -621,6 +622,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
             "--n",
             "--fine-bar",
             "--forced",
+            "--no-pins",
             "--fold",
             "--spiral-cap",
             "--cell-floor",
@@ -666,6 +668,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "palettes": ("--top",),
         "sheet": ("--batch", "--out"),
     },
+    "pins": {"resolve": ()},
     "growth": {
         "run": ("--name", "--fraction", "--n", "--seed", "--swap-seconds"),
         "plot": (),
@@ -1033,14 +1036,16 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     arrived to carry a leg mined on another machine back to this ledger under a
     manifest, rather than by picking its files out of the leg directory by hand; and one
     hundred and thirteen until `solve viewers` arrived to write a viewer per planned
-    gallery and one index page over them."""
+    gallery and one index page over them; and one hundred and fourteen until `pins resolve`
+    arrived to turn the pinned list's explorer links into the ledger rows every solve seats
+    first."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 114
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 115
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

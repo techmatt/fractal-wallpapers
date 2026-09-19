@@ -1,0 +1,19 @@
+# Pinned seats: pool rows every solve seats first. One explorer link per line.
+#
+# Edited only through prompts. `fractal-wallpapers curate pins resolve` turns each link
+# into the ledger row it means (data/curation/pins.json), and every solve reads that.
+# See src/fractal_wallpapers/curation/pins.py.
+
+# The four the root README shows (examples/README.md), as the site's gallery links them.
+http://localhost:8000/explorer/?v=3&m=stripe&x=-1.2514947263705116&y=0.04110851135180772&w=0.0000000798119929768514&p=cmr.jungle&mirror=1
+http://localhost:8000/explorer/?v=3&f=phoenix&cx=-0.45709691767279576&cy=-0.199309339142123&px=0.26195066562519664&py=-0.03188285542142037&zx=0.23987361417464126&zy=0.45066347511034605&m=threads&x=1.1154713756796277&y=0.1372761613815802&w=0.0006723781020213695&p=Sapphire%20Against%20Rose
+http://localhost:8000/explorer/?v=3&f=julia&cx=-0.7488551646997019&cy=-0.13572339871672048&x=0.435675577907737&y=0.06312318776094998&w=0.009812625699590332&p=glowdon
+http://localhost:8000/explorer/?v=3&f=julia3&cx=0.4169190761394084&cy=0.006933824661843332&m=threads&x=-0.054828545370623066&y=0.017335365897850258&w=0.251946210734878&p=Cobalt%20Furnace%20Ultra&phase=0.95781
+
+# Matt's list of 2026-09-19. The stripe link above was in it too and is listed once.
+http://localhost:8000/explorer/?v=3&f=julia&cx=-0.7548374821242281&cy=-0.07387098369508416&x=1.1657954374472932&y=-0.0027164036431146996&w=0.4061229733402075&p=BuGn&mirror=1&level=band_autolevel/v1:0.3454723956420635,0.9895482934924191,2,0.3454723956420635,0.9895482934924191
+http://localhost:8000/explorer/?v=3&f=multibrot4&x=0.4463839370384832&y=0.6581804592603596&w=0.00000016659688118789476&p=BuGn&phase=0.326013&mirror=1
+http://localhost:8000/explorer/?v=3&f=multibrot4&m=threads&x=0.31870002570230427&y=0.7500185160037178&w=0.0000056993905449865795&p=Verdant%20Ascent
+http://localhost:8000/explorer/?v=3&f=multibrot4&m=itinerary&x=0.4463940515101383&y=0.6581690038991578&w=0.00000002396802137411385&p=BuGn&phase=0.837569&mirror=1
+http://localhost:8000/explorer/?v=3&x=-0.7615029393553008&y=-0.08414501638912376&w=0.0000017171554259166104&p=abstract-3d-wallpapers&phase=0.486808&level=band_autolevel/v1:0.05764011360332521,0.9515490895087246,2,0.05764011360332521,0.9515490895087246
+http://localhost:8000/explorer/?v=3&x=-0.05741293905814204&y=0.6691860457932917&w=0.000000018331388391421064&p=YlGn&mirror=1&level=band_autolevel/v1:0.08749388163623803,0.9932119474211839,2,0.08749388163623803,0.9932119474211839

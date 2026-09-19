@@ -335,6 +335,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             augment_depth=args.augment_depth,
             augment_seconds=args.augment_seconds,
             explain=explain,
+            pins=() if args.no_pins else solve.pins_module.SHIPPED,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -528,6 +529,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             augment_depth=args.augment_depth,
             augment_seconds=args.augment_seconds,
             explain=explain,
+            pins=() if args.no_pins else solve.pins_module.SHIPPED,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -832,10 +834,10 @@ def themed_flags(container):
     Written once for [`solve_flags_a_record_keeps`]'s reason: a record IS a run
     taken once and kept, so a themed record has to reach the same decision by the
     same spelling, and two `--help` texts describing one flag two ways is how that
-    stops being true. `run` hands its own argument group — it carries twenty-six
-    flags and groups them — and `record` at twelve hands the parser itself, which
-    is what `tests/test_cli.py`'s *a grouped command leaves no flag behind* wants:
-    a command with no named groups keeps none.
+    stops being true. Both hand an argument group of their own: both group their
+    help — `record` since 2026-09-19, when it reached twenty flags — and
+    `tests/test_cli.py`'s *a grouped command leaves no flag behind* holds a grouped
+    command to keeping none in the default group.
     """
     from fractal_wallpapers.curation import ceiling as ceiling_module
     from fractal_wallpapers.curation import headroom as headroom_module
@@ -1085,9 +1087,9 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
     not be reproducible from the `run` it claims to be, and the drift would show
     up as two `--help` texts describing one flag two ways.
 
-    Three containers rather than one parser, because `run` groups its help — it
-    carries twenty-seven flags — and `record` does not, so a record hands the
-    same parser three times.
+    Three containers rather than one parser, because both verbs group their help
+    and hand one argument group each — `record` since 2026-09-19, when `--no-pins`
+    took it to twenty flags.
     """
     from fractal_wallpapers.curation import augment as augment_module
     from fractal_wallpapers.curation import ceiling as ceiling_module
@@ -1128,6 +1130,14 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         "shipped default moves, and `config.forced` is 0 on every record that does not "
         "name it. A FILE and never a list of keys, for `--explain-keys`' reason. Blank "
         "lines and `#` comments are skipped",
+    )
+    pool.add_argument(
+        "--no-pins",
+        action="store_true",
+        help="seat NONE of the pinned list, for a comparison. Unsaid, every pass seats the "
+        "rows data/curation/pins.json names FIRST — in its pool, and in its theme on a themed "
+        "pass — exempt from every bar and never swapped out; unlike `--forced`, a pin is a "
+        "SEAT and not an offer. `curate pins resolve` is what writes the file",
     )
     pool.add_argument(
         "--fold",
@@ -1638,14 +1648,24 @@ def add_steps(steps) -> None:
             "naming it here is refused rather than dropped on the floor."
         ),
     )
-    recording.add_argument(
+    # Grouped since 2026-09-19, when `--no-pins` took it to twenty flags — the wall
+    # `tests/test_cli.py` holds a flat command to. The groups are `run`'s seams in the
+    # order a record already printed them, so no flag moved.
+    which_record = recording.add_argument_group("what to call it, and how big")
+    recorded_pool = recording.add_argument_group("the pool it solves over")
+    recorded_demands = recording.add_argument_group("the demands")
+    recorded_search = recording.add_argument_group("the objective and the search")
+    which_gallery = recording.add_argument_group(
+        "which gallery", "a themed gallery, or a collection; the general gallery without either"
+    )
+    which_record.add_argument(
         "--solve-name",
         help="what to call the solve's own output directory under "
         "artifacts/curation/solve (default `tentative_n<N>_<stamp>`, the record's own "
         "stamp, so successive records at the same N coexist). A name that already "
         "holds a solve record is refused rather than written over",
     )
-    recording.add_argument(
+    which_record.add_argument(
         "--n",
         type=int,
         default=None,
@@ -1653,14 +1673,14 @@ def add_steps(steps) -> None:
         f"size a record is kept at, where a `run` reads a leg at "
         f"{candidate_ledger_module.FIRST_SOLVE})",
     )
-    solve_flags_a_record_keeps(pool=recording, demands=recording, search=recording)
+    solve_flags_a_record_keeps(pool=recorded_pool, demands=recorded_demands, search=recorded_search)
     # A THEMED record is the one thing a record could not be. Recording a themed
     # gallery had to go through `run`, which writes a solve record and never a
     # stamp — so a themed gallery could be solved and never kept, and the six
     # themed baselines of 2026-09-05 are what noticed. The three flags are the
     # same three `run` carries, from the same helper.
-    themed_flags(recording)
-    collection_flag(recording)
+    themed_flags(which_gallery)
+    collection_flag(which_gallery)
 
     sweeping_k = solve_verbs.add_parser(
         "k-sweep",
@@ -2052,3 +2072,49 @@ def add_steps(steps) -> None:
         "--sheet-name", default="cascade_vs_rank_key", help="what to call this sheet's directory"
     )
     seating_sheet.set_defaults(handler=curate_seat_sheet)
+
+    pinning = steps.add_parser(
+        "pins",
+        help="the pinned seats: resolve data/curation/pins.txt to the ledger rows it means",
+        description=(
+            "A pin is a pool row every solve seats FIRST — counted toward n, exempt from every "
+            "bar and from the near-duplicate gate against the other pins, never swapped out. "
+            "`pins.txt` holds explorer links, one a line; `resolve` turns each into a ledger "
+            "row key by plane, mode and place (x, y, w within a thousandth of the link's w), "
+            "ignoring `level` and `mirror` and — unless several rows share the place — the "
+            "palette and phase, and writes `pins.json`, which is the only file a solve reads. "
+            "A link with no seatable row at its place is left unresolved and reported, never "
+            "rendered."
+        ),
+    )
+    pinning.set_defaults(handler=curate_pins)
+    pin_verbs = pinning.add_subparsers(dest="what", required=True)
+    pin_verbs.add_parser(
+        "resolve",
+        help="write data/curation/pins.json off pins.txt, one streamed pass over the ledger",
+    )
+
+
+def curate_pins(args: argparse.Namespace) -> int:
+    """Resolve the pinned list to the rows it means."""
+    from fractal_wallpapers.curation import candidate_ledger, pins
+
+    if not candidate_ledger.rows_path().is_file():
+        print(
+            f"the candidate ledger is not on this machine "
+            f"({display_path(candidate_ledger.rows_path())}), and a pin is a row of it. "
+            f"Nothing was written."
+        )
+        return 1
+    document = pins.resolve()
+    path = pins.write(document)
+    print(display_path(path))
+    for pin in document["pins"]:
+        if pin["key"]:
+            print(
+                f"  {pin['key']}  {pin['chosen_by']:<17} of {pin['sharing_the_place']}  "
+                f"p_fine {pin['p_fine']}  {pin['note']}"
+            )
+        else:
+            print(f"  UNRESOLVED  {pin['why']}\n    {pin['link']}")
+    return 0 if all(pin["key"] for pin in document["pins"]) else 1

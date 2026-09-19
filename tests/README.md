@@ -704,6 +704,14 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### pins_ckpt132
+
+`pins_ckpt132`, 2026-09-19, `.[dev,models]` with a release engine.
+**Fast: 4,853 passed in 150.29 s (2:30)**, 157 deselected, green. **25 fast tests added**
+(19 in `tests/test_pins.py`, 6 in `tests/test_solve.py`'s *Pinned seats*), so the tree is
+*believed* at **5,010** collected. Slow not run. Taken right after twenty-one `curate solve
+record` pool loads ended, and inside the 142–155 s band.
+
 #### viewers_ckpt132
 
 `viewers_ckpt132`, 2026-09-19, `.[dev,models]` with a release engine.
