@@ -562,6 +562,13 @@ on their ops. The price is
 three-minute run, and *not* the "no measurable cost" a three-epoch probe first read:
 at that length the warm-up epoch swamps it.
 
+**So a before/after across a refit has no reading without a control from the same
+recipe.** 516 of 1,000 seats changing is what the fit alone does, with nothing
+varied. A comparison of two columns, or of a seating before and after a refit, is
+read against a replicate of the same recipe (other seeds, under determinism), never
+against zero: a move inside the replicate's own spread is the fit, not the change
+being priced.
+
 ### Verified on the real horizon, not on a proxy — `deterministic_refit_20260910`
 
 **A whole 30-epoch run repeats bitwise**: two of them agree to sixteen digits on every

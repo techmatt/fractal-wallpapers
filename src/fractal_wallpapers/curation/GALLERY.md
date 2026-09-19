@@ -620,6 +620,12 @@ discarded, and `curate solve record --n 2000` takes it again in **148.78 s**
 trial boundary — *A budget to the pair, and the two records made before it was
 one* in [`GALLERY_decisions.md`](GALLERY_decisions.md).
 
+**The pool holds `n`; the seed's shortfall was ordering.** Solved as an integer
+program over the view under every linear rule [carried], n=1000 and n=2000 both
+filled; one-per-location, the group cap and the family allowance refused nothing,
+and the spiral cap refused exactly its share. What the greedy seed was short of was
+never stock.
+
 ### A narrowed view is a different cost regime, and the budget DOES bind there
 
 **`DEFAULT_SECONDS`' own note is measured on the full pool at the shipping rungs
@@ -931,6 +937,11 @@ over-charges the over-represented warm and vivid cells by three to five points,
 which is a per-cell cap doing its declared job on the cells those hues concentrate
 in. **The pool-relative comparison is an artifact of the filter and is not
 quotable.**
+
+**At n=2000 the constraints choose the gallery, not the judge.** Two n=2000 solves on
+the pool of 2026-09-03, one per judge — `v5_control_n2000` (1,578 seats) and
+`v6_flip_n2000` (1,635) — share **404** seated keys, so the flip turned over about
+three quarters of the gallery.
 
 #### Two hues collapse as the bar rises, and it is a standing trade
 
@@ -1542,6 +1553,37 @@ at `rules.GEOMETRY_RADIUS` on the relaxed bar, the second the shipped twin test 
 `ceiling.TAU`. The table's numbers are what the pool can field of each and never a
 ranking.
 
+#### What a collection past its target costs, read 2026-09-18
+
+**Raising a family past its target, read on one pool** [carried] — 46 in-memory solves
+over 464,134 candidates, each `solve.solve` with exactly the arguments
+`curate solve record --collection NAME` passes, no record written. `red` and `orange`
+fill 500 at the shipped fine bar, their added rows at a `p_fine` median of 0.173 and
+0.136; `blue` and `rose` fill it too, but their added rows sit at a q1 of 0.048 and
+0.051. `purple` stops at 448 and `magenta` at 457, `magenta`'s bar falling to 0.020.
+`yellow`, `cyan`, `green` and `lime` grow only by taking the bar to or near the 0.01
+floor, and what they add is floor stock — added medians 0.016–0.027 — and `green`
+seats about 365 however high `n` goes on that pool. **Where a family stops short on
+the shipped bar it is the seating rules and not the stock or the clock**: `geometry`
+(the family distinctness rule), the spiral cap and one seat per location refuse the
+missing seats, in that order, and the augment stage finished inside its budget every
+time. `green` and `lime` are the exception: they sit on the floor bar, so for them it
+is supply. Only the three mode targets were raised off this reading (`targets.TARGETS`).
+
+**The three angle and stripe mode collections are bound by place.** The evening leg of
+2026-09-18 that opened new places for them (`c45a96d`) took their ceilings — seats at
+`n = 800`, with `location` and `spiral` doing the refusing — from 244 / 198 / 294 to
+**375 / 332 / 435** for `smooth_mean_angle` / `smooth_angle_min` / `smooth_stripe`.
+At the targets of 2026-09-18 (300 / 150 / 200) the seated `p_fine` medians are
+**0.275 / 0.387 / 0.311**, and `smooth_angle_min` has the strongest marginal of any
+collection: its lowest added row reads **0.106**. More distinct places is what raises
+them.
+
+**Degree-6 rows seat.** When `threads` went 400 → 500 on 2026-09-18, 46 of the 142
+rows the re-solve added were degree 6 [carried]. Seating is not labelling, and
+`sheets.build` refuses a whole sheet holding one (`labeling/README.md`'s *Degree 6 is
+never labelled, and every door refuses it*).
+
 ### A themed pass relaxes the bar inside its own cell
 
 **Matt's ruling of 2026-09-11**, and it is on the themed path alone — the general
@@ -1823,6 +1865,13 @@ takes the seating key, and cuts clusters* in that same log.
 outranks measured — *The fold picks its survivor on the seating key* in
 [`GALLERY_decisions.md`](GALLERY_decisions.md).
 
+**No score column is an independent read of the seated population.** Both columns a
+record reports — the render judge's `p_ge4` and the fine head's `p_fine` — are
+columns the seating gated or ranked on, so a seated median is read through the
+selection (the winner's curse `curation.shrinkage` prices, taken over a whole
+gallery) and never measures quality apart from it. The one independent read of a
+seating is a human eye on it.
+
 ### The fold merges instead of deleting — `POOL_ckpt117_fold_merges_instead_of_deletes_0909`
 
 The fold is right that a near-duplicate cluster should hold one seat. It was buying
@@ -2050,6 +2099,13 @@ same night's pool seated 947 with all of its rows and 952 with its `phoenix` row
 held out. A smaller pool seating more is a fact about the pass this project runs and
 never a proof that rows can lower an optimum.
 
+**By the same token, seats changed is not a measure of how much the pool changed.** A
+small change to what the pass is given shifts the view's seeded strata draw and the
+greedy path diverges from there: the first pin list moved 80 seats of `general` while
+nine of its ten pins were already seated (*Pinned seats*). Read a change to the pool
+off the pool — rows in and out — and a change to the gallery off the seated `p_fine`
+distribution, never off a churn count.
+
 ## Pinned seats — a standing list every solve seats first
 
 ```
@@ -2113,6 +2169,12 @@ caused by the pins. **Most of the displacement is knock-on**, not a pin taking a
 `general`, nine of the ten pins were already seated and 80 seats still moved. Taking the
 pins out of the view shifts the view's seeded strata draw (18,687 → 18,677 rows), and the
 greedy path diverges from there.
+
+**The twenty-one records of that re-solve are the standing baseline**, kept on
+2026-09-19 as one `tentative.KEPT_UNPUBLISHED` entry because `fractal-website` resolves
+twenty of them (all but `general_n2000`). The keep list went from 16 records to 37 —
+eight published and twenty-nine not — and `protected_keys()` from 5,188 keys to
+**9,858**.
 
 ## `curate solve record` — a solve recorded under a stamp, and a browser over it
 
@@ -2213,7 +2275,8 @@ prompt names.
 **A record is about a minute and a half, not the hours a leg is.** At `n=1000` over a
 pool of ~169,000 candidates it ran **89 s end to end** — 58.5 s of that the solve
 itself, the rest the pool load, the `centered` join and the page. Nothing here renders:
-`record` is taken with `--no-render` and the tiles are the candidate pictures the solve
+`record` never renders — it has no `--no-render` flag because it has nothing to turn off —
+and the tiles are the candidate pictures the solve
 chose from, so the cost is reading and arithmetic. It still holds the pool, so it is one
 of the processes the one-pool-holding-process rule counts.
 
@@ -2724,7 +2787,7 @@ not the candidate ledger — so it comes from [`depth.centered_locations`] over 
 ledgers, keyed on the location, which costs about 3.6 s once per record.
 
 **What the browser cannot show**, and each is a fact about the store rather than the
-page: the release-size picture, because a record is taken with `--no-render` and the
+page: the release-size picture, because `record` never renders and the
 tiles are the candidate renders the solve chose from; the palette group and the seating
 leg, which are on the solve record and not on a row; and any picture the prune had
 already swept before the record existed, which shows as a "no picture on this disk" tile
