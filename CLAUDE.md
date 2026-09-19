@@ -245,7 +245,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `mine_ckpt132_night_0730` added no test on
+**The newest reading is fast only**: `viewers_ckpt132` added 6 fast tests on 2026-09-19 and
+read **4,828 fast in 153.96 s (2:34)**, 157 deselected, green, so the tree is *believed* at
+4,985 collected; taken right after twenty-one record solves. Before it,
+`mine_ckpt132_night_0730` added no test on
 2026-09-19 and read **4,822 fast in 145.15 s (2:25)**, 157 deselected, green, count unmoved;
 taken after its render leg and POST solves had ended. Before it,
 `mine_ckpt132_completable_3h` added no test on

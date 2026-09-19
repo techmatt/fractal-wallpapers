@@ -2291,6 +2291,32 @@ broken tiles.
 directory named after an unrelated September-10 experiment inside a tree `CLAUDE.md`
 defines as disposable. The old path now holds a forwarding page rather than a dead one.
 
+#### `viewers` — one page per planned gallery, and an index over them
+
+```
+fractal-wallpapers curate solve viewers <stamp> <stamp> …   # one per record, then:
+artifacts/curation/viewer/<label>/index.html
+artifacts/curation/viewer/all.html
+```
+
+For judging every gallery we plan to publish by eye, at its planned size. Each named
+record's page is `browse`'s page, same builder and same presentation order, written to a
+directory **labelled off the record's solve name**: `targets_<collection>_n…` lands under
+`<collection>`, and anything else is `general`, or `general_n<seats>` when it was asked at a
+size other than `tentative.RECORDED_SEATS`. Two records under one label are refused.
+`all.html` links every one, with seats against target and the seated `p_fine` median and q1.
+The top-level `index.html` is still the published record's alone, and `viewers` never
+writes it.
+
+A collection record needs nothing from the builder a general one does not: the facets are
+tallied off the rows and `page_order`'s allowance already handles a page that is all one
+mode or one family. The header now names the solve, so a page says which collection it is.
+
+⚠ **Nothing pins an unpublished record's candidates.** `protected_keys()` reads the keep
+list, so a prune can take a picture these pages show. The page falls back to a *no picture
+on this disk* tile, and `viewers` over the same stamps rebuilds it. It renders nothing, so a
+full set of 21 took 46 s on 2026-09-19, on top of the solves.
+
 ### The page opens in a derived presentation order, and it moves nothing
 
 **Since 2026-09-13.** The page used to open in `rank` order, best first, and the

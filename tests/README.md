@@ -704,6 +704,14 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### viewers_ckpt132
+
+`viewers_ckpt132`, 2026-09-19, `.[dev,models]` with a release engine.
+**Fast: 4,828 passed in 153.96 s (2:34)**, 157 deselected, green. **6 fast tests added**
+(`tests/test_viewers.py`), so the tree is *believed* at **4,985** collected. Slow not run.
+Taken four minutes after twenty-one `curate solve record` pool loads ended, and inside the
+142–155 s band.
+
 #### mine_ckpt132_completable_3h
 
 `mine_ckpt132_completable_3h`, 2026-09-18, `.[dev,models]` with a release engine.
