@@ -257,8 +257,9 @@ package` there and `curate mine unpack` here, then the usual merge door —
 `curation/LEGS.md`'s mine section has the package's shape.
 
 **The export's manifest (`portable.json`) is the transfer roster**; the ten
-Durables `durables.guard()` checks are its guarded subset, not the whole of what a
-fresh box needs. **`fractal_wallpapers` is a namespace package**, so a run inside a
+Durables are a subset of it, and the three `durables.guard()` checks
+(`durables.guarded()`) a subset of those — neither is the whole of what a fresh box
+needs. **`fractal_wallpapers` is a namespace package**, so a run inside a
 `git worktree` on a box with this checkout's editable install silently merges both
 checkouts' modules — drop the live `src` from `sys.path` first, as
 `portable_stores_ckpt127` did with a `sitecustomize.py` on `PYTHONPATH` that filters
@@ -364,6 +365,11 @@ record of what the batch was over. Pictures in a batch are named `<row>_<digest>
 being of everything the engine was told — so a batch is resumable and two records
 that would draw one picture name one file. `renders.jsonl` beside them is the join
 back to the records.
+
+**What reading the fourth spelling moved, measured 2026-09-14** (`9f1e0ae`): over
+129,956 rows in 342 tracked files, 0 regressed and **55,350** now read their own
+colormap where they had silently drawn `smooth` / `twilight_shifted` / 1920x1080 with
+exit 0. A dated reading, not a census.
 
 
 ## Which engine build drew a picture

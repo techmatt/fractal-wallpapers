@@ -485,6 +485,16 @@ one. Production's rule is `mirror = the map is not cyclic`, owned by
 the 1,020-map candidate pool **155 are sequential and are folded, 865 are cyclic and
 are not**, and the engine refuses to fold a cyclic map at all.
 
+**The rule has no exceptions on disk, and a folded table closes** [carried, read
+2026-09-11]: over the candidate ledger at its 374,309 rows and all 80 gallery records
+then in the store, rows carrying a non-cyclic map unfolded and rows carrying a cyclic
+map folded both counted **zero** — `hunt.Maker.palette_for` refuses a draw that sets
+`mirror`. And because the opening colour is written again at `1.0`, over all 156
+sequential maps the folded wrap step is exactly 0.0 in OKLab against an inside step
+of up to 7.0e-3, where the same maps unfolded wrap at a **median 0.693**; so a
+repeat (`cycles` above 1) has no seam. `every_folded_map_closes_so_a_repeat_has_no_seam`
+is the guard.
+
 **And a fold is why a lopsided field loses nearly all of a map.** The fold sends the
 ramp's original position `g` to *two* table positions, `g / 2` and `1 − g / 2`, so
 the ramp's far end lands **dead centre** — `g = 1` at `t = 0.5` — and its whole far

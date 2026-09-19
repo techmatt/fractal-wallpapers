@@ -811,7 +811,9 @@ and there is no way to tell a run that is loading its ledgers from one that has
 hung. The startup itself is not quick — the novelty and saturation memories are
 built over every ledger under `--ledgers` before the first batch, which was about
 **two minutes and 115 CPU-seconds over 7 ledgers** on 2026-09-02 — so the silence
-is long enough to be worth reading.
+is long enough to be worth reading. ⚠ By 2026-09-18 it read **about six minutes,
+even with `--no-saturation`** [carried], so a waiter armed on a harvest should not
+read a quiet first six minutes as a hang.
 
 **`--minutes` is also the only backstop a harvest has** — there is no
 `--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop

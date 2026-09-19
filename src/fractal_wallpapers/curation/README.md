@@ -547,6 +547,12 @@ and below the bar those are one order** — `tests/test_seat_sheet.py` pins that
 [`README_decisions.md`](README_decisions.md)'s *The prune ranks on `rank_key` and a
 gallery seats on the cascade, and below the bar those are one order* is why.
 
+⚠ **A pruned row never gets a `p_fine`.** The prune runs inside the merge and ranks
+on `rank_key`'s coarse columns, and `gallery-grade score-pool` runs only after the
+merge, over the rows that survived it. So a displaced row carries its coarse
+readings and never a fine one, and a question about what a prune cost on the fine
+column has no column to read.
+
 ### Putting a picture back
 
 The prune was taken on an argument — **everything it removes is either retained
@@ -693,6 +699,11 @@ cascade key: `pool_scores.jsonl` is written whole in one pass and merged rows ca
 no `p_fine` until it is rewritten, which makes them unseatable rather than merely
 unranked. Measured 2026-09-08: 41,407 above-bar pictures in **362.5 s**; again
 2026-09-11 after a pass that both removed and added rows, **43,022 in 402.5 s**.
+By 2026-09-18 the above-bar set was about 56,000 pictures and a pass read **about
+9–10 minutes on a warm page cache**, and **about 3.5x that as the first pass after a
+cold one** — 2,214 s and then 627 s over the same pictures [carried]. The pass reads
+every stored picture once, so the gap is the disk: budget it as a step of its own
+rather than as the tail of a merge, and compare two clocks only when both are warm.
 
 **A refresh moves MEMBERSHIP and not readings**, and that is worth knowing before
 reading a leg against a column: the 2026-09-11 pass dropped 3,487 keys the store no
@@ -2738,6 +2749,11 @@ deliberately not in it: *no colormap identity, no palette group*. `sweep._Pooled
 carries a `cells` slot and `rank_key.features_for` never reads it; none of the five
 protections is a colour either. So for a pair already at the keep, which of its rows
 survive is decided without reference to what colour they are.
+
+**What the colour-blind rank costs sits below the bar.** Of the 4,981 rows one recolour
+leg's merge pruned on 2026-09-14, **70** were above `Q4_BAR`, with no hue pattern among
+them [carried] — so a colour term in the rank would buy back rows the gallery does not
+seat.
 
 ⚠ **The prune row above was NONE until 2026-09-15**, and an audit taken that morning
 says so. `retention.FAMILY_ALLOWANCE` landed that afternoon and is the one colour term

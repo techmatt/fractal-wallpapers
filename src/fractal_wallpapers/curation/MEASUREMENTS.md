@@ -390,6 +390,18 @@ retention alone, and why `rank_key` cannot be retired while the cascade runs.
 * **`light_vivid_purple` is companion-allowance-bound**: the pool holds **28 of 42**
   and the cell is refused by a full companion cell of the same carriers rather than by
   its own rule.
+* **Degree 6 reads like the pool at the bar and thin above it, measured 2026-09-17**:
+  over 683 d=6 fine rows, **30.0% clear `solve.DEFAULT_FINE_BAR` (pool 30.1%) and 1.6%
+  clear 0.50 (pool 3.9%)**. The plane nobody labelled reaches the gallery bar at the
+  pool's own rate.
+* **For a mode collection, places already seated in a sibling mode buy the most,
+  measured 2026-09-18** (`angle_modes_evening_ckpt130`, the three `smooth_*`
+  angle/stripe modes): **37.3 ceiling seats an engine-hour** at places seated in
+  `smooth`/`stripe`, against **23.5** on the graded backlog and **20.7** at places
+  seated in a family collection [carried for the last]. The seated-sibling route then
+  stood at 871 of 904 places opened, the family route at 287 of 1,114 [carried].
+  Prices per shot are in [`LEGS.md`](LEGS.md)'s *What the drawn weight did, measured
+  2026-09-18*.
 
 ## What the label stores and the candidate ledger share, measured
 
@@ -1039,6 +1051,13 @@ order of magnitude wrong.
 125.4**, and the spread by kind is carried rather than the mean —
 [`MEASUREMENTS_decisions.md`](MEASUREMENTS_decisions.md)'s *What a `color_mass`
 close costs a map, measured 2026-09-06*.
+
+**The coloring kind is a price, and on clears it is 12–45x, measured 2026-09-14**
+[carried]. One night's `smooth` unit took **7.1%** of the engine seconds and returned
+**57.6%** of the clears — **6.1 engine seconds a clear** against **71.6–276.4** for the
+non-shareable roster — on a clear rate only **1.5x** better. The difference is the
+dump: a shareable mode (`colorize.shareable`) dumps one field per (place, mode) and
+recolours off it, so excluding one on seat grounds is paid for in engine seconds.
 
 ## What the solve costs by stage, control and narrowed, measured 2026-09-07
 

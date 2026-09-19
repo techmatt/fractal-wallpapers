@@ -1376,7 +1376,7 @@ def hunt_draw_flags(holder):
         "--mode",
         metavar="MODE",
         nargs="+",
-        help="draw every candidate in this ONE mode, instead of sampling `--per-location` of "
+        help="draw every candidate in the named mode(s), instead of sampling `--per-location` of "
         "them out of `mode_policy.mined()`. A different ask from the width: the width says "
         "how many modes a place is tried in and the draw samples them, so `--per-location 1` "
         "alone gives each place one mode out of the twelve and the leg reads as a thin slice "

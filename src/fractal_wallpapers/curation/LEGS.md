@@ -558,6 +558,11 @@ places and yielded 32 clears to deepen, which is about 8 minutes of deepening.**
 rest of the deepening share had to come from older clears with free modes. Neither
 source moves the coarse clear rate, but the older ones read better on fine.
 
+**The d=6 stocks after these legs** [carried]: the top-band never-opened stock went
+142 → 6, and never-opened d=6 overall read 2,338 (`multibrot6` 436, `julia:multibrot6`
+1,902). The 180 older clears missing six or more mined modes were deepened whole on
+2026-09-18 (the list-bound table below), and that list is empty.
+
 **Across all partitions, the top of the never-opened pool opens as well as deepening
 does.** Measured by `small_fixes_open_ckpt131` (2026-09-18) at one candidate a place over
 the default `mined()` roster. The 44,227 admitted, never-opened places were ranked by
@@ -602,6 +607,11 @@ a slice. **`curvature` clears almost nowhere**: 1 of 632 shots on the graded pla
 of 180 on d=6. **A slice sized off the slice before it runs about 15% over** when it
 reaches down the rank: 0.72 s became 0.84 s, and 283 of 8,515 shots were cut.
 
+**So a floor unit's roster is `mined()` and nothing added**, Matt's call of 2026-09-19.
+Named on a 13-mode unit, `curvature` takes about a thirteenth of every shot for the
+clear rates above; `mode_policy.UNMINED` has kept it off every default roster since
+2026-09-06, and only naming it brought it back.
+
 ⚠ **A merge can fail at its last step if another process holds `rows.jsonl`.** On that
 night a `fractal-website` `builder check` did, and `sweep.prune`'s retries gave up. The
 rows and scores had landed and the losers' pictures were already deleted, but the pruned
@@ -624,6 +634,17 @@ one finished with `stopped_for_budget` 0:
 1000 shots were 23.2 at ranks 708–1,075, then 18.8, then 16.7 and 16.9 over the last two
 quarters. **The tuned clears cost 17.5 s a shot, not the ~10.7 s the stopped unit suggested**, and
 they paid it for the fewest fine-bar rows of any list.
+
+**What the graded list seated in the general gallery**, joined on each unit's own row
+keys: 21 on 2026-09-18 (ranks 1–707, median `p_fine` 0.479) and 17 on 2026-09-19 (ranks
+708–2,179), **38 in all**. The night's 25 general seats also count the undeepened
+clears (3) and the ranked opening (5).
+
+**The ranked stock after 2026-09-19**: ranks 1–4,215 are opened, so **40,012** of the
+44,227 admitted never-opened places remain from rank 4,216 on (44,227 − 1,717 − 2,498).
+The hunt over ranks 1,718–4,215 made the night's best row (`p_fine` 0.969), and its
+seated rows read the highest median `p_fine` of any unit that night, **0.386** across
+its 26 collection seats [carried].
 
 **The 179 tuned-descent places still undeepened take a narrow roster only**, Matt's call
 of 2026-09-19. The full mined roster costs about 17.5 wall s a shot there, and on
@@ -707,6 +728,12 @@ phase draw is spent on `direct_trap_screen`, `direct_trap_multiply` or
 
 **Exclusive with `--vary-palette`, refused at the parser.** Both write
 `Shot.palette`, so a plan carrying the two is two draws under one name.
+
+⚠ **Standing does not mean default: the flag is off unless it is named.** A
+`curate depth run` that leaves out `--phase-draw` draws every candidate at phase 0, as
+every leg did before 2026-09-13, so every deepening unit names it. `curate hunt` has
+no such flag and opens at phase 0 (*A reframe leg's places are opened by `curate hunt
+--places`, at phase 0*).
 
 ### `--texture-draw LOW HIGH` — how loud a screened composite's texture is, drawn per candidate
 
@@ -1332,6 +1359,18 @@ smoked at **377 ms a place**: they are deep human-found zooms at 11,000–17,000
 iterations where the opened set was standing walk stock. Budget the population at
 its own rate and not at `--opened`'s.
 
+**What the pass read, 2026-09-16**: 3,110 scored in 2m42s, 3,027 embedded. **97.3%
+clear the junk floor, 87.8% the keeper floor, 44.6% the great cut**, against the
+1,607's 91.5 / 77.7 / 37.9 and fresh harvest supply's 50.0 / 33.4 / 11.4, so **3.9x
+at the great cut**, the best ground this project has scored. `julia:multibrot4` reads
+71.6% great and `phoenix` 52.5%.
+
+**The other backlog was admitted the same day**: the three ckpt-123 production
+harvests' **83,598** unscored gate survivors read **50.3 / 33.5 / 11.2**, which is
+what their 20% pilot projected. `mandelbrot` reads 0.3% great and `multibrot5` 0.7%,
+against 15–19% on the four dynamical partitions. The two admissions took the supply
+sidecar from 127,592 to 197,580 rows and the embedding store from 51,491 to 88,181.
+
 **`maxiter` is the one field two rows at one place can disagree about**, and they
 do — 205 of the 6,202 places, over 1,097 rows. **None of them is in the backlog**:
 every one is a place a walk already reached, whose sidecar row settles it. The log
@@ -1611,6 +1650,11 @@ The parameter under it is `near_named` and not `near_places`, which is what the
 flag is called. `build_plan` calls [`near_places`] to take the draw, and a
 parameter of that name would shadow the function for the whole of it.
 
+**So merge each arm under its own name when the arms are to be priced apart**, and cut
+any sheet before the merge that prunes its rows: a ledger row keeps no arm
+(`candidate_ledger.rows.hunt_block`), so the merge stamp is the only separator the
+pool-view door can use.
+
 ### `--draw-maps` is the palette twin of it, and it is a draw filter and nothing else
 
 `--draw-maps FILE` is a maps **manifest** — a JSONL of `{"schema": 1, "map": ...}`
@@ -1697,7 +1741,9 @@ Of `classic-pairs-2026-09`'s 54 general seats, **4** took a place off another ro
 sit at a place the baseline gallery did not hold at all, and 17 were already seats. What
 a drop displaces is a *location*, not a map — the general gallery dropped 99 places and
 took 99 others. Read the pair at the gallery level and quote the same-place pairs as the
-handful they are.
+handful they are. Across all seven records of that pair the drop made **five** same-place
+swaps in total, and distinct maps seated rose **528 → 542** [carried]: an enlarged pool
+re-seats rather than substitutes.
 
 **The reach is what bounds the seat count, and it is the number to quote beside it.**
 Only **508 of the baseline gallery's 1,000 seated places held a new-map row at all** and
@@ -1711,6 +1757,19 @@ present, 54 seats is about a tenth.
 **zero** seats across all seven records; `tia` at 8.42% took 49. And a drop reaches the
 solver through **every** leg that ever drew it: `sheet_leg_0905`'s 5,091 surviving rows
 sit at *proven* places and out-seat the mine's 10,121 on three of the six themes.
+
+**A mining night's PRE set is the last POST set unless something moved**, Matt's ruling
+of 2026-09-19. The twenty solves run as a PRE only when the store's latest solve set is
+not the standing baseline, or when anything has merged since it was taken; otherwise the
+previous night's POST is the PRE and is not solved again. The set is the general pass
+and then every collection, one process after another, and it holds the pool, so nothing
+else pool-holding runs beside it:
+
+```
+fractal-wallpapers curate solve run --n 1000 --name <tag>_general --no-render --no-sheet
+fractal-wallpapers curate solve run --collection <name> --name <tag>_<name> --no-render --no-sheet
+                                                    # once for each of targets.collections()
+```
 
 ### `--draw-cells` is the same filter cut by RULE instead of by hand
 
@@ -2530,6 +2589,10 @@ printed once per generation. Kill the tree rather than waiting for it, and throw
 pictures away — a partially written PNG can still answer `_already` with the right
 resolution, so a re-run would carry the corrupt ones across.
 
+⚠ **Never edit a unit driver while bash is running it.** Bash reads a script as it
+goes, so an edit mid-run shifts the byte offset it resumes from and re-executes or
+skips lines — a unit can launch twice. Write the next driver to a new file.
+
 ### The contact sheet a leg reads its own pile on is tracked, since 2026-09-08
 
 **`curation.sheet.score_sheet` — do not copy a sheet script into `scratch/` again.**
@@ -2615,6 +2678,18 @@ judge rather than as a writer with no arguments.
 the writer landed at 15:46Z and the two prunes before it ran at 10:49Z and 13:52Z.
 There is nothing earlier to compare a night against, and a displacement question
 asked of any merge before that date has no file to read.
+
+**A before/after across a merge counts the `score-pool` refresh as well as the leg**,
+because rows read after the merge enter the barred pool whoever made them. Credit
+seats to a leg by joining the after record's seat keys on the leg's own rows file,
+never by differencing the two records. The record's `leg` field is no help here: it
+names the seating stage (`mode_floor` / `general_pool`), not a rendering leg.
+
+**A leg is read off seats AND the seated `p_fine` distribution, never off fill
+alone.** A collection at its target fills from the tail, so seats a leg buys can land
+in a gallery that was already full and move only its median and q1, while a short
+collection can fill on floor stock and read as a win. Report the seat count beside
+the seated median and q1, before and after.
 
 ### And a second file, for the rows the rank let go and the rule kept
 
@@ -3149,6 +3224,12 @@ is not one number.
   Near-band ore is 26.5 s a newly primed location against breadth's 101 s.
 * **The per-candidate clear rate is flat in k out to 40.** Palettes are exchangeable at
   a place and the palette head's ordering does nothing a depth run can see.
+  **Exchangeability is a property of the unrestricted pool**: a carrier-restricted draw
+  — `--draw-cells` or the conditioned arm — is not exchangeable to the same depth, so
+  its per-candidate curve is read on its own and never borrowed from this one [carried].
+* **A row at a proven place is worth roughly three of a row at a free slot** (ckpt 109)
+  [carried]: free slots buy presence in the pool, proven places buy seats. A leg that
+  only takes free slots runs at width 1 and keeps every row.
 * **The head's rank decays shallowly with depth.** Ten equal-count bands of each
   partition's never-opened pool, 1,845 locations at k=20: fitted odds ratio **0.842 a
   band**, .192 at the top and .048 at the bottom, a 4.0x spread end to end and a 2.4x
