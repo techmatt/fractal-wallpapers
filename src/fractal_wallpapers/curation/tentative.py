@@ -300,6 +300,14 @@ PUBLISHED: tuple[str, ...] = (
 #:   the population `gallery_rejection_20260914` was drawn from — so it is the
 #:   before half of `rejection_ingest_ckpt124`'s diff as well, and it stays until
 #:   that batch stops being the newest thing the store learned.
+#: * `20260919T171003Z` … `20260919T173838Z` — **the twenty-one pinned records**,
+#:   Matt's instruction in `site_rebase_ckpt132`, and one entry in twenty-one lines:
+#:   the first solves with `data/curation/pins.json` seated first, one per
+#:   collection in `targets.TARGETS` plus the general n=1000 and an n=2000. Twenty of
+#:   them are the collection stamps `fractal-website` lists — its galleries, seat
+#:   tiles and atlases resolve their rows — and each has a live page under `curate
+#:   solve viewers`. `20260919T171350Z`, the n=2000, is **not** listed by the site and
+#:   is kept as the comparison beside the n=1000; it goes when that stops being asked.
 #:
 #: ⚠ **`20260914T171846Z` was here and is now in [`PUBLISHED`]**, from 2026-09-14.
 #: It is kept by that tuple and must not be named by this one as well: [`kept`]
@@ -325,6 +333,28 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     "20260913T172903Z",
     "20260914T144946Z",
     "20260914T152502Z",
+    # The pinned records: general n1000, general n2000, twelve families, seven modes.
+    "20260919T171003Z",
+    "20260919T171350Z",
+    "20260919T171517Z",
+    "20260919T171636Z",
+    "20260919T171754Z",
+    "20260919T171915Z",
+    "20260919T172029Z",
+    "20260919T172144Z",
+    "20260919T172300Z",
+    "20260919T172420Z",
+    "20260919T172535Z",
+    "20260919T172651Z",
+    "20260919T172806Z",
+    "20260919T172927Z",
+    "20260919T173059Z",
+    "20260919T173230Z",
+    "20260919T173402Z",
+    "20260919T173514Z",
+    "20260919T173625Z",
+    "20260919T173732Z",
+    "20260919T173838Z",
 )
 
 

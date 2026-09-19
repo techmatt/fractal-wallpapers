@@ -590,7 +590,7 @@ modes itself.
 
 | population | price, 13 modes | coarse clear | fine-bar rows per 1000 wall s |
 |---|--:|--:|--:|
-| `tuned129_*`'s 202 seahorse-satellite places (widths about 1e-11) | **~10.7 wall s a shot** | — | — |
+| `tuned129_*`'s 202 seahorse-satellite places (widths about 1e-11) — **narrow roster only**, see below | **~10.7 wall s a shot** | — | — |
 | the 180 d=6 clears missing ≥ 6 mined modes | 1.12 wall s (3.17 engine s) | 4.4% | 14.5 |
 | graded composite-only places, head ranks 1–52 | 0.72 wall s (1.54 engine s) | 19.5% | 113 |
 | the same, ranks 53–707 | 0.84 wall s (2.47 engine s) | 8.1% | 32.8 |
@@ -616,14 +616,22 @@ one finished with `stopped_for_budget` 0:
 | population | price, 13 modes | coarse clear | fine-bar rows per 1000 wall s |
 |---|--:|--:|--:|
 | graded composite-only places, ranks 708–2,179 (plus 23 short ones above them) | 0.72 wall s | 5.8% | 26.8 |
-| the 23 tuned-descent places that clear `Q4_BAR` | **17.5 wall s** | 9.4% | 1.1 |
+| the 23 tuned-descent places that clear `Q4_BAR` (the other 179: **narrow roster only**) | **17.5 wall s** | 9.4% | 1.1 |
 | an opening leg's own undeepened clears (150, all Julia) | 1.24 wall s | 12.4% | 47.9 |
 | `hunt --places`, ranked never-opened stock ranks 1,718–4,215 | 1.39 wall s a place | 8.7% | 23.4 |
 
 **Down the graded list the yield flattens rather than falling away.** Fine-bar rows per
 1000 shots were 23.2 at ranks 708–1,075, then 18.8, then 16.7 and 16.9 over the last two
 quarters. **The tuned clears cost 17.5 s a shot, not the ~10.7 s the stopped unit suggested**, and
-they paid it for the fewest fine-bar rows of any list. **Three readings mislead on a live
+they paid it for the fewest fine-bar rows of any list.
+
+**The 179 tuned-descent places still undeepened take a narrow roster only**, Matt's call
+of 2026-09-19. The full mined roster costs about 17.5 wall s a shot there, and on
+2026-09-19 that bought one collection row per 88 minutes; 179 places × 13 modes at that
+price is about 11.3 hours. Never size them at full roster price again: a leg for them
+names a narrow `--floor-modes` roster, or leaves them out.
+
+**Three readings mislead on a live
 leg.** `pictures/` holds about 1.4 files a shot, so count `rows.jsonl`. A place's 13 shots
 land as one block, so on slow places the row count stands still for ten minutes. And a
 `hunt` runs on one engine, so an engine count of 1 is not a stall.
