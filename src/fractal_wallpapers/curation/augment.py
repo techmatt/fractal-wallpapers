@@ -338,8 +338,17 @@ class Pass:
         time the walk reaches it. Every caller re-checks with [`still_seated`];
         taking the list fresh per seat would be a sort of the whole gallery per
         seat, and skipping is the same answer.
+
+        **A pinned seat is not on it**: every chain starts by ejecting a seat off this
+        list, so leaving the pins off is the whole of what keeps a chain from taking
+        one out. See [`rules.State.pinned`].
         """
-        held = [(str(key), candidate) for key, (candidate, _why) in self.state.seated.items()]
+        pinned = getattr(self.state, "pinned", frozenset())
+        held = [
+            (str(key), candidate)
+            for key, (candidate, _why) in self.state.seated.items()
+            if str(key) not in pinned
+        ]
         held.sort(key=lambda pair: (-len(set(pair[1].cells)), self.gallery.value(pair[1]), pair[0]))
         return held
 

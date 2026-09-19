@@ -784,11 +784,13 @@ def test_a_seat_the_scarcity_leg_placed_is_attributed_to_the_mode_floor_and_not_
     # own demand's name, so `leg_of` cannot enumerate that tail and defaults to
     # it — which means any named leg without a branch is reported as scarcity.
     assert solve.leg_of("augment") == "augment"
+    assert solve.leg_of(solve.PINNED) == "pinned"
     assert set(record["attribution"]["legs"]) == {
         "mandate",
         "general_pool",
         "swap",
         "augment",
+        "pinned",
     }
 
 
@@ -3435,3 +3437,91 @@ def test_a_pool_of_pictureless_rows_says_which_refusal_emptied_it():
         "and the line after it says which key in the tally to act on, which is what "
         "the empty-ledger refusal could never say because it is never reached here"
     )
+
+
+# --------------------------------------------------------------------------- #
+# Pinned seats. See `curation/pins.py`; the resolution is `tests/test_pins.py`.
+# --------------------------------------------------------------------------- #
+def strong_pool(count: int = 12) -> list:
+    """`count` strong rows, one place each, far apart as pictures."""
+    return [candidate(f"s{at}", score=0.99) for at in range(count)]
+
+
+def test_a_pin_below_every_bar_is_seated_first_and_counts_toward_n():
+    pinned = candidate("pin", score=0.05)
+    record = solve.solve(
+        [*strong_pool(), pinned], n=5, key=solve.JUDGE_KEY, pins=("pin",), log=quiet
+    )
+
+    seats = {seat["key"]: seat for seat in record["seated"]}
+    assert record["filled"] == 5
+    assert seats["pin"]["pinned"] is True and seats["pin"]["seated_for"] == solve.PINNED
+    assert seats["pin"]["leg"] == "pinned"
+    assert sum(seat["pinned"] for seat in record["seated"]) == 1
+    assert record["pins"]["seated"] == ["pin"]
+
+
+def test_no_pins_seats_the_same_pool_without_it():
+    pinned = candidate("pin", score=0.05)
+    record = solve.solve([*strong_pool(), pinned], n=5, key=solve.JUDGE_KEY, pins=(), log=quiet)
+    assert "pin" not in {seat["key"] for seat in record["seated"]}
+    assert record["pins"]["listed"] == 0
+
+
+def test_a_near_copy_of_a_pin_is_refused_and_two_pins_that_are_twins_both_sit(monkeypatch):
+    """The gate against everything else stands; the gate between pins does not."""
+    values = {f"s{at}": ceiling.TAU * 8 * (at + 2) for at in range(12)}
+    values.update({"pin": 0.0, "twin_of_pin": ceiling.TAU / 3, "pin_too": ceiling.TAU / 2})
+    monkeypatch.setattr(rules, "clouds_for", lambda *_args, **_rest: Signatures(values))
+    pool = [
+        *strong_pool(),
+        candidate("pin", score=0.4),
+        candidate("pin_too", score=0.4),
+        candidate("twin_of_pin", score=0.999),
+    ]
+    record = solve.solve(pool, n=6, key=solve.JUDGE_KEY, pins=("pin", "pin_too"), log=quiet)
+
+    seated = {seat["key"] for seat in record["seated"]}
+    assert {"pin", "pin_too"} <= seated
+    assert "twin_of_pin" not in seated
+    assert record["rejection"]["reasons"].get("twin", 0) >= 1
+
+
+def test_the_swap_loop_and_the_chains_never_take_a_pin_out():
+    """A far stronger row at the pin's own place: without the pin it takes the
+    place, and with it every stage finds nothing that may leave for it."""
+    pool = [
+        *strong_pool(4),
+        candidate("pin", score=0.05, location="shared"),
+        candidate("better", score=0.999, location="shared"),
+    ]
+    unpinned = solve.solve(pool, n=5, key=solve.JUDGE_KEY, pins=(), log=quiet)
+    assert "better" in {seat["key"] for seat in unpinned["seated"]}
+
+    record = solve.solve(pool, n=5, key=solve.JUDGE_KEY, pins=("pin",), log=quiet)
+    seated = {seat["key"] for seat in record["seated"]}
+    assert "pin" in seated and "better" not in seated
+    assert all(swap["out"] != "pin" for swap in record["swaps"]["taken"])
+
+
+def test_a_pin_is_in_a_themed_gallery_only_when_its_row_is_in_the_theme():
+    pool = [
+        *[candidate(f"t{at}", score=0.99, cells=("lime",)) for at in range(8)],
+        candidate("in_theme", score=0.1, cells=("lime",)),
+        candidate("off_theme", score=0.1, cells=("red",)),
+    ]
+    record = solve.solve(
+        pool,
+        n=4,
+        key=solve.JUDGE_KEY,
+        theme="lime",
+        targets={"lime": 1.0},
+        pins=("in_theme", "off_theme", "absent"),
+        log=quiet,
+    )
+
+    assert record["pins"]["seated"] == ["in_theme"]
+    assert record["pins"]["not_in_this_gallery"] == {
+        "off_theme": "not dominant in lime",
+        "absent": "not in the pool this pass solved over",
+    }

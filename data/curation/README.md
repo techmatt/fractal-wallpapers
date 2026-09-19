@@ -8,6 +8,8 @@ runs/<run>.json                  that run's own summary, whole
 gallery/<pass>.json              one gallery pass: its slots, its seats and its retro table
 manufacture/<batch>/<kind>.jsonl what a manufactured row was made FOR, keyed on its render
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
+pins.txt                         explorer links to rows every solve seats first — edited by prompts
+pins.json                        each of those links resolved to its ledger row (`curate pins resolve`)
 supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
 neutral_embeddings.manifest.json what the untracked embedding store is, and under what
 candidate_ledger/rows.manifest.json    what the untracked candidate ledger is

@@ -113,6 +113,7 @@ from fractal_wallpapers.curation import (
     signatures,
     view,
 )
+from fractal_wallpapers.curation import pins as pins_module
 from fractal_wallpapers.curation import stamps as stamps_module
 from fractal_wallpapers.palettes import dominance
 from fractal_wallpapers.paths import rehome, tracked_name, under
@@ -684,7 +685,12 @@ LEGS = {
     "augment": "the augmenting chain: one seat was ejected and TWO were inserted in its "
     "room, which is how the seat count moves at all — a 1-swap conserves it. See "
     "curation.augment",
+    "pinned": "the pinned list: a row data/curation/pins.json names, seated before the seed "
+    "without asking any bar or rule and never taken out again. See curation.pins",
 }
+
+#: What a pinned seat's `seated_for` says, and the leg [`leg_of`] files it under.
+PINNED = "pinned"
 
 
 class SolveRefused(RuntimeError):
@@ -2104,13 +2110,21 @@ class Gallery:
     def seat(self, candidate, why: str) -> None:
         import bisect
 
-        value = self.value(candidate)
         self.state.seat(candidate, why)
+        if str(candidate.key) in getattr(self.state, "pinned", ()):
+            # A pin holds a seat and counts toward tier 1, and is otherwise outside
+            # the objective: it was not chosen, it can never leave, so as the worst
+            # seat it would be a floor no swap could raise and a prune bound that
+            # stopped meaning anything. See [`curation.pins`].
+            return
+        value = self.value(candidate)
         bisect.insort(self._ranks, (value, str(candidate.key)))
         self._value_at[str(candidate.key)] = value
         self._total += value
 
     def unseat(self, key):
+        if str(key) in getattr(self.state, "pinned", ()):
+            raise SolveRefused(f"{key} is a pinned seat and nothing may take it out")
         candidate = self.state.unseat(key)
         value = self.value(candidate)
         self._ranks.remove((value, str(candidate.key)))
@@ -2648,9 +2662,18 @@ def solve(
     augment_chains: bool = DEFAULT_AUGMENT,
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
+    pins=pins_module.SHIPPED,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
+
+    `pins` is [`pins_module.SHIPPED`] unasked — the tracked list, which every pass
+    honours without a flag — or the keys to pin, `()` being none (`--no-pins`). A pin
+    in this pass's pool, and in its theme where there is one, is seated **first**,
+    before the bars, the pre-selection and the seed have any say, counts toward `n`,
+    and is never offered to the swap loop or the chains; every other row is judged
+    against it as against any seat. The record's `pins` block says which were seated
+    and why the rest were not. See [`curation.pins`].
 
     Pool construction first — the per-mode bars, then the neutral pre-selection at
     `radius` (`None` for none at all) — then the view, the seed and the swap loop.
@@ -2778,6 +2801,13 @@ def solve(
         candidates, pool_refused = pool(log=log)
     else:
         pool_refused = {}
+    # The pins are taken off the pool as it was HANDED IN, before the fine bar
+    # narrows it: a pin is exempt from every bar, so the only thing that decides
+    # whether one is in this gallery is whether its row is in this pass's pool at all
+    # — which is how a mode collection and a family pass decide membership.
+    pinned_keys = pins_module.keys_for(pins, log=log)
+    pin_rows, pins_block = _pins_in(candidates, pinned_keys, theme, int(n), log=log)
+    pinned_set = frozenset(candidate.key for candidate in pin_rows)
     # BEFORE everything, which is what makes a barred pass a whole pass rather
     # than a filtered reading of an unbarred one: the per-mode bars, the neutral
     # pre-selection, the view's sizing and the strata are all taken over the rows
@@ -2893,6 +2923,12 @@ def solve(
         for candidate in cleared:
             if candidate.key not in survived:
                 refused[candidate.key] = SAME_PLACE
+    # A pin that also came through the pre-selection takes the relabeled copy, so it
+    # holds the CLUSTER its place was folded into and a sibling at an absorbed place
+    # is refused by the one-seat rule rather than seated beside it.
+    if pinned_set:
+        folded = {candidate.key: candidate for candidate in kept if candidate.key in pinned_set}
+        pin_rows = [folded.get(candidate.key, candidate) for candidate in pin_rows]
 
     # AFTER the fold, and on the cluster — see [`strongest_clusters`]. It sat one
     # line after the fine bar until 2026-09-09, which put it before the fold and
@@ -2955,7 +2991,11 @@ def solve(
     rule.group_cap = cap
 
     viewed = view.stratify(
-        kept,
+        # A pin is seated before the seed and never offered, so it is not in the
+        # view: offered, it would only be refused by its own cluster and counted.
+        [candidate for candidate in kept if candidate.key not in pinned_set]
+        if pinned_set
+        else kept,
         n=n,
         rule=rule,
         rank=rank,
@@ -2970,6 +3010,10 @@ def solve(
         log=log,
     )
     inside = {candidate.key for candidate in viewed.rows}
+    #: Every row the diversity rule may be asked about: the view, plus the pins it
+    #: will HOLD — a seat the rule has no picture or descriptor for is a seat
+    #: nothing is deduplicated against.
+    known = [*viewed.rows, *pin_rows]
 
     # The reduced signatures the bound reads, from the sidecar where one has been
     # swept — see [`curation.signatures`]. Everything it answers for is a picture
@@ -2981,8 +3025,8 @@ def solve(
         # Geometry-only distinctness, and the sidecar is not consulted: it holds
         # reduced pixel-cloud signatures, which this rule never reads.
         twins = rules.Places(
-            rules.places_for(viewed.rows),
-            {candidate.key: candidate.location for candidate in viewed.rows},
+            rules.places_for(known),
+            {candidate.key: candidate.location for candidate in known},
             tau=geometry_radius,
         )
         log(
@@ -2990,13 +3034,13 @@ def solve(
             f"{len(twins.places):,} place descriptor(s), no picture opened"
         )
     else:
-        held_signatures = signatures.for_candidates(viewed.rows)
+        held_signatures = signatures.for_candidates(known)
         if held_signatures:
             log(
-                f"[solve] {len(held_signatures):,} of {len(viewed.rows):,} reduced "
+                f"[solve] {len(held_signatures):,} of {len(known):,} reduced "
                 "signature(s) from the sidecar"
             )
-        twins = rules.Twins(rules.clouds_for(viewed.rows), reduced=held_signatures)
+        twins = rules.Twins(rules.clouds_for(known), reduced=held_signatures)
     held_ceilings = {str(mode): float(share) for mode, share in (mode_ceilings or {}).items()}
     state = rules.State(
         rule, n, diversity=twins, spiral_cap=spiral_cap, mode_ceilings=held_ceilings
@@ -3016,6 +3060,14 @@ def solve(
         )
     demands = demands_for(held_floors, rule.targets, rule=rule, cell_floor=held_cell_floor)
     gallery = Gallery(state, order, demands)
+    # FIRST, and without asking: no bar, no counted rule and no diversity test, which
+    # is what exempts a pin from the gate against the other pins. Held in the rule
+    # like any seat, so every row the seed offers next is judged against them.
+    state.pinned = pinned_set
+    for candidate in pin_rows:
+        gallery.seat(candidate, PINNED)
+    if pin_rows:
+        log(f"[pins] {len(pin_rows)} pinned seat(s) taken before the seed")
 
     seeded = seed(gallery, viewed.rows, demands, rank, refused, log=log)
     swapped = (
@@ -3091,8 +3143,11 @@ def solve(
         _seated(candidate, why, None if order is None else order.get(candidate.key))
         for candidate, why in gallery.state.seated.values()
     ]
+    for row in seated_rows:
+        row["pinned"] = str(row["key"]) in pinned_set
     seated_rows.sort(key=lambda row: (-_rank_of(row), str(row["key"])))
     placement = attribution(seated_rows, cleared, order, gallery, rule, n)
+    pins_block["seated"] = [key for key in pins_block["eligible"] if gallery.state.holds(key)]
     record = {
         "schema": SCHEMA,
         "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -3155,6 +3210,7 @@ def solve(
         # record that forced nothing carries `asked: 0`, which is every shipped
         # pass and is the answer a reader needs rather than a missing field.
         "forced": fine.record,
+        "pins": pins_block,
         # `theme_pool` and not `theme`, since 2026-09-12. This is a description of
         # the POOL a themed pass drew from — how many rows were in the cell, what
         # made them members, what the cap was — and the theme itself is a string on
@@ -3280,6 +3336,45 @@ def solve(
             "shipping it."
         )
     return record
+
+
+def _pins_in(candidates, keys, theme: str | None, n: int, log=print) -> tuple[list, dict]:
+    """`(the pinned rows this pass seats, the record's pins block)`.
+
+    Membership is the row's and never forced: a pin is in this gallery when its row
+    is in the pool the pass was handed — which is how a mode collection admits only
+    its own mode — and, on a themed pass, when the row is dominant in the theme,
+    which is how a family pass admits only its own family. At most `n` of them, in
+    the list's order.
+    """
+    by_key = {candidate.key: candidate for candidate in candidates} if keys else {}
+    rows: list = []
+    left_out: dict = {}
+    for key in keys:
+        held = by_key.get(key)
+        if held is None:
+            left_out[key] = "not in the pool this pass solved over"
+        elif theme is not None and str(theme) not in held.cells:
+            left_out[key] = f"not dominant in {theme}"
+        elif len(rows) >= int(n):
+            left_out[key] = f"the gallery is {n} seat(s) and the pins before it filled them"
+        else:
+            rows.append(held)
+    if keys:
+        log(
+            f"[pins] {len(rows)} of {len(keys)} pinned row(s) belong to this gallery"
+            + (f"; {len(left_out)} do not (the record's `pins` block says why)" if left_out else "")
+        )
+    block = {
+        "of": "the pinned list (data/curation/pins.json): rows seated FIRST, exempt from "
+        "every bar and from the near-duplicate gate against each other, never taken out by "
+        "the swap loop or the chains. A pin is in a gallery when its row is in the pass's "
+        "pool, and in the theme on a themed pass. See curation/pins.py",
+        "listed": len(keys),
+        "eligible": [candidate.key for candidate in rows],
+        "not_in_this_gallery": left_out,
+    }
+    return rows, block
 
 
 def short_fill(filled: int, n: int) -> dict | None:
@@ -3629,7 +3724,7 @@ def leg_of(seated_for: str) -> str:
     slip.
     """
     held = str(seated_for)
-    if held in ("swap", "augment"):
+    if held in ("swap", "augment", PINNED):
         return held
     return "general_pool" if held == "general_pool" else "mandate"
 

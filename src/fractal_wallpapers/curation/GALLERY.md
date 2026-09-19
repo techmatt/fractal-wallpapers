@@ -2050,6 +2050,70 @@ same night's pool seated 947 with all of its rows and 952 with its `phoenix` row
 held out. A smaller pool seating more is a fact about the pass this project runs and
 never a proof that rows can lower an optimum.
 
+## Pinned seats — a standing list every solve seats first
+
+```
+data/curation/pins.txt                      # explorer links, one a line — edited only through prompts
+fractal-wallpapers curate pins resolve      # -> data/curation/pins.json, the only file a solve reads
+fractal-wallpapers curate solve record --no-pins …   # the same pass without them, for a comparison
+```
+
+**Since 2026-09-19.** A pin is a pool row Matt wants guaranteed shipped. Every solve —
+`run`, `record`, a collection, a ladder — honours the list without a flag, and it
+survives a change of `n` and a re-solve silently. `curation/pins.py` carries the rule.
+
+- **Seated first, counted toward `n`**, before the fine bar, the per-mode bars and the
+  neutral pre-selection have any say. A pin is never offered to the seed, and
+  `rules.State.pinned` keeps it out of every removal set, so neither the swap loop nor
+  the augmenting chains can take one out. It holds a seat and tier 1 and is otherwise
+  **outside the objective**: the worst seat and the sum are over the seats the solve
+  chose.
+- **Exempt from the gate between pins, not from the gate against everything else.**
+  Pins are seated without asking, so two pins that are twins, or share a place, both sit.
+  Each pin is then held in the diversity rule and the one-seat-per-cluster rule like any
+  seat, so a near-copy of a pin is refused rather than seated beside it.
+- **Membership is by the row, never forced.** The general gallery always takes a pin. A
+  mode collection takes it when the row's **routed** mode is that mode: `04cd304c`'s
+  recipe is `itinerary` and it counts as `smooth`. A hue family takes it when the family
+  pass would admit it on its own, meaning the row is dominant in the family. The
+  record's `pins` block, copied onto the tentative manifest, lists what was seated and
+  why the rest were not. A seated pin's row carries `pinned: true`, and the viewer
+  gives it a gold border, a `pinned` badge and a `pinned` facet.
+- **Resolution is by plane, mode and place**: `f` and its constants, `m`, and `x`, `y`,
+  `w` within `pins.PLACE_TOLERANCE` (a thousandth) of the link's own `w`. `level` and
+  `mirror` are ignored. Palette and phase are also ignored unless several seatable rows
+  share the place. In that case the tiebreak is palette and phase, then palette alone,
+  then the highest `p_fine`, and the pin's `chosen_by` says which one decided. Only rows
+  `solve.pool` would admit are candidates, so a vetoed, rejected or pictureless row is
+  never pinned. A link with none is left **unresolved** with its reason, and is never
+  rendered. A missing or stale `pins.json` is a loud line in the solve's log, not a crash.
+- **A pin is protected from the prune**: `tentative.protected_keys()` reads the list too,
+  so a merge cannot take a row every solve promises to seat.
+
+**The first list: ten pins**, the root README's four examples plus six more from Matt's
+list of 2026-09-19 (his seventh link was the README's stripe example). All ten resolved
+in one 19 s pass over 550,538 ledger rows. Eight were chosen by `palette_and_phase` among
+3–5 rows at their place, and two were the only row there. Re-recorded on the unchanged
+`mn132_post_*` pool (`pins_ckpt132`), **every gallery still filled its target and no
+`p_fine` median moved by more than 0.009**:
+
+| gallery | pins seated | seats displaced | `p_fine` median | q1 |
+|---|--:|--:|--:|--:|
+| `general` n=1000 | 10 (1 not already seated) | 80 | 0.587 → 0.585 | 0.427 → 0.429 |
+| `general_n2000` | 10 (0) | 157 | 0.407 → 0.402 | 0.235 → 0.236 |
+| `green` | 7 (3) | 19 | 0.188 → 0.188 | 0.076 → 0.077 |
+| `smooth` | 6 (0) | 60 | 0.276 → 0.270 | 0.133 → 0.133 |
+| `stripe` | 1 (0) | 51 | 0.310 → 0.305 | 0.156 → 0.153 |
+| `threads` | 3 (0) | 9 | 0.308 → 0.309 | 0.156 → 0.156 |
+| `red` · `orange` · `magenta` · `teal` · `lime` | 1 · 1 · 1 · 2 · 2 | 11 · 10 · 4 · 9 · 2 | ±0.009 | ±0.005 |
+
+The eleven galleries no pin belongs to came back **seat for seat identical**. That is the
+control: the pass is deterministic on a fixed pool, so every displaced seat above was
+caused by the pins. **Most of the displacement is knock-on**, not a pin taking a seat. In
+`general`, nine of the ten pins were already seated and 80 seats still moved. Taking the
+pins out of the view shifts the view's seeded strata draw (18,687 → 18,677 rows), and the
+greedy path diverges from there.
+
 ## `curate solve record` — a solve recorded under a stamp, and a browser over it
 
 ```

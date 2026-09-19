@@ -126,8 +126,16 @@ def tentative_store(tmp_path, monkeypatch):
     reads the supply sidecar, the fitted population and the served-location index
     off this machine, exactly as `tests/test_candidate_ledger` lets it, so moving
     the whole tree under it would fail on a file the rule under test never reads.
+
+    **The pinned list is redirected with it**, since 2026-09-19: `protected_keys`
+    keeps every pinned row as well as every kept record's, and the tracked list
+    names real keys that no guard here wrote. `tests/test_pins.py` holds the pins'
+    half of the protection.
     """
+    from fractal_wallpapers.curation import pins
+
     monkeypatch.setattr(tentative, "store_root", lambda: tmp_path / "tentative")
+    monkeypatch.setattr(pins, "resolved_path", lambda: tmp_path / "no_pins.json")
     return tmp_path / "tentative"
 
 
