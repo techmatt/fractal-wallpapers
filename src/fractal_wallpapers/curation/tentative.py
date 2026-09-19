@@ -1085,6 +1085,7 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
         _PAGE.replace("__STAMP__", html.escape(str(stamp)))
         .replace("__SEATS__", str(len(rows)))
         .replace("__ASKED__", str(manifest["seats"]["asked"]))
+        .replace("__NAME__", html.escape(str(manifest.get("solve", {}).get("name") or "")))
         .replace("__MISSING__", str(missing))
         .replace("__AT_FULL__", str(at_full))
         .replace("__FULL_REGIME__", html.escape(fulls.REGIME.spelled))
@@ -1098,10 +1099,10 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     return path
 
 
-#: The browser, as one string with six substitutions. Kept here rather than in a
+#: The browser, as one string with nine substitutions. Kept here rather than in a
 #: tracked asset file because it is the only page this project writes for a person
 #: to drive, and a second file would be a second thing to find. The substitutions
-#: are `__ROWS__`, `__STAMP__`, `__SEATS__`, `__ASKED__`, `__MISSING__`,
+#: are `__ROWS__`, `__STAMP__`, `__NAME__`, `__SEATS__`, `__ASKED__`, `__MISSING__`,
 #: `__AT_FULL__`, `__FULL_REGIME__` and `__ORDERED_BY__`, all filled by [`page`]
 #: and none of them by the reader.
 _PAGE = (
@@ -1179,7 +1180,8 @@ _PAGE = (
   #lb .bar b { color: #9fc2ff; font-weight: 600; }
 </style>
 <header>
-  <h1>tentative gallery __STAMP__ <span>&middot; __SEATS__ of __ASKED__ seat(s) filled
+  <h1>tentative gallery __STAMP__ <span>&middot; __NAME__
+      &middot; __SEATS__ of __ASKED__ seat(s) filled
       &middot; __MISSING__ without a picture on this disk
       &middot; presented on __ORDERED_BY__</span></h1>
   <div class="controls">

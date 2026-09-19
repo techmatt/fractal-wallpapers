@@ -78,6 +78,16 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
     if args.what == "recipes":
         return curate_solve_recipes(args)
 
+    if args.what == "viewers":
+        from fractal_wallpapers.curation import viewers
+
+        try:
+            print(display_path(viewers.build(args.stamps)))
+        except (viewers.ViewersRefused, tentative.TentativeRefused) as refusal:
+            print(refusal)
+            return 1
+        return 0
+
     # `browse <stamp>` and `browse --stamp <stamp>` are one command, because a
     # reader who has just seen a stamp printed will type it either way and the
     # cost of not accepting both is a page silently written for a DIFFERENT
@@ -1756,6 +1766,19 @@ def add_steps(steps) -> None:
         "It is what a published record wants: 923 of the published record's 1,000 fulls "
         "were borrowed from labelling sheets on 2026-09-14 and 895 of those from one sheet",
     )
+
+    viewing = solve_verbs.add_parser(
+        "viewers",
+        help="a viewer per named record under the viewer directory, and `all.html` over them",
+        description=(
+            "Each record's page, built exactly as `browse` builds it, lands at "
+            "`<viewer>/<label>/index.html`: the collection a `targets_<collection>_n…` solve "
+            "name says, else `general`, with `_n<seats>` where the size is not the recorded "
+            "one. `all.html` beside them links every one with seats against target and the "
+            "seated `p_fine` median and q1. Nothing is rendered."
+        ),
+    )
+    viewing.add_argument("stamps", nargs="+", metavar="STAMP", help="the records, one each")
 
     browsing = solve_verbs.add_parser(
         "browse", help="write a record's page again, off the rows it already holds"
