@@ -731,7 +731,7 @@ fn in_unit_interval(value: f64, name: &str) -> Result<(), String> {
 }
 
 /// A frame's normalization: the span of field values the gradient covers.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct Stretch {
     low: f64,
     span: f64,
@@ -801,6 +801,7 @@ impl Stretch {
 /// has earned by the time it is reached; raising the weight concentrates color on
 /// the fast bins, and a weight of zero weighs every bin the same and gives back
 /// the straight line.
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Edges {
     curve: Vec<f64>,
 }
@@ -902,6 +903,7 @@ impl Edges {
 /// occupies rather than at one end of it. That is what keeps a field with a large
 /// flat region from putting the whole region at the very top or bottom of the
 /// gradient.
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Ranks {
     sorted: Vec<f64>,
 }
@@ -931,7 +933,17 @@ impl Ranks {
 /// question, and picking one is what a transfer *is*. Value and edge share the
 /// percentile stretch, because the edge transfer remaps a stretched position;
 /// rank replaces the stretch outright, because it is a normalization of its own.
-enum Spend {
+/// **Public because a caller may colour one band at a time**, and a band's bytes
+/// must not depend on where the frame was cut. The site's wasm explorer splits a
+/// shade over a worker pool: it measures this once over the whole field, hands the
+/// same value to every band, and each band then colours a run of samples through
+/// statistics that are the frame's. Measuring per band would stretch each one
+/// against its own histogram and draw a visible step between them. The measure and
+/// the colouring are separate for that reason and for no other — [`shade`],
+/// [`composite`] and [`modulate`] are each still one call that does both, over one
+/// band that is the whole frame.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Spend {
     Value(Stretch),
     Edge(Stretch, Edges),
     Rank(Ranks),
@@ -939,7 +951,7 @@ enum Spend {
 
 impl Spend {
     /// Measure the transfer this recipe asks for over one field.
-    fn measure(field: &Field, transfer: Transfer) -> Spend {
+    pub fn measure(field: &Field, transfer: Transfer) -> Spend {
         match transfer {
             Transfer::Value => Spend::Value(Stretch::measure(field)),
             Transfer::Edge { weight } => {
@@ -954,7 +966,7 @@ impl Spend {
     }
 
     /// Where one raw field value lands on the gradient, in `[0, 1]`.
-    fn position(&self, value: f64) -> f64 {
+    pub fn position(&self, value: f64) -> f64 {
         match self {
             Spend::Value(stretch) => stretch.position(value),
             Spend::Edge(stretch, edges) => edges.remap(stretch.position(value)),
@@ -1127,8 +1139,25 @@ pub fn shade(
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
     let spend = Spend::measure(field, palette.transfer);
-    field
-        .values
+    shade_samples(&field.values, &spend, transform, palette, colormap)
+}
+
+/// [`shade`]'s second half: a run of samples, through a transfer somebody else
+/// measured.
+///
+/// **This is the whole frame's colouring with the frame taken out of it.** Every
+/// stage below reads one sample and the [`Spend`] it is handed, so a run of samples
+/// colours to the same bytes whether it is the frame or a band of it — which is
+/// what lets a caller split the pass. [`shade`] is this over one band that is the
+/// whole field, and the pipeline takes that path.
+pub fn shade_samples(
+    values: &[f32],
+    spend: &Spend,
+    transform: Transform,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Vec<[f64; 3]> {
+    values
         .par_iter()
         .map(|&value| {
             if !value.is_finite() {
@@ -1166,6 +1195,38 @@ pub fn composite(
 ) -> Vec<[f64; 3]> {
     let base_spend = Spend::measure(base, palette.transfer);
     let texture_stretch = Stretch::measure(texture);
+    composite_samples(
+        &base.values,
+        &texture.values,
+        &base_spend,
+        &texture_stretch,
+        base_transform,
+        texture_transform,
+        blend,
+        weight,
+        texture_gamma,
+        palette,
+        colormap,
+    )
+}
+
+/// [`composite`]'s second half: a run of sample pairs, through the two frame-wide
+/// normalizations somebody else measured. See [`shade_samples`] for why the halves
+/// are separable and who splits them.
+#[allow(clippy::too_many_arguments)]
+pub fn composite_samples(
+    base: &[f32],
+    texture: &[f32],
+    base_spend: &Spend,
+    texture_stretch: &Stretch,
+    base_transform: Transform,
+    texture_transform: Transform,
+    blend: Blend,
+    weight: f64,
+    texture_gamma: Option<f64>,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Vec<[f64; 3]> {
     // The recipe describes the picture, and the picture is what the base makes:
     // the texture is a screen over it and carries no gamma from the recipe. Its own
     // `texture_gamma` is the one power that reaches it. The traversal comes after
@@ -1176,9 +1237,8 @@ pub fn composite(
         phase: 0.0,
         ..*palette
     };
-    base.values
-        .par_iter()
-        .zip(&texture.values)
+    base.par_iter()
+        .zip(texture)
         .map(|(&base_value, &texture_value)| {
             let under = base_value
                 .is_finite()
@@ -1245,10 +1305,37 @@ pub fn modulate(
 ) -> (Vec<[f64; 3]>, bool) {
     let ranks = Ranks::measure(base.values.iter().map(|&value| value as f64));
     let spread = Stretch::over(texture.values.iter().copied());
-    let linear = base
-        .values
-        .par_iter()
-        .zip(&texture.values)
+    let linear = modulate_samples(
+        &base.values,
+        &texture.values,
+        &ranks,
+        &spread,
+        base_transform,
+        texture_transform,
+        shift,
+        palette,
+        colormap,
+    );
+    (linear, spread.is_flat())
+}
+
+/// [`modulate`]'s second half: a run of sample pairs, through the rank and the
+/// spread somebody else measured. See [`shade_samples`] for why the halves are
+/// separable and who splits them.
+#[allow(clippy::too_many_arguments)]
+pub fn modulate_samples(
+    base: &[f32],
+    texture: &[f64],
+    ranks: &Ranks,
+    spread: &Stretch,
+    base_transform: Transform,
+    texture_transform: Transform,
+    shift: f64,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Vec<[f64; 3]> {
+    base.par_iter()
+        .zip(texture)
         .map(|(&base_value, &texture_value)| {
             if !base_value.is_finite() {
                 return INTERIOR;
@@ -1270,8 +1357,7 @@ pub fn modulate(
             .place(gray);
             colormap.lookup(placed)
         })
-        .collect();
-    (linear, spread.is_flat())
+        .collect()
 }
 
 /// The `p`-th percentile of `values`, which is partially reordered in place.

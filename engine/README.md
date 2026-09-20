@@ -541,6 +541,43 @@ adding an export**. `plan` is what a page asks first, and it answers out of
 `mode::resolve`, `maxiter::for_width` and `Family::home_view` rather than out of a
 table the page keeps. No wasm-bindgen: the module is this crate plus one file.
 
+### A coloring splits into a measure and a colouring, so a caller may band it
+
+*(`explorer_shade_pool_ckpt136`, 2026-09-20.)* A field band is a pure function of its
+own rows, which is what lets the site draw one frame over twelve workers. **A shade is
+not.** `coloring` normalizes a frame against its own distribution — the 0.5th and
+99.5th percentiles of its valid samples, and the edge transfer's profile and the rank
+transfer's sort — so a band coloured alone would be stretched against its own
+histogram and would draw a visible step between itself and its neighbours. That is
+stated at the top of `src/coloring.rs` and it is the reason the shade was the one
+stage of that page still running on one thread.
+
+So each of the three colorings is now two halves that are named apart:
+
+```
+Spend::measure(field, transfer)       the frame-wide normalization, once
+shade_samples(values, spend, …)       a run of samples through it
+composite_samples(base, texture, …)   and the pair, and the modulate's
+modulate_samples(base, texture, …)
+```
+
+`shade`, `composite` and `modulate` are unchanged as far as any caller is concerned:
+each is its own measure followed by its own `_samples` over **one band that is the
+whole field**, so `paint` and `recolor` and everything else in this tree take exactly
+the arithmetic they always took. What is new is only that a caller holding a *part* of
+a frame can be handed the whole frame's statistics — which is what
+`explorer/engine-wasm`'s `shade_stats` and `shade_band` do, and what its
+`bands.test.mjs` holds to the whole-frame call byte for byte, at one and at two
+samples a pixel and on a two-lane composite.
+
+`Spend` is public for that and carries `Serialize`/`Deserialize` so it can cross a
+worker boundary; `Stretch`, `Edges` and `Ranks` were already public and gained the
+same pair. **Two of the three do not cross in practice**: a `Ranks` is the frame's
+valid samples sorted, eight bytes a sample, so the modulate and a rank transfer are
+more expensive to split than to colour, and the consumer detects that and keeps its
+one-worker path. Nothing here decides that — this crate hands back what it measured
+and says how big it is by being it.
+
 **Consumers pin by path, because the version cannot tell them anything.** This crate
 is `0.1.0` and is never bumped, so a git dependency could not distinguish two
 revisions of it — and it would drag the Python package, the data and the labels into
