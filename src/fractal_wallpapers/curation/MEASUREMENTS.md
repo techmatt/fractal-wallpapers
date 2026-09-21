@@ -403,6 +403,36 @@ retention alone, and why `rank_key` cannot be retired while the cascade runs.
   Prices per shot are in [`LEGS.md`](LEGS.md)'s *What the drawn weight did, measured
   2026-09-18*.
 
+* **Aiming a Julia `c` at a parabolic point buys nothing, measured 2026-09-21**
+  (`parabolic_c_pilot_ckpt139`, three arms, 12 walk expansions a root each). Admitted
+  locations a root, against the twin channel's **38.6**: main cardioid **0.0–0.6**,
+  period-2 disc **0.1**, islands of period 3–14 (component scale 0.011–0.115) **0.0** —
+  140 roots, 560 candidates, 273 gate survivors, **maximum head score 0.089 against a
+  junk floor of 0.10**. The one aimed stratum that beat the control, islands of period
+  28–57 at **88.7–89.0** a root, has component scales of `9.7e-9` to `1.6e-5`, so its
+  offsets are four to eight decades under the scale at which the picture changes: it is
+  redrawing a proven `c`, not aiming. **The result is monotone in the component's scale
+  and that is the whole of it.**
+* **The unresolved share near a parabolic `c` is worst at the widths the hunt frames, not
+  at the home view.** Median interior share for `c` outside M — where the filled Julia set
+  has no interior, so interior share *is* unresolved share — at the width policy's own
+  cap: at `ε = 1e-3`, **11.7% at width 3.0 and 48.6% at width 0.204**, which is the q3 of
+  what `julia:mandelbrot` places are actually framed at (q1 0.0029, median 0.033, q3
+  0.204, over 29,588 rows). A narrower frame holds proportionally more of the slow gate.
+  4x the cap takes the 48.6% to 18.0%.
+* **`stripe` is 6.6x `smooth` on cap-heavy views, measured 2026-09-21.** Over 1,443 hunt
+  candidates at a median cap of 16,018 it took **63.8% of the clock for 33.7% of the
+  pictures**: 3.120 s mean against `smooth`'s 0.475 and `tia`'s 1.367. On the control arm,
+  71.0% for 34.7% at 8.0x. A field roster on narrow julia frames is `smooth` + `tia`.
+* **The tracked `c`-pool has saturated the `c`-spacing floor on the degree-2 plane,
+  measured 2026-09-21.** Of **6,963** admitted degree-2 parameter-plane locations, the
+  `3.2e-2` floor against the pool's own 209 rows admits **19**. A twin-channel draw on
+  this plane is spacing-bound and not supply-bound.
+* **Two places under one aimed root are more alike than two arm places at random and are
+  not duplicates**: median neutral-embedding cosine **0.898** against **0.732**, with
+  0.9% of pairs at or above 0.99 against 0.03%. ⚠ Each pair differs in viewport as well as
+  in `c`, so this bounds the `Δc` effect rather than isolating it.
+
 ## What the label stores and the candidate ledger share, measured
 
 * **The join ceiling is about 12%**, by PLACE and never by key — quote the ratio and

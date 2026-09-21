@@ -696,12 +696,24 @@ class Walk:
         Nothing is drawn here. The screened draw a parameter-plane walk can take
         instead is `--root-channel viewport_sampler`, which the CLI seeds through
         `add_root` directly.
+
+        **A seed row's own `provenance` block is carried onto the root row**, under
+        the two members this writes. That is what makes an aimed list of `c` a
+        channel rather than an anonymous file of coordinates: a list built by
+        aiming at parabolic points carries which point, which internal angle and
+        which side of the boundary each row was drawn at, and every location that
+        descends from the root can be joined back to it through `root_id`. Without
+        it the only thing a run could say afterwards is the file's name, and the
+        stratum — the whole question a pilot is asking — would have to live in a
+        second file keyed on coordinates. The two members written here win, so a
+        seed file cannot rename its own row or claim a different source.
         """
         rows = pools.read_seed_file(Path(path))
         if limit is not None:
             rows = rows[:limit]
         for index, row in enumerate(rows):
             view = row.get("viewport")
+            carried = row.get("provenance")
             self.add_root(
                 row["family"],
                 (
@@ -714,7 +726,11 @@ class Walk:
                     else None
                 ),
                 source="seed_file",
-                provenance={"seed_id": row.get("id", f"row{index:04d}"), "file": Path(path).name},
+                provenance={
+                    **(carried if isinstance(carried, dict) else {}),
+                    "seed_id": row.get("id", f"row{index:04d}"),
+                    "file": Path(path).name,
+                },
             )
         return len(rows)
 
