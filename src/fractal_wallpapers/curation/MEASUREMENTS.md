@@ -413,6 +413,18 @@ retention alone, and why `rank_key` cannot be retired while the cascade runs.
   offsets are four to eight decades under the scale at which the picture changes: it is
   redrawing a proven `c`, not aiming. **The result is monotone in the component's scale
   and that is the whole of it.**
+* **A Julia walk rooted at a deep minibrot nucleus is worth about 2x the twin channel,
+  measured 2026-09-21** — the salvage from the leg above, and the one arm in it that has a
+  verb line. Depth clear rate at 0.50 **14.39% `smooth` and 5.67% `tia` against 7.11% and
+  2.94%**; 10.1% of all shots clearing against 4.9%; hunt candidates **1.37x cheaper**
+  (1.648 s against 2.249). At the seats it is **1.9x**: on `--collection smooth`, 800 seats
+  over 123,746 rows, the nucleus arm took **25 of 5,062 pool rows (0.49%)** and the twin
+  channel **3 of 1,172 (0.26%)**, both under the collection's own 0.65%. On a general
+  `n=1000` over the whole 515,020-row pool it is 8 seats against 0 and **the counterfactual
+  moves nothing either way** — the gallery fills regardless, which is the size of what one
+  night of one partition buys. ⚠ Measured over **14** distinct nuclei, all of period 28–57,
+  because that is every degree-2 centered location this store holds. Count the supply
+  before spending a night on it.
 * **The unresolved share near a parabolic `c` is worst at the widths the hunt frames, not
   at the home view.** Median interior share for `c` outside M — where the filled Julia set
   has no interior, so interior share *is* unresolved share — at the width policy's own
