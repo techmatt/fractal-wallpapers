@@ -704,6 +704,30 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### parabolic_c_pilot_ckpt139
+
+`parabolic_c_pilot_ckpt139`, 2026-09-21, `.[dev,models]` with a release engine.
+**Fast: 4,881 passed in 148.43 s (2:28)**, 157 deselected, green. **+21** — eighteen in a
+new `tests/test_parabolic.py` and three in `tests/test_walk.py` — so the tree is believed
+at 5,038 collected. Slow not run. Taken about three minutes after a `curate depth` leg, a
+`gallery-grade score-pool` over 62,099 pictures and a four-pass solve driver had all
+finished, so the stores were warm and nothing was competing; 148.43 s sits inside the
+144.50–153.96 s band the last four readings occupy, so the clock is the tree.
+
+⚠ **It caught seven tests nobody had counted.** The figure this prompt inherited was
+`site_rebase_ckpt132`'s 4,853, and a `--collect-only` at `HEAD` with this prompt's changes
+stashed read **4,860**. The five commits between the two added seven fast tests without
+re-measuring — the drift *take the fast lane whether or not the prompt wrote a test*
+exists to catch, found here the same way the earlier ones were, by arithmetic that did
+not add up rather than by anybody noticing.
+
+**`git stash -u` then `--collect-only` is the cheap way to split a delta.** A prompt that
+reads `+28` and wrote twenty-one tests has two hypotheses — its own tests are parametrized
+wider than it thinks, or the tree moved under it — and they want opposite fixes. Stashing
+and collecting answers it in ten seconds and needs no worktree, because a *count* is what
+is in question and not a *clock*. (A clock still needs the `git worktree` at `HEAD` that
+*A lane that moves right after code landed* names, because the box has to be held still.)
+
 #### site_rebase_ckpt132
 
 `site_rebase_ckpt132`, 2026-09-19, `.[dev,models]` with a release engine.

@@ -11,6 +11,7 @@ and when to stop.
 pools      the tracked seed pools, and the spacing the julia one has to keep
 walk       the frontier, the batch, the two reserved floors, the run loop
 nucleus    Newton on a nucleus, the atom instrument, the canonical key
+parabolic  where a component touches its neighbour, and a ring of julia c around it
 operators  reframing a found view onto the atoms around it
 reframing  the channel that makes an operator's OWN view a candidate
 ledger     one JSONL record, one schema, a fate on every row
@@ -1428,3 +1429,99 @@ fractal-wallpapers walk --family julia --roots 20 --batches 8
 fractal-wallpapers walk --seeds my_locations.jsonl --no-neighborhood
 fractal-wallpapers walk --seeds my_locations.jsonl --plane-grace-rungs 0
 ```
+
+## Parabolic parameters: aiming a Julia `c` at an implosion
+
+`parabolic.py` solves for the parameters where a hyperbolic component of the
+Mandelbrot set touches its neighbour — a component's **cusp** (`q = 1`) or the
+root of its `r/q` **bulb** — and [`parabolic.offsets`] turns one of those into a
+ring of Julia parameters around it. The reason to want them is pictorial: at a
+parabolic `c` the attracting cycle and the repelling one have collided, the basin
+boundary grows the Leau-Fatou flowers, and a neighbourhood of that `c` produces
+Julia sets that are rich at a **shallow** zoom — where this engine's `f64` lives.
+
+Supply for every `julia:*` partition is **root-bound**: a Julia place descends
+from a `c`, and the two channels that make one — the tracked pool and
+[`supply.twins`] — both hand over a `c` somebody found by looking at the
+*parameter plane*. This is the first channel that computes one.
+
+```
+fractal-wallpapers walk --family julia --degree 2 --seeds aimed.jsonl --batch 16 --batches 152
+```
+
+**The door is `--seeds` and there is no new channel.** A seed row is
+`{family, viewport?}` and a `julia` family block *is* a `c`, so a list of aimed
+parameters is already a list of walk roots; `viewport` omitted means the engine's
+own home view, which for a Julia set is where the picture is.
+
+### The solve is exact, and nothing here is tuned
+
+`(z, c)` solving `f_c^p(z) = z` and `(f_c^p)'(z) = e^{2πi r/q}` together, by
+Newton at [`nucleus.NUCLEUS_DPS`], reached by **continuation along the internal
+ray**: at `λ = 0` the answer is the nucleus with `z` at the critical point, and
+the solver marches `λ = t·e^{2πi r/q}` from `t = 0` to `1` correcting each step.
+It never asks whether the component is cardioid-like or disc-like. The multiplier's
+derivative is accumulated alongside the product and never divided out — the
+log-derivative form divides by `f'(z₀)`, which is zero at the one point every
+march starts from.
+
+Checked against the four parameters that can be written down independently —
+`1/4`, `−3/4`, `−5/4` and `−7/4`, the last the period-3 window's tangent
+bifurcation — and against the main cardioid's closed form `μ/2 − μ²/4` at every
+`r/q` with `q ≤ 12`. All agree below `1e-50`. ⚠ `−7/4` is the *cusp*; the period-3
+**nucleus** is `−1.75487766…`, a hundredth away, and the two are easy to confuse.
+
+### The scale is the component's, and it is never `1/|A|`
+
+[`parabolic.component_scale`] measures a component by solving both ends of its
+real internal ray — `0/1` and `1/2` — and reporting the distance. The main
+cardioid comes out at exactly `1`, the period-2 disc at exactly `1/2`, the
+period-3 island at `0.0185292`. [`nucleus.atom_instrument`]'s `window_scale` is
+`1/|A|`, which the website's perturbation crate established is the atom's
+**domain** and not its body, so nothing here takes a size from it.
+
+**A satellite component has no `0/1` end**, and the solver refuses rather than
+returning a nearby number: at a satellite's root the cycle has collided with its
+*parent's*, `f^p(z) = z` has a double root and the system is singular. That is the
+"generically" in the design and not a bug. The fallback is twice the
+nucleus-to-doubling distance — exact on a round satellite — and the route is
+reported (`RAY_ENDS` against `DOUBLING_RADIUS`) because the two differ by about
+3/2 on a cardioid.
+
+⚠ **The period-2 disc's own cusp is one of these**, so premise-style anchor lists
+that name `−3/4` as "the period-2 disc's `0/1` point" are naming the *cardioid's*
+`1/2` point. One point, two components, and only the cardioid can solve for it.
+
+### Classification reads the critical orbit, not a root-find
+
+[`parabolic.classify`] says whether an offset is in the component, inside `M`
+elsewhere, or outside — three materially different pictures, and outside `M` the
+filled Julia set has no interior at all, which is what makes an unresolved share
+readable off a render. It walks the critical orbit and reads the multiplier of
+whatever cycle the orbit settles onto.
+
+**Newton on `f_c^p(z) = z` in `z` alone cannot do this job**, and the failure is
+silent: the parabolic cycle is a *double* root of that equation, so the solve is
+singular at exactly the point every offset is taken around and reports "no cycle"
+for a whole neighbourhood of it. Built that way, the ring around the main
+cardioid's cusp came back as "inside `M`, some other component" for every one of
+its interior offsets.
+
+### Degree 2 only, and the gate says why
+
+The arithmetic is written for `z^d + c` and the solver refuses every `d ≠ 2`. At
+a degree-`d` nucleus the multiplier vanishes to order `d − 1`, so **both** of its
+derivatives are zero at the `t = 0` end of the ray and Newton has no direction to
+move in. Generalizing needs a predictor for the ray's first step, which is a
+different piece of work. Degree 6 could not be labelled anyway —
+`labeling/README.md`'s *Degree 6 is never labelled*.
+
+### The `c`-spacing floor and an aimed list are in direct conflict
+
+[`pools.C_SPACING_FLOOR`] is `3.2e-2`, and an aimed ring at `ε ≤ 3.16e-2` of a
+component of scale 1 sits **inside** it by construction. `walk --seeds` does not
+enforce the floor — only the pool reader and [`supply.twins`] do — so a pilot
+runs; a *channel* would have to answer it. Measured 2026-09-21: of **6,963**
+admitted degree-2 parameter-plane locations, the floor against the tracked pool
+admits **19**. The ordinary twin channel on this plane is saturated, which is a
+fact about the floor and not about the plane.

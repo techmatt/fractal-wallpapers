@@ -790,3 +790,40 @@ def test_a_focus_row_carries_the_whole_thing_the_proposal_was_aiming_at(tmp_path
             assert focus["center_re"] and focus["center_im"]
             if focus["spacing"] is not None:
                 assert focus["spacing"] > row["spread_radius"]
+
+
+def test_a_seed_row_carries_its_own_provenance_onto_the_root_row(tmp_path) -> None:
+    """What makes an aimed list of `c` a channel and not a file of coordinates.
+
+    A seed file built by aiming — at parabolic points, say — knows which point,
+    which internal angle and which side of the boundary each row was drawn at,
+    and every location that descends joins back to the root by `root_id`. Carried
+    here, that stratum is on the ledger; not carried, it has to live in a second
+    file keyed on coordinates and the run itself can say nothing but the file's
+    name.
+    """
+    run = walk(tmp_path, scorer=FixedScorer(0.5))
+    stratum = {"channel": "parabolic", "kind": "cardioid_cusp", "epsilon": 0.01, "side": "outside"}
+    assert run.seed_from_file(seed_file(tmp_path, [{**JULIA_SEED, "provenance": stratum}])) == 1
+    roots = [row for row in ledger_module.read(run.ledger.path) if row["kind"] == "root"]
+    assert len(roots) == 1
+    assert roots[0]["provenance"] | stratum == roots[0]["provenance"]
+    assert roots[0]["source"] == "seed_file"
+
+
+def test_a_seed_row_cannot_rename_its_own_row_or_claim_a_different_source(tmp_path) -> None:
+    """The two members the reader writes win over anything the file says."""
+    run = walk(tmp_path, scorer=FixedScorer(0.5))
+    rows = [{**JULIA_SEED, "id": "aimed7", "provenance": {"seed_id": "mine", "file": "elsewhere"}}]
+    assert run.seed_from_file(seed_file(tmp_path, rows)) == 1
+    root = next(row for row in ledger_module.read(run.ledger.path) if row["kind"] == "root")
+    assert root["provenance"]["seed_id"] == "aimed7"
+    assert root["provenance"]["file"] == "seeds.jsonl"
+
+
+def test_a_seed_row_with_no_provenance_block_is_unchanged(tmp_path) -> None:
+    """The shape every existing seed file is written in, and it must not move."""
+    run = walk(tmp_path, scorer=FixedScorer(0.5))
+    assert run.seed_from_file(seed_file(tmp_path, [PLANE_SEED])) == 1
+    root = next(row for row in ledger_module.read(run.ledger.path) if row["kind"] == "root")
+    assert set(root["provenance"]) == {"seed_id", "file"}

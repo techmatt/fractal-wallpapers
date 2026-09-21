@@ -3342,6 +3342,51 @@ is production's unchanged.
 55 / 42 / 36 / 31 / 27% of places producing a q4 row. A 2.3x spread end to end
 *inside* a population every member of which the location head already called q4.
 
+## Aiming a Julia `c` at a parabolic point — the pilot recipe, 2026-09-21
+
+`parabolic_c_pilot_ckpt139`. The instrument is `discovery/parabolic.py` and
+`discovery/README.md`'s *Parabolic parameters* has it; this is what a leg made of
+it costs and what it bought.
+
+```
+# 1. the population, as walk seed rows carrying their stratum in `provenance`
+#    (kind x epsilon rung x inside/outside), seeded and written as the leg's record
+# 2. the walk: --seeds is the whole channel, 12 expansions a root
+fractal-wallpapers walk --family julia --degree 2 --seeds aimed.jsonl \
+    --out-dir <leg>/walk_aimed --batch 16 --batches 152 --seed 20260921
+# 3. into the ordinary doors, in this order and no other
+fractal-wallpapers curate score --ledger <leg>/walk_aimed/walk.jsonl
+fractal-wallpapers curate embed
+# 4. open, then deepen, never side by side
+fractal-wallpapers curate hunt run --name par139_aimed --budget 2400 \
+    --unconditional 4000 --per-location 1 --mode smooth tia stripe \
+    --places <leg>/aimed_places.jsonl --seed 20260921
+fractal-wallpapers curate hunt merge --name par139_aimed
+fractal-wallpapers curate depth run --name par139d_aimed --budget 2400 --workers 3 \
+    --shares '{"near_band":0,"ranked_bands":0,"flat":0,"mode_floor":1}' \
+    --floor-places <leg>/aimed_places.jsonl --floor-modes smooth tia stripe \
+    --floor-width 8 --phase-draw --seed 20260921
+```
+
+**The whole budget goes on the mode-floor draw and that is not a preference.**
+`--floor-places` narrows that draw alone; the near, ranked and flat draws pick
+their own places off a rank and would spend an arm's clock on locations that
+belong to no arm, which makes the arm unpriceable rather than merely diluted.
+
+**A hunt merge has to come before the deepening**, because `--floor-places` cuts
+out of the **opened** pool and a place is opened when the ledger stands on it. A
+hunt merge prunes nothing — its rows land on never-opened pairs — so the sheets
+`LEGS.md`'s *A counterfactual by merge stamp* asks to be cut before a merge are
+cut before the **depth** merges, which can prune.
+
+**Attribution is by the arm's own row keys and never by a merge stamp.** Every
+candidate an arm landed is in that arm's `rows.jsonl`; a ledger row keeps no arm.
+The place key comes back to the walk ledger's `root_id`, which carries the seed
+row's `provenance` — so a seat joins all the way back to which parabolic point,
+which internal angle, which `ε` rung and which side of the boundary made it.
+That join is what `walk.seed_from_file` carrying a seed row's own provenance
+buys, and it is the only change the pipeline needed.
+
 ## `curate shrinkage` — what the winner of a wide set loses on a second look
 
 A location is PRIMED on the **maximum of k noisy readings**, so a prime rate

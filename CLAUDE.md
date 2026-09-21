@@ -246,7 +246,16 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `site_rebase_ckpt132` added no test on 2026-09-19 and
+**The newest reading is fast only**: `parabolic_c_pilot_ckpt139` added 21 fast tests on
+2026-09-21 and read **4,881 fast in 148.43 s (2:28)**, 157 deselected, green, so the tree
+is *believed* at 5,038 collected; taken three minutes after a depth leg, a `score-pool` and
+a four-pass solve driver, so the stores were warm.
+⚠ **It also found the figure below stale by seven**: a `--collect-only` at `HEAD` with this
+prompt's changes stashed read **4,860**, not 4,853, so the five commits after
+`site_rebase_ckpt132` added seven tests between them without re-measuring. That is the
+drift *take the fast lane whether or not the prompt wrote a test* exists to catch, and a
+stash-and-collect is the cheap way to split a delta into mine and the tree's.
+Before it, `site_rebase_ckpt132` added no test on 2026-09-19 and
 read **4,853 fast in 144.50 s (2:24)**, 157 deselected, green, count unmoved; taken on a
 quiet box. Before it, `pins_ckpt132` added 25 fast tests on 2026-09-19 and
 read **4,853 fast in 150.29 s (2:30)**, 157 deselected, green, so the tree is *believed* at
