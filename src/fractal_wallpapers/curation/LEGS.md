@@ -1814,6 +1814,15 @@ fractal-wallpapers curate solve run --collection <name> --name <tag>_<name> --no
                                                     # once for each of targets.collections()
 ```
 
+**A twenty-solve set is 24 minutes, and a night's two ends are 35 minutes and 45**, timed on
+2026-09-21: the PRE set ran 2:41–3:06pm and the POST 5:39–6:04pm, 24.4 and 24.6 minutes, one
+process after another on a warm store. So the front of a mining leg is **~25 min** and not
+the quarter hour a prompt tends to reserve, and its tail is a merge (4) plus a warm
+`gallery-grade score-pool` (**11**, over 62,361 pictures) plus the POST set (24) — **~40
+minutes before the report is written**. Reserve the hour. `mine_finish_then_open_ckpt139` had
+a 3h21m window and 35 of those minutes went on the two solve sets alone, which is what left
+it room for three of its five named routes.
+
 ### `--draw-cells` is the same filter cut by RULE instead of by hand
 
 `--draw-cells CELL …` narrows the same pool `--draw-maps` narrows, and the two
