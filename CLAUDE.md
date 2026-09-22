@@ -265,7 +265,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `minibrot_examples_ckpt140` added 6 fast tests on
+**The newest reading is fast only**: `readme_example_julia4_ckpt141` added no test on
+2026-09-22 and read **4,919 fast in 176.89 s (2:57)**, 157 deselected, count unmoved. Its
+one red was a guard it trips by design: a JPEG added to `ALLOWLIST` fails *not tracked*
+until it is staged. It went green once staged, and the +28 s is unchased and read as box.
+Before it, `minibrot_examples_ckpt140` added 6 fast tests on
 2026-09-22 and read **4,919 fast**, 157 deselected, green, so the tree is *believed* at
 5,076 collected — the count moving by exactly what the prompt added, three times running.
 ⚠ **Its clock, 418.17 s, is not a reading**: another prompt was compiling the crate through
