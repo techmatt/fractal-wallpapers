@@ -2196,7 +2196,7 @@ fractal-wallpapers curate solve record --n 150            # a smaller one
 fractal-wallpapers curate solve browse <stamp>            # write the page again
 fractal-wallpapers curate solve browse <stamp> --spacing  # what the presentation order bought
 fractal-wallpapers curate solve resolve 49616c4b,a71f     # an ID or alias back to a recipe
-fractal-wallpapers curate solve recipes --write           # the tracked {key, recipe} file
+fractal-wallpapers curate solve recipes --write --stamp <stamp>   # its {key, recipe} file
 fractal-wallpapers curate solve fulls --pin               # give the record its own fulls
 fractal-wallpapers curate solve list                      # every record on this machine
 ```
@@ -2242,6 +2242,34 @@ the record: no `recipes.jsonl` is tracked now, because no record is published.
 decides again, per stamp, whether its recipes are carried.
 `tentative.write_recipes` resolves for any stamp; what is per-stamp is only
 whether git carries it.
+
+### All twenty kept records carry one, on disk and untracked
+
+**`final139_recipes` wrote the other nineteen on 2026-09-21**, so redrawability is
+a property the saved set has standing rather than one command away. **9,000 seats,
+9,000 recipes, zero absent from the ledger and zero refused** — every row
+recomputed its own key before it was written, on all twenty. **6.22 MiB in total**,
+the largest file `final139_general`'s and `final139_tia`'s at 0.686 MiB, both under
+`test_history_purity.py`'s 1 MiB ceiling. The redraw claim was re-verified on
+`final139_general`'s first seat: **byte-identical** to the pool's own JPEG, in
+1.35 s.
+
+**Writing one costs one pass of the candidate ledger, and that is 9–10 s**, not the
+forty seconds a ledger read is priced at elsewhere — `by_key` streams 774 MB and
+stops when it has every seat, and twenty consecutive passes over a warm page cache
+took **3m04s end to end** with no pass slower than 10 s. A record's seat count does
+not move it: the n=150 collections cost the same as the n=1000 general pass.
+
+⚠ **Tracking a recipe file is publishing its stamp, and there is no third way.**
+The hole in `.gitignore` is per *stamp* — git never descends into an unpublished
+stamp's directory, so a file-level negation cannot reach one — and
+`test_tentative.py` holds the negation lines to equal `tentative.PUBLISHED` and
+separately asserts that every tracked recipe stamp is in it. So *commit the recipe
+files* and *publish the twenty* are the same act, which would give
+`tentative.latest()` an answer again and silently land every unstamped `browse`,
+`resolve` and `backfill` on `final139_smooth_stripe`. **Matt's call of 2026-09-21
+was to leave them untracked**: they are kept, not published, and the size rule was
+never what stopped them.
 
 ### A record's fulls are pinned, because a gather is a borrow
 
