@@ -86,6 +86,91 @@ def test_a_plane_is_named_the_way_a_link_names_it():
 
 
 # --------------------------------------------------------------------------- #
+# Writing one.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize(
+    "view",
+    [
+        {
+            "family": "mandelbrot",
+            "constants": {},
+            "mode": "smooth",
+            "x": "-0.75",
+            "y": "0.1",
+            "w": "0.001",
+            "palette": None,
+            "phase": 0.0,
+        },
+        {
+            "family": "multibrot4",
+            "constants": {},
+            "mode": "threads",
+            "x": "0.4463839370384832",
+            "y": "0.6581804592603596",
+            "w": "0.00000016659688118789476",
+            "palette": "Sapphire Against Rose",
+            "phase": 0.326013,
+        },
+        {
+            "family": "julia",
+            "constants": {"cx": "-0.7488551646997019", "cy": "-0.13572339871672048"},
+            "mode": "stripe",
+            "x": "0.435675577907737",
+            "y": "0.06312318776094998",
+            "w": "0.009812625699590332",
+            "palette": "glowdon",
+            "phase": 0.0,
+        },
+    ],
+)
+def test_a_query_written_here_reads_back_as_the_view_it_was_written_from(view):
+    """[`pins.query_of`] is [`pins.parse`]'s inverse, and that is the whole claim.
+
+    A writer emitting thousands of links — `minibrots examples` is the one that
+    needed this — has no other way to know its links open the places it meant. The
+    coordinates go in as the decimal strings a ledger wrote and come back as the
+    floats they spell, so the check is on the value and not on the spelling.
+    """
+    back = pins.parse(pins.EXPLORER_BASE + pins.query_of(view))
+    assert back["family"] == view["family"]
+    assert back["mode"] == view["mode"]
+    assert back["palette"] == view["palette"]
+    assert back["phase"] == pytest.approx(view["phase"])
+    for key in ("x", "y", "w"):
+        assert back[key] == float(view[key])
+    for key, value in view["constants"].items():
+        assert back["constants"][key] == float(value)
+
+
+def test_a_written_query_leaves_out_the_two_keys_the_explorer_defaults():
+    """A link to a `mandelbrot` `smooth` view carries no `f` and no `m`.
+
+    Not cosmetic: every link in `pins.txt` is shaped this way, and a writer that
+    spelled the defaults would make a file of links that do not compare equal to
+    the ones a person pastes out of the explorer.
+    """
+    plain = {
+        "family": pins.DEFAULT_FAMILY,
+        "constants": {},
+        "mode": pins.DEFAULT_MODE,
+        "x": "-0.5",
+        "y": "0.0",
+        "w": "3.0",
+        "palette": None,
+        "phase": 0.0,
+    }
+    assert pins.query_of(plain) == "x=-0.5&y=0.0&w=3.0"
+    assert pins.query_of({**plain, "mode": "threads"}).startswith("m=threads&")
+    assert pins.query_of({**plain, "family": "multibrot3"}).startswith("f=multibrot3&")
+    # A phase of zero is the explorer's own default too, and a palette without one
+    # is how most of the list reads.
+    assert pins.query_of({**plain, "palette": "BuGn"}) == "x=-0.5&y=0.0&w=3.0&p=BuGn"
+    assert "phase=" not in pins.query_of({**plain, "palette": "BuGn", "phase": 0.0})
+    # A space in a map name is percent-encoded, which is what `parse` decodes.
+    assert "p=Cobalt%20Furnace" in pins.query_of({**plain, "palette": "Cobalt Furnace"})
+
+
+# --------------------------------------------------------------------------- #
 # Matching a place.
 # --------------------------------------------------------------------------- #
 def test_a_place_matches_inside_a_thousandth_of_the_links_width_and_not_outside_it():

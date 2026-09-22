@@ -37,6 +37,8 @@ answer the other would pass every claim above and fail this one.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from fractal_wallpapers.discovery import minibrot
@@ -306,6 +308,35 @@ def test_the_solved_chain_is_reported_whatever_the_cut_says():
     reswept = [row for row in table if row[1] <= minibrot.ENCLOSE_K]
     assert [row[0] for row in reswept] == [2, NAMED_ENCLOSING, 2 * NAMED_ENCLOSING]
     assert table[1][2] == pytest.approx(NAMED_RATIO, rel=1e-5)
+
+
+def test_a_cut_moved_off_the_chain_table_agrees_with_probing_again():
+    """[`minibrot.enclosing_at`] is what makes the example set cheap, so it is pinned.
+
+    `minibrots examples` re-reads a census row rather than solving again, which is
+    the only reason a different `--k` costs nothing. It has to give the answer a
+    fresh [`minibrot.enclosing`] gives at the same cut, or the example set and the
+    census would drift apart with nothing looking broken.
+    """
+    held = minibrot.scan(NAMED[0], NAMED[1], 2)
+    _record, cost = minibrot.enclosing(*NAMED, 2)
+    row = {"partition": "mandelbrot", "width": float(NAMED[2]), "chain_table": cost["chain_table"]}
+    for k in (0.5, 0.82, 1.35, 2.0):
+        fresh, _cost = minibrot.enclosing(*NAMED, 2, k=k, held=held)
+        reread = minibrot.enclosing_at(row, k)
+        if fresh is None:
+            assert reread is None
+            continue
+        head, groups, solved = reread
+        assert head["period"] == fresh["period"]
+        assert [[one["period"] for one in group] for group in groups] == fresh["generations"]
+        assert [one["period"] for one in solved] == [row[0] for row in cost["chain_table"]]
+
+
+def test_the_example_set_is_read_back_or_answers_empty():
+    """A writeup asking what the census found gets `({}, [])` where nobody has run it."""
+    assert minibrot.examples_path().name == minibrot.EXAMPLES_NAME
+    assert minibrot.read_examples(Path("no") / "such" / "file.jsonl") == ({}, [])
 
 
 def test_the_ratio_decade_bins_by_the_decade_and_refuses_a_non_reading():

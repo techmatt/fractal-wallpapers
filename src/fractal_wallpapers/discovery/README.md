@@ -1555,7 +1555,20 @@ fractal-wallpapers minibrots probe --link "<an explorer link>"
 fractal-wallpapers minibrots census --population records --out records.jsonl
 fractal-wallpapers minibrots census --population pool --budget 7200 \
     --reading enclosing --skip records.jsonl --skip verdicts.jsonl --out pool.jsonl
+fractal-wallpapers minibrots examples --census records.jsonl --census verdicts.jsonl \
+    --census pool.jsonl --k 2.0 --descents '<leg>_*'
 ```
+
+**The example set a writeup picks figures from is
+`artifacts/discovery/minibrot_examples.jsonl`, written at `--k 2.0`** — the
+geometric extent of a copy, so nothing a tighter reading might want is dropped, and
+every row carries each chain entry's own distance so tightening is a filter and
+never a re-run. A summary row heads the file with the counts at every cut from
+`ENCLOSE_K` to 2.0, and four `example: descent_chain` rows follow it, one per tuned
+satellite, each a whole nesting as the rungs somebody rendered. **It is not
+tracked**: 2,709 places at ~500 bytes is 1.3 MiB against `test_history_purity`'s 1
+MiB limit, and it is one command away from a census output — Matt's ruling of
+2026-09-22 that an example set is an artifact and not a record.
 
 ### The criterion is about the FRAME, and the other candidate is about the route
 

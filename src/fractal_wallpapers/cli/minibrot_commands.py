@@ -1,7 +1,8 @@
-"""`minibrots probe` and `minibrots census`: what a frame holds, and how many do.
+"""`minibrots probe`, `census` and `examples`: what a frame holds, how many do, and
+which ones a writeup should look at.
 
 The command surface over [`fractal_wallpapers.discovery.minibrot`]. `probe` is one
-frame — a link, or coordinates — and prints the atom it sits on. `census` is a
+frame — a link, or coordinates — and prints both readings of it. `census` is a
 population, cheapest first: the seats of the kept records, the frames a human has
 judged, then the whole parameter-plane pool.
 
@@ -10,6 +11,14 @@ The three populations are named rather than taken as a file because each is a
 keep: the records come off [`curation.tentative.kept`], the verdicts off the
 location label store, and the pool off the candidate ledger. A caller who wants
 some other population hands one in with `--locations`.
+
+`examples` turns a census output into the **example set** a writeup picks figures
+from: one row per enclosed place, each carrying its explorer link, its enclosing
+copy, the whole solved chain and what the walk, the head and the records say about
+it. It re-reads the census's own `chain_table` rather than probing again, so a
+different cut costs nothing and the answers cannot drift from the census's. The
+output is **not tracked** — see [`minibrot.EXAMPLES_NAME`] for why — and it lands
+under the hot tier, which is what survives `scratch/` being wiped.
 """
 
 from __future__ import annotations
@@ -160,9 +169,11 @@ def _summary(found: list[dict], reading: str) -> dict:
 
 
 def minibrots(args: argparse.Namespace) -> int:
-    """`minibrots probe` and `minibrots census`, dispatching on the verb."""
+    """`minibrots probe`, `census` and `examples`, dispatching on the verb."""
     if args.what == "probe":
         return _probe(args)
+    if args.what == "examples":
+        return _examples(args)
     return _census(args)
 
 
@@ -274,8 +285,386 @@ def _census(args: argparse.Namespace) -> int:
     return 0
 
 
+# --------------------------------------------------------------------------- #
+# `examples`: the census output as the set a writeup picks figures from.
+# --------------------------------------------------------------------------- #
+#: Cuts the summary row reports counts at, whatever the population is kept at.
+#:
+#: The shipped bound, the one every tuned *frame* clears rather than every tuned
+#: frame the pool kept, and the geometric extent of a copy. A writeup quoting "one
+#: place in N is inside a copy" has to say which of these it means, and the three
+#: differ by an order of magnitude.
+REPORTED_CUTS = (1.0, 1.35, 1.5, 2.0)
+
+
+def _census_output(paths):
+    """Every row of every census output named, oldest file first, by place."""
+    held: dict[str, dict] = {}
+    for path in paths:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                held[str(row["location"])] = row
+    return held
+
+
+def _pool_rows(places: set[str]) -> dict:
+    """The pool row each place is *shown* by: its best fine reading, or its first.
+
+    One streamed pass, because the ledger is hundreds of megabytes and this is the
+    only thing in this command that touches it. The chosen row is what the example's
+    link, mode, palette and picture come from, so the link opens the picture the
+    `p_fine` beside it is a reading of.
+    """
+    from fractal_wallpapers.curation import candidate_ledger
+    from fractal_wallpapers.models import gallery_grade_train
+
+    fine = gallery_grade_train.read_pool_scores()
+    held: dict[str, dict] = {}
+    for row in candidate_ledger.stream():
+        place = str((row.get("location") or {}).get("key") or "")
+        if place not in places:
+            continue
+        recipe = row.get("recipe") or {}
+        read = fine.get(str(row.get("key")))
+        value = float(read["p_ge4"]) if read and read.get("p_ge4") is not None else None
+        seen = held.get(place)
+        if seen is not None and not (value is not None and (seen["p_fine"] or -1.0) < value):
+            continue
+        held[place] = {
+            "candidate": str(row.get("key")),
+            "mode": recipe.get("mode"),
+            "colormap": recipe.get("colormap"),
+            "phase": float((recipe.get("palette") or {}).get("phase") or 0.0),
+            "picture": bool(row.get("picture")),
+            "p_fine": value,
+            "family": recipe.get("family") or {},
+        }
+    return held
+
+
+def _walk_rows(places) -> dict:
+    """What the walk ledgers say about each place: tuned or not, root kind, depth."""
+    from fractal_wallpapers.discovery import minibrot
+
+    index = minibrot.walk_index()
+    held: dict[str, dict] = {}
+    for place in places:
+        parsed = json.loads(place)
+        got = minibrot.descent(index, parsed[3], parsed[4], parsed[5])
+        if got is None:
+            continue
+        tuned = bool((got.root_provenance or {}).get("tuned_seed_key"))
+        held[place] = {
+            "provenance": "tuned" if tuned else "untuned",
+            "root_kind": "tuned_descent" if tuned else got.root_source,
+            "depth": got.depth,
+            "decades": None if got.decades is None else round(got.decades, 2),
+        }
+    return held
+
+
+def _seat_names(places) -> dict:
+    """`{place: [record, …]}` over the kept records, for the places asked about."""
+    from fractal_wallpapers.curation import tentative
+
+    held: dict[str, set] = {}
+    for stamp in tentative.kept():
+        name = tentative.read_manifest(stamp)["solve"]["name"]
+        for row in tentative.read_rows(stamp):
+            place = str(row.get("location") or "")
+            if place in places:
+                held.setdefault(place, set()).add(name)
+    return {place: sorted(names) for place, names in held.items()}
+
+
+def _view_of(place: str, shown: dict) -> dict:
+    """The place as [`pins.query_of`] wants it: plane, constants, mode, coordinates."""
+    from fractal_wallpapers.curation import pins
+
+    parsed = json.loads(place)
+    family = shown.get("family") or {}
+    kind = family.get("kind") or str(parsed[0]).split(":")[0]
+    return {
+        "family": pins.family_of(kind, family.get("degree", parsed[1])),
+        "constants": {},
+        "mode": shown.get("mode"),
+        "x": parsed[3],
+        "y": parsed[4],
+        "w": parsed[5],
+        "palette": shown.get("colormap"),
+        "phase": shown.get("phase") or 0.0,
+    }
+
+
+def _significant(value, digits: int = 6):
+    """`value` at `digits` significant figures. A size is a scale, not an identity."""
+    import math
+
+    if not value or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return value
+    return float(f"{value:.{digits}g}")
+
+
+def _example_row(place, census, head, groups, solved, shown, walk, records) -> dict:
+    """One example: where it is, what encloses it, and what everything else says.
+
+    The place key carries the plane, the centre and the width, and the query carries
+    them again because a link has to; nothing else repeats them. `chain` is every
+    copy the census solved that is bigger than the frame, each as
+    `[period, atom size, distance in its own atom sizes]`, so a **tighter** cut is a
+    filter over this list and not another census.
+    """
+    from fractal_wallpapers.curation import pins
+
+    entry = {
+        "schema": 1,
+        "place": place,
+        "mode": shown.get("mode"),
+        "query": pins.query_of(_view_of(place, shown)),
+        "q": head["period"],
+        "ratio": _significant(head["window_scale"] / float(census["width"])),
+        "distance_atoms": round(head["distance_atoms"], 5),
+        "chain": [
+            [one["period"], _significant(one["window_scale"]), round(one["distance_atoms"], 5)]
+            for one in solved
+        ],
+        "generations": [[member["period"] for member in group] for group in groups],
+        "provenance": (walk or {}).get("provenance", "no_walk_row"),
+    }
+    if shown.get("p_fine") is not None:
+        entry["p_fine"] = round(shown["p_fine"], 4)
+    if shown.get("candidate"):
+        entry["candidate"] = shown["candidate"]
+    if shown.get("picture"):
+        entry["picture"] = True
+    for key in ("root_kind", "depth", "decades"):
+        if (walk or {}).get(key) is not None:
+            entry[key] = walk[key]
+    if records:
+        entry["records"] = records
+    return entry
+
+
+def _descent_chains(globs, k: float) -> list[dict]:
+    """One `descent_chain` example per tuned walk directory group named.
+
+    A tuned descent is a walk aimed *into* a satellite, so its ledger is the one
+    place this repository holds a whole nesting as a sequence of frames somebody
+    rendered: the rungs come out as `<run>/views/node<parent>_c<child>.jpg`, which is
+    the gate render at each step. The satellite's period and atom size come off the
+    root row's own provenance rather than a table here, so a leg that aimed at a
+    different satellite reads correctly with no edit.
+
+    The deepest admitted node of each group wins, and its chain is walked back up
+    `parent_node_id`. Nothing is probed from a table here — the deepest node is
+    usually not a pool row at all — so this is the one place the command solves.
+    """
+    from fractal_wallpapers.curation import pins
+    from fractal_wallpapers.discovery import minibrot
+    from fractal_wallpapers.paths import hot_root
+
+    best: dict[str, tuple] = {}
+    for pattern in globs:
+        for directory in sorted(hot_root().glob(pattern)):
+            ledger = directory / "walk.jsonl"
+            if not ledger.is_file():
+                continue
+            root, rows = None, []
+            for line in ledger.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                if row.get("kind") == "root":
+                    root = row
+                elif row.get("kind") == "candidate" and row.get("node_id") is not None:
+                    rows.append(row)
+            if root is None or not rows:
+                continue
+            provenance = root.get("provenance") or {}
+            group = str(provenance.get("tuned_satellite") or directory.name)
+            deepest = min(rows, key=lambda row: float(row["viewport"]["width"]))
+            width = float(deepest["viewport"]["width"])
+            if group not in best or width < best[group][0]:
+                best[group] = (width, directory.name, root, rows, deepest)
+
+    out = []
+    for group in sorted(best):
+        _width, run, root, rows, deepest = best[group]
+        provenance = root.get("provenance") or {}
+        admitted = {row["node_id"]: row for row in rows}
+        rungs, node = [], deepest
+        while node is not None:
+            rungs.append(node)
+            node = admitted.get(node.get("parent_node_id"))
+        rungs.reverse()
+        view = deepest["viewport"]
+        record, _cost = minibrot.enclosing(
+            view["center_re"], view["center_im"], view["width"], 2, k=k
+        )
+        out.append(
+            {
+                "schema": 1,
+                "example": "descent_chain",
+                "satellite": group,
+                "satellite_period": provenance.get("tuned_satellite_period"),
+                "satellite_nucleus": provenance.get("tuned_satellite_key"),
+                "satellite_atom_size": provenance.get("tuned_abs_lambda"),
+                "run": run,
+                "seed": provenance.get("tuned_seed_key"),
+                "seeded_where": provenance.get("tuned_seed_where"),
+                "query": pins.query_of(
+                    {
+                        "family": pins.family_of(
+                            (root.get("family") or {}).get("kind", "mandelbrot"),
+                            (root.get("family") or {}).get("degree", 2),
+                        ),
+                        "constants": {},
+                        "mode": None,
+                        "x": view["center_re"],
+                        "y": view["center_im"],
+                        "w": view["width"],
+                        "palette": None,
+                        "phase": 0.0,
+                    }
+                ),
+                "rungs": [{"depth": "root", "width": (root.get("viewport") or {}).get("width")}]
+                + [
+                    {
+                        "depth": rung.get("depth"),
+                        "width": rung["viewport"]["width"],
+                        "branch": rung.get("branch"),
+                        "placement": rung.get("placement"),
+                        "interior_fraction": _significant(rung.get("interior_fraction"), 4),
+                        "occupancy": _significant(rung.get("occupancy"), 4),
+                        "view": f"{run}/views/node{rung['parent_node_id']}"
+                        f"_c{rung['child_index']}.jpg",
+                    }
+                    for rung in rungs
+                ],
+                "q": None if record is None else record["period"],
+                "ratio": None if record is None else _significant(record["size_over_width"]),
+                "chain_periods": None if record is None else record["chain_periods"],
+                "generations": None if record is None else record["generations"],
+            }
+        )
+    return out
+
+
+def _examples_summary(census, cuts, kept_at, rows, chains, walk, shown, seats) -> dict:
+    """The header row: what a writeup quotes, and the population it is quoting from."""
+    import math
+    import statistics
+    from collections import defaultdict
+
+    from fractal_wallpapers.curation import pins
+    from fractal_wallpapers.discovery import minibrot
+
+    by_k = {}
+    for k in cuts:
+        enclosed = [place for place, row in census.items() if minibrot.enclosing_at(row, k)]
+        tuned = sum(1 for place in enclosed if walk.get(place, {}).get("provenance") == "tuned")
+        by_k[f"{k:g}"] = {
+            "enclosed": len(enclosed),
+            "tuned": tuned,
+            "untuned": len(enclosed) - tuned,
+            "one_in": round(len(census) / len(enclosed)) if enclosed else None,
+        }
+    untuned = [row for row in rows if row["provenance"] != "tuned"]
+    depths = [row["depth"] for row in untuned if row.get("depth") is not None]
+    decades = [row["decades"] for row in untuned if row.get("decades") is not None]
+    widths, enclosed_widths = defaultdict(int), defaultdict(int)
+    kept_places = {row["place"] for row in rows}
+    for place, row in census.items():
+        width = float(row["width"])
+        name = f"1e{int(math.floor(math.log10(width)))}" if width > 0 else "n/a"
+        widths[name] += 1
+        if place in kept_places:
+            enclosed_widths[name] += 1
+    order = sorted(widths, key=lambda name: int(name[2:]) if name.startswith("1e") else 1 << 30)
+    return {
+        "schema": 1,
+        "summary": "minibrots examples",
+        # The base once for the file, a query a row — see [`pins.EXPLORER_BASE`].
+        "explorer": pins.EXPLORER_BASE,
+        "probed": len(census),
+        "kept_at_k": kept_at,
+        "shipped_k": minibrot.ENCLOSE_K,
+        "bulb_slack": minibrot.BULB_SLACK,
+        "rows": len(rows),
+        "descent_chains": len(chains),
+        "by_k": by_k,
+        "untuned_with_pool_row": sum(1 for row in untuned if row.get("candidate")),
+        "untuned_with_walk_row": len(depths),
+        "untuned_no_walk_row": sum(1 for row in untuned if row["provenance"] == "no_walk_row"),
+        "seated_anywhere": sum(1 for row in rows if row.get("records")),
+        "untuned_median_depth": statistics.median(depths) if depths else None,
+        "untuned_median_decades": round(statistics.median(decades), 2) if decades else None,
+        "by_ratio_decade": dict(
+            sorted(
+                Counter(minibrot.ratio_decade(row["ratio"]) for row in rows).items(),
+                key=lambda item: int(item[0][2:]) if item[0].startswith("1e") else 1 << 30,
+            )
+        ),
+        "by_width_decade": {name: [enclosed_widths[name], widths[name]] for name in order},
+    }
+
+
+def _examples(args: argparse.Namespace) -> int:
+    from fractal_wallpapers.cli.common import resolve_output
+    from fractal_wallpapers.discovery import minibrot
+
+    census = _census_output(args.census)
+    print(f"[examples] {len(census):,} census row(s) read")
+    verdicts = {}
+    for place, row in census.items():
+        got = minibrot.enclosing_at(row, args.k)
+        if got is not None:
+            verdicts[place] = got
+    print(f"[examples] {len(verdicts):,} enclosed at K={args.k:g}")
+
+    places = set(verdicts)
+    shown = _pool_rows(places)
+    print(f"[examples] {len(shown):,} have a pool row")
+    walk = _walk_rows(places)
+    print(f"[examples] {len(walk):,} join to a walk row")
+    seats = _seat_names(places)
+
+    rows = [
+        _example_row(
+            place,
+            census[place],
+            *verdicts[place],
+            shown.get(place, {}),
+            walk.get(place),
+            seats.get(place),
+        )
+        for place in places
+    ]
+    # Tuned first and then by the fine head, descending, which puts the places a
+    # descent aimed at above the ones a walk stumbled into and the best picture at
+    # the top of each. Ties by place, so the file is a function of the census.
+    rows.sort(
+        key=lambda row: (row["provenance"] != "tuned", -(row.get("p_fine") or -1.0), row["place"])
+    )
+    chains = _descent_chains(args.descents or (), args.k)
+    print(f"[examples] {len(chains)} descent chain(s)")
+
+    cuts = sorted({minibrot.ENCLOSE_K, args.k, *REPORTED_CUTS})
+    summary = _examples_summary(census, cuts, args.k, rows, chains, walk, shown, seats)
+    out = resolve_output(args.out) if args.out else minibrot.examples_path()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in [summary, *chains, *rows]:
+            handle.write(json.dumps(row, separators=(",", ":")) + "\n")
+    size = out.stat().st_size
+    print(f"[examples] wrote {out} — {len(rows):,} places + {len(chains)} chain(s), {size:,} bytes")
+    print(json.dumps(summary["by_k"], indent=2))
+    return 0
+
+
 def add_commands(subcommands) -> None:
-    """Register `minibrots` and its two verbs."""
+    """Register `minibrots` and its three verbs."""
     from fractal_wallpapers.curation import release
     from fractal_wallpapers.discovery import minibrot
 
@@ -382,5 +771,46 @@ def add_commands(subcommands) -> None:
         help="the seed the probe order is shuffled under (default: 0). The order is shuffled "
         "rather than sorted so that a pass --budget cuts short is a uniform sample of its "
         "population; sorted by key it would be a prefix in the centre's real part",
+    )
+
+    examples = verbs.add_parser(
+        "examples",
+        help="a census output as the set a writeup picks figures from",
+        description=(
+            "One row per enclosed place, carrying its explorer link, the copy that encloses "
+            "it, the whole solved chain and what the walk, the fine head and the kept records "
+            "say about it, under a summary row with the counts at several cuts. It re-reads "
+            "the census's own `chain_table` and probes nothing, so the answers cannot drift "
+            "from the census's and a different --k costs nothing. The output is NOT tracked: "
+            "it is regenerable from a census output by this command."
+        ),
+    )
+    examples.add_argument(
+        "--census",
+        action="append",
+        required=True,
+        help="a `census --out` file to read; repeatable, and the union of them is the "
+        "population. A place named twice keeps the later file's row",
+    )
+    examples.add_argument(
+        "--k",
+        type=float,
+        default=2.0,
+        help="the cut the population is kept at (default: 2.0, the geometric extent of a "
+        f"copy — widest, so nothing a writeup might want is dropped, against the "
+        f"{minibrot.ENCLOSE_K:g} the census ships). Every row carries each chain entry's "
+        f"own distance, so a TIGHTER cut is a filter over the output and never a re-run",
+    )
+    examples.add_argument(
+        "--descents",
+        action="append",
+        help="a glob under the hot root whose walk ledgers are tuned descents, e.g. "
+        "`<leg>_<seed>x<satellite>`; repeatable. Each satellite the glob reaches "
+        "contributes one `descent_chain` example — its deepest walk, rung by rung, with "
+        "the gate render at each step. Unset writes no chains",
+    )
+    examples.add_argument(
+        "--out",
+        help="where to write; unset writes beside the hot tier's other discovery output",
     )
     group.set_defaults(handler=minibrots)

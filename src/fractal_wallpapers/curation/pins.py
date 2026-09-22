@@ -60,7 +60,7 @@ import json
 import math
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, quote, urlsplit
 
 from fractal_wallpapers.paths import repo_root
 
@@ -114,6 +114,12 @@ CONSTANTS = {
     "julia": ("cx", "cy"),
     "phoenix": ("cx", "cy", "px", "py", "zx", "zy"),
 }
+
+#: What a link is, up to its query: the local explorer, at the schema version the
+#: keys below belong to. A writer that emits many links carries this **once** and
+#: a query per row — [`parse`] reads the query and ignores everything left of it,
+#: so the two halves join by concatenation.
+EXPLORER_BASE = "http://localhost:8000/explorer/?v=3&"
 
 
 class PinsRefused(ValueError):
@@ -200,6 +206,40 @@ def parse(link: str) -> dict:
         "palette": query.get("p"),
         "phase": float(query.get("phase", "0")),
     }
+
+
+def query_of(view: dict) -> str:
+    """[`parse`]'s inverse: the query a link spells this view with.
+
+    Only the keys [`parse`] reads, in the order the explorer writes them, and the
+    two defaults are **left out** rather than spelled — a link to a `mandelbrot`
+    `smooth` view carries no `f` and no `m`, which is what
+    `explorer/permalink.js` does and what every link in `pins.txt` looks like.
+
+    The coordinates go in as **given**. A caller holding the decimal strings a
+    ledger wrote hands those over and the link redraws that row exactly; a caller
+    holding floats gets `repr`, which is the shortest string that round-trips.
+    """
+    family = str(view.get("family") or DEFAULT_FAMILY)
+    parts = [] if family == DEFAULT_FAMILY else [f"f={family}"]
+    held = view.get("constants") or {}
+    plane = "julia" if family.startswith("julia") else family
+    parts += [f"{key}={_spelled(held[key])}" for key in CONSTANTS.get(plane, ()) if key in held]
+    mode = view.get("mode")
+    if mode and str(mode) != DEFAULT_MODE:
+        parts.append(f"m={mode}")
+    parts += [f"{key}={_spelled(view[key])}" for key in ("x", "y", "w")]
+    if view.get("palette"):
+        parts.append(f"p={quote(str(view['palette']))}")
+    phase = float(view.get("phase") or 0.0)
+    if phase:
+        parts.append(f"phase={phase:g}")
+    return "&".join(parts)
+
+
+def _spelled(value) -> str:
+    """A coordinate as a link spells it: the string it arrived as, or `repr`."""
+    return value if isinstance(value, str) else repr(float(value))
 
 
 def _row_view(row: dict) -> dict | None:
