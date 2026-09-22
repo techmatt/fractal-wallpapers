@@ -261,12 +261,20 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `minibrot_enclosed_census_ckpt140` added 17 fast tests
+**The newest reading is fast only**: `minibrot_examples_ckpt140` added 6 fast tests on
+2026-09-22 and read **4,919 fast**, 157 deselected, green, so the tree is *believed* at
+5,076 collected — the count moving by exactly what the prompt added, three times running.
+⚠ **Its clock, 418.17 s, is not a reading**: another prompt was compiling the crate through
+it, which is a 2.5× tax and worth knowing as that and nothing else. The six guards were
+priced on their own files instead — and **priced twice**, which corrected the reading below:
+`tests/test_minibrot.py` reads **3.85 s and 3.87 s** at 30 tests against the **8.71 s** that
+reading took from one run at 28, so *one* run of a file buys the same illusion of precision
+the whole-lane delta does. Before it, `minibrot_enclosed_census_ckpt140` added 17 fast tests
 on 2026-09-22 and read **4,913 fast in 169.55 s (2:49)**, 157 deselected, green, so the
-tree is *believed* at 5,070 collected. **The count moved by exactly what the prompt
-added**, twice in a row now, and of the +14.2 s **7.6 s is the tree**: all seventeen are in
-`tests/test_minibrot.py`, which went from 1.09 s to 8.71 s because four of them solve real
-nuclei. Before it, `minibrot_descent_census_ckpt140` added 11 fast tests
+tree was *believed* at 5,070 collected. **The count moved by exactly what the prompt
+added**, and ⚠ its +14.2 s was read as 7.6 s of tree and was **box almost end to end** —
+taken seven minutes after a 35-minute census leg. Before it,
+`minibrot_descent_census_ckpt140` added 11 fast tests
 on 2026-09-22 and read **4,896 fast in 155.34 s (2:35)**, 157 deselected, green.
 **The count moved by exactly what the prompt
 added** — no unmeasured drift under it for once — and the +7.9 s is the box: it was taken

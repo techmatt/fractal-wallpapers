@@ -238,12 +238,72 @@ OUTSIDE = "nucleus_outside_frame"
 #: What an enclosing read that found no copy around the frame is refused with.
 NOT_ENCLOSED = "no_enclosing_copy"
 
+#: Where `minibrots examples` writes the example set, under the hot tier.
+#:
+#: **Untracked, and that is the decision**: at the widest cut the set is 2,709
+#: places and a row that carries a place key, a link and the solved chain is about
+#: 650 bytes, so the file is 1.7 MiB against [`test_history_purity`]'s 1 MiB — and
+#: widening that list is not a thing a prompt does. It is regenerable from a census
+#: output by one command, the command is tracked, and Matt's ruling of 2026-09-22
+#: is that an example set is an artifact and not a record.
+EXAMPLES_NAME = "minibrot_examples.jsonl"
+
 
 def degree_of(partition: str) -> int | None:
     """The degree a partition's frames iterate at, or `None` if it has no atoms."""
     if partition not in PLANES:
         return None
     return partitions_module.degree_of_plane(partition)
+
+
+def examples_path():
+    """Where the example set lands: `<hot>/discovery/`[`EXAMPLES_NAME`]."""
+    from fractal_wallpapers.paths import hot_root
+
+    return hot_root() / "discovery" / EXAMPLES_NAME
+
+
+def read_examples(path=None) -> tuple[dict, list[dict]]:
+    """`(the summary row, every row after it)`, or `({}, [])` where nothing is written.
+
+    Empty rather than raising, because the caller that matters is a writeup asking
+    what the census found: a missing file means nobody has run `minibrots examples`
+    on this box, which is a thing to say in one line and not a traceback.
+    """
+    where = Path(examples_path() if path is None else path)
+    if not where.is_file():
+        return {}, []
+    rows = [
+        json.loads(line) for line in where.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    if not rows or "summary" not in rows[0]:
+        return {}, rows
+    return rows[0], rows[1:]
+
+
+def enclosing_at(row: dict, k: float, *, bulb_slack: float = BULB_SLACK):
+    """[`enclosing`]'s verdict re-read off a census row's `chain_table`, at cut `k`.
+
+    **No Newton and no orbit pass**: every candidate was solved when the census ran
+    and its distance recorded, so moving the cut is arithmetic over rows that are
+    already on disk. `None` where the frame's only generation is the main body's.
+
+    Returns `(the enclosing copy, the generations, every solved entry)`, each entry
+    a dict with `period`, `window_scale` and `distance_atoms` — [`generations`]'
+    shape, so the two agree by construction rather than by a second spelling of the
+    rule.
+    """
+    degree = degree_of(row["partition"]) or 2
+    width = float(row["width"])
+    solved = [
+        {"period": int(period), "window_scale": ratio * width, "distance_atoms": float(atoms)}
+        for period, atoms, ratio in (row.get("chain_table") or [])
+    ]
+    held = [main_body(degree), *(one for one in solved if one["distance_atoms"] <= k)]
+    groups = generations(held, degree, slack=bulb_slack)
+    if groups[-1][0]["period"] == 1:
+        return None
+    return groups[-1][0], groups, solved
 
 
 @dataclass
@@ -548,6 +608,7 @@ def enclosing(
     chosen["enclosed"] = True
     chosen["chain_periods"] = [record["period"] for record in qualifying]
     chosen["generation"] = [record["period"] for record in groups[-1]]
+    chosen["generations"] = [[record["period"] for record in group] for group in groups]
     chosen["innermost_period"] = qualifying[-1]["period"]
     return chosen, cost
 

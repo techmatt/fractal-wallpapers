@@ -704,7 +704,33 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
-#### minibrot_enclosed_census_ckpt140
+#### minibrot_examples_ckpt140
+
+`minibrot_examples_ckpt140`, 2026-09-22, `.[dev,models]` with a release engine.
+**Fast: 4,919 passed**, 157 deselected, green. **+6** — `tests/test_minibrot.py` 28 → 30
+and `tests/test_pins.py` 19 → 23 — so the tree is believed at **5,076** collected. The
+count moved by exactly what this prompt added, three entries running.
+
+⚠ **The clock is 418.17 s (6:58) and it is not a reading of anything.** Another prompt was
+compiling the crate through it — five `engine/src/*.rs` files modified, none of them this
+prompt's. 2.5× is what a `cargo build` beside the lane costs, which is worth knowing and is
+not a timing of the tree.
+
+**What the six guards cost, priced on their own files and priced TWICE**:
+`tests/test_minibrot.py` **3.85 s and 3.87 s** at 30 tests, `tests/test_pins.py` **2.42 s
+then 0.72 s** at 23 — the first of that pair is a cold import and the second is the file.
+An untouched control, `tests/test_colormaps.py`, read 3.20 s in the same minutes.
+
+⚠ **That corrects the entry below.** It claimed `tests/test_minibrot.py` cost **8.71 s** at
+28 tests and attributed 7.6 s of a +14.2 s lane move to the tree. The same file reads
+**3.85 s at 30 tests**, twice, so the 8.71 s was the box as well and that move was box
+almost end to end. `CLAUDE.md` and the entry below are corrected.
+
+**One reading of a file is not a measurement either**, which is the lesson the entry below
+was one step short of. Pricing a guard on its own file is right and cheap; doing it once
+buys the same illusion of precision the whole-lane delta does. Twice, and a control.
+
+#### minibrot_descent_census_ckpt140 and minibrot_enclosed_census_ckpt140
 
 `minibrot_enclosed_census_ckpt140`, 2026-09-22, `.[dev,models]` with a release engine.
 **Fast: 4,913 passed in 169.55 s (2:49)**, 157 deselected, green. **+17**, all of them in
@@ -714,16 +740,15 @@ that was below them.
 `minibrot_descent_census_ckpt140`'s 4,896 — two consecutive entries now with no unmeasured
 drift under them.
 
-**+14.2 s, and 7.6 s of it is the tree.** `tests/test_minibrot.py` went from **1.09 s to
-8.71 s**, measured on its own file both times: four of the new guards are parametrized over
-the four `tuned129x_*` root frames and each solves a real chain of nuclei at 60 digits,
-which is the cost of pinning what `ENCLOSE_K` does at the shallow end. The remaining ~6.6 s
-reads as box — taken seven minutes after a 35-minute census leg that held three
-below-normal processes.
+⚠ **+14.2 s, which this entry read as 7.6 s of tree and was wrong about**; the entry above
+has the correction. It priced `tests/test_minibrot.py` at 8.71 s on one run of its own
+file, against 1.09 s at 11 tests, and concluded the four parametrized `tuned129x_*` root
+frames were most of the lane's move. Two later runs of that file read 3.85 s and 3.87 s at
+*more* tests, so the 8.71 s was the box — the lane was taken seven minutes after a
+35-minute census leg and so was the file.
 
-**This is the first entry where a guard was priced by re-running its own file before and
-after**, which took two seconds and settled a question the whole-lane delta cannot answer.
-Do that rather than argue about box.
+**It is still the first entry that priced a guard on its own file rather than arguing about
+box**, and that method is the right one. It just needs two runs and a control.
 
 #### minibrot_descent_census_ckpt140
 
