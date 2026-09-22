@@ -277,10 +277,31 @@ needs. **`fractal_wallpapers` is a namespace package**, so a run inside a
 checkouts' modules — drop the live `src` from `sys.path` first, as
 `portable_stores_ckpt127` did with a `sitecustomize.py` on `PYTHONPATH` that filters
 `sys.path` (spawned workers inherit it). **`reference/README.md`** in each export names
-`portable.REFERENCE`'s record, its `n` and the `curate solve run … --no-render`
-that re-seats it, the comparison a fresh box makes before trusting its own seating.
+**two** records, their `n` and the `curate solve run … --no-render` that re-seats each:
+the comparison a fresh box makes before trusting its own seating. **They are two
+different passes and neither replaces the other** — `portable.REFERENCE`
+(`20260916T182649Z`, `--collection green`, n=300) is the only target on the themed
+path, and `portable.GENERAL_CHECK` (`20260922T012627Z`, `final139_general`, `--n 1000`)
+is the general pass over the whole pool.
 **The reference record is off the keep list by design**, so a boundary wipe deletes it
-and `portable.REFERENCE` must be re-pointed at a record that stands before the next export.
+and `portable.REFERENCE` must be re-pointed at a record that stands before the next
+export; the general check is *on* the keep list, so `{kept}` and `{kept_solves}` carry
+it already and it needs no roster entry of its own.
+
+⚠ **`REFERENCE` stopped re-seating, measured 2026-09-21** by `reference_reseat_ckpt140`
+on the exporting box itself: its invocation fills 300 of 300 but shares **230** of the
+record's seats and **3** at the same index. The five days of mining between them grew
+the pool 418,339 → 518,436 candidates and the green cell 2,929 → 3,436 scored rows,
+which lifted the themed bar off its 0.01 floor to a reachable **0.015935**
+(`theme_bar.bar_from`, `floor_below` → `reachable`) and re-ranked the cell under it.
+**43 of the 70 new seats come from legs run after the record**; the other 27 were
+already on the ledger and were not seated then, and **every one of the 70 would have
+cleared the old bar too** — so the bar move re-ranks far more than it admits. Twelve of
+the 70 seats it lost now sit below the new bar; the other 58 are still in the pool and
+merely outranked. Nothing is wrong with the check and it has not been re-cut: that is
+Matt's call. **`GENERAL_CHECK` re-seated 1000 of 1000 in order** the same day, over the
+pool mining closed behind, which is why it is named beside a themed check that no longer
+does.
 
 **Pictures do not travel; the fresh box re-renders**, Matt's ruling of 2026-09-16.
 A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as

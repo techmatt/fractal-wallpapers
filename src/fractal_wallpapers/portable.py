@@ -110,7 +110,36 @@ CHECKOUT = "checkout"
 #: carried from an older one. **It travels through the roster and not the keep
 #: list** — `tentative.KEPT_UNPUBLISHED` pins seats against a prune, and a
 #: comparison target has no business doing that.
+#:
+#: ⚠ **It no longer re-seats, measured 2026-09-21** by `reference_reseat_ckpt140`:
+#: the same invocation over today's pool fills 300 of 300 and shares **230** of the
+#: record's seats, **3** of them at the same index. Nothing is wrong with the check
+#: — the pool it reads grew from 418,339 candidates to 518,436, and the themed bar
+#: moved with it, off the 0.01 floor to a reachable 0.015935 (`bar_from` went
+#: `floor_below` to `reachable`) — which is the same decay `targets_green_n300`
+#: showed at 282 of 300. **Whether it is re-cut is Matt's call and nothing here
+#: repoints it.** Until it is, a fresh box reading a divergence off this record is
+#: reading the five days of mining between them and not its own stores, and
+#: [`GENERAL_CHECK`] is the check that does reproduce.
 REFERENCE = {"stamp": "20260916T182649Z", "collection": "green"}
+
+#: **The n = 1000 check beside [`REFERENCE`]**, and the one that reproduces today.
+#: `final139_general` is the general seating of the closed pool at
+#: [`curation.tentative.RECORDED_SEATS`] — the shipped fine bar, no theme, no
+#: collection — and it re-seated **1000 of 1000 in order** on 2026-09-21, over the
+#: pool it was itself taken on hours earlier and which mining closed behind.
+#:
+#: **It travels on the keep list and not the roster**, which is the opposite of
+#: [`REFERENCE`] and for the opposite reason: it is one of the twenty
+#: `tentative.KEPT_UNPUBLISHED` records already, so `{kept}` carries its rows and
+#: `{kept_solves}` its `solve.json`, and adding it to the roster would carry the
+#: same three files twice.
+#:
+#: ⚠ **The two checks are not interchangeable and neither replaces the other.**
+#: This one is the general pass on the whole pool; [`REFERENCE`] is the themed
+#: one, `--collection green` at a relaxed bar, and it is the only comparison
+#: target on the collection path. A box that ran one has not run the other.
+GENERAL_CHECK = {"stamp": "20260922T012627Z", "name": "final139_general", "n": 1000}
 
 #: Where the export writes what the reference is and how to reproduce it.
 REFERENCE_README = "reference/README.md"
@@ -662,6 +691,18 @@ def reference_invocation() -> str:
     )
 
 
+def general_check_invocation() -> str:
+    """The exact command that re-seats [`GENERAL_CHECK`] on a box holding its stores.
+
+    `--n` and not `--collection`: the general pass is the one `curation.targets`
+    has no row for, and its size is `tentative.RECORDED_SEATS`.
+    """
+    return (
+        "fractal-wallpapers curate solve run --name reference_general "
+        f"--n {GENERAL_CHECK['n']} --no-render --no-sheet"
+    )
+
+
 def _write_reference(to: Path, rows: list, log=print) -> dict:
     """Write `reference/README.md` for [`REFERENCE`]; refuse if its record did not travel.
 
@@ -684,7 +725,14 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
     record = held["solve"]["record"]
     text = "\n".join(
         [
-            "# The reference solve",
+            "# The reference solves",
+            "",
+            "**Two checks and they are two different passes.** The themed one below is the "
+            "only comparison target on the collection path; the n = "
+            f"{GENERAL_CHECK['n']} one after it is the general pass over the whole pool. "
+            "A box that ran one has not run the other.",
+            "",
+            "## The themed check",
             "",
             f"- **Stamp:** `{stamp}` (tentative record, not published)",
             f"- **Collection:** `{REFERENCE['collection']}`, **n = {n}** (`curation/targets.py`)",
@@ -702,9 +750,40 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             f"and compare `seated` in `artifacts/curation/solve/reference_"
             f"{REFERENCE['collection']}/solve.json` with the record's: the same {n} keys in "
             "the same order is a box whose stores, code and judges agree with this one. "
-            "Taken on the exporting box straight after the record, it re-seated all of them "
-            "in order. A different engine fingerprint (read `storage import`'s `engine:` line) "
+            "Run on the exporting box straight after the record was taken, on 2026-09-16, it "
+            "re-seated all of them in order. "
+            "A different engine fingerprint (read `storage import`'s `engine:` line) "
             "empties the score amendment's overlay, and that alone moves seats.",
+            "",
+            "⚠ **It stopped re-seating on the exporting box itself, measured 2026-09-21**: "
+            f"300 of 300 filled, 230 of the record's seats in common, 3 at the same index. "
+            "The pool grew from 418,339 candidates to 518,436 under it and the themed bar "
+            "moved off its 0.01 floor to a reachable 0.015935, which re-ranks the cell. "
+            "**Read a divergence here as the pool having moved and not as this box**, until "
+            "the record is re-cut — and check the n = "
+            f"{GENERAL_CHECK['n']} pass below, which does reproduce.",
+            "",
+            f"## The n = {GENERAL_CHECK['n']} check",
+            "",
+            f"- **Stamp:** `{GENERAL_CHECK['stamp']}` (`{GENERAL_CHECK['name']}`, kept and "
+            "not published)",
+            f"- **No collection**, **n = {GENERAL_CHECK['n']}** "
+            "(`curation/tentative.py`'s `RECORDED_SEATS`), on the shipped fine bar",
+            f"- **Seats:** `artifacts/curation/tentative/{GENERAL_CHECK['stamp']}/"
+            "gallery.jsonl`, and in order as `seated` in "
+            f"`artifacts/curation/solve/{GENERAL_CHECK['name']}/solve.json`",
+            "",
+            "After the same four steps, run:",
+            "",
+            "```",
+            general_check_invocation(),
+            "```",
+            "",
+            "and compare `seated` in `artifacts/curation/solve/reference_general/solve.json` "
+            f"with the record's: the same {GENERAL_CHECK['n']} keys in the same order is a box "
+            "whose stores, code and judges agree with this one. It re-seated all of them in "
+            "order on 2026-09-21, over the pool mining closed behind, which is why it is here "
+            "beside a themed check that no longer does.",
             "",
         ]
     )
@@ -719,6 +798,12 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
         "collection": REFERENCE["collection"],
         "n": n,
         "invocation": reference_invocation(),
+        "general": {
+            "stamp": GENERAL_CHECK["stamp"],
+            "name": GENERAL_CHECK["name"],
+            "n": GENERAL_CHECK["n"],
+            "invocation": general_check_invocation(),
+        },
     }
 
 
@@ -990,6 +1075,7 @@ def engine_agrees(manifest: dict) -> tuple[str, bool | None]:
 
 __all__ = [
     "CHECKOUT",
+    "GENERAL_CHECK",
     "MANIFEST_NAME",
     "PICTURES_NAME",
     "REFERENCE",
