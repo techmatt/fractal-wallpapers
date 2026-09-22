@@ -1529,19 +1529,32 @@ fact about the floor and not about the plane.
 
 ## Is there a minibrot in this frame: the census instrument
 
-`minibrot.py` answers one question about one frame — *does this view hold a small
-copy of the whole set, and how big is it against the frame* — and `minibrots
-census` asks it of a whole population. It was written for
-`minibrot_descent_census_ckpt140`, whose subject was a `threads` wallpaper at
-width `1.29e-9` that a person's eye called a successful minibrot descent, and the
-first thing it found is that this repository could not previously have agreed
-with him.
+`minibrot.py` answers two questions about one frame, and `minibrots census` asks
+them of a whole population. They are two sides of the same copy and they are
+**not** the same reading:
+
+- **(a) the frame HOLDS a minibrot** — a copy seen from outside. A nucleus within
+  one frame width of centre whose atom is 1 to 32 frame widths *smaller* than the
+  frame. `--reading band`, [`minibrot.probe`].
+- **(c) the frame IS decoration of one** — the same copy seen from inside. A copy
+  of period `q > 1` whose atom is at least the frame's *width* and whose nucleus
+  is within `ENCLOSE_K` of that copy's own atom sizes. `--reading enclosing`,
+  [`minibrot.enclosing`].
+- They mostly **disagree**, and the named row satisfies both at once: it holds a
+  period-1026 atom 11.8 frame widths across, and it sits inside a period-27
+  satellite 754 times its own width.
+
+It was written for `minibrot_descent_census_ckpt140`, whose subject was a
+`threads` wallpaper at width `1.29e-9` that a person's eye called a successful
+minibrot descent, and the first thing it found is that this repository could not
+previously have agreed with him. `minibrot_enclosed_census_ckpt140` added (c),
+which is what that eye was actually reporting.
 
 ```
 fractal-wallpapers minibrots probe --link "<an explorer link>"
 fractal-wallpapers minibrots census --population records --out records.jsonl
 fractal-wallpapers minibrots census --population pool --budget 7200 \
-    --skip records.jsonl --skip verdicts.jsonl --out pool.jsonl
+    --reading enclosing --skip records.jsonl --skip verdicts.jsonl --out pool.jsonl
 ```
 
 ### The criterion is about the FRAME, and the other candidate is about the route
@@ -1557,6 +1570,68 @@ and two decades below the root* is cleared by **8,935 of the 30,712** that do,
 which makes it a reading of the search. [`minibrot.descent`] computes (b) anyway,
 because it is one pass over the ledgers and it is the provenance half of the
 story.
+
+### Criterion (c): the copy a frame is decoration of
+
+The candidates are **not** (a)'s ranked periods. They are the **record minima of
+`|z_k|`** along the `f64` critical orbit at the frame's centre: each `k` where
+the orbit sets a new record low is a copy that contains the frame, and they
+arrive nested, outermost first. At the named row the whole chain is
+`2, 27, 54, 1026`, which is four Newton solves against (a)'s 24 — (c) is the
+cheap reading, at **27 locations a second against (a)'s 2.6 to 10**. Over all
+1,200 `tuned129x_*` walk rows the chain holds the descent's own satellite period
+**every time**.
+
+**A bulb is not a copy, and without that the census measures nothing.** The
+period-2 bulb's atom is 0.5 wide and its nucleus sits about half of that from
+every frame in seahorse valley, so on distance alone it encloses them — while
+being eight decades too big to be what they decorate, and while being attached to
+the main body, whose decorations never count. A first pass over the twenty
+records' seats taken before this rule existed read **618 of 804** enclosed seats
+as period 2 and another 140 as period 3.
+
+So the chain is cut into **generations** — a copy, and the bulbs hanging off it —
+with the main body prepended as `period 1, size 1.0`. An entry is a bulb of one
+above it when its period is a multiple `m` and its size is within
+[`minibrot.BULB_SLACK`] of [`minibrot.bulb_scale`], `2·sin(π/m)/(m²(d−1))`. **The
+enclosing copy is the head of the last generation**, and a frame whose only
+generation is the main body's own is enclosed by nothing. At the named row the
+generations are `[1, 2]` and `[27, 54]`, so the answer is `27`.
+
+The law is tight and the populations are far apart. Against the main body's own
+scale of 1.0, its bulbs from `m = 2` to `m = 11` read **0.98 to 1.40** of it on
+all five planes; degree 2's primitive minibrots on the real antenna read 0.099 of
+it at period 3 and fall away fast — 0.016, 0.020, 0.0042, 1.1e-5 at periods 4 to
+7. A third of the law sits between the two with a factor of three to spare on the
+near side. The `1/(d−1)` is load-bearing: without it a degree-6 bulb reads 0.21
+of the law and is taken for a copy, which would make every frame in the main
+body's decorations on four of the five planes read enclosed by something.
+
+⚠ **`ENCLOSE_K` is calibrated on one part of a copy, and it is the reading this
+instrument is least sure of.** The 202 `tuned129x_*` pool places are inside a
+period 22, 27, 33 or 35 satellite by construction and must read enclosed by it;
+their own distances are **0.6414 to 0.8184**, median 0.7747, and *the smallest K
+that reads ≥ 95% of them right* is **0.81 at 96.5%**, with 0.82 reading all 202.
+
+But that band is not a property of being inside a copy, it is a property of how
+deep those rows are. **The same four descents' own root frames, 25.89 atom sizes
+across, read 1.216, 1.289, 1.290 and 1.297** — one for one with their four
+satellites, every one outside 0.82. A descent starts near the copy's edge and
+works inward; 0.82 is where those descents ended up. And a copy spans
+`[-2, 0.25]` in its own coordinates, so its filigree reaches **2.0** atom sizes
+and a frame on a copy's antenna is nowhere near 0.82.
+
+⚠ **A cut that drops a copy but keeps its period doubling answers the
+doubling.** Those four root frames read `q = 70, 44, 66, 54` at 0.82 and
+`35, 22, 33, 27` at 1.35. The reading is never wrong in kind — the doubling does
+enclose the frame — it is one generation too deep, and `tests/test_minibrot.py`
+pins all four both ways.
+
+**Every census row carries `chain_table`** — the whole solved chain, each entry
+with its distance in its own atom sizes and its ratio — so the cut is re-swept off
+the output and never re-probed. `minibrot_enclosed_census_ckpt140`'s report has
+what the count does from 0.82 to 2.25. The bound is a decision about how much of
+a copy counts as its inside, and not a measurement.
 
 ### The existing operator path cannot see these atoms, and the reason is the ceiling
 
@@ -1578,14 +1653,16 @@ slack is three decades.
 
 ### What it costs, measured
 
-Three workers at below-normal priority, on this box, 2026-09-22:
+Three workers at below-normal priority, on this box, 2026-09-22. **(a) is the
+expensive reading and (c) is nearly free** — one is 24 Newton solves at periods
+in the thousands, the other is four at periods in the tens:
 
-| population | locations | wall | rate | in band |
-|---|--:|--:|--:|--:|
-| the twenty kept records' seats | 2,014 | 6m02s | 5.6/s | 1,025 (50.9%) |
-| every human-labelled frame | 7,747 | 12m46s | 10.1/s | 3,143 (40.6%) |
-| the rest of the pool | 17,817 | 1h55m | 2.6/s | 6,435 (36.1%) |
-| **union** | **27,578** | **2h14m** | | **10,603 (38.4%)** |
+| population | locations | (a) wall | (a) rate | in band | (c) wall | (c) rate | enclosed |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| the twenty kept records' seats | 2,014 | 6m02s | 5.6/s | 1,025 (50.9%) | 1m14s | 27.3/s | 10 (0.5%) |
+| every human-labelled frame | 7,747 | 12m46s | 10.1/s | 3,143 (40.6%) | 4m26s | 29.2/s | 105 (1.4%) |
+| the rest of the pool | 17,817 | 1h55m | 2.6/s | 6,435 (36.1%) | 29m34s | 10.0/s | 255 (1.4%) |
+| **union** | **27,578** | **2h14m** | | **10,603 (38.4%)** | **35m14s** | | **370 (1.3%)** |
 
 That union is every parameter-plane location the pool holds — **21,049 of 55,884**,
 the other 34,835 being `julia:*` and `phoenix` — plus **6,529** human-labelled

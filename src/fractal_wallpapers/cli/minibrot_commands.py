@@ -105,24 +105,58 @@ def _skipped(paths) -> set[str]:
     return held
 
 
-def _summary(found: list[dict]) -> dict:
-    """The counts a census pass reports: how many, in band, and the distribution."""
+def _decade_order(item) -> int:
+    """Sort key for a [`minibrot.ratio_decade`] bin name, `n/a` last."""
+    name = item[0]
+    return int(name[2:]) if name.startswith("1e") else 1 << 30
+
+
+def _summary(found: list[dict], reading: str) -> dict:
+    """The counts a census pass reports: how many, in band, enclosed, and where."""
     from fractal_wallpapers.discovery import minibrot
 
-    bands = Counter(row["band"] for row in found if "band" in row)
-    modes = Counter(row["partition"] for row in found if row.get("in_frame"))
-    # In the bins' own order and not the string order, which puts 16-32 between
-    # 1-2 and 2-4 and makes a distribution unreadable as a distribution.
-    ordered = [minibrot.band_of(edge) for edge in (0.5, *minibrot.BANDS)]
-    return {
+    report: dict = {
         "probed": len(found),
-        "with_a_nucleus": sum(1 for row in found if "period" in row),
-        "in_frame": sum(1 for row in found if row.get("in_frame")),
-        "band": f"{minibrot.FRAME_MIN:g}-{minibrot.FRAME_MAX:g} atom sizes",
-        "by_band": {name: bands[name] for name in ordered},
-        "in_frame_by_partition": dict(modes.most_common()),
         "refused": dict(Counter(row["refused"] for row in found if "refused" in row).most_common()),
     }
+    if reading in ("both", "band"):
+        bands = Counter(row["band"] for row in found if "band" in row)
+        # In the bins' own order and not the string order, which puts 16-32
+        # between 1-2 and 2-4 and makes a distribution unreadable as one.
+        ordered = [minibrot.band_of(edge) for edge in (0.5, *minibrot.BANDS)]
+        report.update(
+            {
+                "with_a_nucleus": sum(1 for row in found if "period" in row),
+                "in_frame": sum(1 for row in found if row.get("in_frame")),
+                "band": f"{minibrot.FRAME_MIN:g}-{minibrot.FRAME_MAX:g} atom sizes",
+                "by_band": {name: bands[name] for name in ordered},
+                "in_frame_by_partition": dict(
+                    Counter(row["partition"] for row in found if row.get("in_frame")).most_common()
+                ),
+            }
+        )
+    if reading in ("both", "enclosing"):
+        decades = Counter(row["ratio_decade"] for row in found if "ratio_decade" in row)
+        report.update(
+            {
+                "enclosed": sum(1 for row in found if row.get("enclosed")),
+                "enclose_k": minibrot.ENCLOSE_K,
+                "by_enclosing_period": dict(
+                    Counter(
+                        row["enclosing_period"] for row in found if "enclosing_period" in row
+                    ).most_common(12)
+                ),
+                # Numerically and not by the key string, which files 1e10 between
+                # 1e1 and 1e2 and makes a distribution unreadable as one. `n/a`
+                # cannot arrive on an enclosed row — the ratio is at least 1 by
+                # construction — and is sorted rather than assumed away.
+                "by_ratio_decade": dict(sorted(decades.items(), key=_decade_order)),
+                "enclosed_by_partition": dict(
+                    Counter(row["partition"] for row in found if row.get("enclosed")).most_common()
+                ),
+            }
+        )
+    return report
 
 
 def minibrots(args: argparse.Namespace) -> int:
@@ -155,9 +189,23 @@ def _probe(args: argparse.Namespace) -> int:
     if degree is None:
         print(f"{minibrot.NOT_A_PLANE}: {partition}")
         return 1
-    record, cost = minibrot.probe(center_re, center_im, width, degree)
-    print(json.dumps({"partition": partition, "atom": record, "cost": cost}, indent=2))
-    return 0 if record is not None else 1
+    held = minibrot.scan(center_re, center_im, degree)
+    record, cost = minibrot.probe(center_re, center_im, width, degree, held=held)
+    around, enclose_cost = minibrot.enclosing(center_re, center_im, width, degree, held=held)
+    print(
+        json.dumps(
+            {
+                "partition": partition,
+                "atom": record,
+                "cost": cost,
+                "chain": held.chain[:16],
+                "enclosing": around,
+                "enclosing_cost": enclose_cost,
+            },
+            indent=2,
+        )
+    )
+    return 0 if record is not None or around is not None else 1
 
 
 def _census(args: argparse.Namespace) -> int:
@@ -195,7 +243,7 @@ def _census(args: argparse.Namespace) -> int:
         + (f", {dropped:,} already read" if dropped else "")
     )
 
-    tasks = [(key, *held[key]) for key in keys]
+    tasks = [(key, *held[key], args.reading) for key in keys]
     started = time.time()
     found: list[dict] = []
     out = resolve_output(args.out) if args.out else None
@@ -219,7 +267,8 @@ def _census(args: argparse.Namespace) -> int:
         "population": args.population if not args.locations else str(args.locations),
         "asked": len(tasks),
         "seconds": round(time.time() - started, 1),
-        **_summary(found),
+        "reading": args.reading,
+        **_summary(found, args.reading),
     }
     print(json.dumps(report, indent=2))
     return 0
@@ -234,11 +283,13 @@ def add_commands(subcommands) -> None:
         "minibrots",
         help="is there a minibrot in this frame, and how many frames hold one",
         description=(
-            f"Solve for the nucleus a frame's centre sits on and measure the atom against "
-            f"the frame. A frame counts as holding a minibrot when its width is between "
+            f"Two readings of one frame. (a) it HOLDS a minibrot: its width is between "
             f"{minibrot.FRAME_MIN:g} and {minibrot.FRAME_MAX:g} atom sizes and the nucleus "
-            f"lands within {minibrot.NEAR_MULTIPLE:g} frame width(s) of centre. Parameter "
-            f"planes only: a julia or phoenix view has no embedded copy of the set to find."
+            f"lands within {minibrot.NEAR_MULTIPLE:g} frame width(s) of centre. (c) it IS "
+            f"decoration of one: a copy of period q > 1 whose atom is at least the frame's "
+            f"width and whose nucleus is within {minibrot.ENCLOSE_K:g} of that copy's own "
+            f"atom sizes encloses it. Parameter planes only: a julia or phoenix view has no "
+            f"embedded copy of the set to find."
         ),
     )
     verbs = group.add_subparsers(dest="what", required=True)
@@ -284,6 +335,14 @@ def add_commands(subcommands) -> None:
         "--locations",
         help="a JSONL file of {partition, location, center_re, center_im, width} to probe "
         "instead of a named population",
+    )
+    many.add_argument(
+        "--reading",
+        default=minibrot.READINGS[0],
+        choices=minibrot.READINGS,
+        help=f"which criteria to take (default: {minibrot.READINGS[0]}) — `band` is (a), the "
+        f"atom this frame HOLDS, `enclosing` is (c), the copy this frame is DECORATION OF, and "
+        f"`both` shares one orbit scan between them. (c) is much the cheaper of the two",
     )
     many.add_argument("--out", help="write one JSONL row per probe here")
     many.add_argument(

@@ -704,6 +704,27 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### minibrot_enclosed_census_ckpt140
+
+`minibrot_enclosed_census_ckpt140`, 2026-09-22, `.[dev,models]` with a release engine.
+**Fast: 4,913 passed in 169.55 s (2:49)**, 157 deselected, green. **+17**, all of them in
+`tests/test_minibrot.py`, so the tree is believed at **5,070** collected.
+
+**The count moved by exactly what this prompt added**, against
+`minibrot_descent_census_ckpt140`'s 4,896 — two consecutive entries now with no unmeasured
+drift under them.
+
+**+14.2 s, and 7.6 s of it is the tree.** `tests/test_minibrot.py` went from **1.09 s to
+8.71 s**, measured on its own file both times: four of the new guards are parametrized over
+the four `tuned129x_*` root frames and each solves a real chain of nuclei at 60 digits,
+which is the cost of pinning what `ENCLOSE_K` does at the shallow end. The remaining ~6.6 s
+reads as box — taken seven minutes after a 35-minute census leg that held three
+below-normal processes.
+
+**This is the first entry where a guard was priced by re-running its own file before and
+after**, which took two seconds and settled a question the whole-lane delta cannot answer.
+Do that rather than argue about box.
+
 #### minibrot_descent_census_ckpt140
 
 `minibrot_descent_census_ckpt140`, 2026-09-22, `.[dev,models]` with a release engine.
