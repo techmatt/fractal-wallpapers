@@ -271,6 +271,17 @@ ROSTER: tuple[Entry, ...] = (
         "the clone",
     ),
     Entry(
+        "kept solve records",
+        TREE,
+        ("curation/solve/{kept_solves}/solve.json",),
+        ("curate solve list", "curate solve recipes"),
+        "the seating each kept record came from. A kept `manifest.json` names its solve record "
+        "by path, so a box that took the records without these holds a manifest pointing at a "
+        "file that is not there. `{kept_solves}` is read off those manifests rather than listed, "
+        "because `curation/solve/` also holds the legs of records that were discarded and an "
+        "off-list record does not travel",
+    ),
+    Entry(
         "reference solve",
         TREE,
         (
@@ -360,6 +371,33 @@ def kept_stamps() -> tuple[str, ...]:
     return tuple(tentative.PUBLISHED) + tuple(tentative.KEPT_UNPUBLISHED)
 
 
+def kept_solve_records() -> tuple[str, ...]:
+    """The `curation/solve/<name>` each kept record's manifest names, by name and in order.
+
+    Read off the manifests rather than listed, because `curation/solve/` also holds
+    the legs of records that were discarded, and an off-list record does not travel.
+    A record the box does not hold, or one whose manifest names no solve, contributes
+    nothing — the record itself is already absent from the export by the same rule.
+    """
+    try:
+        base = Tiers.current().unit("curation")
+    except StorageRefusal:
+        return ()
+    names: list[str] = []
+    for stamp in kept_stamps():
+        manifest = base / "tentative" / stamp / "manifest.json"
+        if not manifest.is_file():
+            continue
+        held = json.loads(manifest.read_text(encoding="utf-8"))
+        record = str(((held.get("solve") or {}).get("record")) or "")
+        parts = PurePosixPath(record).parts
+        if len(parts) < 2:
+            continue
+        if parts[-2] not in names:
+            names.append(parts[-2])
+    return tuple(names)
+
+
 def gallery_grade_runs() -> tuple[str, ...]:
     """The run directories the shipped gallery-grade ensemble resolves to, by name."""
     from fractal_wallpapers.models import gallery_grade_train
@@ -372,6 +410,8 @@ def _expand(pattern: str) -> list[str]:
     """`a/{b,c}/d` as `a/b/d` and `a/c/d`, and `{kept}` as every kept stamp. One group."""
     if "{kept}" in pattern:
         return [pattern.replace("{kept}", stamp) for stamp in kept_stamps()]
+    if "{kept_solves}" in pattern:
+        return [pattern.replace("{kept_solves}", name) for name in kept_solve_records()]
     if "{reference}" in pattern:
         return [pattern.replace("{reference}", REFERENCE["stamp"])]
     if "{gallery_grade_runs}" in pattern:
@@ -965,6 +1005,7 @@ __all__ = [
     "engine_agrees",
     "export",
     "import_",
+    "kept_solve_records",
     "layout",
     "pool_pictures",
     "read_manifest",

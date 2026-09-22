@@ -303,8 +303,8 @@ really on, and resolve back on read.
 
 ### Continuing on another machine
 
-Most of what the pipeline reads is untracked; `storage export` carries it (about 3 GiB,
-no pictures) and the new machine re-renders before any solve:
+Most of what the pipeline reads is untracked; `storage export` carries it (3.91 GiB in
+750 files on 2026-09-22, no pictures) and the new machine re-renders before any solve:
 
 ```
 fractal-wallpapers storage export --to <archive disk>/portable/<stamp>

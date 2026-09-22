@@ -230,10 +230,24 @@ throwaway root in a `git worktree`. 501 files, **3.28 GiB**: the ten Durables, a
 55 walk ledgers on both tiers, every leg's `sequence.jsonl`, the depth legs'
 `depth.json`, the kept tentative records' text, the gallery-grade pool scores, the
 colour census, the built label sheets' text, the `labels/` inbox, and the three
-fp32 seeds of the shipped gallery-grade ensemble. The last export, at commit `5c5fbb2`,
-was 508 files and 3.29 GiB with the four mine records and the reference solve that
-joined the roster that day; **no export is kept on the archive disk** — both were
-copied out and `portable/` deleted on 2026-09-16, so the next transfer exports afresh.
+fp32 seeds of the shipped gallery-grade ensemble.
+
+**A standing instance lives at `portable/20260922T030159Z` in the sibling
+`fractal-drive-sync` checkout**,
+taken at commit `00e26b3` after mining closed: **750 files, 3.91 GiB** in 14 minutes,
+753 files and 4.04 GiB with `pictures.jsonl` and the manifest beside them. It is the
+first export to carry the twenty `final139_*` records as kept solves — their
+`gallery.jsonl`, `manifest.json` and `recipes.jsonl` through `{kept}`, and their
+`solve.json` through the **kept solve records** entry `{kept_solves}` reads off those
+manifests. *Restore it with*
+
+```
+fractal-wallpapers storage import --from <fractal-drive-sync>/portable/20260922T030159Z --root <hot root> [--archive-root <archive>]
+```
+
+Before it, the 2026-09-16 pair (501 files / 3.28 GiB, then 508 / 3.29 GiB at commit
+`5c5fbb2` with the four mine records and the reference solve) was copied out and
+`portable/` deleted, so nothing stood on the archive disk between them.
 
 ```
 fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
@@ -272,7 +286,8 @@ and `portable.REFERENCE` must be re-pointed at a record that stands before the n
 A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as
 `picture_absent` — so the first leg after an import is `curate candidate-ledger
 re-render`, and only then a solve. The export writes `pictures.jsonl` instead: one
-row per candidate the solve can seat (418,339, 59.3 GiB on 2026-09-16) with its
+row per candidate the solve can seat (518,436, 78.98 GiB on 2026-09-22 — 393,887
+`same_build` and 124,549 `unknown_build`; 418,339 and 59.3 GiB on 2026-09-16) with its
 sha256 and whether the build that drew it is the exporting build (`same_build`) or
 unrecorded (`unknown_build`, the rows before 2026-09-02). Two seeded samples
 re-rendered from an imported root came back **byte-identical, 125 of 125** — 48 at
@@ -293,6 +308,18 @@ lime solve seated the **same 150 seats in the same order** as the live solve run
 before it, with the live stores' sha256 identical before and after the pair (the
 worktree's pool pictures were stand-in copies for that one comparison, deleted
 after).
+
+**A restore check needs no second box, and `repo_root` is the one thing to move.**
+`destination_of` sends every CHECKOUT-rooted row (the `labels/` inbox, the three
+gallery-grade `best.pt`) at `portable.repo_root()`, so an import run on the exporting
+box refuses on *those* destinations existing long before it says anything about the
+tree. Point `portable.repo_root` at a scratch directory first — what
+`tests/test_portable.py`'s `box` fixture already does — and the same import lands the
+whole export beside the live one without touching it. The 2026-09-22 instance came
+back **750 of 750 files matching the manifest**, the four ledger stores at their live
+row counts (566,920 / 566,920 / 566,920 / 87,065), the twenty records at 9,000 seats
+with recipes and `solve.json` for each, and one seat redrawn from the restored
+`recipes.jsonl` **byte-identical** to the same seat redrawn from the live one.
 
 **What a fresh box needs before the import**: `uv sync --extra dev --extra models
 --extra solve`, `fetch-weights`, `cargo build --release`, and a `local.toml` naming
