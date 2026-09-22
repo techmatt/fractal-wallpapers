@@ -261,7 +261,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `preclose_ckpt139` added no test on 2026-09-21 and read
+**The newest reading is fast only**: `reference_reseat_ckpt140` added 2 fast tests on
+2026-09-21 and read **4,885 fast in 147.40 s (2:27)**, 157 deselected, green, so the tree
+is *believed* at 5,042 collected; taken on a quiet box a few minutes after two
+`--no-render` solves, so the pool was out of memory again by then and the −6.4 s against
+the reading below reads as box. Before it, `preclose_ckpt139` added no test on 2026-09-21 and read
 **4,883 fast in 153.81 s (2:33)**, 157 deselected, green, count unmoved, so the tree is
 *believed* at 5,040 collected; a doc-only prompt, taken on a quiet box. It carries
 `portable_final139`'s +2 forward — that prompt read 4,883 and did not update the figure

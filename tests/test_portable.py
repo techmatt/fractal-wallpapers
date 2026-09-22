@@ -296,6 +296,37 @@ def test_the_reference_is_not_on_the_keep_list() -> None:
     assert portable.REFERENCE["stamp"] not in portable.kept_stamps()
 
 
+def test_the_general_check_is_on_the_keep_list() -> None:
+    """The opposite of the reference, and the reason it needs no roster entry.
+
+    `GENERAL_CHECK` is one of the kept records already, so `{kept}` carries its
+    rows and `{kept_solves}` its `solve.json`. A stamp that fell off the keep
+    list is a README naming a comparison target the export does not carry.
+    """
+    from fractal_wallpapers.curation import tentative
+
+    assert portable.GENERAL_CHECK["stamp"] in portable.kept_stamps()
+    assert portable.GENERAL_CHECK["n"] == tentative.RECORDED_SEATS
+
+
+def test_the_readme_names_the_general_check_beside_the_themed_one(box, monkeypatch) -> None:
+    """Two checks, two invocations, and the README says they are different passes."""
+    roster = _with_reference(box, monkeypatch)
+    to = box["tmp"] / "export"
+    manifest = portable.export(to, roster=roster, pictures=False, log=lambda *_: None)
+    general = manifest["reference"]["general"]
+    assert general["stamp"] == portable.GENERAL_CHECK["stamp"]
+    assert general["invocation"] == portable.general_check_invocation()
+    assert "--n 1000 --no-render" in general["invocation"]
+    readme = (to / portable.REFERENCE_README).read_text(encoding="utf-8")
+    assert f"`{portable.GENERAL_CHECK['stamp']}`" in readme
+    assert portable.GENERAL_CHECK["name"] in readme
+    assert portable.general_check_invocation() in readme
+    # Both invocations are there and they are not the same command.
+    assert portable.reference_invocation() in readme
+    assert portable.reference_invocation() != portable.general_check_invocation()
+
+
 def test_the_sequence_glob_is_the_stores_stamps_declares() -> None:
     from fractal_wallpapers.curation import stamps
 
