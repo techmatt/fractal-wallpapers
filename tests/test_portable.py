@@ -219,6 +219,40 @@ def test_the_kept_placeholder_expands_to_the_keep_list_and_nothing_else(monkeypa
     ]
 
 
+def _kept_record(box, stamp: str, record: str | None) -> None:
+    """One kept record on hot: a seat, and a manifest naming `record` as its solve."""
+    where = box["hot"] / "curation" / "tentative" / stamp
+    where.mkdir(parents=True)
+    (where / "gallery.jsonl").write_bytes(b'{"key": "k"}\n')
+    solve = {} if record is None else {"record": record}
+    (where / "manifest.json").write_text(json.dumps({"solve": solve}), encoding="utf-8")
+
+
+def test_the_kept_solves_placeholder_is_read_off_the_kept_manifests(box, monkeypatch) -> None:
+    monkeypatch.setattr(portable, "kept_stamps", lambda: ("S1", "S2", "S3", "S4"))
+    _kept_record(box, "S1", "artifacts/curation/solve/one/solve.json")
+    _kept_record(box, "S2", "artifacts/curation/solve/two/solve.json")
+    _kept_record(box, "S3", None)  # a manifest naming no solve contributes nothing
+    # S4 is on the list and not on this box, which is how a pruned record reads.
+    assert portable._expand("curation/solve/{kept_solves}/solve.json") == [
+        "curation/solve/one/solve.json",
+        "curation/solve/two/solve.json",
+    ]
+
+
+def test_a_kept_record_travels_with_the_solve_its_manifest_names(box, monkeypatch) -> None:
+    """A manifest pointing at a file the export did not carry is the failure guarded here."""
+    monkeypatch.setattr(portable, "kept_stamps", lambda: ("S1",))
+    _kept_record(box, "S1", "artifacts/curation/solve/one/solve.json")
+    for name in ("one", "discarded"):
+        leg = box["hot"] / "curation" / "solve" / name
+        leg.mkdir(parents=True)
+        (leg / "solve.json").write_text(f'{{"name": "{name}"}}', encoding="utf-8")
+    entry = next(entry for entry in portable.ROSTER if entry.name == "kept solve records")
+    carried = {row["path"] for row in portable.resolve((entry,))}
+    assert carried == {"artifacts/curation/solve/one/solve.json"}
+
+
 def _with_reference(box, monkeypatch, *, carried: bool = True):
     """The fixture's roster plus the reference entry, and a record for it on hot."""
     monkeypatch.setattr(portable, "REFERENCE", {"stamp": "S9", "collection": "green"})
