@@ -269,8 +269,10 @@ PUBLISHED: tuple[str, ...] = ()
 #: and provenance does not need the folder. What earns a line is code or a figure
 #: that reads the rows.
 #:
-#: **The twenty `final139_*` records of 2026-09-21, and nothing else** — one
-#: entry in twenty lines, Matt's ruling in `close_mining_save_solves_ckpt139`.
+#: **The twenty `final139_*` records of 2026-09-21, and one n=2000 beside them**
+#: — Matt's ruling in `close_mining_save_solves_ckpt139` for the twenty, and his
+#: of 2026-09-22 for `final140_general2000`, the general pass at n=2000 over the
+#: same pool, which the website offers beside the n=1000 default.
 #: They are the general n=1000 and the nineteen collections of
 #: [`curation.targets`], solved over the pool as mining closed and recorded under
 #: one name stem, and each is resolved three ways: `curate solve viewers` writes
@@ -293,9 +295,9 @@ PUBLISHED: tuple[str, ...] = ()
 #: provenance, and provenance never needed the folder.
 #:
 #: ⚠ **A record off this list is discarded and the sweep of 2026-09-21 took the
-#: store down to it**: twenty-one records remain on this machine, the twenty here
+#: store down to it**: twenty-one records remained on this machine, the twenty here
 #: and `portable.REFERENCE`, which travels through the export roster and
-#: never through the keep list.
+#: never through the keep list. The n=2000 of 2026-09-22 makes it twenty-two.
 #:
 #: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
 #: is deliberate: a kept record is kept, not tracked. Publication, durability and
@@ -325,6 +327,10 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     "20260922T014921Z",
     "20260922T015029Z",
     "20260922T015138Z",
+    # `final140_general2000` — the general pass at n=2000 over the same closed
+    # pool, Matt's ruling of 2026-09-22: `fractal-website` offers it beside the
+    # n=1000 default. Same bar and config as `final139_general`, only `n` moved.
+    "20260922T220551Z",
 )
 
 
