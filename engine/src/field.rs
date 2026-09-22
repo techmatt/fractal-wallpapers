@@ -966,8 +966,8 @@ mod tests {
     }
 
     /// Every family the sampler can be handed, one instance each — the ten
-    /// integer degrees over the two planes, Phoenix, and the one family the
-    /// specialization table deliberately leaves out.
+    /// integer degrees over the two planes, Phoenix and its parameter plane, and the
+    /// one family the specialization table deliberately leaves out.
     fn every_family() -> Vec<Family> {
         let mut families = Vec::new();
         for degree in 2..=6 {
@@ -978,6 +978,7 @@ mod tests {
             });
         }
         families.push(crate::family::CLASSIC_PHOENIX);
+        families.push(crate::family::PHOENIX_PLANE);
         families.push(Family::FractionalMultibrot { degree: 2.5 });
         families
     }

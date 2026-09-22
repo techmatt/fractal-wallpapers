@@ -1040,6 +1040,7 @@ fn clone_family(family: &FamilySpec) -> Result<FamilySpec, String> {
             p: pair(p),
             z_prev: pair(z_prev),
         },
+        FamilySpec::PhoenixM { p } => FamilySpec::PhoenixM { p: pair(p) },
         // A render-only family has no business in a training tile: the tiles are
         // what the judges learn a location from, and this family is never a
         // location a judge will be asked about. Refused here rather than in the
