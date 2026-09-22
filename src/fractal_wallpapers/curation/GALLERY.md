@@ -2269,7 +2269,12 @@ files* and *publish the twenty* are the same act, which would give
 `tentative.latest()` an answer again and silently land every unstamped `browse`,
 `resolve` and `backfill` on `final139_smooth_stripe`. **Matt's call of 2026-09-21
 was to leave them untracked**: they are kept, not published, and the size rule was
-never what stopped them.
+never what stopped them. **That ruling is written at `curation/tentative.PUBLISHED`
+and `KEPT_UNPUBLISHED`** — the twenty are the whole of `KEPT_UNPUBLISHED` and
+`PUBLISHED` is empty — and this is the one place the coupling is argued, so a doc
+that needs it points here rather than restating it. What makes the set durable
+instead is the portable instance `portable.ROSTER` exports, which carries the
+records' text without git seeing it.
 
 ### A record's fulls are pinned, because a gather is a borrow
 
@@ -2715,7 +2720,7 @@ and the twenty-one pinned records of 2026-09-19. What that did to the three ques
 | records in the store | 122 | **21** |
 | tracked files under `tentative/` | 17 | **0** |
 
-The twenty-first record in the store is `curation.portable.REFERENCE`, which travels
+The twenty-first record in the store is `portable.REFERENCE`, which travels
 through the export roster and never through the keep list. **Nothing is published**, so
 `tentative.latest()` refuses and every unstamped `browse`, `resolve`, `votes build`,
 atlas and backfill has to name a stamp; the bookmarked viewer is written by
