@@ -112,15 +112,19 @@ These were decided once, at the first commit, because each is expensive to rever
   **twenty-one records**, the twenty kept plus
   `fractal_wallpapers.portable.REFERENCE` (the module is top-level, `portable.py`
   beside `engine.py`, and **not** under `curation/`), which travels through the
-  export roster instead of the keep list. `protected_keys()` reads the two tuples
-  and nothing else and is **6,067 keys**. **A count of folders is not a count of
-  kept records** and a leg that wants to know what is kept reads
+  export roster instead of the keep list. **Since 2026-09-22 the list is
+  twenty-one**: `final140_general2000` (`20260922T220551Z`), the general pass at
+  n=2000 over the same pool, joined it on Matt's ruling so the website can offer it
+  beside the n=1000 default. `protected_keys()` reads the two tuples and nothing
+  else and is **6,299 keys** (6,067 before it). **A count of folders is not a
+  count of kept records** and a leg that wants to know what is kept reads
   `tentative.kept()`.
 - **Preservation of the saved set is a portable instance Matt backs up, and not
-  git.** The twenty-one records live on this box and in the export
+  git.** The twenty-two records live on this box and in the export
   `fractal-wallpapers storage export` writes under
   `C:\Code\fractal-drive-sync\portable\<stamp>` — 753 files, 4.04 GiB on
-  2026-09-22, restored with `storage import --from <instance> --root <hot root>`.
+  2026-09-22, which predates `final140_general2000`, so that record is on this box
+  only until the next export — restored with `storage import --from <instance> --root <hot root>`.
   **Nothing is committed until the work is truly finalized**: tracking a record's
   text is publishing its stamp and there is no third way
   (`curation/GALLERY.md`'s *All twenty kept records carry one, on disk and

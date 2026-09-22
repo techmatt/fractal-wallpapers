@@ -2727,6 +2727,20 @@ atlas and backfill has to name a stamp; the bookmarked viewer is written by
 `curate solve browse <stamp> --viewer` and the per-collection pages by
 `curate solve viewers`, neither of which reads `PUBLISHED`.
 
+**A twenty-first kept record joined on 2026-09-22**: `final140_general2000`
+(`20260922T220551Z`), the general pass at **n=2000** over the same pool (stamp
+`e0cf00ba…`), which Matt ruled the website offers beside the n=1000 default. It is
+`curate solve record --n 2000 --solve-name final140_general2000`, and its config
+differs from `final139_general`'s only in `n` and what `n` derives: the mode floors
+roughly double and the cell floor goes 20 → 41. It filled **2000 of 2000 at
+shortfall 0** in 166.58 s — seed 47.1 s, four swap passes 105.7 s, **0 chains** in
+8.1 s, the supply reading of the n=2000 paragraph above holding on the closed pool.
+Seated `p_fine` reads median **0.4077** and worst **0.041483** against 0.5872 and
+0.132439 at n=1000. **790 of the n=1000's seats are in it** and 1,210 of its seats are
+new; the 210 it dropped are mostly `stripe` and `tia` (56 each). Mode, family and cell
+shares stay within about a point of the n=1000's, all 49 cells and 13 modes present in
+both. `protected_keys()` went **6,067 → 6,299**.
+
 **Publication, durability and retention are three questions, and the protection below is
 the durable one.** A record on the **keep list** is *protected*: `protected_keys` reads
 `tentative.kept()` — `PUBLISHED` plus `KEPT_UNPUBLISHED` — and nothing else. What
