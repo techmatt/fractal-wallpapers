@@ -110,18 +110,24 @@ Render one location. This needs no weights, no GPU and no network.
 
 That writes a 1920x1080 PNG and prints the seconds it spent painting and resampling.
 
-Then redraw a wallpaper from the published gallery, out of tracked data alone:
+Then redraw a wallpaper from a recorded gallery:
 
 ```
+.venv/Scripts/fractal-wallpapers curate solve recipes --write --stamp <stamp>
 .venv/Scripts/fractal-wallpapers render \
-  --recipe artifacts/curation/tentative/20260914T171846Z/recipes.jsonl \
-  --key 460117ee --out artifacts/seat.jpg
+  --recipe artifacts/curation/tentative/<stamp>/recipes.jsonl \
+  --key <seat> --out artifacts/seat.jpg
 ```
 
-`recipes.jsonl` carries the full recipe of each of that record's thousand seats: family,
-viewport, iteration cap, mode, curve, colormap, palette pass and levelling band. A redraw
-is byte-identical to the published image. `gallery.jsonl` beside it says which key is which
-seat.
+`recipes.jsonl` carries the full recipe of each of that record's seats: family, viewport,
+iteration cap, mode, curve, colormap, palette pass and levelling band. A redraw is
+byte-identical to the picture the record seated. `gallery.jsonl` beside it says which key
+is which seat, and `curate solve list` says which records this machine holds.
+
+⚠ **No record is published as of 2026-09-21**, so a fresh clone brings none of this: the
+twenty `final139_*` galleries are kept on the machine that made them and read by naming
+their stamps. Until a record is published again, the first command above is what makes
+the recipe file, out of the candidate ledger.
 
 `--location` is the narrower form. It takes a place and a geometry only, and refuses a row
 that says more rather than drawing the right coordinates in the wrong colors.

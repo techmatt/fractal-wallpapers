@@ -66,49 +66,52 @@ These were decided once, at the first commit, because each is expensive to rever
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
-  tracked file inside an ignored tree is how these rules rot. **There is exactly
-  one hole and it is deliberate**: a published tentative gallery's *text* files
-  (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`) come
-  through, because a clone that cannot resolve the IDs the site's figures name
-  cannot rebuild the site. The pictures stay ignored, the un-ignore names the
-  files one by one rather than by pattern, and it is not an oversight to tidy
-  up. `index.html` is not tracked for any stamp. **A third file joined it on
-  2026-09-14 and for ONE stamp only**: `20260914T171846Z`'s `recipes.jsonl`, a
-  `{key, recipe}` row per seat at 0.68 MiB, because 994 of that record's 1,000
-  seats could not be drawn from tracked data at all — the key is a one-way digest
-  and the recipe behind it lives in the untracked ledger. Its negation line names
-  that stamp's path rather than a pattern, so writing another record's is a
-  decision each time; `render --recipe FILE --key <seat>` is the door that draws
-  one back, and a redraw is byte-identical.
+  tracked file inside an ignored tree is how these rules rot. **There was exactly
+  one hole and on 2026-09-21 it closed**: a published tentative gallery's *text*
+  files (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`,
+  and `recipes.jsonl` for one stamp) came through so that a clone could resolve
+  the IDs the site's figures name. **No record is published now**, so nothing
+  under `artifacts/` is tracked at all and the negation lines went with the
+  records. The shape stays in `.gitignore` as a comment: publishing a record
+  again is a line there and a line in `curation.tentative.PUBLISHED`, and the
+  un-ignore names files one by one rather than by pattern. `index.html` is never
+  tracked. `curate solve recipes --write --stamp <stamp>` writes the
+  `{key, recipe}` row per seat that makes a record redrawable — 0.68 MiB for a
+  thousand — and `render --recipe FILE --key <seat>` draws one back
+  byte-identical.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
-  2026-09-04, and the hole above is per *stamp* because of it. An unpublished
+  2026-09-04, and the hole above was per *stamp* because of it. An unpublished
   record is read by naming its stamp, and what it does not get is a Durable-class
   save, check or restore and a place in an archive copy. `tentative.PUBLISHED` and
   `.gitignore`'s negation lines are one list written twice and
   `tests/test_tentative.py` holds them to agreeing. The ruling, what it replaced
   and why `LARGE_TEXT_ALLOWLIST` was not the answer are at
-  `curation/tentative.PUBLISHED`. **`20260914T171846Z` is the published n=1000
-  record** and the official one, his ruling of 2026-09-14 and the first
-  publication since the split — what an unqualified "the record" and an unstamped
-  `tentative.latest()` both mean. **The page to open is
-  `artifacts/curation/viewer/index.html`**, `curate solve browse --viewer`, which
-  carries no stamp so the bookmark survives the role moving.
+  `curation/tentative.PUBLISHED`. **`tentative.PUBLISHED` is EMPTY since
+  2026-09-21**, the ruling that closed mining: nothing is published, so
+  `tentative.latest()` refuses and **an unstamped read is not available** — every
+  `browse`, `resolve`, `votes build`, atlas and backfill names a stamp, and
+  `curation.backfill.DEFAULT_RECORD` is the general one. **The page to open is
+  `artifacts/curation/viewer/index.html`**, written by
+  `curate solve browse <stamp> --viewer` and showing `final139_general`; the
+  nineteen collection pages beside it come from `curate solve viewers` and
+  `all.html` indexes them. The path carries no stamp, so the bookmark survives
+  the role moving.
 - **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13,
   which reverses what this file said until then. **Keeping needs a reason;
   discarding does not** — it is not a balance a leg weighs at the end of its run.
   A leg that recorded a gallery to measure something against **deletes it when the
   measurement is taken and says so in its report**: a solve is cheap to run again,
   and what a leftover record costs is misreading hazard, not bytes. **The keep list
-  is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, which carries
-  its twenty-nine entries with the reason for each written at the site. Everything else
-  goes unless Matt says otherwise. **The keep list holds thirty-seven** — eight
-  published and twenty-nine not, twenty-one of those the pinned records of
-  2026-09-19 that `fractal-website` lists — and a stamp earns its keep from exactly one of the two
-  lists, `20260914T171846Z` being in `PUBLISHED` and therefore not in the other.
-  ⚠ **The store is not the keep list and on 2026-09-15 it held 96 records, 80 of
-  them off it** (61.4 MiB, five batches of solve records from this checkpoint's own
-  prompts). None pins anything, since `protected_keys()` reads the two tuples and
-  nothing else; what they cost is misreading hazard. **A count of folders is not a
+  is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, with the
+  reason written at the site. Everything else goes unless Matt says otherwise.
+  **The keep list holds twenty since 2026-09-21** — the `final139_*` set, none of
+  them published: the general n=1000 and the nineteen collections, seated over the
+  pool as mining closed, and every earlier saved record was removed in the same act
+  rather than left beside them. ⚠ **The store is not the keep list** — it held 122
+  records the day before, 85 of them off the list — but that sweep took it to
+  **twenty-one**, the twenty kept plus `curation.portable.REFERENCE`, which travels
+  through the export roster instead of the keep list. `protected_keys()` reads the
+  two tuples and nothing else and is **6,067 keys**. **A count of folders is not a
   count of kept records** and a leg that wants to know what is kept reads
   `tentative.kept()`.
 - **Publication, durability and retention are three questions and not one.**
@@ -246,7 +249,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `mine_finish_then_open_ckpt139` added no test on
+**The newest reading is fast only**: `close_mining_save_solves_ckpt139` added no test on
+2026-09-21 and read **4,881 fast in 146.67 s (2:27)**, 157 deselected, green, count unmoved
+— taken on a quiet box after its twenty record solves, with 121 tentative records and 529
+solve directories deleted under it and two guards in `test_tentative.py` now sweeping an
+empty published set. Before it, `mine_finish_then_open_ckpt139` added no test on
 2026-09-21 and read **4,881 fast in 152.98 s (2:33)**, 157 deselected, green, count unmoved;
 taken six minutes after the leg's twenty POST solves ended, so the stores were warm, and the
 +4.5 s against the reading below reads as box. Before it,

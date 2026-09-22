@@ -59,6 +59,13 @@ name is the moment of launch and sits a minute or so before the record's own
 stamp, because the record's stamp is taken after the solve. Such a record is
 unpublished and is discarded by default like any other, so a re-solve means
 re-pointing the site's table, not adding to a keep list.
+
+⚠ **The `final139_*` set of 2026-09-21 does not carry that spelling**, Matt's
+ruling having named the stem: the twenty records are `final139_<collection>` and
+`final139_general`. `curation.viewers` reads a collection off either spelling, so
+the viewer pages are unaffected; the site's panel refuses the new one until its
+own prompt repoints `builder/seats.py`, which is the work that ruling leaves for
+the website checkout.
 """
 
 from __future__ import annotations
