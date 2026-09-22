@@ -109,11 +109,23 @@ These were decided once, at the first commit, because each is expensive to rever
   pool as mining closed, and every earlier saved record was removed in the same act
   rather than left beside them. ⚠ **The store is not the keep list** — it held 122
   records the day before, 85 of them off the list — but that sweep took it to
-  **twenty-one**, the twenty kept plus `curation.portable.REFERENCE`, which travels
-  through the export roster instead of the keep list. `protected_keys()` reads the
-  two tuples and nothing else and is **6,067 keys**. **A count of folders is not a
-  count of kept records** and a leg that wants to know what is kept reads
+  **twenty-one records**, the twenty kept plus
+  `fractal_wallpapers.portable.REFERENCE` (the module is top-level, `portable.py`
+  beside `engine.py`, and **not** under `curation/`), which travels through the
+  export roster instead of the keep list. `protected_keys()` reads the two tuples
+  and nothing else and is **6,067 keys**. **A count of folders is not a count of
+  kept records** and a leg that wants to know what is kept reads
   `tentative.kept()`.
+- **Preservation of the saved set is a portable instance Matt backs up, and not
+  git.** The twenty-one records live on this box and in the export
+  `fractal-wallpapers storage export` writes under
+  `C:\Code\fractal-drive-sync\portable\<stamp>` — 753 files, 4.04 GiB on
+  2026-09-22, restored with `storage import --from <instance> --root <hot root>`.
+  **Nothing is committed until the work is truly finalized**: tracking a record's
+  text is publishing its stamp and there is no third way
+  (`curation/GALLERY.md`'s *All twenty kept records carry one, on disk and
+  untracked*), so the backup is what makes the set durable and `tentative.kept()`
+  is only what stops a prune taking its pictures.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
   `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple
@@ -249,7 +261,12 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `close_mining_save_solves_ckpt139` added no test on
+**The newest reading is fast only**: `preclose_ckpt139` added no test on 2026-09-21 and read
+**4,883 fast in 153.81 s (2:33)**, 157 deselected, green, count unmoved, so the tree is
+*believed* at 5,040 collected; a doc-only prompt, taken on a quiet box. It carries
+`portable_final139`'s +2 forward — that prompt read 4,883 and did not update the figure
+here, which is the ordinary way this line goes two stale. Before it,
+`close_mining_save_solves_ckpt139` added no test on
 2026-09-21 and read **4,881 fast in 146.67 s (2:27)**, 157 deselected, green, count unmoved
 — taken on a quiet box after its twenty record solves, with 121 tentative records and 529
 solve directories deleted under it and two guards in `test_tentative.py` now sweeping an

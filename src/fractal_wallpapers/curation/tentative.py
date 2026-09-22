@@ -294,7 +294,7 @@ PUBLISHED: tuple[str, ...] = ()
 #:
 #: ⚠ **A record off this list is discarded and the sweep of 2026-09-21 took the
 #: store down to it**: twenty-one records remain on this machine, the twenty here
-#: and `curation.portable.REFERENCE`, which travels through the export roster and
+#: and `portable.REFERENCE`, which travels through the export roster and
 #: never through the keep list.
 #:
 #: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that

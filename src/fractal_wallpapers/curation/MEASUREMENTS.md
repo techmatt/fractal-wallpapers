@@ -403,6 +403,15 @@ retention alone, and why `rank_key` cannot be retired while the cascade runs.
   Prices per shot are in [`LEGS.md`](LEGS.md)'s *What the drawn weight did, measured
   2026-09-18*.
 
+* **A plane sampler's openable place costs 6.2 s before anything opens it, measured
+  2026-09-18** (`d6_sampler_leg_ckpt131`): two harvest sessions plus `curate score` and
+  `curate embed` took **3,554 s to make 571 admitted never-opened places**, and opening them
+  at one candidate each was a further 1.10 s a place. **A sampler unit cannot start with a
+  hunt** — it has to harvest its own stock first — so an hour of sampler is about 580 places
+  found and not yet looked at. That is why `mine_finish_then_open_ckpt139` gave its whole
+  Phase 2 to the rank walk: an even split would have left the sampler ~1,600 s, about 260
+  places and no clock to open them.
+
 * **Aiming a Julia `c` at a parabolic point buys nothing, measured 2026-09-21**
   (`parabolic_c_pilot_ckpt139`, three arms, 12 walk expansions a root each). Admitted
   locations a root, against the twin channel's **38.6**: main cardioid **0.0–0.6**,
@@ -1182,3 +1191,27 @@ because a tightened constraint here comes back with a better answer —
 [`MEASUREMENTS_decisions.md`](MEASUREMENTS_decisions.md)'s *A tightened constraint
 comes back with a BETTER answer, so a shadow price here is a suboptimality
 reading*.
+
+## What a mining night's two ends cost, measured 2026-09-21
+
+The envelope a producing leg cannot spend on production. Timed on `mine_finish_then_open_ckpt139`
+and `close_mining_save_solves_ckpt139`, one process after another on a warm store, twenty
+solves each time — the general n=1000 and the nineteen collections of
+[`targets`](targets.py). **A set does not scale with its seats**: the n=150 collections cost
+about what the n=1000 general pass does, because the pool read is the same read.
+
+| end | what it is | wall |
+|---|---|--:|
+| front | the PRE set, twenty `curate solve run --no-render` | **24.4 min** |
+| tail | `hunt`/`depth merge` | 4 min |
+| tail | one warm `gallery-grade score-pool` over 62,361 pictures | 11 min |
+| tail | the POST set, twenty solves | 24.6 min |
+| **tail, total** | the three above summed, before the report is written | **~40 min** |
+| (either) | twenty `curate solve record`, seated and written to disk | 26.7 min |
+
+**So reserve 25 minutes at the front and ~45 at the back**, the sum plus the gaps between one
+process and the next — a prompt that reserves 15 and 55 is short at the front and spending the
+back on the report. `mine_finish_then_open_ckpt139` had a 3h21m window and lost 35
+minutes of it to the two solve sets alone, which is why three of its five named routes ran.
+The prose is in [`LEGS.md`](LEGS.md)'s *A twenty-solve set is 24 minutes, and a night's two
+ends are 35 minutes and 45*.

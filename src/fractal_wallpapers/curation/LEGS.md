@@ -10,6 +10,75 @@ one sweep measured, what one pass found, what a night's arms bought — are in
 [`LEGS_decisions.md`](LEGS_decisions.md), which is where a superseded rule goes and
 where a figure keeps the date it was taken on.
 
+## Mining is CLOSED (2026-09-21) — reopen inventory
+
+Mining stopped with the twenty `final139_*` galleries and stays stopped until Matt
+reopens it. This is the whole of what a reopening needs, in one place, so that no
+session has to carry it: every arm that is open, every arm that is closed, and the
+row that prices each one. **Nothing here is a cursor.** A leg's leftovers are not a
+prefix — a hunt shuffles its manifest, *A hunt does NOT serve `--places` in the
+manifest's order* below — so **resumption is re-derivation**: take the population
+again and subtract every place the ledger now holds.
+
+**OPEN — the hole at proven places, 10,241 left.** Of 53,823 ledger places, 18,354
+clear `Q4_BAR` and **10,692** of those held no `itinerary` and no
+`direct_trap_lines` row at all; `mf139_u2` took 588 and its clears made new proven
+places, so 10,241 stand. ⚠ **Do not give the two equal width again** — `itinerary`
+cleared **18.5%** against `direct_trap_lines`' **2.9%** on the same 588, at 2.237
+engine s a candidate for the pair, which is cheaper than nine dear modes on the same
+ground. [`MEASUREMENTS.md`](MEASUREMENTS.md)'s `mf139_u2` row under *Every
+per-candidate rate this project has measured*, and *The two thinnest mined modes
+still have a five-figure hole, re-read 2026-09-21* below.
+
+**OPEN — the ranked never-opened stock, 37,951 left.** Ranks 1–6,276 are opened.
+Down the rank it gets dearer and thinner at once: **1.676 wall s a place against
+1.39** one band up, **6.9% clearing against 8.7%**. [`MEASUREMENTS.md`](MEASUREMENTS.md)'s
+`mf139_u3` row, same heading, and *The ranked stock after 2026-09-21* below.
+
+**OPEN — four parameter planes the sampler has never run on.** Read off the harvest
+ledgers, only `phoenix:classic` and `multibrot6`/`julia:multibrot6` have a merged
+sampler session; **`mandelbrot`, `multibrot3`, `multibrot4` and `multibrot5` have
+none**. ⚠ **A sampler unit cannot start with a hunt** — it harvests its own stock
+first, at **~6.2 s an openable place** — so an hour buys about 580 places found and
+not yet opened. [`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the sourcing channels
+cost in seats, measured*, and [`discovery/README.md`](../discovery/README.md)'s
+*A parameter plane: straddle refinement, and it does not run out*.
+
+**OPEN — 268 undeepened clears, and they are the cheapest ground there is.**
+`mf139_u2`/`_u3`/`_u3b` cleared 126 at the hole places and 142 on the rank walk and
+deepened none of them. An opening leg's own clears priced at **47.9 fine-bar rows
+per 1000 wall s**, the best of any list this project has measured, at 1.24 wall s a
+place — *The same recipe, run to the end of every list* below. The door is
+`curate depth run --floor-places` over them.
+
+**OPEN, but count the supply first — the nucleus-rooted Julia walk, n=14.** The
+salvage out of the parabolic pilot: a Julia walk rooted at a **deep minibrot
+nucleus** ran at about **2x the twin channel** at every stage, and it has a verb
+line at *Aiming a Julia `c` at a parabolic point — the pilot recipe, 2026-09-21*
+below, with `nucleus.identify_nucleus` handing over the `c`. ⚠ It was measured over
+**14** distinct degree-2 centered nuclei, all of period 28–57, because that is every
+one this store holds — at fourteen the arm saturates in an hour and the 2x is a
+reading of fourteen neighbourhoods rather than of a channel.
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What the sourcing channels cost in seats,
+measured*.
+
+**CLOSED — the 179 tuned-descent places.** All 179 got a `tia` row on 2026-09-21,
+27 minutes at one mode a place, **6 clears and 0 seats in either the general
+gallery or the nineteen collections**. A tuned place costs the same at one mode as
+at thirteen — 22.06 and 22.55 engine s a candidate — so there is no narrower roster
+left to try. *That list is CLOSED* below, and the two `mf139_u1_*` rows under
+*Every per-candidate rate this project has measured*.
+
+**CLOSED — aiming a Julia `c` at a parabolic point.** Twenty-one of the twenty-four
+strata the pilot could populate are dead at every `ε` and every side: the main
+cardioid, the period-2 disc, and every low-period island. The result is monotone in
+the component's own scale, and the one stratum that worked sits a median `1.1e-7`
+from a nucleus, which is the arm above and not this one. ⚠ **An aimed draw could
+not go below `ε = 3.16e-3` anyway**: the walk's own `interior_cap` of 0.30 refuses
+what a narrower offset frames, so a descendant would die of a cap and read as a bad
+place. *Aiming a Julia `c` at a parabolic point — the pilot recipe, 2026-09-21*
+below has the recipe; **do not schedule an arm off it.**
+
 ## `curate pool-draw` — the one draw that is not aimed at anything
 
 Every other sheet this project cuts is aimed: a band around a bar, a mode nobody
@@ -1815,13 +1884,12 @@ fractal-wallpapers curate solve run --collection <name> --name <tag>_<name> --no
 ```
 
 **A twenty-solve set is 24 minutes, and a night's two ends are 35 minutes and 45**, timed on
-2026-09-21: the PRE set ran 2:41–3:06pm and the POST 5:39–6:04pm, 24.4 and 24.6 minutes, one
-process after another on a warm store. So the front of a mining leg is **~25 min** and not
-the quarter hour a prompt tends to reserve, and its tail is a merge (4) plus a warm
-`gallery-grade score-pool` (**11**, over 62,361 pictures) plus the POST set (24) — **~40
-minutes before the report is written**. Reserve the hour. `mine_finish_then_open_ckpt139` had
-a 3h21m window and 35 of those minutes went on the two solve sets alone, which is what left
-it room for three of its five named routes.
+2026-09-21 — so the front of a mining leg is **~25 min** and not the quarter hour a prompt
+tends to reserve, and its tail is a merge, a warm `gallery-grade score-pool` and the POST set
+before the report is written. **Reserve 25 at the front and ~45 at the back.** The envelope is
+[`MEASUREMENTS.md`](MEASUREMENTS.md)'s *What a mining night's two ends cost, measured
+2026-09-21*; `mine_finish_then_open_ckpt139` had a 3h21m window and 35 of those minutes went
+on the two solve sets alone, which is what left it room for three of its five named routes.
 
 ### `--draw-cells` is the same filter cut by RULE instead of by hand
 

@@ -704,6 +704,25 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### preclose_ckpt139
+
+`preclose_ckpt139`, 2026-09-21, `.[dev,models]` with a release engine. **Fast: 4,883
+passed in 153.81 s (2:33)**, 157 deselected, green. **No test added**, count unmoved
+against `portable_final139`'s 4,883.
+
+**This is the reading that says a doc prompt should still take the lane, and also the one
+that says the clock cannot be read on it.** The whole diff is six Markdown files and one
+`#:` comment in `curation/tentative.py`, so **nothing executable changed at all** — and
+the lane still moved **+7.1 s** against `close_mining_save_solves_ckpt139`'s 146.67 s,
+which puts a hard floor of about seven seconds under what "reads as box" means in this
+band. Any future move smaller than that is not evidence of anything.
+
+⚠ **`portable_final139`'s reading was never appended here either**, the same gap the entry
+below notes for `mine_finish_then_open_ckpt139`: it read 4,883 in 157.68 s with +2 tests
+and one red fixed in place, and it did not update `CLAUDE.md`'s figure, so that line stood
+at 4,881 against a tree of 4,883 until this prompt. Two commits in a row skipping the log
+is what makes the *stash-and-collect* check worth its minute.
+
 #### close_mining_save_solves_ckpt139
 
 `close_mining_save_solves_ckpt139`, 2026-09-21, `.[dev,models]` with a release engine.
