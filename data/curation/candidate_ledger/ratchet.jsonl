@@ -122,3 +122,5 @@
 {"schema": 1, "event": "mark", "at": "2026-09-21T18:39:50Z", "why": "prune", "counts": {"rows": 565235, "recipe_key_named": 552021}}
 {"schema": 1, "event": "deleted", "at": "2026-09-21T18:39:50Z", "why": "prune", "counts": {"rows": 3889, "recipe_key_named": 3889}}
 {"schema": 1, "event": "deleted", "at": "2026-09-21T18:43:06Z", "why": "prune", "counts": {"rows": 907, "recipe_key_named": 907}}
+{"schema": 1, "event": "mark", "at": "2026-09-21T23:57:40Z", "why": "prune", "counts": {"rows": 566753, "recipe_key_named": 553539}}
+{"schema": 1, "event": "mark", "at": "2026-09-22T00:28:03Z", "why": "prune", "counts": {"rows": 566920, "recipe_key_named": 553706}}

@@ -246,7 +246,11 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `parabolic_c_pilot_ckpt139` added 21 fast tests on
+**The newest reading is fast only**: `mine_finish_then_open_ckpt139` added no test on
+2026-09-21 and read **4,881 fast in 152.98 s (2:33)**, 157 deselected, green, count unmoved;
+taken six minutes after the leg's twenty POST solves ended, so the stores were warm, and the
++4.5 s against the reading below reads as box. Before it,
+`parabolic_c_pilot_ckpt139` added 21 fast tests on
 2026-09-21 and read **4,881 fast in 148.43 s (2:28)**, 157 deselected, green, so the tree
 is *believed* at 5,038 collected; taken three minutes after a depth leg, a `score-pool` and
 a four-pass solve driver, so the stores were warm.

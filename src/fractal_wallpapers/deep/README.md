@@ -438,6 +438,11 @@ cost about 17.5 wall s a shot on the full mined roster — one collection row pe
 minutes on 2026-09-19 — so a floor leg over them names a narrow `--floor-modes`.
 `curation/LEGS.md`'s *The same recipe, run to the end of every list* has the reading.
 
+**They are done.** On 2026-09-21 all 179 took a `tia` row at `--floor-width 1` in 1,618 s
+of leg wall and cleared **6 (3.35%)**, one of them at `p_ge4` 1.0. Nothing is paged here
+any more; `curation/LEGS.md`'s *That list is CLOSED* carries the prices and the one
+surprise — the stored `smooth` score did not order the `tia` yield.
+
 **Four pairs produced four candidates each and stopped**, their root expanding
 once before every child fell under the floor. They are not failures of the aim:
 they are copies whose decorations at that scale hold nothing the gates admit, and

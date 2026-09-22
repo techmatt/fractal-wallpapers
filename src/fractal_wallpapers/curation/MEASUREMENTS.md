@@ -707,12 +707,31 @@ that leg's contention: three engines cost about 1.6–1.8x per candidate over on
 | **20.911** | 3 shareable modes, breadth, **`phoenix:classic` alone** | 3 | 3 | 09-15 | 280 cand / 246 blocks | `on125_phoenix` |
 | **39.642** | **`stripe` alone**, breadth, the LAST 177 `phoenix:classic` places | 3 | 1 | 09-15 | 177 cand / 177 blocks | `con125_phoenix_stripe` |
 | 0.36–0.60 | `render --manifest`, no leg and no sharing | 1 | — | 09-15 | 500 renders / 3–5 min wall | fresh-install notes |
+| **22.06** | **`tia` alone**, floor draw over the tuned-descent places, best 30 first | 3 | 1 | 09-21 | 30 cand / 30 blocks | `mf139_u1_1` |
+| **22.55** | the same roster, the remaining 149 of the 179 | 3 | 1 | 09-21 | 149 cand / 149 blocks | `mf139_u1_2` |
+| **2.237** | **`itinerary` + `direct_trap_lines`**, floor draw over proven places untried in both | 3 | 1 | 09-21 | 1,176 cand / 588 places | `mf139_u2` |
+| **1.676** | `hunt --places`, ranked never-opened stock, ranks 4,216–6,276 | 1 | — | 09-21 | 1,894 places / 3,174 s wall | `mf139_u3` |
 
 **The judge is two orders cheaper than the engine, and that is why only training wants a
 GPU.** Those same 500 candidate-geometry pictures read through the shipped render head on
 **CPU** took **12.9 s including a 2.9 s model load** — about **26 ms a picture**, so
 scoring a whole batch costs less than one render out of it. The row above is one engine
 by construction rather than by choice: `render --manifest` takes no `--workers` at all.
+
+⚠ **A tuned-descent place costs the same at a one-mode roster as at thirteen**, measured
+2026-09-21 by `mf139_u1_1`/`_u1_2` over all 179 of them: **22.06 and 22.55 engine seconds a
+candidate**, against the 13-mode unit's 17.5 **wall** s a shot on the 23 that clear the gate.
+A place at width ~1e-11 pays its iteration count per render and shares nothing, so a narrow
+roster buys the *list*, not a cheaper shot — the whole 179 came in at **8.4–12.1 wall s a
+shot** only because one mode is one shot a place. Size a leg here by shots, never by modes.
+
+**The two hole modes are 2.237 engine s a candidate together and they are not alike.**
+`mf139_u2` gave 588 proven places untried in both an `itinerary` and a `direct_trap_lines`
+row apiece — 1,176 of 1,176 made, none stopped for budget, 0.862 wall s a shot at a
+concurrency of 2.98. That is **cheaper than `mine_pilot_ckpt124_armA`'s 2.870** for nine dear
+modes on the same kind of ground, so a two-mode dear roster is not priced by taking a ninth
+of the nine-mode figure. What separates them is the clear rate, not the price: `itinerary`
+**109 of 588 (18.5%)**, `direct_trap_lines` **17 of 588 (2.9%)** at `solve.Q4_BAR`.
 
 ⚠ **`threads` costs 3.872 and its median stored render reads 2.324 — a 67% gap, and
 the render figure is the one that misleads.** A composite dumps no field
