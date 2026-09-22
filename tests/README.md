@@ -704,6 +704,28 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### minibrot_descent_census_ckpt140
+
+`minibrot_descent_census_ckpt140`, 2026-09-22, `.[dev,models]` with a release engine.
+**Fast: 4,896 passed in 155.34 s (2:35)**, 157 deselected, green. **+11** in a new
+`tests/test_minibrot.py`, so the tree is believed at **5,053** collected.
+
+**The count moved by exactly what this prompt added**, against
+`reference_reseat_ckpt140`'s 4,885 — the first entry in a while with no unmeasured drift
+under it, which is what taking the lane every prompt is supposed to buy.
+
+⚠ **`reference_reseat_ckpt140`'s own reading was never appended here** and is in
+`CLAUDE.md` alone: 4,885 in 147.40 s, 157 deselected, green, +2. That is now three
+consecutive prompts whose readings reached `CLAUDE.md` and not this log.
+
+**+7.9 s, and it is the box.** The lane was taken four minutes after a two-hour census leg
+that held three processes at below-normal priority on every core, so the page cache was
+full of `rows.jsonl` and nothing else; 155.34 s sits just outside the 144.50–153.96 s band
+the last several readings occupy and the move is at `preclose_ckpt139`'s own ~7 s floor for
+what "reads as box" means in this band. The eleven new guards are **1.09 s** measured on
+their own file — one Newton solve at period 1026 (0.21 s) and ten pieces of arithmetic —
+so they cannot be more than a seventh of it.
+
 #### preclose_ckpt139
 
 `preclose_ckpt139`, 2026-09-21, `.[dev,models]` with a release engine. **Fast: 4,883

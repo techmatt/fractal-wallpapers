@@ -261,9 +261,15 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `reference_reseat_ckpt140` added 2 fast tests on
-2026-09-21 and read **4,885 fast in 147.40 s (2:27)**, 157 deselected, green, so the tree
-is *believed* at 5,042 collected; taken on a quiet box a few minutes after two
+**The newest reading is fast only**: `minibrot_descent_census_ckpt140` added 11 fast tests
+on 2026-09-22 and read **4,896 fast in 155.34 s (2:35)**, 157 deselected, green, so the
+tree is *believed* at 5,053 collected. **The count moved by exactly what the prompt
+added** — no unmeasured drift under it for once — and the +7.9 s is the box: it was taken
+four minutes after a two-hour census leg that held three below-normal processes on every
+core, and the eleven guards cost 1.09 s measured on their own file. Before it,
+`reference_reseat_ckpt140` added 2 fast tests on
+2026-09-21 and read **4,885 fast in 147.40 s (2:27)**, 157 deselected, green; taken on a
+quiet box a few minutes after two
 `--no-render` solves, so the pool was out of memory again by then and the −6.4 s against
 the reading below reads as box. Before it, `preclose_ckpt139` added no test on 2026-09-21 and read
 **4,883 fast in 153.81 s (2:33)**, 157 deselected, green, count unmoved, so the tree is
