@@ -629,6 +629,7 @@ one finished with `stopped_for_budget` 0:
 | the 23 tuned-descent places that clear `Q4_BAR` (the other 179: **narrow roster only**) | **17.5 wall s** | 9.4% | 1.1 |
 | an opening leg's own undeepened clears (150, all Julia) | 1.24 wall s | 12.4% | 47.9 |
 | `hunt --places`, ranked never-opened stock ranks 1,718–4,215 | 1.39 wall s a place | 8.7% | 23.4 |
+| the same, ranks 4,216–6,276 (`mf139_u3`+`u3b`, 2026-09-21, 2,061 whole) | **1.68 wall s a place** | 6.9% | — |
 
 **Down the graded list the yield flattens rather than falling away.** Fine-bar rows per
 1000 shots were 23.2 at ranks 708–1,075, then 18.8, then 16.7 and 16.9 over the last two
@@ -639,6 +640,15 @@ they paid it for the fewest fine-bar rows of any list.
 keys: 21 on 2026-09-18 (ranks 1–707, median `p_fine` 0.479) and 17 on 2026-09-19 (ranks
 708–2,179), **38 in all**. The night's 25 general seats also count the undeepened
 clears (3) and the ranked opening (5).
+
+**The ranked stock after 2026-09-21**: ranks 1–6,276 are opened and **37,951** remain.
+`mf139_u3` took 1,894 of the 2,061 in ranks 4,216–6,276 and `mf139_u3b` the other 167. ⚠ Those
+167 were **not** a tail — a hunt shuffles (*A hunt does NOT serve `--places` in the manifest's
+order* above) — and all 167 were `julia:mandelbrot`, because the round-robin drained the
+slice's other seven partitions outright. **They were the dear part and not the poor part**:
+3.23 render s a place against the slice's 1.68, clearing 7.2% against 6.9%, so a hunt's
+leftovers are worth taking rather than writing off. **Down the rank the band got dearer and
+thinner at once**: 1.68 wall s a place against 1.39 one band up, 6.9% clearing against 8.7%.
 
 **The ranked stock after 2026-09-19**: ranks 1–4,215 are opened, so **40,012** of the
 44,227 admitted never-opened places remain from rank 4,216 on (44,227 − 1,717 − 2,498).
@@ -651,6 +661,20 @@ of 2026-09-19. The full mined roster costs about 17.5 wall s a shot there, and o
 2026-09-19 that bought one collection row per 88 minutes; 179 places × 13 modes at that
 price is about 11.3 hours. Never size them at full roster price again: a leg for them
 names a narrow `--floor-modes` roster, or leaves them out.
+
+**That list is CLOSED**, `mf139_u1_1`/`_u1_2` on 2026-09-21: all 179 got a `tia` row at
+`--floor-width 1`, 179 of 179 made, none stopped for budget, **1,618 s of leg wall** — so
+the whole population cost 27 minutes once the roster was one mode. `tia` was the roster
+because every one of the 179 held **exactly one row and it was `smooth`**, put there by
+`tuned129_open`; a `smooth` roster would have been a palette redraw at every place.
+**6 clears of 179 (3.35%)**, best `p_ge4` **1.0**.
+
+⚠ **The place's existing `smooth` score does not order its `tia` yield, and the list was
+served best-first on exactly that.** The best 30 by stored `p_ge4` cleared **0 of 30** at a
+top of 0.124; the remaining 149 cleared **6**. A mode a place has never been shown is a
+different question from the one its stored row answers, so a manifest of untried (place,
+mode) pairs has no head to serve first — order it by rank if a budget may cut it, and read
+the yield off the whole list rather than off its top slice.
 
 **Three readings mislead on a live
 leg.** `pictures/` holds about 1.4 files a shot, so count `rows.jsonl`. A place's 13 shots
@@ -1313,6 +1337,25 @@ here claimed until 2026-09-16 and which is false for the same reason
 `--floor-places` could not reach the 1,607. See the section below.
 
 ### ⚠ `curate hunt --places` cannot reach an unopened place either, and `--graded` is that door
+
+★ **A hunt does NOT serve `--places` in the manifest's order, so a budget-cut hunt is a
+SAMPLE of the manifest and never its prefix.** `hunt.plan` round-robins over the partitions
+and takes each one's places in a **seeded uniform shuffle** ([`narrowed`] keeps the same
+shuffle, which is what makes a narrowed hunt the hunt it would have been). Read off
+`mf139_u3`'s first 220 rows on 2026-09-21, a rank-ordered manifest of 2,061 places came out
+`julia:mandelbrot`, `julia:multibrot3`, `julia:multibrot4`, `julia:multibrot5`, `mandelbrot`,
+… with ranks 4,488, 5,744, 5,895, 6,268, 4,341 — **108 rank inversions in 220 rows**, which
+is what a shuffle looks like.
+
+Two things follow, and the second is the one that has been quietly assumed away. A hunt over
+a mixed manifest spends its clock **evenly over the partitions**, so a slice that is 34%
+`julia:mandelbrot` and 0.05% `multibrot3` still opens them one for one until the thin ones run
+out. And **"resumable from the last rank opened" is not a thing a hunt can offer**: there is
+no last rank, only a scatter. `mine_ckpt132_night_0730` reported its rank slice that way and
+was right by luck — it finished all 2,498 of them, so the scatter closed the slice. The
+resumption that does work is **re-derivation**: the ranked stock less every place the ledger
+now holds, which is what a `lists.py` of this shape rebuilds in a single stream and what any
+leg here should name as its population rather than a rank.
 
 ★ **A hunt's population is the ADMITTED one, so a place with no sidecar row is
 refused rather than hunted.** `hunt.scanned` is `embeddings.load` through
@@ -2465,6 +2508,14 @@ the nine a dumped field cannot serve. The field there is known good and the whol
 dear half of the roster has never been asked. Measured 2026-09-01: **19,504** opened
 locations, **4,319** with any dear attempt, so **15,185** are untried and **15,169**
 of those still resolve to a renderable row.
+
+**The two thinnest mined modes still have a five-figure hole, re-read 2026-09-21** over
+53,823 ledger places: **18,354** are over `Q4_BAR` and **10,692** of those hold no
+`itinerary` and no `direct_trap_lines` row at all — a population, not a remainder, and the
+richest ground either mode has. `mf139_u2` served the first 588 of it best-first and cleared
+**18.5%** on `itinerary` against **2.9%** on `direct_trap_lines`, so the two do not deserve
+equal width the next time one of these is sized. **10,241 are left**, and the count rose
+against the 10,104 the arithmetic gives because the night's clears made new proven places.
 
 **`--cell` takes several cells and one place is aimed at exactly one.** The arm's
 places are split round-robin over the cells in the order asked, so a leg sent at the
