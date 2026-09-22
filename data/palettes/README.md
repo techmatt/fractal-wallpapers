@@ -250,8 +250,9 @@ proven twice, not the whole library and not the 219 that seated exactly once.
 
 The derivation is the join `magenta_30m_ckpt130` wrote down: a gallery row carries
 no colormap, so the 1,000 rows of `<stamp>/gallery.jsonl` join on `key` to
-`<stamp>/recipes.jsonl` — tracked for that one stamp, for the reason `CLAUDE.md`
-gives — and `recipe.colormap` is counted off the joined row. Every key joined.
+`<stamp>/recipes.jsonl` — tracked for that one stamp then, untracked for every
+record now, for the reason `CLAUDE.md` gives — and `recipe.colormap` is counted
+off the joined row. Every key joined.
 **It is a reading of one record and not a standing rule**: a later publication
 re-derives it, and the count column is what a reader re-filters on at another
 threshold.
