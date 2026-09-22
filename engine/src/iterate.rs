@@ -813,6 +813,66 @@ mod tests {
         }
     }
 
+    /// The Phoenix parameter plane with `p = 0` is the Mandelbrot set, exactly: `z₀ =
+    /// z₋₁ = 0` and a zero memory term leave `z² + c` from the origin. Held over a grid
+    /// that crosses the whole set, interior and exterior both, to the smooth count's bits.
+    #[test]
+    fn the_phoenix_plane_with_zero_p_is_the_mandelbrot_set() {
+        let plane = Family::PhoenixM {
+            p: Complex::new(0.0, 0.0),
+        };
+        let mandelbrot = Family::Multibrot { degree: 2 };
+        let (mut escaped, mut interior) = (0, 0);
+        for row in 0..48 {
+            for col in 0..64 {
+                let re = -2.2 + 3.0 * (col as f64 + 0.5) / 64.0;
+                let im = -1.2 + 2.4 * (row as f64 + 0.5) / 48.0;
+                let pixel = Complex::new(re, im);
+                let a = escape(&plane, pixel, 600);
+                let b = escape(&mandelbrot, pixel, 600);
+                assert_eq!(a.escaped, b.escaped, "at {pixel}");
+                assert_eq!(
+                    a.smooth.to_bits(),
+                    b.smooth.to_bits(),
+                    "smooth count differs at {pixel}"
+                );
+                if a.escaped {
+                    escaped += 1;
+                } else {
+                    interior += 1;
+                }
+            }
+        }
+        assert!(
+            escaped > 0 && interior > 0,
+            "escaped={escaped} interior={interior}"
+        );
+    }
+
+    /// The plane's point is its Julia set's `c`: at the same `p`, the plane's orbit of
+    /// `c` is the Phoenix set's orbit of `z₀ = 0`, step for step. That identity is what
+    /// makes a click on the plane open the picture it was a point of.
+    #[test]
+    fn a_point_of_the_phoenix_plane_is_its_phoenix_set_at_the_origin() {
+        let p = crate::family::PHOENIX_P;
+        let plane = Family::PhoenixM { p };
+        for c in [
+            crate::family::PHOENIX_C,
+            Complex::new(0.3, 0.2),
+            Complex::new(-0.9, 0.45),
+        ] {
+            let set = Family::Phoenix {
+                c,
+                p,
+                z_prev: Complex::new(0.0, 0.0),
+            };
+            let a = escape(&plane, c, 800);
+            let b = escape(&set, Complex::new(0.0, 0.0), 800);
+            assert_eq!(a.escaped, b.escaped, "at {c}");
+            assert_eq!(a.smooth.to_bits(), b.smooth.to_bits(), "at {c}");
+        }
+    }
+
     /// A non-zero `z₋₁` is a real axis, not a decoration: it must move the set.
     #[test]
     fn a_nonzero_z_prev_gives_a_different_set() {

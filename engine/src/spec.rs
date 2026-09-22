@@ -99,6 +99,13 @@ pub enum FamilySpec {
         #[serde(default = "origin")]
         z_prev: Pair,
     },
+    /// The same recurrence over its parameter plane: `c` = the pixel, `z₀ = z₋₁ = 0`,
+    /// and `p` fixed, with the classic `p` as its default — so `{"kind": "phoenix_m"}`
+    /// alone is the plane the classic Ushiki set is a point of.
+    PhoenixM {
+        #[serde(default = "phoenix_p")]
+        p: Pair,
+    },
     /// `z ← z^d + c` over the parameter plane at a **non-integer** `d`, on the
     /// principal branch: the gaps between the integer degrees the families above
     /// render, and **render-only** — `render` and `dump-field` take it and every
@@ -425,6 +432,15 @@ impl FamilySpec {
                     ..plain(family, "phoenix", 2)
                 })
             }
+            FamilySpec::PhoenixM { p } => {
+                let family = Family::PhoenixM {
+                    p: pair(&p, "family.p")?,
+                };
+                Ok(ResolvedFamily {
+                    p: Some(p),
+                    ..plain(family, "phoenix_m", 2)
+                })
+            }
             FamilySpec::FractionalMultibrot { degree } => {
                 let value = decimal(&degree, "family.degree")?;
                 check_fractional_degree(value)?;
@@ -713,6 +729,17 @@ mod tests {
             }
         );
         assert_eq!(resolved.location.z_prev.unwrap(), ["0.0", "0.0"]);
+    }
+
+    /// The bare plane is the plane the classic set is a point of, and it comes home
+    /// to its own measured row rather than to the classic set's.
+    #[test]
+    fn the_phoenix_plane_defaults_to_the_classic_p() {
+        let resolved = resolve(r#"{"kind":"phoenix_m"}"#);
+        assert_eq!(resolved.family, crate::family::PHOENIX_PLANE);
+        assert_eq!(resolved.location.family, "phoenix_m");
+        assert_eq!(resolved.location.center_re, "-0.69");
+        assert_eq!(resolved.location.width, "2.8");
     }
 
     /// The decimal strings are the identity of a location, so they must survive

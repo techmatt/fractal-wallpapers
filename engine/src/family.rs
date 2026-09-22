@@ -152,6 +152,15 @@ pub enum Family {
         /// else is a different set from the same `(c, p)`.
         z_prev: Complex<f64>,
     },
+    /// The Phoenix recurrence over its **parameter plane**: `c` = the pixel,
+    /// `z₀ = z₋₁ = 0`, and `p` fixed. The Mandelbrot-type Phoenix, and the plane the
+    /// Julia-type [`Phoenix`](Family::Phoenix) sets are points of: the one at `c`
+    /// here, at the same `p` and `z₋₁ = 0`, is that `c`'s Phoenix set. The classic
+    /// Ushiki instance is the point `c = 0.5667` of the `p = −0.5` plane.
+    ///
+    /// `p = 0` erases the memory term and leaves `z² + c` from `z₀ = 0` — the
+    /// Mandelbrot set — which is the property `iterate::tests` pins.
+    PhoenixM { p: Complex<f64> },
     /// `z ← z^d + c` over the parameter plane at a **non-integer** `d`, on the
     /// principal branch. The gaps between the integer degrees the other families
     /// render — and a stretch below the quadratic one, where the set thins
@@ -185,6 +194,10 @@ pub const CLASSIC_PHOENIX: Family = Family::Phoenix {
     p: PHOENIX_P,
     z_prev: Complex::new(0.0, 0.0),
 };
+
+/// The plane the classic instance is a point of: what `{"kind": "phoenix_m"}` alone
+/// means, and the instance its home row was measured on.
+pub const PHOENIX_PLANE: Family = Family::PhoenixM { p: PHOENIX_P };
 
 /// The orbit's initial state: `(z₀, z₋₁, c)`.
 ///
@@ -274,6 +287,10 @@ macro_rules! over_written_out {
                 let $name = $crate::family::Family::Phoenix { c, p, z_prev };
                 $body
             }
+            $crate::family::Family::PhoenixM { p } => {
+                let $name = $crate::family::Family::PhoenixM { p };
+                $body
+            }
             other => {
                 debug_assert!(
                     !other.is_written_out(),
@@ -293,7 +310,9 @@ impl Family {
     pub fn seed(&self, pixel: Complex<f64>) -> Seed {
         let zero = Complex::new(0.0, 0.0);
         match *self {
-            Family::Multibrot { .. } | Family::FractionalMultibrot { .. } => (zero, zero, pixel),
+            Family::Multibrot { .. }
+            | Family::PhoenixM { .. }
+            | Family::FractionalMultibrot { .. } => (zero, zero, pixel),
             Family::Julia { c, .. } => (pixel, zero, c),
             Family::Phoenix { c, z_prev, .. } => (pixel, z_prev, c),
         }
@@ -307,16 +326,28 @@ impl Family {
     /// instead of matching the families over again and forgetting Phoenix.
     pub fn pixel_is_z0(&self) -> bool {
         match *self {
-            Family::Multibrot { .. } | Family::FractionalMultibrot { .. } => false,
+            Family::Multibrot { .. }
+            | Family::PhoenixM { .. }
+            | Family::FractionalMultibrot { .. } => false,
             Family::Julia { .. } | Family::Phoenix { .. } => true,
         }
     }
 
     /// One step of the recurrence: `(z_n, z_{n-1}, c) → z_{n+1}`.
+    ///
+    /// **`inline(always)`, because the specialization depends on it.** The escape
+    /// loop folds this `match` away only if the body is inlined into a call site
+    /// that sees the family as a constant, and the inliner's cost model decides
+    /// that by the size of the whole `match`. Adding the Phoenix plane's arm tipped
+    /// it: the Mandelbrot anchor at 1600×900 × 4 went from 6.5 s to 13.4 s with
+    /// every pixel byte-identical, because each iteration was now a call and a
+    /// runtime match. Forced, it is 6.4 s again. The arithmetic is unmoved; only
+    /// where it is compiled to is.
+    #[inline(always)]
     pub fn step(&self, z: Complex<f64>, z_prev: Complex<f64>, c: Complex<f64>) -> Complex<f64> {
         match *self {
             Family::Multibrot { degree } | Family::Julia { degree, .. } => cpow(z, degree) + c,
-            Family::Phoenix { p, .. } => z * z + c + p * z_prev,
+            Family::Phoenix { p, .. } | Family::PhoenixM { p } => z * z + c + p * z_prev,
             Family::FractionalMultibrot { degree } => cpowf(z, degree) + c,
         }
     }
@@ -333,7 +364,9 @@ impl Family {
     pub fn derivative_seed(&self) -> (Complex<f64>, Complex<f64>) {
         let (zero, one) = (Complex::new(0.0, 0.0), Complex::new(1.0, 0.0));
         match *self {
-            Family::Multibrot { .. } | Family::FractionalMultibrot { .. } => (zero, zero),
+            Family::Multibrot { .. }
+            | Family::PhoenixM { .. }
+            | Family::FractionalMultibrot { .. } => (zero, zero),
             Family::Julia { .. } => (one, zero),
             Family::Phoenix { .. } => (one, zero),
         }
@@ -345,10 +378,15 @@ impl Family {
     /// * `z^d + c` by `c`  → `d·z^{d−1}·dz + 1`
     /// * `z^d + c` by `z₀` → `d·z^{d−1}·dz`
     /// * `z² + c + p·z_{n−1}` by `z₀` → `2·z·dz + p·dz_{n−1}`
+    /// * `z² + c + p·z_{n−1}` by `c`  → `2·z·dz + 1 + p·dz_{n−1}`
     ///
     /// The `+1` is the parameter plane's alone, and Phoenix is the one family
     /// whose derivative needs its own memory term — which is why this takes two
     /// steps of history exactly as `step` does.
+    ///
+    /// `inline(always)` for [`step`](Family::step)'s reason: it is called once an
+    /// iteration from the same specialized loops, and grew the same arm.
+    #[inline(always)]
     pub fn derivative_step(
         &self,
         z: Complex<f64>,
@@ -363,6 +401,7 @@ impl Family {
                 Complex::new(degree as f64, 0.0) * cpow(z, degree - 1) * dz
             }
             Family::Phoenix { p, .. } => 2.0 * z * dz + p * dz_prev,
+            Family::PhoenixM { p } => 2.0 * z * dz + 1.0 + p * dz_prev,
             Family::FractionalMultibrot { degree } => {
                 Complex::new(degree, 0.0) * cpowf(z, degree - 1.0) * dz + 1.0
             }
@@ -383,7 +422,7 @@ impl Family {
     pub fn escape_exponent(&self) -> f64 {
         match *self {
             Family::Multibrot { degree } | Family::Julia { degree, .. } => degree as f64,
-            Family::Phoenix { .. } => 2.0,
+            Family::Phoenix { .. } | Family::PhoenixM { .. } => 2.0,
             Family::FractionalMultibrot { degree } => degree,
         }
     }
@@ -398,7 +437,10 @@ impl Family {
     /// render asks this and refuses.
     pub fn is_render_only(&self) -> bool {
         match *self {
-            Family::Multibrot { .. } | Family::Julia { .. } | Family::Phoenix { .. } => false,
+            Family::Multibrot { .. }
+            | Family::Julia { .. }
+            | Family::Phoenix { .. }
+            | Family::PhoenixM { .. } => false,
             Family::FractionalMultibrot { .. } => true,
         }
     }
@@ -425,13 +467,14 @@ impl Family {
             Family::Multibrot { degree: 2..=6 }
                 | Family::Julia { degree: 2..=6, .. }
                 | Family::Phoenix { .. }
+                | Family::PhoenixM { .. }
         )
     }
 
     /// What this family's filled set was measured to span, or `None` for the
     /// one family that cannot be measured.
     ///
-    /// These six boxes are the **only** framing numbers in the engine. They are
+    /// These seven boxes are the **only** framing numbers in the engine. They are
     /// measurements, not choices: a `MEASURE_GRID`² grid over `±MEASURE_HALF_SPAN`
     /// at a cap of [`MEASURE_CAP`], and a sample counts as filled when its orbit
     /// has not left the bailout disc by the cap.
@@ -444,14 +487,16 @@ impl Family {
     /// | multibrot d=5 | ±0.914 | ±0.914 | 3.25 | (0, 0) w 3.6 |
     /// | multibrot d=6 | [−1.148, 0.963] | ±1.096 | 3.90 | (−0.09, 0) w 4.3 |
     /// | phoenix classic | [−0.679, 0.755] | ±1.271 | 4.52 | (0.04, 0) w 5.0 |
+    /// | phoenix plane p=−0.5 | [−1.930, 0.543] | ±0.666 | 2.47 | (−0.69, 0) w 2.8 |
     ///
     /// Two of those numbers surprise. The Mandelbrot set reaches `re = 0.453`,
     /// well right of the main cardioid's rightmost point at `0.375`: a symmetric
     /// pair of components sits out at `0.44 ± 0.375i`, ~2 900 grid samples of it,
-    /// and they are still filled at a cap of 2 × 10⁷. And **every one of the six
-    /// is taller than a 16:9 frame three units wide** — every width in the fourth
-    /// column is height-driven — so the whole-plane framing clipped all of them,
-    /// not only Phoenix.
+    /// and they are still filled at a cap of 2 × 10⁷. And **every one of the first
+    /// six is taller than a 16:9 frame three units wide** — each of their widths in
+    /// the fourth column is height-driven — so the whole-plane framing clipped all
+    /// of them, not only Phoenix. The Phoenix plane, added later, is the one set in
+    /// the table that is wide rather than tall: its width is its own span.
     ///
     /// Julia is the exception and stays one: its set is a different shape for
     /// every `c`, so there is no set to measure and no containing frame to
@@ -464,6 +509,12 @@ impl Family {
     /// is not the Julia case: Phoenix has a canonical instance to measure and
     /// Julia has none, and a home view is where a picture of the family starts,
     /// not a claim about every point of its parameter space.
+    ///
+    /// The Phoenix plane's box is the same bargain one level up: the plane at the
+    /// classic `p`, which is what `{"kind": "phoenix_m"}` alone means. Its set
+    /// stops at `re = 0.5425`, short of the classic `c = 0.5667`, so the classic
+    /// Ushiki instance is a point just outside the plane's filled set; the frame
+    /// the row derives still holds it, with room.
     pub fn measured_extent(&self) -> Option<Extent> {
         let at = |re: (f64, f64), im: (f64, f64)| Some(Extent { re, im });
         match *self {
@@ -475,6 +526,7 @@ impl Family {
             Family::Multibrot { .. } => None,
             Family::Julia { .. } => None,
             Family::Phoenix { .. } => at((-0.67875, 0.755), (-1.27125, 1.27125)),
+            Family::PhoenixM { .. } => at((-1.93, 0.5425), (-0.66625, 0.66625)),
             Family::FractionalMultibrot { .. } => None,
         }
     }
@@ -644,6 +696,7 @@ mod tests {
                 c: Complex::new(-0.8, 0.156),
             },
             CLASSIC_PHOENIX,
+            PHOENIX_PLANE,
         ] {
             assert!(!family.is_render_only(), "{family:?}");
             assert!(family.home_view().is_some(), "{family:?}");
@@ -667,6 +720,7 @@ mod tests {
         );
         // Phoenix escapes quadratically however the memory term reshapes the set.
         assert_eq!(CLASSIC_PHOENIX.escape_exponent(), 2.0);
+        assert_eq!(PHOENIX_PLANE.escape_exponent(), 2.0);
         assert_eq!(
             Family::FractionalMultibrot { degree: 3.75 }.escape_exponent(),
             3.75
@@ -701,6 +755,7 @@ mod tests {
                 c: Complex::new(-0.8, 0.156),
             },
             CLASSIC_PHOENIX,
+            PHOENIX_PLANE,
         ] {
             let (z0, ..) = family.seed(pixel);
             assert_eq!(family.pixel_is_z0(), z0 == pixel, "{family:?}");
@@ -717,6 +772,7 @@ mod tests {
             ("multibrot5", Family::Multibrot { degree: 5 }),
             ("multibrot6", Family::Multibrot { degree: 6 }),
             ("phoenix", CLASSIC_PHOENIX),
+            ("phoenix plane", PHOENIX_PLANE),
         ]
     }
 
@@ -738,6 +794,7 @@ mod tests {
             ("multibrot5", 0.0, 3.6),
             ("multibrot6", -0.09, 4.3),
             ("phoenix", 0.04, 5.0),
+            ("phoenix plane", -0.69, 2.8),
         ];
         for ((name, family), (_, center_re, width)) in derivable().into_iter().zip(rows) {
             let home = family.home_view().expect("a framed family");
@@ -842,7 +899,8 @@ mod tests {
     ///
     /// It checks every recorded integer-degree box against a fresh measurement
     /// to the bit, so the degree-6 row was added by the same procedure that
-    /// reproduces the older rows rather than by a procedure beside them.
+    /// reproduces the older rows rather than by a procedure beside them — and so
+    /// was the Phoenix plane's, at its default `p`.
     #[test]
     #[ignore]
     fn the_measured_boxes_are_the_measurement() {
@@ -851,8 +909,10 @@ mod tests {
         // A grid sample's coordinate, rounded to the five decimals the step
         // (0.00125) is written in, which is how the table records it.
         let at = |i: u32| ((-MEASURE_HALF_SPAN + step * i as f64) * 1e5).round() / 1e5;
-        for degree in 2..=6u32 {
-            let family = Family::Multibrot { degree };
+        let measured_here = (2..=6u32)
+            .map(|degree| (format!("degree {degree}"), Family::Multibrot { degree }))
+            .chain([("phoenix plane".to_string(), PHOENIX_PLANE)]);
+        for (name, family) in measured_here {
             let rows: Vec<Option<(f64, f64, f64, f64)>> = (0..MEASURE_GRID)
                 .into_par_iter()
                 .map(|row| {
@@ -888,8 +948,8 @@ mod tests {
                 re: (re_lo, re_hi),
                 im: (im_lo, im_hi),
             };
-            println!("degree {degree}: {measured:?} -> {:?}", measured.frame());
-            assert_eq!(family.measured_extent(), Some(measured), "degree {degree}");
+            println!("{name}: {measured:?} -> {:?}", measured.frame());
+            assert_eq!(family.measured_extent(), Some(measured), "{name}");
         }
     }
 
@@ -907,5 +967,32 @@ mod tests {
         let z = Complex::new(0.25, 0.6);
         let z_prev = Complex::new(0.9, 0.4);
         assert_eq!(phoenix.step(z, z_prev, c), julia.step(z, z_prev, c));
+    }
+
+    /// The plane and its sets share one recurrence and differ in which quantity the
+    /// pixel is: so the step is the same arithmetic, and the derivative differs by
+    /// exactly the parameter plane's `+1`.
+    #[test]
+    fn the_phoenix_plane_steps_like_its_sets_and_differentiates_by_c() {
+        let c = Complex::new(0.3, -0.1);
+        let set = Family::Phoenix {
+            c,
+            p: PHOENIX_P,
+            z_prev: Complex::new(0.0, 0.0),
+        };
+        let z = Complex::new(0.25, 0.6);
+        let z_prev = Complex::new(0.9, 0.4);
+        assert_eq!(PHOENIX_PLANE.step(z, z_prev, c), set.step(z, z_prev, c));
+
+        let (dz, dz_prev) = (Complex::new(0.7, -0.2), Complex::new(-0.1, 0.3));
+        let by_c = PHOENIX_PLANE.derivative_step(z, dz, dz_prev);
+        let by_z0 = set.derivative_step(z, dz, dz_prev);
+        assert!((by_c - by_z0 - Complex::new(1.0, 0.0)).norm() < 1e-15);
+
+        let pixel = Complex::new(0.1, 0.2);
+        let zero = Complex::new(0.0, 0.0);
+        assert_eq!(PHOENIX_PLANE.seed(pixel), (zero, zero, pixel));
+        assert_eq!(PHOENIX_PLANE.derivative_seed(), (zero, zero));
+        assert!(PHOENIX_PLANE.is_written_out());
     }
 }
