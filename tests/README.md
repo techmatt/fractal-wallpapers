@@ -704,6 +704,28 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+#### close_mining_save_solves_ckpt139
+
+`close_mining_save_solves_ckpt139`, 2026-09-21, `.[dev,models]` with a release engine.
+**Fast: 4,881 passed in 146.67 s (2:27)**, 157 deselected, green. **No test added**, count
+unmoved. Taken on a quiet box twenty minutes after the prompt's twenty `curate solve
+record` passes had finished, and **after 121 tentative records and 529 solve directories
+were deleted under the lane** — 1.4 GiB off `artifacts/curation/` — which moves the clock
+by nothing measurable: 146.67 s sits inside the 144.50–152.98 s band the last five
+readings occupy. A store shrinking is not a store the lane was reading.
+
+**Two guards in `tests/test_tentative.py` now sweep an empty set** — the redraw claim and
+the recipe-size claim, which had `20260914T171846Z` written into them and sweep
+`git ls-files` for tracked `recipes.jsonl` now — so the *count* is unmoved while one slow
+guard's *work* went to zero. It is priced at the site; the slow lane was not run, so what
+that is worth in seconds is unmeasured.
+
+⚠ **`mine_finish_then_open_ckpt139`'s reading was never appended here** and is in
+`CLAUDE.md` alone: 4,881 in 152.98 s, 157 deselected, green, no test added, taken six
+minutes after its POST solves. Nothing is missing from the arithmetic — the count is the
+same on both sides of it — but the log below skips straight from this entry to
+`parabolic_c_pilot_ckpt139`.
+
 #### parabolic_c_pilot_ckpt139
 
 `parabolic_c_pilot_ckpt139`, 2026-09-21, `.[dev,models]` with a release engine.

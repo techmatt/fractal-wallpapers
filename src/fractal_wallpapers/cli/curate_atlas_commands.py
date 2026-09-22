@@ -59,7 +59,8 @@ def add_steps(steps) -> None:
         default=None,
         help="the tentative record whose seats are placed first (default: the newest "
         "published one). Named rather than guessed where it matters: an unpublished record "
-        "is reached only by its stamp.",
+        "is reached only by its stamp — and while none is published, NAME ONE: the default "
+        "refuses and says so.",
     )
     making.add_argument(
         "--plane",

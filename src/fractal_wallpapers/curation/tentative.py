@@ -188,11 +188,28 @@ ALIAS_LENGTH = 8
 #: the reading, and a record cut to what fills is a record that hides it.
 RECORDED_SEATS = 1000
 
-#: **The stamps Matt has published**, oldest first. A published record is tracked
-#: — its two text files come through the hole in `.gitignore` — and it is the
-#: only kind an unstamped read can land on. [`PAGE_NAME`] is not one of them: a
-#: record is its rows and its manifest, and [`page`] regenerates the browser from
-#: those on demand.
+#: **The stamps Matt has published, and since 2026-09-21 there are none.** A
+#: published record is tracked — its two text files come through the hole in
+#: `.gitignore` — and it is the only kind an unstamped read can land on.
+#: [`PAGE_NAME`] is not one of them: a record is its rows and its manifest, and
+#: [`page`] regenerates the browser from those on demand.
+#:
+#: **Mining closed on 2026-09-21 and the saved set became one set**, Matt's
+#: ruling in `close_mining_save_solves_ckpt139`: the pool as merged that night is
+#: the population, the twenty `final139_*` records [`KEPT_UNPUBLISHED`] names are
+#: the semi-final galleries, and **nothing in them is published**. The eight
+#: stamps this tuple carried were removed with every other saved record — the
+#: seven of 2026-09-02 to 2026-09-04 and `20260914T171846Z`, the official n=1000
+#: record from 2026-09-14 — and their tracked text left the index with them.
+#:
+#: **So [`latest`] has no answer and refuses**, which is the change a reader
+#: meets first: every unstamped `browse`, `resolve`, `votes build`, atlas and
+#: backfill has to name a stamp now, and the refusal says so. That is the
+#: 2026-09-04 split run to its end rather than a new rule — an unpublished record
+#: is read by naming its stamp, and publication is the one act that gives a
+#: record a name an unstamped read can find. **Publishing one again is two edits
+#: and a test**: a line here and its negation line in `.gitignore`, which
+#: `tests/test_tentative.py` holds to agreeing.
 #:
 #: Recording a gallery and publishing one used to be a single act: the hole was
 #: spelled per FILE across every stamp, so every record ever made was committed,
@@ -211,22 +228,17 @@ RECORDED_SEATS = 1000
 #: and discarding does not**: a leg that recorded a gallery to measure something
 #: against deletes it once the measurement is taken and says so in its report,
 #: because a solve is cheap to run again and what a leftover record costs is
-#: misreading hazard and prune protection rather than bytes. The keep list is the
-#: stamps below, any record a published or upcoming figure cites, and the current
-#: official n=1000 record — which is `20260914T171846Z`, and which since
-#: 2026-09-14 is a stamp in **this** tuple rather than in [`KEPT_UNPUBLISHED`].
-#: **The role moves and the entry does not follow it**: a stamp that held it keeps
-#: its line for as long as something still resolves it, so this sentence names the
-#: rule and the tuples name the stamps. That list is [`kept`], and
-#: [`KEPT_UNPUBLISHED`] is the half of it this tuple does not already carry.
+#: misreading hazard and prune protection rather than bytes. The keep list is
+#: this tuple plus [`KEPT_UNPUBLISHED`], it is [`kept`], and **since 2026-09-21
+#: the whole of it is the twenty `final139_*` records**: the ruling that closed
+#: mining removed every earlier saved record rather than adding to them, so the
+#: list is a set somebody chose in one act instead of a sediment.
 #:
-#: **`20260914T171846Z` is the project's first publication since the split**, and
-#: the eighth stamp here. It is the first solve taken with the full rejection pass
-#: ingested — 1,000 of 1,000, shortfall 0, 728 vetoed rows out of the pool — and it
-#: is what an unqualified "the record" and an unstamped [`latest`] both mean from
-#: here. It was in [`KEPT_UNPUBLISHED`] until it was published and is not in both:
-#: [`kept`] de-duplicates, so a stamp named twice would read as two decisions where
-#: there is one, and publication is the stronger of the two to state.
+#: **What an unqualified "the record" means is now a stamp somebody names.** It
+#: meant `20260914T171846Z` from 2026-09-14 — the first solve taken with the full
+#: rejection pass ingested, 1,000 of 1,000 at shortfall 0 — and that record is
+#: gone with the rest; `final139_general` is the general n=1000 seating of the
+#: closed pool and it is kept, not published.
 #:
 #: **Retention is a third question after publication and durability**, and until
 #: 2026-09-13 the protection answered it by itself: [`protected_keys`] swept the
@@ -242,16 +254,7 @@ RECORDED_SEATS = 1000
 #: `tests/test_tentative.py` fails if they disagree. Two spellings because git
 #: cannot read a Python tuple and this module must not shell out to git to answer
 #: what an unstamped read means.
-PUBLISHED: tuple[str, ...] = (
-    "20260902T161757Z",
-    "20260902T164622Z",
-    "20260903T234205Z",
-    "20260904T023748Z",
-    "20260904T080248Z",
-    "20260904T134242Z",
-    "20260904T233233Z",
-    "20260914T171846Z",
-)
+PUBLISHED: tuple[str, ...] = ()
 
 #: **The unpublished stamps the keep list names**, which is the whole of the keep
 #: list that [`PUBLISHED`] does not already carry. Discarding is the default for an
@@ -266,95 +269,62 @@ PUBLISHED: tuple[str, ...] = (
 #: and provenance does not need the folder. What earns a line is code or a figure
 #: that reads the rows.
 #:
-#: * `20260906T133236Z` — `data/gallery_grade/batches.jsonl` names it as the draw
-#:   behind all three `n1000_0906_*` batches of the shipped label corpus, and
-#:   [`k_sweep`] reproduces its seating as the `K = 2` control arm.
-#: * `20260906T133559Z` — the site's `modes-gallery` figure stands its curvature
-#:   panel on seat `0cb93bec2bec2baf`; `fractal-website`'s `builder/picks.py`
-#:   resolves `<stamp>|<key>` out of this checkout and keeps no copy of its own.
-#: * `20260908T144844Z` — `backfill.DEFAULT_RECORD`, the record a backfill sweeps
-#:   when nobody names one, and the n=1000 gallery the site's figures resolve.
-#: * `20260908T211552Z` — two more seats `fractal-website`'s `article/figures.jsonl`
-#:   names as `<stamp>|<key>`.
-#: * `20260911T022330Z` — the record `curation/page_order.py`'s constants were
-#:   measured on. Re-measuring those against a record pruned out from under them
-#:   would read as drift in the page order rather than as a missing record.
-#: * `20260914T152502Z` — **Matt's instruction in `veto_model_ckpt124`**, and the
-#:   one entry here he named rather than something in the tree earning: it is the
-#:   first n=1000 solve taken with the veto in force, and it is the counterfactual
-#:   the veto's cost to the gallery is read off — `curation/GALLERY.md`'s *The veto
-#:   and the seat floors can disagree* quotes its shortfall, its pool counts and
-#:   its worst seat. ⚠ **Nothing resolves its rows**, which is the ordinary test
-#:   for a line here, so this one goes when the veto's cost stops being a live
-#:   question rather than waiting for a figure to stop naming it.
-#: * `20260913T172903Z` and `20260914T144946Z` — the **before and after of the
-#:   `mine_night2_ckpt124` run**, added 2026-09-14, and they are one entry in two
-#:   lines: `curate seat-sheet --before … --after …` names both by stamp, and a
-#:   diff with one half missing is not a smaller diff, it is no diff. ⚠ The before
-#:   half was **moved out of the store by that same night's sweep and moved back**
-#:   — it was off the keep list for the hours between, which is exactly right under
-#:   discard-by-default and exactly why the sweep moves records rather than
-#:   deleting them. When the pair stops being interesting, both go.
-#:   `20260914T144946Z` **earns a second line of its own**: the rejection pass was
-#:   cut over its thousand seats — `data/gallery_grade/batches.jsonl` names it as
-#:   the population `gallery_rejection_20260914` was drawn from — so it is the
-#:   before half of `rejection_ingest_ckpt124`'s diff as well, and it stays until
-#:   that batch stops being the newest thing the store learned.
-#: * `20260919T171003Z` … `20260919T173838Z` — **the twenty-one pinned records**,
-#:   Matt's instruction in `site_rebase_ckpt132`, and one entry in twenty-one lines:
-#:   the first solves with `data/curation/pins.json` seated first, one per
-#:   collection in `targets.TARGETS` plus the general n=1000 and an n=2000. Twenty of
-#:   them are the collection stamps `fractal-website` lists — its galleries, seat
-#:   tiles and atlases resolve their rows — and each has a live page under `curate
-#:   solve viewers`. `20260919T171350Z`, the n=2000, is **not** listed by the site and
-#:   is kept as the comparison beside the n=1000; it goes when that stops being asked.
+#: **The twenty `final139_*` records of 2026-09-21, and nothing else** — one
+#: entry in twenty lines, Matt's ruling in `close_mining_save_solves_ckpt139`.
+#: They are the general n=1000 and the nineteen collections of
+#: [`curation.targets`], solved over the pool as mining closed and recorded under
+#: one name stem, and each is resolved three ways: `curate solve viewers` writes
+#: a live page per label out of its rows, [`curation.backfill`] sweeps the
+#: general one by default, and `fractal-website` is being repointed at the
+#: twenty. A record here is **kept and not published** — the distinction is
+#: [`PUBLISHED`]'s, which is now empty.
 #:
-#: ⚠ **`20260914T171846Z` was here and is now in [`PUBLISHED`]**, from 2026-09-14.
-#: It is kept by that tuple and must not be named by this one as well: [`kept`]
-#: de-duplicates either way, so a second line would change nothing on disk and
-#: would leave two answers to *why is this record kept* where publication is the
-#: only one that still applies.
+#: The stamp order below is the order they were recorded, which is the order
+#: `curation.targets.TARGETS` names the collections with the general pass first.
 #:
-#: ⚠ The first four were named in `fractal_wallpapers/README.md`'s store table as
-#: hard dependencies **while the store-wide sweep made the distinction cost
-#: nothing**. Now it costs everything, so they are here: the day this list became
-#: the whole input to [`protected_keys`] is the day a dependency not on it is a
-#: figure that breaks.
+#: ⚠ **Every earlier entry was removed on 2026-09-21, with the records
+#: themselves** — the eight of the `n1000_0906_*` corpus draw, the site's figure
+#: seats, [`curation.backfill`]'s old default, [`curation.page_order`]'s
+#: measurement record, the veto counterfactual and the `mine_night2_ckpt124`
+#: pair, and the twenty-one pinned records of 2026-09-19. What they were kept
+#: for is in this file's history and in `curation/GALLERY.md`'s *The first
+#: publication, and what it changed*; what resolves them now is nothing, in this
+#: checkout. The measurements taken on them stand as measurements: a citation is
+#: provenance, and provenance never needed the folder.
+#:
+#: ⚠ **A record off this list is discarded and the sweep of 2026-09-21 took the
+#: store down to it**: twenty-one records remain on this machine, the twenty here
+#: and `curation.portable.REFERENCE`, which travels through the export roster and
+#: never through the keep list.
 #:
 #: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
 #: is deliberate: a kept record is kept, not tracked. Publication, durability and
 #: retention are three questions, and this tuple answers only the third.
 KEPT_UNPUBLISHED: tuple[str, ...] = (
-    "20260906T133236Z",
-    "20260906T133559Z",
-    "20260908T144844Z",
-    "20260908T211552Z",
-    "20260911T022330Z",
-    "20260913T172903Z",
-    "20260914T144946Z",
-    "20260914T152502Z",
-    # The pinned records: general n1000, general n2000, twelve families, seven modes.
-    "20260919T171003Z",
-    "20260919T171350Z",
-    "20260919T171517Z",
-    "20260919T171636Z",
-    "20260919T171754Z",
-    "20260919T171915Z",
-    "20260919T172029Z",
-    "20260919T172144Z",
-    "20260919T172300Z",
-    "20260919T172420Z",
-    "20260919T172535Z",
-    "20260919T172651Z",
-    "20260919T172806Z",
-    "20260919T172927Z",
-    "20260919T173059Z",
-    "20260919T173230Z",
-    "20260919T173402Z",
-    "20260919T173514Z",
-    "20260919T173625Z",
-    "20260919T173732Z",
-    "20260919T173838Z",
+    # `final139_general` — the general n=1000 over the closed pool.
+    "20260922T012627Z",
+    # The twelve hue families, in the codebook's wheel order: rose … magenta.
+    "20260922T012745Z",
+    "20260922T012906Z",
+    "20260922T013025Z",
+    "20260922T013149Z",
+    "20260922T013306Z",
+    "20260922T013423Z",
+    "20260922T013540Z",
+    "20260922T013657Z",
+    "20260922T013816Z",
+    "20260922T013935Z",
+    "20260922T014052Z",
+    "20260922T014213Z",
+    # The seven mode collections: tia, smooth, stripe, threads, and the three
+    # angle modes.
+    "20260922T014347Z",
+    "20260922T014520Z",
+    "20260922T014655Z",
+    "20260922T014809Z",
+    "20260922T014921Z",
+    "20260922T015029Z",
+    "20260922T015138Z",
 )
 
 
@@ -466,6 +436,12 @@ def latest() -> str:
     next experimental record silently becomes the answer for every figure prompt,
     naming IDs that exist on one machine. An unpublished record is read by naming
     its stamp, which is the whole way it is reached.
+
+    ⚠ **[`PUBLISHED`] has been empty since 2026-09-21**, so this refuses on every
+    call and every unstamped read refuses with it. That is the ruling that closed
+    mining arriving here and not a fault: the twenty `final139_*` records are
+    kept, none of them is published, and the refusal names the stamps to choose
+    between.
     """
     held = published()
     if not held:

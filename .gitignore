@@ -34,29 +34,24 @@ artifacts/curation/*
 !artifacts/curation/tentative/
 artifacts/curation/tentative/*
 # The published stamps, one line each. Adding one is Matt's decision, not a fix.
-!artifacts/curation/tentative/20260902T161757Z/
-!artifacts/curation/tentative/20260902T164622Z/
-!artifacts/curation/tentative/20260903T234205Z/
-!artifacts/curation/tentative/20260904T023748Z/
-!artifacts/curation/tentative/20260904T080248Z/
-!artifacts/curation/tentative/20260904T134242Z/
-!artifacts/curation/tentative/20260904T233233Z/
-!artifacts/curation/tentative/20260914T171846Z/
+# **There are none since 2026-09-21**, the ruling that closed mining: the twenty
+# `final139_*` records are the saved set, they are kept and not published, and the
+# eight lines that stood here went with the records they named. The two file-level
+# negations below are the shape a publication takes, kept so that publishing one
+# again is a line here and a line in `curation.tentative.PUBLISHED`.
 # Inside a published stamp, only the text files named here. An unpublished stamp
 # is an excluded directory git never descends into, so these never reach one.
 artifacts/curation/tentative/*/*
 !artifacts/curation/tentative/*/gallery.jsonl
 !artifacts/curation/tentative/*/manifest.json
-# The third file, and it is named for ONE STAMP rather than by pattern. A seat
-# row says which picture was seated; `recipes.jsonl` says what it is made of, and
-# without it 994 of the 1,000 published seats cannot be drawn from tracked data
-# at all — the key is a one-way digest and the recipe behind it lives in the
-# untracked ledger. 0.68 MiB, under `test_history_purity.py`'s 1 MiB ceiling.
-# The other seven published stamps predate the decision and stay as they are:
-# writing theirs is a question about how big this history should be, not a fix,
-# and a per-stamp line is what makes that a decision each time rather than a
-# pattern that answers it once for every record ever published.
-!artifacts/curation/tentative/20260914T171846Z/recipes.jsonl
+# The third file was `recipes.jsonl`, named for ONE STAMP rather than by pattern,
+# and its line went with `20260914T171846Z` on 2026-09-21. A seat row says which
+# picture was seated; `recipes.jsonl` says what it is made of, and without it 994
+# of that record's 1,000 seats could not be drawn from tracked data at all — the
+# key is a one-way digest and the recipe behind it lives in the untracked ledger.
+# 0.68 MiB, under `test_history_purity.py`'s 1 MiB ceiling, and `curate solve
+# recipes --write <stamp>` writes one for any record: the next publication decides
+# again, per stamp, whether its recipes are tracked.
 /labels/
 /local.toml
 # Every head's weights, fetched rather than tracked: `fetch-weights` reads

@@ -2170,11 +2170,13 @@ caused by the pins. **Most of the displacement is knock-on**, not a pin taking a
 pins out of the view shifts the view's seeded strata draw (18,687 → 18,677 rows), and the
 greedy path diverges from there.
 
-**The twenty-one records of that re-solve are the standing baseline**, kept on
+**The twenty-one records of that re-solve were the standing baseline**, kept on
 2026-09-19 as one `tentative.KEPT_UNPUBLISHED` entry because `fractal-website` resolves
 twenty of them (all but `general_n2000`). The keep list went from 16 records to 37 —
 eight published and twenty-nine not — and `protected_keys()` from 5,188 keys to
-**9,858**.
+**9,858**. ⚠ **All twenty-one were removed on 2026-09-21** with every other saved
+record; the `final139_*` set below is what stands in their place, and the site is
+repointed at those stamps.
 
 ## `curate solve record` — a solve recorded under a stamp, and a browser over it
 
@@ -2234,10 +2236,11 @@ gallery's own JPEGs.
 operator never acted — there is no band in those pictures' identity to record.
 All four of those modes are in the 13 verified above.
 
-⚠ **Tracked for `20260914T171846Z` alone.** `.gitignore` names that one path
-rather than a pattern: the other seven published stamps predate the decision, and
-writing theirs is a question about how big this history should be rather than a
-fix. `tentative.write_recipes` resolves for any stamp; what is per-stamp is only
+⚠ **Tracked for `20260914T171846Z` alone, and that line went on 2026-09-21** with
+the record: no `recipes.jsonl` is tracked now, because no record is published.
+`.gitignore` named that one path rather than a pattern, and the next publication
+decides again, per stamp, whether its recipes are carried.
+`tentative.write_recipes` resolves for any stamp; what is per-stamp is only
 whether git carries it.
 
 ### A record's fulls are pinned, because a gather is a borrow
@@ -2388,8 +2391,10 @@ A tray line says how many of the record's seats have one.
 #### `--viewer` — the one path to bookmark, and it carries no stamp
 
 ```
-fractal-wallpapers curate solve browse --viewer          # the newest PUBLISHED record, here:
+fractal-wallpapers curate solve browse <stamp> --viewer  # that record, here:
 artifacts/curation/viewer/index.html
+fractal-wallpapers curate solve browse --viewer          # the newest PUBLISHED record —
+                                                         # refuses while none is published
 ```
 
 **The page a person opens is not the page beside the rows.** A record's own `index.html`
@@ -2658,6 +2663,36 @@ at their mode floors; `dark_muted_lime`, `dark_vivid_lime`, `dark_vivid_yellow`,
 `light_vivid_cyan` and `light_vivid_lime` at exactly 20 seats) are as *The veto and the seat
 floors can disagree* left them — met, with no slack — and the record carrying them is now
 the published one rather than a stamp somebody had to know to name.
+
+#### Mining closed, and the saved set became one set — `final139_*`, 2026-09-21
+
+**Matt closed mining and the twenty `final139_*` records are the semi-final galleries**,
+his ruling in `close_mining_save_solves_ckpt139`: the general n=1000 and the nineteen
+collections of [`curation.targets`], recorded over the pool as merged that night, under
+one name stem. Each was checked against its no-record `post139_*` counterpart from two
+hours earlier and **all twenty seat the same pictures in the same order** — the two
+records differ in `seconds` and `taken_at` and in nothing else, which is what a record
+being `run` with nothing changed is supposed to mean and had never been asserted
+end to end before.
+
+**Everything else was removed**, records and solve halves both: 121 tentative records
+(640.7 MiB) and 529 solve directories (821.4 MiB), including the eight published stamps
+and the twenty-one pinned records of 2026-09-19. What that did to the three questions:
+
+| | before | after |
+|---|--:|--:|
+| `PUBLISHED` | 8 | **0** |
+| `kept()` | 37 | **20** |
+| `protected_keys()` | 9,858 | **6,067** |
+| records in the store | 122 | **21** |
+| tracked files under `tentative/` | 17 | **0** |
+
+The twenty-first record in the store is `curation.portable.REFERENCE`, which travels
+through the export roster and never through the keep list. **Nothing is published**, so
+`tentative.latest()` refuses and every unstamped `browse`, `resolve`, `votes build`,
+atlas and backfill has to name a stamp; the bookmarked viewer is written by
+`curate solve browse <stamp> --viewer` and the per-collection pages by
+`curate solve viewers`, neither of which reads `PUBLISHED`.
 
 **Publication, durability and retention are three questions, and the protection below is
 the durable one.** A record on the **keep list** is *protected*: `protected_keys` reads

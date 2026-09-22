@@ -183,9 +183,12 @@ def agreement(stamp: dict, shipped: list | None, stops: list) -> str:
 
 
 #: Which record's seats a backfill sweeps unless a caller names another. The
-#: n=1000 gallery of 2026-09-08 — the record the site's figures resolve and the
-#: one every seat of which is expressible from the candidate path.
-DEFAULT_RECORD = "20260908T144844Z"
+#: general n=1000 of 2026-09-21, `final139_general` — the seating of the pool as
+#: mining closed, and the one record here that is a whole gallery rather than a
+#: collection. It replaced the n=1000 of 2026-09-08 when the ruling that closed
+#: mining removed every earlier saved record; a default has to name a record that
+#: exists, so this constant moves with the keep list rather than outliving it.
+DEFAULT_RECORD = "20260922T012627Z"
 
 #: How often the leg says where it is. A backfill is hundreds of renders and the
 #: only thing that distinguishes a slow one from a hung one is a line.

@@ -1176,41 +1176,62 @@ def test_a_seat_the_ledger_does_not_hold_is_reported_and_not_skipped(store, isol
 
 
 # --------------------------------------------------------------------------- #
-# The published record, against the file this repository actually tracks.
+# A published record, against the files this repository actually tracks.
 # --------------------------------------------------------------------------- #
-@pytest.mark.slow
-def test_the_published_record_can_be_redrawn_from_tracked_data_alone():
-    """★ The claim the whole file exists to make, asserted on the real one.
+def recipe_stamps() -> list[str]:
+    """Every stamp whose `recipes.jsonl` this repository tracks, off the index.
 
-    `20260914T171846Z` is the official n=1000 record, and before 2026-09-14 994
+    Read from git rather than from a constant, because the hole in `.gitignore`
+    is per stamp and the index is what a clone actually gets.
+
+    ⚠ **It has been empty since 2026-09-21**, when the ruling that closed mining
+    removed every saved record and emptied `tentative.PUBLISHED`, and the two
+    guards below sweep it. **That is coverage given up and it is priced here**:
+    the redraw claim was asserted over `20260914T171846Z`'s thousand seats — the
+    slowest guard in this file and the one the tracked recipe file exists for —
+    and it is asserted over nothing today. Neither guard is deleted, because
+    publishing a record again is two lines and these are what read them.
+    """
+    return [
+        Path(name).parent.name
+        for name in tracked("artifacts/curation/tentative/*/" + tentative.RECIPES_NAME)
+    ]
+
+
+@pytest.mark.slow
+def test_every_published_record_with_a_recipe_file_redraws_from_tracked_data_alone():
+    """★ The claim the whole file exists to make, asserted on the real ones.
+
+    `20260914T171846Z` was the official n=1000 record, and before 2026-09-14 994
     of its 1,000 seats could not be drawn from anything a clone has: the key is a
     one-way digest, the recipe behind it lives in the untracked ledger, and 529
     seats carry a continuous `palette.phase` so recovery by search is out. This
-    reads the two TRACKED files and nothing else.
+    reads the two TRACKED files of each such record and nothing else.
 
-    Slow because it recomputes all thousand keys — `of_record` then `key_of`,
-    which is a JSON round trip and a sha256 per seat — and that is the assertion
-    rather than a way of reaching it. A sample would leave the file's coverage
-    unasserted, which is the one thing about it worth asserting.
+    Slow because it recomputes every key — `of_record` then `key_of`, which is a
+    JSON round trip and a sha256 per seat — and that is the assertion rather than
+    a way of reaching it. A sample would leave the file's coverage unasserted,
+    which is the one thing about it worth asserting.
     """
-    stamp = "20260914T171846Z"
-    assert stamp in tentative.PUBLISHED
-    seats = [str(row["key"]) for row in tentative.read_rows(stamp)]
-    held = tentative.read_recipes(stamp)
+    stamps = recipe_stamps()
+    assert set(stamps) <= set(tentative.PUBLISHED), "a tracked recipe file, and no publication"
+    for stamp in stamps:
+        seats = [str(row["key"]) for row in tentative.read_rows(stamp)]
+        held = tentative.read_recipes(stamp)
 
-    assert len(seats) == 1000
-    missing = [key for key in seats if key not in held]
-    assert not missing, f"{len(missing)} published seat(s) carry no recipe"
-    for key in seats:
-        assert recipes.key_of(recipes.of_record(held[key])) == key
+        assert seats
+        missing = [key for key in seats if key not in held]
+        assert not missing, f"{len(missing)} published seat(s) of {stamp} carry no recipe"
+        for key in seats:
+            assert recipes.key_of(recipes.of_record(held[key])) == key
 
 
-def test_the_tracked_recipe_file_stays_under_the_history_size_rule():
-    """0.68 MiB against `test_history_purity.MAX_TRACKED_BYTES`, and smaller than
-    the `gallery.jsonl` beside it. That margin is why this is a tracked file and
-    not a release asset — and it is per stamp, so it is worth knowing where it
-    sits before a second record is published."""
-    stamp = "20260914T171846Z"
-    written = tentative.recipes_path(stamp).stat().st_size
-    assert written < (1 << 20)
-    assert written < 2 * tentative.rows_path(stamp).stat().st_size
+def test_a_tracked_recipe_file_stays_under_the_history_size_rule():
+    """0.68 MiB for a thousand seats against `test_history_purity.MAX_TRACKED_BYTES`,
+    and smaller than the `gallery.jsonl` beside it. That margin is why this is a
+    tracked file and not a release asset — and it is per stamp, so it is worth
+    knowing where it sits before a record is published."""
+    for stamp in recipe_stamps():
+        written = tentative.recipes_path(stamp).stat().st_size
+        assert written < (1 << 20)
+        assert written < 2 * tentative.rows_path(stamp).stat().st_size

@@ -130,7 +130,7 @@ def curate_label_fate(args: argparse.Namespace) -> int:
 
 def curate_label_migration(args: argparse.Namespace) -> int:
     """Stage the judged recipes at candidate geometry, score them, and read them out."""
-    from fractal_wallpapers.curation import label_migration
+    from fractal_wallpapers.curation import label_migration, tentative
 
     store = getattr(args, "store", None)
     doing = {
@@ -148,7 +148,11 @@ def curate_label_migration(args: argparse.Namespace) -> int:
     }[args.what]
     try:
         report = doing()
-    except (label_migration.MigrationError, OSError) as refusal:
+    # `readout` joins against a recorded gallery and takes `tentative.latest()`
+    # when `--stamp` is unsaid, so the refusal of an unstamped read is one of this
+    # verb's ordinary refusals — not a fault to show as a traceback. It became
+    # reachable on 2026-09-21, when `tentative.PUBLISHED` emptied.
+    except (label_migration.MigrationError, tentative.TentativeRefused, OSError) as refusal:
         print(refusal)
         return 1
     if getattr(args, "out", None):
@@ -624,7 +628,8 @@ def add_commands(subcommands) -> None:
     reading_out.add_argument(
         "--stamp",
         metavar="STAMP",
-        help="the recorded gallery to compare places against (default the latest PUBLISHED)",
+        help="the recorded gallery to compare places against (default the latest "
+        "PUBLISHED, and NAME ONE while none is published — this refuses without it)",
     )
     reading_out.add_argument("--out", metavar="PATH", help="write the record there")
 

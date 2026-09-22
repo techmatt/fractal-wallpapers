@@ -14,7 +14,11 @@ rendered — and `<viewer>/all.html` beside them, a plain table linking each one
 A record says which gallery it is through its solve name, and that is the name the
 website's collection panel already reads: `targets_<collection>_n<seats>_<stamp>`
 for a collection (`curation/targets.py`'s *Recording a collection the site will
-read*). Anything else is a general pass — the whole pool, no `--collection` — and
+read*). **A set recorded under one name stem reads `<stem>_<collection>`** and is
+matched second — the twenty `final139_*` records of 2026-09-21 are spelled that
+way, and a mode collection's name is nowhere else in its record: a family pass
+carries the family on `config.theme` and a mode pass carries `null`. Anything
+else is a general pass — the whole pool, no `--collection` — and
 is labelled `general`, with `_n<seats>` appended when it was asked for any size
 other than [`tentative.RECORDED_SEATS`], so the official size and a comparison
 size never land in one directory. Two named records resolving to one label are
@@ -45,6 +49,14 @@ INDEX_NAME = "all.html"
 #: A collection record's solve name — the spelling `builder seats` requires.
 _COLLECTION_NAME = re.compile(r"^targets_(?P<collection>.+)_n(?P<seats>\d+)_")
 
+#: The other spelling: a stem and the collection, `<stem>_<collection>`. A set
+#: recorded under one name stem is named that way — the twenty `final139_*`
+#: records of 2026-09-21 are — and a mode collection carries its name nowhere
+#: else, the manifest's `config.theme` being the family for a family pass and
+#: `null` for a mode one. Read second, so a name the site's spelling matches
+#: still resolves through that one.
+_STEM_AND_COLLECTION = re.compile(r"^(?P<stem>[^_]+)_(?P<collection>.+)$")
+
 
 class ViewersRefused(ValueError):
     """Two named records would share one viewer directory."""
@@ -52,9 +64,13 @@ class ViewersRefused(ValueError):
 
 def label_of(manifest: dict) -> str:
     """Which gallery a record is, as the directory its viewer lands in."""
-    named = _COLLECTION_NAME.match(str(manifest.get("solve", {}).get("name") or ""))
+    solve_name = str(manifest.get("solve", {}).get("name") or "")
+    named = _COLLECTION_NAME.match(solve_name)
     if named and named["collection"] in targets.TARGETS:
         return named["collection"]
+    stemmed = _STEM_AND_COLLECTION.match(solve_name)
+    if stemmed and stemmed["collection"] in targets.TARGETS:
+        return stemmed["collection"]
     asked = int(manifest["seats"]["asked"])
     return "general" if asked == tentative.RECORDED_SEATS else f"general_n{asked}"
 
