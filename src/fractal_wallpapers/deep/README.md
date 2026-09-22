@@ -402,6 +402,20 @@ the neighbourhood and lateral operators four each. A frame inside a satellite is
 framed on the satellite's *decorations*, and the nucleus those operators would
 snap to is the parent's, thousands of frame widths away.
 
+⚠ **That refusal is half geometry and half the period ceiling**, found on
+2026-09-22 by `discovery/minibrot.py`. [`operators.MAX_PERIOD`] is 64 and the
+atoms inside a period-`q` copy sit at multiples of `q`, so a descent into a
+period-27 satellite has nothing an operator sweeping to 64 can name. The frame at
+`-0.782601984654748 + 0.15006989511782523i`, width `1.286e-9` — the one Matt's
+eye called a successful minibrot descent — holds a **period-1026** nucleus
+**0.15** frame widths off centre, framed at **11.8** atom sizes. The operators are
+right not to fire here — a `4 x size` framing of that atom reads
+`f64_margin_decades` **-0.07**, so the view they would build is past the spacing
+wall at release geometry. What is wrong is reading their refusal as *there is no
+minibrot in this frame*: the picture is of that atom's decorations at twelve
+sizes, which renders fine. `discovery/README.md`'s *Is there a minibrot in this
+frame* has the instrument.
+
 ### Start at the neighbourhood width and every seed clears the floor
 
 `tuned_descents_1h_ckpt129` ran the recipe above at production scale — six seeds

@@ -89,6 +89,7 @@ GROUPS: tuple[str, ...] = (
     "weights_commands",
     "draw_commands",
     "walk_commands",
+    "minibrot_commands",
     "supply_commands",
     "modes_commands",
     "label_commands",

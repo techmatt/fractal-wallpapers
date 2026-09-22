@@ -12,6 +12,7 @@ pools      the tracked seed pools, and the spacing the julia one has to keep
 walk       the frontier, the batch, the two reserved floors, the run loop
 nucleus    Newton on a nucleus, the atom instrument, the canonical key
 parabolic  where a component touches its neighbour, and a ring of julia c around it
+minibrot   is there a minibrot in this frame, and how big is it against the frame
 operators  reframing a found view onto the atoms around it
 reframing  the channel that makes an operator's OWN view a candidate
 ledger     one JSONL record, one schema, a fate on every row
@@ -1525,3 +1526,78 @@ runs; a *channel* would have to answer it. Measured 2026-09-21: of **6,963**
 admitted degree-2 parameter-plane locations, the floor against the tracked pool
 admits **19**. The ordinary twin channel on this plane is saturated, which is a
 fact about the floor and not about the plane.
+
+## Is there a minibrot in this frame: the census instrument
+
+`minibrot.py` answers one question about one frame — *does this view hold a small
+copy of the whole set, and how big is it against the frame* — and `minibrots
+census` asks it of a whole population. It was written for
+`minibrot_descent_census_ckpt140`, whose subject was a `threads` wallpaper at
+width `1.29e-9` that a person's eye called a successful minibrot descent, and the
+first thing it found is that this repository could not previously have agreed
+with him.
+
+```
+fractal-wallpapers minibrots probe --link "<an explorer link>"
+fractal-wallpapers minibrots census --population records --out records.jsonl
+fractal-wallpapers minibrots census --population pool --budget 7200 \
+    --skip records.jsonl --skip verdicts.jsonl --out pool.jsonl
+```
+
+### The criterion is about the FRAME, and the other candidate is about the route
+
+Two readings were on the table. **(a)** the frame holds a nucleus within one
+frame width of centre whose atom is between 1 and 32 frame widths *smaller* than
+the frame; **(b)** the row sits `N` rungs and some decades below its walk's root.
+The named row satisfies both, so the tie is broken on what each is a reading
+*of*: (a) is a property of the view and two rows at one place answer identically,
+while (b) is a property of the route — **25,172 of the pool's 55,884 locations
+join to no walk row at all**, a reframing's own view among them, and *depth ≥ 5
+and two decades below the root* is cleared by **8,935 of the 30,712** that do,
+which makes it a reading of the search. [`minibrot.descent`] computes (b) anyway,
+because it is one pass over the ledgers and it is the provenance half of the
+story.
+
+### The existing operator path cannot see these atoms, and the reason is the ceiling
+
+[`operators._solve_at_center`] is the same solve and is right for what it does,
+but it sweeps to [`operators.MAX_PERIOD`] = 64. A frame inside a period-`q`
+satellite has its atoms at multiples of `q`: the named row is inside a
+**period-27** satellite and the atom in its frame is **period 1026**, so the
+operator answers `nucleus_outside_frame` on a view squarely on top of a minibrot.
+`deep/README.md`'s *The reframing operators find nothing inside a copy* recorded
+that refusal on this exact descent and read it as the parent's nucleus being far
+away; it is that **and** the ceiling.
+
+Raising the ceiling costs arbitrary-precision Newton per candidate period, so the
+ranked periods are screened first in `f64` off a prefix sum the orbit scan already
+computes. Over 60 pool locations the screen cut the pass **158.2 s → 35.5 s** with
+**no verdict changed** — same 56 nuclei, same periods, same ratios — and the worst
+single probe fell from 101.3 s to 13.3 s. See the module docstring for why the
+slack is three decades.
+
+### What it costs, measured
+
+Three workers at below-normal priority, on this box, 2026-09-22:
+
+| population | locations | wall | rate | in band |
+|---|--:|--:|--:|--:|
+| the twenty kept records' seats | 2,014 | 6m02s | 5.6/s | 1,025 (50.9%) |
+| every human-labelled frame | 7,747 | 12m46s | 10.1/s | 3,143 (40.6%) |
+| the rest of the pool | 17,817 | 1h55m | 2.6/s | 6,435 (36.1%) |
+| **union** | **27,578** | **2h14m** | | **10,603 (38.4%)** |
+
+That union is every parameter-plane location the pool holds — **21,049 of 55,884**,
+the other 34,835 being `julia:*` and `phoenix` — plus **6,529** human-labelled
+frames that hold no pool row. 197,254 Newton solves in all, 7.2 a probe.
+
+**The rate is a function of depth, not of size.** A labelled frame is shallow and
+its orbit escapes in tens of iterations; the pool's deep tail runs thousands before
+it escapes and ranks periods in the thousands. Four times the locations at a third
+of the rate is the whole difference between the second row and the third. Plan one
+of these by the population's width distribution.
+
+**A capped pass is a sample, not a region.** The probe order is a seeded shuffle
+rather than the key order, because the key order is the centre's real part: a
+`--budget` that cut a sorted pass short would hand back one side of the plane and
+call it a census.
