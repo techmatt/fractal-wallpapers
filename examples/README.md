@@ -1,18 +1,39 @@
 # examples
 
-The four thumbnails the root `README.md` shows at the top. Nothing reads them but that
+The five thumbnails the root `README.md` shows at the top. Nothing reads them but that
 page.
 
-Each is a seat of the general n=1000 gallery record, rendered through the engine and
-scaled to 480x270. They are the only binary files this repository tracks, and
-`tests/test_history_purity.py`'s `ALLOWLIST` carries the reason and the bound.
+Each is rendered through the engine at 1920x1080, supersample 2, and scaled to 480x270
+(Lanczos; JPEG quality 82, progressive, 4:2:0). They are the only binary files this
+repository tracks, and `tests/test_history_purity.py`'s `ALLOWLIST` carries the reason
+and the bound.
 
 | file | seat | family | mode | colormap |
 | --- | --- | --- | --- | --- |
 | `mandelbrot_stripe.jpg` | `460117ee` | mandelbrot | `stripe` | cmr.jungle |
 | `phoenix_threads.jpg` | `0275fee1` | phoenix | `threads` | Sapphire Against Rose |
+| `julia_multibrot4_smooth.jpg` | — (a link) | julia (multibrot4) | `smooth` | glowdon, phase 0.053 |
 | `julia_smooth.jpg` | `2fd9890d` | julia (mandelbrot) | `smooth` | glowdon |
 | `julia_multibrot3_threads.jpg` | `5ff0ad6b` | julia (multibrot3) | `threads` | Cobalt Furnace Ultra |
+
+## The one that is a link
+
+`julia_multibrot4_smooth.jpg` is not a gallery seat. It is this explorer view, and it is
+here so a reader can open the same picture there:
+
+```
+http://localhost:8000/explorer/index.html?v=3&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053
+```
+
+The link leaves out `m`, `level` and every shade key but `phase`, so it takes the
+explorer's defaults (`permalink.js`): mode `smooth`, no autolevel curve, and the engine's
+default palette recipe with only the phase moved — which is `engine_spec.recipe(phase=…)`
+exactly. The cap is the engine's depth policy in both places. The render spec is
+`curation.pins.parse` of the link with those defaults and no autolevel; `render` has no
+flag for a palette phase, so it goes to `engine.render_report` as a spec rather than
+through the command line.
+
+## The four that are seats
 
 To draw any of them at full size, which is what these were scaled down from:
 
@@ -33,4 +54,4 @@ them is.
 
 Replacing one is two steps and neither is optional: redraw and rescale the picture here,
 and repoint the `<img>` in the root README. A file added or renamed also moves the
-`ALLOWLIST` entry, which is what makes a fifth picture a decision rather than a copy.
+`ALLOWLIST` entry, which is what makes a sixth picture a decision rather than a copy.

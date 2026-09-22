@@ -6,10 +6,11 @@ Generates fractal wallpapers and uses neural judges trained on human labels to d
 which ones are worth keeping.
 
 <p align="center">
-  <img src="examples/mandelbrot_stripe.jpg" width="24%" alt="Mandelbrot set, stripe coloring">
-  <img src="examples/phoenix_threads.jpg" width="24%" alt="Phoenix set, threads coloring">
-  <img src="examples/julia_smooth.jpg" width="24%" alt="Julia set, smooth coloring">
-  <img src="examples/julia_multibrot3_threads.jpg" width="24%" alt="Cubic Julia set, threads coloring">
+  <img src="examples/mandelbrot_stripe.jpg" width="19%" alt="Mandelbrot set, stripe coloring">
+  <img src="examples/phoenix_threads.jpg" width="19%" alt="Phoenix set, threads coloring">
+  <img src="examples/julia_multibrot4_smooth.jpg" width="19%" alt="Quartic Julia set, smooth coloring">
+  <img src="examples/julia_smooth.jpg" width="19%" alt="Julia set, smooth coloring">
+  <img src="examples/julia_multibrot3_threads.jpg" width="19%" alt="Cubic Julia set, threads coloring">
 </p>
 
 A Rust crate renders the escape-time fields. Python decides where to look, how to color
