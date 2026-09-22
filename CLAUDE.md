@@ -261,9 +261,14 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `minibrot_descent_census_ckpt140` added 11 fast tests
-on 2026-09-22 and read **4,896 fast in 155.34 s (2:35)**, 157 deselected, green, so the
-tree is *believed* at 5,053 collected. **The count moved by exactly what the prompt
+**The newest reading is fast only**: `minibrot_enclosed_census_ckpt140` added 17 fast tests
+on 2026-09-22 and read **4,913 fast in 169.55 s (2:49)**, 157 deselected, green, so the
+tree is *believed* at 5,070 collected. **The count moved by exactly what the prompt
+added**, twice in a row now, and of the +14.2 s **7.6 s is the tree**: all seventeen are in
+`tests/test_minibrot.py`, which went from 1.09 s to 8.71 s because four of them solve real
+nuclei. Before it, `minibrot_descent_census_ckpt140` added 11 fast tests
+on 2026-09-22 and read **4,896 fast in 155.34 s (2:35)**, 157 deselected, green.
+**The count moved by exactly what the prompt
 added** — no unmeasured drift under it for once — and the +7.9 s is the box: it was taken
 four minutes after a two-hour census leg that held three below-normal processes on every
 core, and the eleven guards cost 1.09 s measured on their own file. Before it,

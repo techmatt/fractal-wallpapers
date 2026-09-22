@@ -7,31 +7,69 @@ module makes that question a number, over frames this project already has, and i
 answers it the way [`discovery.operators`] already answers it for a reframing —
 [`discovery.nucleus`]' Newton and its atom instrument, no second nucleus finder.
 
-## Two readings, and which one is kept
+## Three readings, and the two that are kept
 
-**(a) The frame holds an atom of comparable size.** Solve for the nucleus the
-frame's centre sits on, measure the atom's linear scale `1/|A|`, and ask what the
-frame's width is in atom sizes. This is a property of the *frame* and of nothing
-else: two rows at one place answer identically, and a frame that arrived by
-hand, by a reframing or by ten rungs of a walk all get the same reading.
+**(a) The frame holds an atom of comparable size** — [`probe`]. Solve for the
+nucleus the frame's centre sits on, measure the atom's linear scale `1/|A|`, and
+ask what the frame's width is in atom sizes. A copy seen from *outside*: it is a
+property of the frame and of nothing else, so two rows at one place answer
+identically and a frame that arrived by hand, by a reframing or by ten rungs of a
+walk all get the same reading.
 
-**(b) The row descended far below its root.** Join the pool row back to the walk
-ledger that found it, take the node's `depth` and the decades between its width
-and its root's. This is a property of the *route*, and three things are wrong
-with it as the census criterion: **25,172 of the pool's 55,884 locations join to
-no walk row at all** ([`descent`] returns `None` for them, and a reframing's own
-view is one of them by construction), the same frame reached twice reads twice,
-and descending is what a walk does — at *depth ≥ 5 and two decades below the
-root*, **8,935 of the 30,712** joinable locations clear it, which is a reading of
-the search and not of the picture.
+**(b) The row descended far below its root** — [`descent`]. Join the pool row
+back to the walk ledger that found it, take the node's `depth` and the decades
+between its width and its root's. This is a property of the *route*, and three
+things are wrong with it as a census criterion: **25,172 of the pool's 55,884
+locations join to no walk row at all** ([`descent`] returns `None` for them, and
+a reframing's own view is one of them by construction), the same frame reached
+twice reads twice, and descending is what a walk does — at *depth ≥ 5 and two
+decades below the root*, **8,935 of the 30,712** joinable locations clear it.
 
-The census keeps **(a)**, and the named row of `minibrot_descent_census_ckpt140`
-satisfies it: a **period-1026** nucleus 0.15 frame widths off centre, the frame
-**11.8** atom sizes wide. It satisfies (b) as well — depth 6, 1.88 decades below
-its root — which is why the tie had to be broken on what the reading is *of*
-rather than on which one the row passes. [`descent`] is here, and reported
-beside the census, precisely because it is cheap and it is the provenance half
-of the story; it is not what decides a verdict.
+**(c) The frame is decoration OF a copy** — [`enclosing`]. The same copy seen
+from *inside*: the frame sits within a small copy of the set that is very much
+bigger than it is, which is what a tuned seahorse descent does by construction.
+(a) and (c) are different questions and they mostly disagree; (c) is the one that
+answers *how many frames are inside a minibrot's filigree*.
+
+`minibrot_descent_census_ckpt140` censused (a); `minibrot_enclosed_census_ckpt140`
+added (c) and censused it. Its subject row satisfies all three: a **period-1026**
+nucleus 0.15 frame widths off centre and the frame **11.8** atom sizes wide for
+(a), depth 6 and 1.88 decades below its root for (b), and **enclosed by the
+period-27 satellite at a ratio of 754** for (c).
+
+## What (c) is, and the two things the obvious reading gets wrong
+
+The enclosing copy of a frame `(centre, w)` is a period `q > 1` whose nucleus
+`n_q` sits within [`ENCLOSE_K`] of *its own* atom sizes of the centre and whose
+atom is at least as big as the frame — `size_q ≥ w`, and `size_q / w` is the
+ratio reported. The main body, `q = 1`, never counts.
+
+**The candidates are the record minima of `|z_k|`, not the ranked periods (a)
+uses.** Along the critical orbit at the centre, each `k` at which `|z_k|` sets a
+new record low is a period whose copy contains the frame, and they arrive nested,
+lowest first: at the named row the whole chain is `2, 27, 54, 1026`. That makes
+(c) the cheap end of the scan — four Newton solves where (a) ranked 71 periods
+and solved 24 — and it is a chain rather than a set, which is what the next
+paragraph needs. Over all 1,200 `tuned129x_*` walk rows the chain holds the
+descent's own satellite period every time.
+
+**Lowest-period-wins alone answers `2` on every frame in seahorse valley, and a
+bulb is not a copy.** The period-2 bulb's atom is 0.5 wide and its nucleus sits
+about half of that from every tuned place, so it qualifies on distance at any
+usable `K` while being eight decades too big to be what the frame decorates. It
+is also not a minibrot: it is attached to the main body, so its decorations are
+the main body's decorations, and the main body never counts. A first census pass
+taken without this paragraph read **618 of 804** enclosed record seats as period
+2 and another 140 as period 3.
+
+So the chain is split into **generations** — a copy, and the bulbs hanging off
+it — with the main body prepended to it as `period 1, size 1.0`. An entry is a
+bulb of one above it in its generation when its period is a multiple `m` of that
+one's and its size is within [`BULB_SLACK`] of [`bulb_scale`]; otherwise it
+starts a new generation, which is to say it is a copy. **The enclosing copy is
+the head of the last generation, and a frame whose only generation is the main
+body's own is enclosed by nothing.** At the named row the generations are
+`[1, 2]` and `[27, 54]`, so the answer is `27`.
 
 ## Why the period ceiling moves, and what makes that affordable
 
@@ -134,6 +172,55 @@ SCREEN_SLACK = 3.0
 #: existed.
 MAX_SOLVES = 24
 
+#: How far off centre an ENCLOSING copy's nucleus may sit, in *its own* atom
+#: sizes. Criterion (c)'s one threshold.
+#:
+#: Calibrated on the 202 `tuned129x_*` pool places, which are inside a period 22,
+#: 27, 33 or 35 satellite by construction and must read enclosed by it. Their own
+#: readings are **0.6414 to 0.8184**, median 0.7747 — a much tighter band than
+#: anything else here. *The smallest K that reads ≥ 95% of them right*, which is
+#: how `minibrot_enclosed_census_ckpt140` was told to pick it, gives **0.81 at
+#: 96.5%**; one more hundredth reads **all 202**, so the hundredth is taken.
+#:
+#: ⚠ **The calibration set visits one part of a copy and this bound is the
+#: distance to it.** A copy of the set spans `[-2, 0.25]` in its own coordinates
+#: with the nucleus at the origin, so its filigree reaches **2.0** atom sizes out
+#: and a frame on the copy's antenna is well past 0.82. That the 202 places land
+#: in `0.64–0.82` is not a property of being inside a copy, it is a property of
+#: how deep they are: the same four descents' own *root* frames, at 25.89 atom
+#: sizes, read **1.216, 1.289, 1.290, 1.297** — one for one with their four
+#: satellites, and every one of them outside this bound. A descent starts near
+#: the copy's edge and works inward, and 0.82 is where it ended up.
+#:
+#: **Every census row carries `chain_table`**, the whole solved chain with each
+#: entry's distance, so the cut is re-swept off the output — `discovery/README.md`'s
+#: *Criterion (c)* has what the count does between 0.82 and 2.25. ⚠ A cut that
+#: drops a copy but keeps its period doubling answers the **doubling**: those
+#: four root frames read `q = 70, 44, 66, 54` here, the copy in each case being
+#: the entry that was cut.
+#:
+#: It is not [`NEAR_MULTIPLE`] and must not be confused with it: that one is in
+#: *frame* widths and bounds where (a)'s atom may be, this one is in *atom* sizes
+#: and bounds how far outside a copy the frame may sit and still be its
+#: decoration.
+ENCLOSE_K = 0.82
+
+#: How far under [`bulb_scale`] a chain entry may sit and still be read as a bulb
+#: of the copy above it rather than as a copy of its own.
+#:
+#: The law is tight and the two populations are far apart. Measured against
+#: `1.0` — the main body's own atom scale — the bulbs attached to it read
+#: **0.98 to 1.40** of the law across all five planes and every `m` from 2 to 11,
+#: while degree 2's primitive minibrots on the real antenna read **0.099** of it
+#: at period 3 and fall away from there: 0.016 at 4, 0.020 at 5, 0.0042 at 6,
+#: 1.1e-5 at 7. A third of the law is between the two with a factor of three to
+#: spare on the near side, which is period 3, the largest primitive there is.
+BULB_SLACK = 3.0
+
+#: Newton solves one enclosing read may spend. A backstop, like [`MAX_SOLVES`]:
+#: the screened chain is 2 to 8 entries on everything measured here.
+ENCLOSE_MAX_SOLVES = 12
+
 #: The partitions this instrument can be asked about at all: the parameter
 #: planes, where a small copy of the set is a thing that exists.
 PLANES = partitions_module.PARAMETER_PLANES
@@ -147,6 +234,9 @@ ESCAPED = "orbit_escaped_immediately"
 #: What a probe that solved nothing near its centre is refused with. Spelled the
 #: way [`operators._solve_at_center`] spells it, because it is the same refusal.
 OUTSIDE = "nucleus_outside_frame"
+
+#: What an enclosing read that found no copy around the frame is refused with.
+NOT_ENCLOSED = "no_enclosing_copy"
 
 
 def degree_of(partition: str) -> int | None:
@@ -166,6 +256,10 @@ class Scan:
     prefix: list[float]
     #: The iteration the orbit escaped at, or [`ORBIT_CAP`] if it never did.
     escaped_at: int
+    #: Every `k > 1` at which `|z_k|` set a new record low, ascending: criterion
+    #: (c)'s candidates, and the nesting order of the copies around the frame.
+    #: `k = 1` is dropped with the main body it stands for.
+    chain: list[int] = field(default_factory=list)
 
     def approx_log10_abs_a(self, period: int, degree: int) -> float | None:
         """`log₁₀|A|` at `period`, off the prefix sum. Loose by decades; see above."""
@@ -188,6 +282,8 @@ def scan(center_re, center_im, degree: int, *, cap: int = ORBIT_CAP, keep: int =
     z = complex(0.0, 0.0)
     seen: list[tuple[float, int]] = []
     prefix = [0.0]
+    chain: list[int] = []
+    record = math.inf
     step = 0
     for step in range(1, cap + 1):
         z = (z * z + point) if degree == 2 else (z**degree + point)
@@ -195,18 +291,22 @@ def scan(center_re, center_im, degree: int, *, cap: int = ORBIT_CAP, keep: int =
         if not math.isfinite(magnitude) or magnitude > escape:
             break
         seen.append((magnitude, step))
+        if magnitude < record:
+            record = magnitude
+            if step > 1:
+                chain.append(step)
         prefix.append(
             prefix[-1] + math.log10(degree) + (degree - 1) * math.log10(magnitude)
             if magnitude > 0
             else prefix[-1]
         )
     if not seen:
-        return Scan([], prefix, step)
+        return Scan([], prefix, step, chain)
     seen.sort()
     periods: set[int] = set()
     for _magnitude, multiple in seen[:keep]:
         periods.update(d for d in range(2, multiple + 1) if multiple % d == 0)
-    return Scan(sorted(periods), prefix, step)
+    return Scan(sorted(periods), prefix, step, chain)
 
 
 def screened(held: Scan, width: float, degree: int, *, slack: float = SCREEN_SLACK) -> list[int]:
@@ -238,6 +338,7 @@ def probe(
     near_multiple: float = NEAR_MULTIPLE,
     max_solves: int = MAX_SOLVES,
     slack: float = SCREEN_SLACK,
+    held: Scan | None = None,
 ) -> tuple[dict | None, dict]:
     """`(the atom this frame holds, what it cost)` — the census's one measurement.
 
@@ -256,7 +357,8 @@ def probe(
 
     width = float(width)
     cost = {"solves": 0, "ranked": 0, "screened": 0, "escaped_at": 0}
-    held = scan(center_re, center_im, degree)
+    if held is None:
+        held = scan(center_re, center_im, degree)
     cost["ranked"] = len(held.periods)
     cost["escaped_at"] = held.escaped_at
     if not held.periods:
@@ -286,6 +388,168 @@ def probe(
         record["in_frame"] = bool(FRAME_MIN <= sizes <= FRAME_MAX)
         return record, cost
     return None, {**cost, "refused": refusal}
+
+
+# --------------------------------------------------------------------------- #
+# Criterion (c): the copy this frame is decoration of.
+# --------------------------------------------------------------------------- #
+def screened_chain(
+    held: Scan,
+    width: float,
+    degree: int,
+    *,
+    slack: float = SCREEN_SLACK,
+    max_solves: int = ENCLOSE_MAX_SOLVES,
+) -> list[int]:
+    """The chain periods whose atom could still be at least the frame's width.
+
+    [`screened`]' screen with only the lower edge of the band: an enclosing copy
+    is *bigger* than the frame, so the test is `log₁₀(w) + log₁₀|A| ≤ slack` and
+    there is no upper bound to apply. The exact `size_q ≥ w` is re-asked after
+    Newton, which is what the slack is for.
+    """
+    if width <= 0:
+        return []
+    at = math.log10(width)
+    kept = []
+    for period in held.chain:
+        approx = held.approx_log10_abs_a(period, degree)
+        if approx is not None and at + approx <= slack:
+            kept.append(period)
+    return kept[:max_solves]
+
+
+def bulb_scale(m: int, degree: int) -> float:
+    """How big a satellite bulb of index `m` is against the component it hangs off.
+
+    `2·sin(π/m) / (m²·(d−1))`, the smallest such bulb — the one at internal angle
+    `1/m`; the others run up to `m/π` times larger and pass the same test with
+    room to spare. Measured against the main body's own scale of 1.0 it reads
+    within a few per cent on every plane: at degree 2 the bulbs from `m = 2` to
+    `m = 11` read 1.00, 0.98, 0.99, 1.01, 1.02, 1.03 of it, and the `1/(d−1)` is
+    what makes degree 3 to 6 read the same rather than 0.53, 0.37, 0.27, 0.21.
+
+    This is what separates a **bulb** from a **copy**, which is the whole of what
+    criterion (c) needs the chain for: a bulb's decorations belong to the
+    component it is attached to, a copy's belong to itself.
+    """
+    if m < 2:
+        return math.inf
+    return 2.0 * math.sin(math.pi / m) / (m * m * max(degree - 1, 1))
+
+
+def generations(qualifying, degree: int, *, slack: float = BULB_SLACK) -> list[list[dict]]:
+    """Split a nested chain into `[copy, its bulbs…]` groups, outermost first.
+
+    An entry joins the generation above it when it is a bulb of **any** member of
+    it — not only of the last, because a copy's period doubling and its `1/m`
+    bulb both hang off the copy and arrive in that order.
+    """
+    groups: list[list[dict]] = []
+    for record in qualifying:
+        if groups and any(_is_bulb_of(record, prior, degree, slack) for prior in groups[-1]):
+            groups[-1].append(record)
+        else:
+            groups.append([record])
+    return groups
+
+
+def _is_bulb_of(record: dict, prior: dict, degree: int, slack: float) -> bool:
+    """Whether `record` is a satellite bulb hanging off `prior`'s component."""
+    above, below = prior["period"], record["period"]
+    if above <= 0 or below <= above or below % above:
+        return False
+    floor = prior["window_scale"] * bulb_scale(below // above, degree) / slack
+    return record["window_scale"] >= floor
+
+
+def main_body(degree: int) -> dict:
+    """The chain's head: period 1 at `c = 0`, whose atom scale is exactly 1.
+
+    `A = Λ^(1/(d−1))·z'_1` with an empty `Λ` and `z'_1 = 1`, so `|A| = 1` on
+    every plane — and 1.0 *is* the main cardioid's width at degree 2. It is
+    prepended rather than solved for: [`nucleus.make_atom`] refuses period 1 as
+    the `c = 0` degenerate, which is right for every other caller.
+    """
+    return {"period": 1, "window_scale": 1.0, "degree": degree}
+
+
+def enclosing(
+    center_re,
+    center_im,
+    width,
+    degree: int,
+    *,
+    k: float = ENCLOSE_K,
+    bulb_slack: float = BULB_SLACK,
+    max_solves: int = ENCLOSE_MAX_SOLVES,
+    slack: float = SCREEN_SLACK,
+    held: Scan | None = None,
+) -> tuple[dict | None, dict]:
+    """`(the copy this frame is inside, what it cost)` — criterion (c).
+
+    The atom record is [`nucleus.make_atom`]'s with four readings added:
+    `size_over_width`, the ratio the census reports; `seed_distance_atoms`, how
+    far off centre the nucleus sits in its own atom sizes; `chain_periods`, every
+    period of the nested chain that qualified, the main body's 1 among them; and
+    `generation`, the copy and the bulbs on it that the answer came from. `None`
+    with a reason where the frame is decoration of the main body and of nothing
+    smaller.
+
+    `held` is an already-taken [`scan`] at this centre, so a caller asking both
+    criteria pays for one orbit pass rather than two.
+    """
+    import mpmath as mp
+
+    width = float(width)
+    cost = {"chain": 0, "chain_screened": 0, "enclose_solves": 0}
+    if held is None:
+        held = scan(center_re, center_im, degree)
+    cost["chain"] = len(held.chain)
+    periods = screened_chain(held, width, degree, slack=slack, max_solves=max_solves)
+    cost["chain_screened"] = len(periods)
+    if not periods:
+        return None, {**cost, "enclose_refused": NOT_ENCLOSED}
+
+    nuc.set_precision()
+    center = mp.mpc(mp.mpf(str(center_re)), mp.mpf(str(center_im)))
+    solved: list[dict] = []
+    for period in periods:
+        cost["enclose_solves"] += 1
+        solve = nuc.newton_nucleus(center, period, degree=degree)
+        if not solve.converged:
+            continue
+        record = nuc.make_atom(solve.c, period, degree)
+        if record is None:
+            continue
+        size = record["window_scale"]
+        if not (size >= width > 0):
+            continue
+        distance = float(abs(solve.c - center))
+        record["seed_distance"] = distance
+        record["seed_distance_atoms"] = distance / size
+        record["size_over_width"] = size / width
+        solved.append(record)
+    # Every copy bigger than the frame, whatever `k` says, so a census row carries
+    # the whole table and the cut can be moved without re-probing anything. See
+    # [`ENCLOSE_K`]: the calibration set only ever visits one part of a copy.
+    cost["chain_table"] = [
+        [record["period"], round(record["seed_distance_atoms"], 5), record["size_over_width"]]
+        for record in solved
+    ]
+    qualifying = [main_body(degree), *(r for r in solved if r["seed_distance_atoms"] <= k)]
+
+    groups = generations(qualifying, degree, slack=bulb_slack)
+    chosen = dict(groups[-1][0])
+    if chosen["period"] == 1:
+        # Every copy the frame sits in is the main body or a bulb on it, so what
+        # the frame decorates is the main body — which never counts.
+        return None, {**cost, "enclose_refused": NOT_ENCLOSED}
+    chosen["enclosed"] = True
+    chosen["chain_periods"] = [record["period"] for record in qualifying]
+    chosen["generation"] = [record["period"] for record in groups[-1]]
+    chosen["innermost_period"] = qualifying[-1]["period"]
+    return chosen, cost
 
 
 # --------------------------------------------------------------------------- #
@@ -409,26 +673,68 @@ def band_of(sizes: float) -> str:
     return f">={BANDS[-1]:g}"
 
 
+def ratio_decade(ratio: float) -> str:
+    """Which decade of `size_q / w` an enclosing reading falls in, as `10^n`.
+
+    The ratio spans nine decades over this pool — a frame can be a tenth of its
+    copy or a billionth of it — so the reporting bin is the decade and not a
+    band. `1e0` holds `1 ≤ r < 10`, which is a frame nearly as big as the copy
+    it sits in.
+    """
+    if not (ratio > 0) or not math.isfinite(ratio):
+        return "n/a"
+    return f"1e{int(math.floor(math.log10(ratio)))}"
+
+
+#: Which criteria a census pass takes. `band` is (a), `enclosing` is (c), and
+#: `both` shares one orbit scan between them.
+READINGS = ("both", "band", "enclosing")
+
+
 def _one(task: tuple) -> dict:
     """One census row, in a worker. Arguments are plain data so they pickle."""
-    location, partition, center_re, center_im, width = task
+    location, partition, center_re, center_im, width, reading = task
     degree = degree_of(partition)
     if degree is None:
         return {"location": location, "refused": NOT_A_PLANE}
-    record, cost = probe(center_re, center_im, width, degree)
-    row = {"location": location, "partition": partition, "width": float(width), **cost}
-    if record is None:
-        return row
-    return {
-        **row,
-        "period": record["period"],
-        "window_scale": record["window_scale"],
-        "frame_sizes": record["frame_sizes"],
-        "seed_distance_frames": record["seed_distance_frames"],
-        "in_frame": record["in_frame"],
-        "band": band_of(record["frame_sizes"]),
-        "nucleus": record["key"],
-    }
+    row = {"location": location, "partition": partition, "width": float(width)}
+    held = scan(center_re, center_im, degree)
+    if reading in ("both", "band"):
+        record, cost = probe(center_re, center_im, width, degree, held=held)
+        row.update(cost)
+        if record is not None:
+            row.update(
+                {
+                    "period": record["period"],
+                    "window_scale": record["window_scale"],
+                    "frame_sizes": record["frame_sizes"],
+                    "seed_distance_frames": record["seed_distance_frames"],
+                    "in_frame": record["in_frame"],
+                    "band": band_of(record["frame_sizes"]),
+                    "nucleus": record["key"],
+                }
+            )
+    if reading in ("both", "enclosing"):
+        record, cost = enclosing(center_re, center_im, width, degree, held=held)
+        row.update(cost)
+        row["enclosed"] = record is not None
+        if record is not None:
+            row.update(
+                {
+                    "enclosing_period": record["period"],
+                    "enclosing_scale": record["window_scale"],
+                    "size_over_width": record["size_over_width"],
+                    "enclosing_distance_atoms": record["seed_distance_atoms"],
+                    "enclosing_chain": record["chain_periods"],
+                    "enclosing_generation": record["generation"],
+                    "innermost_period": record["innermost_period"],
+                    "enclosing_nucleus": record["key"],
+                    "ratio_decade": ratio_decade(record["size_over_width"]),
+                }
+            )
+    if reading == "enclosing":
+        row["escaped_at"] = held.escaped_at
+    return row
 
 
 def _initializer() -> None:
