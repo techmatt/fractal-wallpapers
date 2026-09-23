@@ -38,7 +38,8 @@ rename it, and a rename is a `git grep` away from being repointed.
 
 ## Locked conventions
 
-These were decided once, at the first commit, because each is expensive to reverse.
+Each of these is expensive to reverse. Most date from the first commit; the ones
+that came later carry the date of Matt's ruling.
 
 - **Rust makes every pixel; Python never renders.** Python reaches the engine only
   through `src/fractal_wallpapers/engine.py`. No other module shells out to the
@@ -104,23 +105,16 @@ These were decided once, at the first commit, because each is expensive to rever
   and what a leftover record costs is misreading hazard, not bytes. **The keep list
   is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, with the
   reason written at the site. Everything else goes unless Matt says otherwise.
-  **The keep list holds twenty since 2026-09-21** — the `final139_*` set, none of
-  them published: the general n=1000 and the nineteen collections, seated over the
-  pool as mining closed, and every earlier saved record was removed in the same act
-  rather than left beside them. ⚠ **The store is not the keep list** — it held 122
-  records the day before, 85 of them off the list — but that sweep took it to
-  **twenty-one records**, the twenty kept plus a separate themed reference.
-  **Since 2026-09-22 there is no separate reference**:
-  `fractal_wallpapers.portable.REFERENCE` (the module is top-level, `portable.py`
-  beside `engine.py`, and **not** under `curation/`) names the kept `final139_green`,
-  as `GENERAL_CHECK` names `final139_general`, and the store holds exactly the kept
-  records. **Since 2026-09-22 the list is
-  twenty-one**: `final140_general2000` (`20260922T220551Z`), the general pass at
-  n=2000 over the same pool, joined it on Matt's ruling so the website can offer it
-  beside the n=1000 default. `protected_keys()` reads the two tuples and nothing
-  else and is **6,299 keys** (6,067 before it). **A count of folders is not a
-  count of kept records** and a leg that wants to know what is kept reads
-  `tentative.kept()`.
+  **The keep list holds twenty-one, none of them published**: the `final139_*` set
+  (the general n=1000 and the nineteen collections, seated over the pool as mining
+  closed on 2026-09-21) and `final140_general2000`, the general pass at n=2000 over
+  the same pool, kept so the website can offer it beside the n=1000 default. The
+  store holds exactly the kept records and no separate reference:
+  `fractal_wallpapers.portable.REFERENCE` (top-level `portable.py` beside
+  `engine.py`, **not** under `curation/`) names the kept `final139_green`, as
+  `GENERAL_CHECK` names `final139_general`. ⚠ **The store is not the keep list**, and
+  a count of folders is not a count of kept records — they have diverged before, by
+  85 records — so a leg that wants to know what is kept reads `tentative.kept()`.
 - **Preservation of the saved set is a portable instance Matt backs up, and not
   git.** The twenty-one kept records live on this box and in the backups Matt
   takes with `fractal-wallpapers storage export`. **An export is Matt's, taken only
@@ -138,10 +132,8 @@ These were decided once, at the first commit, because each is expensive to rever
   and never a folder existing. A record off that list is readable by naming its
   stamp and pins nothing. The test for a `KEPT_UNPUBLISHED` entry is that something
   **resolves** the record — code reading its rows, a figure naming `<stamp>|<key>`
-  — not that something mentions it. ⚠ It swept the whole store until 2026-09-13,
-  which made an ephemeral artifact confer preservation and is why sweeping kept
-  landing on Matt's desk as a recurring approval; there is no sweep step to carry
-  forward any more.
+  — not that something mentions it. It swept the whole store until 2026-09-13, which
+  let an ephemeral artifact confer preservation; it must never sweep again.
 - **A collection's size is in `curation/targets.py` and nowhere else**, Matt's cut
   of 2026-09-15. Nineteen collections — twelve hue families, seven modes since
   2026-09-17 — and a prompt that names a seat count is a prompt retyping one of
@@ -194,7 +186,7 @@ These were decided once, at the first commit, because each is expensive to rever
   mine — and it is a rule about this machine, not a tuning knob: more than three
   `fractal-engine.exe` at once, or any at normal priority, makes the desktop
   unusable while the leg runs. `engine.run` spawns below-normal through
-  [`process_control.child_priority_flags`], so only the count is the caller's.
+  `process_control.child_priority_flags`, so only the count is the caller's.
 - **ONE POOL-HOLDING PROCESS PER BOX.** Anything that loads the candidate pool —
   `curate growth`, `curate solve run`, `curate solve record`, and the slow test lane
   counts as one — never runs concurrently with another on the same machine. The pool
@@ -241,9 +233,6 @@ cargo build --manifest-path engine/Cargo.toml
 cargo test --manifest-path engine/Cargo.toml
 ```
 
-**The fast lane is the default for every prompt**, Matt's ruling of 2026-09-16.
-`python -m pytest --slow` runs only when a prompt names it.
-
 Run the Python suite with the checkout's own interpreter — `.venv` — rather than
 whatever `python` resolves to on the path. `pythonpath = ["src"]` in
 `pyproject.toml` gets pytest itself importing the package from any interpreter,
@@ -265,7 +254,7 @@ just its own file.
 
 `python -m pytest` runs the **fast lane**, and it is the lane every prompt runs.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
-only when the prompt names it.
+only when the prompt names it — Matt's ruling of 2026-09-16.
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box
@@ -298,7 +287,6 @@ file holds rules only. What follows is the rules that log produced.
   accepting its clock.
 - **`data/palettes` is a parametrized guard**, so a colormap drop moves both counts with
   no test written, and a reading taken across a drop is not comparable with one before it.
-
 - **A reading is comparable only against one taken on the same install**, and
   [`tests/README.md`](tests/README.md#what-the-fast-lane-count-means) defines the
   count once: selected and deselected both, or neither. **A count is not stable
