@@ -233,18 +233,26 @@ throwaway root in a `git worktree`. 501 files, **3.28 GiB**: the ten Durables, a
 colour census, the built label sheets' text, the `labels/` inbox, and the three
 fp32 seeds of the shipped gallery-grade ensemble.
 
-**A standing instance lives at `portable/20260922T030159Z` in the sibling
-`fractal-drive-sync` checkout**,
-taken at commit `00e26b3` after mining closed: **750 files, 3.91 GiB** in 14 minutes,
-753 files and 4.04 GiB with `pictures.jsonl` and the manifest beside them. It is the
-first export to carry the twenty `final139_*` records as kept solves — their
-`gallery.jsonl`, `manifest.json` and `recipes.jsonl` through `{kept}`, and their
-`solve.json` through the **kept solve records** entry `{kept_solves}` reads off those
-manifests. *Restore it with*
+**A standing instance lives at `portable/20260923T041444Z` in the sibling
+`fractal-drive-sync` checkout**, taken at commit `34fb5c6` on 2026-09-22 by
+`preserve_export_ckpt142`: **754 files, 3.91 GiB**, copied in 14 s. The whole export
+took 14.5 minutes and about 13 of them were hashing 518,436 pictures (73.6 GiB). It is
+757 files and 4.04 GiB with `pictures.jsonl`, the manifest and
+`reference/README.md` beside them. It carries all twenty-one kept records — the
+twenty `final139_*` and `final140_general2000` — through `{kept}` and
+`{kept_solves}`, each with its `recipes.jsonl`, and the re-cut `REFERENCE` through
+the roster. Both of the README's checks re-seated in order against the records it
+carries (300 of 300 and 1000 of 1000). It replaces `portable/20260922T030159Z`,
+which predated `final140_general2000` and carried the old reference. *Restore it
+with*
 
 ```
-fractal-wallpapers storage import --from <fractal-drive-sync>/portable/20260922T030159Z --root <hot root> [--archive-root <archive>]
+fractal-wallpapers storage import --from <fractal-drive-sync>/portable/20260923T041444Z --root <hot root> [--archive-root <archive>]
 ```
+
+**`--no-pictures` skips `pictures.jsonl`**, and with it the pool load and the hashing
+of every seatable picture. The file's only use is checking a fresh box's re-render
+against the bytes it is meant to reproduce. No import, solve or record reads it.
 
 Before it, the 2026-09-16 pair (501 files / 3.28 GiB, then 508 / 3.29 GiB at commit
 `5c5fbb2` with the four mine records and the reference solve) was copied out and
@@ -281,7 +289,7 @@ checkouts' modules — drop the live `src` from `sys.path` first, as
 **two** records, their `n` and the `curate solve run … --no-render` that re-seats each:
 the comparison a fresh box makes before trusting its own seating. **They are two
 different passes and neither replaces the other** — `portable.REFERENCE`
-(`20260916T182649Z`, `--collection green`, n=300) is the only target on the themed
+(`20260923T040952Z`, `--collection green`, n=300) is the only target on the themed
 path, and `portable.GENERAL_CHECK` (`20260922T012627Z`, `final139_general`, `--n 1000`)
 is the general pass over the whole pool.
 **The reference record is off the keep list by design**, so a boundary wipe deletes it
@@ -289,20 +297,17 @@ and `portable.REFERENCE` must be re-pointed at a record that stands before the n
 export; the general check is *on* the keep list, so `{kept}` and `{kept_solves}` carry
 it already and it needs no roster entry of its own.
 
-⚠ **`REFERENCE` stopped re-seating, measured 2026-09-21** by `reference_reseat_ckpt140`
-on the exporting box itself: its invocation fills 300 of 300 but shares **230** of the
-record's seats and **3** at the same index. The five days of mining between them grew
-the pool 418,339 → 518,436 candidates and the green cell 2,929 → 3,436 scored rows,
-which lifted the themed bar off its 0.01 floor to a reachable **0.015935**
-(`theme_bar.bar_from`, `floor_below` → `reachable`) and re-ranked the cell under it.
-**43 of the 70 new seats come from legs run after the record**; the other 27 were
-already on the ledger and were not seated then, and **every one of the 70 would have
-cleared the old bar too** — so the bar move re-ranks far more than it admits. Twelve of
-the 70 seats it lost now sit below the new bar; the other 58 are still in the pool and
-merely outranked. Nothing is wrong with the check and it has not been re-cut: that is
-Matt's call. **`GENERAL_CHECK` re-seated 1000 of 1000 in order** the same day, over the
-pool mining closed behind, which is why it is named beside a themed check that no longer
-does.
+**A themed reference decays as the pool grows, so it is re-cut at an export.** Its bar
+is the cell's own `multiple * n`-th best candidate, and a leg that adds rows to the cell
+moves the bar and re-ranks the cell under it. The record before this one, taken
+2026-09-16, fell to **230** of 300 in common and **3** at the same index by 2026-09-21:
+the pool grew 418,339 → 518,436 candidates, the green cell 2,929 → 3,436 scored rows,
+and the bar left its 0.01 floor for a reachable **0.015935** (`theme_bar.bar_from`,
+`floor_below` → `reachable`). **Every one of the 70 new seats would have cleared the
+old bar too**, so a bar move re-ranks far more than it admits. It was re-cut on
+2026-09-22 by `preserve_export_ckpt142`, over the pool mining closed behind, and
+re-seated **300 of 300 in order**. It is seat-for-seat the kept `final139_green`. The
+general check re-seated **1000 of 1000 in order** the same evening.
 
 **Pictures do not travel; the fresh box re-renders**, Matt's ruling of 2026-09-16.
 A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as

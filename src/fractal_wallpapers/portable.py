@@ -102,28 +102,24 @@ TREE = "tree"
 CHECKOUT = "checkout"
 
 #: **The solve a fresh box compares its first seating against**, and the record
-#: that holds its seats. A tentative record at the size `curation.targets` sets,
-#: taken at HEAD on 2026-09-16 and re-run `--no-render` straight after: 300 of
-#: 300 seats in the same order. The 2026-09-15 `targets_green_n300` record it
-#: replaced had stopped reproducing (282 of 300 in common) once the pool moved
-#: under it, which is why a reference is re-taken with an export rather than
-#: carried from an older one. **It travels through the roster and not the keep
-#: list** — `tentative.KEPT_UNPUBLISHED` pins seats against a prune, and a
-#: comparison target has no business doing that.
+#: that holds its seats. A tentative record at the size `curation.targets` sets —
+#: `curate solve record --collection green`, n = 300 — taken over the closed pool
+#: on 2026-09-22 and re-run `--no-render` straight after: 300 of 300 seats in the
+#: same order. **It travels through the roster and not the keep list** —
+#: `tentative.KEPT_UNPUBLISHED` pins seats against a prune, and a comparison
+#: target has no business doing that.
 #:
-#: ⚠ **It no longer re-seats, measured 2026-09-21** by `reference_reseat_ckpt140`:
-#: the same invocation over today's pool fills 300 of 300 and shares **230** of the
-#: record's seats, **3** of them at the same index. Nothing is wrong with the check
-#: — the pool it reads grew from 418,339 candidates to 518,436, and the themed bar
-#: moved with it, off the 0.01 floor to a reachable 0.015935 (`bar_from` went
-#: `floor_below` to `reachable`) — which is the same decay `targets_green_n300`
-#: showed at 282 of 300. **Whether it is re-cut is Matt's call and nothing here
-#: repoints it.** Until it is, a fresh box reading a divergence off this record is
-#: reading the five days of mining between them and not its own stores, and
-#: [`GENERAL_CHECK`] is the check that does reproduce.
-REFERENCE = {"stamp": "20260916T182649Z", "collection": "green"}
+#: **A themed reference decays as the pool grows, and it is re-cut at an export.**
+#: The themed bar is read off the cell's own `multiple * n`-th best candidate, so
+#: every leg that adds rows to the cell can move the bar and re-rank the cell under
+#: it. The two records before this one both stopped reproducing that way — 282 of
+#: 300 in common, then 230 of 300 with 3 at the same index once five days of mining
+#: took the bar off its 0.01 floor to a reachable 0.015935. Mining closed on
+#: 2026-09-21, so this record should hold while the pool does, and it seats exactly
+#: what the kept `final139_green` seats, in the same order.
+REFERENCE = {"stamp": "20260923T040952Z", "collection": "green"}
 
-#: **The n = 1000 check beside [`REFERENCE`]**, and the one that reproduces today.
+#: **The n = 1000 check beside [`REFERENCE`].**
 #: `final139_general` is the general seating of the closed pool at
 #: [`curation.tentative.RECORDED_SEATS`] — the shipped fine bar, no theme, no
 #: collection — and it re-seated **1000 of 1000 in order** on 2026-09-21, over the
@@ -750,18 +746,15 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             f"and compare `seated` in `artifacts/curation/solve/reference_"
             f"{REFERENCE['collection']}/solve.json` with the record's: the same {n} keys in "
             "the same order is a box whose stores, code and judges agree with this one. "
-            "Run on the exporting box straight after the record was taken, on 2026-09-16, it "
+            "Run on the exporting box straight after the record was taken, on 2026-09-22, it "
             "re-seated all of them in order. "
             "A different engine fingerprint (read `storage import`'s `engine:` line) "
             "empties the score amendment's overlay, and that alone moves seats.",
             "",
-            "⚠ **It stopped re-seating on the exporting box itself, measured 2026-09-21**: "
-            f"300 of 300 filled, 230 of the record's seats in common, 3 at the same index. "
-            "The pool grew from 418,339 candidates to 518,436 under it and the themed bar "
-            "moved off its 0.01 floor to a reachable 0.015935, which re-ranks the cell. "
-            "**Read a divergence here as the pool having moved and not as this box**, until "
-            "the record is re-cut — and check the n = "
-            f"{GENERAL_CHECK['n']} pass below, which does reproduce.",
+            "**A themed record decays as the pool grows**: its bar is read off the cell's own "
+            "best candidates, so a leg that adds rows to the cell re-ranks it. Mining closed "
+            "before this record was taken, so a divergence on a box that has mined nothing "
+            "since the import is the box and not the pool.",
             "",
             f"## The n = {GENERAL_CHECK['n']} check",
             "",
@@ -782,8 +775,8 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             "and compare `seated` in `artifacts/curation/solve/reference_general/solve.json` "
             f"with the record's: the same {GENERAL_CHECK['n']} keys in the same order is a box "
             "whose stores, code and judges agree with this one. It re-seated all of them in "
-            "order on 2026-09-21, over the pool mining closed behind, which is why it is here "
-            "beside a themed check that no longer does.",
+            "order on the exporting box on 2026-09-21 and again on 2026-09-22, over the pool "
+            "mining closed behind.",
             "",
         ]
     )

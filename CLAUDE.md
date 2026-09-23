@@ -120,11 +120,11 @@ These were decided once, at the first commit, because each is expensive to rever
   count of kept records** and a leg that wants to know what is kept reads
   `tentative.kept()`.
 - **Preservation of the saved set is a portable instance Matt backs up, and not
-  git.** The twenty-two records live on this box and in the export
-  `fractal-wallpapers storage export` writes under
-  `C:\Code\fractal-drive-sync\portable\<stamp>` — 753 files, 4.04 GiB on
-  2026-09-22, which predates `final140_general2000`, so that record is on this box
-  only until the next export — restored with `storage import --from <instance> --root <hot root>`.
+  git.** The twenty-two records — the twenty-one kept and `portable.REFERENCE` —
+  live on this box and in the export `fractal-wallpapers storage export` writes
+  under `C:\Code\fractal-drive-sync\portable\<stamp>`: `20260923T041444Z`, 757
+  files, 4.04 GiB on 2026-09-22, carrying `final140_general2000` with its recipes
+  and the re-cut reference — restored with `storage import --from <instance> --root <hot root>`.
   **Nothing is committed until the work is truly finalized**: tracking a record's
   text is publishing its stamp and there is no third way
   (`curation/GALLERY.md`'s *All twenty kept records carry one, on disk and
@@ -265,7 +265,10 @@ just its own file.
 `python -m pytest --slow` runs every test there is; CI runs it, and a prompt runs it
 only when the prompt names it.
 
-**The newest reading is fast only**: `enclosing_k_and_engine_rebuild_ckpt141` added no
+**The newest reading is fast only**: `preserve_export_ckpt142` added no test on
+2026-09-22 and read **4,919 fast in 161.66 s (2:41)**, 157 deselected, green, count
+unmoved, taken right after a 14.5-minute export and three pool loads. Before it,
+`enclosing_k_and_engine_rebuild_ckpt141` added no
 test on 2026-09-22 and read **4,919 fast in 159.08 s (2:39)**, 157 deselected, green, count
 unmoved. Before it, `readme_example_julia4_ckpt141` added no test on
 2026-09-22 and read **4,919 fast in 176.89 s (2:57)**, 157 deselected, count unmoved. Its
