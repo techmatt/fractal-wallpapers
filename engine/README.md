@@ -578,6 +578,51 @@ more expensive to split than to colour, and the consumer detects that and keeps 
 one-worker path. Nothing here decides that — this crate hands back what it measured
 and says how big it is by being it.
 
+### The colouring stages, and the two a palette may add before the stretch
+
+*(`palette_modes_ckpt143`, 2026-09-23, from the website, which was sent for the seam.)*
+A field value reaches the map through these stages, in this order:
+
+```
+compression   g = (ν^λ − 1)/λ, ln ν at λ = 0, ν floored at the smallest normal f32
+scale         leveled:  measure (stretch / edge / rank) over g, then the mode's curve,
+                        gamma, cycles and phase — exactly the path described above
+              absolute: frac(g/period + phase), nothing measured, nothing clamped
+bake          the map folded and/or reversed (and on the site, the autolevel curve on its stops)
+lookup        the 4096-entry linear-light table, lerped
+rolloff       on luminance, after the colour is chosen
+```
+
+`Palette` carries the three new members as `scale` (`leveled` | `absolute`), `lambda`
+(`[0, 1]`) and `period` (positive), and **each is omitted from a serialized recipe at
+its default** — the `texture_gamma` / `merge_order` exception, for their reason: a
+recipe is hashed into render keys and cache names. So nothing the pipeline has ever
+recorded names them, and the pipeline's own whitelist of seven palette keys
+(`engine_spec.py`) never emits them; this is an explorer-first stage.
+
+- **`λ = 1` skips the compression outright under leveled**, rather than computing
+  `ν − 1`: the shift is invisible to a stretch in exact arithmetic and not in rounding,
+  and the default recipe must be the picture it always was. Measured: 315 renders
+  (twenty modes over five families, five recipes) byte-identical before and after, the
+  three anchors timed within noise. Under absolute there is no old picture to keep, so
+  λ = 1 is Box–Cox proper, `ν − 1`, and the slider is continuous over its whole range.
+- **Under leveled the statistics are measured on `g`** (`Spend::of`), not remapped from
+  the uncompressed stretch. The field is compressed into an `f32` field first and
+  measured over that, and each sample is compressed the same way before it is placed,
+  so a banded shade is still the whole frame's bytes. Under a rank transfer and in the
+  modulate, λ changes nothing but rounding — a rank is blind to a monotone map.
+- **Under absolute, gamma, cycles, transfer and the mode's curve do not apply**: each
+  reshapes a `[0, 1]` that a stretch produced, and absolute produces none. `Spend::of`
+  answers `Spend::Absolute`, which measures nothing. In a composite the scale and the
+  compression are the base's and the texture keeps its own stretch; in the modulate the
+  base is laid along its own values rather than ranked, and the texture's shift still
+  rides on the phase. The direct traps read none of this, as they read no gamma.
+- **Linear absolute colouring with a short period bands at large ν.** The lane a field
+  crosses in is `f32` (the narrowing is unchanged), whose step is about 0.004 at
+  ν ≈ 3·10⁴ and 0.06 at 10⁶. A period of a few units there is tens to hundreds of steps
+  a cycle and bands visibly; a log or a small λ compresses first and shrinks the step
+  with it. Widening the lane would move a type the explorer depends on, and is left.
+
 **Consumers pin by path, because the version cannot tell them anything.** This crate
 is `0.1.0` and is never bumped, so a git dependency could not distinguish two
 revisions of it — and it would drag the Python package, the data and the labels into
