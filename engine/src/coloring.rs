@@ -226,6 +226,53 @@ impl Rolloff {
     }
 }
 
+/// What a field value is measured against before it is placed on the gradient.
+///
+/// **Leveled** is the frame framing itself: the percentile stretch (or whichever
+/// [`Transfer`] the recipe asks for) measured over this frame's own samples, so
+/// the whole gradient is always spent on whatever this frame happens to hold. It
+/// is the default and it is every picture the pipeline has ever made.
+///
+/// **Absolute** measures nothing. The gradient is laid along the field's own
+/// values, one traversal every `period` of them, `frac(g/period + phase)` — so a
+/// value is the same color in every frame that holds it, which is what a zoom
+/// needs and what leveling cannot give: a stretch spends the gradient on the
+/// frame's range, and a frame whose range is dominated by a thin shell of
+/// outliers puts all the detail in its bulk into one corner of the map. The
+/// price is that nothing frames the picture: a period too long for the frame is
+/// one flat color, a period too short is noise.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Scale {
+    /// Normalize against this frame's own samples.
+    #[default]
+    Leveled,
+    /// Lay the gradient along the field's values themselves, one cycle a period.
+    Absolute,
+}
+
+impl Scale {
+    fn is_leveled(&self) -> bool {
+        *self == Scale::Leveled
+    }
+}
+
+/// The smallest value [`Palette::compress`] reads a field value as.
+///
+/// A Box–Cox transform is defined on positive values only, and `ln 0` is not a
+/// number. This is the smallest normal `f32`, which is the lane a field arrives
+/// in: no positive sample a lane can carry is moved by the floor, and a sample at
+/// zero or below lands at one finite value rather than at `-inf`.
+pub const COMPRESSION_FLOOR: f64 = f32::MIN_POSITIVE as f64;
+
+fn unit_f64() -> f64 {
+    1.0
+}
+
+fn is_unit(value: &f64) -> bool {
+    *value == 1.0
+}
+
 /// The palette pass: everything between a normalized field and a color.
 ///
 /// A **mode** says which field to read and through which curve. This says how
@@ -235,6 +282,12 @@ impl Rolloff {
 /// than folded into the mode's name. Every default is the identity — a spec that
 /// says nothing about the palette renders exactly as it did before any of this
 /// existed.
+///
+/// **The last three members leave no trace at their defaults.** `scale`, `lambda`
+/// and `period` are omitted from a serialized recipe when they are the identity,
+/// the same exception `texture_gamma` and `merge_order` make and for the same
+/// reason: a recipe is hashed into render keys and cache names, and a key that
+/// appeared unconditionally would rename every picture ever recorded.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct Palette {
@@ -256,6 +309,22 @@ pub struct Palette {
     /// stage here that acts on the color rather than on the index into the map,
     /// and it is here because it belongs to the same recipe a record carries.
     pub rolloff: Rolloff,
+    /// What a field value is measured against. See [`Scale`]. Under
+    /// [`Scale::Absolute`], `gamma`, `cycles`, `transfer` and the mode's own curve
+    /// do not apply: each of them reshapes a `[0, 1]` the stretch produced, and
+    /// absolute produces none.
+    #[serde(default, skip_serializing_if = "Scale::is_leveled")]
+    pub scale: Scale,
+    /// The Box–Cox compression λ applied to the raw field value **before anything
+    /// else**, under either scale: `g = (ν^λ − 1)/λ`, and `ln ν` at `λ = 0`, in
+    /// `[0, 1]`. See [`Palette::compress`].
+    #[serde(default = "unit_f64", skip_serializing_if = "is_unit")]
+    pub lambda: f64,
+    /// Under [`Scale::Absolute`], how much of the compressed value one traversal
+    /// of the gradient covers. Means nothing under leveled, where the frame's own
+    /// range is the traversal.
+    #[serde(default = "unit_f64", skip_serializing_if = "is_unit")]
+    pub period: f64,
 }
 
 impl Default for Palette {
@@ -267,6 +336,9 @@ impl Default for Palette {
             bake: crate::colormap::Bake::default(),
             transfer: Transfer::Value,
             rolloff: Rolloff::None,
+            scale: Scale::Leveled,
+            lambda: 1.0,
+            period: 1.0,
         }
     }
 }
@@ -297,7 +369,82 @@ impl Palette {
                 "the rolloff's knee must be at least 0 and below 1, got {knee}"
             ));
         }
+        if !(self.lambda.is_finite() && (0.0..=1.0).contains(&self.lambda)) {
+            return Err(format!(
+                "lambda must be between 0 and 1, got {}",
+                self.lambda
+            ));
+        }
+        if !(self.period.is_finite() && self.period > 0.0) {
+            return Err(format!("period must be positive, got {}", self.period));
+        }
         Ok(())
+    }
+
+    /// Whether this recipe compresses the field before it is measured.
+    ///
+    /// **`λ = 1` skips the stage outright**, rather than computing `ν − 1`: under
+    /// leveled that shift is invisible to the stretch in exact arithmetic but not
+    /// in rounding, and the default recipe has to be the picture it always was,
+    /// bit for bit. Under absolute it is not skipped — see [`Palette::place_absolute`].
+    pub fn compresses(&self) -> bool {
+        self.lambda != 1.0
+    }
+
+    /// The Box–Cox transform of one raw field value: `(ν^λ − 1)/λ`, and exactly
+    /// `ln ν` at `λ = 0`, with `ν` floored at [`COMPRESSION_FLOOR`].
+    ///
+    /// Monotone for every λ, and continuous in λ — the `− 1` and the `/λ` are what
+    /// make `λ → 0` arrive at the log rather than at a constant — so the slider
+    /// between the identity and the log is one family and not two. At `λ = 1` it
+    /// is `ν − 1`, the identity shifted.
+    pub fn compress(&self, value: f64) -> f64 {
+        let value = value.max(COMPRESSION_FLOOR);
+        if self.lambda == 0.0 {
+            value.ln()
+        } else {
+            (value.powf(self.lambda) - 1.0) / self.lambda
+        }
+    }
+
+    /// One lane sample compressed, back into the lane's own width: what a leveled
+    /// recipe measures its statistics over and then places. A sample with no value
+    /// stays without one.
+    fn compress_sample(&self, value: f32) -> f32 {
+        if value.is_finite() {
+            self.compress(value as f64) as f32
+        } else {
+            value
+        }
+    }
+
+    /// A field with this recipe's compression spent on every sample, or `None`
+    /// where the recipe does not compress.
+    fn compressed(&self, field: &Field) -> Option<Field> {
+        self.compresses().then(|| Field {
+            values: field
+                .values
+                .par_iter()
+                .map(|&value| self.compress_sample(value))
+                .collect(),
+            width: field.width,
+            height: field.height,
+        })
+    }
+
+    /// Place one raw field value on the gradient absolutely: `frac(g/period + phase)`.
+    ///
+    /// No statistics, no stretch and no clamp. The compression is always the
+    /// Box–Cox of [`Palette::compress`] here, `λ = 1` included, so the family is
+    /// continuous across the whole slider; the skip [`Palette::compresses`] makes
+    /// is a leveled optimisation and absolute has no bytes to preserve. The wrap is
+    /// one wrap, not `place`'s two: there is no `[0, 1]` value whose top a second
+    /// wrap would be protecting.
+    pub fn place_absolute(&self, value: f64) -> f64 {
+        let turned = (self.compress(value) / self.period + self.phase).rem_euclid(1.0);
+        // `rem_euclid` of a hair below zero rounds to exactly 1.0; that is the
+        // start of the gradient, not its end.
+        if turned >= 1.0 { 0.0 } else { turned }
     }
 
     /// Whether the gradient is traversed once, from its start.
@@ -942,14 +1089,35 @@ impl Ranks {
 /// the colouring are separate for that reason and for no other — [`shade`],
 /// [`composite`] and [`modulate`] are each still one call that does both, over one
 /// band that is the whole frame.
+///
+/// **`Absolute` measures nothing**, and is here so that a caller splitting the pass
+/// has one thing to hand every band whichever [`Scale`] the recipe asks for. The
+/// colourings place an absolute sample through [`Palette::place_absolute`] and never
+/// ask it for a position.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Spend {
     Value(Stretch),
     Edge(Stretch, Edges),
     Rank(Ranks),
+    Absolute,
 }
 
 impl Spend {
+    /// Measure what this whole recipe needs over one field: nothing under
+    /// [`Scale::Absolute`], and under leveled the recipe's transfer over the field
+    /// **as the recipe compresses it** — the statistics are the compressed field's,
+    /// which is what makes λ a real change to a leveled picture rather than a
+    /// remapping of positions the uncompressed stretch already chose.
+    pub fn of(field: &Field, palette: &Palette) -> Spend {
+        if palette.scale == Scale::Absolute {
+            return Spend::Absolute;
+        }
+        match palette.compressed(field) {
+            Some(compressed) => Spend::measure(&compressed, palette.transfer),
+            None => Spend::measure(field, palette.transfer),
+        }
+    }
+
     /// Measure the transfer this recipe asks for over one field.
     pub fn measure(field: &Field, transfer: Transfer) -> Spend {
         match transfer {
@@ -971,6 +1139,9 @@ impl Spend {
             Spend::Value(stretch) => stretch.position(value),
             Spend::Edge(stretch, edges) => edges.remap(stretch.position(value)),
             Spend::Rank(ranks) => ranks.position(value),
+            // Never asked by the colourings here (see the type). A caller that asks
+            // anyway gets the value clamped, which is a picture rather than a panic.
+            Spend::Absolute => value.clamp(0.0, 1.0),
         }
     }
 }
@@ -1129,16 +1300,19 @@ pub fn colorize(field: &Field, transform: Transform, colormap: &Colormap) -> Vec
 
 /// Color one field into linear-light RGB, through a palette recipe.
 ///
-/// The order is the whole of it: stretch, then transfer, then the mode's curve,
-/// then gamma and the traversal, then the map. Each stage takes `[0, 1]` to
-/// `[0, 1]`, so any of them can be the identity without the rest noticing.
+/// The order is the whole of it: the compression, then stretch, then transfer,
+/// then the mode's curve, then gamma and the traversal, then the map. Each stage
+/// after the compression takes `[0, 1]` to `[0, 1]`, so any of them can be the
+/// identity without the rest noticing. Under [`Scale::Absolute`] everything
+/// between the compression and the map is replaced by one wrap — see
+/// [`Palette::place_absolute`].
 pub fn shade(
     field: &Field,
     transform: Transform,
     palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
-    let spend = Spend::measure(field, palette.transfer);
+    let spend = Spend::of(field, palette);
     shade_samples(&field.values, &spend, transform, palette, colormap)
 }
 
@@ -1150,6 +1324,10 @@ pub fn shade(
 /// colours to the same bytes whether it is the frame or a band of it — which is
 /// what lets a caller split the pass. [`shade`] is this over one band that is the
 /// whole field, and the pipeline takes that path.
+///
+/// `spend` is [`Spend::of`]'s answer for this recipe: it was measured over the
+/// compressed field, so each sample is compressed the same way before it is
+/// placed.
 pub fn shade_samples(
     values: &[f32],
     spend: &Spend,
@@ -1157,12 +1335,22 @@ pub fn shade_samples(
     palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
+    let absolute = palette.scale == Scale::Absolute;
+    let compresses = palette.compresses();
     values
         .par_iter()
         .map(|&value| {
             if !value.is_finite() {
                 return INTERIOR;
             }
+            if absolute {
+                return colormap.lookup(palette.place_absolute(value as f64));
+            }
+            let value = if compresses {
+                palette.compress_sample(value)
+            } else {
+                value
+            };
             let position = spend.position(value as f64);
             colormap.lookup(palette.place(transform.apply(position)))
         })
@@ -1193,7 +1381,7 @@ pub fn composite(
     palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
-    let base_spend = Spend::measure(base, palette.transfer);
+    let base_spend = Spend::of(base, palette);
     let texture_stretch = Stretch::measure(texture);
     composite_samples(
         &base.values,
@@ -1213,6 +1401,13 @@ pub fn composite(
 /// [`composite`]'s second half: a run of sample pairs, through the two frame-wide
 /// normalizations somebody else measured. See [`shade_samples`] for why the halves
 /// are separable and who splits them.
+///
+/// **The compression and the scale are the base's**, for the reason gamma is: the
+/// recipe describes the picture and the picture is what the base makes. The texture
+/// keeps its own stretch under either scale — it is a modulation of the base's
+/// light, and a texture laid along its own absolute values would be a second
+/// picture. Under absolute the base arrives already wrapped, so the traversal after
+/// the blend is not taken again.
 #[allow(clippy::too_many_arguments)]
 pub fn composite_samples(
     base: &[f32],
@@ -1237,12 +1432,22 @@ pub fn composite_samples(
         phase: 0.0,
         ..*palette
     };
+    let absolute = palette.scale == Scale::Absolute;
+    let compresses = palette.compresses();
     base.par_iter()
         .zip(texture)
         .map(|(&base_value, &texture_value)| {
-            let under = base_value
-                .is_finite()
-                .then(|| gamma.place(base_transform.apply(base_spend.position(base_value as f64))));
+            let under = base_value.is_finite().then(|| {
+                if absolute {
+                    return palette.place_absolute(base_value as f64);
+                }
+                let base_value = if compresses {
+                    palette.compress_sample(base_value)
+                } else {
+                    base_value
+                };
+                gamma.place(base_transform.apply(base_spend.position(base_value as f64)))
+            });
             let over = texture_value.is_finite().then(|| {
                 let value = texture_transform.apply(texture_stretch.position(texture_value as f64));
                 match texture_gamma {
@@ -1256,6 +1461,9 @@ pub fn composite_samples(
                 (None, Some(over)) => over,
                 (Some(under), Some(over)) => under + (blend.apply(under, over) - under) * weight,
             };
+            if absolute {
+                return colormap.lookup(gray);
+            }
             colormap.lookup(
                 Palette {
                     gamma: 1.0,
@@ -1303,7 +1511,13 @@ pub fn modulate(
     palette: &Palette,
     colormap: &Colormap,
 ) -> (Vec<[f64; 3]>, bool) {
-    let ranks = Ranks::measure(base.values.iter().map(|&value| value as f64));
+    let ranks = if palette.scale == Scale::Absolute {
+        Ranks::measure(std::iter::empty())
+    } else {
+        let compressed = palette.compressed(base);
+        let ranked = compressed.as_ref().unwrap_or(base);
+        Ranks::measure(ranked.values.iter().map(|&value| value as f64))
+    };
     let spread = Stretch::over(texture.values.iter().copied());
     let linear = modulate_samples(
         &base.values,
@@ -1322,6 +1536,15 @@ pub fn modulate(
 /// [`modulate`]'s second half: a run of sample pairs, through the rank and the
 /// spread somebody else measured. See [`shade_samples`] for why the halves are
 /// separable and who splits them.
+///
+/// Under leveled the compression changes nothing but rounding — a rank is blind to
+/// any monotone map — and it is still applied, so that the statement "λ acts before
+/// anything else" has no exception to remember. **Under absolute the base is not
+/// ranked at all**: it is laid along its own compressed values like any other
+/// absolute picture, and the texture's shift rides on the phase exactly as it does
+/// on the rank. That departs from "the base is spent by rank as part of what this
+/// is", deliberately: the rank exists so that a shift means the same distance
+/// everywhere in the frame, and an absolute scale is uniform by construction.
 #[allow(clippy::too_many_arguments)]
 pub fn modulate_samples(
     base: &[f32],
@@ -1334,18 +1557,34 @@ pub fn modulate_samples(
     palette: &Palette,
     colormap: &Colormap,
 ) -> Vec<[f64; 3]> {
+    let absolute = palette.scale == Scale::Absolute;
+    let compresses = palette.compresses();
     base.par_iter()
         .zip(texture)
         .map(|(&base_value, &texture_value)| {
             if !base_value.is_finite() {
                 return INTERIOR;
             }
-            let gray = base_transform.apply(ranks.position(base_value as f64));
             let over = if texture_value.is_finite() {
                 texture_transform.apply(spread.position(texture_value))
             } else {
                 0.0
             };
+            if absolute {
+                return colormap.lookup(
+                    Palette {
+                        phase: palette.phase + shift * over,
+                        ..*palette
+                    }
+                    .place_absolute(base_value as f64),
+                );
+            }
+            let base_value = if compresses {
+                palette.compress_sample(base_value)
+            } else {
+                base_value
+            };
+            let gray = base_transform.apply(ranks.position(base_value as f64));
             // The perturbation rides on the recipe's own phase rather than
             // replacing it: `place` already computes `frac(gray·cycles + phase)`,
             // so a per-sample phase is the whole of what this coloring needs and
@@ -2331,5 +2570,186 @@ mod tests {
         assert!(ratio < 1.0, "the highlight was not pulled down");
         assert_eq!(Rolloff::None.shade(pixel), pixel);
         assert_eq!(soft.shade([0.0, 0.0, 0.0]), [0.0, 0.0, 0.0]);
+    }
+
+    /// The three members that arrived after every record was written leave no
+    /// trace at their defaults, so a recipe hashed into a render key or a cache
+    /// name is the text it always was — and a recipe that sets them says so.
+    #[test]
+    fn scale_lambda_and_period_are_absent_at_their_defaults() {
+        let text = serde_json::to_string(&Palette::default()).unwrap();
+        for key in ["scale", "lambda", "period"] {
+            assert!(!text.contains(key), "{key} leaked into {text}");
+        }
+        let set: Palette =
+            serde_json::from_str(r#"{"scale": "absolute", "lambda": 0.25, "period": 600}"#)
+                .unwrap();
+        assert_eq!(set.scale, Scale::Absolute);
+        assert_eq!((set.lambda, set.period), (0.25, 600.0));
+        let again: Palette = serde_json::from_str(&serde_json::to_string(&set).unwrap()).unwrap();
+        assert_eq!(again, set);
+        assert!(serde_json::from_str::<Palette>(r#"{"scale": "leveled"}"#).is_ok());
+        assert!(serde_json::from_str::<Palette>(r#"{"scale": "relative"}"#).is_err());
+    }
+
+    #[test]
+    fn lambda_and_period_are_refused_out_of_range() {
+        for lambda in [-0.1, 1.5, f64::NAN] {
+            let recipe = Palette {
+                lambda,
+                ..Palette::default()
+            };
+            assert!(recipe.validate().is_err(), "lambda {lambda} passed");
+        }
+        for period in [0.0, -1.0, f64::INFINITY] {
+            let recipe = Palette {
+                period,
+                ..Palette::default()
+            };
+            assert!(recipe.validate().is_err(), "period {period} passed");
+        }
+        for lambda in [0.0, 0.5, 1.0] {
+            let recipe = Palette {
+                lambda,
+                period: 1e-3,
+                ..Palette::default()
+            };
+            assert!(recipe.validate().is_ok());
+        }
+    }
+
+    /// Box–Cox is one family: exactly the log at zero, continuous into it, the
+    /// identity shifted by one at one, and monotone everywhere, the floor included.
+    #[test]
+    fn the_compression_is_box_cox_and_continuous_at_zero() {
+        let at = |lambda| Palette {
+            lambda,
+            ..Palette::default()
+        };
+        for nu in [0.5, 1.0, 7.0, 1e4] {
+            assert_eq!(at(0.0).compress(nu), f64::ln(nu));
+            assert!((at(1e-9).compress(nu) - f64::ln(nu)).abs() < 1e-6);
+            assert!((at(1.0).compress(nu) - (nu - 1.0)).abs() < 1e-12);
+            assert!((at(0.3).compress(nu) - (nu.powf(0.3) - 1.0) / 0.3).abs() < 1e-12);
+        }
+        for lambda in [0.0, 0.3, 1.0] {
+            let recipe = at(lambda);
+            assert!(recipe.compress(0.0).is_finite(), "λ {lambda} at zero");
+            assert_eq!(recipe.compress(-5.0), recipe.compress(0.0));
+            let mut previous = f64::NEG_INFINITY;
+            for step in 0..200 {
+                let g = recipe.compress(step as f64 * 0.37);
+                assert!(g >= previous, "λ {lambda} is not monotone");
+                previous = g;
+            }
+        }
+    }
+
+    /// Under leveled the statistics are the compressed field's: a field that is
+    /// geometric in value is spent evenly by `λ = 0`, where the plain stretch
+    /// crowds it into the bottom of the gradient.
+    #[test]
+    fn a_leveled_compression_measures_its_stretch_on_g() {
+        let values: Vec<f32> = (0..=400).map(|i| 10f32.powf(i as f32 / 100.0)).collect();
+        let field = field_of(&values);
+        let logged = Palette {
+            lambda: 0.0,
+            ..Palette::default()
+        };
+        let plain = shade(&field, Transform::Linear, &Palette::default(), &ramp());
+        let even = shade(&field, Transform::Linear, &logged, &ramp());
+        // The middle sample is 10^2 of a range that runs to 10^4: plainly a hundredth
+        // of the way up, logged half of it.
+        let map = ramp();
+        assert!(
+            plain[200][0] <= map.lookup(0.05)[0],
+            "plain middle {:?}",
+            plain[200]
+        );
+        assert!(
+            (even[200][0] - map.lookup(0.5)[0]).abs() < 0.01,
+            "logged middle {:?} against {:?}",
+            even[200],
+            map.lookup(0.5)
+        );
+    }
+
+    /// `λ = 1` under leveled is not merely close to the default recipe: it is the
+    /// default recipe, which is what the skip is for.
+    #[test]
+    fn lambda_one_is_the_default_picture_bit_for_bit() {
+        let values: Vec<f32> = (0..500)
+            .map(|i| (i as f32 * 0.731).sin() * 40.0 + 3.0)
+            .collect();
+        let field = field_of(&values);
+        for transfer in [
+            Transfer::Value,
+            Transfer::Edge { weight: 0.5 },
+            Transfer::Rank,
+        ] {
+            let recipe = Palette {
+                transfer,
+                ..Palette::default()
+            };
+            assert!(!recipe.compresses());
+            let spend = Spend::of(&field, &recipe);
+            let whole = shade(&field, Transform::Sqrt, &recipe, &ramp());
+            let split = shade_samples(&field.values, &spend, Transform::Sqrt, &recipe, &ramp());
+            let direct = shade_samples(
+                &field.values,
+                &Spend::measure(&field, transfer),
+                Transform::Sqrt,
+                &recipe,
+                &ramp(),
+            );
+            assert_eq!(whole, split);
+            assert_eq!(whole, direct);
+        }
+    }
+
+    /// Absolute colors a value by the value: no statistics, so two frames that
+    /// share a value share its color, and one period later the gradient is back.
+    #[test]
+    fn absolute_places_by_value_and_wraps_every_period() {
+        let recipe = Palette {
+            scale: Scale::Absolute,
+            lambda: 0.0,
+            period: 0.25,
+            phase: 0.1,
+            ..Palette::default()
+        };
+        let nu: f64 = 40.0;
+        let expected = (nu.ln() / 0.25 + 0.1).rem_euclid(1.0);
+        assert!((recipe.place_absolute(nu) - expected).abs() < 1e-12);
+        let later = nu * 0.25f64.exp();
+        assert!((recipe.place_absolute(later) - expected).abs() < 1e-9);
+
+        let one = field_of(&[40.0, 2.0, 9.0]);
+        let other = field_of(&[40.0, 5000.0, f32::NAN]);
+        let a = shade(&one, Transform::Linear, &recipe, &ramp());
+        let b = shade(&other, Transform::Linear, &recipe, &ramp());
+        assert_eq!(a[0], b[0], "one value, two frames, two colors");
+        assert_eq!(b[2], INTERIOR);
+        assert!(matches!(Spend::of(&one, &recipe), Spend::Absolute));
+    }
+
+    /// Absolute at `λ = 1` is Box–Cox too, `ν − 1`: the skip is leveled's alone,
+    /// so the slider is continuous across its whole travel under absolute.
+    #[test]
+    fn absolute_at_lambda_one_is_nu_minus_one() {
+        let recipe = Palette {
+            scale: Scale::Absolute,
+            period: 600.0,
+            phase: 0.1,
+            ..Palette::default()
+        };
+        let nu = 1234.5;
+        let expected = ((nu - 1.0) / 600.0 + 0.1f64).rem_euclid(1.0);
+        assert!((recipe.place_absolute(nu) - expected).abs() < 1e-12);
+        let near = Palette {
+            lambda: 1.0 - 1e-9,
+            ..recipe
+        };
+        assert!((near.place_absolute(nu) - expected).abs() < 1e-5);
     }
 }
