@@ -169,7 +169,7 @@ def test_the_named_frame_is_decoration_of_the_satellite_its_descent_aimed_at():
     assert record is not None
     assert record["period"] == NAMED_ENCLOSING
     assert record["size_over_width"] == pytest.approx(NAMED_RATIO, rel=1e-5)
-    assert record["seed_distance_atoms"] < minibrot.ENCLOSE_K
+    assert record["seed_distance_atoms"] < minibrot.TIGHT_ENCLOSE_K
     # The main body and its period-2 bulb qualify on distance and are one
     # generation; the copy and its own period doubling are the next, and the
     # answer is that generation's head — not the doubling, not the ancestor.
@@ -192,7 +192,7 @@ def test_the_period_2_bulb_qualifies_on_distance_and_is_still_not_the_answer():
     held = minibrot.scan(NAMED[0], NAMED[1], 2)
     groups = minibrot.generations(_qualifying(held, NAMED[2], 2), 2)
     assert [[row["period"] for row in group] for group in groups] == [[1, 2], [27, 54]]
-    assert groups[0][1]["seed_distance_atoms"] < minibrot.ENCLOSE_K
+    assert groups[0][1]["seed_distance_atoms"] < minibrot.TIGHT_ENCLOSE_K
     assert groups[0][1]["size_over_width"] > 1e8
 
 
@@ -271,17 +271,17 @@ TUNED_ROOTS = [
 
 @pytest.mark.parametrize(("re_", "im_", "width", "aimed", "answered"), TUNED_ROOTS)
 def test_a_cut_that_drops_a_copy_answers_its_period_doubling(re_, im_, width, aimed, answered):
-    """What [`minibrot.ENCLOSE_K`] costs at the shallow end, pinned as a number.
+    """What [`minibrot.TIGHT_ENCLOSE_K`] costs at the shallow end, pinned as a number.
 
-    These are the root frames of the four descents [`minibrot.ENCLOSE_K`] is
-    calibrated on, and the bound is calibrated on their *deep* rows. At the root
+    These are the root frames of the four descents the tight reading is
+    calibrated on, and it is calibrated on their *deep* rows. At the root
     the frame is 1.2 to 1.3 atom sizes off the satellite's nucleus, which the cut
     refuses — and the generation then starts at the satellite's own period
     doubling, which is half the size and inside the bound. The reading is not
     wrong, it is one generation too deep, and it is the shape of what a tighter
     or looser cut does to this census.
     """
-    record, cost = minibrot.enclosing(re_, im_, width, 2)
+    record, cost = minibrot.enclosing(re_, im_, width, 2, k=minibrot.TIGHT_ENCLOSE_K)
     assert record is not None
     table = {row[0]: row[1] for row in cost["chain_table"]}
     assert aimed in table, "the satellite is solved for; it is the cut that drops it"
@@ -290,6 +290,9 @@ def test_a_cut_that_drops_a_copy_answers_its_period_doubling(re_, im_, width, ai
     # And it comes back the moment the cut is widened to hold the root frames.
     wider, _cost = minibrot.enclosing(re_, im_, width, 2, k=1.35)
     assert wider is not None and wider["period"] == aimed
+    # The shipped bound is the geometric extent of a copy, so it holds them too.
+    shipped, _cost = minibrot.enclosing(re_, im_, width, 2)
+    assert shipped is not None and shipped["period"] == aimed
 
 
 def test_the_solved_chain_is_reported_whatever_the_cut_says():
@@ -321,7 +324,7 @@ def test_a_cut_moved_off_the_chain_table_agrees_with_probing_again():
     held = minibrot.scan(NAMED[0], NAMED[1], 2)
     _record, cost = minibrot.enclosing(*NAMED, 2)
     row = {"partition": "mandelbrot", "width": float(NAMED[2]), "chain_table": cost["chain_table"]}
-    for k in (0.5, 0.82, 1.35, 2.0):
+    for k in (0.5, minibrot.TIGHT_ENCLOSE_K, 1.35, minibrot.ENCLOSE_K):
         fresh, _cost = minibrot.enclosing(*NAMED, 2, k=k, held=held)
         reread = minibrot.enclosing_at(row, k)
         if fresh is None:

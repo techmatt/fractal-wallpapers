@@ -175,8 +175,15 @@ MAX_SOLVES = 24
 #: How far off centre an ENCLOSING copy's nucleus may sit, in *its own* atom
 #: sizes. Criterion (c)'s one threshold.
 #:
-#: Calibrated on the 202 `tuned129x_*` pool places, which are inside a period 22,
-#: 27, 33 or 35 satellite by construction and must read enclosed by it. Their own
+#: **2.0, the geometric extent of a copy**, Matt's ruling of 2026-09-22: a copy
+#: spans `[-2, 0.25]` in its own coordinates, so 2.0 holds its whole filigree and
+#: nothing a frame on the copy's antenna decorates is refused. The calibrated
+#: reading below is [`TIGHT_ENCLOSE_K`] and stays documented as that — it is what
+#: the deep rows of tuned descents read, not how far a copy reaches.
+#:
+#: The tight reading was calibrated on the 202 `tuned129x_*` pool places, which
+#: are inside a period 22, 27, 33 or 35 satellite by construction and must read
+#: enclosed by it. Their own
 #: readings are **0.6414 to 0.8184**, median 0.7747 — a much tighter band than
 #: anything else here. *The smallest K that reads ≥ 95% of them right*, which is
 #: how `minibrot_enclosed_census_ckpt140` was told to pick it, gives **0.81 at
@@ -190,20 +197,26 @@ MAX_SOLVES = 24
 #: how deep they are: the same four descents' own *root* frames, at 25.89 atom
 #: sizes, read **1.216, 1.289, 1.290, 1.297** — one for one with their four
 #: satellites, and every one of them outside this bound. A descent starts near
-#: the copy's edge and works inward, and 0.82 is where it ended up.
+#: the copy's edge and works inward, and 0.82 is where it ended up. That is why
+#: it is not the default.
 #:
 #: **Every census row carries `chain_table`**, the whole solved chain with each
 #: entry's distance, so the cut is re-swept off the output — `discovery/README.md`'s
 #: *Criterion (c)* has what the count does between 0.82 and 2.25. ⚠ A cut that
 #: drops a copy but keeps its period doubling answers the **doubling**: those
-#: four root frames read `q = 70, 44, 66, 54` here, the copy in each case being
-#: the entry that was cut.
+#: four root frames read `q = 70, 44, 66, 54` at the tight reading, the copy in
+#: each case being the entry that was cut, and `35, 22, 33, 27` here.
 #:
 #: It is not [`NEAR_MULTIPLE`] and must not be confused with it: that one is in
 #: *frame* widths and bounds where (a)'s atom may be, this one is in *atom* sizes
 #: and bounds how far outside a copy the frame may sit and still be its
 #: decoration.
-ENCLOSE_K = 0.82
+ENCLOSE_K = 2.0
+
+#: The tight reading of [`ENCLOSE_K`]: the smallest cut that reads all 202 tuned
+#: descent rows enclosed, which was the default until 2026-09-22. Kept as a named
+#: cut so a census summary still reports the count at it.
+TIGHT_ENCLOSE_K = 0.82
 
 #: How far under [`bulb_scale`] a chain entry may sit and still be read as a bulb
 #: of the copy above it rather than as a copy of its own.

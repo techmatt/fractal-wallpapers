@@ -650,7 +650,7 @@ def _examples(args: argparse.Namespace) -> int:
     chains = _descent_chains(args.descents or (), args.k)
     print(f"[examples] {len(chains)} descent chain(s)")
 
-    cuts = sorted({minibrot.ENCLOSE_K, args.k, *REPORTED_CUTS})
+    cuts = sorted({minibrot.TIGHT_ENCLOSE_K, minibrot.ENCLOSE_K, args.k, *REPORTED_CUTS})
     summary = _examples_summary(census, cuts, args.k, rows, chains, walk, shown, seats)
     out = resolve_output(args.out) if args.out else minibrot.examples_path()
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -797,8 +797,8 @@ def add_commands(subcommands) -> None:
         type=float,
         default=2.0,
         help="the cut the population is kept at (default: 2.0, the geometric extent of a "
-        f"copy — widest, so nothing a writeup might want is dropped, against the "
-        f"{minibrot.ENCLOSE_K:g} the census ships). Every row carries each chain entry's "
+        f"copy and the {minibrot.ENCLOSE_K:g} the census ships — widest, so nothing a "
+        f"writeup might want is dropped). Every row carries each chain entry's "
         f"own distance, so a TIGHTER cut is a filter over the output and never a re-run",
     )
     examples.add_argument(
