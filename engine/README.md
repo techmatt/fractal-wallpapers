@@ -774,6 +774,12 @@ when the step between them falls under one `f64` unit of last place *at the
 magnitude of that sum*. The refusal reads exactly that: `sample_spacing()`
 against `RESOLUTION_ULPS` (4) ulps of the frame's own reach.
 
+**A render spec can opt past it with `"allow_unresolvable_in_f64": true`**, for a
+figure whose subject is the floor itself: the picture is then of the arithmetic,
+blocks one ulp on a side. It is absent by default, enters no identity, record or
+report, no Python builder emits it, and it reaches `render` and `dump-field` only
+— the tile path keeps its own refusal regardless.
+
 **It used to be `pixel_size() > 1e-13`, which was wrong twice.** A relative limit
 enforced as an absolute constant, and read off the *output* pixel, so a
 supersampled render was judged on a grid four times coarser than the one it
