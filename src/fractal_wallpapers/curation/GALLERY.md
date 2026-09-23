@@ -2720,8 +2720,9 @@ and the twenty-one pinned records of 2026-09-19. What that did to the three ques
 | records in the store | 122 | **21** |
 | tracked files under `tentative/` | 17 | **0** |
 
-The twenty-first record in the store is `portable.REFERENCE`, which travels
-through the export roster and never through the keep list. **Nothing is published**, so
+The twenty-first record in the store was a separate themed reference, off the keep
+list; on 2026-09-22 `portable.REFERENCE` was pointed at the kept `final139_green`,
+which it seated seat-for-seat, and the separate record was deleted. **Nothing is published**, so
 `tentative.latest()` refuses and every unstamped `browse`, `resolve`, `votes build`,
 atlas and backfill has to name a stamp; the bookmarked viewer is written by
 `curate solve browse <stamp> --viewer` and the per-collection pages by

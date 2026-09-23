@@ -153,7 +153,7 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | the hot copies under `artifacts/curation/` | `artifacts/curation/` never leaves the hot tier — see [`curation/README.md`](curation/README.md)'s *The archive tier* |
 | the tracked release and gate stores, `data/curation/{release,gate}/` | the live decisions, and half of `orphans`' reference set |
 | `artifacts/reframe_g1` … `g12` | the reframing chain's ledgers — eleven legs, there is no `g3`. `discovered_priors` reads every one as a prior, so losing a leg is re-finding its atoms |
-| `artifacts/curation/tentative/<stamp>/` | **the records `tentative.kept()` names**, published or not — `PUBLISHED` plus `KEPT_UNPUBLISHED`. Since 2026-09-13 that list is the whole input to `tentative.protected_keys()`; before it the sweep was store-wide, so a record merely existing pinned its seats and deleting it was the only release. An off-list record is still readable by naming its stamp and pins nothing. **Since 2026-09-21 the list is the twenty `final139_*` records** — the general n=1000 and the nineteen collections, seated over the pool as mining closed — and `PUBLISHED` is empty, so a clone arrives holding none of them and `tentative.latest()` refuses. The sweep that went with the ruling took the store to those twenty plus `portable.REFERENCE` |
+| `artifacts/curation/tentative/<stamp>/` | **the records `tentative.kept()` names**, published or not — `PUBLISHED` plus `KEPT_UNPUBLISHED`. Since 2026-09-13 that list is the whole input to `tentative.protected_keys()`; before it the sweep was store-wide, so a record merely existing pinned its seats and deleting it was the only release. An off-list record is still readable by naming its stamp and pins nothing. **Since 2026-09-21 the list is the twenty `final139_*` records** — the general n=1000 and the nineteen collections, seated over the pool as mining closed — and `PUBLISHED` is empty, so a clone arrives holding none of them and `tentative.latest()` refuses. The sweep that went with the ruling took the store to those twenty plus a separate themed reference, which went on 2026-09-22 when `portable.REFERENCE` was pointed at the kept `final139_green`; the store is now the keep list and nothing else |
 | `artifacts/curation/tentative/20260922T012627Z/` | `final139_general`, the general n=1000 of the closed pool: `curation.backfill.DEFAULT_RECORD`, the record the bookmarked viewer shows, and the one `fractal-website` is being repointed at in place of the stamps it names today. The nineteen collection records beside it are the same decision, one per `curation.targets` entry |
 | `artifacts/curation/tentative/20260922T220551Z/` | `final140_general2000`, the same general pass at n=2000 over the same pool, on the keep list since 2026-09-22 so `fractal-website` can offer it beside the n=1000 default. Its solve half is `artifacts/curation/solve/final140_general2000/`; `curate solve record --n 2000 --solve-name final140_general2000` re-seats it |
 | `artifacts/curation/viewer/` | **the page a person opens**, `tentative.viewer_dir()`, written by `curate solve browse <stamp> --viewer` and, per collection, by `curate solve viewers`. One directory with no stamp in its name, so a bookmark survives the record moving — it showed the newest PUBLISHED record until publication ended on 2026-09-21 and shows the stamp last named now. Regenerable in a second and a **derivation, not a copy** — the candidates and the `1280x720ss2` fulls stay where they are and the page reaches them by relative path |
@@ -233,34 +233,21 @@ throwaway root in a `git worktree`. 501 files, **3.28 GiB**: the ten Durables, a
 colour census, the built label sheets' text, the `labels/` inbox, and the three
 fp32 seeds of the shipped gallery-grade ensemble.
 
-**A standing instance lives at `portable/20260923T041444Z` in the sibling
-`fractal-drive-sync` checkout**, taken at commit `34fb5c6` on 2026-09-22 by
-`preserve_export_ckpt142`: **754 files, 3.91 GiB**, copied in 14 s. The whole export
-took 14.5 minutes and about 13 of them were hashing 518,436 pictures (73.6 GiB). It is
-757 files and 4.04 GiB with `pictures.jsonl`, the manifest and
-`reference/README.md` beside them. It carries all twenty-one kept records — the
-twenty `final139_*` and `final140_general2000` — through `{kept}` and
-`{kept_solves}`, each with its `recipes.jsonl`, and the re-cut `REFERENCE` through
-the roster. Both of the README's checks re-seated in order against the records it
-carries (300 of 300 and 1000 of 1000). It replaces `portable/20260922T030159Z`,
-which predated `final140_general2000` and carried the old reference. *Restore it
-with*
-
-```
-fractal-wallpapers storage import --from <fractal-drive-sync>/portable/20260923T041444Z --root <hot root> [--archive-root <archive>]
-```
+**An export is Matt's backup, taken only at his direction.** He holds the copies
+off-box and deletes the local instance at once, so no standing instance lives on this
+machine and no tracked text names an export's stamp. The export of 2026-09-22 was
+**757 files, 4.04 GiB** with `pictures.jsonl`, the manifest and `reference/README.md`,
+and took 14.5 minutes, about 13 of them hashing 518,436 pictures (73.6 GiB). It carries
+all twenty-one kept records — the twenty `final139_*` and `final140_general2000` —
+through `{kept}` and `{kept_solves}`, each with its `recipes.jsonl`.
 
 **`--no-pictures` skips `pictures.jsonl`**, and with it the pool load and the hashing
 of every seatable picture. The file's only use is checking a fresh box's re-render
 against the bytes it is meant to reproduce. No import, solve or record reads it.
 
-Before it, the 2026-09-16 pair (501 files / 3.28 GiB, then 508 / 3.29 GiB at commit
-`5c5fbb2` with the four mine records and the reference solve) was copied out and
-`portable/` deleted, so nothing stood on the archive disk between them.
-
 ```
-fractal-wallpapers storage export --to <archive disk>/portable/<stamp>
-fractal-wallpapers storage import --from <that directory> --root <hot root> [--archive-root <archive>]
+fractal-wallpapers storage export --to <an empty directory>
+fractal-wallpapers storage import --from <path to the backup> --root <hot root> [--archive-root <archive>]
 fractal-wallpapers curate candidate-ledger re-render --keys <a gallery.jsonl>   # one known solve, minutes
 fractal-wallpapers curate candidate-ledger re-render --seatable   # then any solve can run
 fractal-wallpapers curate candidate-ledger re-render --rest        # whenever; no seating needs it
@@ -289,25 +276,25 @@ checkouts' modules — drop the live `src` from `sys.path` first, as
 **two** records, their `n` and the `curate solve run … --no-render` that re-seats each:
 the comparison a fresh box makes before trusting its own seating. **They are two
 different passes and neither replaces the other** — `portable.REFERENCE`
-(`20260923T040952Z`, `--collection green`, n=300) is the only target on the themed
-path, and `portable.GENERAL_CHECK` (`20260922T012627Z`, `final139_general`, `--n 1000`)
-is the general pass over the whole pool.
-**The reference record is off the keep list by design**, so a boundary wipe deletes it
-and `portable.REFERENCE` must be re-pointed at a record that stands before the next
-export; the general check is *on* the keep list, so `{kept}` and `{kept_solves}` carry
-it already and it needs no roster entry of its own.
+(`20260922T013423Z`, `final139_green`, `--collection green`, n=300) is the only target
+on the themed path, and `portable.GENERAL_CHECK` (`20260922T012627Z`,
+`final139_general`, `--n 1000`) is the general pass over the whole pool. **Both are
+kept records**, so `{kept}` and `{kept_solves}` carry them and neither has a roster
+entry of its own; the export writes the README whenever its roster carries the kept
+records, and refuses if either check's record is not on the machine.
 
-**A themed reference decays as the pool grows, so it is re-cut at an export.** Its bar
-is the cell's own `multiple * n`-th best candidate, and a leg that adds rows to the cell
-moves the bar and re-ranks the cell under it. The record before this one, taken
-2026-09-16, fell to **230** of 300 in common and **3** at the same index by 2026-09-21:
-the pool grew 418,339 → 518,436 candidates, the green cell 2,929 → 3,436 scored rows,
-and the bar left its 0.01 floor for a reachable **0.015935** (`theme_bar.bar_from`,
-`floor_below` → `reachable`). **Every one of the 70 new seats would have cleared the
-old bar too**, so a bar move re-ranks far more than it admits. It was re-cut on
-2026-09-22 by `preserve_export_ckpt142`, over the pool mining closed behind, and
-re-seated **300 of 300 in order**. It is seat-for-seat the kept `final139_green`. The
-general check re-seated **1000 of 1000 in order** the same evening.
+**A themed reference decays as the pool grows**, which is why it used to be a
+separate record re-cut at each export. Its bar is the cell's own `multiple * n`-th
+best candidate, and a leg that adds rows to the cell moves the bar and re-ranks the
+cell under it. The record taken 2026-09-16 fell to **230** of 300 in common and **3**
+at the same index by 2026-09-21: the pool grew 418,339 → 518,436 candidates, the green
+cell 2,929 → 3,436 scored rows, and the bar left its 0.01 floor for a reachable
+**0.015935** (`theme_bar.bar_from`, `floor_below` → `reachable`). **Every one of the
+70 new seats would have cleared the old bar too**, so a bar move re-ranks far more
+than it admits. Mining closed on 2026-09-21, the last re-cut was seat-for-seat the
+kept `final139_green`, and on 2026-09-22 the reference was pointed at that record and
+the re-cut deleted. `final139_green` re-seated **300 of 300 in order** `--no-render`
+that evening, and the general check **1000 of 1000 in order**.
 
 **Pictures do not travel; the fresh box re-renders**, Matt's ruling of 2026-09-16.
 A solve is not picture-free — `solve.pool` refuses a row whose JPEG is absent as

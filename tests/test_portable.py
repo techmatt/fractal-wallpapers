@@ -254,18 +254,24 @@ def test_a_kept_record_travels_with_the_solve_its_manifest_names(box, monkeypatc
 
 
 def _with_reference(box, monkeypatch, *, carried: bool = True):
-    """The fixture's roster plus the reference entry, and a record for it on hot."""
-    monkeypatch.setattr(portable, "REFERENCE", {"stamp": "S9", "collection": "green"})
-    if carried:
-        record = box["hot"] / "curation" / "tentative" / "S9"
+    """The fixture's roster plus the kept entry, and both checks kept on hot."""
+    monkeypatch.setattr(
+        portable, "REFERENCE", {"stamp": "S9", "name": "green9", "collection": "green"}
+    )
+    monkeypatch.setattr(portable, "GENERAL_CHECK", {"stamp": "G1", "name": "general1", "n": 1000})
+    monkeypatch.setattr(portable, "kept_stamps", lambda: ("S9", "G1"))
+    for stamp, n in (("S9", 1), ("G1", 1000)):
+        if stamp == "S9" and not carried:
+            continue
+        record = box["hot"] / "curation" / "tentative" / stamp
         record.mkdir(parents=True)
         (record / "gallery.jsonl").write_bytes(b'{"key": "k"}\n')
         manifest = {
             "source_commit": "abc",
-            "solve": {"config": {"n": 1}, "record": "artifacts/curation/solve/x/solve.json"},
+            "solve": {"config": {"n": n}, "record": "artifacts/curation/solve/x/solve.json"},
         }
         (record / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
-    entry = next(entry for entry in portable.ROSTER if entry.name == portable.REFERENCE_ENTRY)
+    entry = next(entry for entry in portable.ROSTER if entry.name == portable.KEPT_ENTRY)
     return (*TREE_ROSTER, entry)
 
 
@@ -291,22 +297,20 @@ def test_an_export_whose_reference_is_not_on_the_machine_refuses(box, monkeypatc
         portable.export(box["tmp"] / "export", roster=roster, pictures=False, log=lambda *_: None)
 
 
-def test_the_reference_is_not_on_the_keep_list() -> None:
-    """It travels by the roster so that it pins nothing against a prune."""
-    assert portable.REFERENCE["stamp"] not in portable.kept_stamps()
+def test_both_checks_are_on_the_keep_list() -> None:
+    """The reason neither needs a roster entry of its own.
 
-
-def test_the_general_check_is_on_the_keep_list() -> None:
-    """The opposite of the reference, and the reason it needs no roster entry.
-
-    `GENERAL_CHECK` is one of the kept records already, so `{kept}` carries its
-    rows and `{kept_solves}` its `solve.json`. A stamp that fell off the keep
-    list is a README naming a comparison target the export does not carry.
+    Both are kept records, so `{kept}` carries their rows and `{kept_solves}`
+    their `solve.json`. A stamp that fell off the keep list is a README naming a
+    comparison target the export does not carry.
     """
-    from fractal_wallpapers.curation import tentative
+    from fractal_wallpapers.curation import targets, tentative
 
+    assert portable.REFERENCE["stamp"] in portable.kept_stamps()
     assert portable.GENERAL_CHECK["stamp"] in portable.kept_stamps()
     assert portable.GENERAL_CHECK["n"] == tentative.RECORDED_SEATS
+    assert portable.REFERENCE["collection"] in targets.TARGETS
+    assert not any("{reference}" in p for entry in portable.ROSTER for p in entry.patterns)
 
 
 def test_the_readme_names_the_general_check_beside_the_themed_one(box, monkeypatch) -> None:
