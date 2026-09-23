@@ -704,6 +704,27 @@ stayed there; this is the evidence under them. The order is the one they were
 appended in, because several entries say "the reading below" and mean the one
 that was below them.
 
+The three entries below this paragraph were carried here from `CLAUDE.md` on 2026-09-22,
+when it dropped its readings log entirely on Matt's ruling that it holds rules only.
+
+#### preserve_export_ckpt142
+
+`preserve_export_ckpt142`, 2026-09-22. **Fast: 4,919 passed in 161.66 s (2:41)**, 157
+deselected, green, count unmoved — no test added. Taken right after a 14.5-minute export and
+three pool loads.
+
+#### enclosing_k_and_engine_rebuild_ckpt141
+
+`enclosing_k_and_engine_rebuild_ckpt141`, 2026-09-22. **Fast: 4,919 passed in 159.08 s
+(2:39)**, 157 deselected, green, count unmoved — no test added.
+
+#### readme_example_julia4_ckpt141
+
+`readme_example_julia4_ckpt141`, 2026-09-22. **Fast: 4,919 in 176.89 s (2:57)**, 157
+deselected, count unmoved — no test added. Its one red was a guard it trips by design: a JPEG
+added to `ALLOWLIST` fails *not tracked* until it is staged. It went green once staged, and
+the +28 s is unchased and read as box.
+
 #### minibrot_examples_ckpt140
 
 `minibrot_examples_ckpt140`, 2026-09-22, `.[dev,models]` with a release engine.
