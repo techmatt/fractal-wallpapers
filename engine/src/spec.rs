@@ -72,6 +72,13 @@ pub struct RenderSpec {
     #[serde(default)]
     pub maxiter: Option<u32>,
     pub output: PathBuf,
+    /// Render a view whose samples `f64` cannot tell apart, instead of refusing
+    /// it. The picture is then of the arithmetic, not the set — which is exactly
+    /// what a figure about the precision floor has to show, and nothing else
+    /// should ever want. Absent means false, so it is in no identity and no
+    /// record, and the tile path keeps its own refusal regardless.
+    #[serde(default)]
+    pub allow_unresolvable_in_f64: bool,
 }
 
 /// Which recurrence, and its fixed constants.
@@ -325,12 +332,13 @@ impl RenderSpec {
             out_height,
             supersample: self.supersample,
         };
-        if !view.is_resolvable_in_f64() {
+        if !view.is_resolvable_in_f64() && !self.allow_unresolvable_in_f64 {
             return Err(format!(
                 "the samples of this view are {:.3e} apart, which is {:.2} of a unit of last \
                  place at coordinates of magnitude {:.3}: neighbouring samples would round to \
                  the same number and the picture would be of the arithmetic. This engine has \
-                 no path below f64.",
+                 no path below f64 (a spec that wants that picture on purpose says \
+                 \"allow_unresolvable_in_f64\": true).",
                 view.sample_spacing(),
                 view.resolution_ulps(),
                 view.center.norm(),
@@ -1153,5 +1161,31 @@ mod tests {
                 "wanted '{expected}' in error, got: {message}"
             );
         }
+    }
+
+    /// Past the floor a spec is refused unless it opts out, and opting out is
+    /// the only thing the field changes: the same view, the same location echo.
+    #[test]
+    fn an_unresolvable_view_renders_only_when_the_spec_opts_out() {
+        let deep = |opt: &str| {
+            format!(
+                r#"{{"schema":1,"family":{{"kind":"mandelbrot"}},
+                    "viewport":{{"center_re":"-0.7493705324700382","center_im":"0.0414726670681689",
+                                 "width":"3.4869054402668363e-15"}},
+                    "resolution":[1280,720],"colormap":"twilight_shifted",
+                    "output":"out.png"{opt}}}"#
+            )
+        };
+        let refused = RenderSpec::parse(&deep("")).unwrap().resolve();
+        assert!(refused.err().unwrap().contains("unit of last place"));
+        let explicit = deep(r#","allow_unresolvable_in_f64":false"#);
+        assert!(RenderSpec::parse(&explicit).unwrap().resolve().is_err());
+
+        let resolved = RenderSpec::parse(&deep(r#","allow_unresolvable_in_f64":true"#))
+            .unwrap()
+            .resolve()
+            .unwrap();
+        assert!(!resolved.view.is_resolvable_in_f64());
+        assert_eq!(resolved.location.width, "3.4869054402668363e-15");
     }
 }

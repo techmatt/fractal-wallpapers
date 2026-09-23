@@ -1013,6 +1013,7 @@ fn resolve(row: &PlanRow) -> Result<Resolved, String> {
         colormap_dir: PathBuf::new(),
         maxiter: row.maxiter,
         output: PathBuf::new(),
+        allow_unresolvable_in_f64: false,
     };
     let resolved = spec.resolve()?;
     Ok(Resolved {
