@@ -101,35 +101,26 @@ PICTURES_NAME = "pictures.jsonl"
 TREE = "tree"
 CHECKOUT = "checkout"
 
-#: **The solve a fresh box compares its first seating against**, and the record
-#: that holds its seats. A tentative record at the size `curation.targets` sets —
-#: `curate solve record --collection green`, n = 300 — taken over the closed pool
-#: on 2026-09-22 and re-run `--no-render` straight after: 300 of 300 seats in the
-#: same order. **It travels through the roster and not the keep list** —
-#: `tentative.KEPT_UNPUBLISHED` pins seats against a prune, and a comparison
-#: target has no business doing that.
+#: **The themed solve a fresh box compares its first seating against**: the kept
+#: `final139_green`, `curate solve record --collection green` at the n = 300
+#: `curation.targets` sets, taken over the pool as mining closed. It re-seated
+#: **300 of 300 in order** `--no-render` on 2026-09-22.
 #:
-#: **A themed reference decays as the pool grows, and it is re-cut at an export.**
-#: The themed bar is read off the cell's own `multiple * n`-th best candidate, so
-#: every leg that adds rows to the cell can move the bar and re-rank the cell under
-#: it. The two records before this one both stopped reproducing that way — 282 of
-#: 300 in common, then 230 of 300 with 3 at the same index once five days of mining
-#: took the bar off its 0.01 floor to a reachable 0.015935. Mining closed on
-#: 2026-09-21, so this record should hold while the pool does, and it seats exactly
-#: what the kept `final139_green` seats, in the same order.
-REFERENCE = {"stamp": "20260923T040952Z", "collection": "green"}
+#: **It travels on the keep list, as [`GENERAL_CHECK`] does**: `{kept}` carries its
+#: rows and `{kept_solves}` its `solve.json`, so the roster needs no entry of its
+#: own. Until 2026-09-22 the reference was a separate record off the keep list,
+#: re-cut at every export, because a themed record decays as the pool grows — its
+#: bar is read off the cell's own `multiple * n`-th best candidate, so a leg that
+#: adds rows to the cell re-ranks it. Mining closed on 2026-09-21, and the last
+#: re-cut seated exactly what `final139_green` seats in the same order, so the
+#: separate record bought nothing a kept one does not.
+REFERENCE = {"stamp": "20260922T013423Z", "name": "final139_green", "collection": "green"}
 
 #: **The n = 1000 check beside [`REFERENCE`].**
 #: `final139_general` is the general seating of the closed pool at
 #: [`curation.tentative.RECORDED_SEATS`] — the shipped fine bar, no theme, no
 #: collection — and it re-seated **1000 of 1000 in order** on 2026-09-21, over the
 #: pool it was itself taken on hours earlier and which mining closed behind.
-#:
-#: **It travels on the keep list and not the roster**, which is the opposite of
-#: [`REFERENCE`] and for the opposite reason: it is one of the twenty
-#: `tentative.KEPT_UNPUBLISHED` records already, so `{kept}` carries its rows and
-#: `{kept_solves}` its `solve.json`, and adding it to the roster would carry the
-#: same three files twice.
 #:
 #: ⚠ **The two checks are not interchangeable and neither replaces the other.**
 #: This one is the general pass on the whole pool; [`REFERENCE`] is the themed
@@ -307,19 +298,6 @@ ROSTER: tuple[Entry, ...] = (
         "off-list record does not travel",
     ),
     Entry(
-        "reference solve",
-        TREE,
-        (
-            "curation/tentative/{reference}/gallery.jsonl",
-            "curation/tentative/{reference}/manifest.json",
-            "curation/solve/tentative_n*_{reference}/solve.json",
-        ),
-        ("curate solve run", "curate solve list"),
-        "the seating a fresh box reproduces `--no-render` before it trusts its own: "
-        "`REFERENCE` names it and the export writes `reference/README.md` saying how. Not on "
-        "the keep list, so `{kept}` never reaches it",
-    ),
-    Entry(
         "mine leg records",
         TREE,
         ("curation/mine/*/mine.json",),
@@ -437,8 +415,6 @@ def _expand(pattern: str) -> list[str]:
         return [pattern.replace("{kept}", stamp) for stamp in kept_stamps()]
     if "{kept_solves}" in pattern:
         return [pattern.replace("{kept_solves}", name) for name in kept_solve_records()]
-    if "{reference}" in pattern:
-        return [pattern.replace("{reference}", REFERENCE["stamp"])]
     if "{gallery_grade_runs}" in pattern:
         return [pattern.replace("{gallery_grade_runs}", run) for run in gallery_grade_runs()]
     start = pattern.find("{")
@@ -663,7 +639,7 @@ def export(to: Path, roster=ROSTER, pictures: bool = True, log=print) -> dict:
         }
     reference = (
         _write_reference(to, rows, log=log)
-        if any(entry.name == REFERENCE_ENTRY for entry in roster)
+        if any(entry.name == KEPT_ENTRY for entry in roster)
         else None
     )
     manifest = _manifest(rows, roster, picture_summary)
@@ -675,8 +651,9 @@ def export(to: Path, roster=ROSTER, pictures: bool = True, log=print) -> dict:
     return manifest
 
 
-#: The roster entry [`REFERENCE`] travels in.
-REFERENCE_ENTRY = "reference solve"
+#: The roster entry [`REFERENCE`] and [`GENERAL_CHECK`] travel in, both being kept
+#: records. An export whose roster carries it writes `reference/README.md`.
+KEPT_ENTRY = "kept tentative records"
 
 
 def reference_invocation() -> str:
@@ -700,22 +677,27 @@ def general_check_invocation() -> str:
 
 
 def _write_reference(to: Path, rows: list, log=print) -> dict:
-    """Write `reference/README.md` for [`REFERENCE`]; refuse if its record did not travel.
+    """Write `reference/README.md` for the two checks; refuse if either record did not travel.
 
-    A reference the roster resolved to nothing is an export that would send a fresh
-    box looking for a comparison target it does not have, so it refuses rather than
-    writing a README about a record that is not there.
+    Both are kept records, so the kept entry carries them. One it resolved to
+    nothing is an export that would send a fresh box looking for a comparison
+    target it does not have, so it refuses rather than writing a README about a
+    record that is not there.
     """
     stamp = REFERENCE["stamp"]
-    carried = [row for row in rows if REFERENCE_ENTRY in row["entries"]]
-    if not any(row["path"].endswith(f"tentative/{stamp}/gallery.jsonl") for row in carried):
-        raise PortableRefusal(
-            f"the reference record {stamp} is not on this machine, so the export has no "
-            "comparison target to carry. Take a fresh one (`curate solve record --collection "
-            f"{REFERENCE['collection']}`), check a `--no-render` run re-seats it, and repoint "
-            "`portable.REFERENCE`."
-        )
-    manifest_row = next(row for row in carried if row["path"].endswith("manifest.json"))
+    carried = [row for row in rows if KEPT_ENTRY in row["entries"]]
+    for check in (REFERENCE, GENERAL_CHECK):
+        if not any(
+            row["path"].endswith(f"tentative/{check['stamp']}/gallery.jsonl") for row in carried
+        ):
+            raise PortableRefusal(
+                f"the reference record {check['stamp']} ({check['name']}) is not on this "
+                "machine, so the export has no comparison target to carry. Repoint "
+                "`portable.REFERENCE` or `portable.GENERAL_CHECK` at a kept record that is."
+            )
+    manifest_row = next(
+        row for row in carried if row["path"].endswith(f"tentative/{stamp}/manifest.json")
+    )
     held = json.loads(Path(manifest_row["source"]).read_text(encoding="utf-8"))
     n = int(held["solve"]["config"]["n"])
     record = held["solve"]["record"]
@@ -726,11 +708,12 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             "**Two checks and they are two different passes.** The themed one below is the "
             "only comparison target on the collection path; the n = "
             f"{GENERAL_CHECK['n']} one after it is the general pass over the whole pool. "
-            "A box that ran one has not run the other.",
+            "A box that ran one has not run the other. Both are kept records and travel "
+            "with the rest of them.",
             "",
             "## The themed check",
             "",
-            f"- **Stamp:** `{stamp}` (tentative record, not published)",
+            f"- **Stamp:** `{stamp}` (`{REFERENCE['name']}`, kept and not published)",
             f"- **Collection:** `{REFERENCE['collection']}`, **n = {n}** (`curation/targets.py`)",
             f"- **Taken at commit:** `{held.get('source_commit')}`",
             f"- **Seats:** `artifacts/curation/tentative/{stamp}/gallery.jsonl`, and in order "
@@ -746,8 +729,8 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             f"and compare `seated` in `artifacts/curation/solve/reference_"
             f"{REFERENCE['collection']}/solve.json` with the record's: the same {n} keys in "
             "the same order is a box whose stores, code and judges agree with this one. "
-            "Run on the exporting box straight after the record was taken, on 2026-09-22, it "
-            "re-seated all of them in order. "
+            "It re-seated all of them in order on the exporting box on 2026-09-22, over the "
+            "pool mining closed behind. "
             "A different engine fingerprint (read `storage import`'s `engine:` line) "
             "empties the score amendment's overlay, and that alone moves seats.",
             "",
@@ -788,6 +771,7 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
         "file": REFERENCE_README,
         "sha256": sha256_of(path),
         "stamp": stamp,
+        "name": REFERENCE["name"],
         "collection": REFERENCE["collection"],
         "n": n,
         "invocation": reference_invocation(),
@@ -1069,10 +1053,10 @@ def engine_agrees(manifest: dict) -> tuple[str, bool | None]:
 __all__ = [
     "CHECKOUT",
     "GENERAL_CHECK",
+    "KEPT_ENTRY",
     "MANIFEST_NAME",
     "PICTURES_NAME",
     "REFERENCE",
-    "REFERENCE_ENTRY",
     "REFERENCE_README",
     "ROSTER",
     "SCHEMA",

@@ -109,10 +109,12 @@ These were decided once, at the first commit, because each is expensive to rever
   pool as mining closed, and every earlier saved record was removed in the same act
   rather than left beside them. ⚠ **The store is not the keep list** — it held 122
   records the day before, 85 of them off the list — but that sweep took it to
-  **twenty-one records**, the twenty kept plus
+  **twenty-one records**, the twenty kept plus a separate themed reference.
+  **Since 2026-09-22 there is no separate reference**:
   `fractal_wallpapers.portable.REFERENCE` (the module is top-level, `portable.py`
-  beside `engine.py`, and **not** under `curation/`), which travels through the
-  export roster instead of the keep list. **Since 2026-09-22 the list is
+  beside `engine.py`, and **not** under `curation/`) names the kept `final139_green`,
+  as `GENERAL_CHECK` names `final139_general`, and the store holds exactly the kept
+  records. **Since 2026-09-22 the list is
   twenty-one**: `final140_general2000` (`20260922T220551Z`), the general pass at
   n=2000 over the same pool, joined it on Matt's ruling so the website can offer it
   beside the n=1000 default. `protected_keys()` reads the two tuples and nothing
@@ -120,11 +122,11 @@ These were decided once, at the first commit, because each is expensive to rever
   count of kept records** and a leg that wants to know what is kept reads
   `tentative.kept()`.
 - **Preservation of the saved set is a portable instance Matt backs up, and not
-  git.** The twenty-two records — the twenty-one kept and `portable.REFERENCE` —
-  live on this box and in the export `fractal-wallpapers storage export` writes
-  under `C:\Code\fractal-drive-sync\portable\<stamp>`: `20260923T041444Z`, 757
-  files, 4.04 GiB on 2026-09-22, carrying `final140_general2000` with its recipes
-  and the re-cut reference — restored with `storage import --from <instance> --root <hot root>`.
+  git.** The twenty-one kept records live on this box and in the backups Matt
+  takes with `fractal-wallpapers storage export`. **An export is Matt's, taken only
+  at his direction**: he holds the copies off-box and deletes the local instance at
+  once, so no tracked text names an export stamp or a standing instance. Restore is
+  `storage import --from <path to the backup> --root <hot root>`.
   **Nothing is committed until the work is truly finalized**: tracking a record's
   text is publishing its stamp and there is no third way
   (`curation/GALLERY.md`'s *All twenty kept records carry one, on disk and
@@ -548,7 +550,8 @@ Each prompt in this project ends the same way:
   target** — write it once, allow at most one trim pass, and never iterate to squeeze
   under the line. Going over is fine; padding and re-editing are not.
 - Report findings, numbers, decisions, and surprises only. No process narration, no
-  restating the prompt back.
+  restating the prompt back. **A report mentions tests only for a red it could not
+  fix** — no test counts, no lane readings.
 - **Every clock time is local 12-hour** — `5:25pm`, never `17:25` or UTC — in chat, ETAs,
   heartbeats and reports alike, Matt's ask of 2026-09-16. The CLI's own `[HH:MM:SS]`
   stamps are 24-hour, so convert before quoting one.

@@ -296,8 +296,9 @@ PUBLISHED: tuple[str, ...] = ()
 #:
 #: ⚠ **A record off this list is discarded and the sweep of 2026-09-21 took the
 #: store down to it**: twenty-one records remained on this machine, the twenty here
-#: and `portable.REFERENCE`, which travels through the export roster and
-#: never through the keep list. The n=2000 of 2026-09-22 makes it twenty-two.
+#: and a separate themed reference. On 2026-09-22 `portable.REFERENCE` was pointed
+#: at the kept `final139_green` and the separate record deleted, so the store is
+#: this list and nothing else — twenty-one with the n=2000.
 #:
 #: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
 #: is deliberate: a kept record is kept, not tracked. Publication, durability and
