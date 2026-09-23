@@ -1538,7 +1538,7 @@ them of a whole population. They are two sides of the same copy and they are
   frame. `--reading band`, [`minibrot.probe`].
 - **(c) the frame IS decoration of one** — the same copy seen from inside. A copy
   of period `q > 1` whose atom is at least the frame's *width* and whose nucleus
-  is within `ENCLOSE_K` of that copy's own atom sizes. `--reading enclosing`,
+  is within `ENCLOSE_K` = **2.0** of that copy's own atom sizes. `--reading enclosing`,
   [`minibrot.enclosing`].
 - They mostly **disagree**, and the named row satisfies both at once: it holds a
   period-1026 atom 11.8 frame widths across, and it sits inside a period-27
@@ -1564,7 +1564,7 @@ fractal-wallpapers minibrots examples --census records.jsonl --census verdicts.j
 geometric extent of a copy, so nothing a tighter reading might want is dropped, and
 every row carries each chain entry's own distance so tightening is a filter and
 never a re-run. A summary row heads the file with the counts at every cut from
-`ENCLOSE_K` to 2.0, and four `example: descent_chain` rows follow it, one per tuned
+`TIGHT_ENCLOSE_K` (0.82) to 2.0, and four `example: descent_chain` rows follow it, one per tuned
 satellite, each a whole nesting as the rungs somebody rendered. **It is not
 tracked**: 2,709 places at ~500 bytes is 1.3 MiB against `test_history_purity`'s 1
 MiB limit, and it is one command away from a census output — Matt's ruling of
@@ -1620,8 +1620,12 @@ near side. The `1/(d−1)` is load-bearing: without it a degree-6 bulb reads 0.2
 of the law and is taken for a copy, which would make every frame in the main
 body's decorations on four of the five planes read enclosed by something.
 
-⚠ **`ENCLOSE_K` is calibrated on one part of a copy, and it is the reading this
-instrument is least sure of.** The 202 `tuned129x_*` pool places are inside a
+**`ENCLOSE_K` is 2.0, the geometric extent of a copy**, Matt's ruling of
+2026-09-22: a copy spans `[-2, 0.25]` in its own coordinates, so 2.0 holds all of
+its filigree. It was 0.82 until then, and 0.82 stays as `TIGHT_ENCLOSE_K` — the
+tight reading, what follows is how it was calibrated and why it was not a bound.
+
+⚠ **The tight reading is calibrated on one part of a copy.** The 202 `tuned129x_*` pool places are inside a
 period 22, 27, 33 or 35 satellite by construction and must read enclosed by it;
 their own distances are **0.6414 to 0.8184**, median 0.7747, and *the smallest K
 that reads ≥ 95% of them right* is **0.81 at 96.5%**, with 0.82 reading all 202.
