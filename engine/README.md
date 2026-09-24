@@ -192,6 +192,15 @@ of `1e-3` on the attracting cycle's multiplier, so a point near the parabolic ed
 is iterated as before; that margin is what makes "never escapes" true of the `f64`
 loop and not only of the set.
 
+**At degrees three to six the main component is not a closed form, and a disk inside it
+is.** Its boundary is `c = z(1 - λ/d)` over `|λ| = 1`, with `|z| = ρ = d^(-1/(d-1))`, so
+no boundary point is nearer 0 than `ρ(1 - 1/d)` — 0.25 at degree two, the cardioid's cusp,
+which is the check on the formula. A sample inside that radius less the same margin is
+answered the same way, for one `|c|²` against a constant. 504 frames at the disk's touching
+points and on the component's rim, at widths `1e-2` to `1e-9` and both caps, byte-identical;
+the multibrot home views at 640x360 ss2, alternated three times, `smooth` 1.28x at degree
+three to 1.78x at six and `stripe` 1.32x to 1.93x, the Julia anchor flat beside them.
+
 **It is byte-identical and it is the largest speedup this crate has had**:
 360 renders over every family home and the three anchors in every catalogued mode,
 plus 216 frames on the cardioid's and the bulb's edges — the cusp, the junction,
