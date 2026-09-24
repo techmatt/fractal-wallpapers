@@ -857,8 +857,8 @@ pub fn sweep_row(
                 | FieldSpec::De { .. }
         )
     });
+    const MARGIN: f64 = 1e-3;
     let settled = |c: num_complex::Complex<f64>| -> bool {
-        const MARGIN: f64 = 1e-3;
         let (x, y) = (c.re, c.im);
         let y2 = y * y;
         let bulb = (x + 1.0) * (x + 1.0) + y2;
@@ -874,16 +874,32 @@ pub fn sweep_row(
         let root = (num_complex::Complex::new(1.0, 0.0) - 4.0 * c).sqrt();
         (num_complex::Complex::new(1.0, 0.0) - root).norm() < 1.0 - MARGIN
     };
+    // **At a higher degree the main component is not a closed form, and a disk inside it
+    // is.** Its boundary is `c = z(1 - λ/d)` over `|λ| = 1`, with `|z| = ρ = d^(-1/(d-1))`
+    // the fixed point's modulus there, so no boundary point is nearer 0 than
+    // `ρ(1 - 1/d)` and the disk of that radius about 0 is inside the component — the
+    // degree-two formula gives 0.25, the cardioid's cusp. Shrunk by the same margin, so
+    // the one point per lobe where the disk touches the boundary is iterated as before.
+    // One `|c|²` against a constant per sample.
+    let reach = |degree: u32| -> f64 {
+        let d = degree as f64;
+        let radius = d.powf(-1.0 / (d - 1.0)) * (1.0 - 1.0 / d) * (1.0 - MARGIN);
+        radius * radius
+    };
 
     // One row at a family and a channel set the call site wrote out.
     macro_rules! sweep {
         ($family:expr, $wants:expr) => {{
             let family = $family;
             let wants = $wants;
-            let skips = escape_only && matches!(family, Family::Multibrot { degree: 2 });
+            let (cardioid, disk) = match family {
+                Family::Multibrot { degree: 2 } => (escape_only, 0.0),
+                Family::Multibrot { degree } if escape_only && degree > 2 => (false, reach(degree)),
+                _ => (false, 0.0),
+            };
             for col in 0..width {
                 let pixel = view.sample_point(col, row);
-                if skips && settled(pixel) {
+                if (cardioid && settled(pixel)) || pixel.norm_sqr() < disk {
                     interior += 1;
                     for (lane, _) in lanes.iter_mut().zip(fields) {
                         lane.push(f64::NAN);
