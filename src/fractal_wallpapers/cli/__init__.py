@@ -107,6 +107,7 @@ GROUPS: tuple[str, ...] = (
     "deep_commands",
     "storage_commands",
     "import_commands",
+    "identity_commands",
 )
 
 #: The modules that hold handlers but register **no top-level command**: the five
