@@ -50,6 +50,13 @@ worker ever waits for work, shallow enough that the gate still has a decision to
 make — and the rows the gate declines are named in the record rather than
 silently missing from it.
 
+## Every picture carries its explorer link
+
+A finished row's picture has the site explorer's link to it written into its
+metadata — [`_embed_link`], and `curation/README.md` has the fields. The pixels do
+not move; `info["link"]` is the absolute URL written, or `None` with
+`info["link_refused"]` saying why no exact link exists.
+
 ## Sizing is measured, not argued from core counts
 
 Concurrency inflates each row's own wall clock — the engine already holds several
@@ -356,7 +363,7 @@ def render_task(task: Task) -> Result:
             return Result(
                 task.id,
                 True,
-                {"picture": str(picture), "autolevel": stamp},
+                {"picture": str(picture), "autolevel": stamp, **_embed_link(task, picture, stamp)},
                 time.monotonic() - started,
                 None,
                 stamp is not None,
@@ -371,6 +378,33 @@ def render_task(task: Task) -> Result:
                 False,
                 bound.expired,
             )
+
+
+def _embed_link(task: Task, picture: Path, stamp: dict | None) -> dict:
+    """Write the explorer link into a finished picture, and say what was written.
+
+    **Every release render carries the link that draws it again** *(embedded_links_ckpt145)*:
+    the site's explorer permalink, as [`curation.explorer_link`] spells it, written into
+    the file's metadata by [`curation.embed_link`] — a tag, an XMP `dc:source` and, in a
+    JPEG, an EXIF `ImageDescription`. The pixels are not touched; the compressed image
+    data is the same bytes.
+
+    Here and not in [`colorize.render`], because this is the one seam every leg that
+    renders at release geometry comes through, and the stamp the link's tone curve is
+    read from is in hand. A picture no link draws exactly goes out with none, and
+    `link_refused` says why; a stamp that fails leaves the picture as rendered and says
+    that too. Neither fails the row: the picture is the product, the link is a courtesy.
+    """
+    from fractal_wallpapers.curation import embed_link, explorer_link
+
+    try:
+        query, why = explorer_link.for_task(task, stamp)
+        if query is None:
+            return {"link": None, "link_refused": why}
+        embed_link.embed_file(Path(picture), query)
+        return {"link": explorer_link.url_of(query)}
+    except Exception as failure:  # noqa: BLE001
+        return {"link": None, "link_refused": f"the link was not written: {failure!r}"[:400]}
 
 
 def _worker(task: Task) -> Result:

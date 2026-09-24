@@ -96,6 +96,9 @@ tentative  one solve recorded under a stamp, with IDs, aliases and a browser
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 release    the selected rows again at full size, workers rendering
+explorer_link  the site explorer's permalink for a render row, spelled as its contract
+           spells it — or the reason no link draws the picture exactly
+embed_link the link written into a finished PNG or JPEG's metadata; pixels untouched
 pacing     the wall clock: what may still start, and what is killed
 records    what the run decided, and out of what population
 rejection  taking a released row back afterwards, without losing what the run did
@@ -2186,6 +2189,56 @@ the hot tier entire, pictures pruned in place under the retention policy rather
 than moved. And a tree only leaves after a copy is verified equal on **both** file
 count and byte sum, because the sources are deleted afterwards and a short copy is
 silent.
+
+## Every release render carries its explorer link
+
+*(embedded_links_ckpt145, 2026-09-23.)* A picture [`release.render_task`] finishes has the
+website explorer's link to it written into its metadata, so a wallpaper that leaves this
+machine carries the way back to the view that made it. `render_task` is the seam because
+every leg that renders at release geometry comes through it — the phase-3 pass at
+2560x1440 ss4, a run's release, a solve's seats, a vote kit, `fulls`, a fate page — and
+because the autolevel stamp the link's tone curve comes from is in hand there.
+
+**The fields** are the ones the explorer writes into its own downloads, in the same bytes
+(`explorer/stamp.js` in `fractal-website` is the original, and [`embed_link`] mirrors it):
+
+| Field | PNG | JPEG |
+|---|---|---|
+| `fractal-explorer <query>`, what the explorer's drop reader reads | `iTXt`, keyword `fractal-explorer` | `COM` |
+| XMP `dc:source` = the absolute URL, for `exiftool` and asset managers | `iTXt`, keyword `XML:com.adobe.xmp` | `APP1` XMP |
+| EXIF `ImageDescription` = the absolute URL, Title and Subject in Windows | — | `APP1` Exif |
+
+**The link** is [`explorer_link.query_of`]: the site's shallow permalink (v4), from the row
+[`colorize.render_row`] hands the engine — so an unset palette pass is the plain one, with
+`mirror` decided by the map's cyclicity — and the curve out of the stamp where the operator
+moved the picture. The base is one constant, `explorer_link.EXPLORER_URL`, which is the
+site's `SITE_URL` plus `explorer/`; the hosting choice is not made, and it moves with the
+site's. `pins.EXPLORER_BASE` is the local server a pin is authored against, and is not it.
+
+**It is a second author of the site's contract**, and it is held: the site's `builder
+check` (`stamps`) spells every seat of the general collection through this module and
+through the contract's own `emit.mjs`, and holds the two strings equal — 999 of 1,000 at
+landing, the thousandth a seat read through a `log` curve, which both sides agree has no
+exact link. The same check embeds one PNG and one JPEG both ways and holds the bytes equal.
+
+**A picture no link draws exactly goes out with none.** A family or mode the explorer does
+not offer, a mode read through a curve its catalog does not give it, a parameter a link
+cannot spell, a cap outside 50 to 1,000,000: each is `info["link"] = None` and a sentence in
+`info["link_refused"]`. So is a stamp that fails; neither fails the row, because the picture
+is the product. A release render is always an `f64` picture, so the link is always the
+shallow contract's.
+
+**The pixels do not move, measured.** A seat rendered through `render_task` at 1280x720 ss2
+beside the same row through `colorize.render` alone: 0 of 921,600 pixels differ as JPEG and
+as PNG, and the stamped file with the fields taken back out ([`embed_link.strip`]) is the
+unstamped file byte for byte. The JPEG grew 1,067 bytes, the PNG 831.
+
+**What reads a picture's bytes reads them without the link.** `checks.replay` compares a
+shipped render with a replay the engine draws directly, so its digest is of
+`embed_link.strip` — a stamped shipped file and an unstamped one are the same picture to it.
+`release.parity` needs nothing: both of its arms go through `render_task` and carry the same
+link. Release files already on disk from before this landed carry none, and nothing
+backfills them.
 
 ## Levelling is decided once and replayed upward
 
