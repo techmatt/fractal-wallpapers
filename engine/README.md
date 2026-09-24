@@ -166,12 +166,42 @@ table nothing reaches. Anything that calls
 the channel set in as a runtime value gets the generic loop, same source and same
 numbers, slower.
 
-**The direct trap's own loop is not specialized and is the obvious next piece.**
-`direct_trap::trace` carries the same runtime `match` over the families, plus
-three more of its own — the trap shape, the transform and the merge — inside the
-same iteration. Four production modes draw through it. `family::over_written_out!`
-is written where it is so that loop can use the same table when somebody takes
-that on.
+**The direct trap's own loop takes the family half of the table**
+*(profiling_pass_ckpt146, 2026-09-24)*. `direct_trap::trace` wraps its orbit loop in
+`family::over_written_out!`, so the family's `match` is taken once per orbit rather
+than once per iterate. The other three runtime choices — the trap shape, the
+transform and the merge — are still read inside the iteration: eight shapes times
+the twelve families is a code-size bill the measurement did not argue for. What it
+bought, alternated three times against the build before it at 640x360 ss2: the four
+traps on the mandelbrot anchor **1.09x to 1.16x** natively (`direct_trap_ring` 4.15 s
+to 3.59 s), within noise on the Julia and Phoenix anchors, and **1.24x to 1.32x** in
+the site's wasm build at the mandelbrot home view. Byte-identical over the same 360
+renders as the interior skip below, and the engine fingerprint did not move.
+
+**The main cardioid and the period-2 bulb are answered without iterating**
+*(profiling_pass_ckpt146, 2026-09-24)*, inside `sweep_row`, on the Mandelbrot
+family, and only where every field of the pass reads an escape (`smooth`,
+`discrete`, `stripe`, `tia`, `curvature`, `threads`, `exp_smoothing`,
+`decomposition`, `de`). A point inside either never escapes, so the loop would run
+it to the cap and every such field would reduce it to `None` whatever the orbit did
+on the way; the skip writes the same `NaN` and the same interior count. A field that
+has a value for a bounded orbit — a trap, the lattice, the step length, the address —
+reads the orbit itself and is never skipped. A point passes a classical test first
+(a handful of multiplies, all an exterior sample pays) and is then held to a margin
+of `1e-3` on the attracting cycle's multiplier, so a point near the parabolic edge
+is iterated as before; that margin is what makes "never escapes" true of the `f64`
+loop and not only of the set.
+
+**It is byte-identical and it is the largest speedup this crate has had**:
+360 renders over every family home and the three anchors in every catalogued mode,
+plus 216 frames on the cardioid's and the bulb's edges — the cusp, the junction,
+seven boundary points at widths `1e-2` to `1e-9`, at the policy cap and at an
+explicit 50,000 — all identical, and the fingerprint (`5d97e76bb16be71d`) with
+them. Alternated three times: the mandelbrot anchor at 1600x900 ss4 in `smooth`
+**24.4 s to 1.86 s**; at 640x360 ss2, `smooth` 11x, `tia` 15x, `threads` 15x,
+`stripe` 12.9 s to 0.73 s; a frame over the cardioid and the bulb, `stripe`
+29.9 s to 0.52 s. The two anchors that are not the mandelbrot family, and every
+mode that fills the interior, came back unchanged, which is the control.
 
 **And at `ss = 1` the resample is skipped.** The Lanczos kernel at a reduction of
 one normalizes to exactly 1.0 on the centre tap, so both passes are a long way to

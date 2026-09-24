@@ -829,13 +829,68 @@ pub fn sweep_row(
     let width = view.sample_width();
     let mut interior = 0;
 
+    // **The Mandelbrot set's main cardioid and period-2 bulb are answered without
+    // iterating**, where every field of the pass reads an escape. A point inside
+    // either never escapes, so the loop would run it to the cap and every such
+    // field would reduce it to `None` whatever the orbit did on the way — the same
+    // `NaN` and the same interior count this writes, without the cap's worth of
+    // steps. A field that has a value for a bounded orbit (a trap, the lattice,
+    // the step length, the address) reads the orbit itself and is never skipped.
+    //
+    // The first test is the classical one and costs a handful of multiplies, which
+    // is all an exterior sample pays. A point that passes it is held to a margin on
+    // the attracting cycle's multiplier: inside `|λ| < 1 - MARGIN` the orbit is
+    // contracted onto its cycle and rounding cannot carry it out of the basin,
+    // while a point nearer the parabolic edge is iterated as before. The margin is
+    // what makes "never escapes" true of the `f64` loop and not only of the set.
+    let escape_only = fields.iter().all(|field| {
+        matches!(
+            field,
+            FieldSpec::Smooth
+                | FieldSpec::Discrete { .. }
+                | FieldSpec::Stripe { .. }
+                | FieldSpec::Tia
+                | FieldSpec::Curvature
+                | FieldSpec::Threads { .. }
+                | FieldSpec::ExpSmoothing
+                | FieldSpec::Decomposition
+                | FieldSpec::De { .. }
+        )
+    });
+    let settled = |c: num_complex::Complex<f64>| -> bool {
+        const MARGIN: f64 = 1e-3;
+        let (x, y) = (c.re, c.im);
+        let y2 = y * y;
+        let bulb = (x + 1.0) * (x + 1.0) + y2;
+        if bulb < 0.0625 {
+            let limit = 0.25 * (1.0 - MARGIN);
+            return bulb < limit * limit;
+        }
+        let q = (x - 0.25) * (x - 0.25) + y2;
+        if q * (q + (x - 0.25)) >= 0.25 * y2 {
+            return false;
+        }
+        // The fixed point's multiplier: `λ = 1 - sqrt(1 - 4c)`.
+        let root = (num_complex::Complex::new(1.0, 0.0) - 4.0 * c).sqrt();
+        (num_complex::Complex::new(1.0, 0.0) - root).norm() < 1.0 - MARGIN
+    };
+
     // One row at a family and a channel set the call site wrote out.
     macro_rules! sweep {
         ($family:expr, $wants:expr) => {{
             let family = $family;
             let wants = $wants;
+            let skips = escape_only && matches!(family, Family::Multibrot { degree: 2 });
             for col in 0..width {
-                let orbit = iterate::run(&family, view.sample_point(col, row), maxiter, &wants);
+                let pixel = view.sample_point(col, row);
+                if skips && settled(pixel) {
+                    interior += 1;
+                    for (lane, _) in lanes.iter_mut().zip(fields) {
+                        lane.push(f64::NAN);
+                    }
+                    continue;
+                }
+                let orbit = iterate::run(&family, pixel, maxiter, &wants);
                 if !orbit.escaped {
                     interior += 1;
                 }

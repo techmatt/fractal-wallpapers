@@ -262,40 +262,45 @@ impl Painter {
         // threshold and 1.33x its opacity and still comes back the pale one.
         let mut color = self.start_color;
 
-        for _ in 1..=maxiter {
-            let next = family.step(z, z_prev, c);
-            z_prev = z;
-            z = next;
+        // The family's `match` taken once per orbit rather than once per iterate:
+        // the same table `field::sweep_row` spends, around the loop and nothing
+        // else, so each arm is the bare recurrence. The arithmetic is unchanged.
+        crate::family::over_written_out!(family, |family| {
+            for _ in 1..=maxiter {
+                let next = family.step(z, z_prev, c);
+                z_prev = z;
+                z = next;
 
-            let distance = self.shape.distance(z, self.radius);
-            if distance < self.threshold {
-                // **The key is the nearness itself.** A direct trap has no
-                // field, so there is nothing to normalize and nothing for the
-                // palette recipe's gamma or traversal to act on — those describe
-                // how a field's distribution is spent across the gradient, and a
-                // trap distance is already a fraction of a threshold. Applying
-                // them here would be a category error, and a visible one: it
-                // moved these four modes by ten times what every other mode
-                // moved. What does reach a trap is the bake — a reversed or
-                // folded map is a different gradient — and the rolloff, which
-                // acts after the color is chosen.
-                let key = self
-                    .transform
-                    .apply((distance / self.threshold).clamp(0.0, 1.0));
-                let sample = colormap.lookup(key);
-                let alpha = self.opacity * (1.0 - key);
-                for channel in 0..3 {
-                    let blended =
-                        self.merge_order
-                            .merge(self.merge, color[channel], sample[channel]);
-                    color[channel] = blended * alpha + color[channel] * (1.0 - alpha);
+                let distance = self.shape.distance(z, self.radius);
+                if distance < self.threshold {
+                    // **The key is the nearness itself.** A direct trap has no
+                    // field, so there is nothing to normalize and nothing for the
+                    // palette recipe's gamma or traversal to act on — those describe
+                    // how a field's distribution is spent across the gradient, and a
+                    // trap distance is already a fraction of a threshold. Applying
+                    // them here would be a category error, and a visible one: it
+                    // moved these four modes by ten times what every other mode
+                    // moved. What does reach a trap is the bake — a reversed or
+                    // folded map is a different gradient — and the rolloff, which
+                    // acts after the color is chosen.
+                    let key = self
+                        .transform
+                        .apply((distance / self.threshold).clamp(0.0, 1.0));
+                    let sample = colormap.lookup(key);
+                    let alpha = self.opacity * (1.0 - key);
+                    for channel in 0..3 {
+                        let blended =
+                            self.merge_order
+                                .merge(self.merge, color[channel], sample[channel]);
+                        color[channel] = blended * alpha + color[channel] * (1.0 - alpha);
+                    }
+                }
+
+                if z.norm_sqr() > bailout_sq {
+                    return (color, true);
                 }
             }
-
-            if z.norm_sqr() > bailout_sq {
-                return (color, true);
-            }
-        }
+        });
         (color, false)
     }
 }

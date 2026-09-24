@@ -236,10 +236,9 @@ pub type Seed = (Complex<f64>, Complex<f64>, Complex<f64>);
 /// **It costs a copy of the body per family**, so it belongs around the loop and
 /// never around anything that merely contains one.
 ///
-/// One caller today, [`crate::field::sweep_row`]. It lives here rather than
-/// there because the table is a fact about the enum above it: the direct trap's
-/// loop has the same runtime `match` and is not specialized yet, and when it is,
-/// the table it needs is this one and not a second copy of it.
+/// Two callers, [`crate::field::sweep_row`] and the direct trap's
+/// `Painter::trace`. It lives here rather than beside either because the table is
+/// a fact about the enum above it, and both loops need this one rather than a copy.
 macro_rules! over_written_out {
     ($subject:expr, |$name:ident| $body:block) => {
         match *$subject {
