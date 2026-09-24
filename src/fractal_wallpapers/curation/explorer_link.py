@@ -152,9 +152,10 @@ OPERATORS = frozenset({"band_autolevel/v1"})
 DEFAULT_ASPECT = (16, 9)
 ASPECT_LIMIT = 10000
 
-#: The iteration caps a link may name, `CAP_FLOOR` and `CAP_LIMIT`.
+#: The iteration caps a link may name, `CAP_FLOOR` and `CAP_LIMIT`. The limit is the
+#: explorer's explicit ceiling, two million since the website's cap_split_ckpt145.
 CAP_FLOOR = 50
-CAP_LIMIT = 1_000_000
+CAP_LIMIT = 2_000_000
 
 #: The longest a coordinate string may be, `COORDINATE_LIMIT`.
 COORDINATE_LIMIT = 64
