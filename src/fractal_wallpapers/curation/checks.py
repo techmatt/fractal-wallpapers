@@ -32,7 +32,14 @@ class CheckError(RuntimeError):
 
 
 def _sha256(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    """The picture's digest as its encoder wrote it: the explorer link a release render
+    carries in its metadata (`curation.embed_link`) taken back out first. The replay
+    renders through the engine directly and carries none, and a shipped picture from
+    before the link existed carries none either — so this is the comparison of two
+    pictures, which is what the replay asks, and not of what was written beside them."""
+    from fractal_wallpapers.curation import embed_link
+
+    return hashlib.sha256(embed_link.strip(Path(path).read_bytes())).hexdigest()
 
 
 def released_rows(run: str) -> list[dict]:
