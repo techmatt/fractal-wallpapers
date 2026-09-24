@@ -100,27 +100,26 @@ RECORD_EXEMPT_PREFIXES = ("data/gallery_grade/corpus/",)
 # repository would notice when it did. Describing the output in prose instead is what the
 # README already did.
 #
-# The bound on the exception is that these are THUMBNAILS and there are five of them:
-# 480x270, ~43 KB each, 213,470 bytes for the set, which is a fifth of `MAX_TRACKED_BYTES`
-# for one file and well under it for all five. A gallery does not come here — the gallery
+# The bound on the exception is that these are THUMBNAILS and there are four of them:
+# 480x270, ~42 KB each, 167,304 bytes for the set, which is a sixth of `MAX_TRACKED_BYTES`
+# for one file and well under it for all four. A gallery does not come here — the gallery
 # is `curate solve browse --viewer`, and the pictures it shows stay ignored like every
-# other render. Four are seats of the n=1000 general record and redraw byte-identical with
+# other render. Three are seats of the n=1000 general record and redraw byte-identical with
 # `render --recipe … --key <seat>`, so what is committed is a scaled copy of something this
 # repository can already make again.
 #
-# The fifth, `julia_multibrot4_smooth.jpg`, is Matt's call of 2026-09-22 and is not a
+# The fourth, `julia_multibrot4_smooth.jpg`, is Matt's call of 2026-09-22 and is not a
 # seat: it is an explorer link, and it is here so a README reader can find it in the
 # explorer. The link is the whole recipe — `examples/README.md` carries it — so it is as
-# derivable as the other four, from a URL rather than from a record.
+# derivable as the other three, from a URL rather than from a record.
 #
-# Widening this is a decision, not a fix: a sixth picture, a larger one, or a picture that
+# Widening this is a decision, not a fix: a fifth picture, a larger one, or a picture that
 # is derivable from neither a record nor a link is a different exception from this one.
 ALLOWLIST: frozenset[str] = frozenset(
     {
         "examples/mandelbrot_stripe.jpg",
         "examples/phoenix_threads.jpg",
         "examples/julia_multibrot4_smooth.jpg",
-        "examples/julia_smooth.jpg",
         "examples/julia_multibrot3_threads.jpg",
     }
 )

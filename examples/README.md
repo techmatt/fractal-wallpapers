@@ -1,6 +1,6 @@
 # examples
 
-The five thumbnails the root `README.md` shows at the top. Nothing reads them but that
+The four thumbnails the root `README.md` shows at the top. Nothing reads them but that
 page.
 
 Each is rendered through the engine at 1920x1080, supersample 2, and scaled to 480x270
@@ -13,7 +13,6 @@ and the bound.
 | `mandelbrot_stripe.jpg` | `460117ee` | mandelbrot | `stripe` | cmr.jungle |
 | `phoenix_threads.jpg` | `0275fee1` | phoenix | `threads` | Sapphire Against Rose |
 | `julia_multibrot4_smooth.jpg` | — (a link) | julia (multibrot4) | `smooth` | glowdon, phase 0.053 |
-| `julia_smooth.jpg` | `2fd9890d` | julia (mandelbrot) | `smooth` | glowdon |
 | `julia_multibrot3_threads.jpg` | `5ff0ad6b` | julia (multibrot3) | `threads` | Cobalt Furnace Ultra |
 
 ## The one that is a link
@@ -33,7 +32,7 @@ exactly. The cap is the engine's depth policy in both places. The render spec is
 flag for a palette phase, so it goes to `engine.render_report` as a spec rather than
 through the command line.
 
-## The four that are seats
+## The three that are seats
 
 To draw any of them at full size, which is what these were scaled down from:
 
@@ -44,9 +43,9 @@ fractal-wallpapers render \
   --key <seat> --out artifacts/example.jpg
 ```
 
-⚠ **Both lines, and the first is not optional on a clone.** These four seats were cut
+⚠ **Both lines, and the first is not optional on a clone.** These three seats were cut
 from `20260914T171846Z`, whose `recipes.jsonl` was the one tracked file of its kind and
-which went with every other saved record on 2026-09-21. All four keys are also seats of
+which went with every other saved record on 2026-09-21. All three keys are also seats of
 `final139_general` above, which is kept and **not** published — so the recipe file is
 built out of the candidate ledger on the machine that holds it, and a clone with no
 ledger cannot draw these at all. The keys are unchanged; only the stamp that resolves
@@ -54,4 +53,8 @@ them is.
 
 Replacing one is two steps and neither is optional: redraw and rescale the picture here,
 and repoint the `<img>` in the root README. A file added or renamed also moves the
-`ALLOWLIST` entry, which is what makes a sixth picture a decision rather than a copy.
+`ALLOWLIST` entry, which is what makes a fifth picture a decision rather than a copy.
+
+A fourth seat, `julia_smooth.jpg` (`2fd9890d`, julia (mandelbrot), `smooth`, glowdon),
+left the strip on 2026-09-23 on Matt's call. Its pin in `data/curation/pins.txt` stays,
+because a pin is a seating decision and not a README one.

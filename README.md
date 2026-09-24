@@ -6,11 +6,10 @@ Generates fractal wallpapers and uses neural judges trained on human labels to d
 which ones are worth keeping.
 
 <p align="center">
-  <img src="examples/mandelbrot_stripe.jpg" width="19%" alt="Mandelbrot set, stripe coloring">
-  <img src="examples/phoenix_threads.jpg" width="19%" alt="Phoenix set, threads coloring">
-  <img src="examples/julia_multibrot4_smooth.jpg" width="19%" alt="Quartic Julia set, smooth coloring">
-  <img src="examples/julia_smooth.jpg" width="19%" alt="Julia set, smooth coloring">
-  <img src="examples/julia_multibrot3_threads.jpg" width="19%" alt="Cubic Julia set, threads coloring">
+  <img src="examples/mandelbrot_stripe.jpg" width="24%" alt="Mandelbrot set, stripe coloring">
+  <img src="examples/phoenix_threads.jpg" width="24%" alt="Phoenix set, threads coloring">
+  <img src="examples/julia_multibrot4_smooth.jpg" width="24%" alt="Quartic Julia set, smooth coloring">
+  <img src="examples/julia_multibrot3_threads.jpg" width="24%" alt="Cubic Julia set, threads coloring">
 </p>
 
 A Rust crate renders the escape-time fields. Python decides where to look, how to color
@@ -133,8 +132,9 @@ the recipe file, out of the candidate ledger.
 `--location` is the narrower form. It takes a place and a geometry only, and refuses a row
 that says more rather than drawing the right coordinates in the wrong colors.
 
-That key is the first of the four images at the top of this file. The other three are
-seats `0275fee1`, `2fd9890d` and `5ff0ad6b`, drawn the same way and scaled down.
+That key is the first of the four images at the top of this file. Two more are seats,
+`0275fee1` and `5ff0ad6b`, drawn the same way and scaled down; the third is an explorer
+link, which `examples/README.md` carries.
 
 ## Weights
 
