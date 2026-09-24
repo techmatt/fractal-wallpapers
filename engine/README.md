@@ -212,6 +212,94 @@ them. Alternated three times: the mandelbrot anchor at 1600x900 ss4 in `smooth`
 29.9 s to 0.52 s. The two anchors that are not the mandelbrot family, and every
 mode that fills the interior, came back unchanged, which is the control.
 
+**And the orbits the skips cannot see are stopped once proven interior** *(website
+interior_seam_deep_autorender_ckpt146, 2026-09-24)*. The skips above answer a sample before
+the loop from where the pixel is; this answers it inside the loop from where the orbit has
+got to, under the same condition — every field of the pass reads an escape — and through
+the one seam the brief asked for: `Wants` gains `interior`, which `sweep_row` alone sets,
+with `iterate::Interior` and `Interior::of` beside it. A stopped orbit leaves the loop as
+one that ran out of iterations does, so it reduces to the same `NaN` and counts as the same
+interior. Two tests, each exact:
+
+- **A disk the cycle carries into itself, on the Julia planes.** `z ↦ z^d + c` has one
+  critical point, `0`, so at most one attracting cycle, and that cycle attracts `0`'s orbit:
+  10,000 steps of it, then the first return within `1e-9` in at most 64 steps, find the
+  cycle `z₀ … z_{p−1}` or say there is none. The proof is per step: for `|h| ≤ r`,
+  `|f(zᵢ + h) − z_{i+1}| ≤ Σ_{k=1}^{d} C(d,k)|zᵢ|^{d−k} r^k + |f(zᵢ) − z_{i+1}|`, the binomial
+  expansion under the triangle inequality plus the `f64` cycle point's own residual, and
+  `1e-10` more per step for the loop's rounding of it (under `1e-12` at `|z| ≤ 3` and degree
+  six). Chained round the cycle from `r₀`, a disk about `z₀` is taken when the return lands
+  within `(1 − 1e-3) r₀` and no link passes 1: an orbit inside it comes back inside it every
+  `p` steps for ever, never more than `rᵢ ≤ 1` from the cycle between, so it never reaches the
+  bailout. The largest power of two that closes is bisected upward, and the loop tests
+  against a radius `1e-6` smaller, far more than `|z − z₀|²`'s rounding at `r₀ ≥ 1e-6`. At the
+  site's shipped `c` it finds radius 0.115 at degree three, 0.042 at four, a period-15 cycle's
+  0.024 at five and 0.157 at six; degree two has no attracting cycle there. Computed once per
+  thread and family.
+- **An exact repeat, on every family.** The loop is a deterministic function of its state —
+  `z`, and on Phoenix `z_{n−1}` too — so a state whose bits come round again is a cycle the
+  orbit never leaves, and one that has not escaped never will. Brent's scheme keeps the state
+  at each power-of-two step and compares every step with it, on `to_bits` so that `-0.0` is
+  not `0.0` (the fractional family's `atan2` tells them apart). It needs no proof per family,
+  and it is what catches the parameter planes' interiors outside the cardioid, the bulb and
+  the disk — once rounding has settled an orbit on a float cycle, which is later than a disk
+  would.
+
+**Phoenix gets no disk.** It steps a pair `(z, z_{n−1})`, and a disk proof needs a norm on
+that pair; the repeat covers it.
+
+**The modes that read an interior orbit are not given either test**, and what each would
+buy is recorded rather than built. Once the state repeats, the rest of the orbit is the
+cycle again, so:
+
+- a **minimum or maximum** over the orbit is already final — the circle and cross traps, the
+  lattice's nearest and farthest, and with them `iter_min`, `iter_max`, `angle_min`,
+  `angle_max` and `ratio`, since a strict comparison keeps the first step it happened on;
+- a **head address** (`itinerary`) is final once `depth` symbols are spelled, and replaying
+  the cycle spells the rest exactly; a **tail address** (`tail_itinerary`) is the last
+  `depth` symbols before the cap, which is the cycle's phase at the cap, and base four makes
+  the roll exact;
+- a **mean** is not: the lattice's average distance, `mean_angle` and the step length sum in
+  an order a shortcut cannot reproduce to the bit;
+- the **direct traps** composite a colour per iterate, and a repeat adds more of it.
+
+So the traps, the lattice's extremes and both addresses could stop at a repeat and be exact;
+the means cannot. That is the proposal, and it is its own brief.
+
+**The tests run every sixteenth step, not every step.** Every step cost the orbits they
+never catch — most orbits on most frames — up to 15%: the Phoenix anchor at 1600x900 ss4
+went 1.61 s to 1.86 s. An orbit in the disk stays there, so a late test loses nothing, and
+the repeat, compared at multiples of sixteen and saved at powers of two, still meets a
+cycle of length `L` once the saved step passes `16·L`. Alternated five times against the
+build before the seam, at 1600x900 ss4: the Julia anchor **1.04x**, the Phoenix anchor
+**0.99x**, the Mandelbrot anchor **1.77x** (the repeat catches its minibrots' interiors).
+At 640x360 ss2, the controls that nothing catches are within 1–3%.
+
+**What it bought, on the planes that were the dearest homes.** At the shipped `c`, 640x360
+ss2, medians of three: `smooth` julia3 1.03 s to 0.077 s, julia4 1.50 s to 0.073 s, julia5
+1.17 s to 0.154 s, julia6 2.69 s to 0.080 s; `stripe`, which pays an `atan2` and a `sin` a
+step, julia3 9.05 s to 0.105 s and julia6 11.06 s to 0.119 s. In the site's explorer, time
+to the finished picture: julia3 3.3 s to 0.6–0.8 s, julia4 4.5 s to 0.6 s, julia6 7.9 s to
+0.7 s. The Multibrot homes at `smooth` 0.20–0.66 s to 0.11–0.14 s, the repeat catching
+what the disk about 0 leaves. `itinerary`, the traps and the angle modes read the interior
+orbit and are unchanged.
+
+**The stride costs a longer cycle something.** julia5's cycle has period 15, so an orbit is
+near the disk's centre once every fifteen steps and a test every sixteenth meets it once in
+`lcm(16, 15) = 240`: 7.6x where every step gave 15x. A disk about every cycle point would
+close that at `p` compares a test; not built.
+
+**Held to zero behaviour through `fractal-wallpapers identity`**, the battery this change
+promoted from an ignored script to a command: 540 renders (every family's home at the
+shipped and the older constants, the three anchors and an interior frame, every catalogued
+mode, 384x216 ss1 and 640x360 ss2) and 1,656 edge frames (the cardioid, the bulb, each
+Multibrot disk's touching points and rim, and three points on each Julia disk's rim, widths
+`1e-2` to `1e-9`, the policy cap and 50,000) byte-identical to the build before it; the
+fingerprint unmoved (`5d97e76bb16be71d` / `cbd9bc03a0f33e1c`); engine tests 229 unmoved
+plus two new, one holding every escape-only field over every family to the uninterrupted
+orbit on the bits and one running a grid over each disk to 100,000 without an escape. The
+site's `engine.wasm` drew identical lanes and shaded pictures on 289 frames x 17 modes.
+
 **And at `ss = 1` the resample is skipped.** The Lanczos kernel at a reduction of
 one normalizes to exactly 1.0 on the centre tap, so both passes are a long way to
 copy a buffer; `resample::downsample` encodes straight from the source instead.

@@ -887,11 +887,21 @@ pub fn sweep_row(
         radius * radius
     };
 
+    // **And the orbits the skips above cannot see are stopped once proven interior**,
+    // under the same condition: an attracting cycle's disk on a Julia plane, and an
+    // exact repeat of the loop's state on any family (`iterate::Interior` has both
+    // proofs). A stopped orbit leaves the loop as one that ran out of iterations
+    // does, so it reduces to the same `NaN` and counts as the same interior.
+    let settle = escape_only.then(|| iterate::Interior::of(family));
+
     // One row at a family and a channel set the call site wrote out.
     macro_rules! sweep {
         ($family:expr, $wants:expr) => {{
             let family = $family;
-            let wants = $wants;
+            let wants = Wants {
+                interior: settle,
+                ..$wants
+            };
             let (cardioid, disk) = match family {
                 Family::Multibrot { degree: 2 } => (escape_only, 0.0),
                 Family::Multibrot { degree } if escape_only && degree > 2 => (false, reach(degree)),
@@ -1130,6 +1140,102 @@ mod tests {
                     field.name(),
                     generic[0].len()
                 );
+            }
+        }
+    }
+
+    /// **Stopping an orbit once it is proven interior moves no sample** *(website
+    /// interior_seam_deep_autorender_ckpt146)*. Every escape-only field over every family,
+    /// and over the Julia planes at the site's shipped constant — where degrees three to
+    /// six have an attracting cycle and so a disk — held on the bits to the orbit run to the
+    /// cap with nothing stopping it. At a cap of 2,000, so that the repeat has orbits long
+    /// enough to settle on a float cycle and fire.
+    #[test]
+    fn the_interior_tests_move_no_sample() {
+        let shipped = Complex::new(-0.07810228973371881, -0.6514609012382414);
+        let mut families = every_family();
+        for degree in 2..=6 {
+            families.push(Family::Julia { degree, c: shipped });
+        }
+        let view = Viewport {
+            center: Complex::new(0.0, -0.3),
+            width: 3.2,
+            out_width: 40,
+            out_height: 24,
+            supersample: 2,
+        };
+        let escape_only: Vec<FieldSpec> = every_field()
+            .into_iter()
+            .filter(|field| {
+                !matches!(
+                    field,
+                    FieldSpec::TrapCircle { .. }
+                        | FieldSpec::TrapCross
+                        | FieldSpec::GaussianInt { .. }
+                        | FieldSpec::Velocity
+                        | FieldSpec::Itinerary { .. }
+                )
+            })
+            .collect();
+        for family in families {
+            for field in &escape_only {
+                let lanes = specialized_pass(&view, &family, 2000, &[*field]);
+                let mut unlike = 0;
+                let mut index = 0;
+                for row in 0..view.sample_height() {
+                    for col in 0..view.sample_width() {
+                        let orbit = iterate::run(
+                            &family,
+                            view.sample_point(col, row),
+                            2000,
+                            &field.wants(),
+                        );
+                        let alone = field.reduce(&orbit).unwrap_or(f64::NAN);
+                        if alone.to_bits() != lanes[0][index].to_bits() {
+                            unlike += 1;
+                        }
+                        index += 1;
+                    }
+                }
+                assert_eq!(
+                    unlike,
+                    0,
+                    "{family:?} {}: {unlike} samples moved",
+                    field.name()
+                );
+            }
+        }
+    }
+
+    /// **The disk is found where the plane has an attracting cycle, and holds.** At the
+    /// shipped constant, degrees three, four and six have an attracting fixed point and
+    /// degree five a longer cycle; degree two has none. Every sample of a grid over the
+    /// disk, its rim included, is run to 100,000 with nothing stopping it, and none escapes.
+    #[test]
+    fn the_julia_disk_is_inside_the_basin() {
+        let shipped = Complex::new(-0.07810228973371881, -0.6514609012382414);
+        assert_eq!(
+            iterate::Interior::of(&Family::Julia {
+                degree: 2,
+                c: shipped
+            })
+            .radius_sq,
+            0.0
+        );
+        for degree in 3..=6 {
+            let family = Family::Julia { degree, c: shipped };
+            let disk = iterate::Interior::of(&family);
+            assert!(disk.radius_sq > 1e-4, "degree {degree}: {disk:?}");
+            let radius = disk.radius_sq.sqrt();
+            for i in 0..=16 {
+                for j in 0..=16 {
+                    let offset = Complex::new(i as f64 / 8.0 - 1.0, j as f64 / 8.0 - 1.0);
+                    if offset.norm() > 1.0 {
+                        continue;
+                    }
+                    let orbit = iterate::escape(&family, disk.center + offset * radius, 100_000);
+                    assert!(!orbit.escaped, "degree {degree}: {offset} escaped");
+                }
             }
         }
     }
