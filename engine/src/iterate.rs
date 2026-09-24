@@ -34,6 +34,9 @@ use crate::family::Family;
 /// recurrence rather than by the constant.
 pub const BAILOUT: f64 = 65536.0; // 2^16
 
+/// How often [`run`] asks whether an orbit is proven interior, in steps. See the loop.
+const INTERIOR_EVERY: u32 = 16;
+
 /// Which per-iteration channels this render actually reads.
 ///
 /// `Option` carries both halves of the question — whether a channel is wanted
@@ -65,6 +68,174 @@ pub struct Wants {
     /// estimate divides by. The most expensive flag here — a complex multiply per
     /// iteration on top of the recurrence's own — so nothing but `de` sets it.
     pub derivative: bool,
+    /// Stop an orbit once it is **proven never to escape**, and report it as the
+    /// loop would have at the cap. No field asks for this: [`crate::field::sweep_row`]
+    /// sets it, and only where every field of the pass reads an escape, because
+    /// there a bounded orbit reduces to `None` whatever it did on the way.
+    pub interior: Option<Interior>,
+}
+
+/// The two ways an orbit is proven interior before the cap, in [`run`].
+///
+/// **A disk the cycle carries into itself.** Where the plane has an attracting
+/// cycle `z₀ … z_{p−1}` and a disk about `z₀` that `p` steps of the map send strictly
+/// inside itself, with room left over for `f64` rounding, an orbit that enters the
+/// disk stays within a bounded chain of disks for ever and never reaches the bailout.
+/// [`Interior::of`] finds one on the Julia planes and gives its proof.
+///
+/// **An exact repeat.** The loop is a deterministic function of its state — `z`,
+/// and on Phoenix `z_{n−1}` as well — so a state whose bits come round again is on
+/// a cycle it will never leave, and a cycle that has not escaped yet never will.
+/// Brent's scheme finds it: keep the state at each power-of-two step and compare
+/// every step with it. That is exact on every family and needs no proof per
+/// family; it catches an attracting cycle once rounding has settled the orbit on a
+/// float cycle, which is later than the disk and on any plane at all.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Interior {
+    /// A point of the attracting cycle, the disk's centre.
+    pub center: Complex<f64>,
+    /// The disk's squared radius, already shrunk for the test's own rounding.
+    /// Zero where no disk is known, which no orbit enters, and the repeat is
+    /// then the only test.
+    pub radius_sq: f64,
+}
+
+impl Interior {
+    /// The interior tests that hold on `family`: the repeat everywhere, and a
+    /// disk where the plane has one.
+    ///
+    /// **The disk is the Julia planes' alone.** `z ↦ z^d + c` has one critical
+    /// point, `0`, so it has at most one attracting cycle and that cycle attracts
+    /// `0`'s orbit: iterating `0` finds it, or finds that there is none. The
+    /// parameter planes have a different cycle at every pixel — the cardioid and
+    /// the main component are answered in `sweep_row` before the loop, and the
+    /// rest is the repeat's. Phoenix steps a pair `(z, z_{n−1})` and would need a
+    /// norm on it; the repeat covers it.
+    ///
+    /// **The proof, per step of the cycle.** For `|h| ≤ r`,
+    /// `|f(zᵢ + h) − z_{i+1}| ≤ Σ_{k=1}^{d} C(d,k)·|zᵢ|^{d−k}·r^k + |f(zᵢ) − z_{i+1}|`:
+    /// the binomial expansion of `(zᵢ + h)^d − zᵢ^d` under the triangle inequality,
+    /// plus how far the `f64` cycle point is from mapping exactly onto the next one.
+    /// `SLOP` is added to every link for the loop's own rounding of a step, which at
+    /// `|z| ≤ 3` and degree six is under `10⁻¹²`. Chaining the bound round the cycle
+    /// gives `r_p` from `r₀`; a disk of radius `r₀` about `z₀` is accepted when
+    /// `r_p ≤ (1 − MARGIN)·r₀`, so every `p` steps carry the orbit back into the disk
+    /// with room to spare, and every step in between is within `rᵢ ≤ 1` of `zᵢ`,
+    /// nowhere near the bailout. The largest power of two that closes is taken and
+    /// then bisected upward. The test in the loop compares against a radius shrunk by
+    /// `10⁻⁶` relative, far more than the rounding of `|z − z₀|²` at `r₀ ≥ 10⁻⁶`.
+    ///
+    /// Computed once per thread and family and remembered, because `sweep_row` asks
+    /// once per row.
+    pub fn of(family: &Family) -> Interior {
+        let none = Interior {
+            center: Complex::new(0.0, 0.0),
+            radius_sq: 0.0,
+        };
+        let Family::Julia { degree, c } = *family else {
+            return none;
+        };
+        thread_local! {
+            static LAST: std::cell::Cell<Option<((u32, u64, u64), Interior)>> =
+                const { std::cell::Cell::new(None) };
+        }
+        let key = (degree, c.re.to_bits(), c.im.to_bits());
+        if let Some((held, interior)) = LAST.get() {
+            if held == key {
+                return interior;
+            }
+        }
+        let interior = julia_disk(family, degree).unwrap_or(none);
+        LAST.set(Some((key, interior)));
+        interior
+    }
+}
+
+/// The disk [`Interior::of`] proves, about a point of the Julia plane's attracting
+/// cycle, or `None`.
+fn julia_disk(family: &Family, degree: u32) -> Option<Interior> {
+    /// Steps of the critical orbit before the cycle is read off it.
+    const SETTLE: u32 = 10_000;
+    /// The longest cycle looked for.
+    const LONGEST: usize = 64;
+    /// How near the orbit must come back to call it a cycle; the proof charges
+    /// whatever is left as each link's residual.
+    const CLOSE: f64 = 1e-9;
+    /// Per-link allowance for the loop's own rounding of one step.
+    const SLOP: f64 = 1e-10;
+    /// How far inside itself the return must land.
+    const MARGIN: f64 = 1e-3;
+    /// The smallest disk worth a test.
+    const SMALLEST: f64 = 1e-6;
+
+    let zero = Complex::new(0.0, 0.0);
+    let (_, _, c) = family.seed(zero);
+    let step = |z: Complex<f64>| family.step(z, zero, c);
+    let mut z = zero;
+    for _ in 0..SETTLE {
+        z = step(z);
+        if !(z.norm_sqr() <= 16.0) {
+            return None;
+        }
+    }
+    let mut cycle = vec![z];
+    let mut w = step(z);
+    while (w - z).norm() > CLOSE {
+        if cycle.len() == LONGEST {
+            return None;
+        }
+        cycle.push(w);
+        w = step(w);
+    }
+    let p = cycle.len();
+    let links: Vec<(f64, f64)> = (0..p)
+        .map(|i| {
+            (
+                cycle[i].norm(),
+                (step(cycle[i]) - cycle[(i + 1) % p]).norm(),
+            )
+        })
+        .collect();
+    // How far `p` steps can carry a point from within `r0` of `z₀`, or `∞` if some
+    // link leaves the unit neighbourhood the rounding allowance was sized for.
+    let returns = |r0: f64| -> f64 {
+        let mut r = r0;
+        for &(modulus, residual) in &links {
+            let mut spread = 0.0;
+            let mut binomial = 1.0;
+            for k in 1..=degree {
+                binomial = binomial * (degree - k + 1) as f64 / k as f64;
+                spread += binomial * modulus.powi((degree - k) as i32) * r.powi(k as i32);
+            }
+            r = spread + residual + SLOP;
+            if !(r <= 1.0) {
+                return f64::INFINITY;
+            }
+        }
+        r
+    };
+    let closes = |r0: f64| returns(r0) <= (1.0 - MARGIN) * r0;
+    let mut low = 0.5;
+    while !closes(low) {
+        low *= 0.5;
+        if low < SMALLEST {
+            return None;
+        }
+    }
+    let mut high = 2.0 * low;
+    for _ in 0..30 {
+        let middle = 0.5 * (low + high);
+        if closes(middle) {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    let radius = low * (1.0 - 1e-6);
+    Some(Interior {
+        center: cycle[0],
+        radius_sq: radius * radius,
+    })
 }
 
 impl Wants {
@@ -87,6 +258,7 @@ impl Wants {
             velocity: self.velocity || other.velocity,
             itinerary: self.itinerary.or(other.itinerary),
             derivative: self.derivative || other.derivative,
+            interior: self.interior.or(other.interior),
         }
     }
 }
@@ -550,6 +722,11 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
         orbit.itinerary.push(z, symbols);
     }
 
+    // Brent's saved state for the exact repeat, taken again at every power of two.
+    // `z_{n−1}` is part of the state only where the step reads it.
+    let memory = matches!(family, Family::Phoenix { .. } | Family::PhoenixM { .. });
+    let mut saved = (z, z_prev);
+
     for n in 1..=maxiter {
         // |z²| before the step: the triangle inequality compares the actual next
         // iterate against the bounds `|z²| ± |c|` that the inequality allows it.
@@ -641,6 +818,31 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
             }
             return orbit;
         }
+
+        // After the escape test, so a stopped orbit is one that has not escaped
+        // yet and, by [`Interior`]'s two proofs, never will: it leaves the loop as
+        // one that ran out of iterations does.
+        //
+        // **Every `INTERIOR_EVERY`th step, not every step.** Tested every step, the two
+        // tests cost an orbit that escapes — which is most of them on most frames — up to
+        // 15% (the Phoenix anchor 1.74 s to 1.92 s at 1600×900 ss4). An orbit in the disk
+        // stays there for ever, so testing it late loses nothing; and the repeat, compared
+        // only at multiples of the stride and saved at powers of two, still meets a cycle
+        // of length `L` once the saved step passes `INTERIOR_EVERY·L`.
+        if let Some(interior) = wants.interior {
+            if n % INTERIOR_EVERY == 0 {
+                if (z - interior.center).norm_sqr() < interior.radius_sq {
+                    break;
+                }
+                let bits = |w: Complex<f64>| (w.re.to_bits(), w.im.to_bits());
+                if bits(z) == bits(saved.0) && (!memory || bits(z_prev) == bits(saved.1)) {
+                    break;
+                }
+                if n.is_power_of_two() {
+                    saved = (z, z_prev);
+                }
+            }
+        }
     }
 
     if wants.derivative {
@@ -715,6 +917,7 @@ mod tests {
                 window: AddressWindow::HeadFromZ0,
             }),
             derivative: true,
+            interior: None,
         }
     }
 
