@@ -18,6 +18,15 @@ candidate_ledger/ratchet.jsonl   how large that ledger has ever been, and what t
 ledger_provenance.json           which walk ledger each released row was drawn from
 ```
 
+**A link this repository writes is the explorer's permalink v4** *(find_minibrots_cap2_ckpt145)*.
+`pins.query_of` is the one writer: it spells a view the way `explorer/permalink.js`
+does, defaults left out, and since v4 it writes the recipe's cap as `n` whenever it is
+not what the engine's width policy gives at `w` (`engine.maxiter_for`, asked once a
+width; `warm_width_caps` asks a batch). `EXPLORER_BASE` says `v=4`. The links in
+`pins.txt` say `v=3` and stay valid — the explorer reads v1 to v4, and every one of the
+ten parses to the same engine spec it did — and `parse` reads a pin by place and mode
+whichever version it says, so `n` changes no resolution.
+
 **Five of these describe files that are not here.** `supply_scores.manifest.json`
 names `artifacts/curation/supply_scores.jsonl` — the location head's read of the
 standing supply, and the one thing under the regenerable tree that this checkout

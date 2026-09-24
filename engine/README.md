@@ -52,6 +52,23 @@ or no field at all. Eight field · six composite · two modulate · four direct,
 count everything downstream draws from, and the two numbers are a catalog total
 and a tier below.
 
+## The cap is a policy, and one door still cannot name another
+
+`maxiter::for_width` is the depth policy, and a spec that says nothing about the
+cap gets it. A spec that does say — `RenderSpec`'s `maxiter` — wins over it
+(`an_explicit_maxiter_wins_over_the_policy`), and that explicit cap is carried as
+a key wherever a picture is named: the recipe a ledger row keeps, the explorer's
+deep link (`n` since its first version), and **since the explorer's permalink v4
+the shallow link too** — `n`, written only where the cap is not the policy's, so
+every link to a policy-cap view is the string it always was. On this side the
+recipe→link writer is `curation/pins.py`'s `query_of`, which emits `n` whenever a
+view's `maxiter` is not what `maxiter_for` gives at its width.
+
+**The one exception is `expand.rs`'s `Node`.** A walk node is a centre and a width
+and nothing else, and every rung it proposes is drawn at `for_width` of the parent's
+width and of the child's, so a node cannot carry a cap somebody chose. That is a
+separate open item and is left alone here.
+
 ## The escape loop is written out per family and per channel set
 
 `iterate::run` is one loop with eleven per-iteration channel checks and a `match`

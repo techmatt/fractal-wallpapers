@@ -339,6 +339,7 @@ def _pool_rows(places: set[str]) -> dict:
             "picture": bool(row.get("picture")),
             "p_fine": value,
             "family": recipe.get("family") or {},
+            "maxiter": recipe.get("maxiter"),
         }
     return held
 
@@ -394,6 +395,9 @@ def _view_of(place: str, shown: dict) -> dict:
         "w": parsed[5],
         "palette": shown.get("colormap"),
         "phase": shown.get("phase") or 0.0,
+        # The cap the row was drawn at, which the link writes as `n` where it is not the
+        # width's — so the example opens the picture its `p_fine` is a reading of.
+        "maxiter": shown.get("maxiter"),
     }
 
 
@@ -612,6 +616,7 @@ def _examples_summary(census, cuts, kept_at, rows, chains, walk, shown, seats) -
 
 def _examples(args: argparse.Namespace) -> int:
     from fractal_wallpapers.cli.common import resolve_output
+    from fractal_wallpapers.curation import pins
     from fractal_wallpapers.discovery import minibrot
 
     census = _census_output(args.census)
@@ -629,6 +634,8 @@ def _examples(args: argparse.Namespace) -> int:
     walk = _walk_rows(places)
     print(f"[examples] {len(walk):,} join to a walk row")
     seats = _seat_names(places)
+    # One question to the engine for every width a link below will compare its cap to.
+    pins.warm_width_caps(json.loads(place)[5] for place in places if place in shown)
 
     rows = [
         _example_row(
