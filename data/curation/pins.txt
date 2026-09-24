@@ -4,7 +4,8 @@
 # into the ledger row it means (data/curation/pins.json), and every solve reads that.
 # See src/fractal_wallpapers/curation/pins.py.
 
-# The four the root README shows (examples/README.md), as the site's gallery links them.
+# The four seats the root README showed (examples/README.md), as the site's gallery links
+# them. The julia glowdon one left the strip on 2026-09-23 and stays pinned.
 http://localhost:8000/explorer/?v=3&m=stripe&x=-1.2514947263705116&y=0.04110851135180772&w=0.0000000798119929768514&p=cmr.jungle&mirror=1
 http://localhost:8000/explorer/?v=3&f=phoenix&cx=-0.45709691767279576&cy=-0.199309339142123&px=0.26195066562519664&py=-0.03188285542142037&zx=0.23987361417464126&zy=0.45066347511034605&m=threads&x=1.1154713756796277&y=0.1372761613815802&w=0.0006723781020213695&p=Sapphire%20Against%20Rose
 http://localhost:8000/explorer/?v=3&f=julia&cx=-0.7488551646997019&cy=-0.13572339871672048&x=0.435675577907737&y=0.06312318776094998&w=0.009812625699590332&p=glowdon
