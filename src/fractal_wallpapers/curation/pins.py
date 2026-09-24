@@ -119,7 +119,13 @@ CONSTANTS = {
 #: keys below belong to. A writer that emits many links carries this **once** and
 #: a query per row — [`parse`] reads the query and ignores everything left of it,
 #: so the two halves join by concatenation.
-EXPLORER_BASE = "http://localhost:8000/explorer/?v=3&"
+EXPLORER_BASE = "http://localhost:8000/explorer/?v=4&"
+
+#: The key a link carries an iteration cap in, from the explorer's permalink v4 on —
+#: `explorer/permalink.js`'s `CAP_KEY`. Written only where a recipe's cap is not what
+#: the engine's width policy gives, so every link to a view at the policy's cap is the
+#: string it always was.
+CAP_KEY = "n"
 
 
 class PinsRefused(ValueError):
@@ -216,6 +222,15 @@ def query_of(view: dict) -> str:
     `smooth` view carries no `f` and no `m`, which is what
     `explorer/permalink.js` does and what every link in `pins.txt` looks like.
 
+    **And the cap, where the recipe's is not the width's** *(permalink v4,
+    find_minibrots_cap2_ckpt145)*. A view may carry `maxiter`, the cap its recipe
+    was drawn at; the link says `n=` it only where that differs from what the
+    engine's width policy gives at `w`, because an absent `n` already means exactly
+    that. A link that left out a cap somebody chose would open the place at a
+    different picture under the same name. The policy is the engine's, asked through
+    [`engine.maxiter_for`] and remembered per width — [`warm_width_caps`] asks for a
+    whole batch in one call, which a writer of thousands of links should.
+
     The coordinates go in as **given**. A caller holding the decimal strings a
     ledger wrote hands those over and the link redraws that row exactly; a caller
     holding floats gets `repr`, which is the shortest string that round-trips.
@@ -229,12 +244,41 @@ def query_of(view: dict) -> str:
     if mode and str(mode) != DEFAULT_MODE:
         parts.append(f"m={mode}")
     parts += [f"{key}={_spelled(view[key])}" for key in ("x", "y", "w")]
+    cap = view.get("maxiter")
+    if cap is not None and int(cap) != _width_cap(_spelled(view["w"])):
+        parts.append(f"{CAP_KEY}={int(cap)}")
     if view.get("palette"):
         parts.append(f"p={quote(str(view['palette']))}")
     phase = float(view.get("phase") or 0.0)
     if phase:
         parts.append(f"phase={phase:g}")
     return "&".join(parts)
+
+
+#: The engine's width policy, per width as a link spells it. A cache rather than a
+#: mirror: Python holds no copy of the policy (`engine.maxiter_for` says why), so each
+#: distinct width is one question to the engine, asked once.
+_WIDTH_CAPS: dict[str, int] = {}
+
+
+def warm_width_caps(widths) -> None:
+    """Ask the engine for every width not yet known, in one call.
+
+    [`query_of`] asks one width at a time, which is one subprocess each; a writer about
+    to emit a link per row calls this first with every width it holds.
+    """
+    from fractal_wallpapers import engine
+
+    wanted = sorted({_spelled(width) for width in widths} - set(_WIDTH_CAPS))
+    if wanted:
+        _WIDTH_CAPS.update(zip(wanted, engine.maxiter_for(wanted), strict=True))
+
+
+def _width_cap(width: str) -> int:
+    """The cap the engine's width policy gives at `width`, asked once."""
+    if width not in _WIDTH_CAPS:
+        warm_width_caps([width])
+    return int(_WIDTH_CAPS[width])
 
 
 def _spelled(value) -> str:

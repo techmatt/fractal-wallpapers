@@ -170,6 +170,36 @@ def test_a_written_query_leaves_out_the_two_keys_the_explorer_defaults():
     assert "p=Cobalt%20Furnace" in pins.query_of({**plain, "palette": "Cobalt Furnace"})
 
 
+def test_a_written_query_carries_the_recipes_cap_only_where_the_width_does_not_give_it(
+    monkeypatch,
+):
+    """`n` after `w`, and only where the recipe's cap is not the width policy's.
+
+    Permalink v4's rule: an absent `n` is the width's cap, so a link to a view drawn at
+    it is the string it always was, and a link to one drawn at another says so rather
+    than opening the place at a different picture. The policy is the engine's; here it
+    is seeded, so the test asks nothing of the binary.
+    """
+    monkeypatch.setattr(pins, "_WIDTH_CAPS", {"3.0": 4000})
+    plain = {
+        "family": pins.DEFAULT_FAMILY,
+        "constants": {},
+        "mode": pins.DEFAULT_MODE,
+        "x": "-0.5",
+        "y": "0.0",
+        "w": "3.0",
+        "palette": "BuGn",
+        "phase": 0.0,
+    }
+    assert pins.EXPLORER_BASE.endswith("?v=4&")
+    assert pins.query_of(plain) == "x=-0.5&y=0.0&w=3.0&p=BuGn"
+    assert pins.query_of({**plain, "maxiter": 4000}) == "x=-0.5&y=0.0&w=3.0&p=BuGn"
+    assert pins.query_of({**plain, "maxiter": 300}) == "x=-0.5&y=0.0&w=3.0&n=300&p=BuGn"
+    # And the link still resolves by place: `n` is not a key resolution reads.
+    back = pins.parse(pins.EXPLORER_BASE + pins.query_of({**plain, "maxiter": 300}))
+    assert (back["x"], back["w"], back["palette"]) == (-0.5, 3.0, "BuGn")
+
+
 # --------------------------------------------------------------------------- #
 # Matching a place.
 # --------------------------------------------------------------------------- #
