@@ -336,7 +336,8 @@ with recipes and `solve.json` for each, and one seat redrawn from the restored
 `recipes.jsonl` **byte-identical** to the same seat redrawn from the live one.
 
 **What a fresh box needs before the import**: `uv sync --extra dev --extra models
---extra solve`, `fetch-weights`, `cargo build --release`, and a `local.toml` naming
+--extra solve` (`--extra cuda` in place of `--extra models` on a box that trains),
+`fetch-weights`, `cargo build --release`, and a `local.toml` naming
 the root it imports to. **The engine fingerprint is the thing to read in the import's
 output.** `amend.read` keeps only amendment rows drawn by the running build, so a build
 that fingerprints differently silently reads every amended location at its old
