@@ -167,8 +167,16 @@ def _expire(subcommand: str, seconds: float) -> EngineTimeout:
     )
 
 
-def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> Any:
+def run(
+    subcommand: str,
+    spec: dict | None = None,
+    log: Path | None = None,
+    arguments: tuple[str, ...] = (),
+) -> Any:
     """Hand `spec` to one of the engine's subcommands and return its report.
+
+    `arguments` follow the subcommand on the command line, for the one subcommand
+    that takes flags rather than a spec — `render-link`, whose input is a link.
 
     Every call into the engine goes through here, so there is one place that
     knows how a spec is delivered, one place that decides what a failure looks
@@ -191,7 +199,7 @@ def run(subcommand: str, spec: dict | None = None, log: Path | None = None) -> A
     [`process_control.set_background_priority`]. The flag is a `creationflags`
     value and is `0` off Windows, which is what `subprocess` wants there.
     """
-    command = [str(engine_path()), subcommand]
+    command = [str(engine_path()), subcommand, *arguments]
     priority = process_control.child_priority_flags()
     text = "" if spec is None else json.dumps(spec)
     remaining = _remaining()
@@ -247,6 +255,28 @@ def render_report(spec: dict) -> dict:
 def render(spec: dict) -> Path:
     """Render one viewport described by `spec` and return the output path."""
     return Path(render_report(spec)["output"])
+
+
+def render_link(
+    link: str,
+    size: tuple[int, int],
+    output: Path,
+    supersample: int | None = None,
+    data: Path | None = None,
+) -> dict:
+    """Draw an explorer link at `size` with the link embedded, and return the report.
+
+    `link` is a whole explorer URL or its query. `supersample` absent is the engine's
+    own default; `data` absent is the checkout's `data/`, which the engine finds by
+    walking up from the repository root it is run in. The report carries the canonical
+    link under `link` beside everything `render` reports.
+    """
+    arguments = ["--link", link, "--size", f"{size[0]}x{size[1]}", "--out", str(output)]
+    if supersample is not None:
+        arguments += ["--ss", str(int(supersample))]
+    if data is not None:
+        arguments += ["--data", str(data)]
+    return run("render-link", arguments=tuple(arguments))
 
 
 def dump_field(spec: dict) -> dict:

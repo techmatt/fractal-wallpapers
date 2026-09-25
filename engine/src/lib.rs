@@ -50,6 +50,7 @@
 //! autolevel    band_autolevel/v1: a recorded tone curve replayed on a map's stops
 //! derive       a mode parameter taken from the view: a texture weight, an opacity
 //! link         an explorer link read into a render, shallow and deep
+//! embed        a finished file with its link written into its metadata
 //! ```
 //!
 //! Deliberately absent: deep-zoom precision tiers, the derivative recurrence and
@@ -63,6 +64,7 @@ pub mod colormap;
 pub mod derive;
 pub mod direct_trap;
 pub mod dump;
+pub mod embed;
 #[cfg(test)]
 mod exact_json;
 pub mod expand;

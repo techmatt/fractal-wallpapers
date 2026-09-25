@@ -169,6 +169,23 @@ That key is the first of the four images at the top of this file. Two more are s
 `0275fee1` and `5ff0ad6b`, drawn the same way and scaled down; the third is an explorer
 link, which `examples/README.md` carries.
 
+### Render without Python
+
+An explorer link is enough on its own. Build the engine, then hand it the link — the
+whole URL or just its query — and a size:
+
+```
+cargo build --release --manifest-path engine/Cargo.toml
+engine/target/release/fractal-engine render-link --size 2560x1440 --out seat.png \
+  --link "https://techmatt.github.io/fractal-website/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
+```
+
+It writes the wallpaper with the link embedded in its metadata, so the file reopens its
+view when dropped on the explorer, and prints a JSON report with the canonical link.
+It reads the palettes and anchors from this checkout's `data/`, found by walking up from
+where it runs; `--data DIR` points it elsewhere. Deep (`dv=`) links are read and refused
+for now. [`engine/README.md`](engine/README.md) has the rest.
+
 ## Weights
 
 ```
