@@ -40,6 +40,9 @@ pub enum Kind {
     Sequential,
 }
 
+/// A map's control points as a file writes them: a position, and an sRGB8 colour.
+pub type Stops = Vec<(f64, [u8; 3])>;
+
 /// A colormap file: the tracked text form.
 #[derive(Debug, Deserialize)]
 struct ColormapFile {
@@ -86,6 +89,14 @@ impl Colormap {
 
     /// Load `<directory>/<name>.json` and bake it the way `bake` asks.
     pub fn load_baked(directory: &Path, name: &str, bake: Bake) -> Result<Colormap, String> {
+        let (kind, stops) = Colormap::read_stops(directory, name)?;
+        Colormap::from_stops_baked(name, kind, &stops, bake)
+    }
+
+    /// Read `<directory>/<name>.json`'s kind and control points without baking them —
+    /// what a caller that moves the stops first, the way a replayed tone curve does,
+    /// bakes from instead.
+    pub fn read_stops(directory: &Path, name: &str) -> Result<(Kind, Stops), String> {
         let path = directory.join(format!("{name}.json"));
         let text = std::fs::read_to_string(&path)
             .map_err(|e| format!("read colormap {}: {e}", path.display()))?;
@@ -105,7 +116,7 @@ impl Colormap {
                 file.name
             ));
         }
-        Colormap::from_stops_baked(file.name, file.kind, &file.stops, bake)
+        Ok((file.kind, file.stops))
     }
 
     /// Bake a colormap from sRGB8 control points, as written.

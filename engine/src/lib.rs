@@ -49,11 +49,13 @@
 //! ```text
 //! autolevel    band_autolevel/v1: a recorded tone curve replayed on a map's stops
 //! derive       a mode parameter taken from the view: a texture weight, an opacity
+//! link         an explorer link read into a render, shallow and deep
 //! ```
 //!
 //! Deliberately absent: deep-zoom precision tiers, the derivative recurrence and
 //! the lighting it feeds, and any fast path that trades a branch for clarity.
-//! Those arrive later, behind the same seam.
+//! Those arrive later, behind the same seam — a deep link is already parsed, and
+//! [`link::DeepBackend`] is where its renderer plugs in.
 
 pub mod autolevel;
 pub mod coloring;
@@ -61,11 +63,14 @@ pub mod colormap;
 pub mod derive;
 pub mod direct_trap;
 pub mod dump;
+#[cfg(test)]
+mod exact_json;
 pub mod expand;
 pub mod family;
 pub mod field;
 pub mod foci;
 pub mod iterate;
+pub mod link;
 pub mod maxiter;
 pub mod mode;
 pub mod resample;
