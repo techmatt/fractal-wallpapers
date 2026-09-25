@@ -1,6 +1,7 @@
 The Rust renderer: it makes every pixel this project ever shows.
 
-One binary, nine subcommands, one JSON object in and one file out:
+One binary, ten subcommands, and nine of them take one JSON object in and write one
+file out:
 
 ```
 cargo build --release --manifest-path engine/Cargo.toml
@@ -20,7 +21,11 @@ home-view   a family → where it is framed by default, and how that was derived
 modes       the named colorings, as JSON
 tiles       a plan of locations → training tiles, and a record of what was written
 maxiter     widths → the iteration cap the depth policy gives each one
+render-link an explorer link and a size → the wallpaper, its link embedded
 ```
+
+The tenth takes flags instead, because its input is a link somebody copied — see
+[*`render-link`: an explorer link, drawn without Python*](#render-link-an-explorer-link-drawn-without-python).
 
 `expand` and `screen` are the same filter behind two doors. `src/screen.rs` owns
 one `Battery` — the interior cap on a 128-pixel probe, the cap again on the node
@@ -51,6 +56,69 @@ or no field at all. Eight field · six composite · two modulate · four direct,
 `de` is the one of the twenty that is not production — so **nineteen** is the
 count everything downstream draws from, and the two numbers are a catalog total
 and a tier below.
+
+## `render-link`: an explorer link, drawn without Python
+
+```
+fractal-engine render-link --link <URL|query> --size WxH [--ss N] [--out FILE.png|.jpg] [--data DIR]
+```
+
+The link is the website explorer's own address — a whole URL, `?query` or the bare
+query — and the command draws it at `--size` with `--ss` samples per pixel per axis
+(default **3**; a release is drawn at 2, `release.RELEASE_REGIME`), writes a PNG or,
+for `.jpg`, a JPEG (default `render-link.png`), and **embeds the link in the file**: a
+PNG `iTXt` tag and XMP packet, a JPEG comment, XMP and EXIF, byte for byte what
+`curation/embed_link.py` and the site's `stamp.js` write (`src/embed.rs`,
+`tests/test_render_link.py`). stdout is `render`'s JSON report plus `link` — the
+canonical query, which is what the file carries — `url`, `levelled` and `data`.
+Python reaches it as `engine.render_link`.
+
+**Every step is this crate's.** `src/link.rs` parses the link by `permalink.js`'s rules
+(`v=1`–`4`) and `deep-link.js`'s (`dv=1`–`3`), `mode::tune` applies its mode parameters
+(`RenderSpec.params`, by the link's own names), `autolevel::curved_stops` replays its
+`level=` curve on the map's stops before the bake, and the render is `render`'s. A link
+**replays**; nothing re-derives. Two refusals follow from that: a v3+ link that leaves out
+a derived parameter (`weight` on the angle composites, `opacity` on three traps) means
+"measure it off the canvas", and there is no canvas here, so it is refused with the
+fix; and `--size` must be the link's aspect (`a=`, default 16:9) to the nearest pixel.
+
+**The data it reads is found, not configured**: `--data DIR`, else `$FRACTAL_ENGINE_DATA`,
+else the first `data/` holding `palettes/` and `anchors.jsonl` walking up from the working
+directory, then from the executable — so a clone's own `data/` is found from anywhere in
+the checkout and from `engine/target/release`. What it reads there is `palettes/<p>.json`
+(the library the site's `palettes.bin` is baked from) and `anchors.jsonl` (the constants a
+Julia or Phoenix link without `cx`/`cy` opens at). The levelling band is compiled in from
+`data/coloring/levels_band.json`.
+
+**The parse is the site's, and a fixture says so.** `fixtures/link-cases.json` is 528
+links — gallery seats across every collection and mode, the 31 Deep gallery rows, every
+figure link in the article, and the contracts' corners — each with the view and the
+canonical string, or the refusal, that the site's own modules gave under node. The
+generator travels inside the fixture, with the website commit it ran at;
+`link::tests::the_parsers_are_the_sites` holds every row.
+
+**Against the pipeline it is a tolerance, not an identity — and measured, it is zero.**
+The pipeline bakes a levelled map from stops rounded to nine decimals and read back
+through `serde_json`; this bakes from the unrounded ones, so a byte *may* move at a
+rounding boundary, and nothing promises it will not. On ten `final139_general` seats in ten
+modes (two of them levelled) at 1280x720 ss2, against `release.render_task` of the same
+recipe, **every pixel of all ten came back identical** (2026-09-25). A levelled seat is also
+about half the release's time, because a link replays its curve where a release measures
+one and renders twice. `tests/test_render_link.py` is the standing check, at a tolerance.
+
+**Deep links are parsed, not drawn.** A `dv=` link goes to a `link::DeepBackend` — lanes
+in, the engine's own colouring out (`link::shade_lanes`, held to a smooth render byte for
+byte) — and the only backend is `link::NotBuilt`, which refuses with *deep rendering not
+built yet*. What a perturbation backend has to settle before its pictures are the Deep
+tab's is in the trait's doc comment: the arrival fit for a link without `scale`, a fresh
+reference orbit at the view's centre, and pinning `libm` between native and wasm32.
+
+**Two copies, for now.** `src/autolevel.rs`, `src/derive.rs` and `mode::tune`/`set`/
+`params_of` were copied from the website's `explorer/engine-wasm`, which keeps its own
+until a later website prompt imports these and deletes them; each copy names the other,
+and the autolevel tests read that crate's fixtures in place, skipping where the checkout
+is absent. `float_roundtrip` stays off: a link's numbers are read by `str::parse`, and
+the tests that compare stored doubles read them through `exact_json` instead.
 
 ## The cap is a policy, and one door still cannot name another
 

@@ -10,10 +10,14 @@
 //! fractal-engine home-view  [spec.json]   # a family → where it is framed by default
 //! fractal-engine maxiter    [spec.json]   # plane widths → the iteration cap policy
 //! fractal-engine modes                    # what the named colorings are
+//! fractal-engine render-link --link <URL|query> --size WxH [--ss N] [--out FILE] [--data DIR]
+//!                                         # an explorer link → the wallpaper, link embedded
 //! ```
 //!
 //! One JSON object in, one file out, and a JSON report on stdout describing what
-//! happened. The report is the record: it carries the location's decimal strings
+//! happened. `render-link` is the one subcommand that takes flags rather than a
+//! spec: its input is a link somebody copied, and a spec would be a second spelling
+//! of it. The report is the record: it carries the location's decimal strings
 //! back unchanged alongside the values the engine filled in for itself, so a
 //! render can be repeated from its own output.
 //!
@@ -31,7 +35,7 @@ use serde::Serialize;
 use fractal_engine::{
     coloring::{self, Coloring, Palette},
     colormap::Colormap,
-    dump, expand, family, field, mode, resample, screen, spec,
+    dump, embed, expand, family, field, link, mode, resample, screen, spec,
     spec::{Location, MaxiterSpec, RecolorSpec, RenderSpec},
     tiles,
 };
@@ -201,6 +205,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         Some("tiles") => build_tiles(argument),
         Some("home-view") => home_view(argument),
         Some("maxiter") => maxiter_caps(argument),
+        Some("render-link") => render_link(&args[1..]),
         Some("modes") => print(
             &mode::CATALOG
                 .iter()
@@ -232,6 +237,8 @@ usage: fractal-engine render     [SPEC.json]
        fractal-engine home-view  [SPEC.json]
        fractal-engine maxiter    [SPEC.json]
        fractal-engine modes
+       fractal-engine render-link --link <URL|query> --size WxH [--ss N]
+                                  [--out FILE.png|FILE.jpg] [--data DIR]
 
 render      Render one location through one coloring to a PNG.
 dump-field  Write that render's raw scalar field instead, plus a record of it.
@@ -253,6 +260,13 @@ maxiter     The iteration cap the policy gives each of a list of plane widths.
             picture *is*; this is how the other half of the project checks that
             two renders of one location were drawn at the same one.
 modes       List the named colorings, as JSON.
+render-link Draw an explorer link — the whole URL or its query — at a size, and
+            write it with the link embedded in its metadata. --ss defaults to 3.
+            --out defaults to render-link.png; .jpg writes a JPEG. The palettes,
+            anchors and band come from a checkout's data/: --data DIR, else
+            $FRACTAL_ENGINE_DATA, else the first data/ found walking up from the
+            working directory, then from the executable. A deep (dv=) link is
+            read and refused: deep rendering is not built yet.
 
 The spec is read from SPEC.json, or from stdin when no path is given. A JSON
 report describing what happened is written to stdout.";
@@ -496,4 +510,297 @@ fn file_name(path: &Path) -> String {
     path.file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_default()
+}
+
+// ------------------------------------------------------------------ render-link
+
+/// The environment variable `render-link` reads a `data/` directory from.
+const DATA_ENV: &str = "FRACTAL_ENGINE_DATA";
+
+/// What `render-link` did: the render's own report, and the link it carried.
+#[derive(Serialize)]
+struct LinkReport {
+    #[serde(flatten)]
+    render: RenderReport,
+    /// The canonical query — what the explorer itself would write for this view — which
+    /// is also what the file's metadata now carries.
+    link: String,
+    url: String,
+    /// Whether a `level=` curve was replayed on the map's stops.
+    levelled: bool,
+    /// The `data/` directory the palettes and anchors were read from.
+    data: String,
+}
+
+/// `render-link`'s flags, parsed.
+struct LinkArgs {
+    link: String,
+    size: [u32; 2],
+    supersample: u32,
+    output: std::path::PathBuf,
+    data: Option<std::path::PathBuf>,
+}
+
+/// The release regime's supersample is 2 (`release.RELEASE_REGIME`); the production
+/// setting this command defaults to is 3, on Matt's call for `render_link_ckpt148`.
+const DEFAULT_SUPERSAMPLE: u32 = 3;
+
+fn link_args(args: &[String]) -> Result<LinkArgs, String> {
+    let mut link = None;
+    let mut size = None;
+    let mut supersample = DEFAULT_SUPERSAMPLE;
+    let mut output = std::path::PathBuf::from("render-link.png");
+    let mut data = None;
+    let mut at = 0;
+    while at < args.len() {
+        let flag = args[at].as_str();
+        let value = args
+            .get(at + 1)
+            .ok_or_else(|| format!("render-link: {flag} needs a value\n\n{USAGE}"))?;
+        match flag {
+            "--link" => link = Some(value.clone()),
+            "--size" => {
+                let (width, height) = value
+                    .split_once(['x', 'X'])
+                    .ok_or_else(|| format!("render-link: --size is WxH, got '{value}'"))?;
+                let read = |side: &str| {
+                    side.parse::<u32>()
+                        .ok()
+                        .filter(|&side| side > 0)
+                        .ok_or_else(|| format!("render-link: --size is WxH, got '{value}'"))
+                };
+                size = Some([read(width)?, read(height)?]);
+            }
+            "--ss" => {
+                supersample = value
+                    .parse::<u32>()
+                    .ok()
+                    .filter(|&ss| ss > 0)
+                    .ok_or_else(|| format!("render-link: --ss is a whole number, got '{value}'"))?;
+            }
+            "--out" => output = value.into(),
+            "--data" => data = Some(value.into()),
+            _ => return Err(format!("render-link: unknown flag '{flag}'\n\n{USAGE}")),
+        }
+        at += 2;
+    }
+    Ok(LinkArgs {
+        link: link.ok_or_else(|| format!("render-link: --link is required\n\n{USAGE}"))?,
+        size: size.ok_or_else(|| format!("render-link: --size is required\n\n{USAGE}"))?,
+        supersample,
+        output,
+        data,
+    })
+}
+
+/// Where the palettes, the anchors and the band live: `--data`, else [`DATA_ENV`], else
+/// the first `data/` holding a colormap library and the anchors found walking up from
+/// the working directory, and then from the executable — which is a clone's own
+/// `data/` whether the binary is run from the checkout or from `engine/target/release`.
+fn data_dir(given: Option<std::path::PathBuf>) -> Result<std::path::PathBuf, String> {
+    let holds = |dir: &Path| dir.join("palettes").is_dir() && dir.join("anchors.jsonl").is_file();
+    if let Some(dir) = given {
+        return if holds(&dir) {
+            Ok(dir)
+        } else {
+            Err(format!(
+                "--data {}: no palettes/ and anchors.jsonl there",
+                dir.display()
+            ))
+        };
+    }
+    if let Some(dir) = std::env::var_os(DATA_ENV).map(std::path::PathBuf::from) {
+        return if holds(&dir) {
+            Ok(dir)
+        } else {
+            Err(format!(
+                "{DATA_ENV}={}: no palettes/ and anchors.jsonl there",
+                dir.display()
+            ))
+        };
+    }
+    let starts = [
+        std::env::current_dir().ok(),
+        std::env::current_exe()
+            .ok()
+            .and_then(|exe| exe.parent().map(Path::to_path_buf)),
+    ];
+    for start in starts.into_iter().flatten() {
+        for dir in start.ancestors() {
+            let candidate = dir.join("data");
+            if holds(&candidate) {
+                return Ok(candidate);
+            }
+        }
+    }
+    Err(format!(
+        "render-link found no data/ directory: run it inside a fractal-wallpapers checkout, \
+         or say where one is with --data DIR or {DATA_ENV}"
+    ))
+}
+
+/// What a deep `render-link` did.
+#[derive(Serialize)]
+struct DeepReport {
+    schema: u32,
+    backend: &'static str,
+    resolution: [u32; 2],
+    supersample: u32,
+    output: String,
+    link: String,
+    url: String,
+    data: String,
+    seconds: f64,
+}
+
+/// A deep link through a backend: its lanes, the engine's own colouring, the file, the
+/// link. Everything but the backend's lanes is here already, so a perturbation backend
+/// is the one missing piece; today the only backend is [`link::NotBuilt`], which refuses
+/// before a file is touched.
+fn render_deep(
+    backend: &dyn link::DeepBackend,
+    view: &link::DeepView,
+    args: &LinkArgs,
+    context: &link::Context,
+    canonical: String,
+    data: &Path,
+) -> Result<(), String> {
+    if !fits_aspect(args.size, view.aspect) {
+        return Err(format!(
+            "--size {}x{} is not the link's aspect {}:{}",
+            args.size[0], args.size[1], view.aspect.0, view.aspect.1
+        ));
+    }
+    let started = Instant::now();
+    let frame = link::DeepFrame {
+        view,
+        samples: args.size.map(|side| side * args.supersample),
+    };
+    let lanes = backend.lanes(&frame)?;
+    let colormap =
+        link::colormap_for(context, &view.palette, view.level.as_ref(), view.shade.bake)?;
+    let pixels = link::shade_lanes(&lanes, &view.shade, &colormap, args.size, args.supersample);
+    resample::write_image(&args.output, &pixels, args.size[0], args.size[1])?;
+    embed::embed_file(&args.output, &canonical)?;
+    print(&DeepReport {
+        schema: 1,
+        backend: backend.name(),
+        resolution: args.size,
+        supersample: args.supersample,
+        output: args.output.display().to_string(),
+        url: embed::url_of(&canonical),
+        link: canonical,
+        data: data.display().to_string(),
+        seconds: started.elapsed().as_secs_f64(),
+    })
+}
+
+/// Whether an output size is the link's aspect, to the nearest pixel either way.
+fn fits_aspect(size: [u32; 2], aspect: (u32, u32)) -> bool {
+    let [width, height] = size.map(u64::from);
+    let (across, down) = (u64::from(aspect.0), u64::from(aspect.1));
+    let rounded =
+        |numerator: u64, denominator: u64| (2 * numerator + denominator) / (2 * denominator);
+    height == rounded(width * down, across) || width == rounded(height * across, down)
+}
+
+fn render_link(args: &[String]) -> Result<(), String> {
+    let args = link_args(args)?;
+    let data = data_dir(args.data.clone())?;
+    let context = link::Context::from_data(&data)?;
+    let query = link::query_of(&args.link);
+    let parsed = link::parse(query, &context)?;
+    let canonical = parsed.canonical(&context)?;
+
+    let view = match parsed {
+        link::Link::Shallow(view) => view,
+        link::Link::Deep(view) => {
+            return render_deep(&link::NotBuilt, &view, &args, &context, canonical, &data);
+        }
+    };
+    if let Some(key) = view.underived() {
+        return Err(format!(
+            "this link leaves {key} out, which under permalink v3+ means \"derive it from the \
+             view\": the explorer measures the picture on its canvas, and render-link has no \
+             canvas to measure. Open the link in the explorer and copy it again — the link it \
+             writes carries the {key} it drew at — or add {key}= yourself"
+        ));
+    }
+    if !fits_aspect(args.size, view.aspect) {
+        return Err(format!(
+            "--size {}x{} is not the link's aspect {}:{}; a link names a shape, and a picture \
+             at another one would show a different frame",
+            args.size[0], args.size[1], view.aspect.0, view.aspect.1
+        ));
+    }
+
+    let spec = view
+        .render_spec(
+            args.size,
+            args.supersample,
+            context.palettes().to_path_buf(),
+            args.output.clone(),
+        )
+        .resolve()?;
+    // The operator's own `applies_to`: a replayed curve on a coloring it never acts on
+    // is a decision no run took, and the explorer's module refuses it the same way.
+    if view.level.is_some()
+        && !matches!(
+            spec.coloring,
+            Coloring::Field { .. } | Coloring::Composite { .. }
+        )
+    {
+        return Err(format!(
+            "{} does not act on the {} mode, so there is no curve for this link to replay",
+            fractal_engine::autolevel::OPERATOR,
+            view.mode
+        ));
+    }
+    let colormap = link::colormap_for(
+        &context,
+        &view.palette,
+        view.level.as_ref(),
+        spec.palette.bake,
+    )?;
+
+    let started = Instant::now();
+    let painted = coloring::paint(
+        &spec.view,
+        &spec.family,
+        spec.maxiter,
+        &spec.coloring,
+        &spec.palette,
+        &colormap,
+    )?;
+    let paint_seconds = started.elapsed().as_secs_f64();
+
+    let started = Instant::now();
+    write_image(&spec.output, &painted.linear, &spec.view)?;
+    embed::embed_file(&spec.output, &canonical)?;
+    let resample_seconds = started.elapsed().as_secs_f64();
+
+    print(&LinkReport {
+        render: RenderReport {
+            schema: 1,
+            location: spec.location,
+            resolution: [spec.view.out_width, spec.view.out_height],
+            supersample: spec.view.supersample,
+            maxiter: spec.maxiter,
+            mode: spec.mode,
+            coloring: spec.coloring,
+            palette: spec.palette,
+            colormap: colormap.name().to_string(),
+            interior_fraction: painted.interior_fraction,
+            texture_flat: painted.texture_flat,
+            output: spec.output.display().to_string(),
+            seconds: RenderSeconds {
+                paint: paint_seconds,
+                resample: resample_seconds,
+            },
+        },
+        url: embed::url_of(&canonical),
+        link: canonical,
+        levelled: view.level.is_some(),
+        data: data.display().to_string(),
+    })
 }
