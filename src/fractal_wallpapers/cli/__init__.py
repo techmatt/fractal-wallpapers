@@ -179,15 +179,15 @@ def build_parser() -> argparse.ArgumentParser:
 #:
 #: The base install is deliberately torch-free — `pip install -e .` buys the
 #: engine, the walk, the supply engine and the labeling rig, and the `models`
-#: extra is two gigabytes of CUDA wheels a clone that only renders should never
-#: pay for. The cost of that is an `ImportError` on any command that crosses the
-#: line, and on a base install `curate mine plan` raised a bare
-#: `ModuleNotFoundError: No module named 'numpy'` naming nothing a person could
-#: act on. This turns every one of those into the install command.
+#: extra is hundreds of megabytes of torch a clone that only renders should never
+#: pay for (`cuda`, its GPU twin, is gigabytes). The cost of that is an
+#: `ImportError` on any command that crosses the line, and on a base install
+#: `curate mine plan` raised a bare `ModuleNotFoundError: No module named 'numpy'`
+#: naming nothing a person could act on. This turns every one of those into the install command.
 #:
 #: `numpy` and `pillow` are in **two** extras and the cheaper is named: choosing a
 #: gallery reads scores off a store and never loads a head, so a machine that does
-#: it needs neither torch nor the CUDA wheels.
+#: it needs no torch at all.
 EXTRA_FOR: dict[str, str] = {
     "numpy": "solve",
     "PIL": "solve",
@@ -212,8 +212,8 @@ def name_the_extra(missing: ModuleNotFoundError) -> str | None:
         f"{missing.name} is not installed. It comes with the `{extra}` extra, which this "
         f"command needs and the base install deliberately leaves out:\n"
         f'    pip install -e ".[{extra}]"\n'
-        f"The base install is torch-free on purpose — `models` alone is about four gigabytes "
-        f"of CUDA wheels — so a clone that only renders pays for none of this."
+        f"The base install is torch-free on purpose, so a clone that only renders pays for "
+        f"none of this. To train on an NVIDIA GPU, install `cuda` in place of `models`."
     )
 
 

@@ -1,8 +1,8 @@
 """The one command a fresh clone runs first, held to the install it runs on.
 
 `pip install -e .` buys the engine, the walk, the supply engine and the labeling
-rig. It does not buy torch, deliberately — the `models` extra is two gigabytes
-of CUDA wheels that a clone which only wants to render fractals should never pay
+rig. It does not buy torch, deliberately — the `models` extra is hundreds of
+megabytes of it that a clone which only wants to render fractals should never pay
 for. `fetch-weights` is what that clone runs before anything else, and `--check`
 is how it finds out whether the release it is about to pull is complete.
 

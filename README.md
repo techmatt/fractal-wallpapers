@@ -50,15 +50,15 @@ for spread across family, color and structure.
 ## Install
 
 **Supported platforms: Windows x86_64, Linux x86_64 and macOS on Apple silicon.** CI installs,
-builds and runs the full test lane on all three, with every extra.
+builds and runs the full test lane on all three, with `dev`, `models` and `solve`.
 
-* **Training on a GPU is CUDA, so Windows or Linux with an NVIDIA card.** On macOS the
-  `models` extra installs PyPI's torch, which has Apple's MPS backend rather than CUDA.
-  Everything that is not training runs the same on all three platforms. The heads' training
-  commands have only been measured on CUDA.
-* **Intel Macs and Linux on ARM can render, walk and choose a gallery, but not install
-  `models`.** Torch publishes no macOS x86_64 wheel, and the CUDA index this project uses
-  has no Linux aarch64 wheel.
+* **Every install is CPU torch unless you ask for CUDA.** Training on a GPU is CUDA, so
+  Windows or Linux with an NVIDIA card, and it is the `cuda` extra below. On macOS torch
+  is PyPI's, which has Apple's MPS backend rather than CUDA. Everything that is not
+  training runs the same on all three platforms. The heads' training commands have only
+  been measured on CUDA.
+* **Intel Macs can render, walk and choose a gallery, but not install `models`.** Torch
+  publishes no macOS x86_64 wheel.
 * **Background priority and kill-on-exit are Windows features.** Elsewhere a render leg
   runs at normal priority, so put `nice` in front of a long one.
 
@@ -78,41 +78,58 @@ supply engine and the labeling rig. Three extras add the rest:
 
 | extra | for |
 | --- | --- |
-| `models` | training and running the heads (torch, torchvision, timm) |
+| `models` | running and training the heads (torch, torchvision, timm), on CPU torch |
+| `cuda` | `models` on CUDA torch, for training on an NVIDIA card — opt-in |
 | `solve` | choosing a gallery (numpy, pillow) |
 | `dev` | the test suite and the linter |
 
 A command that crosses one of those lines names the extra it needs instead of raising a
 bare `ModuleNotFoundError`.
 
-⚠ **pip installs CPU-only torch, and naming the CUDA index by hand does not fix it.**
-`pyproject.toml` routes torch and torchvision to that index through `[tool.uv.sources]`,
-and only `uv` reads those keys. `--extra-index-url` is not the equivalent: pip pools both
-indices and takes the highest version across the pool, and the CUDA index tops out at
-`torch 2.6.0+cu124` where PyPI is further ahead — so the pooled resolve picks PyPI's newer
-CPU build, `torch.cuda.is_available()` comes back `False`, and nothing reports an error.
-That index trails PyPI's cadence by construction, so an open range recurs on every torch
-release. Use `uv`:
+With `uv`, which is what CI runs:
 
 ```
 uv sync --extra dev --extra models --extra solve
 ```
 
 All three named, because `uv sync` installs exactly what it is told. It writes a `uv.lock`
-in the checkout; no lockfile is tracked here.
+in the checkout; no lockfile is tracked here. That is CPU torch on every platform, and it
+is what a machine that will not train a head wants: rendering, the search walk and choosing
+a gallery all run on it, and the judge reads a candidate in about 26 ms there, measured
+in [`curation/MEASUREMENTS.md`](src/fractal_wallpapers/curation/MEASUREMENTS.md)'s *The
+judge is two orders cheaper than the engine*. On Linux `pyproject.toml` sends torch to
+PyTorch's CPU index, because PyPI's Linux torch is the CUDA build and brings gigabytes of
+`nvidia-*` wheels with it.
 
-Failing that, pip needs the exact versions that index holds rather than an open range:
+### Training on an NVIDIA GPU
+
+Name `cuda` **in place of** `models`:
+
+```
+uv sync --extra dev --extra cuda --extra solve
+```
+
+That is `torch 2.6.0+cu124`, the build every shipped head was trained on, on Windows and
+Linux x86_64. The two extras hold the same packages and `pyproject.toml` declares them
+conflicting, so `uv` refuses both at once rather than guessing which torch you meant. Check
+it took with `python -c "import torch; print(torch.cuda.is_available())"`. Without a GPU the
+training commands still run, on CPU and far slower: `--device auto` picks CUDA only when
+torch can see a card.
+
+⚠ **pip cannot opt in, and naming the CUDA index by hand does not fix it.** The routing is
+`[tool.uv.sources]`, and only `uv` reads those keys. `--extra-index-url` is not the
+equivalent: pip pools both indices and takes the highest version across the pool, and the
+CUDA index tops out at `torch 2.6.0+cu124` where PyPI is further ahead — so the pooled
+resolve picks PyPI's newer build, `torch.cuda.is_available()` comes back `False` on Windows,
+and nothing reports an error. pip needs the exact versions that index holds instead:
 
 ```
 .venv/Scripts/pip install --extra-index-url https://download.pytorch.org/whl/cu124 \
-  -e ".[dev,models,solve]" torch==2.6.0+cu124 torchvision==0.21.0+cu124
+  -e ".[dev,cuda,solve]" torch==2.6.0+cu124 torchvision==0.21.0+cu124
 ```
 
-**This is a training concern and nothing else.** Rendering, the search walk and choosing a
-gallery all run on CPU torch — the judge reads a candidate in about 26 ms there, measured
-in [`curation/MEASUREMENTS.md`](src/fractal_wallpapers/curation/MEASUREMENTS.md)'s *The
-judge is two orders cheaper than the engine*. A machine that will not train a head wants
-the CPU build.
+A plain `pip install -e ".[models]"` gets PyPI's torch, which is CPU on Windows and macOS
+but the CUDA build on Linux; use `uv` there for the CPU one.
 
 ## Quickstart
 
@@ -336,7 +353,7 @@ fractal-wallpapers curate mine merge --name <leg>
 
 * **One disk:** `local.toml` names the hot root alone, `hot_root = "C:/fractal-storage"`.
 * **Build:** `rustup show`; if the host is not MSVC, `cargo +stable-x86_64-pc-windows-msvc build --release --manifest-path engine/Cargo.toml`.
-* **Torch:** the `models` extra's index is CUDA-only, and without an NVIDIA GPU it still installs a CPU torch that does everything but training.
+* **Torch:** a machine that will train syncs `--extra cuda` in place of `--extra models`, and re-syncing one of those with `--extra models` swaps its CUDA torch for the CPU one.
 * **Paths:** Git Bash's `/c/...` is not a path to `python.exe`; write `C:/...`.
 
 [The package README](src/fractal_wallpapers/README.md)'s *Continuing on a fresh box* has

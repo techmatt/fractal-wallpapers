@@ -149,6 +149,12 @@ that came later carry the date of Matt's ruling.
   store writers refuse a row on it, and its roots come from the viewport sampler
   alone — `plane_seeds.FAMILIES` stays at 5 unless Matt says "with pool".
   `labeling/README.md`'s *Degree 6 is never labelled* has the doors.
+- **CUDA is opt-in, never the default**, Matt's principle of 2026-09-25: nothing
+  heavy is installed or run unless someone asks for it. `models` is CPU torch on
+  every platform and CI installs it; `cuda` is the same list on cu124 for a box
+  that trains, declared conflicting with `models` in `[tool.uv] conflicts` so one
+  environment holds one torch. A box that trains syncs `--extra cuda` in place of
+  `--extra models`, and a `--extra models` re-sync swaps its torch back to CPU.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
@@ -199,7 +205,7 @@ that came later carry the date of Matt's ruling.
   `grep --include=*` does not, and that is the trap.
 - **The base install stays torch-free on the `fetch-weights` path.** `pip install
   -e .` buys the engine, the walk, the supply engine and the labeling rig; the
-  `models` extra is two gigabytes of CUDA wheels a clone that only renders should
+  `models` extra is hundreds of megabytes of torch a clone that only renders should
   never pay for. `fetch-weights --check` has to run on that install, so its whole
   import graph is stdlib — which is why `models/roster.py` exists apart from `ship`.
   `tests/test_base_install.py` proves it in a subprocess with those imports refused,
@@ -208,7 +214,7 @@ that came later carry the date of Matt's ruling.
   and `pillow` since 2026-09-15, because the suite does not run without them —
   `pillow`'s absence was 113 failures and, once three modules imported it at module
   level, the entire CI run at collection. Three megabytes against the `models`
-  extra's two gigabytes is the whole of the argument, and it moves nothing on the
+  extra's hundreds is the whole of the argument, and it moves nothing on the
   package's own path. **What stays out is `torch`, `torchvision` and `timm`**, and
   a test reaching one of those is held to skipping rather than failing, two ways:
   `tests/test_lanes.py` sweeps every test module for an unguarded module-level

@@ -866,12 +866,14 @@ Everything here needs the `models` extra — torch and timm are not in the base
 install, because rendering fractals, walking the plane, running the supply engine
 and collecting labels all work without them.
 
-⚠ **Install it with `uv sync --extra models`, not with pip.** This is the one
-package here that cares which torch it gets, and pip cannot be made to fetch the
-CUDA build: it pools `--extra-index-url` with PyPI and takes the highest version
-across both, which is PyPI's CPU wheel. Training then runs orders of magnitude
-slower with nothing reporting an error. The root README's *pip installs CPU-only
-torch* has the pinned pip fallback for a machine without `uv`.
+⚠ **`models` is CPU torch; training on a GPU is `uv sync --extra cuda` in its
+place, not pip.** This is the one package here that cares which torch it gets.
+CUDA is opt-in, and only `uv` reads the `[tool.uv.sources]` that route `cuda` to
+the cu124 index: pip pools `--extra-index-url` with PyPI and takes the highest
+version across both, which is PyPI's newer wheel. Training on CPU runs orders of
+magnitude slower, and `device_of("auto")` falls back to it without an error when
+no card is visible. The root README's *Training on an NVIDIA GPU* has the pinned
+pip fallback for a machine without `uv`.
 
 One exception, and it is the reason the exception is written down: `roster` is
 stdlib-only on purpose, because `fetch-weights --check` runs on the base install.
