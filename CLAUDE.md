@@ -220,9 +220,15 @@ that came later carry the date of Matt's ruling.
   public: `api.github.com/repos/techmatt/fractal-wallpapers/actions/runs` gives the
   runs and `runs/<id>/jobs` gives **step-level** conclusions. Job *logs* need
   admin and 403; step conclusions do not, and they are enough to say which step
-  failed on which job. Reproducing the failure is a mask at `sys.meta_path` —
-  `tests/test_base_install.py` already carries the finder — and the block list for
-  a `check` job is `torch,torchvision,timm`, **not** `numpy`, which `scipy` brings.
+  failed on which job. **Reproducing a failed Test step is a fresh clone with no
+  store and no weights**: `git clone` the checkout into a scratch directory, copy
+  the release engine binary into its `engine/target/release/`, set
+  `FRACTAL_WALLPAPERS_HOT_ROOT` and `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` to empty, and
+  run `pytest --slow` there with this checkout's interpreter. That is what a runner
+  has, and it found the `models` job's four reds in five minutes on 2026-09-25.
+  Reproducing the lean install is a mask at `sys.meta_path` —
+  `tests/test_base_install.py` carries the finder — blocking `torch,torchvision,timm`,
+  **not** `numpy`, which `scipy` brings.
 
 ## Checks to run before committing
 
@@ -241,7 +247,10 @@ inside it, which needs an interpreter carrying the editable install. The wrong
 one fails that single test and nothing else, so it reads as a process-control
 bug rather than as the environment it is.
 
-CI runs the same thing on Ubuntu and Windows. The Python suite's walk tests need
+CI runs the same thing on Ubuntu, macOS (Apple silicon) and Windows, installed as the
+README's *Install* gives it — `uv sync` with all three extras — so every CI job has torch
+and none has fetched weights; a test that needs the shipped heads skips on a missing
+file rather than failing. The Python suite's walk tests need
 a **release** engine (`cargo build --release --manifest-path engine/Cargo.toml`)
 and skip themselves without one, so `cargo clean` costs a rebuild *and* the fast
 lane until you do it. **A guard that asks whether the engine is built asks through
@@ -296,11 +305,9 @@ file holds rules only. What follows is the rules that log produced.
   import.
 - **Measure on an idle machine, and take that literally.** Beside a render leg the
   lane does not merely slow, it is killed outright on commit charge, so **run the
-  lane after a leg, never beside it**. Short of that,
-  `test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
-  **fails** rather than slows under load, because it runs a refill loop against a
-  wall clock — a red there on a busy box is worth re-running alone before it is
-  worth reading.
+  lane after a leg, never beside it**. **A test whose claim is not about time never
+  reads the wall clock**: the one that did, in `test_twins.py`, went red rather than
+  slow on every loaded run until 2026-09-25.
   [`tests/README.md`](tests/README.md#a-lane-sharing-the-box-with-a-render-leg) has
   the measurements.
 - **Re-run one untouched, engine-bound guard before believing a lane.** Forty

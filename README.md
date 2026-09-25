@@ -43,12 +43,27 @@ for spread across family, color and structure.
 * **Python 3.11+.**
 * **Rust 1.85+**, from [rustup](https://rustup.rs). The crate is edition 2024 and names
   that floor in `engine/Cargo.toml`.
-* **On Windows, the `Desktop development with C++` workload** of
+* **A linker for Rust**: on Windows, the `Desktop development with C++` workload of
   [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/),
-  which the default `x86_64-pc-windows-msvc` toolchain links through.
+  which the default `x86_64-pc-windows-msvc` toolchain links through; on macOS, the Xcode
+  Command Line Tools (`xcode-select --install`); on Linux, a C compiler (`build-essential`
+  or your distribution's equivalent).
 * **A GPU only to train.** Rendering, the search walk and gallery selection do not use one.
 
 ## Install
+
+**Supported platforms: Windows x86_64, Linux x86_64 and macOS on Apple silicon.** CI installs,
+builds and runs the full test lane on all three, with every extra.
+
+* **Training on a GPU is CUDA, so Windows or Linux with an NVIDIA card.** On macOS the
+  `models` extra installs PyPI's torch, which has Apple's MPS backend rather than CUDA.
+  Everything that is not training runs the same on all three platforms. The heads' training
+  commands have only been measured on CUDA.
+* **Intel Macs and Linux on ARM can render, walk and choose a gallery, but not install
+  `models`.** Torch publishes no macOS x86_64 wheel, and the CUDA index this project uses
+  has no Linux aarch64 wheel.
+* **Background priority and kill-on-exit are Windows features.** Elsewhere a render leg
+  runs at normal priority, so put `nice` in front of a long one.
 
 ```
 git clone https://github.com/techmatt/fractal-wallpapers

@@ -216,12 +216,17 @@ the study that adopted it*.
 
 ### The guard that turns red under load rather than slow
 
-**Short of dying it crawls, and one guard turns red rather than slow.** The same
+**Short of dying it crawls, and one guard turned red rather than slow.** The same
 lane sharing this box with a leg reached 41% in the time it normally takes to
 finish, and under load
 `test_twins.py::test_the_channel_only_ever_hands_over_what_nobody_has_walked`
-**fails** — it runs a refill loop against a wall clock. A red there on a busy box
-is worth re-running alone before it is worth reading.
+**failed**. The cause was the test and not the refill: it declared a one-second
+loop, the first draw's two `engine.home_view` spawns were charged against the 25%
+refill share, and past a third of a second of real time the second draw was
+refused as over the share. Fixed 2026-09-25 by declaring a loop too long to bind
+(`loop_seconds=1e6`, as `test_viewport_sampler.py` already did), with the share
+now held by its own guard on stated seconds,
+`test_a_refill_over_its_share_of_the_loop_is_refused_and_counted`.
 
 ### A votes build can share the box and a solve cannot, and the parent is why
 
