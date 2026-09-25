@@ -248,23 +248,56 @@ interior. Two tests, each exact:
 **Phoenix gets no disk.** It steps a pair `(z, z_{n−1})`, and a disk proof needs a norm on
 that pair; the repeat covers it.
 
-**The modes that read an interior orbit are not given either test**, and what each would
-buy is recorded rather than built. Once the state repeats, the rest of the orbit is the
-cycle again, so:
+**The modes that read an interior orbit stop at a repeat where it makes what they read
+final, and never at the disk** *(interior_seam_orbit_modes_ckpt147, 2026-09-24)*. Once the
+state at step `n` is the state at an earlier `s`, every later iterate is one of
+`z_{s+1} … z_n`, all of them already accumulated. An orbit inside the disk is still
+wandering towards its cycle, so the disk proves only that it never escapes, and the cardioid,
+the bulb and the Multibrot disk never iterate at all — none of the three has an orbit to read
+a statistic from. `FieldSpec::is_final_at_a_repeat` decides, per field; a pass where every
+field is final there, and not every field is escape-only, is handed `Interior::REPEAT`, the
+repeat with no disk. So:
 
-- a **minimum or maximum** over the orbit is already final — the circle and cross traps, the
-  lattice's nearest and farthest, and with them `iter_min`, `iter_max`, `angle_min`,
-  `angle_max` and `ratio`, since a strict comparison keeps the first step it happened on;
-- a **head address** (`itinerary`) is final once `depth` symbols are spelled, and replaying
-  the cycle spells the rest exactly; a **tail address** (`tail_itinerary`) is the last
-  `depth` symbols before the cap, which is the cycle's phase at the cap, and base four makes
-  the roll exact;
-- a **mean** is not: the lattice's average distance, `mean_angle` and the step length sum in
-  an order a shortcut cannot reproduce to the bit;
-- the **direct traps** composite a colour per iterate, and a repeat adds more of it.
+- **Stops: a minimum or maximum.** The circle and cross traps (`trap_circle`,
+  `smooth_trap_circle`), the lattice's nearest and farthest (`gaussian_int`,
+  `smooth_angle_min`), and every reduction read off them — `iter_min`, `iter_max`,
+  `angle_min`, `angle_max`, `ratio` — because the strict comparisons keep the first step and
+  iterate the extreme happened at, and a revisit only ties it.
+- **Stops: a head address** (`itinerary`), once it holds `depth` symbols — nothing is appended
+  after that. A repeat found before it is full is let pass, and the next one, sixteen steps
+  on, is taken.
+- **Stops: a tail address** (`tail_itinerary`) **whose roll is exact**, which
+  `Symbols::rolls_exactly` states: a power-of-two base at least `sectors`, and
+  `depth·log₂base ≤ 53` — the mode's base four to 26 symbols is 52 bits. Then the address is
+  the last `depth` symbols before the cap and nothing else. The state repeats every
+  `n − s` steps, so the loop steps round `(left − depth) mod (n − s)` without spelling, to
+  where the cap's window opens, and spells the `depth` symbols the cap would have ended on —
+  at most a cycle and a window of steps where the cap was thousands. In a base that rounds,
+  the roll carries history its window no longer shows, only the whole run reproduces it,
+  and the tail keeps iterating.
+- **Iterates: a mean.** The lattice's `average_distance` and `mean_angle` (and so
+  `smooth_mean_angle`) and the step length sum a term for every step to the cap.
+- **Iterates: the direct traps**, which composite a colour per iterate and are not in this
+  sampler at all.
 
-So the traps, the lattice's extremes and both addresses could stop at a repeat and be exact;
-the means cannot. That is the proposal, and it is its own brief.
+What it bought, alternated three times against the build before it at 640x360 ss2
+(medians): at the Mandelbrot anchor `itinerary` **11.05 s to 1.17 s**, `tail_itinerary`
+13.31 s to 1.49 s, `gaussian_int` and `smooth_angle_min` 8.5–8.7 s to 0.98 s, the two circle
+traps 1.7 s to 0.24 s; at julia6 on the shipped `c`, 19x to 31x (`itinerary` 8.41 s to
+0.29 s); at the Mandelbrot home 2.3x to 4.1x. `smooth_mean_angle`, which reads the lattice's
+mean and keeps iterating, is the control and came back 1.00x at all three. The three anchors
+at 1600x900 ss4, alternated five times: Julia 0.99x, Mandelbrot 1.01x, Phoenix 1.01x — noise.
+The edge frames `fractal-wallpapers identity --edges` draws now include `smooth_angle_min`,
+`itinerary` and `tail_itinerary` beside `smooth_trap_circle`, one mode per statistic the
+repeat serves. **Byte-identical**: the 540-render battery and all 3,312 edge frames against
+the build before it, the fingerprint unmoved (`5d97e76bb16be71d` / `cbd9bc03a0f33e1c`), and
+`the_interior_tests_move_no_sample` now holds every field the repeat is handed — each
+lattice reduction, the address in all three windows, the tail at two caps a cycle's phase
+apart — to the uninterrupted orbit on the bits. The edge run itself went from 34,100 to
+9,500 render-seconds. In the four orbit modes the Julia disks' rims went 23,073 s to 588 s
+and the Multibrot frames 5,083 s to 3,352 s, while the cardioid's and the bulb's rims gave
+back 6% (3,323 s to 3,115 s): an orbit near a parabolic point settles onto a float cycle
+slowly, or not before the cap.
 
 **The tests run every sixteenth step, not every step.** Every step cost the orbits they
 never catch — most orbits on most frames — up to 15%: the Phoenix anchor at 1600x900 ss4
@@ -282,7 +315,7 @@ step, julia3 9.05 s to 0.105 s and julia6 11.06 s to 0.119 s. In the site's expl
 to the finished picture: julia3 3.3 s to 0.6–0.8 s, julia4 4.5 s to 0.6 s, julia6 7.9 s to
 0.7 s. The Multibrot homes at `smooth` 0.20–0.66 s to 0.11–0.14 s, the repeat catching
 what the disk about 0 leaves. `itinerary`, the traps and the angle modes read the interior
-orbit and are unchanged.
+orbit and were unchanged by it; the repeat reached them next, above.
 
 **The stride costs a longer cycle something.** julia5's cycle has period 15, so an orbit is
 near the disk's centre once every fifteen steps and a test every sixteenth meets it once in

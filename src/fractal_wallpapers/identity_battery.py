@@ -48,6 +48,17 @@ OLDER_C = {
     6: ("0.4", "0"),
 }
 
+#: The modes the edge frames are drawn in: the two escape-only modes every interior test
+#: serves, then one per statistic an exact repeat alone serves (see [`edges`]).
+EDGE_MODES = (
+    "smooth",
+    "stripe",
+    "smooth_trap_circle",
+    "smooth_angle_min",
+    "itinerary",
+    "tail_itinerary",
+)
+
 #: The render pool's shape (CLAUDE.md): three engines at a time, below-normal priority,
 #: which `engine.run` sets.
 WORKERS = 3
@@ -153,8 +164,10 @@ def edges() -> list[tuple[str, dict, str, list[int], int]]:
     boundaries); each Multibrot degree's disk where it touches the main component and on
     the component's rim; and each Julia plane's attracting-cycle disk, at three points of
     its rim, at the shipped constant and the older ones. Four widths, 1e-2 to 1e-9, at the
-    policy cap and at 50,000, in `smooth` and `stripe` (which the tests serve) and
-    `smooth_trap_circle` (which they must not touch).
+    policy cap and at 50,000, in `smooth` and `stripe` (which every test serves), and one
+    mode per statistic the exact repeat alone serves: `smooth_trap_circle` for a trap's
+    minimum, `smooth_angle_min` for the lattice's extremes and the step they fell on, and
+    `itinerary` and `tail_itinerary` for the head and the tail address.
     """
     points: dict[str, tuple[dict, complex]] = {}
     mandelbrot = {"kind": "mandelbrot"}
@@ -198,7 +211,7 @@ def edges() -> list[tuple[str, dict, str, list[int], int]]:
                 }
                 if cap:
                     loc["maxiter"] = cap
-                for mode in ("smooth", "stripe", "smooth_trap_circle"):
+                for mode in EDGE_MODES:
                     out.append(
                         (f"edge-{name}-{width}-{cap}.{mode}.256ss1", loc, mode, [256, 144], 1)
                     )
