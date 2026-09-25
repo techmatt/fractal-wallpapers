@@ -1,9 +1,6 @@
 # fractal-wallpapers
 
-This is the pipeline behind a collection of fractal wallpapers. It searches the escape-time
-planes for places worth framing, colors and judges each picture, and chooses every gallery.
-Rust draws every pixel, and Python does the rest. Most visitors want one of the links below.
-
+This is the pipeline for generating a collection of fractal wallpapers and manipulating them in an online fractal explorer. It searches the escape-time planes for places worth framing, uses a trained convolutional network to judge each picture, and chooses the final galleries from among the high-scoring wallpapers. Rust does the rendering (using WebAssembly for the website), and Python does a lot of the plumbing. Most visitors want one of the links below.
 - **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/)
 - **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractal-website/explorer/)
 - **How it was made:** [The article, starting here](https://techmatt.github.io/fractal-website/start-here.html)
