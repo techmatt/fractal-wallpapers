@@ -320,16 +320,37 @@ def test_a_draw_pushes_a_julia_root_at_the_parents_degree(tmp_path) -> None:
 
 
 def test_the_channel_only_ever_hands_over_what_nobody_has_walked(tmp_path) -> None:
+    """A cursor claim, so the loop's clock is declared too long to bind. At a
+    one-second loop the first draw's two `engine.home_view` spawns are charged
+    against the refill share, and past a third of a second of real time — a
+    loaded box, a cold runner — the second draw is refused as over the share and
+    the handover under test never happens. The share has its own guard, below,
+    on seconds the test states rather than seconds the box spends."""
     live = channel()
     for step in range(3):
         live.offer(location("multibrot3", f"{0.1 + step:.4f}"), "run")
     walk, refill = refill_of(tmp_path, live)
     queues = dict.fromkeys(UNPOOLED_TWINS, 0)
-    refill.run(queues, batch=0, loop_seconds=1.0)
+    refill.run(queues, batch=0, loop_seconds=1e6)
     assert refill.remaining("julia:multibrot3") == 1
-    refill.run(queues, batch=refill.cooldown, loop_seconds=1.0)
+    refill.run(queues, batch=refill.cooldown, loop_seconds=1e6)
     assert refill.remaining("julia:multibrot3") == 0
     assert len({node["family"]["c"][0] for node in walk.frontier}) == 3
+
+
+def test_a_refill_over_its_share_of_the_loop_is_refused_and_counted(tmp_path) -> None:
+    """The bound the cursor test above declares out of its way, held on stated
+    seconds: refills may spend `share` of the loop's whole wall and no more."""
+    live = channel()
+    live.offer(location("multibrot3", "0.1"), "run")
+    walk, refill = refill_of(tmp_path, live)
+    refill.seconds = 1.0
+    assert refill.affordable(loop_seconds=3.0) is True, "1 of 4 is exactly the share"
+    assert refill.affordable(loop_seconds=2.0) is False
+    outcome = refill.run(dict.fromkeys(UNPOOLED_TWINS, 0), batch=0, loop_seconds=2.0)
+    assert outcome == {"refilled": [], "roots": 0, "reason": "over the refill share"}
+    assert refill.deferred_draws == 1
+    assert walk.frontier == []
 
 
 # --------------------------------------------------------------------------- #

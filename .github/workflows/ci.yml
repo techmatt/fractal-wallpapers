@@ -11,18 +11,31 @@ jobs:
   # `cargo build --release`, every engine-backed test skipped itself — the walk
   # tests look for a release binary and stand down without one — so a green badge
   # meant the suite had been collected, not that the renderer worked.
+  #
+  # Three platforms, because the claim is that a person can install and run this on
+  # any of them, and the install is the README's: `uv sync` with all three extras.
+  # That makes this job the torch one too. A separate `models` job used to prove
+  # the judges on one OS with pip; it is folded in here, and the lean install it
+  # left behind is still proved — by `tests/test_base_install.py`, in a
+  # subprocess with torch, torchvision and timm refused, on every platform.
   check:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # `macos-latest` is Apple silicon. Intel macOS is not in the matrix: PyPI
+        # stopped shipping x86_64 macOS torch wheels, so the `models` extra has
+        # nothing to install there (README, *Install*).
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      # uv's own Python, so every platform runs the same minor version the README
+      # asks for. No cache: the Linux and Windows torch wheels are the CUDA build
+      # and a cache of them is bigger than what it saves.
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: "3.12"
 
@@ -50,66 +63,26 @@ jobs:
         run: cargo test --release
         working-directory: engine
 
-      - name: Install the package and dev tools
-        run: python -m pip install --upgrade pip && python -m pip install -e ".[dev]"
+      # Exactly the README's line. On Linux and Windows `[tool.uv.sources]` sends
+      # torch to the cu124 index, which runs on a runner with no GPU as a CPU
+      # torch; on macOS it comes from PyPI with the MPS backend.
+      - name: Install the package and all three extras
+        run: uv sync --extra dev --extra models --extra solve
 
+      # `--no-sync` on every `uv run`: a bare one syncs to the project's default
+      # set first, which names no extras.
       - name: Lint
-        run: python -m ruff check .
+        run: uv run --no-sync python -m ruff check .
 
       - name: Format check
-        run: python -m ruff format --check .
+        run: uv run --no-sync python -m ruff format --check .
 
       # The full lane. `--slow` is what CI and a pre-checkpoint run give: the
       # default run holds back the renders, the training loops and the store
       # sweeps, which is right for an edit-run loop and wrong for a gate. `-rs`
       # so a skip is NAMED: zero skips is the normal reading on a machine with a
       # warm render cache, and a lane that quietly stopped running a file is the
-      # failure this whole arrangement exists to catch.
+      # failure this whole arrangement exists to catch. Through the checkout's
+      # `.venv`, which `conftest` insists on wherever one exists.
       - name: Test
-        run: python -m pytest --slow -rs
-
-  # The torch half, which `.[dev]` alone never touches: ten test modules carry a
-  # module-level `importorskip` on torch or timm and vanish at COLLECTION without
-  # it, and a further handful reach one mid-call and skip there. So the job above
-  # proves the lean install and says nothing about the judges. One OS, because
-  # what is being proved is that the import graph and the heads' own guards hold —
-  # not a platform difference — and the wheels are four gigabytes.
-  #
-  # `pillow` is NOT part of that split any more. It sat outside `dev` until
-  # 2026-09-15, which cost the two jobs above 113 failures and, once three modules
-  # imported it at module level, the entire run at collection. It is three
-  # megabytes, the suite does not run without it, and `dev` is the suite's install
-  # — so it is in `dev` and the `check` jobs actually execute those tests now
-  # rather than skipping or failing them.
-  models:
-    name: models extra (ubuntu-latest)
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Build the engine
-        run: cargo build --release
-        working-directory: engine
-
-      # The CPU index explicitly. `pyproject.toml` pins torch to the cu124 index
-      # through `[tool.uv.sources]`, which **pip does not read** — so a plain
-      # install here would pull whatever PyPI's default is and spend a long time
-      # doing it. CI has no GPU and asking for the CPU build is the honest
-      # spelling of that.
-      - name: Install the package with the models extra
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[dev,models,solve]"
-
-      # Named so a reader can see the nine modules arrive. A count that falls is
-      # a module that stopped being collected, which is exactly what this job is
-      # for.
-      - name: Test
-        run: python -m pytest --slow -rs
+        run: uv run --no-sync python -m pytest --slow -rs

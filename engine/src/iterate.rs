@@ -161,8 +161,10 @@ impl Interior {
         let Family::Julia { degree, c } = *family else {
             return none;
         };
+        /// A family's key — degree and the bits of `c` — beside the disk it proved.
+        type Held = ((u32, u64, u64), Interior);
         thread_local! {
-            static LAST: std::cell::Cell<Option<((u32, u64, u64), Interior)>> =
+            static LAST: std::cell::Cell<Option<Held>> =
                 const { std::cell::Cell::new(None) };
         }
         let key = (degree, c.re.to_bits(), c.im.to_bits());
@@ -200,7 +202,9 @@ fn julia_disk(family: &Family, degree: u32) -> Option<Interior> {
     let mut z = zero;
     for _ in 0..SETTLE {
         z = step(z);
-        if !(z.norm_sqr() <= 16.0) {
+        // NaN counts as escaped: an orbit that overflowed has no cycle to read.
+        let m = z.norm_sqr();
+        if m.is_nan() || m > 16.0 {
             return None;
         }
     }
@@ -234,7 +238,7 @@ fn julia_disk(family: &Family, degree: u32) -> Option<Interior> {
                 spread += binomial * modulus.powi((degree - k) as i32) * r.powi(k as i32);
             }
             r = spread + residual + SLOP;
-            if !(r <= 1.0) {
+            if r.is_nan() || r > 1.0 {
                 return f64::INFINITY;
             }
         }

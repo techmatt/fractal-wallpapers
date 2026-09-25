@@ -488,6 +488,26 @@ class RefusedByDesign(RuntimeError):
     """A renderer declining a case it says it cannot serve. Not a failure."""
 
 
+def _needs_the_shipped_judge(case) -> None:
+    """Skip a case that reaches a candidate leg on a clone with no judge weights.
+
+    `hunt.Maker.make` scores every picture it draws with the shipped render judge,
+    after the picture is on disk. Without torch that call is a `ModuleNotFoundError`
+    and `conftest` skips it; **with** torch and no `fetch-weights` it was a
+    `FileNotFoundError` and a red — every `models` CI job from its first run to
+    2026-09-25, because a runner has torch and never fetches. The pixels under test
+    come before the judge, but the leg is the one production runs, so it is skipped
+    whole rather than run with the judge stubbed. A case with no plan reaches no
+    candidate leg and runs regardless.
+    """
+    from fractal_wallpapers.curation import floors
+    from fractal_wallpapers.models import ship
+
+    weights = ship.shipped_path(floors.SCORING_HEAD)
+    if case.on_a_plan and not weights.is_file():
+        pytest.skip(f"the shipped judge is not on this machine ({weights.name}); fetch-weights")
+
+
 def _maker(hunt, where: Path):
     """A `hunt.Maker` writing into `where` and nothing else.
 
@@ -535,7 +555,17 @@ needs_engine = pytest.mark.skipif(
 
 
 def _digest(picture: Path) -> str:
-    return hashlib.sha256(Path(picture).read_bytes()).hexdigest()
+    """The bytes the encoder wrote, with the explorer link taken back out.
+
+    A release render carries its link in its metadata and no other leg's does, so
+    the whole file differed for every recipe a link can spell — the release leg red
+    against nine agreeing renderers from `3c41ddd` on, on a box with the judge,
+    and unseen in CI, where the candidate legs could not run. Every other byte,
+    the compressed image data included, is still compared.
+    """
+    from fractal_wallpapers.curation import embed_link
+
+    return hashlib.sha256(embed_link.strip(Path(picture).read_bytes())).hexdigest()
 
 
 #: Renderers a case is **not** asked for, by name, with the reason. A candidate
@@ -567,6 +597,7 @@ def renderers_for(case: Case) -> list:
 def test_every_renderer_draws_the_same_picture_for_one_recipe(case_of, tmp_path) -> None:
     """The whole point of the file. Bytes, over every renderer that can draw it."""
     case = case_of()
+    _needs_the_shipped_judge(case)
     asked = renderers_for(case)
     assert len(asked) >= 4, "a case drawn by fewer than four renderers is not a comparison"
 
@@ -605,6 +636,7 @@ def test_the_members_each_case_varies_actually_move_the_pixels(case_of, tmp_path
     both. Identical bytes here mean the case is testing nothing.
     """
     case = case_of()
+    _needs_the_shipped_judge(case)
     draw = _draw_mine if case.on_a_plan else _draw_release
     varied = _digest(draw(case, case.recipe, tmp_path / "varied"))
     plain = _digest(draw(case, case.bare, tmp_path / "plain"))

@@ -67,14 +67,19 @@ solve = [
 
 # The CUDA build, not PyPI's CPU default: a head trains in an hour on a GPU and
 # most of a week without one.
+#
+# **Not on macOS**, which that index holds no wheel for — CUDA does not exist
+# there — so an unmarked source fails `uv sync` outright on a Mac. PyPI's macOS
+# arm64 wheel is the right build: it carries the MPS backend, which is Apple
+# silicon's GPU path.
 [[tool.uv.index]]
 name = "pytorch-cu124"
 url = "https://download.pytorch.org/whl/cu124"
 explicit = true
 
 [tool.uv.sources]
-torch = [{ index = "pytorch-cu124" }]
-torchvision = [{ index = "pytorch-cu124" }]
+torch = [{ index = "pytorch-cu124", marker = "sys_platform != 'darwin'" }]
+torchvision = [{ index = "pytorch-cu124", marker = "sys_platform != 'darwin'" }]
 
 [project.scripts]
 fractal-wallpapers = "fractal_wallpapers.cli:main"
