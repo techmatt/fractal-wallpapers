@@ -44,12 +44,21 @@
 //! `dump-field` and `recolor` are built on, and why [`direct_trap`], the one
 //! coloring that has no field, is also the one that cannot be recolored.
 //!
+//! And the pieces the explorer's own module needs, which a link is drawn through:
+//!
+//! ```text
+//! autolevel    band_autolevel/v1: a recorded tone curve replayed on a map's stops
+//! derive       a mode parameter taken from the view: a texture weight, an opacity
+//! ```
+//!
 //! Deliberately absent: deep-zoom precision tiers, the derivative recurrence and
 //! the lighting it feeds, and any fast path that trades a branch for clarity.
 //! Those arrive later, behind the same seam.
 
+pub mod autolevel;
 pub mod coloring;
 pub mod colormap;
+pub mod derive;
 pub mod direct_trap;
 pub mod dump;
 pub mod expand;

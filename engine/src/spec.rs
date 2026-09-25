@@ -61,6 +61,13 @@ pub struct RenderSpec {
     /// A coloring written out in full. Mutually exclusive with `mode`.
     #[serde(default)]
     pub coloring: Option<Coloring>,
+    /// The named mode's own constants, by the name an explorer link gives them —
+    /// `weight`, `opacity`, `density` and the rest, through [`mode::tune`]. Only beside
+    /// `mode`: a coloring written out in full already says every number it has. Absent
+    /// or empty is the mode exactly as the catalog settled it, which is every spec
+    /// written before this key existed.
+    #[serde(default)]
+    pub params: std::collections::BTreeMap<String, f64>,
     /// How the gradient is spent on whatever the coloring produced. Independent
     /// of the mode, and every default is the identity.
     #[serde(default)]
@@ -345,7 +352,7 @@ impl RenderSpec {
             ));
         }
 
-        let (coloring, mode) = resolve_coloring(self.mode, self.coloring, &family)?;
+        let (coloring, mode) = resolve_coloring(self.mode, self.coloring, &self.params, &family)?;
         self.palette.validate()?;
         // The two halves are settled separately and then checked against each
         // other: almost every pairing is free, and the one that is not should cost
@@ -508,6 +515,7 @@ pub const DEFAULT_MODE: &str = "smooth";
 fn resolve_coloring(
     mode: Option<String>,
     coloring: Option<Coloring>,
+    params: &std::collections::BTreeMap<String, f64>,
     family: &Family,
 ) -> Result<(Coloring, Option<String>), String> {
     let (coloring, mode) = match (mode, coloring) {
@@ -517,10 +525,25 @@ fn resolve_coloring(
                  coloring with a name, so give one or the other"
             ));
         }
-        (Some(mode), None) => (mode::resolve(&mode, Some(family))?, Some(mode)),
+        (None, Some(_)) if !params.is_empty() => {
+            return Err(
+                "the spec gives params beside an explicit coloring; params tune a \
+                        named mode, and a coloring written out in full already says every \
+                        number it has"
+                    .into(),
+            );
+        }
+        (Some(mode), None) => (
+            mode::tune(&mode, mode::resolve(&mode, Some(family))?, params)?,
+            Some(mode),
+        ),
         (None, Some(coloring)) => (coloring, None),
         (None, None) => (
-            mode::resolve(DEFAULT_MODE, Some(family))?,
+            mode::tune(
+                DEFAULT_MODE,
+                mode::resolve(DEFAULT_MODE, Some(family))?,
+                params,
+            )?,
             Some(DEFAULT_MODE.to_string()),
         ),
     };
@@ -683,6 +706,42 @@ mod tests {
         assert_eq!(resolved.maxiter, maxiter::for_width(home.width));
         assert_eq!(resolved.location.center_re, "-0.77");
         assert_eq!(resolved.location.width, "4.4");
+    }
+
+    fn with(extra: &str) -> Result<Resolved, String> {
+        RenderSpec::parse(&format!(
+            r#"{{"schema":1,"family":{{"kind":"mandelbrot"}},"resolution":[64,36],
+                "colormap":"twilight_shifted","output":"out.png",{extra}}}"#
+        ))?
+        .resolve()
+    }
+
+    /// `params` tunes a named mode by the link's names, leaves the rest of the mode as
+    /// the catalog settled it, and is refused where it has nothing to tune.
+    #[test]
+    fn params_tune_a_named_mode_and_nothing_else() {
+        let tuned = with(r#""mode":"direct_trap_multiply","params":{"opacity":0.6}"#).unwrap();
+        let mut expected = mode::resolve("direct_trap_multiply", Some(&tuned.family)).unwrap();
+        mode::set("direct_trap_multiply", &mut expected, "opacity", 0.6).unwrap();
+        assert_eq!(tuned.coloring, expected);
+
+        let bare = with(r#""mode":"smooth_stripe","params":{}"#).unwrap();
+        assert_eq!(
+            bare.coloring,
+            mode::resolve("smooth_stripe", Some(&bare.family)).unwrap()
+        );
+
+        let refused = with(r#""mode":"smooth","params":{"weight":0.5}"#)
+            .err()
+            .expect("refused");
+        assert!(refused.contains("has no weight parameter"), "{refused}");
+        let coloring = serde_json::to_string(&mode::resolve("smooth", None).unwrap()).unwrap();
+        let refused = with(&format!(
+            r#""coloring":{coloring},"params":{{"weight":0.5}}"#
+        ))
+        .err()
+        .expect("refused");
+        assert!(refused.contains("explicit coloring"), "{refused}");
     }
 
     #[test]

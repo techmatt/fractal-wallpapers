@@ -410,6 +410,148 @@ pub fn tier(name: &str) -> Option<Tier> {
         .map(|entry| entry.tier)
 }
 
+// ------------------------------------------------------------- mode parameters
+
+/// Apply a mode's own parameters, by the name an explorer link gives them, to the
+/// coloring [`resolve`] settled.
+///
+/// **A parameter is a number [`resolve`] writes down for that mode**, and nothing
+/// else. The *shape* of the coloring is the mode's identity — which field, which blend,
+/// which trap shape, which start colour — and moving any of those would put a different
+/// picture under the first one's name, so none of them is reachable here at all. What
+/// is left is the settled constants: how dense the stripes are, how wide the threads
+/// kernel is, how much of a texture is let through, how close a trap has to come.
+///
+/// A key the mode has no room for is an error. There is no default to fall back to
+/// that would not be a lie about what the caller asked for.
+///
+/// **Copied, with [`set`] and [`params_of`], from `explorer/engine-wasm/src/lib.rs`** in
+/// the `fractal-website` checkout, which keeps its private copy until a later website
+/// prompt imports these instead. An empty `params` returns the coloring untouched,
+/// which is what every spec that does not name `params` gets.
+pub fn tune(
+    name: &str,
+    mut coloring: Coloring,
+    params: &std::collections::BTreeMap<String, f64>,
+) -> Result<Coloring, String> {
+    for (key, &value) in params {
+        if !value.is_finite() {
+            return Err(format!("{key} has to be a number, got {value}"));
+        }
+        set(name, &mut coloring, key, value)?;
+    }
+    Ok(coloring)
+}
+
+/// One parameter of [`tune`]'s, written onto the coloring.
+pub fn set(name: &str, coloring: &mut Coloring, key: &str, value: f64) -> Result<(), String> {
+    // The knobs the coloring itself carries: how a pair is mixed, how far an
+    // address pushes, how a trap paints.
+    match (key, &mut *coloring) {
+        ("weight", Coloring::Composite { texture_weight, .. }) => {
+            *texture_weight = value;
+            return Ok(());
+        }
+        ("shift", Coloring::Modulate { shift, .. }) => {
+            *shift = value;
+            return Ok(());
+        }
+        ("threshold", Coloring::Direct { threshold, .. }) => {
+            *threshold = Some(value);
+            return Ok(());
+        }
+        ("opacity", Coloring::Direct { opacity, .. }) => {
+            *opacity = value;
+            return Ok(());
+        }
+        ("radius", Coloring::Direct { trap_radius, .. }) => {
+            *trap_radius = value;
+            return Ok(());
+        }
+        _ => {}
+    }
+    // The knobs the mode's own field carries. The *characteristic* field: a plain
+    // field mode has one, and a composite's is its texture — the smooth base is
+    // shared by every composite and has no constants of its own, so there is
+    // nothing there to name.
+    if let Some(field) = characteristic_field(coloring) {
+        match (key, field) {
+            ("density", FieldSpec::Stripe { density }) => {
+                *density = value;
+                return Ok(());
+            }
+            ("radius", FieldSpec::TrapCircle { radius }) => {
+                *radius = value;
+                return Ok(());
+            }
+            ("sigma", FieldSpec::Threads { sigma }) => {
+                *sigma = value;
+                return Ok(());
+            }
+            _ => {}
+        }
+    }
+    Err(format!("the {name} mode has no {key} parameter"))
+}
+
+/// What the parameters of this coloring currently are, by the name [`set`] takes: the
+/// read half of the same mapping, which is also where a mode's *settled* value of a
+/// parameter a link may leave out comes from.
+pub fn params_of(coloring: &Coloring) -> std::collections::BTreeMap<&'static str, f64> {
+    let mut params = std::collections::BTreeMap::new();
+    match coloring {
+        Coloring::Composite { texture_weight, .. } => {
+            params.insert("weight", *texture_weight);
+        }
+        Coloring::Modulate { shift, .. } => {
+            params.insert("shift", *shift);
+        }
+        Coloring::Direct {
+            shape,
+            trap_radius,
+            threshold,
+            opacity,
+            ..
+        } => {
+            params.insert("radius", *trap_radius);
+            // Absent means the shape's own calibrated distance, which is a number
+            // the engine holds and a caller would otherwise have to guess at.
+            params.insert(
+                "threshold",
+                threshold.unwrap_or_else(|| shape.default_threshold()),
+            );
+            params.insert("opacity", *opacity);
+        }
+        Coloring::Field { .. } => {}
+    }
+    // The characteristic field is the last one the coloring reads: the only one a
+    // plain field mode has, and the texture of a pair — which is the same rule
+    // `characteristic_field` applies to write it.
+    match coloring.fields().last() {
+        Some(FieldSpec::Stripe { density }) => {
+            params.insert("density", *density);
+        }
+        Some(FieldSpec::TrapCircle { radius }) => {
+            params.insert("radius", *radius);
+        }
+        Some(FieldSpec::Threads { sigma }) => {
+            params.insert("sigma", *sigma);
+        }
+        _ => {}
+    }
+    params
+}
+
+fn characteristic_field(coloring: &mut Coloring) -> Option<&mut FieldSpec> {
+    match coloring {
+        Coloring::Field { field, .. } => Some(field),
+        Coloring::Composite { texture, .. } | Coloring::Modulate { texture, .. } => {
+            Some(&mut texture.field)
+        }
+        Coloring::Direct { .. } => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
