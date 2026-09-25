@@ -1,9 +1,16 @@
 # fractal-wallpapers
 
-[![ci](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml?query=branch%3Amain)
+This is the pipeline behind a collection of fractal wallpapers. It searches the escape-time
+planes for places worth framing, colors and judges each picture, and chooses every gallery.
+Rust draws every pixel, and Python does the rest. Most visitors want one of the links below.
 
-Generates fractal wallpapers and uses neural judges trained on human labels to decide
-which ones are worth keeping.
+- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/)
+- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractal-website/explorer/)
+- **How it was made:** [The article, starting here](https://techmatt.github.io/fractal-website/start-here.html)
+- **The site's code** (explorer, article, builder): [fractal-website](https://github.com/techmatt/fractal-website)
+- **The pipeline and engine code:** you are here; read on.
+
+[![ci](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml?query=branch%3Amain)
 
 <p align="center">
   <img src="examples/mandelbrot_stripe.jpg" width="24%" alt="Mandelbrot set, stripe coloring">
@@ -11,9 +18,6 @@ which ones are worth keeping.
   <img src="examples/julia_multibrot4_smooth.jpg" width="24%" alt="Quartic Julia set, smooth coloring">
   <img src="examples/julia_multibrot3_threads.jpg" width="24%" alt="Cubic Julia set, threads coloring">
 </p>
-
-A Rust crate renders the escape-time fields. Python decides where to look, how to color
-what it finds, and which finished images survive.
 
 ## What it does
 
