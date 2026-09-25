@@ -1008,6 +1008,7 @@ fn resolve(row: &PlanRow) -> Result<Resolved, String> {
         supersample: 1,
         mode: None,
         coloring: None,
+        params: Default::default(),
         palette: Default::default(),
         colormap: String::new(),
         colormap_dir: PathBuf::new(),
