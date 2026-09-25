@@ -70,8 +70,12 @@ pub struct Wants {
     pub derivative: bool,
     /// Stop an orbit once it is **proven never to escape**, and report it as the
     /// loop would have at the cap. No field asks for this: [`crate::field::sweep_row`]
-    /// sets it, and only where every field of the pass reads an escape, because
-    /// there a bounded orbit reduces to `None` whatever it did on the way.
+    /// sets it, and only where every field of the pass either reads an escape — a
+    /// bounded orbit reduces to `None` whatever it did on the way — or reads a
+    /// statistic an exact repeat makes final (see [`Interior`]). A pass with one of
+    /// the second kind is handed [`Interior::REPEAT`], which has no disk: an orbit in
+    /// a disk is still wandering towards its cycle, and a minimum over it is not yet
+    /// final.
     pub interior: Option<Interior>,
 }
 
@@ -90,6 +94,24 @@ pub struct Wants {
 /// every step with it. That is exact on every family and needs no proof per
 /// family; it catches an attracting cycle once rounding has settled the orbit on a
 /// float cycle, which is later than the disk and on any plane at all.
+///
+/// **A repeat also makes some of the orbit's statistics final**, which a disk does
+/// not. Once the state at step `n` is the state at an earlier step `s`, every later
+/// iterate is one of `z_{s+1} … z_n`, and the loop has already accumulated each of
+/// those. So a stopped orbit reads exactly as the orbit run to the cap for:
+///
+/// - a **minimum or maximum** — the circle and cross traps, the lattice's nearest
+///   and farthest, and the iterate and step each happened at, because the strict
+///   comparisons keep the first occurrence and a revisit only ties it;
+/// - a **head address**, once it holds `depth` symbols, after which nothing is
+///   appended — the loop does not stop on a repeat before then;
+/// - a **tail address** whose roll is exact ([`Symbols::rolls_exactly`]): it is then
+///   the last `depth` symbols before the cap and nothing else, and those are the
+///   cycle's, read from the phase the cap falls at. The loop steps round to that
+///   phase and spells them; see [`run`].
+///
+/// A mean, a sum, a count and a colour composited per iterate are not final: each
+/// keeps changing for every step the cap has left. Those passes are not handed this.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Interior {
     /// A point of the attracting cycle, the disk's centre.
@@ -101,6 +123,13 @@ pub struct Interior {
 }
 
 impl Interior {
+    /// The exact repeat alone, with no disk: what a pass that reads a statistic of the
+    /// interior orbit is handed.
+    pub const REPEAT: Interior = Interior {
+        center: Complex::new(0.0, 0.0),
+        radius_sq: 0.0,
+    };
+
     /// The interior tests that hold on `family`: the repeat everywhere, and a
     /// disk where the plane has one.
     ///
@@ -128,10 +157,7 @@ impl Interior {
     /// Computed once per thread and family and remembered, because `sweep_row` asks
     /// once per row.
     pub fn of(family: &Family) -> Interior {
-        let none = Interior {
-            center: Complex::new(0.0, 0.0),
-            radius_sq: 0.0,
-        };
+        let none = Interior::REPEAT;
         let Family::Julia { degree, c } = *family else {
             return none;
         };
@@ -314,6 +340,29 @@ impl AddressWindow {
     /// Whether the address rolls rather than filling once.
     pub fn is_tail(self) -> bool {
         self == AddressWindow::Tail
+    }
+}
+
+impl Symbols {
+    /// Whether a tail address rolled with these symbols is **exactly** its last
+    /// `depth` symbols, whatever came before them.
+    ///
+    /// Three conditions, each a step of [`Address::roll`]'s `frac(value·base) +
+    /// sector·base^{−depth}` being exact: the base is a power of two, so the
+    /// multiply and the bottom weight are exact; it is at least `sectors`, so the
+    /// integer part `fract` drops is the oldest symbol and nothing else; and
+    /// `depth·log₂base ≤ 53`, so every window is a multiple of the bottom weight that
+    /// an `f64` holds. The named modes' four sectors in base four to 26 symbols are 52
+    /// bits. Anything else rounds, the rounding carries history the window no longer
+    /// shows, and only the whole run reproduces it.
+    pub fn rolls_exactly(&self) -> bool {
+        let bits = self.base.to_bits();
+        let power_of_two = self.base.is_finite() && bits & ((1 << 52) - 1) == 0;
+        let exponent = ((bits >> 52) & 0x7ff) as i64 - 1023;
+        power_of_two
+            && exponent >= 1
+            && self.base >= self.sectors as f64
+            && self.depth as i64 * exponent <= 53
     }
 }
 
@@ -726,6 +775,8 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
     // `z_{n−1}` is part of the state only where the step reads it.
     let memory = matches!(family, Family::Phoenix { .. } | Family::PhoenixM { .. });
     let mut saved = (z, z_prev);
+    // The step `saved` was taken at, so that a repeat knows a period: `n − saved_at`.
+    let mut saved_at = 0;
 
     for n in 1..=maxiter {
         // |z²| before the step: the triangle inequality compares the actual next
@@ -836,10 +887,40 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
                 }
                 let bits = |w: Complex<f64>| (w.re.to_bits(), w.im.to_bits());
                 if bits(z) == bits(saved.0) && (!memory || bits(z_prev) == bits(saved.1)) {
-                    break;
+                    // Every channel but the address is final here, or absent from a
+                    // pass that is handed the repeat (see [`Interior`]).
+                    let Some(symbols) = wants.itinerary else {
+                        break;
+                    };
+                    if !symbols.window.is_tail() {
+                        // A head address is final once it is full, and the orbit keeps
+                        // going until it is: the repeat comes round again.
+                        if orbit.itinerary.symbols() >= symbols.depth {
+                            break;
+                        }
+                    } else if symbols.rolls_exactly() {
+                        // A tail address is the last `depth` symbols before the cap.
+                        // From step `saved_at` on, the state repeats every `period`
+                        // steps, so the state `k` steps on is the state `k mod period`
+                        // steps on: step that far without spelling, then spell the
+                        // symbols the cap's window holds. Nothing else is read
+                        // afterwards from an orbit that did not escape.
+                        let period = n - saved_at;
+                        let left = maxiter - n;
+                        let spelled = left.min(symbols.depth);
+                        for _ in 0..(left - spelled) % period {
+                            (z, z_prev) = (family.step(z, z_prev, c), z);
+                        }
+                        for _ in 0..spelled {
+                            (z, z_prev) = (family.step(z, z_prev, c), z);
+                            orbit.itinerary.push(z, symbols);
+                        }
+                        break;
+                    }
                 }
                 if n.is_power_of_two() {
                     saved = (z, z_prev);
+                    saved_at = n;
                 }
             }
         }
@@ -1652,5 +1733,78 @@ mod tests {
         one.push(0.25);
         assert_eq!(one.deband(0.0), Some(0.25));
         assert_eq!(one.deband(1.0), Some(0.25));
+    }
+
+    /// The tail's roll is exact at the named modes' four sectors in base four to 26
+    /// symbols, and at no setting where one of the three conditions fails.
+    #[test]
+    fn the_tail_rolls_exactly_only_where_its_arithmetic_is_exact() {
+        let symbols = |sectors, base, depth| Symbols {
+            sectors,
+            base,
+            depth,
+            window: AddressWindow::Tail,
+        };
+        for (sectors, base, depth, exact) in [
+            (4, 4.0, 26, true),
+            (4, 4.0, 27, false),
+            (2, 2.0, 53, true),
+            (4, 8.0, 17, true),
+            (4, 8.0, 18, false),
+            (4, 3.0, 26, false),
+            (4, 2.0, 26, false),
+            (4, 4.5, 10, false),
+            (1, 1.0, 10, false),
+        ] {
+            assert_eq!(
+                symbols(sectors, base, depth).rolls_exactly(),
+                exact,
+                "{sectors} sectors, base {base}, depth {depth}"
+            );
+        }
+    }
+
+    /// **A tail address stopped at a repeat is the one run to the cap, and it did stop.**
+    /// At the centre of the Mandelbrot set's period-3 bulb, outside the cardioid and the
+    /// bulb the sampler answers before the loop, over caps that put the cap at every
+    /// phase of the cycle, on the bits. A tail address counts every symbol it spelled, so
+    /// fewer than the cap is the proof that the loop stepped round to the phase rather
+    /// than running there.
+    #[test]
+    fn a_tail_address_stopped_at_a_repeat_is_the_one_run_to_the_cap() {
+        let family = Family::Multibrot { degree: 2 };
+        let pixel = Complex::new(-0.1225611668766536, 0.7448617666197442);
+        let symbols = Symbols {
+            sectors: 4,
+            base: 4.0,
+            depth: 26,
+            window: AddressWindow::Tail,
+        };
+        let full = Wants {
+            itinerary: Some(symbols),
+            trap_circle: Some(1.0),
+            ..Wants::default()
+        };
+        let stopped = Wants {
+            interior: Some(Interior::REPEAT),
+            ..full
+        };
+        for cap in 3000..3006 {
+            let a = run(&family, pixel, cap, &full);
+            let b = run(&family, pixel, cap, &stopped);
+            assert!(!a.escaped && !b.escaped);
+            assert_eq!(a.itinerary.symbols(), cap);
+            assert!(b.itinerary.symbols() < cap / 2, "cap {cap}: never stopped");
+            assert_eq!(
+                a.itinerary.value().unwrap().to_bits(),
+                b.itinerary.value().unwrap().to_bits(),
+                "cap {cap}"
+            );
+            assert_eq!(
+                a.trap_circle.to_bits(),
+                b.trap_circle.to_bits(),
+                "cap {cap}"
+            );
+        }
     }
 }

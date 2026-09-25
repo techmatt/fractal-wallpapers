@@ -446,6 +446,40 @@ impl FieldSpec {
         }
     }
 
+    /// Whether this field reads the same value from an orbit stopped at an exact
+    /// repeat of its state as from the orbit run to the cap — see
+    /// [`iterate::Interior`] for why each of these is.
+    ///
+    /// **True of every escape-only field** (a bounded orbit reduces to `None` either
+    /// way), the two traps (a minimum), the lattice's reductions but the two that
+    /// read its mean, a head address and a tail address whose roll is exact.
+    /// **False of** the step length and the lattice's `average_distance` and
+    /// `mean_angle`, which are means over every step to the cap, and of a tail
+    /// address rolled in a base that rounds.
+    pub fn is_final_at_a_repeat(&self) -> bool {
+        match *self {
+            FieldSpec::Smooth
+            | FieldSpec::Discrete { .. }
+            | FieldSpec::Stripe { .. }
+            | FieldSpec::Tia
+            | FieldSpec::Curvature
+            | FieldSpec::Threads { .. }
+            | FieldSpec::ExpSmoothing
+            | FieldSpec::Decomposition
+            | FieldSpec::De { .. }
+            | FieldSpec::TrapCircle { .. }
+            | FieldSpec::TrapCross => true,
+            FieldSpec::GaussianInt { reduce } => {
+                !matches!(reduce, Reduction::AverageDistance | Reduction::MeanAngle)
+            }
+            FieldSpec::Velocity => false,
+            FieldSpec::Itinerary { .. } => match self.wants().itinerary {
+                Some(symbols) => !symbols.window.is_tail() || symbols.rolls_exactly(),
+                None => false,
+            },
+        }
+    }
+
     /// Whether two fields can be gathered in a single pass.
     ///
     /// One orbit carries one stripe density and one trap radius, so a composite
@@ -892,7 +926,19 @@ pub fn sweep_row(
     // exact repeat of the loop's state on any family (`iterate::Interior` has both
     // proofs). A stopped orbit leaves the loop as one that ran out of iterations
     // does, so it reduces to the same `NaN` and counts as the same interior.
-    let settle = escape_only.then(|| iterate::Interior::of(family));
+    //
+    // A pass that also reads a statistic an exact repeat makes final — a trap, the
+    // lattice's extremes, an address — gets the repeat alone, and the value the orbit
+    // run to the cap would have reduced to. The skips above and the disk never get
+    // it: neither has an orbit's worth of iterates to read the statistic from.
+    let settle = if escape_only {
+        Some(iterate::Interior::of(family))
+    } else {
+        fields
+            .iter()
+            .all(FieldSpec::is_final_at_a_repeat)
+            .then_some(iterate::Interior::REPEAT)
+    };
 
     // One row at a family and a channel set the call site wrote out.
     macro_rules! sweep {
@@ -1145,11 +1191,14 @@ mod tests {
     }
 
     /// **Stopping an orbit once it is proven interior moves no sample** *(website
-    /// interior_seam_deep_autorender_ckpt146)*. Every escape-only field over every family,
-    /// and over the Julia planes at the site's shipped constant — where degrees three to
-    /// six have an attracting cycle and so a disk — held on the bits to the orbit run to the
-    /// cap with nothing stopping it. At a cap of 2,000, so that the repeat has orbits long
-    /// enough to settle on a float cycle and fire.
+    /// interior_seam_deep_autorender_ckpt146, interior_seam_orbit_modes_ckpt147)*. Every
+    /// field an interior test is handed to — the escape-only fields, the traps, every
+    /// lattice reduction that is final at a repeat, and the address in all three windows
+    /// — over every family, and over the Julia planes at the site's shipped constant,
+    /// where degrees three to six have an attracting cycle and so a disk, held on the
+    /// bits to the orbit run to the cap with nothing stopping it. At a cap of 2,000, so
+    /// that the repeat has orbits long enough to settle on a float cycle and fire; the
+    /// tail address again at 2,013, so that the cap falls at another phase of a cycle.
     #[test]
     fn the_interior_tests_move_no_sample() {
         let shipped = Complex::new(-0.07810228973371881, -0.6514609012382414);
@@ -1164,32 +1213,29 @@ mod tests {
             out_height: 24,
             supersample: 2,
         };
-        let escape_only: Vec<FieldSpec> = every_field()
+        let address = |start| FieldSpec::Itinerary {
+            sectors: 4,
+            weight_base: None,
+            depth: 26,
+            start,
+        };
+        let mut fields: Vec<(FieldSpec, u32)> = every_field()
             .into_iter()
-            .filter(|field| {
-                !matches!(
-                    field,
-                    FieldSpec::TrapCircle { .. }
-                        | FieldSpec::TrapCross
-                        | FieldSpec::GaussianInt { .. }
-                        | FieldSpec::Velocity
-                        | FieldSpec::Itinerary { .. }
-                )
-            })
+            .chain(EVERY_REDUCTION.map(|reduce| FieldSpec::GaussianInt { reduce }))
+            .chain([address(AddressStart::Z1), address(AddressStart::Tail)])
+            .filter(FieldSpec::is_final_at_a_repeat)
+            .map(|field| (field, 2000))
             .collect();
+        fields.push((address(AddressStart::Tail), 2013));
         for family in families {
-            for field in &escape_only {
-                let lanes = specialized_pass(&view, &family, 2000, &[*field]);
+            for &(field, cap) in &fields {
+                let lanes = specialized_pass(&view, &family, cap, &[field]);
                 let mut unlike = 0;
                 let mut index = 0;
                 for row in 0..view.sample_height() {
                     for col in 0..view.sample_width() {
-                        let orbit = iterate::run(
-                            &family,
-                            view.sample_point(col, row),
-                            2000,
-                            &field.wants(),
-                        );
+                        let orbit =
+                            iterate::run(&family, view.sample_point(col, row), cap, &field.wants());
                         let alone = field.reduce(&orbit).unwrap_or(f64::NAN);
                         if alone.to_bits() != lanes[0][index].to_bits() {
                             unlike += 1;
@@ -1204,6 +1250,39 @@ mod tests {
                     field.name()
                 );
             }
+        }
+    }
+
+    /// **A mean is never handed the repeat.** The step length, the lattice's mean and the
+    /// angle read off it sum over every step to the cap, and a tail rolled in a base that
+    /// rounds carries history its window does not show; stopping any of them would move
+    /// the sample. Everything else in the catalog's fields is final at a repeat.
+    #[test]
+    fn only_the_statistics_a_repeat_makes_final_are_stopped() {
+        let open = [
+            FieldSpec::Velocity,
+            FieldSpec::GaussianInt {
+                reduce: Reduction::AverageDistance,
+            },
+            FieldSpec::GaussianInt {
+                reduce: Reduction::MeanAngle,
+            },
+            FieldSpec::Itinerary {
+                sectors: 4,
+                weight_base: Some(3.0),
+                depth: 26,
+                start: AddressStart::Tail,
+            },
+        ];
+        for field in open {
+            assert!(!field.is_final_at_a_repeat(), "{field:?}");
+        }
+        for field in every_field() {
+            assert_eq!(
+                field.is_final_at_a_repeat(),
+                field != FieldSpec::Velocity,
+                "{field:?}"
+            );
         }
     }
 
