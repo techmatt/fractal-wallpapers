@@ -1,4 +1,4 @@
-"""Reading every candidate the pool holds through today's finished-render heads.
+"""Reading every candidate the pool holds through today's finished-render judge.
 
 A release row carries the scores the run that made it read, on the artifact that
 was shipped that night. That is the right thing for a record to hold — it is what
@@ -19,13 +19,13 @@ decided on the night it decided. `scores_current` is the readable-today number,
 it carries the sha of the artifact that produced it, and a reader that wants to
 compare rows across runs reads that one.
 
-## Each row is read by its own head, not by both
+## One judge reads every row, whatever its kind
 
-A candidate belongs to the judge whose slots paid for it: the smooth judge owns
-the smooth coloring and the strange judge owns every other mode. Reading a
-strange picture through the smooth head would produce a number, and the number
-would be about material that head has never been trained on. The pool holds rows
-of both kinds, so the pass loads both heads — and each row is scored by one.
+The smooth and strange render heads became one judge on 2026-08-23, and
+[`floors.SCORING_HEAD`] names it. The pass loads that one head once and reads the
+whole pool through it. A row's kind still matters, because the floors and the
+selection accounting are per kind, so `scores_current.head` stays the kind while
+`judge` and `head_sha256` record the one scale every row was read on.
 
 ## The picture is the candidate render, at candidate geometry
 
@@ -257,7 +257,7 @@ RE_RENDER_UNIT = "pool_re_render"
 
 
 def pool_rows() -> list[dict]:
-    """Every scored row of the pool, out of both stores it lives in.
+    """Every scored row of the pool, out of the one store it lives in.
 
     The population this module is about, in one place: the tracked release store,
     which is all of it since the gate store was retired. A row with **no score** is
