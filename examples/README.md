@@ -1,7 +1,7 @@
 # examples
 
 The four thumbnails the root `README.md` shows at the top. Nothing reads them but that
-page.
+page, and each one there links to its view in the live explorer.
 
 Each is rendered through the engine at 1920x1080, supersample 2, and scaled to 480x270
 (Lanczos; JPEG quality 82, progressive, 4:2:0). They are the only binary files this
@@ -21,7 +21,7 @@ and the bound.
 here so a reader can open the same picture there:
 
 ```
-http://localhost:8000/explorer/index.html?v=3&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053
+https://techmatt.github.io/fractals/explorer/index.html?v=3&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053
 ```
 
 The link leaves out `m`, `level` and every shade key but `phase`, so it takes the
@@ -51,8 +51,15 @@ built out of the candidate ledger on the machine that holds it, and a clone with
 ledger cannot draw these at all. The keys are unchanged; only the stamp that resolves
 them is.
 
+Each seat's link in the root README is `pins.query_of` of the seat's recipe row from that
+file (`pins._row_view` gives the view), with `v=4&` in front: `query_of` spells no
+version and the explorer refuses a link without one. `fractal-engine render-link` on each
+at 480x270 matches the thumbnail except `mandelbrot_stripe.jpg`: its recipe's palette has
+`mirror: true`, which `query_of` does not spell, so the link opens the right place in the
+un-mirrored map. Adding `&mirror=1` makes it match.
+
 Replacing one is two steps and neither is optional: redraw and rescale the picture here,
-and repoint the `<img>` in the root README. A file added or renamed also moves the
+and repoint the `<img>` and its link in the root README. A file added or renamed also moves the
 `ALLOWLIST` entry, which is what makes a fifth picture a decision rather than a copy.
 
 A fourth seat, `julia_smooth.jpg` (`2fd9890d`, julia (mandelbrot), `smooth`, glowdon),
