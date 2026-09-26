@@ -244,8 +244,25 @@ def labeled_renders() -> set:
     carried by **exactly one** of its 308,419 rows, and that row is the candidate
     the draw named on `selected_on`. `tests/test_gallery_grade_retention.py` is
     the pin, and it asserts the reach rather than the count.
+
+    **Remembered against the stat of every row file it would read**, so a second
+    call over unchanged stores is a few dozen `stat`s rather than 31k keys
+    derived again (1.1 s, 2026-09-26). A prune, a rotation and an inventory each
+    ask, and the fast lane's prune guards asked once per prune. A store written
+    since, or pointed somewhere else, is a different signature and is read afresh.
     """
     from fractal_wallpapers.labeling import finished, gallery_grade, store
+
+    signature = tuple(
+        (str(path), stat.st_mtime_ns, stat.st_size)
+        for path in [
+            *(path for head in finished.HEADS for path in finished.row_paths(head)),
+            *gallery_grade.row_paths(),
+        ]
+        for stat in (path.stat(),)
+    )
+    if _LABELED_RENDERS[0] == signature:
+        return set(_LABELED_RENDERS[1])
 
     out: set = set()
     for head in finished.HEADS:
@@ -266,7 +283,12 @@ def labeled_renders() -> set:
         key = gallery_grade.render_key(row)
         if key is not None:
             out.add(key)
+    _LABELED_RENDERS[:] = [signature, frozenset(out)]
     return out
+
+
+#: `[signature, keys]` of the last [`labeled_renders`] read.
+_LABELED_RENDERS: list = [None, frozenset()]
 
 
 # --------------------------------------------------------------------------- #

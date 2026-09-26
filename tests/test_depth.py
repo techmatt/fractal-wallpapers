@@ -53,6 +53,21 @@ BUDGET = 200
 CHEAP_PHOENIX = {**FIXTURE_PRICES, "phoenix": 0.5}
 
 
+@pytest.fixture(autouse=True)
+def no_walk_ledger_join(monkeypatch):
+    """No plan here joins against **this machine's** walk ledgers.
+
+    [`build_plan`] records `centered_drawable` on every plan, and that is
+    [`depth.centered_locations`] — a read of every walk ledger on both tiers. The
+    world here is synthetic, so no key of it is in that set, and the read answers
+    nothing while costing **6.7 s of a 146 s fast lane** (568k rows on 2026-09-26),
+    paid by whichever test builds a plan first. It reads empty, which is what a
+    fresh clone's join returns; a guard about the join patches its own set, and
+    that patch is the later one, so it stands.
+    """
+    monkeypatch.setattr(depth, "centered_locations", frozenset)
+
+
 def seat_prices(monkeypatch, prices):
     """Make every band price out at `prices`, whatever this machine has recorded."""
     monkeypatch.setattr(
