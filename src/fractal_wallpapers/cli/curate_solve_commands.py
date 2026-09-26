@@ -2139,6 +2139,80 @@ def add_steps(steps) -> None:
                 "flight; what they had half made is only under _work/",
             )
 
+    packing = steps.add_parser(
+        "packs",
+        help="zip the full set into the wallpaper packs the site offers, and packs.json",
+        description=(
+            "Reads the full set's directory and its membership.jsonl, and zips the sixteen "
+            "packs: the general n=1000 in three parts, best 30/100/200, and the twelve colour "
+            "collections. Pictures are copied as rendered (STORE mode, no re-encode). Uploads "
+            "nothing. See `curation/README.md`'s *Wallpaper packs*."
+        ),
+    )
+    packing.set_defaults(handler=curate_packs)
+    pack_verbs = packing.add_subparsers(dest="what", required=True)
+    for verb, words in (
+        ("status", "per pack: members on disk, missing, bytes so far and projected"),
+        ("build", "write the zips and packs.json; refuses an incomplete pack by default"),
+    ):
+        verb_parser = pack_verbs.add_parser(verb, help=words)
+        verb_parser.add_argument(
+            "--full", type=Path, required=True, help="the full set's directory (required)"
+        )
+        verb_parser.add_argument(
+            "--order",
+            type=Path,
+            default=None,
+            help="the general rank: one recipe key a line, every n=1000 seat once (default: "
+            "a seeded permutation, packs.SEED). The votes will supply this file.",
+        )
+        if verb == "build":
+            verb_parser.add_argument(
+                "--out", type=Path, required=True, help="where the zips and packs.json go"
+            )
+            verb_parser.add_argument(
+                "--names",
+                type=Path,
+                default=None,
+                help="palette display names (default: explorer/palette-names.json in the "
+                "fractal-website checkout beside this one)",
+            )
+            verb_parser.add_argument(
+                "--allow-partial",
+                action="store_true",
+                help="build an incomplete pack anyway, named -trial-partial",
+            )
+            verb_parser.add_argument(
+                "--only",
+                nargs="+",
+                default=None,
+                help="build these packs by name (general-1-of-3, best-30, rose, ...); "
+                "default every pack",
+            )
+
+
+def curate_packs(args: argparse.Namespace) -> int:
+    """Report on or build the wallpaper packs."""
+    from fractal_wallpapers.curation import packs
+
+    try:
+        if args.what == "status":
+            print(json.dumps(packs.status(args.full, args.order), indent=1))
+            return 0
+        summary = packs.build(
+            args.full,
+            args.out,
+            only=args.only,
+            order=args.order,
+            names_path=args.names,
+            allow_partial=args.allow_partial,
+        )
+    except packs.PacksRefused as refused:
+        print(refused)
+        return 2
+    print(json.dumps(summary, indent=1))
+    return 0
+
 
 def curate_full_set(args: argparse.Namespace) -> int:
     """Drive, read or pause the full-resolution set."""

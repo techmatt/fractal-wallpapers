@@ -97,6 +97,7 @@ selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 release    the selected rows again at full size, workers rendering
 full_set   every kept seat at 2560x1440 ss3 as JPEG q95 4:4:4: the resumable driver
+packs      the full set zipped into the sixteen downloadable packs, and packs.json
 explorer_link  the site explorer's permalink for a render row, spelled as its contract
            spells it — or the reason no link draws the picture exactly
 embed_link the link written into a finished PNG or JPEG's metadata; pixels untouched
@@ -2284,6 +2285,47 @@ fractal-wallpapers curate full-set pause  --out <dir> --now   # kill it now
   run again. `pause --now` kills the driver's pid: the driver holds a kill-on-close job
   its workers and their engines inherit, so they go with it. Never kill
   `fractal-engine.exe` by name.
+
+## Wallpaper packs
+
+*(packs_assemble_ckpt153, 2026-09-26.)* [`packs`] zips the full set's JPEGs into the
+downloads the site's packs page offers. It reads the full set's directory and its
+`membership.jsonl` and nothing else of the render path, and it uploads nothing.
+
+- **Sixteen zips**: the general n=1000 in three parts in rank order (334 / 333 / 333),
+  best 30, 100 and 200 (the first K of that same order, so each is nested in part 1),
+  and the twelve hue collections. n=2000 and the seven mode collections do not ship.
+- **Rank order** is a seeded permutation (`packs.SEED`) until the friends' votes
+  define one; then it is `--order FILE`, one recipe key a line, every n=1000 seat once.
+  A colour pack draws its own from `<SEED>/<hue>`. The seed and the order are written
+  into `packs.json`.
+- **Inside**: one folder named after the zip, `<rank> <palette> <fractal>.jpg` per
+  picture and a `README.txt` (site, the embedded explorer link, CC BY 4.0). The rank pads
+  to the pack's width, and a general part keeps the general rank, so part 2 opens at
+  `0335`. The palette is the explorer's display name from `explorer/palette-names.json`
+  in the `fractal-website` checkout (`--names` overrides); an id with no entry falls back
+  to the raw id and `build` lists it under `unnamed_palettes`. The fractal is
+  `builder/picks.py`'s `family_name` there with the degree as a word: Mandelbrot, Julia,
+  Cubic / Quartic / Quintic / Sextic Multibrot or Julia, Phoenix.
+- **Pictures are STORED, byte for byte** — no re-encode, so the link the full set wrote
+  into each JPEG travels with it. Only `README.txt` deflates.
+- **An incomplete pack refuses** (exit 2, naming what each pack lacks) unless
+  `--allow-partial`, which names the pack and its file `-trial-partial`.
+- **`packs.json`** beside the zips: per pack its name, file, picture count, bytes, sha256
+  and seat keys in rank order. `build` merges into it by pack and drops any entry whose
+  zip is no longer there.
+- **Sizes**: GitHub Releases takes each file under 2 GiB (GitHub's *About releases*,
+  checked 2026-09-26), and Matt's budget is about 1.1 GB a zip. At the full set's mean
+  of about 2.9 MB a picture, a 333-picture general part is about 0.96 GB, but **a
+  400-seat hue collection is about 1.15 GB** and runs 1.0–1.3 GB on each hue's own mean
+  so far — over the budget, and inside GitHub's limit.
+
+```
+fractal-wallpapers curate packs status --full <full set dir>                  # per pack: on disk, missing, projected
+fractal-wallpapers curate packs build  --full <dir> --out <packs dir>         # all sixteen; refuses if incomplete
+fractal-wallpapers curate packs build  --full <dir> --out <dir> --only best-30 rose
+fractal-wallpapers curate packs build  ... --order <votes order file>         # the votes' rank
+```
 
 ## Levelling is decided once and replayed upward
 

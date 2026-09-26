@@ -670,6 +670,10 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
     },
     "pins": {"resolve": ()},
     "full-set": {"run": ("--out", "--workers"), "status": ("--out",), "pause": ("--out", "--now")},
+    "packs": {
+        "status": ("--full", "--order"),
+        "build": ("--full", "--order", "--out", "--names", "--allow-partial", "--only"),
+    },
     "growth": {
         "run": ("--name", "--fraction", "--n", "--seed", "--swap-seconds"),
         "plot": (),
@@ -1046,7 +1050,7 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 118
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 120
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "
