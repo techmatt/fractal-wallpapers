@@ -46,9 +46,10 @@ A subsample that cannot fill `n` is a **finding**, not an error. That is the cur
 
 ## The output schema — `growth.jsonl`, one row per (rung, seed, n)
 
-The website's `pipeline-growth` figure bakes from this file, so it is the contract
-and not an implementation detail. Every field, its unit, and whether it is
-approximate:
+The website bakes its `pipeline-growth` figure from its own `builder/pool_study.py`,
+which draws with this module's `visits`, `draw` and `restrict` and writes a file of
+its own rather than reading this one. The schema is still the contract for every run
+recorded here. Every field, its unit, and whether it is approximate:
 
 **Which cell this is** — `schema` (int, [`SCHEMA`]); `stamp` (text, the run folder's
 name, on every row of the run); `rung` (text, `1/8`, the fraction spelled);
