@@ -10,7 +10,14 @@ torch = pytest.importorskip("torch")
 
 
 class Corpus:
-    """A [`palette_train.Sets`] with the pictures already made, and no disk at all."""
+    """A [`palette_train.Sets`] with the pictures already made, and no disk at all.
+
+    It hands out float64, and the tests below read the head in float64 to match,
+    because what they claim is about the arithmetic of the split and not about
+    float32: arm64's float32 kernels pick different paths by batch size, which put
+    a whole batch and its pieces 1.3-1.8% apart on macOS while Linux and Windows
+    agreed to 1e-6.
+    """
 
     def __init__(self, sets: int, width: int, seed: int = 0) -> None:
         generator = torch.Generator().manual_seed(seed)
@@ -32,7 +39,7 @@ class Corpus:
         flat = (torch.as_tensor(indices).view(-1, 1) * self.width + offsets).reshape(-1)
         pictures = palette_head.normalize(self.pictures[flat])
         pictures = pictures.view(len(indices), self.width, *pictures.shape[1:])
-        return pictures, self.scores[torch.as_tensor(indices)]
+        return pictures.double(), self.scores[torch.as_tensor(indices)].double()
 
 
 def a_recipe(**over) -> dict:
@@ -43,7 +50,7 @@ def relative(mine, theirs) -> float:
     """How far apart two gradients are, as a share of the one they should be.
 
     Elementwise equality is the wrong test: the two runs sum the same terms in a
-    different order, so they differ by float32's own last bits on values of order
+    different order, so they differ by float64's own last bits on values of order
     a thousand. What is being claimed is that they are the same vector.
     """
     return float(
@@ -84,16 +91,16 @@ def test_a_batch_split_into_pieces_is_the_same_gradient(listwise: float) -> None
     recipe = a_recipe(listwise=listwise, listwise_temperature=0.5)
     indices = [0, 1, 2, 3]
 
-    whole = palette_head.build(pretrained=False).eval()
+    whole = palette_head.build(pretrained=False).double().eval()
     torch.manual_seed(0)
     palette_train.accumulate(whole, examples, indices, "cpu", recipe, None, len(indices))
     one_pass = gradients(whole)
 
-    pieced = palette_head.build(pretrained=False).eval()
+    pieced = palette_head.build(pretrained=False).double().eval()
     pieced.load_state_dict(whole.state_dict())
     torch.manual_seed(0)
     palette_train.accumulate(pieced, examples, indices, "cpu", recipe, None, 2)
-    assert relative(one_pass, gradients(pieced)) < 1e-5
+    assert relative(one_pass, gradients(pieced)) < 1e-12
 
 
 @pytest.mark.slow
@@ -108,14 +115,14 @@ def test_a_ragged_last_piece_is_still_weighted_by_what_it_holds() -> None:
     recipe = a_recipe()
     indices = [0, 1, 2, 3, 4]
 
-    whole = palette_head.build(pretrained=False).eval()
+    whole = palette_head.build(pretrained=False).double().eval()
     palette_train.accumulate(whole, examples, indices, "cpu", recipe, None, 5)
     one_pass = gradients(whole)
 
-    pieced = palette_head.build(pretrained=False).eval()
+    pieced = palette_head.build(pretrained=False).double().eval()
     pieced.load_state_dict(whole.state_dict())
     palette_train.accumulate(pieced, examples, indices, "cpu", recipe, None, 2)
-    assert relative(one_pass, gradients(pieced)) < 1e-5
+    assert relative(one_pass, gradients(pieced)) < 1e-12
 
 
 def test_the_recipe_keeps_the_batch_the_teacher_trained_under() -> None:

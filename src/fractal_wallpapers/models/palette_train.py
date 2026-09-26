@@ -338,8 +338,9 @@ def accumulate(
     time and each piece's loss is scaled by its share of the batch before
     `backward`. Because the objective is a **mean over sets**, those scaled pieces
     sum to the gradient a single pass over the whole batch would have produced —
-    the same vector to within float32's own last bits, which is what
-    `tests/test_palette_train.py` measures rather than assumes. The one thing that
+    the same vector to within rounding, which is what `tests/test_palette_train.py`
+    measures in float64 rather than assumes (in float32, arm64's kernels differ by
+    batch size and put the two a percent or two apart). The one thing that
     genuinely differs is BatchNorm, which sees a piece's pictures rather than the
     batch's.
 
