@@ -462,7 +462,9 @@ def status(out: Path, window: float = 3600.0) -> dict:
     progress = read_jsonl(out / PROGRESS_NAME)
     stamped = [time.mktime(time.strptime(row["at"][:19], "%Y-%m-%dT%H:%M:%S")) for row in progress]
     recent = [at for at in stamped if at >= time.time() - window]
-    rate = len(recent) / (window / 3600.0) if recent else None
+    # Over the window, or over the run's age where the run is younger than it.
+    span = min(window, time.time() - min(stamped)) if stamped else 0.0
+    rate = len(recent) / (span / 3600.0) if recent and span > 0 else None
     left = None if total is None else max(0, total - on_disk)
     finish_at = None
     if rate and left is not None:
