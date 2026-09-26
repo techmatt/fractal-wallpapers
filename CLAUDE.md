@@ -94,8 +94,8 @@ that came later carry the date of Matt's ruling.
   `curation.backfill.DEFAULT_RECORD` is the general one. **The page to open is
   `artifacts/curation/viewer/index.html`**, written by
   `curate solve browse <stamp> --viewer` and showing `final139_general`; the
-  nineteen collection pages beside it come from `curate solve viewers` and
-  `all.html` indexes them. The path carries no stamp, so the bookmark survives
+  collection pages beside it come from `curate solve viewers`, which with no
+  stamp builds every kept record, and `all.html` indexes them. The path carries no stamp, so the bookmark survives
   the role moving.
 - **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13,
   which reverses what this file said until then. **Keeping needs a reason;

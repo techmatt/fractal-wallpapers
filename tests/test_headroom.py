@@ -728,3 +728,31 @@ def test_the_census_records_the_preselection_it_was_taken_over():
 def test_a_census_without_the_preselection_says_it_was_not_applied():
     read = headroom.census(clearing_pool(3), ladder=(20,), radius=None, log=lambda *_: None)
     assert "skipped" in read["preselection"]
+
+
+def test_the_population_joins_the_stores_solve_pool_joins_only_off_the_ledger(monkeypatch):
+    """The veto and the spiral scores are handed to `solve.pool` explicitly.
+
+    `solve.pool` reads both only when it reads the ledger itself, and this always
+    hands it rows, so a store not handed over is a store the population never saw:
+    until 2026-09-26 the spiral scores were not, and every place read UNKNOWN.
+    """
+    from fractal_wallpapers.curation import candidate_ledger, spiral_scores
+    from fractal_wallpapers.curation import veto as veto_module
+
+    monkeypatch.setattr(candidate_ledger, "read", lambda: [])
+    monkeypatch.setattr(candidate_ledger, "read_scores", lambda: [])
+    monkeypatch.setattr(veto_module, "render_keys", lambda: {"vetoed"})
+    monkeypatch.setattr(spiral_scores, "by_key", lambda: {"place": 0.9})
+    handed = {}
+
+    def pool(**rest):
+        handed.update(rest)
+        return [], {}
+
+    monkeypatch.setattr(solve, "pool", pool)
+    headroom.population(log=lambda *_: None)
+    assert handed["vetoed"] == {"vetoed"}
+    assert handed["spirals"] == {"place": 0.9}
+    headroom.population(rows=[], scores=[], log=lambda *_: None)
+    assert handed["vetoed"] is None and handed["spirals"] is None

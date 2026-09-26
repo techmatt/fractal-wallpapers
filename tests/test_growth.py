@@ -311,6 +311,10 @@ def test_every_row_carries_the_schema_the_module_documents(monkeypatch, tmp_path
         "centered_seats",
         "centered_share",
         "solve_seconds",
+        "fine_bar",
+        "over_the_fine_bar",
+        "seated_p_fine",
+        "eligible_p_fine",
     }
     assert wanted <= set(rows[0])
     assert rows[0]["schema"] == growth.SCHEMA
@@ -379,6 +383,39 @@ def test_a_row_whose_eligible_pool_is_not_the_solves_is_refused(monkeypatch):
             order=order,
             log=quiet,
         )
+
+
+def test_a_rung_the_fine_bar_bites_on_is_measured_and_records_p_fine(monkeypatch, tmp_path):
+    """The eligible pool is counted inside the fine bar, as the solve counts it.
+
+    Half of every place's rows read under [`solve.DEFAULT_FINE_BAR`]. Counted
+    unbarred, as it was until 2026-09-26, the check disagreed with the solve's own
+    record and refused; counted barred it agrees, and the row carries the seated
+    `p_fine` spread off the same column.
+    """
+    candidates, rows, order = pool_of(12)
+    low = solve.DEFAULT_FINE_BAR / 2
+    read = {held.key: (0.5 if held.key.endswith("_0") else low) for held in candidates}
+    monkeypatch.setattr(growth, "growth_dir", lambda stamp: tmp_path / str(stamp))
+    swept_rows, manifest = growth.sweep(
+        stamp="FIXTURE",
+        denominators=(1,),
+        sizes=(4,),
+        rows=rows,
+        candidates=candidates,
+        order=order,
+        coverage={},
+        centered=frozenset(),
+        fine=solve.FineColumn(read=read, record={}),
+        log=quiet,
+    )
+    row = swept_rows[0]
+    assert row["candidates"] == 24
+    assert row["over_the_fine_bar"] == 12 == row["eligible"]
+    assert row["fine_bar"] == solve.DEFAULT_FINE_BAR == manifest["solve"]["fine_bar"]
+    assert row["seated_p_fine"]["count"] == row["filled"] == 4
+    assert row["seated_p_fine"]["p50"] == row["seated_p_fine"]["min"] == 0.5
+    assert row["eligible_p_fine"]["min"] >= solve.DEFAULT_FINE_BAR
 
 
 # --------------------------------------------------------------------------- #

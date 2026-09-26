@@ -64,8 +64,9 @@ floor on what was attempted);
 written before the leg stamped `hunt.seconds`); `mining_seconds_rows` (count, what
 the seconds were summed over).
 
-**What the leg had to choose from** — `eligible` (count, candidates clearing their
-mode's bar) and `eligible_locations` (count, distinct places among them);
+**What the leg had to choose from** — `eligible` (count, candidates over the fine
+bar that also clear their mode's bar) and `eligible_locations` (count, distinct places
+among them);
 `after_the_preselection` (count, survivors of the neutral pre-selection);
 `in_the_view` (count, rows the stratified view offered the seed).
 
@@ -87,6 +88,14 @@ with no seat is not in it); `twin_refusals` (count, candidates the diversity rul
 refused) and `twin_collapse_share` (ratio, over `after_the_preselection`);
 `centered_seats` and `centered_share` (count and ratio, seats at a location a walk
 ledger calls `centered`, [`depth.centered_locations`]).
+
+**The gallery judge** — `fine_bar` (probability, the bar [`solve.at_fine_bar`]
+narrowed the subsample by, [`solve.DEFAULT_FINE_BAR`]); `over_the_fine_bar` (count,
+subsample rows reading `p_fine(>=4)` at or over it — the pool the solve actually
+sees, and what `eligible` is counted inside); `seated_p_fine` and `eligible_p_fine`
+(probability, the fine head's `p_fine(>=4)`, the column the cascade seats by, as
+`count`, `min` and `max` — the whiskers — and `p10/25/50/75/90`; a seat the head has
+no reading for is left out and `count` says so).
 
 **What it cost** — `solve_seconds` (seconds, the solve's own wall clock).
 
@@ -302,12 +311,15 @@ def row_of(
     spent: dict,
     eligible: dict,
     centered: frozenset,
+    fine: dict | None = None,
 ) -> dict:
     """One `growth.jsonl` row, read off one finished solve record.
 
     Everything here is a projection of the record [`solve.solve`] returned —
     nothing is re-derived from the pool, so a number on this row and the same
-    number on the pass record cannot drift apart.
+    number on the pass record cannot drift apart. The one join is `fine`, the
+    column the solve itself read (`{key: p_fine(>=4)}`), which the seated rows
+    do not carry.
     """
     from fractal_wallpapers.curation import retention
 
@@ -327,6 +339,9 @@ def row_of(
     after = int(record["population"]["after_the_preselection"])
     on_centre = sum(1 for held in seated if str(held["location"]) in centered)
     seated_rank = quantiles(held["rank"] for held in seated if held.get("rank") is not None)
+    fine = fine or {}
+    seated_fine = quantiles(fine[key] for key in (str(h["key"]) for h in seated) if key in fine)
+    barred = record.get("fine_bar") or {}
     return {
         "schema": SCHEMA,
         "stamp": str(stamp),
@@ -348,7 +363,10 @@ def row_of(
         "mode_ceilings": dict(record["config"].get("mode_ceilings") or {}),
         "visits": int(drawn),
         "visits_available": int(available),
-        "candidates": int(record["population"]["candidates"]),
+        # The subsample as drawn, which is the fine bar's `offered`: the solve's own
+        # `population.candidates` is counted AFTER the bar narrowed it, and read
+        # bare it put 2,343 on a 1/8 rung that drew 63,509 on 2026-09-26.
+        "candidates": int(barred.get("offered", record["population"]["candidates"])),
         "attempts": int(spent["attempts"]),
         # The keep is READ and not written out as a word: this string lands in a
         # record, and a record that states a policy constant it did not ask for
@@ -356,6 +374,8 @@ def row_of(
         "attempts_are": SCHEMA_NOTES["attempts_are"].format(keep=retention.keep_per_pair()),
         "mining_seconds": spent["mining_seconds"],
         "mining_seconds_rows": int(spent["mining_seconds_rows"]),
+        "fine_bar": barred.get("bar"),
+        "over_the_fine_bar": barred.get("kept"),
         "eligible": int(record["population"]["clearing"]),
         "eligible_locations": int(record["population"]["clearing_locations"]),
         "after_the_preselection": after,
@@ -370,6 +390,8 @@ def row_of(
         "seated_p_ge4": quantiles(held["p_ge4"] for held in seated),
         "eligible_rank": eligible["rank"],
         "eligible_p_ge4": eligible["p_ge4"],
+        "seated_p_fine": seated_fine,
+        "eligible_p_fine": eligible.get("p_fine"),
         "selection_lift": None
         if seated_rank is None or eligible["rank"] is None
         else round(seated_rank["p50"] - eligible["rank"]["p50"], 6),
@@ -405,14 +427,24 @@ def cell(
     order: dict | None = None,
     coverage: dict | None = None,
     swap_seconds: float | None = None,
+    fine=None,
     log=print,
 ) -> list[dict]:
     """Every size, solved over one subsample. One row per size.
 
     The eligible pool is derived **once** here rather than per size, because the
-    bars and the clearing rule do not read `n` — and the derivation is checked
-    against the count [`solve.solve`] puts on its own record, so the two readings
-    of "what cleared" cannot silently part company.
+    fine bar, the mode bars and the clearing rule do not read `n` — and the
+    derivation is checked against the count [`solve.solve`] puts on its own
+    record, so the two readings of "what cleared" cannot silently part company.
+
+    **It is counted inside the fine bar**, [`solve.at_fine_bar`] at
+    [`solve.DEFAULT_FINE_BAR`], because that is the first thing [`solve.solve`]
+    does to the pool it is handed. Until 2026-09-26 this counted the subsample
+    unbarred, so the check disagreed with the solve's own record — and refused —
+    at every rung the bar dropped a single clearing row from. `fine` is
+    [`solve.fine_column`]'s answer, resolved once per sweep and handed to every
+    reader of the column so the bar, the pre-selection and the seated `p_fine`
+    read one mapping.
 
     The **neutral pre-selection** is derived once here for the same reason and on
     the same terms. It does not read `n` either, and it is the more expensive of
@@ -422,12 +454,17 @@ def cell(
     """
     from fractal_wallpapers.curation import headroom
 
-    table = headroom.bars(candidates)
-    cleared = headroom.clearing(candidates, table)
-    preselected = solve.preselection_for(cleared, log=log)
+    fine = solve.fine_column(log=log) if fine is None else fine
+    barred, _reading = solve.at_fine_bar(
+        candidates, float(solve.DEFAULT_FINE_BAR), fine=fine, log=log
+    )
+    table = headroom.bars(barred)
+    cleared = headroom.clearing(barred, table)
+    preselected = solve.preselection_for(cleared, fine=fine, log=log)
     eligible = {
         "rank": quantiles(solve.value_of(held, order) for held in cleared),
         "p_ge4": quantiles(held.score for held in cleared),
+        "p_fine": quantiles(fine.read[held.key] for held in cleared if held.key in fine.read),
     }
     out = []
     for size in sizes:
@@ -439,6 +476,7 @@ def cell(
             coverage=coverage,
             seconds=swap_seconds,
             preselected=preselected,
+            fine=fine,
             log=log,
         )
         if record["population"]["clearing"] != len(cleared):
@@ -458,11 +496,14 @@ def cell(
             spent=spent,
             eligible=eligible,
             centered=centered,
+            fine=fine.read,
         )
         out.append(held)
+        median = (held["seated_p_fine"] or {}).get("p50")
         log(
             f"[growth] 1/{denominator} seed={seed} n={size}: {held['filled']} seat(s) "
             f"({'-' if held['fill'] is None else format(held['fill'], '.1%')}), "
+            f"median p_fine {'-' if median is None else format(median, '.3f')}, "
             f"{held['floors_met']}/{held['floors_in_the_roster']} floor(s), "
             f"{record['seconds']}s solve, {round(time.monotonic() - started, 1)}s the cell"
         )
@@ -541,6 +582,7 @@ def sweep(
     order: dict | None = None,
     coverage: dict | None = None,
     centered: frozenset | None = None,
+    fine=None,
     log=print,
 ) -> tuple[list[dict], dict]:
     """`(the rows, the manifest)`. Reads the live stores and writes nothing.
@@ -568,8 +610,10 @@ def sweep(
     refused: dict = {}
     if candidates is None:
         candidates, _costs, refused = headroom.population(log=log)
+    if fine is None:
+        fine = solve.fine_column(log=log)
     if order is None:
-        order, coverage = solve.ranking_for(candidates, solve.DEFAULT_KEY, log=log)
+        order, coverage = solve.ranking_for(candidates, solve.DEFAULT_KEY, fine=fine, log=log)
     if centered is None:
         centered = depth.centered_locations()
     reachable = sorted({visit_of[held.key] for held in candidates if held.key in visit_of})
@@ -606,6 +650,7 @@ def sweep(
             order=order,
             coverage=coverage,
             swap_seconds=swap_seconds,
+            fine=fine,
             log=log,
         )
         out.extend(measured)
@@ -644,6 +689,7 @@ def sweep(
             "of": "production, unchanged. Restricting the pool is the only difference",
             "key": solve.DEFAULT_KEY,
             "group_cap": solve.DEFAULT_GROUP_CAP,
+            "fine_bar": solve.DEFAULT_FINE_BAR,
             "swap_seconds": swap_seconds,
             "floors": "the per-mode rule, mode_policy.seat_floors",
         },

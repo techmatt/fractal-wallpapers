@@ -228,13 +228,25 @@ def population(rows=None, scores=None, log=print) -> tuple:
     "headroom a solve cannot reach" this function refuses to be. A caller that
     handed its own `rows` is building its own pool and gets no veto, same as
     there.
+
+    **The spiral scores are handed over for the same reason and on the same
+    terms**, since 2026-09-26. [`solve.pool`] joins them only when it reads the
+    ledger itself, so until then every population built here read every place as
+    UNKNOWN and the spiral share cap refused nothing. `curate growth` solves over
+    this population, and until they were joined its whole-pool rung seated at a
+    median `p_fine` of 0.605 where `solve.pool`'s own pool seats at 0.587, and
+    filled 1,000 at 1/8 where that pool fills 964.
     """
+    from fractal_wallpapers.curation import spiral_scores
     from fractal_wallpapers.curation import veto as veto_module
 
     stored = candidate_ledger.read() if rows is None else list(rows)
     read = candidate_ledger.read_scores() if scores is None else list(scores)
     vetoed = set(veto_module.render_keys()) if rows is None else None
-    candidates, refused = solve.pool(rows=stored, scores=read, vetoed=vetoed, log=log)
+    spirals = spiral_scores.by_key() if rows is None else None
+    candidates, refused = solve.pool(
+        rows=stored, scores=read, vetoed=vetoed, spirals=spirals, log=log
+    )
     return candidates, render_cost(stored), refused
 
 

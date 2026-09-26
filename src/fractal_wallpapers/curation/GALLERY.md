@@ -59,7 +59,10 @@ measurement and the prefilter that was measured and refused.
 **`curate headroom` hands it through explicitly** and has to: `headroom.population`
 always passes its own `rows`, and `solve.pool` reads the store only when it is
 reading the ledger itself, so an unhanded veto there would census headroom a solve
-cannot reach.
+cannot reach. **The spiral scores go through the same door since 2026-09-26**:
+`solve.pool` joins them on the same condition, so until then every
+`headroom.population` read each place as UNKNOWN and the spiral share cap refused
+nothing. `curate growth` solves over that population, which is how it was found.
 
 #### The veto and the seat floors can disagree, and today they do not
 
@@ -2459,10 +2462,15 @@ defines as disposable. The old path now holds a forwarding page rather than a de
 #### `viewers` — one page per planned gallery, and an index over them
 
 ```
-fractal-wallpapers curate solve viewers <stamp> <stamp> …   # one per record, then:
+fractal-wallpapers curate solve viewers                     # every kept record
+fractal-wallpapers curate solve viewers <stamp> <stamp> …   # or just these, then:
 artifacts/curation/viewer/<label>/index.html
 artifacts/curation/viewer/all.html
 ```
+
+**With no stamp it builds every record on the keep list** (`tentative.kept()`), so
+`all.html` lists the whole kept set rather than whichever subset was last typed. Named
+stamps still build just those, and `all.html` then lists just those.
 
 For judging every gallery we plan to publish by eye, at its planned size. Each named
 record's page is `browse`'s page, same builder and same presentation order, written to a
@@ -4451,6 +4459,16 @@ what makes 114 solves affordable — the flatness sidecar and the location readi
 are read once instead of once a cell.
 
 A subsample that cannot fill `n` is a **finding**, not an error. That is the curve.
+
+**The eligible pool is counted inside the fine bar, since 2026-09-26.** `solve.solve`
+narrows whatever it is handed to `p_fine(>=4) >= solve.DEFAULT_FINE_BAR` before
+anything else, and `growth.cell` used to count the clearing pool and take the shared
+pre-selection over the subsample *unbarred* — so its check against the solve's own
+`clearing` refused at any rung where the bar dropped a single clearing row. It now applies `solve.at_fine_bar` first, and one fine column, resolved once a
+sweep, feeds the bar, the pre-selection, the cascade and the row. Each row carries
+`seated_p_fine` (the seated set's `p_fine`: min and max, p10/25/50/75/90) and
+`over_the_fine_bar` beside `filled`, which is what the website's pool-fraction study
+had to measure for itself because this verb could not.
 
 ### The output schema is the durable part
 
