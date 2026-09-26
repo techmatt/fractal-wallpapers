@@ -228,6 +228,13 @@ refused as over the share. Fixed 2026-09-25 by declaring a loop too long to bind
 now held by its own guard on stated seconds,
 `test_a_refill_over_its_share_of_the_loop_is_refused_and_counted`.
 
+**Its sibling went red on an IDLE box, and the clock was the cause again.**
+`test_a_harvest_serves_a_twin_off_a_derived_parameter` read *served* off realized
+**minutes**, and `time.monotonic` on Windows is `GetTickCount64` at **15.625 ms**
+resolution. A twin's expansion that finishes inside one tick books 0 minutes, which
+reads as unserved. It failed about 1 run in 30. Fixed 2026-09-26 by reading
+*served* off **batches**, which count what was served and not how long it took.
+
 ### A votes build can share the box and a solve cannot, and the parent is why
 
 **But it survived beside `curate votes build`, and the difference is the parent
@@ -711,6 +718,24 @@ that was below them.
 
 The three entries below this paragraph were carried here from `CLAUDE.md` on 2026-09-22,
 when it dropped its readings log entirely on Matt's ruling that it holds rules only.
+
+#### preclose_ckpt151
+
+`preclose_ckpt151`, 2026-09-26, idle. **Fast: 4,958 passed in 146.37 s → 132.89 s**, 160
+deselected, count unmoved, and no guard marked, thinned or dropped. Summed by file, the time
+was thin: only one test took more than 2.2 s. Two pure wins:
+- `test_depth.py` **15.9 → 9.0 s**. `build_plan` records `centered_drawable`, which is
+  `depth.centered_locations` — every walk ledger on both tiers, **568k rows, ~7 s** — over
+  a synthetic world none of whose keys can be in it. It is `functools.cache`d, so the cost
+  landed on whichever test planned first, and marking that test slow would only have moved
+  it. The file now stubs the join empty (autouse), which is what a clone reads.
+- `test_candidate_ledger.py` **10.1 → 4.5 s**. `retention.labeled_renders` re-derived 31k
+  render keys from the tracked label stores, **1.1 s**, on every prune. It now remembers
+  its answer against the `(path, mtime_ns, size)` of every row file it would read, which
+  speeds production's prune, rotation and inventory too.
+
+`centered_locations`' own docstring prices the join at 3.6 s over 185k rows, and the walk
+ledgers have since tripled. That is a production cost of each depth plan, left as is.
 
 #### preserve_export_ckpt142
 

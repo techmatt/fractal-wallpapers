@@ -394,7 +394,10 @@ def test_a_harvest_serves_a_twin_off_a_derived_parameter(tmp_path) -> None:
     )
     summary = run.run()
 
-    served = {p for p, row in summary["quota"]["mix"]["minutes"].items() if row["realized"] > 0}
+    # Served is read off BATCHES, not minutes: a twin's expansion here can finish
+    # inside one tick of Windows' 15.6 ms `time.monotonic`, book 0 minutes, and read
+    # as unserved — about 1 run in 30 on 2026-09-26.
+    served = {p for p, row in summary["quota"]["mix"]["batches"].items() if row["realized"] > 0}
     assert served == set(UNPOOLED_TWINS), "all four twins were servable off derived parameters"
     assert summary["tally"]["found"] > 0
     assert summary["refill"]["twins"]["c_spacing_floor"] == C_SPACING_FLOOR
