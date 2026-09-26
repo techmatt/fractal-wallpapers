@@ -73,7 +73,7 @@ from __future__ import annotations
 import multiprocessing
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from concurrent.futures import TimeoutError as FutureTimeout
 from concurrent.futures.process import BrokenProcessPool
 from dataclasses import dataclass, field, replace
@@ -477,13 +477,23 @@ def _kill_workers(pool, log) -> None:
             log(f"[release] worker {getattr(process, 'pid', '?')} would not die: {failure!r}")
 
 
-def run_pass(tasks, workers: int, sink, log=print, leg=None) -> dict:
+def run_pass(tasks, workers: int, sink, log=print, leg=None, ordered: bool = True) -> dict:
     """Render `tasks` and hand each result to `sink(task, result)` **in plan order**.
 
     The sink runs in the parent, exactly once per task, in the order `tasks` was
     given and never concurrently with itself. It is the only place records are
     written, which is the whole reason a worker renders with its stamp write
     suppressed and hands the stamp back instead.
+
+    **`ordered=False` hands each result over as it finishes instead**, for a
+    caller whose rows are independent pictures and whose records have no order to
+    keep ([`curation.full_set`]). The window is the same depth, so the gate still
+    decides every row before it starts. What it buys is the workers behind a slow
+    row: in order, a row at the head of the window holds the sink, the window
+    fills with finished rows, and every other worker idles until it lands.
+    Measured on 2026-09-26 at 2560x1440 ss3: one engine running of three, for
+    fourteen minutes, behind one row. That is what `ss_cost_test_ckpt148`'s "the
+    pool buys ~5%" was measuring, at least in part.
 
     `leg` is the pass's share of the run's wall clock ([`pacing.Leg`]) and is
     optional: without one the pass renders every row, unbounded, exactly as it
@@ -554,6 +564,9 @@ def run_pass(tasks, workers: int, sink, log=print, leg=None) -> dict:
             f"[release] {len(tasks)} row(s) over {workers} worker process(es) at "
             f"{THREADS_ENV}={record['engine_threads']} (serial fallback: --workers 1)"
         )
+        if not ordered:
+            clean = _as_finished(pool, tasks, workers, sink, record, leg, log)
+            return close()
         fill(workers + SUBMIT_AHEAD)
         for index, task in enumerate(tasks):
             if index not in futures:
@@ -609,6 +622,100 @@ def run_pass(tasks, workers: int, sink, log=print, leg=None) -> dict:
         # object takes its engine down with it.
         pool.shutdown(wait=clean, cancel_futures=not clean)
     return close()
+
+
+def _as_finished(pool, tasks, workers: int, sink, record: dict, leg, log) -> bool:
+    """[`run_pass`]'s `ordered=False` loop. True on a clean end, False after a kill.
+
+    The same window, the same gate, the same two fallbacks as the ordered loop;
+    only the sink's order differs. **The hang backstop is measured from
+    submission**, because a row in the window may wait behind one other before a
+    worker takes it: a row is declared hung at twice its deadline plus
+    [`KILL_GRACE`] after it was submitted, which no row that merely queued can
+    reach.
+    """
+    pending: dict = {}  # future -> (index, submitted at)
+    cursor = 0
+    landed = 0
+
+    def top_up() -> None:
+        nonlocal cursor
+        while (
+            len(pending) < workers + SUBMIT_AHEAD
+            and cursor < len(tasks)
+            and record["stopped"] is None
+        ):
+            decline = leg.may_start() if leg is not None else None
+            if decline is not None:
+                record["stopped"] = str(decline)
+                record["not_started"] = [rest.id for rest in tasks[cursor:]]
+                log(f"[release] BUDGET STOP before {tasks[cursor].id}: {decline}")
+                return
+            bounded = _bounded(tasks[cursor], leg)
+            pending[pool.submit(_worker, bounded)] = (cursor, time.monotonic(), bounded.timeout)
+            cursor += 1
+
+    def unfinished() -> list:
+        held = sorted(index for index, _at, _limit in pending.values())
+        return [tasks[index] for index in held] + list(tasks[cursor:])
+
+    top_up()
+    while pending:
+        finished, _ = wait(list(pending), timeout=30.0, return_when=FIRST_COMPLETED)
+        if not finished:
+            now = time.monotonic()
+            hung = [
+                future
+                for future, (_index, at, limit) in pending.items()
+                if limit is not None and now - at > 2 * limit + KILL_GRACE
+            ]
+            if not hung:
+                continue
+            _kill_workers(pool, log)
+            for future in hung:
+                index, _at, limit = pending.pop(future)
+                log(f"[release] {tasks[index].id} HUNG past twice its {limit:.0f}s deadline")
+                _took(
+                    record,
+                    leg,
+                    tasks[index],
+                    Result(
+                        tasks[index].id,
+                        False,
+                        {},
+                        limit + KILL_GRACE,
+                        "killed: hung past its deadline and the parent's grace",
+                        False,
+                        True,
+                    ),
+                    sink,
+                    log,
+                    " (killed by the parent)",
+                )
+            rest = unfinished()
+            record["fell_back_serial"] += len(rest)
+            _serially(rest, sink, record, leg, log, " (serial, after a kill)")
+            return False
+        for future in finished:
+            index, _at, _limit = pending.pop(future)
+            try:
+                result = future.result()
+            except BrokenProcessPool as broken:
+                rest = [tasks[index], *unfinished()]
+                record["fell_back_serial"] = len(rest)
+                log(
+                    f"[release] POOL BROKEN ({broken!r}) - rendering the remaining "
+                    f"{len(rest)} row(s) serially in the parent rather than dropping them"
+                )
+                pending.clear()
+                _serially(rest, sink, record, leg, log, " (serial, after the pool broke)")
+                return True
+            except Exception as failure:  # noqa: BLE001
+                result = Result(tasks[index].id, False, {}, 0.0, repr(failure)[:400], False)
+            landed += 1
+            _took(record, leg, tasks[index], result, sink, log, f" [{landed}/{len(tasks)}]")
+        top_up()
+    return True
 
 
 def decodable(picture: Path) -> bool:

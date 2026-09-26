@@ -376,6 +376,131 @@ def test_a_hung_worker_is_killed_by_the_parent_and_the_rest_finish_serially(
     assert gate.observed[0] == (1.0 + release.KILL_GRACE, False, True)
 
 
+class ControlledPool:
+    """A pool of real futures the test finishes by hand, in whatever order it likes.
+
+    `finish_when_asked` names the order rows complete in: each time the loop waits,
+    the next submitted row in that order is completed. A real `Future` so that
+    `concurrent.futures.wait` works on it.
+    """
+
+    def __init__(self, order=None, broken=(), hang=()):
+        from concurrent.futures import Future
+
+        self.Future = Future
+        self.order, self.broken, self.hang = list(order or []), set(broken), set(hang)
+        self.submitted: list = []
+        self.futures: dict = {}
+        self._processes = {1: type("P", (), {"pid": 1, "kill": lambda s: None})()}
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def submit(self, _entry, task_):
+        future = self.Future()
+        self.submitted.append(task_.id)
+        self.futures[task_.id] = future
+        return future
+
+    def complete_next(self) -> None:
+        for identifier in list(self.order):
+            future = self.futures.get(identifier)
+            if future is None or future.done() or identifier in self.hang:
+                continue
+            self.order.remove(identifier)
+            if identifier in self.broken:
+                future.set_exception(BrokenProcessPool("worker died"))
+            else:
+                future.set_result(release.Result(identifier, True, {}, 0.0, None, False))
+            return
+
+    def shutdown(self, **kwargs):
+        pass
+
+
+def unordered_wait(pool):
+    """`wait` for the controlled pool: finish the next row, then report what is done."""
+
+    def fake(futures, timeout=None, return_when=None):
+        pool.complete_next()
+        done = {future for future in futures if future.done()}
+        return done, set(futures) - done
+
+    return fake
+
+
+def test_an_unordered_pass_sinks_rows_as_they_finish_and_keeps_the_window(monkeypatch) -> None:
+    """A slow head row must not hold the rows behind it: that idled two workers of three."""
+    pool = ControlledPool(order=["b", "c", "d", "a", "e", "f"])
+    monkeypatch.setattr(release, "ProcessPoolExecutor", pool)
+    monkeypatch.setattr(release, "wait", unordered_wait(pool))
+    seen, sink = recorder()
+    plan = [task(name) for name in "abcdef"]
+    record = release.run_pass(plan, 2, sink, lambda _m: None, Gate(allow=9), ordered=False)
+    assert [identifier for identifier, _ in seen] == ["b", "c", "d", "a", "e", "f"]
+    assert pool.submitted[:3] == ["a", "b", "c"], "the window is still workers + SUBMIT_AHEAD"
+    assert record["rows"] == 6 and not record["not_started"]
+
+
+def test_an_unordered_pass_still_asks_the_gate_before_every_row(monkeypatch) -> None:
+    """Pause is a gate that declines: the rows in flight finish, nothing new starts."""
+    pool = ControlledPool(order=list("abcdef"))
+    monkeypatch.setattr(release, "ProcessPoolExecutor", pool)
+    monkeypatch.setattr(release, "wait", unordered_wait(pool))
+    seen, sink = recorder()
+    plan = [task(name) for name in "abcdef"]
+    record = release.run_pass(plan, 2, sink, lambda _m: None, Gate(allow=4), ordered=False)
+    assert pool.submitted == ["a", "b", "c", "d"]
+    assert [identifier for identifier, _ in seen] == ["a", "b", "c", "d"]
+    assert record["not_started"] == ["e", "f"]
+
+
+def test_an_unordered_pass_finishes_serially_when_the_pool_breaks(monkeypatch) -> None:
+    pool = ControlledPool(order=["b", "a"], broken={"a"})
+    monkeypatch.setattr(release, "ProcessPoolExecutor", pool)
+    monkeypatch.setattr(release, "wait", unordered_wait(pool))
+    monkeypatch.setattr(
+        release, "render_task", lambda t: release.Result(t.id, True, {}, 0.0, None, False)
+    )
+    said: list = []
+    seen, sink = recorder()
+    plan = [task(name) for name in "abcd"]
+    record = release.run_pass(plan, 2, sink, said.append, ordered=False)
+    assert sorted(identifier for identifier, _ in seen) == ["a", "b", "c", "d"]
+    assert len(seen) == 4, "every row sunk exactly once"
+    assert record["fell_back_serial"] == 3
+    assert any("POOL BROKEN" in line for line in said)
+
+
+def test_an_unordered_pass_kills_a_hung_row_and_finishes_the_rest_serially(monkeypatch) -> None:
+    """Only the row past its backstop is killed, and the rows behind it are not held."""
+    pool = ControlledPool(order=["b", "c", "d"], hang={"a"})
+    now = [0.0]
+    finish_next = unordered_wait(pool)
+
+    def wait(futures, timeout=None, return_when=None):
+        done, rest = finish_next(futures)
+        if not done:
+            now[0] = 10_000.0  # nothing finished: time passes the backstop
+        return done, rest
+
+    monkeypatch.setattr(release, "ProcessPoolExecutor", pool)
+    monkeypatch.setattr(release, "wait", wait)
+    monkeypatch.setattr(release.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(
+        release, "render_task", lambda t: release.Result(t.id, True, {}, 0.5, None, False)
+    )
+    said: list = []
+    seen, sink = recorder()
+    gate = Gate(allow=9, timeout=1.0)
+    plan = [task("a"), task("b"), task("c"), task("d")]
+    record = release.run_pass(plan, 2, sink, said.append, gate, ordered=False)
+    assert seen == [("b", True), ("c", True), ("d", True), ("a", False)]
+    assert record["killed"] == 1
+    assert gate.observed[-1] == (1.0 + release.KILL_GRACE, False, True)
+    assert any("HUNG" in line for line in said)
+
+
 @pytest.mark.slow
 def test_a_killed_row_is_a_failed_row_that_says_it_was_killed(monkeypatch) -> None:
     """The engine call is where the wall clock goes, so that is where it is cut —

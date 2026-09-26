@@ -426,7 +426,11 @@ def _run(out: Path, workers: int, log) -> dict:
         clear_work(work, task.id)
 
     gate = PauseGate(out / PAUSE_NAME, DEADLINE)
-    record = release.run_pass(tasks, workers, lambda t, r: sink(t, r, 1), log, leg=gate)
+    # As each row finishes, not in plan order: the pictures are independent, and in
+    # order one slow row idles every other worker behind it.
+    record = release.run_pass(
+        tasks, workers, lambda t, r: sink(t, r, 1), log, leg=gate, ordered=False
+    )
     retried: list[str] = []
     if not gate.paused:
         retry = [task for task in tasks if task.id in failed]
@@ -434,7 +438,9 @@ def _run(out: Path, workers: int, log) -> dict:
         if retry:
             log(f"[full-set] retrying {len(retry)} failed row(s) once")
             gate = PauseGate(out / PAUSE_NAME, RETRY_DEADLINE)
-            release.run_pass(retry, workers, lambda t, r: sink(t, r, 2), log, leg=gate)
+            release.run_pass(
+                retry, workers, lambda t, r: sink(t, r, 2), log, leg=gate, ordered=False
+            )
     shutil.rmtree(work, ignore_errors=True)
     return {
         **summary,
