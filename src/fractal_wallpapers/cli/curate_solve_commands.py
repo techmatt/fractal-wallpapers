@@ -2102,6 +2102,68 @@ def add_steps(steps) -> None:
         help="write data/curation/pins.json off pins.txt, one streamed pass over the ledger",
     )
 
+    full_set = steps.add_parser(
+        "full-set",
+        help="every kept seat at 2560x1440 ss3 as JPEG q95 4:4:4: the resumable driver",
+        description=(
+            "Renders every distinct recipe the kept records seat — the Gallery tab's pictures — "
+            "into one directory as <key>.jpg, general first, then general n=2000, then the "
+            "collections. A <key>.jpg on disk is done; relaunching resumes. `pause` asks the "
+            "driver to finish the rows in flight and exit; `pause --now` kills it and its own "
+            "workers. See `curation/README.md`'s *The full set*."
+        ),
+    )
+    full_set.set_defaults(handler=curate_full_set)
+    full_set_verbs = full_set.add_subparsers(dest="what", required=True)
+    for verb, words in (
+        ("run", "render what is not on disk yet, then retry the failures once"),
+        ("status", "pictures done out of the total, the rate, the projected finish"),
+        ("pause", "stop after the rows in flight (the driver watches a PAUSE file)"),
+    ):
+        verb_parser = full_set_verbs.add_parser(verb, help=words)
+        verb_parser.add_argument(
+            "--out", type=Path, required=True, help="the full set's directory (required)"
+        )
+        if verb == "run":
+            verb_parser.add_argument(
+                "--workers",
+                type=int,
+                default=3,
+                help="release worker processes (default 3, this machine's render-pool rule)",
+            )
+        if verb == "pause":
+            verb_parser.add_argument(
+                "--now",
+                action="store_true",
+                help="kill the driver and its own workers rather than waiting for the rows in "
+                "flight; what they had half made is only under _work/",
+            )
+
+
+def curate_full_set(args: argparse.Namespace) -> int:
+    """Drive, read or pause the full-resolution set."""
+    from fractal_wallpapers.curation import full_set
+
+    if args.what == "status":
+        print(json.dumps(full_set.status(args.out), indent=1))
+        return 0
+    if args.what == "pause":
+        print(full_set.pause(args.out))
+        if args.now:
+            pid = full_set.stop_now(args.out)
+            print(f"killed driver {pid}" if pid else "no driver was running")
+        return 0
+    try:
+        summary = full_set.run(args.out, workers=args.workers)
+    except full_set.DriverRunning as busy:
+        print(f"{busy}; not starting a second one")
+        return 3
+    except full_set.FullSetRefused as refused:
+        print(refused)
+        return 2
+    print(json.dumps(summary, indent=1))
+    return 0 if not summary["failed"] else 1
+
 
 def curate_pins(args: argparse.Namespace) -> int:
     """Resolve the pinned list to the rows it means."""

@@ -96,6 +96,7 @@ tentative  one solve recorded under a stamp, with IDs, aliases and a browser
 selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 release    the selected rows again at full size, workers rendering
+full_set   every kept seat at 2560x1440 ss3 as JPEG q95 4:4:4: the resumable driver
 explorer_link  the site explorer's permalink for a render row, spelled as its contract
            spells it — or the reason no link draws the picture exactly
 embed_link the link written into a finished PNG or JPEG's metadata; pixels untouched
@@ -2239,6 +2240,50 @@ shipped render with a replay the engine draws directly, so its digest is of
 `release.parity` needs nothing: both of its arms go through `render_task` and carry the same
 link. Release files already on disk from before this landed carry none, and nothing
 backfills them.
+
+## The full set: every Gallery picture at 2560x1440 ss3
+
+*(fulls_ss3_ckpt148, 2026-09-26.)* [`full_set`] renders every distinct recipe the kept
+records seat — the Gallery tab's pictures, 6,299 recipes over 11,000 seats in the
+twenty-one records of `tentative.kept()` — into one directory as `<key>.jpg`. The path is
+the one `ss_cost_test_ckpt148` verified: `release.task_for` into `release.render_task` with
+the ledger recipe and the borrowed levelling curve, rendered to a PNG under `_work/`, then
+encoded once by `votes.encode` and stamped with the explorer link (Pillow drops a PNG's
+text chunks, so the link is written again into the JPEG).
+
+**The full-resolution setting is 2560x1440 ss3, JPEG q95 at 4:4:4** (no chroma
+subsampling). ss4 priced at 80 wall hours over the set and ss2 at 22; ss2 moved every one
+of ten test pictures more than a q90 WebP pass did. The engine's own JPEG writer is the
+thumbnail writer (q90, 4:2:0) and is not the one used.
+
+**The three-worker pool buys only about 5% at 2560x1440** (`ss_cost_test_ckpt148`: the
+same ten pictures took 459 s of wall time on the pool against 484 s serial at ss4, 124 s
+against 133 s at ss2, each row running about 3x longer inside the pool). The engine
+already fills the machine at this frame size. The driver still runs the production shape.
+
+```
+fractal-wallpapers curate full-set run    --out <dir>         # start or resume
+fractal-wallpapers curate full-set status --out <dir>         # done/total, rate, ETA
+fractal-wallpapers curate full-set pause  --out <dir>         # finish rows in flight, exit
+fractal-wallpapers curate full-set pause  --out <dir> --now   # kill it now
+```
+
+- **Done means `<key>.jpg` is in the directory**, and nothing else does: every picture is
+  built under `_work/` and renamed in, and a start empties `_work/`. `progress.jsonl` (key,
+  seconds, bytes, timestamp) is for timing only; `failures.jsonl` names every failed row
+  and its error. Failures are retried once at the end of each pass.
+- **Order**: the general n=1000 seats, then general n=2000, then the collections in the
+  keep list's order. `membership.jsonl` has one row per (collection, seat order, key) and
+  is what pack assembly reads.
+- **One driver per directory**: `driver.lock` is held by the operating system through
+  `process_control.hold`, so a dead driver's lock is simply free, and `driver.pid` names
+  the live one. A second `run` refuses with exit 3 and names the pid, and a session
+  resuming the run attaches its waiter to that pid rather than starting another.
+- **Pause and resume**: `pause` writes `PAUSE`; the driver finishes the rows in flight and
+  exits clean, and a start refuses while `PAUSE` exists. To resume, delete `PAUSE` and
+  run again. `pause --now` kills the driver's pid: the driver holds a kill-on-close job
+  its workers and their engines inherit, so they go with it. Never kill
+  `fractal-engine.exe` by name.
 
 ## Levelling is decided once and replayed upward
 
