@@ -51,7 +51,7 @@ const DEEP_READS: [u32; 3] = [1, 2, 3];
 pub const DEEP_MARKER: &str = "dv";
 
 /// Where an explorer link opens, for the absolute URL a file's metadata carries.
-pub const EXPLORER_URL: &str = "https://techmatt.github.io/fractal-website/explorer/";
+pub const EXPLORER_URL: &str = "https://techmatt.github.io/fractals/explorer/";
 
 /// The families a shallow link names, in `permalink.js`'s order; the first is the default.
 const FAMILIES: [&str; 12] = [
@@ -1669,7 +1669,7 @@ mod tests {
     #[test]
     fn a_whole_url_is_its_query() {
         assert_eq!(
-            query_of("https://techmatt.github.io/fractal-website/explorer/?v=4&p=viridis#top"),
+            query_of("https://techmatt.github.io/fractals/explorer/?v=4&p=viridis#top"),
             "v=4&p=viridis"
         );
         assert_eq!(query_of("?v=4&p=viridis"), "v=4&p=viridis");

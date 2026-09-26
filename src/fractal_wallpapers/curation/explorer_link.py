@@ -49,7 +49,7 @@ from urllib.parse import quote
 from fractal_wallpapers import engine, engine_spec
 
 #: Where a link written into a file points. The site's `SITE_URL` plus `explorer/`.
-EXPLORER_URL = "https://techmatt.github.io/fractal-website/explorer/"
+EXPLORER_URL = "https://techmatt.github.io/fractals/explorer/"
 
 #: The shallow contract's version, `permalink.js`'s `VERSION`.
 VERSION = 4

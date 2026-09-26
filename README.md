@@ -1,10 +1,10 @@
 # fractal-wallpapers
 
 This is the pipeline for generating a collection of fractal wallpapers and manipulating them in an online fractal explorer. It searches the escape-time planes for places worth framing, uses a trained convolutional network to judge each picture, and chooses the final galleries from among the high-scoring wallpapers. Rust does the rendering (using WebAssembly for the website), and Python does a lot of the plumbing. Most visitors want one of the links below.
-- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractal-website/wallpaper-packs/)
-- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractal-website/explorer/)
-- **How it was made:** [The article, starting here](https://techmatt.github.io/fractal-website/start-here.html)
-- **The site's code** (explorer, article, builder): [fractal-website](https://github.com/techmatt/fractal-website)
+- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractals/wallpaper-packs/)
+- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractals/explorer/)
+- **How it was made:** [The article, starting here](https://techmatt.github.io/fractals/start-here.html)
+- **The site's code** (explorer, article, builder): [fractals](https://github.com/techmatt/fractals)
 - **The pipeline and engine code:** you are here; read on.
 
 [![ci](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml?query=branch%3Amain)
@@ -177,7 +177,7 @@ whole URL or just its query — and a size:
 ```
 cargo build --release --manifest-path engine/Cargo.toml
 engine/target/release/fractal-engine render-link --size 2560x1440 --out seat.png \
-  --link "https://techmatt.github.io/fractal-website/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
+  --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
 ```
 
 It writes the wallpaper with the link embedded in its metadata, so the file reopens its
