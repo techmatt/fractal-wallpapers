@@ -682,10 +682,11 @@ fractal-wallpapers curate solve run --n 1000 --fine-bar 0.50   # the same column
 since 2026-09-07 — narrows the seatable pool to the rows reading at or above a bar
 on the same column. Both refuse without `pool_scores.jsonl` rather than falling
 back, and both take an unread row the conservative way: the order leaves it behind
-every row the head could read, and the bar excludes it. **The bar is off by
-default** and this head's adoption did not change that —
-`curation/GALLERY.md`'s *The bar is a recorded parameter and the default is still
-no bar*.
+every row the head could read, and the bar excludes it. **The bar is on by
+default since 2026-09-08** — `solve.DEFAULT_FINE_BAR`, `0.030242` since
+2026-09-10 — and `fine_bar=None` in process is the unbarred population;
+`curation/GALLERY.md`'s *The bar is a recorded parameter, and since 2026-09-08 it
+is the default*.
 
 Each band is **ten to thirteen minutes of fitting** on this box — a run is
 81–144 s — plus a two-minute streaming pass over the ledger that every run

@@ -29,8 +29,9 @@ corpus or a retired judge, never something that ships.
 `gallery_grade/` is a head **adopted for seating and for nothing else**, since
 2026-09-07. It is stage two of a cascade behind the render judge's `p_ge4`,
 fitted on the `gallery_grade` store, and `solve.DEFAULT_KEY` is that cascade — so
-it orders the gallery above the bar and is read nowhere else: no floor, no bar,
-no rank key, no retention.
+it orders the gallery above the bar, and the bar is on the same column:
+`solve.DEFAULT_FINE_BAR` narrows the pool before a solve seats anything, on by
+default since 2026-09-08. It is no release floor, no rank key and no retention.
 
 ⚠ **It is on the roster since 2026-09-14 and was off it until then.** The
 argument for leaving it off was that the roster is heads a *render* goes through

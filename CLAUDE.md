@@ -425,6 +425,7 @@ Each prompt in this project ends the same way:
   and when another prompt is in flight in this repository — anything `git status`
   lists as modified or untracked that is not yours — commit **only your own files, by
   explicit path**: `git add <path> …`, never `git add -A` or `git add .`.
+- **Commit with a pathspec (`git commit -- <paths>`), never a bare `git commit` after staging**, because another prompt may have staged files in the same index.
 - **One prompt at a time in this repository.** A second prompt does not start while
   another has uncommitted changes — wait for `git status` to come back clean. The
   by-explicit-path rule above is necessary and it is *not* sufficient: it governs
