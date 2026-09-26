@@ -113,10 +113,19 @@ def reading(stamp: str, fine: dict) -> dict:
     }
 
 
-def build(stamps, fine: dict | None = None, log=print) -> Path:
-    """Write every named record's viewer and the index over them. Returns the index."""
+def build(stamps=None, fine: dict | None = None, log=print) -> Path:
+    """Write every named record's viewer and the index over them. Returns the index.
+
+    **No stamp named is the whole keep list**, [`tentative.kept`], so `all.html`
+    written that way always lists every kept record and never the subset the last
+    caller happened to type. An empty keep list refuses rather than writing an
+    index over nothing.
+    """
     from fractal_wallpapers.curation import distinct
 
+    stamps = list(stamps or ()) or tentative.kept()
+    if not stamps:
+        raise ViewersRefused("no stamp was named and the keep list holds no record on this disk")
     fine = distinct.fine_scores() if fine is None else fine
     lines = [reading(str(stamp), fine) for stamp in stamps]
     seen: dict = {}

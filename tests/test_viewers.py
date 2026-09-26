@@ -52,6 +52,30 @@ def test_two_records_under_one_label_are_refused_before_anything_is_written(monk
     assert written == []
 
 
+def test_no_stamp_named_builds_the_whole_keep_list(monkeypatch, tmp_path) -> None:
+    names = {"s1": "final139_red", "s2": "final139_general"}
+    monkeypatch.setattr(tentative, "kept", lambda: ["s1", "s2"])
+    monkeypatch.setattr(tentative, "read_rows", lambda stamp: [{"key": "a"}])
+    monkeypatch.setattr(
+        tentative,
+        "read_manifest",
+        lambda stamp: _manifest(names[stamp], tentative.RECORDED_SEATS),
+    )
+    monkeypatch.setattr(tentative, "viewer_dir", lambda: tmp_path)
+    written = []
+    monkeypatch.setattr(tentative, "page", lambda stamp, **_: written.append(stamp))
+    viewers.build(fine={"a": 0.5}, log=lambda *_: None)
+    assert written == ["s1", "s2"]
+    index = (tmp_path / viewers.INDEX_NAME).read_text(encoding="utf-8")
+    assert 'href="red/index.html"' in index and 'href="general/index.html"' in index
+
+
+def test_no_stamp_and_an_empty_keep_list_is_refused(monkeypatch) -> None:
+    monkeypatch.setattr(tentative, "kept", lambda: [])
+    with pytest.raises(viewers.ViewersRefused):
+        viewers.build(fine={})
+
+
 def test_the_index_reads_only_the_seats_the_head_has_read() -> None:
     rows = [{"key": "a"}, {"key": "b"}, {"key": "c"}]
     fine = {"a": 0.2, "b": 0.6}

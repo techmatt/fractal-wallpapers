@@ -1789,16 +1789,24 @@ def add_steps(steps) -> None:
 
     viewing = solve_verbs.add_parser(
         "viewers",
-        help="a viewer per named record under the viewer directory, and `all.html` over them",
+        help="a viewer per kept record (or per named one) under the viewer directory, and "
+        "`all.html` over them",
         description=(
-            "Each record's page, built exactly as `browse` builds it, lands at "
+            "With no stamp, every record on the keep list (`tentative.kept()`), so "
+            "`all.html` lists the whole kept set. Each record's page, built exactly as "
+            "`browse` builds it, lands at "
             "`<viewer>/<label>/index.html`: the collection a `targets_<collection>_n…` solve "
             "name says, else `general`, with `_n<seats>` where the size is not the recorded "
             "one. `all.html` beside them links every one with seats against target and the "
             "seated `p_fine` median and q1. Nothing is rendered."
         ),
     )
-    viewing.add_argument("stamps", nargs="+", metavar="STAMP", help="the records, one each")
+    viewing.add_argument(
+        "stamps",
+        nargs="*",
+        metavar="STAMP",
+        help="the records, one each (default every kept record)",
+    )
 
     browsing = solve_verbs.add_parser(
         "browse", help="write a record's page again, off the rows it already holds"
