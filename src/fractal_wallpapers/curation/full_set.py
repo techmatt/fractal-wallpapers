@@ -76,13 +76,16 @@ REGIME = release.Regime((2560, 1440), 3)
 QUALITY = 95
 CHROMA = "444"
 
-#: How long one row may take in the pool before it is killed. The slowest of the
-#: ten priced rows was 93 s serial at ss4, which is about 55 s at ss3 and three
-#: times that beside two siblings, so half an hour is ten times the worst seen.
-DEADLINE = 1800.0
+#: How long one row may take in the pool before it is killed. **An hour since
+#: 2026-09-27**, up from half an hour: the ten priced rows put the worst at a few
+#: minutes, but the deep Mandelbrot seats (`stripe` and the angle modes at
+#: 28,000 to 47,000 iterations) run past thirty minutes beside two siblings —
+#: five of them in forty minutes of the general n=2000 — and a row killed at the
+#: deadline is a row paid for twice, once to the kill and once in the retry.
+DEADLINE = 3600.0
 
 #: The deadline a failed row is retried under, once, at the end of a pass.
-RETRY_DEADLINE = 3600.0
+RETRY_DEADLINE = 7200.0
 
 #: The names the output directory holds beside the pictures.
 LOCK_NAME = "driver.lock"
