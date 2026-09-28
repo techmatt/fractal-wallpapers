@@ -21,7 +21,7 @@ and the bound.
 here so a reader can open the same picture there:
 
 ```
-https://techmatt.github.io/fractals/explorer/index.html?v=3&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053
+https://techmatt.github.io/fractals/explorer/index.html?v=4&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053
 ```
 
 The link leaves out `m`, `level` and every shade key but `phase`, so it takes the
@@ -30,7 +30,9 @@ default palette recipe with only the phase moved — which is `engine_spec.recip
 exactly. The cap is the engine's depth policy in both places. The render spec is
 `curation.pins.parse` of the link with those defaults and no autolevel; `render` has no
 flag for a palette phase, so it goes to `engine.render_report` as a spec rather than
-through the command line.
+through the command line. It was written as `v=3`, and is spelled `v=4` now because that
+is what the explorer rewrites it to on arrival: nothing a smooth-mode view says changed
+between the two, and `render-link` draws both to the same pixels.
 
 ## The three that are seats
 
@@ -51,12 +53,15 @@ built out of the candidate ledger on the machine that holds it, and a clone with
 ledger cannot draw these at all. The keys are unchanged; only the stamp that resolves
 them is.
 
-Each seat's link in the root README is `pins.query_of` of the seat's recipe row from that
-file (`pins._row_view` gives the view), with `v=4&` in front: `query_of` spells no
-version and the explorer refuses a link without one. `fractal-engine render-link` on each
-at 480x270 matches the thumbnail except `mandelbrot_stripe.jpg`: its recipe's palette has
-`mirror: true`, which `query_of` does not spell, so the link opens the right place in the
-un-mirrored map. Adding `&mirror=1` makes it match.
+Each seat's link in the root README is `curation.explorer_link.query_of` of the seat's
+recipe, with the tone curve its run or `autolevel_backfill.jsonl` recorded: the link the
+embedded stamps carry and the site's gallery row for the seat carries, byte for byte.
+**Never `pins.query_of`**, which is a writer for authoring pins and drops `mirror`, the
+`level` curve and a mode's parameters. The strip carried its spelling until 2026-09-28, and
+`mandelbrot_stripe.jpg`, whose palette has `mirror: true`, opened in the un-mirrored map.
+The site's `builder check` runs a `readmes` check that holds every link in this README to
+parsing as its own canonical spelling, and each seat's to the contract's link for its
+recipe, reading the `seat` column above.
 
 Replacing one is two steps and neither is optional: redraw and rescale the picture here,
 and repoint the `<img>` and its link in the root README. A file added or renamed also moves the
