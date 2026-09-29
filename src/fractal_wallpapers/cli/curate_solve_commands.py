@@ -2143,7 +2143,7 @@ def add_steps(steps) -> None:
         "packs",
         help="zip the full set into the wallpaper packs the site offers, and packs.json",
         description=(
-            "Reads the full set's directory and its membership.jsonl, and zips the sixteen "
+            "Reads the full set's directory and its membership.jsonl, and zips the eighteen "
             "packs: the general n=1000 in three parts, best 30/100/200, and the twelve colour "
             "collections. Pictures are copied as rendered (STORE mode, no re-encode). Uploads "
             "nothing. See `curation/README.md`'s *Wallpaper packs*."

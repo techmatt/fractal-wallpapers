@@ -64,6 +64,7 @@ from __future__ import annotations
 import math
 import struct
 
+from fractal_wallpapers.curation import full_set
 from fractal_wallpapers.discovery import walk as walk_module
 
 #: The deepest frame this mode will draw where a plane asks for nothing wider.
@@ -198,10 +199,11 @@ RESOLUTION_ULPS = 4.0
 
 #: What a finished wallpaper is drawn at, which the seat check is quoted against.
 #:
-#: Read from curation rather than restated: a seat admitted against the wrong
-#: geometry is a picture that fails at the last step of the run that made it.
-RELEASE_RESOLUTION = (2560, 1440)
-RELEASE_SUPERSAMPLE = 4
+#: Read from curation rather than restated — [`full_set.REGIME`], the one spelling
+#: of full size: a seat admitted against the wrong geometry is a picture that fails
+#: at the last step of the run that made it.
+RELEASE_RESOLUTION = tuple(full_set.REGIME.resolution)
+RELEASE_SUPERSAMPLE = int(full_set.REGIME.supersample)
 
 
 def band(size: float) -> tuple[float, float]:
@@ -295,8 +297,8 @@ def releasable(center_re, center_im, width: float) -> bool:
 
     **The check that decides whether a seat is worth taking**, and it is asked at
     the release geometry rather than the walk's because that is the one that runs
-    out first: sixteen samples per output pixel over 2560 of them is a grid
-    twenty-seven times finer than a walk node's. A seat whose money shot fails
+    out first: three samples across each of 2560 output pixels is a grid twenty
+    times finer than a walk node's. A seat whose money shot fails
     here is a seat whose every find would be refused at the last step of the run
     that made it.
     """

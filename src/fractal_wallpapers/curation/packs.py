@@ -8,7 +8,7 @@ the full set stamped into every JPEG travels with it.
 
 ## What ships
 
-Sixteen zips (Matt, 2026-09-26):
+Eighteen zips (Matt, 2026-09-26):
 
 - **The general n=1000 in three parts**, [`PARTS`] of them in rank order — 334, 333
   and 333. A part keeps the general rank in its file names, so part 2 opens at

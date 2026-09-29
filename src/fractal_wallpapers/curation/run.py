@@ -85,6 +85,7 @@ from fractal_wallpapers.curation import (
     colorize,
     durables,
     floors,
+    full_set,
     intake,
     pacing,
     recipes,
@@ -99,11 +100,7 @@ from fractal_wallpapers.curation import (
 from fractal_wallpapers.curation import (
     stamps as stamps_module,
 )
-from fractal_wallpapers.curation.run_layout import (
-    RELEASE_RESOLUTION,
-    RELEASE_SUPERSAMPLE,
-    run_dir,
-)
+from fractal_wallpapers.curation.run_layout import run_dir
 from fractal_wallpapers.paths import tracked_name
 
 #: The share of a release's slots the strange judge fills, and the default the
@@ -723,10 +720,9 @@ def _release(selected, by_key, directory, workers, skip, log, leg=None):
     where = directory / "release"
     where.mkdir(parents=True, exist_ok=True)
     stamps = where / "autolevel_stamps.jsonl"
-    geometry = {
-        "resolution": list(RELEASE_RESOLUTION),
-        "supersample": RELEASE_SUPERSAMPLE,
-    }
+    # Full size is the full set's regime and nothing else's. The record carries
+    # it, so a run released at the former ss4 still re-derives at ss4.
+    geometry = full_set.REGIME.geometry()
     finished = release.completed(where)
     swept = colorize.sweep_writing(where)
     if swept:

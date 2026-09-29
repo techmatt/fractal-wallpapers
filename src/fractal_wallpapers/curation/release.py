@@ -154,7 +154,7 @@ class Regime:
 #: pixels at half the supersample is a sixteenth of the field samples, so the leg
 #: that priced at ~25 s a winner is the one this buys back.
 #:
-#: It is deliberately not [`run.RELEASE_RESOLUTION`]. A diagnostic release and a
+#: It is deliberately not full size, [`full_set.REGIME`]. A diagnostic release and a
 #: shipped wallpaper used to be the same picture at the same size and are not any
 #: more, so the two are named apart rather than one read off the other — what a
 #: run makes is a night's evidence, and what the selection makes is the

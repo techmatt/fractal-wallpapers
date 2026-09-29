@@ -62,10 +62,10 @@ def released_rows(run: str) -> list[dict]:
 #: shipped. Every row written before `release_geometry` existed came out of a run
 #: or a pass whose release leg was 2560x1440 ss4 — there was one regime and it was
 #: not a parameter — so this is a **reading of the store as it stands** and not a
-#: default anything new relies on. A row written since carries its own.
-UNRECORDED_REGIME = release.Regime(
-    tuple(run_layout.RELEASE_RESOLUTION), run_layout.RELEASE_SUPERSAMPLE
-)
+#: default anything new relies on. A row written since carries its own. It is
+#: [`release.FORMER_RELEASE_REGIME`] by name, and never today's full size: that
+#: moved to ss3 ([`full_set.REGIME`]) and these rows did not.
+UNRECORDED_REGIME = release.FORMER_RELEASE_REGIME
 
 
 def regime_of_row(row: dict) -> release.Regime:

@@ -1,4 +1,6 @@
-"""Where a release run's regenerable files go, and at what size it draws them.
+"""Where a release run's regenerable files go.
+
+What size it draws them at is [`full_set.REGIME`], the one spelling of full size.
 
 This is here rather than in [`curation.run`] because of who asks. `run` is the
 release pass's wiring — a thousand lines that import a dozen modules and drive an
@@ -27,12 +29,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from fractal_wallpapers.paths import under
-
-#: What a release picture is rendered at. Read by the two checks that re-render a
-#: shipped row and compare — a parity check that drew at another size would be
-#: measuring the size.
-RELEASE_RESOLUTION = (2560, 1440)
-RELEASE_SUPERSAMPLE = 4
 
 
 def run_dir(run: str) -> Path:

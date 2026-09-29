@@ -97,7 +97,7 @@ selection  top-N per judge, under the slot and supply caps, the location rule
            — and the bar
 release    the selected rows again at full size, workers rendering
 full_set   every kept seat at 2560x1440 ss3 as JPEG q95 4:4:4: the resumable driver
-packs      the full set zipped into the sixteen downloadable packs, and packs.json
+packs      the full set zipped into the eighteen downloadable packs, and packs.json
 explorer_link  the site explorer's permalink for a render row, spelled as its contract
            spells it — or the reason no link draws the picture exactly
 embed_link the link written into a finished PNG or JPEG's metadata; pixels untouched
@@ -1824,10 +1824,12 @@ will actually plan, instead of restating the attempt multiplier, the share and t
 mode count in `schedule` — three copies that were correct only while all three of
 the originals were fixed.
 
-Everything **a run** makes at full size is **2560x1440 supersample 4** —
-`run_layout.RELEASE_RESOLUTION` and `run_layout.RELEASE_SUPERSAMPLE`, one geometry for every
-partition, every mode and every head, so nothing about a release row's cost or
-its bytes depends on which slot it took.
+Everything **a run** makes at full size is **`full_set.REGIME`, 2560x1440 ss3** —
+the one spelling of full size, one geometry for every partition, every mode and
+every head, so nothing about a release row's cost or its bytes depends on which
+slot it took. Every run to date released at **ss4**, when full size was
+`run_layout`'s own constant; their records carry the geometry they drew at, so
+`checks` re-derives them at ss4 still (wallpapers_followups_ckpt156, 2026-09-29).
 
 **A gallery pass is 1280x720 ss2**, from 2026-08-25 on Matt's call, and it is a
 *default* rather than a constant: `release.RELEASE_REGIME`, moved by
@@ -2197,8 +2199,8 @@ silent.
 *(embedded_links_ckpt145, 2026-09-23.)* A picture [`release.render_task`] finishes has the
 website explorer's link to it written into its metadata, so a wallpaper that leaves this
 machine carries the way back to the view that made it. `render_task` is the seam because
-every leg that renders at release geometry comes through it — the phase-3 pass at
-2560x1440 ss4, a run's release, a solve's seats, a vote kit, `fulls`, a fate page — and
+every leg that renders at release geometry comes through it — the full set at
+`full_set.REGIME` (2560x1440 ss3), a run's release, a solve's seats, a vote kit, `fulls`, a fate page — and
 because the autolevel stamp the link's tone curve comes from is in hand there.
 
 **The fields** are the ones the explorer writes into its own downloads, in the same bytes
@@ -2253,7 +2255,8 @@ encoded once by `votes.encode` and stamped with the explorer link (Pillow drops 
 text chunks, so the link is written again into the JPEG).
 
 **The full-resolution setting is 2560x1440 ss3, JPEG q95 at 4:4:4** (no chroma
-subsampling). ss4 priced at 80 wall hours over the set and ss2 at 22; ss2 moved every one
+subsampling): `full_set.REGIME`, `QUALITY` and `CHROMA`. `REGIME` is the one
+spelling of full size — a run's release and `deep.depth`'s seat check read it too. ss4 priced at 80 wall hours over the set and ss2 at 22; ss2 moved every one
 of ten test pictures more than a q90 WebP pass did. The engine's own JPEG writer is the
 thumbnail writer (q90, 4:2:0) and is not the one used.
 
@@ -2323,7 +2326,7 @@ fractal-wallpapers curate full-set pause  --out <dir> --now   # kill it now
 downloads the site's packs page offers. It reads the full set's directory and its
 `membership.jsonl` and nothing else of the render path, and it uploads nothing.
 
-- **Sixteen zips**: the general n=1000 in three parts in rank order (334 / 333 / 333),
+- **Eighteen zips**: the general n=1000 in three parts in rank order (334 / 333 / 333),
   best 30, 100 and 200 (the first K of that same order, so each is nested in part 1),
   and the twelve hue collections. n=2000 and the seven mode collections do not ship.
 - **Rank order** is a seeded permutation (`packs.SEED`) until the friends' votes
@@ -2350,10 +2353,15 @@ downloads the site's packs page offers. It reads the full set's directory and it
   of about 2.9 MB a picture, a 333-picture general part is about 0.96 GB, but **a
   400-seat hue collection is about 1.15 GB** and runs 1.0–1.3 GB on each hue's own mean
   so far — over the budget, and inside GitHub's limit.
+- **The first whole build** (wallpapers_followups_ckpt156, 2026-09-29, seeded order): all
+  eighteen, 15.1 GB, in **8 minutes** from the full set's directory to a sibling on the
+  same disk — a copy, not a render leg: it holds no pool and drives no engine, but it is
+  long enough to background. Four hue packs land over the 1.1 GB budget: blue 1,169 MB, red and
+  orange 1,134 MB, azure 1,120 MB; the largest general part is 921 MB.
 
 ```
 fractal-wallpapers curate packs status --full <full set dir>                  # per pack: on disk, missing, projected
-fractal-wallpapers curate packs build  --full <dir> --out <packs dir>         # all sixteen; refuses if incomplete
+fractal-wallpapers curate packs build  --full <dir> --out <packs dir>         # all eighteen; refuses if incomplete
 fractal-wallpapers curate packs build  --full <dir> --out <dir> --only best-30 rose
 fractal-wallpapers curate packs build  ... --order <votes order file>         # the votes' rank
 ```

@@ -44,8 +44,8 @@ archived subtree.
 
 ```toml
 # local.toml, untracked, at the repository root
-hot_root = "D:/fractal-wallpapers/artifacts"       # omit for artifacts/ in the checkout
-archive_root = "E:/fractal-wallpapers/artifacts"   # omit if this machine has one disk
+hot_root = "<ssd>:/fractal-wallpapers/artifacts"          # omit for artifacts/ in the checkout
+archive_root = "<bulk disk>:/fractal-wallpapers/artifacts"  # omit if this machine has one disk
 ```
 
 Writes always land hot; reads resolve hot first and fall through to the archive.
@@ -362,7 +362,7 @@ with recipes and `solve.json` for each, and one seat redrawn from the restored
 the root it imports to (on one disk, `hot_root` alone). On Windows, check `rustup show`
 first: if the host toolchain is not MSVC, build with `cargo +stable-x86_64-pc-windows-msvc
 build --release --manifest-path engine/Cargo.toml`. Git Bash's `/c/...` is not a path
-`python.exe` or `git` can read; write `C:/...`. **The engine fingerprint is the thing to read in the import's
+`python.exe` or `git` can read; write the drive-letter form, `<drive>:/...`. **The engine fingerprint is the thing to read in the import's
 output.** `amend.read` keeps only amendment rows drawn by the running build, so a build
 that fingerprints differently silently reads every amended location at its old
 sidecar score; the amendment then has to be *re-derived* with `curate redraw` and

@@ -181,9 +181,11 @@ long to run as the optimization costs to compile.
 that do real work. A test earns `@pytest.mark.slow` by costing about a second or
 more of a render through the engine, a training loop, or a sweep of a store —
 the render cache, the tracked pool, the distillation corpus. Arithmetic stays
-in the fast lane however much of it there is, and a slow guard **moves lanes rather than
-being deleted or weakened**. The marker, the flag and the line the fast lane
-prints all live in `conftest.py`; `CLAUDE.md` states the rule.
+in the fast lane however much of it there is. Moving lanes is not the only answer
+to a slow guard: under `CLAUDE.md`'s *The two lanes*, **a guard may be weakened or
+deleted for speed when the trade is named and priced** — what stopped being covered,
+said at the site and in the report, with the seconds it bought. The marker, the flag
+and the line the fast lane prints all live in `conftest.py`; `CLAUDE.md` states the rule.
 
 ### The line is the point of the arrangement
 
