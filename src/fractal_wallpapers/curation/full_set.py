@@ -477,7 +477,11 @@ def status(out: Path, window: float = 3600.0) -> dict:
     left = None if total is None else max(0, total - on_disk)
     finish_at = None
     if rate and left is not None:
-        finish_at = time.strftime("%a %I:%M%p", time.localtime(time.time() + left / rate * 3600))
+        # The date as well as the day: a slow hour projects more than a week out, and a
+        # bare weekday then names a day that is sooner than the finish.
+        finish_at = time.strftime(
+            "%a %b %d %I:%M%p", time.localtime(time.time() + left / rate * 3600)
+        )
     return {
         "done": on_disk,
         "total": total,

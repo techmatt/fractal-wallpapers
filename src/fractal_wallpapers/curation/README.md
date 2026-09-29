@@ -2257,10 +2257,31 @@ subsampling). ss4 priced at 80 wall hours over the set and ss2 at 22; ss2 moved 
 of ten test pictures more than a q90 WebP pass did. The engine's own JPEG writer is the
 thumbnail writer (q90, 4:2:0) and is not the one used.
 
-**The three-worker pool buys only about 5% at 2560x1440** (`ss_cost_test_ckpt148`: the
-same ten pictures took 459 s of wall time on the pool against 484 s serial at ss4, 124 s
-against 133 s at ss2, each row running about 3x longer inside the pool). The engine
-already fills the machine at this frame size. The driver still runs the production shape.
+**The three-worker pool bought about 5% at 2560x1440 in `ss_cost_test_ckpt148`** (the same
+ten pictures took 459 s of wall time on the pool against 484 s serial at ss4, 124 s against
+133 s at ss2, each row running about 3x longer inside the pool), **and part of that reading
+was the pool's plan-order sink, not the machine.** In plan order a slow row at the head of
+the four-row window idles every other worker behind it: the first full-set driver ran one
+engine of three for fourteen minutes behind one row. `release.run_pass(ordered=False)` hands
+rows over as they finish, and the full set runs that way. On light rows the engine still
+fills the machine, so the pool's gain there stays small.
+
+**Deep seats do not fill the machine, and they set the run's length** (fulls_ss3_ckpt148).
+The Mandelbrot and multibrot `stripe`, `smooth_stripe` and angle-mode seats at 20,000 to
+47,000 iterations, and the phoenix angle-mode seats, hold an engine to about one core
+however many threads it is given — three of them together used 2.9 cores of 12 — and each
+renders twice (base, then the inherited curve), so one takes 15 to 60 minutes in the pool.
+Over the set the median picture took 49 s in the pool and the p95 303 s. A row's deadline
+is [`full_set.DEADLINE`], an hour, and a retry's is two; at thirty minutes six of those
+seats were killed and each was paid for twice. One, `c0dc1f27ef3e335a` (phoenix
+`smooth_mean_angle` at 22,360), needed the two-hour retry. More than three workers would
+use the idle cores on exactly these seats and is the machine's render-pool rule to change,
+not a leg's.
+
+**The run** (fulls_ss3_ckpt148): 6,299 pictures, 16.9 GB, about 61 hours of rendering over
+68 elapsed with Matt's pauses between, all 6,299 on disk. 6,291 carry the explorer link;
+the other 8 read `smooth` or `stripe` through a `log` curve the explorer's catalog cannot
+spell, so they carry none by design.
 
 ```
 fractal-wallpapers curate full-set run    --out <dir>         # start or resume
@@ -2285,6 +2306,16 @@ fractal-wallpapers curate full-set pause  --out <dir> --now   # kill it now
   run again. `pause --now` kills the driver's pid: the driver holds a kill-on-close job
   its workers and their engines inherit, so they go with it. Never kill
   `fractal-engine.exe` by name.
+- **Redrawing a picture is deleting its `<key>.jpg`** and running again: done-ness is the
+  file and nothing else, so no log needs editing. `failures.jsonl` is append-only history,
+  so a key it names may well be on disk since; what failed is what is missing.
+- ⚠ **A process that launched the driver must outlive it.** Stopping the shell job a
+  driver was started from (in a Claude Code session, a `TaskStop` on its background job)
+  left the driver's own process alive but closed the container its engines are born into,
+  and every engine after that failed in 0.0 s with `engine failed:` — 1,188 rows of the
+  queue burned in four minutes and one finished picture lost its link. Nothing on disk was
+  harmed, because a failed row writes no file. Stop a driver with `pause`, never by
+  stopping its parent.
 
 ## Wallpaper packs
 
