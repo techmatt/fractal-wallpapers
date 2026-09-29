@@ -26,7 +26,7 @@ jobs:
       matrix:
         # `macos-latest` is Apple silicon. Intel macOS is not in the matrix: PyPI
         # stopped shipping x86_64 macOS torch wheels, so the `models` extra has
-        # nothing to install there (README, *Install*).
+        # nothing to install there (README, *Requirements*).
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:

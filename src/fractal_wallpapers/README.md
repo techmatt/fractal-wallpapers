@@ -34,9 +34,30 @@ Three refusals, all subclasses of `StorageRefusal`, which `cli.main` catches onc
 for every subcommand because each is about the machine rather than about a
 command's flags: `ArtifactsRootMissing` for a configured root that is not there,
 `ArchiveUnreachable` for a name only the unplugged archive could have answered
-for, `TierCollision` for one name in both tiers. See the
-[top-level README](../../README.md#putting-the-regenerable-tree-on-another-disk)
-for why each refuses rather than falls back.
+for, `TierCollision` for one name in both tiers. Each refuses rather than falls
+back: a configured root that is not present does not fall back to the checkout,
+where an empty tree would read as a cache nobody had built yet, and one name in
+both tiers is refused by name rather than resolved by preference. `head train`,
+`renders train` and `palette train` also refuse when their cache resolves through
+the archive tier, and name the restore command; so does an output path inside an
+archived subtree.
+
+```toml
+# local.toml, untracked, at the repository root
+hot_root = "D:/fractal-wallpapers/artifacts"       # omit for artifacts/ in the checkout
+archive_root = "E:/fractal-wallpapers/artifacts"   # omit if this machine has one disk
+```
+
+Writes always land hot; reads resolve hot first and fall through to the archive.
+The environment variables override the file for one invocation, and setting either
+to the empty string asserts that this machine has no such root, whatever the file
+says. Keep the hot tier on an SSD.
+
+```
+fractal-wallpapers storage status              # every subtree, its tier, its size
+fractal-wallpapers storage archive tiles       # hot -> archive
+fractal-wallpapers storage restore tiles       # archive -> hot
+```
 
 `storage.py` is the only thing that changes any of those answers: `move` copies a
 subtree to the other tier, verifies it three ways and only then deletes the
@@ -338,7 +359,10 @@ with recipes and `solve.json` for each, and one seat redrawn from the restored
 **What a fresh box needs before the import**: `uv sync --extra dev --extra models
 --extra solve` (`--extra cuda` in place of `--extra models` on a box that trains),
 `fetch-weights`, `cargo build --release`, and a `local.toml` naming
-the root it imports to. **The engine fingerprint is the thing to read in the import's
+the root it imports to (on one disk, `hot_root` alone). On Windows, check `rustup show`
+first: if the host toolchain is not MSVC, build with `cargo +stable-x86_64-pc-windows-msvc
+build --release --manifest-path engine/Cargo.toml`. Git Bash's `/c/...` is not a path
+`python.exe` or `git` can read; write `C:/...`. **The engine fingerprint is the thing to read in the import's
 output.** `amend.read` keeps only amendment rows drawn by the running build, so a build
 that fingerprints differently silently reads every amended location at its old
 sidecar score; the amendment then has to be *re-derived* with `curate redraw` and
@@ -363,7 +387,9 @@ through which coloring. A label row, a walk ledger's candidate and a release
 decision are all that shape. **`locations.py` is the only thing that reads it**,
 and everything that takes a manifest goes through it: `render --location` and
 `render --manifest`, `screen`, `score-locations`, and the boundary draw's own
-output.
+output. `render --location` takes a place and a geometry only, and refuses a row that
+says more rather than drawing the right coordinates in the wrong colors; a finished
+wallpaper is redrawn from its whole recipe with `render --recipe FILE --key <seat>`.
 
 It takes all four spellings, because all four are already on disk:
 

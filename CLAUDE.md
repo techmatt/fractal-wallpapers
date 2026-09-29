@@ -1,16 +1,11 @@
 # Working in fractal-wallpapers
 
 This repository generates fractal wallpapers and then decides which ones are worth
-keeping. A Rust engine renders escape-time fields fast; Python steers it — choosing
-where to look, how to color what it finds, and which finished images survive — with
-small neural judges trained on human labels. It is the companion repo to a tutorial
-article, so it is written to be read: every directory says what it does, every
-runnable step has a name, and the git history stays small enough to clone without
-thinking about it.
-
-Almost all of the code here was written with Claude Code. That works best when you
-give it a whole component to build at once and hold it to the conventions below,
-rather than asking for edits line by line.
+keeping. A Rust engine renders escape-time fields; Python steers it, choosing where to
+look, how to color what it finds, and which finished images survive, with small neural
+judges trained on human labels. It is the companion repo to a tutorial article, so it is
+written to be read. `README.md` is for visitors; this file is the rules an agent working
+here is held to.
 
 ## The naming rule
 
@@ -26,10 +21,8 @@ live name answers out of a comment about a different one, confidently and wrongl
 
 **A citation names a heading and a file, never a line number.** Write
 `curation/GALLERY.md`'s *What a pass costs is one store*, not `§1487` or
-`GALLERY.md:1487`. A line number is correct until the next edit to the file above it
-and then it is silently wrong, pointing at a real line that says something else —
-worse than dangling, because nothing looks broken, which is how `curation/README.md`
-carried two stale ones undetected. A heading survives every edit that does not
+`GALLERY.md:1487`. A line number goes silently wrong at the next edit above it, pointing
+at a real line that says something else; a heading survives every edit that does not
 rename it, and a rename is a `git grep` away from being repointed.
 
 **The rule stands and no test here enforces it**: the guard is the website's,
@@ -67,54 +60,41 @@ that came later carry the date of Matt's ruling.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
-  tracked file inside an ignored tree is how these rules rot. **There was exactly
-  one hole and on 2026-09-21 it closed**: a published tentative gallery's *text*
-  files (`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`,
-  and `recipes.jsonl` for one stamp) came through so that a clone could resolve
-  the IDs the site's figures name. **No record is published now**, so nothing
-  under `artifacts/` is tracked at all and the negation lines went with the
-  records. The shape stays in `.gitignore` as a comment: publishing a record
-  again is a line there and a line in `curation.tentative.PUBLISHED`, and the
-  un-ignore names files one by one rather than by pattern. `index.html` is never
-  tracked. `curate solve recipes --write --stamp <stamp>` writes the
-  `{key, recipe}` row per seat that makes a record redrawable — 0.68 MiB for a
-  thousand — and `render --recipe FILE --key <seat>` draws one back
-  byte-identical.
+  tracked file inside an ignored tree is how these rules rot. **Nothing under
+  `artifacts/` is tracked** since 2026-09-21, when the last published record went.
+  The file-level negations for a published tentative stamp's text files stay in
+  `.gitignore` as the shape a publication takes: publishing a record again is a
+  line there and a line in `curation.tentative.PUBLISHED`, and the un-ignore names
+  files one by one rather than by pattern. `index.html` is never tracked.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
-  2026-09-04, and the hole above was per *stamp* because of it. An unpublished
-  record is read by naming its stamp, and what it does not get is a Durable-class
-  save, check or restore and a place in an archive copy. `tentative.PUBLISHED` and
-  `.gitignore`'s negation lines are one list written twice and
-  `tests/test_tentative.py` holds them to agreeing. The ruling, what it replaced
-  and why `LARGE_TEXT_ALLOWLIST` was not the answer are at
-  `curation/tentative.PUBLISHED`. **`tentative.PUBLISHED` is EMPTY since
-  2026-09-21**, the ruling that closed mining: nothing is published, so
-  `tentative.latest()` refuses and **an unstamped read is not available** — every
-  `browse`, `resolve`, `votes build`, atlas and backfill names a stamp, and
-  `curation.backfill.DEFAULT_RECORD` is the general one. **The page to open is
-  `artifacts/curation/viewer/index.html`**, written by
-  `curate solve browse <stamp> --viewer` and showing `final139_general`; the
-  collection pages beside it come from `curate solve viewers`, which with no
-  stamp builds every kept record, and `all.html` indexes them. The path carries no stamp, so the bookmark survives
-  the role moving.
-- **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13,
-  which reverses what this file said until then. **Keeping needs a reason;
-  discarding does not** — it is not a balance a leg weighs at the end of its run.
-  A leg that recorded a gallery to measure something against **deletes it when the
-  measurement is taken and says so in its report**: a solve is cheap to run again,
-  and what a leftover record costs is misreading hazard, not bytes. **The keep list
-  is code**: `tentative.PUBLISHED` plus `tentative.KEPT_UNPUBLISHED`, with the
-  reason written at the site. Everything else goes unless Matt says otherwise.
-  **The keep list holds twenty-one, none of them published**: the `final139_*` set
-  (the general n=1000 and the nineteen collections, seated over the pool as mining
-  closed on 2026-09-21) and `final140_general2000`, the general pass at n=2000 over
-  the same pool, kept so the website can offer it beside the n=1000 default. The
-  store holds exactly the kept records and no separate reference:
-  `fractal_wallpapers.portable.REFERENCE` (top-level `portable.py` beside
+  2026-09-04. An unpublished record is read by naming its stamp, and what it does
+  not get is a Durable-class save, check or restore and a place in an archive copy.
+  `tentative.PUBLISHED` and `.gitignore`'s negation lines are one list written twice
+  and `tests/test_tentative.py` holds them to agreeing; the ruling and why
+  `LARGE_TEXT_ALLOWLIST` was not the answer are at `curation/tentative.PUBLISHED`.
+  **`tentative.PUBLISHED` is EMPTY since 2026-09-21**, the ruling that closed
+  mining, so `tentative.latest()` refuses and **an unstamped read is not
+  available**: every `browse`, `resolve`, `votes build`, atlas and backfill names a
+  stamp, and `curation.backfill.DEFAULT_RECORD` is the general one. The page a
+  person opens, and how it is written, is the `artifacts/curation/viewer/` row of
+  `src/fractal_wallpapers/README.md`'s keep roster and `curation/GALLERY.md`.
+- **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13.
+  **Keeping needs a reason; discarding does not** — it is not a balance a leg weighs
+  at the end of its run. A leg that recorded a gallery to measure something against
+  **deletes it when the measurement is taken and says so in its report**: a solve is
+  cheap to run again, and what a leftover record costs is misreading hazard, not
+  bytes. **The keep list is code**: `tentative.PUBLISHED` plus
+  `tentative.KEPT_UNPUBLISHED`, with the reason written at the site. Everything else
+  goes unless Matt says otherwise. **The keep list holds twenty-one, none of them
+  published**: the `final139_*` set (the general n=1000 and the nineteen collections,
+  seated over the pool as mining closed on 2026-09-21) and `final140_general2000`, the
+  general pass at n=2000 over the same pool, kept so the website can offer it beside
+  the n=1000 default. The store holds exactly the kept records and no separate
+  reference: `fractal_wallpapers.portable.REFERENCE` (top-level `portable.py` beside
   `engine.py`, **not** under `curation/`) names the kept `final139_green`, as
   `GENERAL_CHECK` names `final139_general`. ⚠ **The store is not the keep list**, and
-  a count of folders is not a count of kept records — they have diverged before, by
-  85 records — so a leg that wants to know what is kept reads `tentative.kept()`.
+  a count of folders is not a count of kept records — they have diverged before —
+  so a leg that wants to know what is kept reads `tentative.kept()`.
 - **Preservation of the saved set is a portable instance Matt backs up, and not
   git.** The twenty-one kept records live on this box and in the backups Matt
   takes with `fractal-wallpapers storage export`. **An export is Matt's, taken only
@@ -132,17 +112,16 @@ that came later carry the date of Matt's ruling.
   and never a folder existing. A record off that list is readable by naming its
   stamp and pins nothing. The test for a `KEPT_UNPUBLISHED` entry is that something
   **resolves** the record — code reading its rows, a figure naming `<stamp>|<key>`
-  — not that something mentions it. It swept the whole store until 2026-09-13, which
-  let an ephemeral artifact confer preservation; it must never sweep again.
+  — not that something mentions it. It must never sweep the whole store again: that
+  let an ephemeral artifact confer preservation.
 - **A collection's size is in `curation/targets.py` and nowhere else**, Matt's cut
-  of 2026-09-15. Nineteen collections — twelve hue families, seven modes since
-  2026-09-17 — and a prompt that names a seat count is a prompt retyping one of
-  them, which is how they drifted before the table existed. `curate solve run --collection NAME`
-  and `curate solve record --collection NAME` take `n` from it, splice a family or
-  filter a mode through `targets.pool_for`, and `--n` still overrides. **A
-  collection the table does not name refuses** rather than seating a plausible
-  number. Changing a target is a one-line edit to `TARGETS`, and the reason for
-  each tier is written at the constant.
+  of 2026-09-15. Nineteen collections — twelve hue families, seven modes — and a
+  prompt that names a seat count is a prompt retyping one of them.
+  `curate solve run --collection NAME` and `curate solve record --collection NAME`
+  take `n` from it, splice a family or filter a mode through `targets.pool_for`, and
+  `--n` still overrides. **A collection the table does not name refuses** rather
+  than seating a plausible number. Changing a target is a one-line edit to
+  `TARGETS`, and the reason for each tier is written at the constant.
 - **Degree 6 is never labelled**, Matt's ruling of 2026-09-16: `multibrot6` and
   `julia:multibrot6` are the mining loop's generalization test on a fractal no human
   has labelled. `partitions.NEVER_LABELLED` is the list, sheet build, ingest and both
@@ -154,10 +133,14 @@ that came later carry the date of Matt's ruling.
   every platform and CI installs it; `cuda` is the same list on cu124 for a box
   that trains, declared conflicting with `models` in `[tool.uv] conflicts` so one
   environment holds one torch. A box that trains syncs `--extra cuda` in place of
-  `--extra models`, and a `--extra models` re-sync swaps its torch back to CPU.
+  `--extra models`, and a `--extra models` re-sync swaps its torch back to CPU. The
+  install commands, and why pip cannot opt in, are `models/README.md`'s under
+  `src/fractal_wallpapers/`.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
-  reads `models/weights.json` (head → release tag `weights-vN`, asset name, sha256),
+  reads `models/weights.json` (head → dated release tag, asset name, sha256),
   downloads into `models/<head>/`, and verifies the hash before keeping the file.
+  `roster.TAG` is the one spelling of the tag, and a published tag is never moved;
+  `models/README.md` has why.
 - **Formatting is not negotiable**: `ruff` lints and formats Python at line length
   100; `rustfmt` and `clippy` govern the crate; `.gitattributes` normalizes line
   endings to LF. A repo-wide reformat should never become possible.
@@ -181,6 +164,7 @@ that came later carry the date of Matt's ruling.
   unreferenced — if nothing will want a thing back, its builder goes with it. The
   unit of the first two is a **top-level name**, so a subtree that has to move on
   its own is promoted to one first; `curation` can never move, being the live pool.
+  How the tiers are configured is `src/fractal_wallpapers/README.md`'s *Two roots*.
 - **A picture with no ledger row is garbage, and there is a sweep for it.**
   `curate candidate-ledger orphans` lists by default and deletes with `--apply`;
   run it after any killed leg and periodically. **An unmerged leg is listed and
@@ -211,17 +195,16 @@ that came later carry the date of Matt's ruling.
   `tests/test_base_install.py` proves it in a subprocess with those imports refused,
   because every machine that runs the suite has torch.
 - **`dev` is the suite's install and is not the base install.** It carries `numpy`
-  and `pillow` since 2026-09-15, because the suite does not run without them —
-  `pillow`'s absence was 113 failures and, once three modules imported it at module
-  level, the entire CI run at collection. Three megabytes against the `models`
-  extra's hundreds is the whole of the argument, and it moves nothing on the
-  package's own path. **What stays out is `torch`, `torchvision` and `timm`**, and
-  a test reaching one of those is held to skipping rather than failing, two ways:
-  `tests/test_lanes.py` sweeps every test module for an unguarded module-level
-  import — one of those aborts the **whole lane** at collection, not its own file —
-  and `conftest.pytest_runtest_call` catches the call-time arrivals, which no sweep
-  of `tests/` can see because sixteen modules under `src/` import torch inside a
-  function body. Both read their population from `cli.EXTRA_FOR` less `dev`.
+  and `pillow` since 2026-09-15, because the suite does not run without them; three
+  megabytes against the `models` extra's hundreds is the whole of the argument, and
+  it moves nothing on the package's own path. **What stays out is `torch`,
+  `torchvision` and `timm`**, and a test reaching one of those is held to skipping
+  rather than failing, two ways: `tests/test_lanes.py` sweeps every test module for
+  an unguarded module-level import — one of those aborts the **whole lane** at
+  collection, not its own file — and `conftest.pytest_runtest_call` catches the
+  call-time arrivals, which no sweep of `tests/` can see because modules under
+  `src/` import torch inside a function body. Both read their population from
+  `cli.EXTRA_FOR` less `dev`.
 - **CI's red is readable without `gh` and without admin rights.** The repository is
   public: `api.github.com/repos/techmatt/fractal-wallpapers/actions/runs` gives the
   runs and `runs/<id>/jobs` gives **step-level** conclusions. Job *logs* need
@@ -231,8 +214,7 @@ that came later carry the date of Matt's ruling.
   the release engine binary into its `engine/target/release/`, set
   `FRACTAL_WALLPAPERS_HOT_ROOT` and `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` to empty, and
   run `pytest --slow` there with this checkout's interpreter. That is what a runner
-  has, and it found the `models` job's four reds in five minutes on 2026-09-25.
-  Reproducing the lean install is a mask at `sys.meta_path` —
+  has. Reproducing the lean install is a mask at `sys.meta_path` —
   `tests/test_base_install.py` carries the finder — blocking `torch,torchvision,timm`,
   **not** `numpy`, which `scipy` brings.
 
@@ -273,33 +255,26 @@ only when the prompt names it — Matt's ruling of 2026-09-16.
 
 **Every reading this lane has taken is in
 [`tests/README.md`](tests/README.md#the-lanes-readings-in-order)**, with what the box
-was doing at the time. They are there and not here because this file loads into every
-session and a chronological log is not a rule — Matt's ruling of 2026-09-23 is that this
-file holds rules only. What follows is the rules that log produced.
+was doing at the time, and so are the measurements behind the rules below. This file
+holds rules only — Matt's ruling of 2026-09-23.
 
 - **Take the fast lane whether or not the prompt wrote a test**, and the slow lane only
-  when the prompt names it. A reading is only ever a reading of the tree in front of it,
-  and counts have drifted here across prompts that never re-measured; *the two lanes
-  agree on the collected count* is the check that catches that, so a prompt that does
-  run the slow lane compares the counts.
+  when the prompt names it. A reading is only ever a reading of the tree in front of it;
+  *the two lanes agree on the collected count* is the check that catches drift, so a
+  prompt that does run the slow lane compares the counts.
 - **A lane with any red in it is a lane to read.** There is no expected failure any more.
 - **Repointing a census constant at today's reading is the forbidden edit.** A census
   that went red because a store deletes by design is fixed by a **ratchet** —
   `test_leveled_identity.py` is the worked example — and the ratchet is what makes the
   repoint unnecessary rather than what excuses it.
 - **Zero skips is the normal reading, and a lane that skips is a short render cache** —
-  a store condition, not a tree fault. `--slow -rs` names them; they are all slow-only
-  tests over six `test_render_*` and `test_finished_train` files. **An ingest shortens
+  a store condition, not a tree fault. `--slow -rs` names them. **An ingest shortens
   the cache by exactly the rows it lands and a sheet build does not** (a sheet's pictures
   land under `artifacts/sheet/` and no store gains a row until `label ingest` runs), so
-  run `renders plan` then `renders build --workers 3` after an ingest. The per-crop cost
-  is the store's and varies by head; `tests/README.md` has the measurements.
-- **A fixture that reads one tracked answer once can be worth more than the tests it
-  serves cost.** `models.palette_sets.cyclic` parses all 1,021 colormap documents on
-  every call, and anything that builds a recipe reaches it, so a file that resolves one
-  per test pays it per test — `conftest.shipped_cyclic_maps` is the fix and it cut
-  `tests/test_repetition.py` by two thirds. Ask what a new file pays per test before
-  accepting its clock.
+  run `renders plan` then `renders build --workers 3` after an ingest.
+- **Ask what a new test file pays per test before accepting its clock.** A fixture that
+  reads one tracked answer once can be worth more than the tests it serves cost —
+  `conftest.shipped_cyclic_maps` is the worked example.
 - **`data/palettes` is a parametrized guard**, so a colormap drop moves both counts with
   no test written, and a reading taken across a drop is not comparable with one before it.
 - **A reading is comparable only against one taken on the same install**, and
@@ -312,8 +287,7 @@ file holds rules only. What follows is the rules that log produced.
 - **Measure on an idle machine, and take that literally.** Beside a render leg the
   lane does not merely slow, it is killed outright on commit charge, so **run the
   lane after a leg, never beside it**. **A test whose claim is not about time never
-  reads the wall clock**: the one that did, in `test_twins.py`, went red rather than
-  slow on every loaded run until 2026-09-25.
+  reads the wall clock.**
   [`tests/README.md`](tests/README.md#a-lane-sharing-the-box-with-a-render-leg) has
   the measurements.
 - **Re-run one untouched, engine-bound guard before believing a lane.** Forty
@@ -321,14 +295,11 @@ file holds rules only. What follows is the rules that log produced.
   either way on an invariant guard means the box.
 - **A lane that moves right after code landed is the code until measured
   otherwise**, and the cheap check is one slow file re-run under a profile rather
-  than the whole lane re-run hoping for a quieter box. Reaching for the box first
-  has cost a session:
-  [`tests/README.md`](tests/README.md#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise).
+  than the whole lane re-run hoping for a quieter box
+  ([`tests/README.md`](tests/README.md#a-lane-that-moves-right-after-code-landed-is-the-code-until-measured-otherwise)).
   **The cheapest decisive check is a `git worktree` at `HEAD`** with
   `FRACTAL_WALLPAPERS_HOT_ROOT` pointed at the real store: it measures the OLD code
   on TODAY's box, which is the one comparison a re-run of the new code cannot make.
-  `repo_bootstrap_fixes_ckpt124` split a 35 s move into 15 s of box and 20 s of tree
-  that way in five minutes, then found the 20 s in one file.
 - **When a lane moves with no test added, ask three questions**: **which store
   grew**, **which derivation is paid twice**, and **what is paid once per test**.
   Re-measure after a **merge**, not only after writing tests. And suspect the
@@ -346,23 +317,17 @@ file holds rules only. What follows is the rules that log produced.
   work** — a render through the engine, a training loop, or a sweep of a store.
   Arithmetic stays in the fast lane however much of it there is.
 - **A guard may be weakened or deleted to make a lane faster**, Matt's ruling of
-  2026-09-15, which reverses what this file said until then. It said *a slow guard
-  moves lanes; it is never deleted or weakened* — the tests are this project's
-  memory — and the thing that changed is that the slow lane is now too slow to run
-  as often as it should be, which costs more than a thin guard does. **Slight loss
-  of fidelity is acceptable; a 1:1 equivalent is not required.**
-  What is still required is that the trade is **named and priced**, because the
-  failure this replaces one rule with another to avoid is a suite that quietly got
-  weaker and nobody could say where:
+  2026-09-15: the slow lane is too slow to run as often as it should be, and that
+  costs more than a thin guard does. **Slight loss of fidelity is acceptable; a 1:1
+  equivalent is not required.** What is still required is that the trade is **named
+  and priced**, so the suite never quietly gets weaker with nobody able to say where:
   - **Say what stopped being covered, at the site and in the report** — a sample
     where there was a census, four modes where there were twenty, a claim dropped.
   - **Price it.** A cut with no seconds beside it is not a speedup, it is a
     deletion; `--durations=0 --durations-min=0` summed by file is how this repo
     finds its time and `tests/README.md` carries the method.
-  - **Take the pure wins first.** They cost nothing and they are usually there:
-    `present_pictures` gave 5.1 s of the pool layout on the day this rule changed,
-    by keying a dict on a string instead of a `Path`, and it sped every production
-    solve with it. Reach for coverage only once those are gone.
+  - **Take the pure wins first.** They cost nothing and they are usually there.
+    Reach for coverage only once those are gone.
   - **Prefer thinning a claim to dropping one.** A guard pinned per mode is twenty
     claims and cutting it to four drops sixteen of them; a guard that samples 80
     rows of a store is one claim and sampling 20 is the same claim, cheaper. The
@@ -400,27 +365,19 @@ Each prompt in this project ends the same way:
   that blocks on one reports nothing until it lands.
 - **Arm a completion waiter in the same breath as the launch, and wait on the REAL
   process.** A launcher wrapper exits first and its exit code says nothing about the
-  leg — waiting on one has started a unit on top of a still-running merge twice in
-  one night, and it caught this checkout again on 2026-09-15 (`nohup … &` returned
-  instantly and reported success while the leg had barely begun). A long run also
-  carries a **15-minute heartbeat with a wall-clock timestamp**: a night once lost
-  two units to a session that went quiet for two and three quarter hours with budget
-  remaining. ⚠ **A heartbeat detects nothing on its own** — that stall wrote
-  `engines=0` six times and nothing read it — so the heartbeat is for the reader and
-  the waiter is what wakes the session.
+  leg: `nohup … &` returns instantly and reports success while the leg has barely
+  begun. A long run also carries a **15-minute heartbeat with a wall-clock
+  timestamp**. ⚠ **A heartbeat detects nothing on its own**, so the heartbeat is for
+  the reader and the waiter is what wakes the session.
 - **What arms a waiter is a step that WAITS, not a step that LAUNCHES**, and the
   case the rule above misses is a **handover**: waiting on another checkout to go
-  clean, on another session, or on a person. `overnight_mine_ckpt126` was staged
-  against a held tree, said it would watch `fractal-website` for the lock, and armed
-  nothing — no background job, no `until` loop, no scheduled wake-up. That checkout
-  committed twice and went clean, and **nine hours of producing budget were lost**
-  with the repository still at the same HEAD in the morning. A stated intention is
-  not a mechanism: the only thing that returns control to a session is a tool call
-  completing, so **an idle turn IS the stall**. Block in the foreground on the real
-  condition (`until [ -z "$(git -C <repo> status --short)" ]; do sleep 60; done`)
-  with a generous timeout, or background that same loop so its exit fires one
-  notification. ⚠ A handover is the one moment with **no launch to hang the waiter
-  off**, which is exactly why it is the moment it gets skipped.
+  clean, on another session, or on a person. A stated intention is not a mechanism:
+  the only thing that returns control to a session is a tool call completing, so
+  **an idle turn IS the stall**. Block in the foreground on the real condition
+  (`until [ -z "$(git -C <repo> status --short)" ]; do sleep 60; done`) with a
+  generous timeout, or background that same loop so its exit fires one notification.
+  ⚠ A handover is the one moment with **no launch to hang the waiter off**, which is
+  exactly why it is the moment it gets skipped.
 - **The commit gate is part of the contract, not a step after it.** Commit to `main`,
   and when another prompt is in flight in this repository — anything `git status`
   lists as modified or untracked that is not yours — commit **only your own files, by
@@ -431,8 +388,7 @@ Each prompt in this project ends the same way:
   by-explicit-path rule above is necessary and it is *not* sufficient: it governs
   what a commit adds and says nothing about what the index already holds, so a
   prompt that has staged a **deletion** has it swept into whatever the other prompt
-  commits next. `915ede6` is what that looks like — three files deleted by a prompt
-  that was still running, carried under a message about something else entirely.
+  commits next.
 
 ### Staging a prompt
 

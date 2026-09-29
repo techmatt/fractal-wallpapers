@@ -17,6 +17,18 @@ manifest that names the hash moves with it. Dated rather than numbered for the
 same reason the hash is the real identity: `weights-v6` said nothing about which
 heads were in it or when.
 
+```
+fractal-wallpapers fetch-weights                   # every head, each hashed before it is kept
+fractal-wallpapers fetch-weights --check           # offline: what is here, and does it hash
+fractal-wallpapers fetch-weights --verify-release  # download and hash every asset from scratch
+```
+
+A missing asset does not stop the others; the exit code says whether every head
+arrived. On a machine that already holds the files `--check` never asks GitHub, which
+is what `--verify-release` is for. **All four assets are MIT**, and each row of
+`weights.json` says so, because a release asset travels without the `LICENSE` file
+beside it.
+
 `smooth_render/` and `strange_render/` are **superseded**: one
 judge over both kinds replaced them on 2026-08-23, and their directories stay
 because a head's pre-registration, its acceptance read and its own reading of

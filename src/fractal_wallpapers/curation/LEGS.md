@@ -10,6 +10,25 @@ one sweep measured, what one pass found, what a night's arms bought — are in
 [`LEGS_decisions.md`](LEGS_decisions.md), which is where a superseded rule goes and
 where a figure keeps the date it was taken on.
 
+## From a fresh clone to a first gallery
+
+A fresh clone holds tracked labels and nothing rendered, so a solve has nothing to
+seat until a walk has found places and a leg has rendered them. The root README gives
+the sequence: `fetch-weights`, a `harvest --no-scoring`, `curate score --harvest`,
+`curate embed`, a hunt and its merge, then `curate solve run`.
+
+- **`curate embed` is a hard gate**, not an optional step: a hunt refuses outright
+  against an empty embedding store.
+- **The hunt is the only step in that sequence that makes pictures.** `curate
+  candidate-ledger backfill` reads the two decision stores and drives no engine, so on a
+  machine that has rendered nothing it writes rows with no picture, which a solve cannot
+  seat because the diversity rule is read off pixels. Backfill rebuilds an existing pool;
+  it is not a step toward a first gallery.
+- **Merging a leg rewrites tracked manifests, and that is expected.** `curate hunt merge`
+  and `candidate-ledger backfill` both update the manifests under `data/curation/`, and
+  `rows.manifest.json` can *shrink* as stale history consolidates during a prune. A `git
+  status` that comes back dirty after a leg is the record keeping up.
+
 ## Mining is CLOSED (2026-09-21) — reopen inventory
 
 Mining stopped with the twenty `final139_*` galleries and stays stopped until Matt

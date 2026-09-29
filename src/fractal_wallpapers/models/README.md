@@ -20,6 +20,18 @@ name the head it was scored under goes quietly stale.
 fractal-wallpapers score-locations --manifest rows.jsonl --out scores.jsonl
 ```
 
+Training a head is a chain of commands, each writing a record the next reads, with
+the bar written down before the candidate it judges exists:
+
+```
+fractal-wallpapers tiles build                         # or `renders build`, per head
+fractal-wallpapers head preregister                    # the bar, first
+fractal-wallpapers head train --run seed0_all_regimes --seed 0
+fractal-wallpapers head score --run seed0_all_regimes
+fractal-wallpapers head accept                         # the band, against the bar
+fractal-wallpapers head ship
+```
+
 For the two **finished-render** judges, which answer the question after it —
 does this particular colouring of a place work — the same five stages exist
 under their own names: `renders` regenerates every judged picture from the recipe
@@ -872,8 +884,31 @@ CUDA is opt-in, and only `uv` reads the `[tool.uv.sources]` that route `cuda` to
 the cu124 index: pip pools `--extra-index-url` with PyPI and takes the highest
 version across both, which is PyPI's newer wheel. Training on CPU runs orders of
 magnitude slower, and `device_of("auto")` falls back to it without an error when
-no card is visible. The root README's *Training on an NVIDIA GPU* has the pinned
-pip fallback for a machine without `uv`.
+no card is visible. Check a CUDA sync took with
+`python -c "import torch; print(torch.cuda.is_available())"`.
+
+```
+uv sync --extra dev --extra cuda --extra solve     # torch 2.6.0+cu124, Windows and Linux x86_64
+```
+
+That is the build every shipped head was trained on. The two extras hold the same
+packages and `pyproject.toml` declares them conflicting, so `uv` refuses both at once
+rather than guessing which torch was meant. On Linux, `models` routes torch to
+PyTorch's CPU index, because PyPI's Linux torch is the CUDA build and brings gigabytes
+of `nvidia-*` wheels with it.
+
+⚠ **Naming the CUDA index by hand to pip does not fix it.** The CUDA index tops out at
+`torch 2.6.0+cu124` where PyPI is further ahead, so a pooled resolve picks PyPI's newer
+build, `torch.cuda.is_available()` comes back `False` on Windows, and nothing reports
+an error. pip needs the exact versions that index holds:
+
+```
+.venv/Scripts/pip install --extra-index-url https://download.pytorch.org/whl/cu124 \
+  -e ".[dev,cuda,solve]" torch==2.6.0+cu124 torchvision==0.21.0+cu124
+```
+
+A plain `pip install -e ".[models]"` gets PyPI's torch, which is CPU on Windows and
+macOS but the CUDA build on Linux; use `uv` there for the CPU one.
 
 One exception, and it is the reason the exception is written down: `roster` is
 stdlib-only on purpose, because `fetch-weights --check` runs on the base install.
