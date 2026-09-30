@@ -2222,12 +2222,21 @@ site's. `pins.EXPLORER_BASE` is the local server a pin is authored against, and 
 **It is a second author of the site's contract**, and it is held: the site's `builder
 check` (`stamps`) spells every seat of the general collection through this module and
 through the contract's own `emit.mjs`, and holds the two strings equal — 999 of 1,000 at
-landing, the thousandth a seat read through a `log` curve, which both sides agree has no
-exact link. The same check embeds one PNG and one JPEG both ways and holds the bytes equal.
+landing, the thousandth a seat read through a `log` curve that no key could then say. The
+same check embeds one PNG and one JPEG both ways and holds the bytes equal.
+
+**`curve` is spelled where it is not the catalog's** *(preclose_wallpapers_ckpt156,
+2026-09-29)*. The contract gained the key in the site's tools_figures_ckpt156: `curve=log`
+(or `linear`, `sqrt`, `scurve`) after the mode's parameters and before `x`, left out when
+it is the catalog's own curve for the mode — `log` for `trap_circle`, `linear` for every
+other. `query_of` writes it the same way, so the eight seats of the kept records that read
+`smooth` or `stripe` through `log` now carry a link. Held against the site's `links.emit`
+over every seat of all twenty-one kept records at landing.
 
 **A picture no link draws exactly goes out with none.** A family or mode the explorer does
-not offer, a mode read through a curve its catalog does not give it, a parameter a link
-cannot spell, a cap outside 50 to 1,000,000: each is `info["link"] = None` and a sentence in
+not offer, a curve under a direct trap (which reads no field, and the explorer refuses one
+there), a parameter a link cannot spell, a cap outside 50 to 2,000,000: each is
+`info["link"] = None` and a sentence in
 `info["link_refused"]`. So is a stamp that fails; neither fails the row, because the picture
 is the product. A release render is always an `f64` picture, so the link is always the
 shallow contract's.
@@ -2282,9 +2291,14 @@ use the idle cores on exactly these seats and is the machine's render-pool rule 
 not a leg's.
 
 **The run** (fulls_ss3_ckpt148): 6,299 pictures, 16.9 GB, about 61 hours of rendering over
-68 elapsed with Matt's pauses between, all 6,299 on disk. 6,291 carry the explorer link;
-the other 8 read `smooth` or `stripe` through a `log` curve the explorer's catalog cannot
-spell, so they carry none by design.
+68 elapsed with Matt's pauses between, all 6,299 on disk. 6,291 went out carrying the
+explorer link; the other 8 read `smooth` or `stripe` through a `log` curve the contract
+could not then spell. **All 6,299 carry one since 2026-09-29**: once the contract gained
+`curve`, the eight were re-stamped in place with `embed_link.embed_file` (metadata only,
+the compressed image data unchanged) and not re-rendered. `progress.jsonl` still says
+`"link": false` for them, because it is the run's history; the file is what to read. The
+packs were zipped before the re-stamp, and four of the eight ship in one (general part 2,
+azure, and two in purple): those copies carry no link until the packs are next built.
 
 ```
 fractal-wallpapers curate full-set run    --out <dir>         # start or resume

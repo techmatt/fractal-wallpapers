@@ -108,6 +108,7 @@ def engine_free(monkeypatch):
             "smooth": {"kind": "field"},
             "trap_circle": {"kind": "field", "transform": "log"},
             "smooth_mean_angle": {"kind": "composite", "texture_weight": 0.85},
+            "direct_trap_ring": {"kind": "direct", "transform": "linear"},
         },
     )
 
@@ -157,13 +158,24 @@ def test_a_derived_parameter_is_written_at_the_catalogs_constant(engine_free) ->
     assert "&weight=0.4&" in query
 
 
+def test_a_curve_is_spelled_only_where_it_is_not_the_catalogs(engine_free) -> None:
+    query, _ = spelled(curve="log")
+    assert "&f=multibrot3&curve=log&x=0.25&" in query
+    query, _ = spelled(mode="trap_circle", curve="linear")
+    assert "&m=trap_circle&curve=linear&x=" in query
+    assert "curve=" not in spelled(mode="trap_circle", curve="log")[0]
+    assert "curve=" not in spelled(curve=None)[0]
+    query, _ = spelled(mode="smooth_mean_angle", curve="sqrt")
+    assert "&m=smooth_mean_angle&weight=0.85&curve=sqrt&x=" in query
+
+
 @pytest.mark.parametrize(
     ("changes", "said"),
     [
         ({"family": {"kind": "fractional_multibrot", "degree": 2.5}}, "not one the explorer draws"),
         ({"mode": "tail_itinerary"}, "not one the explorer offers"),
-        ({"curve": "log"}, "no key of a link can say"),
-        ({"mode": "trap_circle", "curve": "linear"}, "no key of a link can say"),
+        ({"curve": "cubic"}, "not a curve a field can be read through"),
+        ({"mode": "direct_trap_ring", "curve": "log"}, "which reads no field"),
         ({"mode_params": {"density": 2.0}}, "which a link cannot spell"),
         ({"maxiter": 20}, "outside what a link may name"),
     ],

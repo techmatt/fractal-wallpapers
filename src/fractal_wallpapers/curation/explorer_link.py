@@ -26,11 +26,15 @@ copies from.
 
 The site's rule: a link that opens something close to the picture is worse than none.
 So [`query_of`] returns a query or a reason, never an approximation. A family the
-explorer does not draw, a mode it does not offer, a mode read through a curve its
-catalog does not give it, a parameter the contract cannot spell, a cap outside what a
-link may name — each is a refusal with the sentence that says which, and the file goes
-out with no link in it. A release render is always a shallow (`f64`) picture, so the
-link is always the shallow contract's; the Deep tab's links are written only by that tab.
+explorer does not draw, a mode it does not offer, a curve under a direct trap (which
+reads no field), a parameter the contract cannot spell, a cap outside what a link may
+name — each is a refusal with the sentence that says which, and the file goes out with no
+link in it. A release render is always a shallow (`f64`) picture, so the link is always
+the shallow contract's; the Deep tab's links are written only by that tab.
+
+A mode read through a curve its catalog does not give it — `smooth` or `stripe` through
+`log` — was a refusal until the contract gained `curve` (the site's tools_figures_ckpt156).
+It is spelled now, and only where it is not the catalog's own, as `emit` spells it.
 
 ## The base is one constant
 
@@ -129,6 +133,13 @@ DERIVED = {
 
 #: What a row's `mode_params` calls a composite's drawn weight, where a link says `weight`.
 LEDGER_TEXTURE_WEIGHT = "texture_weight"
+
+#: The key naming the curve a mode reads its field through, `permalink.js`'s `CURVE_KEY`,
+#: and the curves it may name, `FIELD_CURVES` — the engine's `coloring::Transform`. Absent
+#: is the catalog's own, so a picture drawn through that is written without it; the key
+#: sits after the mode's parameters and before the frame.
+CURVE_KEY = "curve"
+FIELD_CURVES = ("linear", "sqrt", "log", "scurve")
 
 #: The palette pass's keys in emit order, each with its default and how it is written —
 #: `permalink.js`'s `SHADE_KEYS`. A key at its default is left out.
@@ -274,6 +285,11 @@ def _catalog_curve(mode: str) -> str:
     return str((engine_spec.catalog().get(mode) or {}).get("transform", "linear"))
 
 
+def _direct(mode: str) -> bool:
+    """Whether a mode is a direct trap, which reads no field and so takes no curve."""
+    return (engine_spec.catalog().get(mode) or {}).get("kind") == "direct"
+
+
 def _tagged(value: dict) -> str:
     """A tagged shade value — `edge:0.3`, `none` — as `writeTagged` spells it."""
     for name, held in value.items():
@@ -315,12 +331,16 @@ def query_of(
         return None, f"the {kind} family at degree {degree} is not one the explorer draws"
     if mode not in MODES:
         return None, f"the {mode} render mode is not one the explorer offers"
-    held_curve = _catalog_curve(mode)
-    if curve is not None and str(curve) != held_curve:
-        return None, (
-            f"this picture reads {mode} through a {curve} curve and the catalog's {mode} is "
-            f"{held_curve}, which no key of a link can say"
-        )
+    # Held the way `heldCurve` holds it: `None` wherever it is the catalog's own.
+    field_curve = None if curve is None or str(curve) == _catalog_curve(mode) else str(curve)
+    if field_curve is not None:
+        if field_curve not in FIELD_CURVES:
+            return None, f"{field_curve} is not a curve a field can be read through"
+        if _direct(mode):
+            return None, (
+                f"this picture names a {field_curve} curve under {mode}, a direct trap, which "
+                "reads no field; the explorer refuses a curve there"
+            )
 
     params = dict(mode_params or {})
     if LEDGER_TEXTURE_WEIGHT in params:
@@ -356,6 +376,8 @@ def query_of(
     if mode != DEFAULT_MODE:
         parts.append(f"m={encode(mode)}")
     parts += [f"{key}={encode(js_number(params[key]))}" for key in wanted if key in params]
+    if field_curve is not None:
+        parts.append(f"{CURVE_KEY}={field_curve}")
 
     home = engine.home_view(family)
     homes = {"x": home["center_re"], "y": home["center_im"], "w": home["width"]}
