@@ -17,6 +17,13 @@ manifest that names the hash moves with it. Dated rather than numbered for the
 same reason the hash is the real identity: `weights-v6` said nothing about which
 heads were in it or when.
 
+**The tag was re-pointed once, on 2026-09-30, and no asset moved**: a history
+rewrite gave every commit a new id, so the tag was force-updated to the rewritten
+commit with the same tree for every file a release reads. The rule above holds
+again from there. **Deleting a tag drops its release to a draft** and its
+download links 404 until it is republished, so a tag is only ever force-updated
+in the same push as the branch, never deleted and recreated.
+
 ```
 fractal-wallpapers fetch-weights                   # every head, each hashed before it is kept
 fractal-wallpapers fetch-weights --check           # offline: what is here, and does it hash

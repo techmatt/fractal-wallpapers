@@ -121,7 +121,7 @@ cheap half of this arm is `smooth` alone. Before, the eleven above:
 `direct_trap_screen`, `direct_trap_multiply`, `direct_trap_lines`, `threads`,
 `itinerary`, `smooth`, `exp_smoothing`. After, those eleven less
 **`direct_trap_lines`** — Matt's ruling of 2026-09-02, off the eye-check sheet
-`8ce5def` reports: every `direct_trap_lines` seat in the newest n=2000 baseline
+`b31644a` reports: every `direct_trap_lines` seat in the newest n=2000 baseline
 read against every centered candidate clearing the mode's own bar, and the verdict
 is that it is not a centered mode — and less `exp_smoothing`, which is a standing
 rather than a roster ruling and is applied by asking the weight.

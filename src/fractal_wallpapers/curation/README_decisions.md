@@ -97,7 +97,7 @@ across thirteen legs, and every leg sampled has its stored picture reproduce
 byte-for-byte as the bare-mode render.** Four probed rows a leg, own-params render
 against bare-mode render against the stored file: bare matched 4/4 in every leg.
 `dtm_lc_smoke`'s pictures are dated 2026-09-07, five days after the roster feature
-landed, so this is not the pre-`52d6d80` era being rediscovered.
+landed, so this is not the pre-`8af3afa` era being rediscovered.
 
 `direct_trap_multiply` is the only mode that has ever carried settings, so the
 damage is bounded to it — and it is not only the pictures: each row's judge score
@@ -175,7 +175,7 @@ stopped releasing is not read as compliance.
 
 Two more renderers were fixed with them. `shrinkage._render_one` dropped all three
 members **and** re-measured its levelling at label geometry rather than inheriting the
-candidate's decision — pre-`87ad3eb` behaviour, and a second uncontrolled difference
+candidate's decision — pre-`39f2977` behaviour, and a second uncontrolled difference
 inside the one quantity that module exists to measure, since a shrinkage read is defined
 as *the geometry and nothing else moves*. It now reads the recipe through
 `recipes.of_record` and takes its borrowed curve from `stamps.for_release`, batched in

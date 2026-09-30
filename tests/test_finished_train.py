@@ -146,7 +146,7 @@ def test_the_pin_is_part_of_the_evaluation_side_and_carries_no_training_row(
     """One-way containment, which is what the design actually holds.
 
     This asserted the other direction until 2026-08-30 — every eval-side place is
-    pinned — under the name `test_the_split_is_the_pin_...`. `ca42265` had already
+    pinned — under the name `test_the_split_is_the_pin_...`. `710b9d5` had already
     abandoned that property on purpose: the pin took the 150 places carrying no
     training row and left the other 50 **contested** — eval-side by their batch's
     registration, unpinned because a training row is already on them. So the test

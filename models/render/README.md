@@ -52,7 +52,7 @@ smooth_render    0.780   measured, ADVISORY everywhere    crossing 0.779545
 **One of the two acts, and `curation.floors.ACTING_RELEASE_BARS` is the one place
 that says which.** It holds `strange_render` and nothing else. The smooth height is
 measured, recorded and written onto records; there is no leg in which it removes a
-picture. It read differently at a second site until 2026-08-28, when `64c9612`
+picture. It read differently at a second site until 2026-08-28, when `31a901a`
 deleted the pre-solver gallery pass; `curate solve run` replaced that pass and seats
 against `solve.Q4_BAR` on `P(>=4)`, a cutpoint neither of these `P(>=3)` heights
 transfers to. So *measured* and *acting* are two facts about a height here, and this

@@ -85,7 +85,7 @@ SCHEMA_NOTES: dict[str, str] = {
     # CORRECTED 2026-09-12, and the only note in this tree that has been. It said
     # `168 of general_leg_0909's band 2, all julia:mandelbrot`; measured, they span
     # ten partitions and only 14 are julia:mandelbrot. A record written between
-    # 727733d and this commit carries the wrong sentence — see
+    # 4e2533c and this commit carries the wrong sentence — see
     # `fractal_wallpapers/README.md`'s *Notes corrected after they shipped*.
     "not_admitted_is": "in the ledger and NOT in the admitted embedded population, which is what "
     "`depth.near_places` stands on. A manifest cut over the ledger alone names "
@@ -657,7 +657,7 @@ def dear_modes() -> list[str]:
 CENTERED_FIELD: tuple[str, ...] = ("smooth", "exp_smoothing")
 
 #: What the centered roster does **not** draw, and why. `direct_trap_lines` is off
-#: it on Matt's ruling of 2026-09-02, taken off the eye-check sheet `8ce5def`
+#: it on Matt's ruling of 2026-09-02, taken off the eye-check sheet `b31644a`
 #: reports: every `direct_trap_lines` seat in the newest n=2000 baseline, read
 #: against every centered candidate clearing the mode's own bar, and the verdict
 #: is that it is not a centered mode.

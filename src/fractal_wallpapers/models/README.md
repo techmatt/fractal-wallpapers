@@ -711,7 +711,7 @@ acts.
 measured on and refuses on its first call afterwards, `strange_render_release` off
 `STRANGE_RELEASE_BAR`; until it is refitted a flip stops the curation run's release
 path. `SMOOTH_RELEASE_FLOOR` is measured and acts nowhere — it acted in the gallery
-pass until `64c9612` deleted that pass on 2026-08-28 — but it is **restated at the
+pass until `31a901a` deleted that pass on 2026-08-28 — but it is **restated at the
 same flip anyway**, because the colour census selects rows by the artifact it names
 and a stale one silently selects nothing. `tests/test_curation_cuts.py`'s
 *every measured render height is stamped with the head that is shipped* holds both.

@@ -1245,8 +1245,8 @@ cache question cheaper to answer for the swap loop, it removed it, and the
 constant stays at 2048 on that evidence rather than by default.
 
 ⚠ **That replay predates the augmenting chain by three hours and the conclusion
-does not reach the pass that ships now.** The 2,844 was measured on `4300e4b`'s
-solve; `384a78f` shipped the augmenting chain the same afternoon, and it is a
+does not reach the pass that ships now.** The 2,844 was measured on `52fa46f`'s
+solve; `ce5d558` shipped the augmenting chain the same afternoon, and it is a
 decode-making stage the scored prune does not cover. The two n=2000 records that
 followed — stamps `20260904T234133Z` and `20260905T001615Z`, neither published —
 make **10,912** and **15,279** full signatures against a **16,112-row view**.
@@ -1574,7 +1574,7 @@ time. `green` and `lime` are the exception: they sit on the floor bar, so for th
 is supply. Only the three mode targets were raised off this reading (`targets.TARGETS`).
 
 **The three angle and stripe mode collections are bound by place.** The evening leg of
-2026-09-18 that opened new places for them (`c45a96d`) took their ceilings — seats at
+2026-09-18 that opened new places for them (`f1b0bf5`) took their ceilings — seats at
 `n = 800`, with `location` and `spiral` doing the refusing — from 244 / 198 / 294 to
 **375 / 332 / 435** for `smooth_mean_angle` / `smooth_angle_min` / `smooth_stripe`.
 At the targets of 2026-09-18 (300 / 150 / 200) the seated `p_fine` medians are
@@ -1838,7 +1838,7 @@ many groups took it.
 `curation.rejection` call `.acts()` on `p_ge3`, and there is **one** such bar —
 `floors.ACTING_RELEASE_BARS` holds `strange_render` alone. (`floors.gallery_floor`
 was the third caller and was retired on 2026-09-07, its pass having gone in
-`64c9612`; `floors.measured_floor` hands back a measurement now and calls nothing.)
+`31a901a`; `floors.measured_floor` hands back a measurement now and calls nothing.)
 The
 supply engine's `GOOD_FLOOR` and `GREAT_CUT` are on the **location** head. So the
 sentence to carry is: *`P(>=4)` decides who is in the pool for seven modes,
@@ -3509,7 +3509,7 @@ denominator by different factors. The same caveat rides on `depth.mode_bars`'
 quoted against.
 
 **And for four days the separator was not on any row at all, which is a hole this
-store keeps.** `449643d` (2026-08-29) cut the ledger row to its readers by tracing
+store keeps.** `60c38b0` (2026-08-29) cut the ledger row to its readers by tracing
 sixteen call sites, found nothing in *code* reading `hunt.drawn_for`, and took it
 off with six other `hunt` fields — the paragraph above is a reader with a person on
 the end of it, and a trace of call sites cannot see one. The same commit rewrote

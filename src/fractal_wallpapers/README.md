@@ -433,7 +433,7 @@ being of everything the engine was told — so a batch is resumable and two reco
 that would draw one picture name one file. `renders.jsonl` beside them is the join
 back to the records.
 
-**What reading the fourth spelling moved, measured 2026-09-14** (`9f1e0ae`): over
+**What reading the fourth spelling moved, measured 2026-09-14** (`1a9008a`): over
 129,956 rows in 342 tracked files, 0 regressed and **55,350** now read their own
 colormap where they had silently drawn `smooth` / `twilight_shifted` / 1920x1080 with
 exit 0. A dated reading, not a census.
@@ -553,13 +553,13 @@ Rows written before the date carry a sentence that was **wrong**, not merely
 older. This is the whole of the list; anything not on it, a reader may take at
 face value.
 
-* **2026-09-12 — `depth.SCHEMA_NOTES["not_admitted_is"]`.** Landed in `727733d`
+* **2026-09-12 — `depth.SCHEMA_NOTES["not_admitted_is"]`.** Landed in `4e2533c`
   saying the places `general_leg_0909`'s band 2 lost were *all*
   `julia:mandelbrot`. Measured the same day: the same 168 places cost all three of
   that night's arms, they span **ten** partitions, only **14** are
   `julia:mandelbrot`, and **166 of them have no supply-sidecar row at all** — so
   they were never an embedding backlog either. A `curate depth near-places` census
-  written under `727733d` carries the wrong sentence.
+  written under `4e2533c` carries the wrong sentence.
 * **2026-09-12 — `gallery_grade_train.SCHEMA_NOTES["held_out_is"]`**, both
   spellings of it, and `bar_<band>.json`'s `population.is` with them. They said
   every number in a run record is *optimistic by one early stop* (or *by one

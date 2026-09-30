@@ -764,12 +764,12 @@ def test_a_row_with_no_colour_ask_carries_the_two_fields_it_always_carried():
 def test_the_colour_ask_survives_a_merge_and_the_whole_store_rewrite_that_deleted_it_once(
     isolated, monkeypatch
 ):
-    """**The memory of `449643d`.** Both `ASKED_FOR` fields are on the row after the
+    """**The memory of `60c38b0`.** Both `ASKED_FOR` fields are on the row after the
     door has written it *and* after the whole-store rewrite has read every row and
     written a new file — which is the exact pair of steps that took `drawn_for` off
     on 2026-08-29 and left 3,042 aimed rows unfilterable for good.
 
-    The store-wide rewrite is [`candidate_ledger.prune`] now: `449643d`'s `retain`
+    The store-wide rewrite is [`candidate_ledger.prune`] now: `60c38b0`'s `retain`
     projected each row through a declared field set and is gone, and `prune` streams
     and filters instead. That is why this is a behavioural guard over the two doors
     and not another assertion about `hunt_block` — the field set that dropped

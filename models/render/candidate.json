@@ -7,7 +7,7 @@
   "precision": "fp16",
   "run": "deploy_seed1",
   "checkpoint": "best",
-  "source_commit": "e26a8bcb4d79e3a698480c8410cb363aadb38599",
+  "source_commit": "e3c2992be733ceac40a36cd4a0572483795b997b",
   "provenance": {
     "supervision": "human verdicts",
     "corpus": "data/smooth_render + data/strange_render"

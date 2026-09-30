@@ -9,7 +9,7 @@
       "precision": "fp16",
       "license": "MIT",
       "run": "twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3",
-      "source_commit": "899f104b9f8f803c7f86a5ede749a11b564ca2ec",
+      "source_commit": "1ab63bd6b75dee0dc35f9187f011b25980da5ad2",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/gallery_grade"
@@ -30,7 +30,7 @@
       "precision": "fp16",
       "license": "MIT",
       "run": "seed0_all_regimes",
-      "source_commit": "801e41e9b0d2d947cd3845c7678ac6aa5bbd961a",
+      "source_commit": "69a7e51b7cfa38974b78d302a3caf26ef881c7b3",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/labels"
@@ -44,7 +44,7 @@
       "precision": "fp16",
       "license": "MIT",
       "run": "seed2_listwise",
-      "source_commit": "e3b2604b98ee29296edc70de9c54d666ae719df3",
+      "source_commit": "e73252fa4e49257ea286d6266be7ddc31658a6be",
       "provenance": {
         "supervision": "distilled from a pretrained teacher",
         "corpus": "data/palette_choice",
@@ -64,7 +64,7 @@
       "precision": "fp16",
       "license": "MIT",
       "run": "deploy_v6_seed0",
-      "source_commit": "7e0ddc2f0aab99d90b3430b0de6659b13e1b07aa",
+      "source_commit": "3d637e1aa7fc5ec6691ee97933f022ebe4c98c50",
       "provenance": {
         "supervision": "human verdicts",
         "corpus": "data/smooth_render + data/strange_render"

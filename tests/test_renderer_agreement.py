@@ -559,7 +559,7 @@ def _digest(picture: Path) -> str:
 
     A release render carries its link in its metadata and no other leg's does, so
     the whole file differed for every recipe a link can spell — the release leg red
-    against nine agreeing renderers from `3c41ddd` on, on a box with the judge,
+    against nine agreeing renderers from `4600c90` on, on a box with the judge,
     and unseen in CI, where the candidate legs could not run. Every other byte,
     the compressed image data included, is still compared.
     """

@@ -332,9 +332,9 @@ spawns `sys.executable` and fails for the environment rather than for the tree.
 
 ### The 3,383, resolved
 
-It was an interpreter with no `torch`. Masking `torch` and `timm` at `2bde06e`
+It was an interpreter with no `torch`. Masking `torch` and `timm` at `a2cd7ac`
 reproduces the logged reading to the unit — `3371 passed, 14 skipped, 109
-deselected`, which at `9a62672`'s two-tests-fewer tree is exactly the **3,369
+deselected`, which at `0f2c8ce`'s two-tests-fewer tree is exactly the **3,369
 passed / 14 skipped / 109 deselected** written down that evening. The eight
 torch-gated modules drop 65 fast tests and 5 slow ones, which is why the
 deselected count fell from 114 to 109 as well; the fourteen skips are those eight
@@ -1537,8 +1537,8 @@ and the sheet guards render 8×8 JPEGs through a stub — so nothing here earned
 
 ⚠ **The tree stood at 4,639 before this prompt, which is nine above the 4,630
 `CLAUDE.md` carried.** Three commits landed after `PRECLOSEOUT_ckpt123_wallpapers`
-took that pair — `b065d2f` (the seat sheet's before/after axis), `0535802` and
-`477aee4` — and each added tests without re-measuring. That is the drift *take the
+took that pair — `10b4625` (the seat sheet's before/after axis), `0535802` and
+`440b27c` — and each added tests without re-measuring. That is the drift *take the
 pair whether or not the prompt wrote a test* exists to catch, and it is caught here
 by the two lanes meeting rather than by anybody noticing the arithmetic.
 
@@ -2003,7 +2003,7 @@ zero skips, zero failures.** Idle box. **The two lanes agree on 4,361**, which i
 that number is for.
 
 The **+6 over the reading below is two prompts' and not one**: five tests from
-`a3a48ea`, which landed while this one was running, and one here — the guard that
+`627d1c1`, which landed while this one was running, and one here — the guard that
 holds the new frozen-file exemption to a directory that actually carries a
 `checksums.json`.
 
@@ -2045,7 +2045,7 @@ not beside it; `.[dev,models]` install, release engine built. The **+16 over the
 reading below is `tests/test_palette_variants.py`**, whole, and the count moved
 because tests were added.
 
-The three reds all land in `5665ae6`'s rescued corpus and **none of them is reachable
+The three reds all land in `e8e00af`'s rescued corpus and **none of them is reachable
 from the fast lane**, which is why nine days of green fast lanes said nothing about
 them:
 
@@ -2612,7 +2612,7 @@ run.** `FIX_ckpt115_feasibility_group_cap_0908`, 2026-09-08, idle box,
 fast — **4,063** against the 4,049 the entry below this one left. The +14 is
 **+4 slow**, this prompt's four guards on the feasibility row's group cap, which
 is the whole of the deselected move 124 → 128; and **+10 fast**, all of them
-`23d1d15`'s, the only commit to touch `tests/` between the two readings. The
+`8e775e1`'s, the only commit to touch `tests/` between the two readings. The
 clock is 121.32 s against 122.86 s over ten more tests, so nothing here is a
 cost. Matt skipped the slow lane mid-prompt, so **4,063 is a derivation and not a
 reading** — it is the fast lane's own collected total, which is what the slow
@@ -2642,7 +2642,7 @@ this one left. The +7 is all arithmetic and all fast: **4** orphan-sweep guards 
 `test_candidate_ledger.py` for the reference set becoming a union, and **3** in
 `test_lanes.py` for the session backstop's new half. **The 4,036 this is +7 of is
 not an entry here**: the solve-profiling leg immediately below in the history
-(`5ccf60b`, three tests added) reported 121.50 s over 3,912 fast and 4,036 in 6:55
+(`ae76fac`, three tests added) reported 121.50 s over 3,912 fast and 4,036 in 6:55
 slow in its **commit message** and did not append here, so that reading is in
 `git log` and nowhere else. 120.68 against 121.50 and
 122.01 is nothing. The slow lane's 7:17 against 6:55 is 22 s on a lane that has
@@ -2865,11 +2865,11 @@ no slow figure for this date and the next slow reading should be compared agains
 the 3,958 above rather than against anything here.
 
 **The count needs two moves to read, and both are accounted for.** The 3,836
-below was taken at `BUILD_ckpt112_gallery_grade_sheets_0906`, and `d701596`
+below was taken at `BUILD_ckpt112_gallery_grade_sheets_0906`, and `0e2c882`
 landed *after* it with six drift-guard tests in `test_expressed.py` — so the
 baseline this prompt started from was 3,842, not 3,836. Eleven went: nine in
 `test_expressed.py` (two thin-list, one recolor-cost, six drift-guard, which is
-every test `d701596` wrote) and two stratum guards in `test_rank_key.py`.
+every test `0e2c882` wrote) and two stratum guards in `test_rank_key.py`.
 3,842 - 11 = 3,831. **A reading taken against 3,836 would look like -5 and would
 be wrong about which tests moved**, which is the same trap as comparing across a
 palette drop.
@@ -2935,7 +2935,7 @@ on a full cache carries it. A lane that skips 19 again is a short cache, not a
 regression.
 
 The count moved 3,896 to 3,917. **One of the 21 is this prompt's**, and a
-`--collect-only` with its three files stashed read **3,916** at `f1b2c1d`, so the
+`--collect-only` with its three files stashed read **3,916** at `6dc0dd3`, so the
 other twenty landed in the three commits that went in beside it — 19 of them the
 two new files `test_top_slice_probe.py` and `test_activations.py`, collected
 directly. Compare the next lane against 3,917 and zero skips.
@@ -3177,7 +3177,7 @@ working rather than a gap.
 The **slow** lane read **6:31 (390.59 s) over 3,681, nothing skipped** at the same
 commit, idle, 2026-09-04 — thirty-three tests more than the reading below and
 **24 s under it**, which is the first slow reading to drop while gaining tests.
-The cause is not this drop's work: it is `4300e4b`'s three solve speedups, which
+The cause is not this drop's work: it is `52fa46f`'s three solve speedups, which
 took the n=2000 pass from 275 s to 119 s, and the slow lane holds guards that run
 a pass. So a lane that got cheaper here is a lane pricing *code that got faster* —
 the one benign reason for the digit to fall, and the opposite of the two occasions
@@ -3267,7 +3267,7 @@ that module's tests — the module never imports, so its tests are missing from 
 collected total rather than counted. Those eight carry 65 fast tests and 5 slow ones,
 which is the 57 (65 less the 8 that came back as skips) *and* the 114 → 109 fall in
 the deselected count that made the reading look like a different suite. `def test_` is
-2,556 at every commit from `9a62672` to here and `data/palettes` holds 901 colormaps
+2,556 at every commit from `0f2c8ce` to here and `data/palettes` holds 901 colormaps
 at every one of them, so neither the suite nor `test_colormaps.py` ever moved. **The
 second half of that stopped being true on 2026-09-05**: `classic-pairs-2026-09` put
 120 maps in the directory and therefore 120 parametrizations into that module, which
@@ -3285,7 +3285,7 @@ half.** With those two guards stashed the tree collects **3,440** — the `cli` 
 figure, three entries down — and not the **3,383** the reading below records, though
 none of the three commits between them adds a test function. So the 57 the warning
 below calls unaccounted for came back, on an unchanged suite, pointing the other way:
-that warning says `9a62672` and HEAD both collected 3,375 the evening it was written,
+that warning says `0f2c8ce` and HEAD both collected 3,375 the evening it was written,
 and HEAD collects 3,440 today, twice in a row. `tests/test_colormaps.py` parametrizes
 over the colormaps on disk and is the one collection here that data could move — it is
 902 today and `data/palettes` has held 912 tracked JSONs across all four commits, so it
@@ -3297,7 +3297,7 @@ interpreter.
 
 It read **118.50 s over 3,383** at the manifest guard, idle, 2026-09-04 — against
 **177.48 s over the same 3,383**, measured the same evening on the same idle box by
-checking `9a62672` back out into the tree and running it. A third off, and none of it
+checking `0f2c8ce` back out into the tree and running it. A third off, and none of it
 an optimisation: `test_ledger_tracking`, `test_candidate_ledger.isolated` and
 `test_hunt` redirected the ledger store **per accessor**, and no accessor list named
 the supply sidecar or the expressed readout that `prune` reads through `rank_key`. All
@@ -3309,7 +3309,7 @@ top-level layering fixes, 49 modules of largest SCC down to 44 — moved the lan
 177.48 s to **175.40 s**, which is to say not at all, which is what an import-graph
 change should cost.
 
-⚠ **The reading below does not reproduce and has not been edited.** `9a62672` collects
+⚠ **The reading below does not reproduce and has not been edited.** `0f2c8ce` collects
 **3,375 selected / 3,484 total** today and runs 3,369 passed / 14 skipped; the line
 below records 3,440. Nothing since has added or removed a test — HEAD collects the same
 3,375. The 57 are unaccounted for.
@@ -3508,7 +3508,7 @@ over five *more* tests than the 8:23. That is the third time this lane has moved
 without code moving; the store that grew in between is the release pool's, whose
 16,029 rows were rewritten and whose 3,484 candidate pictures were put back on
 disk that morning. The entry here read 64.3 s and 7:20 at
-`0b53e15`, then **3,101 in 16:25 with the fast lane at 290-320 s** at `9560862`
+`8b204fe`, then **3,101 in 16:25 with the fast lane at 290-320 s** at `9560862`
 later the same day; what happened in between and what undid it are the next two
 paragraphs, and they are why a stale figure here is worth correcting rather than
 living with.
@@ -3521,7 +3521,7 @@ tests on an idle machine, right after 194,058 levelled colormap directories and
 14 GiB came off `artifacts/` — so the stores got *smaller*. It is not a test: the
 ten slowest sum to 99 s on both sides of the sweep, and the extra ~130 s is a
 ~45 ms constant spread across all 2,998. It is not that day's code either, which
-was checked by measuring 317.5 s at `7383b63` with the working tree stashed.
+was checked by measuring 317.5 s at `d9d617f` with the working tree stashed.
 Suspected: NTFS metadata after a bulk small-directory delete. So also re-measure
 after anything that moves hundreds of thousands of paths, and suspect the **disk**
 as well as the stores.

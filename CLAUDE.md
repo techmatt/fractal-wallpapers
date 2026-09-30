@@ -44,7 +44,7 @@ that came later carry the date of Matt's ruling.
   load-bearing**: eight top-level commands are also handler names, and a submodule
   set as an attribute of its package is one `__getattr__` never sees, so
   `cli/render.py` would shadow `cli.render` for good. Handler names resolve
-  through `__getattr__`, never re-exported, for the reason `2dc6a8b` gives.
+  through `__getattr__`, never re-exported, for the reason `6d55846` gives.
 - **Records are JSONL**: UTF-8, one JSON object per line, carrying an integer
   `schema` field from the very first row. A label row carries its full join — the
   label *and* the complete render parameters in the same row — so a labeled example

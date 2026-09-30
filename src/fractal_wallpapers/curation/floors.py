@@ -424,7 +424,7 @@ def measured_floor(head: str) -> Restatement:
 
     This replaced `gallery_floor`, retired 2026-09-07. That function returned a
     `Bar` on both kinds under Matt's ruling of 2026-08-22, that every measured
-    floor acts in the gallery pass whatever it does at a run's release. `64c9612`
+    floor acts in the gallery pass whatever it does at a run's release. `31a901a`
     deleted that pass on 2026-08-28 and `curation.solve` replaced it, seating
     against `solve.Q4_BAR` on `P(>=4)` — a cutpoint neither of these `P(>=3)`
     heights transfers to. **The ruling retired with the pass rather than moving

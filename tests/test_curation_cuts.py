@@ -150,7 +150,7 @@ def test_every_measured_render_height_is_stamped_with_the_head_that_is_shipped()
 
     A render flip strands two heights, not one. `STRANGE_RELEASE_BAR` acts and
     refuses on its first comparison; `SMOOTH_RELEASE_FLOOR` acts nowhere since
-    `64c9612` deleted the gallery pass, and a height nothing calls `.acts()` on
+    `31a901a` deleted the gallery pass, and a height nothing calls `.acts()` on
     cannot announce its own staleness — the colour census would go on selecting
     rows against a sha no row carries and report a smaller population with no
     line saying why. So the sweep is over `MEASURED_RELEASE_FLOORS`, which is

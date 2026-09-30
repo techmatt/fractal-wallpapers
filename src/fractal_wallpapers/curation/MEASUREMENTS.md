@@ -991,7 +991,7 @@ per-partition table says where:
 
 **144 candidates of 1,362 — 10.6% — took 63.6% of the engine time**, and 72 of them took
 half of it on their own. `phoenix:classic` was opened into the candidate ledger for the
-first time on 2026-09-02 (`c8a82d6`), which priced its eleven-mode roster at 53.5 s a
+first time on 2026-09-02 (`1c8c5ba`), which priced its eleven-mode roster at 53.5 s a
 candidate against 3.155 on the parameter planes for exactly the reasons that apply here:
 its places carry 12k-22k maxiter and a direct trap has no field to dump. Those places are
 now in the **never-opened breadth pool**, so every breadth draw taken from this date

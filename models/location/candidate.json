@@ -7,7 +7,7 @@
   "precision": "fp16",
   "run": "seed0_all_regimes",
   "checkpoint": "best",
-  "source_commit": "8d90d9c8d13c0e8a4790d14875ec95f270917759",
+  "source_commit": "05f2ba20c15a356e8b65e6a585014bc2a6d1d6fc",
   "provenance": {
     "supervision": "human verdicts",
     "corpus": "data/labels"

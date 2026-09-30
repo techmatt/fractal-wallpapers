@@ -186,7 +186,7 @@ about 7x.** Measured on this machine, idle, 2026-09-04, over a 164,052-candidate
 pool: `--n 1000 --no-render --no-sheet` is **53 s** end to end, of which the pool
 read is 17 s and the solve itself 31 s; the `--n 2000` solve half measures 122 s,
 so that line is about two and a half minutes on the same overhead. The old
-figures predate the three speedups of `4300e4b` — which took the n=2000 pass from
+figures predate the three speedups of `52fa46f` — which took the n=2000 pass from
 275 s to 119 s — and the `~6 min` had said "scaled not measured" since it was
 written. A figure nobody measured is a figure that goes stale without anything
 looking wrong, which is why these two now name the day and the pool.

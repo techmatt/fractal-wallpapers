@@ -567,7 +567,7 @@ a fixed number there would be a test that fails on ordinary work. Standing on
 | `smooth_render` | 277 | 300 | **23** | 0 |
 | `strange_render` | 180 | 207 | **27** | 0 |
 
-50 contested, which is `ca42265`'s own number. Do not repair the pin to move it.
+50 contested, which is `710b9d5`'s own number. Do not repair the pin to move it.
 
 #### `eval_only` outranks the clock, and that is what stops the evaluation side shrinking
 

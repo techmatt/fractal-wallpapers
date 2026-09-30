@@ -400,7 +400,7 @@ two apart is `seeds_available` on the run record beside `seeds_consumed`.
 **`g12` is thinner than `g11`, and that one is a reading.** It consumed 888 of 3,137
 seeds and read barren on 74% of them (660 of 888) against `g11`'s 67% (449 of 672).
 Its 201 locations, opened by `curate hunt --places`, bought **42 seats over 31
-places** in the after-solves of 2026-09-16 (`f483b61`).
+places** in the after-solves of 2026-09-16 (`6b4eb88`).
 
 **One consequence, and it is about what can be tested rather than about the
 queue.** `g9`, `g10` and `g11` all ran the same ladder — the nine rungs

@@ -2927,7 +2927,7 @@ and to `take` alone is not a missing field — it is a `KeyError` on the first
 candidate that lands, after the plan, the population read and the first block have
 all been paid, so the leg renders for minutes and writes **no row at all**. That
 is what `texture_flat` did on 2026-08-31: it reached `take` three times at
-`7ea2f44` and the worker's dict not at all, and every depth leg was dead for eight
+`7e73785` and the worker's dict not at all, and every depth leg was dead for eight
 hours with pictures on disk and an empty `rows.jsonl` as the only symptom.
 `test_the_parent_reads_no_key_the_worker_does_not_spell` reads both sides off the
 AST and holds them to each other.

@@ -198,7 +198,7 @@ def _render_one(payload: tuple) -> dict:
     which is the whole quantity this module measures. And `level=` was set off
     whether the row's stamp was non-null, so the operator re-measured its base at
     **label** geometry rather than replaying the curve decided at candidate
-    geometry: pre-`87ad3eb` behaviour, and it puts a second uncontrolled
+    geometry: pre-`39f2977` behaviour, and it puts a second uncontrolled
     difference into the same comparison. `borrowed` is packaged in the parent
     ([`reread`]) for [`release.Task`]'s reason — a worker has no store open.
     """
