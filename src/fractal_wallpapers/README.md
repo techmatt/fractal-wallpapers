@@ -146,6 +146,9 @@ than by an absolute path: `models.acceptance.beside(relative)` is
 `repo_root().parent / relative`, so a sibling clone is found wherever the pair
 was put and is simply absent afterwards. That absence is the reason the numbers
 it reads are vendored — a bar has to stay re-readable without that repository.
+On Matt's box since 2026-09-30 the sibling is a **directory junction onto the
+archive disk**, so it is still found at the sibling path, and with that disk
+unplugged it reads as absent, exactly as on a clone that never had it.
 
 ## The standing keep roster
 
@@ -162,7 +165,7 @@ understand before reading the list.** The only sweep that deletes a candidate is
 [`candidate_ledger.sweep.picture_dirs`](curation/candidate_ledger/sweep.py)
 enumerates `<tier>/curation/<subtree>/<leg>/pictures` — `store.POOL_SUBTREES`,
 `store.PICTURES_NAME`, a fixed shape at a fixed depth — and nothing else.
-Everything on this list bar the last two entries is outside that shape entirely,
+Everything on this list bar the last entry is outside that shape entirely,
 so it is not *exempted* from the sweep, it is **unreachable** by it. What keeps it
 is a ruling, and a ruling is only as good as the place it is written down.
 
@@ -189,7 +192,6 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `artifacts/top_slice_probe/` | the probe's features, scores and held-out split |
 | `artifacts/gallery_grade/n1000_0906/*/plan.jsonl` | the only thing that can rebuild those levelled pictures as they were judged |
 | `data/curation/candidate_ledger/ratchet.jsonl` | tracked and append-only: the census asserts against it, and a lost row is a lost deletion |
-| `artifacts/curation/{depth,rotation,repetition}/*/fields` | Matt's ruling. All three **are** pool subtrees, so these are the entries the sweep walks past — `fields` is not `pictures`, so they are unreachable by name at that depth rather than by subtree. Each is bounded while its leg runs by `colorize.FIELDS_KEPT`, which is 64 dumps or about 226 MB, and none is swept after it |
 | `artifacts/curation/gallery/` | 14,438 gate attempt rows over four retired passes, and `orphans` is their only reader — see [`curation/README.md`](curation/README.md)'s *The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT* |
 
 **The ten unmerged `runs/` legs are not a cleanup opportunity, and the listing

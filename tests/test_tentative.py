@@ -105,11 +105,14 @@ def store(tmp_path, monkeypatch):
     The tier redirect and not a patch of `tentative.gallery_dir`: the page's
     thumbnail paths, the picture the prune unlinks and the store the protection
     reads all resolve through the same root, and moving one of them alone would
-    leave the others pointing at this machine.
+    leave the others pointing at this machine. **Both roots**, for the same
+    reason: with only the hot one moved, a tree name this machine has archived
+    (`sheet`, since 2026-09-30) is in both tiers and collides.
     """
     from fractal_wallpapers import paths
 
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     (tmp_path / "artifacts").mkdir()
     # Every synthetic record is published, because `PUBLISHED` names the stamps of
     # this machine and a test writes stamps of its own. Without this an unstamped

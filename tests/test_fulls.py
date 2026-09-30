@@ -21,10 +21,15 @@ OTHER = release.Regime((640, 360), 2)
 
 @pytest.fixture
 def tier(tmp_path, monkeypatch):
-    """The regenerable tree in `tmp_path`, so nothing here reads Matt's sheets."""
+    """The regenerable tree in `tmp_path`, so nothing here reads Matt's sheets.
+
+    **Both roots**, because `sheet` lives on the archive tier since 2026-09-30: a
+    hot-only redirect makes this tree's `sheet` and the real archive's collide.
+    """
     from fractal_wallpapers import paths
 
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     (tmp_path / "artifacts").mkdir()
     return tmp_path / "artifacts"
 

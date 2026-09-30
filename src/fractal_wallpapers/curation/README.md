@@ -1367,6 +1367,15 @@ things were established before deleting any:
 released and parity pictures, the label sheets' own `full/` renders, and everything
 belonging to a leg the ledger cannot answer for.
 
+**The pool's were swept on 2026-09-30, by Matt's licence, with mining and labelling
+closed.** Every `<stem>.leveled/` under `sweep.picture_dirs` went — **222,158
+directories / 16.74 GiB** — except the **2,035** beside a kept seat's picture: the
+pictures of `tentative.protected_keys()`'s rows and of the kept records' own rows. The
+hazard above is not gone, it is dormant: **a sheet rebuilt from a swept candidate needs
+that candidate re-rendered first** (`curate candidate-ledger re-render`), because
+`pool_draw.leveled_dir` answers None for it and the build renders through the plain map
+under the same identity. Colormaps outside the pool shape were not touched.
+
 #### A prune cannot take a surviving row's colormap, and the reason is structural
 
 **The question keeps being asked and it has a closed answer: no prune can delete a

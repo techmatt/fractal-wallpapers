@@ -1169,8 +1169,14 @@ def delete_pictures(named, log=print) -> dict:
     [`curation.pool_draw`] reads a live candidate's onto every plan unit and
     [`labeling.sheets`] renders through it, and `LEGS.md`'s *`curate pool-draw`*
     records what losing one does — a rebuild serves a different picture under the
-    same identity, silently. `curation/README.md`'s *What retention does not
-    reach, and the levelled colormaps swept on 2026-08-30* carries the re-sweep.
+    same identity, silently.
+
+    **A pool-wide sweep was licensed once, by Matt on 2026-09-30**, with mining and
+    labelling closed: every pool colormap went except those beside a kept seat's
+    picture. So **a sheet rebuilt from a swept candidate needs that candidate
+    re-rendered first** (`curate candidate-ledger re-render`), or it is the silent
+    plain-map picture above. `curation/README.md`'s *What retention does not reach,
+    and the levelled colormaps swept on 2026-08-30* carries both sweeps.
 
     The colormap is swept whether or not the JPEG was still there: a row is being
     dropped either way, and a colormap outliving an already-deleted picture is
