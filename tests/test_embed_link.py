@@ -82,6 +82,23 @@ def test_the_link_names_the_family_the_explorer_does() -> None:
     assert name({"kind": "multibrot", "degree": 2.5}) is None
 
 
+def test_a_phoenix_that_names_no_constants_is_the_classic_set() -> None:
+    # The engine's serde defaults, never the origin: `c = p = 0` is a plain disk.
+    of = explorer_link.constants_of
+    classic = {"cx": "0.5667", "cy": "0.0", "px": "-0.5", "py": "0.0", "zx": "0", "zy": "0"}
+    assert of("phoenix", {"kind": "phoenix"}) == classic
+    assert of("phoenix_plane", {"kind": "phoenix_m"}) == {"px": "-0.5", "py": "0.0"}
+    held = {"kind": "phoenix", "c": ["0.1", "0.2"], "p": ["0.3", "0.4"], "z_prev": ["0", "0"]}
+    assert of("phoenix", held) == {
+        "cx": "0.1",
+        "cy": "0.2",
+        "px": "0.3",
+        "py": "0.4",
+        "zx": "0",
+        "zy": "0",
+    }
+
+
 def test_a_curve_the_operator_did_not_move_the_picture_with_is_not_carried() -> None:
     curve = {"applies": True, "identity": False, "black_pt": 0.1, "white_pt": 0.9,
              "exponent": 1.2, "out_ends": [0.05, 0.95]}  # fmt: skip

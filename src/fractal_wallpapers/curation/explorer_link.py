@@ -241,10 +241,25 @@ def family_name(family: dict) -> str | None:
     return name if name in CONSTANTS else None
 
 
+#: What a Phoenix recipe means by a constant it does not name: the engine's own serde
+#: defaults (`FamilySpec::Phoenix`'s `phoenix_c`, `phoenix_p` and `origin`, and
+#: `FamilySpec::PhoenixM`'s `phoenix_p`), so `{"kind": "phoenix"}` alone is the classic
+#: Ushiki set. Spelled as the website's `builder/links.py` spells them, which `stamps` there
+#: holds this module to byte for byte. Never the origin for `c` and `p`: that was the
+#: default here, and seventeen seats whose recipes named no constants were stamped with a
+#: link to `c = p = 0`, a plain disk, under pictures of the classic set
+#: (link_fidelity_ckpt157).
+PHOENIX_DEFAULTS = {"c": ("0.5667", "0.0"), "p": ("-0.5", "0.0"), "z_prev": ("0", "0")}
+
+
 def constants_of(name: str, family: dict) -> dict[str, str]:
-    """A family's constants as the decimal strings the row holds. Absent is the origin."""
-    c = family.get("c") or ("0", "0")
-    p = family.get("p") or ("0", "0")
+    """A family's constants as the decimal strings the row holds.
+
+    Absent is what the engine takes it to mean: a Phoenix constant its classic default
+    (`PHOENIX_DEFAULTS`), and a Julia `c` the origin, which the engine never assumes."""
+    absent = PHOENIX_DEFAULTS if name in ("phoenix", "phoenix_plane") else {}
+    c = family.get("c") or absent.get("c", ("0", "0"))
+    p = family.get("p") or absent.get("p", ("0", "0"))
     z = family.get("z_prev") or ("0", "0")
     every = {"cx": c[0], "cy": c[1], "px": p[0], "py": p[1], "zx": z[0], "zy": z[1]}
     return {key: str(every[key]) for key in CONSTANTS[name]}
