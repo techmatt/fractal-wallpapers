@@ -273,7 +273,7 @@ neither more nor less than `pictures` by any rule.
 
 **Counts, not shares.** The count is what was measured; the share is `count / pictures`,
 which a reader takes exactly rather than at whatever precision a rounded column kept.
-**1,022 rows, 52,310 bytes** — 5.0% of `test_history_purity`'s 1 MiB.
+**1,022 rows, 52,310 bytes** — 2.5% of `test_history_purity`'s per-file cap.
 
 **The verdict is read back, never re-taken.** Every ledger row carries the reading
 `palettes.dominance` already made — `colour.families`, written when the picture was

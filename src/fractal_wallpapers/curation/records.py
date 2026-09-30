@@ -30,7 +30,7 @@ rows already arrive in blocks of. `data/palette_choice/rows/` is written the sam
 way for the same reason, down to the file names.
 
 What this buys is a ceiling that does not move with the project's age. Accumulated
-into one file per stage, `release.jsonl` reached 918 KiB against the 1 MiB history
+into one file per stage, `release.jsonl` reached 918 KiB against the then 1 MiB history
 guard by the third run — a build that fails partway through a fourth. One file per
 run alone would not have been enough either: the 240-attempt run that followed
 wrote 828 KiB of release rows, the same squeak-under one run later. Per run *and*
@@ -592,7 +592,7 @@ def upsert_file(path: Path, rows) -> tuple[int, int]:
     What `runs.jsonl` is written with — it takes a row per run rather than a run's
     worth of rows, so it has no reason to be anything but one file. The retired
     gallery passes' untracked gate store used it for the opposite reason: that file
-    was not in the history, so the 1 MiB guard the tracked stores split on did not
+    was not in the history, so the per-file guard the tracked stores split on did not
     act over it.
     """
     merged: dict = {}

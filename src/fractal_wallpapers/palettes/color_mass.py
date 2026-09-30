@@ -74,7 +74,7 @@ what a ceiling acts on. It is the *bound* that does not apply to them.
 
 One per mode over the roster it was measured on — see [`UNMEASURED`] for the
 production mode that has no file — under `data/palettes/color_mass/`. `tests/test_history_purity.py`
-caps a tracked file at 1 MiB and the whole map is several megabytes, so it splits
+caps every tracked file and the whole map is several megabytes, so it splits
 the way the tracked release store splits on partition — for the guard, and on the
 axis a reader already has in hand. A `.json` under `data/palettes/` is a colormap
 by convention (every reader of the library globs `*.json` there and takes the stem
@@ -803,7 +803,7 @@ def sweep_log():
     censused and deleted.
 
     Tracking it is out for the ordinary reason and by a wide margin: 25.7 MB
-    against a 1 MiB per-file guard. What the history keeps is this manifest and
+    against the per-file history guard. What the history keeps is this manifest and
     [`record_dir`]'s map; what the archive keeps is the log.
     """
     from fractal_wallpapers.curation import durability
@@ -814,7 +814,7 @@ def sweep_log():
         copy=sweep_backup_path(),
         manifest=sweep_manifest_path(),
         why_not_tracked=(
-            "25.7 MB of 48-cell vectors over 27,053 renders against a 1 MiB per-file "
+            "25.7 MB of 48-cell vectors over 27,053 renders against the per-file "
             "history guard. It is a finished experiment log rather than a record anything "
             "reads: what production reads is the map cut from it, which is tracked. The "
             "manifest is what the history keeps — the row count, the bytes, the sha256, the "

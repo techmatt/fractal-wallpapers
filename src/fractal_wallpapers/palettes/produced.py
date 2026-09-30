@@ -43,7 +43,7 @@ from *not in this library at all*, which an absent row cannot say.
 `palettes_for_random_choice.csv` set: a CSV beside the maps it is about, with
 this module's docstring and `data/palettes/README.md` carrying the method that a
 CSV has nowhere to put. About fifty kilobytes over the library, well under
-`test_history_purity`'s 1 MiB. The ledger it is read from is a regenerable
+`test_history_purity`'s per-file cap. The ledger it is read from is a regenerable
 artifact and is not tracked; `fractal-wallpapers palettes produced` rebuilds the
 table in about a minute.
 """

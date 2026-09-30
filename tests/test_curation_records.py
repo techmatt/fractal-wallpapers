@@ -197,7 +197,7 @@ def test_a_run_writes_a_file_per_partition_under_a_directory_of_its_own(tmp_path
 
     The run was already the key's axis and the partition is the axis every
     apportionment is taken on. Accumulated into one file per stage the store grew
-    for as long as the project did — 918 KiB against the 1 MiB history guard by the
+    for as long as the project did — 918 KiB against the then 1 MiB history guard by the
     third run — and one file per run alone was still 828 KiB after a 240-attempt
     run. The fix is not a smaller row.
     """

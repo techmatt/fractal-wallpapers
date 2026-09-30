@@ -410,7 +410,7 @@ def durable():
     only on a machine whose engine still fingerprints the same — a build that has
     moved on cannot reproduce these rows at all, it can only write different ones
     beside them. Tracking it is out for the usual reason and by a wide margin:
-    tens of megabytes against a 1 MiB per-file history guard.
+    tens of megabytes against the per-file history guard.
 
     Unlike every other durable here it is **append-only**, which is what makes
     [`durables.guard`] worth extending to it: a shorter file is always a loss
@@ -424,7 +424,7 @@ def durable():
         copy=backup_path(),
         manifest=manifest_path(),
         why_not_tracked=(
-            "tens of megabytes of re-read scores against a 1 MiB per-file history guard, "
+            "tens of megabytes of re-read scores against the per-file history guard, "
             "and it grows by an append every time a build change makes a standing score "
             "stale. The manifest is what the history keeps: the row count, the bytes, the "
             "sha256, and how many rows each engine build contributed."

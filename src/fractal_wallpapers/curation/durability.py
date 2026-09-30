@@ -40,7 +40,7 @@ and `durable_scores`, `flatness.durable`, `signatures.durable`,
 
 Size and churn, and either one alone would settle it.
 
-* **Size.** Tens of megabytes against a 1 MiB per-file history guard
+* **Size.** Tens of megabytes against the per-file history guard
   (`tests/test_history_purity.py`) and a 20 MB commit rule. Tracking one would
   need the large-text allowlist, which holds one entry and is a decision rather
   than a fix.

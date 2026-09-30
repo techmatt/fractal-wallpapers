@@ -20,6 +20,7 @@ import json
 from pathlib import Path
 
 import pytest
+from tests.test_history_purity import MAX_TRACKED_BYTES
 
 from fractal_wallpapers.curation import colors, floors, records, rescore
 from fractal_wallpapers.palettes import codebook
@@ -340,7 +341,7 @@ def library_once(censused_library, monkeypatch):
 def test_the_manifest_describes_the_rows_rather_than_holding_them(
     tmp_path, monkeypatch, library_once
 ) -> None:
-    """The rows are megabytes against a 1 MiB per-file history guard, so what the
+    """The rows are megabytes against the per-file history guard, so what the
     history keeps is a measurement of them."""
     monkeypatch.setattr(colors, "census_dir", lambda: tmp_path / "artifacts")
     monkeypatch.setattr(colors, "manifest_path", lambda: tmp_path / "data" / "manifest.json")
@@ -353,7 +354,7 @@ def test_the_manifest_describes_the_rows_rather_than_holding_them(
     assert len(manifest["rows"]["sha256"]) == 64
     assert manifest["stages"] == ["library"]
     assert manifest["rebuild_command"].startswith("fractal-wallpapers curate colors")
-    assert (tmp_path / "data" / "manifest.json").stat().st_size < 1_048_576
+    assert (tmp_path / "data" / "manifest.json").stat().st_size < MAX_TRACKED_BYTES
 
 
 @pytest.mark.slow

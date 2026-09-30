@@ -1702,7 +1702,7 @@ place the hashes live. That is the reason to keep this passage rather than a
 gate row and a release row for every scored attempt, which is the same row twice
 and the second copy in the history. Measured on gallery1's own 1,120 attempts,
 the old layout would have tracked **7.84 MB** — 4.06 MB of release rows with the
-largest partition file at 0.86 MiB against the 1 MiB guard, 3.59 MB of gate rows,
+largest partition file at 0.86 MiB against the then 1 MiB guard, 3.59 MB of gate rows,
 and a 197 KB single-file pass record — per pass, kept forever. The release store now answers
 only the question it exists for, *which candidate took a slot*, and a pass takes
 at most `n` of those decisions. What each slot passed over is not lost: it is on

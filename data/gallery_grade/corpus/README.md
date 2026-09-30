@@ -62,7 +62,8 @@ scale de-duplicated across a render's repeat gradings. `models/gallery_grade/REA
 *What the de-drifted target is for* has why the `normalized` column beside it is a
 yardstick and not a training target.
 
-**Adding another frozen corpus is a decision.** These two files are over
-`tests/test_history_purity.py`'s `MAX_TRACKED_BYTES` and are excused by a
+**Adding another frozen corpus is a decision.** `population.jsonl` is over
+`tests/test_history_purity.py`'s `MAX_TRACKED_BYTES` (and `targets.json` was too, until
+the cap went to 2 MiB on 2026-09-29), excused by a
 `LARGE_TEXT_ALLOWLIST` prefix whose reason is written at that site. A corpus that is
 still regenerable does not come here.

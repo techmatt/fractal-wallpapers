@@ -49,11 +49,9 @@ artifacts/curation/tentative/*/*
 !artifacts/curation/tentative/*/gallery.jsonl
 !artifacts/curation/tentative/*/manifest.json
 !artifacts/curation/tentative/*/recipes.jsonl
-# Published and over `test_history_purity.py`'s 1 MiB ceiling, so ignored again
-# rather than allowlisted: `final140_general2000`'s rows (1.32 MiB) and recipes
-# (1.37 MiB). Its manifest is tracked; the n=2000 rows live in the backup.
-artifacts/curation/tentative/20260922T220551Z/gallery.jsonl
-artifacts/curation/tentative/20260922T220551Z/recipes.jsonl
+# Every published record is tracked whole, the n=2000's included since the
+# per-file cap went to 2 MiB on 2026-09-29: no path inside a published stamp is
+# ignored again, and `tests/test_tentative.py` holds that.
 /labels/
 /local.toml
 # Every head's weights, fetched rather than tracked: `fetch-weights` reads

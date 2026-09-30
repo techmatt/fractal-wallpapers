@@ -36,7 +36,7 @@ decimal on identical bytes and no further, which is why the sidecar records what
 a run **read** rather than promising that a recipe has a score.
 ## Where it lives
 
-The rows are megabytes and the history guard acts at 1 MiB a file, so this gets
+The rows are megabytes and the history guard caps every tracked file, so this gets
 what the supply sidecar and the neutral-render embeddings get: the file under
 `artifacts/`, a copy on the archive tier, and a **manifest** in the history
 saying how many rows, how many bytes and which sha256 that copy is.
@@ -183,7 +183,7 @@ def durable_rows() -> durability.Durable:
         manifest=manifest_dir() / "rows.manifest.json",
         why_not_tracked=(
             "one row per recipe at about a kilobyte and a half a row, which is tens of "
-            "megabytes against a 1 MiB per-file history guard, and rewritten whole on every "
+            "megabytes against the per-file history guard, and rewritten whole on every "
             "backfill because the store upserts by key. The manifest is what the history "
             "keeps; the bytes live on both tiers."
         ),

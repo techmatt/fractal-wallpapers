@@ -24,7 +24,7 @@ picture and it is never the thing the student is scored against.
 The scores of one checkpoint are a tree — `scores/<source_batch>/<partition>.jsonl`
 — rather than one file. A row is roughly 2.6 KiB because it carries two full score
 vectors and the candidate list they are aligned to, so 377 sets came to 999 KiB
-against the 1 MiB history guard on every one of the four seeds: 47 KiB of headroom
+against the then 1 MiB history guard on every one of the four seeds: 47 KiB of headroom
 on a file whose length is the corpus's, and the corpus is the thing that grows.
 
 Neither axis is invented for the filesystem's sake. **The batch is the axis the

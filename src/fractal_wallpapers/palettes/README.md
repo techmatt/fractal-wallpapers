@@ -229,7 +229,7 @@ with nothing red, and the rows it was wrong about would be exactly the marginal
 carriers a target leans on.
 
 **This was the tracked file closest to the size guard.** 881,834 bytes before —
-**84.1%** of `test_history_purity`'s `MAX_TRACKED_BYTES` (1 MiB), which is a plain
+**84.1%** of `test_history_purity`'s `MAX_TRACKED_BYTES` (1 MiB until 2026-09-29), which is a plain
 assertion failure in the **fast** lane and nothing at the git level, so it trips at
 the commit gate rather than at the commit — and **690,732 after, 65.9%**. It grew at
 **3.71 rows and 878 bytes a map**, the *marginal* rate measured across
@@ -439,35 +439,39 @@ maps, so the ramp bound does not apply to them; what they read is still what the
 really produces, which is what a ceiling acts on.
 
 **Eighteen files, one per mode, and that is the guard talking.** The whole map is 7.77 MB
-against `test_history_purity`'s 1 MiB per-file cap, so it splits the way the tracked
+against `test_history_purity`'s per-file cap, so it splits the way the tracked
 release store splits on partition. Largest file `itinerary.jsonl` at 489,002 bytes
 (477.5 KiB) on 2026-09-06; smallest `direct_trap_multiply.jsonl` at 355,074.
 
 **The split has its own warning line and it was raised on 2026-09-06.**
-`test_palette_color_mass.SPLIT_BYTES` is **786,432** — three quarters of the 1 MiB
-history guard — and it was `GUARD_BYTES // 2`, 524,288, which `itinerary.jsonl` had
+`test_palette_color_mass.SPLIT_BYTES` is **786,432** — three quarters of a mebibyte,
+which was the history guard until 2026-09-29, and its own number since the guard went to
+2 MiB rather than a fraction that would have followed it up — and it was half a
+mebibyte, 524,288, which `itinerary.jsonl` had
 reached **93.3%** of. The number is sized off measured growth, not chosen: a file holds
 exactly one row per drawable group, so it grows only when the library does, and
 `classic-pairs-2026-09`'s 120 maps moved `itinerary.jsonl` 425,148 → 489,002, **532
 bytes a map**. The old line left 35,286 bytes — 66 maps, *half a drop*, so the next drop
-went red. The new one leaves 297,430 — **559 maps, 4.6 drops** — and still sits a
-quarter of a mebibyte (492 maps) under the history guard, so it fires first and with
-room to act. **What it does not fix is the split's own horizon**: `itinerary.jsonl`
-reaches 1 MiB at about **1,051 more maps**, a library of ~2,072 against today's 1,021,
-which is roughly nine 120-map drops. At that point the answer is another axis and not a
+went red. The new one leaves 297,430 — **559 maps, 4.6 drops** — and sits 1.25 MiB
+under the history guard, so it fires first and with room to act. **What it does not fix
+is the split's own horizon**: `itinerary.jsonl` reaches the guard's 2 MiB at about
+**3,023 more maps**, a library of ~4,044 against the 1,021 of 2026-09-06, which is
+roughly twenty-five 120-map drops. At that point the answer is another axis and not a
 bigger number — the per-mode split has one row per group and no way to shed one.
 
 ⚠ **786,432 was raised to 1,572,864 on 2026-09-13 and put back the same night**, and the
 round trip is worth knowing about because both halves were about the wrong reading of
-this number. It was raised *above* the 1 MiB history guard, with
+this number. It was raised *above* the then 1 MiB history guard, with
 `data/palettes/color_mass/` added to `LARGE_TEXT_ALLOWLIST` to make that legal — which
 is a warning line sitting above the rule it warns about, firing never. The deeper error
 is the one the paragraph above already states: **this is a split threshold, not a cap**,
 so raising it buys fewer and bigger shards, which is the opposite of what the per-mode
 split is for. More shards is the intended answer to a file that outgrows it.
-`data/palettes/carriers.jsonl` went the same way and came back differently — it keeps
+`data/palettes/carriers.jsonl` went the same way and came back differently — it kept
 Matt's 2 MiB, but as a named entry in `test_history_purity`'s `PER_FILE_CAPS`, a raised
 ceiling for one path rather than the absence of one, so a tenfold surprise still fires.
+That entry went on 2026-09-29, when the guard itself became 2 MiB and it stopped raising
+anything; the record is held to the guard like every other file.
 
 The **ten-thousand-hour stress test** — [`curation/README.md`](../curation/README.md)'s
 *The stress test the size is read against is ten thousand hours* — reads as absurd here

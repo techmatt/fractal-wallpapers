@@ -10,7 +10,7 @@ palette.fp16.pt        what ships. Fetched, not tracked
 
 Each seed's `scores/` is a tree — `<source_batch>/<partition>.jsonl` — and not one
 file. A score row carries two whole score vectors and the candidate list they are
-aligned to, so 377 sets read 999 KiB against the repository's 1 MiB size guard on
+aligned to, so 377 sets read 999 KiB against the repository's then 1 MiB size guard on
 every seed. The batch is the axis the corpus grows on and the partition is the
 axis its rows already arrive in blocks of; split on both, the largest file is
 425 KiB and a new labeling batch adds a directory rather than lengthening one.

@@ -2222,7 +2222,7 @@ back and `recipes.key_of` of that is the row's own key — **every row is checke
 recompute before it is written**, because a recipe file whose keys do not
 recompute names different pictures under the record's names, which is worse than
 having none. **0.68 MiB for a thousand seats** (716,688 bytes), under
-`test_history_purity.py`'s 1 MiB ceiling and smaller than the `gallery.jsonl`
+`test_history_purity.py`'s per-file cap and smaller than the `gallery.jsonl`
 beside it.
 
 **`render --recipe FILE --key <seat>` is the door**, and there was none before:
@@ -2242,9 +2242,9 @@ All four of those modes are in the 13 verified above.
 ⚠ **Tracked for every published stamp since 2026-09-29**, by a file-level
 `!artifacts/curation/tentative/*/recipes.jsonl` beside the rows' and the
 manifest's. Until 2026-09-21 it was named for `20260914T171846Z` alone and that
-line went with the record. A published file over the 1 MiB ceiling is ignored
-again by its own path rather than allowlisted — `final140_general2000`'s rows and
-recipes, below. `tentative.write_recipes` resolves for any stamp.
+line went with the record. Every published record's is tracked, the n=2000's
+included since the per-file cap was raised on 2026-09-29 — below.
+`tentative.write_recipes` resolves for any stamp.
 
 ### All twenty kept records carry one, and publication tracked them
 
@@ -2253,7 +2253,7 @@ a property the saved set has standing rather than one command away. **9,000 seat
 9,000 recipes, zero absent from the ledger and zero refused** — every row
 recomputed its own key before it was written, on all twenty. **6.22 MiB in total**,
 the largest file `final139_general`'s and `final139_tia`'s at 0.686 MiB, both under
-`test_history_purity.py`'s 1 MiB ceiling. The redraw claim was re-verified on
+`test_history_purity.py`'s per-file cap. The redraw claim was re-verified on
 `final139_general`'s first seat: **byte-identical** to the pool's own JPEG, in
 1.35 s.
 
@@ -2663,7 +2663,7 @@ per stamp because of it: the store is ignored by default and each published stam
 negation line beside `curation.tentative.PUBLISHED`, which is the same list in code.
 Recording a gallery and committing it were one act until then, so a record too large to
 track was a record that could not be made — an n=2000 record's `gallery.jsonl` is **over
-the 1 MiB `tests/test_history_purity.py` allows**, at 1.06 MB for the 1,795 seats of
+the then 1 MiB `tests/test_history_purity.py` allowed**, at 1.06 MB for the 1,795 seats of
 `20260904T234133Z` (its page was 1.18 MB and is now beside the question). Every
 unpublished record is read **by naming its stamp**; `tentative.latest()` — what an
 unstamped `browse` or `resolve` means — walks published stamps only, so an experiment can
@@ -2689,7 +2689,7 @@ full rejection pass ingested: 1,000 of 1,000, shortfall 0, 728 vetoed rows out o
 **What publication actually did**, measured rather than assumed:
 
 * **Two text files entered the index** — `gallery.jsonl` at 670,450 B and `manifest.json`
-  at 65,642 B, both under the 1 MiB `test_history_purity.py` allows and both free of
+  at 65,642 B, both under the then 1 MiB `test_history_purity.py` allowed and both free of
   absolute paths. `index.html` is still ignored, by the same per-stamp rule, at 768,620 B
   that a `browse` writes again.
 * **`tentative.latest()` moved onto it.** Every unstamped `browse`, `resolve` and `votes
@@ -2777,10 +2777,12 @@ re-hashing to its key, no absolute path — and all twenty-one passed.
 
 **Sixty-one files, 13.02 MiB**: the twenty `final139_*` records' `gallery.jsonl`,
 `manifest.json` and `recipes.jsonl`, and `final140_general2000`'s manifest.
-**Its rows (1.32 MiB) and recipes (1.37 MiB) are over `test_history_purity.py`'s
-1 MiB ceiling and were not allowlisted**: `.gitignore` ignores the two paths again,
-so a clone holds the n=2000's manifest and not its seats, `tentative.published()`
-does not offer it there, and the backup is where its rows live. Retention did not
+**Its rows (1.32 MiB) and recipes (1.37 MiB) were held back**, over what was then
+`test_history_purity.py`'s 1 MiB per-file cap, and not allowlisted: `.gitignore`
+ignored the two paths again. **They followed the same day** (`final_wallpapers_ckpt156`),
+when Matt raised the cap to 2 MiB — nothing depended on 1 MiB in particular, and 2 MiB
+still keeps a clone lean — so the re-ignore lines went, the two files were committed, and
+**a clone holds all twenty-one records whole**: sixty-three files, 15.71 MiB. Retention did not
 move, because `kept()` is the union and every reader of the keep list asks it.
 **What an unstamped read means moved**, from a refusal to `tentative.DEFAULT`,
 `final139_general`.

@@ -183,7 +183,7 @@ def durable() -> durability.Durable:
         manifest=candidate_ledger.manifest_dir() / "flatness.manifest.json",
         why_not_tracked=(
             "one row per recipe with a picture on disk, which is tens of thousands of rows "
-            "against a 1 MiB per-file history guard. Same guard, same answer as the rows and "
+            "against the per-file history guard. Same guard, same answer as the rows and "
             "the scores."
         ),
         save_command="fractal-wallpapers curate flatness save",

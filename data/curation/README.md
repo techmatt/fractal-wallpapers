@@ -154,7 +154,7 @@ the axis every apportionment here is taken on, which is why
 
 What it buys is a ceiling that does not move with the project's age. As one file
 per stage these grew for as long as the project does: `release.jsonl` was 918 KiB
-against the 1 MiB `test_history_purity` guard by the third run. One file per run
+against the then 1 MiB `test_history_purity` guard by the third run. One file per run
 alone would not have been enough either — the 240-attempt run that followed wrote
 828 KiB of release rows. Per run and partition the largest file that run wrote is
 195 KiB, and a run five times its size still fits.

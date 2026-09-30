@@ -864,9 +864,9 @@ def negated(stamp: str) -> bool:
 
 
 def reignored() -> set[str]:
-    """Paths inside a published stamp that `.gitignore` ignores again by name,
-    which is what a published file over the 1 MiB ceiling gets instead of an
-    allowlist entry."""
+    """Paths inside the store that `.gitignore` ignores again by name. The n=2000's
+    rows and recipes were the two, for the first day of 2026-09-29, over the then
+    1 MiB per-file cap; there are none since Matt raised it to 2 MiB."""
     prefix = TRACKED_STORE + "/"
     return {
         line.strip()
@@ -902,29 +902,28 @@ def test_the_published_list_and_the_gitignore_negations_are_one_list():
     assert sorted(s for s in held if negated(s) and s not in tentative.PUBLISHED) == []
 
 
-def test_every_published_stamp_is_actually_in_the_tree():
-    """A published stamp is tracked, so a clone has its text files. One named in
-    both lists and absent from the index is an ID that resolves nowhere.
+def test_every_published_stamp_is_in_the_tree_whole():
+    """A published stamp is tracked, so a clone has its text files — **all three,
+    for every one of them**. One named in both lists and absent from the index is
+    an ID that resolves nowhere, and one tracked in part is a record a clone can
+    name and not read.
 
-    The manifest always; the rows and the recipes unless `.gitignore` ignores that
-    exact path again, which is how a file over the 1 MiB ceiling is published
-    without being allowlisted — `final140_general2000`'s two, since 2026-09-29.
+    Since 2026-09-29, when Matt raised the per-file cap to 2 MiB, that includes
+    `final140_general2000`'s rows and recipes, which were ignored again by path
+    for the day before: a clone holds all twenty-one records whole, and no path
+    in the store is ignored again.
     """
+    assert reignored() == set(), "a published record's file is ignored again by name"
     index = set(tracked(TRACKED_STORE + "/*"))
-    again = reignored()
     for stamp in tentative.PUBLISHED:
-        manifest = f"{TRACKED_STORE}/{stamp}/{tentative.MANIFEST_NAME}"
-        assert manifest in index, f"{stamp}/{tentative.MANIFEST_NAME} is published and untracked"
-        for name in (tentative.ROWS_NAME, tentative.RECIPES_NAME):
+        for name in (tentative.MANIFEST_NAME, tentative.ROWS_NAME, tentative.RECIPES_NAME):
             path = f"{TRACKED_STORE}/{stamp}/{name}"
-            assert (path in index) != (path in again), (
-                f"{path} is published: tracked, or ignored again by name, and exactly one"
-            )
+            assert path in index, f"{path} is published and untracked"
 
 
 def test_the_default_read_is_published_and_a_clone_can_read_it():
     """`tentative.DEFAULT` is what an unstamped read means, so it has to be a
-    record every clone holds whole: published, and its rows not ignored again."""
+    record every clone holds whole: published, and its rows tracked."""
     assert tentative.DEFAULT in tentative.PUBLISHED
     rows = f"{TRACKED_STORE}/{tentative.DEFAULT}/{tentative.ROWS_NAME}"
     assert rows in set(tracked(rows))
@@ -958,13 +957,7 @@ def test_the_page_is_a_derivation_and_no_stamp_tracks_one():
     """
     assert tracked(TRACKED_STORE + "/*/" + tentative.PAGE_NAME) == []
     rows = tracked(TRACKED_STORE + "/*/" + tentative.ROWS_NAME)
-    again = reignored()
-    expected = [
-        stamp
-        for stamp in tentative.PUBLISHED
-        if f"{TRACKED_STORE}/{stamp}/{tentative.ROWS_NAME}" not in again
-    ]
-    assert sorted(Path(name).parent.name for name in rows) == sorted(expected)
+    assert sorted(Path(name).parent.name for name in rows) == sorted(tentative.PUBLISHED)
 
 
 def test_the_page_is_written_from_the_two_tracked_files_alone(tentative_store):
@@ -1017,7 +1010,7 @@ def test_an_unstamped_read_lands_on_the_newest_PUBLISHED_record(tentative_store,
 
 def test_an_unstamped_read_lands_on_DEFAULT_before_the_newest(tentative_store, monkeypatch):
     """Since 2026-09-29 `PUBLISHED` is twenty-one peers, and the newest of them is
-    the n=2000 pass a clone cannot read. An unstamped read is `DEFAULT` wherever
+    the n=2000 pass, which is not the default gallery. An unstamped read is `DEFAULT` wherever
     it is held, and the newest published stamp only where it is not."""
     for stamp in ("20260101T000000Z", "20260202T000000Z", "20260303T000000Z"):
         recorded(tentative_store, stamp, stamp)
@@ -1304,11 +1297,14 @@ def test_every_published_record_with_a_recipe_file_redraws_from_tracked_data_alo
 
 
 def test_a_tracked_recipe_file_stays_under_the_history_size_rule():
-    """0.68 MiB for a thousand seats against `test_history_purity.MAX_TRACKED_BYTES`,
-    and smaller than the `gallery.jsonl` beside it. That margin is why this is a
-    tracked file and not a release asset — and it is per stamp, so it is worth
-    knowing where it sits before a record is published."""
+    """0.68 MiB for a thousand seats and 1.37 MiB for the n=2000's two thousand,
+    against `test_history_purity.MAX_TRACKED_BYTES`, and about the size of the
+    `gallery.jsonl` beside it. That margin is why this is a tracked file and not a
+    release asset — and it is per stamp, so it is worth knowing where it sits
+    before a record is published."""
+    from tests.test_history_purity import MAX_TRACKED_BYTES
+
     for stamp in recipe_stamps():
         written = tentative.recipes_path(stamp).stat().st_size
-        assert written < (1 << 20)
+        assert written < MAX_TRACKED_BYTES
         assert written < 2 * tentative.rows_path(stamp).stat().st_size

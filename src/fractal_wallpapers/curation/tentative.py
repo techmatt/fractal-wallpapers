@@ -160,16 +160,17 @@ PAGE_NAME = "index.html"
 #: happens to overlap.
 #:
 #: One `{key, recipe}` row per seat closes it, at 0.68 MiB for a thousand — under
-#: `tests/test_history_purity.py`'s 1 MiB ceiling and smaller than the
+#: `tests/test_history_purity.py`'s per-file cap and smaller than the
 #: `gallery.jsonl` beside it. The `recipe` block is [`recipes.Recipe.record`]
 #: verbatim, so `recipes.of_record` reads it back and `recipes.key_of` of that is
 #: the row's own key; `render --recipe` is the door that draws one.
 #:
 #: **Tracked for every published stamp since 2026-09-29**, by a file-level
 #: negation in `.gitignore` beside the other two. It was named for one stamp
-#: until then, `20260914T171846Z`, and that line went with the record. A file
-#: over the 1 MiB ceiling is ignored again by its own path rather than
-#: allowlisted — `final140_general2000`'s, at 1.37 MiB for two thousand seats.
+#: until then, `20260914T171846Z`, and that line went with the record.
+#: `final140_general2000`'s, at 1.37 MiB for two thousand seats, was ignored again
+#: by its own path for the first day, over the then 1 MiB cap; since the cap went
+#: to 2 MiB it is tracked like the rest.
 RECIPES_NAME = "recipes.jsonl"
 
 #: The record's own directory of full-resolution pictures — see [`fulls_dir`].
@@ -199,27 +200,28 @@ RECORDED_SEATS = 1000
 #: were kept and not published until **Matt ruled the set truly finalized on
 #: 2026-09-29** (`finalize_records_ckpt156`), when all twenty-one moved here from
 #: [`KEPT_UNPUBLISHED`] and their `gallery.jsonl`, `manifest.json` and
-#: `recipes.jsonl` were committed — except `final140_general2000`'s rows and
-#: recipes, which are over the 1 MiB ceiling and stay untracked, so a clone holds
-#: its manifest and [`published`] does not offer it there. The eight stamps this
+#: `recipes.jsonl` were committed. `final140_general2000`'s rows and recipes were
+#: held back that day as over the then 1 MiB per-file cap, and followed the same
+#: day when Matt raised it to 2 MiB (`final_wallpapers_ckpt156`), so **a clone holds
+#: all twenty-one records whole**. The eight stamps this
 #: tuple carried before 2026-09-21 went with every other saved record, and their
 #: tracked text left the index with them.
 #:
 #: **An unstamped read lands on [`DEFAULT`]**, not on the newest stamp here: the
 #: twenty-one are peers recorded minutes apart, and the newest is the n=2000 pass,
-#: which a clone cannot read. **Publishing another is two edits and a test**: a
+#: which is not the default gallery. **Publishing another is two edits and a test**: a
 #: line here and its negation line in `.gitignore`, which `tests/test_tentative.py`
 #: holds to agreeing.
 #:
 #: Recording a gallery and publishing one used to be a single act: the hole was
 #: spelled per FILE across every stamp, so every record ever made was committed,
 #: and a record too large to track was a record that could not be made without
-#: breaking `tests/test_history_purity.py` — an n=2000 record's `gallery.jsonl` is
-#: over `MAX_TRACKED_BYTES`. **`LARGE_TEXT_ALLOWLIST` was not the answer and was
-#: not touched**: widening the size rule would have tracked every record ever made
-#: rather than the ones worth pointing at, which is the wrong question. Matt's
-#: ruling of 2026-09-04 split
-#: them. A record is published when he names it; every other record is read **by
+#: breaking `tests/test_history_purity.py` — an n=2000 record's `gallery.jsonl` was
+#: over `MAX_TRACKED_BYTES` while that was 1 MiB. **`LARGE_TEXT_ALLOWLIST` was
+#: not the answer and was not touched**: widening the size rule would have
+#: tracked every record ever made rather than the ones worth pointing at, which
+#: is the wrong question. Matt's ruling of 2026-09-04 split them. A record is
+#: published when he names it; every other record is read **by
 #: naming its stamp**, and what it does not get is a Durable-class save, check or
 #: restore and a place in an archive copy.
 #:
@@ -284,7 +286,6 @@ PUBLISHED: tuple[str, ...] = (
     # `final140_general2000` — the general pass at n=2000 over the same closed
     # pool, Matt's ruling of 2026-09-22: `fractal-website` offers it beside the
     # n=1000 default. Same bar and config as `final139_general`, only `n` moved.
-    # Its manifest alone is tracked; rows and recipes are over the ceiling.
     "20260922T220551Z",
 )
 
@@ -292,10 +293,10 @@ PUBLISHED: tuple[str, ...] = (
 #:
 #: Named rather than taken as the newest [`PUBLISHED`] stamp, because since
 #: 2026-09-29 that tuple is twenty-one peers and its newest is the n=2000 pass,
-#: whose rows a clone does not hold — the same record would answer differently
-#: on this box and on a clone. It is `curation.backfill.DEFAULT_RECORD` and
-#: `portable.GENERAL_CHECK`'s stamp too. [`latest`] falls back to the newest
-#: published stamp only where this one is not held.
+#: which is the website's second offer and not its default. It is
+#: `curation.backfill.DEFAULT_RECORD` and `portable.GENERAL_CHECK`'s stamp too.
+#: [`latest`] falls back to the newest published stamp only where this one is not
+#: held.
 DEFAULT = "20260922T012627Z"
 
 #: **The unpublished stamps the keep list names**, which is the whole of the keep
@@ -446,7 +447,7 @@ def latest() -> str:
 
     **[`DEFAULT`] first since 2026-09-29**, when twenty-one peers were published
     at once and the newest of them stopped meaning anything: it is the n=2000
-    pass, whose rows a clone does not hold.
+    pass, which is not the gallery an unqualified read means.
     """
     held = published()
     if DEFAULT in held:

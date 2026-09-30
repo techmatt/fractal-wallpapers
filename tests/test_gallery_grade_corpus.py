@@ -55,13 +55,19 @@ def test_the_corpus_is_the_one_the_adopted_column_was_fitted_on() -> None:
     assert len(document["sheets"]) == 12, "twelve, which is what the corpus is named for"
 
 
-def test_the_two_files_over_the_limit_are_the_two_the_allowlist_excuses() -> None:
-    """Ties `tests/test_history_purity.py`'s third entry to a fact rather than a claim."""
-    limit = 1024 * 1024
+def test_the_file_over_the_limit_is_the_one_the_allowlist_excuses() -> None:
+    """Ties `tests/test_history_purity.py`'s third entry to a fact rather than a claim.
+
+    Two files until 2026-09-29: `targets.json`, at 1.09 MiB, went under when the
+    cap was raised to 2 MiB, and the join is what still needs the entry."""
+    from tests.test_history_purity import MAX_TRACKED_BYTES
+
     over = {
-        name: said["bytes"] for name, said in _checksums()["files"].items() if said["bytes"] > limit
+        name: said["bytes"]
+        for name, said in _checksums()["files"].items()
+        if said["bytes"] > MAX_TRACKED_BYTES
     }
-    assert sorted(over) == ["population.jsonl", "targets.json"]
+    assert sorted(over) == ["population.jsonl"]
 
 
 def test_every_row_resolves_to_a_per_render_target() -> None:

@@ -260,7 +260,7 @@ def durable() -> durability.Durable:
         manifest=candidate_ledger.manifest_dir() / "signatures.manifest.json",
         why_not_tracked=(
             "one packed vector per recipe key at about six kilobytes a row, which is tens "
-            "of megabytes against a 1 MiB per-file history guard. Same guard, same answer "
+            "of megabytes against the per-file history guard. Same guard, same answer "
             "as the rows, the scores and the flatness sidecar."
         ),
         save_command="fractal-wallpapers curate signatures save",

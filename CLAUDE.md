@@ -50,7 +50,9 @@ that came later carry the date of Matt's ruling.
   label *and* the complete render parameters in the same row — so a labeled example
   is never split across files. Every random draw is seeded, and the seed is recorded.
 - **Git history stays text.** `tests/test_history_purity.py` fails the build if a
-  tracked file is binary-by-nature or exceeds 1 MiB, or if a tracked *record* names
+  tracked file is binary-by-nature or exceeds 2 MiB (Matt's ruling of 2026-09-29,
+  up from 1 MiB; `MAX_TRACKED_BYTES` is the one spelling in code and prose says
+  "the per-file history guard"), or if a tracked *record* names
   an absolute path. It carries **four** exemption lists and **no two of them excuse
   the same rule**, so an entry earns each one separately and moving a name between
   them changes what it is held to. Each is on Matt's call, each has its reason
@@ -65,8 +67,10 @@ that came later carry the date of Matt's ruling.
   `.gitignore` un-ignores the twenty-one stamps of 2026-09-22 as one directory
   pattern and, inside a published stamp, `gallery.jsonl`, `manifest.json` and
   `recipes.jsonl` by name. Publishing another record is a line there and a line in
-  `curation.tentative.PUBLISHED`. A published file over the 1 MiB ceiling is
-  ignored again by its own path, never allowlisted. `index.html` is never tracked.
+  `curation.tentative.PUBLISHED`. **Every published record is tracked whole** —
+  nothing inside a published stamp is ignored again, and a file that would be over
+  the per-file cap is Matt's to rule on, never an allowlist entry.
+  `index.html` is never tracked.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
   2026-09-04. An unpublished record is read by naming its stamp, and what it does
   not get is a Durable-class save, check or restore and a place in an archive copy.
@@ -77,7 +81,7 @@ that came later carry the date of Matt's ruling.
   ruling that the saved set is truly finalized, and `KEPT_UNPUBLISHED` is empty.
   **An unstamped read means `tentative.DEFAULT`**, `final139_general`, and never the
   newest published stamp: the twenty-one are peers, and the newest is the n=2000,
-  whose rows are over the ceiling and untracked. The page a
+  which is not the default gallery. The page a
   person opens, and how it is written, is the `artifacts/curation/viewer/` row of
   `src/fractal_wallpapers/README.md`'s keep roster and `curation/GALLERY.md`.
 - **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13.
@@ -107,9 +111,8 @@ that came later carry the date of Matt's ruling.
   text is publishing its stamp and there is no third way
   (`curation/GALLERY.md`'s *All twenty kept records carry one, and publication
   tracked them*). The saved set's text was committed on 2026-09-29, but the backup
-  is still what makes the set durable — it carries the pictures, and the n=2000's
-  rows git does not — and `tentative.kept()` is only what stops a prune taking its
-  pictures.
+  is still what makes the set durable — it carries the pictures, which git does
+  not — and `tentative.kept()` is only what stops a prune taking its pictures.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
   `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple

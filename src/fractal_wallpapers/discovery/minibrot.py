@@ -255,10 +255,11 @@ NOT_ENCLOSED = "no_enclosing_copy"
 #:
 #: **Untracked, and that is the decision**: at the widest cut the set is 2,709
 #: places and a row that carries a place key, a link and the solved chain is about
-#: 650 bytes, so the file is 1.7 MiB against [`test_history_purity`]'s 1 MiB — and
-#: widening that list is not a thing a prompt does. It is regenerable from a census
-#: output by one command, the command is tracked, and Matt's ruling of 2026-09-22
-#: is that an example set is an artifact and not a record.
+#: 650 bytes, so the file is 1.7 MiB — over [`test_history_purity`]'s per-file cap
+#: when this was decided and under it since the cap went to 2 MiB on 2026-09-29.
+#: Size was never the whole reason: it is regenerable from a census output by one
+#: command, the command is tracked, and Matt's ruling of 2026-09-22 is that an
+#: example set is an artifact and not a record.
 EXAMPLES_NAME = "minibrot_examples.jsonl"
 
 

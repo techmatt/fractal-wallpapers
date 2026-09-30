@@ -40,5 +40,5 @@
     "data/labels+finished": 3110
   },
   "recorded": "2026-09-16",
-  "why_not_tracked": "tens of megabytes against a 1 MiB per-file history guard, and rewritten whole on every `curate score` because the sidecar upserts per ledger \u2014 so tracking it would add a fresh full-size blob to the history every harvest night. The manifest is what the history keeps; the bytes live on both tiers."
+  "why_not_tracked": "tens of megabytes against the per-file history guard, and rewritten whole on every `curate score` because the sidecar upserts per ledger \u2014 so tracking it would add a fresh full-size blob to the history every harvest night. The manifest is what the history keeps; the bytes live on both tiers."
 }

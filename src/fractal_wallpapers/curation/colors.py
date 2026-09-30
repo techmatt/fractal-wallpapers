@@ -127,7 +127,7 @@ def manifest_path() -> Path:
     """The tracked manifest: what the last census was, and what it was taken over.
 
     A manifest rather than the tracked rows, because the rows are megabytes
-    against a 1 MiB per-file history guard. A manifest **without** an archive
+    against the per-file history guard. A manifest **without** an archive
     copy, unlike the supply sidecar and the embedding store: those cost a GPU leg
     or a standing supply that the checkout cannot rebuild, and this costs about
     five minutes over inputs that are all either tracked or regenerable. What the
@@ -800,7 +800,7 @@ def take(stages=STAGES, log=print) -> dict:
             "census_size": list(codebook.CENSUS_SIZE),
         },
         "why_not_tracked": (
-            "the rows are megabytes against the 1 MiB per-file history guard, and the census "
+            "the rows are megabytes against the per-file history guard, and the census "
             "re-runs in about five minutes from tracked inputs plus the render caches, so what "
             "the history keeps is provenance rather than the file"
         ),

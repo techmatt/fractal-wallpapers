@@ -102,7 +102,7 @@ def sidecar() -> durability.Durable:
         copy=backup_path(),
         manifest=manifest_path(),
         why_not_tracked=(
-            "tens of megabytes against a 1 MiB per-file history guard, and rewritten whole "
+            "tens of megabytes against the per-file history guard, and rewritten whole "
             "on every `curate score` because the sidecar upserts per ledger — so tracking it "
             "would add a fresh full-size blob to the history every harvest night. The "
             "manifest is what the history keeps; the bytes live on both tiers."

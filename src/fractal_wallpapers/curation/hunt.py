@@ -336,7 +336,7 @@ def frames_durable():
         copy=frames_backup_path(),
         manifest=frames_manifest_path(),
         why_not_tracked=(
-            "tens of megabytes of frame rows against a 1 MiB per-file history guard. The "
+            "tens of megabytes of frame rows against the per-file history guard. The "
             "manifest is what the history keeps: the row count, the byte count, the sha256, "
             "the margin every row was chosen at and how many of them adopted a new framing."
         ),

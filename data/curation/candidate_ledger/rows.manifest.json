@@ -258,5 +258,5 @@
   },
   "engine": "unknown",
   "recorded": "2026-09-21",
-  "why_not_tracked": "one row per recipe at about a kilobyte and a half a row, which is tens of megabytes against a 1 MiB per-file history guard, and rewritten whole on every backfill because the store upserts by key. The manifest is what the history keeps; the bytes live on both tiers."
+  "why_not_tracked": "one row per recipe at about a kilobyte and a half a row, which is tens of megabytes against the per-file history guard, and rewritten whole on every backfill because the store upserts by key. The manifest is what the history keeps; the bytes live on both tiers."
 }

@@ -13,6 +13,7 @@ import json
 
 import numpy
 import pytest
+from tests.test_history_purity import MAX_TRACKED_BYTES
 
 from fractal_wallpapers.palettes import (
     carriers,
@@ -246,27 +247,19 @@ def test_the_lead_is_taken_over_the_rows_the_table_holds_and_that_is_exact() -> 
                 assert klass in row["fields"]
 
 
-#: The ceiling this one record is held to. **2 MiB since 2026-09-13, Matt's
-#: dictated value**, and it is ABOVE `test_history_purity.py`'s
-#: `MAX_TRACKED_BYTES`. What makes a record that size legal is that file's
-#: `PER_FILE_CAPS`, which names this path and this number — a raised ceiling for
-#: one file, not the absence of one. It spent the day of 2026-09-13 in
-#: `LARGE_TEXT_ALLOWLIST` instead and came back out the same night, because an
-#: allowlist entry on a file that grows with every palette drop hands away the
-#: only number that would catch a tenfold surprise.
+#: The ceiling this one record is held to: **the history guard itself since
+#: 2026-09-29.** It was Matt's dictated 2 MiB from 2026-09-13, ABOVE a 1 MiB
+#: `MAX_TRACKED_BYTES` and made legal by a `PER_FILE_CAPS` entry naming this path —
+#: a raised ceiling for one file, not the absence of one. It spent the day of
+#: 2026-09-13 in `LARGE_TEXT_ALLOWLIST` instead and came back out the same night,
+#: because an allowlist entry on a file that grows with every palette drop hands
+#: away the only number that would catch a tenfold surprise. When Matt raised the
+#: guard to 2 MiB the entry stopped raising anything and went, so this imports the
+#: guard rather than spelling the number a second time.
 #:
-#: The two places state the same number and
-#: `test_history_purity.test_the_per_file_cap_agrees_with_the_record_s_own_test`
-#: holds them to it, so neither is the copy and either moving alone is a red.
-#:
-#: Stated as its own number rather than as a fraction of the history guard,
-#: because it is no longer a fraction of it: the two limits say different things,
-#: and a reader who sees `0.8 *` would take this file to be the one that fires
-#: first when it is the one with the raised cap. Before 2026-09-13 this test did
-#: assert `0.8 * MAX_TRACKED_BYTES`, and the record sat — and still sits — at
-#: 690,732 bytes, 65.9% of a mebibyte, so the cap is headroom rather than a
-#: ceiling in force.
-MAX_RECORD_BYTES = 2 * 1024 * 1024
+#: Before 2026-09-13 this test asserted `0.8 *` of a 1 MiB guard, and the record
+#: sat — and still sits — at 690,732 bytes, a third of today's guard.
+MAX_RECORD_BYTES = MAX_TRACKED_BYTES
 
 
 def test_the_record_sits_under_its_own_ceiling() -> None:

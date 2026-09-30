@@ -63,6 +63,6 @@
       90
     ]
   },
-  "why_not_tracked": "the rows are megabytes against the 1 MiB per-file history guard, and the census re-runs in about five minutes from tracked inputs plus the render caches, so what the history keeps is provenance rather than the file",
+  "why_not_tracked": "the rows are megabytes against the per-file history guard, and the census re-runs in about five minutes from tracked inputs plus the render caches, so what the history keeps is provenance rather than the file",
   "rebuild_command": "fractal-wallpapers curate colors"
 }

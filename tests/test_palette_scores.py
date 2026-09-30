@@ -8,7 +8,7 @@ import pytest
 
 from fractal_wallpapers.models import palette_scoring, palette_train
 
-#: How much of the 1 MiB history guard the largest shard may take. The guard is
+#: How much of the per-file history guard the largest shard may take. The guard is
 #: the wall; this is the distance from it that makes splitting worth doing at all.
 LARGEST_SHARE = 0.5
 

@@ -138,7 +138,7 @@ def store() -> durability.Durable:
         manifest=manifest_path(),
         why_not_tracked=(
             "one kilobyte of vector per location over twenty-five thousand locations, which "
-            "is tens of megabytes against a 1 MiB per-file history guard, and it grows by an "
+            "is tens of megabytes against the per-file history guard, and it grows by an "
             "append every time a harvest adds admissions. The manifest is what the history "
             "keeps: the row count, the bytes, the sha256, the frozen choices every vector "
             "was made under, and the population it was counted against."

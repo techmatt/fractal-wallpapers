@@ -8,7 +8,7 @@ hand, where a mean over two observations is a number the test can state outright
 
 Two failures this file exists to catch:
 
-* **the guard.** A tracked file over 1 MiB fails `test_history_purity`, and the
+* **the guard.** A tracked file over the per-file cap fails `test_history_purity`, and the
   whole reason the map is eighteen files rather than one is that it is 7.77 MB.
   That split is a decision, and a rebuild that quietly rejoined it would be a
   build failure a long way from here. [`SPLIT_BYTES`] is the warning line the
@@ -22,30 +22,34 @@ from __future__ import annotations
 import json
 
 import pytest
+from tests.test_history_purity import MAX_TRACKED_BYTES
 
 from fractal_wallpapers.palettes import color_mass, dominance, groups
 
-#: The 1 MiB per-file cap `tests/test_history_purity.py` holds every tracked file
-#: to. Named here too, because the map's split into one file per mode is a
-#: response to it and a rejoin would be caught first by the guard and only then
-#: understood.
-GUARD_BYTES = 1 << 20
+#: The per-file cap `tests/test_history_purity.py` holds every tracked file to.
+#: Named here too, because the map's split into one file per mode is a response to
+#: it and a rejoin would be caught first by the guard and only then understood.
+GUARD_BYTES = MAX_TRACKED_BYTES
 
-#: The size at which the per-mode split has stopped being enough. Three quarters
-#: of [`GUARD_BYTES`], and sized off measured growth rather than chosen: a file
-#: holds exactly one row per drawable palette group, so it grows only when the
+#: The size at which the per-mode split has stopped being enough: 786,432 bytes,
+#: three quarters of a mebibyte, sized off measured growth rather than chosen: a
+#: file holds exactly one row per drawable palette group, so it grows only when the
 #: library does. The `classic-pairs-2026-09` drop put 120 maps in and the largest
 #: file, `itinerary.jsonl`, went 425,148 -> 489,002 bytes — **532 bytes a map**.
 #: From 489,002 that leaves 297,430 bytes of headroom, **559 maps** or 4.6 drops
-#: of that size, where half of `GUARD_BYTES` left 35,286 bytes and 66 maps: half a
-#: drop, so the next one would have gone red. It stays a quarter of a mebibyte —
-#: 492 maps, four more drops — below the history guard so it still fires first,
-#: which is the whole point of naming a second number here.
+#: of that size, where half a mebibyte left 35,286 bytes and 66 maps: half a
+#: drop, so the next one would have gone red.
 #:
-#: It was `GUARD_BYTES // 2` until 2026-09-06.
+#: **Its own number, not a fraction of [`GUARD_BYTES`], since 2026-09-29**, when the
+#: guard went 1 MiB -> 2 MiB. Until then it was written `(GUARD_BYTES * 3) // 4`,
+#: and following the guard up would have doubled it — which is the error the
+#: paragraph below records: this is a split threshold, and raising it buys bigger
+#: shards. It sits 1.25 MiB below the guard now, so it still fires first.
 #:
-#: ⚠ It was 1,572,864 for the day of 2026-09-13 and is three quarters of
-#: [`GUARD_BYTES`] again from the same night. That number was **above** the guard,
+#: It was half of a 1 MiB guard until 2026-09-06.
+#:
+#: ⚠ It was 1,572,864 for the day of 2026-09-13 and three quarters of a mebibyte
+#: again from the same night. That number was **above** the then 1 MiB guard,
 #: which is a thing this line cannot be and still do its job: a warning line above
 #: the rule it warns about never fires, and it only stood at all because
 #: `data/palettes/color_mass/` was in `test_history_purity.py`'s
@@ -54,7 +58,7 @@ GUARD_BYTES = 1 << 20
 #: shards, which is the opposite of what the per-mode split is for. The right answer
 #: to a mode file that outgrows this is another axis and more shards, and this line
 #: firing below the guard is what leaves room to choose one.
-SPLIT_BYTES = (GUARD_BYTES * 3) // 4
+SPLIT_BYTES = 786_432
 
 
 def files() -> list:

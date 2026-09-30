@@ -15,7 +15,12 @@ from pathlib import Path
 
 import pytest
 
-MAX_TRACKED_BYTES = 1024 * 1024
+#: The per-file cap every tracked file is held to, and the one place the number is
+#: spelled: prose says "the per-file history guard" and code imports this. It keeps
+#: a clone lean and nothing depends on its exact value. It was 1 MiB until
+#: 2026-09-29, when Matt raised it to 2 MiB so the n=2000 record could be tracked
+#: whole (`final_wallpapers_ckpt156`).
+MAX_TRACKED_BYTES = 2 * 1024 * 1024
 
 # A machine-specific path in source is the other kind of one-way door: it works
 # for exactly one developer. Source directories are held to pathlib and relatives.
@@ -157,10 +162,16 @@ ALLOWLIST: frozenset[str] = frozenset(
 #
 # Reversing this is one line here plus whatever is decided about the record.
 #
+# ⚠ Since the cap went to 2 MiB on 2026-09-29 the record, at 1.70 MB, is under
+# `MAX_TRACKED_BYTES` and this entry excuses nothing today. It was left in place
+# rather than taken out, because taking it out is the same decision as putting it
+# in and the record grows with the label stores; it is Matt's to retire.
+#
 # The fine-tier head's frozen corpus is the third, added 2026-09-10 on Matt's
-# instruction to copy it "somewhere durable and tracked". Two of its five files are
-# over the limit — a 2,829-row join at 2.16 MiB and the target fit at 1.09 MiB — and
-# neither can be split or trimmed, because the point of tracking them is that their
+# instruction to copy it "somewhere durable and tracked". One of its five files is
+# over the limit — the 2,829-row join at 2.16 MiB; the target fit, at 1.09 MiB, was
+# the second until the cap went to 2 MiB on 2026-09-29 — and neither can be split or
+# trimmed, because the point of tracking them is that their
 # sha256 still checks against the column fitted on them. `gallery-grade population`
 # reads the LIVE store, so the day another sheet is graded it returns a different,
 # larger corpus and the adopted run stops being rebuildable with nothing looking
@@ -171,8 +182,9 @@ ALLOWLIST: frozenset[str] = frozenset(
 # day — 2026-09-13 — and came back out the same night. What they needed was a
 # ceiling, and what this list hands out is the absence of one, which on the only
 # two files that grow with every palette drop is the wrong trade in the wrong
-# direction. `carriers.jsonl` has a stated 2 MiB cap in `PER_FILE_CAPS` below
-# instead, and `color_mass/` is back under `MAX_TRACKED_BYTES` where its split
+# direction. `carriers.jsonl` had a stated 2 MiB cap in `PER_FILE_CAPS` below
+# instead until the guard itself reached 2 MiB, and `color_mass/` is back under
+# `MAX_TRACKED_BYTES` where its split
 # has something to fire against. Reversing an entry out of this list is as much
 # a decision as adding one, and this is the record of it.
 LARGE_TEXT_ALLOWLIST = (
@@ -186,18 +198,13 @@ LARGE_TEXT_ALLOWLIST = (
 # to `MAX_TRACKED_BYTES`, so a file that has quietly gone tenfold still fails — the
 # exemption keeps a shape the allowlist cannot express.
 #
-# `data/palettes/carriers.jsonl` is the only entry. It holds one row per drawable
-# palette group, so it grows only when the library does, at a measured 532 bytes a
-# map; 2 MiB is ~2,600 maps of headroom from today's 690,732 bytes, which is 66% of
-# a mebibyte and so **under `MAX_TRACKED_BYTES` today**. The cap is headroom for the
-# drop that crosses the line, not an exemption in force — Matt's number, 2026-09-13.
-#
-# The number is stated in `test_palette_carriers`'s `MAX_RECORD_BYTES` too, and
-# `test_the_per_file_cap_agrees_with_the_record_s_own_test` holds the two to agreeing:
-# one ceiling written twice, the way `tentative.PUBLISHED` and `.gitignore` are.
-PER_FILE_CAPS: dict[str, int] = {
-    "data/palettes/carriers.jsonl": 2 * 1024 * 1024,
-}
+# **It is empty since 2026-09-29.** Its one entry was `data/palettes/carriers.jsonl`
+# at 2 MiB, Matt's number of 2026-09-13, and when he raised `MAX_TRACKED_BYTES` to
+# 2 MiB the entry stopped raising anything: a ceiling equal to the guard is the guard
+# spelled twice. `test_palette_carriers.MAX_RECORD_BYTES` imports the guard instead.
+# The door stays, because a raised ceiling for one path is still a different thing
+# from the allowlist's absence of one.
+PER_FILE_CAPS: dict[str, int] = {}
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -222,7 +229,7 @@ def test_no_binary_files_are_tracked() -> None:
     assert not offenders, f"binary-by-nature files are tracked: {offenders}"
 
 
-def test_no_tracked_file_exceeds_one_mebibyte() -> None:
+def test_no_tracked_file_exceeds_its_cap() -> None:
     offenders = []
     for name in tracked_files():
         if name in ALLOWLIST or name.startswith(LARGE_TEXT_ALLOWLIST):
@@ -248,18 +255,9 @@ def test_a_raised_cap_names_a_tracked_text_file() -> None:
         assert Path(name).suffix.lower() not in BINARY_SUFFIXES, (
             f"{name} has a raised cap and is binary-by-nature"
         )
-
-
-def test_the_per_file_cap_agrees_with_the_record_s_own_test() -> None:
-    """One ceiling written twice, held to being the same number in both places.
-
-    `test_palette_carriers` states the cap where a reader of that record will look
-    for it; this file states it where the SIZE rule is applied. Neither is the
-    copy, so either moving alone is the failure.
-    """
-    from tests.test_palette_carriers import MAX_RECORD_BYTES
-
-    assert PER_FILE_CAPS["data/palettes/carriers.jsonl"] == MAX_RECORD_BYTES
+        assert PER_FILE_CAPS[name] > MAX_TRACKED_BYTES, (
+            f"{name}'s cap does not raise anything — it is the guard written twice"
+        )
 
 
 #: What the binary allowlist's stated bound is worth as a number. The strip is five
@@ -276,7 +274,7 @@ def test_the_binary_allowlist_is_not_dead_and_stays_a_thumbnail_strip() -> None:
     three ways it goes wrong: an entry nobody tracks any more is a rule nobody reads;
     an entry that is not an image is a different exception wearing this one's name; and
     an entry that grew to a full-resolution render is the gallery this list refuses to
-    become. `MAX_TRACKED_BYTES` would not catch that last one — a 1 MiB wallpaper
+    become. `MAX_TRACKED_BYTES` would not catch that last one — many a full-size wallpaper
     passes it — which is why the bound here is its own, tighter number.
     """
     tracked = set(tracked_files())

@@ -1566,9 +1566,10 @@ every row carries each chain entry's own distance so tightening is a filter and
 never a re-run. A summary row heads the file with the counts at every cut from
 `TIGHT_ENCLOSE_K` (0.82) to 2.0, and four `example: descent_chain` rows follow it, one per tuned
 satellite, each a whole nesting as the rungs somebody rendered. **It is not
-tracked**: 2,709 places at ~500 bytes is 1.3 MiB against `test_history_purity`'s 1
-MiB limit, and it is one command away from a census output — Matt's ruling of
-2026-09-22 that an example set is an artifact and not a record.
+tracked**, and not for size — 2,709 places at ~500 bytes was over `test_history_purity`'s
+per-file cap when this was decided and is under it since the cap went to 2 MiB — but
+because it is one command away from a census output: Matt's ruling of 2026-09-22 that an
+example set is an artifact and not a record.
 
 ### The criterion is about the FRAME, and the other candidate is about the route
 

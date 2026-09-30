@@ -49,14 +49,14 @@ the library and confidently wrong about the rest.
 
 `data/palettes/carriers.jsonl`: one method row, then one row per (map, cell), and
 one `uncarried` row for each map dominant in nothing — see [`uncarried_row`].
-3,665 rows over 1,021 maps in **690,732 bytes**, which is 65.9% of
-`test_history_purity`'s 1 MiB — small enough to keep in the history, where a
+3,665 rows over 1,021 maps in **690,732 bytes**, which is 32.9% of
+`test_history_purity`'s per-file cap — small enough to keep in the history, where a
 reader of a pass record that names a carrier can find out what the pass believed
 about it. It grows at 3.71 rows and 685 bytes a map, the marginal rate measured
-across one drop, so the headroom is 522 maps. It was 881,834 bytes and 84.1% until
-the two derived members came off. The pictures behind it are not tracked: 2,703
-recolours land under `artifacts/` and are remade by `fractal-wallpapers palettes
-carriers` in about eighty seconds.
+across one drop, so the headroom is 2,053 maps. It was 881,834 bytes, 84.1% of the
+then 1 MiB guard, until the two derived members came off. The pictures behind it
+are not tracked: 2,703 recolours land under `artifacts/` and are remade by
+`fractal-wallpapers palettes carriers` in about eighty seconds.
 """
 
 from __future__ import annotations
@@ -159,7 +159,7 @@ def fill(rows: list) -> list:
 
     Both are functions of `share`, which is the one member of a row that is a
     measurement, and both used to be stored beside it. They came off on
-    2026-09-06 because the file is tracked and the history guard acts at 1 MiB:
+    2026-09-06 because the file is tracked and the history guard then acted at 1 MiB:
     they were 191,102 of 881,834 bytes — 21.7% — and the record was at 84.1% of
     the guard with 189 maps of headroom, which is under two of the drops this
     library takes.
