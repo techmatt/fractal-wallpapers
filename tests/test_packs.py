@@ -140,8 +140,14 @@ def test_forced_members_join_the_best_packs_nested(full, tmp_path, monkeypatch):
     order.write_text("\n".join([general[0], outside, *general[1:]]) + "\n", encoding="utf-8")
     forced = {"best-3": [outside, general[9]], "best-5": [general[7]]}
     plan = {pack.name: pack for pack in packs.plan(directory, order, forced=forced)}
-    # The parts stay exactly the ten; the outside pick is in no part.
-    assert [k for n in (1, 2, 3) for k in plan[f"general-{n}-of-3"].keys] == general
+    # The parts grow by the outside pick, the best packs first, the rest in rank order.
+    main = [k for n in (1, 2, 3) for k in plan[f"general-{n}-of-3"].keys]
+    assert set(main[:8]) == set(plan["best-8"].keys)
+    assert main[:3] == plan["best-3"].keys
+    assert sorted(main) == sorted([*general, outside])
+    assert [len(plan[f"general-{n}-of-3"].keys) for n in (1, 2, 3)] == [4, 4, 3]
+    assert plan["general-1-of-3"].forced == [outside]
+    assert "of 11 wallpapers, the collection's 10 plus 1 chosen" in plan["general-1-of-3"].about
     assert plan["best-3"].keys == [general[0], outside, general[9]]
     assert plan["best-5"].keys == [general[0], outside, general[1], general[7], general[9]]
     assert len(plan["best-8"].keys) == 8
@@ -193,3 +199,18 @@ def test_a_forced_member_zips_off_its_own_stamp(full, tmp_path, monkeypatch):
     entry = json.loads((out / packs.MANIFEST_NAME).read_text("utf-8"))["packs"][0]
     assert entry["seats"] == [outside, *general[:2]]
     assert entry["forced"] == [outside]
+
+
+def test_the_main_gallery_takes_its_own_outside_picks(full, tmp_path, monkeypatch):
+    directory, _ = full
+    monkeypatch.setattr(packs, "BEST", (3, 5, 8))
+    general = [f"gen{n:013d}" for n in range(10)]
+    picked = "red0000000000001"
+    order = tmp_path / "order.txt"
+    order.write_text("\n".join([picked, *general]) + "\n", encoding="utf-8")
+    plan = {p.name: p for p in packs.plan(directory, order, forced={"general": [picked]})}
+    # Ranked first by score, and still after every best pack, which it is no member of.
+    assert picked not in plan["best-8"].keys
+    main = [k for n in (1, 2, 3) for k in plan[f"general-{n}-of-3"].keys]
+    assert main[:8] == plan["best-8"].keys and main[8] == picked
+    assert plan["general-3-of-3"].stamps == {picked: "red"}

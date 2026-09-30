@@ -2361,7 +2361,12 @@ downloads the site's packs page offers. It reads the full set's directory and it
   is in every larger best pack too, whatever its rank and even from outside the thousand;
   each pack keeps its K, the forced members displacing its lowest-ranked. A key from
   outside the thousand is ranked by its own score inside the `--order` file, which may name
-  it for that reason alone; the general parts leave it out and stay the thousand. Such a
+  it for that reason alone. `"general"` in the file forces keys into the main gallery alone.
+  **The main gallery's three zips grow past the thousand** (packs_best_rebuild_ckpt157
+  addendum 1): they hold every forced key from outside it too, opening with the best packs
+  (each what it adds to the last, in its own order) so all three nest in part 1, then the
+  rest in rank order, cut into three as evenly as before. Nothing else about the gallery
+  grows. Such a
   member's recipe is read off its own collection's stamp, and `packs.json` lists a best
   pack's `forced`. The site's `builder packs stage` writes `order.txt`, `forced.json` and
   `orders/<hue>.txt` together under its `artifacts/packs-stage/`.

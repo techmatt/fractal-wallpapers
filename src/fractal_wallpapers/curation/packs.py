@@ -34,8 +34,9 @@ the order it produced.
 Matt's hand-picked previews, held by their best pack and every larger one whatever their
 rank, even from outside the thousand, each displacing the lowest-ranked member so the
 pack keeps its K. Such an outside key is ranked by its own score in the `--order` file,
-and the general parts leave it out. The site's `builder packs stage` writes all three
-inputs under its `artifacts/packs-stage/`; [`plan`] has the rules.
+and the main gallery's parts take it in, growing past the thousand (and so does a
+`"general"` forced key: the Main gallery's own hand picks). The site's `builder packs
+stage` writes all three inputs under its `artifacts/packs-stage/`; [`plan`] has the rules.
 
 ## Inside a zip
 
@@ -216,14 +217,14 @@ def read_order(
 
 
 def read_forced(path: Path) -> dict[str, list[str]]:
-    """A forced-members file: `{"best-30": [key, ...], ...}`, by best pack name."""
+    """A forced-members file: `{"best-30": [key, ...], ..., "general": [...]}`, by pack."""
     held = json.loads(Path(path).read_text("utf-8"))
-    names = {f"best-{k}" for k in BEST}
+    names = {f"best-{k}" for k in BEST} | {GENERAL}
     if not isinstance(held, dict) or not all(
         name in names and isinstance(keys, list) and all(isinstance(k, str) for k in keys)
         for name, keys in held.items()
     ):
-        raise PacksRefused(f"{path}: wants {{best pack name: [recipe key, ...]}}")
+        raise PacksRefused(f"{path}: wants {{pack name: [recipe key, ...]}}")
     return held
 
 
@@ -247,8 +248,12 @@ def plan(
     best pack too, so they stay nested. Each pack keeps its K: its forced members plus
     the first K less that many of the general rank, so a forced member displaces the
     lowest-ranked. Its order is `order`'s, which is why a forced key from outside the
-    thousand must be ranked in that file among the general seats; the general parts are
-    that order with such keys left out, and stay exactly the thousand.
+    thousand must be ranked in that file among the general seats. `forced["general"]`
+    names keys for the main gallery alone (its hand-picked previews).
+
+    **The main gallery's zips grow past the thousand** *(Matt, packs_best_rebuild_ckpt157
+    addendum 1)*: its three parts are the thousand and every forced key from outside it,
+    opening with the best packs so that each nests in part 1, the rest in rank order.
 
     **Per-collection orders**: `orders` gives a colour collection an order file of its
     own, in `order`'s form; a colour with none keeps its seeded permutation.
@@ -267,9 +272,9 @@ def plan(
     stamp = general[0]["stamp"]
     seats = [str(row["key"]) for row in general]
     forced = forced or {}
-    unknown = sorted(set(forced) - {f"best-{k}" for k in BEST})
+    unknown = sorted(set(forced) - {f"best-{k}" for k in BEST} - {GENERAL})
     if unknown:
-        raise PacksRefused(f"forced members for no best pack: {', '.join(unknown)}")
+        raise PacksRefused(f"forced members for no pack: {', '.join(unknown)}")
     every_forced = {key for keys in forced.values() for key in keys}
     homeless = sorted(every_forced - set(stamp_of))
     if homeless:
@@ -285,30 +290,9 @@ def plan(
         ranked, order_from, drawn = seeded(seats, seed), "seed", str(seed)
         ranking = ranked
     position = {key: at for at, key in enumerate(ranking)}
+    thousand = len(ranked)
 
-    total = len(ranked)
-    width = len(str(total))
-    packs = []
-    # 1000 over three is 334/333/333: the remainder goes to the first part.
-    cut = [0] + [total - (total * (PARTS - part)) // PARTS for part in range(1, PARTS + 1)]
-    for part in range(PARTS):
-        lo, hi = cut[part], cut[part + 1]
-        packs.append(
-            Pack(
-                name=f"general-{part + 1}-of-{PARTS}",
-                collection=GENERAL,
-                stamp=stamp,
-                about=(
-                    f"Fractal wallpapers, the general collection, part {part + 1} of {PARTS}: "
-                    f"ranks {lo + 1} to {hi} of {total:,}."
-                ),
-                keys=ranked[lo:hi],
-                first_rank=lo + 1,
-                width=width,
-                seed=drawn,
-                order_from=order_from,
-            )
-        )
+    best: list[Pack] = []
     held: set[str] = set()
     smaller: list[str] = []
     for k in BEST:
@@ -323,14 +307,14 @@ def plan(
         held = set(keys)
         smaller = sorted(pinned)
         from_outside = [key for key in keys if key in outside]
-        about = f"Fractal wallpapers, the best {k} of the {total:,} in the general collection."
+        about = f"Fractal wallpapers, the best {k} of the {thousand:,} in the general collection."
         if from_outside:
             about = (
-                f"Fractal wallpapers, the best {k}: {k - len(from_outside)} of the {total:,} "
+                f"Fractal wallpapers, the best {k}: {k - len(from_outside)} of the {thousand:,} "
                 f"in the general collection, and {len(from_outside)} chosen by hand from the "
                 "other collections."
             )
-        packs.append(
+        best.append(
             Pack(
                 name=name,
                 collection=GENERAL,
@@ -344,6 +328,47 @@ def plan(
                 stamps={key: stamp_of[key] for key in from_outside},
             )
         )
+
+    # The main gallery's zips are the thousand and every forced key from outside it
+    # (packs_best_rebuild_ckpt157 addendum 1): the gallery everywhere else stays the
+    # thousand. The best packs open it, each what it adds to the one before in its own
+    # order, so every best pack nests in part 1; the rest follow in rank order.
+    main: list[str] = []
+    for pack in best:
+        main += [key for key in pack.keys if key not in set(main)]
+    main += [key for key in ranking if key not in set(main)]
+    total = len(main)
+    width = len(str(total))
+    extra = len(outside)
+    whole = f"{total:,}"
+    if extra:
+        whole += f" wallpapers, the collection's {thousand:,} plus {extra} chosen by hand from "
+        whole += "the other collections"
+    packs = []
+    # 1000 over three is 334/333/333: the remainder goes to the first part.
+    cut = [0] + [total - (total * (PARTS - part)) // PARTS for part in range(1, PARTS + 1)]
+    for part in range(PARTS):
+        lo, hi = cut[part], cut[part + 1]
+        keys = main[lo:hi]
+        packs.append(
+            Pack(
+                name=f"general-{part + 1}-of-{PARTS}",
+                collection=GENERAL,
+                stamp=stamp,
+                about=(
+                    f"Fractal wallpapers, the general collection, part {part + 1} of {PARTS}: "
+                    f"ranks {lo + 1} to {hi} of {whole}."
+                ),
+                keys=keys,
+                first_rank=lo + 1,
+                width=width,
+                seed=drawn,
+                order_from=order_from,
+                forced=[key for key in keys if key in outside],
+                stamps={key: stamp_of[key] for key in keys if key in outside},
+            )
+        )
+    packs += best
     orders = orders or {}
     strays = sorted(set(orders) - set(targets.families()))
     if strays:
