@@ -141,9 +141,9 @@ pub fn derived_parameter(mode: &str) -> Option<&'static str> {
 /// The keys the page carries and the picture ignores.
 const UI_KEYS: [&str; 5] = ["panel", "every", "collection", "modes", "hue"];
 
-const SHADE_KEYS: [&str; 10] = [
+const SHADE_KEYS: [&str; 11] = [
     "gamma", "cycles", "phase", "reverse", "mirror", "transfer", "rolloff", "scale", "lambda",
-    "period",
+    "period", "knee",
 ];
 
 const COORDINATE_LIMIT: usize = 64;
@@ -714,6 +714,12 @@ fn read_shade(query: &Query) -> Result<Palette, String> {
     if let Some(text) = query.get("period") {
         palette.period = positive(text, "period")?;
     }
+    if let Some(text) = query.get("knee") {
+        let knee = positive(text, "knee")?;
+        // `kneeUnder`: the knee bends the absolute scale's compression and means nothing
+        // under leveled — read, so a malformed one is still refused, and then dropped.
+        palette.knee = (palette.scale == Scale::Absolute).then_some(knee);
+    }
     Ok(palette)
 }
 
@@ -784,6 +790,9 @@ fn emit_shade(palette: &Palette, parts: &mut Vec<String>) {
     }
     if palette.period != defaults.period {
         push("period", js_number(palette.period));
+    }
+    if let (Scale::Absolute, Some(knee)) = (palette.scale, palette.knee) {
+        push("knee", js_number(knee));
     }
 }
 
@@ -1674,6 +1683,34 @@ mod tests {
         );
         assert_eq!(query_of("?v=4&p=viridis"), "v=4&p=viridis");
         assert_eq!(query_of("v=4&p=viridis"), "v=4&p=viridis");
+    }
+
+    /// `knee` is read under the absolute scale and written back as it was, dropped under
+    /// leveled, and refused anywhere but above zero, on either contract.
+    #[test]
+    fn the_knee_rides_the_absolute_scale_only() {
+        let context = context();
+        let shade_of = |query: &str| match parse(query, &context).unwrap() {
+            Link::Shallow(view) => view.shade,
+            Link::Deep(view) => view.shade,
+        };
+        for query in [
+            "v=4&p=viridis&scale=absolute&lambda=0.157&period=1870&knee=5000",
+            "dv=3&x=-0.5&y=0&w=1e-3&p=viridis&scale=absolute&lambda=0.157&period=1870&knee=5000",
+        ] {
+            assert_eq!(shade_of(query).knee, Some(5000.0), "{query}");
+            let canonical = parse(query, &context).unwrap().canonical(&context).unwrap();
+            assert!(canonical.ends_with("&period=1870&knee=5000"), "{canonical}");
+        }
+        assert_eq!(shade_of("v=4&p=viridis&knee=5000").knee, None);
+        let leveled = parse("v=4&p=viridis&knee=5000", &context)
+            .unwrap()
+            .canonical(&context)
+            .unwrap();
+        assert!(!leveled.contains("knee"), "{leveled}");
+        for knee in ["0", "-1", "x"] {
+            assert!(parse(&format!("v=4&p=viridis&knee={knee}"), &context).is_err());
+        }
     }
 
     /// **Both parsers are the site's, on every row of the fixture.** Each row is a link

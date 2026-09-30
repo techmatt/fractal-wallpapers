@@ -265,6 +265,15 @@ impl Scale {
 /// zero or below lands at one finite value rather than at `-inf`.
 pub const COMPRESSION_FLOOR: f64 = f32::MIN_POSITIVE as f64;
 
+/// `(x^λ − 1)/λ`, and exactly `ln x` at `λ = 0`, on a value already floored.
+fn box_cox(value: f64, lambda: f64) -> f64 {
+    if lambda == 0.0 {
+        value.ln()
+    } else {
+        (value.powf(lambda) - 1.0) / lambda
+    }
+}
+
 fn unit_f64() -> f64 {
     1.0
 }
@@ -283,8 +292,8 @@ fn is_unit(value: &f64) -> bool {
 /// says nothing about the palette renders exactly as it did before any of this
 /// existed.
 ///
-/// **The last three members leave no trace at their defaults.** `scale`, `lambda`
-/// and `period` are omitted from a serialized recipe when they are the identity,
+/// **The last four members leave no trace at their defaults.** `scale`, `lambda`,
+/// `period` and `knee` are omitted from a serialized recipe when they are the identity,
 /// the same exception `texture_gamma` and `merge_order` make and for the same
 /// reason: a recipe is hashed into render keys and cache names, and a key that
 /// appeared unconditionally would rename every picture ever recorded.
@@ -325,6 +334,13 @@ pub struct Palette {
     /// range is the traversal.
     #[serde(default = "unit_f64", skip_serializing_if = "is_unit")]
     pub period: f64,
+    /// Under [`Scale::Absolute`], the value of `ν` above which the compression is the
+    /// straight line `ν − 1` whatever `lambda` says, and below which it is the Box–Cox
+    /// of `ν / knee` scaled to meet that line in value and in slope. `None` is off,
+    /// and a recipe without it is the one it always was. Means nothing under leveled.
+    /// See [`Palette::absolute_value`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub knee: Option<f64>,
 }
 
 impl Default for Palette {
@@ -339,6 +355,7 @@ impl Default for Palette {
             scale: Scale::Leveled,
             lambda: 1.0,
             period: 1.0,
+            knee: None,
         }
     }
 }
@@ -378,6 +395,11 @@ impl Palette {
         if !(self.period.is_finite() && self.period > 0.0) {
             return Err(format!("period must be positive, got {}", self.period));
         }
+        if let Some(knee) = self.knee
+            && !(knee.is_finite() && knee > 0.0)
+        {
+            return Err(format!("knee must be positive, got {knee}"));
+        }
         Ok(())
     }
 
@@ -399,11 +421,31 @@ impl Palette {
     /// between the identity and the log is one family and not two. At `λ = 1` it
     /// is `ν − 1`, the identity shifted.
     pub fn compress(&self, value: f64) -> f64 {
+        box_cox(value.max(COMPRESSION_FLOOR), self.lambda)
+    }
+
+    /// The value the absolute scale lays the gradient along: [`Palette::compress`], or,
+    /// where the recipe names a [`Palette::knee`], the knee mapping.
+    ///
+    /// **The knee mapping is one fixed curve of `ν`, a Box–Cox below the knee and exactly
+    /// linear above it.** At and above `knee` it is `ν − 1`, spelled as `compress` spells
+    /// it at `λ = 1`, so a frame whose values all lie above the knee is the knee-less
+    /// recipe at `λ = 1` to the bit. Below it, `(knee − 1) + knee · T_λ(ν / knee)`, which
+    /// meets the line in value and in slope at the knee, so the curve is monotone and C¹
+    /// for every `λ`, and at `λ = 1` it is the line all the way down. `period` is
+    /// therefore the line's period, one traversal every `period` of `ν` above the knee.
+    /// What it is for is a zoom: the low end is compressed the way `λ` compresses it, the
+    /// deep end is not compressed at all, and because the curve does not depend on the
+    /// frame no colour already on the screen changes as the frame moves.
+    pub fn absolute_value(&self, value: f64) -> f64 {
+        let Some(knee) = self.knee else {
+            return self.compress(value);
+        };
         let value = value.max(COMPRESSION_FLOOR);
-        if self.lambda == 0.0 {
-            value.ln()
+        if value >= knee {
+            box_cox(value, 1.0)
         } else {
-            (value.powf(self.lambda) - 1.0) / self.lambda
+            (knee - 1.0) + knee * box_cox(value / knee, self.lambda)
         }
     }
 
@@ -439,9 +481,10 @@ impl Palette {
     /// continuous across the whole slider; the skip [`Palette::compresses`] makes
     /// is a leveled optimisation and absolute has no bytes to preserve. The wrap is
     /// one wrap, not `place`'s two: there is no `[0, 1]` value whose top a second
-    /// wrap would be protecting.
+    /// wrap would be protecting. A `knee` bends the compression and nothing else —
+    /// see [`Palette::absolute_value`].
     pub fn place_absolute(&self, value: f64) -> f64 {
-        let turned = (self.compress(value) / self.period + self.phase).rem_euclid(1.0);
+        let turned = (self.absolute_value(value) / self.period + self.phase).rem_euclid(1.0);
         // `rem_euclid` of a hair below zero rounds to exactly 1.0; that is the
         // start of the gradient, not its end.
         if turned >= 1.0 { 0.0 } else { turned }
@@ -2751,5 +2794,87 @@ mod tests {
             ..recipe
         };
         assert!((near.place_absolute(nu) - expected).abs() < 1e-5);
+    }
+
+    /// The knee leaves no trace when it is off, rides a recipe when it is on, and is
+    /// refused anywhere but above zero.
+    #[test]
+    fn the_knee_is_absent_when_off_and_refused_out_of_range() {
+        let text = serde_json::to_string(&Palette::default()).unwrap();
+        assert!(!text.contains("knee"), "knee leaked into {text}");
+        let off: Palette = serde_json::from_str(r#"{"knee": null}"#).unwrap();
+        assert_eq!(off, Palette::default());
+        let set: Palette =
+            serde_json::from_str(r#"{"scale": "absolute", "lambda": 0.157, "knee": 5000}"#)
+                .unwrap();
+        assert_eq!(set.knee, Some(5000.0));
+        let again: Palette = serde_json::from_str(&serde_json::to_string(&set).unwrap()).unwrap();
+        assert_eq!(again, set);
+        for knee in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+            let recipe = Palette {
+                knee: Some(knee),
+                ..Palette::default()
+            };
+            assert!(recipe.validate().is_err(), "knee {knee} passed");
+        }
+        assert!(set.validate().is_ok());
+    }
+
+    /// Above the knee the knee mapping is the knee-less recipe at `λ = 1` to the bit,
+    /// whatever `λ` says; below it, `(knee − 1) + knee · T_λ(ν / knee)`, meeting the line
+    /// in value and in slope, monotone, and the line itself at `λ = 1`.
+    #[test]
+    fn the_knee_is_the_line_above_and_a_box_cox_below() {
+        let line = Palette {
+            scale: Scale::Absolute,
+            period: 1870.0,
+            phase: 0.091,
+            ..Palette::default()
+        };
+        let knee = 5000.0;
+        let bent = |lambda| Palette {
+            lambda,
+            knee: Some(knee),
+            ..line
+        };
+        for lambda in [0.0, 0.157, 0.5, 1.0] {
+            let recipe = bent(lambda);
+            for nu in [5000.0, 5000.5, 12364.5, 35367.0, 1.6e6] {
+                assert_eq!(
+                    recipe.place_absolute(nu).to_bits(),
+                    line.place_absolute(nu).to_bits(),
+                    "λ {lambda} at {nu}"
+                );
+            }
+            for nu in [1.0, 250.9, 4999.0] {
+                let low = if lambda == 0.0 {
+                    f64::ln(nu / knee)
+                } else {
+                    ((nu / knee).powf(lambda) - 1.0) / lambda
+                };
+                assert_eq!(recipe.absolute_value(nu), (knee - 1.0) + knee * low);
+            }
+            let below = recipe.absolute_value(knee - 1e-6);
+            assert!((below - (knee - 1.0)).abs() < 1e-5, "λ {lambda}: {below}");
+            let slope = (recipe.absolute_value(knee) - recipe.absolute_value(knee - 1e-3)) / 1e-3;
+            assert!((slope - 1.0).abs() < 1e-3, "λ {lambda}: slope {slope}");
+            let mut previous = f64::NEG_INFINITY;
+            for step in 0..400 {
+                let g = recipe.absolute_value(step as f64 * 31.7);
+                assert!(g >= previous, "λ {lambda} is not monotone");
+                previous = g;
+            }
+        }
+        for nu in [2.0, 700.0, 4999.0] {
+            assert!((bent(1.0).absolute_value(nu) - (nu - 1.0)).abs() < 1e-9);
+        }
+        // Off, the absolute value is the compression, bit for bit.
+        let plain = Palette {
+            lambda: 0.157,
+            ..line
+        };
+        assert_eq!(plain.absolute_value(250.9), plain.compress(250.9));
+        let field = field_of(&[250.9, 4000.0, 9000.0]);
+        assert!(matches!(Spend::of(&field, &bent(0.157)), Spend::Absolute));
     }
 }

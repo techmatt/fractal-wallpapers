@@ -830,6 +830,8 @@ A field value reaches the map through these stages, in this order:
 
 ```
 compression   g = (ν^λ − 1)/λ, ln ν at λ = 0, ν floored at the smallest normal f32
+              absolute with a knee: g = ν − 1 at and above it,
+                        (knee − 1) + knee · T_λ(ν/knee) below it
 scale         leveled:  measure (stretch / edge / rank) over g, then the mode's curve,
                         gamma, cycles and phase — exactly the path described above
               absolute: frac(g/period + phase), nothing measured, nothing clamped
@@ -867,6 +869,21 @@ recorded names them, and the pipeline's own whitelist of seven palette keys
   ν ≈ 3·10⁴ and 0.06 at 10⁶. A period of a few units there is tens to hundreds of steps
   a cycle and bands visibly; a log or a small λ compresses first and shrinks the step
   with it. Widening the lane would move a type the explorer depends on, and is left.
+- **`knee` bends the absolute compression into one fixed curve of `ν`**
+  *(`explorer_knee_ckpt157`, 2026-09-30, from the website, which was sent for the seam;
+  the explorer calls it Straighten iter)*. `Palette::knee` is an `Option<f64>`, absent
+  when off and omitted from a serialized recipe then, so no recipe, render key or cache
+  name moves. Where it is set, `Palette::absolute_value` is `ν − 1` at and above the
+  knee — spelled as `compress` spells it at `λ = 1`, so a frame whose values all lie
+  above the knee is the knee-less `λ = 1` picture to the bit — and
+  `(knee − 1) + knee · T_λ(ν/knee)` below it, which meets the line in value and in slope.
+  So `period` is the line's period, `λ` shapes only the low end, and at `λ = 1` the knee
+  is the line all the way down. It exists for a zoom: a depth schedule recolours what is
+  already on the screen as the frame moves, and a curve of `ν` alone never does. It acts
+  only through `place_absolute`, so all three colourings take it and leveled ignores it;
+  the link reads `knee` only under `scale=absolute` and drops it otherwise, as it drops a
+  `level` under absolute. Held to zero behaviour through `fractal-wallpapers identity`:
+  the 540-render battery byte-identical before and after.
 
 **Consumers pin by path, because the version cannot tell them anything.** This crate
 is `0.1.0` and is never bumped, so a git dependency could not distinguish two
