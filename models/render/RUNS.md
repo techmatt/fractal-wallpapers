@@ -1,14 +1,15 @@
 Every tracked run directory under `models/render/`, and what each one is for.
 
-Twenty-five of them, and a run name alone does not say which. Six belong to
-`renders deploy` bands, nine to `renders train` candidates, four to its variants,
-three are mislaunched, two are the ablation and one is a retired design. Each holds
+Twenty-one of them, and a run name alone does not say which. Six belong to
+`renders deploy` bands, nine to `renders train` candidates, four to its variants
+and two are the ablation. Each holds
 `config.json` and `metrics.json`; a run that was read against a bar also holds
 `scores_<kind>.jsonl`. The weights (`best.pt`, `last.pt`) are not tracked.
 
 The bands themselves are declared in code, not here: `render_deploy.BANDS`,
-`render_train.CANDIDATES`, `render_train.VARIANTS` and `render_train.MISLAUNCHED`.
-This file is the index from a directory name back to one of those.
+`render_train.CANDIDATES`, `render_train.VARIANTS` and, for the ablation,
+`render_acceptance.ABLATIONS`. This file is the index from a directory name back to
+one of those.
 
 ## The map
 
@@ -35,10 +36,6 @@ two_head_small_seed2     variant `two_head_small`   small     2      3     repor
 two_head_seed0           variant `two_head`         medium    0     26     reported, never gated
 strange_only_seed0       corpus-matched ablation    medium    0     19     no bar attached
 strange_only_seed1       corpus-matched ablation    medium    1     31     no bar attached
-mislaunch_medium_seed0   mislaunched                medium    0     20     answers no bar
-mislaunch_medium_seed1   mislaunched                medium    1     26     answers no bar
-mislaunch_medium_seed2   mislaunched                medium    2     28     answers no bar
-forward_holdout_seed0    retired split design       small     0      1     nothing reads it
 ```
 
 `small` is `mobilenetv4_conv_small.e2400_r224_in1k` and `medium` is
@@ -80,20 +77,27 @@ the pooled split at exactly the candidate's recipe, so the only thing that moves
 whether the other kind's rows were in the batch. No bar is attached.
 `comparison.json` names `strange_only_seed2` and the three `smooth_only_seed*` as
 **absent** — they were never trained, and the record says so rather than reading a
-band it does not have.
+band it does not have. **These two are read**: `render_acceptance.read` pairs every
+`ABLATIONS` run whose score file is on disk against the candidate, seed for seed,
+so the ablation arms in `comparison.json` and `comparison_small_backbone.json` are
+computed from these directories and go absent without them.
 
-**The three mislaunched runs** trained at the medium backbone while the
+## What was here and is not
+
+**Three mislaunched runs** trained at the medium backbone while the
 `enlarged_corpus` band and its bar declare the small, because they were launched
 without `--backbone` and took `RECIPE`'s pinned default. They were renamed out of
-the band on 2026-08-24 and belong to none: `render_train.MISLAUNCH_BASIS` is carried
-onto anything that reports them. Their best epochs — 20 / 26 / 28 against the band's
-5 / 5 / 4 — are the shape of the failure, an under-fed larger backbone.
+the band on 2026-08-24 as `mislaunch_medium_seed*`, answered no bar, and were
+removed on 2026-09-30. Their best epochs — 20 / 26 / 28 against the band's
+5 / 5 / 4 — were the shape of the failure, an under-fed larger backbone;
+`README.md` beside this file tells it whole.
 
-**The one holdout run** is the forward-holdout split design that ran before
-`renders deploy`: every row registered after the incumbent trained went to the
-comparison side, 2,415 rows of it against the deploy split's 598. It saturated —
-those rows are 73% `>=3` by construction — and the design is retired rather than
-parameterised. The directory is kept and no code reads it.
+**One holdout run**, `forward_holdout_seed0`, was the forward-holdout split design
+that ran before `renders deploy`: every row registered after the incumbent trained
+went to the comparison side, 2,415 rows of it against the deploy split's 598. It
+saturated — those rows are 73% `>=3` by construction — and the design is retired
+rather than parameterised. No code read the directory and it was removed the same
+day.
 
 ## What has no run directory here
 

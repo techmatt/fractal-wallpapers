@@ -379,15 +379,6 @@ def test_the_split_is_not_reshipped_unasked() -> None:
     assert cli.build_parser().parse_args(["label", "split"]).write is False
 
 
-def test_the_import_names_its_source_rather_than_knowing_it() -> None:
-    """No tracked file may hold an absolute path, and the corpus it reads lives
-    outside this repository — so the source is an argument, always."""
-    args = cli.build_parser().parse_args(["import-labels", "--source", "somewhere"])
-    assert args.handler is cli.import_labels
-    with pytest.raises(SystemExit):
-        cli.build_parser().parse_args(["import-labels"])
-
-
 def test_the_palette_head_is_eight_steps_under_one_subcommand() -> None:
     """It is distilled rather than trained from labels, so it has two steps the
     other heads do not: vendoring the real candidate sets and generating a corpus."""

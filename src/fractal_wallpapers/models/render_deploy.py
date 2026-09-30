@@ -39,9 +39,8 @@ bands — so the incumbent scored a perfect 1.000 in the top decile and a
 precision-at-`>=3` comparison there cannot separate two heads. Worse, the
 constraint cost the candidate exactly the rows the retrain existed for. **Both
 of those are properties of the design rather than of the day it ran**, which is
-why the forward holdout is gone from this module rather than parameterised, and
-why [`render_train.MISLAUNCHED`]-style archaeology is not needed: the run it
-produced is on disk, its report says what it said, and no code here reads it.
+why the forward holdout is gone from this module rather than parameterised. The
+run it produced is gone too: its report said what it said, and no code read it.
 
 ## The pin is obeyed exactly as the trainer already enforces it, and no further
 

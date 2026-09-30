@@ -198,36 +198,6 @@ TWO_HEAD_RUNS: tuple[str, ...] = VARIANTS["two_head"]["runs"]
 #: Every run of every variant, which is what a comparison has to align over.
 VARIANT_RUNS: tuple[str, ...] = tuple(run for entry in VARIANTS.values() for run in entry["runs"])
 
-#: Runs that are on disk and belong to no band, with what happened to them.
-#:
-#: A band is a design plus the runs that realize it, so a run that did not train
-#: the design cannot stay in the band — its records would be read against a bar
-#: written about something else. It is not deleted either: it trained, it cost
-#: hours, and what it says about the design it *did* train is worth keeping.
-#: So it is renamed out of the band and named here.
-#:
-#: These three are the whole of it. `enlarged_corpus` declares the small
-#: backbone, its bar states the recipe as "the incumbent's, unchanged in every
-#: key including the backbone", and all three runs trained at the **medium** —
-#: [`RECIPE`]'s pinned default, taken because nothing read the declaration and
-#: the launches passed no `--backbone`. Their records are internally consistent
-#: and consistently wrong, which is why the checkpoint being 3.3x the expected
-#: size is what gave it away. [`check_declared_backbone`] is what stops it
-#: happening at launch and [`check_written_backbone`] is what sees it afterwards.
-MISLAUNCHED: dict[str, dict] = {
-    "mislaunch_medium_seed0": {"launched_as": "enlarged_corpus_seed0"},
-    "mislaunch_medium_seed1": {"launched_as": "enlarged_corpus_seed1"},
-    "mislaunch_medium_seed2": {"launched_as": "enlarged_corpus_seed2"},
-}
-
-#: What the runs above were, in one sentence, carried onto anything that reports
-#: them. They answer no bar and gate nothing.
-MISLAUNCH_BASIS = (
-    "launched 2026-08-24 without --backbone, so all three took RECIPE's pinned medium "
-    "rather than the small backbone the enlarged_corpus band and its bar declare. Renamed "
-    "out of that band on 2026-08-24: they realize no registered design and answer no bar"
-)
-
 #: Every band with a bar, candidates and variants alike, keyed by run name. A
 #: band **declares** its recipe and its runs together, and this is the index that
 #: lets a run name answer which declaration it is supposed to realize.
@@ -1354,8 +1324,6 @@ __all__ = [
     "HEAD",
     "INHERITANCE",
     "KINDS",
-    "MISLAUNCHED",
-    "MISLAUNCH_BASIS",
     "RECIPE",
     "RUNS",
     "SCHEMA",

@@ -15,14 +15,14 @@ server.py         serve one sheet, to one browser, on the first free port at or 
 page.html         the page: the row's pictures, the sheet's tiers, one export
 export_control.js what an export is called and where it goes — one file, every page
 intake.py         THE ingest: a page's export resolved against its sheet, into either store
-corpus_import.py  the one-time import of the source project's location corpus
-finished_import.py the one-time import of its two finished-render corpora
+finished_import.py the one-time import of the source's two finished-render corpora
                   (and NOT on any new label's path — see the note below)
 ```
 
 **`finished_import` is not on the path a new label travels, and reading it as if
-it were has cost a prompt.** It is reachable from `import-finished` and from
-`models.renders.verify`, both of which read the source project. A verdict cast
+it were has cost a prompt.** Its command is gone and its conversions are what is
+still read: `models.renders.verify` and `models.palette_sets.extract`, both of
+which read the source project, reach for them. A verdict cast
 today goes `label build` → `sheets.finished_source` (`stated_recipe` →
 `engine_spec.recipe`) → the page → `label ingest` → `intake` → `finished.append`
 → `renders.plan`, and the recipe is carried whole at every step. So a constraint

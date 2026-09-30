@@ -177,8 +177,8 @@ Nothing in a run directory could have caught it. `config.json`, the config insid
 both checkpoints and `head audit` all agreed with each other and with the wrong
 value; the tell was a checkpoint 3.3x the expected size. So the declaration is
 enforced at both ends now — before a launch spends hours, and before a written band
-is read against a bar it may not answer. The three runs are kept as
-`mislaunch_medium_seed*`, out of every band, named in `render_train.MISLAUNCHED`.
+is read against a bar it may not answer. The three runs were renamed out of the
+band as `mislaunch_medium_seed*` and removed on 2026-09-30: they answered no bar.
 
 **The selection objective is not comparable across the two candidates** — 0.372–0.386
 against 0.386–0.392 — because the slice is drawn over the pooled training side's
@@ -300,6 +300,5 @@ superseded, not six.
 that run's read of each sheet with every row carrying its whole join.
 
 And [`RUNS.md`](RUNS.md), which is the index a directory listing is not: one line
-per run directory, to the band or role it belongs to. Twenty-five of them, across
-two deploy bands, three candidates, two variants, an ablation, three mislaunches
-and one retired design.
+per run directory, to the band or role it belongs to. Twenty-one of them, across
+two deploy bands, three candidates, two variants and an ablation.

@@ -182,8 +182,8 @@ it cannot answer is worse than no read. Two ends are needed because nothing in a
 run directory can catch this on its own: `config.json`, both checkpoints' own
 configs and `head audit` all agree with each other and with the wrong value, since
 the only place that says what the band was *supposed* to be is the declaration.
-`render_train.MISLAUNCHED` names the runs that were kept out of every band on
-exactly those grounds.
+Three runs were taken out of their band on exactly those grounds, and
+`models/render/README.md` tells what they read before they were removed.
 
 **A bar is appended to, never edited.** `prereg.json` carries an `amendments`
 list and `finished_acceptance.amended(bar, arm)` folds it over the arm as
@@ -698,8 +698,8 @@ parameterised.** It held out every post-cut row so the two heads could be compar
 on rows neither had seen. The comparison saturated — those rows are 73% `≥3` by
 construction, drawn off the incumbent's own top and off calibration bands, so the
 incumbent scored a perfect 1.000 in the top decile — and the constraint cost the
-candidate exactly the new strange fours the retrain existed for. Its run is still
-on disk at `models/render/forward_holdout_seed0/`; no code reads it.
+candidate exactly the new strange fours the retrain existed for. Its one run was
+read by no code and is no longer tracked.
 
 **Nothing here adopts anything by itself.** `renders deploy` writes checkpoints
 under `models/render/<run>/` and records under `artifacts/render_deploy/`; staging
@@ -766,7 +766,9 @@ manifest recorded `4b60deb9…`. So `ship.promote` **copies** the judged bytes
 rather than re-making them, and a retired artifact's hash is not recoverable from
 its checkpoint — what holds those bytes is the release asset published under the
 old tag, which is why the old manifest row is left in git history rather than
-edited away.
+edited away. **Deleting a release is therefore the one way to lose a retired
+artifact**: `weights-v1` went on 2026-09-30, and the first location head's bytes
+went with it.
 
 ## Running a band that takes hours
 

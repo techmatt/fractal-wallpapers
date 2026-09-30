@@ -447,25 +447,29 @@ Scaffolding that only ever reads the source project. Each ran, each wrote what i
 was for, and none of it is reachable from a clone with no sibling checkout — so
 each goes at publication, with its test and its subcommand.
 
-- `src/fractal_wallpapers/labeling/corpus_import.py` (`import-labels`, with
-  `tests/test_corpus_import.py`) — the location corpus brought across through the
-  source's own sidecar and amendment rules. The store it wrote is tracked; the
-  reader of the source is not needed again.
-- `src/fractal_wallpapers/labeling/finished_import.py` (`import-finished`; no test
-  file of its own, exercised through `tests/test_modes.py`) — the same for the two
-  finished-render corpora. It calls `library_import`, so the two go together.
+**Gone on 2026-09-30**: the location-corpus importer and its test, and the `cli`
+module that held `import-labels` and `import-finished`. Nothing else read them.
+
+**Still here, each because something live reads it** — deleting one means
+answering what its reader does instead, which is a decision and not a cleanup:
+
+- `src/fractal_wallpapers/labeling/finished_import.py` — the two finished-render
+  corpora's importer. Its command is gone and its `run` has no caller, but its
+  conversions (`recipe_of`, `family_of`, `mode_of`, `engine_modes` and the rest)
+  are read by `models.renders.verify`, by `models.palette_sets.extract`, and by
+  `tests/test_label_round_trip.py` and `tests/test_modes.py`.
 - `src/fractal_wallpapers/palettes/library_import.py` (with
   `tests/test_library_import.py`) — colormaps converted out of the source's pooled
-  library, because an imported row names maps this repository did not hold. **Two
-  live callers first**: `palettes/authored_import.py` and `models/palette_sets.py`
-  both reach for it, so deleting it means answering what those do instead.
-- `src/fractal_wallpapers/cli/import_commands.py` — the parsers and handlers for
-  both of the above, and nothing else. The `cli` split made the two commands one
-  file precisely so this is a file deletion plus its name in `cli/__init__.py`'s
-  module list, rather than surgery inside a module that has other work to do.
+  library. `palettes/authored_import.py` writes every authored drop through its
+  `write`, which is not build-era work at all; `models/palette_sets.run` and
+  `finished_import.run` call its `run`.
+- **Three commands the first list missed**, each taking the source as `--source`:
+  `renders verify` (`models.renders.verify`), `renders prereg`
+  (`finished_acceptance.preregister`) and the palette head's set extraction
+  (`models.palette_sets.run`). They are the readers above, so they go first.
 - `src/fractal_wallpapers/models/acceptance.py`'s extraction path —
   `INCUMBENT_SCORES`, `INCUMBENT_MANIFEST`, `beside`, `ExtractionSourceGone`,
   `extraction_source` — reads `fractal-maker` and `fractal-maker-artifacts` beside
-  this checkout to write a bar the first time. **Only the extraction half goes**:
-  every *read* of a bar already runs against the vendored yardstick, which is
-  tracked and stays.
+  this checkout to write a bar the first time, and `head prereg` still calls it
+  through `preregister`. **Only the extraction half goes**: every *read* of a bar
+  already runs against the vendored yardstick, which is tracked and stays.

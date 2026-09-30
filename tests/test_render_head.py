@@ -754,15 +754,3 @@ def test_a_planted_mismatch_between_a_written_run_and_its_band_fails(
     assert "backbone their band declares" in str(refused.value), (
         "it must refuse on the declaration, not later on a missing score file"
     )
-
-
-def test_the_mislaunched_runs_are_out_of_every_band_and_say_what_they_are() -> None:
-    """They trained, they cost hours, and they answer no bar. Kept and named rather
-    than deleted — but out of the band, so no read can pair them against it."""
-    claimed = {run for entry in render_train.CANDIDATES.values() for run in entry["runs"]}
-    claimed |= {run for entry in render_train.VARIANTS.values() for run in entry["runs"]}
-    for run, entry in render_train.MISLAUNCHED.items():
-        assert run not in claimed, f"{run} is a mis-launch and still sits inside a band"
-        assert render_train.declared_for(run) is None
-        assert entry["launched_as"] in claimed, "it was launched under a name a band does claim"
-    assert "--backbone" in render_train.MISLAUNCH_BASIS

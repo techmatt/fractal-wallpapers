@@ -88,5 +88,7 @@ artifact `fractal-wallpapers fetch-weights` downloads and hash-checks. A flip
 checkpoint: a `torch` archive carries its own file name inside itself, and
 `torch.save` is not byte-reproducible run to run, so a re-cast is a file no bar
 has read. The corollary is that the retired artifact's hash cannot be rebuilt
-from `seed0/head_best.pt` — its bytes are the asset published under `weights-v1`,
-and its manifest row lives in git history.
+from `seed0/head_best.pt` — its bytes were the asset published under `weights-v1`,
+a release deleted on 2026-09-30 because nothing fetched it, so the hash in
+`adoption.json` now names bytes no release holds. Its manifest row lives in git
+history.

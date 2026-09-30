@@ -106,7 +106,6 @@ GROUPS: tuple[str, ...] = (
     "curate_commands",
     "deep_commands",
     "storage_commands",
-    "import_commands",
     "identity_commands",
 )
 

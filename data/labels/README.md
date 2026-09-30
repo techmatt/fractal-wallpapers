@@ -111,7 +111,7 @@ trainer that reads it.
 ## Where these came from
 
 The 11,303 locations here are the source project's label corpus, imported once
-(`fractal-wallpapers import-labels --source <repo>`) and never re-derived. Its
+and never re-derived; the importer read that project and left with it. Its
 labels lived in three registered places behind an amendment overlay; every one of
 them was resolved through that project's own canonical reader at import, folded
 to one verdict per location as the maximum over its crops, and written flat. None
