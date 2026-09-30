@@ -899,6 +899,7 @@ def tracked_ledger():
 
     with pytest.MonkeyPatch.context() as patched:
         patched.delenv(paths.HOT_ROOT_VARIABLE, raising=False)
+        patched.delenv(paths.ARCHIVE_ROOT_VARIABLE, raising=False)
         rows = candidate_ledger.read()
         scores = candidate_ledger.read_scores()
         pool, costs, refused = headroom.population(rows=rows, scores=scores, log=quiet)

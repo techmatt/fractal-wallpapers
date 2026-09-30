@@ -2166,6 +2166,21 @@ def add_steps(steps) -> None:
             help="the general rank: one recipe key a line, every n=1000 seat once (default: "
             "a seeded permutation, packs.SEED). The votes will supply this file.",
         )
+        verb_parser.add_argument(
+            "--forced",
+            type=Path,
+            default=None,
+            help='forced best-pack members, JSON {"best-30": [key, ...], ...}: each is held '
+            "by that best pack and every larger one whatever its rank, displacing the lowest; "
+            "one from outside the thousand must be ranked in --order",
+        )
+        verb_parser.add_argument(
+            "--orders",
+            type=Path,
+            default=None,
+            help="a directory of colour-collection orders, <collection>.txt in --order's "
+            "form; a colour with no file keeps its seeded permutation",
+        )
         if verb == "build":
             verb_parser.add_argument(
                 "--out", type=Path, required=True, help="where the zips and packs.json go"
@@ -2196,8 +2211,10 @@ def curate_packs(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import packs
 
     try:
+        forced = packs.read_forced(args.forced) if args.forced else None
+        orders = packs.read_orders(args.orders) if args.orders else None
         if args.what == "status":
-            print(json.dumps(packs.status(args.full, args.order), indent=1))
+            print(json.dumps(packs.status(args.full, args.order, forced, orders), indent=1))
             return 0
         summary = packs.build(
             args.full,
@@ -2206,6 +2223,8 @@ def curate_packs(args: argparse.Namespace) -> int:
             order=args.order,
             names_path=args.names,
             allow_partial=args.allow_partial,
+            forced=forced,
+            orders=orders,
         )
     except packs.PacksRefused as refused:
         print(refused)

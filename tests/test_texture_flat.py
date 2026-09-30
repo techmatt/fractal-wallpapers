@@ -248,6 +248,7 @@ def artifacts_on_disk(tmp_path, monkeypatch):
     root = tmp_path / "artifacts"
     root.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
 
 
 def _ledger_row(key, *, mode=MODULATE, flat=False):

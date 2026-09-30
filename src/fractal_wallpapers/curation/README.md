@@ -2350,12 +2350,21 @@ downloads the site's packs page offers. It reads the full set's directory and it
 `membership.jsonl` and nothing else of the render path, and it uploads nothing.
 
 - **Eighteen zips**: the general n=1000 in three parts in rank order (334 / 333 / 333),
-  best 30, 100 and 200 (the first K of that same order, so each is nested in part 1),
+  best 30, 100 and 200 (the first K of that same order, nested, bar forced members below),
   and the twelve hue collections. n=2000 and the seven mode collections do not ship.
 - **Rank order** is a seeded permutation (`packs.SEED`) until the friends' votes
   define one; then it is `--order FILE`, one recipe key a line, every n=1000 seat once.
-  A colour pack draws its own from `<SEED>/<hue>`. The seed and the order are written
-  into `packs.json`.
+  A colour pack draws its own from `<SEED>/<hue>`, or takes `<hue>.txt` from
+  `--orders DIR` in the same form. The seed and the order are written into `packs.json`.
+- **Forced members** (packs_forced_members_ckpt157): `--forced FILE`, JSON
+  `{"best-30": [key, ...], ...}`, is Matt's hand-picked previews. A key forced into best-K
+  is in every larger best pack too, whatever its rank and even from outside the thousand;
+  each pack keeps its K, the forced members displacing its lowest-ranked. A key from
+  outside the thousand is ranked by its own score inside the `--order` file, which may name
+  it for that reason alone; the general parts leave it out and stay the thousand. Such a
+  member's recipe is read off its own collection's stamp, and `packs.json` lists a best
+  pack's `forced`. The site's `builder packs stage` writes `order.txt`, `forced.json` and
+  `orders/<hue>.txt` together under its `artifacts/packs-stage/`.
 - **Inside**: one folder named after the zip, `<rank> <palette> <fractal>.jpg` per
   picture and a `README.txt` (site, the embedded explorer link, CC BY 4.0). The rank pads
   to the pack's width, and a general part keeps the general rank, so part 2 opens at
@@ -2387,6 +2396,7 @@ fractal-wallpapers curate packs status --full <full set dir>                  # 
 fractal-wallpapers curate packs build  --full <dir> --out <packs dir>         # all eighteen; refuses if incomplete
 fractal-wallpapers curate packs build  --full <dir> --out <dir> --only best-30 rose
 fractal-wallpapers curate packs build  ... --order <votes order file>         # the votes' rank
+fractal-wallpapers curate packs build  ... --order <f> --forced <json> --orders <dir>  # as staged
 ```
 
 ## Levelling is decided once and replayed upward

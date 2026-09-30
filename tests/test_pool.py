@@ -31,6 +31,7 @@ def artifacts_on_disk(tmp_path, monkeypatch):
     root = tmp_path / "artifacts"
     root.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     return root
 
 
@@ -309,6 +310,7 @@ def test_the_rule_the_leg_builds_carries_the_allowance_arithmetic():
 
 def test_a_record_round_trips_through_its_own_directory(tmp_path, monkeypatch):
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     written = solve.write_record("pilot", {"schema": solve.SCHEMA, "filled": 1})
     assert written.name == "solve.json"
     assert solve.read_record("pilot")["schema"] == solve.SCHEMA
@@ -323,6 +325,7 @@ def test_a_solve_name_that_already_holds_a_record_is_refused(tmp_path, monkeypat
     `diversity_refusals` are gone — its rows, manifest and page survived, being
     stamped, so nothing looked broken."""
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     solve.write_record("shared", {"schema": solve.SCHEMA, "filled": 1})
 
     with pytest.raises(solve.SolveRefused, match="written once and never over"):
@@ -336,6 +339,7 @@ def test_a_run_replacing_its_own_record_says_so(tmp_path, monkeypatch):
     leg and again after it, so the seats carry their rendered pictures. A flag it
     has to pass, rather than a rule that bends for whoever wrote last."""
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     solve.write_record("n1000", {"schema": solve.SCHEMA, "filled": 1})
 
     solve.write_record("n1000", {"schema": solve.SCHEMA, "filled": 2}, over=True)

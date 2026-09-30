@@ -128,3 +128,68 @@ def test_zip_stores_pictures_byte_for_byte(full, tmp_path):
             )
         readme = bundle.read("fractal-wallpapers-general-2-of-3/README.txt").decode("utf-8")
     assert packs.SITE in readme and "CC BY 4.0" in readme and "ranks 5 to 7 of 10" in readme
+
+
+def test_forced_members_join_the_best_packs_nested(full, tmp_path, monkeypatch):
+    directory, _ = full
+    monkeypatch.setattr(packs, "BEST", (3, 5, 8))
+    general = [f"gen{n:013d}" for n in range(10)]
+    outside = "ros0000000000002"
+    # The staged rank: the thousand in order, the outside pick ranked second by its score.
+    order = tmp_path / "order.txt"
+    order.write_text("\n".join([general[0], outside, *general[1:]]) + "\n", encoding="utf-8")
+    forced = {"best-3": [outside, general[9]], "best-5": [general[7]]}
+    plan = {pack.name: pack for pack in packs.plan(directory, order, forced=forced)}
+    # The parts stay exactly the ten; the outside pick is in no part.
+    assert [k for n in (1, 2, 3) for k in plan[f"general-{n}-of-3"].keys] == general
+    assert plan["best-3"].keys == [general[0], outside, general[9]]
+    assert plan["best-5"].keys == [general[0], outside, general[1], general[7], general[9]]
+    assert len(plan["best-8"].keys) == 8
+    assert set(plan["best-5"].keys) <= set(plan["best-8"].keys)
+    assert plan["best-8"].forced == [outside, general[7], general[9]]
+    assert plan["best-3"].stamps == {outside: "rose"}
+    assert "chosen by hand" in plan["best-3"].about
+    with pytest.raises(packs.PacksRefused, match="need --order"):
+        packs.plan(directory, forced=forced)
+    with pytest.raises(packs.PacksRefused, match="in no collection"):
+        packs.plan(directory, order, forced={"best-3": ["nope"]})
+    with pytest.raises(packs.PacksRefused, match="over its 3"):
+        packs.plan(directory, order, forced={"best-3": [outside, *general[5:8]]})
+
+
+def test_a_colour_pack_takes_its_own_order(full, tmp_path):
+    directory, _ = full
+    rose = [f"ros{n:013d}" for n in reversed(range(4))]
+    orders = tmp_path / "orders"
+    orders.mkdir()
+    (orders / "rose.txt").write_text("\n".join(rose) + "\n", encoding="utf-8")
+    plan = {pack.name: pack for pack in packs.plan(directory, orders=packs.read_orders(orders))}
+    assert plan["rose"].keys == rose
+    assert (plan["rose"].order_from, plan["rose"].seed) == ("rose.txt", None)
+    assert plan["red"].seed == f"{packs.SEED}/red"
+    (orders / "rose.txt").write_text("\n".join(rose[:3]) + "\n", encoding="utf-8")
+    with pytest.raises(packs.PacksRefused, match="rose seats: 0 unknown, 1 absent"):
+        packs.plan(directory, orders=packs.read_orders(orders))
+
+
+def test_a_forced_member_zips_off_its_own_stamp(full, tmp_path, monkeypatch):
+    directory, names = full
+    monkeypatch.setattr(packs, "BEST", (3, 5, 8))
+    general = [f"gen{n:013d}" for n in range(10)]
+    outside = "ros0000000000002"
+    order = tmp_path / "order.txt"
+    order.write_text("\n".join([outside, *general]) + "\n", encoding="utf-8")
+    render(directory, [*general, outside])
+    out = tmp_path / "packs"
+    packs.build(
+        directory,
+        out,
+        only=["best-3"],
+        order=order,
+        names_path=names,
+        log=lambda _: None,
+        forced={"best-3": [outside]},
+    )
+    entry = json.loads((out / packs.MANIFEST_NAME).read_text("utf-8"))["packs"][0]
+    assert entry["seats"] == [outside, *general[:2]]
+    assert entry["forced"] == [outside]

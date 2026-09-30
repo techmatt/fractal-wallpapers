@@ -26,8 +26,16 @@ Until the friends' votes on the n=1000 set are in, the general rank is a **seede
 permutation** of its seats ([`SEED`]). The order is an input — `--order FILE`, one
 recipe key a line, the id a returned vote carries — and the draw is only its
 default, so the day the votes land is a file and not a change here. A colour pack
-draws its own permutation from `<SEED>/<collection>`. Every seed is written into
-[`MANIFEST_NAME`] beside the order it produced.
+draws its own permutation from `<SEED>/<collection>` unless `--orders DIR` gives it
+`<collection>.txt` in the same form. Every seed is written into [`MANIFEST_NAME`] beside
+the order it produced.
+
+**A best pack may be forced members** (`--forced FILE`, packs_forced_members_ckpt157):
+Matt's hand-picked previews, held by their best pack and every larger one whatever their
+rank, even from outside the thousand, each displacing the lowest-ranked member so the
+pack keeps its K. Such an outside key is ranked by its own score in the `--order` file,
+and the general parts leave it out. The site's `builder packs stage` writes all three
+inputs under its `artifacts/packs-stage/`; [`plan`] has the rules.
 
 ## Inside a zip
 
@@ -52,7 +60,7 @@ import hashlib
 import json
 import random
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from fractal_wallpapers.paths import repo_root
@@ -158,6 +166,10 @@ class Pack:
     width: int = 0
     seed: str | None = None
     order_from: str = "seed"
+    #: A best pack's forced members, in rank order ([`plan`]).
+    forced: list[str] = field(default_factory=list)
+    #: Members from outside the pack's own collection, by the stamp their recipe is under.
+    stamps: dict[str, str] = field(default_factory=dict)
 
     def file_name(self, partial: bool = False) -> str:
         return f"{PREFIX}-{self.name}{'-' + PARTIAL if partial else ''}.zip"
@@ -182,38 +194,97 @@ def seeded(keys: list[str], seed) -> list[str]:
     return shuffled
 
 
-def read_order(path: Path, keys: list[str]) -> list[str]:
-    """An order file: one recipe key a line, naming exactly the record's seats once each."""
+def read_order(
+    path: Path, keys: list[str], allowed: set[str] | frozenset[str] = frozenset(), what="general"
+) -> list[str]:
+    """An order file: one recipe key a line, naming exactly the record's seats once each.
+
+    `allowed` are keys from outside the record that may be ranked among them too — the
+    forced best-pack members — and are the only extra keys an order may name.
+    """
     wanted = [line.strip() for line in Path(path).read_text("utf-8").splitlines()]
     wanted = [key for key in wanted if key and not key.startswith("#")]
-    extra = sorted(set(wanted) - set(keys))
+    extra = sorted(set(wanted) - set(keys) - set(allowed))
     lost = sorted(set(keys) - set(wanted))
     twice = sorted({key for key in wanted if wanted.count(key) > 1})
     if extra or lost or twice:
         raise PacksRefused(
-            f"{path} is not an order of the {len(keys)} general seats: "
+            f"{path} is not an order of the {len(keys)} {what} seats: "
             f"{len(extra)} unknown, {len(lost)} absent, {len(twice)} repeated"
         )
     return wanted
 
 
-def plan(full: Path, order: Path | None = None, seed: int = SEED) -> list[Pack]:
-    """Every shipped pack, members in rank order, off the full set's membership."""
+def read_forced(path: Path) -> dict[str, list[str]]:
+    """A forced-members file: `{"best-30": [key, ...], ...}`, by best pack name."""
+    held = json.loads(Path(path).read_text("utf-8"))
+    names = {f"best-{k}" for k in BEST}
+    if not isinstance(held, dict) or not all(
+        name in names and isinstance(keys, list) and all(isinstance(k, str) for k in keys)
+        for name, keys in held.items()
+    ):
+        raise PacksRefused(f"{path}: wants {{best pack name: [recipe key, ...]}}")
+    return held
+
+
+def read_orders(directory: Path) -> dict[str, Path]:
+    """A directory of per-collection order files, `<collection>.txt`, by collection."""
+    return {held.stem: held for held in sorted(Path(directory).glob("*.txt"))}
+
+
+def plan(
+    full: Path,
+    order: Path | None = None,
+    seed: int = SEED,
+    forced: dict[str, list[str]] | None = None,
+    orders: dict[str, Path] | None = None,
+) -> list[Pack]:
+    """Every shipped pack, members in rank order, off the full set's membership.
+
+    **Forced members** *(Matt, packs_forced_members_ckpt157)*: `forced` names, by best
+    pack, seats that pack holds whatever their rank — a hand-picked preview, and possibly
+    a seat outside the thousand. A key forced into best-K is forced into every larger
+    best pack too, so they stay nested. Each pack keeps its K: its forced members plus
+    the first K less that many of the general rank, so a forced member displaces the
+    lowest-ranked. Its order is `order`'s, which is why a forced key from outside the
+    thousand must be ranked in that file among the general seats; the general parts are
+    that order with such keys left out, and stay exactly the thousand.
+
+    **Per-collection orders**: `orders` gives a colour collection an order file of its
+    own, in `order`'s form; a colour with none keeps its seeded permutation.
+    """
     from fractal_wallpapers.curation import targets
 
     rows = read_membership(full)
     by_collection: dict[str, list[dict]] = {}
+    stamp_of: dict[str, str] = {}
     for row in rows:
         by_collection.setdefault(row["collection"], []).append(row)
+        stamp_of.setdefault(str(row["key"]), row["stamp"])
     general = sorted(by_collection.get(GENERAL, []), key=lambda row: row["order"])
     if not general:
         raise PacksRefused(f"membership has no {GENERAL!r} collection")
     stamp = general[0]["stamp"]
     seats = [str(row["key"]) for row in general]
+    forced = forced or {}
+    unknown = sorted(set(forced) - {f"best-{k}" for k in BEST})
+    if unknown:
+        raise PacksRefused(f"forced members for no best pack: {', '.join(unknown)}")
+    every_forced = {key for keys in forced.values() for key in keys}
+    homeless = sorted(every_forced - set(stamp_of))
+    if homeless:
+        raise PacksRefused(f"forced members in no collection of the full set: {homeless}")
+    outside = every_forced - set(seats)
+    if outside and order is None:
+        raise PacksRefused("forced members from outside the thousand need --order to rank them")
     if order is not None:
-        ranked, order_from, drawn = read_order(order, seats), Path(order).name, None
+        ranking = read_order(order, seats, outside)
+        ranked = [key for key in ranking if key not in outside]
+        order_from, drawn = Path(order).name, None
     else:
         ranked, order_from, drawn = seeded(seats, seed), "seed", str(seed)
+        ranking = ranked
+    position = {key: at for at, key in enumerate(ranking)}
 
     total = len(ranked)
     width = len(str(total))
@@ -238,27 +309,56 @@ def plan(full: Path, order: Path | None = None, seed: int = SEED) -> list[Pack]:
                 order_from=order_from,
             )
         )
+    held: set[str] = set()
+    smaller: list[str] = []
     for k in BEST:
+        name = f"best-{k}"
+        pinned = set(smaller) | set(forced.get(name, []))
+        if len(pinned) > k:
+            raise PacksRefused(f"{name} is forced {len(pinned)} members, over its {k}")
+        rest = [key for key in ranked if key not in pinned][: k - len(pinned)]
+        keys = sorted(pinned | set(rest), key=position.__getitem__)
+        if not held <= set(keys):
+            raise PacksRefused(f"{name} does not hold the smaller best pack")
+        held = set(keys)
+        smaller = sorted(pinned)
+        from_outside = [key for key in keys if key in outside]
+        about = f"Fractal wallpapers, the best {k} of the {total:,} in the general collection."
+        if from_outside:
+            about = (
+                f"Fractal wallpapers, the best {k}: {k - len(from_outside)} of the {total:,} "
+                f"in the general collection, and {len(from_outside)} chosen by hand from the "
+                "other collections."
+            )
         packs.append(
             Pack(
-                name=f"best-{k}",
+                name=name,
                 collection=GENERAL,
                 stamp=stamp,
-                about=(
-                    f"Fractal wallpapers, the best {k} of the {total:,} in the general collection."
-                ),
-                keys=ranked[:k],
+                about=about,
+                keys=keys,
                 width=len(str(k)),
                 seed=drawn,
                 order_from=order_from,
+                forced=sorted(pinned, key=position.__getitem__),
+                stamps={key: stamp_of[key] for key in from_outside},
             )
         )
+    orders = orders or {}
+    strays = sorted(set(orders) - set(targets.families()))
+    if strays:
+        raise PacksRefused(f"orders for no colour collection: {', '.join(strays)}")
     for hue in targets.families():
         members = sorted(by_collection.get(hue, []), key=lambda row: row["order"])
         if not members:
             raise PacksRefused(f"membership has no {hue!r} collection")
-        hue_seed = f"{seed}/{hue}"
-        keys = seeded([str(row["key"]) for row in members], hue_seed)
+        own = [str(row["key"]) for row in members]
+        if hue in orders:
+            hue_seed, keys = None, read_order(orders[hue], own, what=hue)
+            hue_from = Path(orders[hue]).name
+        else:
+            hue_seed, hue_from = f"{seed}/{hue}", "seed"
+            keys = seeded(own, hue_seed)
         packs.append(
             Pack(
                 name=hue,
@@ -268,6 +368,7 @@ def plan(full: Path, order: Path | None = None, seed: int = SEED) -> list[Pack]:
                 keys=keys,
                 width=len(str(len(keys))),
                 seed=hue_seed,
+                order_from=hue_from,
             )
         )
     return packs
@@ -281,9 +382,14 @@ def missing(full: Path, pack: Pack) -> list[str]:
     return [key for key in pack.keys if key not in done]
 
 
-def status(full: Path, order: Path | None = None) -> list[dict]:
+def status(
+    full: Path,
+    order: Path | None = None,
+    forced: dict[str, list[str]] | None = None,
+    orders: dict[str, Path] | None = None,
+) -> list[dict]:
     """Per pack: members, on disk, missing, bytes so far and projected at the mean."""
-    packs = plan(full, order)
+    packs = plan(full, order, forced=forced, orders=orders)
     sizes = {held.stem: held.stat().st_size for held in Path(full).glob("*.jpg")}
     mean = sum(sizes.values()) / len(sizes) if sizes else 0.0
     out = []
@@ -337,6 +443,8 @@ def write_zip(
     from fractal_wallpapers.curation import tentative
 
     recipes = tentative.read_recipes(pack.stamp)
+    for stamp in sorted(set(pack.stamps.values())):
+        recipes = {**tentative.read_recipes(stamp), **recipes}
     done = {held.stem for held in Path(full).glob("*.jpg")}
     target = Path(out) / pack.file_name(partial)
     folder = target.stem
@@ -378,6 +486,7 @@ def write_zip(
         "order_from": pack.order_from,
         "seed": pack.seed,
         "seats": [seat["key"] for seat in seats],
+        "forced": pack.forced,
         "first_rank": pack.first_rank,
     }
     return {"entry": entry, "unnamed": sorted(unnamed)}
@@ -406,13 +515,15 @@ def build(
     names_path: Path | None = None,
     allow_partial: bool = False,
     log=print,
+    forced: dict[str, list[str]] | None = None,
+    orders: dict[str, Path] | None = None,
 ) -> dict:
     """Build the named packs (every pack if `only` is empty) and update the manifest.
 
     Refuses, before writing anything, if a pack asked for has members not on disk
     and `allow_partial` is not set.
     """
-    packs = plan(full, order)
+    packs = plan(full, order, forced=forced, orders=orders)
     if only:
         unknown = sorted(set(only) - {pack.name for pack in packs})
         if unknown:

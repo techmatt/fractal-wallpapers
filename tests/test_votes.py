@@ -59,6 +59,7 @@ def store(tmp_path, monkeypatch):
     from fractal_wallpapers import paths
 
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     (tmp_path / "artifacts").mkdir()
     monkeypatch.setattr(tentative, "published", tentative.stamps)
     stamp = "20260101T000000Z"
