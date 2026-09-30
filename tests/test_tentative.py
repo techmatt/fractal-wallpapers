@@ -15,6 +15,7 @@ solves, or opens a picture.
 
 from __future__ import annotations
 
+import fnmatch
 import json
 from pathlib import Path
 
@@ -835,21 +836,43 @@ def test_the_protection_is_wired_into_the_prune_and_not_only_declared():
 # --------------------------------------------------------------------------- #
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-#: How `.gitignore` spells one published stamp.
+#: How `.gitignore` spells a published stamp, or a pattern over published stamps.
 NEGATION = "!artifacts/curation/tentative/"
 
+#: Where the store sits in the checkout, as git sees it.
+TRACKED_STORE = "artifacts/curation/tentative"
 
-def negated_stamps() -> list[str]:
-    """The stamps `.gitignore` un-ignores, in the order it names them."""
+
+def negation_patterns() -> list[str]:
+    """The stamp patterns `.gitignore` un-ignores, in the order it names them.
+
+    A directory negation is a stamp or a pattern over stamps — the twenty-one of
+    2026-09-22 are one line, `20260922T*`. The file-level negations beside them
+    (`*/gallery.jsonl` and the rest) name files, not stamps, and are not read here.
+    """
     held = []
     for line in (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines():
         line = line.strip()
-        if not line.startswith(NEGATION):
-            continue
-        rest = line[len(NEGATION) :]
-        if rest.endswith("/") and "*" not in rest:
-            held.append(rest.rstrip("/"))
+        # `!artifacts/curation/tentative/` itself re-includes the store, not a stamp.
+        if line.startswith(NEGATION) and line.endswith("/") and line != NEGATION:
+            held.append(line[len(NEGATION) :].rstrip("/"))
     return held
+
+
+def negated(stamp: str) -> bool:
+    return any(fnmatch.fnmatchcase(stamp, pattern) for pattern in negation_patterns())
+
+
+def reignored() -> set[str]:
+    """Paths inside a published stamp that `.gitignore` ignores again by name,
+    which is what a published file over the 1 MiB ceiling gets instead of an
+    allowlist entry."""
+    prefix = TRACKED_STORE + "/"
+    return {
+        line.strip()
+        for line in (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+        if line.strip().startswith(prefix) and "*" not in line
+    }
 
 
 def test_the_published_list_and_the_gitignore_negations_are_one_list():
@@ -861,17 +884,50 @@ def test_the_published_list_and_the_gitignore_negations_are_one_list():
     ID `latest()` hands out and a clone cannot resolve, and a stamp git tracks
     that `PUBLISHED` omits is a record shipped to everybody that no unstamped
     read will ever reach.
+
+    **A pattern is expanded rather than compared**, since 2026-09-29: every
+    published stamp must match a negation, every negation must match a published
+    stamp, and no stamp in the checkout's store may match one without being
+    published — which is what stops a pattern quietly taking a record in.
     """
-    assert negated_stamps() == list(tentative.PUBLISHED)
+    patterns = negation_patterns()
+    assert patterns, "no stamp is un-ignored, so nothing published can be tracked"
+    assert [stamp for stamp in tentative.PUBLISHED if not negated(stamp)] == []
+    for pattern in patterns:
+        assert any(fnmatch.fnmatchcase(stamp, pattern) for stamp in tentative.PUBLISHED), (
+            f"`.gitignore` un-ignores {pattern!r} and no published stamp is it"
+        )
+    store = REPO_ROOT / TRACKED_STORE
+    held = [entry.name for entry in store.iterdir() if entry.is_dir()] if store.is_dir() else []
+    assert sorted(s for s in held if negated(s) and s not in tentative.PUBLISHED) == []
 
 
 def test_every_published_stamp_is_actually_in_the_tree():
-    """A published stamp is tracked, so a clone has its two text files. One named
-    in both lists and absent from the tree is an ID that resolves nowhere."""
+    """A published stamp is tracked, so a clone has its text files. One named in
+    both lists and absent from the index is an ID that resolves nowhere.
+
+    The manifest always; the rows and the recipes unless `.gitignore` ignores that
+    exact path again, which is how a file over the 1 MiB ceiling is published
+    without being allowlisted — `final140_general2000`'s two, since 2026-09-29.
+    """
+    index = set(tracked(TRACKED_STORE + "/*"))
+    again = reignored()
     for stamp in tentative.PUBLISHED:
-        directory = REPO_ROOT / "artifacts" / "curation" / "tentative" / stamp
-        for name in (tentative.ROWS_NAME, tentative.MANIFEST_NAME):
-            assert (directory / name).is_file(), f"{stamp}/{name} is published and not here"
+        manifest = f"{TRACKED_STORE}/{stamp}/{tentative.MANIFEST_NAME}"
+        assert manifest in index, f"{stamp}/{tentative.MANIFEST_NAME} is published and untracked"
+        for name in (tentative.ROWS_NAME, tentative.RECIPES_NAME):
+            path = f"{TRACKED_STORE}/{stamp}/{name}"
+            assert (path in index) != (path in again), (
+                f"{path} is published: tracked, or ignored again by name, and exactly one"
+            )
+
+
+def test_the_default_read_is_published_and_a_clone_can_read_it():
+    """`tentative.DEFAULT` is what an unstamped read means, so it has to be a
+    record every clone holds whole: published, and its rows not ignored again."""
+    assert tentative.DEFAULT in tentative.PUBLISHED
+    rows = f"{TRACKED_STORE}/{tentative.DEFAULT}/{tentative.ROWS_NAME}"
+    assert rows in set(tracked(rows))
 
 
 def tracked(pattern: str) -> list[str]:
@@ -900,9 +956,15 @@ def test_the_page_is_a_derivation_and_no_stamp_tracks_one():
     stops nothing that git already has in the index, which is why the seven were
     removed from it by hand and why this guards the index and not the rules.
     """
-    assert tracked("artifacts/curation/tentative/*/" + tentative.PAGE_NAME) == []
-    rows = tracked("artifacts/curation/tentative/*/" + tentative.ROWS_NAME)
-    assert sorted(Path(name).parent.name for name in rows) == sorted(tentative.PUBLISHED)
+    assert tracked(TRACKED_STORE + "/*/" + tentative.PAGE_NAME) == []
+    rows = tracked(TRACKED_STORE + "/*/" + tentative.ROWS_NAME)
+    again = reignored()
+    expected = [
+        stamp
+        for stamp in tentative.PUBLISHED
+        if f"{TRACKED_STORE}/{stamp}/{tentative.ROWS_NAME}" not in again
+    ]
+    assert sorted(Path(name).parent.name for name in rows) == sorted(expected)
 
 
 def test_the_page_is_written_from_the_two_tracked_files_alone(tentative_store):
@@ -951,6 +1013,21 @@ def test_an_unstamped_read_lands_on_the_newest_PUBLISHED_record(tentative_store,
     # is reached for as long as it exists — and since 2026-09-13 it exists only
     # until whatever it was recorded to measure has been measured.
     assert tentative.read_rows("20260303T000000Z") == [{"key": "20260303T000000Z"}]
+
+
+def test_an_unstamped_read_lands_on_DEFAULT_before_the_newest(tentative_store, monkeypatch):
+    """Since 2026-09-29 `PUBLISHED` is twenty-one peers, and the newest of them is
+    the n=2000 pass a clone cannot read. An unstamped read is `DEFAULT` wherever
+    it is held, and the newest published stamp only where it is not."""
+    for stamp in ("20260101T000000Z", "20260202T000000Z", "20260303T000000Z"):
+        recorded(tentative_store, stamp, stamp)
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z", "20260202T000000Z"))
+    monkeypatch.setattr(tentative, "DEFAULT", "20260101T000000Z")
+
+    assert tentative.latest() == "20260101T000000Z"
+
+    monkeypatch.setattr(tentative, "DEFAULT", "20260909T000000Z")
+    assert tentative.latest() == "20260202T000000Z", "a DEFAULT not held falls back"
 
 
 def test_a_published_stamp_this_machine_does_not_hold_is_not_offered(tentative_store, monkeypatch):

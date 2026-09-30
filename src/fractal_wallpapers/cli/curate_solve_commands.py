@@ -39,9 +39,9 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
             print("no tentative gallery has been recorded on this machine.")
             return 1
         # **Which records a clone gets is the first thing this has to say.** An
-        # unstamped read lands on the newest PUBLISHED stamp, so a reader looking
-        # at this list needs to see why the newest line is not always the default
-        # — otherwise the answer reads as a bug in `browse`.
+        # unstamped read lands on `tentative.DEFAULT`, else the newest PUBLISHED
+        # stamp, so a reader looking at this list needs to see why the newest line
+        # is not the default — otherwise the answer reads as a bug in `browse`.
         published = set(tentative.published())
         for stamp in held:
             rows = tentative.read_rows(stamp)
@@ -1849,9 +1849,9 @@ def add_steps(steps) -> None:
         "one place with no stamp in its name — instead of beside the record's rows. That is "
         "the path to bookmark: a record's own page names the stamp it is of, and the "
         "official record moves every checkpoint, so a bookmark onto one is a bookmark onto "
-        "a superseded gallery. With no stamp named it is the newest PUBLISHED record, which "
-        "is what the bookmark is for. `--out` names another place and the two are not given "
-        "together",
+        "a superseded gallery. With no stamp named it is `tentative.latest()` — "
+        "`final139_general` — which is what the bookmark is for. `--out` names another "
+        "place and the two are not given together",
     )
 
     listing_recipes = solve_verbs.add_parser(

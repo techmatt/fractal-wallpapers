@@ -45,12 +45,12 @@ fractal-wallpapers render \
   --key <seat> --out artifacts/example.jpg
 ```
 
-⚠ **Both lines, and the first is not optional on a clone.** These three seats were cut
-from `20260914T171846Z`, whose `recipes.jsonl` was the one tracked file of its kind and
-which went with every other saved record on 2026-09-21. All three keys are also seats of
-`final139_general` above, which is kept and **not** published — so the recipe file is
-built out of the candidate ledger on the machine that holds it, and a clone with no
-ledger cannot draw these at all. The keys are unchanged; only the stamp that resolves
+**On a clone the second line is enough.** These three seats were cut from
+`20260914T171846Z`, which went with every other saved record on 2026-09-21. All three
+keys are also seats of `final139_general` above, which was **published on 2026-09-29**
+with its `recipes.jsonl` tracked, so a clone with no ledger draws them from the tracked
+file. The first line rebuilds that file out of the candidate ledger, and only the machine
+that holds the ledger can run it. The keys are unchanged; only the stamp that resolves
 them is.
 
 Each seat's link in the root README is `curation.explorer_link.query_of` of the seat's

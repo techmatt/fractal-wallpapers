@@ -33,25 +33,27 @@ artifacts/*
 artifacts/curation/*
 !artifacts/curation/tentative/
 artifacts/curation/tentative/*
-# The published stamps, one line each. Adding one is Matt's decision, not a fix.
-# **There are none since 2026-09-21**, the ruling that closed mining: the twenty
-# `final139_*` records are the saved set, they are kept and not published, and the
-# eight lines that stood here went with the records they named. The two file-level
-# negations below are the shape a publication takes, kept so that publishing one
-# again is a line here and a line in `curation.tentative.PUBLISHED`.
+# The published stamps. Adding one is Matt's decision, not a fix.
+# **Since 2026-09-29 they are the twenty-one records of 2026-09-22** — the twenty
+# `final139_*` and `final140_general2000` — published together when Matt ruled
+# the saved set truly finalized (`finalize_records_ckpt156`). One pattern and not
+# a line each: a stamp is the UTC second its record was taken, so no record made
+# after that day can match it, and on the day it was written the store held the
+# keep list and nothing else. A later publication is a line of its own.
+!artifacts/curation/tentative/20260922T*/
 # Inside a published stamp, only the text files named here. An unpublished stamp
 # is an excluded directory git never descends into, so these never reach one.
+# `recipes.jsonl` says what each seat is made of — the key is a one-way digest and
+# without it a clone can name a seat and not draw it.
 artifacts/curation/tentative/*/*
 !artifacts/curation/tentative/*/gallery.jsonl
 !artifacts/curation/tentative/*/manifest.json
-# The third file was `recipes.jsonl`, named for ONE STAMP rather than by pattern,
-# and its line went with `20260914T171846Z` on 2026-09-21. A seat row says which
-# picture was seated; `recipes.jsonl` says what it is made of, and without it 994
-# of that record's 1,000 seats could not be drawn from tracked data at all — the
-# key is a one-way digest and the recipe behind it lives in the untracked ledger.
-# 0.68 MiB, under `test_history_purity.py`'s 1 MiB ceiling, and `curate solve
-# recipes --write <stamp>` writes one for any record: the next publication decides
-# again, per stamp, whether its recipes are tracked.
+!artifacts/curation/tentative/*/recipes.jsonl
+# Published and over `test_history_purity.py`'s 1 MiB ceiling, so ignored again
+# rather than allowlisted: `final140_general2000`'s rows (1.32 MiB) and recipes
+# (1.37 MiB). Its manifest is tracked; the n=2000 rows live in the backup.
+artifacts/curation/tentative/20260922T220551Z/gallery.jsonl
+artifacts/curation/tentative/20260922T220551Z/recipes.jsonl
 /labels/
 /local.toml
 # Every head's weights, fetched rather than tracked: `fetch-weights` reads

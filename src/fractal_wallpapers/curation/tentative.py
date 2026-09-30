@@ -165,12 +165,11 @@ PAGE_NAME = "index.html"
 #: verbatim, so `recipes.of_record` reads it back and `recipes.key_of` of that is
 #: the row's own key; `render --recipe` is the door that draws one.
 #:
-#: ⚠ **Tracked for `20260914T171846Z` alone**, and `.gitignore` names that one
-#: path rather than a pattern. The other seven published stamps predate the
-#: decision and their rows are on this machine; writing theirs is a decision about
-#: history's size, not a fix. [`recipes_path`] resolves for any stamp and
-#: [`write_recipes`] writes for any stamp — what is per-stamp is only whether git
-#: carries it.
+#: **Tracked for every published stamp since 2026-09-29**, by a file-level
+#: negation in `.gitignore` beside the other two. It was named for one stamp
+#: until then, `20260914T171846Z`, and that line went with the record. A file
+#: over the 1 MiB ceiling is ignored again by its own path rather than
+#: allowlisted — `final140_general2000`'s, at 1.37 MiB for two thousand seats.
 RECIPES_NAME = "recipes.jsonl"
 
 #: The record's own directory of full-resolution pictures — see [`fulls_dir`].
@@ -188,28 +187,29 @@ ALIAS_LENGTH = 8
 #: the reading, and a record cut to what fills is a record that hides it.
 RECORDED_SEATS = 1000
 
-#: **The stamps Matt has published, and since 2026-09-21 there are none.** A
-#: published record is tracked — its two text files come through the hole in
-#: `.gitignore` — and it is the only kind an unstamped read can land on.
+#: **The stamps Matt has published: the twenty-one records of 2026-09-22, since
+#: 2026-09-29.** A published record is tracked — its text files come through the
+#: hole in `.gitignore` — and it is the only kind an unstamped read can land on.
 #: [`PAGE_NAME`] is not one of them: a record is its rows and its manifest, and
 #: [`page`] regenerates the browser from those on demand.
 #:
 #: **Mining closed on 2026-09-21 and the saved set became one set**, Matt's
 #: ruling in `close_mining_save_solves_ckpt139`: the pool as merged that night is
-#: the population, the twenty `final139_*` records [`KEPT_UNPUBLISHED`] names are
-#: the semi-final galleries, and **nothing in them is published**. The eight
-#: stamps this tuple carried were removed with every other saved record — the
-#: seven of 2026-09-02 to 2026-09-04 and `20260914T171846Z`, the official n=1000
-#: record from 2026-09-14 — and their tracked text left the index with them.
+#: the population and the twenty `final139_*` records are the galleries. They
+#: were kept and not published until **Matt ruled the set truly finalized on
+#: 2026-09-29** (`finalize_records_ckpt156`), when all twenty-one moved here from
+#: [`KEPT_UNPUBLISHED`] and their `gallery.jsonl`, `manifest.json` and
+#: `recipes.jsonl` were committed — except `final140_general2000`'s rows and
+#: recipes, which are over the 1 MiB ceiling and stay untracked, so a clone holds
+#: its manifest and [`published`] does not offer it there. The eight stamps this
+#: tuple carried before 2026-09-21 went with every other saved record, and their
+#: tracked text left the index with them.
 #:
-#: **So [`latest`] has no answer and refuses**, which is the change a reader
-#: meets first: every unstamped `browse`, `resolve`, `votes build`, atlas and
-#: backfill has to name a stamp now, and the refusal says so. That is the
-#: 2026-09-04 split run to its end rather than a new rule — an unpublished record
-#: is read by naming its stamp, and publication is the one act that gives a
-#: record a name an unstamped read can find. **Publishing one again is two edits
-#: and a test**: a line here and its negation line in `.gitignore`, which
-#: `tests/test_tentative.py` holds to agreeing.
+#: **An unstamped read lands on [`DEFAULT`]**, not on the newest stamp here: the
+#: twenty-one are peers recorded minutes apart, and the newest is the n=2000 pass,
+#: which a clone cannot read. **Publishing another is two edits and a test**: a
+#: line here and its negation line in `.gitignore`, which `tests/test_tentative.py`
+#: holds to agreeing.
 #:
 #: Recording a gallery and publishing one used to be a single act: the hole was
 #: spelled per FILE across every stamp, so every record ever made was committed,
@@ -229,16 +229,14 @@ RECORDED_SEATS = 1000
 #: against deletes it once the measurement is taken and says so in its report,
 #: because a solve is cheap to run again and what a leftover record costs is
 #: misreading hazard and prune protection rather than bytes. The keep list is
-#: this tuple plus [`KEPT_UNPUBLISHED`], it is [`kept`], and **since 2026-09-21
-#: the whole of it is the twenty `final139_*` records**: the ruling that closed
-#: mining removed every earlier saved record rather than adding to them, so the
-#: list is a set somebody chose in one act instead of a sediment.
+#: this tuple plus [`KEPT_UNPUBLISHED`], it is [`kept`], and **the whole of it
+#: is the twenty-one records of 2026-09-22**: the ruling that closed mining
+#: removed every earlier saved record rather than adding to them, so the list is
+#: a set somebody chose in one act instead of a sediment.
 #:
-#: **What an unqualified "the record" means is now a stamp somebody names.** It
-#: meant `20260914T171846Z` from 2026-09-14 — the first solve taken with the full
-#: rejection pass ingested, 1,000 of 1,000 at shortfall 0 — and that record is
-#: gone with the rest; `final139_general` is the general n=1000 seating of the
-#: closed pool and it is kept, not published.
+#: **What an unqualified "the record" means is [`DEFAULT`]**, `final139_general`,
+#: the general n=1000 seating of the closed pool. It meant `20260914T171846Z`
+#: from 2026-09-14 until that record went with the rest on 2026-09-21.
 #:
 #: **Retention is a third question after publication and durability**, and until
 #: 2026-09-13 the protection answered it by itself: [`protected_keys`] swept the
@@ -253,58 +251,13 @@ RECORDED_SEATS = 1000
 #: **This list and `.gitignore`'s negation lines are one list written twice**, and
 #: `tests/test_tentative.py` fails if they disagree. Two spellings because git
 #: cannot read a Python tuple and this module must not shell out to git to answer
-#: what an unstamped read means.
-PUBLISHED: tuple[str, ...] = ()
-
-#: **The unpublished stamps the keep list names**, which is the whole of the keep
-#: list that [`PUBLISHED`] does not already carry. Discarding is the default for an
-#: unpublished record, so an entry here is a stated reason and not an oversight,
-#: and it is what makes [`protected_keys`] a decision rather than a side effect of
-#: what happens to be on a disk.
+#: what an unstamped read means. `.gitignore` spells these twenty-one as one
+#: pattern, `20260922T*`, and the test expands it against this tuple.
 #:
-#: **The test for an entry is that something RESOLVES the record**, not that
-#: something mentions it. Every batch in `data/gallery_grade/batches.jsonl` names
-#: the record it was cut from in its `method` prose, and none of those is a reason
-#: to be here — the corpus rows carry their own join, so the record is provenance
-#: and provenance does not need the folder. What earns a line is code or a figure
-#: that reads the rows.
-#:
-#: **The twenty `final139_*` records of 2026-09-21, and one n=2000 beside them**
-#: — Matt's ruling in `close_mining_save_solves_ckpt139` for the twenty, and his
-#: of 2026-09-22 for `final140_general2000`, the general pass at n=2000 over the
-#: same pool, which the website offers beside the n=1000 default.
-#: They are the general n=1000 and the nineteen collections of
-#: [`curation.targets`], solved over the pool as mining closed and recorded under
-#: one name stem, and each is resolved three ways: `curate solve viewers` writes
-#: a live page per label out of its rows, [`curation.backfill`] sweeps the
-#: general one by default, and `fractal-website` is being repointed at the
-#: twenty. A record here is **kept and not published** — the distinction is
-#: [`PUBLISHED`]'s, which is now empty.
-#:
-#: The stamp order below is the order they were recorded, which is the order
+#: The order is the order they were recorded, which is the order
 #: `curation.targets.TARGETS` names the collections with the general pass first.
-#:
-#: ⚠ **Every earlier entry was removed on 2026-09-21, with the records
-#: themselves** — the eight of the `n1000_0906_*` corpus draw, the site's figure
-#: seats, [`curation.backfill`]'s old default, [`curation.page_order`]'s
-#: measurement record, the veto counterfactual and the `mine_night2_ckpt124`
-#: pair, and the twenty-one pinned records of 2026-09-19. What they were kept
-#: for is in this file's history and in `curation/GALLERY.md`'s *The first
-#: publication, and what it changed*; what resolves them now is nothing, in this
-#: checkout. The measurements taken on them stand as measurements: a citation is
-#: provenance, and provenance never needed the folder.
-#:
-#: ⚠ **A record off this list is discarded and the sweep of 2026-09-21 took the
-#: store down to it**: twenty-one records remained on this machine, the twenty here
-#: and a separate themed reference. On 2026-09-22 `portable.REFERENCE` was pointed
-#: at the kept `final139_green` and the separate record deleted, so the store is
-#: this list and nothing else — twenty-one with the n=2000.
-#:
-#: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
-#: is deliberate: a kept record is kept, not tracked. Publication, durability and
-#: retention are three questions, and this tuple answers only the third.
-KEPT_UNPUBLISHED: tuple[str, ...] = (
-    # `final139_general` — the general n=1000 over the closed pool.
+PUBLISHED: tuple[str, ...] = (
+    # `final139_general` — the general n=1000 over the closed pool, and [`DEFAULT`].
     "20260922T012627Z",
     # The twelve hue families, in the codebook's wheel order: rose … magenta.
     "20260922T012745Z",
@@ -331,8 +284,54 @@ KEPT_UNPUBLISHED: tuple[str, ...] = (
     # `final140_general2000` — the general pass at n=2000 over the same closed
     # pool, Matt's ruling of 2026-09-22: `fractal-website` offers it beside the
     # n=1000 default. Same bar and config as `final139_general`, only `n` moved.
+    # Its manifest alone is tracked; rows and recipes are over the ceiling.
     "20260922T220551Z",
 )
+
+#: **What an unstamped read means**: `final139_general`, the general n=1000.
+#:
+#: Named rather than taken as the newest [`PUBLISHED`] stamp, because since
+#: 2026-09-29 that tuple is twenty-one peers and its newest is the n=2000 pass,
+#: whose rows a clone does not hold — the same record would answer differently
+#: on this box and on a clone. It is `curation.backfill.DEFAULT_RECORD` and
+#: `portable.GENERAL_CHECK`'s stamp too. [`latest`] falls back to the newest
+#: published stamp only where this one is not held.
+DEFAULT = "20260922T012627Z"
+
+#: **The unpublished stamps the keep list names**, which is the whole of the keep
+#: list that [`PUBLISHED`] does not already carry. Discarding is the default for an
+#: unpublished record, so an entry here is a stated reason and not an oversight,
+#: and it is what makes [`protected_keys`] a decision rather than a side effect of
+#: what happens to be on a disk.
+#:
+#: **The test for an entry is that something RESOLVES the record**, not that
+#: something mentions it. Every batch in `data/gallery_grade/batches.jsonl` names
+#: the record it was cut from in its `method` prose, and none of those is a reason
+#: to be here — the corpus rows carry their own join, so the record is provenance
+#: and provenance does not need the folder. What earns a line is code or a figure
+#: that reads the rows.
+#:
+#: **Empty since 2026-09-29**, when Matt ruled the saved set truly finalized and
+#: its twenty-one records — the twenty `final139_*` of 2026-09-21 and
+#: `final140_general2000` beside them — moved to [`PUBLISHED`]. Moving them kept
+#: every one prune-proof, because [`kept`] is the union and every reader of the
+#: keep list asks [`kept`] rather than either tuple. What they were kept for, and
+#: in what order, is written at [`PUBLISHED`] now.
+#:
+#: ⚠ **Every earlier entry was removed on 2026-09-21, with the records
+#: themselves** — the eight of the `n1000_0906_*` corpus draw, the site's figure
+#: seats, [`curation.backfill`]'s old default, [`curation.page_order`]'s
+#: measurement record, the veto counterfactual and the `mine_night2_ckpt124`
+#: pair, and the twenty-one pinned records of 2026-09-19. What they were kept
+#: for is in this file's history and in `curation/GALLERY.md`'s *The first
+#: publication, and what it changed*; what resolves them now is nothing, in this
+#: checkout. The measurements taken on them stand as measurements: a citation is
+#: provenance, and provenance never needed the folder.
+#:
+#: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
+#: is deliberate: a kept record is kept, not tracked. Publication, durability and
+#: retention are three questions, and this tuple answers only the third.
+KEPT_UNPUBLISHED: tuple[str, ...] = ()
 
 
 class TentativeRefused(RuntimeError):
@@ -435,22 +434,23 @@ def kept() -> list[str]:
 
 
 def latest() -> str:
-    """The newest PUBLISHED gallery, which is what an unstamped read means.
+    """What an unstamped read means: [`DEFAULT`] where it is published and held,
+    and otherwise the newest PUBLISHED gallery.
 
     **Published and not merely newest**, Matt's ruling of 2026-09-04. An
     unstamped read is a reader who has not said which gallery they mean, and the
-    honest default is the newest one a clone could also resolve — otherwise the
-    next experimental record silently becomes the answer for every figure prompt,
+    honest default is one a clone could also resolve — otherwise the next
+    experimental record silently becomes the answer for every figure prompt,
     naming IDs that exist on one machine. An unpublished record is read by naming
     its stamp, which is the whole way it is reached.
 
-    ⚠ **[`PUBLISHED`] has been empty since 2026-09-21**, so this refuses on every
-    call and every unstamped read refuses with it. That is the ruling that closed
-    mining arriving here and not a fault: the twenty `final139_*` records are
-    kept, none of them is published, and the refusal names the stamps to choose
-    between.
+    **[`DEFAULT`] first since 2026-09-29**, when twenty-one peers were published
+    at once and the newest of them stopped meaning anything: it is the n=2000
+    pass, whose rows a clone does not hold.
     """
     held = published()
+    if DEFAULT in held:
+        return DEFAULT
     if not held:
         unpublished = [stamp for stamp in stamps() if stamp not in set(PUBLISHED)]
         if unpublished:

@@ -57,10 +57,10 @@ def add_steps(steps) -> None:
     making.add_argument(
         "--record",
         default=None,
-        help="the tentative record whose seats are placed first (default: the newest "
-        "published one). Named rather than guessed where it matters: an unpublished record "
-        "is reached only by its stamp — and while none is published, NAME ONE: the default "
-        "refuses and says so.",
+        help="the tentative record whose seats are placed first (default: "
+        "`tentative.latest()`, `final139_general` where it is held). Named rather than "
+        "guessed where it matters: an unpublished record is reached only by its stamp, and "
+        "where no published record is held the default refuses and says so.",
     )
     making.add_argument(
         "--plane",

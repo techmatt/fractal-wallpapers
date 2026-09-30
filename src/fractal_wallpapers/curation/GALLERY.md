@@ -2239,14 +2239,14 @@ gallery's own JPEGs.
 operator never acted — there is no band in those pictures' identity to record.
 All four of those modes are in the 13 verified above.
 
-⚠ **Tracked for `20260914T171846Z` alone, and that line went on 2026-09-21** with
-the record: no `recipes.jsonl` is tracked now, because no record is published.
-`.gitignore` named that one path rather than a pattern, and the next publication
-decides again, per stamp, whether its recipes are carried.
-`tentative.write_recipes` resolves for any stamp; what is per-stamp is only
-whether git carries it.
+⚠ **Tracked for every published stamp since 2026-09-29**, by a file-level
+`!artifacts/curation/tentative/*/recipes.jsonl` beside the rows' and the
+manifest's. Until 2026-09-21 it was named for `20260914T171846Z` alone and that
+line went with the record. A published file over the 1 MiB ceiling is ignored
+again by its own path rather than allowlisted — `final140_general2000`'s rows and
+recipes, below. `tentative.write_recipes` resolves for any stamp.
 
-### All twenty kept records carry one, on disk and untracked
+### All twenty kept records carry one, and publication tracked them
 
 **`final139_recipes` wrote the other nineteen on 2026-09-21**, so redrawability is
 a property the saved set has standing rather than one command away. **9,000 seats,
@@ -2271,13 +2271,22 @@ separately asserts that every tracked recipe stamp is in it. So *commit the reci
 files* and *publish the twenty* are the same act, which would give
 `tentative.latest()` an answer again and silently land every unstamped `browse`,
 `resolve` and `backfill` on `final139_smooth_stripe`. **Matt's call of 2026-09-21
-was to leave them untracked**: they are kept, not published, and the size rule was
-never what stopped them. **That ruling is written at `curation/tentative.PUBLISHED`
-and `KEPT_UNPUBLISHED`** — the twenty are the whole of `KEPT_UNPUBLISHED` and
-`PUBLISHED` is empty — and this is the one place the coupling is argued, so a doc
-that needs it points here rather than restating it. What makes the set durable
-instead is the portable instance `portable.ROSTER` exports, which carries the
-records' text without git seeing it.
+was to leave them untracked**: they were kept, not published, and the size rule was
+never what stopped them.
+
+**On 2026-09-29 Matt ruled the set truly finalized and published it**
+(`finalize_records_ckpt156`): all twenty-one stamps moved from `KEPT_UNPUBLISHED` to
+`PUBLISHED`, and the coupling above was paid rather than dodged. Two things made
+it safe. `tentative.latest()` now answers `tentative.DEFAULT` — `final139_general`
+— wherever it is held, so an unstamped read lands on the general n=1000 and not on
+whichever peer was recorded last. And `.gitignore` spells the twenty-one as one
+directory pattern, `!artifacts/curation/tentative/20260922T*/`, which no later
+record can match because a stamp is the UTC second it was taken.
+`test_tentative.py` expands that pattern against `PUBLISHED`. **The ruling is
+written at `curation/tentative.PUBLISHED`**, and this is the one place the
+coupling is argued, so a doc that needs it points here rather than restating it.
+The portable instance `portable.ROSTER` exports stays the durable copy: it
+carries what git does not, `final140_general2000`'s rows and recipes among it.
 
 ### A record's fulls are pinned, because a gather is a borrow
 
@@ -2429,8 +2438,8 @@ A tray line says how many of the record's seats have one.
 ```
 fractal-wallpapers curate solve browse <stamp> --viewer  # that record, here:
 artifacts/curation/viewer/index.html
-fractal-wallpapers curate solve browse --viewer          # the newest PUBLISHED record —
-                                                         # refuses while none is published
+fractal-wallpapers curate solve browse --viewer          # tentative.latest():
+                                                         # final139_general
 ```
 
 **The page a person opens is not the page beside the rows.** A record's own `index.html`
@@ -2730,9 +2739,10 @@ and the twenty-one pinned records of 2026-09-19. What that did to the three ques
 
 The twenty-first record in the store was a separate themed reference, off the keep
 list; on 2026-09-22 `portable.REFERENCE` was pointed at the kept `final139_green`,
-which it seated seat-for-seat, and the separate record was deleted. **Nothing is published**, so
-`tentative.latest()` refuses and every unstamped `browse`, `resolve`, `votes build`,
-atlas and backfill has to name a stamp; the bookmarked viewer is written by
+which it seated seat-for-seat, and the separate record was deleted. **Nothing was
+published until 2026-09-29**, so until then `tentative.latest()` refused and every
+unstamped `browse`, `resolve`, `votes build`, atlas and backfill had to name a
+stamp; the bookmarked viewer is written by
 `curate solve browse <stamp> --viewer` and the per-collection pages by
 `curate solve viewers`, neither of which reads `PUBLISHED`.
 
@@ -2749,6 +2759,31 @@ Seated `p_fine` reads median **0.4077** and worst **0.041483** against 0.5872 an
 new; the 210 it dropped are mostly `stripe` and `tia` (56 each). Mode, family and cell
 shares stay within about a point of the n=1000's, all 49 cells and 13 modes present in
 both. `protected_keys()` went **6,067 → 6,299**.
+
+#### The saved set published — twenty-one stamps, 2026-09-29
+
+**Matt ruled the semi-final set truly finalized** (`finalize_records_ckpt156`) and
+all twenty-one records moved from `KEPT_UNPUBLISHED` to `PUBLISHED`. Each was
+checked against its manifest before staging — rows equal to `seats.recorded`, seat
+indices in order, every `counts` column recomputed from the rows, every recipe
+re-hashing to its key, no absolute path — and all twenty-one passed.
+
+| | before | after |
+|---|--:|--:|
+| `PUBLISHED` | 0 | **21** |
+| `KEPT_UNPUBLISHED` | 21 | **0** |
+| `kept()` / `protected_keys()` | 21 / 6,299 | **21 / 6,299** |
+| tracked files under `tentative/` | 0 | **61** |
+
+**Sixty-one files, 13.02 MiB**: the twenty `final139_*` records' `gallery.jsonl`,
+`manifest.json` and `recipes.jsonl`, and `final140_general2000`'s manifest.
+**Its rows (1.32 MiB) and recipes (1.37 MiB) are over `test_history_purity.py`'s
+1 MiB ceiling and were not allowlisted**: `.gitignore` ignores the two paths again,
+so a clone holds the n=2000's manifest and not its seats, `tentative.published()`
+does not offer it there, and the backup is where its rows live. Retention did not
+move, because `kept()` is the union and every reader of the keep list asks it.
+**What an unstamped read means moved**, from a refusal to `tentative.DEFAULT`,
+`final139_general`.
 
 **Publication, durability and retention are three questions, and the protection below is
 the durable one.** A record on the **keep list** is *protected*: `protected_keys` reads

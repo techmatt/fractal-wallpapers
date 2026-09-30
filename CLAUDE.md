@@ -60,22 +60,24 @@ that came later carry the date of Matt's ruling.
 - **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
   `models/**/*.pt` (fetched weights, living beside their tracked metadata), and
   toolchain noise. Do not interleave tracked and ignored content beyond that — a
-  tracked file inside an ignored tree is how these rules rot. **Nothing under
-  `artifacts/` is tracked** since 2026-09-21, when the last published record went.
-  The file-level negations for a published tentative stamp's text files stay in
-  `.gitignore` as the shape a publication takes: publishing a record again is a
-  line there and a line in `curation.tentative.PUBLISHED`, and the un-ignore names
-  files one by one rather than by pattern. `index.html` is never tracked.
+  tracked file inside an ignored tree is how these rules rot. **The one tracked
+  content under `artifacts/` is the published records' text**, since 2026-09-29:
+  `.gitignore` un-ignores the twenty-one stamps of 2026-09-22 as one directory
+  pattern and, inside a published stamp, `gallery.jsonl`, `manifest.json` and
+  `recipes.jsonl` by name. Publishing another record is a line there and a line in
+  `curation.tentative.PUBLISHED`. A published file over the 1 MiB ceiling is
+  ignored again by its own path, never allowlisted. `index.html` is never tracked.
 - **A tentative record is PUBLISHED only when Matt names it**, his ruling of
   2026-09-04. An unpublished record is read by naming its stamp, and what it does
   not get is a Durable-class save, check or restore and a place in an archive copy.
   `tentative.PUBLISHED` and `.gitignore`'s negation lines are one list written twice
   and `tests/test_tentative.py` holds them to agreeing; the ruling and why
   `LARGE_TEXT_ALLOWLIST` was not the answer are at `curation/tentative.PUBLISHED`.
-  **`tentative.PUBLISHED` is EMPTY since 2026-09-21**, the ruling that closed
-  mining, so `tentative.latest()` refuses and **an unstamped read is not
-  available**: every `browse`, `resolve`, `votes build`, atlas and backfill names a
-  stamp, and `curation.backfill.DEFAULT_RECORD` is the general one. The page a
+  **`tentative.PUBLISHED` is the twenty-one kept records since 2026-09-29**, Matt's
+  ruling that the saved set is truly finalized, and `KEPT_UNPUBLISHED` is empty.
+  **An unstamped read means `tentative.DEFAULT`**, `final139_general`, and never the
+  newest published stamp: the twenty-one are peers, and the newest is the n=2000,
+  whose rows are over the ceiling and untracked. The page a
   person opens, and how it is written, is the `artifacts/curation/viewer/` row of
   `src/fractal_wallpapers/README.md`'s keep roster and `curation/GALLERY.md`.
 - **An unpublished record is DISCARDED by default**, Matt's ruling of 2026-09-13.
@@ -85,8 +87,8 @@ that came later carry the date of Matt's ruling.
   cheap to run again, and what a leftover record costs is misreading hazard, not
   bytes. **The keep list is code**: `tentative.PUBLISHED` plus
   `tentative.KEPT_UNPUBLISHED`, with the reason written at the site. Everything else
-  goes unless Matt says otherwise. **The keep list holds twenty-one, none of them
-  published**: the `final139_*` set (the general n=1000 and the nineteen collections,
+  goes unless Matt says otherwise. **The keep list holds twenty-one, all of them
+  published since 2026-09-29**: the `final139_*` set (the general n=1000 and the nineteen collections,
   seated over the pool as mining closed on 2026-09-21) and `final140_general2000`, the
   general pass at n=2000 over the same pool, kept so the website can offer it beside
   the n=1000 default. The store holds exactly the kept records and no separate
@@ -103,9 +105,11 @@ that came later carry the date of Matt's ruling.
   `storage import --from <path to the backup> --root <hot root>`.
   **Nothing is committed until the work is truly finalized**: tracking a record's
   text is publishing its stamp and there is no third way
-  (`curation/GALLERY.md`'s *All twenty kept records carry one, on disk and
-  untracked*), so the backup is what makes the set durable and `tentative.kept()`
-  is only what stops a prune taking its pictures.
+  (`curation/GALLERY.md`'s *All twenty kept records carry one, and publication
+  tracked them*). The saved set's text was committed on 2026-09-29, but the backup
+  is still what makes the set durable — it carries the pictures, and the n=2000's
+  rows git does not — and `tentative.kept()` is only what stops a prune taking its
+  pictures.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
   `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple

@@ -713,7 +713,7 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             "",
             "## The themed check",
             "",
-            f"- **Stamp:** `{stamp}` (`{REFERENCE['name']}`, kept and not published)",
+            f"- **Stamp:** `{stamp}` (`{REFERENCE['name']}`, kept and published)",
             f"- **Collection:** `{REFERENCE['collection']}`, **n = {n}** (`curation/targets.py`)",
             f"- **Taken at commit:** `{held.get('source_commit')}`",
             f"- **Seats:** `artifacts/curation/tentative/{stamp}/gallery.jsonl`, and in order "
@@ -742,7 +742,7 @@ def _write_reference(to: Path, rows: list, log=print) -> dict:
             f"## The n = {GENERAL_CHECK['n']} check",
             "",
             f"- **Stamp:** `{GENERAL_CHECK['stamp']}` (`{GENERAL_CHECK['name']}`, kept and "
-            "not published)",
+            "published)",
             f"- **No collection**, **n = {GENERAL_CHECK['n']}** "
             "(`curation/tentative.py`'s `RECORDED_SEATS`), on the shipped fine bar",
             f"- **Seats:** `artifacts/curation/tentative/{GENERAL_CHECK['stamp']}/"

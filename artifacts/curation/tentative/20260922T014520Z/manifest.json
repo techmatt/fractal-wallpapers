@@ -1,0 +1,1965 @@
+{
+  "schema": 1,
+  "stamp": "20260922T014520Z",
+  "taken_at": "2026-09-22T01:45:27Z",
+  "source_commit": "0570b5fbaf4b1a40966b437fb3848d5247adbec6",
+  "solve": {
+    "name": "final139_smooth",
+    "record": "artifacts/curation/solve/final139_smooth/solve.json",
+    "taken_at": "2026-09-22T01:45:20Z",
+    "seconds": 28.05,
+    "config": {
+      "n": 800,
+      "fold": "pool",
+      "fold_default": "pool",
+      "fold_is": "what the neutral pre-selection did with a place it folded into another. `pool` relabels \u2014 the rows stay and the seat constraint reads one seat per CLUSTER \u2014 and `delete` destroys them, which is what shipped until 2026-09-09. `null` is a pass with no pre-selection. A record whose config is silent either predates 2026-09-09 and folded `delete`, or carries the answer on `preselection.fold`, which the walk writes itself. See distinct.POOL",
+      "fine_bar": 0.030242,
+      "fine_bar_default": 0.030242,
+      "theme_bar": null,
+      "theme_bar_is": "the themed path takes the lower of the shipped fine bar and the p_fine of its cell's `multiple * n`-th best candidate, floored at `floor` \u2014 see solve.themed_fine_bar. `null` is a pass that was not themed or ran unbarred. A record that does not name the field at all was taken before 2026-09-11, when a themed pass inherited the general bar and drew from 3.7% of the pool; one that spells it `themed_bar` was taken before 2026-09-12, when it was renamed to sort beside `theme` here",
+      "forced": 0,
+      "forced_default": 0,
+      "forced_is": "how many rows --forced lifted to the top of the fine column BEFORE the bar, the neutral pre-selection and the cascade \u2014 solve.FORCED_LIFT, an order-preserving `1 + p_fine` so the forced set keeps its own order. STAGED and off by default: `0` is a pass that forced nothing, and a record that does not name the field at all was taken before 2026-09-09. It forces an OFFER and never a seat: every rule still applies",
+      "fine_bar_is": "a bar on the gallery-grade head's p_fine(>=4), applied to the pool BEFORE anything else runs \u2014 the per-mode bars, the neutral pre-selection and the view are all taken over what it leaves. `null` is NO bar; the flag is `--fine-bar` and `solve.at_fine_bar` is the door. A record that does not name the field at all was taken before 2026-09-07 and ran unbarred. THE DEFAULT HAS MOVED THREE TIMES: null until 2026-09-08, 0.50 until 2026-09-09, 0.184 until 2026-09-10, 0.030242 since \u2014 and every move since the first was a MATCHED level under a new head rather than a change of strictness, so `fine_bar` is only readable beside `fine_head` below",
+      "fine_head": "twelve_sheets_drop_high_asymmetric_auc_ge4_more_k3",
+      "fine_head_is": "the gallery-grade run whose `p_ge4` this pass could read \u2014 the run named on every row of `gallery-grade score-pool`'s output. `null` is a machine that has never scored the pool, and a record that does not name the field was taken before 2026-09-09, under `auc_ge4_more_seed2`",
+      "fine_weights": "06ad9211c9221bc099d0134ce634da5030b40b2655626229e145dbd364b2a80b",
+      "fine_weights_is": "the sha256 of the FP32 checkpoint(s) behind `fine_head`'s column \u2014 for the shipped k=3 recipe a digest of the three member hashes in seed order, gallery_grade_train.weights_digest. A run NAME survives a retrain and the scores under it do not, which is what this closes. `null` is a record taken before 2026-09-14, when p_fine carried no hash at all, or on a box that has never scored the pool. NOT the fp16 release artifact: a clone scoring with the published head stamps its own rows differently and that is correct",
+      "spiral_cap": 0.1,
+      "spiral_cap_default": 0.1,
+      "mode_ceilings": {},
+      "mode_ceilings_default": {
+        "threads": 0.2
+      },
+      "mode_ceilings_is": "at most ceil(share * seats filled) seats of the named mode \u2014 ceiling.share_of, the spiral cap's own arithmetic and the one spelling a colour target is stated in. A GUARD against a runaway and not a target: it is set above what the gallery does unaided, so the reading it gives is the `mode_ceiling` refusal column, and a zero there is the expected answer. On since 2026-09-05, so a record that does not name it ran with NO per-mode ceiling",
+      "augment": true,
+      "augment_default": true,
+      "augment_depth": 2,
+      "augment_seconds": 300.0,
+      "augment_is": "augmenting chains \u2014 one seat ejected and two inserted in its room. THE ONLY STAGE THAT RAISES THE SEAT COUNT: a 1-swap conserves it. On since 2026-09-04, so a record that does not name the flag ran WITH it and is not comparable to one taken before that",
+      "theme": null,
+      "method": "a stratified view, a greedy seed, 1-swap improvement to exhaustion, augmenting chains, then the 1-swap loop again. ANYTIME at every stage: the gallery is valid from its first seat and nothing here claims optimality. The exact solve it replaced is retired",
+      "objective": "lexicographic and strict, in this order: (1) seats filled, every one above its own mode's bar; (2) the shortfall against every demand \u2014 the mode floors and any colour target \u2014 minimized, and nothing padded; (3) the worst seated score, maximized; (4) the sum. The rank quantity is the fitted rank key and not p_ge4 alone. A filled floor outranks the worst seat by ruling: a demand this pool can meet is met, and the price comes out of the weakest seat rather than out of the roster. Nothing guards a met demand because the order itself keeps it",
+      "order": "the mandated demands from their own subpools, scarcest first; then the general pool by the rank key; then swaps; then augmenting chains; then swaps again",
+      "bars": {
+        "curvature": "p_ge3",
+        "direct_trap_lines": "p_ge3",
+        "direct_trap_multiply": "p_ge3",
+        "direct_trap_screen": "p_ge3",
+        "itinerary": "p_ge3",
+        "smooth": "p_ge4",
+        "smooth_angle_min": "p_ge3",
+        "smooth_curvature": "p_ge3",
+        "smooth_mean_angle": "p_ge3",
+        "smooth_stripe": "p_ge3",
+        "stripe": "p_ge3",
+        "threads": "p_ge3",
+        "tia": "p_ge3"
+      },
+      "bars_are": "the pool definition. curation.headroom.bars: P(>=4) for a mode with enough places above it, P(>=3) for one without",
+      "ceiling": {
+        "k": 3,
+        "k_default": 3,
+        "kf": 1,
+        "kf_default": 1,
+        "cell_share": 0.020833333333333332,
+        "family_share": 0.08333333333333333,
+        "allowance": "floor(k * t * n) + 1",
+        "floor": 16,
+        "floor_rule": "floor(kf * t * n), and NO + 1 \u2014 the ceiling's warm-up is for a walk that has to seat its first row somewhere and a floor has nothing to warm up. At the uniform cell share the pair reads: every chromatic cell gets at least kf fair shares of the gallery and at most k",
+        "floor_is": "SOFT, and one demand per chromatic cell on the objective's shortfall tier \u2014 it never refuses a candidate and never makes a solve infeasible. A cell the pool cannot fill is a row in `shortfalls.cell_floors`. `null` is a pass that carried no colour floor: every record before 2026-09-09, and every themed pass since, a theme being one cell by construction",
+        "group_cap": 20,
+        "group_cap_rule": "proportional",
+        "group_cap_from": "max(1, floor(0.025 * n))",
+        "targets": {},
+        "target_rule": "t * the REALIZED seat count: at least ceil(t * seats filled) of the seats dominant in the named cell. A share of the gallery that gets filled, because this leg does not promise n of them. It is a demand and it is soft: a target the pool cannot meet is a recorded shortfall and never a padded seat"
+      },
+      "sort_key": "cascade",
+      "sort_key_named": "cascade",
+      "mode_floor": 0,
+      "mode_floors": {
+        "smooth": 0,
+        "tia": 0,
+        "stripe": 0,
+        "curvature": 0,
+        "smooth_mean_angle": 0,
+        "smooth_angle_min": 0,
+        "smooth_stripe": 0,
+        "smooth_curvature": 0,
+        "direct_trap_screen": 0,
+        "direct_trap_multiply": 0,
+        "direct_trap_lines": 0,
+        "threads": 0,
+        "itinerary": 0
+      },
+      "mode_floor_rule": "an artificial flat 0 for every accepted mode",
+      "mode_floor_natural": {
+        "smooth": 0,
+        "tia": 25,
+        "stripe": 25,
+        "curvature": 13,
+        "smooth_mean_angle": 25,
+        "smooth_angle_min": 25,
+        "smooth_stripe": 25,
+        "smooth_curvature": 13,
+        "direct_trap_screen": 13,
+        "direct_trap_multiply": 13,
+        "direct_trap_lines": 13,
+        "threads": 25,
+        "itinerary": 25
+      },
+      "mode_floor_artificial": true,
+      "modes": [
+        "smooth",
+        "tia",
+        "stripe",
+        "curvature",
+        "smooth_mean_angle",
+        "smooth_angle_min",
+        "smooth_stripe",
+        "smooth_curvature",
+        "direct_trap_screen",
+        "direct_trap_multiply",
+        "direct_trap_lines",
+        "threads",
+        "itinerary"
+      ],
+      "mode_policy": {
+        "weights": {
+          "trap_circle": 0,
+          "gaussian_int": 0,
+          "smooth_trap_circle": 0,
+          "direct_trap_ring": 0,
+          "tail_itinerary": 0,
+          "exp_smoothing": 0,
+          "smooth": 1,
+          "curvature": 1,
+          "smooth_curvature": 1,
+          "direct_trap_screen": 1,
+          "direct_trap_multiply": 1,
+          "direct_trap_lines": 1,
+          "tia": 2,
+          "stripe": 2,
+          "threads": 2,
+          "smooth_stripe": 2,
+          "smooth_mean_angle": 2,
+          "smooth_angle_min": 2,
+          "itinerary": 2
+        },
+        "accepted": [
+          "smooth",
+          "tia",
+          "stripe",
+          "curvature",
+          "smooth_mean_angle",
+          "smooth_angle_min",
+          "smooth_stripe",
+          "smooth_curvature",
+          "direct_trap_screen",
+          "direct_trap_multiply",
+          "direct_trap_lines",
+          "threads",
+          "itinerary"
+        ],
+        "mined": [
+          "smooth",
+          "tia",
+          "stripe",
+          "smooth_mean_angle",
+          "smooth_angle_min",
+          "smooth_stripe",
+          "smooth_curvature",
+          "direct_trap_screen",
+          "direct_trap_multiply",
+          "direct_trap_lines",
+          "threads",
+          "itinerary"
+        ],
+        "unmined": [
+          "curvature"
+        ],
+        "niche": [
+          "exp_smoothing",
+          "gaussian_int",
+          "trap_circle",
+          "smooth_trap_circle",
+          "direct_trap_ring",
+          "tail_itinerary"
+        ],
+        "promoted": [
+          "tia",
+          "stripe",
+          "smooth_mean_angle",
+          "smooth_angle_min",
+          "smooth_stripe",
+          "threads",
+          "itinerary"
+        ],
+        "wired": "all three. Weight 0 is out of the labeling rosters, the default mining rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` floors a promoted mode at twice a normal one and is the default floor of both the greedy and the solver since 2026-08-31.",
+        "unmined_is": "accepted in every respect but the draw: seated, censused, barred and floored like any other mode, and drawn by no mining leg unasked. A standing about what a mine spends and not a weight; see UNMINED."
+      }
+    },
+    "diversity": {
+      "rule": "twin",
+      "threshold": 0.034281,
+      "neighbours": 1,
+      "replaceable": "one component behind `within`/`hold`/`drop`/`record`. A gallery chosen under a different diversity rule is not comparable to this one, which is why the rule and its threshold are here"
+    },
+    "diversity_is": "which rule decided two seats were different enough, as `rules.State.record` spells it. A gallery chosen under a different rule is not comparable with this one. A manifest with no `diversity` key at all was written before 2026-09-11; an explicit `null` is a pass that ran without the rule",
+    "pins": {
+      "of": "the pinned list (data/curation/pins.json): rows seated FIRST, exempt from every bar and from the near-duplicate gate against each other, never taken out by the swap loop or the chains. A pin is in a gallery when its row is in the pass's pool, and in the theme on a themed pass. See curation/pins.py",
+      "listed": 10,
+      "eligible": [
+        "2fd9890d487a9782",
+        "7ab095c794fc64e3",
+        "b88eacf62062bf25",
+        "04cd304c99de81fa",
+        "809df7f474bd2b68",
+        "fb7cedfe8416c8fc"
+      ],
+      "not_in_this_gallery": {
+        "460117ee01aee127": "not in the pool this pass solved over",
+        "0275fee138aa3b0b": "not in the pool this pass solved over",
+        "5ff0ad6b8898db4b": "not in the pool this pass solved over",
+        "fbfc2ce3aa1d996b": "not in the pool this pass solved over"
+      },
+      "seated": [
+        "2fd9890d487a9782",
+        "7ab095c794fc64e3",
+        "b88eacf62062bf25",
+        "04cd304c99de81fa",
+        "809df7f474bd2b68",
+        "fb7cedfe8416c8fc"
+      ]
+    }
+  },
+  "pool": {
+    "stamp": "a7932388862d3eb05f76c06c89b0f65c2ab0e2e930b65239d5f805ed32a22a52",
+    "stamp_is": "sha256 over the sorted candidate keys, as `growth.pool_stamp` takes it. Two records carrying the same stamp were chosen over the same pool \u2014 over the same POOL and not necessarily the same seatable rows, because a quality bar narrows what a pass may seat and is on `solve.config.fine_bar` instead",
+    "candidates": 124376,
+    "locations": 42011,
+    "reachable_clusters": 2921,
+    "refused": {
+      "niche_mode": 47712,
+      "rejected": 44,
+      "vetoed": 728,
+      "off_regime": 0,
+      "no_picture": 0,
+      "picture_absent": 0,
+      "no_score": 0
+    },
+    "ledger_rows": 566920,
+    "ledger_path": "artifacts/curation/candidate_ledger/rows.jsonl"
+  },
+  "seats": {
+    "asked": 800,
+    "filled": 800,
+    "shortfall": 0,
+    "recorded": 800
+  },
+  "shortfalls": {
+    "seats": {
+      "asked": 800,
+      "filled": 800,
+      "unfilled": 0
+    },
+    "demands": {
+      "of": "every demand this pass carried, mode floors and colour targets alike. The third objective tier is the sum of the `short` column",
+      "short_total": 19,
+      "rows": [
+        {
+          "demand": "cell_floor:dark_muted_azure",
+          "axis": "cell",
+          "of": "dark_muted_azure",
+          "asked": 16,
+          "held": 19,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_blue",
+          "axis": "cell",
+          "of": "dark_muted_blue",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_cyan",
+          "axis": "cell",
+          "of": "dark_muted_cyan",
+          "asked": 16,
+          "held": 33,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_green",
+          "axis": "cell",
+          "of": "dark_muted_green",
+          "asked": 16,
+          "held": 22,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_lime",
+          "axis": "cell",
+          "of": "dark_muted_lime",
+          "asked": 16,
+          "held": 8,
+          "short": 8
+        },
+        {
+          "demand": "cell_floor:dark_muted_magenta",
+          "axis": "cell",
+          "of": "dark_muted_magenta",
+          "asked": 16,
+          "held": 40,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_orange",
+          "axis": "cell",
+          "of": "dark_muted_orange",
+          "asked": 16,
+          "held": 27,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_purple",
+          "axis": "cell",
+          "of": "dark_muted_purple",
+          "asked": 16,
+          "held": 43,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_red",
+          "axis": "cell",
+          "of": "dark_muted_red",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_rose",
+          "axis": "cell",
+          "of": "dark_muted_rose",
+          "asked": 16,
+          "held": 45,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_teal",
+          "axis": "cell",
+          "of": "dark_muted_teal",
+          "asked": 16,
+          "held": 39,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_muted_yellow",
+          "axis": "cell",
+          "of": "dark_muted_yellow",
+          "asked": 16,
+          "held": 16,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_azure",
+          "axis": "cell",
+          "of": "dark_vivid_azure",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_blue",
+          "axis": "cell",
+          "of": "dark_vivid_blue",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_cyan",
+          "axis": "cell",
+          "of": "dark_vivid_cyan",
+          "asked": 16,
+          "held": 29,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_green",
+          "axis": "cell",
+          "of": "dark_vivid_green",
+          "asked": 16,
+          "held": 35,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_lime",
+          "axis": "cell",
+          "of": "dark_vivid_lime",
+          "asked": 16,
+          "held": 9,
+          "short": 7
+        },
+        {
+          "demand": "cell_floor:dark_vivid_magenta",
+          "axis": "cell",
+          "of": "dark_vivid_magenta",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_orange",
+          "axis": "cell",
+          "of": "dark_vivid_orange",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_purple",
+          "axis": "cell",
+          "of": "dark_vivid_purple",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_red",
+          "axis": "cell",
+          "of": "dark_vivid_red",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_rose",
+          "axis": "cell",
+          "of": "dark_vivid_rose",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_teal",
+          "axis": "cell",
+          "of": "dark_vivid_teal",
+          "asked": 16,
+          "held": 29,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:dark_vivid_yellow",
+          "axis": "cell",
+          "of": "dark_vivid_yellow",
+          "asked": 16,
+          "held": 13,
+          "short": 3
+        },
+        {
+          "demand": "cell_floor:light_muted_azure",
+          "axis": "cell",
+          "of": "light_muted_azure",
+          "asked": 16,
+          "held": 45,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_blue",
+          "axis": "cell",
+          "of": "light_muted_blue",
+          "asked": 16,
+          "held": 38,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_cyan",
+          "axis": "cell",
+          "of": "light_muted_cyan",
+          "asked": 16,
+          "held": 41,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_green",
+          "axis": "cell",
+          "of": "light_muted_green",
+          "asked": 16,
+          "held": 34,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_lime",
+          "axis": "cell",
+          "of": "light_muted_lime",
+          "asked": 16,
+          "held": 18,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_magenta",
+          "axis": "cell",
+          "of": "light_muted_magenta",
+          "asked": 16,
+          "held": 43,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_orange",
+          "axis": "cell",
+          "of": "light_muted_orange",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_purple",
+          "axis": "cell",
+          "of": "light_muted_purple",
+          "asked": 16,
+          "held": 41,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_red",
+          "axis": "cell",
+          "of": "light_muted_red",
+          "asked": 16,
+          "held": 49,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_rose",
+          "axis": "cell",
+          "of": "light_muted_rose",
+          "asked": 16,
+          "held": 49,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_teal",
+          "axis": "cell",
+          "of": "light_muted_teal",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_muted_yellow",
+          "axis": "cell",
+          "of": "light_muted_yellow",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_azure",
+          "axis": "cell",
+          "of": "light_vivid_azure",
+          "asked": 16,
+          "held": 25,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_blue",
+          "axis": "cell",
+          "of": "light_vivid_blue",
+          "asked": 16,
+          "held": 38,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_cyan",
+          "axis": "cell",
+          "of": "light_vivid_cyan",
+          "asked": 16,
+          "held": 24,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_green",
+          "axis": "cell",
+          "of": "light_vivid_green",
+          "asked": 16,
+          "held": 26,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_lime",
+          "axis": "cell",
+          "of": "light_vivid_lime",
+          "asked": 16,
+          "held": 15,
+          "short": 1
+        },
+        {
+          "demand": "cell_floor:light_vivid_magenta",
+          "axis": "cell",
+          "of": "light_vivid_magenta",
+          "asked": 16,
+          "held": 27,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_orange",
+          "axis": "cell",
+          "of": "light_vivid_orange",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_purple",
+          "axis": "cell",
+          "of": "light_vivid_purple",
+          "asked": 16,
+          "held": 31,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_red",
+          "axis": "cell",
+          "of": "light_vivid_red",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_rose",
+          "axis": "cell",
+          "of": "light_vivid_rose",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_teal",
+          "axis": "cell",
+          "of": "light_vivid_teal",
+          "asked": 16,
+          "held": 16,
+          "short": 0
+        },
+        {
+          "demand": "cell_floor:light_vivid_yellow",
+          "axis": "cell",
+          "of": "light_vivid_yellow",
+          "asked": 16,
+          "held": 51,
+          "short": 0
+        }
+      ]
+    },
+    "modes": {
+      "floor": 0,
+      "floors": {
+        "smooth": 0,
+        "tia": 0,
+        "stripe": 0,
+        "curvature": 0,
+        "smooth_mean_angle": 0,
+        "smooth_angle_min": 0,
+        "smooth_stripe": 0,
+        "smooth_curvature": 0,
+        "direct_trap_screen": 0,
+        "direct_trap_multiply": 0,
+        "direct_trap_lines": 0,
+        "threads": 0,
+        "itinerary": 0
+      },
+      "floors_are": "one floor for every mode",
+      "asked": 0,
+      "represented": 1,
+      "of": 13,
+      "per_mode": {
+        "smooth": {
+          "floor": 0,
+          "seated": 800,
+          "short": 0,
+          "clearing": 5177,
+          "refused_by": {
+            "cell_allowance": 2945,
+            "location": 1136,
+            "spiral": 177,
+            "twin": 89,
+            "the_leg_had_no_seat_left": 23,
+            "the_view_did_not_reach_it": 7
+          }
+        },
+        "tia": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "stripe": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "curvature": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "smooth_mean_angle": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "smooth_angle_min": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "smooth_stripe": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "smooth_curvature": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "direct_trap_screen": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "direct_trap_multiply": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "direct_trap_lines": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "threads": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        },
+        "itinerary": {
+          "floor": 0,
+          "seated": 0,
+          "short": 0,
+          "clearing": 0,
+          "refused_by": {}
+        }
+      },
+      "starved": [],
+      "starved_count": 0,
+      "starved_are": "a floor above zero that went unfilled. Read `per_mode` for which: a mode with `clearing` above `seated` lost its seats to a rule named in `refused_by`, and one with `clearing` at `seated` had nothing left to seat",
+      "floor_never_needed": [
+        "smooth",
+        "tia",
+        "stripe",
+        "curvature",
+        "smooth_mean_angle",
+        "smooth_angle_min",
+        "smooth_stripe",
+        "smooth_curvature",
+        "direct_trap_screen",
+        "direct_trap_multiply",
+        "direct_trap_lines",
+        "threads",
+        "itinerary"
+      ],
+      "floor_never_needed_count": 13,
+      "floor_never_needed_are": "asked for nothing, so they cannot have gone short",
+      "below_the_floor": [],
+      "below_the_floor_count": 0,
+      "counts": {
+        "smooth": 800
+      }
+    },
+    "cells": {
+      "held": 48,
+      "over_allowance": {},
+      "counts": {
+        "light_muted_teal": 51,
+        "light_vivid_yellow": 51,
+        "light_muted_orange": 51,
+        "dark_vivid_purple": 51,
+        "light_muted_yellow": 51,
+        "dark_vivid_orange": 51,
+        "dark_vivid_azure": 51,
+        "dark_muted_blue": 51,
+        "dark_vivid_blue": 51,
+        "light_vivid_orange": 51,
+        "light_vivid_red": 51,
+        "dark_muted_red": 51,
+        "dark_vivid_rose": 51,
+        "dark_vivid_magenta": 51,
+        "light_vivid_rose": 51,
+        "dark_vivid_red": 51,
+        "light_muted_red": 49,
+        "light_muted_rose": 49,
+        "dark_muted_rose": 45,
+        "light_muted_azure": 45,
+        "light_muted_magenta": 43,
+        "dark_muted_purple": 43,
+        "light_muted_cyan": 41,
+        "light_muted_purple": 41,
+        "dark_muted_magenta": 40,
+        "dark_muted_teal": 39,
+        "light_vivid_blue": 38,
+        "light_muted_blue": 38,
+        "dark_vivid_green": 35,
+        "light_muted_green": 34,
+        "dark_muted_cyan": 33,
+        "light_vivid_purple": 31,
+        "dark_vivid_cyan": 29,
+        "dark_vivid_teal": 29,
+        "dark_muted_orange": 27,
+        "light_vivid_magenta": 27,
+        "light_vivid_green": 26,
+        "light_vivid_azure": 25,
+        "light_vivid_cyan": 24,
+        "dark_muted_green": 22,
+        "dark_muted_azure": 19,
+        "light_muted_lime": 18,
+        "light_vivid_teal": 16,
+        "dark_muted_yellow": 16,
+        "light_vivid_lime": 15,
+        "dark_vivid_yellow": 13,
+        "dark_vivid_lime": 9,
+        "dark_muted_lime": 8
+      }
+    },
+    "cell_floors": {
+      "of": "one soft demand per chromatic cell, floor(kf * t * seats filled). It rides the same shortfall tier the mode floors ride and can neither refuse a candidate nor make the solve infeasible",
+      "floor": 16,
+      "floor_of": "the realized seat count and not n, for curation.solve.target_rule's reason: this leg does not promise n seats, so a demand denominated in seats nobody is promising to fill reports nothing when the answer comes back short",
+      "cells": 48,
+      "at_or_over_the_floor": 44,
+      "below_the_floor": [
+        "dark_muted_lime",
+        "dark_vivid_lime",
+        "dark_vivid_yellow",
+        "light_vivid_lime"
+      ],
+      "below_the_floor_count": 4,
+      "short_total": 19,
+      "deadlocked_total": 5,
+      "deadlocked_is": "a row dominant in a starving cell that the ALLOWANCE refused for a DIFFERENT cell it is also dominant in \u2014 a seat charges about 2.1 cells, so the companion being full is a way to starve a cell that neither its own allowance nor its own supply can show. `deadlocked_on` names the cells that were full",
+      "per_cell": {
+        "dark_muted_azure": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 19,
+          "short": 0,
+          "clearing": 105,
+          "refused_by": {
+            "cell_allowance": 45,
+            "location": 26,
+            "twin": 11,
+            "spiral": 4
+          },
+          "deadlocked": 45,
+          "deadlocked_on": {
+            "dark_muted_blue": 23,
+            "dark_vivid_azure": 17,
+            "dark_muted_red": 3,
+            "light_muted_teal": 2
+          }
+        },
+        "dark_muted_blue": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 364,
+          "refused_by": {
+            "cell_allowance": 225,
+            "location": 88
+          },
+          "deadlocked": 92,
+          "deadlocked_on": {
+            "dark_vivid_blue": 59,
+            "dark_vivid_azure": 15,
+            "dark_vivid_purple": 11,
+            "dark_muted_red": 5,
+            "light_muted_yellow": 1
+          }
+        },
+        "dark_muted_cyan": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 33,
+          "short": 0,
+          "clearing": 118,
+          "refused_by": {
+            "cell_allowance": 27,
+            "spiral": 19,
+            "location": 18,
+            "twin": 15,
+            "the_leg_had_no_seat_left": 5,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 27,
+          "deadlocked_on": {
+            "light_muted_teal": 25,
+            "dark_vivid_rose": 1,
+            "dark_muted_red": 1
+          }
+        },
+        "dark_muted_green": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 22,
+          "short": 0,
+          "clearing": 54,
+          "refused_by": {
+            "location": 12,
+            "spiral": 9,
+            "twin": 7,
+            "cell_allowance": 2,
+            "the_leg_had_no_seat_left": 1,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 2,
+          "deadlocked_on": {
+            "light_muted_teal": 1,
+            "light_vivid_yellow": 1
+          }
+        },
+        "dark_muted_lime": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 8,
+          "short": 8,
+          "clearing": 14,
+          "refused_by": {
+            "location": 4,
+            "spiral": 1,
+            "cell_allowance": 1
+          },
+          "deadlocked": 1,
+          "deadlocked_on": {
+            "light_muted_orange": 1
+          }
+        },
+        "dark_muted_magenta": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 40,
+          "short": 0,
+          "clearing": 158,
+          "refused_by": {
+            "cell_allowance": 52,
+            "location": 34,
+            "spiral": 22,
+            "twin": 8,
+            "the_leg_had_no_seat_left": 2
+          },
+          "deadlocked": 52,
+          "deadlocked_on": {
+            "dark_vivid_magenta": 35,
+            "dark_vivid_rose": 7,
+            "light_vivid_rose": 6,
+            "dark_vivid_purple": 2,
+            "dark_vivid_blue": 1
+          }
+        },
+        "dark_muted_orange": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 27,
+          "short": 0,
+          "clearing": 117,
+          "refused_by": {
+            "cell_allowance": 54,
+            "location": 36
+          },
+          "deadlocked": 54,
+          "deadlocked_on": {
+            "dark_vivid_orange": 23,
+            "light_muted_orange": 15,
+            "light_muted_yellow": 6,
+            "dark_muted_red": 3,
+            "dark_muted_blue": 3
+          }
+        },
+        "dark_muted_purple": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 43,
+          "short": 0,
+          "clearing": 284,
+          "refused_by": {
+            "cell_allowance": 120,
+            "location": 69,
+            "spiral": 37,
+            "twin": 10,
+            "the_leg_had_no_seat_left": 4,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 120,
+          "deadlocked_on": {
+            "dark_vivid_purple": 49,
+            "dark_vivid_blue": 35,
+            "dark_muted_blue": 27,
+            "light_vivid_rose": 6,
+            "dark_vivid_magenta": 1
+          }
+        },
+        "dark_muted_red": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 449,
+          "refused_by": {
+            "cell_allowance": 277,
+            "location": 121
+          },
+          "deadlocked": 148,
+          "deadlocked_on": {
+            "dark_vivid_red": 64,
+            "light_vivid_red": 26,
+            "dark_vivid_orange": 25,
+            "light_muted_orange": 17,
+            "light_vivid_orange": 8
+          }
+        },
+        "dark_muted_rose": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 45,
+          "short": 0,
+          "clearing": 285,
+          "refused_by": {
+            "cell_allowance": 121,
+            "location": 78,
+            "spiral": 30,
+            "twin": 8,
+            "the_leg_had_no_seat_left": 2,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 121,
+          "deadlocked_on": {
+            "dark_vivid_rose": 43,
+            "dark_muted_red": 27,
+            "light_vivid_red": 20,
+            "dark_vivid_red": 14,
+            "dark_vivid_magenta": 9
+          }
+        },
+        "dark_muted_teal": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 39,
+          "short": 0,
+          "clearing": 139,
+          "refused_by": {
+            "cell_allowance": 39,
+            "location": 26,
+            "spiral": 17,
+            "twin": 14,
+            "the_leg_had_no_seat_left": 4
+          },
+          "deadlocked": 39,
+          "deadlocked_on": {
+            "light_muted_teal": 36,
+            "dark_muted_red": 2,
+            "light_muted_orange": 1
+          }
+        },
+        "dark_muted_yellow": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 16,
+          "short": 0,
+          "clearing": 43,
+          "refused_by": {
+            "location": 16,
+            "cell_allowance": 8,
+            "spiral": 3
+          },
+          "deadlocked": 8,
+          "deadlocked_on": {
+            "light_muted_yellow": 5,
+            "light_vivid_orange": 1,
+            "light_muted_orange": 1,
+            "dark_muted_blue": 1
+          }
+        },
+        "dark_vivid_azure": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 354,
+          "refused_by": {
+            "cell_allowance": 214,
+            "location": 89
+          },
+          "deadlocked": 55,
+          "deadlocked_on": {
+            "dark_vivid_blue": 30,
+            "dark_muted_blue": 17,
+            "light_vivid_orange": 5,
+            "light_muted_yellow": 1,
+            "light_vivid_red": 1
+          }
+        },
+        "dark_vivid_blue": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 753,
+          "refused_by": {
+            "cell_allowance": 548,
+            "location": 154
+          },
+          "deadlocked": 80,
+          "deadlocked_on": {
+            "dark_vivid_purple": 32,
+            "dark_vivid_azure": 30,
+            "dark_muted_blue": 15,
+            "dark_vivid_red": 1,
+            "light_vivid_red": 1
+          }
+        },
+        "dark_vivid_cyan": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 29,
+          "short": 0,
+          "clearing": 78,
+          "refused_by": {
+            "spiral": 13,
+            "twin": 12,
+            "location": 12,
+            "cell_allowance": 6,
+            "the_leg_had_no_seat_left": 5,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 6,
+          "deadlocked_on": {
+            "light_muted_teal": 4,
+            "dark_vivid_rose": 1,
+            "dark_muted_red": 1
+          }
+        },
+        "dark_vivid_green": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 35,
+          "short": 0,
+          "clearing": 85,
+          "refused_by": {
+            "spiral": 18,
+            "location": 17,
+            "twin": 9,
+            "cell_allowance": 3,
+            "the_leg_had_no_seat_left": 2,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 3,
+          "deadlocked_on": {
+            "dark_vivid_azure": 2,
+            "light_muted_teal": 1
+          }
+        },
+        "dark_vivid_lime": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 9,
+          "short": 7,
+          "clearing": 12,
+          "refused_by": {
+            "location": 2,
+            "spiral": 1
+          },
+          "deadlocked": 0,
+          "deadlocked_on": {}
+        },
+        "dark_vivid_magenta": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 377,
+          "refused_by": {
+            "cell_allowance": 245,
+            "location": 81
+          },
+          "deadlocked": 46,
+          "deadlocked_on": {
+            "dark_vivid_purple": 20,
+            "light_vivid_rose": 18,
+            "dark_vivid_rose": 6,
+            "light_vivid_red": 2
+          }
+        },
+        "dark_vivid_orange": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 380,
+          "refused_by": {
+            "cell_allowance": 250,
+            "location": 79
+          },
+          "deadlocked": 152,
+          "deadlocked_on": {
+            "light_vivid_orange": 55,
+            "light_muted_orange": 40,
+            "light_vivid_yellow": 15,
+            "dark_vivid_red": 14,
+            "dark_muted_red": 14
+          }
+        },
+        "dark_vivid_purple": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 577,
+          "refused_by": {
+            "cell_allowance": 417,
+            "location": 109
+          },
+          "deadlocked": 60,
+          "deadlocked_on": {
+            "dark_vivid_blue": 41,
+            "dark_vivid_magenta": 14,
+            "light_vivid_red": 2,
+            "light_vivid_rose": 2,
+            "dark_muted_blue": 1
+          }
+        },
+        "dark_vivid_red": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 861,
+          "refused_by": {
+            "cell_allowance": 664,
+            "location": 146
+          },
+          "deadlocked": 294,
+          "deadlocked_on": {
+            "light_vivid_red": 121,
+            "light_vivid_orange": 98,
+            "dark_muted_red": 28,
+            "light_vivid_rose": 15,
+            "light_vivid_yellow": 11
+          }
+        },
+        "dark_vivid_rose": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 505,
+          "refused_by": {
+            "cell_allowance": 329,
+            "location": 125
+          },
+          "deadlocked": 112,
+          "deadlocked_on": {
+            "light_vivid_rose": 74,
+            "dark_vivid_magenta": 13,
+            "dark_vivid_red": 11,
+            "light_vivid_red": 11,
+            "dark_vivid_blue": 2
+          }
+        },
+        "dark_vivid_teal": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 29,
+          "short": 0,
+          "clearing": 69,
+          "refused_by": {
+            "cell_allowance": 15,
+            "location": 11,
+            "spiral": 6,
+            "twin": 5,
+            "the_leg_had_no_seat_left": 3
+          },
+          "deadlocked": 15,
+          "deadlocked_on": {
+            "light_muted_teal": 15
+          }
+        },
+        "dark_vivid_yellow": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 13,
+          "short": 3,
+          "clearing": 24,
+          "refused_by": {
+            "location": 8,
+            "cell_allowance": 3
+          },
+          "deadlocked": 3,
+          "deadlocked_on": {
+            "light_vivid_yellow": 2,
+            "light_muted_yellow": 1
+          }
+        },
+        "light_muted_azure": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 45,
+          "short": 0,
+          "clearing": 185,
+          "refused_by": {
+            "cell_allowance": 64,
+            "location": 43,
+            "twin": 17,
+            "spiral": 13,
+            "the_leg_had_no_seat_left": 2,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 64,
+          "deadlocked_on": {
+            "dark_muted_blue": 27,
+            "dark_vivid_azure": 26,
+            "dark_vivid_blue": 10,
+            "dark_vivid_magenta": 1
+          }
+        },
+        "light_muted_blue": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 38,
+          "short": 0,
+          "clearing": 193,
+          "refused_by": {
+            "cell_allowance": 92,
+            "location": 49,
+            "twin": 7,
+            "spiral": 6,
+            "the_leg_had_no_seat_left": 1
+          },
+          "deadlocked": 92,
+          "deadlocked_on": {
+            "dark_vivid_blue": 30,
+            "dark_muted_blue": 28,
+            "dark_vivid_azure": 20,
+            "dark_vivid_purple": 12,
+            "dark_vivid_magenta": 2
+          }
+        },
+        "light_muted_cyan": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 41,
+          "short": 0,
+          "clearing": 147,
+          "refused_by": {
+            "cell_allowance": 48,
+            "location": 27,
+            "twin": 17,
+            "spiral": 11,
+            "the_leg_had_no_seat_left": 3
+          },
+          "deadlocked": 48,
+          "deadlocked_on": {
+            "light_muted_teal": 34,
+            "dark_vivid_azure": 11,
+            "dark_vivid_blue": 1,
+            "dark_muted_blue": 1,
+            "light_muted_yellow": 1
+          }
+        },
+        "light_muted_green": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 34,
+          "short": 0,
+          "clearing": 65,
+          "refused_by": {
+            "cell_allowance": 10,
+            "location": 8,
+            "spiral": 7,
+            "twin": 5,
+            "the_leg_had_no_seat_left": 1
+          },
+          "deadlocked": 10,
+          "deadlocked_on": {
+            "light_muted_teal": 7,
+            "light_vivid_yellow": 1,
+            "dark_vivid_red": 1,
+            "light_muted_orange": 1
+          }
+        },
+        "light_muted_lime": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 18,
+          "short": 0,
+          "clearing": 58,
+          "refused_by": {
+            "cell_allowance": 15,
+            "location": 13,
+            "spiral": 9,
+            "twin": 2,
+            "the_leg_had_no_seat_left": 1
+          },
+          "deadlocked": 15,
+          "deadlocked_on": {
+            "light_muted_yellow": 8,
+            "light_vivid_orange": 3,
+            "light_vivid_yellow": 2,
+            "light_muted_orange": 2
+          }
+        },
+        "light_muted_magenta": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 43,
+          "short": 0,
+          "clearing": 151,
+          "refused_by": {
+            "cell_allowance": 54,
+            "location": 29,
+            "spiral": 12,
+            "twin": 12,
+            "the_leg_had_no_seat_left": 1
+          },
+          "deadlocked": 54,
+          "deadlocked_on": {
+            "dark_vivid_magenta": 24,
+            "dark_vivid_rose": 8,
+            "light_vivid_rose": 7,
+            "dark_vivid_blue": 7,
+            "dark_vivid_purple": 6
+          }
+        },
+        "light_muted_orange": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 363,
+          "refused_by": {
+            "cell_allowance": 226,
+            "location": 86
+          },
+          "deadlocked": 106,
+          "deadlocked_on": {
+            "dark_vivid_orange": 31,
+            "light_vivid_orange": 16,
+            "light_muted_yellow": 16,
+            "dark_vivid_red": 12,
+            "dark_muted_red": 10
+          }
+        },
+        "light_muted_purple": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 41,
+          "short": 0,
+          "clearing": 222,
+          "refused_by": {
+            "cell_allowance": 104,
+            "location": 44,
+            "spiral": 19,
+            "twin": 11,
+            "the_leg_had_no_seat_left": 3
+          },
+          "deadlocked": 104,
+          "deadlocked_on": {
+            "dark_vivid_blue": 43,
+            "dark_vivid_purple": 40,
+            "dark_muted_blue": 12,
+            "dark_vivid_magenta": 7,
+            "light_vivid_orange": 2
+          }
+        },
+        "light_muted_red": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 49,
+          "short": 0,
+          "clearing": 309,
+          "refused_by": {
+            "cell_allowance": 176,
+            "location": 72,
+            "twin": 6,
+            "spiral": 6
+          },
+          "deadlocked": 176,
+          "deadlocked_on": {
+            "dark_vivid_red": 49,
+            "dark_muted_red": 35,
+            "light_vivid_red": 30,
+            "dark_vivid_rose": 24,
+            "light_muted_orange": 22
+          }
+        },
+        "light_muted_rose": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 49,
+          "short": 0,
+          "clearing": 258,
+          "refused_by": {
+            "cell_allowance": 118,
+            "location": 62,
+            "spiral": 14,
+            "twin": 9,
+            "the_leg_had_no_seat_left": 4,
+            "the_view_did_not_reach_it": 2
+          },
+          "deadlocked": 118,
+          "deadlocked_on": {
+            "dark_vivid_rose": 56,
+            "light_vivid_rose": 39,
+            "dark_vivid_magenta": 11,
+            "dark_vivid_red": 4,
+            "light_vivid_red": 3
+          }
+        },
+        "light_muted_teal": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 161,
+          "refused_by": {
+            "cell_allowance": 80,
+            "location": 30
+          },
+          "deadlocked": 3,
+          "deadlocked_on": {
+            "light_muted_orange": 2,
+            "dark_muted_blue": 1
+          }
+        },
+        "light_muted_yellow": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 176,
+          "refused_by": {
+            "cell_allowance": 83,
+            "location": 42
+          },
+          "deadlocked": 35,
+          "deadlocked_on": {
+            "light_muted_orange": 21,
+            "light_vivid_yellow": 7,
+            "light_vivid_orange": 3,
+            "dark_vivid_red": 2,
+            "dark_vivid_orange": 1
+          }
+        },
+        "light_vivid_azure": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 25,
+          "short": 0,
+          "clearing": 135,
+          "refused_by": {
+            "cell_allowance": 65,
+            "location": 36,
+            "spiral": 6,
+            "twin": 2,
+            "the_leg_had_no_seat_left": 1
+          },
+          "deadlocked": 65,
+          "deadlocked_on": {
+            "dark_vivid_blue": 44,
+            "dark_vivid_azure": 14,
+            "dark_muted_blue": 4,
+            "dark_muted_red": 1,
+            "light_vivid_orange": 1
+          }
+        },
+        "light_vivid_blue": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 38,
+          "short": 0,
+          "clearing": 276,
+          "refused_by": {
+            "cell_allowance": 178,
+            "location": 54,
+            "spiral": 6
+          },
+          "deadlocked": 178,
+          "deadlocked_on": {
+            "dark_vivid_blue": 121,
+            "dark_vivid_purple": 39,
+            "dark_vivid_azure": 8,
+            "dark_muted_blue": 7,
+            "dark_vivid_magenta": 2
+          }
+        },
+        "light_vivid_cyan": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 24,
+          "short": 0,
+          "clearing": 61,
+          "refused_by": {
+            "cell_allowance": 19,
+            "spiral": 6,
+            "location": 6,
+            "twin": 5,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 19,
+          "deadlocked_on": {
+            "dark_vivid_azure": 11,
+            "dark_vivid_blue": 4,
+            "light_muted_teal": 2,
+            "dark_muted_blue": 1,
+            "light_muted_yellow": 1
+          }
+        },
+        "light_vivid_green": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 26,
+          "short": 0,
+          "clearing": 74,
+          "refused_by": {
+            "location": 19,
+            "spiral": 19,
+            "twin": 8,
+            "the_leg_had_no_seat_left": 2
+          },
+          "deadlocked": 0,
+          "deadlocked_on": {}
+        },
+        "light_vivid_lime": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 15,
+          "short": 1,
+          "clearing": 17,
+          "refused_by": {
+            "cell_allowance": 1,
+            "location": 1
+          },
+          "deadlocked": 1,
+          "deadlocked_on": {
+            "dark_vivid_azure": 1
+          }
+        },
+        "light_vivid_magenta": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 27,
+          "short": 0,
+          "clearing": 197,
+          "refused_by": {
+            "cell_allowance": 135,
+            "location": 34,
+            "twin": 1
+          },
+          "deadlocked": 135,
+          "deadlocked_on": {
+            "dark_vivid_purple": 77,
+            "dark_vivid_blue": 26,
+            "dark_vivid_magenta": 23,
+            "light_vivid_rose": 5,
+            "dark_vivid_rose": 4
+          }
+        },
+        "light_vivid_orange": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 669,
+          "refused_by": {
+            "cell_allowance": 500,
+            "location": 118
+          },
+          "deadlocked": 299,
+          "deadlocked_on": {
+            "dark_vivid_red": 144,
+            "light_vivid_yellow": 47,
+            "dark_vivid_orange": 42,
+            "light_vivid_red": 39,
+            "light_muted_orange": 13
+          }
+        },
+        "light_vivid_purple": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 31,
+          "short": 0,
+          "clearing": 346,
+          "refused_by": {
+            "cell_allowance": 235,
+            "location": 57,
+            "spiral": 17,
+            "twin": 3,
+            "the_leg_had_no_seat_left": 2,
+            "the_view_did_not_reach_it": 1
+          },
+          "deadlocked": 235,
+          "deadlocked_on": {
+            "dark_vivid_purple": 125,
+            "dark_vivid_blue": 103,
+            "dark_vivid_azure": 5,
+            "dark_muted_blue": 2
+          }
+        },
+        "light_vivid_red": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 638,
+          "refused_by": {
+            "cell_allowance": 452,
+            "location": 135
+          },
+          "deadlocked": 275,
+          "deadlocked_on": {
+            "dark_vivid_red": 196,
+            "light_vivid_orange": 28,
+            "dark_muted_red": 23,
+            "light_muted_orange": 13,
+            "dark_vivid_magenta": 5
+          }
+        },
+        "light_vivid_rose": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 427,
+          "refused_by": {
+            "cell_allowance": 279,
+            "location": 97
+          },
+          "deadlocked": 167,
+          "deadlocked_on": {
+            "dark_vivid_rose": 103,
+            "dark_vivid_magenta": 56,
+            "dark_vivid_red": 4,
+            "light_vivid_red": 2,
+            "dark_vivid_purple": 1
+          }
+        },
+        "light_vivid_teal": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 16,
+          "short": 0,
+          "clearing": 29,
+          "refused_by": {
+            "cell_allowance": 5,
+            "spiral": 4,
+            "location": 4
+          },
+          "deadlocked": 5,
+          "deadlocked_on": {
+            "light_muted_teal": 4,
+            "dark_vivid_azure": 1
+          }
+        },
+        "light_vivid_yellow": {
+          "floor": 16,
+          "allowance": 51,
+          "seated": 51,
+          "short": 0,
+          "clearing": 320,
+          "refused_by": {
+            "cell_allowance": 209,
+            "location": 60
+          },
+          "deadlocked": 129,
+          "deadlocked_on": {
+            "light_vivid_orange": 83,
+            "dark_vivid_red": 20,
+            "dark_vivid_orange": 13,
+            "light_vivid_red": 8,
+            "light_muted_yellow": 3
+          }
+        }
+      }
+    },
+    "families": {
+      "held": 12,
+      "over_allowance": {},
+      "counts": {
+        "orange": 118,
+        "blue": 116,
+        "red": 107,
+        "rose": 101,
+        "purple": 99,
+        "magenta": 95,
+        "azure": 84,
+        "teal": 77,
+        "yellow": 75,
+        "cyan": 74,
+        "green": 67,
+        "lime": 26
+      }
+    },
+    "groups": {
+      "held": 397,
+      "cap": 20,
+      "realized_max": 12,
+      "at_the_cap": 0,
+      "counts_top20": {
+        "map:cmr.gothic": 12,
+        "map:Deep Rose Vault": 9,
+        "map:Furnace Rose": 9,
+        "map:fractal_flowers_abstract_104352_2560x1600": 9,
+        "map:RdBu": 7,
+        "map:torque-25": 7,
+        "m31": 6,
+        "map:Chalcedony": 6,
+        "map:RdPu": 6,
+        "map:cmr.voltage": 6,
+        "map:glowdon": 6,
+        "map:river-of-light-25": 6,
+        "m03": 5,
+        "m21": 5,
+        "m43": 5,
+        "map:PRGn": 5,
+        "map:abstract-3d-wallpapers": 5,
+        "map:abstract-wallpaper-backgrounds-hd": 5,
+        "map:amazing-25": 5,
+        "map:cmr.iceburn": 5
+      },
+      "over_cap": {}
+    },
+    "refusals_while_choosing": {
+      "cell_allowance": 2189,
+      "location": 1117,
+      "spiral": 901,
+      "twin": 377,
+      "group_cap": 0,
+      "family_allowance": 0,
+      "mode_ceiling": 0,
+      "picture_unreadable": 0
+    },
+    "read": "a shortfall here is `this leg did not find it`, never `the pool does not hold it`. The only infeasibility claims are the census's necessary conditions"
+  },
+  "counts": {
+    "mode": {
+      "smooth": 800
+    },
+    "hue_family": {
+      "blue": 92,
+      "orange": 89,
+      "red": 82,
+      "rose": 80,
+      "purple": 75,
+      "magenta": 72,
+      "yellow": 63,
+      "azure": 58,
+      "cyan": 56,
+      "teal": 56,
+      "green": 55,
+      "lime": 18,
+      "null": 4
+    },
+    "cell": {
+      "dark_vivid_blue": 35,
+      "dark_vivid_magenta": 35,
+      "dark_vivid_rose": 33,
+      "dark_vivid_purple": 31,
+      "dark_vivid_azure": 30,
+      "light_muted_orange": 28,
+      "light_vivid_orange": 27,
+      "light_vivid_yellow": 27,
+      "light_muted_yellow": 26,
+      "light_vivid_red": 25,
+      "dark_vivid_orange": 23,
+      "light_muted_azure": 23,
+      "light_muted_teal": 22,
+      "dark_vivid_green": 21,
+      "dark_muted_blue": 20,
+      "light_muted_cyan": 20,
+      "light_muted_red": 20,
+      "dark_muted_red": 18,
+      "dark_muted_rose": 18,
+      "dark_muted_teal": 18,
+      "dark_vivid_red": 18,
+      "light_muted_magenta": 18,
+      "dark_muted_purple": 17,
+      "light_vivid_rose": 17,
+      "dark_muted_cyan": 16,
+      "light_muted_green": 16,
+      "light_vivid_cyan": 16,
+      "light_vivid_green": 15,
+      "dark_muted_magenta": 14,
+      "light_muted_purple": 13,
+      "light_vivid_azure": 13,
+      "light_vivid_blue": 13,
+      "light_vivid_purple": 13,
+      "light_muted_blue": 12,
+      "light_muted_rose": 12,
+      "dark_muted_green": 10,
+      "light_muted_lime": 9,
+      "light_vivid_lime": 8,
+      "dark_muted_yellow": 7,
+      "dark_vivid_teal": 7,
+      "dark_muted_orange": 6,
+      "light_vivid_magenta": 6,
+      "light_vivid_teal": 6,
+      "dark_vivid_lime": 5,
+      "dark_vivid_yellow": 5,
+      "dark_muted_azure": 4,
+      "dark_muted_lime": 3,
+      "dark_vivid_cyan": 1
+    },
+    "partition": {
+      "multibrot4": 178,
+      "mandelbrot": 152,
+      "julia:mandelbrot": 100,
+      "julia:multibrot3": 97,
+      "julia:multibrot5": 86,
+      "multibrot3": 62,
+      "multibrot5": 59,
+      "julia:multibrot4": 48,
+      "phoenix": 17,
+      "julia:multibrot6": 1
+    },
+    "centered": {
+      "False": 527,
+      "True": 273
+    },
+    "spiral": {
+      "False": 719,
+      "True": 81
+    }
+  }
+}

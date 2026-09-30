@@ -8,7 +8,7 @@ writes a working directory, and **the website is its only consumer**: `fractal-w
 ships. That module (`builder/atlas.py`) is the contract; this directory writes to it.
 
 ```
-fractal-wallpapers curate atlas                     # the mandelbrot plane, the newest published record
+fractal-wallpapers curate atlas                     # the mandelbrot plane, tentative.latest() (final139_general)
 fractal-wallpapers curate atlas --record <stamp> --radius 12 --out artifacts/atlas/mandelbrot
 fractal-wallpapers curate atlas --no-pictures       # dots.json only, for checking a thinning
 ```
