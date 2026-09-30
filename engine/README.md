@@ -90,12 +90,15 @@ the checkout and from `engine/target/release`. What it reads there is `palettes/
 Julia or Phoenix link without `cx`/`cy` opens at). The levelling band is compiled in from
 `data/coloring/levels_band.json`.
 
-**The parse is the site's, and a fixture says so.** `fixtures/link-cases.json` is 528
+**The parse is the site's, and a fixture says so.** `fixtures/link-cases.json` is 703
 links — gallery seats across every collection and mode, the 31 Deep gallery rows, every
-figure link in the article, and the contracts' corners — each with the view and the
-canonical string, or the refusal, that the site's own modules gave under node. The
-generator travels inside the fixture, with the website commit it ran at;
-`link::tests::the_parsers_are_the_sites` holds every row.
+figure link in the article, and the contracts' corners, `curve` and `knee` among them —
+each with the view and the canonical string, or the refusal, that the site's own modules
+gave under node. The generator travels inside the fixture, with the website commit it ran
+at; `link::tests::the_parsers_are_the_sites` holds every row, the view's `curve` included.
+A link's `curve` is the site's: read wherever it is not the mode's catalog curve, written
+back the same way, and `render-link` draws through it (`link::with_curve`), refusing one
+under a direct trap as the explorer's module does *(link_fidelity_ckpt157)*.
 
 **Against the pipeline it is a tolerance, not an identity — and measured, it is zero.**
 The pipeline bakes a levelled map from stops rounded to nine decimals and read back

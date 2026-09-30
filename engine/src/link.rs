@@ -752,8 +752,10 @@ fn tagged(
     }
 }
 
-/// The shade keys a canonical link writes: the ones that are not the engine's default.
-fn emit_shade(palette: &Palette, parts: &mut Vec<String>) {
+/// The shade keys a canonical link writes: the ones that are not the engine's default, and
+/// the scale wherever `scale_stated` says the link named one — `deep-link.js`'s
+/// `scaleStated`, since a deep link that names no scale asks for the arrival fit.
+fn emit_shade(palette: &Palette, scale_stated: bool, parts: &mut Vec<String>) {
     let defaults = Palette::default();
     let mut push = |key: &str, value: String| parts.push(format!("{key}={}", encode(&value)));
     if palette.gamma != defaults.gamma {
@@ -784,6 +786,8 @@ fn emit_shade(palette: &Palette, parts: &mut Vec<String>) {
     }
     if palette.scale == Scale::Absolute {
         push("scale", "absolute".into());
+    } else if scale_stated {
+        push("scale", "leveled".into());
     }
     if palette.lambda != defaults.lambda {
         push("lambda", js_number(palette.lambda));
@@ -901,6 +905,74 @@ fn read_level_under(query: &Query, palette: &Palette) -> Result<Option<Curve>, S
     })
 }
 
+// ---------------------------------------------------------------- the curve
+
+/// `permalink.js`'s `CURVE_KEY`: the curve a mode reads its field through, where it is not
+/// the catalog's. Not a version: every link that read before reads the same.
+const CURVE_KEY: &str = "curve";
+
+/// `FIELD_CURVES`: `coloring::Transform`, in its own spelling and its own order.
+const FIELD_CURVES: [(&str, coloring::Transform); 4] = [
+    ("linear", coloring::Transform::Linear),
+    ("sqrt", coloring::Transform::Sqrt),
+    ("log", coloring::Transform::Log),
+    ("scurve", coloring::Transform::Scurve),
+];
+
+fn curve_name(curve: coloring::Transform) -> &'static str {
+    FIELD_CURVES
+        .iter()
+        .find(|(_, one)| *one == curve)
+        .map(|(name, _)| *name)
+        .expect("every transform has a spelling")
+}
+
+/// The curve a mode's catalog coloring reads its field through: `builder/explorer.py`'s
+/// `curves`, which bakes `catalog.js`'s `CURVES` — a field coloring's own transform, and
+/// `linear` for a composite, a modulate or a direct trap, which carry none of their own.
+fn catalog_curve(mode: &str) -> Result<coloring::Transform, String> {
+    Ok(match mode::resolve(mode, None)? {
+        coloring::Coloring::Field { transform, .. } => transform,
+        _ => coloring::Transform::Linear,
+    })
+}
+
+/// `readCurve` then `heldCurve`: a curve the link spells, or the refusal; `None` wherever
+/// it is the mode's own, so a link spelling the catalog's curve and one saying nothing
+/// are one view.
+fn read_curve(text: Option<&str>, mode: &str) -> Result<Option<coloring::Transform>, String> {
+    let Some(text) = text else { return Ok(None) };
+    let curve = FIELD_CURVES
+        .iter()
+        .find(|(name, _)| *name == text)
+        .map(|(_, curve)| *curve)
+        .ok_or_else(|| format!("the curve has to be linear, sqrt, log or scurve, not {text}."))?;
+    Ok((curve != catalog_curve(mode)?).then_some(curve))
+}
+
+/// A resolved coloring with a link's curve written in, where the link carries one: the
+/// explorer module's `with_curve`, so that `render-link` draws a `curve=` link through the
+/// curve it names. A direct trap reads no field, so a curve under one is refused rather
+/// than drawn unchanged — a knob that silently did nothing would look like one that worked.
+pub fn with_curve(
+    coloring: &mut coloring::Coloring,
+    curve: Option<coloring::Transform>,
+) -> Result<(), String> {
+    let Some(curve) = curve else { return Ok(()) };
+    match coloring {
+        coloring::Coloring::Field { transform, .. } => *transform = curve,
+        coloring::Coloring::Composite { base, .. } | coloring::Coloring::Modulate { base, .. } => {
+            base.transform = curve
+        }
+        _ => {
+            return Err(
+                "a direct trap reads no field, so there is no curve to read it through".into(),
+            );
+        }
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------- the shallow view
 
 /// A shallow link, as `permalink.js`'s `parse` returns it.
@@ -912,6 +984,8 @@ pub struct ShallowView {
     pub mode: &'static str,
     /// By the name the link gives each; emitted in the mode's own order.
     pub params: BTreeMap<String, f64>,
+    /// The link's `curve`, or `None` where it is the mode's own.
+    pub curve: Option<coloring::Transform>,
     pub x: Coordinate,
     pub y: Coordinate,
     pub w: Coordinate,
@@ -996,7 +1070,10 @@ pub fn parse_shallow(search: &str, context: &Context) -> Result<ShallowView, Str
                     .into(),
             );
         }
-        let known = ["v", "f", "m", "x", "y", "w", "n", "a", "p", "level"].contains(key)
+        let known = [
+            "v", "f", "m", CURVE_KEY, "x", "y", "w", "n", "a", "p", "level",
+        ]
+        .contains(key)
             || constant_keys(family).contains(key)
             || wanted.contains(key)
             || SHADE_KEYS.contains(key)
@@ -1076,6 +1153,7 @@ pub fn parse_shallow(search: &str, context: &Context) -> Result<ShallowView, Str
             .ok_or_else(|| format!("the catalog has no settled {derived} for {mode}"))?;
         params.insert(derived.to_string(), *value);
     }
+    let curve = read_curve(query.get(CURVE_KEY), mode)?;
 
     // The site checks the palette before the shade and the shade before the fold; which
     // refusal a link meets first changes its sentence and never whether it is refused.
@@ -1088,6 +1166,7 @@ pub fn parse_shallow(search: &str, context: &Context) -> Result<ShallowView, Str
         constants,
         mode,
         params,
+        curve,
         x,
         y,
         w,
@@ -1108,6 +1187,7 @@ fn fresh(context: &Context) -> Result<ShallowView, String> {
         constants: BTreeMap::new(),
         mode: MODES[0],
         params: BTreeMap::new(),
+        curve: None,
         x,
         y,
         w,
@@ -1138,6 +1218,9 @@ impl ShallowView {
                 parts.push(format!("{key}={}", encode(&js_number(value))));
             }
         }
+        if let Some(curve) = self.curve {
+            parts.push(format!("{CURVE_KEY}={}", curve_name(curve)));
+        }
         for (key, coordinate, home) in [
             ("x", &self.x, &home_x),
             ("y", &self.y, &home_y),
@@ -1156,7 +1239,7 @@ impl ShallowView {
             parts.push(format!("a={}:{}", self.aspect.0, self.aspect.1));
         }
         parts.push(format!("p={}", encode(&self.palette)));
-        emit_shade(&self.shade, &mut parts);
+        emit_shade(&self.shade, false, &mut parts);
         emit_level(&self.level, &self.shade, &mut parts);
         Ok(parts.join("&"))
     }
@@ -1320,6 +1403,10 @@ pub struct DeepView {
     pub palette: String,
     pub shade: Palette,
     pub level: Option<Curve>,
+    /// Whether the link named its `scale`: `deep-link.js`'s `canonicalize` keeps stating
+    /// a scale that was stated, `leveled` included, and adds none to a link that asked for
+    /// the arrival fit by naming none *(deep_leveled_link_and_recolour_ckpt150)*.
+    pub scale_stated: bool,
 }
 
 const DEEP_KNOWN: [&str; 11] = ["dv", "f", "cx", "cy", "x", "y", "w", "n", "a", "p", "level"];
@@ -1452,6 +1539,7 @@ pub fn parse_deep(search: &str, context: &Context) -> Result<DeepView, String> {
         palette,
         shade,
         level,
+        scale_stated: query.has("scale"),
     })
 }
 
@@ -1486,7 +1574,7 @@ impl DeepView {
             parts.push(format!("a={}:{}", self.aspect.0, self.aspect.1));
         }
         parts.push(format!("p={}", encode(&self.palette)));
-        emit_shade(&self.shade, &mut parts);
+        emit_shade(&self.shade, self.scale_stated, &mut parts);
         emit_level(&self.level, &self.shade, &mut parts);
         parts.join("&")
     }
@@ -1685,6 +1773,31 @@ mod tests {
         assert_eq!(query_of("v=4&p=viridis"), "v=4&p=viridis");
     }
 
+    /// A `curve` link draws through its curve: written into a field coloring and a
+    /// composite's base, and refused under a direct trap, which reads no field.
+    #[test]
+    fn a_curve_is_written_into_the_coloring_it_reads() {
+        use coloring::{Coloring, Transform};
+        let mut field = mode::resolve("smooth", None).unwrap();
+        with_curve(&mut field, Some(Transform::Sqrt)).unwrap();
+        assert!(matches!(
+            field,
+            Coloring::Field {
+                transform: Transform::Sqrt,
+                ..
+            }
+        ));
+        let mut composite = mode::resolve("smooth_mean_angle", None).unwrap();
+        with_curve(&mut composite, Some(Transform::Scurve)).unwrap();
+        let Coloring::Composite { base, .. } = &composite else {
+            panic!("a composite")
+        };
+        assert_eq!(base.transform, Transform::Scurve);
+        let mut direct = mode::resolve("direct_trap_ring", None).unwrap();
+        assert!(with_curve(&mut direct, Some(Transform::Sqrt)).is_err());
+        assert!(with_curve(&mut direct, None).is_ok());
+    }
+
     /// `knee` is read under the absolute scale and written back as it was, dropped under
     /// leveled, and refused anywhere but above zero, on either contract.
     #[test]
@@ -1761,6 +1874,11 @@ mod tests {
                     let params: BTreeMap<String, f64> =
                         serde_json::from_value(view["params"].clone()).unwrap();
                     assert_eq!(ours.params, params, "{query}: params");
+                    assert_eq!(
+                        ours.curve.map(curve_name),
+                        view["curve"].as_str(),
+                        "{query}: curve"
+                    );
                     assert_eq!(
                         ours.maxiter.map(u64::from),
                         view["maxiter"].as_u64(),

@@ -734,7 +734,7 @@ fn render_link(args: &[String]) -> Result<(), String> {
         ));
     }
 
-    let spec = view
+    let mut spec = view
         .render_spec(
             args.size,
             args.supersample,
@@ -742,6 +742,10 @@ fn render_link(args: &[String]) -> Result<(), String> {
             args.output.clone(),
         )
         .resolve()?;
+    // The link's `curve`, where it names one that is not the mode's own: written into the
+    // resolved coloring the way the explorer's module writes it, or refused under a direct
+    // trap the way that module refuses it.
+    link::with_curve(&mut spec.coloring, view.curve)?;
     // The operator's own `applies_to`: a replayed curve on a coloring it never acts on
     // is a decision no run took, and the explorer's module refuses it the same way.
     if view.level.is_some()
