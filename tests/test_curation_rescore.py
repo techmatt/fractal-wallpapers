@@ -13,7 +13,8 @@ import json
 
 import pytest
 
-from fractal_wallpapers.curation import records, rescore, run_layout
+from fractal_wallpapers import paths
+from fractal_wallpapers.curation import records, rescore
 
 
 def released(run: str, candidate: str, head: str, **scores) -> dict:
@@ -39,7 +40,10 @@ def test_the_picture_is_the_candidate_render_and_not_the_release_png() -> None:
     row = released("run9", "0007", "smooth_render")
     where = rescore.picture_of(row)
     assert where.name == "0007.jpg"
-    assert where.parent == run_layout.run_dir("run9") / rescore.PICTURES
+    # Through the tiers, not the run directory: a pool picture is answered per file,
+    # from its archive mirror once its hot copy is gone.
+    assert where == paths.under("curation", "runs", "run9", rescore.PICTURES, "0007.jpg")
+    assert where.parent.parent.name == "run9"
     assert where.parent.name == "pictures"
 
 
@@ -50,7 +54,10 @@ def test_a_gallery_seat_reads_the_picture_of_the_run_that_made_it() -> None:
     row["source"] = {"run": "run9", "candidate": "0007", "key": "run9|release|0007"}
     where = rescore.picture_of(row)
     assert where.name == "0007.jpg"
-    assert where.parent == run_layout.run_dir("run9") / rescore.PICTURES
+    # Through the tiers, not the run directory: a pool picture is answered per file,
+    # from its archive mirror once its hot copy is gone.
+    assert where == paths.under("curation", "runs", "run9", rescore.PICTURES, "0007.jpg")
+    assert where.parent.parent.name == "run9"
 
 
 @pytest.fixture
