@@ -2198,10 +2198,21 @@ robocopy "<archive>\<name>" "<hot>\<name>" /E
 ```
 
 Two rules hold on the way out. **`artifacts/curation/` never goes** — it stays on
-the hot tier entire, pictures pruned in place under the retention policy rather
-than moved. And a tree only leaves after a copy is verified equal on **both** file
-count and byte sum, because the sources are deleted afterwards and a short copy is
-silent.
+the hot tier, pictures pruned in place under the retention policy. And a tree only
+leaves after a copy is verified equal on **both** file count and byte sum, because
+the sources are deleted afterwards and a short copy is silent.
+
+**The pool pictures are the one exception, file by file, since 2026-09-30.** Every
+candidate JPEG a ledger row names, outside every kept record and pin and with no
+levelled colormap beside it, was copied to `<archive>/pool_pictures/<group>/<leg>/
+pictures/` and its hot copy deleted: `storage pictures archive`, then `storage
+pictures prune-hot --apply`, with `<archive>/pool_pictures/moved.jsonl` the record
+of what moved. Nothing re-spells a record: `paths.Tiers.resolve` answers a picture
+from its hot copy first and its mirror second. **What that costs a mine that
+reopens**: a `curate solve` over the pool reads the mirror's directory listings off
+the USB disk, and a training pass over mirrored pictures is refused by
+`require_hot` — restore the pictures it needs before it trains. With the disk
+unplugged a pool read raises `ArchiveUnreachable`, never a smaller pool.
 
 ## Every release render carries its explorer link
 

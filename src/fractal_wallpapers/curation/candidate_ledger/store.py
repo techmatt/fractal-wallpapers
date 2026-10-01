@@ -276,23 +276,35 @@ def present_pictures(rows=None) -> set:
 
     A row that names nothing, or whose name has no artifacts component for
     `rehome` to read, is absent — there is no picture either way.
+
+    **A pool picture is present in either place it can be**: its hot directory or
+    its archive mirror (`paths`' *The one name finer than a top-level name*). The
+    mirror is listed only for the rows the hot listing missed, and asking it with
+    the archive unplugged raises `ArchiveUnreachable` rather than answering absent
+    — a pool that silently shrank to its hot pictures is the failure this guards.
     """
     import os
     from collections import defaultdict
 
-    from fractal_wallpapers.paths import Tiers, rehome
+    from fractal_wallpapers.paths import Tiers, is_pool_picture, stored_parts
 
     stored = read() if rows is None else rows
     tiers = Tiers.current()
     homed: dict = {}
+    mirrors: dict = {}
     wanted: dict = defaultdict(set)
     for row in stored:
         named = row.get("picture")
         if not named:
             continue
-        where = rehome(named, tiers)
-        if where is None:
+        parts = stored_parts(named)
+        if parts is None:
             continue
+        # In place, not `rehome`: `rehome` answers a pool picture per file, and
+        # this answers the whole pool with one listing per directory instead.
+        where = tiers.in_place(parts)
+        if is_pool_picture(parts):
+            mirrors[str(row["key"])] = parts
         # **Split to strings once, here.** `where.parent` builds a whole new
         # `Path` and then hashing it to key a dict normalizes the case of every
         # component — and the old spelling did both TWICE a row, once to fill
@@ -305,13 +317,27 @@ def present_pictures(rows=None) -> set:
         homed[str(row["key"])] = (directory, base)
         wanted[directory].add(base)
 
-    listing: dict = {}
-    for directory in wanted:
-        try:
-            listing[directory] = {entry.name for entry in os.scandir(directory)}
-        except OSError:
-            listing[directory] = set()
-    return {key for key, (directory, base) in homed.items() if base in listing.get(directory, ())}
+    def listed(directories) -> dict:
+        found: dict = {}
+        for directory in directories:
+            try:
+                found[directory] = {entry.name for entry in os.scandir(directory)}
+            except OSError:
+                found[directory] = set()
+        return found
+
+    listing = listed(wanted)
+    present = {key for key, (folder, base) in homed.items() if base in listing.get(folder, ())}
+    missed = defaultdict(set)
+    for key in mirrors.keys() - present:
+        directory, _, base = str(tiers.mirror(mirrors[key])).rpartition(os.sep)
+        missed[directory].add(key)
+        homed[key] = (directory, base)
+    listing = listed(missed)
+    present |= {
+        key for keys in missed.values() for key in keys if homed[key][1] in listing[homed[key][0]]
+    }
+    return present
 
 
 # --------------------------------------------------------------------------- #

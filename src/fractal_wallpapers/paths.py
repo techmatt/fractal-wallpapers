@@ -30,6 +30,20 @@ in both tiers is refused rather than silently preferred, because a stale copy
 that quietly wins is the one failure a two-tier store can have that nobody sees.
 `storage archive` and `storage restore` move a name between the tiers.
 
+## The one name finer than a top-level name: a pool picture
+
+`curation` is the live pool and never leaves the hot tier, yet nearly all of its
+bytes are candidate pictures nothing reads between mines. So those pictures, one
+file at a time, have an **archive mirror** under a top-level name of their own:
+`curation/<group>/<leg>/pictures/<file>` may also be at
+`pool_pictures/<group>/<leg>/pictures/<file>`, and that second name tiers like any
+other. Records keep naming the first spelling; `Tiers.resolve` answers it from the
+hot copy where there is one and from the mirror where there is not. Hot wins
+because every write lands hot, so a hot copy is never older than a mirrored one.
+A picture whose hot copy is gone, with the archive configured and unplugged,
+raises `ArchiveUnreachable` — the same refusal as any archived name, for the same
+reason. `storage pictures` makes the mirror and is the only thing that writes it.
+
 ## Records name the tree, never the disk
 
 Because the roots are settings, records that name a file under the tree are
@@ -96,6 +110,21 @@ RETIRED_ROOT_VARIABLE = "FRACTAL_WALLPAPERS_ARTIFACTS_ROOT"
 #: What each tier is called wherever one is printed or recorded.
 HOT = "hot"
 ARCHIVE = "archive"
+
+#: The pool's top-level name, the directory every leg keeps its candidates in, and
+#: the top-level name their archive mirror lives under. A stored name of the shape
+#: `curation/<group>/<leg>/pictures/<file>` is a pool picture; see the module's
+#: *The one name finer than a top-level name*.
+POOL_NAME = "curation"
+POOL_PICTURES_DIR = "pictures"
+POOL_PICTURES_NAME = "pool_pictures"
+
+#: How many lookups one snapshot answers by `stat` in a pictures directory before
+#: it lists the directory once and answers from the listing. A lone lookup — a
+#: thumbnail, a seat — pays one stat; a pass over a leg pays one `scandir`. Both
+#: sides list: the hot NVMe, where a stat is ~100 us against a listing's ~20 us a
+#: name, and the USB mirror, where an uncached stat is milliseconds.
+LISTING_AFTER = 64
 
 
 class StorageRefusal(RuntimeError):
@@ -262,6 +291,8 @@ class Tiers:
         self.hot = Path(hot)
         self.archive = None if archive is None else Path(archive)
         self._known: dict[str, Path] = {}
+        self._asked: dict[Path, int] = {}
+        self._listed: dict[Path, frozenset] = {}
 
     @classmethod
     def current(cls) -> Tiers:
@@ -333,11 +364,61 @@ class Tiers:
         self._known[unit] = Path(where)
 
     def resolve(self, parts) -> Path:
-        """A relative name inside the tree, addressed against the tier that holds it."""
+        """A relative name inside the tree, addressed against the tier that holds it.
+
+        A pool picture is the one name answered per file rather than per
+        top-level name: its hot copy where there is one, its mirror where there is
+        not, and the hot spelling where neither is — what does not exist yet is
+        made where writes land. Raises `ArchiveUnreachable` only when the hot copy
+        is gone and the mirror is on a disk that is not here.
+        """
+        named = [str(part) for part in parts if str(part) not in ("", ".")]
+        if not named:
+            return self.hot
+        here = self.unit(named[0]).joinpath(*named[1:])
+        if not is_pool_picture(named) or self._holds(here):
+            return here
+        mirrored = self.mirror(named)
+        return mirrored if self._holds(mirrored) else here
+
+    def in_place(self, parts) -> Path:
+        """Where a name is under its own top-level name, never answered from a mirror.
+
+        For the callers that look at the hot pictures directories as directories:
+        a sweep listing what is on disk, the move filling the mirror from them.
+        """
         named = [str(part) for part in parts if str(part) not in ("", ".")]
         if not named:
             return self.hot
         return self.unit(named[0]).joinpath(*named[1:])
+
+    def mirror(self, parts) -> Path | None:
+        """Where a pool picture, or a pictures directory, sits in the archive mirror.
+
+        `None` for any other name. The mirror is a top-level name like any other,
+        so with the archive unplugged and the mirror not hot this raises
+        `ArchiveUnreachable` — the point of asking is that the hot copy is gone.
+        """
+        named = [str(part) for part in parts if str(part) not in ("", ".")]
+        if not (len(named) in (4, 5) and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR):
+            return None
+        return self.unit(POOL_PICTURES_NAME).joinpath(*named[1:])
+
+    def _holds(self, path: Path) -> bool:
+        """Whether a file is there: a stat for a lone question, a listing for a pass."""
+        directory = path.parent
+        listed = self._listed.get(directory)
+        if listed is None:
+            asked = self._asked.get(directory, 0) + 1
+            self._asked[directory] = asked
+            if asked <= LISTING_AFTER:
+                return path.is_file()
+            try:
+                listed = frozenset(entry.name for entry in os.scandir(directory))
+            except OSError:
+                listed = frozenset()
+            self._listed[directory] = listed
+        return path.name in listed
 
     def names(self) -> list[str]:
         """Every top-level name either tier holds, sorted, without duplicates.
@@ -352,6 +433,29 @@ class Tiers:
         if self.archive_is_reachable:
             found |= {entry.name for entry in self.archive.iterdir()}
         return sorted(found)
+
+
+def is_pool_picture(named) -> bool:
+    """Whether a name below the tree is `curation/<group>/<leg>/pictures/<file>`.
+
+    Exactly that depth: a leg's `fields/`, a `.leveled/` directory's contents and
+    every other file under `curation` are not pool pictures and have no mirror.
+    """
+    return len(named) == 5 and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR
+
+
+def stored_parts(stored) -> list[str] | None:
+    """The components of a stored name below its artifacts component, or `None`.
+
+    `rehome`'s reading of a record's path, for a caller that wants the name
+    without resolving it — a batch that lists directories rather than stat-ing
+    files.
+    """
+    parts = str(stored).replace("\\", "/").split("/")
+    for index in range(len(parts) - 1, -1, -1):
+        if parts[index] == ARTIFACTS_NAME:
+            return [part for part in parts[index + 1 :] if part not in ("", ".")]
+    return None
 
 
 def under(*parts) -> Path:

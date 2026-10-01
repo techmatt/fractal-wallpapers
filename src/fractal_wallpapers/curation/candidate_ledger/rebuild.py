@@ -54,9 +54,12 @@ def sources() -> list[dict]:
 
 def _picture_of(source: dict) -> Path:
     """Where one row's own candidate render is, whether or not it is still there."""
-    from fractal_wallpapers.curation import rescore, run_layout
+    from fractal_wallpapers.curation import rescore
+    from fractal_wallpapers.paths import under
 
-    return run_layout.run_dir(str(source["run"])) / rescore.PICTURES / f"{source['candidate']}.jpg"
+    # The whole name, so an archived pool picture resolves to its mirror.
+    run = str(source["run"])
+    return under("curation", "runs", run, rescore.PICTURES, f"{source['candidate']}.jpg")
 
 
 def renders_of(everything: list) -> tuple[dict, dict]:

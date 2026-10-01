@@ -64,7 +64,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers import paths
-from fractal_wallpapers.curation import records, run_layout
+from fractal_wallpapers.curation import records
 
 #: The prose this module's records carry on their `*_is` / `*_are` fields, in
 #: one place. The builder reads it at write time and the row still carries the
@@ -137,7 +137,10 @@ def picture_of(row: dict, pool: dict | None = None):
     in one pass's pool twice.
     """
     run, candidate = origin_of(row, pool)
-    return run_layout.run_dir(run) / PICTURES / f"{candidate}.jpg"
+    # The whole name through the tiers, not a resolved run directory plus a file:
+    # a pool picture is answered per file, from its archive mirror once its hot
+    # copy is gone (`paths`' *The one name finer than a top-level name*).
+    return paths.under("curation", "runs", str(run), PICTURES, f"{candidate}.jpg")
 
 
 @functools.cache

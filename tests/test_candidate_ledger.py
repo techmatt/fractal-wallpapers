@@ -600,6 +600,7 @@ def test_present_pictures_answers_the_disk_and_not_the_row(tmp_path, monkeypatch
     (root / "run1").mkdir(parents=True)
     (root / "run1" / "here.jpg").touch()
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
 
     rows = [
         _picture_row("a", "artifacts/run1/here.jpg"),
@@ -617,6 +618,7 @@ def test_the_picture_census_counts_the_absent_by_mode_and_by_run(tmp_path, monke
     (root / "run1").mkdir(parents=True)
     (root / "run1" / "here.jpg").touch()
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
 
     rows = [
         _picture_row("a", "artifacts/run1/here.jpg"),
@@ -997,6 +999,7 @@ def test_a_dropped_picture_takes_its_levelled_colormap_with_it(tmp_path, monkeyp
     a_pair(pictures, "dropped")
     a_pair(pictures, "kept")
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
 
     record = candidate_ledger.delete_pictures(
         ["artifacts/curation/depth/a_leg/pictures/dropped.jpg"], log=lambda *_: None
@@ -1022,6 +1025,7 @@ def test_the_colormap_goes_even_where_the_picture_was_already_swept(tmp_path, mo
     a_pair(pictures, "half_gone")
     (pictures / "half_gone.jpg").unlink()
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
 
     record = candidate_ledger.delete_pictures(
         ["artifacts/curation/depth/a_leg/pictures/half_gone.jpg"], log=lambda *_: None
@@ -1040,6 +1044,7 @@ def test_a_name_this_project_did_not_write_reaches_neither_half(tmp_path, monkey
     from fractal_wallpapers import paths
 
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(tmp_path / "artifacts"))
+    monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     (tmp_path / "artifacts").mkdir()
     a_pair(tmp_path / "elsewhere", "a")
 

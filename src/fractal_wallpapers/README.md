@@ -29,6 +29,19 @@ files are — no registry, so nothing to drift. Everything asks through one funn
   `view_dir()`, `cache_dir()` and the rest are all one line of this.
 * **`Tiers`** — a snapshot, for a caller resolving a million rows at once: it
   reads the settings and each subtree's tier once instead of once per row.
+* **A pool picture is the one name answered per file.** `curation` never leaves
+  the hot tier, but since 2026-09-30 its unkept candidate JPEGs live in an archive
+  mirror, `pool_pictures/<group>/<leg>/pictures/<file>`, made by
+  `fractal-wallpapers storage pictures archive` and emptied of hot copies by
+  `storage pictures prune-hot --apply`. Records still name
+  `artifacts/curation/...`; `Tiers.resolve` answers the hot copy where there is one
+  and the mirror where there is not, and `Tiers.in_place` is the hot spelling for a
+  caller that writes. `present_pictures`, `orphans` and `delete_pictures` reach
+  both places. With the archive unplugged, every kept seat still resolves — kept
+  pictures never move — and any picture whose hot copy is gone raises
+  `ArchiveUnreachable`, so a pool read raises instead of shrinking. A training pass
+  over mirrored pictures meets `require_hot`; `paths.py`'s *The one name finer than
+  a top-level name* and `picture_mirror.py` have the rest.
 
 Three refusals, all subclasses of `StorageRefusal`, which `cli.main` catches once
 for every subcommand because each is about the machine rather than about a
@@ -174,7 +187,7 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `artifacts/curation/candidate_ledger/` | the pool itself: `rows.jsonl`, `scores.jsonl`, and the flatness and reduced-signature sidecars |
 | the ten `durability.Durable`s | see below — every one of them is under `artifacts/curation/`, and three are what a run refuses to start without |
 | `artifacts/curation/neutral_embeddings.jsonl` | one neutral-render vector per admitted location; the gallery pass needs a distance |
-| the hot copies under `artifacts/curation/` | `artifacts/curation/` never leaves the hot tier — see [`curation/README.md`](curation/README.md)'s *The archive tier* |
+| the hot copies under `artifacts/curation/` | `artifacts/curation/` never leaves the hot tier — see [`curation/README.md`](curation/README.md)'s *The archive tier*. Its unkept pool pictures are in the archive mirror `pool_pictures/` since 2026-09-30, read through `Tiers.resolve`; the kept seats' pictures stay hot |
 | the tracked release and gate stores, `data/curation/{release,gate}/` | the live decisions, and half of `orphans`' reference set |
 | `artifacts/reframe_g1` … `g12` | the reframing chain's ledgers — eleven legs, there is no `g3`. `discovered_priors` reads every one as a prior, so losing a leg is re-finding its atoms |
 | `artifacts/curation/tentative/<stamp>/` | **the records `tentative.kept()` names**, published or not — `PUBLISHED` plus `KEPT_UNPUBLISHED`. Since 2026-09-13 that list is the whole input to `tentative.protected_keys()`; before it the sweep was store-wide, so a record merely existing pinned its seats and deleting it was the only release. An off-list record is still readable by naming its stamp and pins nothing. **Since 2026-09-21 the list is the twenty `final139_*` records** — the general n=1000 and the nineteen collections, seated over the pool as mining closed — and `final140_general2000` beside them. **All twenty-one have been `PUBLISHED` since 2026-09-29** and `KEPT_UNPUBLISHED` is empty: a clone arrives holding each one's `gallery.jsonl`, `manifest.json` and `recipes.jsonl`, all twenty-one whole — and `tentative.latest()` answers `tentative.DEFAULT`, `final139_general`. `curation/GALLERY.md`'s *The saved set published — twenty-one stamps, 2026-09-29* has the numbers. The sweep that went with the ruling took the store to those twenty plus a separate themed reference, which went on 2026-09-22 when `portable.REFERENCE` was pointed at the kept `final139_green`; the store is now the keep list and nothing else |

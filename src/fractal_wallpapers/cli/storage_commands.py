@@ -124,6 +124,27 @@ def storage_import(args: argparse.Namespace) -> int:
     return 0
 
 
+def storage_pictures(args: argparse.Namespace) -> int:
+    """The pool pictures' archive mirror: copy, verify, delete the hot copies, look."""
+    from fractal_wallpapers import picture_mirror
+
+    if args.action == "plan":
+        from fractal_wallpapers.paths import Tiers
+
+        moving = picture_mirror.plan(Tiers.current())
+        report = {"pictures": len(moving), "bytes": sum(row["bytes"] for row in moving)}
+    elif args.action == "archive":
+        report = picture_mirror.archive()
+    elif args.action == "verify":
+        report = picture_mirror.verify()
+    elif args.action == "prune-hot":
+        report = picture_mirror.prune_hot(apply=args.apply)
+    else:
+        report = picture_mirror.status()
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def add_commands(subcommands) -> None:
     """The two tiers: what is where, and moving a subtree between them."""
     storing = subcommands.add_parser(
@@ -184,6 +205,26 @@ def add_commands(subcommands) -> None:
         help="tiers only. Walking a million files for their sizes is minutes on the archive",
     )
     showing.set_defaults(handler=storage_status)
+
+    picturing = steps.add_parser(
+        "pictures",
+        help="the pool pictures' archive mirror: plan, archive, verify, prune-hot, status",
+        description=(
+            "`curation` never leaves the hot tier, but its candidate pictures can: each one a "
+            "ledger row names, outside every kept record and pin, is copied to the same place "
+            "under pool_pictures/ on the archive, and every reader finds it there once its hot "
+            "copy is gone. `archive` copies and verifies and deletes nothing; `prune-hot` "
+            "deletes the hot copies, re-checking each against its mirror, and only with "
+            "--apply. `picture_mirror.py` has the rules."
+        ),
+    )
+    picturing.add_argument("action", choices=("plan", "archive", "verify", "prune-hot", "status"))
+    picturing.add_argument(
+        "--apply",
+        action="store_true",
+        help="prune-hot only: delete. Without it prune-hot says what it would delete",
+    )
+    picturing.set_defaults(handler=storage_pictures)
 
     exporting = steps.add_parser(
         "export",

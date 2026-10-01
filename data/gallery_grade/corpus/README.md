@@ -54,7 +54,10 @@ re-home across tiers. The reason that is acceptable is the freeze and not the
 re-homing: the alternative is re-taking a sha256 whose whole stated purpose is *this
 is the file the column was fitted on, byte for byte*, and a checksum re-taken after
 an edit says nothing. The `curation` subtree these point into can never move anyway —
-`CLAUDE.md`'s three-way decision names it as the live pool.
+`CLAUDE.md`'s three-way decision names it as the live pool. Its pictures can, file by
+file, into the archive mirror (`paths.py`'s *The one name finer than a top-level
+name*), and these rows still resolve there because `rehome` reads the part below
+`artifacts` whatever drive letter precedes it.
 
 **The target is not the row's own grade.** `population.jsonl`'s `score` is the verdict
 as cast; the band trains on `targets.json`'s per-render **`raw`**, which is the same

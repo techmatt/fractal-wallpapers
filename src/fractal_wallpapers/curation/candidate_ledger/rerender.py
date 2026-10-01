@@ -18,7 +18,7 @@ from pathlib import Path
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import SCHEMA
-from fractal_wallpapers.paths import Tiers, rehome, tracked_name, under
+from fractal_wallpapers.paths import Tiers, rehome, stored_parts, tracked_name, under
 
 #: Every progress and ETA line here goes out through this: `print` with the flush
 #: forced. **A leg is run backgrounded with stdout redirected to a file, and on
@@ -544,7 +544,11 @@ def re_render(
         if again != str(row["key"]):
             refused.append({"key": str(row["key"]), "the_render_path_would_make": again})
             continue
-        where = rehome(str(row["picture"]), tiers)
+        # In place, never through `rehome`: a write lands hot, and a picture whose
+        # hot copy was archived would otherwise be redrawn onto its mirror. The new
+        # hot copy wins over the old mirrored one by the resolver's own rule.
+        parts = stored_parts(str(row["picture"]))
+        where = None if parts is None else tiers.in_place(parts)
         if where is None:
             refused.append({"key": str(row["key"]), "why": "the stored name is not under the tree"})
             continue

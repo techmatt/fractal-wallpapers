@@ -48,7 +48,13 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
     SCHEMA,
     LedgerError,
 )
-from fractal_wallpapers.paths import rehome, tracked_name, under
+from fractal_wallpapers.paths import (
+    is_pool_picture,
+    rehome,
+    stored_parts,
+    tracked_name,
+    under,
+)
 
 #: The prose this module's records carry on their `*_is` fields, in one place.
 #: The builder reads it at write time and the row still carries the sentence
@@ -418,6 +424,29 @@ def picture_dirs() -> list[Path]:
     return found
 
 
+def mirror_dirs() -> list[Path]:
+    """Every `<pool subtree>/<leg>/pictures` in the pool pictures' archive mirror.
+
+    The same fixed shape as [`picture_dirs`], under `pool_pictures` rather than
+    `curation`. Raises `ArchiveUnreachable` with the archive configured and
+    unplugged: a sweep that listed only the hot half would read every mirrored
+    picture's hot directory as the whole of what there is.
+    """
+    from fractal_wallpapers.paths import Tiers
+
+    tiers = Tiers.current()
+    found = []
+    for name in POOL_SUBTREES:
+        base = tiers.mirror(("curation", name, "-", PICTURES_NAME)).parent.parent
+        if not base.is_dir():
+            continue
+        for leg in sorted(base.iterdir()):
+            where = leg / PICTURES_NAME
+            if where.is_dir():
+                found.append(where)
+    return found
+
+
 # --------------------------------------------------------------------------- #
 # The declaration a sweep leaves behind, and the two merges that read it.
 # --------------------------------------------------------------------------- #
@@ -622,13 +651,19 @@ def _named_by_a_store(tiers) -> tuple[dict, set, dict]:
         stored = row.get("picture")
         if not stored:
             continue
-        where = rehome(str(stored), tiers)
-        if where is None:
+        parts = stored_parts(str(stored))
+        if parts is None:
             continue
         named += 1
-        wanted[where.parent].add(where.name)
-        if row.get("hunt") is not None:
-            stamped.add(where.parent)
+        # Both places a pool picture can be, so a name protects its hot copy and
+        # its archive mirror alike, whichever the reader would be answered from.
+        places = [tiers.in_place(parts)]
+        if is_pool_picture(parts):
+            places.append(tiers.mirror(parts))
+        for where in places:
+            wanted[where.parent].add(where.name)
+            if row.get("hunt") is not None:
+                stamped.add(where.parent)
 
     decisions, reference = _decision_rows(tiers)
     reference = {"candidate_ledger": named, **reference}
@@ -642,9 +677,16 @@ def _named_by_a_store(tiers) -> tuple[dict, set, dict]:
         run, candidate = rescore.origin_of(row, pool)
         home = homes.get(run)
         if home is None:
-            home = homes[run] = tiers.resolve(("curation", "runs", run, rescore.PICTURES))
-        wanted[home].add(f"{candidate}.jpg")
-    reference["pictures_named"] = sum(len(held) for held in wanted.values())
+            named_home = ("curation", "runs", run, rescore.PICTURES)
+            home = homes[run] = (tiers.in_place(named_home), tiers.mirror(named_home))
+        for where in home:
+            wanted[where].add(f"{candidate}.jpg")
+    # Counted on the hot side alone: a mirror directory names the same pictures
+    # again, and a picture named is one picture wherever its bytes are.
+    mirror_root = tiers.mirror(("curation", "-", "-", rescore.PICTURES)).parents[2]
+    reference["pictures_named"] = sum(
+        len(held) for where, held in wanted.items() if mirror_root not in where.parents
+    )
     return wanted, stamped, reference
 
 
@@ -785,7 +827,7 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
     unmerged: list = []
     swept_legs: list = []
     unreferenced: Counter = Counter()
-    for where in picture_dirs():
+    for where in picture_dirs() + mirror_dirs():
         # The check at the point of decision, and not carried over from the
         # enumeration. A directory that does not sit under a tier root is not
         # something this may reason about at all, whoever put it in the list.
@@ -863,7 +905,10 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
         # Leg granularity, and the count is per leg because the declaration is:
         # this directory's pictures are gone, and a merge reading its records
         # would name them.
-        taken_from[where.parent] = taken_from.get(where.parent, 0) + len(unnamed)
+        # A mirror directory declares on its hot leg: the leg's records are there,
+        # and so is the merge that would read them.
+        leg = tiers.in_place(("curation", subtree, where.parent.name))
+        taken_from[leg] = taken_from.get(leg, 0) + len(unnamed)
 
     record = {
         "schema": SCHEMA,
@@ -1186,7 +1231,7 @@ def delete_pictures(named, log=print) -> dict:
     of a store somebody has swept before, and a leg that refused to finish over
     one would leave the records ahead of the disk.
     """
-    from fractal_wallpapers.paths import Tiers, rehome
+    from fractal_wallpapers.paths import Tiers, is_pool_picture, rehome, stored_parts
 
     out = {
         "asked": 0,
@@ -1202,29 +1247,43 @@ def delete_pictures(named, log=print) -> dict:
     tiers = Tiers.current()
     for stored in named:
         out["asked"] += 1
-        where = rehome(str(stored), tiers)
-        if where is None:
+        parts = stored_parts(str(stored))
+        if parts is None:
             out["absent"] += 1
             continue
-        try:
-            size = where.stat().st_size
-        except OSError:
-            size = None
-        if size is None:
-            out["absent"] += 1
-        else:
+        # A pool picture is deleted in both places it can be, its hot copy and its
+        # archive mirror, so a prune never strands the one the reader would fall
+        # back to. Asking the mirror with the archive unplugged raises rather than
+        # deleting half a picture.
+        places = (
+            [tiers.in_place(parts), tiers.mirror(parts)]
+            if is_pool_picture(parts)
+            else [rehome(str(stored), tiers)]
+        )
+        took = failed = 0
+        for where in places:
             try:
-                where.unlink()
-            except OSError as failure:
-                out["unreadable"] += 1
-                log(f"[prune] {where}: {failure!r}")
-            else:
-                out["deleted"] += 1
-                out["bytes"] += size
-        # One call site, past every outcome the JPEG can have. A second one
-        # inside a branch is how the sweep would come to be skipped for exactly
-        # the rows whose picture was already the odd case.
-        _delete_colormap(where, out, log)
+                size = where.stat().st_size
+            except OSError:
+                size = None
+            if size is not None:
+                try:
+                    where.unlink()
+                except OSError as failure:
+                    failed += 1
+                    out["unreadable"] += 1
+                    log(f"[prune] {where}: {failure!r}")
+                else:
+                    took += 1
+                    out["bytes"] += size
+            # One call site, past every outcome the JPEG can have. A second one
+            # inside a branch is how the sweep would come to be skipped for
+            # exactly the rows whose picture was already the odd case.
+            _delete_colormap(where, out, log)
+        if took:
+            out["deleted"] += 1
+        elif not failed:
+            out["absent"] += 1
         if out["deleted"] and out["deleted"] % 25_000 == 0:
             log(f"[prune] {out['deleted']:,} picture(s) deleted, {out['bytes'] / 2**30:.2f} GiB")
     out["gib"] = round(out["bytes"] / 2**30, 3)
