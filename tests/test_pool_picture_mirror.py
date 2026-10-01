@@ -140,3 +140,19 @@ def test_orphans_keeps_a_named_mirror_copy_and_sweeps_an_unnamed_one(roots, monk
     record = sweep.orphans(apply=True, log=lambda *_: None)
     assert record["named_by_nothing"] == 1
     assert named.exists() and not stray.exists()
+
+
+def test_restore_brings_a_picture_back_hot_and_out_of_the_mirror(roots, monkeypatch):
+    hot, cold = roots
+    put(hot, "curation", "a", data=b"a" * 7)
+    rows = [{"key": "a", "picture": STORED.format("a")}]
+    monkeypatch.setattr(candidate_ledger, "stream", lambda: iter(rows))
+    monkeypatch.setattr(picture_mirror, "protected", lambda: (set(), set()))
+    quiet = lambda *_: None  # noqa: E731
+    picture_mirror.archive(log=quiet)
+    picture_mirror.prune_hot(apply=True, log=quiet)
+    out = picture_mirror.restore([STORED.format("a")], log=quiet)
+    assert out["restored"] == 1
+    assert not (cold / "pool_pictures" / "depth" / "leg" / "pictures" / "a.jpg").exists()
+    assert paths.rehome(STORED.format("a")).read_bytes() == b"a" * 7
+    assert picture_mirror.read_moved(paths.Tiers.current()) == []

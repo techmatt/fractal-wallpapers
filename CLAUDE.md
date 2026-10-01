@@ -165,12 +165,17 @@ that came later carry the date of Matt's ruling.
   pure-LF file.
 - **Where a file under `artifacts/` belongs is a three-way decision, made once per
   subtree.** *Hot* (`artifacts/`) is what a live command in the loop reads, and its
-  file count is not a target to drive down. *Archive* (`E:\FractalStorage`,
+  file count is not a target to drive down. *Archive* (`E:\Fractals\FractalStorage`,
   `storage archive <name>`) is finished bulk nothing reads routinely, restored
   before reuse. *Delete* is everything regenerable from what is hot and everything
   unreferenced — if nothing will want a thing back, its builder goes with it. The
   unit of the first two is a **top-level name**, so a subtree that has to move on
   its own is promoted to one first; `curation` can never move, being the live pool.
+  **Its pool pictures are the one exception finer than a name**, since 2026-09-30:
+  `storage pictures` mirrors every unkept candidate JPEG to `pool_pictures/` on the
+  archive, `paths.Tiers.resolve` answers a picture hot-then-mirror, and with the
+  archive unplugged a picture whose hot copy is gone raises rather than reading as
+  absent. `src/fractal_wallpapers/picture_mirror.py` has the rules.
   How the tiers are configured is `src/fractal_wallpapers/README.md`'s *Two roots*.
 - **A picture with no ledger row is garbage, and there is a sweep for it.**
   `curate candidate-ledger orphans` lists by default and deletes with `--apply`;

@@ -139,6 +139,13 @@ def storage_pictures(args: argparse.Namespace) -> int:
         report = picture_mirror.verify()
     elif args.action == "prune-hot":
         report = picture_mirror.prune_hot(apply=args.apply)
+    elif args.action == "restore":
+        if not args.list:
+            raise SystemExit("restore takes --list: a file of stored picture names, one a line")
+        from pathlib import Path
+
+        lines = Path(args.list).read_text(encoding="utf-8").splitlines()
+        report = picture_mirror.restore([line.strip() for line in lines if line.strip()])
     else:
         report = picture_mirror.status()
     print(json.dumps(report, indent=2))
@@ -218,11 +225,19 @@ def add_commands(subcommands) -> None:
             "--apply. `picture_mirror.py` has the rules."
         ),
     )
-    picturing.add_argument("action", choices=("plan", "archive", "verify", "prune-hot", "status"))
+    picturing.add_argument(
+        "action", choices=("plan", "archive", "verify", "prune-hot", "restore", "status")
+    )
     picturing.add_argument(
         "--apply",
         action="store_true",
         help="prune-hot only: delete. Without it prune-hot says what it would delete",
+    )
+    picturing.add_argument(
+        "--list",
+        default=None,
+        help="restore only: a manifest file of stored picture names "
+        "(artifacts/curation/...), one a line, to bring back hot and out of the mirror",
     )
     picturing.set_defaults(handler=storage_pictures)
 

@@ -26,6 +26,17 @@ copies, and re-checks each one against its mirror at the moment of deleting it:
 the mirror file is there and the same size, and the key is still unprotected.
 Between the two a picture is in both places, which is safe because hot wins.
 
+## Restore, for a reader that cannot see the mirror
+
+`restore --list <file>` brings named pictures back hot and out of the mirror, so a
+later `prune-hot` cannot take them again. **The website is that reader**: its
+builder resolves through its own copy of the tiers, which has no mirror, and its
+figures pin seats of records that are not on the keep list. Fifty-six such seats'
+pictures went to the mirror on 2026-09-30, `builder check`'s `seats` went red, and
+they were restored. A new `archive` run plans them again — it reads protection off
+`tentative.protected_keys()`, which those records are not in — so the run after
+the next mine re-checks `builder check` before `prune-hot`.
+
 ## The record
 
 `<archive>/pool_pictures/moved.jsonl`, one row a picture moved: the stored name,
@@ -362,6 +373,48 @@ def prune_hot(apply: bool = False, log=print) -> dict:
     return out
 
 
+def restore(named, log=print) -> dict:
+    """Bring these pictures back to the hot tier, whole: copy, check, then drop the mirror.
+
+    `named` is stored names (`artifacts/curation/...`). Each is copied back hot, its
+    size checked against the record, and only then is its mirror copy deleted and
+    its row dropped from the record — so a restored picture is an ordinary hot
+    picture again, and `prune-hot` will not take it a second time. The reason to
+    use it is a reader outside this package that cannot see the mirror: the
+    website's figures resolve through their own copy of the tiers.
+    """
+    tiers = _reachable_tiers()
+    rows = read_moved(tiers)
+    wanted = {"/".join(["artifacts", *stored_parts(name)]) for name in named}
+    mirror_root = tiers.archive / POOL_PICTURES_NAME
+    out = {"asked": len(wanted), "restored": 0, "bytes": 0, "not_mirrored": 0}
+    keep = []
+    for row in rows:
+        stored = "/".join(["artifacts", *stored_parts(row["picture"])])
+        if stored not in wanted:
+            keep.append(row)
+            continue
+        wanted.discard(stored)
+        parts = stored_parts(stored)
+        source, target = mirror_root.joinpath(*parts[1:]), tiers.in_place(parts)
+        if not target.is_file():
+            _copy_one(source, target)
+        if target.stat().st_size != row["bytes"]:
+            raise MirrorError(f"{target} came back at the wrong size; the mirror copy is kept")
+        source.unlink()
+        out["restored"] += 1
+        out["bytes"] += row["bytes"]
+    out["not_mirrored"] = len(wanted)
+    record = moved_path(tiers)
+    temporary = record.with_name(f"{record.name}.writing")
+    with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in keep:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    temporary.replace(record)
+    log(f"[pictures] restored {out['restored']:,} hot; {out['not_mirrored']} were not mirrored")
+    return out
+
+
 def status() -> dict:
     """What the mirror holds and how much of it is still hot as well."""
     tiers = Tiers.current()
@@ -378,4 +431,13 @@ def status() -> dict:
     }
 
 
-__all__ = ["MirrorError", "archive", "plan", "protected", "prune_hot", "status", "verify"]
+__all__ = [
+    "MirrorError",
+    "archive",
+    "plan",
+    "protected",
+    "prune_hot",
+    "restore",
+    "status",
+    "verify",
+]
