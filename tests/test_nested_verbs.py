@@ -671,8 +671,17 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
     "pins": {"resolve": ()},
     "full-set": {"run": ("--out", "--workers"), "status": ("--out",), "pause": ("--out", "--now")},
     "packs": {
-        "status": ("--full", "--order"),
-        "build": ("--full", "--order", "--out", "--names", "--allow-partial", "--only"),
+        "status": ("--full", "--order", "--forced", "--orders"),
+        "build": (
+            "--full",
+            "--order",
+            "--forced",
+            "--orders",
+            "--out",
+            "--names",
+            "--allow-partial",
+            "--only",
+        ),
     },
     "growth": {
         "run": ("--name", "--fraction", "--n", "--seed", "--swap-seconds"),
