@@ -2183,6 +2183,9 @@ repointed at those stamps.
 
 ## `curate solve record` — a solve recorded under a stamp, and a browser over it
 
+`solve.json`, `gallery.jsonl`, `manifest.json` and `keep.jsonl` are given field by field in
+the root [`FORMATS.md`](../../../FORMATS.md).
+
 ```
 src/fractal_wallpapers/curation/tentative.py   the store, the aliases, the page
 artifacts/curation/tentative/<stamp>/gallery.jsonl   one row per seat

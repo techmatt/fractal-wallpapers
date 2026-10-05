@@ -49,7 +49,8 @@ the switch decides what is *reported*, never what is drawn.
 
 The pipeline runs `spec → family → iterate → field → coloring → resample`, one
 module per stage; `src/lib.rs` says what each does and why the seam between the
-field and its coloring is the one that matters. `src/spec.rs` documents the JSON
+field and its coloring is the one that matters. `src/spec.rs` documents the JSON, and
+the root [`FORMATS.md`](../FORMATS.md)'s *The render spec* lists every key with its range,
 and `src/mode.rs` the named colorings — **twenty** of them, in four shapes: one
 field, two fields blended, a base whose palette position a second field shifts,
 or no field at all. Eight field · six composite · two modulate · four direct, and
@@ -72,6 +73,9 @@ PNG `iTXt` tag and XMP packet, a JPEG comment, XMP and EXIF, byte for byte what
 `tests/test_render_link.py`). stdout is `render`'s JSON report plus `link` — the
 canonical query, which is what the file carries — `url`, `levelled` and `data`.
 Python reaches it as `engine.render_link`.
+
+Every key a link may carry is listed in [`FORMATS.md`](../FORMATS.md)'s *The explorer link*;
+the website's `explorer/README.md` owns the vocabulary.
 
 **Every step is this crate's.** `src/link.rs` parses the link by `permalink.js`'s rules
 (`v=1`–`4`) and `deep-link.js`'s (`dv=1`–`3`), `mode::tune` applies its mode parameters

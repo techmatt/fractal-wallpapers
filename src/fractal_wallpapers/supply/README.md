@@ -874,6 +874,9 @@ fractal-wallpapers harvest --partition multibrot6 --root-channel viewport_sample
 
 ## What a run writes for a readout to price it with
 
+`walk.jsonl`'s row kinds, and `harvest export`'s flat `locations.jsonl`, are given field by
+field in the root [`FORMATS.md`](../../../FORMATS.md).
+
 `summary.json` carries, beside the run-wide books:
 
 * `tally.by_partition` — the exploration share against the deficit-priced contest

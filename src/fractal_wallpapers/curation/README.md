@@ -203,6 +203,9 @@ page shows each seat's stored 640x360 candidate.
 
 ## Three different things are called a ledger
 
+Every field of each file below is in the root [`FORMATS.md`](../../../FORMATS.md), which
+this README does not restate.
+
 The word does three jobs in this stage and they are not versions of one another.
 A reader who conflates them will look for a row in the wrong file:
 
