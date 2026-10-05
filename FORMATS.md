@@ -23,7 +23,7 @@ each in [0, 1] and non-increasing in K.
 | `artifacts/curation/supply_scores.jsonl` | `curate score` | [supply_scores.jsonl](#supply_scoresjsonl) |
 | `artifacts/curation/candidate_ledger/rows.jsonl` | `curate hunt merge`, `curate mine merge` | [Candidate ledger rows](#candidate-ledger-rows) |
 | `artifacts/curation/candidate_ledger/scores.jsonl` | the same merges, `candidate-ledger score` | [Candidate ledger scores](#candidate-ledger-scores) |
-| `artifacts/curation/flatness.jsonl` | the merges, `curate flatness sweep` | [Candidate ledger flatness](#candidate-ledger-flatness) |
+| `artifacts/curation/candidate_ledger/flatness.jsonl` | the merges, `curate flatness sweep` | [Candidate ledger flatness](#candidate-ledger-flatness) |
 | `artifacts/gallery_grade_head/pool_scores.jsonl` | `gallery-grade score-pool` | [pool_scores.jsonl](#pool_scoresjsonl) |
 | `artifacts/curation/solve/<name>/solve.json` | `curate solve run`, `curate solve record` | [solve.json](#solvejson) |
 | `artifacts/curation/tentative/<stamp>/gallery.jsonl` | `curate solve record` | [gallery.jsonl](#galleryjsonl) |
