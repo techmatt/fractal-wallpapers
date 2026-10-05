@@ -183,3 +183,28 @@ def test_harvest_export_joins_admitted_places_to_the_judges_scores(tmp_path, mon
         "scored": 1,
     }
     assert page.is_file()
+
+
+def test_a_walkthrough_bundle_is_drawn_from_the_page_its_command_left(tmp_path):
+    pytest.importorskip("PIL")
+    from PIL import Image
+
+    from fractal_wallpapers import walkthrough
+
+    picture = tmp_path / "source" / "a.png"
+    picture.parent.mkdir()
+    Image.new("RGB", (640, 360), (10, 20, 30)).save(picture)
+    page = grid_page.write(
+        tmp_path / "page" / "index.html",
+        "t",
+        ["intro"],
+        [grid_page.Section("s", tiles=[grid_page.Tile(picture, [("P(>=4)", 0.5)])])],
+        command="fractal-wallpapers harvest stats",
+    )
+    walkthrough.rebundle(page.parent, tmp_path / "out")
+    twin = json.loads((tmp_path / "out" / "page.json").read_text(encoding="utf-8"))
+    assert twin["command"] == "fractal-wallpapers harvest stats"
+    assert twin["sections"][0]["tiles"][0]["picture"] == "pictures/a.jpg"
+    assert (tmp_path / "out" / "pictures" / "a.jpg").is_file()
+    with pytest.raises(FileNotFoundError):
+        walkthrough.rebundle(tmp_path / "never", tmp_path / "out2")

@@ -94,6 +94,7 @@ WRITERS = [
     ("Gallery page.json", "curation/tentative.py", "page", {"stamp", "ordered_by"}),
     ("counts.json", "curation/trace.py", "build", {"broken_chains", "files"}),
     ("counts.json", "curation/trace.py", "counted", {"source", "sliced"}),
+    ("walkthrough.json", "walkthrough.py", "build", {"pages", "files"}),
 ]
 
 

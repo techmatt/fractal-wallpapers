@@ -143,7 +143,10 @@ A worked example of this path, with sample output from every stage, is at
 
 One ordered path, about half an hour end to end. Every step is one command, writes the
 files named beside it (each field is in [`FORMATS.md`](FORMATS.md)), and leaves one page
-to open that shows the result is sane. Times are from a sample run on the box in
+to open that shows the result is sane. Every page has a `page.json` beside it holding
+exactly what it shows ([FORMATS.md](FORMATS.md#pagejson)), names the command that made it
+at the top, and takes `--bundle DIR` to write itself as a folder that can leave the clone.
+Step 10 gathers them all. Times are from a sample run on the box in
 [*What each stage costs*](#what-each-stage-costs).
 
 **1. Render one picture** (seconds). An explorer link is enough on its own: copy one from
@@ -185,8 +188,8 @@ fractal-wallpapers harvest stats
 The harvest walks all twelve fractal families and writes `artifacts/harvest/walk.jsonl`
 ([FORMATS.md](FORMATS.md#walkjsonl)). The two degree-6 families, which no human has
 labelled, share at most a tenth of a mixed harvest's clock
-(`supply.allocation.CAPPED_GROUP_SHARE`), so the cheapest family cannot take over a first walk. `curate score` reads every admitted place through
-the location judge into `artifacts/curation/supply_scores.jsonl`
+(`supply.allocation.CAPPED_GROUP_SHARE`), so the cheapest family cannot take over a
+first walk. `curate score` reads every admitted place through the location judge into `artifacts/curation/supply_scores.jsonl`
 ([FORMATS.md](FORMATS.md#supply_scoresjsonl)). `export` joins the two into one flat
 `artifacts/harvest/locations.jsonl` ([FORMATS.md](FORMATS.md#locationsjsonl)), and `stats`
 prints each family's counts and scores. Open `artifacts/harvest/stats/index.html` for each
@@ -254,7 +257,8 @@ A record is the solve run once more and kept under a UTC stamp that never moves:
 `artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`
 ([FORMATS.md](FORMATS.md#galleryjsonl)). It goes on the keep list, so a later merge spares
 its pictures; `curate solve release <stamp>` lets it go. `browse --viewer` writes the
-newest record you made to `artifacts/curation/viewer/index.html`, the page to open.
+newest record you made to `artifacts/curation/viewer/index.html`, the page to open. Its
+`page.json` is [FORMATS.md](FORMATS.md#gallery-pagejson)'s.
 
 **9. Keep the pool growing** (as long as you like):
 
@@ -267,6 +271,24 @@ fractal-wallpapers curate solve run --name second --n 12
 
 A mine spends its budget where the pool is thinnest. Re-score and re-solve after each
 merge.
+
+**10. Trace the gallery, and gather every page** (seconds):
+
+```
+fractal-wallpapers curate solve trace <stamp>
+fractal-wallpapers walkthrough --stamp <stamp>
+```
+
+`trace` follows each seat of a record back through every file above, to the walk row that
+found its place, and follows three of each kind of reject to where it stopped. It writes
+`artifacts/curation/trace/<stamp>/`: sliced copies of each file holding only the rows on
+those chains, `counts.json` with each full file's size ([FORMATS.md](FORMATS.md#countsjson)),
+and `index.html`, which shows each seat's row from every file with the join field marked.
+`walkthrough` writes every page of this path into `artifacts/walkthrough/`, each a folder
+holding its page, its `page.json` and only the pictures it shows: `judges-check/`,
+`walk-stats/`, `candidates/`, `gallery/` and `trace/`, plus the harvest's `summary.json`,
+`stats.json`, `keep.jsonl` and an `index.html` linking them all. Open that. It renders
+nothing; a page whose step was skipped is listed with the command that makes it.
 
 ### Say it plainly
 

@@ -32,6 +32,7 @@ each in [0, 1] and non-increasing in K.
 | `page.json` beside each inspection page | every page and `--bundle` | [page.json](#pagejson) |
 | `page.json` beside a gallery's page | `curate solve browse`, `record` | [Gallery page.json](#gallery-pagejson) |
 | `artifacts/curation/trace/<stamp>/counts.json` and `files/` | `curate solve trace` | [counts.json](#countsjson) |
+| `artifacts/walkthrough/walkthrough.json` | `walkthrough` | [walkthrough.json](#walkthroughjson) |
 | a render spec JSON | you; `fractal-engine render <spec>` | [The render spec](#the-render-spec) |
 | an explorer link | the website; `render-link` | [The explorer link](#the-explorer-link) |
 
@@ -345,6 +346,19 @@ slice also holds one row of every kind no chain reached. The page is a
 | `schema`, `stamp`, `seats` | `1`, the record traced, and its seat count |
 | `broken_chains` | `[{seat, key, stopped_at}]`: seats whose chain could not be followed, and the file it stopped at |
 | `files` | `{name: {source, rows, sliced}}`: the full file's tracked path, how many rows it held, and how many the slice kept |
+
+## walkthrough.json
+
+The listing at the top of `fractal-wallpapers walkthrough`'s folder (default
+`artifacts/walkthrough/`, `walkthrough.py`'s `build`), which its `index.html` is drawn
+beside. Each listed folder is a bundle holding a [page.json](#pagejson), or a
+[Gallery page.json](#gallery-pagejson) for `gallery/`.
+
+| field | meaning |
+| --- | --- |
+| `schema`, `command`, `stamp` | `1`, the command line, and the record shown and traced |
+| `pages` | `[{folder, title, made_by, command, files, bytes}]`; a page whose step was not run has `missing: true` and `made_by` is the command that makes it |
+| `files` | `[{name, source}]`: the whole files copied in (`summary.json`, `stats.json`, `keep.jsonl`) and where each came from; `missing: true` where there was none |
 
 ## The render spec
 
