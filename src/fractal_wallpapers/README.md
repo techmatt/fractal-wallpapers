@@ -194,6 +194,7 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `artifacts/curation/tentative/20260922T012627Z/` | `final139_general`, the general n=1000 of the closed pool: `tentative.DEFAULT` (what an unstamped read means), `curation.backfill.DEFAULT_RECORD`, the record the bookmarked viewer shows, and `fractal-website`'s general collection. The nineteen collection records beside it are the same decision, one per `curation.targets` entry |
 | `artifacts/curation/tentative/20260922T220551Z/` | `final140_general2000`, the same general pass at n=2000 over the same pool, on the keep list since 2026-09-22 so `fractal-website` can offer it beside the n=1000 default, and published since 2026-09-29 with all three text files tracked, like the rest. Its solve half is `artifacts/curation/solve/final140_general2000/`; `curate solve record --n 2000 --solve-name final140_general2000` re-seats it |
 | `artifacts/curation/viewer/` | **the page a person opens**, `tentative.viewer_dir()`, written by `curate solve browse <stamp> --viewer` and, per collection, by `curate solve viewers`. One directory with no stamp in its name, so a bookmark survives the record moving — it showed the newest PUBLISHED record until publication ended on 2026-09-21, and since the twenty-one were published on 2026-09-29 an unstamped `--viewer` writes `final139_general`'s. Regenerable in a second and a **derivation, not a copy** — the candidates and the `1280x720ss2` fulls stay where they are and the page reaches them by relative path |
+| `artifacts/curation/tentative/keep.jsonl` | **the keep list's unpublished half**, data since 2026-10-04: `curate solve record` appends its stamp, `curate solve release <stamp>` appends its release, and `tentative.kept()` reads the last row per stamp. Deleting it releases every unpublished record at once. Field by field in the root `FORMATS.md` |
 | `artifacts/votes/` | the exported voting kits, which are a sitting's whole population |
 | `artifacts/curation/growth/20260902T150756Z/` | one rung of a chronological series that is never rewritten; the pool it was solved over does not exist any more |
 | `data/coloring/texture_flat.jsonl` | the register of which renders' modulate texture carried no information, for rows written before the engine reported it |
@@ -206,6 +207,12 @@ is a ruling, and a ruling is only as good as the place it is written down.
 | `artifacts/gallery_grade/n1000_0906/*/plan.jsonl` | the only thing that can rebuild those levelled pictures as they were judged |
 | `data/curation/candidate_ledger/ratchet.jsonl` | tracked and append-only: the census asserts against it, and a lost row is a lost deletion |
 | `artifacts/curation/gallery/` | 14,438 gate attempt rows over four retired passes, and `orphans` is their only reader — see [`curation/README.md`](curation/README.md)'s *The 53 MB of attempt rows under `artifacts/curation/gallery/` is KEPT* |
+
+**The reader pages are derivations, and none is on this list.** `artifacts/judges/`
+(`judges score --page`, `judges check`), `artifacts/curation/candidate_page/` (`curate
+candidate-ledger browse`), and a harvest's `locations.jsonl` and `stats/` (`harvest export`,
+`harvest stats`) are each rewritten whole by their one command from stores that are
+kept, so deleting any of them costs one re-run.
 
 **The ten unmerged `runs/` legs are not a cleanup opportunity, and the listing
 says so if it is read to the end.** `curate candidate-ledger orphans` lists

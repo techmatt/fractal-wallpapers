@@ -170,7 +170,7 @@ and CPU and CUDA agree to about 1e-5. Writes `artifacts/judges/check/check.json`
 `artifacts/judges/check/index.html`. `judges score <picture>…` scores any picture of your
 own.
 
-**3. Search the planes for places** (10 minutes, then about 4 to score):
+**3. Search the planes for places** (10 minutes, then about 3 to score):
 
 ```
 fractal-wallpapers harvest --minutes 10 --no-scoring
@@ -187,7 +187,7 @@ the location judge into `artifacts/curation/supply_scores.jsonl`
 prints each family's counts and scores. Open `artifacts/harvest/stats/index.html` for each
 family's best four and worst four places.
 
-**4. Embed the places** (2 to 6 minutes):
+**4. Embed the places** (1.5 minutes on CUDA, about 6 on CPU):
 
 ```
 fractal-wallpapers curate embed
@@ -205,13 +205,15 @@ fractal-wallpapers curate hunt merge --name h1
 fractal-wallpapers curate candidate-ledger browse
 ```
 
-`--budget` is render-seconds, which in practice is wall time. The hunt renders each place
-in several modes and palettes at 640x360 and scores every picture with the render judge.
+`--budget` is render-seconds, which in practice is wall time; ten minutes made 273
+candidates over 91 places. The hunt renders each place in several modes and palettes at
+640x360 and scores every picture with the render judge.
 `merge` puts the rows into the candidate pool,
 `artifacts/curation/candidate_ledger/{rows,scores}.jsonl`
 ([FORMATS.md](FORMATS.md#candidate-ledger-rows)). Open
 `artifacts/curation/candidate_page/index.html` for the pool by mode and family, its best
-candidates and a random draw.
+candidates and a random draw. Its gallery-judge column fills once step 6 has run; run
+`browse` again then to see it.
 
 **6. Read the pool with the gallery judge** (seconds):
 
@@ -222,7 +224,7 @@ fractal-wallpapers gallery-grade score-pool
 The solve's order needs this, and it needs it again after every merge. It writes
 `artifacts/gallery_grade_head/pool_scores.jsonl` ([FORMATS.md](FORMATS.md#pool_scoresjsonl)).
 
-**7. Choose a gallery** (about 15 s a seat, for the full-size render):
+**7. Choose a gallery** (1 to 3 minutes at n=12, most of it rendering the seats at 1280x720):
 
 ```
 fractal-wallpapers curate solve run --name first --n 12 --force-fill
@@ -231,7 +233,8 @@ fractal-wallpapers curate solve run --name first_at_bars --n 12
 
 `--force-fill` is the first look at an early pool. The quality bars stop refusing, and the
 best rows available seat under every distinctness rule. Without it, the default bars seat
-only the handful a short run clears (see below). Each run writes
+only the handful a short run clears (see below): 5 of 12 in the sample run, against 12 of
+12 forced. Each run writes
 `artifacts/curation/solve/<name>/solve.json` ([FORMATS.md](FORMATS.md#solvejson)) and the
 seats at 1280x720. Open `artifacts/curation/solve/<name>/contact_sheet.html`.
 
@@ -281,7 +284,34 @@ merge.
 
 ### What each stage costs
 
-The table is filled in from the sample run that proves this path.
+Measured on 2026-10-04 on one box (Intel i5-10400F, NVIDIA RTX 2060 SUPER, Windows 10),
+in a fresh clone that followed this path. Engine times cover the eight `judges check`
+recipes rendered at each geometry; judge times are inference only, with the model already
+loaded, at the batch size the pipeline uses. Model load is a fraction of a second apiece,
+except the first torch import (about 4 s).
+
+| stage | rendered at | the network reads | engine s / picture | judge ms / picture, CPU · CUDA | bytes / picture | in the sample run |
+| --- | --- | --- | --- | --- | --- | --- |
+| walk frame (gate render) | 384x216, ss1 | — | 0.04–0.3 | — | 60 KB | 4,166, 260 MB |
+| location judge | its own 384x216 ss1 view | 384x224 stretch | 0.04–0.3 | 24 · 5 | 60 KB | 4,120, 256 MB |
+| embedding (DINOv2) | 448x252, ss1 | 448x252 as is | 0.05–0.2 | 100 · 8 | 90 KB | 1,383, 123 MB |
+| mined candidate | 640x360, ss2 | — | 0.2–1.2 | — | 140 KB, plus about 0.9 MB of cached field | 416 rows, 77 MB of pictures, 370 MB of fields |
+| wallpaper (render) judge | the candidate | 384x224 stretch | — | 13 · 7 | — | every candidate |
+| gallery judge | the candidate | 384x224 stretch, 3 seeds | — | 25 · 8 | — | the above-bar rows |
+| palette judge | 640x360, ss2 | 224x224 squash | — | 9 · 6 | — | `judges check` only |
+| solve seat | 1280x720, ss2 | — | 0.7–4.1 | — | 1.8 MB PNG | 12 a solve, 67 MB for four solves |
+| full-size wallpaper | 2560x1440, ss3 | — | 5–31 | — | 2.2 MB JPEG | not made |
+
+A GPU speeds the judges up 2 to 12 times. The embedding gains most (100 ms to 8 ms a
+picture, so `curate embed` took 90 s here, against about 380 s for the audit's CPU
+install), then the location judge. Everything that renders is engine-bound on either
+install, at three below-normal workers: the harvest, the hunt, the mine and the seat
+renders take the same wall time, and a fixed hunt budget makes about a fifth more
+candidates on CUDA only because its judging overhead is smaller (1.5 s against 1.9 s a
+candidate). The 10 + 10 minute sample took about 37 minutes from harvest to viewer on
+the CUDA install (and the 5-minute mine about 10 more), and leaves about 1 GB under
+`artifacts/`. The CPU install takes about 45 minutes and lands on the same order of
+disk.
 
 Each stage's README covers the rest:
 

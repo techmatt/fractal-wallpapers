@@ -960,3 +960,16 @@ own probabilities: the human label is shown and never used to choose the frame.
 `--coverage` prints how every partition's held-out rows spread across the four
 and draws nothing, which is how a family is chosen. `julia:multibrot3` is the
 default because it is the only one whose spread is healthy in all four buckets.
+
+## Scoring a picture by hand, and checking an install
+
+`fractal-wallpapers judges score <picture>…` reads any picture file through the render,
+gallery and palette judges, and `--location FILE` reads location records through the
+location judge (`models/judges.py` is the door; it adds no scoring of its own). `judges
+check` renders the eight recipes in `data/judges/check.jsonl`, all seats of
+`final139_general` across eight families and modes, and compares all four judges with the
+expected scores at a tolerance of 1e-4. On 2026-10-04 the CUDA install matched exactly and
+the CPU install (torch 2.14.1+cpu) within 1.4e-5. Each check picture was byte-identical
+across three installs, and the render judge's `P(>=4)` equalled the published record's
+own `p_ge4` for every seat. `judges check --write-expected` rewrites the expected scores,
+and is for a deliberate change to a judge or the engine only.
