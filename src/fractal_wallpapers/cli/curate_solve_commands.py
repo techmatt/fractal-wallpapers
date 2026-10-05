@@ -1233,7 +1233,7 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         type=spiral_cap_value,
         default=solve_module.DEFAULT_SPIRAL_CAP,
         metavar="SHARE",
-        help="cap the share of seats sitting at a location the spiral probe calls a "
+        help="cap the share of seats filled from a location the spiral probe calls a "
         "spiral: at most ceil(SHARE * seats filled), the same spelling a colour target "
         "is stated in. The verdict comes off `curate spiral-scores` at the cut "
         "models/spiral/manifest.json carries, and a location with NO score counts "

@@ -615,7 +615,7 @@ def record() -> dict:
         "niche": niche(),
         "promoted": promoted(),
         "wired": "all three. Weight 0 is out of the labeling rosters, the default mining "
-        "rosters and gallery emission; 1 and 2 differ at the seat, where `seat_floors` "
+        "rosters and the galleries a solve writes; 1 and 2 differ at the seat, where `seat_floors` "
         "floors a promoted mode at twice a normal one and is the default floor of both "
         "the greedy and the solver since 2026-08-31.",
         "unmined_is": SCHEMA_NOTES["unmined_is"],
