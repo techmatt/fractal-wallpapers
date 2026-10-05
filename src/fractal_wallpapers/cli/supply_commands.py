@@ -9,6 +9,7 @@ from pathlib import Path
 from fractal_wallpapers import schedule as schedule_module
 from fractal_wallpapers.cli.common import (
     build_scorer,
+    bundle_flag,
     declared_ledgers,
     device_flag,
     display_path,
@@ -280,6 +281,7 @@ def harvest_draws_views(args: argparse.Namespace) -> bool:
 
 def harvest_readout(args: argparse.Namespace) -> int:
     """`harvest export` and `harvest stats`: read a finished run, start nothing."""
+    from fractal_wallpapers import bundle as bundle_module
     from fractal_wallpapers.supply import places
 
     run_dir = resolve_output(args.out_dir)
@@ -289,7 +291,8 @@ def harvest_readout(args: argparse.Namespace) -> int:
             scored = sum(1 for row in rows if row["p_ge3"] is not None)
             print(f"{display_path(path)}: {len(rows):,} admitted place(s), {scored:,} scored")
             return 0
-        record, page = places.stats(run_dir)
+        bundle = resolve_output(args.bundle) if args.bundle else None
+        record, page = places.stats(run_dir, bundle=bundle)
     except FileNotFoundError as refusal:
         print(refusal)
         return 1
@@ -302,6 +305,8 @@ def harvest_readout(args: argparse.Namespace) -> int:
         )
     print(display_path(run_dir / "stats" / "stats.json"))
     print(display_path(page))
+    if bundle is not None:
+        print(bundle_module.said(bundle))
     return 0
 
 
@@ -936,6 +941,7 @@ def add_commands(subcommands) -> None:
             "location judge's P(>=3)."
         ),
     )
+    bundle_flag(summarising)
     for verb in (exporting, summarising):
         verb.add_argument(
             "--out-dir",

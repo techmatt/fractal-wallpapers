@@ -26,6 +26,7 @@ import json
 from pathlib import Path
 
 from fractal_wallpapers.cli.common import (
+    bundle_flag,
     declared_ledgers,
     device_flag,
     display_path,
@@ -590,6 +591,7 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
                 seed=args.seed,
                 out=resolve_output(args.out) if args.out else None,
                 log=lambda line: None,
+                bundle=resolve_output(args.bundle) if args.bundle else None,
             )
         except FileNotFoundError as refusal:
             print(refusal)
@@ -601,6 +603,10 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
         for mode, rows, _scored, over, median, _places in summary["by_mode"]:
             print(f"  {mode:<24} {rows:>7,} rows  {over:>6,} >= bar  median P(>=4) {median}")
         print(display_path(page))
+        if args.bundle:
+            from fractal_wallpapers import bundle
+
+            print(bundle.said(resolve_output(args.bundle)))
         return 0
     doing = {
         "backfill": lambda: candidate_ledger.backfill(recolour=args.recolour),
@@ -1259,6 +1265,7 @@ def add_steps(steps) -> None:
     browsing.add_argument("--sample", type=int, default=24, help="random candidates shown (24)")
     browsing.add_argument("--seed", type=int, default=0, help="the random draw's seed (0)")
     browsing.add_argument("--out", metavar="DIR", help="write the page and summary here")
+    bundle_flag(browsing)
 
     filling = ledger_verbs.add_parser("backfill", help="build the ledger from what already exists")
     filling.add_argument(

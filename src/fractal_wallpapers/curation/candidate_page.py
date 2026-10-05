@@ -43,7 +43,12 @@ def _median(values) -> float | None:
 
 
 def build(
-    best: int = SHOWN, sample: int = SHOWN, seed: int = 0, out: Path | None = None, log=print
+    best: int = SHOWN,
+    sample: int = SHOWN,
+    seed: int = 0,
+    out: Path | None = None,
+    log=print,
+    bundle: Path | None = None,
 ):
     """Write the page and its summary. Returns `(page path, summary dict)`."""
     from fractal_wallpapers.curation import candidate_ledger, distinct, mode_policy, solve
@@ -146,6 +151,7 @@ def build(
                 f"A random {len(drawn)} (seed {int(seed)})", tiles=[tile(row) for row in drawn]
             ),
         ],
+        bundle=bundle,
     )
     log(f"[candidates] {tracked_name(page)}")
     return page, summary

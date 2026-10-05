@@ -24,6 +24,7 @@ import json
 from pathlib import Path
 
 from fractal_wallpapers.cli.common import (
+    bundle_flag,
     display_path,
     resolve_output,
 )
@@ -132,8 +133,13 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
                 named_stamp = named_stamp or tentative.viewable()
             else:
                 out = resolve_output(args.out) if args.out else None
-            written = display_path(tentative.page(named_stamp, out=out))
+            bundle = resolve_output(args.bundle) if args.bundle else None
+            written = display_path(tentative.page(named_stamp, out=out, bundle=bundle))
             print(f"{written} — {named_stamp}" if args.viewer else written)
+            if bundle is not None:
+                from fractal_wallpapers import bundle as bundle_module
+
+                print(bundle_module.said(bundle))
             return 0
         # resolve: a comma list, so one invocation answers a whole figure prompt.
         if not named:
@@ -1894,6 +1900,7 @@ def add_steps(steps) -> None:
         "this and copying `index.html` afterwards, which points at nothing. The record's "
         "own page is left alone",
     )
+    bundle_flag(browsing)
     browsing.add_argument(
         "--viewer",
         action="store_true",

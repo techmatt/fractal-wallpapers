@@ -559,7 +559,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "restore": ("--force",),
     },
     "candidate-ledger": {
-        "browse": ("--best", "--sample", "--seed", "--out"),
+        "browse": ("--best", "--sample", "--seed", "--out", "--bundle"),
         "backfill": ("--recolour",),
         "bare-varied": ("--out",),
         "census": ("--n", "--out"),
@@ -647,7 +647,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "k-sweep-plot": (),
         "fulls": ("--stamp", "--workers", "--no-render", "--pin"),
         "viewers": (),
-        "browse": ("--stamp", "--spacing", "--out", "--viewer"),
+        "browse": ("--stamp", "--spacing", "--out", "--bundle", "--viewer"),
         "recipes": ("--stamp", "--write"),
         "resolve": ("--stamp",),
         "list": (),

@@ -1149,13 +1149,20 @@ def thumbnail_href(picture, directory: Path, tiers: Tiers | None = None) -> str:
         return resolved.absolute().as_uri()
 
 
-def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
-    """Write `index.html` beside a record's rows. Returns the page.
+def page(
+    stamp: str | None = None,
+    out: Path | None = None,
+    log=print,
+    bundle: Path | None = None,
+    command: str | None = None,
+) -> Path:
+    """Write `index.html` and its `page.json` beside a record's rows. Returns the page.
 
     Self-contained: the rows are embedded, the styling is inline, and the only
     external references are the relative thumbnails. Nothing is fetched and no
     script is loaded from anywhere, because the page is opened over `file://`
-    where both fail.
+    where both fail. **`page.json` is written first and the page embeds exactly its
+    rows**, so a reader parsing what the page shows reads that file.
 
     **The two tracked files are all it REQUIRES**, which is what makes the page a
     derivation rather than part of the record: `curate solve browse <stamp>` writes
@@ -1175,11 +1182,16 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     which is the whole reason this is a parameter rather than a copy afterwards:
     an `index.html` moved by hand points at nothing. It is the same derivation
     either way and the record's own page is left where it is.
+
+    `bundle` also writes the page into that folder with each seat's picture
+    re-encoded beside it ([`fractal_wallpapers.bundle`]). A bundle carries no
+    release-geometry picture: the click-through shows the bundled one.
     """
+    from fractal_wallpapers import bundle as bundle_module
+
     stamp = latest() if stamp is None else str(stamp)
     path = page_path(stamp) if out is None else Path(out)
-    directory = path.parent
-    directory.mkdir(parents=True, exist_ok=True)
+    command = bundle_module.invoked() if command is None else command
     rows = read_rows(stamp)
     manifest = read_manifest(stamp)
     # Two resolutions a row over a record that reaches two thousand of them, so
@@ -1192,56 +1204,92 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
     full = fulls.index(
         [row.get("key") for row in rows], log=lambda _line: None, pin_dir=fulls_dir(stamp)
     )
-    shown = [
-        {
-            **row,
-            "src": thumbnail_href(row.get("picture"), directory, tiers),
-            "full": (
-                fulls.href(full[row["key"]], directory, tiers) if row.get("key") in full else ""
-            ),
-        }
-        for row in rows
-    ]
-    missing = sum(1 for row in rows if _on_disk(row, tiers) is not True)
-    at_full = sum(1 for row in shown if row["full"])
     # The presentation order: derived here, from the rows, changing none of them.
     # `order` is a column on the EMBEDDED copy and never on `gallery.jsonl` — the
     # record is untouched and an existing one gets today's order on its next build.
     vectors = page_order.vectors_for(rows)
-    for at, held in enumerate(page_order.order(rows, vectors)):
-        shown[held]["order"] = at
-    writing = Path(str(path) + ".writing")
-    writing.write_text(
-        _PAGE.replace("__STAMP__", html.escape(str(stamp)))
-        .replace("__SEATS__", str(len(rows)))
-        .replace("__ASKED__", str(manifest["seats"]["asked"]))
-        .replace(
-            "__NAME__",
-            html.escape(str(manifest.get("solve", {}).get("name") or ""))
-            + (
-                " &middot; FORCED FILL: seated past the fine and per-mode bars"
-                if is_forced(manifest)
-                else ""
-            ),
+    order = page_order.order(rows, vectors)
+    basis = page_order.basis(vectors)
+
+    missing = sum(1 for row in rows if _on_disk(row, tiers) is not True)
+
+    def write_one(path: Path, src, full_of) -> None:
+        directory = path.parent
+        directory.mkdir(parents=True, exist_ok=True)
+        shown = [
+            {**row, "src": src(row, directory), "full": full_of(row, directory)} for row in rows
+        ]
+        for at, held in enumerate(order):
+            shown[held]["order"] = at
+        doc = {
+            "schema": bundle_module.SCHEMA,
+            "command": command,
+            "stamp": stamp,
+            "name": manifest.get("solve", {}).get("name") or "",
+            "forced": is_forced(manifest),
+            "seats": len(rows),
+            "asked": manifest["seats"]["asked"],
+            "missing": missing,
+            "at_full": sum(1 for row in shown if row["full"]),
+            "full_regime": fulls.REGIME.spelled,
+            "ordered_by": basis,
+            "rows": shown,
+        }
+        (directory / bundle_module.PAGE_JSON).write_text(
+            json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
         )
-        .replace("__MISSING__", str(missing))
-        .replace("__AT_FULL__", str(at_full))
-        .replace("__FULL_REGIME__", html.escape(fulls.REGIME.spelled))
-        .replace("__ORDERED_BY__", html.escape(page_order.basis(vectors)))
-        .replace("__ROWS__", json.dumps(shown, ensure_ascii=False)),
-        encoding="utf-8",
-        newline="\n",
-    )
-    writing.replace(path)
+        writing = Path(str(path) + ".writing")
+        writing.write_text(_page_html(doc), encoding="utf-8", newline="\n")
+        writing.replace(path)
+
+    def src_here(row: dict, directory: Path) -> str:
+        return thumbnail_href(row.get("picture"), directory, tiers)
+
+    def full_here(row: dict, directory: Path) -> str:
+        return fulls.href(full[row["key"]], directory, tiers) if row.get("key") in full else ""
+
+    write_one(path, src_here, full_here)
+    if bundle is not None:
+        pictures = bundle_module.Pictures(Path(bundle))
+
+        def src_bundled(row: dict, _directory: Path) -> str:
+            held = rehome(row["picture"], tiers) if row.get("picture") else None
+            return pictures.href(held) or ""
+
+        write_one(Path(bundle) / PAGE_NAME, src_bundled, lambda _row, _directory: "")
     log(f"[tentative] {tracked_name(path)}: {len(rows):,} tile(s), {missing} without a picture")
     return path
 
 
-#: The browser, as one string with nine substitutions. Kept here rather than in a
+def _page_html(doc: dict) -> str:
+    """The browser, filled from a `page.json` document and nothing else."""
+    return (
+        _PAGE.replace("__STAMP__", html.escape(str(doc["stamp"])))
+        .replace("__COMMAND__", html.escape(doc["command"]))
+        .replace("__SEATS__", str(doc["seats"]))
+        .replace("__ASKED__", str(doc["asked"]))
+        .replace(
+            "__NAME__",
+            html.escape(str(doc["name"]))
+            + (
+                " &middot; FORCED FILL: seated past the fine and per-mode bars"
+                if doc["forced"]
+                else ""
+            ),
+        )
+        .replace("__MISSING__", str(doc["missing"]))
+        .replace("__AT_FULL__", str(doc["at_full"]))
+        .replace("__FULL_REGIME__", html.escape(doc["full_regime"]))
+        .replace("__ORDERED_BY__", html.escape(doc["ordered_by"]))
+        .replace("__ROWS__", json.dumps(doc["rows"], ensure_ascii=False))
+    )
+
+
+#: The browser, as one string with ten substitutions. Kept here rather than in a
 #: tracked asset file because it is the only page this project writes for a person
 #: to drive, and a second file would be a second thing to find. The substitutions
-#: are `__ROWS__`, `__STAMP__`, `__NAME__`, `__SEATS__`, `__ASKED__`, `__MISSING__`,
-#: `__AT_FULL__`, `__FULL_REGIME__` and `__ORDERED_BY__`, all filled by [`page`]
+#: are `__ROWS__`, `__STAMP__`, `__COMMAND__`, `__NAME__`, `__SEATS__`, `__ASKED__`, `__MISSING__`,
+#: `__AT_FULL__`, `__FULL_REGIME__` and `__ORDERED_BY__`, all filled by [`_page_html`]
 #: and none of them by the reader.
 _PAGE = (
     """<!doctype html>
@@ -1327,6 +1375,7 @@ _PAGE = (
       &middot; __SEATS__ of __ASKED__ seat(s) filled
       &middot; __MISSING__ without a picture on this disk
       &middot; presented on __ORDERED_BY__</span></h1>
+  <div class="dim num" id="command">__COMMAND__</div>
   <div class="controls">
     <fieldset id="f-mode"><legend>mode</legend></fieldset>
     <fieldset id="f-hue_family"><legend>hue family</legend></fieldset>

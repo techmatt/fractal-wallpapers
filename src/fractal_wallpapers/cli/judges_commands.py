@@ -15,7 +15,12 @@ import argparse
 import json
 from pathlib import Path
 
-from fractal_wallpapers.cli.common import device_flag, display_path, resolve_output
+from fractal_wallpapers.cli.common import (
+    bundle_flag,
+    device_flag,
+    display_path,
+    resolve_output,
+)
 
 #: How far a check score may sit from its expected value and still pass. The
 #: fresh-install audit of 2026-10-04 measured CPU against CUDA on the same pictures
@@ -259,10 +264,15 @@ def judges_check(args: argparse.Namespace) -> int:
             "PASS" if not misses else f"MISSED: {', '.join(misses)}",
         ],
         [grid_page.Section("Cases", tiles=tiles)],
+        bundle=resolve_output(args.bundle) if args.bundle else None,
     )
     print(f"{len(cases)} case(s), largest gap {worst:.2g} against a tolerance of {TOLERANCE:g}")
     print(f"model load seconds: {loading}")
     print(display_path(page))
+    if args.bundle:
+        from fractal_wallpapers import bundle
+
+        print(bundle.said(resolve_output(args.bundle)))
     if misses:
         print(f"MISSED: {', '.join(misses)}")
         return 1
@@ -341,6 +351,7 @@ def add_commands(subcommands) -> None:
         help="rewrite the tracked expected scores from this reading. For a maintainer after a "
         "deliberate change to a judge or the engine, never to make a miss pass",
     )
+    bundle_flag(checking)
     device_flag(checking)
     group.set_defaults(handler=judges)
 

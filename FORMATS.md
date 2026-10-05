@@ -29,6 +29,8 @@ each in [0, 1] and non-increasing in K.
 | `artifacts/curation/tentative/<stamp>/gallery.jsonl` | `curate solve record` | [gallery.jsonl](#galleryjsonl) |
 | `artifacts/curation/tentative/<stamp>/manifest.json` | `curate solve record` | [manifest.json](#manifestjson) |
 | `artifacts/curation/tentative/keep.jsonl` | `solve record`, `solve release` | [keep.jsonl](#keepjsonl) |
+| `page.json` beside each inspection page | every page and `--bundle` | [page.json](#pagejson) |
+| `page.json` beside a gallery's page | `curate solve browse`, `record` | [Gallery page.json](#gallery-pagejson) |
 | a render spec JSON | you; `fractal-engine render <spec>` | [The render spec](#the-render-spec) |
 | an explorer link | the website; `render-link` | [The explorer link](#the-explorer-link) |
 
@@ -291,6 +293,40 @@ The keep list's unpublished half (`tentative.py`'s `keep` and `release`), append
 seats are spared by every merge's prune. `curate solve record` appends `kept: true`
 unless given `--no-keep`, and `curate solve release <stamp>` appends `kept: false`. The
 published records are kept by `tentative.PUBLISHED` and never appear here.
+
+## page.json
+
+The parseable twin of every inspection page: `judges check`, `harvest stats`, `curate
+candidate-ledger browse`, and `curate solve trace`. It sits beside `index.html`, holds
+exactly what the page shows, and the page is drawn from it (`grid_page.py`'s `document`
+and `render`). Pass `--bundle DIR` to any of those commands and the same pair is also
+written into `DIR`, with each picture the page shows re-encoded under `DIR/pictures/`
+(`bundle.py`'s `WIDTH` and `QUALITY`). Nothing in a bundle refers outside the folder.
+
+| field | meaning |
+| --- | --- |
+| `schema`, `title` | `1`, and the page's heading |
+| `command` | the command line that wrote it; an absolute path under the working directory is spelled relative |
+| `intro` | the lines under the heading |
+| `sections` | `[{heading, note, table, tiles, records}]` in page order |
+| `table` | `null`, or a list of rows whose first row is the header |
+| `tiles` | `[{picture, title, mark, caption}]`; `picture` is the path the page uses, relative to it, or `null`; `caption` is `[[label, value]]` |
+| `records` | `[{file, joined_on, key, note, row}]`: one row copied out of `file` whole, the field the chain was `joined_on` and its `key` (marked on the page), and a `note` saying why a chain stopped here |
+
+## Gallery page.json
+
+The twin of a recorded gallery's page (`curate solve browse`, `curate solve record`),
+written by `tentative.py`'s `page`. The page is a filtering browser that embeds `rows`
+as they are here.
+
+| field | meaning |
+| --- | --- |
+| `schema`, `command`, `stamp` | as above, and the record's stamp |
+| `name`, `forced` | the solve's name, and whether it ran `--force-fill` |
+| `seats`, `asked` | seats filled, and seats asked for |
+| `missing`, `at_full` | seats with no picture on this disk, and seats with a release-geometry picture |
+| `full_regime`, `ordered_by` | the release regime's spelling, and the basis of the presentation order |
+| `rows` | [gallery.jsonl](#galleryjsonl)'s rows, each with `src` (the picture the tile shows), `full` (its release-geometry picture, or empty; always empty in a bundle) and `order` |
 
 ## The render spec
 

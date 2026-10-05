@@ -11,6 +11,7 @@ import json
 
 import pytest
 
+from fractal_wallpapers import bundle as bundle_module
 from fractal_wallpapers import cli, grid_page, palettes
 from fractal_wallpapers.cli import common, judges_commands
 from fractal_wallpapers.cli.draw_commands import render_spec
@@ -107,6 +108,41 @@ def test_the_grid_page_links_its_pictures_relatively(tmp_path):
     )
     text = page.read_text(encoding="utf-8")
     assert 'src="../pictures/a.jpg"' in text and "<script" not in text
+
+
+def test_a_page_has_a_twin_and_a_bundle_that_refers_to_nothing_outside_it(tmp_path):
+    pytest.importorskip("PIL")
+    from PIL import Image
+
+    picture = tmp_path / "source" / "a.png"
+    picture.parent.mkdir()
+    Image.new("RGB", (1280, 720), (40, 80, 120)).save(picture)
+    sections = [
+        grid_page.Section(
+            "s",
+            tiles=[grid_page.Tile(picture, [("P(>=4)", 0.5)])],
+            records=[grid_page.Record("rows.jsonl", {"key": "k1", "x": 1}, "key", "k1")],
+        )
+    ]
+    bundle = tmp_path / "bundle"
+    page = grid_page.write(
+        tmp_path / "page" / "index.html", "t", ["intro"], sections, command="cmd", bundle=bundle
+    )
+    twin = json.loads((page.parent / "page.json").read_text(encoding="utf-8"))
+    assert twin["command"] == "cmd" and twin["sections"][0]["tiles"][0]["caption"] == [
+        ["P(>=4)", 0.5]
+    ]
+    assert "cmd" in page.read_text(encoding="utf-8")
+    text = (bundle / "index.html").read_text(encoding="utf-8")
+    assert 'src="pictures/a.jpg"' in text and str(tmp_path) not in text
+    assert "<mark>&quot;key&quot;: &quot;k1&quot;</mark>" in text
+    with Image.open(bundle / "pictures" / "a.jpg") as small:
+        assert small.size == (bundle_module.WIDTH, round(720 * bundle_module.WIDTH / 1280))
+    assert sorted(p.name for p in bundle.rglob("*") if p.is_file()) == [
+        "a.jpg",
+        "index.html",
+        "page.json",
+    ]
 
 
 def test_harvest_export_joins_admitted_places_to_the_judges_scores(tmp_path, monkeypatch):

@@ -87,6 +87,11 @@ WRITERS = [
     ("manifest.json", "curation/tentative.py", "manifest_of", {"stamp_is", "ledger_rows"}),
     ("manifest.json", "curation/tentative.py", "manifest_of", {"asked", "recorded"}),
     ("keep.jsonl", "curation/tentative.py", "_keep_row", {"stamp", "kept"}),
+    ("page.json", "grid_page.py", "document", {"intro", "sections"}),
+    ("page.json", "grid_page.py", "document", {"heading", "tiles"}),
+    ("page.json", "grid_page.py", "document", {"picture", "caption"}),
+    ("page.json", "grid_page.py", "document", {"joined_on", "row"}),
+    ("Gallery page.json", "curation/tentative.py", "page", {"stamp", "ordered_by"}),
 ]
 
 

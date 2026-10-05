@@ -278,6 +278,18 @@ def device_flag(parser: FlagContainer) -> FlagContainer:
     return parser
 
 
+def bundle_flag(parser: FlagContainer) -> FlagContainer:
+    """`--bundle DIR` on every inspection page: the page as a folder that can leave
+    the clone. One definition, for the reason [`device_flag`] gives."""
+    parser.add_argument(
+        "--bundle",
+        metavar="DIR",
+        help="also write the page into DIR as a portable folder: index.html, page.json, and "
+        "only the pictures it shows, re-encoded small; nothing outside DIR is referred to",
+    )
+    return parser
+
+
 def tag_flag(parser: FlagContainer) -> FlagContainer:
     """Which release a shipment names, on every `ship` verb there is.
 

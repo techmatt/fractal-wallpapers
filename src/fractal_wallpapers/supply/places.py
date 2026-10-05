@@ -128,7 +128,9 @@ def _quantiles(values: list[float]) -> dict | None:
     }
 
 
-def stats(run_dir: Path, out_dir: Path | None = None) -> tuple[dict, Path]:
+def stats(
+    run_dir: Path, out_dir: Path | None = None, bundle: Path | None = None
+) -> tuple[dict, Path]:
     """Per-family counts, the location judge's score distribution, the best and worst.
 
     Written as `<out>/stats.json` and `<out>/index.html`, `<out>` defaulting to
@@ -215,5 +217,6 @@ def stats(run_dir: Path, out_dir: Path | None = None) -> tuple[dict, Path]:
             "Scores are the location judge's P(>=3) and P(>=4) off supply_scores.jsonl.",
         ],
         [grid_page.Section("Per fractal family", table=table), *sections],
+        bundle=bundle,
     )
     return record, page
