@@ -92,6 +92,8 @@ WRITERS = [
     ("page.json", "grid_page.py", "document", {"picture", "caption"}),
     ("page.json", "grid_page.py", "document", {"joined_on", "row"}),
     ("Gallery page.json", "curation/tentative.py", "page", {"stamp", "ordered_by"}),
+    ("counts.json", "curation/trace.py", "build", {"broken_chains", "files"}),
+    ("counts.json", "curation/trace.py", "counted", {"source", "sliced"}),
 ]
 
 

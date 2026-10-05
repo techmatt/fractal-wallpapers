@@ -95,6 +95,30 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
     if args.what == "recipes":
         return curate_solve_recipes(args)
 
+    if args.what == "trace":
+        from fractal_wallpapers import bundle as bundle_module
+        from fractal_wallpapers.curation import trace
+
+        stamp = args.stamp or tentative.latest()
+        bundle = resolve_output(args.bundle) if args.bundle else None
+        try:
+            page, counts = trace.build(
+                stamp,
+                out=resolve_output(args.out) if args.out else None,
+                bundle=bundle,
+                log=lambda line: None,
+            )
+        except FileNotFoundError as refusal:
+            print(refusal)
+            return 1
+        print(f"{stamp}: {counts['seats']} seat(s), {len(counts['broken_chains'])} broken chain(s)")
+        for name, block in counts["files"].items():
+            print(f"  {name:<20} {block['sliced']:>5} of {block['rows']:>9,} row(s)")
+        print(display_path(page))
+        if bundle is not None:
+            print(bundle_module.said(bundle))
+        return 0
+
     if args.what == "viewers":
         from fractal_wallpapers.curation import viewers
 
@@ -1844,6 +1868,26 @@ def add_steps(steps) -> None:
         "It is what a published record wants: 923 of the published record's 1,000 fulls "
         "were borrowed from labelling sheets on 2026-09-14 and 895 of those from one sheet",
     )
+
+    tracing = solve_verbs.add_parser(
+        "trace",
+        help="follow each seat of a record back through every file to the walk row that "
+        "found its place, and write the slices and a page",
+        description=(
+            "For each seat: its gallery.jsonl row, its candidate-ledger row, scores and "
+            "flatness, its pool_scores row, its place's supply_scores and locations.jsonl "
+            "rows, and the walk.jsonl rows from the place back to its lineage's root. Writes "
+            "sliced copies of each file (only the rows on those chains, byte for byte, plus "
+            "one walk row of every other kind) under files/, counts.json with each full "
+            "file's row count, and a page (default artifacts/curation/trace/<stamp>/). Also "
+            "follows three of each reject: the lowest-scored places, candidates under the "
+            "pool gate, and candidates that cleared it and missed the fine bar. A chain that "
+            "cannot be followed is listed with the file it stopped at."
+        ),
+    )
+    tracing.add_argument("stamp", nargs="?", help="the record (default the newest)")
+    tracing.add_argument("--out", metavar="DIR", help="write the trace here")
+    bundle_flag(tracing)
 
     viewing = solve_verbs.add_parser(
         "viewers",

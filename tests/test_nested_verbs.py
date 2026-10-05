@@ -646,6 +646,7 @@ SURFACE: dict[str, dict[str, tuple[str, ...]]] = {
         "k-sweep": ("--k", "--n", "--control"),
         "k-sweep-plot": (),
         "fulls": ("--stamp", "--workers", "--no-render", "--pin"),
+        "trace": ("--out", "--bundle"),
         "viewers": (),
         "browse": ("--stamp", "--spacing", "--out", "--bundle", "--viewer"),
         "recipes": ("--stamp", "--write"),
@@ -1057,14 +1058,15 @@ def test_every_nested_verb_is_a_real_subparser() -> None:
     hundred and thirteen until `solve viewers` arrived to write a viewer per planned
     gallery and one index page over them; and one hundred and fourteen until `pins resolve`
     arrived to turn the pinned list's explorer links into the ledger rows every solve seats
-    first."""
+    first; and one hundred and twenty-two until `solve trace` arrived to follow each seat of
+    a record back through every file a reader inspects."""
     groups = nested_groups(cli.build_parser())
 
     assert set(groups) == set(SURFACE), (
         f"nested groups the surface table does not name: {sorted(set(groups) - set(SURFACE))}; "
         f"named but not nested: {sorted(set(SURFACE) - set(groups))}"
     )
-    assert sum(len(verbs) for verbs in SURFACE.values()) == 122
+    assert sum(len(verbs) for verbs in SURFACE.values()) == 123
     for name, action in groups.items():
         assert list(action.choices) == list(SURFACE[name]), (
             f"`curate {name}` registers its verbs in another order, and the order is the "

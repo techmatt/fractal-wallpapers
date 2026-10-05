@@ -31,6 +31,7 @@ each in [0, 1] and non-increasing in K.
 | `artifacts/curation/tentative/keep.jsonl` | `solve record`, `solve release` | [keep.jsonl](#keepjsonl) |
 | `page.json` beside each inspection page | every page and `--bundle` | [page.json](#pagejson) |
 | `page.json` beside a gallery's page | `curate solve browse`, `record` | [Gallery page.json](#gallery-pagejson) |
+| `artifacts/curation/trace/<stamp>/counts.json` and `files/` | `curate solve trace` | [counts.json](#countsjson) |
 | a render spec JSON | you; `fractal-engine render <spec>` | [The render spec](#the-render-spec) |
 | an explorer link | the website; `render-link` | [The explorer link](#the-explorer-link) |
 
@@ -327,6 +328,23 @@ as they are here.
 | `missing`, `at_full` | seats with no picture on this disk, and seats with a release-geometry picture |
 | `full_regime`, `ordered_by` | the release regime's spelling, and the basis of the presentation order |
 | `rows` | [gallery.jsonl](#galleryjsonl)'s rows, each with `src` (the picture the tile shows), `full` (its release-geometry picture, or empty; always empty in a bundle) and `order` |
+
+## counts.json
+
+Beside a trace's page (`curate solve trace <stamp>`, `curation/trace.py`'s `build`),
+default `artifacts/curation/trace/<stamp>/`. The trace's `files/` folder holds a sliced
+copy of each file a seat's chain runs through: `gallery.jsonl`, `manifest.json`,
+`rows.jsonl`, `scores.jsonl`, `flatness.jsonl`, `pool_scores.jsonl`,
+`supply_scores.jsonl`, `locations.jsonl` and `walk.jsonl`. Each slice holds only the rows
+on the chains, copied byte for byte, so each is read by its own section above. The walk
+slice also holds one row of every kind no chain reached. The page is a
+[page.json](#pagejson).
+
+| field | meaning |
+| --- | --- |
+| `schema`, `stamp`, `seats` | `1`, the record traced, and its seat count |
+| `broken_chains` | `[{seat, key, stopped_at}]`: seats whose chain could not be followed, and the file it stopped at |
+| `files` | `{name: {source, rows, sliced}}`: the full file's tracked path, how many rows it held, and how many the slice kept |
 
 ## The render spec
 
