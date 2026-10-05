@@ -62,9 +62,9 @@ RENDERS = [
     {
         "name": "render",
         "argv": [
-            "fractal-wallpapers", "render", "--family", "mandelbrot",
-            "--center-re", "-0.7436438870371587", "--center-im", "0.13182590420531197",
-            "--width", "0.00001", "--mode", "stripe", "--cycles", "2",
+            "fractal-wallpapers", "render", "--family", "julia", "--c", "-0.75", "0.11",
+            "--center-re", "0", "--center-im", "0",
+            "--width", "3", "--mode", "stripe", "--cycles", "2",
             "--out", "artifacts/first.png",
         ],
     },

@@ -31,8 +31,9 @@ It is the pipeline behind the site [Making Fractal Wallpapers](https://techmatt.
 ## What it does
 
 The search covers the Mandelbrot set, multibrots of degree 3 to 6, Julia sets of degree 2
-to 6, the Phoenix set, and a render-only fractional multibrot, drawn in about twenty
-coloring modes through about a thousand palettes.
+to 6 and the Phoenix set, drawn in about twenty coloring modes through about a thousand
+palettes. The engine also draws a fractional multibrot, which the search never visits: it
+is render-only, reached through a spec file ([FORMATS.md](FORMATS.md#the-render-spec)).
 
 Four judges pick from that space. Three are trained on human ratings tracked in this
 repository; the palette judge is distilled from an older palette model.
@@ -160,17 +161,18 @@ at the top, and takes `--bundle DIR` to write itself as a folder that can leave 
 Step 10 gathers them all. Times are from a sample run on the box in
 [*What each stage costs*](#what-each-stage-costs).
 
-**1. Render one picture** (about a minute, then seconds):
+**1. Render one picture** (seconds):
 
 ```
-fractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \
-  --center-im 0.13182590420531197 --width 0.00001 --mode stripe --cycles 2 --out artifacts/first.png
+fractal-wallpapers render --family julia --c -0.75 0.11 --center-re 0 --center-im 0 \
+  --width 3 --mode stripe --cycles 2 --out artifacts/first.png
 engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
   --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
 ```
 
-The first spells the picture out in flags; it is a deep view with a lot of interior, so
-it takes about 70 s on the reference box. The second draws an explorer link, copied from
+The first spells the picture out in flags: the whole of the quadratic Julia set at
+c = -0.75 + 0.11i, a seahorse-valley constant, in stripe coloring with the palette run
+twice. It takes about 3 s on the reference box. The second draws an explorer link, copied from
 the explorer or from any wallpaper's metadata, in about 5 s. The link is read as text: it
 is a complete recipe, and nothing is fetched from the network. `render-link` needs no
 Python and no weights, and it embeds the link in the file, so the picture reopens its view
