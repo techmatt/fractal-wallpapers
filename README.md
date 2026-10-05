@@ -292,7 +292,7 @@ fractal-wallpapers curate solve run --name second --n 12
 A mine spends its budget where the pool is thinnest. Re-score and re-solve after each
 merge.
 
-**10. Trace the gallery, and gather every page** (about a minute and a half, nearly all of it step 1's renders):
+**10. Trace the gallery, and gather every page** (about ten seconds, most of it step 1's two renders):
 
 ```
 fractal-wallpapers curate solve trace <stamp>
@@ -312,7 +312,7 @@ are `render/` (step 1's two pictures, drawn again and timed on your machine),
 `parameters.json` ([FORMATS.md](FORMATS.md#parametersjson)) and `help/`, every command's
 `--help`. Nothing else is rendered; a page whose step was skipped is listed with the
 command that makes it. In the sample run the five folders came to 0.18, 1.57, 0.79, 0.23
-and 1.27 MB, and the whole folder to 4.85 MB, 0.55 MB of it `render/`.
+and 1.27 MB, and the whole folder to 4.90 MB, 0.60 MB of it `render/`.
 
 ### Say it plainly
 
@@ -361,7 +361,7 @@ renders take the same wall time, and a fixed hunt budget makes about a fifth mor
 candidates on CUDA only because its judging overhead is smaller (1.5 s against 1.9 s a
 candidate). The 10 + 10 minute sample took about 27 minutes from harvest to viewer on
 the CUDA install, and the 5-minute mine, its merge and the re-solve about 6 more. It leaves
-about 1.1 GB under `artifacts/`, and step 10's walkthrough is 4.85 MB of it. The first CPU
+about 1.1 GB under `artifacts/`, and step 10's walkthrough is 4.90 MB of it. The first CPU
 sample of 2026-10-04 took about 45 minutes and landed on the same order of disk.
 
 Each stage's README covers the rest:
