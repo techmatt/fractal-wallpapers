@@ -13,9 +13,23 @@ where a figure keeps the date it was taken on.
 ## From a fresh clone to a first gallery
 
 A fresh clone holds tracked labels and nothing rendered, so a solve has nothing to
-seat until a walk has found places and a leg has rendered them. The root README gives
-the sequence: `fetch-weights`, a `harvest --no-scoring`, `curate score --harvest`,
-`curate embed`, a hunt and its merge, then `curate solve run`.
+seat until a walk has found places and a leg has rendered them. The root README's *From
+a fresh clone to a first gallery* is the sequence, one command a step: `fetch-weights`
+and `judges check`, a `harvest --no-scoring`, `curate score --harvest` (then `harvest
+export` and `harvest stats`), `curate embed`, a hunt and its merge, `curate
+candidate-ledger browse`, **`gallery-grade score-pool`**, `curate solve run` at a small
+`n` (`--force-fill` for the first look), `curate solve record`, `curate solve browse
+--viewer`, and `curate mine run` and its merge to continue.
+
+- **`gallery-grade score-pool` comes before every solve, and again after every merge.**
+  The default `cascade` order reads the gallery judge's column, and a solve without it
+  refuses with that instruction.
+- **A ten-minute pool seats a handful at the default bars**: the fresh-install audit of
+  2026-10-04 cleared 3 of 324 candidates on CPU and 18 of 379 on CUDA past the fine bar.
+  `--force-fill` lifts both quality bars and keeps every distinctness rule; its record
+  says so, and a collection publish path refuses it.
+- **A recorded gallery is kept by default** (`tentative/keep.jsonl`), so a later merge's
+  prune spares its seats. `curate solve release <stamp>` lets one go.
 
 - **`curate embed` is a hard gate**, not an optional step: a hunt refuses outright
   against an empty embedding store.

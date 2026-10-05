@@ -83,90 +83,205 @@ run.
 
 ## Install
 
+**[`uv`](https://docs.astral.sh/uv/) is the primary route**, and it's what CI runs. Pick
+CPU or CUDA; the two differ only in which torch they install:
+
 ```
 git clone https://github.com/techmatt/fractal-wallpapers
 cd fractal-wallpapers
-python -m venv .venv
-.venv/Scripts/pip install -e .                   # Linux/macOS: .venv/bin/pip
+uv sync --extra models --extra solve              # CPU torch, any machine
+uv sync --extra cuda --extra solve                # or: CUDA torch, an NVIDIA card (Windows, Linux x86_64)
 cargo build --release --manifest-path engine/Cargo.toml
+.venv/Scripts/fractal-wallpapers fetch-weights    # Linux/macOS: .venv/bin/fractal-wallpapers
 ```
 
-Build the engine in release. A debug build works but runs about ten times slower.
+- **One `uv sync`, not both.** `models` and `cuda` are declared as conflicting, so a
+  second sync swaps the torch in place. Add `--extra dev` for the test suite and the
+  linter. `uv sync` makes `.venv` itself, picking a Python that every pinned wheel
+  supports. On a Windows 10 box on 2026-10-04, CPU landed on Python 3.13 with torch
+  2.14.1+cpu (a 0.75 GB venv, about 40 s), and CUDA on Python 3.12 with torch
+  2.6.0+cu124 (a 4.7 GB venv, about 50 s). The `uv.lock` it writes is ignored.
+- **Every command below is `fractal-wallpapers …`.** Activate the venv once
+  (`.venv\Scripts\activate` on Windows, `source .venv/bin/activate` elsewhere), or prefix
+  each command with `.venv/Scripts/` (`.venv/bin/`).
+- **Rust** builds the engine in about a minute. Build it in release; a debug build runs
+  about ten times slower.
+- **`fetch-weights`** downloads the four judges (43 MB) from this repository's GitHub
+  release named in `models/weights.json`, and checks each file against its sha256.
+- **What downloads on first use:** `curate embed` fetches a frozen DINOv2 ViT-S/14
+  ([`timm/vit_small_patch14_dinov2.lvd142m`](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m),
+  85 MB, Apache-2.0) into the Hugging Face cache, `~/.cache/huggingface` unless `HF_HOME`
+  says otherwise. Nothing else needs the network after install.
 
-The base install covers rendering, the search, and the labeling rig. Extras add the rest:
+**The alternative is pip**, for a machine without uv. It gets CPU torch from PyPI on
+Windows and macOS, so use it for CPU only; [`models/README.md`](src/fractal_wallpapers/models/README.md)
+gives the CUDA pip command and why uv is the better way there:
+
+```
+python -m venv .venv
+.venv/Scripts/pip install -e ".[models,solve]"   # Linux/macOS: .venv/bin/pip
+```
+
+`pip install -e .` alone is the base install: the engine, the search and the labeling rig,
+with no torch. A command that needs an extra you don't have says which one.
 
 | extra | for |
 | --- | --- |
 | `models` | running and training the judges (torch, torchvision, timm), on CPU torch |
-| `cuda` | `models` on CUDA torch, for training on an NVIDIA card |
+| `cuda` | `models` on CUDA torch, for an NVIDIA card |
 | `solve` | choosing a gallery (numpy, pillow) |
 | `dev` | the test suite and the linter |
 
-A command that needs an extra you don't have says which one. The simplest full install is
-[`uv`](https://docs.astral.sh/uv/), which is what CI runs:
+Rendered output goes under `artifacts/`, which in real use reaches a hundred gigabytes or
+so. An untracked `local.toml` can move it to another disk; the
+[package README](src/fractal_wallpapers/README.md) explains how.
 
-```
-uv sync --extra dev --extra models --extra solve
-```
+## From a fresh clone to a first gallery
 
-That writes a `uv.lock` in the checkout; none is tracked.
+One ordered path, about half an hour end to end. Every step is one command, writes the
+files named beside it (each field is in [`FORMATS.md`](FORMATS.md)), and leaves one page
+to open that shows the result is sane. Times are from a sample run on the box in
+[*What each stage costs*](#what-each-stage-costs).
 
-To train on an NVIDIA GPU, name `cuda` in place of `models`. Use `uv` for that rather than
-pip; [`models/README.md`](src/fractal_wallpapers/models/README.md) explains why, and gives
-the pip command if you have to.
-
-## Render a picture
-
-An explorer link is enough on its own. Copy one from the explorer (or from any wallpaper's
-metadata) and hand it to the engine with a size:
+**1. Render one picture** (seconds). An explorer link is enough on its own: copy one from
+the explorer, or from any wallpaper's metadata.
 
 ```
 engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
   --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
+fractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \
+  --center-im 0.13182590420531197 --width 0.00001 --mode stripe --cycles 2 --out artifacts/first.png
 ```
 
-That needs no Python, no weights, and no network. It writes the picture with the link
-embedded, so the file reopens its view when dropped on the explorer. Deep-zoom (`dv=`)
-links aren't drawn yet. [`engine/README.md`](engine/README.md) has the rest.
+`render-link` needs no Python, no weights and no network, and it embeds the link in the
+file, so the picture reopens its view when dropped on the explorer. `render --help` lists
+every family, mode and palette knob. `fractal-wallpapers modes` and
+`fractal-wallpapers palettes list` print the names. Writes the two PNGs; open them.
 
-From Python, one location by its coordinates:
-
-```
-.venv/Scripts/fractal-wallpapers render --family mandelbrot \
-  --center-re -0.7436438870371587 --center-im 0.13182590420531197 --width 0.00001 \
-  --out artifacts/first.png
-```
-
-## Run the pipeline
-
-Everything runnable is a subcommand of `fractal-wallpapers`, each with its own `--help`.
-The judges' weights come from this repository's GitHub releases, and each file is checked
-against the sha256 in `models/weights.json`:
+**2. Check the judges** (under a minute):
 
 ```
-fractal-wallpapers fetch-weights
+fractal-wallpapers judges check
 ```
 
-A fresh clone holds the tracked labels and nothing rendered, so a first gallery takes a
-search, a scoring pass, and a rendering leg before the solve has anything to choose from:
+This renders eight tracked recipes, scores each with all four judges, and fails if any
+score is more than 1e-4 from the expected one. Renders are byte-identical across installs,
+and CPU and CUDA agree to about 1e-5. Writes `artifacts/judges/check/check.json`. Open
+`artifacts/judges/check/index.html`. `judges score <picture>…` scores any picture of your
+own.
+
+**3. Search the planes for places** (10 minutes, then about 4 to score):
 
 ```
-fractal-wallpapers harvest --partition mandelbrot --minutes 60 --no-scoring
+fractal-wallpapers harvest --minutes 10 --no-scoring
 fractal-wallpapers curate score --harvest artifacts/harvest
-fractal-wallpapers curate embed
-fractal-wallpapers curate hunt run --name h1 --budget 1200 --unconditional 600
-fractal-wallpapers curate hunt merge --name h1
-fractal-wallpapers curate solve run --n 150
+fractal-wallpapers harvest export
+fractal-wallpapers harvest stats
 ```
 
-`curate embed` fetches one third-party model on first use, a frozen DINOv2 ViT-S/14
-([`timm/vit_small_patch14_dinov2.lvd142m`](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m),
-Apache-2.0), from Hugging Face. It's the only command that needs the network after
-install.
+The harvest walks all twelve fractal families and writes `artifacts/harvest/walk.jsonl`
+([FORMATS.md](FORMATS.md#walkjsonl)). `curate score` reads every admitted place through
+the location judge into `artifacts/curation/supply_scores.jsonl`
+([FORMATS.md](FORMATS.md#supply_scoresjsonl)). `export` joins the two into one flat
+`artifacts/harvest/locations.jsonl` ([FORMATS.md](FORMATS.md#locationsjsonl)), and `stats`
+prints each family's counts and scores. Open `artifacts/harvest/stats/index.html` for each
+family's best four and worst four places.
 
-Rendered output goes under `artifacts/`, and in real use that reaches a hundred gigabytes
-or so. An untracked `local.toml` can move it to another disk; the
-[package README](src/fractal_wallpapers/README.md) explains how.
+**4. Embed the places** (2 to 6 minutes):
+
+```
+fractal-wallpapers curate embed
+```
+
+This is a hard gate: a hunt refuses to start without it. On first use it downloads DINOv2
+(see *Install*). It writes the embedding store under `artifacts/curation/`, and it has no
+page.
+
+**5. Render candidates, and merge them into the pool** (10 minutes):
+
+```
+fractal-wallpapers curate hunt run --name h1 --budget 600 --unconditional 600
+fractal-wallpapers curate hunt merge --name h1
+fractal-wallpapers curate candidate-ledger browse
+```
+
+`--budget` is render-seconds, which in practice is wall time. The hunt renders each place
+in several modes and palettes at 640x360 and scores every picture with the render judge.
+`merge` puts the rows into the candidate pool,
+`artifacts/curation/candidate_ledger/{rows,scores}.jsonl`
+([FORMATS.md](FORMATS.md#candidate-ledger-rows)). Open
+`artifacts/curation/candidate_page/index.html` for the pool by mode and family, its best
+candidates and a random draw.
+
+**6. Read the pool with the gallery judge** (seconds):
+
+```
+fractal-wallpapers gallery-grade score-pool
+```
+
+The solve's order needs this, and it needs it again after every merge. It writes
+`artifacts/gallery_grade_head/pool_scores.jsonl` ([FORMATS.md](FORMATS.md#pool_scoresjsonl)).
+
+**7. Choose a gallery** (about 15 s a seat, for the full-size render):
+
+```
+fractal-wallpapers curate solve run --name first --n 12 --force-fill
+fractal-wallpapers curate solve run --name first_at_bars --n 12
+```
+
+`--force-fill` is the first look at an early pool. The quality bars stop refusing, and the
+best rows available seat under every distinctness rule. Without it, the default bars seat
+only the handful a short run clears (see below). Each run writes
+`artifacts/curation/solve/<name>/solve.json` ([FORMATS.md](FORMATS.md#solvejson)) and the
+seats at 1280x720. Open `artifacts/curation/solve/<name>/contact_sheet.html`.
+
+**8. Record it, and open the viewer** (the same, plus seconds):
+
+```
+fractal-wallpapers curate solve record --n 12 --force-fill
+fractal-wallpapers curate solve browse --viewer
+```
+
+A record is the solve run once more and kept under a UTC stamp that never moves:
+`artifacts/curation/tentative/<stamp>/{gallery.jsonl,manifest.json}`
+([FORMATS.md](FORMATS.md#galleryjsonl)). It goes on the keep list, so a later merge spares
+its pictures; `curate solve release <stamp>` lets it go. `browse --viewer` writes the
+newest record you made to `artifacts/curation/viewer/index.html`, the page to open.
+
+**9. Keep the pool growing** (as long as you like):
+
+```
+fractal-wallpapers curate mine run --name m1 --budget 300
+fractal-wallpapers curate mine merge --name m1
+fractal-wallpapers gallery-grade score-pool
+fractal-wallpapers curate solve run --name second --n 12
+```
+
+A mine spends its budget where the pool is thinnest. Re-score and re-solve after each
+merge.
+
+### Say it plainly
+
+- **A harvest is clock-allocated, so no two runs match.** Slots go to whichever family is
+  furthest below its share at that moment, priced by measured minutes, so even at one seed
+  two runs diverge within a few batches. Only the seeded draws inside a run are
+  reproducible.
+- **A merge prunes, and it deletes pictures.** Each merge keeps the best few rows per
+  (place, mode) and deletes the rest with their pictures, unless a record on the keep list
+  (step 8) or a published record seats them. It also rewrites the tracked manifests under
+  `data/curation/`, so `git status` goes dirty after every merge. That is the record
+  keeping up, not damage.
+- **A short run seats few pictures at the default bars.** A seat has to clear its mode's
+  bar on the render judge, then the gallery judge's fine bar, and only a few percent of a
+  ten-minute pool clears both. A gallery of hundreds wants hours of mining. `--force-fill`
+  shows what the pool holds today, and its record says it ran forced.
+- **A clone holds the published records as text only.** The twenty-one galleries under
+  `artifacts/curation/tentative/20260922T*` are their rows, manifests and recipes, with no
+  pictures. `render --recipe <recipes.jsonl> --key <alias>` draws any seat of them.
+
+### What each stage costs
+
+The table is filled in from the sample run that proves this path.
 
 Each stage's README covers the rest:
 
