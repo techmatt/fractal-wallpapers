@@ -580,6 +580,28 @@ def curate_candidate_ledger(args: argparse.Namespace) -> int:
 
     if args.what == "free-slots":
         return _free_slots(args)
+    if args.what == "browse":
+        from fractal_wallpapers.curation import candidate_page
+
+        try:
+            page, summary = candidate_page.build(
+                best=args.best,
+                sample=args.sample,
+                seed=args.seed,
+                out=resolve_output(args.out) if args.out else None,
+                log=lambda line: None,
+            )
+        except FileNotFoundError as refusal:
+            print(refusal)
+            return 1
+        print(
+            f"{summary['rows']:,} candidate(s) over {summary['places']:,} place(s), "
+            f"{summary['scored']:,} scored, {summary['fine_read']:,} read by the gallery judge"
+        )
+        for mode, rows, _scored, over, median, _places in summary["by_mode"]:
+            print(f"  {mode:<24} {rows:>7,} rows  {over:>6,} >= bar  median P(>=4) {median}")
+        print(display_path(page))
+        return 0
     doing = {
         "backfill": lambda: candidate_ledger.backfill(recolour=args.recolour),
         "bare-varied": lambda: candidate_ledger.bare_varied(
@@ -1221,6 +1243,22 @@ def add_steps(steps) -> None:
     )
     ledger_store.set_defaults(handler=curate_candidate_ledger)
     ledger_verbs = ledger_store.add_subparsers(dest="what", required=True)
+
+    browsing = ledger_verbs.add_parser(
+        "browse",
+        help="a page of the pool: size by mode and family, the best N and a seeded random N",
+        description=(
+            "Reads the ledger and its score sidecar and renders nothing: the pool's size by "
+            "mode and by fractal family, then the best N candidates by the render judge's "
+            "P(>=4) and a seeded random N, each picture beside its scores (the gallery "
+            "judge's p_fine where `gallery-grade score-pool` has read it). Writes summary.json "
+            "and index.html to artifacts/curation/candidate_page/ unless --out says otherwise."
+        ),
+    )
+    browsing.add_argument("--best", type=int, default=24, help="best candidates shown (24)")
+    browsing.add_argument("--sample", type=int, default=24, help="random candidates shown (24)")
+    browsing.add_argument("--seed", type=int, default=0, help="the random draw's seed (0)")
+    browsing.add_argument("--out", metavar="DIR", help="write the page and summary here")
 
     filling = ledger_verbs.add_parser("backfill", help="build the ledger from what already exists")
     filling.add_argument(

@@ -97,6 +97,7 @@ GROUPS: tuple[str, ...] = (
     "renders_commands",
     "gallery_grade_commands",
     "head_commands",
+    "judges_commands",
     "spiral_commands",
     "regime_commands",
     "palette_commands",

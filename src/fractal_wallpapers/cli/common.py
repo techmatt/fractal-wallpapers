@@ -530,7 +530,106 @@ def refine_limits(args: argparse.Namespace) -> dict:
     return out
 
 
-def location_arguments(draw: argparse.ArgumentParser) -> None:
+def palette_arguments(draw: argparse.ArgumentParser) -> None:
+    """The palette knobs and the mode's own parameters, for `render` alone.
+
+    Every knob a recipe can carry and the engine reads under the spec's `palette`
+    object, plus `params`, the named mode's settings. Unsaid, a knob is left out of
+    the spec and the engine's identity applies, so a render naming none is the
+    render it always was. The curve and the two families the flags cannot name —
+    `fractional_multibrot` and `phoenix_m` — are a spec JSON's, through
+    `fractal-engine render <spec.json>`; FORMATS.md's *The render spec* has every key.
+    """
+    knobs = draw.add_argument_group(
+        "the palette",
+        "how the colormap is spent; each is the engine's identity when unsaid",
+    )
+    knobs.add_argument("--gamma", type=float, help="> 0, power on the normalized field (1)")
+    knobs.add_argument("--cycles", type=float, help="> 0, times the map repeats over the field (1)")
+    knobs.add_argument("--phase", type=float, help="turns the map is rotated by, any finite (0)")
+    knobs.add_argument("--reverse", action="store_true", help="run the map backwards")
+    knobs.add_argument(
+        "--mirror",
+        action="store_true",
+        help="fold the map out and back; refused on a cyclic map (`palettes list --kind`)",
+    )
+    knobs.add_argument(
+        "--transfer",
+        metavar="KIND",
+        help="value (default), edge:W with W >= 0, or rank — what the map is indexed by",
+    )
+    knobs.add_argument(
+        "--rolloff",
+        metavar="KIND",
+        help="none (default), soft_knee:K with K in [0, 1), reinhard, or aces",
+    )
+    knobs.add_argument(
+        "--scale",
+        choices=["leveled", "absolute"],
+        help="leveled (default) spreads the map over the field's own range; absolute "
+        "indexes it by the raw count, where --period and --knee apply and gamma, cycles "
+        "and transfer do not",
+    )
+    knobs.add_argument("--lambda", dest="box_cox", type=float, help="Box-Cox, in [0, 1] (1)")
+    knobs.add_argument("--period", type=float, help="> 0, absolute scale only (1)")
+    knobs.add_argument("--knee", type=float, help="> 0, absolute scale only (none)")
+    knobs.add_argument(
+        "--param",
+        action="append",
+        metavar="NAME=VALUE",
+        help="a mode parameter, repeatable: density (stripe, smooth_stripe), radius "
+        "(trap_circle, smooth_trap_circle, direct traps), sigma (threads), weight (the "
+        "smooth_* composites and threads, in [0, 1]), shift (itinerary, tail_itinerary), "
+        "threshold and opacity (direct_trap_*). `modes` lists the modes",
+    )
+
+
+def palette_of(args: argparse.Namespace) -> tuple[dict, dict]:
+    """`(palette, params)` for a spec, holding only what was typed. Raises `ValueError`."""
+    palette: dict = {}
+    for name, key in (("gamma", "gamma"), ("cycles", "cycles"), ("phase", "phase")):
+        if getattr(args, name, None) is not None:
+            palette[key] = float(getattr(args, name))
+    if getattr(args, "box_cox", None) is not None:
+        palette["lambda"] = float(args.box_cox)
+    for name in ("period", "knee"):
+        if getattr(args, name, None) is not None:
+            palette[name] = float(getattr(args, name))
+    for name in ("reverse", "mirror"):
+        if getattr(args, name, False):
+            palette[name] = True
+    if getattr(args, "scale", None):
+        palette["scale"] = args.scale
+    transfer = getattr(args, "transfer", None)
+    if transfer:
+        kind, _, weight = transfer.partition(":")
+        if kind == "edge":
+            palette["transfer"] = {"kind": "edge", "weight": float(weight or 0)}
+        elif kind in ("value", "rank") and not weight:
+            palette["transfer"] = {"kind": kind}
+        else:
+            raise ValueError(f"--transfer takes value, edge:W or rank, not {transfer!r}")
+    rolloff = getattr(args, "rolloff", None)
+    if rolloff:
+        kind, _, knee = rolloff.partition(":")
+        if kind == "soft_knee":
+            palette["rolloff"] = {"kind": "soft_knee", "knee": float(knee or 0)}
+        elif kind in ("none", "reinhard", "aces") and not knee:
+            palette["rolloff"] = {"kind": kind}
+        else:
+            raise ValueError(
+                f"--rolloff takes none, soft_knee:K, reinhard or aces, not {rolloff!r}"
+            )
+    params: dict = {}
+    for text in getattr(args, "param", None) or ():
+        name, equals, value = text.partition("=")
+        if not equals or not name:
+            raise ValueError(f"--param takes NAME=VALUE, not {text!r}")
+        params[name.strip()] = float(value)
+    return palette, params
+
+
+def location_arguments(draw: argparse.ArgumentParser, palette: bool = False) -> None:
     """Add the arguments that name a location and how to color it.
 
     Shared by `render` and `dump-field`, which describe the same thing and
@@ -628,6 +727,10 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
         type=int,
         help="iteration cap; omit to let the depth-aware policy choose",
     )
+    # `render` alone takes the palette knobs; added here, before the defaults are
+    # read, so a knob typed beside a record is refused like any other flag.
+    if palette:
+        palette_arguments(draw)
     # What every one of those flags means when nobody passes it, carried onto the
     # namespace. argparse fills a default in and does not remember that it did,
     # so a command handed a whole location record has no other way to tell a flag

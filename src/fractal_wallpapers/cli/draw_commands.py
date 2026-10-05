@@ -11,6 +11,7 @@ from fractal_wallpapers.cli.common import (
     DEFAULT_MODE,
     boundary_default,
     location_arguments,
+    palette_of,
     resolve_output,
 )
 from fractal_wallpapers.paths import (
@@ -71,6 +72,13 @@ def render_spec(args: argparse.Namespace) -> dict:
         spec["viewport"] = viewport
     if args.maxiter is not None:
         spec["maxiter"] = args.maxiter
+    # Only what was typed, and only on `render`: a knob left out is the engine's
+    # identity, so a render naming none is byte for byte what it was.
+    palette, params = palette_of(args)
+    if palette:
+        spec["palette"] = palette
+    if params:
+        spec["params"] = params
     return spec
 
 
@@ -91,6 +99,10 @@ def refuse_impossible_location(args: argparse.Namespace) -> str | None:
     unknown = refuse_unknown(getattr(args, "colormap", None))
     if unknown is not None:
         return unknown
+    try:
+        palette_of(args)
+    except ValueError as refusal:
+        return str(refusal)
     if args.family == "julia" and args.c is None:
         return "--c is required for a julia render: it is half of the location's identity"
     if args.family not in ("julia", "multibrot") and args.degree != 2:
@@ -161,6 +173,49 @@ def pick_recipe(rows: list[dict], key: str | None, path: Path) -> dict:
     return rows[0]
 
 
+def draw_recipe(recipe, output: Path):
+    """Draw one stored recipe to `output`. `(picture, autolevel stamp)`.
+
+    **The one door from a recipe to a picture outside a leg**, shared by `render
+    --recipe` and `judges check` so the two cannot draw different pixels for one
+    key. The levelling band is checked first: a recipe names the sha256 of the band
+    it was levelled onto, and drawing onto another is a different picture under the
+    record's ID. Raises `recipes.RecipeError` with the sentence to print.
+    """
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.curation import recipes as recipes_module
+
+    band = None
+    if recipe.autolevel is not None:
+        band = colorize.band()
+        wanted = str(recipe.autolevel.get("band_sha256") or "")
+        if band is None:
+            raise recipes_module.RecipeError(
+                f"this recipe was levelled onto band {wanted[:12]} and the autolevel "
+                f"operator is switched off on this machine, so the picture would come out "
+                f"unlevelled under its own name."
+            )
+        if wanted and str(band.get("_sha256") or "") != wanted:
+            raise recipes_module.RecipeError(
+                f"this recipe was levelled onto band {wanted[:12]} and "
+                f"data/coloring/levels_band.json is {str(band.get('_sha256'))[:12]}. A render "
+                f"onto another band is a different picture under the same key."
+            )
+    return colorize.render(
+        {"family": recipe.family, "viewport": recipe.viewport},
+        recipe.mode,
+        recipe.colormap,
+        set(),
+        output,
+        render_geometry={**recipe.regime.geometry(), "maxiter": int(recipe.maxiter)},
+        level=recipe.autolevel is not None,
+        band=band,
+        mode_params=recipe.mode_params,
+        curve=recipe.curve,
+        palette=recipe.palette,
+    )
+
+
 def render_recipe(args: argparse.Namespace) -> int:
     """Draw one picture from a stored recipe — everything, not only the place.
 
@@ -181,7 +236,6 @@ def render_recipe(args: argparse.Namespace) -> int:
     direct traps or the itinerary, and a seat in one of those modes has no band in
     its identity to begin with.
     """
-    from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.curation import recipes as recipes_module
 
     path = resolve_output(args.recipe)
@@ -201,39 +255,11 @@ def render_recipe(args: argparse.Namespace) -> int:
         )
         return 1
 
-    band = None
-    if recipe.autolevel is not None:
-        band = colorize.band()
-        wanted = str(recipe.autolevel.get("band_sha256") or "")
-        if band is None:
-            print(
-                f"this recipe was levelled onto band {wanted[:12]} and the autolevel "
-                f"operator is switched off on this machine, so the picture would come out "
-                f"unlevelled under its own name."
-            )
-            return 1
-        if wanted and str(band.get("_sha256") or "") != wanted:
-            print(
-                f"this recipe was levelled onto band {wanted[:12]} and "
-                f"data/coloring/levels_band.json is {str(band.get('_sha256'))[:12]}. A render "
-                f"onto another band is a different picture under the same key."
-            )
-            return 1
-
-    output = resolve_output(args.out)
-    picture, stamp = colorize.render(
-        {"family": recipe.family, "viewport": recipe.viewport},
-        recipe.mode,
-        recipe.colormap,
-        set(),
-        output,
-        render_geometry={**recipe.regime.geometry(), "maxiter": int(recipe.maxiter)},
-        level=recipe.autolevel is not None,
-        band=band,
-        mode_params=recipe.mode_params,
-        curve=recipe.curve,
-        palette=recipe.palette,
-    )
+    try:
+        picture, stamp = draw_recipe(recipe, resolve_output(args.out))
+    except recipes_module.RecipeError as refusal:
+        print(refusal)
+        return 1
     print(
         json.dumps(
             {
@@ -313,7 +339,14 @@ def render(args: argparse.Namespace) -> int:
         print(complaint)
         return 1
 
-    print(json.dumps(engine.render_report(render_spec(args)), indent=2))
+    try:
+        report = engine.render_report(render_spec(args))
+    except RuntimeError as refusal:
+        # The engine's own refusal — a mirror on a cyclic map, a knob out of range —
+        # is a sentence about the flags, and a traceback would bury it.
+        print(str(refusal).removeprefix("engine failed: "))
+        return 1
+    print(json.dumps(report, indent=2))
     return 0
 
 
@@ -554,7 +587,7 @@ def add_commands(subcommands) -> None:
             "strings and are recorded exactly as written."
         ),
     )
-    location_arguments(draw)
+    location_arguments(draw, palette=True)
     record_input = draw.add_argument_group(
         "a record instead of flags",
         "either one names what the flags above would have spelled out",

@@ -278,8 +278,37 @@ def harvest_draws_views(args: argparse.Namespace) -> bool:
     return False
 
 
+def harvest_readout(args: argparse.Namespace) -> int:
+    """`harvest export` and `harvest stats`: read a finished run, start nothing."""
+    from fractal_wallpapers.supply import places
+
+    run_dir = resolve_output(args.out_dir)
+    try:
+        if args.what == "export":
+            path, rows = places.export(run_dir)
+            scored = sum(1 for row in rows if row["p_ge3"] is not None)
+            print(f"{display_path(path)}: {len(rows):,} admitted place(s), {scored:,} scored")
+            return 0
+        record, page = places.stats(run_dir)
+    except FileNotFoundError as refusal:
+        print(refusal)
+        return 1
+    print(f"{'family':<20} {'found':>6} {'admitted':>8} {'scored':>6} {'median P>=3':>11}")
+    for partition, block in record["families"].items():
+        median = (block["p_ge3"] or {}).get("median")
+        print(
+            f"{partition:<20} {block['found']:>6} {block['admitted']:>8} {block['scored']:>6} "
+            f"{'—' if median is None else f'{median:.3f}':>11}"
+        )
+    print(display_path(run_dir / "stats" / "stats.json"))
+    print(display_path(page))
+    return 0
+
+
 def harvest(args: argparse.Namespace) -> int:
     """Run the production loop: keep finding material where it is scarcest."""
+    if getattr(args, "what", None) in ("export", "stats"):
+        return harvest_readout(args)
     from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
     from fractal_wallpapers.supply import autopsy, ledgers, novelty, saturation, twins
     from fractal_wallpapers.supply.census import stock_census
@@ -882,6 +911,37 @@ def add_commands(subcommands) -> None:
     grace_flag(scoring)
     scoring_flags(scoring)
     production.set_defaults(handler=harvest)
+    # Two OPTIONAL verbs that read a finished run rather than starting one. Optional,
+    # so `harvest --minutes 10` is the loop it always was; the verbs re-declare
+    # `--out-dir` with `SUPPRESS` for the reason `cli/__init__.py` gives, so the run
+    # directory can be named before or after the verb.
+    reading = production.add_subparsers(dest="what", required=False, metavar="{export,stats}")
+    exporting = reading.add_parser(
+        "export",
+        help="join the run's admitted places to the location judge's scores, as one file",
+        description=(
+            "Writes ONE flat file, <run>/locations.jsonl: one row per admitted place, joining "
+            "walk.jsonl's candidate rows (refinements applied) to "
+            "artifacts/curation/supply_scores.jsonl on the location key. A place `curate "
+            "score` has not read yet is present with null scores. The stores are only read. "
+            "FORMATS.md's *locations.jsonl* gives every field."
+        ),
+    )
+    summarising = reading.add_parser(
+        "stats",
+        help="per fractal family: found, admitted, scored, scores, and the best and worst four",
+        description=(
+            "Printed, and written as <run>/stats/stats.json and <run>/stats/index.html, a page "
+            "with the gate render of each family's best four and worst four places by the "
+            "location judge's P(>=3)."
+        ),
+    )
+    for verb in (exporting, summarising):
+        verb.add_argument(
+            "--out-dir",
+            default=argparse.SUPPRESS,
+            help="the run directory (default: artifacts/harvest)",
+        )
 
     checking = subcommands.add_parser(
         "score-parity",
