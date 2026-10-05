@@ -213,8 +213,8 @@ fractal-wallpapers curate hunt merge --name h1
 fractal-wallpapers curate candidate-ledger browse
 ```
 
-`--budget` is render-seconds, which in practice is wall time; ten minutes made 273
-candidates over 91 places. The hunt renders each place in several modes and palettes at
+`--budget` is render-seconds, which in practice is wall time; ten minutes made 327
+candidates over 109 places. The hunt renders each place in several modes and palettes at
 640x360 and scores every picture with the render judge.
 `merge` puts the rows into the candidate pool,
 `artifacts/curation/candidate_ledger/{rows,scores}.jsonl`
@@ -241,8 +241,8 @@ fractal-wallpapers curate solve run --name first_at_bars --n 12
 
 `--force-fill` is the first look at an early pool. The quality bars stop refusing, and the
 best rows available seat under every distinctness rule. Without it, the default bars seat
-only the handful a short run clears (see below): 5 of 12 in the sample run, against 12 of
-12 forced. Each run writes
+only the handful a short run clears (see below): 2 of 12 in the sample run, against 12 of
+12 forced, and 4 of 12 after step 9's five-minute mine. Each run writes
 `artifacts/curation/solve/<name>/solve.json` ([FORMATS.md](FORMATS.md#solvejson)) and the
 seats at 1280x720. Open `artifacts/curation/solve/<name>/contact_sheet.html`.
 
@@ -288,7 +288,8 @@ and `index.html`, which shows each seat's row from every file with the join fiel
 holding its page, its `page.json` and only the pictures it shows: `judges-check/`,
 `walk-stats/`, `candidates/`, `gallery/` and `trace/`, plus the harvest's `summary.json`,
 `stats.json`, `keep.jsonl` and an `index.html` linking them all. Open that. It renders
-nothing; a page whose step was skipped is listed with the command that makes it.
+nothing; a page whose step was skipped is listed with the command that makes it. In the
+sample run the five folders came to 0.17, 1.55, 0.74, 0.23 and 1.27 MB.
 
 ### Say it plainly
 
@@ -319,26 +320,26 @@ except the first torch import (about 4 s).
 
 | stage | rendered at | the network reads | engine s / picture | judge ms / picture, CPU · CUDA | bytes / picture | in the sample run |
 | --- | --- | --- | --- | --- | --- | --- |
-| walk frame (gate render) | 384x216, ss1 | — | 0.04–0.3 | — | 60 KB | 4,166, 260 MB |
-| location judge | its own 384x216 ss1 view | 384x224 stretch | 0.04–0.3 | 24 · 5 | 60 KB | 4,120, 256 MB |
-| embedding (DINOv2) | 448x252, ss1 | 448x252 as is | 0.05–0.2 | 100 · 8 | 90 KB | 1,383, 123 MB |
-| mined candidate | 640x360, ss2 | — | 0.2–1.2 | — | 140 KB, plus about 0.9 MB of cached field | 416 rows, 77 MB of pictures, 370 MB of fields |
+| walk frame (gate render) | 384x216, ss1 | — | 0.04–0.3 | — | 60 KB | 4,069, 246 MB |
+| location judge | its own 384x216 ss1 view | 384x224 stretch | 0.04–0.3 | 24 · 5 | 60 KB | 4,022, 241 MB |
+| embedding (DINOv2) | 448x252, ss1 | 448x252 as is | 0.05–0.2 | 100 · 8 | 90 KB | 1,796, 155 MB |
+| mined candidate | 640x360, ss2 | — | 0.2–1.2 | — | 140 KB, plus about 0.9 MB of cached field | 437 rows after two merges, 81 MB of pictures, 317 MB of fields |
 | wallpaper (render) judge | the candidate | 384x224 stretch | — | 13 · 7 | — | every candidate |
 | gallery judge | the candidate | 384x224 stretch, 3 seeds | — | 25 · 8 | — | the above-bar rows |
 | palette judge | 640x360, ss2 | 224x224 squash | — | 9 · 6 | — | `judges check` only |
-| solve seat | 1280x720, ss2 | — | 0.7–4.1 | — | 1.8 MB PNG | 12 a solve, 67 MB for four solves |
+| solve seat | 1280x720, ss2 | — | 0.7–4.1 | — | 1.8 MB PNG | 12 a solve, 34 MB for three solves and two records |
 | full-size wallpaper | 2560x1440, ss3 | — | 5–31 | — | 2.2 MB JPEG | not made |
 
 A GPU speeds the judges up 2 to 12 times. The embedding gains most (100 ms to 8 ms a
-picture, so `curate embed` took 90 s here, against about 380 s for the audit's CPU
+picture, so `curate embed` took 102 s here, against about 380 s for the audit's CPU
 install), then the location judge. Everything that renders is engine-bound on either
 install, at three below-normal workers: the harvest, the hunt, the mine and the seat
 renders take the same wall time, and a fixed hunt budget makes about a fifth more
 candidates on CUDA only because its judging overhead is smaller (1.5 s against 1.9 s a
-candidate). The 10 + 10 minute sample took about 37 minutes from harvest to viewer on
-the CUDA install (and the 5-minute mine about 10 more), and leaves about 1 GB under
-`artifacts/`. The CPU install takes about 45 minutes and lands on the same order of
-disk.
+candidate). The 10 + 10 minute sample took about 27 minutes from harvest to viewer on
+the CUDA install, and the 5-minute mine, its merge and the re-solve about 6 more. It leaves
+about 1.1 GB under `artifacts/`, and step 10's walkthrough is 4.1 MB of it. The first CPU
+sample of 2026-10-04 took about 45 minutes and landed on the same order of disk.
 
 Each stage's README covers the rest:
 

@@ -212,7 +212,11 @@ is a ruling, and a ruling is only as good as the place it is written down.
 (`judges score --page`, `judges check`), `artifacts/curation/candidate_page/` (`curate
 candidate-ledger browse`), and a harvest's `locations.jsonl` and `stats/` (`harvest export`,
 `harvest stats`) are each rewritten whole by their one command from stores that are
-kept, so deleting any of them costs one re-run.
+kept, so deleting any of them costs one re-run. So are `artifacts/curation/trace/<stamp>/`
+(`curate solve trace`) and the top-level `artifacts/walkthrough/` (`walkthrough`), whose
+tier is *delete*: hot while a reader looks at it, never archived, and rebuilt in seconds
+from the pages and records it bundles. Each page's `page.json` twin and `--bundle DIR`
+form are [`bundle.py`](bundle.py)'s.
 
 **The ten unmerged `runs/` legs are not a cleanup opportunity, and the listing
 says so if it is read to the end.** `curate candidate-ledger orphans` lists
