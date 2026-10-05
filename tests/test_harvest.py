@@ -15,6 +15,7 @@ import pytest
 from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
+from fractal_wallpapers.supply.allocation import CAPPED_GROUP, CAPPED_GROUP_SHARE
 from fractal_wallpapers.supply.census import Census, MachineStock
 from fractal_wallpapers.supply.harvest import Budget, Harvest, ReconcileError
 from fractal_wallpapers.supply.partitions import ALL_PARTITIONS, CLASSIC_PHOENIX
@@ -68,12 +69,18 @@ def quota(currency=None, partitions=ALL_PARTITIONS, **kwargs) -> Quota:
 
 def test_a_cold_start_allocation_is_well_defined() -> None:
     """No labels and no finds anywhere is this repository's state today. Every
-    deficit is zero, so the clock spreads uniformly over every registered
-    partition — decided, not floored, and reported as such."""
+    deficit is zero, so the clock spreads uniformly — the degree-6 pair over its
+    ceiling and every other partition over the rest — decided, not floored, and
+    reported as such."""
     allocation = quota().allocation()
     assert sum(allocation.share.values()) == pytest.approx(1.0)
+    rest = [p for p in ALL_PARTITIONS if p not in CAPPED_GROUP]
     assert all(
-        allocation.share[p] == pytest.approx(1 / len(ALL_PARTITIONS)) for p in ALL_PARTITIONS
+        allocation.share[p] == pytest.approx((1 - CAPPED_GROUP_SHARE) / len(rest)) for p in rest
+    )
+    assert all(
+        allocation.share[p] == pytest.approx(CAPPED_GROUP_SHARE / len(CAPPED_GROUP))
+        for p in CAPPED_GROUP
     )
     assert allocation.floored == set(), "a cold start was not decided by the floor"
 

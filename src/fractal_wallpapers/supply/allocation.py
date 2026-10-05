@@ -28,6 +28,17 @@ trigger the reframings which reach into the poor ones.
 `deficit / price`, so a wrong price stops the only service that would revise it.
 Nothing else in this design can reach a partition that is never served.
 
+## A ceiling on degree 6
+
+`multibrot6` and `julia:multibrot6` together take at most `CAPPED_GROUP_SHARE` of a
+mixed run's clock. The fill runs first; if the pair is over the ceiling, the
+ceiling is filled between the two of them and the other partitions are filled
+again over what they gave back, by the same rule, so their shares relative to
+each other do not move and every floor holds. Being cheap is what
+made the pair run away: `deficit / price` rewards a family that is fast to walk,
+whether or not anything it finds is worth keeping. Admissions track minutes
+closely enough that a tenth of the clock lands near a tenth of the places.
+
 ## The floor's carry — because an entitlement that does not accumulate is not one
 
 The share-gap rule cannot hold a floor, and the reason is structural rather than a
@@ -110,6 +121,7 @@ from dataclasses import dataclass, field
 from fractal_wallpapers.supply.apportion import allocate_slots
 from fractal_wallpapers.supply.partitions import (
     ALL_PARTITIONS,
+    NEVER_LABELLED,
     is_dynamical,
     parameter_plane_of,
 )
@@ -117,6 +129,16 @@ from fractal_wallpapers.supply.prices import SEED_PRICE
 
 #: Every partition floors at this share of the total clock.
 FLOOR_FRACTION = 0.05
+
+#: The degree-6 pair's combined ceiling on a mixed harvest's clock, Matt's ruling of
+#: 2026-10-04. `julia:multibrot6` is the cheapest family to walk, so `deficit / price`
+#: handed it a quarter of a from-empty run while the location judge rates it a median
+#: P(>=3) of 0.009. A run naming only the pair is not capped: this is a share of a
+#: mixed walk, not a refusal. Never below the pair's own floors.
+CAPPED_GROUP_SHARE = 0.10
+
+#: The partitions `CAPPED_GROUP_SHARE` holds together: degree 6, which no human labels.
+CAPPED_GROUP = NEVER_LABELLED
 
 #: How much unspent floor entitlement, in mean batches, claims the next slot. One
 #: mean batch is the weakest statement that makes the claim affordable — the
@@ -198,24 +220,48 @@ def allocate(
         p: max(0.0, float(deficits.get(p, 0.0))) / max(float(prices.get(p, SEED_PRICE)), 1e-9)
         for p in served
     }
-    total = sum(weighted.values())
+    share, pinned = _water_fill(weighted, served, floor, 1.0)
+    # The degree-6 ceiling, applied after the fill and only to a mixed walk. The
+    # pair's ceiling and the rest of the run are each filled again by the same rule
+    # that filled the whole the first time, so every floor still holds.
+    held = [p for p in served if p in CAPPED_GROUP]
+    if held and len(held) < n:
+        ceiling = max(CAPPED_GROUP_SHARE, floor * len(held))
+        if sum(share[p] for p in held) > ceiling + 1e-12:
+            rest = [p for p in served if p not in CAPPED_GROUP]
+            capped, pinned_held = _water_fill(weighted, held, floor, ceiling)
+            refilled, pinned = _water_fill(weighted, rest, floor, 1.0 - ceiling)
+            share = capped | refilled
+            pinned |= pinned_held
+    return Allocation(share=share, floored=pinned, weighted_deficit=weighted, floor=floor)
+
+
+def _water_fill(weighted: dict, served: list, floor: float, pool_total: float) -> tuple:
+    """`(share, pinned)` — `pool_total` divided over `served` in proportion to
+    `weighted`, with every share pinned up to `floor` and the rest re-divided.
+
+    With no weight at all the pool is spread uniformly, and those partitions are
+    tagged floored only if the uniform split is itself below the floor.
+    """
+    n = len(served)
+    if n == 0:
+        return {}, set()
+    total = sum(weighted[p] for p in served)
     if total <= 0.0:
-        return Allocation(
-            share={p: 1.0 / n for p in served},
-            floored=(set(served) if 1.0 / n < floor else set()),
-            weighted_deficit=weighted,
-            floor=floor,
+        return (
+            {p: pool_total / n for p in served},
+            (set(served) if pool_total / n < floor else set()),
         )
 
     pinned: set = set()
-    share = {p: weighted[p] / total for p in served}
+    share = {p: pool_total * weighted[p] / total for p in served}
     while True:
         below = [p for p in served if p not in pinned and share[p] < floor - 1e-12]
         if not below:
             break
         pinned.update(below)
         rest = [p for p in served if p not in pinned]
-        pool = 1.0 - floor * len(pinned)
+        pool = pool_total - floor * len(pinned)
         for p in pinned:
             share[p] = floor
         remaining = sum(weighted[p] for p in rest)
@@ -226,12 +272,12 @@ def allocate(
     # Numerical tidy-up over the unpinned mass only, so the floor stays exact.
     rest = [p for p in served if p not in pinned]
     if rest:
-        pool = 1.0 - floor * len(pinned)
+        pool = pool_total - floor * len(pinned)
         held = sum(share[p] for p in rest)
         if held > 0:
             for p in rest:
                 share[p] = share[p] * pool / held
-    return Allocation(share=share, floored=pinned, weighted_deficit=weighted, floor=floor)
+    return share, pinned
 
 
 def fold_dynamical_intent(
@@ -531,6 +577,8 @@ def batch_slots(
 
 
 __all__ = [
+    "CAPPED_GROUP",
+    "CAPPED_GROUP_SHARE",
     "FLOOR_DEBT_TRIGGER_BATCHES",
     "FLOOR_FRACTION",
     "TWIN_ROUTE_GAIN",

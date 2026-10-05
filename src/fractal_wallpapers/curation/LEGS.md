@@ -84,6 +84,11 @@ per 1000 wall s**, the best of any list this project has measured, at 1.24 wall 
 place — *The same recipe, run to the end of every list* below. The door is
 `curate depth run --floor-places` over them.
 
+**CHANGED 2026-10-04 — degree 6 in a harvest.** `multibrot6`/`julia:multibrot6` now
+draw viewport-sampler roots by default, and together are capped at a tenth of a mixed
+harvest's clock (`supply.allocation.CAPPED_GROUP_SHARE`); a `--partition` naming only
+the pair is uncapped.
+
 **OPEN, but count the supply first — the nucleus-rooted Julia walk, n=14.** The
 salvage out of the parabolic pilot: a Julia walk rooted at a **deep minibrot
 nucleus** ran at about **2x the twin channel** at every stage, and it has a verb

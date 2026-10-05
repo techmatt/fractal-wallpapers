@@ -138,6 +138,9 @@ so. An untracked `local.toml` can move it to another disk; the
 
 ## From a fresh clone to a first gallery
 
+A worked example of this path, with sample output from every stage, is at
+<https://techmatt.github.io/fractals/tools-and-data/run-it-yourself/>.
+
 One ordered path, about half an hour end to end. Every step is one command, writes the
 files named beside it (each field is in [`FORMATS.md`](FORMATS.md)), and leaves one page
 to open that shows the result is sane. Times are from a sample run on the box in
@@ -180,7 +183,9 @@ fractal-wallpapers harvest stats
 ```
 
 The harvest walks all twelve fractal families and writes `artifacts/harvest/walk.jsonl`
-([FORMATS.md](FORMATS.md#walkjsonl)). `curate score` reads every admitted place through
+([FORMATS.md](FORMATS.md#walkjsonl)). The two degree-6 families, which no human has
+labelled, share at most a tenth of a mixed harvest's clock
+(`supply.allocation.CAPPED_GROUP_SHARE`), so the cheapest family cannot take over a first walk. `curate score` reads every admitted place through
 the location judge into `artifacts/curation/supply_scores.jsonl`
 ([FORMATS.md](FORMATS.md#supply_scoresjsonl)). `export` joins the two into one flat
 `artifacts/harvest/locations.jsonl` ([FORMATS.md](FORMATS.md#locationsjsonl)), and `stats`

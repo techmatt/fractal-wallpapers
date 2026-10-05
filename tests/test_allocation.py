@@ -11,6 +11,8 @@ from __future__ import annotations
 import pytest
 
 from fractal_wallpapers.supply.allocation import (
+    CAPPED_GROUP,
+    CAPPED_GROUP_SHARE,
     FLOOR_FRACTION,
     FloorLedger,
     allocate,
@@ -107,8 +109,55 @@ def test_every_registered_partition_is_allocated_and_none_is_held_out() -> None:
     )
     assert set(allocation.share) == set(ALL_PARTITIONS)
     assert all(v > 0.0 for v in allocation.share.values())
-    assert allocation.share[CLASSIC_PHOENIX] == pytest.approx(1 / len(ALL_PARTITIONS))
+    # Uniform over everything the degree-6 ceiling leaves.
+    rest = len(ALL_PARTITIONS) - len(CAPPED_GROUP)
+    assert allocation.share[CLASSIC_PHOENIX] == pytest.approx((1 - CAPPED_GROUP_SHARE) / rest)
     assert sum(allocation.share.values()) == pytest.approx(1.0)
+
+
+# --------------------------------------------------------------------------- #
+# the degree-6 ceiling
+# --------------------------------------------------------------------------- #
+
+
+def _cheap_degree6() -> tuple[dict, dict]:
+    """Deficits and prices under which the degree-6 pair would run away: the
+    from-empty harvest of 2026-10-04 gave `julia:multibrot6` 0.27 of the clock."""
+    deficits = dict.fromkeys(ALL_PARTITIONS, 10.0)
+    prices = dict.fromkeys(ALL_PARTITIONS, 1.0)
+    prices["julia:multibrot6"] = 0.05
+    return deficits, prices
+
+
+def test_the_degree6_pair_takes_at_most_its_ceiling_of_a_mixed_walk() -> None:
+    deficits, prices = _cheap_degree6()
+    allocation = allocate(deficits, prices, ALL_PARTITIONS)
+    weighted = allocation.weighted_deficit
+    assert sum(weighted[p] for p in CAPPED_GROUP) / sum(weighted.values()) > 0.5
+    assert sum(allocation.share[p] for p in CAPPED_GROUP) == pytest.approx(CAPPED_GROUP_SHARE)
+    assert sum(allocation.share.values()) == pytest.approx(1.0)
+    assert all(v >= FLOOR_FRACTION - 1e-12 for v in allocation.share.values())
+
+
+def test_the_ceiling_leaves_every_other_partition_relative_to_the_others_unchanged() -> None:
+    deficits, prices = _cheap_degree6()
+    deficits["mandelbrot"], deficits["phoenix"] = 300.0, 100.0
+    allocation = allocate(deficits, prices, ALL_PARTITIONS)
+    assert allocation.share["mandelbrot"] / allocation.share["phoenix"] == pytest.approx(3.0)
+
+
+def test_a_walk_naming_only_the_degree6_pair_is_not_capped() -> None:
+    deficits, prices = _cheap_degree6()
+    allocation = allocate(deficits, prices, list(CAPPED_GROUP))
+    assert sum(allocation.share.values()) == pytest.approx(1.0)
+
+
+def test_a_pair_already_under_its_ceiling_is_left_alone() -> None:
+    deficits = dict.fromkeys(ALL_PARTITIONS, 0.0)
+    deficits["mandelbrot"] = 10.0
+    allocation = allocate(deficits, dict.fromkeys(ALL_PARTITIONS, 1.0), ALL_PARTITIONS)
+    assert all(allocation.share[p] == pytest.approx(FLOOR_FRACTION) for p in CAPPED_GROUP)
+    assert allocation.share["mandelbrot"] == pytest.approx(1 - 11 * FLOOR_FRACTION)
 
 
 # --------------------------------------------------------------------------- #
