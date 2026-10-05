@@ -1,13 +1,9 @@
 # fractal-wallpapers
 
-This is the pipeline for generating a collection of fractal wallpapers and manipulating them in an online fractal explorer. It searches the escape-time planes for places worth framing, uses a trained convolutional network to judge each picture, and chooses the final galleries from among the high-scoring wallpapers. Rust does the rendering (using WebAssembly for the website), and Python does a lot of the plumbing. Most visitors want one of the links below.
-- **Wallpapers to download:** [Wallpaper packs](https://techmatt.github.io/fractals/wallpaper-packs/)
-- **Exploring for yourself:** [The fractal explorer](https://techmatt.github.io/fractals/explorer/)
-- **How it was made:** [The article, starting here](https://techmatt.github.io/fractals/start-here.html)
-- **The site's code** (explorer, article, builder): [fractals](https://github.com/techmatt/fractals)
-- **The pipeline and engine code:** you are here; read on.
-
-[![ci](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml?query=branch%3Amain)
+This repository makes fractal wallpapers. It searches the Mandelbrot set and its
+relatives for places worth framing, renders each place in many colorings and palettes,
+and lets small neural judges trained on human ratings choose a gallery from the results.
+It is the pipeline behind the site [Making Fractal Wallpapers](https://techmatt.github.io/fractals/).
 
 <p align="center">
   <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&m=stripe&x=-1.2514947263705116&y=0.04110851135180772&w=0.0000000798119929768514&p=cmr.jungle&mirror=1"><img src="examples/mandelbrot_stripe.jpg" width="24%" alt="Mandelbrot set, stripe coloring"></a>
@@ -15,6 +11,22 @@ This is the pipeline for generating a collection of fractal wallpapers and manip
   <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&f=julia4&cx=0.44637678855595264&cy=0.6581861161102234&x=-0.0006944498037232774&y=-0.007170259608518661&w=0.644829668143998&p=glowdon&phase=0.053"><img src="examples/julia_multibrot4_smooth.jpg" width="24%" alt="Quartic Julia set, smooth coloring"></a>
   <a href="https://techmatt.github.io/fractals/explorer/index.html?v=4&f=julia3&cx=0.4169190761394084&cy=0.006933824661843332&m=threads&x=-0.054828545370623066&y=0.017335365897850258&w=0.251946210734878&p=Cobalt%20Furnace%20Ultra&phase=0.95781"><img src="examples/julia_multibrot3_threads.jpg" width="24%" alt="Cubic Julia set, threads coloring"></a>
 </p>
+
+**Where to go:**
+
+- [The site](https://techmatt.github.io/fractals/): the article on how it was made
+- [Mandelnaut Explorer](https://techmatt.github.io/fractals/explorer/): fly through the fractals in your browser
+- [Wallpaper packs](https://techmatt.github.io/fractals/wallpaper-packs/): the wallpapers, to download
+- [Run the pipeline yourself](https://techmatt.github.io/fractals/tools-and-data/run-it-yourself/):
+  a worked example of [this repository's path](#from-a-fresh-clone-to-a-first-gallery),
+  with sample output from every stage
+- [`FORMATS.md`](FORMATS.md): every file the pipeline writes, field by field
+- [techmatt/fractals](https://github.com/techmatt/fractals): the website's source
+
+**Licences:** the code is MIT; the wallpapers are CC BY 4.0, credit Matt Fisher
+([details](#license)).
+
+[![ci](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/techmatt/fractal-wallpapers/actions/workflows/ci.yml?query=branch%3Amain)
 
 ## What it does
 
@@ -28,24 +40,19 @@ repository; the palette judge is distilled from an older palette model.
 | judge | what it scores |
 | --- | --- |
 | `location` | whether a place is worth rendering at all |
-| `render` | whether a particular rendering of a place is good |
+| `render`, the wallpaper judge | whether a particular rendering of a place is good |
 | `palette` | which palette suits a place |
-| `gallery_grade` | a finer order inside the render judge's top band |
+| `gallery_grade`, the gallery judge | a finer order inside the render judge's top band |
 
 The output is a gallery of a few hundred to a thousand wallpapers, chosen for quality and
 for spread across family, color, and structure.
 
 ## How this relates to techmatt/fractals
 
-This repository is the pipeline: the Rust engine that draws every pixel, the search, the
-coloring, the judges, and the curation that picks the gallery.
-[techmatt/fractals](https://github.com/techmatt/fractals) is the site that presents it:
-the [article](https://techmatt.github.io/fractals/start-here.html), the
-[explorer](https://techmatt.github.io/fractals/explorer/), and the
-[wallpaper packs](https://techmatt.github.io/fractals/wallpaper-packs/). The explorer runs
-this engine compiled to WebAssembly, and it draws the same bytes there as it does natively.
-Every wallpaper carries its explorer link in its metadata, so any of them reopens in the
-explorer, and any explorer view can be rendered here at full size.
+This repository is the pipeline; [techmatt/fractals](https://github.com/techmatt/fractals)
+is the site that presents it. Mandelnaut Explorer runs this engine compiled to
+WebAssembly. Every wallpaper carries its explorer link in its metadata, so any of them
+reopens in the explorer, and any explorer view can be rendered here at full size.
 
 ## What is where
 
@@ -82,6 +89,10 @@ priority for render workers is a Windows feature; elsewhere, put `nice` in front
 run.
 
 ## Install
+
+The code is Rust and Python. The Rust engine in `engine/` draws every picture, and it can
+be built and used alone for rendering (`cargo build` and step 1's `render-link` need
+nothing else). Python runs the pipeline around it and the judges, which are PyTorch models.
 
 **[`uv`](https://docs.astral.sh/uv/) is the primary route**, and it's what CI runs. Pick
 CPU or CUDA; the two differ only in which torch they install:
@@ -149,30 +160,37 @@ at the top, and takes `--bundle DIR` to write itself as a folder that can leave 
 Step 10 gathers them all. Times are from a sample run on the box in
 [*What each stage costs*](#what-each-stage-costs).
 
-**1. Render one picture** (seconds). An explorer link is enough on its own: copy one from
-the explorer, or from any wallpaper's metadata.
+**1. Render one picture** (about a minute, then seconds):
 
 ```
-engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
-  --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
 fractal-wallpapers render --family mandelbrot --center-re -0.7436438870371587 \
   --center-im 0.13182590420531197 --width 0.00001 --mode stripe --cycles 2 --out artifacts/first.png
+engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
+  --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
 ```
 
-`render-link` needs no Python, no weights and no network, and it embeds the link in the
-file, so the picture reopens its view when dropped on the explorer. `render --help` lists
-every family, mode and palette knob. `fractal-wallpapers modes` and
-`fractal-wallpapers palettes list` print the names. Writes the two PNGs; open them.
+The first spells the picture out in flags; it is a deep view with a lot of interior, so
+it takes about 70 s on the reference box. The second draws an explorer link, copied from
+the explorer or from any wallpaper's metadata, in about 5 s. The link is read as text: it
+is a complete recipe, and nothing is fetched from the network. `render-link` needs no
+Python and no weights, and it embeds the link in the file, so the picture reopens its view
+when dropped on the explorer. Every family, mode, palette and number either can set, with
+its default and range, is in step 10's `parameters.json` and in `render --help` and
+`fractal-engine render-link --help`. Writes the two PNGs; open them.
 
-**2. Check the judges** (under a minute):
+**2. Check the install** (under a minute):
 
 ```
 fractal-wallpapers judges check
 ```
 
-This renders eight tracked recipes, scores each with all four judges, and fails if any
-score is more than 1e-4 from the expected one. Renders are byte-identical across installs,
-and CPU and CUDA agree to about 1e-5. Writes `artifacts/judges/check/check.json`. Open
+This renders eight tracked recipes and holds each to two halves. **The picture matches**:
+every cell of a 32x18 grid has its mean colour within 4 of 255 of a tracked text
+reference, since the engine draws the same picture everywhere but promises no byte
+identity across machines. **The scores match**: all four judges within 1e-4 of the
+expected scores (CPU and CUDA agree to about 1e-5). It exits non-zero if either misses,
+and times each render beside the reference box's time, so you can calibrate your
+machine. Writes `artifacts/judges/check/check.json`. Open
 `artifacts/judges/check/index.html`. `judges score <picture>…` scores any picture of your
 own.
 
@@ -191,9 +209,9 @@ labelled, share at most a tenth of a mixed harvest's clock
 (`supply.allocation.CAPPED_GROUP_SHARE`), so the cheapest family cannot take over a
 first walk. `curate score` reads every admitted place through the location judge into `artifacts/curation/supply_scores.jsonl`
 ([FORMATS.md](FORMATS.md#supply_scoresjsonl)). `export` joins the two into one flat
-`artifacts/harvest/locations.jsonl` ([FORMATS.md](FORMATS.md#locationsjsonl)), and `stats`
-prints each family's counts and scores. Open `artifacts/harvest/stats/index.html` for each
-family's best four and worst four places.
+`artifacts/harvest/locations.jsonl` ([FORMATS.md](FORMATS.md#locationsjsonl)), one row a
+place, and `stats` prints each family's places and scores. Open
+`artifacts/harvest/stats/index.html` for each family's best four and worst four places.
 
 **4. Embed the places** (1.5 minutes on CUDA, about 6 on CPU):
 
@@ -287,9 +305,12 @@ and `index.html`, which shows each seat's row from every file with the join fiel
 `walkthrough` writes every page of this path into `artifacts/walkthrough/`, each a folder
 holding its page, its `page.json` and only the pictures it shows: `judges-check/`,
 `walk-stats/`, `candidates/`, `gallery/` and `trace/`, plus the harvest's `summary.json`,
-`stats.json`, `keep.jsonl` and an `index.html` linking them all. Open that. It renders
-nothing; a page whose step was skipped is listed with the command that makes it. In the
-sample run the five folders came to 0.17, 1.55, 0.74, 0.23 and 1.27 MB.
+`stats.json`, `keep.jsonl` and an `index.html` linking them all. Open that. Beside them
+are `render/` (step 1's two pictures, drawn again and timed on your machine),
+`parameters.json` ([FORMATS.md](FORMATS.md#parametersjson)) and `help/`, every command's
+`--help`. Nothing else is rendered; a page whose step was skipped is listed with the
+command that makes it. In the sample run the five folders came to 0.17, 1.55, 0.74, 0.23
+and 1.27 MB.
 
 ### Say it plainly
 

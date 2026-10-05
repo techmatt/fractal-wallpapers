@@ -214,8 +214,9 @@ candidate-ledger browse`), and a harvest's `locations.jsonl` and `stats/` (`harv
 `harvest stats`) are each rewritten whole by their one command from stores that are
 kept, so deleting any of them costs one re-run. So are `artifacts/curation/trace/<stamp>/`
 (`curate solve trace`) and the top-level `artifacts/walkthrough/` (`walkthrough`), whose
-tier is *delete*: hot while a reader looks at it, never archived, and rebuilt in seconds
-from the pages and records it bundles. Each page's `page.json` twin and `--bundle DIR`
+tier is *delete*: hot while a reader looks at it, never archived, and rebuilt from the
+pages and records it bundles in about a minute and a half, nearly all of it the README's
+plain-flags render example, which `walkthrough` draws again into `render/` to time it. Each page's `page.json` twin and `--bundle DIR`
 form are [`bundle.py`](bundle.py)'s.
 
 **The ten unmerged `runs/` legs are not a cleanup opportunity, and the listing

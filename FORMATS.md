@@ -32,17 +32,21 @@ each in [0, 1] and non-increasing in K.
 | `page.json` beside each inspection page | every page and `--bundle` | [page.json](#pagejson) |
 | `page.json` beside a gallery's page | `curate solve browse`, `record` | [Gallery page.json](#gallery-pagejson) |
 | `artifacts/curation/trace/<stamp>/counts.json` and `files/` | `curate solve trace` | [counts.json](#countsjson) |
+| `artifacts/judges/check/check.json`, `data/judges/check.jsonl` | `judges check` | [check.json](#checkjson) |
 | `artifacts/walkthrough/walkthrough.json` | `walkthrough` | [walkthrough.json](#walkthroughjson) |
+| `artifacts/walkthrough/render/render.json` | `walkthrough` | [render.json](#renderjson) |
+| `artifacts/walkthrough/parameters.json` | `walkthrough` | [parameters.json](#parametersjson) |
 | a render spec JSON | you; `fractal-engine render <spec>` | [The render spec](#the-render-spec) |
 | an explorer link | the website; `render-link` | [The explorer link](#the-explorer-link) |
 
 ## locations.jsonl
 
-One row per **admitted** place of one harvest, written whole by `harvest export`
+One row per **place** one harvest kept, written whole by `harvest export`
 (`supply/places.py`'s `rows`). It joins the walk ledger's `candidate` rows (with an
-adopted refinement applied) to the location judge's sidecar on the location key.
-"Admitted" means what the run's summary counts: fate `survived`. A place `curate
-score` hasn't read yet is present, with nulls in every judge column.
+adopted refinement applied) to the location judge's sidecar on the location key. A
+place is kept when a candidate row's fate is `survived`; two survivors on one location
+key are one place, and the file holds the first. A place `curate score` hasn't read
+yet is present, with nulls in every judge column.
 
 | field | type | meaning |
 | --- | --- | --- |
@@ -58,17 +62,20 @@ score` hasn't read yet is present, with nulls in every judge column.
 | `slot_channel` | str/null | which half of the harvest's clock found it: `share` (the protected exploration share) or `contest` (the deficit-priced contest) |
 | `origin` | str | `walk`, a reframing operator's name, or `refined` |
 | `refined` | bool | the close-time framing scan moved this frame |
-| `view` | str/null | the walk's own gate render, a JPEG under `<run>/views/` |
+| `view` | str/null | the walk's own gate render, relative to the run directory: `views/node<parent>_c<child>.jpg` |
 | `walk_p_ge3`, `walk_p_ge4` | float/null | what the walk's scorer read off the gate render; null on a `--no-scoring` run |
 | `p_ge2`, `p_ge3`, `p_ge4` | float/null | the location judge's probabilities off `supply_scores.jsonl` |
 | `score_regime` | str/null | the geometry the judge read, e.g. `384x216ss1` |
 | `score_view` | str/null | the picture file the judge read |
 
-`harvest stats` writes `<run>/stats/stats.json`: `{schema, run, found, admitted,
-scored, families}`, with `families` keyed by partition. Each family is
-`{found, admitted, scored, p_ge3, p_ge4, best, worst}`; `p_ge3` and `p_ge4` are
+`harvest stats` writes `<run>/stats/stats.json`: `{schema, run, found, places,
+repeats, scored, families}`, with `families` keyed by partition. `run` is the run
+directory as a tracked path, `found` counts every `candidate` row the walk wrote,
+`places` the places kept, `repeats` the survivors that landed on a place already kept,
+and `scored` the kept places the location judge has read. Each family is
+`{found, places, scored, p_ge3, p_ge4, best, worst}`; `p_ge3` and `p_ge4` are
 `{min, q1, median, q3, max, over_half}`, and `best` and `worst` are lists of location
-keys.
+keys. Its page shows a `scored` column only where `scored` differs from `places`.
 
 ## walk.jsonl
 
@@ -310,9 +317,10 @@ written into `DIR`, with each picture the page shows re-encoded under `DIR/pictu
 | `schema`, `title` | `1`, and the page's heading |
 | `command` | the command line that wrote it; an absolute path under the working directory is spelled relative |
 | `intro` | the lines under the heading |
-| `sections` | `[{heading, note, table, tiles, records}]` in page order |
+| `sections` | `[{heading, note, table, tiles, legend, records}]` in page order |
 | `table` | `null`, or a list of rows whose first row is the header |
-| `tiles` | `[{picture, title, mark, caption}]`; `picture` is the path the page uses, relative to it, or `null`; `caption` is `[[label, value]]` |
+| `tiles` | `[{picture, title, mark, band, caption}]`; `picture` is the path the page uses, relative to it, or `null`; `band` is `best`, `worst` or empty (a run of banded tiles is drawn on a green or red ground); `caption` is `[[label, value]]` |
+| `legend` | `[[column, meaning]]`: one plain line per table column and caption label, drawn under them (`grid_page.py`'s `MEANING` holds the shared lines) |
 | `records` | `[{file, joined_on, key, note, row}]`: one row copied out of `file` whole, the field the chain was `joined_on` and its `key` (marked on the page), and a `note` saying why a chain stopped here |
 
 ## Gallery page.json
@@ -328,6 +336,7 @@ as they are here.
 | `seats`, `asked` | seats filled, and seats asked for |
 | `missing`, `at_full` | seats with no picture on this disk, and seats with a release-geometry picture |
 | `full_regime`, `ordered_by` | the release regime's spelling, and the basis of the presentation order |
+| `legend` | `[[label, meaning]]`: what each part of a tile says, drawn under the header |
 | `rows` | [gallery.jsonl](#galleryjsonl)'s rows, each with `src` (the picture the tile shows), `full` (its release-geometry picture, or empty; always empty in a bundle) and `order` |
 
 ## counts.json
@@ -359,6 +368,62 @@ beside. Each listed folder is a bundle holding a [page.json](#pagejson), or a
 | `schema`, `command`, `stamp` | `1`, the command line, and the record shown and traced |
 | `pages` | `[{folder, title, made_by, command, files, bytes}]`; a page whose step was not run has `missing: true` and `made_by` is the command that makes it |
 | `files` | `[{name, source}]`: the whole files copied in (`summary.json`, `stats.json`, `keep.jsonl`) and where each came from; `missing: true` where there was none |
+| `renders` | `[{name, picture, seconds}]`: the two render examples under `render/` ([render.json](#renderjson)) |
+| `help` | the file names under `help/`: one `--help` text per command on the README's path (`walkthrough.py`'s `HELP`), named by its words (`curate-solve-trace.txt`), plus `fractal-engine-render-link.txt` |
+
+`parameters.json` beside it is [parameters.json](#parametersjson).
+
+## check.json
+
+`judges check` (`cli/judges_commands.py`'s `judges_check`) renders the tracked cases in
+`data/judges/check.jsonl` and writes its reading to `artifacts/judges/check/check.json`,
+beside a [page.json](#pagejson) page. A case in `check.jsonl` is `{schema, name, key,
+from, recipe, expected, picture, reference_seconds}`: `recipe` as in
+[Candidate ledger rows](#candidate-ledger-rows), `key` its recipe key, `from` the
+`<stamp>|<key>` it was taken from, `expected` each judge's scores, `picture` the
+reference print `{grid, cells}` (`grid` is `[32, 18]` cells, `cells` each cell's mean
+`[r, g, b]` in 0–255, row by row: text, so no picture enters the repository), and
+`reference_seconds` the render's time on the box named by `REFERENCE_BOX`.
+
+| field | meaning |
+| --- | --- |
+| `schema`, `cases` | `2`, and how many cases ran |
+| `tolerance`, `picture_tolerance`, `picture_grid` | the score tolerance, the largest per-channel gap a cell's mean may have from the reference (levels of 255), and the grid |
+| `reference_box` | the machine the reference seconds were measured on |
+| `missed`, `largest_gap`, `largest_picture_gap` | the cases that missed either half, and the worst score and picture gaps |
+| `load_seconds` | `{judge: seconds}` to load each judge |
+| `results` | one per case: `{name, key, picture_matches, picture_gap, scores_match, seconds, reference_seconds, actual, missed}`; `seconds` is this render's time, `actual` each judge's scores, `missed` the scores off by more than the tolerance |
+
+## render.json
+
+`walkthrough`'s `render/` folder (`walkthrough.py`'s `write_renders`): the README's two
+render examples, each drawn at the README's size on this run and kept as a JPEG
+`RENDER_WIDTH` wide. `{schema, renders}`, each render:
+
+| field | meaning |
+| --- | --- |
+| `name`, `picture` | `render` or `render-link`, and its JPEG beside this file |
+| `command` | the command as the README spells it, as an argument list; the walkthrough points `--out` into a scratch file instead |
+| `rendered_at`, `shown_at` | the size it was drawn at, and the JPEG's width |
+| `seconds` | wall seconds the render took on this run |
+
+## parameters.json
+
+Everything a reader can set on one render (`parameters.py`'s `describe`), read from the
+code that decides it rather than typed: `render`'s parser, the engine's `modes`, the
+palette-knob table `cli/common.py`'s `PALETTE_KNOBS`, and the colormap library.
+
+| field | meaning |
+| --- | --- |
+| `schema`, `settable_by` | `1`, and what `flag` and `spec` mean below |
+| `families` | `{kind: {flag, degree, takes, note}}`: every family the engine renders; `flag` is whether `render --family` names it (else only a spec JSON) |
+| `walked_families` | the twelve fractal families the pipeline searches |
+| `frame` | `{center_re, center_im, width, resolution, supersample, maxiter}`, each `{flag, default, range, unsaid}`; `unsaid` is what leaving it out means |
+| `modes`, `default_mode` | `[{name, tier, production, identity, params}]`, `params` being `{name: {default, min, max, range}}`; a flag sets one with `--param NAME=VALUE` |
+| `palette` | `{knob: {flag, default, range, says}}` for every key of [the render spec](#the-render-spec)'s `palette` |
+| `colormaps` | `[{name, kind}]`, as `palettes list --json` prints them |
+| `spec_only` | `{key: meaning}`: spec keys no flag reaches |
+| `flags` | every flag of `render`: `{flag, dest, group, default, choices, help}` |
 
 ## The render spec
 

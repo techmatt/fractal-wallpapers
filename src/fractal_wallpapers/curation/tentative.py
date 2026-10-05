@@ -1233,6 +1233,7 @@ def page(
             "at_full": sum(1 for row in shown if row["full"]),
             "full_regime": fulls.REGIME.spelled,
             "ordered_by": basis,
+            "legend": [[label, meaning] for label, meaning in TILE_LEGEND],
             "rows": shown,
         }
         (directory / bundle_module.PAGE_JSON).write_text(
@@ -1281,15 +1282,52 @@ def _page_html(doc: dict) -> str:
         .replace("__AT_FULL__", str(doc["at_full"]))
         .replace("__FULL_REGIME__", html.escape(doc["full_regime"]))
         .replace("__ORDERED_BY__", html.escape(doc["ordered_by"]))
+        .replace(
+            "__LEGEND__",
+            "".join(
+                f"<li><b>{html.escape(label)}</b>: {html.escape(meaning)}</li>"
+                for label, meaning in doc["legend"]
+            ),
+        )
         .replace("__ROWS__", json.dumps(doc["rows"], ensure_ascii=False))
     )
+
+
+def _tile_legend() -> list[tuple[str, str]]:
+    from fractal_wallpapers import grid_page
+
+    return grid_page.legend(
+        "rank",
+        "P(>=4)",
+        "mode",
+        "hue family",
+        "colour cells",
+        "family",
+        "centered",
+        "seat",
+        "pinned",
+        "floor",
+        said={
+            "rank": "the number the solve ordered pictures by; higher is better",
+            "P(>=4)": grid_page.MEANING["wallpaper judge P(>=4)"],
+            "hue family": "the broad colour the picture is dominant in",
+            "colour cells": "every finer colour region it is dominant in, joined by +",
+            "centered": "its place is a centred miniature copy of the set",
+            "pinned": "seated by hand from data/curation/pins.json, not chosen by the solve",
+            "floor": "the colour floor seated this, or holds it, so a scarce colour stays in",
+        },
+    )
+
+
+#: What each part of a gallery tile says, drawn under the page's header.
+TILE_LEGEND = _tile_legend()
 
 
 #: The browser, as one string with ten substitutions. Kept here rather than in a
 #: tracked asset file because it is the only page this project writes for a person
 #: to drive, and a second file would be a second thing to find. The substitutions
 #: are `__ROWS__`, `__STAMP__`, `__COMMAND__`, `__NAME__`, `__SEATS__`, `__ASKED__`, `__MISSING__`,
-#: `__AT_FULL__`, `__FULL_REGIME__` and `__ORDERED_BY__`, all filled by [`_page_html`]
+#: `__AT_FULL__`, `__FULL_REGIME__`, `__ORDERED_BY__` and `__LEGEND__`, all filled by [`_page_html`]
 #: and none of them by the reader.
 _PAGE = (
     """<!doctype html>
@@ -1369,6 +1407,9 @@ _PAGE = (
             object-fit: contain; }
   #lb .bar { padding: 8px 14px 12px; text-align: center; color: var(--muted); }
   #lb .bar b { color: #9fc2ff; font-weight: 600; }
+  .legend { color: var(--muted); font-size: 12px; margin: 10px 14px 0; padding: 0;
+            list-style: none; columns: 2 420px; }
+  .legend b { color: var(--ink); font-weight: 600; }
 </style>
 <header>
   <h1>tentative gallery __STAMP__ <span>&middot; __NAME__
@@ -1418,6 +1459,7 @@ _PAGE = (
       picture</span>
   </div>
 </header>
+<ul class="legend">__LEGEND__</ul>
 <main id="grid"></main>
 <div id="empty" hidden>Nothing matches these filters.</div>
 <div id="lb"><img alt=""><div class="bar"></div></div>

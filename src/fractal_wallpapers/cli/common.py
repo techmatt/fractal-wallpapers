@@ -542,6 +542,41 @@ def refine_limits(args: argparse.Namespace) -> dict:
     return out
 
 
+#: Every palette knob a render can set, keyed as the spec's `palette` object keys it:
+#: its flag, its default (the engine's identity, `coloring.rs`'s `Palette`), and its
+#: range. **The one statement of them on the Python side**: `render`'s flags are
+#: built from it and `parameters.json` reads it.
+PALETTE_KNOBS: dict[str, dict] = {
+    "gamma": {"flag": "--gamma", "default": 1.0, "range": "> 0",
+              "says": "power on the normalized field"},
+    "cycles": {"flag": "--cycles", "default": 1.0, "range": "> 0",
+               "says": "times the map repeats over the field"},
+    "phase": {"flag": "--phase", "default": 0.0, "range": "any finite",
+              "says": "turns the map is rotated by"},
+    "reverse": {"flag": "--reverse", "default": False, "range": "true or false",
+                "says": "run the map backwards"},
+    "mirror": {"flag": "--mirror", "default": False, "range": "true or false",
+               "says": "fold the map out and back; refused on a cyclic map "
+               "(`palettes list --kind`)"},
+    "transfer": {"flag": "--transfer", "default": "value",
+                 "range": "value (default), edge:W with W >= 0, or rank",
+                 "says": "what the map is indexed by"},
+    "rolloff": {"flag": "--rolloff", "default": "none",
+                "range": "none (default), soft_knee:K with K in [0, 1), reinhard, or aces",
+                "says": "how the brightest values are compressed"},
+    "scale": {"flag": "--scale", "default": "leveled", "range": "leveled or absolute",
+              "says": "leveled (default) spreads the map over the field's own range; "
+              "absolute indexes it by the raw count, where --period and --knee apply and "
+              "gamma, cycles and transfer do not"},
+    "lambda": {"flag": "--lambda", "dest": "box_cox", "default": 1.0, "range": "in [0, 1]",
+               "says": "Box-Cox"},
+    "period": {"flag": "--period", "default": 1.0, "range": "> 0",
+               "says": "absolute scale only"},
+    "knee": {"flag": "--knee", "default": None, "range": "> 0",
+             "says": "absolute scale only"},
+}  # fmt: skip
+
+
 def palette_arguments(draw: argparse.ArgumentParser) -> None:
     """The palette knobs and the mode's own parameters, for `render` alone.
 
@@ -556,35 +591,26 @@ def palette_arguments(draw: argparse.ArgumentParser) -> None:
         "the palette",
         "how the colormap is spent; each is the engine's identity when unsaid",
     )
-    knobs.add_argument("--gamma", type=float, help="> 0, power on the normalized field (1)")
-    knobs.add_argument("--cycles", type=float, help="> 0, times the map repeats over the field (1)")
-    knobs.add_argument("--phase", type=float, help="turns the map is rotated by, any finite (0)")
-    knobs.add_argument("--reverse", action="store_true", help="run the map backwards")
-    knobs.add_argument(
-        "--mirror",
-        action="store_true",
-        help="fold the map out and back; refused on a cyclic map (`palettes list --kind`)",
-    )
-    knobs.add_argument(
-        "--transfer",
-        metavar="KIND",
-        help="value (default), edge:W with W >= 0, or rank — what the map is indexed by",
-    )
-    knobs.add_argument(
-        "--rolloff",
-        metavar="KIND",
-        help="none (default), soft_knee:K with K in [0, 1), reinhard, or aces",
-    )
-    knobs.add_argument(
-        "--scale",
-        choices=["leveled", "absolute"],
-        help="leveled (default) spreads the map over the field's own range; absolute "
-        "indexes it by the raw count, where --period and --knee apply and gamma, cycles "
-        "and transfer do not",
-    )
-    knobs.add_argument("--lambda", dest="box_cox", type=float, help="Box-Cox, in [0, 1] (1)")
-    knobs.add_argument("--period", type=float, help="> 0, absolute scale only (1)")
-    knobs.add_argument("--knee", type=float, help="> 0, absolute scale only (none)")
+    for key, knob in PALETTE_KNOBS.items():
+        default = knob["default"]
+        default = "none" if default is None else f"{default:g}" if type(default) is float else ""
+        if key == "reverse":
+            knobs.add_argument("--reverse", action="store_true", help=knob["says"])
+        elif key == "mirror":
+            knobs.add_argument("--mirror", action="store_true", help=knob["says"])
+        elif key in ("transfer", "rolloff"):
+            knobs.add_argument(
+                knob["flag"], metavar="KIND", help=f"{knob['range']} — {knob['says']}"
+            )
+        elif key == "scale":
+            knobs.add_argument("--scale", choices=["leveled", "absolute"], help=knob["says"])
+        else:
+            knobs.add_argument(
+                knob["flag"],
+                dest=knob.get("dest", key),
+                type=float,
+                help=f"{knob['range']}, {knob['says']} ({default})",
+            )
     knobs.add_argument(
         "--param",
         action="append",

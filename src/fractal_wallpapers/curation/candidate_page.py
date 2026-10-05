@@ -31,6 +31,15 @@ UNIT = "candidate_page"
 #: How many tiles each of the two picture sections shows by default.
 SHOWN = 24
 
+#: The two tallies' columns after the first, as the page names them.
+TALLY = ["pictures", "judged", "at the bar", "median wallpaper judge P(>=4)", "places drawn"]
+
+#: The first column of each tally.
+LABEL = {"mode": "mode", "partition": "family"}
+
+#: A tile's caption labels.
+CAPTION = ["wallpaper judge P(>=4)", "wallpaper judge P(>=3)", "gallery judge", "mode", "family"]
+
 
 def out_dir() -> Path:
     """The page's directory. **The one accessor.**"""
@@ -82,7 +91,7 @@ def build(
         groups: dict[str, list[dict]] = {}
         for row in held:
             groups.setdefault(row[column], []).append(row)
-        table = [[column, "rows", "scored", "P(>=4) >= bar", "median P(>=4)", "places"]]
+        table = [[LABEL[column], *TALLY]]
         for name in sorted(groups):
             rows = groups[name]
             table.append(
@@ -107,9 +116,9 @@ def build(
             picture=picture,
             title=row["key"],
             caption=[
-                ("P(>=4)", row["p_ge4"]),
-                ("P(>=3)", row["p_ge3"]),
-                ("p_fine(>=4)", row["p_fine"]),
+                ("wallpaper judge P(>=4)", row["p_ge4"]),
+                ("wallpaper judge P(>=3)", row["p_ge3"]),
+                ("gallery judge", row["p_fine"]),
                 ("mode", row["mode"]),
                 ("family", row["partition"]),
             ],
@@ -140,15 +149,27 @@ def build(
             f"{len(held):,} candidates over {summary['places']:,} places; {len(scored):,} scored "
             f"by the render judge, {summary['fine_read']:,} read by the gallery judge "
             f"(`gallery-grade score-pool`).",
-            f"P(>=4) is the render judge's; the bar column counts rows at or over "
-            f"{solve.Q4_BAR:g}, the height a mode's own bar starts from.",
+            f"The wallpaper judge is the render judge; the bar column counts pictures at or "
+            f"over {solve.Q4_BAR:g}, the height a mode's own bar starts from.",
         ],
         [
-            grid_page.Section("Pool by mode", table=tally("mode")),
-            grid_page.Section("Pool by fractal family", table=tally("partition")),
-            grid_page.Section(f"Best {len(top)} by P(>=4)", tiles=[tile(row) for row in top]),
             grid_page.Section(
-                f"A random {len(drawn)} (seed {int(seed)})", tiles=[tile(row) for row in drawn]
+                "Pool by mode", table=tally("mode"), legend=grid_page.legend("mode", *TALLY)
+            ),
+            grid_page.Section(
+                "Pool by fractal family",
+                table=tally("partition"),
+                legend=grid_page.legend("family", *TALLY),
+            ),
+            grid_page.Section(
+                f"Best {len(top)} by the wallpaper judge's P(>=4)",
+                tiles=[tile(row) for row in top],
+                legend=grid_page.legend(*CAPTION),
+            ),
+            grid_page.Section(
+                f"A random {len(drawn)} (seed {int(seed)})",
+                tiles=[tile(row) for row in drawn],
+                legend=grid_page.legend(*CAPTION),
             ),
         ],
         bundle=bundle,

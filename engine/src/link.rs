@@ -1133,12 +1133,8 @@ pub fn parse_shallow(search: &str, context: &Context) -> Result<ShallowView, Str
     for &key in wanted {
         let Some(text) = query.get(key) else { continue };
         let value = finite(text, key)?;
-        let (fits, says) = match key {
-            "weight" | "opacity" => ((0.0..=1.0).contains(&value), "between 0 and 1"),
-            "shift" => (true, "a number"),
-            _ => (value > 0.0, "positive"),
-        };
-        if !fits {
+        let (_, _, says) = mode::parameter_range(key);
+        if !mode::parameter_fits(key, value) {
             return Err(format!("{key} has to be {says}; the link says {text}."));
         }
         params.insert(key.to_string(), value);

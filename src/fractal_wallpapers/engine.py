@@ -279,6 +279,21 @@ def render_link(
     return run("render-link", arguments=tuple(arguments))
 
 
+def usage(subcommand: str) -> str:
+    """A subcommand's `--help` text, as the engine prints it. Raises on a nonzero exit."""
+    done = subprocess.run(
+        [str(engine_path()), subcommand, "--help"],
+        capture_output=True,
+        text=True,
+        cwd=repo_root(),
+        check=False,
+        creationflags=process_control.child_priority_flags(),
+    )
+    if done.returncode != 0:
+        raise RuntimeError(f"engine failed: {done.stderr.strip() or done.stdout.strip()}")
+    return done.stdout
+
+
 def dump_field(spec: dict) -> dict:
     """Write the raw scalar field a render would have colored.
 

@@ -412,6 +412,29 @@ pub fn tier(name: &str) -> Option<Tier> {
 
 // ------------------------------------------------------------- mode parameters
 
+/// The range a mode parameter must fall in, as `(lowest, highest)` with `None` for
+/// unbounded, and the phrase a refusal uses. **The one statement of it**: the link
+/// parser refuses by it and `modes` prints it, so the two cannot drift.
+/// `weight` and `opacity` are mixing fractions; `shift` is a palette offset and
+/// may be any number; every other parameter is a distance or a density, positive.
+pub fn parameter_range(key: &str) -> (Option<f64>, Option<f64>, &'static str) {
+    match key {
+        "weight" | "opacity" => (Some(0.0), Some(1.0), "between 0 and 1"),
+        "shift" => (None, None, "a number"),
+        _ => (Some(0.0), None, "positive"),
+    }
+}
+
+/// Whether `value` is inside [`parameter_range`]'s range for `key`. Positive is
+/// strict; a fraction's ends are allowed.
+pub fn parameter_fits(key: &str, value: f64) -> bool {
+    match parameter_range(key) {
+        (Some(low), Some(high), _) => (low..=high).contains(&value),
+        (Some(low), None, _) => value > low,
+        _ => true,
+    }
+}
+
 /// Apply a mode's own parameters, by the name an explorer link gives them, to the
 /// coloring [`resolve`] settled.
 ///

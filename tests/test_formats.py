@@ -67,7 +67,9 @@ def literal_keys(path: str, function: str, marker: set[str]) -> set[str]:
 
 #: (FORMATS.md section, writer module, writer function, keys that pick the row literal)
 WRITERS = [
-    ("locations.jsonl", "supply/places.py", "rows", {"root_channel", "slot_channel"}),
+    ("locations.jsonl", "supply/places.py", "_rows_and_repeats", {"root_channel", "slot_channel"}),
+    ("locations.jsonl", "supply/places.py", "stats", {"repeats", "families"}),
+    ("locations.jsonl", "supply/places.py", "stats", {"places", "best", "worst"}),
     ("walk.jsonl", "discovery/walk.py", "_candidate", {"fate", "child_index"}),
     ("supply_scores.jsonl", "curation/intake.py", "score", {"head_sha256", "node_id"}),
     ("Candidate ledger rows", "curation/candidate_ledger/rows.py", "row", {"at_candidate_regime"}),
@@ -95,6 +97,15 @@ WRITERS = [
     ("counts.json", "curation/trace.py", "build", {"broken_chains", "files"}),
     ("counts.json", "curation/trace.py", "counted", {"source", "sliced"}),
     ("walkthrough.json", "walkthrough.py", "build", {"pages", "files"}),
+    ("check.json", "cli/judges_commands.py", "judges_check", {"picture_tolerance", "results"}),
+    ("check.json", "cli/judges_commands.py", "judges_check", {"picture_matches", "seconds"}),
+    ("check.json", "cli/judges_commands.py", "judges_check", {"reference_seconds", "picture"}),
+    ("render.json", "walkthrough.py", "write_renders", {"rendered_at", "shown_at"}),
+    ("parameters.json", "parameters.py", "describe", {"settable_by", "spec_only"}),
+    ("parameters.json", "parameters.py", "describe", {"production", "params"}),
+    ("parameters.json", "parameters.py", "flags", {"group", "choices"}),
+    ("Gallery page.json", "curation/tentative.py", "page", {"stamp", "legend"}),
+    ("page.json", "grid_page.py", "document", {"band", "caption"}),
 ]
 
 

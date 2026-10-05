@@ -318,6 +318,7 @@ def build(
                     else f"CHAIN BROKEN: it could not be followed into {stopped}"
                 ),
                 tiles=[grid_page.Tile(picture, [("seat", seat), ("mode", row.get("mode"))])],
+                legend=grid_page.legend("seat", "mode"),
                 records=[_record("gallery.jsonl", row, "key", key), *records],
             )
         )
@@ -328,7 +329,15 @@ def build(
             held = stores.ledger.rows[stores.by_key[key][-1]]
             picture = rehome(held["picture"], tiers) if held.get("picture") else None
         tiles = [grid_page.Tile(picture, [("why", why)])] if key is not None else []
-        sections.append(grid_page.Section(f"not made it: {heading}", why, tiles, records=records))
+        sections.append(
+            grid_page.Section(
+                f"not made it: {heading}",
+                why,
+                tiles,
+                records=records,
+                legend=grid_page.legend("why") if tiles else [],
+            )
+        )
     _walk_examples(stores)
     files = directory / FILES
     if files.is_dir():
@@ -358,15 +367,22 @@ def build(
             if broken
             else "."
         ),
-        "Full files held: "
-        + ", ".join(f"{name} {block['rows']:,}" for name, block in counts["files"].items())
-        + ". The slices hold only the rows shown, plus one walk row of every other kind.",
+        "The slices hold only the rows shown, plus one walk row of every other kind.",
+    ]
+    files_table = [["file", "rows in the file", "rows shown"]] + [
+        [name, block["rows"], block["sliced"]] for name, block in counts["files"].items()
     ]
     page = grid_page.write(
         directory / "index.html",
         f"Trace of {stamp}",
         intro,
-        [grid_page.Section("The record", records=[_record("manifest.json", manifest)]), *sections],
+        [
+            grid_page.Section(
+                "The files", table=files_table, legend=grid_page.legend(*files_table[0])
+            ),
+            grid_page.Section("The record", records=[_record("manifest.json", manifest)]),
+            *sections,
+        ],
         bundle=bundle,
     )
     if bundle is not None:

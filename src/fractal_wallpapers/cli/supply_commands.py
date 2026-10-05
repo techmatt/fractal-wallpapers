@@ -289,20 +289,28 @@ def harvest_readout(args: argparse.Namespace) -> int:
         if args.what == "export":
             path, rows = places.export(run_dir)
             scored = sum(1 for row in rows if row["p_ge3"] is not None)
-            print(f"{display_path(path)}: {len(rows):,} admitted place(s), {scored:,} scored")
+            print(f"{display_path(path)}: {len(rows):,} place(s), {scored:,} scored")
             return 0
         bundle = resolve_output(args.bundle) if args.bundle else None
         record, page = places.stats(run_dir, bundle=bundle)
     except FileNotFoundError as refusal:
         print(refusal)
         return 1
-    print(f"{'family':<20} {'found':>6} {'admitted':>8} {'scored':>6} {'median P>=3':>11}")
+    split = any(block["scored"] != block["places"] for block in record["families"].values())
+    print(
+        f"{'family':<20} {'found':>6} {'places':>6} "
+        + (f"{'scored':>6} " if split else "")
+        + f"{'median P>=3':>11}"
+    )
     for partition, block in record["families"].items():
         median = (block["p_ge3"] or {}).get("median")
         print(
-            f"{partition:<20} {block['found']:>6} {block['admitted']:>8} {block['scored']:>6} "
-            f"{'—' if median is None else f'{median:.3f}':>11}"
+            f"{partition:<20} {block['found']:>6} {block['places']:>6} "
+            + (f"{block['scored']:>6} " if split else "")
+            + f"{'—' if median is None else f'{median:.3f}':>11}"
         )
+    if record["repeats"]:
+        print(f"{record['repeats']:,} survivor(s) landed on a place already kept")
     print(display_path(run_dir / "stats" / "stats.json"))
     print(display_path(page))
     if bundle is not None:
@@ -923,18 +931,19 @@ def add_commands(subcommands) -> None:
     reading = production.add_subparsers(dest="what", required=False, metavar="{export,stats}")
     exporting = reading.add_parser(
         "export",
-        help="join the run's admitted places to the location judge's scores, as one file",
+        help="join the run's kept places to the location judge's scores, as one file",
         description=(
-            "Writes ONE flat file, <run>/locations.jsonl: one row per admitted place, joining "
+            "Writes ONE flat file, <run>/locations.jsonl: one row per kept place, joining "
             "walk.jsonl's candidate rows (refinements applied) to "
             "artifacts/curation/supply_scores.jsonl on the location key. A place `curate "
-            "score` has not read yet is present with null scores. The stores are only read. "
+            "score` has not read yet is present with null scores. Its `view` is relative to the "
+            "run directory. The stores are only read. "
             "FORMATS.md's *locations.jsonl* gives every field."
         ),
     )
     summarising = reading.add_parser(
         "stats",
-        help="per fractal family: found, admitted, scored, scores, and the best and worst four",
+        help="per fractal family: found, places, scores, and the best and worst four",
         description=(
             "Printed, and written as <run>/stats/stats.json and <run>/stats/index.html, a page "
             "with the gate render of each family's best four and worst four places by the "

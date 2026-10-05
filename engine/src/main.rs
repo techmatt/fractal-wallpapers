@@ -115,6 +115,18 @@ struct Mode {
     /// identity line says and [`mode::resolve`] does. `tail_itinerary` reads the
     /// same on both planes, so its listed coloring is exact.
     coloring: Coloring,
+    /// Each parameter a spec's `params` or a link may set on this mode: its value
+    /// in the catalog form above, and the range [`mode::parameter_range`] holds it to.
+    params: std::collections::BTreeMap<&'static str, ModeParam>,
+}
+
+/// One mode parameter as `modes` prints it.
+#[derive(Serialize)]
+struct ModeParam {
+    default: f64,
+    min: Option<f64>,
+    max: Option<f64>,
+    range: &'static str,
 }
 
 /// Where one family is framed when nothing says otherwise, and how that frame
@@ -210,11 +222,28 @@ fn run(args: Vec<String>) -> Result<(), String> {
             &mode::CATALOG
                 .iter()
                 .map(|entry| {
+                    let coloring = mode::resolve(entry.name, None)?;
+                    let params = mode::params_of(&coloring)
+                        .into_iter()
+                        .map(|(key, default)| {
+                            let (min, max, range) = mode::parameter_range(key);
+                            (
+                                key,
+                                ModeParam {
+                                    default,
+                                    min,
+                                    max,
+                                    range,
+                                },
+                            )
+                        })
+                        .collect();
                     Ok(Mode {
                         name: entry.name,
                         identity: entry.identity,
                         tier: entry.tier,
-                        coloring: mode::resolve(entry.name, None)?,
+                        coloring,
+                        params,
                     })
                 })
                 .collect::<Result<Vec<_>, String>>()?,
@@ -704,7 +733,35 @@ fn fits_aspect(size: [u32; 2], aspect: (u32, u32)) -> bool {
     height == rounded(width * down, across) || width == rounded(height * across, down)
 }
 
+/// `render-link --help`: every flag, its default, and what the link is.
+const LINK_USAGE: &str = "\
+usage: fractal-engine render-link --link <URL|query> --size WxH [--ss N]
+                                  [--out FILE.png|FILE.jpg] [--data DIR]
+
+Draw an explorer link at a size, and write it with the link embedded in the
+picture's metadata, so the picture reopens its view when dropped on the
+explorer. The link is read as text: it is a complete recipe (family, view,
+iteration cap, coloring, palette and its knobs), and nothing is fetched from
+the network. Python, the judges and the weights are not needed.
+
+  --link URL|query  a whole explorer URL, or only its query (the part after ?)
+  --size WxH        the picture's size in pixels, e.g. 2560x1440; required
+  --ss N            samples per pixel per axis, a whole number >= 1 (default 3)
+  --out FILE        where to write it; .png or .jpg (default render-link.png)
+  --data DIR        the checkout's data/ holding the palettes, the anchors and
+                    the levelling band (default: $FRACTAL_ENGINE_DATA, else the
+                    first data/ found walking up from the working directory,
+                    then from the executable)
+  --help            print this and exit
+
+A deep (dv=) link is read and refused: deep rendering is not built yet.
+FORMATS.md's *The explorer link* lists every key a link may carry.";
+
 fn render_link(args: &[String]) -> Result<(), String> {
+    if args.iter().any(|arg| arg == "--help" || arg == "-h") {
+        println!("{LINK_USAGE}");
+        return Ok(());
+    }
     let args = link_args(args)?;
     let data = data_dir(args.data.clone())?;
     let context = link::Context::from_data(&data)?;

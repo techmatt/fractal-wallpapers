@@ -2,10 +2,13 @@
 
 `score` reads any picture files through the render, gallery and palette judges and
 any location records through the location judge, prints a table, and can write
-JSON and a page. `check` renders a tracked handful of recipes — text only, since a
-render is byte-identical across installs — scores them with all four judges, and
-fails on any score off its expected value by more than the stated tolerance. It is
-the one-command answer to *did my install load the same judges the project ships*.
+JSON and a page. `check` is the install check: it renders a tracked handful of
+recipes and holds each to two halves, **the picture matches** (its cell-mean print
+against a tracked text reference, within `PICTURE_TOLERANCE`, since the engine
+promises the same picture and not the same bytes across machines) and **the scores
+match** (all four judges within `TOLERANCE`). It times each render beside a tracked
+reference time from `REFERENCE_BOX`, so a reader can calibrate their machine. It is
+the one-command answer to *does my install draw and judge what the project ships*.
 [`models.judges`] is the door both read through.
 """
 
@@ -27,6 +30,22 @@ from fractal_wallpapers.cli.common import (
 #: at under 7e-6 for every head; this leaves an order of magnitude for a torch
 #: version, a BLAS and the fp16 weights' rounding to differ in.
 TOLERANCE = 1e-4
+
+#: The cells a check picture is printed into, columns by rows: 20x20 pixels each at
+#: the check's 640x360.
+GRID = (32, 18)
+
+#: How far a cell's mean colour may sit from the reference, in levels of 255 per
+#: channel. The engine draws the same picture everywhere but promises no byte
+#: identity across machines (a platform's libm may round an orbit differently and
+#: flip a pixel on a boundary). One flipped pixel moves its cell's mean by at most
+#: 0.64 of a level and the JPEG round trip by well under one, so four levels lets a
+#: few boundary pixels a cell differ and still catches any change to the family,
+#: the view, the palette or the levelling band, each of which moves cells by tens.
+PICTURE_TOLERANCE = 4.0
+
+#: The machine the tracked reference seconds were measured on, stated once.
+REFERENCE_BOX = "Intel i5-10400F, Windows 10, release engine, one render at a time"
 
 
 def check_path() -> Path:
@@ -158,8 +177,43 @@ def judges_score(args: argparse.Namespace) -> int:
     return 0
 
 
+def picture_print(picture: Path) -> list[list[float]]:
+    """A picture as `GRID` cells' mean colours: `[[r, g, b], ...]`, row by row, 0–255.
+
+    The text a check case's picture is compared through. Cell means rather than
+    pixels, because the engine promises the same picture and not the same bytes
+    across machines: a libm that rounds one orbit differently flips a pixel or two
+    on a boundary, which moves a cell's mean by a fraction of a level, while a
+    wrong family, view, palette or band moves whole cells by tens.
+    """
+    import numpy as np
+    from PIL import Image
+
+    columns, rows = GRID
+    with Image.open(picture) as image:
+        pixels = np.asarray(image.convert("RGB"), dtype=np.float64)
+    height, width, _ = pixels.shape
+    cells = pixels[: height - height % rows, : width - width % columns]
+    cells = cells.reshape(rows, cells.shape[0] // rows, columns, cells.shape[1] // columns, 3)
+    means = cells.mean(axis=(1, 3)).reshape(-1, 3)
+    return [[round(float(value), 1) for value in cell] for cell in means]
+
+
+def picture_gap(expected: list, actual: list) -> float:
+    """The largest per-channel gap between two prints' cells, in levels of 255."""
+    if len(expected) != len(actual):
+        return float("inf")
+    return max(
+        abs(float(a) - float(b))
+        for cell, other in zip(expected, actual, strict=True)
+        for a, b in zip(cell, other, strict=True)
+    )
+
+
 def judges_check(args: argparse.Namespace) -> int:
-    """Render the tracked check cases, score them with all four judges, compare."""
+    """Render the tracked check cases, compare each picture and its four judges' scores."""
+    import time
+
     from fractal_wallpapers import grid_page
     from fractal_wallpapers.cli.draw_commands import draw_recipe
     from fractal_wallpapers.curation import recipes
@@ -171,6 +225,7 @@ def judges_check(args: argparse.Namespace) -> int:
     pictures_dir = directory / "pictures"
     pictures_dir.mkdir(parents=True, exist_ok=True)
     pictures = []
+    seconds = []
     for case in cases:
         recipe = recipes.of_record(case["recipe"])
         if recipes.key_of(recipe) != case["key"]:
@@ -179,12 +234,15 @@ def judges_check(args: argparse.Namespace) -> int:
                 f"the file says {case['key']}. The engine or the recipe schema moved."
             )
             return 1
+        started = time.perf_counter()
         try:
             picture, _stamp = draw_recipe(recipe, pictures_dir / f"{case['name']}.jpg")
         except recipes.RecipeError as refusal:
             print(f"check case {case['name']}: {refusal}")
             return 1
+        seconds.append(round(time.perf_counter() - started, 2))
         pictures.append(Path(picture))
+    prints = [picture_print(picture) for picture in pictures]
     actual: list[dict] = [{} for _ in cases]
     loading = {}
     for name in judges.PICTURE_JUDGES:
@@ -204,19 +262,31 @@ def judges_check(args: argparse.Namespace) -> int:
         }
         for case in cases
     ]
-    read, loading["location"] = judges.score_places(places, args.device, log=lambda line: None)
+    read, took = judges.score_places(places, args.device, log=lambda line: None)
+    loading["location"] = round(took, 2)
     for row, reading in zip(actual, read, strict=True):
         row["location"] = {"p_ge3": reading["p_ge3"], "p_ge4": reading["p_ge4"]}
     if args.write_expected:
         with path.open("w", encoding="utf-8", newline="\n") as handle:
-            for case, row in zip(cases, actual, strict=True):
-                handle.write(json.dumps({**case, "expected": row}, ensure_ascii=False) + "\n")
-        print(f"{display_path(path)}: expected scores rewritten from this reading")
+            for case, row, cells, took in zip(cases, actual, prints, seconds, strict=True):
+                written = {
+                    **case,
+                    "expected": row,
+                    "picture": {"grid": list(GRID), "cells": cells},
+                    "reference_seconds": took,
+                }
+                handle.write(json.dumps(written, ensure_ascii=False) + "\n")
+        print(
+            f"{display_path(path)}: expected scores, picture prints and reference seconds "
+            f"rewritten from this reading. The seconds are this machine's: say which in "
+            f"judges_commands.REFERENCE_BOX."
+        )
         return 0
     misses = []
     worst = 0.0
+    worst_picture = 0.0
     results = []
-    for case, row in zip(cases, actual, strict=True):
+    for case, row, cells, took in zip(cases, actual, prints, seconds, strict=True):
         off = {}
         for judge, block in case["expected"].items():
             for column, expected in block.items():
@@ -225,28 +295,76 @@ def judges_check(args: argparse.Namespace) -> int:
                 worst = max(worst, gap)
                 if gap > TOLERANCE:
                     off[f"{judge}.{column}"] = {"expected": expected, "actual": got}
-        if off:
+        reference = case.get("picture") or {}
+        picture_off = (
+            picture_gap(reference["cells"], cells)
+            if reference.get("grid") == list(GRID)
+            else float("inf")
+        )
+        worst_picture = max(worst_picture, picture_off)
+        picture_ok = picture_off <= PICTURE_TOLERANCE
+        if off or not picture_ok:
             misses.append(case["name"])
-        results.append({"name": case["name"], "key": case["key"], "actual": row, "missed": off})
+        results.append(
+            {
+                "name": case["name"],
+                "key": case["key"],
+                "picture_matches": picture_ok,
+                "picture_gap": picture_off,
+                "scores_match": not off,
+                "seconds": took,
+                "reference_seconds": case.get("reference_seconds"),
+                "actual": row,
+                "missed": off,
+            }
+        )
     report = {
-        "schema": 1,
+        "schema": 2,
         "tolerance": TOLERANCE,
+        "picture_tolerance": PICTURE_TOLERANCE,
+        "picture_grid": list(GRID),
+        "reference_box": REFERENCE_BOX,
         "cases": len(cases),
         "missed": misses,
         "largest_gap": worst,
+        "largest_picture_gap": worst_picture,
         "load_seconds": loading,
         "results": results,
     }
     (directory / "check.json").write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
+
+    def yes(value: bool) -> str:
+        return "match" if value else "MISS"
+
+    def took_beside(result: dict) -> str:
+        reference = result["reference_seconds"]
+        return f"{result['seconds']:.2f} · " + ("—" if reference is None else f"{reference:.2f}")
+
+    columns = ["case", "picture", "scores", "render s (yours · reference)"]
+    table = [columns] + [
+        [
+            result["name"],
+            yes(result["picture_matches"]),
+            yes(result["scores_match"]),
+            took_beside(result),
+        ]
+        for result in results
+    ]
     tiles = []
-    for case, row, picture in zip(cases, actual, pictures, strict=True):
-        caption = []
+    labels: list[str] = []
+    for case, row, picture, result in zip(cases, actual, pictures, results, strict=True):
+        caption = [
+            ("picture", f"{yes(result['picture_matches'])} (gap {result['picture_gap']:.2g})"),
+            ("render s (yours · reference)", took_beside(result)),
+        ]
         for judge, block in case["expected"].items():
             for column, expected in block.items():
                 got = (row.get(judge) or {}).get(column)
-                caption.append((f"{judge} {column}", f"{float(expected):.5f} → {_shown(got)}"))
+                label = f"{JUDGE_NAMES[judge]} {_column_name(column)}"
+                labels.append(label)
+                caption.append((label, f"{float(expected):.5f} → {_shown(got)}"))
         tiles.append(
             grid_page.Tile(
                 picture=picture,
@@ -255,18 +373,56 @@ def judges_check(args: argparse.Namespace) -> int:
                 mark="MISS" if case["name"] in misses else "",
             )
         )
+    said = {
+        "case": "a tracked recipe the check renders and scores",
+        "picture": f"whether your render matches the tracked reference picture: every one of "
+        f"its {GRID[0]}x{GRID[1]} cells' mean colour within {PICTURE_TOLERANCE:g} of 255",
+        "scores": f"whether all four judges' scores are within {TOLERANCE:g} of the expected ones",
+        "render s (yours · reference)": f"seconds your machine took to render the picture, "
+        f"beside the same render on the reference box ({REFERENCE_BOX})",
+    }
+    said |= {label: _caption_meaning(label) for label in labels}
     page = grid_page.write(
         directory / "index.html",
         "Judge check",
         [
-            f"{len(cases)} tracked recipes rendered here and scored by all four judges; each "
-            f"line reads expected → actual. Tolerance {TOLERANCE:g}; largest gap {worst:.2g}.",
+            f"{len(cases)} tracked recipes rendered here, each picture compared with its tracked "
+            f"reference and scored by all four judges. Largest picture gap {worst_picture:.2g} "
+            f"(tolerance {PICTURE_TOLERANCE:g}); largest score gap {worst:.2g} (tolerance "
+            f"{TOLERANCE:g}). Reference times are from {REFERENCE_BOX}.",
             "PASS" if not misses else f"MISSED: {', '.join(misses)}",
         ],
-        [grid_page.Section("Cases", tiles=tiles)],
+        [
+            grid_page.Section(
+                "Each case", table=table, legend=grid_page.legend(*columns, said=said)
+            ),
+            grid_page.Section(
+                "Cases",
+                note="each judge line reads expected → yours",
+                tiles=tiles,
+                legend=grid_page.legend(
+                    "picture",
+                    "render s (yours · reference)",
+                    *dict.fromkeys(labels),
+                    said=said,
+                ),
+            ),
+        ],
         bundle=resolve_output(args.bundle) if args.bundle else None,
     )
-    print(f"{len(cases)} case(s), largest gap {worst:.2g} against a tolerance of {TOLERANCE:g}")
+    print(f"{'case':<30} {'picture':>7} {'scores':>7} {'render s':>9} {'reference':>9}")
+    for result in results:
+        reference = result["reference_seconds"]
+        print(
+            f"{result['name']:<30} {yes(result['picture_matches']):>7} "
+            f"{yes(result['scores_match']):>7} {result['seconds']:>9.2f} "
+            f"{'—' if reference is None else f'{reference:.2f}':>9}"
+        )
+    print(f"reference times: {REFERENCE_BOX}")
+    print(
+        f"largest picture gap {worst_picture:.2g} against {PICTURE_TOLERANCE:g}; "
+        f"largest score gap {worst:.2g} against {TOLERANCE:g}"
+    )
     print(f"model load seconds: {loading}")
     print(display_path(page))
     if args.bundle:
@@ -278,6 +434,34 @@ def judges_check(args: argparse.Namespace) -> int:
         return 1
     print("PASS")
     return 0
+
+
+#: The judges as a reader knows them.
+JUDGE_NAMES = {
+    "render": "wallpaper judge",
+    "gallery_grade": "gallery judge",
+    "palette": "palette judge",
+    "location": "location judge",
+}
+
+
+def _column_name(column: str) -> str:
+    return f"P(>={column[-1]})" if column.startswith("p_ge") else column
+
+
+def _caption_meaning(label: str) -> str:
+    """One legend line for a check tile's `<judge> <column>` caption."""
+    judge, _, column = label.rpartition(" ")
+    if column == "score":
+        return (
+            f"the {judge}'s fit of this palette to this place, expected → yours; comparable "
+            f"only between palettes of one place"
+        )
+    level = column[len("P(>=") : -1]
+    reads = "place" if judge == "location judge" else "picture"
+    return (
+        f"the {judge}'s probability that the {reads} rates at least {level} of 5, expected → yours"
+    )
 
 
 def _shown(value) -> str:
@@ -335,20 +519,24 @@ def add_commands(subcommands) -> None:
     device_flag(scoring)
     checking = verbs.add_parser(
         "check",
-        help="render the tracked check recipes, score them with all four judges, compare",
+        help="the install check: render the tracked recipes, compare each picture and its scores",
         description=(
-            f"Reads data/judges/check.jsonl — recipes and expected scores, text only — renders "
-            f"each at its own regime, scores it with the render, gallery and palette judges "
-            f"and its place with the location judge, and exits non-zero if any score is more "
-            f"than {TOLERANCE:g} from its expected value. Writes check.json and a page showing "
-            f"each picture beside expected and actual scores (default artifacts/judges/check/)."
+            f"Reads data/judges/check.jsonl — recipes, reference pictures as text, expected "
+            f"scores and reference render seconds — renders each at its own regime, and holds "
+            f"it to two halves: the picture matches (every one of its {GRID[0]}x{GRID[1]} "
+            f"cells' mean colour within {PICTURE_TOLERANCE:g} of 255 of the reference) and the "
+            f"scores match (the render, gallery and palette judges on the picture and the "
+            f"location judge on its place, each within {TOLERANCE:g}). Exits non-zero if either "
+            f"half misses. Each render is timed and shown beside the reference time from "
+            f"{REFERENCE_BOX}. Writes check.json and a page (default artifacts/judges/check/)."
         ),
     )
     checking.add_argument("--out-dir", metavar="DIR", help="where the pictures and page go")
     checking.add_argument(
         "--write-expected",
         action="store_true",
-        help="rewrite the tracked expected scores from this reading. For a maintainer after a "
+        help="rewrite the tracked expected scores, picture prints and reference seconds from "
+        "this reading. For a maintainer on the reference box after a "
         "deliberate change to a judge or the engine, never to make a miss pass",
     )
     bundle_flag(checking)

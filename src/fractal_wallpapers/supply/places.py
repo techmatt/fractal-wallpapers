@@ -8,12 +8,17 @@ something a reader should have to join by hand, so `harvest export` joins them
 once into `<run>/locations.jsonl` and `harvest stats` summarises that per fractal
 family with the best and worst places drawn. **The stores are only read.**
 
-**Admitted means what the run's own summary counts**: a candidate row whose fate is
-`survived`, with any adopted refinement applied (`ledgers.refined_of`). On a
-scored harvest that is a gate survivor the location judge admitted; on a
-`--no-scoring` harvest it is every gate survivor. The judge's scores come from the
-sidecar, keyed on the location key; a place `curate score` has not read yet is in
-the file with nulls.
+**A place is a location key, kept once.** It is kept when a candidate row's fate
+is `survived`, with any adopted refinement applied (`ledgers.refined_of`): on a
+scored harvest a gate survivor the location judge admitted, on a `--no-scoring`
+harvest every gate survivor. Two survivors can be one place — two children of one
+node proposed on the same frame — and the file holds the first; the second is
+counted as a repeat and not as a second place, which is what the location judge's
+sidecar does too, since it is keyed on the place. The judge's scores come from that
+sidecar; a place `curate score` has not read yet is in the file with nulls.
+
+`view` is relative to the run directory the file is written into, so the file names
+no machine's paths and moves with its run.
 """
 
 from __future__ import annotations
@@ -37,7 +42,12 @@ def export_path(run_dir: Path) -> Path:
 
 
 def rows(run_dir: Path) -> list[dict]:
-    """One joined row per admitted place of the harvest at `run_dir`, in ledger order."""
+    """One joined row per kept place of the harvest at `run_dir`, in ledger order."""
+    return _rows_and_repeats(run_dir)[0]
+
+
+def _rows_and_repeats(run_dir: Path) -> tuple[list[dict], int]:
+    """`(rows, repeats)`: a survivor whose place is already a row is a repeat."""
     from fractal_wallpapers.curation import intake
     from fractal_wallpapers.discovery import walk
     from fractal_wallpapers.supply import ledgers
@@ -57,11 +67,17 @@ def rows(run_dir: Path) -> list[dict]:
     scores = intake.read_scores() if intake.scores_path().is_file() else {}
     views = walk.views_dir(run_dir)
     out = []
+    seen: set[str] = set()
+    repeats = 0
     for row in ledgers.admitted(ledger, admit=lambda held: held.get("fate") == "survived"):
         key = key_of_row(row)
         if key is None:
             continue
         text = key_text(key)
+        if text in seen:
+            repeats += 1
+            continue
+        seen.add(text)
         scored = scores.get(text) or {}
         image = row.get("image")
         out.append(
@@ -78,7 +94,7 @@ def rows(run_dir: Path) -> list[dict]:
                 "slot_channel": row.get("channel"),
                 "origin": row.get("origin"),
                 "refined": bool(row.get("framing")),
-                "view": None if not image else str(views / image),
+                "view": None if not image else (views / image).relative_to(run_dir).as_posix(),
                 "walk_p_ge3": row.get("score"),
                 "walk_p_ge4": row.get("score_great"),
                 "p_ge2": scored.get("p_ge2"),
@@ -88,7 +104,7 @@ def rows(run_dir: Path) -> list[dict]:
                 "score_view": scored.get("view"),
             }
         )
-    return out
+    return out, repeats
 
 
 def export(run_dir: Path) -> tuple[Path, list[dict]]:
@@ -138,8 +154,9 @@ def stats(
     project is a point on; an unscored family shows its counts and no ends.
     """
     from fractal_wallpapers import grid_page
+    from fractal_wallpapers.paths import tracked_name
 
-    held = rows(run_dir)
+    held, repeats = _rows_and_repeats(run_dir)
     found = _found(run_dir)
     families: dict[str, dict] = {}
     for partition in sorted(set(found) | {row["partition"] for row in held}):
@@ -148,7 +165,7 @@ def stats(
         ranked = sorted(scored, key=lambda row: (-float(row["p_ge3"]), row["key"]))
         families[partition] = {
             "found": found.get(partition, 0),
-            "admitted": len(mine),
+            "places": len(mine),
             "scored": len(scored),
             "p_ge3": _quantiles([float(row["p_ge3"]) for row in scored]),
             "p_ge4": _quantiles(
@@ -159,9 +176,10 @@ def stats(
         }
     record = {
         "schema": SCHEMA,
-        "run": str(run_dir),
+        "run": tracked_name(run_dir),
         "found": sum(found.values()),
-        "admitted": len(held),
+        "places": len(held),
+        "repeats": repeats,
         "scored": sum(1 for row in held if row["p_ge3"] is not None),
         "families": families,
     }
@@ -172,29 +190,33 @@ def stats(
     )
     by_key = {row["key"]: row for row in held}
 
-    def tile(key: str) -> grid_page.Tile:
+    def tile(key: str, band: str) -> grid_page.Tile:
         row = by_key[key]
         return grid_page.Tile(
-            picture=Path(row["view"]) if row["view"] else None,
+            picture=Path(run_dir) / row["view"] if row["view"] else None,
             caption=[
                 ("P(>=3)", row["p_ge3"]),
                 ("P(>=4)", row["p_ge4"]),
                 ("width", row["viewport"].get("width")),
                 ("root channel", row["root_channel"]),
             ],
+            band=band,
         )
 
-    table = [
-        ["family", "found", "admitted", "scored", "median P(>=3)", "P(>=3) > .5", "P(>=4) > .5"]
-    ]
+    # A scored column only where it says something places does not: on a run
+    # `curate score` has read whole, the two are one number.
+    split = any(block["scored"] != block["places"] for block in families.values())
+    columns = ["family", "found", "places", *(["scored"] if split else [])]
+    columns += ["median P(>=3)", "P(>=3) > .5", "P(>=4) > .5"]
+    table = [columns]
     sections = []
     for partition, block in families.items():
         table.append(
             [
                 partition,
                 block["found"],
-                block["admitted"],
-                block["scored"],
+                block["places"],
+                *([block["scored"]] if split else []),
                 (block["p_ge3"] or {}).get("median"),
                 (block["p_ge3"] or {}).get("over_half"),
                 (block["p_ge4"] or {}).get("over_half"),
@@ -204,19 +226,26 @@ def stats(
             sections.append(
                 grid_page.Section(
                     f"{partition}: best {len(block['best'])} and worst {len(block['worst'])}",
-                    note="best first, then worst; the picture is the walk's gate render",
-                    tiles=[tile(key) for key in block["best"] + block["worst"]],
+                    note="ranked on P(>=3); the picture is the walk's gate render",
+                    tiles=[tile(key, "best") for key in block["best"]]
+                    + [tile(key, "worst") for key in block["worst"]],
+                    legend=grid_page.legend("P(>=3)", "P(>=4)", "width", "root channel"),
                 )
             )
+    kept = f"{record['found']:,} candidates found, {record['places']:,} places kept"
+    if repeats:
+        kept += f" ({repeats:,} more survivors landed on a place already kept)"
     page = grid_page.write(
         directory / "index.html",
         "Harvest stats",
         [
-            f"{record['found']:,} candidates found, {record['admitted']:,} admitted, "
-            f"{record['scored']:,} scored by the location judge (`curate score`).",
+            kept + f", {record['scored']:,} of them scored by the location judge (`curate score`).",
             "Scores are the location judge's P(>=3) and P(>=4) off supply_scores.jsonl.",
         ],
-        [grid_page.Section("Per fractal family", table=table), *sections],
+        [
+            grid_page.Section("Per fractal family", table=table, legend=grid_page.legend(*columns)),
+            *sections,
+        ],
         bundle=bundle,
     )
     return record, page
