@@ -17,6 +17,19 @@ from fractal_wallpapers.paths import (
 )
 
 
+def palettes_list(args: argparse.Namespace) -> int:
+    """Print every drawable colormap name, as `--colormap` takes it."""
+    from fractal_wallpapers.palettes import drawable
+
+    held = [(name, kind) for name, kind in drawable().items() if args.kind in (None, kind)]
+    if args.json:
+        print(json.dumps([{"name": name, "kind": kind} for name, kind in held], indent=2))
+    else:
+        for name, _kind in held:
+            print(name)
+    return 0
+
+
 def palettes_provenance(args: argparse.Namespace) -> int:
     """Rebuild the record of how the made maps were made."""
     from fractal_wallpapers.palettes import provenance
@@ -160,6 +173,20 @@ def add_commands(subcommands) -> None:
         ),
     )
     steps = group.add_subparsers(dest="step", required=True)
+
+    listing = steps.add_parser(
+        "list",
+        help="every drawable colormap name, exactly as `--colormap` takes it",
+        description=(
+            "One name a line, sorted, each the stem of data/palettes/<name>.json — slugs and "
+            "display names alike, so `Oxblood, Cyan, Cream` is passed with its commas and "
+            "spaces, quoted. `--kind` narrows to cyclic or sequential maps (mirroring is "
+            "refused on a cyclic one); `--json` writes `[{name, kind}]` instead."
+        ),
+    )
+    listing.add_argument("--kind", choices=["cyclic", "sequential"], help="only maps of this kind")
+    listing.add_argument("--json", action="store_true", help="print `[{name, kind}]` as JSON")
+    listing.set_defaults(handler=palettes_list)
 
     ingesting = steps.add_parser(
         "ingest",

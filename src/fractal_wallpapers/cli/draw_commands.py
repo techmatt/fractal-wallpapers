@@ -86,6 +86,11 @@ def discrete_or_mode(args: argparse.Namespace) -> dict:
 
 def refuse_impossible_location(args: argparse.Namespace) -> str | None:
     """Say why this location cannot be rendered, or `None` if it can."""
+    from fractal_wallpapers.palettes import refuse_unknown
+
+    unknown = refuse_unknown(getattr(args, "colormap", None))
+    if unknown is not None:
+        return unknown
     if args.family == "julia" and args.c is None:
         return "--c is required for a julia render: it is half of the location's identity"
     if args.family not in ("julia", "multibrot") and args.degree != 2:

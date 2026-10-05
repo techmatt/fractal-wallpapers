@@ -43,10 +43,13 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
         # stamp, so a reader looking at this list needs to see why the newest line
         # is not the default — otherwise the answer reads as a bug in `browse`.
         published = set(tentative.published())
+        kept = set(tentative.kept())
         for stamp in held:
             rows = tentative.read_rows(stamp)
             manifest = tentative.read_manifest(stamp)
-            mark = "published" if stamp in published else "unpublished"
+            mark = (
+                "published" if stamp in published else ("kept" if stamp in kept else "unpublished")
+            )
             print(
                 f"{stamp}  {mark:<11} {len(rows):>5} seat(s) of "
                 f"{manifest['seats']['asked']}, {display_path(tentative.gallery_dir(stamp))}"
@@ -54,13 +57,26 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
         if len(published) != len(held):
             print(
                 f"\n{len(held) - len(published)} unpublished record(s): read by naming the "
-                f"stamp, but not tracked and never what an unstamped read means. An "
-                f"unpublished record is DISCARDED once what it was made to measure has been "
-                f"measured — keeping one needs a reason, and the keep list is a figure's "
-                f"citation or the official n=1000 record. Publishing one is Matt's decision "
-                f"— `curation.tentative.PUBLISHED` and the negation lines in `.gitignore` "
-                f"are the list."
+                f"stamp, but not tracked. A KEPT one is on the keep list "
+                f"({display_path(tentative.keep_path())}), which `solve record` adds to by "
+                f"default, so a merge's prune spares its seats' pictures; "
+                f"`curate solve release <stamp>` takes one off. Publishing one is Matt's "
+                f"decision — `curation.tentative.PUBLISHED` and the negation lines in "
+                f"`.gitignore` are the list."
             )
+        return 0
+
+    if args.what == "release":
+        try:
+            for stamp in args.stamps:
+                tentative.release(stamp)
+                print(
+                    f"{stamp} released: its folder stays readable, and the next merge's prune "
+                    f"may take its seats' pictures."
+                )
+        except tentative.TentativeRefused as refusal:
+            print(refusal)
+            return 1
         return 0
 
     if args.what == "record":
@@ -113,7 +129,7 @@ def curate_recorded_solve(args: argparse.Namespace) -> int:
                 # Which record it is of, said out loud. The viewer path carries no
                 # stamp on purpose, so the one thing this command has to print
                 # that `browse <stamp>` does not is the stamp it just wrote.
-                named_stamp = named_stamp or tentative.latest()
+                named_stamp = named_stamp or tentative.viewable()
             else:
                 out = resolve_output(args.out) if args.out else None
             written = display_path(tentative.page(named_stamp, out=out))
@@ -263,6 +279,12 @@ def _record_a_solve(args: argparse.Namespace) -> int:
     # per-mode render-cost table read off every ledger row — and this handler has
     # never looked at that table. Streaming instead is 5.1 s and one fewer
     # whole-ledger copy.
+    if args.collection and args.force_fill:
+        print(
+            "--force-fill seats past both quality bars and a collection record is what the "
+            "website publishes, so the two are refused together. Force-fill a general pass."
+        )
+        return 1
     if args.collection and args.themed:
         print(
             "--collection names a hue family or a mode and --themed names one of the 48 "
@@ -336,6 +358,7 @@ def _record_a_solve(args: argparse.Namespace) -> int:
             augment_seconds=args.augment_seconds,
             explain=explain,
             pins=() if args.no_pins else solve.pins_module.SHIPPED,
+            force_fill=args.force_fill,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -359,6 +382,12 @@ def _record_a_solve(args: argparse.Namespace) -> int:
         print(refusal)
         return 1
     stamp = directory.name
+    if not args.no_keep:
+        tentative.keep(stamp)
+        print(
+            f"[tentative] {stamp} is on the keep list, so a merge's prune spares its seats; "
+            f"`curate solve release {stamp}` lets it go"
+        )
     print(f"{display_path(tentative.page(stamp))}")
     manifest = tentative.read_manifest(stamp)
     print(json.dumps({"stamp": stamp, **manifest["seats"], "counts": manifest["counts"]}, indent=2))
@@ -411,6 +440,12 @@ def curate_solve(args: argparse.Namespace) -> int:
         # against a bare re-parse of the same verb, which was the same rule
         # enforced a step too late — after argparse had already accepted the line.
         return curate_recorded_solve(args)
+    if args.collection and args.force_fill:
+        print(
+            "--force-fill seats past both quality bars and a collection record is what the "
+            "website publishes, so the two are refused together. Force-fill a general pass."
+        )
+        return 1
     if args.collection and args.themed:
         print(
             "--collection names a hue family or a mode and --themed names one of the 48 "
@@ -530,6 +565,7 @@ def curate_solve(args: argparse.Namespace) -> int:
             augment_seconds=args.augment_seconds,
             explain=explain,
             pins=() if args.no_pins else solve.pins_module.SHIPPED,
+            force_fill=args.force_fill,
         )
     except solve.SolveRefused as refusal:
         print(refusal)
@@ -1115,6 +1151,15 @@ def solve_flags_a_record_keeps(*, pool, demands, search):
         f"pass that ran unbarred",
     )
     pool.add_argument(
+        "--force-fill",
+        action="store_true",
+        help="seat as many as an EARLY pool allows: the fine bar and the per-mode bars stop "
+        "refusing and the best rows available seat, while every distinctness rule still "
+        "holds. Never a default. The record and its page say it ran forced, and a "
+        "collection record (`--collection`) refuses it. The first look after a short run, "
+        "where the default bars seat a handful",
+    )
+    pool.add_argument(
         "--forced",
         metavar="PATH",
         help="a MANIFEST of candidate keys, one per line, this pass lifts to the top of "
@@ -1673,6 +1718,13 @@ def add_steps(steps) -> None:
         f"size a record is kept at, where a `run` reads a leg at "
         f"{candidate_ledger_module.FIRST_SOLVE})",
     )
+    which_record.add_argument(
+        "--no-keep",
+        action="store_true",
+        help="record without putting the stamp on the keep list (default: kept, so a merge's "
+        "prune spares its seats' pictures until `curate solve release <stamp>`). For a "
+        "record made to measure one number against, which nothing should hold on to",
+    )
     solve_flags_a_record_keeps(pool=recorded_pool, demands=recorded_demands, search=recorded_search)
     # A THEMED record is the one thing a record could not be. Recording a themed
     # gallery had to go through `run`, which writes a solve record and never a
@@ -1849,9 +1901,10 @@ def add_steps(steps) -> None:
         "one place with no stamp in its name — instead of beside the record's rows. That is "
         "the path to bookmark: a record's own page names the stamp it is of, and the "
         "official record moves every checkpoint, so a bookmark onto one is a bookmark onto "
-        "a superseded gallery. With no stamp named it is `tentative.latest()` — "
-        "`final139_general` — which is what the bookmark is for. `--out` names another "
-        "place and the two are not given together",
+        "a superseded gallery. With no stamp named it is `tentative.viewable()`: the newest "
+        "record made on this machine whose pictures are here, and only when there is none, "
+        "`tentative.latest()` — `final139_general`. `--out` names another place and the "
+        "two are not given together",
     )
 
     listing_recipes = solve_verbs.add_parser(
@@ -1891,6 +1944,18 @@ def add_steps(steps) -> None:
     )
 
     solve_verbs.add_parser("list", help="name every record on this machine")
+    releasing = solve_verbs.add_parser(
+        "release",
+        help="take a recorded gallery off the keep list, so a merge's prune may take its seats",
+        description=(
+            "`solve record` keeps what it records: the stamp goes on the keep list "
+            "(artifacts/curation/tentative/keep.jsonl) and every merge's prune spares the "
+            "pictures its seats name. This undoes that for the stamps named. The folder "
+            "stays and is still readable by its stamp; the published records are kept by "
+            "code and cannot be released here."
+        ),
+    )
+    releasing.add_argument("stamps", nargs="+", metavar="STAMP", help="a record's stamp")
 
     growing = steps.add_parser(
         "growth",

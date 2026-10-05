@@ -1673,7 +1673,8 @@ def cascade_order(
         raise SolveRefused(
             f"the {CASCADE_KEY!r} order needs this pool read through the fine-tier head and "
             f"{gallery_grade_train.pool_scores_path()} is not there. Run "
-            f"`fractal-wallpapers gallery-grade score-pool` first, or seat on {RANK_KEY!r}."
+            f"`fractal-wallpapers gallery-grade score-pool` first; it reads the pool's "
+            f"above-bar rows in seconds, and it is needed again after every merge."
         )
     out = dict(order)
     counted = {"above_bar": 0, "lifted": 0, "above_bar_unread": 0, "below_bar": 0, "forced": 0}
@@ -2663,9 +2664,19 @@ def solve(
     augment_depth: int = augment_module.DEFAULT_DEPTH,
     augment_seconds: float | None = augment_module.DEFAULT_SECONDS,
     pins=pins_module.SHIPPED,
+    force_fill: bool = False,
     log=print,
 ) -> dict:
     """One gallery, chosen. The record is the return value; nothing is written.
+
+    `force_fill` is **the first look at an early pool, and never a default**
+    (`--force-fill`): the two quality gates stop refusing — no fine bar runs and
+    every row of an accepted mode counts as clearing its mode's bar — so the best
+    rows available seat, in the order the key gives them. Every distinctness rule
+    still holds at the seat: one per place, the twin test, the allowances, the
+    ceilings. `config.force_fill` says it ran, the tentative record and its page
+    say so, and a collection publish path refuses a forced record
+    ([`tentative.refuse_forced`]).
 
     `pins` is [`pins_module.SHIPPED`] unasked — the tracked list, which every pass
     honours without a flag — or the keys to pin, `()` being none (`--no-pins`). A pin
@@ -2833,6 +2844,12 @@ def solve(
     # them at once. [`themed_fine_bar`] carries the argument and the gate it
     # returns goes on `config`, so the record says which bar it ran under.
     themed_bar = None
+    if force_fill and fine_bar is not None:
+        log(
+            f"[force-fill] the fine bar ({float(fine_bar):g}) and the per-mode bars are off: "
+            "the best rows available seat, and every distinctness rule still holds"
+        )
+        fine_bar = None
     if theme is not None and fine_bar is not None:
         fine_bar, themed_bar = themed_fine_bar(
             candidates, theme, float(fine_bar), int(n), fine=fine, log=log
@@ -2898,7 +2915,7 @@ def solve(
         )
 
     table = headroom.bars(population, relaxed=theme is not None)
-    cleared = headroom.clearing(population, table)
+    cleared = list(population) if force_fill else headroom.clearing(population, table)
     log(
         f"[solve] {len(cleared):,} of {len(population):,} candidates clear their mode's bar"
         + (" (relaxed: the P(>=3) crossing)" if theme is not None else "")
@@ -2948,7 +2965,7 @@ def solve(
 
     if order is not None:
         blind = [c for c in cleared if c.key not in order]
-        if blind and not allow_unranked:
+        if blind and not (allow_unranked or force_fill):
             raise SolveRefused(
                 f"{len(blind):,} of {len(cleared):,} clearing candidate(s) carry no "
                 f"{key!r} value, so they sort last and cannot win a seat while a readable "
@@ -3176,6 +3193,7 @@ def solve(
             _fine_head(),
             _fine_weights(),
             themed_bar,
+            force_fill=force_fill,
         ),
         "objective": {
             "of": OBJECTIVE,
@@ -3527,9 +3545,14 @@ def _config(
     fine_head: str | None = None,
     fine_weights: str | None = None,
     themed_bar: dict | None = None,
+    force_fill: bool = False,
 ) -> dict:
     return {
         "n": n,
+        # On `config` because this block travels whole into a recorded gallery's
+        # manifest: a forced fill seated past both quality gates, and a reader — or
+        # a publish path, `tentative.refuse_forced` — must see that on the record.
+        "force_fill": bool(force_fill),
         # On `config` for the spiral cap's reason below: this block is what
         # [`tentative.manifest`] carries WHOLE into the tracked manifest, and
         # whether a gallery seated one wallpaper per PLACE or one per near-cluster

@@ -121,7 +121,7 @@ An explorer link is enough on its own. Copy one from the explorer (or from any w
 metadata) and hand it to the engine with a size:
 
 ```
-engine/target/release/fractal-engine render-link --size 2560x1440 --out seat.png \
+engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
   --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
 ```
 

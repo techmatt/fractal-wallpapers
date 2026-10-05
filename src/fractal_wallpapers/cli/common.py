@@ -559,7 +559,9 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
         "--degree",
         type=int,
         default=2,
-        help="exponent d in z^d + c, for multibrot (3-5) and julia (2-5)",
+        help="exponent d in z^d + c, for multibrot (3-6) and julia (2-6); a non-integer "
+        "degree is the engine's `fractional_multibrot`, reached through a spec JSON "
+        "(FORMATS.md's *The render spec*)",
     )
     recurrence.add_argument(
         "--c",
@@ -618,7 +620,8 @@ def location_arguments(draw: argparse.ArgumentParser) -> None:
     coloring.add_argument(
         "--colormap",
         default="twilight_shifted",
-        help="colormap name under data/palettes (default: twilight_shifted)",
+        help="colormap name under data/palettes (default: twilight_shifted); "
+        "`fractal-wallpapers palettes list` prints every name",
     )
     coloring.add_argument(
         "--maxiter",

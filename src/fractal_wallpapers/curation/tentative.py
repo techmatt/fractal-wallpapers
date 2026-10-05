@@ -199,11 +199,12 @@ RECORDED_SEATS = 1000
 #: the population and the twenty `final139_*` records are the galleries. They
 #: were kept and not published until **Matt ruled the set truly finalized on
 #: 2026-09-29** (`finalize_records_ckpt156`), when all twenty-one moved here from
-#: [`KEPT_UNPUBLISHED`] and their `gallery.jsonl`, `manifest.json` and
-#: `recipes.jsonl` were committed. `final140_general2000`'s rows and recipes were
-#: held back that day as over the then 1 MiB per-file cap, and followed the same
-#: day when Matt raised it to 2 MiB (`final_wallpapers_ckpt156`), so **a clone holds
-#: all twenty-one records whole**. The eight stamps this
+#: the `KEPT_UNPUBLISHED` tuple (data since 2026-10-04, [`KEEP_NAME`]) and their
+#: `gallery.jsonl`, `manifest.json` and `recipes.jsonl` were committed.
+#: `final140_general2000`'s rows and recipes were held back that day as over the
+#: then 1 MiB per-file cap, and followed the same day when Matt raised it to 2 MiB
+#: (`final_wallpapers_ckpt156`), so **a clone holds all twenty-one records
+#: whole**. The eight stamps this
 #: tuple carried before 2026-09-21 went with every other saved record, and their
 #: tracked text left the index with them.
 #:
@@ -231,10 +232,13 @@ RECORDED_SEATS = 1000
 #: against deletes it once the measurement is taken and says so in its report,
 #: because a solve is cheap to run again and what a leftover record costs is
 #: misreading hazard and prune protection rather than bytes. The keep list is
-#: this tuple plus [`KEPT_UNPUBLISHED`], it is [`kept`], and **the whole of it
-#: is the twenty-one records of 2026-09-22**: the ruling that closed mining
-#: removed every earlier saved record rather than adding to them, so the list is
-#: a set somebody chose in one act instead of a sediment.
+#: this tuple plus [`kept_unpublished`], it is [`kept`], and on this project's own
+#: box **the whole of it is the twenty-one records of 2026-09-22**: the ruling that
+#: closed mining removed every earlier saved record rather than adding to them, so
+#: the list is a set somebody chose in one act instead of a sediment. ⚠ **Since
+#: 2026-10-04 `curate solve record` keeps what it records by default**, so a
+#: measurement leg here records with `--no-keep`, or releases its record when the
+#: measurement is taken (`curate solve release <stamp>`).
 #:
 #: **What an unqualified "the record" means is [`DEFAULT`]**, `final139_general`,
 #: the general n=1000 seating of the closed pool. It meant `20260914T171846Z`
@@ -299,40 +303,27 @@ PUBLISHED: tuple[str, ...] = (
 #: held.
 DEFAULT = "20260922T012627Z"
 
-#: **The unpublished stamps the keep list names**, which is the whole of the keep
-#: list that [`PUBLISHED`] does not already carry. Discarding is the default for an
-#: unpublished record, so an entry here is a stated reason and not an oversight,
-#: and it is what makes [`protected_keys`] a decision rather than a side effect of
-#: what happens to be on a disk.
+#: **The keep list's unpublished half is data, not code**, since 2026-10-04: one
+#: append-only file, [`KEEP_NAME`] beside the stamps, whose last row per stamp says
+#: whether that record is kept. It replaced a `KEPT_UNPUBLISHED` tuple a person had
+#: to edit in this module, which a reader of a fresh clone could not be expected to
+#: do — and without which their own first record lost seats to the next merge's
+#: prune. **`curate solve record` keeps what it records by default** (`--no-keep`
+#: says otherwise) and **`curate solve release <stamp>` lets one go**; [`keep`] and
+#: [`release`] are the two writers and [`kept_unpublished`] the one reader.
 #:
-#: **The test for an entry is that something RESOLVES the record**, not that
-#: something mentions it. Every batch in `data/gallery_grade/batches.jsonl` names
-#: the record it was cut from in its `method` prose, and none of those is a reason
-#: to be here — the corpus rows carry their own join, so the record is provenance
-#: and provenance does not need the folder. What earns a line is code or a figure
-#: that reads the rows.
-#:
-#: **Empty since 2026-09-29**, when Matt ruled the saved set truly finalized and
-#: its twenty-one records — the twenty `final139_*` of 2026-09-21 and
-#: `final140_general2000` beside them — moved to [`PUBLISHED`]. Moving them kept
-#: every one prune-proof, because [`kept`] is the union and every reader of the
-#: keep list asks [`kept`] rather than either tuple. What they were kept for, and
-#: in what order, is written at [`PUBLISHED`] now.
-#:
-#: ⚠ **Every earlier entry was removed on 2026-09-21, with the records
-#: themselves** — the eight of the `n1000_0906_*` corpus draw, the site's figure
-#: seats, [`curation.backfill`]'s old default, [`curation.page_order`]'s
-#: measurement record, the veto counterfactual and the `mine_night2_ckpt124`
-#: pair, and the twenty-one pinned records of 2026-09-19. What they were kept
-#: for is in this file's history and in `curation/GALLERY.md`'s *The first
-#: publication, and what it changed*; what resolves them now is nothing, in this
-#: checkout. The measurements taken on them stand as measurements: a citation is
-#: provenance, and provenance never needed the folder.
-#:
-#: ⚠ **Unlike [`PUBLISHED`], nothing in `.gitignore` corresponds to this**, and that
-#: is deliberate: a kept record is kept, not tracked. Publication, durability and
-#: retention are three questions, and this tuple answers only the third.
-KEPT_UNPUBLISHED: tuple[str, ...] = ()
+#: The 2026-09-13 rule still holds in its own terms: a record is preserved because
+#: a row names it and never because a folder exists, so a record written by any
+#: other door — a k-sweep rung, a measurement — pins nothing unless kept by name.
+#: The file is untracked runtime state under `artifacts/`, like the stamps it
+#: names: the twenty-one published records are [`PUBLISHED`] and need no row.
+#: The tuple's history — what it held and why each entry went — is in this file's
+#: git history and `curation/GALLERY.md`'s *The first publication, and what it
+#: changed*.
+KEEP_NAME = "keep.jsonl"
+
+#: The schema a keep row carries.
+KEEP_SCHEMA = 1
 
 
 class TentativeRefused(RuntimeError):
@@ -424,14 +415,76 @@ def published() -> list[str]:
 def kept() -> list[str]:
     """**The keep list**: every stamp this project has decided to hold on to.
 
-    [`PUBLISHED`] plus [`KEPT_UNPUBLISHED`], intersected with the store the same
+    [`PUBLISHED`] plus [`kept_unpublished`], intersected with the store the same
     way and for the same reason [`published`] is — a caller wants records it can
     read. This is the whole input to [`protected_keys`], so a record is preserved
     because a list names it and never because a folder exists.
     """
     held = set(stamps())
-    named = list(PUBLISHED) + [stamp for stamp in KEPT_UNPUBLISHED if stamp not in set(PUBLISHED)]
+    named = list(PUBLISHED) + [stamp for stamp in kept_unpublished() if stamp not in set(PUBLISHED)]
     return sorted(stamp for stamp in named if stamp in held)
+
+
+def keep_path() -> Path:
+    """The keep file. **The one accessor**, [`store_root`]'s reason."""
+    return store_root() / KEEP_NAME
+
+
+def kept_unpublished() -> list[str]:
+    """Every unpublished stamp whose LAST row in [`keep_path`] keeps it, oldest first.
+
+    Not intersected with the store — [`kept`] does that — and tolerant of a line it
+    cannot parse, because [`protected_keys`] reads this inside every prune and a
+    prune must not be stopped by a browser's store.
+    """
+    path = keep_path()
+    if not path.is_file():
+        return []
+    state: dict[str, bool] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+            state[str(row["stamp"])] = bool(row["kept"])
+        except (ValueError, KeyError, TypeError):
+            continue
+    return sorted(stamp for stamp, held in state.items() if held and stamp not in set(PUBLISHED))
+
+
+def _keep_row(stamp: str, kept: bool, reason: str) -> dict:
+    stamp = str(stamp)
+    if not (gallery_dir(stamp) / ROWS_NAME).is_file():
+        raise TentativeRefused(
+            f"{stamp} is not a recorded gallery on this machine ({tracked_name(store_root())}); "
+            f"`curate solve list` names the ones that are."
+        )
+    if stamp in set(PUBLISHED):
+        raise TentativeRefused(
+            f"{stamp} is PUBLISHED, and a published record is kept by `tentative.PUBLISHED` "
+            f"rather than by a row here; releasing one is Matt's decision, not a command."
+        )
+    row = {
+        "schema": KEEP_SCHEMA,
+        "stamp": stamp,
+        "kept": kept,
+        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "reason": reason,
+    }
+    path = keep_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    return row
+
+
+def keep(stamp: str, reason: str = "recorded by `curate solve record`") -> dict:
+    """Put one unpublished record on the keep list, so a merge's prune spares its seats."""
+    return _keep_row(stamp, True, reason)
+
+
+def release(stamp: str, reason: str = "released by `curate solve release`") -> dict:
+    """Take one record off the keep list. Its folder stays readable; its seats stop
+    voting on retention, so the next merge's prune may take their pictures."""
+    return _keep_row(stamp, False, reason)
 
 
 def latest() -> str:
@@ -468,6 +521,49 @@ def latest() -> str:
             f"({tracked_name(store_root())}). `curate solve record` writes one."
         )
     return held[-1]
+
+
+def is_forced(manifest: dict) -> bool:
+    """Whether a record's solve ran `--force-fill`, off the manifest's `solve.config`.
+
+    Absent reads `False`: every record before 2026-10-04 predates the flag."""
+    return bool(((manifest.get("solve") or {}).get("config") or {}).get("force_fill"))
+
+
+def refuse_forced(stamp: str, where: str) -> None:
+    """Raise if `stamp` was a forced fill. **Every collection publish path calls this**:
+    a forced record seated past both quality bars and is a first look, not a gallery."""
+    if is_forced(read_manifest(stamp)):
+        raise TentativeRefused(
+            f"{stamp} is a FORCED FILL (`curate solve record --force-fill`), seated past the "
+            f"fine and per-mode bars, and {where} publishes only records solved at the bars."
+        )
+
+
+def viewable(sample: int = 8) -> str:
+    """What `curate solve browse --viewer` opens with no stamp named.
+
+    **The newest UNPUBLISHED record whose pictures are on this machine**, and
+    [`latest`] only when there is none. A clone holds the published records as text
+    alone, so [`latest`] there is a thousand-tile page with every picture missing —
+    the first thing a reader saw after recording their own gallery. Unpublished and
+    not merely newest, so a box that holds the published pictures and no record of
+    its own still opens [`DEFAULT`], as it always has.
+
+    "Pictures are here" is read off the first `sample` seats rather than all of
+    them: a record whose first eight are gone is not the one a reader meant.
+    """
+    tiers = Tiers.current()
+    for stamp in reversed(stamps()):
+        if stamp in set(PUBLISHED):
+            continue
+        try:
+            rows = read_rows(stamp)[:sample]
+        except (TentativeRefused, ValueError, KeyError):
+            continue
+        if rows and any(_on_disk(row, tiers) for row in rows):
+            return stamp
+    return latest()
 
 
 def read_rows(stamp: str | None = None) -> list[dict]:
@@ -1119,7 +1215,15 @@ def page(stamp: str | None = None, out: Path | None = None, log=print) -> Path:
         _PAGE.replace("__STAMP__", html.escape(str(stamp)))
         .replace("__SEATS__", str(len(rows)))
         .replace("__ASKED__", str(manifest["seats"]["asked"]))
-        .replace("__NAME__", html.escape(str(manifest.get("solve", {}).get("name") or "")))
+        .replace(
+            "__NAME__",
+            html.escape(str(manifest.get("solve", {}).get("name") or ""))
+            + (
+                " &middot; FORCED FILL: seated past the fine and per-mode bars"
+                if is_forced(manifest)
+                else ""
+            ),
+        )
         .replace("__MISSING__", str(missing))
         .replace("__AT_FULL__", str(at_full))
         .replace("__FULL_REGIME__", html.escape(fulls.REGIME.spelled))

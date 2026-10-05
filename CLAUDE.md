@@ -78,7 +78,8 @@ that came later carry the date of Matt's ruling.
   and `tests/test_tentative.py` holds them to agreeing; the ruling and why
   `LARGE_TEXT_ALLOWLIST` was not the answer are at `curation/tentative.PUBLISHED`.
   **`tentative.PUBLISHED` is the twenty-one kept records since 2026-09-29**, Matt's
-  ruling that the saved set is truly finalized, and `KEPT_UNPUBLISHED` is empty.
+  ruling that the saved set is truly finalized, and this box keeps no unpublished
+  record.
   **An unstamped read means `tentative.DEFAULT`**, `final139_general`, and never the
   newest published stamp: the twenty-one are peers, and the newest is the n=2000,
   which is not the default gallery. The page a
@@ -89,8 +90,12 @@ that came later carry the date of Matt's ruling.
   at the end of its run. A leg that recorded a gallery to measure something against
   **deletes it when the measurement is taken and says so in its report**: a solve is
   cheap to run again, and what a leftover record costs is misreading hazard, not
-  bytes. **The keep list is code**: `tentative.PUBLISHED` plus
-  `tentative.KEPT_UNPUBLISHED`, with the reason written at the site. Everything else
+  bytes. **The keep list is `tentative.PUBLISHED` (code) plus the keep file
+  (data)**, `artifacts/curation/tentative/keep.jsonl`, since 2026-10-04 — Matt's
+  `fresh_install_build_ckpt161`, so a reader of a clone keeps their own record
+  without editing code. ⚠ **`curate solve record` keeps what it records by
+  default**, so a leg here that records to measure passes `--no-keep` or runs
+  `curate solve release <stamp>` when the measurement is taken. Everything else
   goes unless Matt says otherwise. **The keep list holds twenty-one, all of them
   published since 2026-09-29**: the `final139_*` set (the general n=1000 and the nineteen collections,
   seated over the pool as mining closed on 2026-09-21) and `final140_general2000`, the
@@ -115,12 +120,12 @@ that came later carry the date of Matt's ruling.
   not — and `tentative.kept()` is only what stops a prune taking its pictures.
 - **Publication, durability and retention are three questions and not one.**
   `tentative.protected_keys()` reads `tentative.kept()` — `PUBLISHED` plus
-  `KEPT_UNPUBLISHED` — **and nothing else**, so preservation is a line in a tuple
-  and never a folder existing. A record off that list is readable by naming its
-  stamp and pins nothing. The test for a `KEPT_UNPUBLISHED` entry is that something
-  **resolves** the record — code reading its rows, a figure naming `<stamp>|<key>`
-  — not that something mentions it. It must never sweep the whole store again: that
-  let an ephemeral artifact confer preservation.
+  `tentative.kept_unpublished()`, the keep file — **and nothing else**, so
+  preservation is a named row and never a folder existing. A record off that list
+  is readable by naming its stamp and pins nothing. It must never sweep the whole
+  store again: that let an ephemeral artifact confer preservation. **A forced fill
+  (`--force-fill`) is never published**: `tentative.refuse_forced` is called by
+  every collection publish path.
 - **A collection's size is in `curation/targets.py` and nowhere else**, Matt's cut
   of 2026-09-15. Nineteen collections — twelve hue families, seven modes — and a
   prompt that names a seat count is a prompt retyping one of them.

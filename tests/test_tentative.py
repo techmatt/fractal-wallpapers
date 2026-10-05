@@ -769,7 +769,7 @@ def test_retention_keeps_a_recorded_seat_the_rank_would_have_dropped(
     because since 2026-09-13 the keep list is the whole of what `protected_keys`
     reads — a record merely existing protects nothing.
     """
-    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260101T000000Z",))
+    monkeypatch.setattr(tentative, "kept_unpublished", lambda: ["20260101T000000Z"])
     rows = []
     for key in ("k0", "k1"):
         source = decision(candidate=key)
@@ -800,7 +800,9 @@ def test_the_protection_reads_every_kept_record_and_not_only_the_newest(
 ):
     """An older kept record's IDs are exactly the ones somebody is still holding. A
     protection that read only the latest would sweep last week's page silently."""
-    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260901T000000Z", "20260902T000000Z"))
+    monkeypatch.setattr(
+        tentative, "kept_unpublished", lambda: ["20260901T000000Z", "20260902T000000Z"]
+    )
     tentative.write(record_of(seat("k0")), stamp="20260901T000000Z", log=quiet)
     tentative.write(record_of(seat("k1")), stamp="20260902T000000Z", log=quiet)
 
@@ -814,7 +816,7 @@ def test_a_record_the_protection_cannot_parse_does_not_stop_a_prune(tentative_st
     The unparseable record is on the keep list, or this would pass by never
     reading the folder at all — which is a different claim than the one here.
     """
-    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260902T000000Z",))
+    monkeypatch.setattr(tentative, "kept_unpublished", lambda: ["20260902T000000Z"])
     directory = tentative_store / "20260902T000000Z"
     directory.mkdir(parents=True)
     (directory / tentative.ROWS_NAME).write_text("{not json\n", encoding="utf-8")
@@ -1055,14 +1057,36 @@ def test_the_protection_keeps_an_unpublished_record_the_keep_list_names(
 ):
     """**Publication, durability and retention are three questions**, Matt's
     ruling, and this is the third one answered on its own. An unpublished record
-    is protected when `KEPT_UNPUBLISHED` names it and not otherwise — publication
+    is protected when the keep file names it and not otherwise — publication
     is not the input, but neither is the folder's mere existence."""
     recorded(tentative_store, "20260101T000000Z", "k0")
     recorded(tentative_store, "20260303T000000Z", "k1")
     monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))
-    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260303T000000Z",))
+    tentative.keep("20260303T000000Z")
 
     assert tentative.protected_keys() == {"k0", "k1"}
+
+
+def test_a_released_record_leaves_the_keep_list_and_a_published_one_cannot_be_released(
+    tentative_store, monkeypatch
+):
+    """The keep list's unpublished half is DATA since 2026-10-04: `solve record`
+    keeps by default and `solve release` lets go, and the last row per stamp wins.
+    A published record is kept by the tuple and refuses a row either way."""
+    recorded(tentative_store, "20260101T000000Z", "k0")
+    recorded(tentative_store, "20260303T000000Z", "k1")
+    monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))
+    tentative.keep("20260303T000000Z")
+    assert tentative.kept() == ["20260101T000000Z", "20260303T000000Z"]
+    tentative.release("20260303T000000Z")
+    assert tentative.kept() == ["20260101T000000Z"]
+    assert tentative.protected_keys() == {"k0"}
+    rows = tentative.keep_path().read_text(encoding="utf-8").splitlines()
+    assert [json.loads(row)["kept"] for row in rows] == [True, False]
+    with pytest.raises(tentative.TentativeRefused):
+        tentative.release("20260101T000000Z")
+    with pytest.raises(tentative.TentativeRefused):
+        tentative.keep("20269999T000000Z")
 
 
 def test_a_record_off_the_keep_list_pins_nothing(tentative_store, monkeypatch):
@@ -1077,7 +1101,7 @@ def test_a_record_off_the_keep_list_pins_nothing(tentative_store, monkeypatch):
     recorded(tentative_store, "20260101T000000Z", "k0")
     recorded(tentative_store, "20260303T000000Z", "k1")
     monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z",))
-    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ())
+    monkeypatch.setattr(tentative, "kept_unpublished", lambda: [])
 
     assert tentative.protected_keys() == {"k0"}
     assert tentative.kept() == ["20260101T000000Z"]
@@ -1095,7 +1119,9 @@ def test_the_keep_list_is_published_plus_the_named_unpublished_and_holds_no_ghos
     recorded(tentative_store, "20260101T000000Z", "k0")
     recorded(tentative_store, "20260303T000000Z", "k1")
     monkeypatch.setattr(tentative, "PUBLISHED", ("20260101T000000Z", "20261212T000000Z"))
-    monkeypatch.setattr(tentative, "KEPT_UNPUBLISHED", ("20260303T000000Z", "20261111T000000Z"))
+    monkeypatch.setattr(
+        tentative, "kept_unpublished", lambda: ["20260303T000000Z", "20261111T000000Z"]
+    )
 
     assert tentative.kept() == ["20260101T000000Z", "20260303T000000Z"]
 

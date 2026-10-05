@@ -122,15 +122,21 @@ def now() -> str:
 # The population.
 # --------------------------------------------------------------------------- #
 def membership() -> list[dict]:
-    """One row per (collection, seat) over the kept records, **in render order**.
+    """One row per (collection, seat) over the published records, **in render order**.
+
+    `tentative.published()` and not `kept()`: since `solve record` keeps what it
+    records by default, the keep list can hold a reader's own record, and the full
+    set is the published collections and nothing a local solve wrote.
 
     `order` is the seat's place in its own record, from zero, and `seat` is the
     record's own seat number beside it.
     """
     from fractal_wallpapers.curation import tentative, viewers
 
+    for stamp in tentative.published():
+        tentative.refuse_forced(stamp, "the full set")
     records = [
-        (viewers.label_of(tentative.read_manifest(stamp)), stamp) for stamp in tentative.kept()
+        (viewers.label_of(tentative.read_manifest(stamp)), stamp) for stamp in tentative.published()
     ]
     rank = {name: index for index, name in enumerate(FIRST)}
     records.sort(key=lambda held: rank.get(held[0], len(FIRST)))

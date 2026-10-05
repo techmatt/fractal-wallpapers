@@ -368,10 +368,14 @@ ROSTER: tuple[Entry, ...] = (
 # Small pieces.
 # --------------------------------------------------------------------------- #
 def kept_stamps() -> tuple[str, ...]:
-    """The keep list as code states it — no store read, so a test's tmp roots see the same."""
+    """The keep list as stated: `PUBLISHED` plus the keep file's unpublished stamps.
+
+    No sweep of the store — only the one small keep file, which sits under the hot
+    root, so a test's tmp roots see their own.
+    """
     from fractal_wallpapers.curation import tentative
 
-    return tuple(tentative.PUBLISHED) + tuple(tentative.KEPT_UNPUBLISHED)
+    return tuple(tentative.PUBLISHED) + tuple(tentative.kept_unpublished())
 
 
 def kept_solve_records() -> tuple[str, ...]:

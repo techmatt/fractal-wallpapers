@@ -860,8 +860,12 @@ figures (1.1–1.7 s a place opened) price a different act.
 **Nothing label-fed will ever serve them**, by ruling (`partitions.NEVER_LABELLED`):
 the proven channel, the `c`-pool and reframing priors are empty by construction, the
 plane seed pool holds no d=6 row, and the twin is fed only by its plane's admissions.
-**The viewport sampler is the plane's one root source**; a harvest that names the pair
-without `--root-channel viewport_sampler` has nothing to draw.
+**The viewport sampler is the plane's one root source**, so since 2026-10-04 a harvest
+turns it on for `multibrot6` whether or not `--root-channel viewport_sampler` is named
+(`cli.supply_commands.build_sampler_channel`); every other partition keeps the channel
+off unless named. Before that, a from-empty harvest admitted nothing on either and
+said the pool was exhausted. A 3-minute isolated harvest of the pair then admitted
+254 on `multibrot6` and 824 on `julia:multibrot6`.
 
 ```
 fractal-wallpapers walk --family multibrot --degree 6 --root-channel viewport_sampler --roots 40

@@ -433,7 +433,10 @@ class LocationScorer:
         if importlib.util.find_spec("torch") is None:
             raise ModuleNotFoundError(
                 "torch is not installed, so the location head cannot be read. Install the "
-                "models extra, or walk on the structural gates alone."
+                "models extra, or walk on the structural gates alone.",
+                # Named, so `cli.main` turns this into the install line for the
+                # extra rather than a traceback: it reads `name` and nothing else.
+                name="torch",
             )
         return stamp
 

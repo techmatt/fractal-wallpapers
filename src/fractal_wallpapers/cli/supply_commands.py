@@ -67,13 +67,29 @@ def build_sampler_channel(args: argparse.Namespace, partitions, walk_run, log=pr
     a resumed session re-derives the list its cursor is standing in. The walk's
     ledger, so every attempt and its fate land in the run's record rather than
     only in a summary.
+
+    **Degree 6 has it on whether or not the run named it.** `multibrot6` is never
+    labelled (`partitions.NEVER_LABELLED`), so the plane seed pool, the proven
+    channel and the reframing priors hold nothing for it and the sampler is its one
+    root source; `julia:multibrot6` is a twin fed only by its plane's admissions. A
+    harvest from empty that left the channel off admitted nothing on either and
+    said the pool was exhausted. So an unnamed channel is built for the degree-6
+    planes alone, and every other partition keeps the default it had.
     """
     from fractal_wallpapers.discovery import viewport_sampler
+    from fractal_wallpapers.supply.partitions import NEVER_LABELLED
 
+    served = list(partitions)
     if viewport_sampler.CHANNEL not in (getattr(args, "root_channels", None) or ()):
-        return None
+        served = [p for p in partitions if p in NEVER_LABELLED and p in viewport_sampler.SERVED]
+        if not served:
+            return None
+        log(
+            f"[plan] root channel {viewport_sampler.CHANNEL} on for {', '.join(served)}: "
+            f"degree 6 is never labelled, so the sampler is its only root source"
+        )
     return viewport_sampler.build(
-        partitions=partitions,
+        partitions=served,
         seed=args.seed,
         rungs=args.sampler_rungs,
         widest=args.sampler_widest,
