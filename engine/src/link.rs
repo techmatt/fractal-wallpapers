@@ -1303,6 +1303,15 @@ const MAX_SCALE: i64 = 120;
 /// ckpt162 the deep reader shared it, which ended a deep link near 1e-45 to 1e-54.
 const DEEP_COORDINATE_LIMIT: usize = MAX_SCALE as usize + 8;
 
+/// `deep-link.js`'s `WRITTEN_OUT_CEILING`: at and past this magnitude a deep coordinate has
+/// more integer digits than [`DEEP_COORDINATE_LIMIT`], and is refused before it is built.
+const WRITTEN_OUT_CEILING: f64 = 1e128;
+
+/// `deep-link.js`'s `NARROWEST_WIDTH`: the narrowest width a deep link may name, the
+/// centre guard's last place. Every positive decimal below it needs more than
+/// [`MAX_SCALE`] places, so it is the lower edge the width's old syntax check drew.
+const NARROWEST_WIDTH: f64 = 1e-120;
+
 /// How many zeros an exponent may append before this reader refuses, where `deep-fx.js`
 /// would build the `BigInt`. No link the site writes comes near it; a deep coordinate is
 /// at most 128 characters, and `1e1000` is a place no frame is at.
@@ -1336,6 +1345,10 @@ impl Decimal {
         let scale = fraction.len() as i64 - exponent;
         let mut digits = format!("{whole}{fraction}");
         if scale < 0 {
+            // `fx.read`: a zero is a zero however many zeros its exponent asks for.
+            if !digits.bytes().any(|b| b != b'0') {
+                return Some(Decimal::make(negative, digits, 0));
+            }
             if -scale > MAX_INTEGER_ZEROS {
                 return None;
             }
@@ -1421,18 +1434,32 @@ fn deep_coordinate(text: &str, key: &str) -> Result<Decimal, String> {
             utf16_len(text)
         ));
     }
-    // `fx.refusal`'s two answers, told apart as `deep-link.js` tells them: a decimal past
-    // the centre guard is not a non-number.
-    if is_decimal(text.trim()) && Decimal::parse(text).is_none() {
-        return Err(format!(
-            "{key} carries more than {MAX_SCALE} digits after the point; the link says {text}."
-        ));
-    }
-    Decimal::parse(text).ok_or_else(|| {
+    // Held to the cap as it will be written back, as `deep-link.js` holds it: a number past
+    // `WRITTEN_OUT_CEILING` has more integer digits than the cap before it is built, and
+    // anything else is measured once it is spelled (gpu_deep_ship_ckpt162's review).
+    let too_wide = || {
         format!(
-            "{key} has to be a decimal number, with or without an exponent; the link says {text}."
+            "{key} is longer than {DEEP_COORDINATE_LIMIT} characters written out; the link says \
+             {text}."
         )
-    })
+    };
+    let decimal = is_decimal(text.trim());
+    if decimal && !(number(text).abs() < WRITTEN_OUT_CEILING) {
+        return Err(too_wide());
+    }
+    match Decimal::parse(text) {
+        Some(parsed) if utf16_len(&parsed.text()) > DEEP_COORDINATE_LIMIT => Err(too_wide()),
+        Some(parsed) => Ok(parsed),
+        // `fx.refusal`'s two answers, told apart as `deep-link.js` tells them: a decimal past
+        // the centre guard is not a non-number. `MAX_INTEGER_ZEROS` cannot land here: a
+        // nonzero number with that many integer zeros is past the ceiling above.
+        None if decimal => Err(format!(
+            "{key} carries more than {MAX_SCALE} digits after the point; the link says {text}."
+        )),
+        None => Err(format!(
+            "{key} has to be a decimal number, with or without an exponent; the link says {text}."
+        )),
+    }
 }
 
 /// `deep-link.js`'s `parse`.
@@ -1527,6 +1554,17 @@ pub fn parse_deep(search: &str, context: &Context) -> Result<DeepView, String> {
         ));
     }
     let width = number(width_text);
+    // The floor, and a positive width a double holds as 0 (`1e-400`) is under it rather than
+    // "not positive" (`deep-link.js`'s `width`, gpu_deep_ship_ckpt162's review).
+    let mantissa = trimmed_width.split(['e', 'E']).next().unwrap_or("");
+    let positive =
+        !trimmed_width.starts_with('-') && mantissa.bytes().any(|b| (b'1'..=b'9').contains(&b));
+    if positive && width < NARROWEST_WIDTH {
+        return Err(format!(
+            "w can be no narrower than 1e-120, the last place a deep link spells a center to; \
+             the link says {width_text}."
+        ));
+    }
     if !(width.is_finite() && width > 0.0) {
         return Err(format!(
             "w is the width of the view in the plane, so it has to be positive; the link says \
