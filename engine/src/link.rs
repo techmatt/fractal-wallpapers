@@ -1297,9 +1297,15 @@ pub struct Decimal {
 /// `deep-fx.js`'s `MAX_SCALE`: the most fraction digits a coordinate may carry.
 const MAX_SCALE: i64 = 120;
 
+/// `deep-link.js`'s `COORDINATE_LIMIT`: the deep contract's own cap on a coordinate's
+/// length, [`MAX_SCALE`] and eight, so the link never binds before the centre guard does
+/// (gpu_deep_ship_ckpt162). The shallow reader keeps [`COORDINATE_LIMIT`]'s 64; until
+/// ckpt162 the deep reader shared it, which ended a deep link near 1e-45 to 1e-54.
+const DEEP_COORDINATE_LIMIT: usize = MAX_SCALE as usize + 8;
+
 /// How many zeros an exponent may append before this reader refuses, where `deep-fx.js`
-/// would build the `BigInt`. No link the site writes comes near it; a coordinate is 64
-/// characters, and `1e1000` is a place no frame is at.
+/// would build the `BigInt`. No link the site writes comes near it; a deep coordinate is
+/// at most 128 characters, and `1e1000` is a place no frame is at.
 const MAX_INTEGER_ZEROS: i64 = 1000;
 
 impl Decimal {
@@ -1408,10 +1414,18 @@ pub struct DeepView {
 const DEEP_KNOWN: [&str; 11] = ["dv", "f", "cx", "cy", "x", "y", "w", "n", "a", "p", "level"];
 
 fn deep_coordinate(text: &str, key: &str) -> Result<Decimal, String> {
-    if utf16_len(text) > COORDINATE_LIMIT {
+    if utf16_len(text) > DEEP_COORDINATE_LIMIT {
         return Err(format!(
-            "{key} is {} characters, and a coordinate is capped at {COORDINATE_LIMIT}.",
+            "{key} is {} characters, and a deep coordinate is capped at \
+             {DEEP_COORDINATE_LIMIT}.",
             utf16_len(text)
+        ));
+    }
+    // `fx.refusal`'s two answers, told apart as `deep-link.js` tells them: a decimal past
+    // the centre guard is not a non-number.
+    if is_decimal(text.trim()) && Decimal::parse(text).is_none() {
+        return Err(format!(
+            "{key} carries more than {MAX_SCALE} digits after the point; the link says {text}."
         ));
     }
     Decimal::parse(text).ok_or_else(|| {
@@ -1499,12 +1513,15 @@ pub fn parse_deep(search: &str, context: &Context) -> Result<DeepView, String> {
         (None, None) => deep_coordinate(&home_y.text, "y")?,
     };
     let width_text = query.get("w").unwrap_or(&home_w.text);
-    if utf16_len(width_text) > COORDINATE_LIMIT {
+    if utf16_len(width_text) > DEEP_COORDINATE_LIMIT {
         return Err(format!(
             "w is the width of the view in the plane, and this is not one: {width_text}."
         ));
     }
-    if Decimal::parse(width_text).is_none() {
+    // The syntax, and not the centre guard: a width is a double, and `shortest` spells one
+    // below about 1e-104 past 120 places (`deep-link.js`'s `width`, gpu_deep_ship_ckpt162).
+    let trimmed_width = width_text.trim();
+    if trimmed_width.is_empty() || !is_decimal(trimmed_width) {
         return Err(format!(
             "w has to be a decimal number; the link says {width_text}."
         ));
