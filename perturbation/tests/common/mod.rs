@@ -630,12 +630,7 @@ pub fn controls_at(degree: u32) -> Vec<Control> {
     ]
 }
 
-/// The seven and the six as one list.
-pub fn every_frame() -> Vec<Control> {
-    every_frame_at(2)
-}
-
-/// The same at one degree.
+/// The seven and the six as one list, at one degree.
 pub fn every_frame_at(degree: u32) -> Vec<Control> {
     frames_at(degree)
         .into_iter()

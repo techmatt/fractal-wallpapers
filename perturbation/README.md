@@ -4,8 +4,9 @@ The picture core of the explorer's Deep tab, as a crate of its own beside `engin
 renders the smooth field of `z^d + c` — the Multibrot set of every integer degree from two
 to six, and the Julia set of any `c` at each — by **perturbation with rebasing**, at widths
 the `f64` engine cannot draw, and hands it out as one `f64` lane a sample. It has no UI, no
-page, no link contract and no exports of its own. Two crates build it, and neither keeps a
-copy:
+page, no link contract and no exports of its own. Two crates ship it, and neither keeps a
+copy (the website's `explorer/deep-gpu-model` also takes it by path, as the kernel its GPU
+model is measured against):
 
 - **`fractal-engine`**, natively, behind its `deep` feature, which is on by default: it is
   how `render-link` draws a `dv=` link from the same arithmetic the page uses. The
@@ -53,8 +54,8 @@ centred at that `c` already computed, and the only differences in the loop are
 where it enters and whether `dc` is spent every step or once.
 
 It also has **no dependencies at all** — not `serde`, not the engine, not even as
-a dev-dependency. It is a dependency of the engine and of the website's wasm module, so
-everything it took, both of them would take. `src/json.rs` reads the fifteen-member spec
+a dev-dependency. It is a dependency of the engine, of the website's wasm module, and of its
+GPU model, so everything it took, all three would take. `src/json.rs` reads the fifteen-member spec
 and `smooth-cases.json` pins the one formula that had to come from the engine.
 
 ```text

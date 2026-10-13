@@ -137,7 +137,8 @@ drew and `engine.wasm` coloured for the kernel's 142 parity specs at their own g
 the 105 Deep gallery links at 32x18, one sample a pixel, with its generator inside it;
 `deep::tests` holds a native draw of each to it — the interior mask and the iteration
 counts exactly, the lanes within four units in the last place, the pixels within one
-level a channel — and prints every case that is not identical. On this box (Windows) 13
+level a channel (the one gallery link with no `scale` records none, as render-link refuses
+it) — and prints every case that is not identical. On this box (Windows) 13
 of the 247 differed, each by one unit on one or two samples, from the platform's `ln`;
 narrowed to `f32` for colour every lane agreed, and every pixel was identical. Another
 operating system's C runtime is held to the same tolerance by CI. `--ss 3` stays
