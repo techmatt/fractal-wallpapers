@@ -24,7 +24,7 @@ MAX_TRACKED_BYTES = 2 * 1024 * 1024
 
 # A machine-specific path in source is the other kind of one-way door: it works
 # for exactly one developer. Source directories are held to pathlib and relatives.
-SOURCE_PREFIXES = ("src/", "engine/src/")
+SOURCE_PREFIXES = ("src/", "engine/src/", "perturbation/src/")
 # The lookbehind keeps URL schemes ("https://...") from reading as drive letters.
 ABSOLUTE_PATH_PATTERN = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]|/(?:home|Users|mnt)/")
 

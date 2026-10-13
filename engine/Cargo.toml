@@ -2,13 +2,22 @@
 name = "fractal-engine"
 version = "0.1.0"
 edition = "2024"
-# The edition above needs rustc 1.85, and saying so here is what makes an old
-# toolchain report a VERSION rather than a feature: cargo refuses with "requires
-# rustc 1.85 or newer, while the currently active rustc version is …", where the
-# edition alone fails as `feature `edition2024` is required` and points at a
-# nightly flag. Nothing else in the crate raises the floor — the thirty
+# The floor is the deep kernel's: `perturbation` calls `f64::next_up`, stable since
+# 1.86, and the engine takes it by default. Saying so here is what makes an old
+# toolchain report a VERSION rather than a missing method or a feature: cargo
+# refuses with "requires rustc 1.86 or newer, while the currently active rustc
+# version is …". Nothing else raises it — the edition wants 1.85 and the thirty
 # dependencies are pure Rust and older than this.
-rust-version = "1.85"
+rust-version = "1.86"
+
+[features]
+# **`deep` draws `dv=` links**: `render-link` hands a deep view to the picture kernel in
+# `../perturbation`, the same copy the website's Deep tab compiles to `perturb.wasm`.
+# On by default, because a native engine that can read a deep link should draw it.
+# The website's `engine-wasm` turns it off (`default-features = false`): the page runs
+# that kernel as a module of its own, and `engine.wasm` gains nothing from a second copy.
+default = ["deep"]
+deep = ["dep:perturbation"]
 
 [dependencies]
 # Complex arithmetic for family parameters and viewport geometry. The iteration
@@ -26,6 +35,9 @@ png = "0.18"
 jpeg-encoder = "0.7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The deep picture kernel, from this repository: fixed-point reference orbits and the
+# perturbed delta loop below the `f64` floor. No dependencies of its own.
+perturbation = { path = "../perturbation", optional = true }
 
 [profile.release]
 opt-level = 3

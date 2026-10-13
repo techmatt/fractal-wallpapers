@@ -242,7 +242,15 @@ python -m ruff check . && python -m ruff format --check .
 python -m pytest
 cargo build --manifest-path engine/Cargo.toml
 cargo test --manifest-path engine/Cargo.toml
+cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warnings
+cargo test --release --manifest-path perturbation/Cargo.toml
 ```
+
+**`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
+of both perturb modules under one pin — `python -m builder explorer` there to move
+`engine.manifest.json`'s `wallpapers_commit`, then `--perturb` — and the lane gate
+`explorer/bench/perturb-parity.mjs`; `perturbation/README.md`'s *Running it* has the order.
+So the website is locked with this repository for any prompt that edits it.
 
 Run the Python suite with the checkout's own interpreter — `.venv` — rather than
 whatever `python` resolves to on the path. `pythonpath = ["src"]` in

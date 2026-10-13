@@ -1,0 +1,27 @@
+[package]
+name = "perturbation"
+version = "0.1.0"
+edition = "2024"
+# `f64::next_up` (`Spec::delta_ulps`) is the newest thing used, stable since 1.86; the
+# engine's floor follows this one, because the engine depends on it.
+rust-version = "1.86"
+publish = false
+
+# The deep picture kernel: `z^d + c` below the `f64` floor, as lanes. Two crates build
+# it — `fractal-engine` natively, for `render-link`'s `dv=` links, and the website's
+# `explorer/perturb-wasm`, which wraps it in the page's exports and compiles it to
+# `perturb.wasm` — and neither keeps a copy. `README.md` has the design and its proofs.
+
+# **No dependencies, and that is the design.** It is a dependency of the engine and of
+# the website's wasm module, so everything it takes both of them take; and `serde_json`
+# is not here either, because the spec is small and flat and `src/json.rs` reads it.
+# The engine's smooth field is held to it by `smooth-cases.json`, committed beside this
+# file, rather than by a dev-dependency on the engine.
+[dependencies]
+
+# Only the root crate's profile counts, so this one is for the crate's own tests:
+# `tests/parity.rs` runs 1.95 G sample-iterations and is a release test.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

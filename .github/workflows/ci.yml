@@ -39,17 +39,43 @@ jobs:
         with:
           python-version: "3.12"
 
+      # The wasm target, because `perturbation/` is the explorer's kernel too: the website
+      # compiles it to `perturb.wasm` with SIMD and without, and `src/lanes.rs` exists only
+      # in the SIMD build, so nothing native ever compiles or lints it.
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
 
+      # `shell: bash` on every step that runs more than one command: Windows' default
+      # PowerShell carries on past a failing native command, so only the last would count.
       - name: Rust format check
-        run: cargo fmt --check
-        working-directory: engine
+        shell: bash
+        run: |
+          cargo fmt --check --manifest-path engine/Cargo.toml
+          cargo fmt --check --manifest-path perturbation/Cargo.toml
 
+      # The engine twice: as `render-link` ships it, with the `deep` backend, and as the
+      # website's `engine-wasm` takes it, with `default-features = false`.
       - name: Clippy
-        run: cargo clippy -- -D warnings
-        working-directory: engine
+        shell: bash
+        run: |
+          cargo clippy --manifest-path engine/Cargo.toml -- -D warnings
+          cargo clippy --manifest-path engine/Cargo.toml --no-default-features -- -D warnings
+          cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warnings
+
+      # The kernel's two wasm builds, checked and linted as the website bakes them: plain
+      # (`perturb-scalar.wasm`) and `+simd128` (`perturb.wasm`), each in its own target
+      # directory so the two flag sets never invalidate each other.
+      - name: Check the kernel for wasm32, scalar and simd128
+        shell: bash
+        run: |
+          cargo clippy --manifest-path perturbation/Cargo.toml --release \
+            --target wasm32-unknown-unknown -- -D warnings
+          RUSTFLAGS="-C target-feature=+simd128" cargo clippy \
+            --manifest-path perturbation/Cargo.toml --release \
+            --target wasm32-unknown-unknown --target-dir perturbation/target/simd128 \
+            -- -D warnings
 
       # BEFORE the Python suite, which is the whole point of this ordering.
       - name: Build the engine
@@ -62,6 +88,13 @@ jobs:
       - name: Test the engine
         run: cargo test --release
         working-directory: engine
+
+      # The kernel's own: its proofs against `f64` and a brute-force oracle, the
+      # interior switch, and its pins. The pins are Windows bytes, held whole there and
+      # by their counters elsewhere (`perturbation/tests/parity.rs`).
+      - name: Test the deep kernel
+        run: cargo test --release
+        working-directory: perturbation
 
       # Exactly the README's line, and the default install: `models` is CPU torch
       # on every platform (PyTorch's CPU index on Linux, PyPI elsewhere), so no
