@@ -1811,4 +1811,34 @@ mod tests {
             );
         }
     }
+
+    /// **The deep kernel's smooth count is this one, to the bit, on every platform.**
+    /// `perturbation` restates the closed form rather than linking the engine, and its
+    /// own test holds the restatement to cases this engine recorded on one machine;
+    /// here the two run side by side on whatever machine this is, so the platform's
+    /// `ln` is the same on both sides and an exact equality is the claim — at every
+    /// degree the deep kernel draws, over escape steps and overshoots from just past
+    /// the bailout to far beyond it.
+    #[cfg(feature = "deep")]
+    #[test]
+    fn the_deep_kernels_smooth_count_is_this_one() {
+        let bailout_sq = BAILOUT * BAILOUT;
+        let mut checked = 0;
+        for degree in 2..=6u32 {
+            for step in [0u32, 1, 7, 312, 65_535, 1_000_000] {
+                for k in 0..200 {
+                    let magnitude_sq = bailout_sq * (1.0 + k as f64 * 0.37).powi(degree as i32);
+                    let ours = smooth_count(step, magnitude_sq, degree as f64);
+                    let theirs = perturbation::kernel::smooth_count_at(step, magnitude_sq, degree);
+                    assert_eq!(
+                        ours.to_bits(),
+                        theirs.to_bits(),
+                        "degree {degree}, step {step}, |z|² {magnitude_sq:e}"
+                    );
+                    checked += 1;
+                }
+            }
+        }
+        assert_eq!(checked, 5 * 6 * 200);
+    }
 }

@@ -295,7 +295,8 @@ render-link Draw an explorer link — the whole URL or its query — at a size, 
             anchors and band come from a checkout's data/: --data DIR, else
             $FRACTAL_ENGINE_DATA, else the first data/ found walking up from the
             working directory, then from the executable. A deep (dv=) link is
-            read and refused: deep rendering is not built yet.
+            drawn by perturbation, as the explorer's Deep tab draws it, and one
+            that names no scale is refused.
 
 The spec is read from SPEC.json, or from stdin when no path is given. A JSON
 report describing what happened is written to stdout.";
@@ -683,9 +684,15 @@ struct DeepReport {
 }
 
 /// A deep link through a backend: its lanes, the engine's own colouring, the file, the
-/// link. Everything but the backend's lanes is here already, so a perturbation backend
-/// is the one missing piece; today the only backend is [`link::NotBuilt`], which refuses
-/// before a file is touched.
+/// link. The backend is `deep::Perturbation`, the explorer's own kernel, where the
+/// engine is built with its default `deep` feature, and [`link::NotBuilt`], which
+/// refuses before a file is touched, where it is not.
+///
+/// **A deep link that names no `scale` is refused here, before any backend runs.** The
+/// Deep tab opens one by fitting `lambda`, `period` and `phase` to the picture it has
+/// just drawn (`fit.js`); that fit is its own least-squares search rather than the
+/// engine's `autolevel`, and its answer depends on the reader's window as well as on
+/// the link, so there is no one picture to port it to.
 fn render_deep(
     backend: &dyn link::DeepBackend,
     view: &link::DeepView,
@@ -694,6 +701,16 @@ fn render_deep(
     canonical: String,
     data: &Path,
 ) -> Result<(), String> {
+    if !view.scale_stated {
+        return Err(
+            "this deep link names no `scale`, and the Deep tab colours such a link by fitting \
+             one to the picture it draws on arrival — a fit render-link does not make. Open \
+             the link in the explorer and copy it back: the copy names `scale=absolute` with \
+             the fitted `lambda`, `period` and `phase`, which a render-link built with its \
+             default `deep` feature draws."
+                .into(),
+        );
+    }
     if !fits_aspect(args.size, view.aspect) {
         return Err(format!(
             "--size {}x{} is not the link's aspect {}:{}",
@@ -754,7 +771,11 @@ the network. Python, the judges and the weights are not needed.
                     then from the executable)
   --help            print this and exit
 
-A deep (dv=) link is read and refused: deep rendering is not built yet.
+A deep (dv=) link is drawn by perturbation, from the same kernel the explorer's
+Deep tab runs: the cap is the link's n, else the width's default, and the colour
+is the link's own. One that names no scale is refused, because the tab fits one to
+the picture on arrival and this does not. A build without the engine's `deep`
+feature refuses every deep link.
 FORMATS.md's *The explorer link* lists every key a link may carry.";
 
 fn render_link(args: &[String]) -> Result<(), String> {
@@ -772,7 +793,11 @@ fn render_link(args: &[String]) -> Result<(), String> {
     let view = match parsed {
         link::Link::Shallow(view) => view,
         link::Link::Deep(view) => {
-            return render_deep(&link::NotBuilt, &view, &args, &context, canonical, &data);
+            #[cfg(feature = "deep")]
+            let backend = fractal_engine::deep::Perturbation;
+            #[cfg(not(feature = "deep"))]
+            let backend = link::NotBuilt;
+            return render_deep(&backend, &view, &args, &context, canonical, &data);
         }
     };
     if let Some(key) = view.underived() {

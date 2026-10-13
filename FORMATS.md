@@ -505,7 +505,7 @@ vocabulary; `engine/src/link.rs` parses the same keys, and
 | key | meaning |
 | --- | --- |
 | `v` | link version, 1–4 (a shallow link) |
-| `dv` | deep-link version, 1–3; parsed, not yet drawn |
+| `dv` | deep-link version, 1–3; drawn by the explorer's own perturbation kernel (the engine's default `deep` feature), and refused where it names no `scale` (`engine/README.md`, *Deep links are drawn by the explorer's own kernel*) |
 | `f` | family: `mandelbrot` (default), `multibrot3`–`multibrot6`, `julia`, `julia3`–`julia6`, `phoenix`, `phoenix_plane` (the `phoenix_m` plane) |
 | `cx`, `cy` | the Julia or Phoenix constant `c` |
 | `px`, `py` | the Phoenix `p` |

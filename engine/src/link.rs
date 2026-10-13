@@ -6,7 +6,7 @@
 //! the Deep tab (`dv=1`–`3`, drawn by perturbation). Both are JavaScript, both live in
 //! the `fractal-website` checkout, and **they are the authority**: this module follows
 //! their `parse` rule for rule and is held to them by `fixtures/link-cases.json`, a
-//! record of what the site's own modules answered for 528 real and hand-made links —
+//! record of what the site's own modules answered for 730 real and hand-made links —
 //! see [`tests::the_parsers_are_the_sites`]. Where the two disagree, this file is wrong.
 //!
 //! What each parse needs from outside the link is the same thing the page hands its own
@@ -24,10 +24,12 @@
 //! compared as a string: [`js_number`] is ECMAScript's `Number::toString` laid over
 //! Rust's shortest round-trip digits, which are the same digits.
 //!
-//! **A deep link is parsed and not drawn.** Its centre is an exact decimal
-//! ([`Decimal`]), kept as the text the Deep tab would write back, and a
-//! [`DeepView`] goes to a [`DeepBackend`] — the seam a perturbation renderer plugs into,
-//! lanes in and shading out. The only backend today is [`NotBuilt`], which says so.
+//! **A deep link is parsed here and drawn by perturbation.** Its centre is an exact
+//! decimal ([`Decimal`]), kept as the text the Deep tab would write back, and a
+//! [`DeepView`] goes to a [`DeepBackend`] — lanes in, shading out. The backend is
+//! `crate::deep::Perturbation`, over `../perturbation`, the kernel the Deep tab compiles
+//! to wasm, under the default `deep` feature; without it the backend is [`NotBuilt`],
+//! which says so.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -1381,6 +1383,40 @@ impl Decimal {
         }
     }
 
+    /// `fx.toNumber`: the nearest double, by way of the text — a correctly rounded read
+    /// of the exact decimal, as `Number(text)` is.
+    pub fn to_f64(&self) -> f64 {
+        self.text()
+            .parse()
+            .expect("a plain decimal reads as a double")
+    }
+
+    /// `fx.difference`: `self − other` exactly, then [`Decimal::to_f64`] — so a near tie
+    /// between two coordinates that share every digit a double holds is still decided
+    /// the way the page decides it.
+    pub fn difference(&self, other: &Decimal) -> f64 {
+        let scale = self.scale.max(other.scale);
+        let widen = |value: &Decimal| {
+            format!(
+                "{}{}",
+                value.digits,
+                "0".repeat((scale - value.scale) as usize)
+            )
+        };
+        let (a, b) = (widen(self), widen(other));
+        let (negative, digits) = if self.negative == other.negative {
+            // Same sign: the magnitudes' difference, signed by whichever is larger.
+            match compare_digits(&a, &b) {
+                std::cmp::Ordering::Less => (!self.negative, subtract_digits(&b, &a)),
+                _ => (self.negative, subtract_digits(&a, &b)),
+            }
+        } else {
+            // Opposite signs: the magnitudes add, and the sign is `self`'s.
+            (self.negative, add_digits(&a, &b))
+        };
+        Decimal::make(negative, digits, scale).to_f64()
+    }
+
     /// `fx.text`: a plain decimal, never an exponent.
     pub fn text(&self) -> String {
         let scale = self.scale as usize;
@@ -1398,6 +1434,50 @@ impl Decimal {
             body
         }
     }
+}
+
+/// Two unsigned decimal digit strings by value, leading zeros ignored.
+fn compare_digits(a: &str, b: &str) -> std::cmp::Ordering {
+    let (a, b) = (a.trim_start_matches('0'), b.trim_start_matches('0'));
+    a.len().cmp(&b.len()).then_with(|| a.cmp(b))
+}
+
+/// `a + b` over unsigned decimal digit strings.
+fn add_digits(a: &str, b: &str) -> String {
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let mut out = Vec::with_capacity(a.len().max(b.len()) + 1);
+    let mut carry = 0;
+    for place in 0..a.len().max(b.len()) {
+        let digit = |s: &[u8]| s.len().checked_sub(place + 1).map_or(0, |i| s[i] - b'0');
+        let sum = digit(a) + digit(b) + carry;
+        out.push(b'0' + sum % 10);
+        carry = sum / 10;
+    }
+    if carry > 0 {
+        out.push(b'0' + carry);
+    }
+    out.reverse();
+    String::from_utf8(out).expect("digits")
+}
+
+/// `a − b` over unsigned decimal digit strings, where `a ≥ b`.
+fn subtract_digits(a: &str, b: &str) -> String {
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    let mut out = Vec::with_capacity(a.len());
+    let mut borrow = 0;
+    for place in 0..a.len() {
+        let top = a[a.len() - 1 - place] - b'0';
+        let under = b.len().checked_sub(place + 1).map_or(0, |i| b[i] - b'0') + borrow;
+        let (digit, next) = if top >= under {
+            (top - under, 0)
+        } else {
+            (top + 10 - under, 1)
+        };
+        out.push(b'0' + digit);
+        borrow = next;
+    }
+    out.reverse();
+    String::from_utf8(out).expect("digits")
 }
 
 // -------------------------------------------------------------------- the deep view
@@ -1444,6 +1524,10 @@ fn deep_coordinate(text: &str, key: &str) -> Result<Decimal, String> {
         )
     };
     let decimal = is_decimal(text.trim());
+    #[allow(
+        clippy::neg_cmp_op_on_partial_ord,
+        reason = "an overflow to NaN is too wide too"
+    )]
     if decimal && !(number(text).abs() < WRITTEN_OUT_CEILING) {
         return Err(too_wide());
     }
@@ -1645,7 +1729,7 @@ pub struct DeepFrame<'a> {
 }
 
 /// One smooth lane per sample, row-major, `NaN` for interior — the layout
-/// `perturb::compute_rows` writes and `engine.wasm`'s `shade_level` reads.
+/// `perturbation::compute_rows` writes and `engine.wasm`'s `shade_level` reads.
 pub struct Lanes {
     pub width: u32,
     pub height: u32,
@@ -1660,25 +1744,27 @@ pub struct Lanes {
 /// the engine's own colouring, so a deep picture is coloured by the same code as every
 /// shallow one.
 ///
-/// **What a backend has to settle before its pictures are the Deep tab's**, known today
-/// and not yet built:
+/// **What a backend has to settle before its pictures are the Deep tab's**, and how
+/// `crate::deep::Perturbation` settles each (its module doc has the detail):
 ///
 /// - **The arrival fit.** A dv link without `scale` does not open to a fixed recipe:
 ///   the page fits `lambda`, `period` and `phase` off the picture on screen (`fit.js`,
-///   and `ArrivalRefit` once the frame is finished). A backend either ports that fit or
-///   `render-link` refuses a scale-less deep link. Every Deep gallery row carries
-///   `scale=absolute`, so none of them needs it.
-/// - **A fresh reference orbit.** The page reuses a held orbit on the Mandelbrot side
-///   when the key matches and the centre is within half a frame, so its picture can
-///   depend on how the reader got there. Only a cold open — the reference at the view's
-///   own centre — is reproducible, and that is what a backend should take.
-/// - **Pinning `libm`.** `perturb`'s smooth count takes three `ln` a sample, and native
-///   and `wasm32` `ln` are not promised to agree to the bit; nothing has measured
-///   whether they do. Until something does, native lanes are "the same picture within a
-///   tolerance" of the tab's and not the same bytes.
-/// - **The cap.** A link without `n` leaves it to the width, and the tab's probe may
-///   raise it (`policy::settle`) before the picture settles; a backend decides whether to
-///   settle or to take the width's answer, and says which.
+///   and `ArrivalRefit` once the frame is finished). That fit is not the engine's
+///   `autolevel` and depends on the reader's window, so it is not ported:
+///   `render-link` refuses a scale-less deep link before any backend runs. One Deep
+///   gallery row of 105 names no `scale`.
+/// - **A fresh reference orbit.** The page reuses a held orbit only where its key, its
+///   cap and the exact decimal centre are the view's (`sameOrbit`), which draws what a
+///   cold open draws; so a backend takes the cold open, the reference at the view's own
+///   centre.
+/// - **`libm`.** The kernel's smooth count takes three `ln` a sample, and native and
+///   `wasm32` `ln` are not promised to agree to the bit. Measured, they differ by one
+///   unit in the last place on a few samples a frame and on no pixel, so native lanes
+///   are the tab's within a tolerance and not always the same bytes:
+///   `fixtures/deep-cases.json` holds them to it.
+/// - **The cap.** The link's `n` where it carries one, and otherwise the width's
+///   default: a link open is an automatic pass and never probes, so `policy::settle` is
+///   not run.
 pub trait DeepBackend {
     /// What this backend is, for a report.
     fn name(&self) -> &'static str;
@@ -1686,7 +1772,7 @@ pub trait DeepBackend {
     fn lanes(&self, frame: &DeepFrame) -> Result<Lanes, String>;
 }
 
-/// The only deep backend there is: it says so.
+/// The deep backend of an engine built without its `deep` feature: it says so.
 pub struct NotBuilt;
 
 impl DeepBackend for NotBuilt {
@@ -1696,9 +1782,10 @@ impl DeepBackend for NotBuilt {
 
     fn lanes(&self, frame: &DeepFrame) -> Result<Lanes, String> {
         Err(format!(
-            "deep rendering not built yet: this is a dv={DEEP_VERSION} link to a {} frame at \
-             width {}, which the Deep tab draws by perturbation, and fractal-engine has no \
-             perturbation backend. The link is parsed and canonical; open it in the explorer.",
+            "deep rendering not built in: this is a dv={DEEP_VERSION} link to a {} frame at \
+             width {}, which the Deep tab draws by perturbation, and this fractal-engine was \
+             built without its `deep` feature. The link is parsed and canonical; build the \
+             engine with its default features, or open the link in the explorer.",
             frame.view.family(),
             frame.view.w.text
         ))
@@ -2004,7 +2091,7 @@ mod tests {
         };
         let refused = NotBuilt.lanes(&frame).err().expect("refused");
         assert!(
-            refused.starts_with("deep rendering not built yet"),
+            refused.starts_with("deep rendering not built in"),
             "{refused}"
         );
 

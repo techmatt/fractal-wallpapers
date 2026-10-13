@@ -1,6 +1,7 @@
-"""`fractal-engine render-link`: its embedded link, and its picture against a release's.
+"""`fractal-engine render-link`: its embedded link, and its picture against a release's
+and against the Deep tab's.
 
-Two claims, one per test:
+Four claims, one per test:
 
 * **The engine's embed is the Python writer's, byte for byte.** A picture `render-link`
   writes, taken back to the bytes its encoder wrote and stamped again by
@@ -13,6 +14,11 @@ Two claims, one per test:
   ones through the pipeline, which can move a byte at a rounding boundary. That is why
   this is its own test rather than a `link` door in `test_renderer_agreement.py`'s
   `RENDERERS`, whose one assertion is a single digest.
+* **A deep link draws the Deep tab's picture.** A `dv=` gallery link through the
+  perturbation backend lands within `DEEP_LEVELS` of what the explorer's own wasm drew
+  for it (`engine/fixtures/deep-cases.json`), with its canonical link embedded.
+* **A deep link without a `scale` is refused**, because the tab fits one on arrival and
+  `render-link` does not.
 """
 
 from __future__ import annotations
@@ -123,3 +129,57 @@ def test_a_link_draws_its_release_picture_within_a_tolerance(tmp_path: Path, cas
     assert mean <= MEAN_TOLERANCE and p99 <= P99_TOLERANCE, (
         f"{case}: {link} draws {mean:.3f} mean, {p99:.0f} p99 away from its release"
     )
+
+
+#: The engine's deep fixture: what the explorer's own wasm drew and coloured for every
+#: Deep gallery link at a small grid, one sample a pixel.
+DEEP_CASES = Path(__file__).resolve().parents[1] / "engine" / "fixtures" / "deep-cases.json"
+
+#: Out of 255 per channel, the most a pixel of a deep `render-link` may sit from the
+#: explorer's: the engine's own fixture test holds the same bound (`RGB_LEVELS` in
+#: `engine/src/deep/tests.rs`), measured at 0.
+DEEP_LEVELS = 1
+
+
+def _deep_gallery() -> list[dict]:
+    import json
+
+    lines = DEEP_CASES.read_text(encoding="utf-8").splitlines()
+    rows = [line.strip().rstrip(",") for line in lines if line.strip().startswith('{"source"')]
+    return [case for case in map(json.loads, rows) if case["source"] == "gallery"]
+
+
+@needs_engine
+def test_a_deep_link_draws_the_explorers_picture(tmp_path: Path) -> None:
+    """**A `dv=` link through `render-link` is the Deep tab's picture**, end to end: the
+    cheapest gallery link, drawn at the fixture's grid and written to a PNG, lands within
+    [`DEEP_LEVELS`] of what `perturb.wasm` and `engine.wasm` drew for it, with the
+    canonical link embedded."""
+    import base64
+
+    import numpy
+
+    from fractal_wallpapers.curation import embed_link
+
+    case = min((c for c in _deep_gallery() if c["pixels"]), key=lambda c: c["ran"])
+    width, height = case["spec"]["resolution"]
+    picture = tmp_path / "deep.png"
+    report = engine.render_link(case["query"], (width, height), picture, supersample=1)
+    assert report["backend"] == "perturbation"
+    assert embed_link.link_in(picture.read_bytes()) == report["link"]
+    explorer = numpy.frombuffer(base64.b64decode(case["pixels"]), dtype=numpy.uint8)
+    explorer = explorer.reshape(height, width, 3).astype(numpy.int16)
+    apart = numpy.abs(_pixels(picture) - explorer)
+    assert int(apart.max()) <= DEEP_LEVELS, f"{case['query']}: {int(apart.max())} levels apart"
+
+
+@needs_engine
+def test_a_deep_link_without_a_scale_is_refused(tmp_path: Path) -> None:
+    """The Deep tab fits a scale-less link's colour to the picture on arrival, and
+    `render-link` does not port that fit, so it refuses before drawing anything."""
+    case = next(c for c in _deep_gallery() if c["pixels"] is None)
+    assert "scale=" not in case["query"]
+    picture = tmp_path / "refused.png"
+    with pytest.raises(RuntimeError, match="names no `scale`"):
+        engine.render_link(case["query"], (32, 18), picture, supersample=1)
+    assert not picture.exists()

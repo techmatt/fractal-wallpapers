@@ -94,8 +94,8 @@ the checkout and from `engine/target/release`. What it reads there is `palettes/
 Julia or Phoenix link without `cx`/`cy` opens at). The levelling band is compiled in from
 `data/coloring/levels_band.json`.
 
-**The parse is the site's, and a fixture says so.** `fixtures/link-cases.json` is 703
-links — gallery seats across every collection and mode, the 31 Deep gallery rows, every
+**The parse is the site's, and a fixture says so.** `fixtures/link-cases.json` is 730
+links — gallery seats across every collection and mode, the 105 Deep gallery rows, every
 figure link in the article, and the contracts' corners, `curve` and `knee` among them —
 each with the view and the canonical string, or the refusal, that the site's own modules
 gave under node. The generator travels inside the fixture, with the website commit it ran
@@ -113,12 +113,35 @@ recipe, **every pixel of all ten came back identical** (2026-09-25). A levelled 
 about half the release's time, because a link replays its curve where a release measures
 one and renders twice. `tests/test_render_link.py` is the standing check, at a tolerance.
 
-**Deep links are parsed, not drawn.** A `dv=` link goes to a `link::DeepBackend` — lanes
-in, the engine's own colouring out (`link::shade_lanes`, held to a smooth render byte for
-byte) — and the only backend is `link::NotBuilt`, which refuses with *deep rendering not
-built yet*. What a perturbation backend has to settle before its pictures are the Deep
-tab's is in the trait's doc comment: the arrival fit for a link without `scale`, a fresh
-reference orbit at the view's centre, and pinning `libm` between native and wasm32.
+**Deep links are drawn by the explorer's own kernel** *(deep_seam_move_ckpt163)*. A `dv=`
+link goes to a `link::DeepBackend` — lanes in, the engine's own colouring out
+(`link::shade_lanes`, held to a smooth render byte for byte) — and the backend is
+`deep::Perturbation`, over `../perturbation`: the picture kernel the website's Deep tab
+compiles to `perturb.wasm`, one copy for both, which this crate takes behind its default
+`deep` feature (the website's `engine-wasm` turns it off, and builds without it get
+`link::NotBuilt`, which refuses). The rows are drawn on every core. What a backend has
+to settle before its pictures are the tab's is in the trait's doc comment, four points,
+and `deep.rs` says how each is settled:
+
+- **the arrival fit** for a link without `scale` is not ported — it is `fit.js`'s own
+  search, not `autolevel`, and depends on the reader's window — so such a link is
+  refused with a sentence that says how to get a link that names one;
+- **the reference orbit** is the cold open's, at the view's own centre;
+- **`libm`** is the platform's, so a frame is the tab's within a tolerance, not always
+  its bytes;
+- **the cap** is the link's `n`, else the width's default, with no settle.
+
+**Measured against the tab, it is one unit in the last place on a few samples, and no
+pixel.** `fixtures/deep-cases.json` is what the website's committed `perturb-scalar.wasm`
+drew and `engine.wasm` coloured for the kernel's 142 parity specs at their own grids and
+the 105 Deep gallery links at 32x18, one sample a pixel, with its generator inside it;
+`deep::tests` holds a native draw of each to it — the interior mask and the iteration
+counts exactly, the lanes within four units in the last place, the pixels within one
+level a channel — and prints every case that is not identical. On this box (Windows) 13
+of the 247 differed, each by one unit on one or two samples, from the platform's `ln`;
+narrowed to `f32` for colour every lane agreed, and every pixel was identical. Another
+operating system's C runtime is held to the same tolerance by CI. `--ss 3` stays
+`render-link`'s default; the fixture's grids are ss 1, as the tab draws.
 
 **Two copies, for now.** `src/autolevel.rs`, `src/derive.rs` and `mode::tune`/`set`/
 `params_of` were copied from the website's `explorer/engine-wasm`, which keeps its own
