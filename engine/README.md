@@ -919,8 +919,9 @@ recorded names them, and the pipeline's own whitelist of seven palette keys
 is `0.1.0` and is never bumped, so a git dependency could not distinguish two
 revisions of it — and it would drag the Python package, the data and the labels into
 a build that wants one Rust library. The site's `explorer/engine-wasm` therefore
-depends on this directory by path, and its `build.rs` exists to say exactly that when
-the sibling checkout is missing. What identifies a build is what it draws: see
+depends on this directory by path, and without the sibling checkout cargo stops before
+building, failing to read `…/fractal-wallpapers/engine/Cargo.toml`, a path that names
+it. What identifies a build is what it draws: see
 [`engine_fingerprint`](../src/fractal_wallpapers/engine_fingerprint.py), a digest of
 a pinned probe set rendered through the production path, which catches a binary
 rebuilt from unchanged source by a different toolchain as well as a source change.
