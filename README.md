@@ -76,7 +76,13 @@ Every directory has a README beside the code it explains. There is no `docs/` tr
 ## Requirements
 
 * **Python 3.11+.**
-* **Rust 1.85+**, from [rustup](https://rustup.rs).
+* **Rust 1.85+**, from [rustup](https://rustup.rs). On Windows, build with the MSVC
+  toolchain (`x86_64-pc-windows-msvc`, rustup's default there). A machine whose rustup
+  default is the GNU toolchain (`rustup show` says `stable-x86_64-pc-windows-gnu`) still
+  builds the engine and draws the same pictures, but 2 to 17 times slower in the
+  transcendental-heavy modes: on one laptop, `judges check`'s stripe case took 4.75 s
+  against 0.49 s on MSVC, and its tia case 8.45 s against 0.49 s. Switch with
+  `rustup default stable-msvc` before building.
 * **A linker for Rust**: on Windows, the `Desktop development with C++` workload of
   [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/);
   on macOS, the Xcode Command Line Tools (`xcode-select --install`); on Linux, a C
@@ -164,8 +170,7 @@ Step 10 gathers them all. Times are from a sample run on the box in
 **1. Render one picture** (seconds):
 
 ```
-fractal-wallpapers render --family julia --c -0.75 0.11 --center-re 0 --center-im 0 \
-  --width 3 --mode stripe --cycles 2 --out artifacts/first.png
+fractal-wallpapers render --family julia --c -0.75 0.11 --center-re 0 --center-im 0 --width 3 --mode stripe --cycles 2 --out artifacts/first.png
 engine/target/release/fractal-engine render-link --size 2560x1440 --out artifacts/seat.png \
   --link "https://techmatt.github.io/fractals/explorer/?v=4&f=julia&cx=-1.2540170796954613&cy=-0.07161459637319667&m=tia&x=-0.336363658629224&y=-0.06271709146615745&w=0.5659066537374874&p=Oxblood%2C%20Cyan%2C%20Cream&phase=0.597858"
 ```
