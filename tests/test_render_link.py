@@ -140,6 +140,13 @@ DEEP_CASES = Path(__file__).resolve().parents[1] / "engine" / "fixtures" / "deep
 #: `engine/src/deep/tests.rs`), measured at 0.
 DEEP_LEVELS = 1
 
+#: A Deep link that states no colour: no `scale`, so the tab would fit one on arrival.
+#: Its own, rather than a gallery row's, since every gallery row now states its colour.
+DEEP_LINK_WITHOUT_A_SCALE = (
+    "dv=3&x=-0.74937053247003823168823992075369&y=0.041472667068168900034718746387049"
+    "&w=3.4869054402668363e-15&n=63534&p=glowdon"
+)
+
 
 def _deep_gallery() -> list[dict]:
     import json
@@ -177,9 +184,7 @@ def test_a_deep_link_draws_the_explorers_picture(tmp_path: Path) -> None:
 def test_a_deep_link_without_a_scale_is_refused(tmp_path: Path) -> None:
     """The Deep tab fits a scale-less link's colour to the picture on arrival, and
     `render-link` does not port that fit, so it refuses before drawing anything."""
-    case = next(c for c in _deep_gallery() if c["pixels"] is None)
-    assert "scale=" not in case["query"]
     picture = tmp_path / "refused.png"
     with pytest.raises(RuntimeError, match="names no `scale`"):
-        engine.render_link(case["query"], (32, 18), picture, supersample=1)
+        engine.render_link(DEEP_LINK_WITHOUT_A_SCALE, (32, 18), picture, supersample=1)
     assert not picture.exists()
