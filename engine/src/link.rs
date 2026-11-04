@@ -1274,6 +1274,7 @@ impl ShallowView {
             mode: Some(self.mode.to_string()),
             coloring: None,
             params: self.params.clone(),
+            style: None,
             palette: self.shade,
             colormap: self.palette.clone(),
             colormap_dir,

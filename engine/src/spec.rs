@@ -38,6 +38,7 @@ use crate::coloring::{Coloring, Palette};
 use crate::family::{Family, HomeView, PHOENIX_C, PHOENIX_P};
 use crate::maxiter;
 use crate::mode;
+use crate::style::Style;
 use crate::viewport::Viewport;
 
 /// A complex constant, as the pair of decimal strings it was written as.
@@ -68,6 +69,10 @@ pub struct RenderSpec {
     /// written before this key existed.
     #[serde(default)]
     pub params: std::collections::BTreeMap<String, f64>,
+    /// A style — a stack of layers over several channels of one escape loop
+    /// ([`crate::style`]). Mutually exclusive with `mode`, `coloring` and `params`.
+    #[serde(default)]
+    pub style: Option<Style>,
     /// How the gradient is spent on whatever the coloring produced. Independent
     /// of the mode, and every default is the identity.
     #[serde(default)]
@@ -246,7 +251,11 @@ pub struct Resolved {
     pub maxiter: u32,
     /// The mode's name, when the spec asked for one by name.
     pub mode: Option<String>,
+    /// What a render without a style colours through. Under a `style` it is the
+    /// default mode's coloring and nothing reads it: the style is the picture.
     pub coloring: Coloring,
+    /// The style, when the spec gave one; then it, not `coloring`, is drawn.
+    pub style: Option<Style>,
     pub palette: Palette,
     pub colormap: String,
     pub colormap_dir: PathBuf,
@@ -352,7 +361,37 @@ impl RenderSpec {
             ));
         }
 
-        let (coloring, mode) = resolve_coloring(self.mode, self.coloring, &self.params, &family)?;
+        if let Some(style) = &self.style {
+            if self.mode.is_some() || self.coloring.is_some() || !self.params.is_empty() {
+                return Err(format!(
+                    "the spec gives style '{}' beside a mode, a coloring or params; a style is \
+                     the whole colouring, so give it alone",
+                    style.name
+                ));
+            }
+            style.validate()?;
+            // Under a style the spec's palette is the bake and the rolloff; where
+            // each layer lands on the map is that layer's own palette.
+            let placement = Palette {
+                bake: Default::default(),
+                rolloff: Default::default(),
+                ..self.palette
+            };
+            if placement != Palette::default() {
+                return Err(
+                    "under a style the spec's palette carries mirror, reverse and rolloff \
+                     only; gamma, cycles, phase, transfer and the scale are each palette \
+                     layer's own"
+                        .into(),
+                );
+            }
+        }
+        let style = self.style;
+        let (coloring, mode) = if style.is_some() {
+            (resolve_coloring(None, None, &self.params, &family)?.0, None)
+        } else {
+            resolve_coloring(self.mode, self.coloring, &self.params, &family)?
+        };
         self.palette.validate()?;
         // The two halves are settled separately and then checked against each
         // other: almost every pairing is free, and the one that is not should cost
@@ -367,6 +406,7 @@ impl RenderSpec {
                 .maxiter
                 .unwrap_or_else(|| maxiter::for_width(plane_width)),
             coloring,
+            style,
             palette: self.palette,
             mode,
             location: Location {

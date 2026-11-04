@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "floating_on_dreams",
+  "kind": "sequential",
+  "source": "floating_on_dreams, authored as 12 OKLCH control points (pale aqua-white through teal and sea green to lime, the greens warmed towards lime) as the albedo of the floating_on_dreams style, measured off its reference image and fitted under the style's lighting.",
+  "stops": [
+    [0.0, [202, 228, 225]],
+    [0.08, [173, 212, 205]],
+    [0.17, [136, 190, 178]],
+    [0.27, [99, 164, 147]],
+    [0.37, [69, 137, 116]],
+    [0.46, [59, 122, 96]],
+    [0.55, [80, 137, 98]],
+    [0.64, [115, 153, 99]],
+    [0.73, [138, 171, 104]],
+    [0.82, [163, 190, 99]],
+    [0.91, [188, 208, 98]],
+    [1.0, [214, 225, 128]]
+  ]
+}

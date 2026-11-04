@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "name": "floating_on_dreams",
+  "description": "glossy glass: the smooth count lit as ring tubes with near-white highlights, every bulb a ringed glass dome with a glowing centre, light threads over it and a faint checker in the pale field",
+  "reference": {
+    "image": "floating-on-dreams-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "suggested_colormap": "floating_on_dreams",
+  "reuses": [
+    "field smooth: the outside palette position and the outside light's height",
+    "the leveled spend (Spend::of) with the rank transfer, so every frame spends the map evenly",
+    "field threads (the accumulated cross trap): the light streaks",
+    "field decomposition (the escape angle): the checker's sectors",
+    "Blend: normal, screen and multiply",
+    "the spec palette's mirror bake and rolloff"
+  ],
+  "adds": [
+    "the style compositor (engine/src/style.rs) and the render spec's style key",
+    "channel gradient: the unit direction the smooth count climbs, from dz/z at the escape",
+    "channel inside: a smooth convergence count inside the set, with its own gradient",
+    "layer light: a ring-banded height lit Blinn-Phong with a rim, on a channel's gradient",
+    "layer glow: a channel's position as the alpha of a colour under a blend",
+    "layer pattern: a checker of escape bands by escape-angle sectors",
+    "mask: any channel as an extra alpha on a layer"
+  ],
+  "style": {
+    "name": "floating_on_dreams",
+    "interior": {"palette": 1.0},
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {"field": {"kind": "smooth"}},
+        "palette": {"transfer": {"kind": "rank"}}
+      },
+      {
+        "kind": "palette",
+        "channel": {"inside": {"iterations": 1000}}
+      },
+      {
+        "kind": "light",
+        "channel": {"inside": {"iterations": 1000}},
+        "light": {
+          "bands": 6.0,
+          "rings": 0.8,
+          "slope": 0.4,
+          "azimuth": 135.0,
+          "elevation": 50.0,
+          "ambient": 0.42,
+          "diffuse": 0.6,
+          "specular": 0.9,
+          "shininess": 60.0,
+          "rim": 0.25,
+          "rim_power": 3.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {"field": {"kind": "smooth"}, "transform": "sqrt"},
+        "light": {
+          "bands": 24.0,
+          "rings": 0.75,
+          "slope": 0.3,
+          "azimuth": 135.0,
+          "elevation": 50.0,
+          "ambient": 0.45,
+          "diffuse": 0.6,
+          "specular": 0.9,
+          "shininess": 50.0,
+          "rim": 0.25,
+          "rim_power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {"field": {"kind": "threads", "sigma": 0.05}},
+        "power": 1.5,
+        "color": {"rgb": "#ffffff"},
+        "blend": "screen",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {"inside": {"iterations": 1000}},
+        "power": 4.0,
+        "color": {"rgb": "#ffffff"},
+        "blend": "screen",
+        "opacity": 0.85
+      },
+      {
+        "kind": "pattern",
+        "checker": {"per_iteration": 1.0, "sectors": 2},
+        "color": {"palette": 0.35},
+        "blend": "multiply",
+        "opacity": 0.12,
+        "mask": {
+          "channel": {"field": {"kind": "smooth"}, "transform": "sqrt"},
+          "invert": true,
+          "power": 2.0
+        }
+      }
+    ]
+  }
+}

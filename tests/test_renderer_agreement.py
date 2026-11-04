@@ -865,6 +865,13 @@ LOCATION_DOOR: dict[str, str] = {
     "`locations.refuse_a_picture_this_cannot_draw` — asked at this door and at no "
     "other, since `screen` and `score-locations` read the same rows and draw "
     "nothing — held by `tests/test_locations.py`, in place of byte agreement.",
+    "styles": "`style render --location` and `--manifest`, which go `locations.read` -> "
+    "`locations.spec_of` -> `styles.spec_of` -> `engine.render_report`. It takes the place, "
+    "the geometry and the cap from the record and nothing else, on purpose: a style IS the "
+    "whole colouring, so the record's mode is dropped and its colormap is replaced by "
+    "`--colormap` or the style's suggested map, and the engine refuses a spec naming a style "
+    "beside a mode, a coloring or params. No registry case is a style, so there is nothing "
+    "for it to agree with byte for byte; `tests/test_styles.py` holds the door.",
 }
 
 

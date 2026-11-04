@@ -67,6 +67,8 @@ reopens in the explorer, and any explorer view can be rendered here at full size
   - `curation/`: the candidate pool, the legs that fill it, and the gallery solve
   - `cli/`: the `fractal-wallpapers` command, one module per command group
 - `data/`: the tracked records: labels, palettes, and the stores the stages read
+  - `styles/`: named layer stacks, each the feel of one reference picture, drawn with any
+    palette by `fractal-wallpapers style render`
 - `models/`: each judge's tracked metadata; its weights are fetched beside it
 - `tests/`: the suite, and what each guard is for
 - `examples/`: the four pictures above

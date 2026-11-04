@@ -1009,6 +1009,7 @@ fn resolve(row: &PlanRow) -> Result<Resolved, String> {
         mode: None,
         coloring: None,
         params: Default::default(),
+        style: None,
         palette: Default::default(),
         colormap: String::new(),
         colormap_dir: PathBuf::new(),

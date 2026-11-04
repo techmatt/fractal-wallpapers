@@ -927,6 +927,27 @@ it. What identifies a build is what it draws: see
 a pinned probe set rendered through the production path, which catches a binary
 rebuilt from unchanged source by a different toolchain as well as a source change.
 
+## Styles: a layer stack over one orbit
+
+*(`002_style_floating_on_dreams`, 2026-11-04.)* The render spec's `style` key draws
+through `src/style.rs` instead of `coloring::paint`: one generic escape loop per
+sample (`iterate::run`, not the specialized table — no named mode reaches it, so the
+three guards above are untouched), reduced to a lane per field any layer reads, plus
+two channels of the style's own — the **gradient**, the unit direction the smooth
+count climbs, read analytically off `z` and `dz` at the escape, and the **inside**
+channel, a smooth convergence count for orbits that never escape, from a second short
+loop over `Family::step` run only for interior samples. Then each layer's frame-wide
+statistic is measured once (a palette layer through `Spend::of`, every other channel
+through `Stretch::over`) and the stack is composited sample by sample with no
+neighbour read, so a band of rows composites to the bytes the whole frame would — the
+explorer's measure-then-samples split, and what makes the file portable to it.
+
+Layer kinds, channels and blends are `data/styles/README.md`'s, which also carries the
+procedure for making a new style from a reference picture. **No named mode's output
+moved**: the style path is a separate branch of `render`, `RenderReport.coloring` is
+omitted only under a style, and `fractal-wallpapers identity` reads byte-identical
+before and after.
+
 ## What each family's picture is symmetric under
 
 None of this is code — there is no symmetry pass in the crate and nothing folds a
@@ -1047,11 +1068,16 @@ No integer-degree render pays for any of this. `cpow` is repeated multiplication
 over degrees 2 through 6 — faster than a polar round trip and exact where one is
 not — and `cpowf` is reached only by this family.
 
-**One capability is deliberately absent and is not debt: normal-map shading** —
-lighting a render by the surface normal of a distance estimate, with an azimuth
-and a lamp height. It makes a fractal read as an embossed metal plaque rather than
-as a field, replacing the picture's own structure with a lighting model's. The
-`de` field ships without it, as a scalar coloring like any other. Two further
+**One capability is deliberately absent from the mode catalog and is not debt:
+normal-map shading** — lighting a render by the surface normal of a distance
+estimate, with an azimuth and a lamp height. It makes a fractal read as an embossed
+metal plaque rather than as a field, replacing the picture's own structure with a
+lighting model's. The `de` field ships without it, as a scalar coloring like any
+other. **Lighting exists in one place, a style's `light` layer** (`src/style.rs`,
+2026-11-04, `002_style_floating_on_dreams`): a reference picture asked for a glossy
+lit surface, so a style may light the smooth count or the inside channel on their
+analytic gradients — never a named mode, and never the distance estimate. See
+[*Styles: a layer stack over one orbit*](#styles-a-layer-stack-over-one-orbit). Two further
 gaps *are* open decisions rather than omissions: `biomorph`, which would change
 what `n` means and so what every cached render means, and perturbation-based deep
 zoom, which is the one genuinely large thing this engine lacks (`iterate.rs`

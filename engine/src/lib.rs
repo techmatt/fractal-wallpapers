@@ -11,6 +11,7 @@
 //! field        those channels reduced over a supersampled grid → a scalar field
 //! coloring     field → linear-light RGB, through a stretch and a colormap
 //! direct_trap  the one coloring that paints during iteration and makes no field
+//! style        a declarative stack of layers over several channels of one orbit
 //! dump         a field written to disk, and the record that says what it is
 //! resample     Lanczos-3 down to the target resolution, then sRGB
 //! ```
@@ -57,8 +58,9 @@
 //! `deep` is the one stage that is not this crate's arithmetic: below the `f64` floor
 //! the field comes from `../perturbation`, the kernel the explorer's Deep tab compiles
 //! to wasm, behind the default `deep` feature, and goes back through [`coloring`] like
-//! any other. Deliberately absent: the derivative recurrence and the lighting it feeds,
-//! and any fast path that trades a branch for clarity.
+//! any other. Deliberately absent: lighting in any named mode — a style's `light`
+//! layer ([`style`]) is the one place a surface is lit — and any fast path that trades
+//! a branch for clarity.
 
 pub mod autolevel;
 pub mod coloring;
@@ -83,5 +85,6 @@ pub mod resample;
 pub mod rng;
 pub mod screen;
 pub mod spec;
+pub mod style;
 pub mod tiles;
 pub mod viewport;

@@ -37,7 +37,7 @@ use fractal_engine::{
     colormap::Colormap,
     dump, embed, expand, family, field, link, mode, resample, screen, spec,
     spec::{Location, MaxiterSpec, RecolorSpec, RenderSpec},
-    tiles,
+    style, tiles,
 };
 
 /// What a render did, printed to stdout as one JSON object.
@@ -52,7 +52,12 @@ struct RenderReport {
     #[serde(skip_serializing_if = "Option::is_none")]
     mode: Option<String>,
     /// The coloring in full, named or not — this is what determines the picture.
-    coloring: Coloring,
+    /// Absent under a style, which is reported in its place.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    coloring: Option<Coloring>,
+    /// The style in full, when the render drew one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    style: Option<style::Style>,
     /// How the gradient was spent on it. Echoed even when it is all defaults,
     /// because a record that omitted it would not say which render it was.
     palette: Palette,
@@ -328,14 +333,24 @@ fn render(spec_path: Option<&str>) -> Result<(), String> {
     let colormap = Colormap::load_baked(&spec.colormap_dir, &spec.colormap, spec.palette.bake)?;
 
     let started = Instant::now();
-    let painted = coloring::paint(
-        &spec.view,
-        &spec.family,
-        spec.maxiter,
-        &spec.coloring,
-        &spec.palette,
-        &colormap,
-    )?;
+    let painted = match &spec.style {
+        Some(chosen) => style::paint(
+            &spec.view,
+            &spec.family,
+            spec.maxiter,
+            chosen,
+            &spec.palette,
+            &colormap,
+        )?,
+        None => coloring::paint(
+            &spec.view,
+            &spec.family,
+            spec.maxiter,
+            &spec.coloring,
+            &spec.palette,
+            &colormap,
+        )?,
+    };
     let paint_seconds = started.elapsed().as_secs_f64();
 
     let started = Instant::now();
@@ -349,7 +364,8 @@ fn render(spec_path: Option<&str>) -> Result<(), String> {
         supersample: spec.view.supersample,
         maxiter: spec.maxiter,
         mode: spec.mode,
-        coloring: spec.coloring,
+        coloring: spec.style.is_none().then_some(spec.coloring),
+        style: spec.style,
         palette: spec.palette,
         colormap: colormap.name().to_string(),
         interior_fraction: painted.interior_fraction,
@@ -365,6 +381,13 @@ fn render(spec_path: Option<&str>) -> Result<(), String> {
 fn dump_field(spec_path: Option<&str>) -> Result<(), String> {
     let spec = RenderSpec::parse(&read_spec(spec_path)?)?.resolve()?;
     dump::check_path(&spec.output)?;
+    if let Some(chosen) = &spec.style {
+        return Err(format!(
+            "dump-field: style '{}' composites several channels and has no one scalar field \
+             to dump",
+            chosen.name
+        ));
+    }
 
     let named = spec.mode.clone().unwrap_or_else(|| "this coloring".into());
     let layer = spec.coloring.dumpable_field().ok_or_else(|| {
@@ -873,7 +896,8 @@ fn render_link(args: &[String]) -> Result<(), String> {
             supersample: spec.view.supersample,
             maxiter: spec.maxiter,
             mode: spec.mode,
-            coloring: spec.coloring,
+            coloring: Some(spec.coloring),
+            style: None,
             palette: spec.palette,
             colormap: colormap.name().to_string(),
             interior_fraction: painted.interior_fraction,

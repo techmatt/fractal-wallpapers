@@ -51,7 +51,10 @@
 //! reason is that it makes a fractal look like an embossed metal plaque rather
 //! than like a field: it replaces the picture's own structure with a lighting
 //! model's. The `de` field is here without it, as a scalar coloring like any
-//! other, and that is the whole of what this engine takes from that corner.
+//! other, and that is the whole of what this catalog takes from that corner. A
+//! *style* ([`crate::style`]) may light a surface — its `light` layer, added for a
+//! reference picture that is a lit glass surface — and that is a style's business,
+//! never a named mode's.
 
 use crate::coloring::{Blend, Coloring, Layer, Transform};
 use crate::direct_trap::Shape;

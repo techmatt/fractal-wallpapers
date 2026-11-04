@@ -143,8 +143,8 @@ pub enum FieldSpec {
     /// the units of their own choosing.
     ///
     /// **No lighting.** A distance estimate is often the input to a normal-map
-    /// shading pass; that pass is deliberately not in this engine. See
-    /// [`crate::mode`].
+    /// shading pass; that pass is deliberately not in the mode catalog. See
+    /// [`crate::mode`], and [`crate::style`] for the one place a surface is lit.
     De {
         #[serde(default = "de_scale")]
         scale: f64,
