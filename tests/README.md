@@ -171,6 +171,7 @@ long to run as the optimization costs to compile.
     - [`renders deploy`, 2026-08-30](#renders-deploy-2026-08-30)
     - [The 2026-08-30 doubling, recorded unsolved](#the-2026-08-30-doubling-recorded-unsolved)
     - [The doubling came back on its own](#the-doubling-came-back-on-its-own)
+- [Reading and reproducing a CI red](#reading-and-reproducing-a-ci-red)
 - [On a parallel runner](#on-a-parallel-runner)
   - [The deciding fact was never the clock](#the-deciding-fact-was-never-the-clock)
   - [What is left of the lane does not parallelise](#what-is-left-of-the-lane-does-not-parallelise)
@@ -3537,6 +3538,26 @@ happened in between is that hours passed. That is the strongest evidence the
 doubling was the disk settling after the delete rather than anything in this
 repository, and it is the reason to re-run a slow lane before believing one. It
 is still not *proven*, so the paragraph above stays.
+
+## Reading and reproducing a CI red
+
+CI runs `pytest --slow -rs` on Ubuntu, macOS (Apple silicon) and Windows after
+`uv sync --extra dev --extra models --extra solve`, so every job has torch and none
+has fetched weights or a store; a test that needs the shipped heads skips on a
+missing file rather than failing.
+
+The repository is public, so a red is readable without `gh` and without admin
+rights: `api.github.com/repos/techmatt/fractal-wallpapers/actions/runs` gives the
+runs and `runs/<id>/jobs` gives **step-level** conclusions. Job *logs* need admin
+and 403; the step conclusions are enough to say which step failed on which job.
+
+**Reproducing a failed Test step is a fresh clone with no store and no weights**,
+which is what a runner has: `git clone` the checkout into a scratch directory, copy
+the release engine binary into its `engine/target/release/`, set
+`FRACTAL_WALLPAPERS_HOT_ROOT` and `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` to empty, and run
+`pytest --slow` there with this checkout's interpreter. Reproducing the lean install
+is a mask at `sys.meta_path` (`test_base_install.py` carries the finder) blocking
+`torch,torchvision,timm` and **not** `numpy`, which `scipy` brings.
 
 ## On a parallel runner
 
