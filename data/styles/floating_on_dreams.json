@@ -28,6 +28,7 @@
   "style": {
     "name": "floating_on_dreams",
     "interior": {"palette": 1.0},
+    "tone": {"median": 0.686, "p10": 0.506},
     "layers": [
       {
         "kind": "palette",

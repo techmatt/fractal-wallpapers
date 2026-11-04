@@ -81,6 +81,69 @@ def is_cyclic(colormap: str) -> bool:
     return json.loads(path.read_text(encoding="utf-8")).get("kind") == "cyclic"
 
 
+def reference_path(document: dict[str, Any]) -> Path:
+    """Where a style's reference picture is: its `folder` is a sibling of this checkout."""
+    reference = document["reference"]
+    return repo_root().parent / reference["folder"] / reference["image"]
+
+
+#: The lightness statistics `tones` reports, in the order it prints them.
+TONES = ("median", "p10", "p90", "white", "black")
+
+
+def tones(path: Path, width: int = 640) -> dict[str, float]:
+    """A picture's lightness distribution: what the tonal check compares.
+
+    Lightness is CIE L* over 100, from the luminance of the decoded sRGB, read on a
+    copy `width` pixels wide (the statistics are of areas, not of hairlines).
+    `white` and `black` are the shares of the frame above 0.9 and below 0.1.
+    """
+    import numpy as np
+    from PIL import Image
+
+    with Image.open(path) as image:
+        image = image.convert("RGB")
+        image = image.resize((width, max(1, round(image.height * width / image.width))))
+        rgb = np.asarray(image, dtype=np.float64) / 255.0
+    linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    luminance = linear @ np.array([0.2126, 0.7152, 0.0722])
+    knee = 6 / 29
+    f = np.where(luminance > knee**3, np.cbrt(luminance), luminance / (3 * knee**2) + 4 / 29)
+    lightness = (116 * f - 16) / 100
+    return {
+        "median": float(np.median(lightness)),
+        "p10": float(np.percentile(lightness, 10)),
+        "p90": float(np.percentile(lightness, 90)),
+        "white": float((lightness > 0.9).mean()),
+        "black": float((lightness < 0.1).mean()),
+    }
+
+
+#: How far a render's lightness may sit from its style's reference and still hold
+#: the style's balance. Fitted on round one of `floating_on_dreams`, where Matt kept
+#: three of ten and found the others far too light: the three kept sit within 0.017
+#: of the reference's median and 0.020 of its p10, and every one of the seven dropped
+#: is 0.032 to 0.126 above its median. The white share is a ceiling, not a band: a
+#: palette that floods the frame with near-white (pink, at 0.21 to 0.26 against the
+#: reference's 0.13) was dropped too.
+TONE_BAND = {"median": 0.03, "p10": 0.05}
+WHITE_ALLOWANCE = 0.05
+BLACK_ALLOWANCE = 0.05
+
+
+def tone_misses(stats: dict[str, float], reference: dict[str, float]) -> list[str]:
+    """Each way a render's lightness misses its reference's; empty when it holds."""
+    misses = [
+        f"{key} {stats[key]:.3f} vs {reference[key]:.3f}"
+        for key, band in TONE_BAND.items()
+        if abs(stats[key] - reference[key]) > band
+    ]
+    for key, allowance in (("white", WHITE_ALLOWANCE), ("black", BLACK_ALLOWANCE)):
+        if stats[key] > reference[key] + allowance:
+            misses.append(f"{key} {stats[key]:.3f} vs {reference[key]:.3f}")
+    return misses
+
+
 def spec_of(
     row: dict[str, Any],
     document: dict[str, Any],

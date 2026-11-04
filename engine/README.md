@@ -948,6 +948,15 @@ moved**: the style path is a separate branch of `render`, `RenderReport.coloring
 omitted only under a style, and `fractal-wallpapers identity` reads byte-identical
 before and after.
 
+*(`003_style_yas`, 2026-11-04.)* Two things in the second style are not per-sample
+functions of the orbit, and both keep the measure-then-samples split rather than break
+it. The **radial** channel is a function of the sample's place in the frame, so it is
+relative to the frame being drawn: a port that draws a band of rows hands it the whole
+frame's geometry, as it already hands it the whole frame's stretch. The **tone** pass is
+a second measure, taken of the composite rather than of a channel — its median and 10th
+percentile lightness, read on a stride of samples — followed by one per-sample curve; a
+port measures it over the frame's composite before applying it to any band.
+
 ## What each family's picture is symmetric under
 
 None of this is code — there is no symmetry pass in the crate and nothing folds a

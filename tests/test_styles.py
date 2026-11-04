@@ -32,7 +32,32 @@ def test_every_style_file_reads_and_names_a_map_that_exists(name):
 
 
 def test_there_is_a_style():
-    assert "floating_on_dreams" in styles.names()
+    assert {"floating_on_dreams", "yas"} <= set(styles.names())
+
+
+def test_the_tonal_check_holds_a_band_and_two_ceilings():
+    reference = {"median": 0.36, "p10": 0.2, "p90": 0.6, "white": 0.01, "black": 0.01}
+    assert styles.tone_misses(dict(reference), reference) == []
+    paler = {**reference, "median": 0.40}
+    assert [miss.split()[0] for miss in styles.tone_misses(paler, reference)] == ["median"]
+    flooded = {**reference, "white": 0.07, "black": 0.0}
+    assert [miss.split()[0] for miss in styles.tone_misses(flooded, reference)] == ["white"]
+
+
+def test_the_tonal_check_reads_a_picture(tmp_path):
+    from PIL import Image
+
+    path = tmp_path / "grey.png"
+    Image.new("RGB", (64, 40), (119, 119, 119)).save(path)
+    stats = styles.tones(path, width=32)
+    # sRGB 119 is CIE L* 50 to within a hair.
+    assert abs(stats["median"] - 0.5) < 0.01 and stats["white"] == stats["black"] == 0.0
+
+
+def test_the_cli_parses_a_tonal_check():
+    args = cli.build_parser().parse_args(["style", "tones", "yas", "a.jpg", "b.jpg"])
+    assert args.handler is cli.style
+    assert args.what == "tones" and args.pictures == ["a.jpg", "b.jpg"]
 
 
 def test_a_spec_carries_the_stack_and_drops_the_mode(tmp_path):
@@ -76,12 +101,13 @@ def test_the_cli_parses_a_style_render():
 
 
 @needs_engine
-def test_the_engine_draws_a_style_and_reports_it(tmp_path):
-    document = styles.load("floating_on_dreams")
+@pytest.mark.parametrize("name", styles.names())
+def test_the_engine_draws_a_style_and_reports_it(tmp_path, name):
+    document = styles.load(name)
     output = tmp_path / "style.png"
     report = engine.render_report(styles.spec_of(dict(LOCATION), document, output))
     assert output.is_file()
-    assert report["style"]["name"] == "floating_on_dreams"
+    assert report["style"]["name"] == name
     assert "coloring" not in report
     assert 0.0 < report["interior_fraction"] < 1.0
 

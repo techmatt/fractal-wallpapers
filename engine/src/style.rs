@@ -47,7 +47,9 @@ use num_complex::Complex;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::coloring::{self, Blend, Painted, Palette, Rolloff, Spend, Stretch, Transform};
+use crate::coloring::{
+    self, Blend, Painted, Palette, Rolloff, Spend, Stretch, Transfer, Transform,
+};
 use crate::colormap::{Bake, Colormap, srgb_to_linear};
 use crate::family::Family;
 use crate::field::{Field, FieldSpec};
@@ -67,10 +69,46 @@ pub struct Style {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub interior: Option<Paint>,
     pub layers: Vec<Layer>,
+    /// The frame's tonal balance, held after the stack is composited. Absent: the
+    /// stack's own balance, whatever the location makes of it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tone: Option<Tone>,
 }
 
+/// Per-frame tonal normalisation: the composite's median lightness moved to `median`,
+/// and optionally its 10th percentile to `p10`.
+///
+/// A stack fitted on one location is fitted to that location's share of field
+/// against structure; at a location with more far field the same stack draws a
+/// paler (or darker) picture, and the style's balance does not hold. This is the
+/// one frame-wide measurement taken of the **composite** rather than of a channel:
+/// the median of CIE `L*` (over 100) across the frame's samples, and then every
+/// sample's lightness goes through the one curve `L ↦ b + (1 − b)·L^g` that carries
+/// that median to the target, its hue and chroma ratios kept (each linear channel
+/// scaled by the change in luminance, so a lifted saturated colour can clip at the
+/// encode). The curve always fixes 1, so a highlight stays a highlight. Without a
+/// `p10` the floor `b` is 0 and black stays black, so only the middle moves; with
+/// one, `b` lifts the darks (a black becomes a grey of lightness `b`) or, below 0,
+/// crushes the deepest of them to black.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Tone {
+    /// The target median lightness, CIE `L*` over 100, in `(0, 1)`.
+    pub median: f64,
+    /// The target 10th-percentile lightness, below the median. With it the curve
+    /// is `L ↦ b + (1 − b)·L^g`, the two constants solved so both the median and
+    /// the shadows land: the floor `b` lifts (or sinks) the darks, so the frame's
+    /// contrast is held as well as its key. Without it `b` is 0.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub p10: Option<f64>,
+}
+
+/// The farthest a tone curve's exponent goes either way: a frame a stack draws
+/// almost all white or all black is a stack wrong for it, not one to rescue.
+const TONE_LIMIT: f64 = 8.0;
+
 /// A channel and the curve its stretched position goes through: a field of the
-/// catalog, or the inside channel — exactly one of the two.
+/// catalog, the inside channel, or the radial channel — exactly one of the three.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Source {
@@ -78,8 +116,47 @@ pub struct Source {
     pub field: Option<FieldSpec>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub inside: Option<Inside>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub radial: Option<Radial>,
     #[serde(default)]
     pub transform: Transform,
+    /// Read the channel from the other end: `1 − position`, before the curve.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub invert: bool,
+}
+
+impl Source {
+    /// A stretched position in `[0, 1]` through the invert and the curve.
+    pub fn curve(&self, position: f64) -> f64 {
+        let position = position.clamp(0.0, 1.0);
+        self.transform.apply(if self.invert {
+            1.0 - position
+        } else {
+            position
+        })
+    }
+}
+
+/// The one channel that is not read off the orbit: how **near** each sample is to
+/// a point of the frame — its distance in frame heights, negated, so a circle is
+/// round at any aspect and the frame's stretch puts the core at 1 and the farthest
+/// corner at 0, the end most maps keep their light colours at.
+///
+/// A picture whose hue and brightness fall away from a core — a whirl around a
+/// bright centre — is coloured by *where* a sample is as much as by what its orbit
+/// did, and no field says that: the smooth count is as high on every arm's edge as
+/// at the core. Defined on every sample, inside the set too.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Radial {
+    /// The core, as fractions of the frame from its top-left corner.
+    pub center: [f64; 2],
+}
+
+impl Default for Radial {
+    fn default() -> Radial {
+        Radial { center: [0.5, 0.5] }
+    }
 }
 
 /// The one channel a style reads **inside** the set: `−ln min|zₙ|` over the first
@@ -111,13 +188,15 @@ impl Default for Inside {
 enum Key {
     Field(FieldSpec),
     Inside,
+    Radial([f64; 2]),
 }
 
 impl Source {
     fn key(&self) -> Key {
-        match self.field {
-            Some(field) => Key::Field(field),
-            None => Key::Inside,
+        match (self.field, self.radial) {
+            (Some(field), _) => Key::Field(field),
+            (None, Some(radial)) => Key::Radial(radial.center),
+            (None, None) => Key::Inside,
         }
     }
 }
@@ -142,6 +221,7 @@ pub enum Kind {
     Light,
     Glow,
     Pattern,
+    Sheet,
 }
 
 /// One layer of the stack. Which members a kind takes is checked in
@@ -176,6 +256,97 @@ pub struct Layer {
     /// `pattern` only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub checker: Option<Checker>,
+    /// `sheet` only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<Sheet>,
+    /// `palette` only: a second channel that bends where on the map the first lands.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub warp: Option<Warp>,
+}
+
+impl Layer {
+    /// Every channel the layer reads: its own, its mask's and its warp's.
+    fn sources(&self) -> impl Iterator<Item = &Source> {
+        self.channel
+            .iter()
+            .chain(self.mask.iter().map(|m| &m.channel))
+            .chain(self.warp.iter().map(|w| &w.channel))
+    }
+}
+
+/// A palette layer's position bent by a second channel: the warp channel's rank in
+/// the frame, centred on 0, times `amount`, is added to the position before the map
+/// is read (and the sum clamped to `[0, 1]`).
+///
+/// A palette laid along the radial channel draws concentric rings of the map, which
+/// with the map a style was fitted to is a glow, and with a map whose colours are not
+/// in lightness order is a target. Bending the position by the structure — the
+/// smooth count, the distance estimate — makes the rings follow the arms, so the hue
+/// still falls away from the core but along the picture's own shapes.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Warp {
+    pub channel: Source,
+    pub amount: f64,
+}
+
+/// A stack of translucent sheets cut from one channel: the field read as nested
+/// shells, each a faint film whose far edge is a bright rim.
+///
+/// The channel's position is cut into `bands` equal steps, offset by `phase` (in
+/// bands). Across each step `p` runs `0 → 1`, and the sheet's alpha is
+/// `fill·p + (1 − fill)·exp(−(1 − p)/edge)`: a face that rises gently across the
+/// step, a rim at full at its far edge, and a drop to the next sheet's face — a
+/// scooped cavity under a lit lip. One band of an inverted channel is a glow that
+/// falls off exponentially from wherever the channel is lowest. Where the field turns sharply the steps crowd together
+/// and so do the rims, so the brightness lands on creases and edges and the flat
+/// stretches stay dim; that is the whole of how the picture gets its glass webbing,
+/// and several sheets on different channels, or one channel at different `bands`,
+/// overlap into it. Without a `color` a sheet paints the stack beneath it, so under
+/// `screen` it lightens in whatever hue the stack already has.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Sheet {
+    pub bands: f64,
+    pub phase: f64,
+    /// The rim's width, as a fraction of a step.
+    pub edge: f64,
+    /// How far the face rises towards its rim, in `[0, 1]`: the face's alpha
+    /// climbs linearly from 0 at its near edge to `fill`, the scoop.
+    pub fill: f64,
+    /// Cut the steps by the sample's rank in the frame (the default), so each
+    /// sheet covers an equal share of the picture wherever the frame is; `false`
+    /// cuts them by the channel's stretch, equal spans of value.
+    pub rank: bool,
+}
+
+impl Default for Sheet {
+    fn default() -> Sheet {
+        Sheet {
+            bands: 8.0,
+            phase: 0.0,
+            edge: 0.08,
+            fill: 0.05,
+            rank: true,
+        }
+    }
+}
+
+impl Sheet {
+    /// The sheet's alpha at a channel position in `[0, 1]`.
+    pub fn alpha(&self, position: f64) -> f64 {
+        let x = position * self.bands + self.phase;
+        // The top of the range is approached from below: a sample the stretch
+        // clipped to exactly 1 sits on the last rim, not at the foot of a face the
+        // wrap would otherwise start — which, on an inverted channel, is the line
+        // the glow is brightest along.
+        let p = if position >= 1.0 {
+            1.0 - (-x).rem_euclid(1.0)
+        } else {
+            x.rem_euclid(1.0)
+        };
+        self.fill * p + (1.0 - self.fill) * (-(1.0 - p) / self.edge).exp()
+    }
 }
 
 /// A channel read as an extra alpha on a layer.
@@ -310,6 +481,23 @@ impl Style {
         if let Some(paint) = &self.interior {
             paint.validate("style interior")?;
         }
+        if let Some(tone) = self.tone {
+            if !(tone.median > 0.0 && tone.median < 1.0) {
+                return Err(format!(
+                    "style '{}': tone median is a lightness in (0, 1), got {}",
+                    self.name, tone.median
+                ));
+            }
+            if tone
+                .p10
+                .is_some_and(|p10| !(p10 >= 0.0 && p10 < tone.median))
+            {
+                return Err(format!(
+                    "style '{}': tone p10 is a lightness in [0, median)",
+                    self.name
+                ));
+            }
+        }
         let mut sigmas = Vec::new();
         for (index, layer) in self.layers.iter().enumerate() {
             let at = format!("style '{}' layer {index} ({:?})", self.name, layer.kind);
@@ -317,10 +505,11 @@ impl Style {
                 return Err(format!("{at}: opacity is in [0, 1], got {}", layer.opacity));
             }
             let allowed: &[&str] = match layer.kind {
-                Kind::Palette => &["channel", "palette"],
+                Kind::Palette => &["channel", "palette", "warp"],
                 Kind::Light => &["channel", "light"],
                 Kind::Glow => &["channel", "color", "power"],
                 Kind::Pattern => &["color", "checker"],
+                Kind::Sheet => &["channel", "sheet", "color"],
             };
             for (name, present) in [
                 ("channel", layer.channel.is_some()),
@@ -329,6 +518,8 @@ impl Style {
                 ("color", layer.color.is_some()),
                 ("power", layer.power.is_some()),
                 ("checker", layer.checker.is_some()),
+                ("sheet", layer.sheet.is_some()),
+                ("warp", layer.warp.is_some()),
             ] {
                 if present && !allowed.contains(&name) {
                     return Err(format!("{at}: a {:?} layer takes no '{name}'", layer.kind));
@@ -387,23 +578,45 @@ impl Style {
                     ));
                 }
             }
+            if let Some(sheet) = layer.sheet {
+                if !(sheet.bands.is_finite() && sheet.bands > 0.0)
+                    || !(sheet.edge.is_finite() && sheet.edge > 0.0)
+                    || !sheet.phase.is_finite()
+                    || !(0.0..=1.0).contains(&sheet.fill)
+                {
+                    return Err(format!(
+                        "{at}: a sheet needs bands > 0, edge > 0, a finite phase and fill in [0, 1]"
+                    ));
+                }
+            }
+            if layer.warp.is_some_and(|warp| !warp.amount.is_finite()) {
+                return Err(format!("{at}: a warp's amount must be finite"));
+            }
             if let Some(mask) = layer.mask {
                 if !(mask.power.is_finite() && mask.power > 0.0) {
                     return Err(format!("{at}: mask power must be positive"));
                 }
             }
-            for source in layer
-                .channel
-                .iter()
-                .chain(layer.mask.iter().map(|m| &m.channel))
-            {
-                match (source.field, source.inside) {
-                    (Some(_), None) => {}
-                    (None, Some(inside)) if inside.iterations > 0 => {}
-                    (None, Some(_)) => return Err(format!("{at}: inside needs iterations >= 1")),
+            if layer.kind == Kind::Light && layer.channel.is_some_and(|s| s.radial.is_some()) {
+                return Err(format!(
+                    "{at}: a light needs a channel read off the orbit, which has a gradient; \
+                     radial has none"
+                ));
+            }
+            for source in layer.sources() {
+                match (source.field, source.inside, source.radial) {
+                    (Some(_), None, None) => {}
+                    (None, Some(inside), None) if inside.iterations > 0 => {}
+                    (None, Some(_), None) => {
+                        return Err(format!("{at}: inside needs iterations >= 1"));
+                    }
+                    (None, None, Some(radial)) if radial.center.iter().all(|c| c.is_finite()) => {}
+                    (None, None, Some(_)) => {
+                        return Err(format!("{at}: a radial centre is two finite fractions"));
+                    }
                     _ => {
                         return Err(format!(
-                            "{at}: a channel names exactly one of 'field' and 'inside'"
+                            "{at}: a channel names exactly one of 'field', 'inside' and 'radial'"
                         ));
                     }
                 }
@@ -446,6 +659,9 @@ impl Style {
             if let Some(field) = layer.mask.and_then(|mask| mask.channel.field) {
                 take(field);
             }
+            if let Some(field) = layer.warp.and_then(|warp| warp.channel.field) {
+                take(field);
+            }
             if layer.kind == Kind::Pattern {
                 take(FieldSpec::Decomposition);
             }
@@ -461,15 +677,33 @@ impl Style {
     fn inside(&self) -> Option<u32> {
         self.layers
             .iter()
-            .flat_map(|layer| {
-                layer
-                    .channel
-                    .iter()
-                    .chain(layer.mask.iter().map(|m| &m.channel))
-            })
+            .flat_map(|layer| layer.sources())
             .filter_map(|source| source.inside.map(|inside| inside.iterations))
             .max()
     }
+
+    /// Every radial centre a layer reads, once each.
+    fn radials(&self) -> Vec<[f64; 2]> {
+        let mut centers: Vec<[f64; 2]> = Vec::new();
+        for layer in &self.layers {
+            for source in layer.sources() {
+                if let Some(radial) = source.radial {
+                    if !centers.contains(&radial.center) {
+                        centers.push(radial.center);
+                    }
+                }
+            }
+        }
+        centers
+    }
+}
+
+/// The radial channel of one sample: its distance from `center`, in frame heights.
+pub fn radial(center: [f64; 2], col: u32, row: u32, width: u32, height: u32) -> f64 {
+    let (width, height) = (width as f64, height as f64);
+    let x = (col as f64 + 0.5 - center[0] * width) / height;
+    let y = (row as f64 + 0.5 - center[1] * height) / height;
+    x.hypot(y)
 }
 
 /// What one escape loop left per sample: a lane per field, and the gradients.
@@ -481,6 +715,8 @@ struct Channels {
     /// The inside channel, and its unit gradient; `NaN` where the orbit escaped.
     inside: Vec<f32>,
     inside_gradient: Vec<[f32; 2]>,
+    /// One lane per radial centre the stack reads.
+    radials: Vec<([f64; 2], Vec<f32>)>,
     interior_fraction: f64,
 }
 
@@ -488,6 +724,14 @@ impl Channels {
     fn lane(&self, key: Key) -> &[f32] {
         match key {
             Key::Inside => &self.inside,
+            Key::Radial(center) => {
+                &self
+                    .radials
+                    .iter()
+                    .find(|(c, _)| *c == center)
+                    .expect("every radial centre a layer reads was gathered")
+                    .1
+            }
             Key::Field(field) => {
                 let index = self
                     .fields
@@ -503,6 +747,8 @@ impl Channels {
         match key {
             Key::Inside => &self.inside_gradient,
             Key::Field(_) => &self.gradient,
+            // Refused by `Style::validate`: radial has no orbit gradient to light.
+            Key::Radial(_) => &[],
         }
     }
 }
@@ -678,12 +924,26 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         }
         inside += row_inside;
     }
+    let radials = style
+        .radials()
+        .into_iter()
+        .map(|center| {
+            let lane = (0..total)
+                .map(|i| {
+                    let (col, row) = (i as u32 % width, i as u32 / width);
+                    -radial(center, col, row, width, height) as f32
+                })
+                .collect();
+            (center, lane)
+        })
+        .collect();
     Channels {
         fields,
         lanes,
         gradient,
         inside: inside_lane,
         inside_gradient,
+        radials,
         interior_fraction: inside as f64 / (width as f64 * height as f64).max(1.0),
     }
 }
@@ -691,6 +951,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
 /// A layer's frame-wide measurements, taken once before any sample is composited.
 enum Measured {
     Palette { spend: Spend, palette: Palette },
+    Ranked(Spend),
     Stretched(Stretch),
     Nothing,
 }
@@ -726,10 +987,24 @@ pub fn paint(
                     palette,
                 }
             }
+            (Kind::Sheet, Some(source)) if layer.sheet.unwrap_or_default().rank => {
+                Measured::Ranked(Spend::measure(&field_of(source.key()), Transfer::Rank))
+            }
             (_, Some(source)) => Measured::Stretched(Stretch::over(
                 channels.lane(source.key()).iter().map(|&v| v as f64),
             )),
             _ => Measured::Nothing,
+        })
+        .collect();
+    let warps: Vec<Option<(Warp, Spend, &[f32])>> = style
+        .layers
+        .iter()
+        .map(|layer| {
+            layer.warp.map(|warp| {
+                let key = warp.channel.key();
+                let spend = Spend::measure(&field_of(key), Transfer::Rank);
+                (warp, spend, channels.lane(key))
+            })
         })
         .collect();
     let masks: Vec<Option<Stretch>> = style
@@ -804,7 +1079,7 @@ pub fn paint(
                     if !value.is_finite() {
                         continue;
                     }
-                    let mut m = mask.channel.transform.apply(stretch.position(value as f64));
+                    let mut m = mask.channel.curve(stretch.position(value as f64));
                     if mask.invert {
                         m = 1.0 - m;
                     }
@@ -819,21 +1094,32 @@ pub fn paint(
                         if !value.is_finite() {
                             continue;
                         }
-                        let transform = layer.channel.map_or(Transform::Linear, |s| s.transform);
-                        let over = colormap
-                            .lookup(palette.place(transform.apply(spend.position(value as f64))));
+                        let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
+                        let mut position = curve(spend.position(value as f64));
+                        if let Some((warp, bend, lane)) = &warps[index] {
+                            let by = lane[i];
+                            if by.is_finite() {
+                                let toward = warp.channel.curve(bend.position(by as f64)) - 0.5;
+                                position = (position + warp.amount * toward).clamp(0.0, 1.0);
+                            }
+                        }
+                        let over = colormap.lookup(palette.place(position));
                         rgb = blend(rgb, over, layer.blend, alpha);
                     }
                     (Measured::Stretched(stretch), Kind::Light) => {
                         let value = lanes[index][i];
-                        let [gx, gy] = layer
-                            .channel
-                            .map_or([f32::NAN; 2], |source| channels.gradient(source.key())[i]);
+                        let [gx, gy] = layer.channel.map_or([f32::NAN; 2], |source| {
+                            channels
+                                .gradient(source.key())
+                                .get(i)
+                                .copied()
+                                .unwrap_or([f32::NAN; 2])
+                        });
                         if !(value.is_finite() && gx.is_finite()) {
                             continue;
                         }
-                        let transform = layer.channel.map_or(Transform::Linear, |s| s.transform);
-                        let height = transform.apply(stretch.position(value as f64));
+                        let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
+                        let height = curve(stretch.position(value as f64));
                         let lit = shade(
                             rgb,
                             height,
@@ -843,13 +1129,29 @@ pub fn paint(
                         );
                         rgb = mix(rgb, lit, alpha);
                     }
+                    (Measured::Ranked(_) | Measured::Stretched(_), Kind::Sheet) => {
+                        let value = lanes[index][i];
+                        if !value.is_finite() {
+                            continue;
+                        }
+                        let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
+                        let position = curve(match &measured[index] {
+                            Measured::Ranked(spend) => spend.position(value as f64),
+                            Measured::Stretched(stretch) => stretch.position(value as f64),
+                            _ => unreachable!("the arm matched one of the two"),
+                        });
+                        let sheet = layer.sheet.unwrap_or_default();
+                        let over = colors[index].unwrap_or(rgb);
+                        rgb = blend(rgb, over, layer.blend, alpha * sheet.alpha(position));
+                    }
+                    (Measured::Ranked(_), _) => unreachable!("only a sheet is ranked"),
                     (Measured::Stretched(stretch), _) => {
                         let value = lanes[index][i];
                         if !value.is_finite() {
                             continue;
                         }
-                        let transform = layer.channel.map_or(Transform::Linear, |s| s.transform);
-                        let position = transform.apply(stretch.position(value as f64));
+                        let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
+                        let position = curve(stretch.position(value as f64));
                         let strength = position.powf(layer.power.unwrap_or(1.0));
                         let over = colors[index].unwrap_or([1.0; 3]);
                         rgb = blend(rgb, over, layer.blend, alpha * strength);
@@ -875,11 +1177,119 @@ pub fn paint(
         })
         .collect();
 
+    let linear = match style.tone {
+        Some(tone) => toned(linear, tone),
+        None => linear,
+    };
     Ok(Painted {
         linear: coloring::toned(linear, palette),
         interior_fraction: channels.interior_fraction,
         texture_flat: None,
     })
+}
+
+/// CIE `L*` over 100 of a linear-light colour, clamped to `[0, 1]` first.
+pub fn lightness(rgb: [f64; 3]) -> f64 {
+    let y = (0.2126 * rgb[0].clamp(0.0, 1.0)
+        + 0.7152 * rgb[1].clamp(0.0, 1.0)
+        + 0.0722 * rgb[2].clamp(0.0, 1.0))
+    .clamp(0.0, 1.0);
+    let f = if y > LSTAR_KNEE.powi(3) {
+        y.cbrt()
+    } else {
+        y / (3.0 * LSTAR_KNEE * LSTAR_KNEE) + 4.0 / 29.0
+    };
+    (116.0 * f - 16.0) / 100.0
+}
+
+/// The luminance a lightness ([`lightness`]) is of.
+fn luminance_of(lightness: f64) -> f64 {
+    let f = (lightness * 100.0 + 16.0) / 116.0;
+    if f > LSTAR_KNEE {
+        f * f * f
+    } else {
+        3.0 * LSTAR_KNEE * LSTAR_KNEE * (f - 4.0 / 29.0)
+    }
+}
+
+const LSTAR_KNEE: f64 = 6.0 / 29.0;
+
+/// The exponent [`Tone`] spends: `g` with `median^g = target`, within the limit.
+pub fn tone_exponent(median: f64, target: f64) -> f64 {
+    if !(median > 0.0 && median < 1.0) {
+        return 1.0;
+    }
+    (target.ln() / median.ln()).clamp(1.0 / TONE_LIMIT, TONE_LIMIT)
+}
+
+/// The tone curve's constants `(b, g)`: `L ↦ b + (1 − b)·L^g` carrying the measured
+/// `median` to `tone.median` and, when the tone asks, the measured `p10` to its own.
+///
+/// With no `p10` the floor is 0 and `g` is solved outright. With one, `b` follows
+/// from `g` through the median and `g` is searched on a log grid within the limit
+/// for the 10th percentile's best fit — a grid rather than a root-finder because
+/// the fit need not cross zero, and the nearest miss is still the right curve.
+pub fn tone_curve(median: f64, p10: f64, tone: Tone) -> (f64, f64) {
+    let Some(target_low) = tone.p10 else {
+        return (0.0, tone_exponent(median, tone.median));
+    };
+    if !(median > 0.0 && median < 1.0 && p10 >= 0.0 && p10 < median) {
+        return (0.0, tone_exponent(median, tone.median));
+    }
+    let floor = |g: f64| {
+        let m = median.powf(g);
+        (tone.median - m) / (1.0 - m)
+    };
+    let mut best = (f64::INFINITY, 0.0, 1.0);
+    for step in 0..=400 {
+        let g = TONE_LIMIT.powf(step as f64 / 200.0 - 1.0);
+        let b = floor(g);
+        if !b.is_finite() || b >= tone.median {
+            continue;
+        }
+        let miss = (b + (1.0 - b) * p10.powf(g) - target_low).abs();
+        if miss < best.0 {
+            best = (miss, b, g);
+        }
+    }
+    (best.1, best.2)
+}
+
+/// Measure the composite's lightness and carry it to the tone's targets.
+///
+/// The percentiles are read on every `stride`-th sample, which is the frame's
+/// distribution to well inside a percent and keeps the measure off the clock.
+fn toned(linear: Vec<[f64; 3]>, tone: Tone) -> Vec<[f64; 3]> {
+    let stride = (linear.len() / 1_000_000).max(1);
+    let mut sampled: Vec<f64> = linear
+        .iter()
+        .step_by(stride)
+        .map(|&c| lightness(c))
+        .collect();
+    if sampled.is_empty() {
+        return linear;
+    }
+    let middle = sampled.len() / 2;
+    let median = *sampled.select_nth_unstable_by(middle, f64::total_cmp).1;
+    let tenth = sampled.len() / 10;
+    let p10 = *sampled.select_nth_unstable_by(tenth, f64::total_cmp).1;
+    let (b, g) = tone_curve(median, p10, tone);
+    if b == 0.0 && (g - 1.0).abs() < 1e-9 {
+        return linear;
+    }
+    let curve = |l: f64| (b + (1.0 - b) * l.powf(g)).clamp(0.0, 1.0);
+    linear
+        .into_par_iter()
+        .map(|rgb| {
+            let l = lightness(rgb);
+            let before = luminance_of(l);
+            if before <= 0.0 {
+                return [luminance_of(curve(0.0)); 3];
+            }
+            let scale = luminance_of(curve(l)) / before;
+            rgb.map(|c| c.clamp(0.0, 1.0) * scale)
+        })
+        .collect()
 }
 
 /// Blend `over` onto `under` channel by channel, then take `alpha` of the result.
@@ -993,6 +1403,114 @@ mod tests {
             "color": {"rgb": "#ffffff"}, "palette": {}}]}"##;
         let style: Style = serde_json::from_str(text).unwrap();
         assert!(style.validate().unwrap_err().contains("takes no 'palette'"));
+    }
+
+    #[test]
+    fn a_sheet_is_dim_over_its_face_and_full_at_its_rim() {
+        let sheet = Sheet {
+            bands: 4.0,
+            phase: 0.0,
+            edge: 0.05,
+            fill: 0.1,
+            rank: true,
+        };
+        // Mid-face of the second step is half way up the scoop; just short of its
+        // far edge is the rim.
+        assert!((sheet.alpha(0.375) - 0.05).abs() < 1e-3);
+        assert!(sheet.alpha(0.4999) > 0.99);
+        // Past the edge the next sheet starts at the foot of its face again.
+        assert!(sheet.alpha(0.5001) < 0.01);
+        // The very top of the range is the last rim, never a wrap to a new face,
+        // and the very bottom is the first face's foot.
+        assert!(sheet.alpha(1.0) > 0.99);
+        assert!(sheet.alpha(0.0) < 0.01);
+    }
+
+    #[test]
+    fn an_inverted_channel_reads_from_the_other_end() {
+        let text = r#"{"field": {"kind": "de"}, "transform": "sqrt", "invert": true}"#;
+        let source: Source = serde_json::from_str(text).unwrap();
+        assert!((source.curve(0.75) - 0.5).abs() < 1e-12);
+        assert_eq!(source.curve(1.0), 0.0);
+    }
+
+    #[test]
+    fn radial_is_round_in_frame_heights() {
+        // A 16:10 frame of 160x100 samples: the centre is 0, a point half a height
+        // right of it and one half a height above it are the same distance.
+        let at = |col, row| radial([0.5, 0.5], col, row, 160, 100);
+        assert!(at(80, 50) < 0.01);
+        assert!((at(130, 50) - at(80, 0)).abs() < 0.011);
+        assert!((at(130, 50) - 0.505).abs() < 1e-3);
+    }
+
+    #[test]
+    fn a_light_on_radial_is_refused() {
+        let text = r##"{"name": "x", "layers": [{"kind": "light", "channel": {"radial": {}}}]}"##;
+        let style: Style = serde_json::from_str(text).unwrap();
+        assert!(style.validate().unwrap_err().contains("radial has none"));
+    }
+
+    #[test]
+    fn tone_carries_the_median_to_its_target_and_keeps_the_ends() {
+        // A frame of greys whose median lightness is 0.8, toned to 0.6.
+        let greys: Vec<[f64; 3]> = (0..=100)
+            .map(|k| luminance_of(0.6 + 0.4 * k as f64 / 100.0))
+            .chain([0.0, 1.0])
+            .map(|y| [y; 3])
+            .collect();
+        let out = toned(
+            greys,
+            Tone {
+                median: 0.6,
+                p10: None,
+            },
+        );
+        let mut light: Vec<f64> = out.iter().map(|&c| lightness(c)).collect();
+        light.sort_by(f64::total_cmp);
+        assert!(
+            (light[light.len() / 2] - 0.6).abs() < 0.01,
+            "{}",
+            light[light.len() / 2]
+        );
+        assert_eq!(light[0], 0.0);
+        assert!((light[light.len() - 1] - 1.0).abs() < 1e-9);
+        // Hue is kept: a colour's channels scale together.
+        let warm = toned(
+            vec![[0.8, 0.4, 0.2]; 3],
+            Tone {
+                median: 0.3,
+                p10: None,
+            },
+        );
+        assert!((warm[0][0] / warm[0][1] - 2.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_tone_with_shadows_lands_both_percentiles() {
+        let tone = Tone {
+            median: 0.36,
+            p10: Some(0.2),
+        };
+        let (b, g) = tone_curve(0.5, 0.1, tone);
+        let curve = |l: f64| b + (1.0 - b) * l.powf(g);
+        assert!((curve(0.5) - 0.36).abs() < 1e-9);
+        assert!((curve(0.1) - 0.2).abs() < 0.01, "{}", curve(0.1));
+        assert!((curve(1.0) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_warp_is_a_palette_layers_and_reads_its_channel() {
+        let text = r##"{"name": "x", "layers": [{"kind": "palette", "channel": {"radial": {}},
+            "warp": {"channel": {"field": {"kind": "de"}}, "amount": 0.3}}]}"##;
+        let style: Style = serde_json::from_str(text).unwrap();
+        style.validate().unwrap();
+        // The warp's field is gathered beside the smooth count every style reads.
+        assert_eq!(style.fields().len(), 2);
+        let text = r##"{"name": "x", "layers": [{"kind": "glow", "channel": {"radial": {}},
+            "color": {"rgb": "#ffffff"}, "warp": {"channel": {"radial": {}}, "amount": 0.3}}]}"##;
+        let style: Style = serde_json::from_str(text).unwrap();
+        assert!(style.validate().unwrap_err().contains("takes no 'warp'"));
     }
 
     #[test]

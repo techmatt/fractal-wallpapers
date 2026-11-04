@@ -6,7 +6,7 @@ import argparse
 import json
 
 from fractal_wallpapers import engine
-from fractal_wallpapers.cli.common import resolve_output
+from fractal_wallpapers.cli.common import resolve_input, resolve_output
 from fractal_wallpapers.paths import tracked_name
 
 
@@ -23,10 +23,45 @@ def style(args: argparse.Namespace) -> int:
         if args.what == "show":
             print(json.dumps(styles.load(args.name), indent=2, ensure_ascii=False))
             return 0
+        if args.what == "tones":
+            return check_tones(args, styles)
         return render_style(args, styles)
     except styles.StyleError as refusal:
         print(refusal)
         return 1
+
+
+def check_tones(args: argparse.Namespace, styles) -> int:
+    """Hold each picture's lightness against the style's reference; 1 when any misses."""
+    from pathlib import Path
+
+    document = styles.load(args.name)
+    named = args.reference
+    reference = resolve_input(named) if named else styles.reference_path(document)
+    if not reference.is_file():
+        print(f"no reference picture at {reference}; pass --reference")
+        return 1
+    held = styles.tones(reference)
+    header = " ".join(f"{key:>6}" for key in styles.TONES)
+    print(f"{'':<8} {header}  picture")
+    print(f"{'ref':<8} {' '.join(f'{held[k]:6.3f}' for k in styles.TONES)}  {reference.name}")
+    failed = 0
+    for name in args.pictures:
+        try:
+            stats = styles.tones(resolve_input(name))
+        except OSError as unreadable:
+            failed += 1
+            print(f"{'UNREAD':<8} {Path(name).name}: {unreadable}")
+            continue
+        misses = styles.tone_misses(stats, held)
+        failed += bool(misses)
+        verdict = "holds" if not misses else "MISSES"
+        row = " ".join(f"{stats[k]:6.3f}" for k in styles.TONES)
+        print(f"{verdict:<8} {row}  {Path(name).name}{'  ' + '; '.join(misses) if misses else ''}")
+    if args.pictures:
+        held_count = len(args.pictures) - failed
+        print(f"{held_count} of {len(args.pictures)} hold the reference's balance")
+    return 1 if failed else 0
 
 
 def render_style(args: argparse.Namespace, styles) -> int:
@@ -83,6 +118,20 @@ def add_commands(subcommands) -> None:
     verbs.add_parser("list", help="every style, its suggested colormap and what it is")
     show = verbs.add_parser("show", help="print one style file whole")
     show.add_argument("name", help="a style name `style list` prints")
+    tones = verbs.add_parser(
+        "tones",
+        help="hold rendered pictures' lightness against the style's reference picture",
+    )
+    tones.add_argument("name", help="a style name `style list` prints, or a draft .json")
+    tones.add_argument(
+        "pictures",
+        nargs="*",
+        help="rendered pictures to check (none: print the reference's own numbers)",
+    )
+    tones.add_argument(
+        "--reference",
+        help="the reference picture (default: the style file's, beside this checkout)",
+    )
 
     render = verbs.add_parser(
         "render",

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "yas",
+  "kind": "sequential",
+  "source": "yas, authored as 10 control points (deep blue through blue-teal, teal and olive to gold and cream) as the albedo of the yas style, measured ring by ring off its reference image by distance from the core, from the brightest strands of each ring rather than its mean, since the style's tone pass sets the frame's lightness and the sheets carry the contrast.",
+  "stops": [
+    [0.0, [22, 52, 78]],
+    [0.12, [34, 82, 112]],
+    [0.25, [48, 112, 122]],
+    [0.38, [70, 134, 122]],
+    [0.5, [98, 154, 128]],
+    [0.62, [126, 166, 126]],
+    [0.74, [168, 172, 118]],
+    [0.86, [210, 190, 128]],
+    [0.94, [236, 212, 148]],
+    [1.0, [252, 244, 196]]
+  ]
+}

@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "name": "yas",
+  "description": "glass webbing inside the depth: a whirl lit from within, gold at the core through teal to deep blue at the edges, translucent sheets whose bright rims crowd onto the creases, sweeping strands and a fine scratch over everything",
+  "reference": {
+    "image": "yas-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "suggested_colormap": "yas",
+  "reuses": [
+    "the style compositor, its palette and glow layers, and the add, screen and normal blends",
+    "field smooth as the radial palette's warp, and a glow on radial (screened warm white) so the core is lit whatever the map",
+    "field de (the exterior distance estimate): the cavities darkened, the glow along the filaments, and the scooped shells around each cavity",
+    "field trap_cross (the Pickover stalk): the long sweeping strands",
+    "field smooth: a second set of shells, the arms' own",
+    "field curvature: the fine scratch",
+    "the leveled spend with the rank transfer (Spend::measure), now also cutting a sheet's steps",
+    "the floating_on_dreams round's lesson: the tone pass holds the reference's lightness at every location"
+  ],
+  "adds": [
+    "channel radial: how near a sample is to a point of the frame, so hue and brightness can fall away from a core",
+    "layer sheet: a channel cut into steps, each a faint scooped face under a bright rim, painting the stack beneath by default",
+    "member warp on a palette layer: a second channel's rank bends where on the map the first lands, so the radial hue follows the arms instead of drawing a target with maps not in lightness order",
+    "member invert on every channel: the position read from the other end",
+    "style tone: per-frame tonal normalisation of the composite to a median and a p10 lightness"
+  ],
+  "style": {
+    "name": "yas",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.36,
+      "p10": 0.2
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "radial": {}
+        },
+        "palette": {
+          "gamma": 0.8
+        },
+        "warp": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "amount": 0.3
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "radial": {}
+        },
+        "power": 4.0,
+        "color": {
+          "rgb": "#fff2d8"
+        },
+        "blend": "screen",
+        "opacity": 0.2
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "transform": "sqrt"
+        },
+        "power": 1.0,
+        "color": {
+          "rgb": "#000000"
+        },
+        "blend": "normal",
+        "opacity": 0.35
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "transform": "sqrt",
+          "invert": true
+        },
+        "sheet": {
+          "bands": 1.0,
+          "edge": 0.12,
+          "fill": 0.0,
+          "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.35
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "trap_cross"
+          },
+          "invert": true
+        },
+        "sheet": {
+          "bands": 1.0,
+          "edge": 0.03,
+          "fill": 0.0,
+          "rank": false
+        },
+        "blend": "add",
+        "opacity": 0.45
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "sheet": {
+          "bands": 5.0,
+          "edge": 0.08,
+          "fill": 0.25
+        },
+        "blend": "add",
+        "opacity": 0.4
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "bands": 4.0,
+          "phase": 0.5,
+          "edge": 0.08,
+          "fill": 0.2
+        },
+        "blend": "add",
+        "opacity": 0.3
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "curvature"
+          }
+        },
+        "sheet": {
+          "bands": 30.0,
+          "edge": 0.05,
+          "fill": 0.0
+        },
+        "blend": "screen",
+        "opacity": 0.15
+      }
+    ]
+  }
+}
