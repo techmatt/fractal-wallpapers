@@ -250,7 +250,9 @@ cargo test --release --manifest-path perturbation/Cargo.toml
 of both perturb modules under one pin — `python -m builder explorer` there to move
 `engine.manifest.json`'s `wallpapers_commit`, then `--perturb` — and the lane gate
 `explorer/bench/perturb-parity.mjs`; `perturbation/README.md`'s *Running it* has the order.
-So the website is locked with this repository for any prompt that edits it.
+That rebake is the website's own item. **Website items no longer commit into this
+repository**: an engine or kernel change the website needs arrives here as an item of
+its own.
 
 Run the Python suite with the checkout's own interpreter — `.venv` — rather than
 whatever `python` resolves to on the path. `pythonpath = ["src"]` in
@@ -368,86 +370,35 @@ holds rules only — Matt's ruling of 2026-09-23.
 
 ## Standing prompt contract
 
-Each prompt in this project ends the same way:
+Each prompt arrives as a conductor queue item, and conductor's preamble owns the
+report's path and header, the load budget and how to wait. What this repository adds:
 
-- Write the final report to `scratch/<prompt_name>_report.md`. **~60 lines is a soft
-  target** — write it once, allow at most one trim pass, and never iterate to squeeze
-  under the line. Going over is fine; padding and re-editing are not.
+- **The report goes where the preamble says, starting with its header.** **~60 lines
+  is a soft target** — write it once, allow at most one trim pass, and never iterate
+  to squeeze under the line. Going over is fine; padding and re-editing are not.
 - Report findings, numbers, decisions, and surprises only. No process narration, no
   restating the prompt back. **A report mentions tests only for a red it could not
   fix** — no test counts, no lane readings.
+- **End the console reply with `Report written to <path>`.**
+- **Commit to the branch you are on.**
 - **Every clock time is local 12-hour** — `5:25pm`, never `17:25` or UTC — in chat, ETAs,
   heartbeats and reports alike, Matt's ask of 2026-09-16. The CLI's own `[HH:MM:SS]`
   stamps are 24-hour, so convert before quoting one.
-- Then copy the report to `C:\Code\fractal-drive-sync\reports\`.
+- **A step estimated over about thirty seconds is backgrounded, not waited on**, with a
+  **completion waiter on the REAL process**, never on a launcher wrapper: a wrapper
+  exits first and its exit code says nothing about the leg — `nohup … &` returns
+  instantly and reports success while the leg has barely begun.
+- **Line endings are LF** — see *Anything writing a tracked text file opens it
+  `newline="\n"`* above.
 - **Operational facts learned on the way — launch commands, ports, drop paths,
-  conventions — get promoted into the relevant module README as you pass them**, not
-  left only in a scratch report. `scratch/` is defined as disposable; a fact worth
-  writing down twice belongs in tracked documentation once.
-- **A step estimated over about thirty seconds is backgrounded, not waited on.** Say
-  what it was estimated at, launch it in the background, and poll — a training band,
-  a render leg or a sweep over the tracked records is minutes to hours, and a prompt
-  that blocks on one reports nothing until it lands.
-- **Arm a completion waiter in the same breath as the launch, and wait on the REAL
-  process.** A launcher wrapper exits first and its exit code says nothing about the
-  leg: `nohup … &` returns instantly and reports success while the leg has barely
-  begun. A long run also carries a **15-minute heartbeat with a wall-clock
-  timestamp**. ⚠ **A heartbeat detects nothing on its own**, so the heartbeat is for
-  the reader and the waiter is what wakes the session.
-- **What arms a waiter is a step that WAITS, not a step that LAUNCHES**, and the
-  case the rule above misses is a **handover**: waiting on another checkout to go
-  clean, on another session, or on a person. A stated intention is not a mechanism:
-  the only thing that returns control to a session is a tool call completing, so
-  **an idle turn IS the stall**. Block in the foreground on the real condition
-  (`until [ -z "$(git -C <repo> status --short)" ]; do sleep 60; done`) with a
-  generous timeout, or background that same loop so its exit fires one notification.
-  ⚠ A handover is the one moment with **no launch to hang the waiter off**, which is
-  exactly why it is the moment it gets skipped.
-- **The commit gate is part of the contract, not a step after it.** Commit to `main`,
-  and when another prompt is in flight in this repository — anything `git status`
-  lists as modified or untracked that is not yours — commit **only your own files, by
-  explicit path**: `git add <path> …`, never `git add -A` or `git add .`.
-- **Commit with a pathspec (`git commit -- <paths>`), never a bare `git commit` after staging**, because another prompt may have staged files in the same index.
-- **One prompt at a time in this repository.** A second prompt does not start while
-  another has uncommitted changes — wait for `git status` to come back clean. The
-  by-explicit-path rule above is necessary and it is *not* sufficient: it governs
-  what a commit adds and says nothing about what the index already holds, so a
-  prompt that has staged a **deletion** has it swept into whatever the other prompt
-  commits next.
-
-### Staging a prompt
-
-**"stage `<prompt>.md`" means prepare, not run.** It is how a second prompt gets
-written and thought through while the first one still holds the repository, and the
-whole point is that it costs the live prompt nothing:
-
-- Read the named prompt file and whatever tracked code, records and READMEs it
-  points at. Reading is unlimited; run read-only commands freely.
-- **Do not dirty the tree.** No edits to tracked files, no new files in the
-  checkout, nothing staged, no commits, no branch. Anything that has to be written
-  while staging — notes, a scratch script, sample output — goes to the scratchpad
-  directory outside the checkout, never to `scratch/` or `artifacts/`.
-- **Do not touch what the live prompt is using.** No render legs, no training, no
-  pool-holding process, no slow lane — the one-pool-holding-process rule and the
-  three-worker rule both still bind, and the process holding them is somebody
-  else's. `git status` coming back dirty is expected; leave every file in it alone
-  and do not try to work out whose it is.
-- Produce a plan: what will change, in which files, in what order, what gets
-  measured or rendered, what the report will have to answer, and which steps are
-  long enough to background.
-- **Then stop and wait.** Say the plan is ready and that the tree is not yours yet.
-  Matt hands over the lock explicitly; `git status` going clean on its own is not
-  the handover.
-
-On being given the lock, re-check `git status` and re-read anything the other
-prompt committed under you before executing — a plan staged against the old tree
-is a plan that may have been overtaken.
+  conventions — go into the relevant module README as you pass them**, never only
+  into a report. A fact worth writing down twice belongs in tracked documentation once.
 
 ## Rules
 
-- Commit to `main` only.
 - **No commit ≥20 MB** — single blob or aggregate — without Matt's explicit prior
-  confirmation. Stop and ask; do not commit and report it afterwards.
+  confirmation. Do not commit the oversize drop: commit the rest of the work, and
+  name the drop and its size in the report for Matt to rule on.
 - Every prompt names its target repository; if the working directory is not that
   repository, stop immediately and say so rather than guessing.
 
