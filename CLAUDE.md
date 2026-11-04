@@ -47,14 +47,12 @@ checkout, swept by its `builder/checks.py`.
 - **Formatting is not negotiable**: `ruff` lints and formats Python at line length 100;
   `rustfmt` and `clippy` govern the crates. A repo-wide reformat should never become
   possible.
-- **Line endings are LF.** `.gitattributes` normalizes them, and **anything writing a
-  tracked text file opens it `newline="\n"`**. CRLF drift is invisible to `git status`
-  and `git diff` (under `* text=auto eol=lf` it commits as LF anyway), and Git Bash's
-  `grep` reports a CR on every line of a pure-LF file: `git ls-files --eol` is the only
-  detector, and `tests/test_line_endings.py` is the guard.
-- **Search the source with `git grep` (or `rg`), never `grep -r` from the root.** The
-  checkout carries ~100 GB and ~400,000 untracked files against under two thousand
-  tracked ones; `grep --include=*` does not honour `.gitignore`.
+- **Line endings are LF**, and **anything writing a tracked text file opens it
+  `newline="\n"`**. CRLF drift is invisible to `git status` and `git diff`, and Git
+  Bash's `grep` sees a CR on every line of a pure-LF file: `git ls-files --eol` is the
+  only detector, `tests/test_line_endings.py` the guard.
+- **Search with `git grep` (or `rg`), never `grep -r` from the root**: the checkout
+  holds ~100 GB of untracked files, and `grep --include=*` ignores `.gitignore`.
 
 ### Installs
 
@@ -62,16 +60,13 @@ checkout, swept by its `builder/checks.py`.
   the supply engine and the labeling rig; `fetch-weights --check` runs on it, so its
   whole import graph is stdlib (why `models/roster.py` exists apart from `ship`).
   `tests/test_base_install.py` proves it in a subprocess with those imports refused.
-- **`dev` is the suite's install, not the base install**: it carries `numpy` and
-  `pillow`, and **never `torch`, `torchvision` or `timm`**. A test reaching one of those
-  skips rather than fails: `tests/test_lanes.py` sweeps for unguarded module-level
-  imports (one aborts the whole lane at collection), and `conftest.pytest_runtest_call`
-  catches call-time arrivals from `src/`. Both read their population from `cli.EXTRA_FOR`
-  less `dev`.
+- **`dev` is the suite's install**: `numpy` and `pillow`, **never `torch`,
+  `torchvision` or `timm`**. A test reaching one of those skips rather than fails;
+  `tests/test_lanes.py` (module-level imports, which abort the whole lane) and
+  `conftest.pytest_runtest_call` (call-time imports) enforce it.
 - **CUDA is opt-in, never the default**: nothing heavy is installed or run unless
-  someone asks. `models` is CPU torch everywhere and CI installs it; `cuda` is the same
-  list on cu124, declared conflicting with `models` so one environment holds one torch.
-  The commands are the README's *Install* and `src/fractal_wallpapers/models/README.md`.
+  someone asks. `models` is CPU torch everywhere; `cuda` is cu124 and conflicts with it,
+  so one environment holds one torch. The commands are the README's *Install*.
 - **Weights come from GitHub Releases, not LFS.** `fractal-wallpapers fetch-weights`
   reads `models/weights.json` (head → release tag, asset, sha256), downloads into
   `models/<head>/` and verifies the hash. `roster.TAG` is the one spelling of the tag,
@@ -99,32 +94,27 @@ The saved set is twenty-one records, all published: the `final139_*` set (genera
 n=1000 and nineteen collections) and `final140_general2000`. This box keeps no
 unpublished record.
 
-- **A record is PUBLISHED only when Matt names it.** Publishing is a line in
-  `curation.tentative.PUBLISHED` and a line in `.gitignore`; the two are one list written
-  twice and `tests/test_tentative.py` holds them to agreeing. Tracking a record's text
-  *is* publishing it; there is no third way, and nothing is committed until the work is
-  truly finalized. **A forced fill (`--force-fill`) is never published**:
-  `tentative.refuse_forced` is called on every collection publish path.
+- **A record is PUBLISHED only when Matt names it**: a line in
+  `curation.tentative.PUBLISHED` and one in `.gitignore`, held to agreeing by
+  `tests/test_tentative.py`. Tracking a record's text *is* publishing it, so nothing is
+  committed until the work is truly finalized. A `--force-fill` record is never
+  published (`tentative.refuse_forced`, on every collection publish path).
 - **An unstamped read means `tentative.DEFAULT`** (`final139_general`), never the newest
-  stamp: the twenty-one are peers. `portable.REFERENCE` (top-level `portable.py`, not
-  under `curation/`) names `final139_green`, as `GENERAL_CHECK` names `final139_general`.
-  The page a person opens is the `artifacts/curation/viewer/` row of
-  `src/fractal_wallpapers/README.md`'s keep roster.
-- **An unpublished record is DISCARDED by default. Keeping needs a reason; discarding
-  does not.** An item that records a gallery to measure against deletes it once the
-  measurement is taken, and says so in its report. ⚠ **`curate solve record` keeps by
-  default**, so pass `--no-keep` or run `curate solve release <stamp>` afterwards.
-- **The keep list is `tentative.kept()`**: `PUBLISHED` plus the keep file
-  (`tentative.keep_path()`, `keep.jsonl` in the store root), which lets a clone keep its
-  own record without editing code. ⚠ **The store is not the keep list**; a count of
-  folders is not a count of kept records, so read `tentative.kept()`.
-- **Publication, durability and retention are three questions.**
-  `tentative.protected_keys()` reads `tentative.kept()` and nothing else, so preservation
-  is a named row, never a folder existing; it must never sweep the whole store again.
-- **Durability is a backup Matt takes, not git.** `fractal-wallpapers storage export` is
-  run only at Matt's direction; he holds the copies off-box and deletes the local
-  instance, so no tracked text names an export stamp. Restore is the
-  `src/fractal_wallpapers/README.md` section *Continuing on a fresh box*.
+  stamp: the twenty-one are peers. `portable.REFERENCE` (top-level `portable.py`) names
+  `final139_green`, as `GENERAL_CHECK` names `final139_general`. The page a person opens
+  is the `artifacts/curation/viewer/` row of `src/fractal_wallpapers/README.md`'s keep
+  roster.
+- **An unpublished record is DISCARDED by default; keeping needs a reason.** An item that
+  records a gallery to measure against deletes it once measured, and says so in its
+  report. ⚠ **`curate solve record` keeps by default**: pass `--no-keep`, or run
+  `curate solve release <stamp>` afterwards.
+- **What is kept is `tentative.kept()`**, `PUBLISHED` plus the keep file
+  (`tentative.keep_path()`), never a count of store folders.
+  `tentative.protected_keys()` reads it and nothing else: preservation is a named row,
+  never a folder existing, and it must never sweep the whole store again.
+- **Durability is a backup, not git**: `storage export` runs only at Matt's direction,
+  and no tracked text names an export or a standing instance. Restore is
+  `src/fractal_wallpapers/README.md`'s *Continuing on a fresh box*.
 
 ### Curation and labels
 
@@ -142,13 +132,12 @@ unpublished record.
 ### Storage and the box
 
 - **Where a file under `artifacts/` belongs is decided once per top-level name**: *hot*
-  (`artifacts/`, what a live command reads; its file count is not a target), *archive*
-  (`storage archive <name>`, finished bulk restored before reuse), or *delete*
-  (regenerable or unreferenced, and its builder goes with it). A subtree that must move
-  alone is promoted to a top-level name first; `curation` never moves. Its unkept pool
-  pictures are the exception: `storage pictures` mirrors them to the archive and
-  `paths.Tiers.resolve` reads hot-then-mirror (`picture_mirror.py` has the rules). The
-  tiers are `src/fractal_wallpapers/README.md`'s *Two roots*.
+  (what a live command reads; its file count is not a target), *archive* (`storage
+  archive <name>`, restored before reuse), or *delete* (regenerable or unreferenced, its
+  builder with it). A subtree that must move alone becomes a top-level name first.
+  `curation` never moves, except its unkept pool pictures, which
+  `storage pictures` mirrors (`picture_mirror.py`). The tiers are
+  `src/fractal_wallpapers/README.md`'s *Two roots*.
 - **A picture with no ledger row is garbage**: `curate candidate-ledger orphans` lists,
   `--apply` deletes. Run it after any killed run and periodically. An unmerged leg is
   listed and never swept unread; it goes only when someone names it (`--leg <name>` or
@@ -200,20 +189,18 @@ and the measurements behind these rules are in `tests/README.md`; this file hold
 - **Zero skips is normal; a skip is a short render cache**, a store condition, not a tree
   fault (`--slow -rs` names them). `label ingest` shortens it by the rows it lands (a
   sheet build does not), so run `renders plan` then `renders build --workers 3` after.
-- **A reading compares only with one on the same install**: `tests/README.md`'s *What
-  "the fast-lane count" means*. A module-level `importorskip` drops a module from
-  collection, so an interpreter without `torch` silently runs a smaller suite; `conftest`
-  prints a red line naming the missing import.
-- **Measure on an idle box, literally.** Beside a render run the lane is killed on commit
-  charge, so run it after, never beside. A test whose claim is not about time never reads
-  the wall clock. Before believing a lane, re-run one untouched engine-bound guard: a
-  tenth off on an invariant guard means the box.
+- **A reading compares only with one on the same install** (`tests/README.md`'s *What
+  "the fast-lane count" means*): an interpreter without `torch` silently collects a
+  smaller suite, and `conftest` prints a red line naming the missing import.
+- **Measure on an idle box, literally**: beside a render run the lane is killed on commit
+  charge, so run it after. A test whose claim is not about time never reads the wall
+  clock. Before believing a lane, re-run one untouched engine-bound guard; a tenth off on
+  an invariant guard means the box.
 - **A lane that moves right after code landed is the code until measured otherwise.**
-  Re-run one slow file under a profile; the decisive check is a `git worktree` at `HEAD`
-  with `FRACTAL_WALLPAPERS_HOT_ROOT` on the real store. With no test added, ask **which
-  store grew**, **which derivation is paid twice**, **what is paid once per test**;
-  re-measure after a merge, and suspect the disk after moving hundreds of thousands of
-  paths.
+  Profile one slow file; the decisive check is a `git worktree` at `HEAD` with
+  `FRACTAL_WALLPAPERS_HOT_ROOT` on the real store. With no test added, ask **which store
+  grew**, **which derivation is paid twice**, **what is paid once per test**; re-measure
+  after a merge; suspect the disk after moving hundreds of thousands of paths.
 - **A fixture redirects a store at the tier roots, never per accessor.**
 - **Read the candidate ledger once a session**, through `conftest.tracked_ledger`; a
   direct `candidate_ledger.read()` adds ~40 s. A guard that sweeps the ledger takes a
@@ -267,20 +254,17 @@ header, the load budget and how to wait. This repository adds:
 written to; code from it was renamed and cleaned, never copied wholesale). It is no
 longer on this box, so the checks that read it skip here as they do on CI.
 
-What only ever read it goes at publication, with its test and subcommand. Each item
-below is still read by something live, so deleting it means deciding what its reader
-does instead:
+What only read it goes at publication, with its test and subcommand. Each of these is
+still read by something live, so deleting one means deciding what its reader does
+instead:
 
-- `labeling/finished_import.py`: its `run` has no caller, but its conversions
-  (`recipe_of`, `family_of`, `mode_of`, `engine_modes`, …) are read by
-  `models.renders.verify`, `models.palette_sets.extract`, `tests/test_label_round_trip.py`
-  and `tests/test_modes.py`.
-- `palettes/library_import.py` (and `tests/test_library_import.py`):
-  `palettes/authored_import.py` writes every authored drop through its `write`;
-  `models/palette_sets.run` and `finished_import.run` call its `run`.
-- Three commands taking the source as `--source`: `renders verify`, `renders
-  preregister` (`finished_acceptance.preregister`) and the palette set extraction
-  (`models.palette_sets.run`). They are the readers above, so they go first.
-- `models/acceptance.py`'s extraction half (`INCUMBENT_SCORES`, `INCUMBENT_MANIFEST`,
-  `beside`, `ExtractionSourceGone`, `extraction_source`), still called by `head
-  preregister`. Every *read* of a bar runs on the vendored yardstick, which stays.
+- `labeling/finished_import.py`: `run` has no caller, but its conversions (`recipe_of`,
+  `family_of`, `mode_of`, `engine_modes`, …) are read by `models.renders.verify`,
+  `models.palette_sets.extract` and two tests.
+- `palettes/library_import.py`: `palettes/authored_import.py` writes every authored drop
+  through its `write`; `palette_sets.run` and `finished_import.run` call its `run`.
+- The `--source` commands `renders verify`, `renders preregister` and `palette extract`
+  are those readers, so they go first.
+- `models/acceptance.py`'s extraction half (`INCUMBENT_*`, `beside`,
+  `ExtractionSourceGone`, `extraction_source`), called by `head preregister`. Every
+  *read* of a bar runs on the vendored yardstick, which stays.
