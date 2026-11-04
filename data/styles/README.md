@@ -112,6 +112,14 @@ The item that brings a picture says "new style from <image>". The procedure:
    the reference's (`styles.TONE_BAND`, fitted on `floating_on_dreams`'s round one, where
    the three Matt kept are exactly the three that hold). Re-tune a stack whose renders
    miss, or drop the location, and say which.
+
+   **Draft the contrasting-palette row (step 6) at low resolution first.** A library map
+   the stack was not tuned for is where the failures hide: render each pairing small
+   (`style render <name> --manifest <best>.jsonl --colormap <map> --resolution 640 400
+   --supersample 1`), and look at every frame for bullseyes (concentric bands the map
+   turns into rings) and washed-out frames (the lighting's near-whites swallowing a pale
+   map; `style tones` flags these too). Drop or swap a failing map before any
+   full-resolution render is paid for.
 6. **Render for the picker**: every shortlisted location in the style with its map; the
    best few with four to six contrasting library maps; the best two in the closest named
    mode or style with the matched map, as the baseline the style is judged against.
