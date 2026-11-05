@@ -334,6 +334,7 @@ pre-selected and its sidecar, and `style keep`.
 | `field_lines` | `blood-price-25.jpg` | `field_lines` | the `lines` channel (`angle`, `step`; `radius`, `arrive`, `settle`, `twist`, `divide`, `side`). Its structure, connected Julia sets with attracting basins, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `leaf_veins` | `commons_Fractal_Art_Series__2814465834074_29.jpg` | `leaf_veins` | nothing: old layers on `de`, `smooth` and `lines`. Its structure, dendrites, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `shaded_blades` | `chronoscope-25.jpg` | `shaded_blades` | the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound |
+| `glossy_lobes` | `blessed-by-the-night-25.jpg` | `glossy_lobes` | nothing: a disc lattice domed at `period` 2 under `shaded_blades`' strip blades, on `de`, `inside` and the sparkle lattice |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -493,3 +494,26 @@ dim rank palette on the smooth count at 0.35 under the blades gives the gaps a g
 and the frame back its share. Its locations are an ordinary gallery scout
 (`--max-ink 0.12`); 32 of the 40 drafts hold the reference's balance, the misses frames
 flooded by one cream blade (p90) or by gap (black).
+
+The eleventh style is soft glossy blue lobes nestled between gold star webs with orange
+cores, and it went in with **no new primitive**: the lobes are `bronze_packing`'s disc
+lattice (radius 0.3 every 1, bounded at 0.02 to 0.35 frames) painted a literal blue and
+domed by a light on the height at `period` 2; the gold stars are `shaded_blades`' strip
+trap at a tenth of its width, painted flat gold from the map, lit across, with bright
+edges and the map's orange end on the late entries crowding each star's core; the veins,
+halo and sparkles are `glow_filaments`' and `gilded_orbs`' layers. Three lessons. **A
+light on a disc's height rings it at one band and domes it at period 2**: at `bands` 1
+and `rings` 1 the tube's crest sits at half height, so every lobe drew as an eye with a
+dark centre; at `period` 2 only the tube's rising half lies across the disc and its crest
+is the middle, one soft dome with one highlight, which is what "glossy, not banded"
+needs. **A blade trap's coverage is its width and its `largest`, never its opacity**:
+at radius 0.18 and `largest` 0.3 the blades covered most of every frame, the tone pass
+turned their gold olive, and every one of the forty drafts read p90 ~0.50 against 0.68;
+at radius 0.1 and `largest` 0.2 the gaps open for the lobes and 24 of 40 hold. **The
+galleries hold no lobes, so the lattice supplies them**: at the scout's forty seats the
+set's interior fills at least 5% of the frame at 3 and none of it at 22, while the
+lattice covers 38–99% (median 82%) before the blades go on; its density is also what
+holds the black share, since at spacing 1.5 the navy gaps read black 0.20–0.24 against
+0.118 and at spacing 1 the mid-blue domes fill them. Its locations are an ordinary
+gallery scout (`--max-ink 0.30`); the misses are frames with little gold (p90 ~0.55)
+or a dark gap left open (black).

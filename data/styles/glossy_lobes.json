@@ -1,0 +1,375 @@
+{
+  "schema": 1,
+  "name": "glossy_lobes",
+  "description": "soft glossy blue lobes like lit bubbles, each one smooth dome with a pale highlight, nestled between translucent gold star webs whose pointed arms are shaded edge to edge and warm to orange at their small inner blades, faint sparkles over everything, on deep navy",
+  "reference": {
+    "image": "blessed-by-the-night-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "suggested_colormap": "glossy_lobes",
+  "reuses": [
+    "the bubble trap's lattice (bronze_packing) as the lobes: discs of radius 0.3 on a square lattice through [0.5, 0.5] every 1, read at entry on escaping orbits between 0.02 and 0.35 frames wide, painted a literal blue so they keep the reference's contrast under every map",
+    "bronze_packing's dome: a light on the disc's height at period 2, rings 1, so the tube's rising half lies across each disc and it lights as one smooth dome with a broad highlight, never a ring; an inverted height glow paints a pale rim",
+    "the inside channel wearing the same lobe, where a seat has interior components",
+    "shaded_blades' strip trap (the line Im(z) = 0.5 at 60 degrees, every 2, a tenth wide, its blades between 0.015 and 0.2 frames) as the gold webs: a flat gold from the map at 0.84, lit across each blade, its edges brightened by an inverted height glow, and the map's orange end on the late entries, the small blades crowding each star's core",
+    "glow_filaments' falloff glows on de: a gold halo 0.01 frames wide and a hair of light along the set, the veins showing through the webs",
+    "gilded_orbs' sparkles: a lattice of tiny discs, warm-white near the set and ice-white in the far field",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "glossy_lobes",
+    "interior": {
+      "rgb": "#1b3260"
+    },
+    "tone": {
+      "median": 0.339,
+      "p10": 0.093
+    },
+    "layers": [
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#0f2248"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 55.0,
+          "ambient": 0.9,
+          "diffuse": 0.5,
+          "specular": 0.9,
+          "shininess": 20.0,
+          "rim": 0.2,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#d6e8ff"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          },
+          "invert": true
+        },
+        "power": 6.0,
+        "color": {
+          "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.35,
+            "spacing": 1.0,
+            "smallest": 0.02
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#4a80d4"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.35,
+            "spacing": 1.0,
+            "smallest": 0.02
+          }
+        },
+        "light": {
+          "period": 2.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 55.0,
+          "ambient": 0.9,
+          "diffuse": 0.5,
+          "specular": 0.9,
+          "shininess": 20.0,
+          "rim": 0.2,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#d6e8ff"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.35,
+            "spacing": 1.0,
+            "smallest": 0.02
+          },
+          "invert": true
+        },
+        "power": 6.0,
+        "color": {
+          "rgb": "#9cc4ff"
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.1,
+            "read": "height",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.2,
+            "smallest": 0.015,
+            "shape": "strip",
+            "tilt": 60.0
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "palette": 0.84
+        },
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.1,
+            "read": "step",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.2,
+            "smallest": 0.015,
+            "shape": "strip",
+            "tilt": 60.0
+          }
+        },
+        "power": 2.0,
+        "color": {
+          "palette": 1.0
+        },
+        "opacity": 0.8
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.1,
+            "read": "across",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.2,
+            "smallest": 0.015,
+            "shape": "strip",
+            "tilt": 60.0
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.5,
+          "azimuth": 135.0,
+          "elevation": 45.0,
+          "ambient": 0.75,
+          "diffuse": 0.5,
+          "specular": 0.5,
+          "shininess": 12.0,
+          "rim": 0.0,
+          "rim_power": 3.0,
+          "highlight": {
+            "palette": 0.88
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.1,
+            "read": "height",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.2,
+            "smallest": 0.015,
+            "shape": "strip",
+            "tilt": 60.0
+          },
+          "invert": true
+        },
+        "power": 10.0,
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.01,
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.06,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.004
+          }
+        },
+        "power": 12.0,
+        "color": {
+          "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.06,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.004
+          }
+        },
+        "power": 16.0,
+        "color": {
+          "rgb": "#cfe2ff"
+        },
+        "blend": "add",
+        "opacity": 0.6,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0
+        }
+      }
+    ]
+  }
+}

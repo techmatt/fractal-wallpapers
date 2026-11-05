@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "glossy_lobes",
+  "kind": "sequential",
+  "source": "glossy_lobes, authored as 11 control points as the albedo of the glossy_lobes style: deep navy through slate blue (the reference's cool pixels by lightness decile) crossing a dark olive into old gold (its warm pixels), ending in a warm orange for the star cores, each stop a little more saturated than the reference's means; the gold stops sit near the reference's top warm deciles rather than below them, since the tone pass pins the median and a frame with navy gaps otherwise reads p90 low.",
+  "stops": [
+    [0.0, [6, 14, 34]],
+    [0.12, [10, 24, 54]],
+    [0.24, [18, 36, 72]],
+    [0.34, [34, 48, 74]],
+    [0.44, [76, 74, 50]],
+    [0.54, [124, 112, 60]],
+    [0.64, [166, 146, 76]],
+    [0.74, [198, 172, 92]],
+    [0.84, [226, 196, 108]],
+    [0.92, [236, 176, 96]],
+    [1.0, [238, 142, 70]]
+  ]
+}

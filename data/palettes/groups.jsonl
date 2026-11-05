@@ -195,3 +195,4 @@
 {"schema": 1, "kind": "admitted", "map": "field_lines", "group": "map:field_lines", "joined": false, "nearest": "map:Wine & Slate Candle", "m1": 0.053113}
 {"schema": 1, "kind": "admitted", "map": "leaf_veins", "group": "map:leaf_veins", "joined": false, "nearest": "map:Deco Malachite", "m1": 0.055499}
 {"schema": 1, "kind": "admitted", "map": "shaded_blades", "group": "map:metal-emblem-25", "joined": true, "nearest": "map:metal-emblem-25", "m1": 0.038812}
+{"schema": 1, "kind": "admitted", "map": "glossy_lobes", "group": "map:glossy_lobes", "joined": false, "nearest": "map:Three Coals", "m1": 0.063752}
