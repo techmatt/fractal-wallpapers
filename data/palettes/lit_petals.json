@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "lit_petals",
+  "kind": "cyclic",
+  "source": "lit_petals, authored as 12 control points as the albedo of the lit_petals style, in the order the reference's rosette runs from its ground inwards: a deep saturated teal ground through sea-green into the cream and gold outer petals, then orange, maroon and plum inner petals and a teal heart that returns to the ground, so the map is cyclic and a jewel layer cycling it fast never meets a seam; the teal and cream stops are more saturated than the reference's pixels, since the petals' light and the tone pass both pull towards grey.",
+  "stops": [
+    [0.0, [10, 58, 70]],
+    [0.1, [26, 104, 112]],
+    [0.19, [86, 150, 136]],
+    [0.27, [228, 214, 150]],
+    [0.36, [246, 220, 140]],
+    [0.45, [232, 170, 74]],
+    [0.54, [196, 104, 32]],
+    [0.63, [140, 42, 20]],
+    [0.72, [100, 18, 26]],
+    [0.8, [66, 18, 50]],
+    [0.89, [18, 82, 104]],
+    [1.0, [10, 58, 70]]
+  ]
+}

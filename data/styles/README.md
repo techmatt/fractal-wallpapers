@@ -335,6 +335,7 @@ pre-selected and its sidecar, and `style keep`.
 | `leaf_veins` | `commons_Fractal_Art_Series__2814465834074_29.jpg` | `leaf_veins` | nothing: old layers on `de`, `smooth` and `lines`. Its structure, dendrites, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `shaded_blades` | `chronoscope-25.jpg` | `shaded_blades` | the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound |
 | `glossy_lobes` | `blessed-by-the-night-25.jpg` | `glossy_lobes` | nothing: a disc lattice domed at `period` 2 under `shaded_blades`' strip blades, on `de`, `inside` and the sparkle lattice |
+| `lit_petals` | `carnival-25.jpg` | `lit_petals` | nothing: the smooth count through a cyclic map, lit at `period` 3, and cycled three times under a `de` mask for the jewels |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -517,3 +518,24 @@ holds the black share, since at spacing 1.5 the navy gaps read black 0.20–0.24
 0.118 and at spacing 1 the mid-blue domes fill them. Its locations are an ordinary
 gallery scout (`--max-ink 0.30`); the misses are frames with little gold (p90 ~0.55)
 or a dark gap left open (black).
+
+The twelfth style is a rosette of smoothly lit petals, cream and gold outside and orange,
+maroon and plum within, crusted at their edges with tiny jewels on a teal ground, and it
+went in with **no new primitive**: the petals are the smooth count through the map by
+rank, lit at `period` 3 with a dark period sheet for the seam; the jewels are the same
+count cycled three times round the map and lit once a step, masked to the set by the
+inverted distance estimate at power 25, with a dark falloff hair outlining them. Three
+lessons. **A petal is several escape steps**: a light at `period` 1 (`gilded_orbs`'
+filigree) draws every petal of a gallery seat as a stack of corrugated ridges, and at 3
+each lobe between the arms lights as one soft dome. **On lace, a jewel's colour has to
+come from the map, not from a glow**: every lace sample lies within a hair of the set, so
+the gold halo and hair glows of the earlier styles painted the whole fringe one khaki,
+and a flat teal paint under gold bead lattices read as a beaded texture rather than
+jewels; cycling the petals' own map, made **cyclic** (teal ground through cream, gold,
+maroon and plum back to teal) so the cycles meet no seam, gives each decoration its own
+teal, gold or maroon. **The jewels hold the highlights**: the stack held the reference's
+balance at all 40 scout drafts and the eleven full renders, while the same petals with
+the jewels taken off read p90 0.75–0.79 against 0.65 at both formulation seats, the
+cream petals unbroken by the dark crust. The galleries hold petals at almost every
+non-spiral seat, so the locations are an ordinary scout with no ink filter, whirls
+dropped by eye.

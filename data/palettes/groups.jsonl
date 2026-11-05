@@ -196,3 +196,4 @@
 {"schema": 1, "kind": "admitted", "map": "leaf_veins", "group": "map:leaf_veins", "joined": false, "nearest": "map:Deco Malachite", "m1": 0.055499}
 {"schema": 1, "kind": "admitted", "map": "shaded_blades", "group": "map:metal-emblem-25", "joined": true, "nearest": "map:metal-emblem-25", "m1": 0.038812}
 {"schema": 1, "kind": "admitted", "map": "glossy_lobes", "group": "map:glossy_lobes", "joined": false, "nearest": "map:Three Coals", "m1": 0.063752}
+{"schema": 1, "kind": "admitted", "map": "lit_petals", "group": "map:lit_petals", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.056743}

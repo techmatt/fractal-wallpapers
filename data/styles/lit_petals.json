@@ -1,0 +1,161 @@
+{
+  "schema": 1,
+  "name": "lit_petals",
+  "description": "an ornate rosette of smoothly lit petals, cream and gold in the outer bands and orange, maroon and plum further in, each band a soft dome lit from the upper left with a dark seam between, their edges crusted with small jewel-like decorations in teal, gold and maroon, on a deep teal ground",
+  "reference": {
+    "image": "carnival-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "suggested_colormap": "lit_petals",
+  "reuses": [
+    "field smooth through the map by rank, once: the depth order of the reference's rosette (teal ground, cream and gold outer petals, orange, maroon and plum inner ones), read off a cyclic map so the jewels can cycle it",
+    "the light layer on field smooth at period 3 (gilded_orbs' filigree at a third of its frequency): every three escape steps one soft dome, the petal",
+    "a period sheet on field smooth multiplied dark at the same period: the seam between petals",
+    "the same count cycled three times round the map and lit at one ring a step, masked to the set's neighbourhood by the inverted distance estimate at power 25: the jewels",
+    "glow_filaments' falloff glow on de, painted near-black and multiplied: the dark hair outlining each jewel",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "lit_petals",
+    "interior": {
+      "rgb": "#12303a"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 3.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.75,
+          "specular": 0.25,
+          "shininess": 14.0,
+          "rim": 0.15,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#fff2d0"
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 3.0,
+          "edge": 0.06,
+          "fill": 0.0
+        },
+        "color": {
+          "rgb": "#2a1418"
+        },
+        "blend": "multiply",
+        "opacity": 0.35
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 3.0,
+          "phase": 0.0
+        },
+        "opacity": 0.9,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 25.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.75,
+          "specular": 0.5,
+          "shininess": 14.0,
+          "rim": 0.15,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#fff2d0"
+          }
+        },
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 25.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#1a0c10"
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+      }
+    ],
+    "tone": {
+      "median": 0.323,
+      "p10": 0.12
+    }
+  }
+}
