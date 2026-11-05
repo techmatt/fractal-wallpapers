@@ -145,7 +145,7 @@ fn lifted(rgb: [f64; 3], before: f64, after: f64) -> [f64; 3] {
 const TONE_LIMIT: f64 = 8.0;
 
 /// A channel and the curve its stretched position goes through: a field of the
-/// catalog, the inside channel, or the radial channel — exactly one of the three.
+/// catalog, the inside channel, the radial channel or a bubble — exactly one.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Source {
@@ -155,6 +155,8 @@ pub struct Source {
     pub inside: Option<Inside>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub radial: Option<Radial>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bubble: Option<Bubble>,
     #[serde(default)]
     pub transform: Transform,
     /// Read the channel from the other end: `1 − position`, before the curve.
@@ -220,20 +222,112 @@ impl Default for Inside {
     }
 }
 
+/// The **bubble** trap: the disc `|z − center| < radius`, read at the step the orbit
+/// enters it for the `hit`-th time.
+///
+/// The circle trap ([`FieldSpec::TrapCircle`]) keeps the orbit's closest pass to a
+/// circle, which draws rings that cross and merge. Reading the disc at an **entry**
+/// draws discs instead: the samples whose orbit first lands in the disc at step `n`
+/// are a conformal preimage of the disc under `n` steps, so each is a round bubble,
+/// and the bubbles of every later step fill the gaps the earlier ones leave — a
+/// circle packing, the smallest crowding into the cusps where two meet. Within one
+/// bubble, `z` at the entry runs over the whole disc, so `1 − |z − center|/radius`
+/// is a dome over it (`height`), its angle a set of rays from its middle (`angle`),
+/// and the step a number per bubble (`step`). A later `hit` is the same disc
+/// entered again after the orbit left it: a packing of smaller bubbles *inside*
+/// each bubble of the hit before.
+///
+/// Its own loop, like [`Inside`]'s, because the gradient needs `dz` at the chosen
+/// step; it stops at the entry, so a sample's cost is its step, not the cap. `NaN`
+/// on a sample whose orbit escapes or runs out of steps before the entry.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Bubble {
+    /// The disc's centre, a point of the orbit's plane `[re, im]`.
+    pub center: [f64; 2],
+    pub radius: f64,
+    /// Which entry: 1 is the first time the orbit lands in the disc.
+    pub hit: u32,
+    pub read: BubbleRead,
+    /// Repeat the disc on a square lattice of this spacing through `center`, so the
+    /// trap is every disc `|z − center − spacing·(j + ik)| < radius`. One disc is a
+    /// target an orbit can miss for good; a lattice of them is one almost every orbit
+    /// lands in sooner or later, so the bubbles fill the frame. Absent: the one disc.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spacing: Option<f64>,
+    /// Read only orbits that escape: inside the set the channel is `NaN`. A bounded
+    /// orbit falls into its attracting cycle, and where that cycle sits in a disc,
+    /// every sample of the basin enters it — one smeared bubble over the whole
+    /// component rather than a packing, which the inside channel paints better.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub escaped: bool,
+    /// The largest bubble drawn, as a fraction of the frame's width: an entry whose
+    /// disc pulls back larger than that (`radius / |dz| > largest · width`, `dz` the
+    /// orbit's derivative in the pixel) is passed over, not counted. Deep in a zoom
+    /// every early step's disc pulls back far larger than the frame and draws one
+    /// straight edge across it; with this the packing starts at a frame-relative size
+    /// wherever the frame is, as a glow's `falloff` does. Absent: every entry counts.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub largest: Option<f64>,
+}
+
+impl Default for Bubble {
+    fn default() -> Bubble {
+        Bubble {
+            center: [0.0, 0.0],
+            radius: 1.0,
+            hit: 1,
+            read: BubbleRead::Height,
+            spacing: None,
+            escaped: false,
+            largest: None,
+        }
+    }
+}
+
+impl Bubble {
+    /// The loop this reads: every read of one disc and hit shares it.
+    fn trap(&self) -> Bubble {
+        Bubble {
+            read: BubbleRead::Height,
+            ..*self
+        }
+    }
+}
+
+/// What a bubble channel reads off the entry.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BubbleRead {
+    /// `1 − |z − center|/radius`: 1 at the bubble's middle, 0 at its rim. Its
+    /// gradient points inwards, so a light at `period` 2 lights each bubble as a
+    /// hemisphere, and a glow on it inverted is a bright rim.
+    #[default]
+    Height,
+    /// The step of the entry: one number per bubble, larger for the smaller
+    /// bubbles in the cusps.
+    Step,
+    /// The angle of `z − center` at the entry, as a fraction of a turn: rays from
+    /// each bubble's middle, which a sheet cuts into a star.
+    Angle,
+}
+
 /// Which lane a source reads.
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Key {
     Field(FieldSpec),
     Inside,
     Radial([f64; 2]),
+    Bubble(Bubble),
 }
 
 impl Source {
     fn key(&self) -> Key {
-        match (self.field, self.radial) {
-            (Some(field), _) => Key::Field(field),
-            (None, Some(radial)) => Key::Radial(radial.center),
-            (None, None) => Key::Inside,
+        match (self.field, self.radial, self.bubble) {
+            (Some(field), _, _) => Key::Field(field),
+            (None, Some(radial), _) => Key::Radial(radial.center),
+            (None, None, Some(bubble)) => Key::Bubble(bubble),
+            (None, None, None) => Key::Inside,
         }
     }
 }
@@ -728,19 +822,33 @@ impl Style {
                 ));
             }
             for source in layer.sources() {
-                match (source.field, source.inside, source.radial) {
-                    (Some(_), None, None) => {}
-                    (None, Some(inside), None) if inside.iterations > 0 => {}
-                    (None, Some(_), None) => {
+                match (source.field, source.inside, source.radial, source.bubble) {
+                    (Some(_), None, None, None) => {}
+                    (None, Some(inside), None, None) if inside.iterations > 0 => {}
+                    (None, Some(_), None, None) => {
                         return Err(format!("{at}: inside needs iterations >= 1"));
                     }
-                    (None, None, Some(radial)) if radial.center.iter().all(|c| c.is_finite()) => {}
-                    (None, None, Some(_)) => {
+                    (None, None, Some(radial), None)
+                        if radial.center.iter().all(|c| c.is_finite()) => {}
+                    (None, None, Some(_), None) => {
                         return Err(format!("{at}: a radial centre is two finite fractions"));
+                    }
+                    (None, None, None, Some(bubble))
+                        if bubble.hit >= 1
+                            && bubble.radius.is_finite()
+                            && bubble.radius > 0.0
+                            && bubble.center.iter().all(|c| c.is_finite())
+                            && bubble.spacing.is_none_or(|s| s.is_finite() && s > 0.0)
+                            && bubble.largest.is_none_or(|l| l.is_finite() && l > 0.0) => {}
+                    (None, None, None, Some(_)) => {
+                        return Err(format!(
+                            "{at}: a bubble needs hit >= 1, a positive radius, spacing and largest, and a finite centre"
+                        ));
                     }
                     _ => {
                         return Err(format!(
-                            "{at}: a channel names exactly one of 'field', 'inside' and 'radial'"
+                            "{at}: a channel names exactly one of 'field', 'inside', 'radial' \
+                             and 'bubble'"
                         ));
                     }
                 }
@@ -806,6 +914,27 @@ impl Style {
             .max()
     }
 
+    /// Every bubble loop a layer reads (one per disc and hit), once each, and the
+    /// reads asked of it: height, step, angle.
+    fn bubbles(&self) -> Vec<(Bubble, [bool; 3])> {
+        let mut traps: Vec<(Bubble, [bool; 3])> = Vec::new();
+        for source in self.layers.iter().flat_map(|layer| layer.sources()) {
+            let Some(bubble) = source.bubble else {
+                continue;
+            };
+            let trap = bubble.trap();
+            let at = match traps.iter().position(|(t, _)| *t == trap) {
+                Some(at) => at,
+                None => {
+                    traps.push((trap, [false; 3]));
+                    traps.len() - 1
+                }
+            };
+            traps[at].1[bubble.read as usize] = true;
+        }
+        traps
+    }
+
     /// Every radial centre a layer reads, once each.
     fn radials(&self) -> Vec<[f64; 2]> {
         let mut centers: Vec<[f64; 2]> = Vec::new();
@@ -841,7 +970,16 @@ struct Channels {
     inside_gradient: Vec<[f32; 2]>,
     /// One lane per radial centre the stack reads.
     radials: Vec<([f64; 2], Vec<f32>)>,
+    /// One entry per bubble loop: its reads (empty where unasked) and the height's
+    /// unit gradient (empty without a light).
+    bubbles: Vec<BubbleLanes>,
     interior_fraction: f64,
+}
+
+struct BubbleLanes {
+    trap: Bubble,
+    reads: [Vec<f32>; 3],
+    gradient: Vec<[f32; 2]>,
 }
 
 impl Channels {
@@ -864,13 +1002,22 @@ impl Channels {
                     .expect("every field a layer reads was gathered");
                 &self.lanes[index]
             }
+            Key::Bubble(bubble) => &self.bubble(bubble).reads[bubble.read as usize],
         }
+    }
+
+    fn bubble(&self, bubble: Bubble) -> &BubbleLanes {
+        self.bubbles
+            .iter()
+            .find(|lanes| lanes.trap == bubble.trap())
+            .expect("every bubble a layer reads was gathered")
     }
 
     fn gradient(&self, key: Key) -> &[[f32; 2]] {
         match key {
             Key::Inside => &self.inside_gradient,
             Key::Field(_) => &self.gradient,
+            Key::Bubble(bubble) => &self.bubble(bubble).gradient,
             // Refused by `Style::validate`: radial has no orbit gradient to light.
             Key::Radial(_) => &[],
         }
@@ -939,6 +1086,87 @@ pub fn inside(family: &Family, pixel: Complex<f64>, iterations: u32) -> Option<(
 /// The disc an orbit has arrived at the critical point's cycle in.
 const EPSILON: f64 = 1e-3;
 
+/// One bubble entry: the step, `z − center` there, and `dz/d(pixel)` there.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Entry {
+    pub step: u32,
+    pub offset: Complex<f64>,
+    pub derivative: Complex<f64>,
+}
+
+impl Entry {
+    /// The three reads, in [`BubbleRead`]'s order.
+    pub fn reads(&self, radius: f64) -> [f64; 3] {
+        let turn = (self.offset.arg() / std::f64::consts::TAU).rem_euclid(1.0);
+        [1.0 - self.offset.norm() / radius, self.step as f64, turn]
+    }
+
+    /// The unit direction the height climbs: towards the bubble's middle. The height
+    /// is `1 − |z − center|/radius`, a negative multiple of `ln|z − center|`, so this
+    /// is [`gradient`] with the offset in place of `z`.
+    pub fn uphill(&self) -> Option<[f64; 2]> {
+        gradient(self.offset, self.derivative)
+    }
+}
+
+/// Where the orbit of `pixel` enters `trap`'s disc for the `hit`-th time, within
+/// `maxiter` steps and before it escapes. An entry is a step inside the disc after
+/// one outside it; the seed counts as outside, so `z₁` in the disc is the first.
+/// `width` is the frame's width in the plane, read only by [`Bubble::largest`].
+pub fn bubble(
+    family: &Family,
+    pixel: Complex<f64>,
+    maxiter: u32,
+    trap: &Bubble,
+    width: f64,
+) -> Option<Entry> {
+    // |dz| an entry needs for its disc to pull back no larger than `largest` frames.
+    let least_sq = trap
+        .largest
+        .map_or(0.0, |largest| (trap.radius / (largest * width)).powi(2));
+    let (mut z, mut z_prev, c) = family.seed(pixel);
+    let (mut dz, mut dz_prev) = family.derivative_seed();
+    let center = Complex::new(trap.center[0], trap.center[1]);
+    let (radius_sq, bailout_sq) = (
+        trap.radius * trap.radius,
+        iterate::BAILOUT * iterate::BAILOUT,
+    );
+    let mut was_inside = false;
+    let mut hits = 0;
+    for step in 1..=maxiter {
+        let next = family.derivative_step(z, dz, dz_prev);
+        dz_prev = dz;
+        dz = next;
+        let next = family.step(z, z_prev, c);
+        z_prev = z;
+        z = next;
+        let magnitude_sq = z.norm_sqr();
+        if magnitude_sq > bailout_sq || magnitude_sq.is_nan() {
+            return None;
+        }
+        let offset = match trap.spacing {
+            None => z - center,
+            Some(spacing) => {
+                let cell = (z - center) / spacing;
+                z - center - Complex::new(cell.re.round(), cell.im.round()) * spacing
+            }
+        };
+        let inside = offset.norm_sqr() < radius_sq;
+        if inside && !was_inside && dz.norm_sqr() >= least_sq {
+            hits += 1;
+            if hits == trap.hit {
+                return Some(Entry {
+                    step,
+                    offset,
+                    derivative: dz,
+                });
+            }
+        }
+        was_inside = inside;
+    }
+    None
+}
+
 /// The unit direction in which the smooth count climbs, from the escape's `z` and
 /// `dz/d(pixel)`.
 ///
@@ -994,10 +1222,20 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
     let width = view.sample_width();
     let height = view.sample_height();
     let reach = style.inside();
-    type Row = (Vec<Vec<f32>>, Vec<[f32; 2]>, Vec<(f32, [f32; 2])>, u64);
+    let traps = style.bubbles();
+    type BubbleRow = ([Vec<f32>; 3], Vec<[f32; 2]>);
+    type Row = (
+        Vec<Vec<f32>>,
+        Vec<[f32; 2]>,
+        Vec<(f32, [f32; 2])>,
+        u64,
+        Vec<BubbleRow>,
+    );
     let rows: Vec<Row> = (0..height)
         .into_par_iter()
         .map(|row| {
+            let mut bubble_rows: Vec<BubbleRow> =
+                traps.iter().map(|_| Default::default()).collect();
             let mut lanes = vec![Vec::with_capacity(width as usize); fields.len()];
             let mut gradients = Vec::with_capacity(if lights { width as usize } else { 0 });
             let mut insides = Vec::with_capacity(if reach.is_some() { width as usize } else { 0 });
@@ -1051,8 +1289,23 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                     );
                     gradients.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
                 }
+                for ((trap, wanted), (reads, unit_lane)) in traps.iter().zip(&mut bubble_rows) {
+                    let entry = (orbit.escaped || !trap.escaped)
+                        .then(|| bubble(family, pixel, maxiter, trap, view.width))
+                        .flatten();
+                    let values = entry.map_or([f64::NAN; 3], |entry| entry.reads(trap.radius));
+                    for ((lane, value), want) in reads.iter_mut().zip(values).zip(wanted) {
+                        if *want {
+                            lane.push(value as f32);
+                        }
+                    }
+                    if lights {
+                        let unit = to_frame(entry.and_then(|entry| entry.uphill()));
+                        unit_lane.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
+                    }
+                }
             }
-            (lanes, gradients, insides, inside)
+            (lanes, gradients, insides, inside, bubble_rows)
         })
         .collect();
 
@@ -1062,9 +1315,23 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
     let mut inside_lane = Vec::with_capacity(if reach.is_some() { total } else { 0 });
     let mut inside_gradient = Vec::with_capacity(if reach.is_some() { total } else { 0 });
     let mut inside = 0u64;
-    for (row_lanes, row_gradient, row_insides, row_inside) in rows {
+    let mut bubbles: Vec<BubbleLanes> = traps
+        .iter()
+        .map(|(trap, _)| BubbleLanes {
+            trap: *trap,
+            reads: Default::default(),
+            gradient: Vec::new(),
+        })
+        .collect();
+    for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles) in rows {
         for (lane, part) in lanes.iter_mut().zip(row_lanes) {
             lane.extend(part);
+        }
+        for (whole, (reads, unit_lane)) in bubbles.iter_mut().zip(row_bubbles) {
+            for (lane, part) in whole.reads.iter_mut().zip(reads) {
+                lane.extend(part);
+            }
+            whole.gradient.extend(unit_lane);
         }
         gradient.extend(row_gradient);
         for (value, unit) in row_insides {
@@ -1093,6 +1360,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         inside: inside_lane,
         inside_gradient,
         radials,
+        bubbles,
         interior_fraction: inside as f64 / (width as f64 * height as f64).max(1.0),
     }
 }
@@ -1587,6 +1855,144 @@ mod tests {
                 behind.smooth
             );
         }
+    }
+
+    fn grid() -> impl Iterator<Item = Complex<f64>> {
+        (0..40).flat_map(|i| {
+            (0..25).map(move |j| Complex::new(-2.0 + i as f64 * 0.06, -1.2 + j as f64 * 0.1))
+        })
+    }
+
+    fn trap(hit: u32, spacing: Option<f64>) -> Bubble {
+        Bubble {
+            center: [0.5, 0.5],
+            radius: 0.3,
+            hit,
+            spacing,
+            ..Bubble::default()
+        }
+    }
+
+    #[test]
+    fn a_bubble_entry_is_inside_its_disc_and_a_later_hit_comes_later() {
+        let family = Family::Multibrot { degree: 2 };
+        let mut entered = 0;
+        for pixel in grid() {
+            for spacing in [None, Some(1.0)] {
+                let Some(first) = bubble(&family, pixel, 500, &trap(1, spacing), 1.0) else {
+                    assert!(bubble(&family, pixel, 500, &trap(2, spacing), 1.0).is_none());
+                    continue;
+                };
+                entered += 1;
+                assert!(first.offset.norm() < 0.3, "{pixel}: {}", first.offset);
+                let [height, _, turn] = first.reads(0.3);
+                assert!((0.0..=1.0).contains(&height) && (0.0..1.0).contains(&turn));
+                if let Some(second) = bubble(&family, pixel, 500, &trap(2, spacing), 1.0) {
+                    assert!(second.step > first.step, "{pixel}");
+                }
+            }
+        }
+        assert!(
+            entered > 100,
+            "only {entered} entries: the grid does not exercise the trap"
+        );
+    }
+
+    #[test]
+    fn a_lattice_of_discs_catches_more_orbits_than_one_disc() {
+        let family = Family::Multibrot { degree: 2 };
+        let caught = |spacing| {
+            grid()
+                .filter(|&pixel| bubble(&family, pixel, 500, &trap(1, spacing), 1.0).is_some())
+                .count()
+        };
+        let (one, lattice) = (caught(None), caught(Some(1.0)));
+        assert!(lattice > one + 100, "one disc {one}, the lattice {lattice}");
+    }
+
+    #[test]
+    fn a_largest_bubble_passes_over_the_entries_that_pull_back_too_big() {
+        // At a frame a thousandth wide, a disc counts only once |dz| has grown past
+        // radius / (largest · width): never earlier than the unbounded entry, and
+        // always at a derivative that large.
+        let family = Family::Multibrot { degree: 2 };
+        let (width, largest) = (1e-3, 0.05);
+        let bounded = Bubble {
+            largest: Some(largest),
+            ..trap(1, Some(1.0))
+        };
+        let mut later = 0;
+        for pixel in grid() {
+            let (Some(free), Some(held)) = (
+                bubble(&family, pixel, 500, &trap(1, Some(1.0)), width),
+                bubble(&family, pixel, 500, &bounded, width),
+            ) else {
+                continue;
+            };
+            assert!(held.step >= free.step, "{pixel}");
+            assert!(held.derivative.norm() >= 0.3 / (largest * width) * (1.0 - 1e-12));
+            later += usize::from(held.step > free.step);
+        }
+        assert!(
+            later > 50,
+            "only {later} entries moved: the bound is not exercised"
+        );
+    }
+
+    #[test]
+    fn the_bubble_gradient_points_up_the_height() {
+        // Step the pixel a hair along the returned direction: the entry step is the
+        // same and the height rises, so a light at period 2 domes every disc.
+        let family = Family::Multibrot { degree: 2 };
+        let shape = trap(1, Some(1.0));
+        let mut checked = 0;
+        for pixel in grid() {
+            let Some(entry) = bubble(&family, pixel, 500, &shape, 1.0) else {
+                continue;
+            };
+            let height = entry.reads(0.3)[0];
+            if !(0.1..0.9).contains(&height) {
+                continue;
+            }
+            let [x, y] = entry.uphill().unwrap();
+            let h = 1e-8;
+            let nudge = Complex::new(x * h, y * h);
+            // A hair away the orbit can cross into another disc, or out of the cap:
+            // the claim is about one disc, so only a pair on the same entry counts.
+            let (Some(ahead), Some(behind)) = (
+                bubble(&family, pixel + nudge, 500, &shape, 1.0),
+                bubble(&family, pixel - nudge, 500, &shape, 1.0),
+            ) else {
+                continue;
+            };
+            if ahead.step != entry.step || behind.step != entry.step {
+                continue;
+            }
+            assert!(ahead.reads(0.3)[0] > behind.reads(0.3)[0], "{pixel}");
+            checked += 1;
+        }
+        assert!(checked > 50, "only {checked} samples checked");
+    }
+
+    #[test]
+    fn a_bubble_without_a_disc_is_refused() {
+        for bubble in [
+            r#"{"radius": 0.0}"#,
+            r#"{"hit": 0}"#,
+            r#"{"spacing": 0.0}"#,
+            r#"{"largest": 0.0}"#,
+            r#"{"center": [0.5, 0.5], "radius": -1.0}"#,
+        ] {
+            let text = format!(
+                r#"{{"name": "x", "layers": [{{"kind": "palette", "channel": {{"bubble": {bubble}}}}}]}}"#
+            );
+            let style: Style = serde_json::from_str(&text).unwrap();
+            assert!(style.validate().is_err(), "{bubble} was accepted");
+        }
+        let both = r#"{"name": "x", "layers": [{"kind": "palette",
+            "channel": {"bubble": {}, "field": {"kind": "smooth"}}}]}"#;
+        let style: Style = serde_json::from_str(both).unwrap();
+        assert!(style.validate().is_err());
     }
 
     #[test]

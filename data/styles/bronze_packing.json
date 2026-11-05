@@ -1,0 +1,329 @@
+{
+  "schema": 1,
+  "name": "bronze_packing",
+  "description": "a circle packing in bronze and gold: the frame filled with round discs of every size, each a flat metal disc with a dark bevel, a bright rim, a glint at its centre, faint rays and a packing of smaller beads inside, glints crowding the cusps where discs meet, and the set's own components gold star-flowers among them",
+  "reference": {
+    "image": "795549-3840x2160-desktop-4k-fractal-background.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown; a Kleinian/inversion circle packing, 3840x2160 (a 4k desktop background, the sibling of teal_tunnel's reference)"
+  },
+  "suggested_colormap": "bronze_packing",
+  "reuses": [
+    "the style compositor, its palette, light, glow and sheet layers, warp, invert, and the normal, multiply, add and screen blends",
+    "field smooth through the map by rank: the escaped field no disc caught",
+    "the inside channel by rank at gamma 0.6: the set's components as gold flowers, their rings of convergence the petals",
+    "the light layer at period 2 on the new bubble height: each disc a shallow dome (rings 0.4) with a Fresnel rim and a specular highlight",
+    "the glow layer four times on the bubble height: a multiplied dark bevel inside each rim, the bright rim itself, a glint at each disc's centre, and the same rim and glint on the nested discs",
+    "a glow on the entry step: the late, tiny discs that crowd every cusp, lit as sparkle",
+    "a sheet on the entry angle at six bands: faint rays from each disc's centre",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [
+    "channel bubble {center, radius, hit, read, spacing, escaped, largest}: the disc |z - center| < radius read at the step the orbit enters it for the hit-th time, its own loop with dz kept so the height has a gradient. The samples entering first at step n are a conformal preimage of the disc, so they draw round discs, and later steps fill the gaps: a circle packing. read is height (1 - |z - center|/radius, a dome a light at period 2 lights as a hemisphere), step (one number per disc) or angle (rays from each disc's middle); hit 2 is a packing of smaller discs inside each disc of hit 1; spacing repeats the disc on a square lattice so almost every orbit lands in one; escaped reads only escaping orbits, leaving the set's components to the inside channel; largest passes over an entry whose disc pulls back larger than that fraction of the frame width (radius / |dz| > largest * width), so the packing starts at a frame-relative size at any zoom depth"
+  ],
+  "style": {
+    "name": "bronze_packing",
+    "interior": {
+      "palette": 0.8
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 0.6,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "step",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        },
+        "warp": {
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "amount": -0.3
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 2,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        },
+        "opacity": 0.35
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "light": {
+          "period": 2.0,
+          "rings": 0.4,
+          "slope": 0.0,
+          "ambient": 0.6,
+          "diffuse": 0.5,
+          "specular": 0.5,
+          "shininess": 40.0,
+          "rim": 0.6,
+          "rim_power": 4.0,
+          "highlight": {
+            "palette": 0.97
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          },
+          "invert": true
+        },
+        "power": 6.0,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          },
+          "invert": true
+        },
+        "power": 40.0,
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "power": 30.0,
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 2,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          },
+          "invert": true
+        },
+        "power": 30.0,
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 2,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "power": 30.0,
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "step",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "power": 3.0,
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "angle",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "sheet": {
+          "bands": 6.0,
+          "rank": false,
+          "edge": 0.04,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      }
+    ],
+    "tone": {
+      "median": 0.321,
+      "p10": 0.05
+    }
+  }
+}

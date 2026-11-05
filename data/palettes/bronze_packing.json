@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "bronze_packing",
+  "kind": "sequential",
+  "source": "bronze_packing, authored as 10 control points (brown-black through copper, bronze and gold to a warm cream) as the albedo of the bronze_packing style, its hues read off the reference by lightness twentile and its top half pushed warmer and more saturated than the reference's mean, since the style's lights supply the near-whites and its tone pass sets the frame's key.",
+  "stops": [
+    [0.0, [6, 4, 2]],
+    [0.12, [22, 13, 7]],
+    [0.25, [48, 27, 13]],
+    [0.38, [86, 48, 21]],
+    [0.5, [126, 74, 32]],
+    [0.62, [170, 102, 42]],
+    [0.74, [208, 136, 54]],
+    [0.86, [236, 178, 88]],
+    [0.94, [248, 216, 150]],
+    [1.0, [255, 247, 224]]
+  ]
+}

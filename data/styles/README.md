@@ -97,6 +97,29 @@ and 0 at the farthest corner, for a picture whose hue and brightness fall away f
 centre. It has no gradient, so a `light` cannot read it, and the location has to put its
 core where `center` says.
 
+`{"bubble": {center, radius, hit, read, spacing, escaped}}` is the **bubble trap**: the
+disc `|z − center| < radius` (`center` a plane point `[re, im]`) read at the step the
+orbit enters it for the `hit`-th time (default 1). The samples that first land in the disc
+at step `n` are a conformal preimage of it, so each is a round disc, and the discs of
+later steps fill the gaps the earlier leave: a circle packing, the tiniest crowding into
+the cusps where two meet. `read` is `height` (`1 − |z − center|/radius`, 1 at a disc's
+middle and 0 at its rim, its gradient pointing inwards, so a `light` at `period` 2 domes
+every disc and a `glow` on it inverted is a bright rim), `step` (the entry's step, one
+number per disc) or `angle` (of `z − center`, a fraction of a turn: rays from each disc's
+middle, which a six-band `sheet` cuts into a star). `hit` 2 is the same disc entered
+again after the orbit left it: smaller discs packed inside each disc of hit 1.
+`spacing` repeats the disc on a square lattice through `center`: one disc is a target
+most orbits miss for good, a lattice is one almost every orbit lands in, so the discs
+fill the frame. Keep the critical point (`0`) off every disc — `center` `[0.5, 0.5]` at
+spacing 1 does — or the discs it falls in pull back as peanuts, not circles. `escaped`
+reads only orbits that escape: inside the set the orbit settles on its cycle, and a
+cycle sitting in a disc draws the whole component as one smeared bubble, which the
+`inside` channel paints better. `largest` (a fraction of the frame width) passes over
+an entry whose disc pulls back larger than that (`radius / |dz| > largest · width`):
+deep in a zoom every early step's disc is far larger than the frame and draws a straight
+edge across it, and with the bound the packing starts at the same frame-relative size at
+any depth. Its own loop, stopping at the entry, with `dz` kept.
+
 Each **layer** is `{kind, blend, opacity, mask, …}`; `blend` is one of `normal`,
 `multiply`, `screen`, `overlay`, `min`, `add` (applied per channel in linear light),
 `opacity` is in [0, 1], and `mask` (`{channel, invert, power}`) multiplies the opacity by
@@ -138,8 +161,12 @@ The item that brings a picture says "new style from <image>". The procedure:
    (`data/palettes/README.md`, `data/palette_authoring/`), name it after the style, and
    tune the stack and the map together on drafts: `style render <draft.json>` takes a
    style file from anywhere, so a draft never has to enter `data/styles/` to be tried.
-4. **Shortlist locations** with the structure the picture has (the atlas,
-   `artifacts/atlas/<plane>/dots.json`, is the library), framed for 16:10.
+4. **Shortlist locations** with the structure the picture has, framed for 16:10. **A
+   picker's locations are drawn from the published galleries, never a spiral** (Matt's
+   ruling: a spiral is a poor demonstration of a style): each `gallery.jsonl` row
+   carries a `spiral` flag and its `recipes.jsonl` row the `family`, `viewport` and
+   `maxiter` a location record needs. The atlas (`artifacts/atlas/<plane>/dots.json`)
+   and hand-placed points are for tuning drafts, not for the picker.
 5. **Hold the tonal balance.** Set the stack's `tone` to the reference's median and
    p10 (`style tones <name>` prints them), then check every render against the
    reference before it goes to a picker:
@@ -164,6 +191,8 @@ The item that brings a picture says "new style from <image>". The procedure:
 6. **Render for the picker**: every shortlisted location in the style with its map; the
    best few with four to six contrasting library maps; the best two in the closest named
    mode or style with the matched map, as the baseline the style is judged against.
+   **Every picker row defaults to nothing selected** (`"kind": "many"`, `"default": []`):
+   Matt selects the few he likes.
 7. Write `reference`, `reuses`, `adds` and `suggested_colormap`, and check the existing
    modes still draw the same bytes (`fractal-wallpapers identity` before and after, when
    the engine changed).
@@ -176,6 +205,7 @@ The item that brings a picture says "new style from <image>". The procedure:
 | `yas` | `yas-25.jpg` | `yas` | `radial`, `sheet`, `invert`, `warp`, `tone` (and `tone` back onto `floating_on_dreams`) |
 | `teal_tunnel` | `795548-3840x2160-desktop-4k-fractal-background.jpg` | `teal_tunnel` | `projection` (`log_polar`), `period` on `light` and `sheet`, a location's own `projection` |
 | `glow_filaments` | `Black-and-Green-Abstract-Wallpaper.jpg` | `glow_filaments` | `falloff` on `glow`, `log_density` on `tone` |
+| `bronze_packing` | `795549-3840x2160-desktop-4k-fractal-background.jpg` | `bronze_packing` | the `bubble` channel (`height`, `step`, `angle`; `hit`, `spacing`, `escaped`) |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -213,3 +243,23 @@ a `d`-th root of unity). **Under a tone target, dimming a layer does nothing**: 
 tone pass lifts it straight back, so a stack whose frame is half void meets the
 reference's key through the width of its glows and the fog in the void, never through
 their opacity.
+
+The fifth style came from a circle packing (most likely an inversion or Kleinian
+render, not escape-time), and its circles went in as one channel, the bubble trap: the
+existing circle trap keeps the orbit's closest pass to a circle, which draws rings that
+cross, where a packing needs **discs read at an entry**. Everything else — the dome, the
+bevel, the rim, the glint, the rays, the nested beads, the cusp sparkle — is the old
+layers on the channel's three reads. Three lessons. **One disc is a target most orbits
+miss; a lattice of discs is one every orbit hits**, and that is the difference between a
+few bubbles on the set and a frame packed with them. **A disc holding a critical point
+pulls back as a peanut**, so the lattice is offset off `0`, and a disc holding an
+attracting cycle smears a whole component, so the trap reads escaping orbits only and
+leaves the inside to the `inside` channel. **A gallery location is a deep zoom**, where
+every early disc pulls back far larger than the frame and crosses it as straight bands;
+bounding the disc size as a fraction of the frame (`largest`) is what makes the style
+stand at every location instead of at hand-placed shallow ones. And one about the tone
+check: this style's sub-pixel beads average up at supersample 2, so the frame's p10 at
+full resolution sits ~0.05–0.07 above the target the tone pass met on the samples; the
+stack's `p10` target (0.05) is set below the reference's (0.099) to land in its band, and
+a low-resolution ss1 draft misses on p10 for the same reason. Read a draft's tones as a
+guide and the full-resolution ones as the check.

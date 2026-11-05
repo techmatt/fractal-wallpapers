@@ -977,6 +977,15 @@ its one constant. A **`tone`** may carry **`log_density`** `k`: before the tone'
 measure, each composite sample's luminance goes through `ln(1 + k·Y) / ln(1 + k)`, hue
 kept. Both are style-path members only.
 
+*(`009_style_bronze_packing`, 2026-11-04.)* A style channel may be a **`bubble`**
+(`style::Bubble`, `style::bubble`): the disc `|z − center| < radius`, optionally repeated
+on a square lattice (`spacing`), read at the orbit's `hit`-th entry as `height`, `step` or
+`angle`, with `dz` kept so the height has a gradient for a `light`. It is its own loop per
+distinct disc and hit, like `inside`, stopping at the entry; `escaped` leaves bounded
+orbits `NaN`, and `largest` passes over an entry whose disc would pull back larger than
+that fraction of the view's plane width (`radius / |dz| > largest · width`), so a port
+needs the view's width as its one constant. Style path only: no `FieldSpec` changed.
+
 ## What each family's picture is symmetric under
 
 None of this is code — there is no symmetry pass in the crate and nothing folds a
