@@ -3,1492 +3,274 @@ Collecting human taste: the labeling rig and the stores it writes to.
 ```
 store.py          the location records: the paths, the one writer, the one reader
 registry.py       what generated a batch, registered before the batch has rows
-groups.py         which locations would leak into each other, and are held out together
+groups.py         which locations would leak into each other, held out together
 split.py          the seeded draw over those groups, shipped as data
 pins.py           the evaluation pin, asserted on the location coordinate
 finished.py       the finished-render stores: one per judge, keyed on the picture
-attributes.py     the location-attribute stores: named classes, never a tier
-                  (`spiral` asks about a place, `repeat_ab` about a PAIR)
+attributes.py     the location-attribute stores (`spiral`, paired `repeat_ab`)
 gallery_grade.py  1..4 GIVEN the bar was cleared: an order inside a gate's own top
 sheets.py         THE generator: two row sources, one cut, one manifest, one page
-server.py         serve one sheet, to one browser, on the first free port at or above
-page.html         the page: the row's pictures, the sheet's tiers, one export
-export_control.js what an export is called and where it goes — one file, every page
-intake.py         THE ingest: a page's export resolved against its sheet, into either store
+server.py         serve one sheet on the first free port at or above --port
+page.html         the page; export_control.js names and places its export
+intake.py         THE ingest: a page's export resolved against its sheet, into a store
 finished_import.py the one-time import of the source's two finished-render corpora
-                  (and NOT on any new label's path — see the note below)
 ```
 
-**`finished_import` is not on the path a new label travels, and reading it as if
-it were has cost a prompt.** Its command is gone and its conversions are what is
-still read: `models.renders.verify` and `models.palette_sets.extract`, both of
-which read the source project, reach for them. A verdict cast
-today goes `label build` → `sheets.finished_source` (`stated_recipe` →
-`engine_spec.recipe`) → the page → `label ingest` → `intake` → `finished.append`
-→ `renders.plan`, and the recipe is carried whole at every step. So a constraint
-written into `finished_import.recipe_of` governs the **maker-era corpora only**
-and never what the rig collects.
-
-One such constraint was there until 2026-09-11 and was simply wrong: a repeated
-traversal (`cycles != 1`) or a rotation (`phase != 0`) on a sequential map was
-refused, on the argument that folding a repeated traversal is two seam fixes
-fighting. `mirror` writes the opening colour again at position 1.0, so the folded
-table **closes** and a repeat of it has no junction — measured over the whole
-tracked library, the folded wrap step is exactly zero on all 156 sequential maps
-against an inside step of up to 7.0e-3, and the same maps unfolded wrap at up to
-1.0. `engine/src/colormap.rs`'s
-`every_folded_map_closes_so_a_repeat_has_no_seam` is the guard, and
-`tests/test_label_round_trip.py`'s *the repeated traversal* section carries one
-such row from a plan unit to the store and back out to a renderer.
-
-Everything runnable here is a `fractal-wallpapers label` subcommand:
+`finished_import` is **not** on a new label's path: a verdict goes `label build` → page →
+`label ingest` → `finished.append`, recipe whole at every step.
 
 ```
-label register --batch NAME --method "how the population was drawn" [--head smooth_render]
-label build --from-ledger artifacts/walk/walk.jsonl --batch NAME
-label build --from-plan artifacts/places.jsonl --batch NAME
-label build --from-plan artifacts/promotion.jsonl --head strange_render --batch NAME
-label build --from-plan <plan> --head smooth_render --batch NAME --order-by top
-label build --from-plan <plan> --head spiral --batch NAME
-label build --from-plan <plan> --head repeat_ab --batch NAME
-label sheets
-label serve --sheet artifacts/sheet
-label ingest --sheet artifacts/sheet --labeler matt --write
+label register --batch NAME --method "how it was drawn" [--head H] [--score-unconditioned]
+               [--anchored] [--eval-only] [--why "..."]
+label build (--from-ledger L | --from-batch B | --from-plan P) --batch NAME [--head H]
+            [--order-by rank|top|plan] [--rejection] [--reuse-renders] [--workers N]
+            [--seed S] [--limit N] [--out-dir artifacts/sheet] [--no-scoring]
+label sheets [--under artifacts] [--drops]
+label serve --sheet artifacts/sheet [--port 8010]
+label ingest --sheet artifacts/sheet --labeler matt [--labels FILE] --write
 label pin --head spiral --from-plan <plan> --batch NAME --reserve N --seed S --write
 label show
-label split --write
+label split [--seed 0] [--share 0.20] --write
 ```
 
 ## The third kind of sheet: a location attribute
 
-`--head` names a store rather than a judge, and one of the stores it can name is
-not a judge at all. An **attribute** sheet asks what a place *is* — `spiral` or
-`not_spiral` — in named classes rather than on the 1–4 scale, and the page shows
-exactly those two buttons. Three things about it differ from every other sheet
-and each of them is what a base-rate read needs:
-
-* **No judge reads the page.** There is no scoring pass, no suggestion from a
-  head and no score order. A page ordered by a quality head measures the head as
-  much as the attribute.
-* **The order is a seeded shuffle**, so position carries no information. The
-  sweep button says so in its own confirmation on a shuffled page, because
-  "everything below here is already right" is a claim about a sorted one.
-* **A prefill, where a plan states one, is a hint and says so.** The manifest
-  carries `prefill_note` and the page prints it instead of its own two sentences
-  about a head's decode or an incumbent verdict — a labeler who reads a
-  similarity hint as a model's tier is being told the wrong thing.
-
-The page still casts **numbers**, because a drop is one number per unit for every
-store there is and a second export shape would be a second answer to what a drop
-is. The manifest carries `classes` and `words`, so a sheet on disk says what its
-ones and twos meant, and `label ingest` turns the number into a class once, at
-the seam. Nothing downstream of that ever sees the ordinal.
+An **attribute** store asks what a place *is* (`spiral` / `not_spiral`) in named classes.
+No judge reads the page, the order is a seeded shuffle, and a plan's prefill is a hint
+(`prefill_note`). The page casts numbers; the manifest's `classes` and `words` let
+`label ingest` turn each into a class once, at the seam.
 
 ### Reserving part of a sitting
 
-`label pin` draws a seeded uniform sample of a plan's own units and writes them
-to the attribute store's `eval_split.jsonl` **before the sitting starts**. It
-exists because `eval_only` is a flag on a batch: a sitting that reserves a fifth
-of itself has no second batch to hang it on, and putting the reserved units in
-one would print a different batch name on their cards and tell the labeler which
-ones they were. Reserving is not withholding — the verdicts are collected like
-any others and the ingest does not assert the pin. What the pin forbids is
-training on them.
-
-```
-fractal-wallpapers label pin --head spiral --from-plan artifacts/pool_draw/spiral_500/plan.jsonl \
-    --batch <batch> --reserve 100 --seed <seed> --write
-```
+`label pin` writes a seeded uniform sample of a plan's units to the attribute store's
+`eval_split.jsonl` **before the sitting**, since a second batch name on the cards would
+reveal them. Their verdicts are collected; the pin forbids training on them.
 
 ### A PAIRED attribute: one tile, two renders, a comparative scale
 
-`repeat_ab` is the second attribute store and the first whose unit is two
-pictures. `Attribute.paired` is the whole switch — `label build` reads it and cuts
-through `sheets.comparison_source` instead of `attribute_source`, so a second
-comparative store needs no second branch anywhere. Everything underneath is the
-same store machinery: ordered classes, an ordinal at the page, a class at ingest,
-a location key, latest-wins.
-
-What the paired source does differently:
-
-* **A unit is one composite picture.** `sheets.composite` puts the two halves side
-  by side at equal size and the same crop, with a 6-pixel separator and nothing
-  written on the image. One picture and not two, because the comparison is the one
-  an eye makes in a single glance — two cards would let a labeler scroll one out of
-  view and answer from memory.
-* **The side order is fixed and the manifest records it**, under `render.sides`. A
-  reading that assumed the halves alternated would report the opposite result with
-  nothing looking wrong, and the pictures cannot say which way round they are.
-* **Both halves are read by the judge and neither reading reaches the page.** They
-  travel on the row under `reading`, the same key `gallery_grade` uses, and
-  `intake` copies it onto the stored verdict. That is what lets the head's own
-  direction be read against the labeler's later without re-rendering the sitting.
-* **The prefill is a constant the plan states, not a decode**, and the order is a
-  seeded shuffle. Both are refusals rather than defaults: `comparison_source`
-  raises if a unit states no suggestion, because an empty box that meant something
-  different from its neighbour's is worse than no prefill at all.
-
-⚠ **A comparative ordinal is not a tier.** `repeat_ab`'s `3` means *the repeat is
-the better picture*; `smooth_render`'s `3` means tier 3. The absent-`score` guard
-is what keeps them from pooling by field name, and `data/repeat_ab/README.md` says
-the rest.
-
-`--reuse-renders` is refused on a paired head: the cache holds neither composites
-nor the variant half's recipe.
+`repeat_ab`'s unit is two pictures; `Attribute.paired` routes `label build` through
+`sheets.comparison_source`. A unit is one composite (`sheets.composite`), the side order is
+fixed and recorded under `render.sides`, the judge's reading of both halves travels under
+`reading`, and a unit stating no prefill is refused. `--reuse-renders` is refused.
+⚠ **A comparative ordinal is not a tier** (`data/repeat_ab/README.md`).
 
 ```
 fractal-wallpapers curate repeat-ab plan --name <batch> --seed <seed> --units 250
-fractal-wallpapers label register --head repeat_ab --batch <batch> --method "…" --why "…"
 fractal-wallpapers label build --head repeat_ab --batch <batch> \
-    --from-plan artifacts/curation/repeat_ab/<batch>/plan.jsonl \
-    --out-dir artifacts/sheet/<batch> --seed <seed>
-fractal-wallpapers label serve --sheet artifacts/sheet/<batch> --port 8020
-fractal-wallpapers label ingest --sheet artifacts/sheet/<batch> --labeler matt --write
+    --from-plan artifacts/curation/repeat_ab/<batch>/plan.jsonl --out-dir artifacts/sheet/<batch>
 ```
+
 ## The fourth kind of sheet: a gallery grade
 
-`--head gallery_grade` cuts a page that asks how good a finished picture is **given
-that the render judge already let it through**. The picture is a finished render at
-exactly the geometry `finished_source` serves and the verdict keys on that render, so
-the cut is that one's knob for knob. What differs is everything a page can tell a
-labeler, and each difference is what a conditional estimand needs:
-
-* **Nothing is prefilled** — no decode, no incumbent verdict, no sweep. There is no
-  anchor sheet for this scale, so the first sitting is what creates the anchors.
-* **The order is a seeded shuffle**, never the judge's score. Ordering by the judge
-  would inject the exact ordering this head exists to replace — and at the good end
-  of that judge's scale, which is the whole population here, the order it would
-  inject is mostly noise.
-* **The card carries nothing.** `finished_source` writes `facts`, a per-picture
-  caption and a `columns` block unconditionally; here all three are empty. The mode
-  and the map on a caption are a stratum a labeler can read off the card.
-
-The judge still reads every picture, and the reading travels on the row under
-`reading` — a key `page.html` has never heard of — beside `drawn_as`, which is what
-the draw knew: `seated`, the `refusal` rule for an unseated row, and `pre_stamp`.
-`sheets.build` writes both only where a source set them, like `selected_on`.
-
-```
-fractal-wallpapers label build --head gallery_grade --from-plan <plan> --batch <batch> \
-    --out-dir artifacts/sheet/<batch> --seed 1
-```
-
-**No batch here can ever be eval-eligible.** `gallery_grade.register` refuses one
-claiming `score_unconditioned` or `eval_only`; the population is model-selected twice
-over and there is no side to protect, so this store ships no `eval_split.jsonl` and
-`label pin` does not apply to it. See `data/gallery_grade/README.md` and
-`data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*.
+`--head gallery_grade` asks how good a finished picture is **given that the render judge
+let it through**, at `finished_source`'s geometry. By default the page is blind: no
+prefill, a seeded shuffle, no `facts`, caption or `columns`. The judge's reading travels
+unrendered under `reading`, beside `drawn_as`. **No batch here can be eval-eligible**
+(`gallery_grade.register` refuses `score_unconditioned`/`eval_only`; no `eval_split.jsonl`;
+see `data/gallery_grade/README.md` and `data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*).
 
 ### Once the store has a head, the same sheet cuts as a correction page
 
-Blind was the **first sitting's** property and not the store's: with no anchors on
-this scale there was nothing to correct against. The fine head has existed since
-2026-09-06, so a plan may now state a `suggestion` and a `suggestion_score` per unit
-and `label build` cuts a correction page — prefilled, read good→bad, sweep offered.
-**Blind is still the default and there is no flag**: `label build` asks the plan,
-`prefilled=any(unit.get("suggestion") is not None for unit in units)`, so a flag that
-could disagree with the plan does not exist.
+A plan stating `suggestion`/`suggestion_score` per unit cuts a correction page (prefilled,
+good→bad, sweep offered); there is no flag. The prefill is the fine head's reading of the
+**candidate** at 640×360 ss2 (`sheets.GRADE_CORRECTION_NOTE` says so). A row the head
+cannot read carries none: `sheets.stated_suggestions` refuses the mix unless `gaps` names
+why, and unsuggested rows sort last (`curation.solve.at_fine_bar`). A row's draw block
+survives ingest inside `selected_on`, which `intake` copies whole.
 
-**The first two bullets above turn over and the other two do not.** What the blind
-rule forbids is the *render* judge ordering a page this scale exists to replace, and
-a head correcting its own decode is the opposite arrangement. The card still carries
-no `facts`, no caption and no `columns`, so a labeler still cannot read a stratum off
-it, and `reading` still travels unrendered.
+### Keep the plan
 
-Two things about the prefill that no stored row can answer:
-
-* **It is a reading of the CANDIDATE, at candidate geometry.** The fine head was
-  fitted at the ledger's 640×360 ss2 and the page serves 1280×720 ss2, so nothing
-  re-reads it on the picture it renders. That is why the suggestion comes off the
-  **plan** rather than off a scorer — a column the plan already holds is honest
-  about which picture it is about. `sheets.GRADE_CORRECTION_NOTE` says so on the
-  page, because `page.html`'s two defaults are both wrong here: unset it says *a
-  head's own decode* without saying which head or which picture, and with
-  `suggested_by` reading `plan` it says *the verdict this row already carries*,
-  which is an incumbent label nobody in this store has cast.
-* **A row the head has no output for carries no suggestion**, and this is the one
-  source that may mix stated prefills with absent ones — `sheets.stated_suggestions`
-  refuses the mix without a reason and takes one in `gaps`. The fine head is defined
-  over rows clearing the render bar and nothing else; an absent suggestion is the
-  head having no opinion rather than a second kind of prefill, and the order puts
-  every such row after every row the head could read, which is
-  `curation.solve.at_fine_bar`'s rule for the same column. The sweep therefore
-  cannot turn a gap into a tier.
-
-`p_fine_correction_20260909` is the first of these — 750 units, four blocks, three
-sheets, one batch — and `data/batch_caveats.md`'s *FOUR-BLOCKS-ONE-BATCH* carries
-what reading its rows wrong looks like. **The block a row was drawn in survives
-ingest only inside `selected_on`**, which is the section-free alternative to *A
-slice tag survives ingest only as a UNIT-ID BLOCK* below: `intake` copies
-`selected_on` onto the stored row whole, so a plan that puts its slice name there
-keeps the page reading good→bad end to end instead of good→bad within blocks.
-
-**Keep the plan.** A row carries `leveled` as a boolean and never the directory, so
-the plan a drop was cut from is the only thing that can rebuild a levelled picture as
-it was judged — the sheets' rendered pictures are regenerable and the plans are not.
-`gallery_grade.plan_paths()` is the accessor; nothing else spells their layout.
-A graded row's *candidate* is held in the pool by the label protection —
-`curation/README.md`'s *What is kept, and why each rule is the rule it is* — so a
-merge cannot take the picture or its `<stem>.leveled/` colormap out from under the
-store.
+A row carries `leveled` as a boolean, not the directory, so the plan is the only thing
+that rebuilds a levelled picture as judged; sheets are regenerable, plans are not.
+`gallery_grade.plan_paths()` is the accessor. The label protection holds a graded row's
+candidate in the pool (`curation/README.md`'s *What is kept, and why each rule is the
+rule it is*).
 
 ### A REJECTION pass is a correction page whose population is not being reviewed
 
-**Since 2026-09-14, `label build --head gallery_grade --rejection`.** A rejection
-pass walks a whole gallery once and marks only the bad tiles — it is how the
-**veto** is collected (`curation/GALLERY.md`'s *The veto*), and the plan it runs
-over is cut by `curate veto sheet <stamp>`, one unit per seat with nothing
-sampled. Mechanically it is a correction page knob for knob: same prefill off the
-plan, same good→bad order, same store, same 1..4 scale, and a mark of any tier is
-an ordinary human label on the ordinary path. Two things change.
-
-**The sweep is off, and that is the whole point of the mode.** *Accept the
-suggestion for every unlabeled row below here* is the one gesture in this rig that
-turns an untouched row into a verdict. On a correction page it is the point — the
-labeler spends the hour on the rows the head got wrong. On a thousand-tile gallery
-sheet where nobody is reviewing the good rows, one click would write the fine
-head's own decode onto some nine hundred unmarked tiles: positives in the store,
-`origin: human`, indistinguishable from labels a person cast, poisoning the corpus
-the head is fitted on. `Source.sweep` carries the flag, the manifest carries it on
-**every** sheet (an absent key means true, which is every sheet cut before the
-date), the page does not build the button, and `sweep.onclick` refuses as well —
-hiding a control is a statement about one page and refusing the act is a statement
-about the sheet.
-
-**Everything else already refused and that is why one flag closes it.** The page
-exports one entry per row a person acted on, `intake.read_export` drops a null
-score, and a unit absent from an export is absent from the store. The sweep was
-the only path left.
-
-**The page says what it is**, in `sheets.GRADE_REJECTION_NOTE` — *a tile you leave
-alone is NOT a label*. A page identical to a correction page is one a labeler
-sweeps out of habit, and the note is the only place on the built sheet that says
-which kind it is.
-
-`tests/test_veto.py` holds all of it: the source's flag, the note, the manifest
-key on both kinds, the page's two guards, and that the full scale stays castable —
-a deliberate 2 is a real verdict and narrowing the page to one button would throw
-away information a labeler was willing to give.
+`label build --head gallery_grade --rejection` over a `curate veto sheet <stamp>` plan
+collects the veto (`curation/GALLERY.md`'s *The veto*): only bad tiles are marked, so **the
+sweep is off** (`Source.sweep`; every manifest carries `sweep`, absent meaning true; the
+page hides and refuses it). `sheets.GRADE_REJECTION_NOTE`: *a tile you leave alone is NOT a
+label*. `tests/test_veto.py` holds it.
 
 ### Cutting a sheet on the render pool
 
-**`--workers N`, since 2026-09-14.** A cut is one engine render per unit and
-nothing else expensive, so a thousand-unit sheet is hours serially. Above 1 the
-cuts run in a `ThreadPoolExecutor` — threads and not processes, because the work
-is `subprocess.run` waiting on `fractal-engine.exe`. Measured on the
-`gallery_rejection_20260914` build: **3.72 s a picture on three workers**, so 1,000
-tiles in about **62 minutes** against roughly three hours at one.
-
-**Order, unit ids and picture names are the serial build's.** `pool.map` yields in
-argument order and `cut_name(index)` is computed before anything runs, so a
-resumed build finds the same names on disk and a re-cut assigns the same `u0001`.
-The progress line counts cuts *finished* rather than positions reached, which is
-the only thing it can honestly say once they land out of order.
-
-**The default stays 1.** Three is this machine's render pool
-(`curation.release.DEFAULT_WORKERS`) and more than three engines at once makes the
-desktop unusable — but a sheet is also cut on CI and in tests, where that rule is
-not the rule, so the ceiling is named in `--help` and not baked into the default.
+`--workers N` cuts on threads; about 3.7 s a picture on three, so 1,000 tiles is an hour.
+Order, ids and names match the serial build. Default 1 (CI); the box's ceiling is three.
 
 ## Serving a sheet to label
 
-A built sheet is a directory: `sheet.json` (the manifest), `sheet.jsonl` (the rows) and
-the rendered pictures beside them. Serving one is two commands, and the server says what it is serving.
-
-**1. See what is already built.** A sheet directory is named by whoever cut it and does
-*not* have to match the batch inside it, so ask the manifests rather than reading the
-directory names — `graduation_sheet` below holds the batch `threads_promotion`:
-
-```
-fractal-wallpapers label sheets --drops
-```
-```
-artifacts/graduation_sheet          strange_render · threads_promotion · 3 units
-                                    labels -> labels/strange_render.threads_promotion.json
-artifacts/plane_deep_admissions     location · plane_deep_admissions · 172 units
-                                    labels -> labels/location.plane_deep_admissions.json
-artifacts/strange3_promotion        strange_render · strange3_promotion · 634 units
-                                    labels -> labels/strange_render.strange3_promotion.json
-artifacts/twin_top_slices           location · twin_top_slices · 96 units
-                                    labels -> labels/location.twin_top_slices.json
-```
-
-`--under` looks somewhere other than `artifacts/`; `--drops` adds the file each sheet's page
-saves to.
-
-**2. Serve it.** One sheet, one port, and pick the port explicitly whenever more than one
-sheet is open:
-
-```
-fractal-wallpapers label serve --sheet artifacts/graduation_sheet --port 8021
-```
-
-**`--port` is where it starts looking, not where it lands.** The bind is exclusive — a
-server will not co-host a port another process holds, so no sheet ever serves half its
-images out of another sheet's directory — but a clash does **not** fail. `server.serve`
-walks upward from the port it was given and prints the one it got. So a sheet asked for
-on 8020 while a forgotten server from another session still holds it comes up on 8021,
-and a second sheet asked for on 8021 comes up on 8022. Both are correct; neither is where
-you asked.
-
-Which makes the printed line the only thing that says where a sheet is, and reading the
-port back off your own command line the way to hand somebody the wrong sheet. That is not
-hypothetical: it happened cutting `p_ge4_calibration_*`, where 8020 was still held by a
-`run10_novel_ground` server nobody had stopped, and the URL the launch command implied was
-serving a location sheet from a different batch on the same host.
-
-It runs until stopped, so launch it in the background. It prints, flushed so a redirected
-log shows it immediately, the URL and what it is serving:
-
-```
-serving <...>/artifacts/graduation_sheet
-  -> http://127.0.0.1:8021/
-  strange_render · threads_promotion · 3 units
-  labels -> labels/strange_render.threads_promotion.json
-```
-
-The default port is 8010; the convention when several are open is 8020, 8021, … one per
-sheet.
-
-**3. Check it is really up** before handing over the URL. The page fetches its own manifest
-and rows, so a 200 on `/` alone does not prove the sheet loaded:
-
-```
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8021/sheet.jsonl
-```
-
-Render filenames are positions in the **cut** order, not unit ids: a 96-unit sheet holds
-`cut0000`–`cut0095`, and unit `u0096` may be `cut0061.png`. The prefix is there so the two
-numbers cannot be confused on disk — nothing is called `0096.png`, so a filename guessed
-from a unit id misses cleanly instead of returning another unit's picture. The manifest is
-the only ordering. (Sheets built before the prefix hold bare `0061.png`; their rows name
-their own paths, so they keep serving.)
+A sheet directory holds `sheet.json`, `sheet.jsonl` and the pictures; its name need not be
+its batch, so find it with `label sheets --drops`. Serve one sheet per port (8020, 8021, …;
+default 8010), backgrounded. **`--port` is where it starts looking**: on a clash it walks
+upward, so **the printed URL is the only thing that says where a sheet is**. Check that
+`/sheet.jsonl` returns 200 before handing it over. Pictures are `cut####`, not unit ids.
 
 ### Where the labels land
 
-Saving from the page writes `labels/<head>.<sheet>.json` — both halves, always, so two
-sheets cut for the same judge cannot overwrite each other (see [`export_control.js`] and
-`store.export_path`). `label sheets --drops` prints the name for every built sheet, and
-`label serve` prints it for the one it is serving.
+Saving writes `labels/<head>.<batch>.json` (`store.export_path`). Serving is not ingesting.
+**`labels/` is an inbox of what is unprocessed**: `label ingest --write` ends by moving the
+drop to `labels/archive/` (`store.archive_export`, last; a repeat name becomes
+`<name>-2.json`; a `--labels` file outside the inbox stays). Moved, never deleted, and a
+spent drop re-ingested can revert later verdicts. A sitting is finished when its drops are
+on disk: a page never exported leaves nothing.
 
-**Serving is not ingesting.** The drop sits in `labels/` until `label ingest` resolves it
-against its sheet; until then the store is untouched. Drops written before sheets carried
-their own name are called `<head>.json`, and re-ingesting one needs an explicit `--labels`.
+#### And the ingest cannot tell which cut the drop came from
 
-**`labels/` is an INBOX and holds only what is unprocessed**, Matt's ruling of
-2026-09-14. A successful `label ingest --write` ends by moving the drop to
-`labels/archive/` — `store.archive_export`, last of all so that nothing is moved out
-from under a refusal, and a drop named with `--labels` from outside the inbox is left
-where it is. **Moved, never deleted**: the store holds the verdicts, but the export is
-the only record of what a *batch* contained, including the units the labeler left alone.
-A second export under one name is archived beside the first as `<name>-2.json` rather
-than over it. The whole tree is untracked.
+Two cuts of one batch share a drop name, and a drop joins by position: a shorter export
+against a longer sheet is accepted with every row on the wrong picture. **Match the unit
+count before ingesting**; retire a superseded cut once its replacement is labelled.
 
-**The rule is protective and the hazard is measured.** The store appends and an ingest is
-idempotent only against *the current row* — so re-ingesting a spent drop whose renders a
-later batch has since re-graded writes the older page's answers back on top. When the
-inbox was first emptied it held 43 processed drops, and **12 of them would have written
-rows: 116 of them reverting `aug_sweep_A_20260910` verdicts**, which is the gallery-grade
-store's entire supersession count. A spent export beside a fresh one is that waiting to be
-typed.
+#### A hand-renamed drop is the working answer to one batch cut into several sheets
 
-**A page that is never exported leaves nothing, and a small page is how that
-happens.** The drop is a page's only record: the sheet, the renders and the levelled
-maps all survive a closed browser and none of them carries a verdict. So a sitting is
-finished when its drops are on disk, not when its servers are stopped — count them
-against `label sheets --drops` before tearing one down.
-`phoenix_classic_20260903` is the case, and it is the *one-card* half of it that went
-missing: the 34-card strange page exported and the single-card smooth page did not,
-so 34 of 35 verdicts survive and the last one has to be re-served. Re-serving costs
-nothing but the operator's second look — the picture is already rendered, so
-`label build` reports `rendered: 0` and serves exactly what was measured.
+Save each sheet's export under its own name and run `label ingest --sheet <dir> --labels
+<file>` per sheet, oldest first. Check no two drops are identical and each count matches one
+cut; on a score-ordered page, position against verdict is strongly negative when bound
+right. Each row records its `sheet`.
 
-**The second half of a drop's name is the BATCH, not the sheet directory** —
-`store.export_path(manifest["head"], manifest["batch"])` is what both `label serve` and
-`label sheets --drops` print. So the collision that name prevents is two *batches* under
-one head; two *cuts of one batch* land on the same drop, and `label sheets --drops` shows
-them doing it. Re-cutting a page — dropping duplicate places, re-ordering, screening — is
-exactly that case, so it is the normal way to arrive here rather than a mistake.
+#### Cut a batch into sheets of UNEQUAL size
 
-**And the ingest cannot tell which cut the drop came from.** A drop is joined by position,
-so a shorter export against a longer sheet of the same batch is accepted: every exported id
-is on the sheet, and the units the drop does not name are reported as `not acted on`, which
-is what a half-labelled page looks like too. Measured 2026-08-29 on a batch whose 745-unit
-re-cut and 998-unit original share one drop: the correct sheet joined 745 of 745 with 21
-withheld, and the original joined the same file at `exported 745, not acted on 253` and
-offered **515 rows bound to the wrong pictures**, without an error. Match the *unit count*
-to the drop before ingesting, and delete or rename the superseded cut once its replacement
-is labelled.
-
-**A hand-renamed drop is the working answer to one batch cut into several sheets, and the
-unit count is what makes it safe.** `p_fine_correction_20260909` went out as three sheets
-of `251 / 250 / 249` sharing one drop name; the labeler saved the second and third aside
-under their own names rather than letting each export replace the last, so all three
-survived. Ingest is then one `label ingest --sheet <dir> --labels <that file>` per sheet,
-run in **cast order** — the oldest export first, for the reason *A second ingest of the
-same export is a no-op* gives in [`intake`]. Two cheap checks before writing anything, both
-of which this pairing passed: no two drops carry the same verdicts (identical files are one
-sheet exported twice, not two sheets), and each drop's unit count matches exactly one cut.
-A third check is worth the minute it costs, because the count alone cannot catch a drop
-that happens to match the wrong sheet of the same length: on a page ordered by a score,
-**Spearman of page position against verdict is strongly negative on a correctly bound
-drop** — `−0.745 / −0.477 / −0.494` on the three above — and a misbound one sits near zero.
-Afterwards the binding is auditable from the store alone: `intake` writes the sheet
-directory's name onto every row as `sheet`, so which cut a verdict came off outlives the
-untracked sheet directory.
-
-**Cut a batch into sheets of UNEQUAL size, because equal ones cannot be bound.** The unit
-count is the only check that binds a drop to a cut on its own, and `gallery_top_20260910`
-went out as `182 / 182 / 181` — so two of its three drops were interchangeable by count,
-and no statistic could separate them either: cuts drawn at random from one population and
-ordered by one column have near-identical column distributions, so a swapped binding barely
-moves any aggregate while binding every row to the wrong picture. What settled it was the
-**saving convention** — `<head>.<batch>.json` for the first cut and ` pt2` / ` pt3` for the
-rest — which is a labeler's habit rather than anything the rig enforces, corroborated by
-the drops' mtimes, the negative position-against-verdict reading on each pairing, and three
-covariates that are not page position (mode, kind, colour cell), all favouring it. Prefer
-sizes that differ, as `p_fine_correction_20260909`'s `251 / 250 / 249` did — that sitting is
-also where the naming convention was *proved*, because there the counts bound the drops
-independently and the names agreed.
-
-**On a SHUFFLED page the position check does not apply, and the overlap with earlier
-verdicts is what replaces it.** Every check above reads position against verdict, which is
-a statement about a page ordered by a score; a blind page is a seeded shuffle and a
-correctly bound drop sits at zero there just as a misbound one does. What works instead is
-the store itself: any unit whose render key already carries a verdict predicts this drop's
-verdict on the correct binding and nothing on the wrong one. Measured 2026-09-10 on
-`aug_sweep_A_20260910`, where 116 of 200 units had been graded in an earlier sitting —
-**r = 0.470 correct against 0.011 for the swap**. A page with no such overlap has neither
-check, so its drop is bound by its name and its unit count alone, which is why two blind
-pages cut on one day want **different batches** rather than one batch in two cuts: the rig
-writes the batch into the drop's name and the ambiguity never arises.
+Equal cuts are interchangeable by count and by every aggregate. On a shuffled page use
+units already holding a verdict as the check; two blind pages want different batches.
 
 ## Degree 6 is never labelled, and every door refuses it
 
-**No row on `multibrot6` or `julia:multibrot6` is ever labelled**, Matt's ruling of
-2026-09-16. Degree 6 is the mining loop's generalization test on a fractal no human has
-labelled, so everything label-fed — proven keepers, the `c`-pool, reframing priors — is
-empty for it by construction and stays so; its roots come from the viewport sampler
-alone. The list is `supply/partitions.NEVER_LABELLED`, and four doors refuse a row on it
-with a message naming the ruling:
+**No row on `multibrot6` or `julia:multibrot6` is ever labelled** (Matt's ruling): degree 6
+is the mining loop's generalization test, so everything label-fed is empty for it and its
+roots come from the viewport sampler alone. The list is `supply/partitions.NEVER_LABELLED`,
+and four doors refuse a row on it:
 
 - `sheets.build`, **before** a directory is made or a picture cut (`SheetError`);
-- `label ingest` (`intake.run`), before a row is built, so the store is untouched
-  (`IntakeError`);
+- `label ingest` (`intake.run`), before a row is built (`IntakeError`);
 - `store.check` and `finished.check`, the two writers' row checks, so an import or a
   backfill that skips the ingest cannot land one either.
 
-Unlike a pinned place, this is **refused and not withheld**: a withheld verdict is a
-real opinion about a place that may not train, and a verdict on degree 6 is a sheet
-that should never have been cut.
+It is **refused, not withheld**: such a verdict is a sheet that should never have been cut.
 
 ## A verdict cast on a pinned location is WITHHELD, not written
 
-A finished store's evaluation side is a **batch** — one registered `eval_only`, cut
-blind — and its pin is asserted on the *location* so a later drop cannot re-render the
-place under a fresh name. A verdict from any other batch at one of those places is
-therefore neither thing this store holds: it may not train, because the instrument is
-spent the moment it does, and it may not join the blind sheet either, because it was
-cast against a prefilled suggestion. `label ingest` names those units, counts them, and
-leaves them in the export:
-
-```
-"units": {"on the sheet": 246, "exported": 246, "not acted on": 0,
-          "withheld on a pinned location": 9}
-"withheld": {"rows": 9, "locations": 9, "units": ["u0007", "u0018", ...]}
-```
-
-Both blind sheets are derived by location, so a withheld row that *had* landed would
-have grown a blind sheet by nine anchored rows and broken every paired comparison
-against it. `tests/test_finished_store.py` holds the invariant this protects: no
-non-`eval_only` row sits on a pinned place. The pin is never the thing that moves.
-
-**A withheld sitting loses whole PAIRS and never half of one**, which is what makes
-the rule safe on a matched-pair page. The pin keys on the location and a matched
-pair is two recipes at one place, so both members are caught or neither: the
-`repeat_axis_*_20260911` sitting lost `p0001` on the smooth sheet and `p0099` on the
-strange one, two rows apiece at one location apiece, and every surviving pair was
-still whole. Reading the sitting is therefore an exclusion of two pairs and not a
-repair — count the *pairs* off the resolved store rather than assuming 246 rows
-means 123 comparisons.
-
-**The check runs before the write, and again after it.** It used to run only after,
-so a drop that trespassed left the rows behind and raised — a store the suite
-forbids, produced by the command that refuses to produce it. Both assertions stay:
-the first on the rows as they were handed to a writer, the second on the rows as the
-store read them back, and the report carries `asserted_before_writing` so which
-reading held is on the record.
+A finished store's evaluation side is an `eval_only` batch, cut blind, pinned on the
+*location*. Another batch's verdict at a pinned place may neither train nor join it, so
+`label ingest` counts it as `withheld on a pinned location` and leaves it in the export
+(pairs go whole). The pin is asserted before the write and after
+(`asserted_before_writing`); `tests/test_finished_store.py` holds the invariant.
 
 ### Ingesting a NEW `eval_only` batch does not refresh the pin, and the store notices
 
-`label ingest` asserts the pin it *finds*; it never rewrites it. The pin document
-(`data/<head>/split.json`) and the evaluation side (`data/<head>/eval_split.jsonl`)
-are written by the one-time corpus import and by nothing else, so landing the first
-rows of a newly registered `eval_only` batch leaves the store in a state
-`tests/test_finished_store.py` rejects two different ways:
-
-* leave the document alone and `eval_only_batches` no longer equals the batches of
-  the rows the registry calls pinned;
-* extend the pin to every place the new batch touches and the older **training**
-  rows already on some of those places are stranded on the wrong side.
-
-A batch registered `eval_only` pins at **batch** granularity here — every row of it is
-the evaluation side. That is not the location head's rule, where a seeded draw over
-groups decides and registration alone changes nothing; do not carry one store's
-intuition to the other.
-
-The resolution is the one the store's own refusal names — *fix the split, never the
-pin*. Pin the places that carry no training row, and leave the rest **contested and
-unpinned**: an instrument is only pinnable where it is not already spent. Rebuild the
-side from the registry with `finished.write_pin`, and assert the new side is a
-**superset** of the old before writing, because `write_pin` truncates and a pin that
-can shrink is not a pin. Measured on a 200-unit two-store drop: 150 places pinnable,
-50 contested.
+The ingest never rewrites `data/<head>/split.json` or `eval_split.jsonl`. A finished store
+pins by **batch** (the location head uses a seeded group draw). Pin only places with no
+training row, leave the rest **contested and unpinned**, rebuild with `finished.write_pin`,
+and assert the new side is a **superset** of the old first (`write_pin` truncates).
 
 #### The contested places are the design, and the guard now asserts that design
 
-`test_finished_train.py` asserted `{eval-side places} ⊆ {pinned places}` until
-2026-08-30, under the name `test_the_split_is_the_pin_...`. A contested place is
-eval-side by its batch's registration while being deliberately absent from the pin, so
-that assertion failed on **both** heads and no repair to the pin could close it: the
-eligible repair — add only places carrying no training row — has an empty population,
-and extending the pin to the contested places moves the failure one line down to the
-stranding this section refuses.
-
-It now asserts the containment that actually holds, one way: **the pin is a subset of
-the evaluation side**, and **no pinned place carries a training row**. That second one
-is the assertion the test exists for and it must always fail loudly. The contested
-count is *recorded* rather than asserted — it moves with every batch anybody labels, so
-a fixed number there would be a test that fails on ordinary work. Standing on
-2026-08-30, read off `finished_train.population`:
-
-| head | pinned | eval-side places | contested | pinned with no eval-side row |
-|---|---|---|---|---|
-| `smooth_render` | 277 | 300 | **23** | 0 |
-| `strange_render` | 180 | 207 | **27** | 0 |
-
-50 contested, which is `710b9d5`'s own number. Do not repair the pin to move it.
+`test_finished_train.py` asserts the pin is a subset of the evaluation side and no pinned
+place carries a training row; the contested count is recorded, never asserted.
 
 #### `eval_only` outranks the clock, and that is what stops the evaluation side shrinking
 
-The two rules key on different things. A *place* is pinned at the location, but which
-side a *row* is on is read off its batch's registration, and a resolution keeps one row
-per **render key**. While that resolution ordered on the timestamp alone, a training
-batch landing on a render key an `eval_only` batch already wrote **superseded it**, and
-where that was the place's only eval-side row the place stopped being eval-side at all.
-It happened twice: on 2026-08-29 two `sparse_mode_head_top` rows beat two
-`seated_and_head_top` rows by **one second** each, and `strange_render` went from 207
-eval-side places to 205 with nothing red and no writer intending it. The tiers agreed
-in both cases, so nothing was corrupted — but the mechanism does not depend on their
-agreeing, and `finished.assert_pin_holds` cannot see it: it asks whether a training row
-sits on a *pinned* place, and a contested place is by construction not pinned.
-
-Closed on 2026-08-30, **reader-side and with no stored row touched**.
-`store.resolution_order` puts a row from a batch registered `eval_only` after every
-other row about the same key, so the evaluation side wins a contested key whatever the
-clock says; the clock still decides between two rows of the same side.
-`store.resolve` and `finished.resolve` take the registry as `known` and
-`store.resolved` / `finished.resolved` — the canonical readers — always pass their own
-store's. A caller holding rows and no store gets the clock alone, which is stated at
-the function rather than assumed. Restoring the rule moved **two rows** across both
-stores, neither of them changing a tier, and put `strange_render` back to 207
-eval-side places.
+`store.resolution_order` ranks an `eval_only` row after every other row on its key; the
+clock decides within a side. The canonical readers pass their registry.
 
 #### A pin may be written BEFORE the sitting, and one guard reads red while it waits
 
-Registration alone does not pin. A batch registered `eval_only` is on the
-evaluation side by its registration, and until its places are in
-`eval_split.jsonl` nothing stops another batch landing a *training* row on one of
-them — and once that has happened the place is contested and no repair to the pin
-can take it back. So the places of a blind sheet are worth pinning **when the
-sheet is cut**, before a single verdict exists. That is not a new idea here: it is
-what `label pin` does for an attribute sitting, and `spiral_500_20260903`'s 100
-reserved cards were drawn before any verdict existed.
-
-Two things have to be got right, and the leg's own `pin.py` is the worked example
-(`blind_palettes_20260905`, 2026-09-05, 180 → 280 places, 0 contested).
-
-* **`split.json`'s `eval_only_batches` is NOT extended.**
-  `test_finished_store.py::test_the_shipped_stores_hold_what_they_say_they_hold`
-  holds that list equal to the batches of the rows the registry calls pinned, and
-  a reserved batch has no rows yet. The reservation goes in its own key —
-  `reserved_before_the_sitting` — and the name joins `eval_only_batches` when the
-  sitting lands.
-* **Only places carrying no training row may be reserved**, the same rule the
-  contested paragraph above states, and the write is bracketed by
-  `finished.assert_pin_holds` on the store as it stands and again on the store as
-  it reads back. `write_pin` truncates, so the side is rebuilt whole and asserted
-  a superset of the old first.
-
-**And a reservation costs two slow guards until its sitting lands.** Both were
-seen red on 2026-09-05 and both were cleared by finishing the arc:
-
-* `test_finished_train.py::test_the_pin_is_part_of_the_evaluation_side_and_carries_no_training_row`
-  asserts `pinned ⊆ evaluation`, whose failure message is *the instrument is
-  shipped and not being read* — precisely what a reservation is until it is
-  labelled. The assertion the test exists for, **no pinned place carries a
-  training row**, holds throughout.
-* `test_renders.py::test_the_evaluation_side_is_in_the_plan` asserts every pinned
-  place is in that head's render-cache plan, and the plan is derived from the
-  store's rows — so a place with no row cannot be in it.
-
-**The arc that clears them, in order**: reserve → label → `label ingest --write` →
-**settle the pin** → `renders plan` → `renders build`. Settling is the step worth
-naming: the reserved rows are placeholders carrying `score: null`, and once the
-verdicts exist each is swapped for the batch's own stored row at that place, so
-the file holds one shape and `split.json` goes back to
-[`finished_import.pin_document`]'s exact keys — `eval_only_batches` off the
-registry, `renders` / `locations` / `tiers` over the file's own rows, and no
-`reserved_before_the_sitting` left behind. `renders build` skips what it holds, so
-the cost is the new rows alone: **100 crops in 347 s at three workers**, 3.47 s
-each. Both guards then run rather than skip, and pass.
-
-Giving the reservation up is the other way out — delete the reserved rows from
-`eval_split.jsonl` — and it is only right when the sheet will not be labelled.
+Reserve a blind sheet's training-free places when it is cut, under `split.json`'s
+`reserved_before_the_sitting` (not `eval_only_batches`), bracketed by
+`finished.assert_pin_holds`. Until the sitting lands
+`test_the_pin_is_part_of_the_evaluation_side_and_carries_no_training_row` and
+`test_the_evaluation_side_is_in_the_plan` read red. Clear them: label → `label ingest
+--write` → settle the pin (stored rows replace the `score: null` placeholders; keys back to
+`finished_import.pin_document`'s) → `renders plan` → `renders build`.
 
 ## What cutting a sheet costs, and why the number moves so much
 
-A location unit is **two renders at 1280×720 ss2**, and that is the whole bill —
-scoring the cut page afterwards is a minute whatever the page holds.
-
-**The label geometry has one spelling and it is `sheets.LABEL_RESOLUTION`**
-(`labeling/sheets.py`), with `LABEL_SUPERSAMPLE` and `LABEL_FILTER` beside it: what
-both finished-render corpora were collected at, and therefore what a finished-render
-sheet renders at — a picture judged at a different geometry is a verdict about a
-different picture. `curation/shrinkage.py` imports it and **nothing else in the tree
-does**, which is what makes it the single spelling rather than one of several.
-Grepping the numbers instead lands on the wrong constant: `sheets.py` holds
-`SHEET_RESOLUTION`/`SHEET_SUPERSAMPLE` at the *same* 1280×720 ss2 for the **location**
-sheet, and `curation/manufacture.py` a third at those numbers again. They agree today
-and nothing makes them; a change to what a person judges a finished render at is a
-change to `LABEL_RESOLUTION` alone.
- Build it in the
-background and estimate before committing, because the per-unit cost is not one
-number and picking the wrong one is off by an order of magnitude:
-
-| sheet | units | mean maxiter | s/unit |
-|---|---|---|---|
-| a degree-2 mandelbrot offer, all above the junk floor | 152 | 28,075 | **6.8** |
-| run2's plane admissions, 1e-3 to 1e-9 | 172 | 24,777 | 7.4 |
-| run9's plane channel at 1e-6 and deeper, gates *not* applied | 164 | 31,955 | **53.5** |
-| run10's refusals and unattempted admissions, screened | 200 | 11,927 | **3.1** |
-| a gallery-grade sheet over seated pool candidates, 2026-09-10 | 200 | 22,999 | **3.5** |
-
-**Maxiter barely predicts it; what the pixels do predicts it.** The first three rows sit
-within 30% on maxiter and span 8× on cost. A row that escapes early is cheap however
-high the cap; a row the walk refused for `interior_cap` iterates nearly every sample
-to that cap, and a sheet cut over *candidates* rather than admissions is full of them.
-Degree costs too — degree 2 is the cheap corner, and the expensive sheet above was 64
-of 96 multibrot4.
-
-**The last row is the same claim from the cheap end, and it is the one a cost estimate
-gets wrong in the other direction.** It is a *candidate* sheet — judge refusals, gate
-refusals, admissions nobody colorized — and it is the cheapest sheet on this page, at
-half the maxiter and a mean interior fraction of 0.0029. The interior screen is why:
-what makes a candidate sheet expensive is the interior-heavy rows, and the screen takes
-every one of those off the page before a pixel is drawn. Scaled instead off a release
-leg by field samples — a 2560×1440 ss4 row is 8× a location unit's two 1280×720 ss2
-renders — the same sheet estimated at 8.75 s/unit and came in at 3.1, so **the sample
-count is an upper bound and not a prediction**; a release row spends time on a palette
-pass a sheet has no equivalent of, and its material is admissions rather than refusals.
-
-Estimating one of these off the harvest's own steering view is the trap: that view is
-640×360 ss2, so the pixel scaling is ×4 for the geometry and ×2 for the pair, and
-applying it to the deep sheet above underestimated by **6.9×** — the steering views it
-was measured on were shallow, gate-passing stock. Scale off a *built sheet* of similar
-material instead, and when the material is deep or ungated, budget an hour per
-hundred rows.
+Label geometry is `sheets.LABEL_RESOLUTION` and `LABEL_SUPERSAMPLE` (1280×720 ss2), its
+one spelling. A location unit is two renders, a finished one one. **Cost follows the
+material, not maxiter or unit count**: ~1 s a unit for `smooth`, 4–7 s textured, a minute
+on `phoenix:classic`. Price off a similar built sheet or a pilot **stratified by mode**.
 
 ### Cutting a finished-render sheet out of the candidate pool
 
-The pool in [`curation.candidate_ledger`] is 22,029 pictures that already exist, which
-reads like a sheet nobody has to render. It is not, and three things are worth knowing
-before estimating one.
-
-**A sheet is cut for a KIND, and the kind names the store.** `finished_source` takes one
-head and every verdict on that page lands in that head's store, so a population spanning
-both kinds is **two sheets and two batches**, never one page. `p_ge4_calibration_*` is the
-case: mode `smooth` is the smooth store, every other mode is the strange one, and a draw
-banded across both had to be cut, registered, served and ingested twice.
-
-Since 2026-08-27 that is enforced rather than remembered: `finished.check` asks
-`hunt.kind_of` which store a row's mode routes to and refuses the row if it is not the
-store being written. `rare_palette` is the batch that bought the guard — 40 of its
-resolved rows are `smooth` and sit in `strange_render`. They stay there, because an
-original is never modified; `finished_train.population` derives the exclusion at the
-read instead. The numbers are in
-[`data/strange_render/README.md`](../../../data/strange_render/README.md).
-
-**And 117 renders are in BOTH stores, which a pooled read counts twice.** Same
-place, mode with the same settings, curve, map and palette pass — `render_key`
-identical, so it is one picture with two verdicts, and the crops are byte-identical
-under identical job names in the two caches. Every one is an `itinerary` whose
-texture said nothing, so it is the smooth field spent by rank bit for bit and both
-sides route to `smooth_render`; the two verdicts agree on all 117. A **per-head**
-read never saw this — `finished_train.population` excludes the strange-store copy as
-off-kind already — but the two **pooled** reads did: `curation.rank_key.fit` had 52
-of them twice in its 3,278-row fit, once on each kind's side of the out-of-fold AUC
-with the lineage group and the fold assigned twice, and `models.render_train
-.population` had all 117. `finished.crossovers` is the one place this is decided
-now, asked of the same router, and both callers go through it; the fit is 3,226 rows
-and the pooled population 11,849. **Nothing was written to a store**, and a crossover
-whose two rows route differently is left whole and reported rather than tiebroken —
-none do today. `models.render_folds.pool` was never double-counting: it routes on
-`routed_to(mode)` alone, which keeps each of the 117 once, in `strange_render`.
-
-**A mode can route to the other store without being that mode.** A modulate —
-`itinerary`, and `tail_itinerary` beside it — shifts its base's palette position by
-an address field, and where that field has no span the shift is zero everywhere and
-the picture is the `smooth` field spent by rank — *bit for bit*, not merely similar.
-So such a row is the smooth judge's, whatever its `mode` says, and the rule names
-neither mode: it is about the modulate shape. `finished.routes_to` is the call that knows: it takes the render's own
-identity to `coloring.texture_flat`, the tracked register of which renders that is
-true of, and hands the answer to `routed_to`. `check` uses it at the writer and
-`finished_train.population` at the read, which is the same two-sided arrangement the
-paragraph above describes — and for the same reason, since the rows already on record
-are originals and are never rewritten.
-
-**And a pool row's own `texture_flat` does not survive the trip to label geometry.**
-`coloring.texture_flat.KEYED` holds `resolution` and `supersample`, so the register
-entry a candidate earned at 640x360 ss2 is not the key the sheet's 1280x720 ss2 join
-computes — `flat_for` misses, reads `False`, and `routes_to` sends the row to the
-strange store while `hunt.kind_of` off the ledger row's stored flag sends it to the
-smooth one. The two disagree exactly on the degenerate modulates, and `check` refuses
-at the writer, after the page has been cut and labelled. So **a sheet drawn out of the
-pool routes by `finished.routes_to` on the join it is about to render**, never by
-`kind_of` on the ledger row. `phoenix_q3q4_20260903` is where this was found: its
-top-200 draw held two `itinerary` rows carrying `texture_flat: true`, which the ledger
-routes smooth and the sheet routes strange. The way to make the two agree is to
-measure the modulate at label geometry and extend the register, and **since
-2026-09-03 the ingest does exactly that**.
-
-**"Ask the routing of the join" is only right when the join has been measured, and
-on a MISS it has not been — it has been defaulted.** `flat_for` answers `False` for
-an identity the register does not hold, which is `strange_render`, so a modulate
-that really is flat at 1280x720 ss2 is written to the strange store *without a
-refusal*: `check` compares two answers and both of them say strange. The disagreement
-the paragraph above describes is the visible half of the failure and the quiet half
-is this one. It fired twice at checkpoint 103, and it was 23 of the 224 label rows in
-a mode with a texture at the time of the fix.
-
-So `finished.append` — THE writer, and the one place a render identity is new — passes
-`extend=True` down through `check` to `routes_to`, and a MISS there runs the engine's
-span test at the row's own geometry through `coloring.texture_flat.extend_with`,
-**appends** the entry to the tracked register and routes on the measurement. The
-register self-extends at ingest instead of needing a backfill that has to find the
-same rows again later. It never rewrites an entry — a held key comes back off the
-register with no render, because a second measurement of one identity is a second
-answer to a question that has one — and it never re-keys a label row. A failed span
-test **refuses**, rather than letting a row route on the default while looking like a
-measurement.
-
-`extend` is off for every reader and that is load-bearing: `routes_to` is called per
-row by `finished_train.population` over both stores, and a default that rendered on a
-miss would turn a corpus read into a render leg, silently, on a machine that may
-already be running one.
-
-**The 23 already in the store were probed on 2026-09-03 and 13 of them measured FLAT.**
-The forward fix repairs the next ingest and nothing already written, so the misses were
-measured at their own geometry through `coloring.texture_flat.extend_with` and the
-entries appended. That fixes one reader and not the other, and the split is the thing
-to know: `finished_train.population` asks `routes_to`, so the appended entries drop
-those rows out of the strange head's training population on their own — but
-**`finished.resolved` decides a row's kind by which store's directory it was read from**
-and never consults the register at all, so no measurement can re-attribute a row that is
-already on disk. Each flat row therefore got a **revision row** in the smooth store: the
-same verdict and the same render identity under its own batch — both batches were
-already registered in both stores with identical flags — carrying a `revision` block
-naming the strange original's file, line and recorded time. The originals stay exactly
-where they are, none was modified, deleted or re-keyed, and the strange store's row
-count did not move. None of the thirteen sits at a pinned place and
-`finished.assert_pin_holds` was asserted on both heads before and after.
-
-**120 of the 224 are flat and only 13 carry a revision.** The other **107** were
-measured before this and are the accepted older arrangement — excluded from the strange
-head's training by `population` and invisible to the smooth head — mostly
-`itinerary_promotion` (59) and `sparse_mode_head_top` (40). So the two halves of one
-population are now read two different ways, and extending the revision to the 107 is a
-decision rather than a repair.
-
-**Budget an ingest's probes by the partition and not by a constant.** The 23 cost
-**435.9 s** between them, not the ~40 s a flat 1.7 s a probe predicts: the `judge_band`
-rows ran 1.3-6.0 s each and the `phoenix:classic` rows ran **27-111 s**, because that
-plane's admitted places carry 12k-22k iterations. A sheet cut from a deep partition can
-put minutes of render inside what reads as a record write.
-
-**`--reuse-renders` misses every pool row, and it is not a near miss.** Candidates are
-rendered at 640x360 ss2 and a finished sheet serves 1280x720 ss2; the cache keys a picture
-by a digest of the whole engine spec, so the geometry alone makes it a different name.
-Checked over all 1,144 rows eligible for that draw: **zero hits**, in both crop caches. The
-render cache holds the *corpus* renders — 5,180 smooth and 3,322 strange — and nothing else.
-
-**A levelled row cannot be re-served by naming its recipe.** The ledger keeps
-[`curation.recipes.stamp_of`]'s reduced stamp, which deliberately drops `acted` because
-whether the operator fired is a function of the picture rather than an input to it. So the
-row cannot say whether it was levelled, and a sheet that rendered it through the base map
-would serve a different picture under the same identity. The way through is
-[`curation.manufacture`]'s: render at sheet geometry through `colorize.render` with
-`level=True`, which writes `<stem>.leveled` beside the picture, then point the plan unit at
-that directory by name. The plan's own `leveled` key is the whole mechanism.
-
-**A measure pass can BE the sheet's render, at three workers instead of one.** The
-build renders serially in-process, and `cut` skips a unit whose picture is already on
-disk — that is the resume path, and it is also a way to do the whole page in
-parallel. Render each plan unit at label geometry through `colorize.render(level=True)`
-into `<sheet dir>/full/<sheets.cut_name(i)>.jpg`, where `i` is the unit's index in
-the plan **file**; `finished_source` sets no `screen`, so nothing reorders or drops a
-unit before the cut and that index is stable. `label build` then reports
-`rendered: 0` and serves exactly what was measured. `sparse_mode_head_top`
-(2026-08-29) did 998 units this way in 47 min at three workers against about 35 min
-serial for the wrong pictures, and the operator acted on **301 of 998, 30.2%**.
-
-**So it is two renders a unit, and the second one is the check.** The measure pass makes the
-picture and the levelled map; `label build` renders again from the plan; and comparing the
-two byte for byte is the only thing that proves the page serves what was measured. On
-`p_ge4_calibration_*` that held on **246 of 246 rows, worst score gap 0.0** — which also
-re-proves `field_sharing`'s recolour-is-the-render claim on a population outside its own
-tests, since the measure pass recoloured a dumped field and the build did a full render.
-
-**How much of a pool sheet the operator actually moves: 43%.** On
-`seated_and_head_top` (2026-08-27, 200 candidate-ledger rows at 1280x720 ss2) the
-operator was *offered* 192 of the 200 — the other eight are direct traps, which
-`autolevel.applies_to` excludes at the site that decides — and it **acted on 85**.
-Those 85 are rows a sheet built straight off the plan would have served as a
-different picture under the same identity, and no number on the ledger row says
-which 85 they are. So a measure pass is not optional on a sheet cut out of the
-candidate pool: skipping it is not a rounding error, it is two fifths of the page.
-
-**Measured cost of a correction sheet cut over the candidate pool**, 2026-08-27,
-`seated_and_head_top`: the measure pass ran 200 units in **301 s wall** at three
-workers (1.50 s/unit wall, 4.46 s/unit of work) and the two `label build` legs cut
-103 + 97 units in about **250 s** between them. That is ~2.8 s/unit for the whole
-two-pass arrangement against the 5.4 s/unit `p_ge4_calibration_*` cost below, and
-the difference is the material rather than the machine: these are field-mode rows
-at a mean 16,541 maxiter, so the operator's second pass is a recolour off a dumped
-field and the eleven composite modes that dominate the older number are barely
-present. **Estimate a sheet by its mode mix, not by its unit count** — the same
-claim the four-row table above makes about maxiter.
-
-**And within one mode, estimate it by where in the pool the draw came from.**
-`smooth_decision_bands` (2026-08-29) is 500 rows of one mode, `smooth`, all
-field, and its measure pass cost **5.90 s a unit** at three workers — 2,953 s for
-the page — against `sparse_mode_head_top`'s 2.8 s a unit over nine modes four days
-earlier. Nothing about the machine changed. The draw did: a sheet cut from the
-**top** of the pool selects deep frames, and a deep frame is a high maxiter. There
-is no mode mix left to explain a 2× when the sheet is single-mode, so budget a
-top-of-pool sheet at roughly twice a sheet drawn across the same pool. The
-operator acted on **267 of 500, 53.4%**, and `label build` reported
-`rendered: 0, reused_from_cache: 0`.
-
-Both renders verified byte for byte on **200 of 200 rows**, and the two readings
-of the same picture at the two geometries are on every row (`selected_on` against
-`columns`): mean shift `-0.0035` on `P(>=4)` over the seats and `-0.0000` over the
-top-scored control, with single rows moving as far as `+0.27` and `-0.20`. The
-judge is regime-stable in the *mean* and not per row, which is exactly why both
-readings travel rather than one.
-
-**Measured cost**, 2026-08-26, six workers, post-`field_sharing`: 246 units at 1280x720 ss2
-in **654 s**, 2.7 s/unit wall and 13.3 s/unit of work. The mix is what moves it — a
-field mode amortises its dump over the operator's second pass, a composite has no field and
-pays two iteration passes, and the composite tail alone took the marginal rate from 0.8 to
-1.8 s/unit. Budget the second render too: the build leg cost about the same again.
-
-**A direct-trap unit is one render and not two**, because `autolevel.applies_to` is `field`
-and `composite` — a direct trap is a figure over a flat ground, its tone statistics describe
-the ground, and the operator is excluded at the site that decides. Four of
-`under_seen_modes`' nine modes are direct traps, so 224 of its 504 units skipped the
-operator entirely and 108 of the remaining 280 were actually levelled. Estimate a mixed
-sheet by kind, not by unit count.
-
-
-**A varied-`phoenix` pool sheet is cheap, and the pinned plane's 17x does not
-carry over.** `phoenix_q3q4_20260903`, 2026-09-02: 200 units at 1280x720 ss2,
-mean maxiter 10,706, measure pass **726.4 s wall at three workers** — 95 smooth
-units in 123.6 s (1.39 s/unit wall, 4.11 s/unit work) and 105 strange in 602.8 s
-(6.15 s/unit wall, 18.10 s/unit work). `LEG_phoenix_classic_supply` priced
-`phoenix:classic` at **56.9 s a candidate** against 3.2 for the parameter planes,
-and reading that as "phoenix is dear" over-budgets this sheet by an order of
-magnitude: that leg's material sat near 1e-4 at 12,243-21,702 maxiter, and varied
-`phoenix` drawn at the judge's own q3/q4 crossing does not.
-
-**And the mode mix moves it 15x within one sheet.** Measured s/unit of work over
-the 187 units the full pass made: `stripe` **44.2**, `smooth_angle_min` 45.5,
-`direct_trap_lines` 43.0, `direct_trap_screen` 25.3, `direct_trap_multiply` 21.3,
-`smooth_stripe` 19.9, `gaussian_int` 17.8, `tia` 14.9, `smooth_mean_angle` 13.1,
-`curvature` 10.0, `exp_smoothing` 9.2, `itinerary` 7.8, `smooth` **4.1**,
-`smooth_curvature` 4.6, `threads` 3.0.
-
-**A stride pilot is not a mode sample, and this is the cheap way to learn it.**
-Seven units taken at stride 16 off the strange plan priced it at 1.93 s/unit wall;
-the full pass came in at 6.15, because those seven drew `exp_smoothing`,
-`gaussian_int`, `tia` and one direct trap and missed all nineteen composites. A
-pilot over a sheet whose cost is a mode mix has to be **stratified by mode**, not
-strided over the file — one unit of each mode present is thirteen renders here and
-would have priced the page inside 20%.
-
-**The render pool is three workers at below-normal priority** — `CLAUDE.md`'s rule, and the
-priority half is now `engine.run`'s rather than a caller's. Measured on `under_seen_modes`,
-2026-08-27: the measure pass at six workers ran 297 units in **880 s** (2.96 s/unit wall);
-the same pass at three ran its 207 remaining units in **712 s** (3.44 s/unit). Two thirds
-of the workers for a sixth more per unit, which is what a leg that has to share a desktop
-should be paying. `label build` is serial and is one engine whatever the pool is.
-
-
-**A roster-wide band draw prices at four times a single-plane one, and the split is
-the mode mix.** `judge_band_20260903` (2026-09-03) measured 300 units at three
-workers in **899.8 s**, zero errors: `smooth_render`'s 123 in 146.3 s (**1.19
-s/unit wall**, 3.53 s/unit work) and `strange_render`'s 177 in 753.5 s (**4.26
-s/unit wall**, 12.66 s/unit work). The smooth half sits on
-`phoenix_q3q4_20260903`'s 1.39 despite being drawn from the top of its band across
-eight partitions, so a top-of-pool draw is not dear by itself — what is dear is
-composites, and the strange sheet's sixteen modes cost 3.6x the smooth sheet's one
-over the same geometry. The operator re-baked a map on **107 of 300** (45 smooth,
-62 strange). Both `label build` legs reported `rendered: 0, reused_from_cache: 0`,
-and 128 units re-rendered from the plan afterwards — every levelled one — matched
-byte for byte.
-
-**The pinned plane's own sheet price, measured: 54.1 s a unit at three workers.**
-`phoenix_classic_20260903` (2026-09-03) measured 34 strange units in **1,838 s**
-wall and 5,325 s of work — 156.6 s of work a unit, which is **26x**
-`sparse_mode_head_top`'s 2.8 and 9x `smooth_decision_bands`' 5.9. This is the
-`phoenix:classic` 17x arriving at the sheet: the same material the candidate leg
-priced at 35.3 s a candidate at `640x360ss2`, re-rendered at four times the
-pixels. Inside the page the spread is 9x — `direct_trap_screen` 41-45 s against
-`threads` and `smooth_mean_angle` at 331-368 — so the mode-mix rule below still
-holds; what changes is the constant. The one smooth unit cost 16.7 s. **Budget a
-pinned-plane sheet at about a minute a card, and a parameter-plane sheet at a few
-seconds**, and do not carry either figure across.
-
-The operator was offered **21 of 34** (the other 13 are direct traps and the
-modes `autolevel.applies_to` excludes) and **acted on 11**, 32.4% of the page —
-between `seated_and_head_top`'s 43% and nothing, on a population an order of
-magnitude dearer. Both builds reported `rendered: 0, reused_from_cache: 0`.
-
-**Write the operator's `leveled` directory back into the plan before the build.**
-`colorize.render` names it `<stem>.leveled` beside the picture and a plan that
-does not carry the key renders through the library's base map instead: the build
-itself will not notice, because `cut` skips a unit whose picture is already on
-disk and reports `rendered: 0` either way. The gap only opens when somebody
-rebuilds the sheet after the pictures are gone, and then it is a different picture
-under the same identity on every levelled row — 107 of 300 here. `judge_band`'s
-plans were repaired from `measure.json` and re-verified before the byte-for-byte
-check, which is the check that would have caught it.
-
-**A sheet cut over a leg's OWN rows is cut before the merge, and the number is
-large.** Retention prunes per `(location, mode)` pair at `RETAIN_PER_PAIR`, so a
-leg that puts eight palettes on each pair to give a sheet something to choose from
-loses `(8 - K) / 8` of them the moment it merges. **The measurement below was
-taken at K=3 and the keep is 5 since 2026-09-06**, so the same leg would lose
-three eighths today rather than five — the shape of the warning is unchanged and
-its size is not. `sheet_leg_0905`
-(2026-09-05) made 19,200 rows and the merge's prune deleted **16,666 pictures,
-2.599 GiB, and 10,775 levelled colormaps, 1.184 GiB** — the pool grew by 2,534
-net. Every one of those deletions is a row some map's four best might have come
-from, so the order is: cut the sheet, then merge. It is also why the sheet's
-`selected_on` reading is worth carrying: after the merge most of those candidate
-rows no longer exist to be looked up.
-
-**Measured cost of a per-map correction sheet, 2026-09-05, `new_maps_top4_20260905`.**
-480 units at 1280×720 ss2 over 480 *distinct* locations — one location each, so
-nothing shares a field and the dump is paid per unit. Three workers:
-
-| sheet | units | modes | s/unit wall | s/unit work | operator acted |
-|---|---:|---|---:|---:|---:|
-| `smooth_render` | 241 | `smooth` | **0.73** | 2.16 | 171 (71%) |
-| `strange_render` | 239 | `stripe`, `tia`, `curvature` | **6.67** | 19.60 | 124 (52%) |
-| `blind_palettes_20260905` | 100 | the same three | 3.99 | 11.87 | 53 (53%) |
-
-**Nine times, on one geometry, one place population and one machine, and the whole
-of it is the mode.** Both correction sheets were cut out of the same 600 proven
-high-band locations by the same assignment; `smooth` is the field spent by rank
-and the other three carry a texture. This is the mode-mix rule above arriving at
-its cleanest reading yet — estimate a finished sheet by its modes, and never carry
-a `smooth` figure onto a strange page. All three builds reported
-`rendered: 0, reused_from_cache: 0`, and re-rendering from the plan matched byte
-for byte on **23 of 23**, **24 of 24** and **14 of 14** sampled rows, 48 of the 61
-of them levelled.
-
-**A stratified pilot prices the PAGE and prices no MODE, and this is the reading
-that separates the two.** `p_fine_correction_20260909`, 2026-09-09, three sheets of
-251 / 250 / 249 units at 1280×720 ss2 over 750 distinct locations, three workers,
-zero errors:
-
-| sheet | units | s/unit wall | s/unit work | cache hits |
-|---|---:|---:|---:|---:|
-| pilot, one unit of each of the 13 modes | 13 | 2.33 | **6.83** | 1 |
-| sheet 1 | 251 | 2.20 | **6.95** | 57 |
-| sheet 2 | 250 | 3.15 | 9.42 | 54 |
-| sheet 3 | 249 | 1.76 | 4.93 | 46 |
-
-The pilot's 6.83 against sheet 1's 6.95 is **1.7%**, and the wall estimate it gave
-for that sheet was 9.1 min against 9.2 — but **every one of its thirteen per-mode
-figures was wrong**, in both directions and by up to 4×: `itinerary` 16.9 → 3.8,
-`stripe` 20.7 → 10.5, against `smooth_angle_min` 2.3 → 13.1 and `smooth_stripe`
-5.6 → 11.7. One of the thirteen was a **cache hit** and priced its mode at 0.01 s
-against a real 5.51. So the aggregate works by cancellation across a mode mix the
-pilot reproduces exactly, and quoting one of its rows is the error that agreement
-hides. The three sheets carry the same mix by construction and still span **1.9×**
-on work per unit, so the mix is not the whole story either — sheet 2 ran beside a
-labeling server and sheet 3 did not.
-
-**A `.leveled/` on the plan is worth checking before the plan is written, and it
-costs nothing.** 153 of those 750 units resolve a `<stem>.leveled/` and **153 of
-153** hold the JSON for that unit's own colormap, so the key is live on every row
-that has one; the other 597 render through the library map. Re-rendering from the
-plan matched byte for byte on **12 of 12** sampled rows, 8 of them levelled. And
-the shipped render judge read candidate against label geometry over sheet 1's 217
-pool rows at mean `P(≥4)` **+0.0072**, median **+0.0041**, single rows **−0.512** to
-**+0.366** — the same claim the paragraph below makes, on a population outside it.
-
-**Both readings on every row, and the shift is a mean of nothing and a tail of a
-half.** `selected_on` at 640×360 ss2 against `columns` at 1280×720 ss2, over the
-480: mean `P(≥4)` shift **+0.0074** on the smooth sheet and **−0.0156** on the
-strange one, medians +0.0041 and +0.0008 — and single rows moving as far as
-**−0.64** and **+0.40**. Of the 480, 456 cleared the pool bar at candidate
-geometry and 444 still clear it at label geometry. The judge is regime-stable in
-the mean and not per row, which is exactly why both readings travel rather than
-one.
+* **The kind names the store**: both kinds is two sheets and two batches.
+* **Route by `finished.routes_to` on the join to be rendered**, not `kind_of` on the
+  ledger row. `finished.append` extends the flat register on a miss; readers never do.
+* **`--reuse-renders` misses every pool row** (640×360 candidates).
+* **Measure first**: render each unit via `colorize.render(level=True)` into
+  `<sheet dir>/full/<sheets.cut_name(i)>.jpg` at three workers, write `leveled` back into
+  the plan, then `label build` reports `rendered: 0`; compare the two renders byte for byte.
+* **Cut a leg's own rows before the merge**: retention prunes at `RETAIN_PER_PAIR`.
 
 ### A blind page is cut and then stripped
 
-The page renders three things that describe a picture rather than being it, and a sheet
-that must not editorialize has to lose all three: **`facts`** (the partition, the frame,
-`mode · colormap`), **`columns`** (the judge's three cutpoints, printed in the meta line)
-and the **caption** on each picture. `finished_source` writes them unconditionally, and
-there is no flag — so a blind sheet is cut normally and `sheet.jsonl` is rewritten with
-`facts: []`, `columns: {}` and empty captions afterwards.
-
-What that costs is nothing, and the reason is worth stating: `intake._finished_row` reads
-only the row's `join`, its `batch` and its `suggestion`, so the display fields are not part
-of any verdict. The `join` stays complete and untouched on every row, which is what keeps
-the ingest a join rather than a lookup. The manifest carries a `withheld` sentence saying
-what came off, because a page with no facts on it and a page whose facts were never cut
-look identical a month later.
-
-**It is five things and not three, and the other two are what `anchored` asks
-about.** `finished_source` also prefills the head's own decode as each row's
-`suggestion` and sorts the page good→bad by its score, and those are exactly the
-two properties a batch registered `anchored: false` is claiming it does not have.
-A page stripped of its facts and still read in the judge's own order, with the
-judge's own tier under every card, is an anchored page with the evidence taken off
-it. So the rewrite also sets **`suggestion: null` and `suggestion_score: null`**
-and **re-orders the rows into a seeded shuffle**, and the manifest's `order`,
-`scorer` and `suggested_by` are corrected to `shuffle` / `none` / `none`.
-
-**Re-ordering after the cut costs no render and is safe to renumber**, which is
-the design rather than luck: the picture is named for its position in the *plan*
-(`cut####`) and the `u0001` id is assigned after the order is fixed, so the join,
-the picture path and the thumbnail all travel with the row and the id encodes the
-page position and nothing else. `blind_palettes_20260905` was cut, stripped and
-renumbered this way on 2026-09-05 — 0 facts, 0 columns, 0 captions, 0 suggestions
-and 100 of 100 joins complete afterwards.
-
-**None of that applies to a GALLERY-GRADE sheet, which is blind by construction.**
-`sheets.gallery_grade_source(prefilled=False)` already emits `facts: []`,
-`columns: {}`, an empty caption, `suggestion: null` and a seeded shuffle, and its
-`prefill_note` is written for a page with no suggestion on it — so there is nothing
-to strip and a rewrite would only be a chance to get it wrong. Cutting one of these
-through a `finished_source` and stripping it afterwards is the mistake to avoid: that
-source prefills off the shipped **render** judge, which reads 4 on nearly everything
-above its own gate.
-
-**The opposite case — blind except for one stated line — is a wrapped `cut` and not
-a rewrite either.** `Source` is a frozen dataclass, so
-`dataclasses.replace(source, cut=…)` around a `cut` that re-attaches the plan unit's
-own `facts` gives a page that is blind in every other respect, with the render, the
-thumbnail and the join all still the tracked builder's.
-`aug_sweep_A_20260910` was cut that way on 2026-09-10, its one fact line naming which
-of two columns picked each seat; `scratch/aug_sweep_0910/build_sheets.py` is the
-shape. Ordering stays the source's seeded shuffle in that case, which matters for the
-same reason the section above renumbers: a labelled page that is also blocked by its
-label confounds the label with page position, and `seats_ingest_20260910` measured
-that drift at **+0.967 tiers across one afternoon**.
-
-**The batch name is on the page too**, in the section line, and so is `order`. Neither is
-strippable and neither should be: they are what a labeler needs to know which sheet is in
-front of them. A batch named after the thing being tested is how a blind sheet stops being
-blind — `under_seen_modes` names a population, not a mode or a score.
-
-**Two provenance facts about the standing blind instruments, both of which a stored
-row cannot answer on its own.** `blind_minibrot`'s 197 rows are recorded as **186 from
-a single maker production-walk ledger**; the rows carry `batch` alone — 197 of 197 read
-`blind_minibrot` — so that split is the sheet's own history and is not re-derivable
-here. And **`S3` is the only rare-colour read this project has, and it is not blind**:
-60 aimed cards, prefilled, cut as one slice of `judge_band_20260903`. There is no blind
-rare-colour instrument, so every rare-colour rate is a ceiling — see
-[`data/batch_caveats.md`](../../../data/batch_caveats.md)'s *THREE-SLICES* entry.
+A blind `finished_source` page is cut, then `sheet.jsonl` gets `facts: []`, `columns: {}`,
+empty captions, null suggestions and a seeded shuffle, and the manifest's
+`order`/`scorer`/`suggested_by` become `shuffle`/`none`/`none` with a `withheld` note. No
+render is paid. A gallery-grade sheet is blind already.
 
 ## A rule answers the mostly-black frames, and nobody is asked again
 
-A location whose frame is mostly the set's own interior renders mostly black, and that
-verdict is settled. Over the 306 human verdicts of `run9_plane_depth` and
-`mandelbrot_offer_body` (2026-08-19), **every** row at interior fraction ≥ 0.10 was
-scored 1, and the highest-scoring keeper anywhere in them sits at 0.0960. So the location
-sheet builder excludes a unit at **`interior_fraction ≥ 0.12`** — `sheets.INTERIOR_THRESHOLD`,
-rule id `interior_ge12_v1` — before the cut, which on that evidence removes 65% of those
-batches' 1s and not one row a person scored 2 or better, at two renders saved each.
-
-* **It reads a cached statistic and computes nothing.** `units_from_ledger` carries the
-  walk's own `interior_fraction` across, and a location plan carries whatever its drawer
-  copied in. A unit without the number **serves normally** — the manifest's `screen.measured`
-  says how many units the rule could actually read, so "excluded nothing" and "saw nothing"
-  are distinguishable. Cached interior at 384×216 ss1 tracks the near-black pixel share of
-  the 1280×720 ss2 picture a person judges at r = 0.9999 over those 306 rows.
-* **The verdicts stay derived.** Excluded units are written to `excluded.jsonl` in the sheet
-  directory — the rule, the threshold, the value that fired it, the batch, and the full
-  location — and are **never** written to the label store. An analysis that wants them as 1s
-  in a denominator reads them from the rule at the moment it wants them; a stored row would
-  be a verdict nobody could un-derive when the threshold moves.
-* **It is not the walk's gate.** `discovery.walk.Gates.interior_cap` is 0.30 and decides
-  where a walk may stand. This is a build-time decision about a page. Neither moves the other,
-  and the sheet rule does not change a walk's gates or caps.
-* **One consequence of those two numbers is worth knowing before planning a sheet.** The walk
-  refuses at 0.30 and the screen answers at 0.12, so **a location the walk refused for
-  `interior_cap` can never be served** — every such row is above the gate and therefore above
-  the screen, by construction and not by luck. On run10 that is 11,762 of the run's 13,962
-  structural refusals: a page cut over what the gates threw out can hold the other two gates
-  and nothing from that one, so its share has to be drawn from `flat` and `occupancy_floor`
-  or the sheet comes back a third short.
+Location sheets exclude `interior_fraction ≥ 0.12` (`sheets.INTERIOR_THRESHOLD`, rule
+`interior_ge12_v1`) to the sheet's `excluded.jsonl`, never the store; a unit without the
+statistic serves. A location the walk refused for `interior_cap` (0.30) never serves.
 
 ## One generator, two row sources
 
-This project asks a person two questions, about two different objects — *is this
-**place** worth rendering* and *is this **picture** worth keeping* — and they
-differ in what a unit is, what gets rendered, and which judge prefills the
-suggestions. A `Source` owns exactly those three things. The cut, the ordering,
-the ids, the manifest, the row file, the thumbnails, the page and the export are
-one implementation underneath both, because two generators is how a project ends
-up with two answers to what an export is called, which is a bug nobody sees until
-two tabs are open.
-
-A location unit is rendered **twice**: through the canonical map, which is what a
-head sees, and through the vivid one, which is what a person judges from — a
-crushing palette makes good material look dead, and the verdict is about the
-place. A finished-render unit is already a picture, so it is rendered once,
-exactly as it is recorded, at the geometry both corpora were collected at.
-
-A picture is named `cut0000` for its position in the **plan** and the `u0001` id
-is assigned after the order is fixed, so the id encodes the page position and
-nothing else — and re-ordering a sheet costs no render, which is what makes a
-long cut resumable. The prefix keeps the two numberings apart on disk: they are
-different numbers for the same unit, and without it one reads as the other.
+A `Source` owns what a unit is, what is rendered and who prefills; everything else is
+shared. A location unit renders twice (canonical and vivid maps), a finished unit once.
 
 ### A revision sheet re-serves rows the store already holds
 
-Re-judging a stored population is the same generator with three things stated by
-the plan rather than derived. A unit's own **recipe** and map re-serve the exact
-picture a verdict was cast on, so the new verdict keys on that render and lands
-as a revision of it. A unit's own **suggestion** prefills the incumbent verdict —
-which here is the stored label, not the head's decode, and is the only prefill
-that can name a tier the shipped checkpoint cannot reach; the manifest records
-`suggested_by`, because a prefill read back as agreement means one thing when a
-model made it and another when the labeler did. And a unit's own **batch** keeps
-the row's registration: one sheet re-serves rows from several batches at once,
-and a row revised under somebody else's batch is a row whose side, anchoring and
-draw method changed under it. The head still scores every row and still orders
-the page good→bad, because that is what a correction sheet is worth.
-
-`--reuse-renders` takes a picture off the head's render cache where the cache
-already holds that spec. The cache names a picture by a digest of everything the
-engine is told, so a hit is the same picture and anything different anywhere is
-a miss.
-
-A plan unit may also name a **`leveled`** directory — a colormap the autolevel
-operator re-baked for one render — and then the sheet renders through that
-instead of through the library's copy of the map. That is what lets a batch
-screen a picture at the sheet's own geometry and be sure the page serves the same
-one: the join is identical either way, so a unit that lost the name would come
-back a different picture with the same identity. `curation.manufacture.verify` is
-the check that says it did not.
+The plan states each unit's recipe, incumbent **suggestion** (`suggested_by`) and **batch**;
+a `leveled` directory is checked by `curation.manufacture.verify`.
 
 ### Which judge prefills a finished-render sheet, and which reading orders it
 
-**The head a sheet is cut for names the STORE, not the model.** One judge reads
-both kinds since 2026-08-23 — `curation.floors.SCORING_HEAD` — and it is the only
-finished-render head `fetch-weights` brings down. A sheet that loaded
-`models/<kind>/<kind>.fp16.pt` was reading a retired checkpoint on a scale nothing
-else in this project still speaks, and on a fresh clone it was reading a file that
-is not there.
-
-`--order-by` says which reading the page is read good→bad by. `rank`, the
-default, is the head's expected tier — the sum of its unconditional cutpoints,
-which is what orders a page over the whole scale. `top` is the last cutpoint
-alone, and it exists because the one below it saturates: the first production
-run's released smooth rows had a median `P(≥3)` of 0.9999, so at the good end of a
-page — the end a correction sheet is read from — `P(≥3)` cannot separate two rows
-and `P(≥4)` still can. Only the ordering moves; `suggestion_score` on a row is the
-expected tier either way.
-
-**`plan` is the third and it is not a reading of the page at all.** The plan
-states `order_score` per unit and the page is read in that. It exists because the
-judge that *scores* a finished page is not always the judge whose opinion a
-sitting is about: a batch cut to ask about one axis of the recipe wants the fine
-head's reading of the **candidate**, which no scorer here can produce — the page
-serves 1280×720 and that head was fitted at the ledger's 640×360, so a re-read
-here would be a different number wearing the same name. A gallery-grade sheet has
-taken its order off the plan since the correction page existed; this is the same
-arrangement on the other source.
-
-It moves the order and **never** the prefill. `suggestion` and `suggestion_score`
-stay the scoring head's own decode, because they are a tier on *this* store's
-scale and a number off another head is not one. A row the plan has no
-`order_score` for sorts after every row it does — `solve.at_fine_bar`'s rule,
-which the gallery-grade page already spends on the same column — and a page asked
-for `plan` where no unit states one is refused rather than quietly served in draw
-order. `curate repetition sheet` is the first caller.
-
-**Five sites resolve a checkpoint through `floors.SCORING_HEAD`, and a judge
-adoption has to re-check all five.** They are `sheets.score_pictures` (this one —
-the sheet's prefills), `curation.colorize.Colorizer` (a candidate's verdict at
-attempt time), `curation.manufacture` (the screen and confirm cuts),
-`curation.rescore` (the whole pool re-read onto the live scale) and
-`models.release_floor` (the floor fit itself). Each calls
-`render_train.load_checkpoint(ship.shipped_path(judge), …)` off that one constant,
-which is what makes "which model reads finished renders" a single edit — and what
-makes a flip a five-site consequence rather than a one-line one. `models.
-render_glance` is deliberately not on the list: it names `render_train.HEAD`
-directly, because its whole job is reading an incumbent against a candidate.
+`--head` names the store; the model is `curation.floors.SCORING_HEAD`. `--order-by` is
+`rank` (expected tier), `top` (last cutpoint) or `plan` (`order_score`); it moves the
+order, never the prefill. An adoption re-checks `sheets.score_pictures`,
+`curation.colorize.Colorizer`, `curation.manufacture`, `curation.rescore` and
+`models.release_floor`.
 
 ## One ingest, every store
 
-**A page saves to `labels/<head>.<sheet>.json`, and that is the whole
-convention.** The name is the head the sheet was cut for *and* the sheet's own
-name, never a generic one and never the head alone: two sheets are open in two
-tabs during a session, `labels.json` twice is one file overwriting the other, and
-two sheets cut for one judge is the same collision with a worse ending — both
-pages number their rows from `u0001`, so a shared drop is either refused for
-being short or joined, unit for unit, against the wrong sheet's places. The rig
-takes the save itself — `PUT /labels/<head>.<sheet>.json` — so a session
-does not end with a file in a download directory somebody has to move, and a
-static server that refuses the endpoint gets the same file downloaded under the
-same name. The drop is untracked, ignored, and disposable; `label ingest` is what
-makes it durable, and it reads the drop by default so it does not have to be told
-where the page just wrote. **And it moves the drop to `labels/archive/` once it
-has** — see *Where the labels land* — so what is left in `labels/` is what nobody
-has processed yet.
-
-**`/labels/` is ignored, and the leading slash is the point.** The entry in
-`.gitignore` is anchored at the repository root, so it hides the drop directory
-and leaves `data/labels/` — the location head's tracked store — alone. Two
-directories one path segment apart, one disposable and one the corpus, and an
-unanchored `labels/` would have ignored both.
-
-**Export and ingest in the same session.** A drop is only meaningful beside the
-sheet it was cut from: units are numbered `u0001` upward *by position* in that
-sheet's row file, so `intake.read_sheet` joins each verdict through
-`artifacts/sheet/` and nothing else can. Both halves are ignored trees — the drop
-under `labels/`, the sheet and its pictures under `artifacts/` — and a rebuilt
-sheet renumbers. So a drop whose sheet is gone cannot be ingested, and a drop
-joined against a *different* sheet of the same size would bind every verdict to a
-plausible picture rather than to its own. Ingest before the sheet moves.
-
-`ingest` exists because a sheet is cut somewhere untracked and its pictures live
-somewhere untracked, and none of that may survive as part of what a label means.
-It joins each exported unit to its sheet row **once**, and writes a row carrying
-the whole join — the place for a location, and the place with the mode, its own
-settings and its curve, the map, every knob of the palette pass and the geometry
-for a finished render. The sheet says which judge it was cut for and that decides
-which store it lands in; `Records` is that difference, spelled once. Both counts
-are checked in both directions, a row already in a store is not written twice, a
-verdict that changed is a new row rather than an edit, and the pin is asserted
-**before** the write and again after it — so the step is safe to re-run, which is
-the only reason anybody re-runs it after finding a mistake. Asserting only
-afterwards left the store holding rows the suite forbids, once, on the first
-attempt at the manufactured rare-colour drop.
-
-**The imported rows of a store may stop short of its scale.** This project judges
-on `finished.SCALE`, 1..4 for both kinds, and that is what every page serves and
-every head emits. What the source project *collected* each corpus on is a
-separate and smaller fact — `finished_import.SOURCE_SCALE`, 4 for smooth renders
-and 3 for strange — and it lives on the importer because it is about pages served
-years ago rather than about this store. A source row outside its own corpus's
-ceiling is a misread file and the import refuses it; a row cast here is held to
-`finished.SCALE`. Which is why 145 of the strange store's rows are tier 4 and not
-one of them was imported.
+`/labels/` is root-anchored in `.gitignore` so `data/labels/` stays tracked. Ingest
+before the sheet moves: units number by row position, and a rebuild renumbers. `intake`
+writes the whole join to the store the sheet's head names (`Records`), checks counts both
+ways, never duplicates, appends a changed verdict, and asserts the pin. Pages and heads use
+`finished.SCALE` (1..4); `finished_import.SOURCE_SCALE` is the imported corpora's.
 
 ### A swept row and an agreeing verdict are the same row afterwards
 
-The sweep is the only path by which a suggestion becomes a label, and it writes
-`scores[unit] = row.suggestion` — the *tier*, with nothing beside it. So the drop
-carries `{"u0137": {"score": 3}}` whether a person looked at that picture and
-agreed or accepted it from a hundred rows away, `intake.rows_of` stamps one
-`recorded_at` on the whole ingest, and the stored row's `suggested` is the only
-column that can disagree with `score`. **A row where they differ was adjudicated;
-a row where they match is not evidence about the head**, and no count of
-agreements read off a swept sheet is an agreement rate.
-
-What survives is a bound, and it is worth taking because it is free. The sweep
-fills unlabeled rows from the current position **to the end** and never
-overwrites, so on a page a labeler walked top-down the swept rows are a
-contiguous **suffix**. The last position carrying an override is therefore a
-floor on the hand-cast prefix, and every row after it is indistinguishable from a
-default. On `under_seen_modes` that is position 269 of 504: 161 overrides, none
-below 269, and all 235 rows after it agreeing exactly. A page ordered by a score
-makes the prefix the head's own top, which is the population a statistic about
-the head wants anyway — and it makes the suffix's tier distribution the head's
-rather than a person's, so a sheet whose head never suggests a 1 comes back with
-every 1 it holds inside the prefix.
-
-The fix, when a session needs to be able to tell them apart, is a second sheet
-or a second pass and not a flag: nothing in the drop, the sheet or the store
-records which button produced a tier.
-
-**The bound can also come back empty, and that is the reading worth having.** It
-is a suffix, so when the last override sits *at* the last position carrying a
-suggestion there is no suffix at all and every agreement on the page was cast by
-hand. All three sheets of `p_fine_correction_20260909` read that way — last
-override at position 217 / 217 / 216 of 217 / 217 / 216 prefilled rows — so its
-139 agreements are evidence and not defaults. What sits after those positions on
-each sheet is the `low_anchor` block, which carries **no** suggestion; a sweep
-writes `row.suggestion` and cannot turn an absence into a tier, so those rows are
-hand-cast by construction rather than by the bound. A page that puts its
-unsuggested rows last therefore ends up bounded on both sides at once.
+Nothing records which button cast a tier: `suggested ≠ score` was adjudicated, a match is
+no evidence. The sweep runs to the end, so the last override bounds the hand-cast prefix.
 
 ### Reading a labelled batch back afterwards
 
-An ingested row carries the place and the verdict, and deliberately not the facts the
-sheet printed under the picture — the arm, the band, the walk fate. Reading a batch
-back is therefore a three-way join, and each side has exactly one right source:
-
-* **verdicts** come from `store.resolved()` — or `finished.resolved(head)` for the
-  two finished-render stores, which is the same rule keyed on the render instead of
-  the place — never from the drop and never from the row files directly; latest-wins
-  is the resolver's job. The order is `store.order_of`: **`(recorded_at, file,
-  line)`**, and **`labeler` is not in it**. Who cast a verdict is on the row and is
-  never part of what supersedes what, so two people labelling one unit resolve by
-  when rather than by whose name sorts first. Body rows are the ones whose
-  `batch` is the sheet's own batch; anchors carry somebody else's and are excluded by
-  that test rather than by position.
-* **what the page said** — `facts`, `suggestion`, the head's `columns` — comes from the
-  sheet's own `sheet.jsonl`, joined on `unit`.
-* **what the pixels did** comes from the source walk ledger, joined on the viewport
-  triple `(center_re, center_im, width)` as *strings*. They are the engine's own
-  shortest round-tripping decimals on both sides, so the match is exact; parsing them
-  to float first is how a join starts missing.
-
-A `candidate` row in the ledger caches `interior_fraction`, `occupancy` and the
-`escape` spread, which is what makes gate calibration cost nothing: the statistics are
-already on disk and no picture has to be rendered again to get them. Two caveats worth
-knowing before trusting them. They are measured on the **node render** (384×216 ss1),
-not on the sheet's 1280×720 ss2 picture — `interior_fraction` is an area share and
-transfers exactly (r = 0.9999 against the near-black pixel share of the canonical
-render, over 306 rows), while `occupancy` counts detail tiles and is resolution-bound.
-And `occupancy` is **absent on rows refused for `interior_cap`**, which is not missing
-data but the refusal order showing through: the frame was thrown out before anything
-measured it. Any rate computed over occupancy has a smaller denominator than the sheet,
-and the rows it drops are the interior-heavy ones.
+Verdicts come from `store.resolved()` / `finished.resolved(head)`, by `store.order_of`
+`(recorded_at, file, line)`; page text from `sheet.jsonl` on `unit`; pixel statistics
+from the walk ledger on `(center_re, center_im, width)` **as strings**.
 
 #### A slice tag survives ingest only as a UNIT-ID BLOCK
 
-A draw made of several populations wants the population on the stored row, and
-the obvious places do not carry it: `intake._finished_row` writes the join, the
-batch, the sheet name, the unit and the suggested tier, so `facts` and
-`selected_on` die with the sheet directory — which is untracked and disposable.
-`section` does not reach the store row either.
-
-What survives is the **id**, and `section` is what shapes it. `build` fixes the
-order before it numbers anything, `finished_source.order` sorts sections in the
-order the plan introduced them and each good→bad inside, so a sectioned plan
-comes back as contiguous `u####` blocks, one per section. Write the ranges down
-beside the batch — `data/batch_caveats.md` is where — and a per-slice read off
-`finished.resolved(head)` is a comparison on the unit id and needs nothing else.
-
-The cost is that the page no longer reads good→bad end to end: it reads
-good→bad *within* each block. `judge_band_20260903` is the worked example, at
-three slices over two sheets.
+Sections come back as contiguous `u####` blocks; record the ranges in
+`data/batch_caveats.md`.
 
 ## Re-rendering a stored row is `renders.spec_of`, never `colorize.render`
 
-A finished-render row carries its whole join, so drawing its picture again is
-`models.renders.spec_of` handed that join and nothing else.
-[`curation.colorize.render`] is **not** that path and cannot be made into it: it
-builds its own recipe — `colorize.CURVE`, `finished.recipe(mirror=colormap not in
-cyclic)`, empty `mode_params` — because it exists to *make* a candidate rather
-than to reproduce one, and a caller cannot hand it a curve or a palette pass.
-Over the `strange_render` store **2,302 of 3,990 rows (58%)** name a curve, a
-trap setting or a palette pass that is not the one it would build, so a page that
-re-renders through it serves a different picture under the same identity for well
-over half its rows. Measured 2026-08-29; the shape of it is that the maker-era
-corpora swept trap settings and gammas and this repository's own hunts do not.
-
-The **operator** half of `colorize.render` is still the thing to copy, and it is
-short: `autolevel.maybe_level` around the render, with
-`autolevel.overriding_colormap` writing the re-baked map into a directory the
-second `engine.run("render", …)` is pointed at through `colormap_dir`. Note what
-it does not cover — `autolevel.applies_to` is `field` and `composite` only, so
-the four `direct_trap_*` modes and the two modulates get no operator pass **by
-kind**, which is a third of the strange roster and is not a measurement about those
-pictures.
-
-Every one of those 3,990 rows resolves through `spec_of`, and every one of the
-671 colormaps they name is in the library. A row that will not resolve is
-therefore a real fault rather than a standing gap in the imported corpora.
+`colorize.render` builds its own recipe to make a candidate; it cannot reproduce a row.
 
 ## A label store and the candidate ledger barely overlap
 
-**709 of the 4,030 resolved `strange_render` renders join a candidate-ledger row**
-(2026-08-29), and the join is [`curation.retention.render_key_of`] — the recipe,
-never the regime. The other 3,321 are the maker-era import and the separately
-manufactured sheets, which were never candidates here. Two things follow. A
-per-mode reading that needs the judge's `P(≥4)` on a *labeled* row cannot get it
-off the ledger sidecar for five rows in six, and has to re-score the picture. And
-the ledger's third protection — `candidate_ledger.RETAINED_LABELED`, a row a
-label row joins to survives the prune whatever the rank says, and now keeps its
-picture with it — is a promise about the rows that join: on the 709 that do,
-none is missing its picture, and the remaining 3,321 have no ledger picture to
-keep.
+Most finished-store renders join no ledger row (`curation.retention.render_key_of`);
+`candidate_ledger.RETAINED_LABELED` keeps the ones that do, with their pictures.
 
 ## The scale is the corpus's; the class count is the model's
 
-Every judge here is cast on **1..4**, `strange_render` included. Its corpus was
-*collected* on three tiers and its head *trained* on three classes, and neither of
-those was ever a ceiling on what a person may write down. What a checkpoint can
-emit lives in that checkpoint's own config, is read back by whoever loads it, and
-moves only when the head is retrained — so the corpus was free to grow a tier the
-incumbent could not see, which is exactly what the retrain to four then had to
-learn from and what a capped store could never have collected. A training pass
-whose recipe cannot express a verdict in its population refuses rather than
-mis-fitting its top cutpoint (`finished_train.refuse_inexpressible`) — a 4 handed
-to a three-class CORN head is a rank with no task to carry it, so the failure is
-a silently mis-fitted top cutpoint rather than a crash.
-
-Two pins hold that decoupling in place and neither of them is the store's scale.
-A config beside a checkpoint has to agree with **that checkpoint's own output
-width** — `classes - 1` cutpoints in the weights — because a head emitting two
-cutpoints while its config claims three is one every reader of its scores
-misreads. And a run's config is deliberately **not** re-checked against today's
-`finished_train.RECIPES`: a config says what *that* run trained under, so a
-retrain that widens the recipe leaves the superseded run readable exactly as it
-was, instead of destroying the baseline it is measured against.
+Every judge is cast on 1..4; a checkpoint's class count is in its own config.
+`finished_train.refuse_inexpressible` refuses a pass that cannot express a verdict.
 
 ## The order is the design
 
-A batch is registered *before* it has rows, because "was a model score in the
-selection" is answerable while the population is being drawn and is answered from
-memory afterwards. A sheet is cut into an untracked run directory and comes back
-as one export holding only what a person actually acted on. Both stores are
-append-only: a verdict that changes is a new row, and the canonical reader
-resolves latest-wins.
-
-The split is drawn over location groups and shipped as data rather than computed
-on demand, so a holdout does not move when the corpus grows. A **group** is a
-connected component of "these two would leak into each other", and `groups.py`
-calls two locations neighbours only when all three of these hold: the same plane
-*exactly* — same partition, same degree, every identifying constant but the seed
-`c` equal digit for digit; their `c` within `C_TOLERANCE`; and their frames
-overlapping, widths within `NEIGHBOR_SCALE` and centers within `NEIGHBOR_SHIFT`
-of the smaller width. The non-`c` axes are exact because a family swept at one
-fixed viewport — phoenix's five-hundred-row `p`/`z₋₁` sweep is the case that
-forced it — otherwise folds hundreds of different fractals into one group, and
-an under-grouped holdout costs the instrument where an over-grouped one only
-costs granularity. What is on the
-evaluation side is pinned there on its `c`-inclusive coordinate — a re-render
-under a fresh identifier is the same place and cannot spend the instrument.
-
-The rig's design is correction mode: a head's own verdict prefilled, the page
-ordered good→bad by its score, and a sweep that accepts everything below a chosen
-row behind a confirmation. All three judges do this, and the location sheet
-consults the same scorer the walk does. `--no-scoring` is the other mode — no
-suggestions, no sweep, a seeded shuffle — and it is what an instrument is cut as.
-The invariant holds in both modes and is the one worth stating twice: **a
-suggestion is not a label**.
+A batch registers before it has rows; stores append and resolve latest-wins; the split is
+drawn over `groups.py`'s groups and shipped. `--no-scoring` cuts an instrument. **A suggestion is not a label.**

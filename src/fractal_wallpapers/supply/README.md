@@ -1,9 +1,6 @@
 Turning compute into new good material where it is scarcest: the census, the
 price, the allocation, and the loop that spends the clock on them.
 
-A walk finds places. This package decides *which* places are worth finding next,
-keeps deciding for hours, and can say afterwards where every minute went.
-
 ```
 partitions   what the books are kept separately for
 release_mix  one ratio table, shipped as data
@@ -20,919 +17,215 @@ twins        Julia parameters derived from the parent plane's admissions
 proven       roots at every location a human scored a keeper, at the frame they scored
 saturation   cross-run memory, straight off the ledgers
 novelty      the two levers against monotony: the discount and the share
-autopsy      what each claim on the batch bought, in pictures — and why each refusal was one
+autopsy      what each claim on the batch bought, in pictures, and why each refusal was one
+places       `harvest export` / `harvest stats`: a run's kept places as one file and one page
 tau_h        how good a cheap look must be before a real one is paid for
 harvest      the production loop, and everything that keeps it honest
 ```
 
-The loop is small to state:
-
-```
-census    what each partition holds, against what the release mix says it is owed
-price     what a unit of currency costs there, measured as the run goes
-allocate  intended share of the clock ∝ deficit ÷ price, with a floor everyone gets
-serve     divide the batch's slots by how far each partition is below its intent
-credit    what the batch found, deduplicated, back into the price and the stock
-```
-
-A batch's slots are claimed in a **ruled order**, and it is one-directional —
-nothing below may eat what is above it:
-
-```
-1  floor      the carry's claimants, guaranteed their slot
-2  share      the protected exploration fraction of what is left
-3  contest    the deficit-priced rule over the remainder, lineage-discounted
-```
-
-**What a find is worth, and what a partition is therefore owed.** Currency is
-`n4 + 0.1·n3` — `currency.CLASS_WEIGHT`, one table read by the standing deficit,
-the in-run price and the readout alike, so moving a weight moves all three. A 4 is
-the unit and a 3 is a tenth of one; 1 and 2 are recorded and worth nothing. Stock
-is two legs and a location is in **exactly one**: the human's class where a human
-has looked, and `MACHINE_STOCK_DISCOUNT` (0.2) × the machine's class where nobody
-has. That is **precedence, never addition** — a labelling sheet is cut out of
-ledger rows, so a location can be in both corpora, and adding the legs would count
-it twice at a weight nobody chose. The discount sits well under the ~50% rate at
-which machine-called keepers survive a human look, deliberately: a machine-filled
-partition keeps a mild standing appetite until labels re-anchor it.
-
-**The standing deficit is a launch snapshot.** The quota re-allocates every batch
-because the *prices* move; the censused deficit does not, because human labels do
-not arrive mid-run. So what changes inside a run is the price and the realized
-share of minutes, and nothing else — a run's mix is steered against the stock it
-opened with.
-
-What follows is worth reading before changing anything here.
-
-**A Julia twin's supply is manufactured by serving its parent.** The allocator
-has always folded a twin's demand into its parameter plane on the ground that
-descending the plane is what produces places worth taking the twin of — but for
-the three higher degrees the step that turned a plane find into a Julia root did
-not exist, so the fold was a promise nothing kept. `twins` is that step: an
-admitted degree-`d` plane location's centre *is* a `c` for the degree-`d` Julia
-family, and it becomes a root through the same seed object and the same cursor
-the tracked degree-2 pool uses. Parameters closer than the pool's own c-spacing
-floor to one already taken are skipped and recorded.
-
-**The degree-2 twin is served too, since 2026-09-12, and what it produced is the
-finding.** It was held out on the ground that a derived parameter must not
-displace the tracked pool a three-stage screen left. That was true as a fact about
-`Refill._pool` — it reads its twin branch first, so a served degree-2 twin would
-have been handed the derived list *instead of* the pool's 209 rows — and not as a
-fact about coarseness: inside `julia:mandelbrot` the pool's own screened virgin
-rows return 0.71 and 1.24 admissions a root against 19.05 and 30.57 for the two
-channels fed by admitted stock. The queue now holds both, one for one, and the
-pool's parameters are reserved into the channel's c-spacing floor so a derived `c`
-cannot land on a curated one.
-
-**What the floor then said is that there is almost nowhere left to derive.** Primed
-over 51 ledgers, the mandelbrot plane's whole admitted history offers 7,286
-locations and 12 become parameters: **7,185 are refused by a tracked pool row** and
-89 by another offer in the same prime. Ten of the twelve are themselves inside the
-floor of a `c` this project has already walked. So the exclusion was guarding a
-door almost nothing was coming through — and the 209-row pool, which has no writer
-and no re-derivation command, has claimed 98.6% of the plane at a 3.2e-2 tolerance.
-The channel is wired, it says why it produces so little, and it grows whenever the
-mandelbrot plane is mined into ground the pool does not already hold.
-
-**Two cautions this exposed, both wider than degree 2.** A `c` inside the floor of
-one already walked is **counted, not refused** — `near_walked` in the readout —
-because the proven channel dedups on the location key alone and enforcing history
-in the twin channel alone would be an asymmetric rule dressed as an invariant; the
-count is the case for fixing it where the gap is. And `proven.interleave` is **not
-stable under a growing second argument**, which it was documented as being: once
-that side runs out before the other — a twin's tens of parameters against a
-partition's hundreds of proven roots, i.e. always — one more entry moves everything
-past the old exhaustion point down a slot. Under a cursor that walks one root twice
-and never walks the new parameter. Any run with both a twin channel and
-`--root-channel proven` did this until `_twin_queue` began building the queue once
-and extending it.
-
-**The best mandelbrot supply this project has found came from its own labels.**
-A dedicated 95-minute leg rooted the walk at the 471 distinct locations a human
-had scored q3+ and interleaved them 2:1 with never-walked plane-pool roots. The
-seeded roots put 91.6% of their finds over the junk floor and 53% of the sample
-over the smooth head's advisory; the fresh roots returned the partition's historic
-rate — 21 rows over the floor out of 333, one clearing. `proven` is that channel,
-derived live from the label store rather than from a file, so a keeper labelled
-this morning is a root this afternoon. It is off unless a run names it, and it is
-interleaved rather than substituted: a channel fed by this project's own past
-output cannot open new ground, and it runs out at the rate the store grows.
-
-That leg was one plane. Re-measured across all four parameter planes over a scored
-active hour, the gap is wider rather than narrower: **135 proven roots returned
-3,228 of the run's 3,303 admissions, and 61 never-walked pool roots returned 75**.
-130 of the 135 produced at least one admission; 14 of the 61 did; the four
-`home_view` roots produced none. The margin holds at every degree, and it is
-largest at degree 2, where the pool's seven roots returned nothing at all.
-
-**On the dynamical partitions the channel buys a frame, not a sampler.** Julia
-and Phoenix have pools; a pool row is a *parameter*, so every root either one
-hands over comes up at the family's home view and the walk descends from there.
-A label row carries the frame the human scored. Measured over 30 active minutes
-across `julia:mandelbrot`, the three twins and `phoenix`, proven roots on:
-
-```
-              served   admissions   per root   booked >=1   already walked on entry
-proven          252         7,315       29.0    249 / 252              95 / 252
-twin             74         1,079       14.6     62 /  74              68 /  74
-pool             50           551       11.0     21 /  50              47 /  50
-```
-
-**Re-measured a third time on 2026-09-01, over ten active minutes with every
-partition served and the channel on, the margin is wider still**: of 128 roots
-served, **90 were proven and they returned 1,690 of the run's 1,789 admissions
-(94.5%)**. The rest is a rounding — 6 twin roots returned 57, 2 `ranked_harvest`
-pool roots returned 41, and the **21 `nucleus_grid` plane-pool roots and 4
-`home_view` roots returned nothing at all**. A quarter of the roots this run
-served booked zero.
-
-**Read that as a fact about that leg and not about the channels** — swept across
-all 44 ledgers on both tiers on 2026-09-02, the two come apart. `nucleus_grid`
-is the fifth-largest channel this project has: **1,510 roots served for 1,766
-admissions**, across all four parameter planes (`multibrot5` 640, `multibrot3`
-415, `mandelbrot` 399, `multibrot4` 312), last booking on 2026-09-01. Its zero
-in the leg above is **truncation, not failure**: its 21 roots there found 552
-candidates and left **258 still `expandable`** when the ten-minute budget
-stopped, having reached depth 7 with nothing yet over the keeper floor. The same
-day's longer leg gave 140 `nucleus_grid` roots 4,256 candidates, depth 9, and
-**131 admissions**. `home_view` is the one that has never produced: **31 roots
-served over ten runs from 2026-08-20 to 2026-09-02, zero admissions, ever.**
-
-**And `home_view`'s zero is deterministic rather than unlucky.** Its four
-parameter-plane roots are a fixed frame — the whole plane — so every run walks
-the same four children to the same verdicts: 16 candidates, all at depth 2, all
-refused by the *structural* gates as `interior_cap` or `flat`, never scored at
-all, with all four root nodes dying `flat`. A home view is mostly interior or
-featureless wash, which is what the gates are for. It is not supply and was
-never meant to be: it is the fallback that keeps `has_channel` true for a family
-whose every atom the solver refused, and with 1,912 `nucleus_grid` rows shipped
-that fallback has not been needed once. The pinned plane's `home_view` row is a
-different population under the same channel name — separable only by partition,
-because the walk does not carry `provenance.source` onto a root row — and it is
-load-bearing for a different reason: `viewport_sampler` deliberately does not
-draw rung 0 *because* the pool hands that frame over. Note the root row says which channel it came from under
-`provenance.channel` and *not* under `source`, which names the pool file the
-entry was read out of: a tally by `source` puts 115 of these 128 roots under
-`seed_file` and cannot see the channel at all.
-
-Cost came out at **0.19–0.22 s/admission**, against 0.26–0.38 for the same five
-partitions on run10 with the channel off. The margin is widest where the pool is
-weakest: **2 of 29 phoenix `c`-pool roots booked anything at all**, against 57 of
-59 proven ones. And the entry column is the surprise in the other direction — a
-home-view root is the same point every prior run rooted at, so 90%+ of pool and
-twin roots enter already saturated, where a labelled frame enters clean about two
-times in three. Run the leg with `--partition <dynamical> --root-channel proven`.
-
-**Five things about the channel are decided in `proven.py` and nowhere else.**
-Its **tier floor is `min(currency.CLASS_WEIGHT)`** — the currency's own bottom
-class rather than a fresh cut, which is tier **3**, so what counts as a proven
-place is exactly what counts as a keeper and moving one moves both. It reads
-**the three QUALITY label stores** — the location store and both finished-render
-stores, `proven.stores()`, which is not every label store there is — unioned and
-deduplicated on the place, each root credited on `provenance.store` to the first
-store that holds it. It serves
-**every registered partition**: `proven.SERVED` is `ALL_PARTITIONS`. It excluded
-`phoenix:classic` until 2026-09-02, which left that partition's q3+ labels the
-only ones in the store that became no roots; its queue now interleaves those
-labelled places through the single home-view root a pinned plane has. The pool is
-**interleaved at
-`RATIO` (2) proven entries per pool entry**, never substituted: a channel fed by
-this project's own past output cannot open new ground, so the fresh pool has to
-keep coming through it. And the queue is ordered by a **digest of the location
-key**, not by a shuffle — best tier first, and inside a tier by
-`blake2b(key)`. That is what makes a resume exact: the order is the same on every
-machine and stable as the label store grows, so a cursor one insertion ahead
-costs one root served twice rather than re-ordering everything behind it. The
-root id is that same digest, so a root's provenance names a place rather than a
-position.
-
-**The finished-render stores became roots on 2026-09-03, and the channel grew
-85%.** Until then `proven.derive` read `census.label_rows` — the location store —
-alone, so a finished-render 4 bought nothing; `phoenix_q3q4_20260903` landed 179
-q3+ verdicts on 179 phoenix places and the channel did not move by a single root.
-Matt ruled a q3+ finished render a proven neighbourhood, and `derive` now unions
-all three stores. Measured across the same tracked stores, before → after:
-
-| | roots | `phoenix` | `phoenix:classic` |
-|---|--:|--:|--:|
-| location store alone | 2,960 | 384 | 7 |
-| all three stores | **5,484** | **697** | **38** |
-
-By store the union is 2,960 location, 1,799 `smooth_render` and 725
-`strange_render` — 23,001 rows read against the location store's 12,063 — and the
-pinned plane is the one that moves most, 5.4x, because almost nothing it holds has
-ever been labelled as a *place*. A place several judged pictures stand on is still
-one root: the dedup is on the location key, not on the render.
-
-**`externally_supplied` was a declaration with no supplier behind it, and it is
-gone.** Audited 2026-09-02 (`AUDIT_phoenix_classic_funnel`), removed the same day.
-The flag cost `phoenix:classic` three separate things — share `0.0` from
-`allocation.allocate` before the floor loop ran, a first-and-unconditional `False`
-from `refill.has_channel`, and exclusion from `proven.SERVED` — and **no job
-outside the walk ever filled it in this repository.** Measured consequence: **0
-candidate rows across all 41 walk ledgers on both tiers**, and therefore 0 in the
-supply sidecar, 0 embedded, 0 in the candidate ledger and 0 eligible — against
-3,336 admitted and 452 eligible for varied `phoenix`. Nothing downstream refused
-it; the location head clears 6 of its 7 q3+ labels over the junk floor. **The
-lesson is the third consequence rather than the first two**: a partition can be
-declared out of the walk and starve in complete silence, because the same
-declaration takes it out of the census that reports starvation. The flag and its
-plumbing are deleted rather than set false — `Allocation.external`,
-`FloorLedger.external`, `Quota.external`, `Refill.external` and
-`release_mix.is_externally_supplied` are all gone — so there is no held-out set
-for a partition to be put back into.
-
-**Measured on the first leg that ever walked it** (2026-09-02,
-`CRAWL_phoenix_classic_30min`, 8 roots, proven channel on): the leg stopped on
-`nothing servable` at **0.66 active minutes of a 30-minute budget** — 120 frames,
-97 scored, **8 admitted (6.7%)** against 54.0% for varied `phoenix` on a
-comparable leg, 74 refused at the junk floor. **All 8 admissions came from proven
-roots; the one fresh home-view root returned zero**, and only 2 of the 8 roots
-booked anything. It died because `growth_per_expansion` came out **0.767** — under
-1, so a frontier fed only by its own admissions shrinks — and the in-walk
-reframing channel cannot prop it up: `reframing_undefined` fired on all 23
-frontier nodes, because a dynamical viewport has no parameter-plane nucleus. **The
-partition's supply ceiling is `1 + its labelled q3+ places`**, which is 8 today.
-By the walk's own saturation distance 5 of the 8 admissions sit inside an earlier
-one, so the plane converges on a few basins rather than offering variety.
-
-**The viewport sampler is the channel that gives it a second one.**
-`discovery.viewport_sampler`, `--root-channel viewport_sampler`. It served
-`partitions.PINNED_PLANES` alone until 2026-09-16 and serves every parameter plane
-as well since (see *There is no continuous boundary sampler*, below); a Julia twin
-is the one kind it leaves out, since its fresh supply is a *parameter*. On the
-pinned plane it draws a jittered grid over the family's own home box at a ladder of
-octaves — rung `k` is `2^k x 2^k` frames at width `home/2^k` — screens every one
-through `engine.screen`, and keeps what clears all three gates. Nothing ranks a
-viewport before the walk sees it.
-
-**Measured on the first leg to use it** (2026-09-02, seed 0, four rungs, ten
-active minutes budgeted): **36 roots out of 340 draws in 8.3 s**, a 10.9% yield,
-refusals 263 `flat` / 35 `occupancy_floor` / 6 `interior_cap`, and the yield
-climbs with the rung (0/4, 2/16, 8/64, 26/256) because the widest frames are
-mostly the home framing's own margin. The partition's queue opened at **44
-entries against the crawl's 8**.
-
-| | crawl, 2026-09-02 | sampler leg, 2026-09-02 |
-|---|--:|--:|
-| roots served | 8 | 24 |
-| active minutes | 0.66 of 30 | 2.60 of 10 |
-| batches | 6 | 27 |
-| frames found | 120 | 472 |
-| **admitted** | **8** | **23** |
-| `growth_per_expansion` | 0.767 | 0.881 |
-| deepest rung reached | 7 | 14 |
-| drawable after merge | 23 | **121** |
-
-**Those two `drawable` figures are snapshots and they are stale.** The 199
-admissions of `LEG_phoenix_classic_supply` went in the same day, and
-`hunt.drawable` on this partition read **652** on 2026-09-03 — after `pc1` and
-`pc20m` had opened 46 of its places between them. So the branch a leg is tempted
-to write, *crawl first if the shelf is thin*, has not been the live branch since
-2026-09-02: ask `hunt.drawable` rather than quoting a row of this table.
-
-**The sampler's own admissions are 5 of the 23, off 3 of its 16 served roots** —
-small, and it is the first time a *fresh* root on this partition has booked
-anything at all: the crawl's one home-view root returned zero, which is what
-`home_view` roots do everywhere else. The other 18 came off proven roots, and
-`P(>=4)` is still ~0 across the set (max 0.0378, median 0.0001) against `P(>=3)`
-up to 0.893. The sampler opens the plane; it does not make the plane better.
-
-**And the binding constraint moved.** The leg stopped on `nothing servable`
-again, but not for the crawl's reason: it had drawn **24 of its 44 entries** and
-`deferred` was empty. The refill hands over `per_draw = low_water = 8` roots and
-then leaves that partition alone for `COOLDOWN = 10` batches; the walk drained
-the batch-22 draw in five batches, the frontier emptied, and the refill was not
-due. Twenty screened viewports were still on the shelf. A real leg on a pinned
-plane therefore wants `--low-water` and `--cooldown` moved before it wants more
-rungs.
-
-**And the cadence was the whole of it.** `LEG_phoenix_classic_supply`,
-2026-09-02, seed 0, six rungs, `--low-water 16 --cooldown 1`: **the first
-`phoenix:classic` leg ever to stop on its own clock** rather than on `nothing
-servable`. 18.3 active minutes of an 18-minute budget over 88 batches, **199
-admissions (197 distinct) against the smoke's 23 and the crawl's 8**, and the
-frontier still held 22 nodes when the budget ran out.
-
-**Why those two numbers.** `COOLDOWN` exists so a partition whose supply is
-exhausted is not re-drawn every batch to prove it — but [`Refill.starved`]
-already skips a partition with `remaining <= 0`, so on a live shelf the cooldown
-can only ever hold *screened viewports* idle, which is what it did to the smoke.
-At **1** the refill is due every batch and the draw is decided by the low-water
-mark alone. `per_draw` has no CLI lever — `Refill.__init__` defaults it to
-`low_water` and no flag sets it — so **`--low-water` is one knob doing two jobs**,
-the trigger level and the draw size. At the shipped 8 it is exactly
-`Limits.batch`, so the refill fires only once the frontier can no longer fill a
-batch and hands over exactly one batch's worth; at **16** it fires with a batch
-still in hand and hands over two. Ten draws, sixteen roots each, **0 deferred and
-0.0% of the refill share spent** — the draw is free on a pinned plane, and the
-affordability bound that was meant to protect the clock was never the one acting.
-
-**The shipped defaults are not wrong and are not changed.** They are sized for a
-ten-partition production run, where a draw every batch for every starved
-partition is a real cost. These are run flags for a single-partition leg on a
-pinned plane, which is where they belong.
-
-**Six rungs was over-provisioned, and the leg says so.** The ladder drew **426
-survivors of 5,460 frames in 130.6 s** (7.8%), and the yield *falls* with the
-rung past 4 — 0/4, 2/16, 8/64, 26/256, 91/1024, 299/4096, so 12.5%, 12.5%,
-10.2%, 8.9%, **7.3%** — which reverses the reading taken over four rungs. The leg
-served **160 of its 434 entries and left 274 on the shelf**. Four rungs (340
-frames, 8 s) would have fed it with room to spare; the extra two cost 122 s of
-screening on every session, resume included, and bought nothing this leg reached.
-
-**What a rung is worth is per root, not per frame.** Admissions by the rung the
-root was drawn at: rung 2 **3** off 2 roots, rung 3 **9** off 8, rung 4 **52** off
-26, rung 5 **64** off 71, rung 6 **52** off 45, and the proven channel **19** off
-7. So **rung 4 is the productive one** — 2.0 admissions a root against 0.90 at
-rung 5 and 1.16 at rung 6 — and the deeper rungs buy volume rather than yield. A
-leg wanting places cheaply should widen rung 4 before it adds a rung.
-
-**The raised budget binds, on 4 roots of 160**, at 37, 37, 38 and 40
-expansions, every one of them a sampled viewport and every one in the productive
-tail — against **75 of 160 roots that died at one expansion**. The cap is doing
-what it was raised to do and is not this leg's constraint.
-
-**On `julia:*` the ordinary cap was the constraint, and the contrast with the line
-above is what moved it.** At 12, the budget bound **1,043 julia roots of 1,714**
-across all 50 ledgers — a median root paying exactly 12 — where 36 bound 4 of 160
-pinned-plane roots. And it closed lineages that were still alive: **98.0% of the
-capped roots were producing standable nodes at their deepest rung**, and they hold
-**28.59 admissions a root against 2.85** for the roots that stopped on their own.
-So every julia per-root yield in the channel tables above is a reading of the cap
-as much as of the channel, and the ceiling on julia depth — 13 rungs at 12, 18 on
-the one leg that walked 24 — was the budget's and not the scorer's.
-`FIX_ckpt123_dynamical_expansion_grace` took that measurement while ruling out the
-expansion grace, which is denied to dynamical roots for a reason that holds: see
-[`discovery/README.md`](../discovery/README.md)'s *A parameter-plane root starts
-above the depths its material lives at*.
-
-**Every dynamical family now walks at 36**, `FIX_ckpt123_dynamical_root_expansions`
-on Matt's ruling that variety within one `c` is real and wanted — the pinned
-planes' number, extended to `julia:*` and varied `phoenix` because they measured
-the same signature harder. The parameter planes keep 12. The two numbers and the
-kind-keyed door are at `discovery/walk.py`'s `Limits.dynamical_root_expansions`;
-the tables above this line were all measured at 12 and are not comparable with a
-leg walked since.
-
-**And at 36 the cap still binds, on 71.2% of roots.** The first `julia:*` leg
-walked at the raised budget (`--minutes 15 --batch 8 --seed 123 --root-channel
-proven`, all four julia partitions, 287 batches, 2,296 expansions) put **57 of 80
-roots at the cap with a median of exactly 36**, and **91.2% of those were still
-admitting at their deepest rung** — the same signature as 12, later. What moved:
-the **depth ceiling 13 → 21**, admissions **25.12 → 66.92 a root**, and the
-admission rate still climbing rather than decaying (56.6% at depth 2, 62.7% at 13,
-72.8% at 16). What it cost: **42 distinct `c` touched and 42 booked against 229 and
-206**, 127.48 admissions per booking parameter against 50.73, and saturation
-discounting **92.4% of admissions against 43.5%** — depth inside one `c` buys
-admissions that sit inside each other. Both legs refuse nothing at a floor
-(`no_score` zero in each), so the depth is real and not a floor change. Different
-populations and different clocks: a sanity read, not a rate.
-
-**58 lineages booked, against the smoke's 7.** `top5_share` fell 0.913 → 0.342,
-so the admissions are spread rather than piled on two roots. Basin overlap went
-the other way and is the thing to watch: **0.683 of admissions sit inside an
-earlier one** by the walk's own saturation distance, against 0.609 for the smoke.
-More roots reach more of the plane and still converge on the same basins.
-
-**A pinned plane's fresh-root pool is one row, by construction.** No tracked pool
-held the classic point: the phoenix seed pool's 96 rows all resolve to varied
-`phoenix`, the plane pool and the deep run's anchors are parameter planes only,
-and `data/anchors.jsonl`'s one classic row feeds engine comparison rather than
-supply. `pools.classic_phoenix_pool()` is that missing row and there will never be
-a second: the plane is one parameter point, so the only thing a fresh root can
-vary is the frame, and varying the frame is what the walk does. Every further
-*place* comes from the proven channel or from the viewport sampler — **and
-measured over the partition's whole stock it is overwhelmingly the sampler.** The
-222 admitted locations `phoenix:classic` holds resolve, through each admission's
-root row, to **183 off 56 `viewport_sampler` roots, 39 off 4 `proven` roots, and
-0 off the one `home_view` root**, all three runs 2026-09-02. So the home-view row
-has never produced an admission on this partition in any leg that has ever walked
-it, and the channel that opened the plane is the one that is off by default.
-
-**So a leg that names `phoenix:classic` and no root channel hands it a floor it
-cannot spend**, and `RUN_ckpt123_overnight_harvest` is the measurement. Recounted
-off `quota.jsonl` itself: **2,290 batch traces**, `phoenix:classic`'s queue **1 at
-batch 0 and 0 in the other 2,289**, **one slot served in the night**, and a
-realized share decaying from 0.0262 to **0.000** against an intended **0.05** and
-a standing deficit of **83.743** that never moved. (The figures this paragraph
-carried until 2026-09-13 — *queue 0 in all 1,710 quota traces*, realized 0.0001 —
-came from the run report rather than the file; the file has 2,290 rows and the
-conclusion is unchanged.) The floor's minutes are not lost — the allocator
-gives them to whoever can take them — but the partition is on the invocation as a
-partition that cannot move. Naming it costs nothing and buys nothing;
-`--root-channel viewport_sampler` is what makes the name mean something.
-
-**Generally: naming no root channel leaves a one-root partition unservable, and
-nothing in the run reports it as starved.** `Refill.has_channel` returns True for
-`phoenix:classic` unconditionally — the home-view pool is always on, and it is one
-row — so the partition enters the census, is allocated against and draws its floor
-on a queue that can never hold a second entry. `starved()` then declines to refill
-it, correctly and silently, because `remaining()` is zero rather than because
-anything is wrong. So the two states *served and thin* and *named and immovable*
-are the same state to every reader downstream. **A mix cannot be served where
-there is nothing to mix**, and the fix is on the invocation rather than in the
-allocator. The warning that exists is `pool_state`'s launch lines: read them
-before a long leg, and treat a partition opening at a single-digit pool as a leg
-that has to name a channel or drop the partition.
-
-**The mix is decided where the batch is popped.** Weighting the *root draw* by
-family cannot enforce a mix: anything that only changes what enters the frontier
-is diluted by whatever multiplies fastest inside it. In the source project an
-intended seventy-percent share realized at under twenty.
-
-**Steering a mix is not enforcing one.** A per-batch argmax on price-weighted
-deficit steers without ever measuring, so a stale price or an unrepresentative
-first hour moves the realized share with nothing to pull it back. The quota
-computes an intent, tracks realized *minutes*, and serves whoever is furthest
-below.
-
-**An entitlement that does not accumulate is not an entitlement.** The share gap
-saturates at the intent, so a floored partition's claim is the same at the first
-batch and the three hundredth. Unspent floor time is carried in minutes, and
-comes due at batch twenty at a 5% floor — whatever a batch costs.
-
-**A harvest's clock used to be mostly the steering view, and that line is gone.**
-The head reads its verdict off the gate render `expand` already wrote, which is
-byte-identical to the same location's tile at the node regime, so a harvest draws
-no picture for scoring at all. What that removed is the line every earlier profile
-here named first: rendering the deploy-geometry view was 56% of a batch's seconds
-over three profiled batches, three quarters of a 135-active-minute harvest's active
-clock (6,974 views, 6,096 s, none reused), and **58.7% of a whole production run's
-clean wall** — 8,810 s of run9's harvest leg. A harvest's clock is now the engine's
-own expansion rung and almost nothing else, and inside that rung the first place to
-look is the focus finder rather than the escape-time iteration.
-
-**`--score-workers` is a flag with almost nothing left to do.** It never paid even
-when there were views to fan out: the engine's own thread pool already saturates a
-twelve-core machine on a single view, so worker processes re-slice the same silicon
-rather than adding any. Measured on an idle machine over the same 96 real views,
-wall seconds against `--score-workers 1`: two workers **0.88x**, four **1.01x**, six
-**1.02x** — and at four the same 93 s of work reports 348 task-seconds, a 3.74x
-inflation that cancels the fan-out exactly. run9 paid that penalty for real at four
-workers: 1.73 s/view wall against 0.969 s/view serial. The flag stays because
-curation's re-score of an old ledger still renders, and because a claim that
-concurrency does not pay is worth being able to re-run. `curation.release` fans out
-for a different reason and does earn it — half a release row is single-threaded
-Python that leaves cores a sibling engine can take, worth 3.19x over four workers on
-the same machine.
-
-**Four levers stand between a long run and one composition, and they act at
-different heights.** The walk's per-root expansion cap bounds what a root may
-*spend*; the per-lineage admission cap (`--lineage-cap`, off by default in a
-harvest and on for a deep run) bounds what it may *book*, and is the hard stop.
-Under it are two soft ones in `novelty`, both run-command parameters and neither
-stored on a row. The **lineage discount** multiplies a lineage's expected credit
-by `max(f, 1/(1+k·n))` where `n` is that lineage's admissions *this run* — in the
-contest only, evaluated at the pop rather than baked into the priority, because
-`n` moves after a node is pushed and the Gumbel must not be re-rolled. The
-**exploration share** reserves a fraction of the post-floor slots for roots whose
-neighbourhood *no ledger* has ever booked an admission from, and prices that
-fraction against its own admission rate. Inside the share the head ranks and only
-the junk floor kills; the discount never reaches it.
-
-⚠ **`--lineage-cap` on a harvest ended the run at the first crossing until
-2026-09-18.** A capped lineage's rows keep their fates and push no node, and the
-batch reconcile (`admitted + expandable = nodes that reached the frontier`) did not
-know that, so `d6_sampler_leg_ckpt131` died at batch 9 with `[reconcile] … 3 admitted
-plus 6 expandable but 8 nodes reached the frontier`. The identity now subtracts rows
-whose lineage the walk reports full, and a survivor with no node from any other
-lineage still ends the run. **Since the same day the cap binds per row at booking**,
-so a lineage books exactly `--lineage-cap` admissions and no more; the crossing
-batch's further admits are recorded `not_admitted` with `lineage_capped: true`. **A crashed harvest resumes from its last checkpoint, but
-the rows the failed batch wrote stay in `walk.jsonl`** and the resumed batch writes
-them again. Cut the ledger back to the last row of the checkpointed batch before
-re-running, and keep the full copy.
-
-**The exploration share is spread evenly over the drawable partitions, and it
-carries that evenness across batches.** A partition is drawable if it has a
-novel-lineage node to spend a slot on; every drawable partition is owed the same
-number of share slots as every other, and while the budget has at least as many
-slots as there are drawable partitions each is *guaranteed* one. Floors and
-exploration are two budgets that sum to the leg, and `exploration_slots` is not
-handed an intent vector at all — it cannot weight by a floor it never sees.
-
-Evenness has to be carried because a batch is too small to hold it: a leg wants
-one or two share slots at a time against nine or ten drawable partitions, so
-spreading uniformly *inside* a batch just gives every slot to whichever
-partition wins the tie-break. `Exploration.taken` is the carry, and the run
-already checkpoints it, so a resume keeps the spread for the same reason it
-keeps the price. Replaying the leg below under the new rule moves its 326 slots
-from `mandelbrot` 179 / `multibrot3` 84 / four Julia twins 0, to **36–37 each
-across all nine drawable partitions, with none at zero**.
-
-**What it replaced, and why the two levers composed badly.** Measured over a ten-minute
-all-partition leg on 2026-09-01: the four julia twins carried a **non-empty
-novel-root queue in all 114 batches** — peaks of 50, 53, 46 and 66 roots no ledger
-had booked from — and took **0 of the run's 326 exploration slots** between them,
-against 179 to `mandelbrot` and 84 to `multibrot3`. The mechanism is on every
-quota card as `share.weight_source`, which read `intent` in all 114: the share was
-drawn over the post-floor pool weighted by each partition's *intended* share, and
-a partition whose intent is the 0.05 floor had spent that intent on its floor
-slots, so it carried a vanishing weight in the draw that followed. With `wanted`
-at one or two slots a batch, a floored partition essentially never won one. The
-run-wide realized share was **0.424**, comfortably over the 0.25 floor, which is
-why the run-wide number could not see it — `quota.exploration.realized.per_partition`
-is where it showed, and a partition reading 0.0 there with a non-empty
-`novel_queues` entry was this. Nothing was broken: the floor and the share were two
-levers that composed badly, and Matt's ruling settled which gives — the floor keeps
-its claim, and exploration stopped being allotted out of what the floor had spent.
-`share.weight_source` reads `even_carry` now, and a floored partition reading 0.0
-against a non-empty `novel_queues` is a defect again rather than the design.
-
-**A run's `--ledgers` names one root, and the two cross-run indexes are only as
-wide as it.** Both `saturation` and `novelty` read the tree that flag points at,
-and the flag's default is the literal string `artifacts`, which resolves through
-`cli.resolve_output` to the **hot** tier — so a checkout whose production runs
-have been archived builds both memories out of whatever happens to be local.
-**No `--ledgers` value reaches the whole history, and naming the archive root is
-not the way to.** The flag takes one root and a root is one tier, so naming the
-archive trades the hot ledgers for the archived ones rather than adding them:
-measured again on 2026-09-13 by `RUN_ckpt123_overnight_harvest`, `ledger_paths`
-with no root finds **53**, the hot root **19** and the archive root **34**, and
-19 + 34 is the 53 no invocation can ask for. The hot count is the one that moves:
-it was 15 before the four ckpt-123 legs wrote their run directories, and the
-archive's 34 has not changed. A
-leg that wants the whole population has to be given it another way — the three
-builders take `paths`, and `cli.harvest` is the one caller that turns the flag
-into them. `ledgers.ledger_paths` is the one place that answers how many there
-are, the three counts move every time a subtree changes tier, and a run that
-prints a ledger count smaller than expected is a run pointed at one tier.
-
-**A finished run's saturation verdict is re-derivable, exactly, and that is what
-makes "novel" a readable property of a frame afterwards.** The index is a pure
-function of the ledger set and the radius, so rebuilding it from the run's own
-`--ledgers` root with the run's own ledger excluded — `saturation.build(paths=
-ledgers.ledger_paths(root, exclude))` — and asking `VisitedIndex.density` about
-each candidate's centre reproduces what the run decided. Rebuilt against run10 it
-comes back at 65,022 visits over 26 ledgers in 420 identity buckets, and its
-`seen`/`discounted` split lands on `tally.saturation_by_partition` row for row.
-
-Two things that reproduction settles. **`saturation.seen` is the frontier feed,
-not the candidate count** — `_apply_memory` asks only about survivors, so a
-`not_admitted` row and every structural refusal carry no run-time verdict at all
-and have to be queried after the fact, with the same index, to be classed either
-way. And on run10 **not one admission on any parameter plane sat on undiscounted
-ground**: 0 of 1,313 `survived` rows across mandelbrot and multibrot3/4/5, against
-1,419 of 3,966 on the dynamical planes and phoenix. A draw conditioned on novelty gets
-nothing from the four planes at this point in their history, and that is the
-readout's 100% discount rate seen from the other side.
-
-**A slot is not a minute.** The quota allocates the clock and hands out node
-slots, so the slot demand is the minute demand divided by what a slot has been
-costing in that partition. Being cheap buys more turns, not more time.
-
-**An active minute is not a wall minute either, and `--minutes` counts the first
-kind.** What is charged is `expand` plus `trigger_reframings`, per partition, per
-batch. Three things are outside it: the start-up before the first batch — the
-head onto the device, the proven derivation, the saturation index, the twin
-channel, about a minute together — the per-batch refill, and the closing gate-flip
-re-score, and the closing `curate score` over what the run found. The ratio has
-**two measured values and the run's own config picks one**: a scored hour over the
-four parameter planes that *drew its own views* measured **1.13× wall per active
-minute**, and run10 — which scored the gate renders the walk had already made, so
-`scoring.rendered` stayed at zero all night — measured **1.013×**. Reserving 1.13
-for a night of the second kind cost run10 36 active minutes. Size a leg on the
-ratio that matches how the night scores; `--minutes` alone will under-book the
-clock either way, and the tail lands after the last batch rather than inside it.
-
-Both are constants of `fractal_wallpapers/schedule.py` —
-`ACTIVE_TO_WALL_DRAWING_VIEWS` (1.13) and `ACTIVE_TO_WALL_SCORING_GATE_RENDERS`
-(1.013) — and **the run's own config picks between them, not the caller**: a run
-that scores the gate renders the walk already made books 1.013, and one whose
-judge draws its own views books 1.13. `schedule.plan` prints which it used and
-why, so a night that lands late names the ratio it was reserved under instead of
-leaving a reader to guess which kind of night it was.
-
-**A run told one partition allocates its whole clock there.** `--partition` is
-repeatable and defaults to every registered one; naming one keeps the books for
-that partition alone, and its census, its price and its refill census all cover
-it alone. That is a different object from a full run with a thin mix, and the
-summary says which it was.
-
-**A named-partition LIST aims a leg; it does not overrule the census share.** The
-one-partition case above keeps the books; the list case does not divide the clock,
-and `RUN_ckpt123_overnight_harvest` is the measurement. It named four julia twins,
-two parameter planes and one pinned plane, and the four twins **stood at a
-standing deficit of exactly
-0.00** — labelled stock already at what the release mix says they are owed — so
-they ran on the 0.05 floor alone and took **0.179 of the realized clock between
-them**, against **0.821** for `mandelbrot` (deficit 624.06) and `multibrot5`
-(196.37). Off the last `quota.jsonl` row of that run, batch 2289. Naming a
-partition buys it a seat in the allocation and the floor that comes with the seat;
-what it cannot buy is minutes, because the intent is `deficit ÷ price` and a
-partition at zero deficit is asking for nothing. **To move the clock, move the
-census** — label the partition, or change `release_mix`; `--partition` says which
-books a leg may open and nothing else. This is a different claim from *the
-partition list aims a leg, it does not extend one* below, which is about roots:
-that one is about running out of supply, this one about never being owed the
-clock in the first place.
-
-**Every batch reconciles, and a batch that does not balance ends the run.** Three
-identities have to close: every candidate the engine reported was written with a
-fate this project knows, everything that reached the frontier was either admitted
-or expandable, and every admission is either a new location or one the run
-already had. `ReconcileError` is a `SystemExit`, so the failure is a non-zero exit
-rather than a line in a log — a long unattended run that silently loses
-candidates is the one failure a summary cannot show afterwards, because the
-missing rows are missing from both sides. The checkpoint (`harvest.STATE_SCHEMA`,
-**5**) is written at the batch boundary *after* the reconcile, so every state a
-run can resume from is one whose identities closed; what it holds is the
-frontier, the counters, the quota's realized tallies and price accumulators, the
-floor ledger's accrual and the random state.
-
-**A checkpoint of an older schema is REFUSED at resume, not adopted.**
-`Harvest.resume` raises on anything but the current number, and each bump was
-taken for the same shape of reason: a schema-4 checkpoint carries no per-partition
-readout books, so resuming from one would reopen the share-against-contest split,
-the head-score histograms and the saturation activations at zero and then report
-medians covering the second session alone, with nothing on the page saying so.
-Refusing costs a run; adopting costs a number nobody can tell is wrong.
-
-**`--finish-by HH:MM` derives `--minutes` from the time the night has to end.**
-The span to the next `HH:MM`, less what has to happen after the harvest — the
-release leg at `--release-slots` x wall-per-picture, the rest of `curate run` at
-2.57 s an attempt, the closing `curate score`, the ledger load and a 20-minute
-margin — and then divided by the ratio above, because `--minutes` is active time
-and the span is wall. `fractal_wallpapers/schedule.py` owns every term, prints the
-derivation at startup and writes it into `summary.json` as `finish_by`, so a night
-that lands late is attributable to the term that was reserved wrong.
-
-Two of those terms are **read rather than written down**, because run10 landed 84
-minutes inside its finish-by on terms that had each stopped being true:
-
-* the **release rate** comes off the most recent tracked run's own release leg
-  (`data/curation/runs/<run>.json`, `release.seconds / release.rows` at
-  `release.workers`, scaled to `--release-workers`). It halved — 41.9 s to 24.9 —
-  the night `artifacts/curation` came off the archive and back onto NVMe. The
-  written-down 41.9 is the fallback for a clone with no release on record, and the
-  plan prints which of the two it used. **The leg is read by the caller, not by
-  `schedule`**: `schedule.release_rate(workers, leg)` takes the row and
-  `schedule.plan` takes the resulting `(seconds, source)` pair, so a module that is
-  arithmetic about a night imports nothing from the record store above it. The one
-  production caller reads `records.latest_release_leg()` and hands it over;
-* the **closing re-score** scales with what the harvest will find, since it
-  re-reads the run's own gate survivors: 7.13 ms a row at 124.7 rows an active
-  minute. That dependence is circular and `schedule.plan` solves it rather than
-  iterating.
-
-The **ledger load** is 2 min and used to be 11. It was never a load: three
-builders each `rglob`ed the archive for `walk.jsonl`, which is 734.6 s a pass on a
-tree that is mostly `tiles/`. They now share one list, found by looking each
-ledger up at `<run directory>/walk.jsonl` — see `ledgers.ledger_paths`.
-
-`--release-slots` defaults to the **ten** a run keeps as its diagnostic release
-(`curation.run.DEFAULT_N`), so the reservation and the run it reserves for name
-the same release without being told twice. It had no default while a release was
-a number somebody chose per night; a run does not choose one any more.
-
-The colorize term beside it is derived rather than restated. It is
-`curation.budget`'s own answer for the shape the night will run — the release
-ceiling, `--strange-share`, `--strange-modes` — asked through the same functions
-the run will spend, because `schedule` used to keep copies of the attempt
-multiplier, the strange share and the modes each head draws, and those were
-correct only while all three were constants of the project. The mode table is a
-parameter of a run now.
-
-**It derives and does not pace** — the active-minute budget is still the only
-backstop, and the margin is real money.
-
-**The standing leg is every partition at once with `--root-channel proven` on**, and
-the examples below that name one `--partition` are the exception rather than the
-shape. `harvest_refresh` (2026-09-01) and `harvest_smoke_0906` (2026-09-06) are both
-that shape; `phoenix_classic_supply` is the one-partition exception and says so in
-its own `quota.partitions`.
-
-**A leg written since 2026-09-06 says what it was launched with**, on the `run`
-header's `invocation` — the argv verbatim and a pasteable line — beside
-`ledgers_read`, which says how many earlier ledgers it opened and off which tiers.
-Every leg before that has to be read back off recorded values against whatever the
-defaults were that week: `refill.proven` populated is the proven channel,
-`quota.partitions` null is every partition. That inference resolved the whole of
-this section's command line once and it is not a method that survives a default
-moving.
-
-**The launch prints what each channel can still reach**, one line per partition:
-the pool's size, how much of it the label store put there, what has been drawn, or
-the reason no draw can serve it. run10 opened with 39, 46 and 52 derived parameters
-in its three julia twins against 413 to 507 in each parameter plane; all of the
-small ones ran dry inside the night and the readout is where that surfaced, the
-following morning. The proven count is beside the pool count because a queue two
-channels deep exhausts two ways — `pool julia:mandelbrot: 1036 of 1036 entries
-left, 827 of them proven roots` — and running out of `c` and running out of
-labelled places are fixed by different things.
-
-**With no root channel named, the whole standing root supply is small enough to
-walk out in a night, and 2026-09-13 is the night that did it.**
-`RUN_ckpt123_overnight_harvest` ran the four julia twins plus `mandelbrot`,
-`multibrot5` and `phoenix:classic` on the pools and the twin channel alone. It
-stopped `nothing servable` at **311 of 405 active minutes**, 2,290 batches, with
-`frontier: 0` and every one of the seven queues at zero — not a stall inside a
-cooldown but every channel reporting itself exhausted at once: the three plane
-pools *every entry has been walked* (507, 501 and 1 row), and each twin *all N
-parameters it derived have been handed over and walked*. **1,401 roots is what
-those seven partitions had**, and the twin channel's own message says why more
-did not appear: it derives from admitted plane locations, the plane pools were
-themselves walked out, so nothing fed it. Budget a channel-less leg at about
-five hours on this supply and expect the clock to outlast the roots — the
-partition list aims a leg, it does not extend one.
-
-**There is no continuous boundary sampler for a parameter plane, and
-`nucleus_grid` is a finite enumerated pool that empties permanently** — ⚠ the first
-half of that is **superseded on 2026-09-16** and the paragraph is kept as the
-history of the gap. The four planes had no sampler on purpose, on an unscreened
-draw over the higher degrees that measured zero good locations in 144, so what they
-ran on was the tracked file
-`data/discovery/plane_seed_pool.jsonl`, and it is **1,922 rows: 1,912
-`nucleus_grid` (mandelbrot 500, multibrot3 412, multibrot4 500, multibrot5 500),
-4 `home_view`, 6 `hand_picked`**, counted off the file. `plane_seeds.derive` is
-deterministic and `verify` asserts byte equality against that file, so re-running
-a harvest gets exactly those rows back and never a new one; a run's cursor only
-moves forward, so a plane that has walked its 500 has no fresh supply for the
-rest of the night. The only lever is a **regeneration** — `derive-plane-seeds
---columns N --per-partition M --write`, a tracked-data change — not a run flag.
-
-**A parameter plane's continuous channel, since 2026-09-16.**
-`--root-channel viewport_sampler` now serves all four planes with
-`discovery.viewport_sampler`'s straddle refinement: a quad-tree over the home box,
-probed through `engine.dump_field` only where the connectedness locus's boundary
-is, every straddling cell in the root-width band screened by the walk's own
-battery. It is opt-in and off by default, and the pool above is still the default
-supply. How it reaches the queue is the one new thing here:
-
-- **The queue is merged at its tail and never re-interleaved.**
-  `Refill._continuous_queue` fixes the finite side at its first call — the plane's
-  pool rows with the proven roots already interleaved through them — and
-  materializes one pair at a time, a sampled survivor then the next finite entry.
-  When the finite side runs out every further entry is sampled, which is the
-  point: a plane whose 500 pool rows are walked out keeps being served, and a plane
-  with no pool at all (`has_channel` is true on the sampler alone) is served from
-  nothing. The cursor stays an index, for the reason `_twin_queue` gives.
-- **A continuous partition is open until the channel says it is exhausted**
-  (`Refill._open`), not while `remaining` is positive: the queue is built only as
-  far as a draw asks, so `remaining` reads 0 on a channel with tens of thousands of
-  cells behind it. `pool_state` never materializes it, so the launch lines cost no
-  probe.
-- **Refinement and screening are paid inside the refill that asks**, bounded by
-  the refill share like any other draw. The first growth of a plane costs about
-  15 s of probes for roughly 700 cells a rung and 8 s to screen a batch of 64
-  (`discovery/README.md`'s *A parameter plane: straddle refinement*).
-- `LOW_WATER` 8 and `COOLDOWN` 10 stay the defaults for these partitions too; the
-  phoenix reading of 16 / 1 is a per-invocation choice.
-
-**The pinned planes were the first exception, and the difference is a file against a
-derivation.** `viewport_sampler` is re-derived at every build and never
-checkpointed, so it cannot empty permanently the way a pool does: its ladder is
-`(4^(R+1) - 4) / 3` frames — 340 at the default four rungs, 1,364 at five, 5,460
-at six — and `--sampler-rungs` moves it, which is why `ViewportSampler.starvation`
-is the one exhaustion message in this package that names a knob. Two cautions
-against reading that as unlimited. The **per-frame yield turns over past rung 4**
-(`discovery/README.md`'s *The viewport sampler*), and a fresh `--seed` redraws the
-same ground rather than new ground: every seed samples the same `4^k` cells of the
-same home box, and the jitter is at most a quarter of a cell width while a frame's
-width *is* the cell width, so two seeds' frames in one cell overlap by at least
-half. **Re-drawable, extendable, and not a source of unbounded novelty.**
-
-**A sitting can add proven roots and no parameters at all, and `julia_supply_ckpt123`
-is the measured case.** All 48 of its rows came back q3+, so all 48 became proven
-roots — but its 24 julia-side roots stand on **9 distinct `c`**, 12 of them on one
-degree-2 `c`, and every one of those 9 already carried a proven root from an earlier
-batch. **48 new roots, 0 new `c`.** The two counts are not proxies for each other and
-a report that gives only the first says a sitting widened the twin channel when it
-deepened it: the `c` are what the parameter channel derives and a root is one view
-inside one of them. Those 9 already stood under 229 earlier roots, which is why
-labelling the head's top offer is the wrong instrument for the julia channel's
-per-night dryness — it draws from where the labels already are.
-
-**Redirect a harvest's stdout through `python -u`.** It is block-buffered
-otherwise, so a backgrounded leg writes an empty log for its whole first stretch
-and there is no way to tell a run that is loading its ledgers from one that has
-hung. The startup itself is not quick — the novelty and saturation memories are
-built over every ledger under `--ledgers` before the first batch, which was about
-**two minutes and 115 CPU-seconds over 7 ledgers** on 2026-09-02 — so the silence
-is long enough to be worth reading. ⚠ By 2026-09-18 it read **about six minutes,
-even with `--no-saturation`** [carried], so a waiter armed on a harvest should not
-read a quiet first six minutes as a hang.
-
-**`--minutes` is also the only backstop a harvest has** — there is no
-`--wall-budget` here, that flag belongs to `curate run`. It is a hard one: the loop
-refuses to *start* a batch when the spent minutes plus the running mean batch would
-overrun, so an over-run is bounded by nothing at all rather than by one batch. Pair
-it with `--batches` sized off a short observed leg and whichever is tighter stops
-the run; the summary says which one did.
+The loop: **census** (what each partition holds against what the release mix says it is
+owed), **price** (what a unit of currency costs there, measured as the run goes),
+**allocate** (intended share of the clock ∝ deficit ÷ price, with a floor everyone gets),
+**serve** (divide the batch's slots by how far each partition is below its intent),
+**credit** (what the batch found, deduplicated, back into price and stock). A batch's
+slots are claimed in a **ruled, one-directional order**: 1 the **floor** (the carry's
+claimants), 2 the protected exploration **share** of what is left, 3 the deficit-priced
+**contest** over the remainder, lineage-discounted. Nothing below eats what is above.
 
 ```
 fractal-wallpapers census
-fractal-wallpapers harvest --minutes 90 --batch 8
-fractal-wallpapers harvest --finish-by 07:00                      # derives --minutes
-fractal-wallpapers harvest --finish-by 07:00 --release-slots 20 --release-workers 8
-fractal-wallpapers harvest --finish-by 07:00 --strange-modes 3    # reserve for that night
-fractal-wallpapers harvest --exploration-floor 0.25 --exploration-start 0.45
-fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --minutes 30 --root-channel proven   # the standing leg: every partition
-fractal-wallpapers harvest --partition mandelbrot --root-channel proven
-fractal-wallpapers harvest --partition phoenix --root-channel proven      # at labelled frames
+fractal-wallpapers harvest --finish-by 07:00 --release-slots 20 --release-workers 8
+fractal-wallpapers harvest --no-exploration --lineage-discount 0   # neither lever
 fractal-wallpapers harvest --partition phoenix:classic --root-channel proven --root-channel viewport_sampler
+fractal-wallpapers harvest --out-dir <run> export                 # or: stats
 fractal-wallpapers derive-proven-seeds --partition mandelbrot --write   # to read it
-fractal-wallpapers harvest --partition mandelbrot --seeds seeds.jsonl   # one leg, one book
+fractal-wallpapers derive-plane-seeds --columns N --per-partition M --write
 fractal-wallpapers derive-prices --run artifacts/harvest --regularize --write
 fractal-wallpapers derive-tau-h --write
 ```
 
+## The books and the mix
+
+**Currency is `n4 + 0.1·n3`** (`currency.CLASS_WEIGHT`), one table read by the deficit,
+the in-run price and the readout, so moving a weight moves all three. **Stock is two legs
+and a location is in exactly one**: the human's class where a human has looked, else
+`census.MACHINE_STOCK_DISCOUNT` (0.2) × the machine's class. Precedence, never addition
+(a sheet is cut from ledger rows, so a location can be in both). The discount sits under
+the ~50% rate at which machine keepers survive a human look, so a machine-filled
+partition keeps a mild appetite until labels re-anchor it.
+
+**The standing deficit is a launch snapshot**; only prices and realized minutes move
+inside a run. **The mix is decided where the batch is popped**, never by weighting the
+root draw (whatever multiplies fastest in the frontier dilutes that). The quota tracks
+realized *minutes* and serves whoever is furthest below; slot demand is minute demand ÷
+what a slot costs there, so being cheap buys turns, not time. Unspent floor time carries
+in minutes and comes due at batch twenty at a 5% floor.
+
+**A named-partition list aims a leg; it does not overrule the census share.**
+`--partition` is repeatable, default every registered one. One partition keeps the books
+for it alone; several buy each a seat and the 0.05 floor, not minutes: a partition at
+zero deficit runs on its floor. **To move the clock, move the census** (label it, or
+change `release_mix`).
+
+**Four levers stand between a long run and one composition.** The per-root expansion
+cap bounds what a root *spends* (`--root-expansions` 12 on a parameter plane,
+`--dynamical-root-expansions` 36 on julia and phoenix, per Matt's ruling that variety
+within one `c` is wanted; `discovery/walk.py`'s `Limits`). `--lineage-cap` (off in a
+harvest, on for a deep run) bounds what it *books*, exactly, recording further admits
+`not_admitted` with `lineage_capped: true`. Under them, two soft levers in `novelty`:
+the **lineage discount** `max(f, 1/(1+k·n))` on a lineage's expected credit, `n` its
+admissions this run, in the contest only and applied at the pop so the Gumbel is never
+re-rolled; and the **exploration share**, post-floor slots reserved for roots whose
+neighbourhood no ledger has booked from, priced on its own admission rate, where only
+the junk floor kills.
+
+**The exploration share is spread evenly over the drawable partitions, carried across
+batches** (`Exploration.taken`, checkpointed): a batch holds one or two share slots
+against ten partitions. `exploration_slots` never sees an intent. `share.weight_source`
+reads `even_carry`; a 0.0 in `quota.exploration.realized.per_partition` beside a
+non-empty `novel_queues` is a defect.
+
+⚠ **`--lineage-cap` and the reconcile**: a capped lineage's rows push no node, and the
+batch identity subtracts rows whose lineage the walk reports full.
+
+## Root channels
+
+**The standing leg is every partition with `--root-channel proven` on.**
+
+**`proven`** roots the walk at every place a human scored a keeper, at the scored frame:
+it returns ~95% of a run's admissions. On a dynamical partition it buys a *frame* a
+`c`-pool cannot express (a pool root comes up at the home view, nearly always already
+saturated). Off unless named, and interleaved, never substituted: it opens no new
+ground. Decided in `proven.py` alone: the **tier floor** `min(currency.CLASS_WEIGHT)`
+(3, exactly a keeper); the **three quality label stores** (`proven.stores()`), unioned
+and deduplicated on the place, credited on `provenance.store`; **every partition**
+(`SERVED` is `ALL_PARTITIONS`); **`RATIO` 2** proven entries per pool entry; order
+**best tier, then `blake2b(key)`**, so a resume is exact and stable as the store grows,
+and the root id names a place, not a position.
+
+**`twins`**: an admitted degree-`d` plane location's centre *is* a `c` for the degree-`d`
+Julia family. At degree 2 the derived list and the tracked pool share the queue one for
+one, the pool reserved into the c-spacing floor; little derives there because the pool
+claims nearly the whole plane. A `c` inside the floor of one walked is counted
+(`near_walked`), not refused. `proven.interleave` is unstable under a growing second
+argument, so `_twin_queue` builds once and extends. New proven julia roots are not new
+`c`: count both.
+
+**`viewport_sampler`** (`discovery.viewport_sampler`) serves the pinned plane and every
+parameter plane, not a twin. On the **pinned plane**, a jittered grid over the home box
+per octave rung (`(4^(R+1) - 4) / 3` frames, 340 at the default four, `--sampler-rungs`);
+rung 4 is the productive one per root, so widen it before adding a rung, and a new
+`--seed` redraws the same ground. On a **parameter plane**, a straddle refinement
+(`discovery/README.md`'s *A parameter plane: straddle refinement*) merged at the queue's
+tail (`Refill._continuous_queue`) behind the pool-plus-proven side; such a partition is
+open until the channel says exhausted (`Refill._open`), and refinement is paid inside
+the refill, under `--refill-share`.
+
+**The plane seed pool** (`data/discovery/plane_seed_pool.jsonl`) is deterministic
+(`verify` asserts byte equality), so a walked-out plane has no fresh pool supply until a
+`derive-plane-seeds --write`. Its `home_view` rows never produce; they keep
+`has_channel` true for a family the solver refused. A root names its channel under
+`provenance.channel` (`source` is the pool file).
+
+**A pinned plane's fresh-root pool is one row** (`pools.classic_phoenix_pool()`), so
+`phoenix:classic` lives off `proven` and the sampler. **Naming no root channel leaves a
+one-root partition unservable, and nothing reports it starved**: `has_channel` is true,
+and `starved()` declines because `remaining()` is zero. Read `pool_state`'s launch lines
+(pool size, label share, drawn, or why nothing serves) and make a single-digit pool name
+a channel or drop the partition.
+
+### With no root channel named, the whole standing root supply is small enough to walk out in a night
+
+On pools and twins alone every queue empties together and the run stops `nothing
+servable` inside a long budget. Budget such a leg at about five hours: the partition list
+aims a leg, it does not extend one.
+
+### The refill cadence
+
+Under `--low-water` (`LOW_WATER` 8, which is `Limits.batch`) a partition is handed
+`low_water` roots (one knob, two jobs; `per_draw` has no flag), then left for
+`--cooldown` batches (`COOLDOWN` 10). `starved` already skips `remaining <= 0`, so on a
+live shelf the cooldown only idles screened viewports. **The cadence was the whole of
+it** on a one-partition pinned-plane leg: `--low-water 16 --cooldown 1` runs its clock
+out. The defaults suit a ten-partition run and stay.
+
 ## Degree 6: twelve partitions, two with no labels behind them
 
-**`multibrot6` and `julia:multibrot6` joined `partitions.PARAMETER_PLANES` on
-2026-09-16**, so `ALL_PARTITIONS` is twelve and every per-partition table carries
-their rows: `release_mix.json` at the supporting ratio 1.0, `tau_h.json` fail-open at
-0.0, and both price tables at the flat seed 3.0 with `defaulted` status until
-2026-09-18. **They are measured since**: `derive-prices` over the six finished d=6
-harvests (`harvest_d6_ckpt128`, `harvest_d6o_c1`–`c4`, `harvest_d6s131`) with
-`--carry data/supply/cost_to_find_measured.json`, which pools `harvest_run2`'s
-provenance in as one more block because that run is no longer on disk. **`multibrot6`
-measures 2.736 active minutes a unit (seed 1.822) and `julia:multibrot6` 0.027 (seed
-0.0285)** — the plane dearer than any other measured partition, the twin in line with
-the other Julia twins. The six runs carry no other partition's evidence, so every
-other row came back unchanged and the shrink target stayed 0.047. These are the
-harvest's own currency and not a hunt's seconds a place — `curation/LEGS.md`'s d=6
-figures (1.1–1.7 s a place opened) price a different act.
-
-**Nothing label-fed will ever serve them**, by ruling (`partitions.NEVER_LABELLED`):
-the proven channel, the `c`-pool and reframing priors are empty by construction, the
-plane seed pool holds no d=6 row, and the twin is fed only by its plane's admissions.
-**The viewport sampler is the plane's one root source**, so since 2026-10-04 a harvest
-turns it on for `multibrot6` whether or not `--root-channel viewport_sampler` is named
-(`cli.supply_commands.build_sampler_channel`); every other partition keeps the channel
-off unless named. Before that, a from-empty harvest admitted nothing on either and
-said the pool was exhausted. A 3-minute isolated harvest of the pair then admitted
-254 on `multibrot6` and 824 on `julia:multibrot6`.
+`multibrot6` and `julia:multibrot6` are in `partitions.PARAMETER_PLANES`, so
+`ALL_PARTITIONS` is twelve; `release_mix.json` 1.0, `tau_h.json` fail-open 0.0, prices
+measured at **2.736 active minutes a unit (`multibrot6`) and 0.027 (`julia:multibrot6`)**.
+**Nothing label-fed will ever serve them** (`partitions.NEVER_LABELLED`): the sampler is
+the plane's one root source, so a harvest turns it on for `multibrot6` unnamed
+(`cli.supply_commands.build_sampler_channel`); the twin feeds off its plane.
 
 ```
-fractal-wallpapers walk --family multibrot --degree 6 --root-channel viewport_sampler --roots 40
 fractal-wallpapers harvest --partition multibrot6 --root-channel viewport_sampler
 ```
 
+## The clock
+
+**`--minutes` counts active minutes** (`expand` plus `trigger_reframings`); outside it
+are start-up (about six minutes, even with `--no-saturation`), refills, the closing
+re-score and `curate score`. Wall per active minute is
+`schedule.ACTIVE_TO_WALL_DRAWING_VIEWS` (1.13) when the judge draws views, else
+`ACTIVE_TO_WALL_SCORING_GATE_RENDERS` (1.013); the config picks, `schedule.plan` says
+which. **It is the only backstop** (`--wall-budget` is `curate run`'s): no batch starts
+whose running mean would overrun. Pair it with `--batches`.
+
+**`--finish-by HH:MM` derives `--minutes`**: the span to the next `HH:MM`, less the
+release leg, the rest of `curate run`, the closing `curate score`, a 2-minute ledger load
+and a 20-minute margin, divided by the ratio. `schedule.py` owns every term and writes
+it to `summary.json` as `finish_by`. Read rather than written: the **release rate** off
+the latest tracked release leg (`data/curation/runs/<run>.json`, scaled to
+`--release-workers`, 41.9 s the fallback; the caller passes `records.latest_release_leg()`
+to `schedule.release_rate`, so `schedule` imports no record store); the **closing
+re-score**, solved rather than iterated; the **colorize term**, `curation.budget`'s
+answer for `--strange-share` and `--strange-modes`. `--release-slots` defaults to
+`curation.run.DEFAULT_N`. It derives; it does not pace.
+
+### `--score-workers` is a flag with almost nothing left to do
+
+A harvest scores the gate render `expand` already wrote, so it draws no picture to
+score; where views are drawn the engine's own threads saturate the box (two workers
+0.88x, four 1.01x). It stays for re-scoring an old ledger. `curation.release` does earn
+its fan-out (3.19x at four).
+
+**Run a harvest through `python -u`**, or a backgrounded leg's log stays empty through
+start-up.
+
+## Ledgers, reconcile and resume
+
+**`--ledgers` names one root, one tier** (default `artifacts`, the hot tier via
+`cli.resolve_output`), and `saturation` and `novelty` are only as wide as it; no value
+reaches the whole history. `ledgers.ledger_paths` answers how many (looked up at
+`<run directory>/walk.jsonl`, never `rglob`). The `run` header records `invocation`
+beside `ledgers_read`. A saturation verdict is re-derivable:
+`saturation.build(paths=ledgers.ledger_paths(root, exclude))` and
+`VisitedIndex.density`. `_apply_memory` asks only about survivors.
+
+**Every batch reconciles, and one that does not balance ends the run**
+(`ReconcileError`, a `SystemExit`): every candidate has a known fate, every frontier
+arrival is admitted or expandable, every admission is new or known. The checkpoint
+(`harvest.STATE_SCHEMA` 5) is written after the reconcile; **an older schema is refused
+at resume**, never adopted. A crashed run's failed-batch rows stay in `walk.jsonl`: cut
+the ledger back to the checkpointed batch first, keeping the full copy.
+
 ## What a run writes for a readout to price it with
 
-`walk.jsonl`'s row kinds, and `harvest export`'s flat `locations.jsonl`, are given field by
-field in the root [`FORMATS.md`](../../../FORMATS.md).
-
-`summary.json` carries, beside the run-wide books:
-
-* `tally.by_partition` — the exploration share against the deficit-priced contest
-  **per partition**, each cell with its slots, finds, distinct admissions and the
-  **median head score** of those admissions. The medians come off a 100-bin
-  histogram rather than the scores themselves, because the cells are checkpointed
-  at every batch boundary; `harvest.SCORE_BINS` is the resolution and it is a
-  readout's, not a cut's.
-* `tally.saturation_by_partition` — seen against discounted, per partition. The
-  run-wide pair says whether the cross-run memory fired; this says where.
-* `tally.minutes` — the charged clock split into `expand`, `reframe` and
-  `refine`. The first two are inside `--minutes` and only their sum was recorded
-  before. The third is the framing scan the walk takes **when it closes**, and it
-  is a third bucket rather than a share of `reframe` on purpose: the reframing
-  operators fire per batch off admissions and this fires once per run off the
-  whole walk, so folding it in would make the operator suite look more expensive
-  on exactly the runs that refined most. It is spent after `--minutes` is
-  already gone, so it is charged and reported rather than budgeted.
-* `walk.operators` — firings, seconds, seconds per firing and share of the charged
-  clock, **per reframing operator**, and `refine_framing` beside them. The
-  neighbourhood enumeration is the expensive one and is on by default in
-  production; this is the first time a run prices it out of its own record
-  instead of out of a replay. The availability and refusal counts sit beside it in
-  `walk.counts` as `reframing:<operator>:<available|reason>`.
-* `refine` — what the close-time framing scan cost and bought: locations scanned,
-  frames drawn, the adopted share, the chosen-width and chosen-move histograms,
-  the whole Δ distribution in nats, how many refinements crossed the keeper floor,
-  and the walk's own gate render measured against a fresh one of the same frame.
-  `walk.counts` carries `refine:scanned`, `refine:adopted`, `refine:below_margin`
-  and `refine:admitted` beside it. See `discovery/README.md` for what the leg is
-  and why its rows are appended rather than edited in.
-* `quota.floor_versus_deficit.per_partition` and `quota.unspent_floor.per_partition`
-  are two different questions and are already two blocks: the first is how many
-  realized minutes each bucket bought, the second is whether the floor's promise
-  was kept — `spent`, `unspent` or `starved`, with `starved` listed separately at
-  `quota.unspent_floor.starved`. A partition whose floor never bound anything and
-  one nothing could feed are not the same silence.
+`walk.jsonl`'s row kinds and `harvest export`'s `locations.jsonl` are in the root
+[`FORMATS.md`](../../../FORMATS.md). `summary.json` adds: `tally.by_partition` (share
+against contest per partition, median head score off `harvest.SCORE_BINS` bins);
+`tally.saturation_by_partition`; `tally.minutes` (`expand`, `reframe`, `refine`, the last
+the once-per-run close-time framing scan, charged after `--minutes`, not budgeted);
+`walk.operators` and `walk.counts` (`reframing:<operator>:<available|reason>`,
+`refine:*`); `refine` (see `discovery/README.md`); `quota.floor_versus_deficit` and
+`quota.unspent_floor` (`spent`, `unspent`, `starved`).
 
 ## Reading a run afterwards: `quota.jsonl` beside the ledger
 
-Every batch appends one line to `<run>/quota.jsonl` — the intent, the vector it
-was folded to, the floor's debts, the prices, the queues, and how many slots each
-partition took under each channel. It is what makes a spent slot attributable
-without re-deriving the rule that spent it, and the **channel autopsy reads it**:
-a refused card names the floor that kept the row out of the books and, for a node
-that reached the frontier and was never expanded, why the run never came back to
-it — capped, outbid on partition, outbid on node rank, discounted lineage, or the
-run stopped first. Each of those is read off the trace of the batches that node
-actually sat through; a run with no trace file gets the floor half and no more.
-
-**The sample is stratified by fate**, in proportion with a floor of two cards a
-class, and it covers unpictured rows. run10's page drew 48 cards and not one of
-them was a structural refusal, though `flat`, `interior_cap` and `occupancy_floor`
-were 13,962 of that run's rejects: the engine draws a frame for a gate survivor
-and for nothing else, and the sampler only drew rows that had a picture. The
-sentences for those gates had shipped and no card could carry one. Re-run against
-run10's records the page is 54 cards with six `interior_cap`, four `flat` and four
-`occupancy_floor` among them, each saying what its gate is and that it has no
-picture to show.
+Every batch appends to `<run>/quota.jsonl`: intent, folded vector, floor debts, prices,
+queues, and slots per partition per channel. The **channel autopsy reads it**: a refused
+card names its floor and, for a frontier node never expanded, why (capped, outbid on
+partition or rank, discounted lineage, run stopped). The sample is **stratified by
+fate** (two cards a class minimum) and covers unpictured structural refusals.

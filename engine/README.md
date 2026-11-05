@@ -1,7 +1,5 @@
-The Rust renderer: it makes every pixel this project ever shows.
-
-One binary, ten subcommands, and nine of them take one JSON object in and write one
-file out:
+The Rust renderer: it makes every pixel this project shows. Python reaches it through
+`src/fractal_wallpapers/engine.py` and nothing else.
 
 ```
 cargo build --release --manifest-path engine/Cargo.toml
@@ -10,6 +8,8 @@ echo '{"schema":1,"family":{"kind":"phoenix"},"resolution":[1920,1080],
        "output":"artifacts/phoenix.png"}' \
   | engine/target/release/fractal-engine render
 ```
+
+Ten subcommands; all but `render-link` take one JSON object and write one file:
 
 ```
 render      a location and a coloring → a PNG
@@ -24,39 +24,17 @@ maxiter     widths → the iteration cap the depth policy gives each one
 render-link an explorer link and a size → the wallpaper, its link embedded
 ```
 
-The tenth takes flags instead, because its input is a link somebody copied — see
-[*`render-link`: an explorer link, drawn without Python*](#render-link-an-explorer-link-drawn-without-python).
+The pipeline is `spec → family → iterate → field → coloring → resample`, one module a stage
+(`src/lib.rs`). `src/spec.rs` documents the JSON; `FORMATS.md`'s *The render spec* lists
+every key. `src/mode.rs` holds **twenty** named colorings (eight field, six composite, two
+modulate, four direct); nineteen are tier `production` and `de` is `niche`, excluded from every
+production draw by `mode::production_names` and `engine.production_modes()`.
 
-`expand` and `screen` are the same filter behind two doors. `src/screen.rs` owns
-one `Battery` — the interior cap on a 128-pixel probe, the cap again on the node
-render, the escape band, the occupancy floor, in that order — and both
-subcommands spend it. `expand` *proposes* the frames it screens; `screen` is
-handed them. A crate test screens an expansion's own candidates by name and
-asserts every fate comes back the same, so the two cannot drift into being two
-filters wearing one name.
-
-Both readings a rung takes of its parent frame — the scale-space focus set and
-the detail-weighted centroid — are pure functions of that frame, so `foci::Frame`
-takes each on the first draw that wants it and every later draw off the same node
-reads it. The randomness is untouched, because none of the cached work ever
-consumed the node's stream. What that is worth is measured on the Python side:
-see [the discovery package](../src/fractal_wallpapers/discovery/README.md).
-
-`expand` will also report each node's kept focus set, behind `report_foci`. Off
-by default and byte-identical off: the set is a reading of the parent frame that
-every rung takes anyway and it consumes nothing from the node's random stream, so
-the switch decides what is *reported*, never what is drawn.
-
-The pipeline runs `spec → family → iterate → field → coloring → resample`, one
-module per stage; `src/lib.rs` says what each does and why the seam between the
-field and its coloring is the one that matters. `src/spec.rs` documents the JSON, and
-the root [`FORMATS.md`](../FORMATS.md)'s *The render spec* lists every key with its range,
-and `src/mode.rs` the named colorings — **twenty** of them, in four shapes: one
-field, two fields blended, a base whose palette position a second field shifts,
-or no field at all. Eight field · six composite · two modulate · four direct, and
-`de` is the one of the twenty that is not production — so **nineteen** is the
-count everything downstream draws from, and the two numbers are a catalog total
-and a tier below.
+The search — `rng`, `screen`, `foci`, `expand` — decides *where* to render, never *how*.
+`expand` and `screen` share one `screen::Battery` (interior cap on a 128-pixel probe, the cap
+on the node render, the escape band, the occupancy floor); a crate test asserts both give a
+candidate the same fate. `foci::Frame` caches a parent's focus set and centroid, consuming no
+random stream; `expand`'s `report_foci` (off, byte-identical off) reports the set.
 
 ## `render-link`: an explorer link, drawn without Python
 
@@ -64,771 +42,126 @@ and a tier below.
 fractal-engine render-link --link <URL|query> --size WxH [--ss N] [--out FILE.png|.jpg] [--data DIR]
 ```
 
-The link is the website explorer's own address — a whole URL, `?query` or the bare
-query — and the command draws it at `--size` with `--ss` samples per pixel per axis
-(default **3**; a release is drawn at 2, `release.RELEASE_REGIME`), writes a PNG or,
-for `.jpg`, a JPEG (default `render-link.png`), and **embeds the link in the file**: a
-PNG `iTXt` tag and XMP packet, a JPEG comment, XMP and EXIF, byte for byte what
-`curation/embed_link.py` and the site's `stamp.js` write (`src/embed.rs`,
-`tests/test_render_link.py`). stdout is `render`'s JSON report plus `link` — the
-canonical query, which is what the file carries — `url`, `levelled` and `data`.
-Python reaches it as `engine.render_link`.
+`--ss` defaults to **3**, `--out` to `render-link.png`. The link is **embedded in the file**
+(PNG `iTXt` and XMP; JPEG comment, XMP and EXIF), byte for byte what `curation/embed_link.py`
+and the site's `stamp.js` write (`src/embed.rs`). stdout is `render`'s report plus `link`
+(canonical query), `url`, `levelled`, `data`. Python: `engine.render_link`. Link keys:
+`FORMATS.md`'s *The explorer link*.
 
-Every key a link may carry is listed in [`FORMATS.md`](../FORMATS.md)'s *The explorer link*;
-the website's `explorer/README.md` owns the vocabulary.
+**A link replays; nothing re-derives.** `src/link.rs` parses by `permalink.js` (`v=1`–`4`)
+and `deep-link.js` (`dv=1`–`3`); `mode::tune` applies mode parameters;
+`autolevel::curved_stops` replays `level=`. So a v3+ link omitting a derived parameter
+(`weight`, `opacity`) is refused with the fix, `--size` must match the link's aspect (`a=`,
+default 16:9), and a `curve` under a direct trap is refused.
 
-**Every step is this crate's.** `src/link.rs` parses the link by `permalink.js`'s rules
-(`v=1`–`4`) and `deep-link.js`'s (`dv=1`–`3`), `mode::tune` applies its mode parameters
-(`RenderSpec.params`, by the link's own names), `autolevel::curved_stops` replays its
-`level=` curve on the map's stops before the bake, and the render is `render`'s. A link
-**replays**; nothing re-derives. Two refusals follow from that: a v3+ link that leaves out
-a derived parameter (`weight` on the angle composites, `opacity` on three traps) means
-"measure it off the canvas", and there is no canvas here, so it is refused with the
-fix; and `--size` must be the link's aspect (`a=`, default 16:9) to the nearest pixel.
+**Data is found**: `--data DIR`, else `$FRACTAL_ENGINE_DATA`, else the first `data/` holding
+`palettes/` and `anchors.jsonl` walking up from the working directory, then the executable.
+The levelling band is compiled in from `data/coloring/levels_band.json`.
 
-**The data it reads is found, not configured**: `--data DIR`, else `$FRACTAL_ENGINE_DATA`,
-else the first `data/` holding `palettes/` and `anchors.jsonl` walking up from the working
-directory, then from the executable — so a clone's own `data/` is found from anywhere in
-the checkout and from `engine/target/release`. What it reads there is `palettes/<p>.json`
-(the library the site's `palettes.bin` is baked from) and `anchors.jsonl` (the constants a
-Julia or Phoenix link without `cx`/`cy` opens at). The levelling band is compiled in from
-`data/coloring/levels_band.json`.
+**The parse is the site's**: `fixtures/link-cases.json` carries the site's own answers (and
+its generator); `link::tests::the_parsers_are_the_sites` holds every row. Against the pipeline
+it is a tolerance (`tests/test_render_link.py`).
 
-**The parse is the site's, and a fixture says so.** `fixtures/link-cases.json` is 730
-links — gallery seats across every collection and mode, the 105 Deep gallery rows, every
-figure link in the article, and the contracts' corners, `curve` and `knee` among them —
-each with the view and the canonical string, or the refusal, that the site's own modules
-gave under node. The generator travels inside the fixture, with the website commit it ran
-at; `link::tests::the_parsers_are_the_sites` holds every row, the view's `curve` included.
-A link's `curve` is the site's: read wherever it is not the mode's catalog curve, written
-back the same way, and `render-link` draws through it (`link::with_curve`), refusing one
-under a direct trap as the explorer's module does *(link_fidelity_ckpt157)*.
+**Deep links are drawn by the explorer's own kernel.** A `dv=` link goes to
+`deep::Perturbation`, over `../perturbation`, behind the default `deep` feature (off in the
+website's `engine-wasm`; without it `link::NotBuilt` refuses), coloured by
+`link::shade_lanes`. A link without `scale` is refused (the arrival fit is `fit.js`'s); the
+reference orbit is at the view's centre; the cap is `n`, else the width's. `deep::tests` holds
+native draws to `fixtures/deep-cases.json` (the website's `perturb-scalar.wasm`): mask and
+counts exact, lanes within four ulps, pixels within one level.
 
-**Against the pipeline it is a tolerance, not an identity — and measured, it is zero.**
-The pipeline bakes a levelled map from stops rounded to nine decimals and read back
-through `serde_json`; this bakes from the unrounded ones, so a byte *may* move at a
-rounding boundary, and nothing promises it will not. On ten `final139_general` seats in ten
-modes (two of them levelled) at 1280x720 ss2, against `release.render_task` of the same
-recipe, **every pixel of all ten came back identical** (2026-09-25). A levelled seat is also
-about half the release's time, because a link replays its curve where a release measures
-one and renders twice. `tests/test_render_link.py` is the standing check, at a tolerance.
-
-**Deep links are drawn by the explorer's own kernel** *(deep_seam_move_ckpt163)*. A `dv=`
-link goes to a `link::DeepBackend` — lanes in, the engine's own colouring out
-(`link::shade_lanes`, held to a smooth render byte for byte) — and the backend is
-`deep::Perturbation`, over `../perturbation`: the picture kernel the website's Deep tab
-compiles to `perturb.wasm`, one copy for both, which this crate takes behind its default
-`deep` feature (the website's `engine-wasm` turns it off, and builds without it get
-`link::NotBuilt`, which refuses). The rows are drawn on every core. What a backend has
-to settle before its pictures are the tab's is in the trait's doc comment, four points,
-and `deep.rs` says how each is settled:
-
-- **the arrival fit** for a link without `scale` is not ported — it is `fit.js`'s own
-  search, not `autolevel`, and depends on the reader's window — so such a link is
-  refused with a sentence that says how to get a link that names one;
-- **the reference orbit** is the cold open's, at the view's own centre;
-- **`libm`** is the platform's, so a frame is the tab's within a tolerance, not always
-  its bytes;
-- **the cap** is the link's `n`, else the width's default, with no settle.
-
-**Measured against the tab, it is one unit in the last place on a few samples, and no
-pixel.** `fixtures/deep-cases.json` is what the website's committed `perturb-scalar.wasm`
-drew and `engine.wasm` coloured for the kernel's 142 parity specs at their own grids and
-the 105 Deep gallery links at 32x18, one sample a pixel, with its generator inside it;
-`deep::tests` holds a native draw of each to it — the interior mask and the iteration
-counts exactly, the lanes within four units in the last place, the pixels within one
-level a channel (the one gallery link with no `scale` records none, as render-link refuses
-it) — and prints every case that is not identical. On this box (Windows) 13
-of the 247 differed, each by one unit on one or two samples, from the platform's `ln`;
-narrowed to `f32` for colour every lane agreed, and every pixel was identical. Another
-operating system's C runtime is held to the same tolerance by CI. `--ss 3` stays
-`render-link`'s default; the fixture's grids are ss 1, as the tab draws.
-
-**Two copies, for now.** `src/autolevel.rs`, `src/derive.rs` and `mode::tune`/`set`/
-`params_of` were copied from the website's `explorer/engine-wasm`, which keeps its own
-until a later website prompt imports these and deletes them; each copy names the other,
-and the autolevel tests read that crate's fixtures in place, skipping where the checkout
-is absent. `float_roundtrip` stays off: a link's numbers are read by `str::parse`, and
-the tests that compare stored doubles read them through `exact_json` instead.
+`src/autolevel.rs`, `src/derive.rs` and `mode::tune`/`set`/`params_of` are copies of the
+website's `explorer/engine-wasm`; each names the other.
 
 ## The cap is a policy, and one door still cannot name another
 
-`maxiter::for_width` is the depth policy, and a spec that says nothing about the
-cap gets it. A spec that does say — `RenderSpec`'s `maxiter` — wins over it
-(`an_explicit_maxiter_wins_over_the_policy`), and that explicit cap is carried as
-a key wherever a picture is named: the recipe a ledger row keeps, the explorer's
-deep link (`n` since its first version), and **since the explorer's permalink v4
-the shallow link too** — `n`, written only where the cap is not the policy's, so
-every link to a policy-cap view is the string it always was. On this side the
-recipe→link writer is `curation/pins.py`'s `query_of`, which emits `n` whenever a
-view's `maxiter` is not what `maxiter_for` gives at its width.
-
-**The one exception is `expand.rs`'s `Node`.** A walk node is a centre and a width
-and nothing else, and every rung it proposes is drawn at `for_width` of the parent's
-width and of the child's, so a node cannot carry a cap somebody chose. That is a
-separate open item and is left alone here.
+`maxiter::for_width` is the policy; an explicit `maxiter` wins
+(`an_explicit_maxiter_wins_over_the_policy`) and travels with the picture: the ledger recipe
+and the links' `n` (`curation/pins.py`'s `query_of` writes it only off-policy). **Except
+`expand.rs`'s `Node`**, a centre and a width drawn at `for_width`.
 
 ## The escape loop is written out per family and per channel set
 
-`iterate::run` is one loop with eleven per-iteration channel checks and a `match`
-over the families inside it, and it collapses to the bare recurrence only when
-the compiler can see **both** the family and the channel set at the *call site*.
-Then the checks fold away, `cpow`'s loop unrolls at a known degree, and the parts
-of the `Orbit` nobody reads stop being built. Hand either one in as a runtime
-value and none of it happens.
+`iterate::run` collapses to the bare recurrence only when the call site sees **both** family
+and channel set as constants. `field::sweep_row` constructs both fresh over the twelve
+`field::Channels` sets times `family::over_written_out!`'s families; every catalogued mode
+lands in the table, and two channels at once fall to the generic loop (same numbers, slower).
+Worth 1.1x–2.45x.
 
-So the call site is written out rather than parameterized. `field::sweep_row`
-matches its `Family` and its `Wants` into a table and **constructs** both fresh —
-construction is what makes them constants — over the twelve channel sets of
-`field::Channels` (the empty set, and each channel alone) times the nine families
-of `family::over_written_out!`. Every catalogued mode lands in that table: a
-composite lays its texture over the smooth base, and the smooth base asks the
-loop for nothing, so a composite's channel set is its texture's single channel.
-Two channels at once is reachable only from a hand-written coloring or a
-multi-field dump, and falls through to the generic loop — same source, same
-numbers, slower.
+**There is no benchmark**; three tests are the guard: `every_production_mode_takes_the_specialized_loop`,
+`every_field_has_a_call_site_of_its_own`, and `debug_assert`s on the fallthrough and in
+`gather`. `the_specialized_loop_is_the_generic_one_bit_for_bit` ties the paths. A render is
+`sample` → `gather` → `sweep_row` a row at a time; `sweep_row` is `pub` for the site's wasm,
+which draws a band of rows per worker.
 
-Measured on this repository's own machine, interleaved before-and-after at
-640x360 ss2 over the home view of each family, best of three:
+**Interior samples skip the cap** where every field reads an escape (`smooth`, `discrete`,
+`stripe`, `tia`, `curvature`, `threads`, `exp_smoothing`, `decomposition`, `de`):
 
-| family | smooth | tia | stripe | gaussian_int | threads | itinerary | de | all modes |
-|---|---|---|---|---|---|---|---|---|
-| mandelbrot | **2.45x** | 1.42 | 1.16 | 1.19 | 1.41 | 1.88 | 1.68 | 1.34 |
-| multibrot d=3 | 1.90 | 1.51 | 1.14 | 1.22 | 1.39 | 1.65 | 1.61 | 1.34 |
-| multibrot d=4 | 1.49 | 1.43 | 1.18 | 1.22 | 1.29 | 1.31 | 1.44 | 1.28 |
-| multibrot d=5 | 1.24 | 1.33 | 1.15 | 1.25 | 1.27 | 1.21 | 1.42 | 1.25 |
-| julia d=2 | 2.11 | 1.41 | 1.20 | 1.18 | 1.37 | 1.31 | 1.56 | 1.31 |
-| julia d=3 | 2.05 | 1.52 | 1.18 | 1.18 | 1.41 | 1.80 | 1.68 | 1.35 |
-| julia d=5 | 1.29 | 1.33 | 1.18 | 1.19 | 1.23 | 1.20 | 1.40 | 1.24 |
-| phoenix | 1.21 | 1.07 | 1.04 | 1.11 | 1.10 | 1.13 | 1.48 | 1.12 |
-| fractional d=2.5 | 1.09 | 1.06 | 1.07 | 1.14 | 1.06 | 1.07 | 1.06 | 1.08 |
+- before the loop: the cardioid and period-2 bulb, and a disk inside the degree-3–6 main
+  component, each with a `1e-3` margin;
+- in the loop (`Wants::interior`, `iterate::Interior`, every sixteenth step): a disk about the
+  Julia cycle proven to map into itself, and on every family an exact bit repeat (Brent);
+- orbit-reading modes stop only at a repeat, where it makes the reading final
+  (`FieldSpec::is_final_at_a_repeat`, `Interior::REPEAT`): minima/maxima, a full head address,
+  an exact tail roll (`Symbols::rolls_exactly`). Means and direct traps iterate on.
 
-**The two halves separate cleanly, and the bottom two rows are how.** Phoenix's
-step is `z² + c + p·z₋₁` with no `cpow` to unroll, and `fractional_multibrot` is
-not in the table at all — so both of them measure the *channel* half alone, and
-both land near 1.1x. The gap between that and mandelbrot's 2.45x is the *family*
-half. A direct trap, which paints in its own loop and never reaches this one, is
-the control: 0.96x to 1.05x throughout.
+All held byte-identical by `fractal-wallpapers identity` (and `--edges`) and
+`the_interior_tests_move_no_sample`. At `ss = 1` the resample is skipped, chunked across
+cores (`resample::encode_only` says why).
 
-The win shrinks as the recurrence gets more expensive, in both directions: down
-the modes, because a `sin` or a `hypot` per iteration is work no folding removes,
-and down the degrees, because `cpow` at `d = 5` is four multiplies whether or not
-it unrolls. Two written-out families are cheap enough that the loop around them
-is most of the cost, and those are the two that move.
+## Mode catalog rules
 
-It costs **175 KB of binary** (1.75 MB to 1.92 MB) and about **8 s** of the
-crate's release compile (15 s to 23 s). Nothing else about the render changed: 347
-renders spanning every family and every catalogued mode at all three live
-geometries — 640x360 ss2, 384x216 ss1 and 2560x1440 ss4 — are byte-identical
-before and after, and `field::tests::the_specialized_loop_is_the_generic_one_bit_for_bit`
-holds the two paths together on every run of the suite.
-
-**Three guards keep production out of the generic loop**, because a silent
-fallback costs a multiple of the render time and shows up as nothing at all.
-`every_production_mode_takes_the_specialized_loop` walks the mode catalog over
-every family and asserts `field::takes_the_specialized_loop`;
-`every_field_has_a_call_site_of_its_own` catches a twelfth channel added without
-one; and the fallthrough arms carry `debug_assert`s that fire if something the
-table claims to cover reaches them. The `match` over `Channels` is exhaustive, so
-an arm cannot simply be deleted.
-
-**Those three tests are the whole standing guard, because there is no benchmark
-in this crate.** No `benches/` directory, no bench target in `Cargo.toml`, no
-criterion dependency — the table above was measured by hand, interleaved
-before-and-after, and is a record of one reading on one machine rather than
-something CI re-takes. So a regression in the *numbers* would not be caught here;
-what is caught, on every run of the suite, is the thing that actually costs a
-multiple of the render time — production silently falling into the generic loop.
-Re-taking the measurement means re-running it by hand. Do not go looking for a
-`cargo bench`.
-
-**`field::sweep_row` and `field::Channels` are `pub` under a carve-out, and the
-consumer is the browser.** The site's wasm module draws a *band* of rows at a
-time, one band per worker, so it cannot reach the specialized table through
-[`sample`] — which takes a whole frame. While `sweep_row` was private the wasm
-build carried a hand-written copy of the escape loop instead, and a second copy of
-the recurrence that nothing holds to this one is how a page comes to quietly
-disagree with a render. Visibility is the whole of what that consumer needs:
-coordinates are formed from the **whole** viewport with a global row index, which
-is exactly what a band wants, and a row appends to `lanes` rather than filling
-them, so a caller may sweep any range of rows into one buffer.
-
-Which is also the precise reading of where the specialization lives: **the table
-is `sweep_row`'s**, and `field::sample` is not a second specialized entry point —
-it reaches the same table through `gather`, one row at a time. So **production is
-specialized**: every native render is `sample` (or `sample_exact`) → `gather` →
-`sweep_row` a row at a time, and `gather` carries a `debug_assert` that its own
-dispatch and `takes_the_specialized_loop` agree — which is what makes the three
-guards above claims about the path production really takes rather than about a
-table nothing reaches. Anything that calls
-`sweep_row` directly gets the specialization; anything that hands the family or
-the channel set in as a runtime value gets the generic loop, same source and same
-numbers, slower.
-
-**The direct trap's own loop takes the family half of the table**
-*(profiling_pass_ckpt146, 2026-09-24)*. `direct_trap::trace` wraps its orbit loop in
-`family::over_written_out!`, so the family's `match` is taken once per orbit rather
-than once per iterate. The other three runtime choices — the trap shape, the
-transform and the merge — are still read inside the iteration: eight shapes times
-the twelve families is a code-size bill the measurement did not argue for. What it
-bought, alternated three times against the build before it at 640x360 ss2: the four
-traps on the mandelbrot anchor **1.09x to 1.16x** natively (`direct_trap_ring` 4.15 s
-to 3.59 s), within noise on the Julia and Phoenix anchors, and **1.24x to 1.32x** in
-the site's wasm build at the mandelbrot home view. Byte-identical over the same 360
-renders as the interior skip below, and the engine fingerprint did not move.
-
-**The main cardioid and the period-2 bulb are answered without iterating**
-*(profiling_pass_ckpt146, 2026-09-24)*, inside `sweep_row`, on the Mandelbrot
-family, and only where every field of the pass reads an escape (`smooth`,
-`discrete`, `stripe`, `tia`, `curvature`, `threads`, `exp_smoothing`,
-`decomposition`, `de`). A point inside either never escapes, so the loop would run
-it to the cap and every such field would reduce it to `None` whatever the orbit did
-on the way; the skip writes the same `NaN` and the same interior count. A field that
-has a value for a bounded orbit — a trap, the lattice, the step length, the address —
-reads the orbit itself and is never skipped. A point passes a classical test first
-(a handful of multiplies, all an exterior sample pays) and is then held to a margin
-of `1e-3` on the attracting cycle's multiplier, so a point near the parabolic edge
-is iterated as before; that margin is what makes "never escapes" true of the `f64`
-loop and not only of the set.
-
-**At degrees three to six the main component is not a closed form, and a disk inside it
-is.** Its boundary is `c = z(1 - λ/d)` over `|λ| = 1`, with `|z| = ρ = d^(-1/(d-1))`, so
-no boundary point is nearer 0 than `ρ(1 - 1/d)` — 0.25 at degree two, the cardioid's cusp,
-which is the check on the formula. A sample inside that radius less the same margin is
-answered the same way, for one `|c|²` against a constant. 504 frames at the disk's touching
-points and on the component's rim, at widths `1e-2` to `1e-9` and both caps, byte-identical;
-the multibrot home views at 640x360 ss2, alternated three times, `smooth` 1.28x at degree
-three to 1.78x at six and `stripe` 1.32x to 1.93x, the Julia anchor flat beside them.
-
-**It is byte-identical and it is the largest speedup this crate has had**:
-360 renders over every family home and the three anchors in every catalogued mode,
-plus 216 frames on the cardioid's and the bulb's edges — the cusp, the junction,
-seven boundary points at widths `1e-2` to `1e-9`, at the policy cap and at an
-explicit 50,000 — all identical, and the fingerprint (`5d97e76bb16be71d`) with
-them. Alternated three times: the mandelbrot anchor at 1600x900 ss4 in `smooth`
-**24.4 s to 1.86 s**; at 640x360 ss2, `smooth` 11x, `tia` 15x, `threads` 15x,
-`stripe` 12.9 s to 0.73 s; a frame over the cardioid and the bulb, `stripe`
-29.9 s to 0.52 s. The two anchors that are not the mandelbrot family, and every
-mode that fills the interior, came back unchanged, which is the control.
-
-**And the orbits the skips cannot see are stopped once proven interior** *(website
-interior_seam_deep_autorender_ckpt146, 2026-09-24)*. The skips above answer a sample before
-the loop from where the pixel is; this answers it inside the loop from where the orbit has
-got to, under the same condition — every field of the pass reads an escape — and through
-the one seam the brief asked for: `Wants` gains `interior`, which `sweep_row` alone sets,
-with `iterate::Interior` and `Interior::of` beside it. A stopped orbit leaves the loop as
-one that ran out of iterations does, so it reduces to the same `NaN` and counts as the same
-interior. Two tests, each exact:
-
-- **A disk the cycle carries into itself, on the Julia planes.** `z ↦ z^d + c` has one
-  critical point, `0`, so at most one attracting cycle, and that cycle attracts `0`'s orbit:
-  10,000 steps of it, then the first return within `1e-9` in at most 64 steps, find the
-  cycle `z₀ … z_{p−1}` or say there is none. The proof is per step: for `|h| ≤ r`,
-  `|f(zᵢ + h) − z_{i+1}| ≤ Σ_{k=1}^{d} C(d,k)|zᵢ|^{d−k} r^k + |f(zᵢ) − z_{i+1}|`, the binomial
-  expansion under the triangle inequality plus the `f64` cycle point's own residual, and
-  `1e-10` more per step for the loop's rounding of it (under `1e-12` at `|z| ≤ 3` and degree
-  six). Chained round the cycle from `r₀`, a disk about `z₀` is taken when the return lands
-  within `(1 − 1e-3) r₀` and no link passes 1: an orbit inside it comes back inside it every
-  `p` steps for ever, never more than `rᵢ ≤ 1` from the cycle between, so it never reaches the
-  bailout. The largest power of two that closes is bisected upward, and the loop tests
-  against a radius `1e-6` smaller, far more than `|z − z₀|²`'s rounding at `r₀ ≥ 1e-6`. At the
-  site's shipped `c` it finds radius 0.115 at degree three, 0.042 at four, a period-15 cycle's
-  0.024 at five and 0.157 at six; degree two has no attracting cycle there. Computed once per
-  thread and family.
-- **An exact repeat, on every family.** The loop is a deterministic function of its state —
-  `z`, and on Phoenix `z_{n−1}` too — so a state whose bits come round again is a cycle the
-  orbit never leaves, and one that has not escaped never will. Brent's scheme keeps the state
-  at each power-of-two step and compares every step with it, on `to_bits` so that `-0.0` is
-  not `0.0` (the fractional family's `atan2` tells them apart). It needs no proof per family,
-  and it is what catches the parameter planes' interiors outside the cardioid, the bulb and
-  the disk — once rounding has settled an orbit on a float cycle, which is later than a disk
-  would.
-
-**Phoenix gets no disk.** It steps a pair `(z, z_{n−1})`, and a disk proof needs a norm on
-that pair; the repeat covers it.
-
-**The modes that read an interior orbit stop at a repeat where it makes what they read
-final, and never at the disk** *(interior_seam_orbit_modes_ckpt147, 2026-09-24)*. Once the
-state at step `n` is the state at an earlier `s`, every later iterate is one of
-`z_{s+1} … z_n`, all of them already accumulated. An orbit inside the disk is still
-wandering towards its cycle, so the disk proves only that it never escapes, and the cardioid,
-the bulb and the Multibrot disk never iterate at all — none of the three has an orbit to read
-a statistic from. `FieldSpec::is_final_at_a_repeat` decides, per field; a pass where every
-field is final there, and not every field is escape-only, is handed `Interior::REPEAT`, the
-repeat with no disk. So:
-
-- **Stops: a minimum or maximum.** The circle and cross traps (`trap_circle`,
-  `smooth_trap_circle`), the lattice's nearest and farthest (`gaussian_int`,
-  `smooth_angle_min`), and every reduction read off them — `iter_min`, `iter_max`,
-  `angle_min`, `angle_max`, `ratio` — because the strict comparisons keep the first step and
-  iterate the extreme happened at, and a revisit only ties it.
-- **Stops: a head address** (`itinerary`), once it holds `depth` symbols — nothing is appended
-  after that. A repeat found before it is full is let pass, and the next one, sixteen steps
-  on, is taken.
-- **Stops: a tail address** (`tail_itinerary`) **whose roll is exact**, which
-  `Symbols::rolls_exactly` states: a power-of-two base at least `sectors`, and
-  `depth·log₂base ≤ 53` — the mode's base four to 26 symbols is 52 bits. Then the address is
-  the last `depth` symbols before the cap and nothing else. The state repeats every
-  `n − s` steps, so the loop steps round `(left − depth) mod (n − s)` without spelling, to
-  where the cap's window opens, and spells the `depth` symbols the cap would have ended on —
-  at most a cycle and a window of steps where the cap was thousands. In a base that rounds,
-  the roll carries history its window no longer shows, only the whole run reproduces it,
-  and the tail keeps iterating.
-- **Iterates: a mean.** The lattice's `average_distance` and `mean_angle` (and so
-  `smooth_mean_angle`) and the step length sum a term for every step to the cap.
-- **Iterates: the direct traps**, which composite a colour per iterate and are not in this
-  sampler at all.
-
-What it bought, alternated three times against the build before it at 640x360 ss2
-(medians): at the Mandelbrot anchor `itinerary` **11.05 s to 1.17 s**, `tail_itinerary`
-13.31 s to 1.49 s, `gaussian_int` and `smooth_angle_min` 8.5–8.7 s to 0.98 s, the two circle
-traps 1.7 s to 0.24 s; at julia6 on the shipped `c`, 19x to 31x (`itinerary` 8.41 s to
-0.29 s); at the Mandelbrot home 2.3x to 4.1x. `smooth_mean_angle`, which reads the lattice's
-mean and keeps iterating, is the control and came back 1.00x at all three. The three anchors
-at 1600x900 ss4, alternated five times: Julia 0.99x, Mandelbrot 1.01x, Phoenix 1.01x — noise.
-The edge frames `fractal-wallpapers identity --edges` draws now include `smooth_angle_min`,
-`itinerary` and `tail_itinerary` beside `smooth_trap_circle`, one mode per statistic the
-repeat serves. **Byte-identical**: the 540-render battery and all 3,312 edge frames against
-the build before it, the fingerprint unmoved (`5d97e76bb16be71d` / `cbd9bc03a0f33e1c`), and
-`the_interior_tests_move_no_sample` now holds every field the repeat is handed — each
-lattice reduction, the address in all three windows, the tail at two caps a cycle's phase
-apart — to the uninterrupted orbit on the bits. The edge run itself went from 34,100 to
-9,500 render-seconds. In the four orbit modes the Julia disks' rims went 23,073 s to 588 s
-and the Multibrot frames 5,083 s to 3,352 s, while the cardioid's and the bulb's rims gave
-back 6% (3,323 s to 3,115 s): an orbit near a parabolic point settles onto a float cycle
-slowly, or not before the cap.
-
-**The tests run every sixteenth step, not every step.** Every step cost the orbits they
-never catch — most orbits on most frames — up to 15%: the Phoenix anchor at 1600x900 ss4
-went 1.61 s to 1.86 s. An orbit in the disk stays there, so a late test loses nothing, and
-the repeat, compared at multiples of sixteen and saved at powers of two, still meets a
-cycle of length `L` once the saved step passes `16·L`. Alternated five times against the
-build before the seam, at 1600x900 ss4: the Julia anchor **1.04x**, the Phoenix anchor
-**0.99x**, the Mandelbrot anchor **1.77x** (the repeat catches its minibrots' interiors).
-At 640x360 ss2, the controls that nothing catches are within 1–3%.
-
-**What it bought, on the planes that were the dearest homes.** At the shipped `c`, 640x360
-ss2, medians of three: `smooth` julia3 1.03 s to 0.077 s, julia4 1.50 s to 0.073 s, julia5
-1.17 s to 0.154 s, julia6 2.69 s to 0.080 s; `stripe`, which pays an `atan2` and a `sin` a
-step, julia3 9.05 s to 0.105 s and julia6 11.06 s to 0.119 s. In the site's explorer, time
-to the finished picture: julia3 3.3 s to 0.6–0.8 s, julia4 4.5 s to 0.6 s, julia6 7.9 s to
-0.7 s. The Multibrot homes at `smooth` 0.20–0.66 s to 0.11–0.14 s, the repeat catching
-what the disk about 0 leaves. `itinerary`, the traps and the angle modes read the interior
-orbit and were unchanged by it; the repeat reached them next, above.
-
-**The stride costs a longer cycle something.** julia5's cycle has period 15, so an orbit is
-near the disk's centre once every fifteen steps and a test every sixteenth meets it once in
-`lcm(16, 15) = 240`: 7.6x where every step gave 15x. A disk about every cycle point would
-close that at `p` compares a test; not built.
-
-**Held to zero behaviour through `fractal-wallpapers identity`**, the battery this change
-promoted from an ignored script to a command: 540 renders (every family's home at the
-shipped and the older constants, the three anchors and an interior frame, every catalogued
-mode, 384x216 ss1 and 640x360 ss2) and 1,656 edge frames (the cardioid, the bulb, each
-Multibrot disk's touching points and rim, and three points on each Julia disk's rim, widths
-`1e-2` to `1e-9`, the policy cap and 50,000) byte-identical to the build before it; the
-fingerprint unmoved (`5d97e76bb16be71d` / `cbd9bc03a0f33e1c`); engine tests 229 unmoved
-plus two new, one holding every escape-only field over every family to the uninterrupted
-orbit on the bits and one running a grid over each disk to 100,000 without an escape. The
-site's `engine.wasm` drew identical lanes and shaded pictures on 289 frames x 17 modes.
-
-**And at `ss = 1` the resample is skipped.** The Lanczos kernel at a reduction of
-one normalizes to exactly 1.0 on the centre tap, so both passes are a long way to
-copy a buffer; `resample::downsample` encodes straight from the source instead.
-Byte-identical over 171 renders at the node regime, which is the geometry that
-matters here — 384x216 `ss = 1` is the walk's own frame, drawn tens of thousands
-of times a run — and worth about **0.9 ms** of a node frame whose paint, after
-the specialization above, is 16 ms.
-
-That skip has a trap in it, and it is written down at `encode_only` because it
-reverses the sign of the change: the two passes it removes were **rayon-parallel**
-and the encode replacing them was not. The expensive half of a resample is one
-`powf` per output channel, and both paths do exactly the same number of those —
-so a serial skip *lost* to the filter, 0.85x, by trading fifty cheap operations
-for the parallelism on the one costly one. Chunked across the same cores it is
-1.03x to 1.20x.
-
-Every catalog entry carries a **tier**. Nineteen are `production` — a run may draw
-them, and the finished-render judges were trained on them. One is `niche`: `de`,
-renderable on demand by name and excluded from every production draw. `threads`
-and `itinerary` were niche too, until a round of labels over both of them said
-they were worth drawing. The exclusion is enforced in one place on each side of
-the boundary — `mode::production_names` here, `engine.production_modes()` in Python —
-so it is a property of a function rather than a rule every draw site remembers.
-`fractal-wallpapers modes` prints the tier beside each name.
-
-One catalog entry is not the same coloring on both planes. `itinerary`'s address
-can open on `z₀`, which on a dynamical plane *is* the pixel — so its leading symbol
-is the pixel's own angular sector and the modulate draws it as a hard wedge along
-the axes. `{"kind": "itinerary", "start": "z1"}` opens the address at the first
-iterate instead, so every symbol is one the recurrence produced. **The named mode
-asks for `z1` wherever the pixel is `z₀`** and for `z0` on the parameter planes,
-where `z₀ = 0` leaves no wedge to remove and the engine refuses the other. The
-choice is in the record either way, so the picture and its coloring say the same
-thing. `fractal-engine modes` has no family to answer for, so it prints the
-parameter-plane form.
-
-**`start` has a third value, and it is a window rather than a start.**
-`{"kind": "itinerary", "start": "tail"}` reads the **last** `depth` symbols the
-orbit spelled before it stopped, instead of the first — `Address::roll`, a rolling
-window whose whole rule is `frac(value·base) + sector·base^-depth`. It is exact
-where `base >= sectors`, which is the only way the catalog asks for it (four
-sectors in base four); under a smaller `weight_base` the retained window can reach
-past 1 and `fract` takes a bite out of a symbol that was meant to stay, which is
-stated at the function rather than refused. An orbit shorter than `depth` fills
-the window from the bottom and so reads with leading zeros, which puts the
-address's structure where the orbits run long — the boundary — and leaves the
-fast-escaping exterior at the smooth base spent by rank.
-
-`z₀` is never in a tail address, so there is no wedge for a plane to make and
-nothing to renumber: **`tail_itinerary` is one coloring on both planes**, and
-`Coloring::agrees_with_family` says so as a three-way match over `AddressStart`
-rather than by not naming the variant. `tail_itinerary` is the catalog mode — the
-same sectors, base, depth and half-turn shift as `itinerary`, with only the window
-moved, so the two render as a comparison of the window and nothing else.
-
-**A modulate can degenerate into an exact spelling of another mode, and it says
-so.** `Coloring::Modulate` spends its base by rank and shifts where in the
-gradient each rank lands by the normalized texture — `position = frac(rank(base)
-+ shift · normalize(texture))`. Normalizing needs a span, and `Stretch::over` has
-an `else` branch for when there is none: every sample at one value, or none of
-them at a value at all. Then `spread.position` is `0.0` everywhere, the
-per-sample phase is the recipe's own phase everywhere, and the picture is
-`frac(rank(base)·cycles + phase)` through the map. The shift is still applied; it
-is applied to zero. **That is not a picture resembling the base spent by rank, it
-is that render bit for bit** — and since every catalogued composite and the
-modulate are all built on `smooth_base()`, which
-`smooth_is_the_default_and_the_base_of_every_composite` asserts over the whole
-catalog, a degenerate `itinerary` or `tail_itinerary` render is the `smooth` mode
-at `transfer: {"kind": "rank"}` and nothing else. Confirmed by sha256 at the
-candidate regime, not only in the arithmetic.
-
-So the `else` branch is reported rather than discarded. `Stretch::is_flat` keeps
-it, `modulate` returns it beside the colour, `Painted::texture_flat` carries it up
-and `RenderReport.texture_flat` prints it — `Option<bool>`, absent for every
-coloring with no texture layer to be flat, which is all of them but the two
-modulates.
-It is absent by `skip_serializing_if` for the same recorded-name reason
-`Composite::texture_gamma` is. The rule is about the modulate *shape* and names no
-mode, which is why `tail_itinerary` needed nothing added to it. Python reads it in
-`fractal_wallpapers.curation.mode_policy.routed_mode`, which is where the
-consequence lives: such a render routes as `smooth` wherever a mode or a kind is
-decided. **A flat texture is a no-op recolour and not a weak one** — this is the
-difference between the modulate and a composite, where a flat texture blends
-toward a constant and makes a *worse* picture rather than a different mode's.
-
-Width does not predict it and a dumped field cannot measure it. Over the 1,962
-`itinerary` rows in the candidate ledger the widest degenerate frame is wider
-than the narrowest varying one in every one of the nine partitions; and counting
-distinct values in the `f32` dump reads 1,280 degenerate against a truth of
-1,085, wrong 15.2% of the time, because `Address` spends its `f32` after eleven
-base-4 symbols against the catalogued depth of 26 and whole subtrees of the
-lamination collapse on the way in. That is the same fact `why_not_a_field` states:
-the texture is carried at `f64` precisely to keep it out of the dump.
-
-A field meant to be *looked at* rather than named stays out of the catalog
-entirely. There is one: `discrete`, the integer escape count, which is what the
-smooth count replaced and is in the crate so the article can show the two side by
-side. `fractal-wallpapers render --discrete [CYCLE]` draws it. A **teaching field
-has no business having a name**, so the guard is not "no mode is called
-discrete": `no_catalogued_mode_reads_a_teaching_field` walks every field every
-catalogued mode reads, both halves of a composite included, because the second
-way in is the one nobody would look for. The two readings really are one escape,
-and the smooth one refines the other — `the_smooth_count_lands_inside_the_step_the_orbit_left_on`
-pins `floor(smooth) == iteration` over five families and 3,600 pixels each, which
-is what makes the discrete render the *floor* of the smooth one rather than
-something merely similar to it.
-
-**A new field of a coloring must `skip_serializing_if` its default.** The render
-cache and the location head's deploy view both name a file by
-`renders.job_name`, a **truncated sha256 of the whole spec that goes over the
-wire** — every key the engine is told, and nothing else — so a key that appeared
-unconditionally would rename every picture the corpora were built from.
-`Composite::texture_gamma`, `Direct::merge_order` and the itinerary field's
-`start` are all written that way, and each says so where it is declared.
-
-**The same digest names a dumped field, and there the rule runs the other way.**
-`curation.colorize.field_of` keys the field cache with `renders.job_name` over a
-spec it *builds* rather than one it was handed, so a field-side axis added to the
-engine and left out of that spec would leave two different fields sharing one
-name — and every candidate recoloured off whichever was dumped first. The
-identity is therefore derived from the field-side members themselves
-(`renders.FIELD_IDENTITY`) rather than hand-listed at the call site, and
-`tests/test_curation_colorize.py` pins both halves: an added member moves the
-digest, and the digests of the specs already on disk do not move.
-
-**Three lists carry that, and adding an axis means classifying it.**
-`renders.SPEC_MEMBERS` is every row member `spec_of` reads — the whole of what
-the digest is over. `FIELD_IDENTITY` is the half a dumped field is a function of
-(the place, the geometry, the field the mode names and the curve it is read
-through); `RECOLOR_MEMBERS` is the rest (`colormap`, `recipe`), spent after the
-field is on disk, over and over, without iterating anything. Two candidates
-differing only in the second half are one field and thirty-two pictures.
-
-**`field_job_name` refuses rather than proceeds, in both directions**, which is
-what makes the classification mandatory instead of merely conventional. A member
-`spec_of` reads that is in neither list raises — "classify it" — because a field's
-name would otherwise not say whether it depends on that member. And a member
-declared field-side that the caller supplied no value for raises too, because a
-field cached without it would be shared by every value it can take. So an axis
-added to the engine cannot reach the field cache by being forgotten: one of those
-two refusals fires first. The failure being bought off is not one stale file — it
-is thirty-two wrong candidates, every one recoloured off whichever field was
-dumped first under a shared name.
-
-**A recolor is the render, through EVERY stage of the recipe.** `recolor` used to
-call `coloring::shade` and stop, and `shade` ends at the colormap lookup — so the
-recipe's last stage, `Rolloff`, which acts on the colour rather than on the index
-into the map, was applied by `render` and not by `recolor`. Nothing caught it,
-because every recipe this project renders through carries `rolloff: none`, which
-is a fact about today's recipes and not about the two paths. `coloring::toned` is
-now the single owner of that stage and `paint` and `recolor` both call it. It
-matters more than it did: `curation.colorize.render` serves a candidate out of a
-dumped field wherever the coloring has one, so "a recolour is the render byte for
-byte" is load-bearing for the candidate ledger rather than only for exploration.
-`tests/test_modes.py` pins all four curves, each held to *moving* the picture so
-the test cannot pass by testing nothing.
+- **`itinerary`** opens at `z1` on dynamical planes (no pixel wedge) and `z0` on parameter
+  planes; `start: "tail"` reads the last `depth` symbols (`Address::roll`), and
+  `tail_itinerary` is one coloring on both planes.
+- **A flat modulate texture is reported**: it is then `smooth` at `transfer: rank` bit for
+  bit. `RenderReport.texture_flat` carries it; `curation.mode_policy.routed_mode` routes it as
+  `smooth`. Only a render can tell (the texture is carried at `f64`).
+- **A teaching field has no name**: `discrete` is drawn by `fractal-wallpapers render
+  --discrete [CYCLE]`, guarded by `no_catalogued_mode_reads_a_teaching_field`.
+- **A new coloring field must `skip_serializing_if` its default**: `renders.job_name` hashes
+  the whole wire spec and names every cached picture.
+- **A dumped field is named by `renders.field_job_name`** over `FIELD_IDENTITY`;
+  `RECOLOR_MEMBERS` (`colormap`, `recipe`) is spent after. An unclassified `SPEC_MEMBERS` entry,
+  or a field-side member with no value, raises (`tests/test_curation_colorize.py`).
+- **A recolor is the render through every stage**: `coloring::toned` owns `Rolloff` for both
+  `paint` and `recolor` (`tests/test_modes.py`).
 
 ## The direct traps: a blend from white is not a screen upside down
 
-Four production modes make no field at all. `direct_trap::Painter::trace` watches
-the orbit and composites a gradient sample into the pixel at **every** near miss,
-so a pixel is the stack of every approach the orbit made, in order. That has one
-consequence the module used to state backwards, and it cost this project a whole
-mode's worth of pale pictures before anybody measured it.
+Four production modes make no field: `direct_trap::Painter::trace` composites a gradient
+sample at every near miss. `direct_trap_multiply` multiplies from white and `_screen` screens
+from black; they are symmetric in linear light only, so in Oklab the multiply is pale by
+construction (in-mask chroma p50 0.011 against ~0.046 for the other three).
 
-`direct_trap_screen` starts from black and screens; `direct_trap_multiply` starts
-from white and multiplies. Black absorbs a multiply, so the mode that multiplies
-*has* to start from white — but the two constructions are symmetric **in linear
-light and nowhere else**. For a neutral, Oklab `L = v^(1/3)`, so `dL/dv` is 0.333
-at white and 8.33 at `L = 0.2`. A multiply from white can lose at most
-`1 - opacity*(1 - sample)` of its ground per hit: 9.3 hits to reach `L = 0.5` at
-the impossible best case of alpha 0.20 and sample 0, and about 29 at a typical
-alpha 0.10 and sample 0.30. A screen from black clears `L = 0.2` in half a hit.
+⚠ **Never gate on clip share; the measure is in-mask chroma.** Every compressive operator
+(multiply from white, rolloff, gamma under 1, the autolevel band) drives clip share to zero on
+a white surface.
 
-Measured on the two modes' clearing candidates — near-white being the share of the
-frame at `L >= 0.90` and chroma `<= 0.06`:
-
-| mode | rows | in-mask chroma p50 | near-white p50 / p90 / max |
-|---|--:|--:|--:|
-| `direct_trap_multiply` | 138 | 0.011 | **0.434 / 0.708 / 0.950** |
-| `direct_trap_screen` | 134 | 0.046 | 0.005 / 0.061 / 0.360 |
-| `direct_trap_lines` | 82 | 0.045 | 0.084 / 0.456 / 0.924 |
-| `direct_trap_ring` | 29 | 0.047 | 0.053 / 0.358 / 0.555 |
-
-A matched test settles that it is the blend and not anything around it: same
-`Shape::Cross`, same threshold, same opacity, same place and same map, so the hit
-set and every per-hit alpha are identical and only `merge` and `start_color`
-differ. Multiply moves the frame **further** in linear light (0.0897 against
-0.0114 on one pair) and 7-25x **less** in Oklab (0.032 against 0.215). It is not
-autolevel — `applies_to` answers only for `field` and `composite`, and every one
-of those 138 rows carries `autolevel = null`. It is not the palette fold, which
-runs the other way: forced onto one location, a plain map is *whiter* than the
-same map mirrored, because folding halves how far up the ramp a key reaches. And
-it is not the colormap: Spearman(near-white, the map's mean spent Oklab L) is
-0.101, and restricting to the 143 darkest of the 901 maps of the day moves the median 0.434 to
-about 0.418. `direct_trap_multiply` already carries twice `direct_trap_screen`'s
-threshold and 1.33x its opacity, and it is still the pale one.
-
-⚠ **Never gate on CLIP SHARE. The measure is the in-mask chroma column above.**
-Clip share — the fraction of pixels pinned at the top of a channel — was tried as
-the whiteness detector and it is worthless, because **every compressive operator
-drives it to 0.000 while the surface stays white and flat**. A multiply from white
-never pins a channel: it approaches the ceiling from below and stops, so the pixels
-that make a picture look bleached are exactly the ones clip share is blindest to.
-The same holds for a rolloff, a gamma under 1 and the autolevel band — each lands
-the histogram short of the top and reads clean on a picture nobody would ship.
-In-mask chroma has no such blind spot: it falls when the surface goes pale whatever
-was done to the top end, and `direct_trap_multiply`'s **0.011** against
-`direct_trap_screen`'s **0.046** is the reading a clip-share gate would have scored
-identically at zero. Nothing in `src/` or `engine/` computes clip share today —
-this is a rule about code that does not exist, written down because there is
-nothing left to re-derive it from and nothing that would catch its reintroduction.
-
-**The fix is a mode-param variant, not an engine change.** `renders.coloring_of`
-writes a row's `opacity` and `threshold` into the coloring block, so a varied row
-is a new recipe key: nothing re-keys, no cached picture changes underneath its
-name, and no human label is voided. Editing the constants at `mode.rs` instead
-re-keys all 4,733 `direct_trap_multiply` rows the ledger holds, voids their
-sidecar scores, forces a full re-render — a direct trap cannot dump, so a recolour
-is a render — and invalidates **594 of the 5,298** human verdicts in the
-strange-render store (406 of 5,110 before `dtm_variants_20260902` landed), because
-they were cast on pictures that would no longer exist. Only 44 of the 594 override
-both knobs, so a change to either constant reaches all but those.
-
-**The variants were drawn, served and judged, and they do fix the whitewash.**
-`dtm_variants_20260902`, 188 human verdicts at label geometry, 2026-09-03. All four
-cells collapse the near-white share against the shipped mode's 0.434 median:
-`opacity=0.4` to 0.094, `opacity=0.6` to 0.032, `threshold=0.2` to 0.011, and both
-raised to 0.000. Matt's tier-4 rate over the batch is 21.8% against 1.8% on the 55
-shipped-setting rows this store already held, and the top tier is the whole of the
-gain — the three single-knob cells sit at 65.9-78.8% tier-3-or-better and mean tier
-2.92-2.95, while raising **both** knobs together overshoots: mean tier 1.93, 25.0%
-tier-3-or-better, and no ground left to lose.
-
-**Those 188 were drawn at LABEL geometry through the sheet, and the pool never got
-one.** `curation.mine.make` — what every mine and every depth leg renders through —
-dropped `mode_params` until 2026-09-08, so every varied row the *ledger* held was the
-bare mode's picture under the variant's key: 10,664 of them across thirteen legs, all
-re-rendered and re-scored the same day. The
-verdicts above are unaffected, and the reason the numbers still mean something is that
-the sheet's own renderer passed the settings — had it not, all four cells would have
-read identically and they do not. `curation/README.md`'s *`mine.make` dropped
-`mode_params`* has the defect and what it cost.
-
-**Redrawn into the pool after the fix, the finding reproduces.** 40 places where a
-bare row already clears `P(≥3) ≥ 0.50`, each drawn at every cell at candidate geometry
-through the fixed path, 2026-09-08: **near-white share 0.038 bare to 0.000 at every
-one of the four cells**, and median in-mask chroma 0.0209 bare against 0.0263
-(`opacity=0.4`), 0.0266 (`opacity=0.6`), 0.0215 (`threshold=0.2`) and 0.0206 (both).
-So a tinted variant does leave white — but read against what a seat actually looks
-like, the gain is small: the 1,000 seats of `20260908T201911Z` read 0.052 median for
-this mode and 0.067–0.138 for every other one, so the best cell lands at two fifths of
-the palest other mode's seats. **The mode is pastel by construction and the settings do
-not change that**; they move the traced lace off white and leave the ground light.
-
-**And the judge charges for it.** Of the 40 places, all 40 clear bare, against 27
-(`opacity=0.4`), 23 (`threshold=0.2`), 19 (`opacity=0.6`) and 4 (both) — the same
-direction as the `P(>=4)` bias below, now measured on the pool's own geometry.
-`opacity=0.4` is the only cell that buys chroma without spending most of the clears.
-
-**Paired at the same place, the direction is near-unanimous and the size is not.**
-Those medians are taken across places and cannot answer the question the cells were
-drawn to answer, which is whether a cell beats bare *at the place it was drawn at*.
-Read pair by pair over the same 40: `opacity=0.4` beats its own place's bare on
-in-mask chroma at **36 of 40**, `opacity=0.6` at 34, `threshold=0.2` at 30 and both
-at 26, with median gains of +0.0054, +0.0078, +0.0041 and +0.0035 — **+62% of the
-bare chroma at the median place**, which is a large relative move on a very small
-number and is why the across-place medians look flat. The four places where no cell
-beats bare are four where bare already sits at or above the median bare chroma of
-0.0209. **The cell that gains the most chroma at a place is usually not one that
-survives the judge** — the per-place best cell clears `P(≥3) ≥ 0.50` at only 16 of
-40, and it is `opacity=0.6` at 15 places and both at 9. `opacity=0.4` is the cell
-that holds the two together: all 27 of its clears are also places where it beat
-bare.
-
-**And the bias is the judge's alone.** On the three single-knob cells
-Spearman(chroma, `P(>=4)`) is **-0.291**, which reproduces the -0.269 above on a
-population the audit never saw; Spearman(chroma, Matt's tier) over the same rows is
-**+0.023**. The eye is indifferent to chroma and the judge is against it, so the
-disagreement between them is chroma-shaped: ranking the 188 by tier against ranking
-them by `P(>=4)`, Spearman(rank gap, chroma) is **-0.271** (p = 0.0002, -0.318 with
-the over-inked cell dropped). On a matched page — same place, same map, only the
-settings swapped — the judge's `P(>=4)` falls on 16-19 of 20 pairs per cell, by a
-median 0.37 to 0.73. Nothing here changes a roster; the cells are Matt's to dictate.
-
-**And an engine-side pixel change here used to be invisible twice over.** The
-recipe key digests the catalog block, which carries `shape`, `trap_radius`,
-`threshold`, `opacity`, `merge`, `start_color` and `transform` — and no
-arithmetic. So a whole-frame normalization, a gamma before the multiply, or a
-second clamp beside `SCREEN_CROSS_OPACITY_CAP` would change every direct-trap
-picture in the project while every file name held. The engine fingerprint did not
-catch it either: its probe set drew six field-and-composite modes and no direct
-trap. `engine_fingerprint.TRAP_PROBES` closes that half — one probe per trap,
-digested into `coverage()` rather than into the stamp, so the sample widens
-without restamping the views already on disk. What is still unguarded is the
-candidate pool itself, whose rows carry no engine at all.
+**The fix is a mode-param variant, not an engine change**: `engine_spec.coloring_of` writes a
+row's `opacity` and `threshold` into the coloring, so a variant is a new key and voids nothing;
+editing `mode.rs`'s constants re-keys the mode and voids its verdicts. `opacity=0.4` buys
+chroma at the least judge cost; the judge is biased against chroma where Matt's tiers are not.
+The recipe key digests no arithmetic, so `engine_fingerprint.TRAP_PROBES` guards trap pixels.
 
 ## The colormap: stops on disk, a folded table in the engine
 
-A file in `data/palettes` is **control points**, never a gradient, and it ships at
-one of four resolutions — 33 stops for 156 maps, 34 for 36, 257 for 334, 512 for
-495; 1,021 files and none at 4096. `Colormap::from_stops_baked` is the only densifier:
-the stops are sorted, converted to **OKLab**, interpolated there, and baked into a
-`TABLE_SIZE` (**4096**) entry table of linear-light RGB, regenerated on every load.
-Perceptual interpolation because a gradient interpolated in linear RGB is evenly
-spaced and visually lumpy; a table because a 2560x1440 render at ss4 is 59 million
-lookups that only ever take 4096 values.
-
-Two consequences a reader outside the crate has to carry. A lookup is **clamped and
-not wrapped** — `t` outside `[0, 1]` returns the end colour, and what falling off the
-end means is for the recipe's `cycles` and `phase` to say. And **anything comparing
-two maps has to sample positions through this interpolation** rather than compare
-stop lists, because two maps at 33 and 512 stops are two samplings of one curve and
-the difference between the samplings is not a difference between the maps.
-`palettes.groups.cloud` is the Python side of that: 4096 evenly spaced unfolded
-positions, `numpy.interp` in OKLab, end colours held outside the outermost stops
-exactly as `interpolate` holds them here.
-
-**Folding happens at bake time, from the recipe's `mirror`.** `colormap::mirror`
-runs the stops out across `[0, 0.5]` and back across `[0.5, 1]` — `n` stops become
-`2n − 1`, the two ends shared between the halves rather than duplicated, and the
-opening colour written again at `1.0` so the closing segment is the fold rather than
-the second-to-last colour held flat. It is applied **before** the OKLab conversion,
-so a folded map is a different 4096-entry table and not a different way of reading
-one. Production's rule is `mirror = the map is not cyclic`, owned by
-`models.palette_sets.recipe_for` and read off the gradient rather than off a row: of
-the 1,020-map candidate pool **155 are sequential and are folded, 865 are cyclic and
-are not**, and the engine refuses to fold a cyclic map at all.
-
-**The rule has no exceptions on disk, and a folded table closes** [carried, read
-2026-09-11]: over the candidate ledger at its 374,309 rows and all 80 gallery records
-then in the store, rows carrying a non-cyclic map unfolded and rows carrying a cyclic
-map folded both counted **zero** — `hunt.Maker.palette_for` refuses a draw that sets
-`mirror`. And because the opening colour is written again at `1.0`, over all 156
-sequential maps the folded wrap step is exactly 0.0 in OKLab against an inside step
-of up to 7.0e-3, where the same maps unfolded wrap at a **median 0.693**; so a
-repeat (`cycles` above 1) has no seam. `every_folded_map_closes_so_a_repeat_has_no_seam`
-is the guard.
-
-**And a fold is why a lopsided field loses nearly all of a map.** The fold sends the
-ramp's original position `g` to *two* table positions, `g / 2` and `1 − g / 2`, so
-the ramp's far end lands **dead centre** — `g = 1` at `t = 0.5` — and its whole far
-half lives in the middle band of the stretch. `coloring` normalizes a field against
-its own 0.5th and 99.5th percentiles, and an escape-time field is nowhere near
-uniform over that stretch: it piles up, often very hard, at one end. A frame with no
-middle therefore never reaches the far half of a folded map, however much of the
-gradient that half occupies — a swatch at gradient position 0.8 needs field values
-near 0.4 and 0.6 of the stretch and is simply absent from a frame that has none. So
-a map's ramp is a **necessary condition on what a picture can be and not a
-prediction**, which is why `curation.palette_coverage` measures capability on pixels
-instead, and why its probe panel takes by construction the two cells whose gradient
-positions pile hardest at one end: those are the cells where a mirrored ramp strands
-its far half, and a panel without one cannot see the failure it exists to find.
+A `data/palettes` file is **control points**. `Colormap::from_stops_baked` interpolates them in
+**OKLab** into a 4096-entry (`TABLE_SIZE`) linear-light table on every load; a lookup clamps,
+never wraps. Compare maps by sampling through this, not stop lists (`palettes.groups.cloud`).
+**Folding is at bake time** from `mirror` (`colormap::mirror`, `n` stops to `2n − 1`, the
+opening colour repeated at `1.0`: `every_folded_map_closes_so_a_repeat_has_no_seam`).
+Production folds exactly the non-cyclic maps (`models.palette_sets.recipe_for`); the engine
+refuses to fold a cyclic one. A fold puts the ramp's far end at `t = 0.5`, so a lopsided field
+never reaches it: `curation.palette_coverage` measures on pixels.
 
 ## The whole lib compiles to wasm32, and draws the same bytes
 
-`engine/src` carries **no `cfg(target_arch)` anywhere**: the crate compiles to
-`wasm32-unknown-unknown` unmodified, and the two things that could have needed a
-gate do not.
-
-* **Rayon.** `coloring` and `resample` are `par_iter` throughout. `rayon-core`
-  detects that a target's threading is unsupported and configures a global
-  **single-threaded fallback** rather than panicking — as if `RAYON_NUM_THREADS=1` —
-  so the parallelism on a page is that page's worker pool, and the engine did not
-  have to know.
-* **The filesystem.** The one fs touch reachable from the coloring path is
-  `Colormap::load`. A wasm consumer calls `from_stops_baked` instead, which is why a
-  map crosses that boundary as stops rather than as a name.
-
-**Whole-frame output is byte-identical to native.** Each of the eighteen production
-modes, on the parameter plane and on a dynamical one, at one and at two samples per
-pixel, against `fractal-engine render` of the same spec: **72 of 72 frames**. It is
-the same `f64` code over the same inputs, and wasm's `f64` is IEEE-754 with no x87
-excess precision to diverge through. That measurement lives with the consumer rather
-than here — this crate has no wasm target of its own and no test that builds one.
-
-**The bindings take one render spec and have no family-specific entry point.** The
-site's module exports `plan`, `compute_band` and `shade`, and all three take the
-engine's own render spec minus the two keys that name files, plus the colormap by
-value — so a family, a degree, a constant, a mode, a mode parameter and a palette
-recipe have exactly one spelling on that boundary, and **adding a family here is not
-adding an export**. `plan` is what a page asks first, and it answers out of
-`mode::resolve`, `maxiter::for_width` and `Family::home_view` rather than out of a
-table the page keeps. No wasm-bindgen: the module is this crate plus one file.
+No `cfg(target_arch)`: rayon falls back to one thread, and a wasm consumer calls
+`from_stops_baked` instead of `Colormap::load`. The site's `plan`, `compute_band` and `shade`
+take the render spec plus the colormap by value, so a new family is not a new export.
 
 ### A coloring splits into a measure and a colouring, so a caller may band it
-
-*(`explorer_shade_pool_ckpt136`, 2026-09-20.)* A field band is a pure function of its
-own rows, which is what lets the site draw one frame over twelve workers. **A shade is
-not.** `coloring` normalizes a frame against its own distribution — the 0.5th and
-99.5th percentiles of its valid samples, and the edge transfer's profile and the rank
-transfer's sort — so a band coloured alone would be stretched against its own
-histogram and would draw a visible step between itself and its neighbours. That is
-stated at the top of `src/coloring.rs` and it is the reason the shade was the one
-stage of that page still running on one thread.
-
-So each of the three colorings is now two halves that are named apart:
 
 ```
 Spend::measure(field, transfer)       the frame-wide normalization, once
@@ -837,419 +170,66 @@ composite_samples(base, texture, …)   and the pair, and the modulate's
 modulate_samples(base, texture, …)
 ```
 
-`shade`, `composite` and `modulate` are unchanged as far as any caller is concerned:
-each is its own measure followed by its own `_samples` over **one band that is the
-whole field**, so `paint` and `recolor` and everything else in this tree take exactly
-the arithmetic they always took. What is new is only that a caller holding a *part* of
-a frame can be handed the whole frame's statistics — which is what
-`explorer/engine-wasm`'s `shade_stats` and `shade_band` do, and what its
-`bands.test.mjs` holds to the whole-frame call byte for byte, at one and at two
-samples a pixel and on a two-lane composite.
-
-`Spend` is public for that and carries `Serialize`/`Deserialize` so it can cross a
-worker boundary; `Stretch`, `Edges` and `Ranks` were already public and gained the
-same pair. **Two of the three do not cross in practice**: a `Ranks` is the frame's
-valid samples sorted, eight bytes a sample, so the modulate and a rank transfer are
-more expensive to split than to colour, and the consumer detects that and keeps its
-one-worker path. Nothing here decides that — this crate hands back what it measured
-and says how big it is by being it.
+`shade`/`composite`/`modulate` are a measure plus one whole-field band; `Spend` and its parts
+serialize across workers (the website's `bands.test.mjs` holds bands to the whole frame).
 
 ### The colouring stages, and the two a palette may add before the stretch
 
-*(`palette_modes_ckpt143`, 2026-09-23, from the website, which was sent for the seam.)*
-A field value reaches the map through these stages, in this order:
-
 ```
-compression   g = (ν^λ − 1)/λ, ln ν at λ = 0, ν floored at the smallest normal f32
-              absolute with a knee: g = ν − 1 at and above it,
-                        (knee − 1) + knee · T_λ(ν/knee) below it
-scale         leveled:  measure (stretch / edge / rank) over g, then the mode's curve,
-                        gamma, cycles and phase — exactly the path described above
-              absolute: frac(g/period + phase), nothing measured, nothing clamped
-bake          the map folded and/or reversed (and on the site, the autolevel curve on its stops)
-lookup        the 4096-entry linear-light table, lerped
-rolloff       on luminance, after the colour is chosen
+compression   g = (ν^λ − 1)/λ, ln ν at λ = 0; with a knee, ν − 1 at and above it
+scale         leveled: measure over g, then curve, gamma, cycles, phase
+              absolute: frac(g/period + phase), nothing measured
+bake          the map folded and/or reversed
+lookup        the 4096-entry table, lerped
+rolloff       on luminance
 ```
 
-`Palette` carries the three new members as `scale` (`leveled` | `absolute`), `lambda`
-(`[0, 1]`) and `period` (positive), and **each is omitted from a serialized recipe at
-its default** — the `texture_gamma` / `merge_order` exception, for their reason: a
-recipe is hashed into render keys and cache names. So nothing the pipeline has ever
-recorded names them, and the pipeline's own whitelist of seven palette keys
-(`engine_spec.py`) never emits them; this is an explorer-first stage.
+`Palette`'s `scale`, `lambda`, `period` and `knee` are omitted at defaults and never emitted
+by the pipeline (`engine_spec.py`). Under absolute, gamma, cycles, transfer and curve do not
+apply (`Spend::Absolute`); `knee` acts only there (`place_absolute`).
 
-- **`λ = 1` skips the compression outright under leveled**, rather than computing
-  `ν − 1`: the shift is invisible to a stretch in exact arithmetic and not in rounding,
-  and the default recipe must be the picture it always was. Measured: 315 renders
-  (twenty modes over five families, five recipes) byte-identical before and after, the
-  three anchors timed within noise. Under absolute there is no old picture to keep, so
-  λ = 1 is Box–Cox proper, `ν − 1`, and the slider is continuous over its whole range.
-- **Under leveled the statistics are measured on `g`** (`Spend::of`), not remapped from
-  the uncompressed stretch. The field is compressed into an `f32` field first and
-  measured over that, and each sample is compressed the same way before it is placed,
-  so a banded shade is still the whole frame's bytes. Under a rank transfer and in the
-  modulate, λ changes nothing but rounding — a rank is blind to a monotone map.
-- **Under absolute, gamma, cycles, transfer and the mode's curve do not apply**: each
-  reshapes a `[0, 1]` that a stretch produced, and absolute produces none. `Spend::of`
-  answers `Spend::Absolute`, which measures nothing. In a composite the scale and the
-  compression are the base's and the texture keeps its own stretch; in the modulate the
-  base is laid along its own values rather than ranked, and the texture's shift still
-  rides on the phase. The direct traps read none of this, as they read no gamma.
-- **Linear absolute colouring with a short period bands at large ν.** The lane a field
-  crosses in is `f32` (the narrowing is unchanged), whose step is about 0.004 at
-  ν ≈ 3·10⁴ and 0.06 at 10⁶. A period of a few units there is tens to hundreds of steps
-  a cycle and bands visibly; a log or a small λ compresses first and shrinks the step
-  with it. Widening the lane would move a type the explorer depends on, and is left.
-- **`knee` bends the absolute compression into one fixed curve of `ν`**
-  *(`explorer_knee_ckpt157`, 2026-09-30, from the website, which was sent for the seam;
-  the explorer calls it Straighten iter)*. `Palette::knee` is an `Option<f64>`, absent
-  when off and omitted from a serialized recipe then, so no recipe, render key or cache
-  name moves. Where it is set, `Palette::absolute_value` is `ν − 1` at and above the
-  knee — spelled as `compress` spells it at `λ = 1`, so a frame whose values all lie
-  above the knee is the knee-less `λ = 1` picture to the bit — and
-  `(knee − 1) + knee · T_λ(ν/knee)` below it, which meets the line in value and in slope.
-  So `period` is the line's period, `λ` shapes only the low end, and at `λ = 1` the knee
-  is the line all the way down. It exists for a zoom: a depth schedule recolours what is
-  already on the screen as the frame moves, and a curve of `ν` alone never does. It acts
-  only through `place_absolute`, so all three colourings take it and leveled ignores it;
-  the link reads `knee` only under `scale=absolute` and drops it otherwise, as it drops a
-  `level` under absolute. Held to zero behaviour through `fractal-wallpapers identity`:
-  the 540-render battery byte-identical before and after.
-
-**Consumers pin by path, because the version cannot tell them anything.** This crate
-is `0.1.0` and is never bumped, so a git dependency could not distinguish two
-revisions of it — and it would drag the Python package, the data and the labels into
-a build that wants one Rust library. The site's `explorer/engine-wasm` therefore
-depends on this directory by path, and without the sibling checkout cargo stops before
-building, failing to read `…/fractal-wallpapers/engine/Cargo.toml`, a path that names
-it. What identifies a build is what it draws: see
-[`engine_fingerprint`](../src/fractal_wallpapers/engine_fingerprint.py), a digest of
-a pinned probe set rendered through the production path, which catches a binary
-rebuilt from unchanged source by a different toolchain as well as a source change.
+**Consumers pin by path** (the crate is `0.1.0`, never bumped); a build is identified by
+`engine_fingerprint.py`.
 
 ## Styles: a layer stack over one orbit
 
-*(`002_style_floating_on_dreams`, 2026-11-04.)* The render spec's `style` key draws
-through `src/style.rs` instead of `coloring::paint`: one generic escape loop per
-sample (`iterate::run`, not the specialized table — no named mode reaches it, so the
-three guards above are untouched), reduced to a lane per field any layer reads, plus
-two channels of the style's own — the **gradient**, the unit direction the smooth
-count climbs, read analytically off `z` and `dz` at the escape, and the **inside**
-channel, a smooth convergence count for orbits that never escape, from a second short
-loop over `Family::step` run only for interior samples. Then each layer's frame-wide
-statistic is measured once (a palette layer through `Spend::of`, every other channel
-through `Stretch::over`) and the stack is composited sample by sample with no
-neighbour read, so a band of rows composites to the bytes the whole frame would — the
-explorer's measure-then-samples split, and what makes the file portable to it.
-
-Layer kinds, channels and blends are `data/styles/README.md`'s, which also carries the
-procedure for making a new style from a reference picture. **No named mode's output
-moved**: the style path is a separate branch of `render`, `RenderReport.coloring` is
-omitted only under a style, and `fractal-wallpapers identity` reads byte-identical
-before and after.
-
-*(`003_style_yas`, 2026-11-04.)* Two things in the second style are not per-sample
-functions of the orbit, and both keep the measure-then-samples split rather than break
-it. The **radial** channel is a function of the sample's place in the frame, so it is
-relative to the frame being drawn: a port that draws a band of rows hands it the whole
-frame's geometry, as it already hands it the whole frame's stretch. The **tone** pass is
-a second measure, taken of the composite rather than of a channel — its median and 10th
-percentile lightness, read on a stride of samples — followed by one per-sample curve; a
-port measures it over the frame's composite before applying it to any band.
-
-*(`007_style_log_polar_tunnel`, 2026-11-04.)* A style may carry a **projection**
-(`src/projection.rs`): a per-sample pre-map of the frame before anything is iterated.
-The one kind is `log_polar`, `c = center + (width/2)·exp(u + i·v)` with `u` the
-frame's log-radius about a vanishing point and `v` its angle (times `turns`, plus a
-`twist` shear), so every octave round a self-similar point is one ring of the picture.
-It is a function of the sample's place alone, like `radial`, and carries its Jacobian
-to the two things that hold a plane length: the distance estimate is rescaled to the
-local sample spacing, and the light's gradient is pulled back to the frame. At one turn
-about the middle it is the straight view (a crate test holds the composite to it).
-Named modes do not take it: it is the style path's, and the identity battery read 0 of
-540 renders different.
-
-*(`008_style_glow_filaments`, 2026-11-04.)* A `glow` layer may carry a **`falloff`**:
-on the `de` channel only, its position is `exp(−d / falloff)` with `d` the raw distance
-estimate (its `scale` divided out) over the view's plane width, instead of the frame's
-stretch. It needs no measure, so a port reads it per sample with the view's width as
-its one constant. A **`tone`** may carry **`log_density`** `k`: before the tone's
-measure, each composite sample's luminance goes through `ln(1 + k·Y) / ln(1 + k)`, hue
-kept. Both are style-path members only.
-
-*(`009_style_bronze_packing`, 2026-11-04.)* A style channel may be a **`bubble`**
-(`style::Bubble`, `style::bubble`): the disc `|z − center| < radius`, optionally repeated
-on a square lattice (`spacing`), read at the orbit's `hit`-th entry as `height`, `step` or
-`angle`, with `dz` kept so the height has a gradient for a `light`. It is its own loop per
-distinct disc and hit, like `inside`, stopping at the entry; `escaped` leaves bounded
-orbits `NaN`, and `largest` passes over an entry whose disc would pull back larger than
-that fraction of the view's plane width (`radius / |dz| > largest · width`), so a port
-needs the view's width as its one constant. Style path only: no `FieldSpec` changed.
+The spec's `style` key draws through `src/style.rs`: one generic escape loop a sample, lanes
+per field plus the style's channels — **gradient** (analytic from `z`, `dz`), **inside** (a
+convergence count), **radial**, **bubble** (`style::bubble`, a disc read at the `hit`-th
+entry). Each statistic is measured once, then composited per sample, so a band matches the
+whole frame given its geometry and width. **tone** is a second measure, of the composite. A
+`log_polar` **projection** (`src/projection.rs`) carries its Jacobian to `de` and the light.
+`data/styles/README.md` owns kinds, channels, blends and how to make a style. **Lighting
+exists only in a style's `light` layer**; named modes carry no normal-map shading.
 
 ## What each family's picture is symmetric under
 
-None of this is code — there is no symmetry pass in the crate and nothing folds a
-render — but it is what the recurrences in `family.rs` imply, and it is the first
-thing to check when a picture looks like it has a bug in it. Measured below on 401²
-`smooth` fields, width 3.0 about the origin at a cap of 800, rotated by nearest
-sample and compared where both land inside the frame.
-
-* **Multibrot, `z ← z^d + c` with the pixel as `c`: `(d − 1)`-fold rotation about the
-  origin.** `c ↦ ωc` with `ω^{d−1} = 1` conjugates the whole orbit by `ω`, and the
-  escape test reads only `|z|`. At `d = 2` that is the identity, which is the honest
-  reading of the Mandelbrot set having no rotational symmetry at all;
-  `discovery.nucleus` folds an atom's `c` into the fundamental sector on this same
-  rule. Measured: at `d = 3, 4, 5` the median `|Δsmooth|` under a `(d − 1)`-fold
-  rotation is 0.0000, 0.0041 and 0.0000, against 0.10 to 0.69 at the neighbouring
-  wrong orders.
-* **Julia, the same recurrence with the pixel as `z₀`: `d`-fold.** Not by conjugacy —
-  `f(ωz) = ω^d z^d + c = f(z)` exactly when `ω^d = 1`, so the two orbits *coincide*
-  after one step rather than merely mirroring, and it holds for every `c`. Measured
-  at `c = −0.4 + 0.6i`: median `|Δsmooth|` 0.0000, 0.0049, 0.0000 and 0.0031 at
-  `d = 2..5`, against 0.16 to 0.28 at the wrong orders.
-* **Any family whose constants are real: reflection in the real axis**, because
-  `cpow` and `cpowf` both commute with conjugation and `|z̄| = |z|`. That is the one
-  symmetry `fractional_multibrot` has, and it is why the negative real axis of its
-  *parameter* plane is not a seam — below.
-* **Phoenix, `z ← z² + c + p·z₋₁`: that conjugation and nothing else, and only when
-  `c`, `p` and `z₋₁` are ALL real.** `CLASSIC_PHOENIX` is `(0.5667, 0)`, `(−0.5, 0)`
-  and `z₋₁ = 0`, so the default render has it; give any one of the three an imaginary
-  part and it is gone. Measured on the classic instance the largest `|Δsmooth|`
-  across the axis is **0.0057** — the `f32` dump's own granularity — and with `c`
-  moved to `0.5666 + 0.1i` it is **147**.
-* **`p = 0` erases the memory term and leaves a quadratic Julia set**, exactly rather
-  than approximately: `phoenix_with_zero_p_is_a_quadratic_julia` pins the smooth
-  counts equal **bit for bit** over 1,600 samples, and a dumped 401² field at
-  `c = −0.4 + 0.6i` is byte-identical to the `julia` degree-2 one. A non-zero `z₋₁`
-  is a real axis and not a decoration — `a_nonzero_z_prev_gives_a_different_set`.
+No code folds a render; this is what `family.rs` implies. Multibrot (pixel `c`): `(d − 1)`-fold
+rotation (`discovery.nucleus` folds on it). Julia (pixel `z₀`): `d`-fold, any `c`. Real
+constants: reflection in the real axis. Phoenix: that reflection only when `c`, `p`, `z₋₁` are
+all real; `p = 0` is a quadratic Julia set (`phoenix_with_zero_p_is_a_quadratic_julia`).
 
 ## The one family that only draws pictures
 
-`fractional_multibrot` is `z ← z^d + c` at a **non-integer** `d`, on the
-principal branch — `exp(d · Log z)` with `Arg z ∈ (−π, π]`, written out in
-`cpowf` rather than delegated so the branch cut is a line somebody can point at.
-The cut is on the negative real axis, so the picture carries a **seam** along
-every ray where an iterate crosses it. That seam is not an artifact to be
-smoothed away: it is what a fractional degree *is* on a single-valued branch, and
-it is the subject of the figure this family exists to draw. A different branch
-moves it and does not remove it.
+`fractional_multibrot`, `z^d + c` at non-integer `d` on the principal branch (`cpowf`): the
+**seam** where an iterate crosses the cut is its subject. `d` runs 1.8
+(`LOWEST_FRACTIONAL_DEGREE`) to 5.0; a whole number is refused. **Render-only**: `render` and
+`dump-field` reach it; every other door refuses through `Family::is_render_only` and
+`spec::render_only_refusal`, and `home_view()` is `None` (`tests/test_fractional_degree.py`).
 
-**The cut is in `z`, so the parameter plane's own real axis is NOT a seam.** The
-branch is chosen in `cpowf`, which is applied to an *iterate*; the pixel is `c`, and
-`cpowf` commutes with conjugation, so the orbit from `c̄` is the conjugate of the
-orbit from `c` and the escape test reads only `|z|`. The picture is therefore exactly
-symmetric about the real axis: on 401² fields at `d = 1.8` and `d = 2.5` the
-difference across `im = 0` is **zero everywhere**, where the typical neighbouring
-difference elsewhere in the same frame is 0.009 to 0.027. What the picture does carry
-is the curves where an *iterate* crosses the cut, and by the same argument those
-arrive in conjugate pairs.
+## How deep `f64` goes
 
-**Below degree 2 the seam is the picture rather than a detail of it.** At `d = 2.5`
-the seams are thin rays off a set that still reads as a multibrot. At `d = 1.8` a
-broad double ray runs corner to corner through a set that is small, lopsided and
-pushed off-centre, and it is the first thing anyone sees — which is the figure this
-family exists to draw, and the reason `LOWEST_FRACTIONAL_DEGREE` reaches below the
-quadratic degree at all.
+`Viewport::is_resolvable_in_f64` refuses where neighbouring sample centres tie
+(`RESOLUTION_ULPS`, 4, of the frame's reach); `"allow_unresolvable_in_f64": true` opts past it
+for `render`/`dump-field` only. It guards **coordinates only**: a case-dependent *fidelity wall*
+(about `1e-4` to `1e-10`) lets rounding decide counts above it, undetected. `cpow`'s order is
+the canonical identity, so other implementations disagree at degree ≥ 4. Perturbation serves
+only `dv=` links; see `src/fractal_wallpapers/deep/README.md`.
 
-**A frame below degree 2 costs about half of one just above it, and that is the set
-shrinking rather than orbits escaping sooner.** Same geometry throughout — 401²,
-width 4.0 about the origin, cap 2000, `dump-field`:
+## Home views
 
-| d | escapes | median smooth | seconds |
-|--:|--:|--:|--:|
-| 1.8 | 94.3% | 6.88 | 0.23 |
-| 1.9 | 93.2% | 6.61 | 0.27 |
-| 2.1 | 88.6% | 6.15 | 0.48 |
-| 2.5 | 88.3% | 5.39 | 0.44 |
-| 3.5 | 89.5% | 4.43 | 0.39 |
-
-Only interior samples pay the full cap, so the cost tracks the escaping share and
-not the count. **The count itself runs the other way**: over the samples that escape
-at every degree in the table the median is 6.73 at `d = 1.8` against 5.32 at
-`d = 2.5`, because the smooth count's base is `ln d` and `ln d < ln 2` below the
-quadratic degree. That is the same fact
-`the_smooth_count_does_not_terrace_below_degree_two` exists for — a smaller base
-*amplifies* the overshoot correction rather than shrinking it, so a wrong
-normalization shows up more loudly at 1.8 and 1.9 than at 2.
-
-It is **render-only**, and that is a guarantee about what cannot happen rather
-than a gap. A written `render` or `dump-field` spec reaches it; seven other doors
-turn it away by name — the supply engine's partition registry, the render cache's
-plane question, every `--family` choice on the command line, the home-view table,
-`expand`, `screen` and `tiles`. `Family::is_render_only` is the single question
-all of them ask, so adding a door cannot quietly add a way in, and
-`spec::render_only_refusal` is the one message they share.
-`location.key_of_row` is the one that answers `None` instead of raising, and its
-caller counts unjoinable rows, which is the loudest failure short of an
-exception. `tests/test_fractional_degree.py` is the whole guarantee in one file.
-
-Three consequences fall out of render-only:
-
-* **`Family::home_view()` returns an `Option`, and this is the `None`.** A row in
-  the framing table is a claim that a family is worth looking at unprompted,
-  which is the one thing this family is not — so a spec for one says where it is
-  framed or is refused.
-* **The degree range is a statement about what has been eyeballed, not about
-  where the arithmetic breaks.** `LOWEST_FRACTIONAL_DEGREE` is `1.8` and the
-  ceiling is `5.0`, the same kind of claim `check_degree` makes about the
-  integers. `iterate::BAILOUT` is `2^16` and a multibrot's escape radius
-  `2^(1/(d−1))` stays inside it all the way down to `d = 1 + 1/16`;
-  `the_bailout_covers_the_lowest_degree` pins that gap, so the floor can be
-  lowered by looking at pictures rather than by touching the loop. The range
-  reaches below 2 deliberately — `z^1.8 + c` is a set of its own and not an
-  interpolation between two named ones.
-* **A whole number is refused.** `degree: "3.0"` is the multibrot family's, read
-  the same way `multibrot` refuses degree 2 because that set is the Mandelbrot
-  set: one picture gets one name, and one cache identity.
-
-No integer-degree render pays for any of this. `cpow` is repeated multiplication
-over degrees 2 through 6 — faster than a polar round trip and exact where one is
-not — and `cpowf` is reached only by this family.
-
-**One capability is deliberately absent from the mode catalog and is not debt:
-normal-map shading** — lighting a render by the surface normal of a distance
-estimate, with an azimuth and a lamp height. It makes a fractal read as an embossed
-metal plaque rather than as a field, replacing the picture's own structure with a
-lighting model's. The `de` field ships without it, as a scalar coloring like any
-other. **Lighting exists in one place, a style's `light` layer** (`src/style.rs`,
-2026-11-04, `002_style_floating_on_dreams`): a reference picture asked for a glossy
-lit surface, so a style may light the smooth count or the inside channel on their
-analytic gradients — never a named mode, and never the distance estimate. See
-[*Styles: a layer stack over one orbit*](#styles-a-layer-stack-over-one-orbit). Two further
-gaps *are* open decisions rather than omissions: `biomorph`, which would change
-what `n` means and so what every cached render means, and perturbation-based deep
-zoom, which is the one genuinely large thing this engine lacks (`iterate.rs`
-carries the TODO). **Deep zoom has two revival conditions, not one.** The obvious
-one is the door below the coordinate wall. The second is *correctness above it*:
-the escape counts this engine returns are already measurably wrong at depths it
-draws today (below), and a low-precision delta against a high-precision reference
-orbit is the fix for that as much as it is the key to the next four decades.
-
-Until it arrives, `Viewport::is_resolvable_in_f64` is what says how deep `f64`
-goes — and it asks the question the arithmetic actually poses. A sample coordinate
-is formed as `center + across * width`, so two neighbouring sample centres tie
-when the step between them falls under one `f64` unit of last place *at the
-magnitude of that sum*. The refusal reads exactly that: `sample_spacing()`
-against `RESOLUTION_ULPS` (4) ulps of the frame's own reach.
-
-**A render spec can opt past it with `"allow_unresolvable_in_f64": true`**, for a
-figure whose subject is the floor itself: the picture is then of the arithmetic,
-blocks one ulp on a side. It is absent by default, enters no identity, record or
-report, no Python builder emits it, and it reaches `render` and `dump-field` only
-— the tile path keeps its own refusal regardless.
-
-**It used to be `pixel_size() > 1e-13`, which was wrong twice.** A relative limit
-enforced as an absolute constant, and read off the *output* pixel, so a
-supersampled render was judged on a grid four times coarser than the one it
-samples. Bisected at 2560x1440 ss4, the first tie is at width 2.84e-13 for a
-centre near 0.23, 1.42e-13 near 0.081, 2.27e-12 at |c| = 1 — against a refusal at
-2.56e-10, so **2.0 to 3.3 decades of headroom nothing was using**. Nothing that
-used to be drawn is refused now; a great deal that was refused for the wrong
-reason is drawn, which is what
-[the deep run mode](../src/fractal_wallpapers/deep/README.md) descends into. The
-new rule is held to the measurement by `viewport.rs`'s own tests, which bisect for
-the tie and require the refusal to sit a *constant* multiple above it at four
-magnitudes — a rule that were secretly absolute shows a headroom that moves.
-
-Measured alongside, before any of that changed: the deepest location any ledger
-holds (1.0165e-9) renders at release geometry with **zero** tied sample centres
-per row, and the tie rate in its dumped field scales exactly x4 with a 4x finer
-grid — which is the `f32` dump's own storage granularity, the same law the
-shallow control four decades above the wall obeys. See
-`scratch/measure_deep_probe_report.md`.
-
-**The refusal guards COORDINATE REPRESENTABILITY and nothing else.** That is the
-whole of its contract: it says two neighbouring sample centres are still two
-numbers, and it says nothing whatever about the escape count computed from
-either. There is a second wall above it — call it the *fidelity* wall — and the
-engine does not guard it, cannot cheaply detect it, and does not claim to. A
-sample coordinate can be perfectly distinct from its neighbour and the *orbit*
-run from it still be decided by rounding: `f64` carries about 1e-16, the dynamics
-stretch that by the Lyapunov growth of a few thousand iterations, and what comes
-back is not the value at that point.
-`julia_deep_eyetest`'s second addendum measured it — same starting `f64`
-coordinate, orbit re-run at 50 digits, and the share of sampled points whose
-escape count disagrees:
-
-```text
-case                 deg   wrong >=1% from   engine refuses   at 1e-11
-julia (off-set)        2             1e-11            1e-13       6.3%
-multibrot3 walk node   3              1e-9            1e-13       8.0%
-mandelbrot walk node   2              1e-5            1e-13      22.0%
-multibrot4 walk node   4              1e-5            1e-13      14.5%
-julia (off-set)        5              1e-5            1e-13      26.8%
-```
-
-**The fidelity wall is case-dependent and sits between about `1e-4` and `1e-10`,
-two to eight decades above the refusal.** Where a case lands on that spread is
-decided by how long its orbits linger near the boundary, not by its degree: the
-degree-2 mandelbrot node above sits on a **period-198** nucleus and is already
-**2.3% wrong at `1e-5`**, crossing at the same rung as the degree-5 julia.
-
-**It is almost never visible.** Only the degree-5 julia shows anything, as a
-mosaic of bit-identical neighbours, and *supersampling makes that one worse* —
-66.6% of adjacent samples identical at ss1 rising to 95.6% at ss8, because a
-finer grid brings coordinates closer together and closeness is what the orbit
-cannot keep. The other four are wrong by more and read as ordinary deep
-pictures.
-
-**This engine's `z^d` is the canonical identity of this project's output.**
-`cpow` builds it by repeated multiplication; Python's repeated squaring is the
-same arithmetic in a different order, and at degrees 4 and 5 the two `f64`
-implementations differ by a whole iteration or more on **12.2%** and **20.4%** of
-samples, worst 411 and 205. At degrees 2 and 3 the orders coincide and they
-agree to `1e-5`, which is what that test looks like when rounding is not deciding
-the answer. So **cross-implementation agreement is not expected at degree ≥ 4**
-and is not a bug report: below the fidelity wall the evaluation order *is* the
-definition, and a render is reproducible against this engine rather than against
-the mathematics.
-
-Nothing in the engine changed on the strength of this — the refusal is unmoved
-and no fidelity check was added, because detecting one costs a second orbit at
-higher precision per sample. What changed is downstream: the deep run mode reads
-its floor as an **aesthetic** one and caps degree 5 a decade early, where wrong
-turns into visibly flat. See
-`scratch/julia_deep_eyetest_addendum2_report.md` for the per-case evidence and
-`../src/fractal_wallpapers/deep/README.md` for the contract.
-
-What deep zoom would cost, observed on the maker's perturbation backend at the S1
-anchor with this repo's own cap policy: a walk node (384×216 ss1) is 0.31 s at
-fw 1e-12, 2.75 s at 1e-15, 1.02 s at 1e-18 — cost tracks how much of the frame is
-deep-iterating material, not depth, so budget ~3 s worst case. A *release* frame
-(2560×1440 ss4) at fw 1e-15 is **~1 800 s** with no series approximation, which is
-`curation.pacing.HUNG_CEILING[RELEASE]` exactly. Descending is cheap; presenting
-what is found is not.
-
-A render given no viewport comes home to its family's own frame, a table in
-`src/family.rs` — and so does a walk root, which reads that table through
-`home-view` rather than keeping a literal of its own. **Framing has one owner.**
-
-Every row is one rule evaluated on that family's own measured set: the filled
-set found on a 4001² grid at a cap of 4000, centred on itself, contained at 16:9
-with a tenth of its deciding extent in margin. Nothing in the table was chosen —
-the textbook Mandelbrot view `(−0.5, 3.0)` does not survive it, because three
-units at 16:9 is 1.69 tall and the set is 2.2. Julia is the one exception, and a
-stated one: its set is a different shape for every `c`, so there is nothing to
-measure and it comes home to the whole plane.
-
-**A new row is added by re-running the measurement, not by a procedure beside
-it.** `family::tests::the_measured_boxes_are_the_measurement` is `#[ignore]`d and
-runs the full grid for every integer multibrot degree, asserting each recorded box
-to the bit (`cargo test --release --manifest-path engine/Cargo.toml -- --ignored
-the_measured_boxes_are_the_measurement --nocapture`; about 100 s on three rayon
-threads with `RAYON_NUM_THREADS=3`). Degree 6 was added that way on 2026-09-16: the
-same test reproduced rows 2–5 exactly and measured re `[−1.1475, 0.9625]`, im
-`±1.09625`, so it comes home to `(−0.09, 0)` at width 4.3.
-
-**Degree 6 is written out** in `family::over_written_out!` like 2–5, not left to
-the generic arm: the spec admits it, a walk reaches it, and the table's rule is
-*every integer degree the spec admits*, which
-`field::tests::the_render_only_family_is_the_only_one_outside_the_table` pins.
-
-Beside the pipeline sits the search — `rng`, `screen`, `foci`, `expand` — which
-uses it and does not extend it. It decides *where* to render and never *how*:
-`expand` reads fields the pipeline produced and returns coordinates with the
-structural gate that refused each one. What makes a picture good is not its
-business; that judgement lives in Python.
-
-Python drives this through `src/fractal_wallpapers/engine.py` and nothing else.
+A render with no viewport, and a walk root, come home to `src/family.rs`'s table: **framing has
+one owner**. Each row is one rule on the measured set (4001² grid, cap 4000, 16:9 with a
+tenth of margin); Julia gets the whole plane. A row is added by re-running
+`RAYON_NUM_THREADS=3 cargo test --release --manifest-path engine/Cargo.toml -- --ignored
+the_measured_boxes_are_the_measurement --nocapture` (~100 s).

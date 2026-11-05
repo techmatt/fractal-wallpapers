@@ -27,9 +27,9 @@ f_c^p(z) = z                       the cycle closes
 
 in the two unknowns `(z, c)`, and [`newton_parabolic`] is Newton on exactly that
 system at [`nucleus.NUCLEUS_DPS`]. Nothing here is fitted, tuned or read off a
-scale, and that is deliberate: `discovery/README.md` records that a *tuned* aim
-misses its target by a fixed fraction of `|λ|`, which is a fraction that does not
-go away by making the tuning finer.
+scale, and that is deliberate: `deep/README.md`'s *Tuning a good frame onto a
+satellite* records that a *tuned* aim misses its target by a fixed fraction of
+`|λ|`, which is a fraction that does not go away by making the tuning finer.
 
 **The route to the root is continuation along the internal ray.** At `λ = 0` the
 solution is the component's nucleus with `z` at the critical point, which

@@ -22,21 +22,8 @@ boundary   a seeded uniform draw, screened by those same gates
 viewport_sampler  the same idea as a root channel: a ladder on the pinned plane, a boundary refinement on a parameter plane
 ```
 
-The one thing a walk does that is not in this package: when it **closes**, it
-refines the framing of its best few finds, through `curation.framing` — the
-gallery pass's own step 5a, reused rather than forked. See *The refine leg*
-below.
-
-Nothing here judges a picture. The gates are geometry — how much of the frame is
-the set's interior, how much variety its escape times have, whether its detail is
-spread over the frame or piled in a corner — and the judgement that decides
-whether a location is beautiful is a seam (`scoring.py`) with a null
-implementation behind it. A walk that runs on the null scorer is a complete walk:
-it admits what survives the gates, and its ledger is what the first head gets
-trained on, which is the only order the two can be built in.
-
-The table below is which command to run. What follows it is what to read before
-changing anything here.
+Nothing here judges a picture: the gates are geometry, and the judgement is a seam
+(`scoring.py`) with a null scorer behind it. Module docstrings hold the mechanics.
 
 ## Which of the three commands to reach for
 
@@ -46,1509 +33,210 @@ changing anything here.
 | `reframe` | locations a **human** already scored a keeper | the operators' own nucleus-centred views, which a walk builds and never scores |
 | `harvest` | nothing beyond the seed pools — it divides its clock by how far each partition sits below its share of the release | the production loop, and the one command for **cold exploration**: `harvest --partition FAMILY --minutes N` |
 
-These are not three alternatives at one level. A harvest **is** a walk with an economics
-layer over it — six of its nine flag groups carry `walk`'s own titles — and `reframe` fires
-the walk's operators from the outside. So a family with no labels is `harvest --partition`
-and not a choice between the three: `reframe` has no keepers to seed from there, and a bare
-`walk` keeps no books about what that family is owed.
+A harvest **is** a walk with an economics layer, and `reframe` fires the walk's
+operators from outside. On a machine with no tiles built, add `--no-scoring` and run
+`curate score --harvest <out-dir>` afterwards, the same two-step `reframe` uses.
 
-On a machine that has never built tiles, add `--no-scoring` and run `curate score --harvest
-<out-dir>` afterwards — the same two-step this file documents for `reframe` below.
+```
+fractal-wallpapers walk --seeds my_locations.jsonl --no-neighborhood --plane-grace-rungs 0
+```
 
 ## The reframing channel: `reframe`, seeded at proven roots
 
-**A walk never scores the frame its own operator built.** `_propose` pushes the
-nucleus-centred view onto the frontier as a *node*, and only what `expand` draws
-*below* a node becomes a candidate — measured on `harvest_run10`, 0 of 14,678
-distinct available reframing viewports appear as a candidate viewport and 0 of
-12,163 pushed node ids is a candidate's own node id. The walk then descends
-straight into the atom's black body: over twelve production ledgers the 42,904
-candidates below a reframing sit at a median frame multiple of **1.66 atom
-sizes**, where 9,432 of their 14,109 interior-cap refusals are. That is why the
-whole candidate pool holds **14** frames that are minibrot centres in the sense a
-gallery wants, and why no seating has ever held more than one.
-
-`fractal-wallpapers reframe` is the other half of the same operators. It fires
-them at **seeds**, takes the view they build as a **candidate**, and writes a
-walk-shaped ledger at `<out-dir>/walk.jsonl` that the supply union reads like any
-other. **Nothing about the walk changes.**
+A walk pushes an operator's nucleus-centred view as a frontier *node*, never a
+candidate, and descends into the atom's black body below it. `fractal-wallpapers
+reframe` fires the operators at **seeds** and takes the view they build as a
+**candidate**, writing a walk-shaped `<out-dir>/walk.jsonl` the supply union reads
+like any other. `reframing.py`'s docstring has the rulings and the ladder in full.
 
 ```
-fractal-wallpapers reframe --minutes 20 --out-dir artifacts/reframe_g1
-fractal-wallpapers curate score --harvest artifacts/reframe_g1
+fractal-wallpapers reframe --minutes 20 --out-dir artifacts/<leg>
+fractal-wallpapers curate score --harvest artifacts/<leg>
 fractal-wallpapers curate embed                    # the merge is these two, in order
-
-# a later leg continues the whole chain and decides its own re-probe: no flags
-fractal-wallpapers reframe --out-dir artifacts/reframe_g2   --generations 40 --minutes 480
-fractal-wallpapers reframe --out-dir artifacts/reframe_g3   --seed 3 --minutes 120
-
-# the overrides, for when the defaults are wrong about a particular night
-fractal-wallpapers reframe --out-dir artifacts/reframe_g4   --no-reprobe
-fractal-wallpapers reframe --out-dir artifacts/reframe_g5   --prior artifacts/reframe_g1 --reprobe
-fractal-wallpapers reframe --out-dir artifacts/reframe_g6   --no-prior
+fractal-wallpapers reframe --out-dir artifacts/<leg> --generations 40 --minutes 480 --seed 3
 ```
 
 **Merging a run into the standing pool is `curate score --harvest <dir>` and then
-`curate embed`, in that order, and nothing else.** ⚠ **Nothing runs it for you, and
-a leg whose merge never happened looks exactly like a leg that found nothing.**
-`curate score --ledger <run>/walk.jsonl --unscored --limit 0` answers it in about
-two seconds without scoring a row — it reports `outstanding` against `bound`, so a
-merged leg reads 0 and an unmerged one reads its whole output. Swept over the chain
-on 2026-09-15: `g1`-`g8` all read 0, and **`g9` and `g10` read 57 of 57 and 3 of 3**
-— both legs' locations had been sitting outside the standing supply since
-2026-09-06, which is also why any supply reading taken since then under-counted the
-channel. Check it at the end of a leg rather than discovering it two weeks later. The union finds a ledger by
-looking it up at `<run directory>/walk.jsonl` for every top-level name of the
-regenerable tree, so a run directory *is* in the pool the moment it exists; what
-the two commands add is the sidecar's read of it and one neutral-render vector per
-admitted location. Measured on generation 1, 2026-08-31: the score step took under
-a minute for 788 rows and left the sidecar at 91,272 rows; `curate embed` wrote
-**663** vectors in 49.5 s and left the store complete over 29,083 admitted
-locations with 0 missing.
+`curate embed`, in that order, and nothing else.** ⚠ Nothing runs it for you, and an
+unmerged leg looks exactly like one that found nothing: `curate score --ledger
+<run>/walk.jsonl --unscored --limit 0` reports `outstanding` against `bound` in
+seconds, 0 for a merged leg. Check it at the end of every leg.
 
-**A reframing row's `image` does not name a picture that still exists, and the
-score step re-renders every row because of it.** `screen_rungs` names each frame
-by its position in its own `engine.screen` batch, but that position restarts at
-zero on every `_draw` call while the frames directory is one directory for the
-whole leg — so the file on disk is whichever nucleus was drawn last under that
-name. Measured on `reframe_g5`: **1,604 rows share 107 distinct `image` names**,
-one of them claimed by 45 rows. Nothing downstream is misled, and that is luck
-rather than design: `curation.intake` looks for a reusable gate render under
-`<run>/views/` and this channel writes `<run>/rungs/`, so the name never resolves
-and the row is drawn again. `reframe_g7`'s merge is the measurement — `"gate": 0,
-"cached": 0, "rendered": 486`.
+A row's `image` names collide within a leg and nothing reads them (scoring re-renders
+every row); re-draw a leg's frames from each row's `viewport` and `maxiter`.
 
-**Making the names unique is not obviously the fix.** Nine rungs kept for a whole
-leg is on the order of a gigabyte of hot `artifacts/` that only a contact sheet
-would ever open, which is the *delete* column of the three-way rule. Anything
-wanting a leg's frames re-draws the few it shows from the row's own `viewport` and
-`maxiter` through `engine.screen` — one process for 128 of them, on the leg that
-found this.
+**`--prior` defaults to every earlier leg the ledgers hold** (found by the
+`kind: "reframing_run"` header, never by name; both tiers when the archive is mounted).
+The atom-key dedup is per run, so a leg not handed the chain writes one atom into two
+seats. A list that omits a leg warns; `--no-prior` starts a chain.
 
-**A leg continues every earlier leg by default, and neither flag below is
-something a supervisor has to remember any more.** Both used to be: a `--prior`
-that named too few legs wrote duplicate rows, and a missing `--reprobe` on a spent
-chain bought seven locations for 576 seeds. Both are now read off the ledgers, and
-both are still overridable — the run record says which branch was taken, why, and
-what the ledgers would have said even when a flag overruled them.
-
-**`--prior <dir>` defaults to every earlier leg the ledgers hold**, and naming any
-is an override rather than a chore. The atom-key dedup is per run, so a leg that
-re-derived its seeds off the label store fires the same roots at the same atoms
-and writes **every one of the earlier leg's nuclei a second time** — one nucleus
-in two ledgers, which is two location keys the moment the two legs pick different
-rungs, which is one atom in two seats. A chain that names only its last link
-forgets everything before it: measured 2026-09-01, a fourth leg handed only the
-third's ledger wrote **192 of its 302 rows** on atoms the first leg already held.
-`--prior` hands the new leg the atom keys the chain found (they seed `seen`), the
-proven root ids it consumed (off the queue), every seed id it fired at, its fire
-history per root and ladder (*A root that was fired and got nothing*, below), and
-its admitted rows as this leg's promotions, deduplicated on the atom at the better
-class.
-
-* **A leg is found by its header row, never by its name.** Every ledger under both
-  tiers is opened, one line each, and kept if that line is `kind:
-  "reframing_run"`. `artifacts/harvest_reframe_night` is a **walk** and would be
-  taken by any name-matching rule; a leg called anything at all is still a leg.
-  Measured 2026-09-03: 0.17 s over the 44 walk ledgers on this machine, and 0.33 s
-  for `prior_run` to read the five legs' 21 MB.
-* **Both tiers when the archive is mounted, HOT alone when it is not**, and they
-  are different populations. A leg is a top-level name of the regenerable tree and
-  `storage archive` moves top-level names, so an archived leg is still a link of
-  the chain and a run that could not see it would re-find its atoms exactly as a
-  one-directory `--prior` does. Hot alone is therefore the **narrower** default
-  and the one that writes duplicates — so it is recorded as a stated note under
-  `priors_seen.note` rather than passed over, and it is not a refusal, because
-  every atom re-found costs engine time rather than putting a wrong row anywhere.
-  Measured 2026-09-03: all five legs are hot and the archive holds none of them,
-  so the two populations coincide today and the note is about tomorrow.
-* **Naming a list that omits a leg the ledgers hold is a WARNING**, never a
-  refusal, and the warning names the omitted run directories so it can be pasted
-  back into the invocation. `--no-prior` is the first-leg-of-a-chain spelling and
-  warns about every leg on the machine.
-* **A run is never its own prior.** The exclusion is by resolved file, and it
-  applies even before the ledger exists: a leg re-using a killed leg's `--out-dir`
-  would otherwise inherit its own finds and refuse all of them as already found.
-
-**`--reprobe` defaults to a reading of the chain.** It fires at the roots an
-earlier leg already spent: `expand_neighborhood` probes at random, so a second
-pass at one root is a different sample of the same neighbourhood and reaches atoms
-the first missed. The earlier legs' nuclei are still deduped, so nothing is
-written twice, and it is a **superset** of the plain continuation — no unfired
-root is skipped by re-probing, the queue simply also holds the spent ones, in the
-tier-then-digest order `supply.proven` imposed. Give the leg its own `--seed` or
-it draws the same probes. A chain counts as spent under either of two clauses,
-both computed and both on the record under `reprobe_because`:
-
-* **exhausted** — a plain continuation has no seed at all. That is the leg that
-  used to raise `no seed survives` and stop; re-probing is the only thing left
-  there that is not a refusal, so the default now takes it. Reachable under
-  `--no-reprobe` and not otherwise.
-* **saturated** — the chain's latest leg, having consumed at least 100 seeds,
-  already held **90% or more** of the nuclei its operators reached. The share is
-  of what the operators reached — rows written plus every nucleus refused as
-  already held, as having no offerable frame, and for a batch that crashed twice —
-  and *not* of the queue.
-
-**Queue exhaustion is an honest floor and a useless trigger, which is why the
-second clause exists.** A root that was consumed and returned nothing used to
-appear in no row, so it landed in neither the `fired` nor the `spent` set and a
-plain continuation offered it again; the fifth leg's 84 `matt_q4` seeds all
-returned nothing and were all still on the queue afterwards. Measured 2026-09-03
-over the five legs on this machine: **635 of 2,153 proven roots are in `fired`**,
-and 977 of that gap is simply the label store having grown from 1,176 roots to
-2,153 since the legs ran. A leg launched then read *saturated* with 1,518 roots
-and 3,253 promotions still on its continuation queue, which is the whole point —
-the queue is not the constraint, the neighbourhoods are.
-
-Since 2026-09-05 the barren half is recorded (*A root that was fired and got
-nothing*, below) and the plain queue shortens as the chain fires. That closes the
-invisibility and **not** this clause: the same fire rows say the queue is
-thousands deep, so exhaustion stays the rare trigger and saturation stays the
-useful one.
-
-**And on 2026-09-04 that reading was wrong, because the queue had been refilled
-under it.** `reframe_g7` was launched at those 1,518 roots under `--no-reprobe`
-against the saturated default, and 20 minutes of them returned 488 locations and
-128 head-q4 at **9.4 s per head-q4** — the cheapest the channel has been. The
-split says why: of the 912 roots it fired, the 277 from the **location** store
-returned **nothing at all** (they are `reframe_g6`'s barren roots, offered again
-because at the time a root that returned nothing never entered `fired`), while the
-635 from the **finished** stores returned 0.769 locations each — `reframe_g1`'s
-0.750 on its own first pass, on ground the channel had never touched. Its
-re-discovery share came back at **23.9%**, so `g7` is now the chain's latest leg
-and the next leg will not re-probe.
-
-The rule that follows is about the clause and not about this leg: **saturation is
-a reading about neighbourhoods, and a widening of `supply.proven` puts new
-neighbourhoods on the queue that the reading cannot see.** After a store is
-unioned in, the clause is stale until one leg has fired at what it added.
-
-The threshold is drawn between the last productive leg and the first spent one,
-and the five legs are the only measurement behind it (`re-discovery`, newest
-last): **13.5%** (792 new, 1,056 seeds), **56.7%**, **68.8%**, **77.5%** (1,607
-new in 168 minutes — not a leg to skip re-probing for), **93.0%** (seven new for
-576 seeds). The floor of 100 consumed seeds is there because a leg that fired at
-nine and found nothing new is not a measurement of anything.
-
-**`reframe_g8` read 57.5%** [measured 2026-09-04], which is below the trigger, so
-the chain's next leg does not re-probe. Two counts stand beside it and neither is
-a rate: **3,616 promotions remain unfired** on the queue, and the **location
-store's 541 roots have been barren since g1-g5** — `fired` cannot say so for the
-legs that ran before the barren half was recorded, which is the whole of what
-*A root that was fired and got nothing* below closes. Both move with every leg;
-read them off the newest run record rather than off this line.
+**`--reprobe` defaults to a reading of the chain**, recorded under `reprobe_because`:
+it re-fires spent roots (`expand_neighborhood` probes at random, so a second pass is a
+new sample) when the chain is **exhausted** (no seed left) or **saturated** (the latest
+leg consumed at least `SATURATION_FLOOR` seeds and already held `SATURATED`, 90%, of
+the nuclei its operators reached; `counts.nucleus_already_found`). Give the leg its own
+`--seed`; `--no-reprobe`/`--reprobe` override. **After `supply.proven` widens, the
+saturation reading is stale until one leg has fired at what it added.**
 
 ### A root that was fired and got nothing
 
-**Every seed a leg fires gets a row, whatever the firing returned.** It is a
-`reframing_fire` row in the same `walk.jsonl`, written per seed-batch rather than
-at close, so a leg killed at hour six of eight has recorded everything it spent up
-to the kill. Nothing downstream sees it: the supply union reads `kind:
-"candidate"` and this is a fifth kind beside the header, the candidates, the
-refinements and the summary.
+Every seed fired gets a `reframing_fire` row, written per seed-batch, invisible to the
+supply union. Outcomes are `productive`, `barren`, `no_converge` (Newton or the period
+scan failed, `reframing.UNRESOLVED`), `not_drawn` (the screen batch crashed twice) and
+`undefined`. **Only `barren` consumes a root**, and consumed is relative to the ladder
+(operators, rung span, period ceiling, read off the header by `reframing.ladder_of`):
 
-**The problem it closes was silent and expensive.** A candidate row is written
-where something is found, so for the channel's first eight legs a root that was
-*fired and returned nothing* left no trace at all — it landed in neither the
-`fired` set nor the `spent` one, and the next plain continuation offered it again
-at the **front** of the queue, ahead of every root nothing had ever paid for.
-`reframe_g8` spent a large share of its seeds re-firing `reframe_g7`'s barren
-roots that way, and `g7` itself re-fired `g6`'s 277.
+- an unresolved root is **held** while `--seed-max-period` stands
+  (`reframing.unsettled_under`), re-offered when it rises;
+- `reframing.covers` re-opens a barren root only for a ladder that reaches further;
+- a plain continuation allows one barren fire per `(root, ladder)`, `--reprobe` two;
+- re-offered roots fire last (`reframing.queued`): unfired `matt_q4`, `matt_q3`,
+  `head_q4`, `head_keeper`, then the re-offered in the same order.
 
-**Consumed is fired, converged, and zero locations.** Matt's ruling of
-2026-09-05, and the other outcomes on the row exist to keep it honest — the five
-are `productive`, `barren`, `no_converge`, `not_drawn` and `undefined`, and only
-`barren` takes a root off the queue:
+The summary's `fires` and the seed query's `ladder_rule` read these through
+`reframing.refusal`, the one place the queue's rules live. Compare `seeds_available`
+with `seeds_consumed` before reading a leg's split as a fact about the supply. **The
+eval pin acts at three places**: the seed query, the carry of earlier promotions
+(`reframing.unpinned`; pins grow as splits are labelled), and
+`Channel.refuse_a_pinned_frame`.
 
-* `no_converge` — Newton did not settle at the seed, or the period scan found no
-  candidate at all. Both move when `--seed-max-period` does, so the leg learned
-  nothing about the place. The refusals that mean this are named once in
-  `reframing.UNRESOLVED`; everything else an operator says — a nucleus outside the
-  seed view, a framing over `operators.MAX_WIDTH`, a probe that kept handing back
-  the parent — is a *fact about the geometry* and fires the same way again, which
-  is what makes a seed that returned only those barren rather than unresolved.
-* `not_drawn` — atoms were found and their `engine.screen` batch crashed twice, so
-  nothing was ever read. A leg failure, not an answer about the root.
-* `undefined` — the seed's family has no parameter-plane degree. Unreachable from
-  the seed query, which serves the parameter planes alone.
+**What it stands on.** Seeds are `supply.proven` q3/q4 roots on parameter planes only,
+minus `labeling.pins.every_pinned`. The rungs (`reframing.RUNGS`, 16x to 256x the atom)
+are framings of **one** location: one row at the head's pick, every rung's reading
+under `rungs_drawn`. A nucleus row is `centered`: a `curation.framing` refinement may
+move its scale only.
 
-A seed the leg never reached before the clock simply has no row, which is how
-"not reached" is spelled: absence.
-
-**Two things the first production exercise found, 2026-09-06, and both are fixed.**
-`reframe_g9` and `g10` are the first legs to write these rows at all, and each
-defect is guarded in `tests/test_reframing_channel.py`.
-
-*An unresolved root is held while the period ceiling stands.* `prior_run` used to
-count a fire only for `productive` and `barren`, so a `no_converge` root carried
-`fires: 0`, read as never fired, and the next leg offered it as **fresh** — at the
-front of the queue rather than last. Measured: g9 left 343 unresolved roots, g10's
-whole root queue was those 343, every one returned `no_converge` again, and they
-took 3.9 of g10's 4.4 minutes for zero locations. The fire is now counted, under
-`unsettled` and **apart from** `fires`, because the two rulings differ: only barren
-consumes, and an unresolved root is instead refused while the ceiling that produced
-it is the ceiling being offered (`reframing.unsettled_under`). Raise
-`--seed-max-period` and every one of them is offered again — last, behind every
-unfired seed, because `reframing.returned_nothing` is what `reoffered` is and it
-counts a barren fire and an unresolved one alike.
-
-The comparison is `reframing.settles_the_same` and not `covers`, deliberately.
-`fire` snaps at the seed's own centre first and hands that atom to the
-neighbourhood enumeration as its parent, so an unresolved seed is one where the
-deterministic scan failed and the random probing never ran: what can move the
-verdict is the period ceiling and the operator set, and what cannot is the rung
-ladder, because a rung is a width an atom is framed at and there is no atom yet.
-So a leg that widens its rungs and leaves the ceiling alone re-offers every barren
-root and no unresolved one, and `--reprobe` does not re-open them either — a
-re-probe is a second sample of a neighbourhood, and this is a seed no neighbourhood
-was ever reached from. `covers` is now that predicate plus the rung-span
-containment a barren verdict needs.
-
-*A carried promotion is pin-filtered where it is carried in.* `reframing.seeds`
-refuses a proven root an eval pin covers and counts the refusals as
-`refused_pinned` on its own record — but `prior_run`'s `promoted` list is built
-from earlier legs' candidate rows and went through no such filter, so
-`Channel.refuse_a_pinned_frame` raised `PinnedPlace` when the queue reached one. It
-killed g9 at 18.9 of 30 minutes and g10 at 4.4 of 11, both on the same promotion,
-and it was deterministic: no leg could outlive its queue's first pinned promotion.
-`reframing.unpinned` now applies the seed query's rule to the promotions as `run`
-carries them in, counting them as `carried_refused_pinned`; swept 2026-09-06 over
-the whole chain, **16 of 5,842 promotions** are on pinned places. They were clean
-when they were written — the pin set grows every time somebody labels an
-evaluation split — which is why the filter belongs at the carry and not at the
-write.
-
-**So the pin acts at three places and not two**, each guarded by its own test in
-`tests/test_reframing_channel.py`: the seed query filters a proven root out
-(`refused_pinned`), the carry filters a promotion out
-(`reframing.unpinned`, `carried_refused_pinned`), and
-`Channel.refuse_a_pinned_frame` asserts over every frame the operators build,
-which is the backstop under both. **All three keep a frame whose `location_key`
-raises** — the assertion returns silently and the carry filter keeps the seed —
-because a key that cannot be computed is not evidence of a pin. An unkeyable
-frame is therefore drawn unchecked, deliberately and in one direction: the filter
-and the assertion behind it must not disagree about what they are looking at.
-
-**Consumed is relative to the ladder, and the ladder is on the header row.** A
-barren verdict at nine rungs is not a verdict at eleven, so each fire is scoped to
-the operator set, the rung span and the period ceiling it ran under —
-`reframing.ladder_of`, read off `kind: "reframing_run"`, which has carried
-`operators`, `rungs` and `seed_max_period` since the channel shipped. That is why
-there is no ladder on the fire row and no second store beside the ledger: the
-ladder is already written down once per leg, and `prior_run`'s one parse of a leg
-answers both questions at once.
-
-`reframing.covers` is what says one ladder already answers another, and it is
-about **reach** rather than about how many rungs there are: the operator set has
-to contain the operator set, the ceiling has to be at least as high, and the rung
-span has to contain the rung span. A rung added *between* two the ladder already
-had has not looked anywhere new and does not re-open a barren root; a rung added
-past the end has. The move it is the shape of is 2026-09-04's — `{8..128}` to
-`{16..256}` reaches further out, so every root `g7` fired barren is offered to a
-leg on the new ladder exactly once.
-
-**One more fire under `--reprobe`, and not two.** The count is per `(root,
-ladder)`: a plain continuation allows one barren fire, `--reprobe` allows two, and
-two barren fires under one ladder spend the pair for re-probing too. A root that
-ever produced a location is bounded by nothing, which is the whole of what
-re-probing is for — `expand_neighborhood` probes at random, so a second pass at a
-neighbourhood that paid is a different sample of it.
-
-**A re-offered root is fired last.** It keeps its own class on its row — the
-source is what a person cast, and this decides where it is fired rather than what
-it is — but `reframing.queued` sorts it behind every unfired seed whatever that
-class is, so a short leg's clock goes to what nothing has paid for yet. The queue
-is therefore: unfired `matt_q4`, unfired `matt_q3`, unfired `head_q4`, unfired
-`head_keeper`, then the re-offered ones in the same order.
-
-**Nothing was backfilled, and the ledgers are why.** A leg's record says which
-roots produced something and cannot say which of the rest it *reached* before the
-clock ran out: the summary row carries `seeds_consumed` as a count, the queue it
-was drawn from was ordered off a label store that has grown since, and no row
-names a seed the leg fired at and got nothing from. Where a record cannot tell
-"fired barren" from "not reached", the rule is to write nothing — so the seven
-legs that ran before 2026-09-06 contribute **0** fire rows and every root the
-chain offered them reads `unknown`, permanently. Of the ten legs on this machine
-(`g1`, `g2`, `g4`-`g11`; there is no `g3`) only `g9`, `g10` and `g11` write them,
-1,488, 384 and 672. What each leg *can* still say is on the record either way:
-`prior_run`'s `ladders` names the four distinct ladders the chain has run under,
-and `fires_recorded` is 0 for a leg that wrote none.
-
-**The three splits, and what they are readings OF.** Barren / unresolved /
-productive, off `fires.outcomes`:
-
-| leg | barren | unresolved | productive | locations | ran |
-|---|--:|--:|--:|--:|--|
-| `g9` | 1,078 | 374 | 36 | 57 | 18.9 of 30 min, killed |
-| `g10` | 6 | 376 | 2 | 3 | 4.4 of 11 min, killed |
-| `g11` | 449 | 83 | **140** | **190** | 30.3 min, ran out its clock |
-| `g12` | 660 | 103 | **125** | **201** | 31.0 min, ran out its clock |
-
-⚠ **`g10`'s split is not a reading of the channel and must not be quoted as one.**
-Two things made it: it died at 4.4 minutes on the carried-promotion pin above, and
-its whole root queue was `g9`'s 343 unresolved roots, every one of which returned
-`no_converge` again under a ceiling that had not moved. Both defects are fixed —
-`reframing.unsettled_under` now *holds* an unresolved root instead of offering it
-at the front, and `reframing.unpinned` filters the carry — so `g11`, the first leg
-to run after both, was offered **3,627** seeds rather than 343 and consumed 672 of
-them. Its 16 pinned promotions were dropped at the carry exactly as the sweep
-predicted. **A leg that reads 2 productive because it was handed nothing fireable
-is a fact about its queue, not about the supply**, and the cheap way to tell the
-two apart is `seeds_available` on the run record beside `seeds_consumed`.
-
-**`g12` is thinner than `g11`, and that one is a reading.** It consumed 888 of 3,137
-seeds and read barren on 74% of them (660 of 888) against `g11`'s 67% (449 of 672).
-Its 201 locations, opened by `curate hunt --places`, bought **42 seats over 31
-places** in the after-solves of 2026-09-16 (`6b4eb88`).
-
-**One consequence, and it is about what can be tested rather than about the
-queue.** `g9`, `g10` and `g11` all ran the same ladder — the nine rungs
-`{16..256}`, the same two operators, `seed_max_period` 256 — so every `covers`
-comparison the store can produce today asks whether a ladder covers *itself*,
-which is the trivially true branch. The non-trivial branch, a ladder that reaches further than the one a root
-was barren under, is exercised by `tests/test_reframing_channel.py` and by nothing
-on disk, and it stays that way until a leg runs on a ladder that moves.
-
-**Where to read it.** A run's summary carries `fires` — the ladder, its key, and
-the outcome tally — and the seed query carries `ladder_rule`: how many offered
-seeds returned nothing, how many a covering ladder **consumed**, how many are
-**held** because Newton never settled and the ceiling has not moved, how many are
-**re-offered** because the ladder grew, and how many have no fire record at all.
-The four reasons come off `reframing.refusal`, which is the one place the queue's
-rules are written and is what `offerable` is asked through, so the readout cannot
-drift from the queue it describes. That mattered: `ladder_rule` could say only
-"refused" when the re-offering of unresolved roots ran for two legs unnoticed.
-
-**A run's header says how the leg was launched and which ledger tiers it read.**
-`ledger.Ledger.header` is what stamps both, so every leg kind carries them rather
-than one channel remembering to. `invocation` is the argv verbatim plus a
-pasteable line; before it, resolving a standing walk's command line meant inferring
-every flag from recorded values against their defaults, which worked once and works
-only while no default moves. `ledgers_read` is `supply.ledgers.tiers_read` over the
-earlier ledgers the leg actually opened — a count split by tier — because two
-halves of one night can read different populations without saying so: on
-2026-09-06 the harvest read the 12 hot ledgers while the reframe leg beside it read
-47 across both tiers, and every figure comparing the two halves was comparing
-populations.
-
-**Seeds are `proven` roots, q3 and q4, parameter planes only, minus every eval
-pin.** Off `supply.proven` rather than a second query over the label store; the
-dynamical partitions are never served, because a Julia viewport is a z-plane point
-with no nucleus in the parameter-plane sense. The pin is the **union over every
-store that ships an evaluation side** — `labeling.pins.every_pinned`, which is the
-location split plus both finished-render splits, so `blind_minibrot`'s 197 places
-and `blind_modes`' are excluded as seeds *and* as derived frames. Measured
-2026-08-31: 1,452 pinned places, 1,252 proven parameter-plane locations at tier
->= 3, **76 of them pinned, 1,176 seeds available** (184 q4, 992 q3).
-
-**The rungs are 16x, 24x, 32x, 48x, 64x, 96x, 128x, 192x and 256x the atom size,
-and they are framings of one location rather than nine locations.** Every rung is
-drawn through `engine.screen` at the node regime, every one is read through the
-location head, one row is written, and its score is the rung the head picked —
-every rung's own reading rides on the row under `reframing.rungs_drawn`. They are
-offered directly rather than walked to: `curation.framing.WIDTH_LADDER` moves
-x1.414 a step and cannot reach 256x from 16x in anything a window that size can
-express. The band that reads as *a minibrot with detail around it* is 50-100 px
-of body at 1280, which is the 32x rung; the walk's widest rung, 16x, lands at
-115-183 px and is a factor of two too tight. The step alternates x1.5 and x1.333
-and the ends continue it rather than inventing a spacing — the whole ladder is
-`{16, 24}` doubled four times.
-
-**Tested, on 6,590 locations over the night of 2026-09-01: the rate plateaus at
-32x and the pick keeps moving outward anyway.** Head-q4 as a share of what was
-drawn at each rung reads **2.0 / 5.0 / 7.3 / 7.1 / 7.6%** at 16 / 24 / 32 / 48 /
-64x — 48x and 64x are inside a rounding of 32x rather than above it, so
-generation 1's monotone read was the ladder ending too early and not a trend. But
-the outer two take **596 of the 1,305 q4 picks (46%)**, and the median chosen
-frame is 32 atom sizes with quartiles at 24 and 48, so the ladder is used across
-its whole width. What none of this settles is whether a 64x frame is a better
-*minibrot* picture or merely one the head likes; that is what the
-`reframe_nuclei` sheet is cut for.
-
-**The ladder grew to nine on 2026-09-01 because its ends were carrying picks that
-were not answers.** Over the 5,773 locations drawn on the full five-rung ladder
-the head's pick came back very nearly flat — **17.5 / 22.2 / 23.0 / 17.5 / 19.8%**
-at 16 / 24 / 32 / 48 / 64x — which puts 37.3% of picks on a rung that was the
-ladder's own reach rather than the head's preferred width. Extending it does not
-cure that and the claim here is not that it does: a flat pick over `k` rungs
-leaves `2/k` on the ends, so nine rungs buys about 22% and, more to the point,
-four widths that had never been drawn. The five-rung ladder had already shown
-which of those two things happens — under the three-rung ladder the outermost
-rung took **30.6%** of picks, and adding 48x and 64x did not drain that pile, it
-moved it: 32x settled to 23.0% and the new outer end took 19.8%.
-
-**`reframing.end_picks` is the readout that says whether this bought anything**,
-and it rides on every run summary under `ends`. It splits a leg's picks three ways
-— the rungs the ladder just gained, the rungs the pile could pile on before they
-arrived, and the strict interior — because a single end-share number cannot tell
-"the pile came off the ends" from "the pile moved outward with the ladder", which
-is exactly what happened last time. Read `ends.old_ends.share` against the 37.3%
-above. `reframing.ENDS_READOUT` is what it is told, and it is a **pair**: two
-rungs were added at each end in 2026-09-01's extension and it read `2`, while
-2026-09-04's move added two at the outer end and removed two at the inner, which
-is `(0, 2)`. So `new_ends` is 192x and 256x, and `old_ends` is 128x — which was
-the ladder's whole reach — beside 16x, which is an end by deletion.
-
-**Answered on 2026-09-04, and the pile did come off: `old_ends.share` is 21.1%**
-over `reframe_g7`'s 488 picks, against 37.3 / 37.3 / 37.8% on the three five-rung
-legs. That is the extension doing the thing the three-rung-to-five-rung move did
-not — draining the old ends rather than moving the pile outward. `reframe_g6`'s
-0.0% was seven picks and said nothing.
-
-**What it also said is that 128x was the wall.** The new ends took **42.0%**,
-about double the ~22% a flat pick over nine rungs would leave there, and it was
-one-sided: the picks ran **2.7 / 4.9 / 9.4 / 12.9 / 13.1 / 10.9 / 11.7 / 13.9 /
-20.5%** outward from 8x, so the outermost rung was the single most picked, and it
-carried **50 of the 128 head-q4** (39%). The inner end bought nothing at all — 8x
-took 13 picks and no head-q4, 12x took 24 and two.
-
-**So on 2026-09-04 the ladder moved rather than grew: 8x and 12x off, 192x and
-256x on, still nine rungs.** Two rungs of a nine-rung ladder returning two head-q4
-between them over 488 picks is the ladder paying for a width nobody wants, and the
-same leg said the head was still reaching outward when it ran out of rungs. What
-that costs is nothing — a rung swapped for a rung is the same eight framings a
-location — and what it buys is two widths that had never been drawn at the end the
-head was pushing against.
-
-**Answered by `reframe_g8` the same day, and the head turned over at 192x.**
-Head-q4 as a share of what was drawn had risen at *every* rung the ladder had ever
-offered, 2.5 / 3.3 / 5.8 / 6.0 / 6.4 / 8.8 / **10.2%** outward to 128x on g7. Over
-g8's 251 locations it reads 1.6 / 3.6 / 4.4 / 8.0 / 6.4 / 8.4 / 8.8 / **9.6** /
-8.8%: the peak is 192x and 256x is below it, which is the first turnover this
-chain has produced and the reason 256x is where the ladder stops. The ends came
-in nearly flat too — `new_ends.share` **25.5%** against g7's 42.0%, `old_ends`
-**17.5%** against 21.1%, and the ~22% a flat pick over nine rungs would leave —
-so the outward move drained the end that 128x had become. It did not empty it:
-256x is still the single most *picked* rung at 16.3%, exactly as 128x was, which
-is the pile moving outward with the ladder for the second time.
-
-**A guard is now in sight at the outer end, which it was not at 128x.**
-`width_over_root_scale` fires past `operators.MAX_WIDTH`, and the largest atom over
-those 6,590 rows has a window scale of 8.5e-3 — so the first rung that guard would
-refuse is **352x**. It has never fired in any reframe leg, g8 included. (An earlier
-revision of this section said the outer two rungs "draw about 790 fewer frames" for
-that reason; they do not, and the 790 was generation 1's 792 rows, drawn before 48x
-and 64x existed.) At 128x that left a factor of 2.8 and the stop was a judgement
-alone; at 256x it leaves **1.38**, so this ladder cannot be doubled again whatever
-the pictures say. The other guard, the f64 spacing wall on the deepest atoms, bit
-at the end that was just dropped: 8x was offerable on 99.7% of those rows and 12x
-on 99.8%, against 99.8% for 16x itself. The new rungs are the *most* offerable the
-ladder has — 192x and 256x were drawn on all 251 of g8's nuclei where 16x and 24x
-reached 248 — and what rises outward instead is the gate's refusal rate, 242 of 248
-surviving at 16x against 228 of 251 at 256x.
-
-**And the pictures at the outer end are minibrots, which is what nobody had
-checked.** The standing argument against every outward move is that a body of ten
-pixels is a speck in a field rather than a subject; the standing answer was that a
-width nobody has read cannot be argued about. `scratch/ladder_0904/`'s contact
-sheet reads it: all **27** head-q4 picks at 192x and 256x have the atom's interior
-at the centre of the frame, none is a filament frame, and the bodies measure
-**8-16 px at 192x and 6-11 px at 256x** at release geometry — the eleven-atom
-scaling holding to within a pixel. So the head is picking real minibrots, very
-small ones, and whether a person wants them is the question a labelled sheet still
-owes. **`interior_fraction` cannot answer it and must not be used to**: read as an
-equivalent disc it puts g7's 16x bodies at a median 132 px, inside the recorded
-115-183, but its 128x median is 27 px against a true 14-23 with a tail to 909 —
-because a wide frame's interior is mostly *other* atoms, which is a fact about
-these frames worth knowing on its own.
-
-**Cost of the four new rungs: about 6% of a leg.** A framing is free of Newton
-solves — `operators._snap` charges the solve to the first framing and marks the
-rest `reused_solve` — so the added cost is renders and head reads only. On
-`reframe_g4` that half was 905 s of a 12,143 s leg (7.5%), and frames per location
-go 4.995 to 8.989 over the same 6,590 rows, so +80% of 7.5% is +6.0%.
-
-**A nucleus location is `centered`, and the field is a contract with
-`curation.framing`.** The centre is the atom the operators solved for and it is
-the whole of what the location is, so a framing refinement over one of these rows
-may move the **scale** and nothing else: `curation.framing.recentres` returns
-nothing for a centered row and `refine` plans no stage-B frames for one, three
-frames a location instead of seven. The flag is read off the row rather than off
-the channel name, so a hand-placed nucleus frame carries it for the same reason.
-
-**These places were once out of reach of the curation pool, and since 2026-09-01
-they are not.** `curation.hunt.drawable` — the population `curate hunt`,
-`curate mine` and `curate depth` all take — used to drop a location the pool-wide
-refinement scan held no row for, and the scan holds none for any of these: it
-predates the channel, and a centered row wants no scan row anyway, because its
-frame is the rung the head already picked. The population is now bounded by the
-location ledger's ratings alone and a framing is an attribute rather than an
-admission ticket, so the channel's **7,686** never-opened places are in the
-ordinary pool and draw at the frame they already carry. `reframe_q4` (below) is
-the location-list draw that was needed before that; see
-`curation/LEGS.md`'s *What bounds the minable population*.
-
-**Drawn as wallpapers, the q4 slice clears at nine times the breadth rate, and the
-rung question comes back with an answer.** `reframe_q4` (2026-09-01) spent an hour
-of the standard per-location draw over the head-q4 nuclei surviving
-`PRESELECT_RADIUS`, top-down: **2,286 candidates over 762 of the 1,252 places**,
-15.62% clearing raw `P(>=4) >= 0.50` against a fresh breadth draw's 1.72% at the
-same cost a candidate, and 38.1% of places producing at least one such row. Per the
-rung the head picked — over the five-rung ladder those legs ran, so every rung the
-ladder has gained since is missing a column here and a later draw is what fills
-them:
-
-| rung | 16x | 24x | 32x | 48x | 64x |
-|---|---|---|---|---|---|
-| places drawn | 61 | 122 | 216 | 157 | 206 |
-| candidates clearing q4 | 9.3% | 14.2% | **18.7%** | 17.0% | 14.1% |
-| places with a q4 row | 25% | 34% | **45%** | 44% | 33% |
-
-**The render judge peaks at 32x and falls away at 64x**, where the location head's
-own pick rate merely plateaued — so the outer rungs are, on this evidence, frames
-the location head likes more than the wallpaper judge does. It is an observation
-and not a controlled comparison: the rung on each row is the one the head *chose*
-for that place, so a rung column is partly a column about which places chose it.
-The `reframe_nuclei` sheet is still what settles it against a person's verdict.
-
-It is also the standing argument *against* every outward move the ladder has made
-since: the render judge was already falling away at 64x when the ladder stopped
-there, so 96x, 128x and now 192x and 256x are drawn into a declining region on
-this evidence. They are drawn anyway, because the location head's own pick had not
-turned over at 64x — and on 2026-09-04 it had not turned over at 128x either — and
-a width nobody has read cannot be argued about. The two readouts that answer it
-are `ends.new_ends` split by end, and a person's verdict on the contact sheet the
-outer rungs are cut into.
-
-**The seed snap scans to period 256**, over `operators.MAX_PERIOD`'s 64.
-Measured on 60 generation-1 seeds: 64 found 24 nuclei in 5.1 s, 128 found 30 in
-8.6 s, 256 found **35 in 17.7 s** — a 58% hit rate against 40% at 3.5x the Newton
-cost. It is the right trade here and the wrong one in the walk, because the snap
-is a tenth of this channel's operator clock and seeds are the scarce thing.
-
-**The seed queue has four classes and every row says which one it came from**:
-`matt_q4`, `matt_q3`, `head_q4`, `head_keeper`, in that order. A human verdict
-outranks the head's because it is the thing being inherited, and inside the human
-half q4 outranks q3 on measurement — over generation 1's 1,056 consumed seeds a q4
-root returned a head-q4 at **11.4%** against a q3 root's **4.2%**, so a q4 seed is
-worth 2.7 of the others. Both promotion classes fire: generation 1 found 58 nuclei
-over the q4 bar and 496 over the keeper floor, and a loop that promoted only the
-first runs its queue dry inside an hour of an overnight leg.
-
-**`operators.snap_at_seed` is the ported operator.** The maker's set was
-`snap_at_seed`, `snap_to_nucleus`, `neighborhood_expand`; this repository had the
-second (`snap_to_nucleus`) and the third under the name `expand_neighborhood`, and
-was missing the first. It is `snap_to_nucleus` at `SNAP_AT_SEED_MAX_WIDTH_MULTIPLE
-= 0.75` — the source project's `snap_max_fw_mult` — with a refusal of its own
-name, `nucleus_outside_seed_view`, because a judged view is a claim about a
-picture and a nucleus a whole frame width off centre was not in it.
-`snap_to_nucleus` itself is **not** fired at seeds: at a seed it is `snap_at_seed`
-with the looser radius, so firing both would return one atom under two names for
-every seed the tighter one accepts and buy only the annulus between 0.75 and 1.0
-frame widths, at a second full Newton pass. The maker did not fire it at seeds
-either — its `snap_to_nucleus` rows are all walk-triggered.
-
-**A crashed `engine.screen` batch costs its frames, not the leg.** One engine
-process died two minutes into an eight-hour leg on 2026-08-31 — nonzero with
-empty stdout *and* stderr, a hard crash rather than a refusal it could describe —
-and took the leg with it. A batch is retried `SCREEN_RETRIES` times and then
-given up on, its nuclei counted as `nucleus_not_drawn` and left in `seen`. An
-unattended leg that stops on one frame has spent the night, which is worse than
-sixty-four missing rows. A supervisor over these legs must tell a **nonzero exit**
-(a crash, retry it) from a **clean exit with few rows** (the queue is done).
-
-**It is operator-bound, not render-bound, so the three-worker render pool does not
-apply.** One `engine.screen` process at a time, below-normal by construction, the
-same shape `curation.framing`'s refine leg has. On the generation-1 smoke the
-operators were 53% of the leg's clock and the neighbourhood enumeration was the
-expensive half of that: **`expand_neighborhood` cost 17x what `snap_at_seed` cost
-per nucleus** (4.6 s against 0.27 s on the pilot), because most of its probes hand
-back the parent atom. Over the whole of 2026-09-01's night the operators were
-**92%** of the leg (26,742 s of 29,014 s) and the split was starker still:
-`expand_neighborhood` **15,541 s for 5,974 locations at 2.60 s each and 1,316,304
-Newton solves**, against `snap_at_seed`'s **61 s for 616 locations at 0.10 s
-each** — 99.6% of the operator clock for 91% of the locations.
-
-**Generations, and why a round is not a generation.** A nucleus the head scores at
-or above the q4 admission bar — `supply.currency`'s keeper floor on `P(>=3)` *and*
-its great cut on `P(>=4)`, never a third reading of the two — becomes a `head_q4`
-seed for the next generation; one that merely clears the keeper floor becomes a
-`head_keeper` seed behind it. A row's **generation** is its seed's plus one and is
-on the row. The loop's `--generations` bounds *rounds*, and a round is not a
-generation once `--prior` is in play: an earlier leg's promotions enter the first
-round's queue beside whatever is left of the label store, so one round writes rows
-of two generations. The summary spells the loop's entries `rounds` for that reason
-and carries a `by_generation` block beside them.
-
-**The head-q4 rate does not decay with generation — it rises.** Over 28
-generations on the night of 2026-09-01 it went 14.0% at generation 1 to 21.3% at
-3, 25.6% at 5 and 32.0% at 16, and each generation is a fresh promotion set off
-the one before rather than one surviving lineage. Read it as the head agreeing
-with itself about what it liked one step ago rather than as the channel getting
-better, and price it on a person's verdicts before believing it. The other half
-of the same measurement: a `head_q4` seed returns q4 at **42.5%** against a
-`matt_q4` seed's **41.3%**, and a `head_keeper` seed matches a `matt_q3` seed at
-**17.3%** exactly, so one generation on the head's class buys what the person's
-class buys.
-
-**A leg exits when its queue empties, and that is completion.** Both full legs of
-that night ran their queues out before their clocks — 3h22m and 2h48m — which is
-why an overnight is a *chain* of legs under one supervisor rather than one long
-`--minutes`.
-
-**A fifth leg on the same roots is 93% re-discovery, which is the convergence
-`--reprobe` exists for, measured.** A four-minute leg on 2026-09-01 handed all
-four earlier ledgers as `--prior` and no `--reprobe` spent **576 seeds** — the
-whole human queue, all 84 `matt_q4` and all 462 `matt_q3`, then 30 `head_q4` —
-and the operators found **100 nuclei of which 93 were already in the priors'
-`seen` set**. Seven new locations, one head-q4. The count is on the summary under
-`counts.nucleus_already_found`, and it is **the number the re-probe default is now
-read off** rather than a number somebody has to read: the seed queue was not empty
-(3,795 offered) and the clock was not the binding constraint, which is why the
-saturation clause and not queue exhaustion is what detects this. Note also that
-**all 84 `matt_q4` seeds returned nothing** — the highest-priority class is the
-first the chain exhausts, because four earlier legs fired at it first, so a short
-leg's yield comes off `matt_q3` and the queue order works against a leg that will
-not run to the end. Those 84 are also why the `fired` set cannot answer this: a
-root that returned nothing is on no row, so a rule asking whether every proven
-root had fired would have called this leg unconverged.
-
-**What that costs, measured on 2026-09-04: a barren root re-offered is worth a
-thirteenth of a fresh one, and `reframe_g8` spent 46% of its seeds on them.** The
-1,263 roots g8 was offered as "never fired" were two populations — **657** that
-`reframe_g7` had consumed and got nothing from, invisible in `fired` for exactly
-the reason above, and **783** nothing had ever touched. Re-fired under a different
-`--seed`, so a different ring of random probes, the 657 returned **10 roots, 15
-locations and 7 head-q4**: 0.023 locations a root against the fresh half's 0.301.
-Not nothing — `expand_neighborhood` probes at random and a second pass does find
-atoms the first missed, which is the whole premise of `--reprobe` — but a
-thirteenth, and at 0.84 s a root it was about nine minutes of a twenty-minute leg.
-**Recording the roots a leg consumed, rather than only those it wrote rows off,
-is what would let a continuation skip them**, and nothing does that today: the
-count is reconstructible only by rebuilding both queues, which is what
-`scratch/ladder_0904/barren.py` had to do.
-
-**Record and rank, never gate.** Every derived nucleus is scored and written
-whatever the head said. Neutral pre-selection distinctness (`curation.distinct`,
-`PRESELECT_RADIUS`) is applied where a **sheet** is cut, through
-`reframing.distinct_places`, and never to the ledger — so a sitting never sees
-fifty lookalikes off one seed and the record still says what the channel found.
-Note that the neutral store is built from the *admitted* supply sidecar, so places
-this leg finds have no descriptor until `curate score` and `curate embed` have run
-over its ledger.
+**Running it.** One `engine.screen` process at a time, below normal, not the
+three-worker pool. A crashed batch is retried `SCREEN_RETRIES` times, then counted
+`nucleus_not_drawn`; a supervisor tells a **nonzero exit** (crash) from a **clean exit
+with few rows** (queue done; an overnight is a chain of legs). The header carries
+`invocation` and `ledgers_read`. **Record and rank, never gate**: distinctness applies
+where a sheet is cut, never to the ledger.
 
 ## The refine leg: `--refine-per-walk`, at close, top-k
 
-A walk stops on a frame because the gates let it through and the head liked it,
-not because that is the best crop of what is there. So when the walk closes it
-takes its best `k` gate survivors — `--refine-per-walk`, default **3** — and
-scans a small window of framings around each: width `x{0.707, 1.0, 1.414}` at the
-current centre, then at the best of those a recentring of `+-0.25` frame one axis
-at a time. Seven frames a location, drawn through `engine.screen` at the node
-regime, read through the shipped location head, and the best **adopted only if it
-beats the recorded framing by `--refine-margin`** — a strict improvement in nats
-of log-odds on `P(>=4)`, never an argmax. Monotonicity is asserted and a violation
-raises.
-
-**It is the gallery pass's step 5a, at the other end of the pipeline and through
-the same code.** One window, one margin, one gate requirement, one provenance
-shape; `curation/framing.py` owns all of them and neither site restates any. What
-differs is only *which* frames are scanned — a pass scans the neighbourhoods it is
-about to colour, a walk scans the handful it is most likely to have found — and
-that is why the leg is bought once per run rather than once per admission.
-
-**Best is the seating statistic**: `logit P(>=4)`, `P(>=3)` breaking the tie,
-which is the order a gallery slot is filled in. A full tie falls to the order the
-ledger wrote, so one seed refines the same frames twice. Three is the archive's
-own number: the maker reframed each walk's top `KRAW = 3` and took the walk's
-reward as the max over them.
-
-**Nothing feeds back into the walk.** No priority moves, no score term is re-read,
-no descent is re-taken. `--refine-per-walk 0` is the walk this repository ran
-before the leg existed, exactly.
+When a walk closes it scans framings around its best `k` gate survivors
+(`--refine-per-walk`, default 3, `0` off) through `curation.framing`, the gallery
+pass's own step 5a: width `x{0.707, 1.0, 1.414}`, then a `+-0.25` frame recentring,
+seven frames at the node regime, adopted **only if it beats the recorded framing by
+`--refine-margin`** in log-odds on `P(>=4)`. Nothing feeds back into the walk.
 
 ### A written row is never edited, so the refinement is a later row
 
-The walk's shape leaves nowhere earlier to put it: *the best three frames of this
-walk* is not knowable until the walk has finished, and a ledger is append-only. So
-the leg appends a `refined` row per scanned location after the candidates, and
-**the reader prefers it** — `supply.ledgers.admitted` joins it onto the candidate
-row and hands on the refined frame, the refined cap, the refined score and the
-fate that score earns. The candidate row on disk is byte-for-byte what was
-written. A window that did **not** clear the margin still gets a row: what the
-margin refused is the evidence the margin is set where it should be, and such a
-row changes nothing about the location it is about.
+The leg appends a `refined` row per scanned location (a window under the margin
+too), and `supply.ledgers.admitted` joins it onto the candidate row. Admission reads
+the refined score, and the location key moves with the frame (`framing.original` keeps
+the old one). Its cost is its own bucket, `refine_minutes`.
 
-**Admission reads the refined score**, so a row the scan lifts over the keeper
-floor is admitted at its refined viewport and — only where it *crosses*, never
-where it was admitted already — gets the triggered operators any admission gets.
-Those fire at the refined centre onto the frontier the run is **closing with**, so
-this walk expands none of them and the checkpoint is already written: they are a
-record of what the operator found, not a feed into a descent.
+## Operators, gates and fates
 
-**The location key moves with the frame**, and that is deliberate. A key is the
-family and the viewport, so a refined row is a different location — which is this
-package's existing stance, stated where the operators dedup: *the framing is part
-of the identity, and the same atom at two framings is two views*. It is the
-opposite of what the gallery pass does, and the two are not in conflict: a pass
-refines a location the pool **already holds** at its recorded frame and has to pin
-identity so one place cannot take two seats, while a walk refines a frame nothing
-downstream has seen yet. The frame the walk stood on is kept on the row under
-`framing.original` either way.
+**Reframing operators are triggered, never a source.** `snap_to_nucleus` emits one
+`Reframing` per `operators.FRAMINGS` rung (own width, 4x, 16x the atom), never inward.
+The probe is about a third of a harvest's active clock, mostly `expand_neighborhood`;
+never price it by a short A/B leg (batch variance is ±23%).
+`--neighborhood`/`--no-neighborhood` is a tri-state; the default lives on
+`walk.Reframings`.
 
-**Priced in its own bucket.** `_charge("refine_framing", seconds)` puts it beside
-the reframing operators in `harvest._operator_report`, and the harvest tally
-carries `refine_minutes` as a **third** bucket rather than a share of
-`reframe_minutes` — the operators fire per batch off admissions and this fires
-once per run off the whole walk, so folding it in would make the operator suite
-look more expensive on exactly the runs that refined most.
+**A root's frame is the engine's** (`engine.home_view`; `tests/test_home_views.py`).
+`julia:multibrot3`–`5` have no pool: `supply.twins` makes their roots per run, so only
+a harvest reaches them.
 
-**Reading a walk's own gate render against a fresh one.** The gallery pass found
-its scan disagreeing with the supply sidecar by up to 0.029 on `P(>=4)` and could
-not say why: 19 of its 20 locations had been scored off a walk's gate render, and
-that picture is not on the view-cache path. Here it is — this run drew it — so
-every scanned location's `refined` row carries `gate_render`: both pictures'
-sha256, both byte counts, both readings and their difference. It is a measurement
-and nothing acts on it.
+**A walk scores the gate render** (byte-identical to the node-regime tile).
+`identity.enforce` refuses a run whose `--colormap` is not the tile pool's cyclic floor
+palette, whose `--node-width` is not the node frame, or whose engine cap disagrees with
+the tile corpus; the engine build is recorded (`drawn_by.jsonl` beside every view), so
+`curate score` re-renders what no stamp claims.
 
-**Reframing operators are triggered, never a source.** They apply to a place the
-walk already found and admitted, and they inherit both its provenance and its
-budget. Every source that enumerated minibrots from first principles was measured
-and found dead; what a minibrot is good for is being a *marker* of a dense
-neighbourhood, at a scale the search can compute before rendering anything.
+**Every candidate is recorded with the gate that refused it**; a survivor's fate is
+`admitted` (frontier and books), `expandable` (frontier only, past the junk floor) or
+`not_admitted`. `artifacts/location_views/` is a frozen record.
+`Limits.lineage_admissions` caps one root's bookings per row (`lineage_capped: true`);
+off here, on in [the deep run mode](../deep/README.md) and under `--lineage-cap`.
 
-**That verdict is about one enumerator at one scale, and there is a counter-fact
-worth carrying beside it.** The measurement that closed it is the source
-project's `minibrot_roster_v2` — 487 human-blind labels on screen-selected,
-G-framed windows at **one scale per atom**, class-4 yield 2, both windows of one
-atom. Its own file records the correction that scale was never varied. Against
-that, `data/smooth_render/rows/blind_minibrot.jsonl` — 197 rows, `eval_only`,
-unanchored, drawn from **maneuver views taken directly as locations** — came back
-**96 fours, 95 threes, 6 twos: 48.7% q4**, against 3.1% for `fresh_pool_draw` and
-0% for `pool_draw_bootstrap` on the same store. Minibrot *supply* has been
-measured to work; minibrot *auto-framed windows at one scale* have been measured
-not to. They are different claims.
+### A parameter-plane root starts above the depths its material lives at
 
-**`snap_to_nucleus` is the outward framing ladder**, and it is the operator that
-turns that marker into views. It recenters on the nucleus the view's centre sits
-on — one probe, one Newton pass — and emits a `Reframing` per rung of
-`operators.FRAMINGS`: `None` (keep the view's own width), then **4×** and **16×**
-the atom's own size. Outward and never inward, deliberately: framing *into* an
-atom is solid black, so there is no small rung. `4` is the "is this atom any
-good?" frame, the smallest that is not mostly the atom's own body; `16` is the
-one worth **labeling**, often close to a usable wallpaper by itself, which is the
-material the corpus wants. The verdict is per rung off one solve — a shallow atom
-can take 4× and be refused 16× — and nothing is reframed wider than
-`MAX_WIDTH` (3.0), a whole-set view, because wider than that is a different
-search rather than a reframing of this neighbourhood.
+Labelled plane material sits four or five rungs below a plane seed root, so the first
+`--plane-grace-rungs` (5) rungs under a `walk.PLANE_ROOT_SOURCES` root skip the junk
+floor; booking is untouched. Dynamical roots get no grace — they have no cliff, and
+what stops them is the budget: `Limits.root_expansions` 12 for parameter planes,
+`dynamical_root_expansions` 36 for every `z₀` family (`engine.DYNAMICAL_KINDS`).
+**Below `min_width` (`1e-9`) is [the deep run mode](../deep/README.md)**, not a lower
+floor here.
 
-**A reframing's own frame is never a candidate, and that is the shape of the
-whole operator suite.** `_propose` pushes the nucleus-centred view onto the
-frontier as a *node*; only what `expand` draws **below** a node becomes a
-candidate, and curation reads candidate rows alone
-(`supply.ledgers.passes_gates`). Measured in `harvest_run10`: **0 of 14,678
-distinct available reframing viewports appear as a candidate viewport, and 0 of
-12,163 pushed node ids is a candidate's own node id.** So the picture the
-operator constructs is a place to stand and never a place to ship — it cannot be
-scored, labelled, coloured or released — which is a design fact worth stating
-because every count of "what the operators bought" is a count of their
-*descendants*.
+### Screening a named frame, and sampling the boundary
 
-**And the descendants are inside the atom.** `Policy.zoom` is `(0.35, 0.50)`, so
-a 16× frame's children land at 5.6–8× atom sizes and its grandchildren at 2–4×.
-Over twelve production ledgers the 42,904 candidates descended from a reframing
-have a **median frame multiple of 1.66 atom sizes**, 59% of them below 2×, and
-that is where 9,432 of their 14,109 `interior_cap` refusals sit.
-
-**How wide a nucleus reads, per rung, measured.** Eleven ring-seeded atoms at a
-1280 px frame — which is both label geometry and `release.RELEASE_REGIME`; halve
-it for the head's own 640 px view:
-
-```text
-framing        2x       4x       8x      16x      32x      64x     128x     256x
-body px      ~1050  460-740  230-370  115-183   57-92    28-45    14-22     7-11
-interior   .50-.75  .16-.24  .04-.06  .01-.02    ~.003    ~.001    ~.000    ~.000
-```
-
-The 2× frame is half interior or more and is refused by `Gates.interior_cap`
-(0.30), which is the arithmetic behind "there is no small rung". The top rung,
-16×, puts the body at 115–183 px. `scratch/AUDIT_minibrot_pipeline_report.md`
-(2026-08-31) argues that a *minibrot as a subject with detail around it* is the
-50–100 px band, which is a **32× rung this ladder does not have**.
-
-**And curation's refinement scan cannot supply it.** `curation.framing`'s window
-is half an octave either side — it has adopted 19,041 of its 28,090 scans at
-Δ = 2.0, and moved outward on 161 of the 809 nucleus-centred places it saw, but
-always at ×1.414. A frame two rungs too tight for its subject stays two rungs too
-tight, so the rung has to be right when the operator emits it.
-
-**What the probe costs, measured.** A harvest charges `expand` and
-`trigger_reframings` as one number, so the ledger cannot break the operators out.
-Replaying every firing of a one-active-hour scored run against the four parameter
-planes — 1,379 firings at the default `--probe 0.25` — prices them:
-
-```text
-                       s/firing   median      p90   share of active clock   s/admission
-expand_neighborhood       0.623    0.074     1.87                   23.9%          2.93
-lateral_to_sibling        0.204    0.068     0.54                    7.8%         56.15
-snap_to_nucleus           0.101    0.046     0.19                    3.9%          0.96
-untriggered descent           —        —        —                   64.5%          0.81
-```
-
-Three things that table settles. **The probe is a third of a harvest's active
-clock** at the default firing rate, and neighborhood alone is a quarter of it.
-**The cost is a tail, not a level** — neighborhood's median firing is 0.074 s and
-its worst was 8.2 s, so a mean is the only honest summary. And **the operators buy
-admissions at three to four times what ordinary descent pays**, which is the trade
-the reserved floor exists to justify rather than to hide: what they produce is
-material nothing has been trained on.
-
-There is no need to take the timer's word for it. Each operator's cost divided by
-the `newton_solves` its own ledger rows recorded lands on one constant — 8.6, 10.7
-and 11.6 ms per solve — so the solve counts alone reproduce the same shares.
-
-**Neighborhood is on in production at that price, and the table is the reason it
-is a decision rather than a default.** A quarter of the active clock buys views
-of a kind nothing has been trained on, which is what the frontier's reserved
-operator slot exists to make; `--no-neighborhood` is the per-run opt-out and
-there is no cheaper operator that produces the same material. `--neighborhood`
-and `--no-neighborhood` are one **tri-state** and both default to saying nothing:
-the shipped default lives on `walk.Reframings`, so a flag nobody passed cannot
-overrule it and moving the default is one edit rather than two.
-
-**What the table paid for that was pure waste has been removed.** The parent atom
-— which atom is this view on — is a deterministic function of the view, and all
-three operators start from it, but each disc operator used to solve for its own.
-Behind a snap that *missed*, which was 954 of the 1,379 firings, both then paid a
-full Newton pass to be told the same "no". One firing now resolves it once
-(`operators.ParentAtom`) and the rest read it, refusal included. Replayed over the
-same 240 firings, before against after, with the proposals compared row for row:
-
-```text
-                       s/firing          median firing        Newton solves
-lateral_to_sibling     0.231 -> 0.142    0.072 s -> 30 us      4,841 -> 3,371
-expand_neighborhood    0.734 -> 0.646    0.084 s ->  1 us     17,824 -> 16,354
-whole firing           1.078 -> 0.899   (-16.6%)
-```
-
-**Zero proposal differences over the whole replay** — same rows, same order, same
-refusals, same atoms. Read the ratios, not the levels: this replay times both arms
-interleaved and draws its probe seeds per operator, so its "before" column sits
-above the priced table's own figures for the same work. Scaled onto the priced
-run, the three operators fall from 35.5% of the active clock to about 29.6%, and
-`lateral_to_sibling` from 7.8% to 4.8%. The median firing is where to look: a
-no-parent firing used to cost each disc operator a full solve pass and now costs
-neither anything at all.
-
-**Do not try to price this with a short A/B leg.** Batch-to-batch variance in
-expansion cost runs ±23% over runs of dozens of batches, so a three-batch run with
-the operator off and one with it on differ by less than the noise — measured, they
-came out 0.511 against 0.520 active minutes, where the effect being looked for was
-a tenth of that. Cost is also flat-to-falling in trigger depth, so a short leg is
-not cheap for the reason it looks like it should be.
-
-**Where a root starts is not decided here.** A root given no view comes home to
-its family's frame, and that frame is the engine's — `fractal-engine home-view`,
-read through `engine.home_view`. This package holds no framing literal, and the
-guard for that is in `tests/test_home_views.py`. It held one once, `{0, 0, 3.0}`,
-which agreed with the engine until the engine's Phoenix row moved: after that a
-phoenix root framed 66% of its own set with both lobes cut, and nothing in either
-half could have noticed.
-
-**Three partitions have no pool here at all, and are harvest-only.**
-`julia:multibrot3`, `julia:multibrot4` and `julia:multibrot5` have no tracked
-`c`-pool and no back-catalogue to draw one from — the two pools in
-`data/discovery/` are degree 2 and Phoenix, and nothing in a walk crosses a
-family. Their roots are **manufactured per run** by
-[`fractal_wallpapers.supply.twins`], which takes the centre of an admitted
-degree-`d` parameter-plane location as a `c` for the degree-`d` Julia family,
-skipping any parameter inside the pool's own c-spacing floor of one already taken.
-That is a supply-engine channel, so `fractal-wallpapers walk` cannot reach these
-three: a harvest is where they get roots, and a run that never serves their parent
-plane never serves them either.
-
-**The degree-2 twin has both, since 2026-09-12.** It keeps the tracked pool and it
-is served by the same channel, its queue holding the two interleaved one for one.
-What held the channel off it was that a served twin used to get the derived list
-*instead of* its pool; the pool's 209 parameters are now reserved into the
-channel's c-spacing floor instead, so a derived `c` cannot land on a curated one.
-The reading that came back is worth having: measured over 51 ledgers, **7,286
-offers from the mandelbrot plane's whole admitted history produced 12 parameters,
-7,185 of them refused by a pool row.** At a 3.2e-2 tolerance the curated pool has
-already claimed 98.6% of everywhere this project has found on that plane.
-
-**A seed pool cannot ask for anywhere else.** `JuliaSeed` carries a `c` and
-`PhoenixSeed` a `(c, p, z₋₁)`; both are *parameters*, so every dynamical root
-either pool hands over comes home — the whole plane at width 3.0, the classic
-Ushiki extent at 5.0 — and the walk descends to anything worth seeing from
-there. The one dynamical supply that names a frame is
-[`fractal_wallpapers.supply.proven`], which hands over the viewport a human
-scored and reaches `add_root`'s `view` with it.
-
-**A walk scores the picture it already made, and no longer renders a second
-one.** `expand` draws every gate survivor at 384x216, one field sample per pixel,
-and that frame is byte-identical to the same location's cached tile at the same
-regime — one of the three the shipped location head was trained over. So the head
-is handed the gate render. What that removed was the *dominant* line of a run's
-clock: the deploy-geometry steering view was 8,810 s of one three-hour production
-leg, 58.7% of the whole run's clean wall, and nothing but the scorer ever read its
-pixels.
-
-**The identity is enforced, not coincidental.** It rests on five things, none of
-which announces itself when it moves: the run's `--colormap` is the tile pool's
-floor palette, that map is **cyclic**, `--node-width` is the node regime's frame,
-the engine's iteration cap still matches the cap the tile corpus recorded, and —
-the one the other four cannot see — the **engine build itself**.
-The cyclic requirement is about the *deploy view* rather than the tile: the tile
-build and the walk's own `expand` both load a colormap unbaked, so neither ever
-folds one, but `location_view` bakes `mirror` into any map that does not wrap —
-so a non-cyclic walk colormap would leave the head's node-regime picture and its
-deploy-geometry picture of one place two different pictures. It is refused rather
-than folded.
-
-The first four are checked before a run writes its first row, and each refuses
-with the flag to change; the engine also states the geometry it drew every batch
-at, and a report that disagrees ends the run. The cap is *asked* through
-`fractal-engine maxiter` rather than restated here, for the same reason the home
-table is.
-
-**The build is recorded rather than compared, and the refusal it buys is on the
-read side.** There is nothing to compare it against at run start — the gate
-renders this run is about to make are made by this engine by construction — so
-`identity.enforce` puts `engine` on the run header and every view the run writes
-carries the same mark in a `drawn_by.jsonl` beside it. The build is named by what
-it draws (`fractal_wallpapers.engine_fingerprint`: six pinned probes over four
-family kinds and six modes, digested to sixteen hex characters, ~0.35 s and
-cached per process), because byte-identity of output is already this engine's
-contract and a digest of output also catches a rebuild from unchanged source and
-a moved mode catalog, which a revision would not. What that record is *for* is
-`curate score` and `curate redraw`: a cached view or a past run's gate render
-that no stamp claims is `unknown`, which is not a fingerprint, so it is
-re-rendered rather than scored. A picture outlives the run that drew it, and
-until this existed nothing could tell one build's picture from another's.
-
-**With the views gone, the rest of a rung's clock is the focus finder.** Inside
-`expand` the escape-time iteration is the *smaller* half: the focus finder —
-twenty smoothing passes over the node field, no iteration in it at all — was 47%
-of expansion before it was read once per node instead of once per draw, and is now
-the first place to look when a walk is slow.
-
-**Once a run, the claim is measured rather than only checked.** A seeded sample of
-about a hundred survivors is scored a second time at the deploy geometry and the
-two verdicts are compared at the three acting gates. The count lands in the run
-summary as one line and **nothing acts on it** — the pre-registered bars in
-`models/regime_flips.py` are where a decision about this head gets made.
-
-**Every candidate is recorded, with the gate that refused it.** A walk that
-logged only its survivors could never afterwards tell "the gates were too tight"
-from "there was nothing there", and both look like a low yield. A gate survivor
-then carries one of three **fates**, and the ledger's word for each is the word
-the books use: `admitted` is on the frontier *and* in the books, `expandable` is
-on the frontier and in no book, `not_admitted` is neither — recorded, and not
-walked from. A row also records the regime and the picture its score was read
-off (`score_regime`, `score_view`), because the head reads three geometries and a
-score that cannot say which one it came from is a number about nothing.
-
-**The pictures a score was read off are two trees, and only one of them still
-grows.** `artifacts/location_views/` is the deploy geometry — the cache walks
-filled before they scored their own gate renders, and what the sidecar, the flip
-study and the restatement all read. It is a read-only record, and since
-2026-08-22 that holds for **old stock's first read too**: `curate score` reads a
-row that states no regime at the node one rather than falling to the deploy
-geometry, so scoring three pre-regime ledgers whole wrote 1.48 GB into
-`artifacts/node_views/384x216ss1/` and not one file into the frozen tree. The one
-command that still renders into it is the regime-flip study, whose canonical arm
-reads production's own pictures on purpose.
-
-**Standing on a place and booking it are two decisions, at two heights.** The
-scorer is asked twice about every gate survivor: *may the walk continue from
-here?* at the junk floor, and *is this a find worth counting?* at the good floor.
-One cut used to answer both, which meant a place too ordinary to keep was also a
-place the walk could not stand on — and a frontier fed only by its own admissions
-shrinks whenever the pass rate falls below one over the branching factor. The
-middle tier carries its own fate (`expandable`), so it reaches the frontier and
-no book in the project can see it.
-
-**A lineage may be capped on what it books, and off by default it is not.**
-`Limits.lineage_admissions` is the ceiling on admissions from one root, asked per
-row at booking; past it a row the head would admit is recorded `not_admitted` with
-`lineage_capped: true`, the lineage stops expanding and its standing frontier nodes are evicted at the
-crossing, recorded as a `lineage_capped` row. It is `None` here and set by the
-[deep run mode](../deep/README.md), where the measurement that motivated it was
-taken: 741 admissions off 15 of 48 roots, 85 on one, and a finished frame set that
-was largely one composition. Nothing is retro-refused when it fires — the rows a
-capped lineage already wrote keep the fates they earned.
-
-**A parameter-plane root starts above its own material, so its first rungs are
-ungated.** Labelled class-3/4 plane locations sit at width 1e-4 to 1e-5, four or
-five rungs below where a plane seed root begins, and the head scores the shallow
-end near zero — so every rung was refused at the junk floor and plane nodes
-reached the frontier at a measured 1.2%. The first `--plane-grace-rungs` rungs
-below a plane-seed root are exempt from that floor and the floor resumes below
-them. Booking is untouched at every rung, dynamical roots are untouched
-altogether, and every gate survivor under a plane root records its rung and its
-raw junk-floor verdict — which is the survival-by-rung table a depth-aware floor
-would have to be shaped from.
-
-**Dynamical roots are untouched because they have no cliff, and that is measured
-rather than assumed.** On the same statistic the 1.2% above is — the share of a
-root's own children reaching the frontier — julia manages **59.9%** over 7,030
-rung-1 candidates, and a `twin:labels` root at the julia home view of width 3.0
-manages **55.3%**, a third of them admitted outright. That is fifty times the rate
-the grace exists to fill, and those roots reach median depth 7 with a ceiling of
-13. Across all 50 ledgers **no julia root has ever been graced — 0 of 2,400** — and
-widening the grace to reach one would buy nothing, because the floor is not what
-stops a julia lineage. **The expansion budget is.** The 1,714 roots walked at
-`root_expansions = 12` pay a median of exactly 12, 60.9% reach it, and **98.0% of
-those were still producing standable nodes at their deepest rung** — a budget
-closing live lineages, holding 28.59 admissions a root against 2.85 for the roots
-that stopped on their own.
-
-**So the budget was split in two, and the dynamical families were moved off 12.**
-`Limits.dynamical_root_expansions = 36` — the number pinned planes had already
-been raised to — now covers every family whose pixel is `z₀`: `julia:*`, varied
-`phoenix`, and pinned `phoenix:classic`. The parameter planes keep 12. The two
-fields carry the measurements and the reason they meet at one number; the split
-is read off the family **kind** through `engine.DYNAMICAL_KINDS` rather than off
-the partition, so a render-only family cannot make a policy lookup raise.
-
-The two virgin `c`-pool channels fail differently again, and also not at this
-floor: `near_boundary` and `near_minibrot` roots die at rung 1 — median one
-expansion, median max depth 2 — but their rung-1 refusals are dominated by the
-**structural gates**, 43.4% `flat` for `near_minibrot` and 11.1% `flat` plus 10.4%
-`interior_cap` for `near_boundary`. Those carry no score at all, so the grace
-could not waive them even if it reached them: what is wrong there is the
-parameter, not the depth.
-
-**Below `min_width` is another mode, not a lower floor here.** The walk's
-`1e-9` stays where it is. What is under it —
-[the deep run mode](../deep/README.md) — reuses this package's engine door,
-gates, ledger and scorer, and changes only where it stands: its roots are nuclei
-produced by high-precision Newton rather than seeds, so its first frame is
-already below this floor. It is a separate mode because reaching depth by
-lowering this one spends the whole budget on the space between atoms, which is
-the finding that parked the idea in the first place.
-
-**The gates are reachable without proposing anything.** `expand` runs the
-structural battery on frames *it* drew, so for a long time the only way to ask
-what the filter made of a frame somebody named was to go looking for it in a
-ledger. `fractal-wallpapers screen` points the same battery at a location record
-and reports, per gate, what it read and what it read that against — and the ones a
-refusal came before report nothing, because they did not run. It is not a second
-copy: `screen.rs` owns one `Battery` and both callers spend it, held to that by
-`a_named_frame_gets_the_same_fate_the_walk_gave_it` in the crate.
-
-Checked against the live `harvest_run9` ledger: of 40 candidates whose recorded
-fate is a gate, `screen` reproduced **40**. The 20 rows carrying a *scorer* fate
-(`expandable`, `not_admitted`) passed every gate by definition and come back
-`survived` — except six, which are first-rung candidates. **A walk waives the
-occupancy floor at its first rung**, where it over-fires on a root frame still
-resolving structure the tighter child has not entered yet, so screening one
-against three gates reports a refusal its run never made. `--waive-occupancy` is
-that waiver, and with it all 20 come back `survived`.
+`screen` runs the walk's own battery on a record and reports per gate;
+`--waive-occupancy` is the walk's first-rung waiver. `sample-boundary` draws in
+`boundary.home_box` and writes `draws.jsonl` (every attempt) and `kept.jsonl` (a
+manifest for `render --manifest`).
 
 ```
-fractal-wallpapers screen --location row.json
 fractal-wallpapers screen --manifest rows.jsonl --out-dir artifacts/screen/frames
-fractal-wallpapers screen --manifest first_rung.jsonl --waive-occupancy
-```
-
-**A random draw plus those gates is a boundary sampler.** A frame that clears all
-three is not mostly set, not far exterior and has its detail spread over it —
-which is what being on the boundary *is*, so there is nothing else to find it
-with. `sample-boundary` draws uniformly inside a family's home frame at a
-log-uniform width, screens each draw, and records every attempt with the gate that
-refused it. Measured over the c-plane at widths 1e-3 to 1e-1: **1.4% of uniform
-draws clear every gate** — 13 survivors in 832 attempts, 31 seconds — and the
-refusals are 81% `flat`, 17% `interior_cap`, under 1% `occupancy_floor`.
-
-**It draws from 90% of the home frame, and `boundary.home_box` is the only place
-in this project that shrinks it.** The box is the family's own home view — read
-through `engine.home_view`, because this side keeps no framing literal — with each
-axis scaled by `boundary.HOME_SHARE` (0.9) and the height taken at 16:9 off the
-shrunken width. The reason is that the home framing carries a margin of empty
-plane around the set **on purpose** (the engine contains the measured set at 16:9
-with a tenth of its deciding extent in margin), so a draw spending attempts out
-there would be measuring the margin rather than the set. It is a property of
-*this sampler* and not of the home table: everything else in the project — a walk
-root, a render with no viewport — takes the engine's frame whole.
-
-It writes two files, because one could not be both: `draws.jsonl` is the record
-(a run header, one row per attempt, a summary) and `kept.jsonl` is a plain
-location manifest that feeds straight into `render --manifest` or
-`score-locations`.
-
-```
 fractal-wallpapers sample-boundary --keep 12 --attempts 1024 --seed 1
 ```
 
 ## The viewport sampler: a root channel that makes places
 
-**A pinned plane's fresh supply used to be one row, by construction.** Every pool
-in this project hands over a *parameter* — a `c`, a phoenix `(c, p, z₋₁)` — and
-the walk descends from the home frame it implies. `phoenix:classic` is Ushiki's
-single point, so there is no parameter left to vary and the only thing a fresh
-root can differ in is the frame. `pools.classic_phoenix_pool()` is that one row;
-everything else the partition had came from the label store, which made its
-ceiling `1 + its labelled q3+ places` and its first leg exhaust itself at 2% of a
-thirty-minute budget.
-
-`viewport_sampler` is the channel that makes places. It is `sample-boundary`'s
-idea pointed at supply instead of at measurement: draw viewports over the
-family's own home box, screen every one through `engine.screen` — the walk's own
-battery, not a second one — and hand the survivors over as roots.
-
-**The ladder is octaves, not a width band.** Rung `k` is a `2^k × 2^k` jittered
-grid at width `home/2^k`, which tiles the home box exactly, so a run gets whole
-coverage at each of four scales rather than a cloud of widths wherever a band was
-set. Rung 0 is the home view and the sampler does not draw it — the pool already
-hands that over, and restating it would put one frame in the queue twice under
-two names. The default ladder is four rungs, `4 + 16 + 64 + 256 = 340` frames;
-`--sampler-rungs` is the knob and a fifth rung alone is 1,024 more.
-
-**The jitter is what makes it a sample rather than a lattice.** Each frame's
-centre is displaced inside its own cell by up to half a half-cell, drawn from a
-digest of `(seed, rung, cell)` rather than from a shared stream — so the draw is
-reproducible, and adding a rung later does not move the rungs already there.
-
-**Nothing ranks a viewport before the walk sees it.** The gates admit and the
-head is never asked: a head's opinion of a *root* frame is not evidence about
-what lies below it, and ranking there would be gate-and-forget on the one channel
-that can open the plane. Every attempt is written to the run's ledger as a
-`sampler_draw` row with the gate that refused it, so a rung that produced nothing
-says so.
-
-**Measured on classic phoenix, 2026-09-02** (four rungs, 384-pixel node width):
-**36 roots out of 340 draws in 8.3 s at the production seed 0**, and 37 in 8.5 s
-at seed 20260902 — a 10.6–10.9% yield either way. Refusals at seed 0 were 263
-`flat`, 35 `occupancy_floor`, 6 `interior_cap`, and the yield climbs with the
-rung (0/4, 2/16, 8/64, 26/256): the widest frames are mostly empty plane and read
-as flat, which is what the home framing's own margin looks like from inside a
-gate. The whole draw costs about eight seconds, which is why it is paid once when
-the run is built rather than inside the refill's share of the loop clock.
-
-**The yield turns over past rung 4, and the four-rung reading above is the half
-of the curve that climbs.** Measured at **six** rungs, seed 0, 2026-09-02:
-**426 survivors of 5,460 frames in 130.6 s**, by rung 0/4, 2/16, 8/64, 26/256,
-91/1024, 299/4096 — 12.5%, 12.5%, 10.2%, 8.9%, **7.3%**. It climbs to rung 4 and
-falls after it, as the frames get small enough that `flat` takes them: 3,552 of
-rung 6's 4,096 draws. The cost is `4^k` a rung and the screen is serial, so the
-fifth and sixth rungs together are **122 s of every session, a resume included**,
-against eight seconds for the first four.
-
-**So add a rung only when a leg has actually walked its shelf out.** The leg that
-measured this served **160 of the 434 entries the six-rung ladder gave it** and
-left 274 unserved; four rungs would have fed it. What that leg was short of was
-never viewports — see *the cadence was the whole of it* in `supply/README.md`.
-Per root rather than per frame, **rung 4 is the productive one**: 2.0 admissions a
-root against 0.90 at rung 5 and 1.16 at rung 6. A denser draw at rung 4 is the
-cheaper way to more places than a rung below it.
+A pinned plane (`phoenix:classic`) has one parameter, so a parameter pool gives it one
+root. `viewport_sampler` makes places: it draws viewports, screens each through
+`engine.screen`, and hands survivors over as roots, unranked, every attempt a
+`sampler_draw` row. On the pinned plane the draw is an octave ladder, rung `k` a
+jittered `2^k x 2^k` grid; the default four rungs are 340 frames in about eight
+seconds, paid at every session start. `--sampler-rungs` adds `4^k` frames a rung, so
+add one only when a leg has walked its shelf out.
 
 ```
-fractal-wallpapers harvest --minutes 10 --partition phoenix:classic     --root-channel proven --root-channel viewport_sampler
+fractal-wallpapers harvest --minutes 10 --partition phoenix:classic --root-channel proven --root-channel viewport_sampler
 ```
 
 ### A parameter plane: straddle refinement, and it does not run out
 
-**The parameter planes are served too since 2026-09-16** (`plane_sampler_ckpt128`),
-under a second draw scheme chosen by partition kind. The pinned plane keeps its
-ladder — its plane has no connectedness locus to find a boundary of — and a
-parameter plane gets a quad-tree refined only where the boundary is. The old
-ruling that there would never be a plane sampler rested on the *ungated* shell
-draw (0 good in 144); this draw is gated like everything else here.
+A quad-tree refined only where a child **straddles** (interior and escaped samples
+both, off one `engine.dump_field` probe of its parent); every straddler between
+`--sampler-widest` (0.1) and `--sampler-narrowest` (1e-3) is screened and served
+round-robin over the band's rungs, a rung grown `CHUNK` (256) parents at a time. About
+39% survive the screen; admissions are new places, concentrated on a few lineages.
 
-A cell at rung `r` is a cell of the same `2^r x 2^r` tiling. A **parent is probed
-once** through `engine.dump_field` at `PROBE_RESOLUTION` (64 x 36, so each child is
-an exact 32 x 18 sub-block), and a child **straddles** if its block holds both
-interior (`NaN`) and escaped samples. Only straddling children are probed further.
-Every straddling cell whose width lies inside the band — `--sampler-widest` 0.1 to
-`--sampler-narrowest` 1e-3, `boundary`'s band read as root widths — is a candidate,
-jittered by the seed as the ladder is, screened through `engine.screen`, recorded
-as a `sampler_draw` row with `scheme: straddle`, and served round-robin over the
-band's rungs. The straddle test places the probes and is not a gate: the battery
-decides.
-
-**The straddle probe**, piloted on multibrot3 (seed 1, 240 straddling parents at
-rungs 5–8, their 960 children each screened once, unjittered; three workers):
-
-| grid | maxiter | ms/probe | agrees with `interior_cap` | screen survivors the probe calls one-sided |
-|---|--:|--:|--:|--:|
-| 32 x 18 | 64 | 5.99 | 96.0% | 2 of 176 |
-| 32 x 18 | 256 | 6.25 | 99.2% | 13 of 176 |
-| 32 x 18 | width policy | 7.81 | 99.2% | 14 of 176 |
-| **64 x 36** | **256** | **6.25** | **99.2%** | **2 of 176** |
-| 64 x 36 | 1024 | 6.70 | 100% | 3 of 176 |
-| 64 x 36 | width policy | 11.85 | 99.6% | 3 of 176 |
-
-A probe this small is the engine's process start, not its iteration, so the larger
-grid costs nothing — and at 32 x 18 a 16 x 9 child misses the one filament an
-exterior child hangs on and drops that whole subtree. Maxiter 64 calls slow
-escapers interior (95–96% agreement).
-
-**A rung grows a chunk of parents at a time, and refined whole it is unaffordable.**
-The first pilot refined whole rungs: **72,800 probes and 645.6 s** before the first
-root, because rung 12 of multibrot3 holds **133,465** straddling cells (rungs 6–12:
-316, 836, 2,224, 6,004, 16,602, 46,605 — ×2.8 a rung). So a rung grows by `CHUNK`
-parents taken in the rung above's served order, and a chunk's children are served
-in digest order. The chunk trades cost against spread, read as the distinct rung-6
-cells (width 0.073) the first 128 candidates descend from:
-
-| refinement | probes | seconds | rung-6 ancestors | rung-4 ancestors |
-|---|--:|--:|--:|--:|
-| whole rungs | 72,800 | 645.6 | 105 | 43 |
-| chunk 1,024 | 5,461 | 38.1 | 97 | 42 |
-| **chunk 256** | **1,749** | **15.4** | **85** | **41** |
-| chunk 64 | 541 | 3.2 | 41 | 26 |
-
-**Per draw against the pinned ladder.** Phoenix's ladder, measured the same
-evening: 340 attempts, 37 survivors, 9.08 s — **26.7 ms an attempt, 245 ms a
-survivor**, all paid at build. Multibrot3 at chunk 256: 128 attempts, 50 survivors,
-7.78 s screening (**61 ms an attempt, 156 ms a survivor**) plus 12.5 s of probes
-paid once for the first 700-odd cells a rung. Its yield is **39%** against the
-ladder's 11%, because every candidate already straddles.
-
-**A walk leg on it** (multibrot3, seed 20260916, `--roots 40 --batches 40 --batch 8
---candidates 4`, the channel alone, nothing merged):
-
-| | whole rungs | chunk 64 | chunk 256 |
-|---|--:|--:|--:|
-| draws surviving the screen | 60/128 | 42/128 | 50/128 |
-| batches before the frontier emptied | 17 | 12 | 13 |
-| admissions | 121 | 36 | 53 |
-| roots booking any | 5 of 40 | 3 of 40 | 3 of 40 |
-| distinct admitted centres | 96 | 32 | 46 |
-| admitted width, median | 4.2e-5 | 3.3e-4 | 8.3e-5 |
-| admissions whose frame holds a pool nucleus | 0 | 0 | 0 |
-
-**The admissions are new places, not re-finds.** The roots stand at the pool's
-widths (median 0.0046 against the pool's 0.0057), yet 2–8% of them frame a pool
-nucleus at a comparable width, and **none of the 210 admissions over the three
-legs holds a pool nucleus in its frame.** **The yield is lineage-concentrated**:
-every leg's admissions come off three to five roots, all at rungs 9–12, and every
-leg ended on an empty frontier with **235–239 candidates refused below the floor**.
-
-**Sampler roots are graced now, and the grace closed the empty frontier but did not
-buy admissions.** `walk.PLANE_ROOT_SOURCES` names `viewport_sampler` beside
-`seed_file` since `degree6_ckpt128`, so a straddle draw on a parameter plane gets
-the five graced rungs a pool root at the same width gets. The chunk-256 leg re-run
-graced — same seed, the same 40 roots off the same 50 of 128 screen survivors:
-
-| chunk 256 | ungraced | graced |
-|---|--:|--:|
-| batches run | 13, frontier empty | **40 of 40, 257 left** |
-| candidates | not recorded | 1,268 |
-| refused below the floor | 239 | 83 |
-| expandable | 27 | 854 |
-| admissions | 53 | **23** |
-| roots booking any | 3 of 40 | 4 of 40 |
-| distinct admitted centres | 46 | 22 |
-| admitted width, median | 8.3e-5 | 3.1e-5 |
-
-**The leg is budget-bound rather than frontier-bound now**, and the budget went on
-graced expansion: 870 of 1,268 candidates were graced and 854 were pushed as
-expandable. The lineage concentration is untouched — **20 of the 23 admissions are
-one rung-12 root**, and admissions still come only off rungs 9–12. Grace deepens a
-root's descent; it does not widen which roots produce. A graced leg reads fewer
-admissions per candidate at this budget and is the right comparison only at a
-budget long enough to spend the frontier it now keeps.
-
-**Degree 6 is a plane nobody has labelled, and the sampler is its whole supply.**
-`multibrot6` and `julia:multibrot6` are registered everywhere a partition has to
-exist, the label stores refuse a row on either (`labeling/README.md`'s *Degree 6 is
-never labelled*), and `plane_seeds.FAMILIES` stops at 5, so the pool holds no d=6
-row and a walk on it starts from `--root-channel viewport_sampler` alone. Its home
-frame is `(−0.09, 0)` at 4.3, so its straddle band is rungs 6–11. The same leg on
-it and on `multibrot5`, graced, 1,280 candidates each, walked to the budget:
-
-| | multibrot6 | multibrot5 |
-|---|--:|--:|
-| probes / seconds | 1,559 / 9.8 | 1,661 / 10.2 |
-| screen survivors | 47 of 192 (24%) | 48 of 128 (38%) |
-| screen refusals: `interior_cap` / `flat` / `occupancy_floor` | 82 / 50 / 13 | 40 / 27 / 13 |
-| walk refusals: `interior_cap` / below the floor / `flat` / `occupancy_floor` | 277 / 76 / 29 / 12 | 256 / 102 / 22 / 9 |
-| admissions (per root) | 18 (0.45) | 25 (0.63) |
-| roots booking any | 3 of 40 | 5 of 40 |
-| largest lineage | 15, a rung-7 root | 12 and 10, rung 9–10 |
-| admitted width, median | 1.4e-7 | 2.6e-4 |
-| frontier left | 274 | 306 |
-
-**The loop runs unchanged on a plane with no labels.** Reframing is defined there —
-`snap_to_nucleus` was available 384 times, none `reframing_undefined` — and the location
-head's gate cleared 18 frames on a family it has never been shown. What differs is
-**where** the yield lives: d=6's admissions sit three decades deeper, under one root
-that descended to 1e-7 through the grace, where multibrot5's stay at pool depths. The
-deep d=6 frames are six-armed spiral clusters with bright cores; multibrot5's are
-sparser filament spirals beside black bulbs, and d=6's one shallow admission reads like
-them. The contact sheet of the first sixteen of each was a scratch page and is not
-tracked.
-
-**On `multibrot6` the sampler's yield climbs as its band narrows, down to about 1/4,000
-of the home width.** `degree6_overnight_ckpt128` (2026-09-17) ran four graced
-`harvest` arms on the pair and read plane admissions per root by the root's straddle
-rung. Each arm moved `--sampler-widest`/`--sampler-narrowest` down one rung:
-
-| arm (band) | rung 10 | 11 | 12 | 13 | 14 | plane admissions |
-|---|--:|--:|--:|--:|--:|--:|
-| 1 (0.004–0.0009) | 0.38 | 0.54 | 1.04 | | | 48 |
-| 2 (0.002–0.00045) | | 1.6 | 1.5 | 2.2 | | 86 |
-| 3 (0.001–0.00023) | | | 0.36 | 1.5 | 2.45 | 75 |
-| 4 (0.0005–0.00012) | | | | 0.22 | 0.30 | 19 |
-
-The fourth arm served no rung 15 (width 1.18e-4 is under its 1.2e-4 floor) and
-collapsed, so the knee on this plane is around **0.001–0.00023**.
-
-**`--lineage-cap 6` spreads the admissions without starving the arm.**
-`d6_sampler_leg_ckpt131` (2026-09-18) ran one harvest at `--sampler-widest 0.002
---sampler-narrowest 0.00023 --low-water 24 --cooldown 4 --lineage-cap 6` for 34
-active minutes. It made **217 walk admissions over 49 lineages; the largest held
-5.1% and the top five 22.6%**, against 85% in five on the uncapped multibrot3 pilot.
-The plane alone was 61 over 19 lineages (largest 18%, top five 57%), and the Julia
-twin 156 over 30 (top five 29.5%). The cap was then asked only at expansion, so the
-batch that crossed it still booked its remaining rows and lineages reached 10–11;
-**since 2026-09-18 it is asked per row at booking** and a lineage books exactly its
-cap, the rest recorded `not_admitted` with `lineage_capped: true`. Scored and
-embedded, the run gave **571 admitted, never-opened places over 75 lineages** (224
-plane, 347 twin). Opened at one candidate each, 19 cleared `solve.Q4_BAR`, spread
-over 14 lineages. (Before the fix in `supply/README.md`'s ⚠ on `--lineage-cap`,
-this flag crashed a harvest at its first crossing.) `--low-water 24
---cooldown 4` is how an arm draws more roots: a refill hands over `--low-water` roots,
-so the default 8 drew 30 roots in 16 minutes and 24 drew 74–111 in 25–30. The Julia
-twin paid most of every arm (98–563) and crowded as it went: 13, 7, 12, 8 new
-parameters, with 35, 79, 63, 11 skipped inside the c-spacing floor.
+**Degree 6 has no labels and this is its whole supply** (`labeling/README.md`'s
+*Degree 6 is never labelled*). On `multibrot6` the yield climbs as the band narrows to
+about `0.001`–`0.00023`. The working arm: `--sampler-widest 0.002 --sampler-narrowest
+0.00023 --low-water 24 --cooldown 4 --lineage-cap 6` (`--low-water` is roots a refill
+hands over).
 
 ```
 fractal-wallpapers walk --family multibrot --degree 3 --root-channel viewport_sampler --roots 40
 fractal-wallpapers harvest --partition multibrot5 --root-channel viewport_sampler
 ```
 
-**A node's foci are recorded only if asked.** The focus set — the peaks of the
-smoothed escape field a rung is aiming at — is read once per node either way, and
-`ExpandReport` kept only the chosen target's score. `--foci`, on both `walk` and
-`harvest`, adds one `foci` ledger row per expanded node carrying every kept peak:
-its position in pixels and in the plane, the blurring scales that detected it, its
-isolation, and the distance to the nearest kept neighbour. Off by default and
-**every candidate row is byte-identical either way** — the reading consumes
-nothing from the node's random stream, so a run with it on descends into exactly
-the same places. It costs about one row per four candidate rows — measured over a
-one-hour scored harvest, 2,219 `foci` rows against 8,876 candidates, which is that
-ratio to two figures. Those rows carried 28,878 peaks found and 13,663 kept, about
-six kept per row.
+#### The straddle probe
 
-```
-fractal-wallpapers walk --family julia --roots 20 --batches 8
-fractal-wallpapers walk --seeds my_locations.jsonl --no-neighborhood
-fractal-wallpapers walk --seeds my_locations.jsonl --plane-grace-rungs 0
-```
+`PROBE_RESOLUTION` is 64 x 36 at maxiter 256: the same ~6 ms as 32 x 18 (a probe is
+process start), 99.2% agreement with `interior_cap`, and 2 of 176 screen survivors
+missed, where 32 x 18 drops the filament an exterior child hangs on.
+
+**`--foci`** (`walk`, `harvest`) adds a `foci` row per expanded node; candidate rows
+are byte-identical either way.
 
 ## Parabolic parameters: aiming a Julia `c` at an implosion
 
-`parabolic.py` solves for the parameters where a hyperbolic component of the
-Mandelbrot set touches its neighbour — a component's **cusp** (`q = 1`) or the
-root of its `r/q` **bulb** — and [`parabolic.offsets`] turns one of those into a
-ring of Julia parameters around it. The reason to want them is pictorial: at a
-parabolic `c` the attracting cycle and the repelling one have collided, the basin
-boundary grows the Leau-Fatou flowers, and a neighbourhood of that `c` produces
-Julia sets that are rich at a **shallow** zoom — where this engine's `f64` lives.
-
-Supply for every `julia:*` partition is **root-bound**: a Julia place descends
-from a `c`, and the two channels that make one — the tracked pool and
-[`supply.twins`] — both hand over a `c` somebody found by looking at the
-*parameter plane*. This is the first channel that computes one.
+`parabolic.py` solves exactly, degree 2 only, for where a component touches its
+neighbour (a cusp or an `r/q` bulb root), and `parabolic.offsets` rings Julia
+parameters around it: rich Julia sets at a shallow zoom. The door is `--seeds`. ⚠
+`walk --seeds` does not enforce `pools.C_SPACING_FLOOR` (3.2e-2), and an aimed ring
+sits inside it; a channel would have to answer that.
 
 ```
 fractal-wallpapers walk --family julia --degree 2 --seeds aimed.jsonl --batch 16 --batches 152
 ```
 
-**The door is `--seeds` and there is no new channel.** A seed row is
-`{family, viewport?}` and a `julia` family block *is* a `c`, so a list of aimed
-parameters is already a list of walk roots; `viewport` omitted means the engine's
-own home view, which for a Julia set is where the picture is.
-
-### The solve is exact, and nothing here is tuned
-
-`(z, c)` solving `f_c^p(z) = z` and `(f_c^p)'(z) = e^{2πi r/q}` together, by
-Newton at [`nucleus.NUCLEUS_DPS`], reached by **continuation along the internal
-ray**: at `λ = 0` the answer is the nucleus with `z` at the critical point, and
-the solver marches `λ = t·e^{2πi r/q}` from `t = 0` to `1` correcting each step.
-It never asks whether the component is cardioid-like or disc-like. The multiplier's
-derivative is accumulated alongside the product and never divided out — the
-log-derivative form divides by `f'(z₀)`, which is zero at the one point every
-march starts from.
-
-Checked against the four parameters that can be written down independently —
-`1/4`, `−3/4`, `−5/4` and `−7/4`, the last the period-3 window's tangent
-bifurcation — and against the main cardioid's closed form `μ/2 − μ²/4` at every
-`r/q` with `q ≤ 12`. All agree below `1e-50`. ⚠ `−7/4` is the *cusp*; the period-3
-**nucleus** is `−1.75487766…`, a hundredth away, and the two are easy to confuse.
-
-### The scale is the component's, and it is never `1/|A|`
-
-[`parabolic.component_scale`] measures a component by solving both ends of its
-real internal ray — `0/1` and `1/2` — and reporting the distance. The main
-cardioid comes out at exactly `1`, the period-2 disc at exactly `1/2`, the
-period-3 island at `0.0185292`. [`nucleus.atom_instrument`]'s `window_scale` is
-`1/|A|`, which the website's perturbation crate established is the atom's
-**domain** and not its body, so nothing here takes a size from it.
-
-**A satellite component has no `0/1` end**, and the solver refuses rather than
-returning a nearby number: at a satellite's root the cycle has collided with its
-*parent's*, `f^p(z) = z` has a double root and the system is singular. That is the
-"generically" in the design and not a bug. The fallback is twice the
-nucleus-to-doubling distance — exact on a round satellite — and the route is
-reported (`RAY_ENDS` against `DOUBLING_RADIUS`) because the two differ by about
-3/2 on a cardioid.
-
-⚠ **The period-2 disc's own cusp is one of these**, so premise-style anchor lists
-that name `−3/4` as "the period-2 disc's `0/1` point" are naming the *cardioid's*
-`1/2` point. One point, two components, and only the cardioid can solve for it.
-
-### Classification reads the critical orbit, not a root-find
-
-[`parabolic.classify`] says whether an offset is in the component, inside `M`
-elsewhere, or outside — three materially different pictures, and outside `M` the
-filled Julia set has no interior at all, which is what makes an unresolved share
-readable off a render. It walks the critical orbit and reads the multiplier of
-whatever cycle the orbit settles onto.
-
-**Newton on `f_c^p(z) = z` in `z` alone cannot do this job**, and the failure is
-silent: the parabolic cycle is a *double* root of that equation, so the solve is
-singular at exactly the point every offset is taken around and reports "no cycle"
-for a whole neighbourhood of it. Built that way, the ring around the main
-cardioid's cusp came back as "inside `M`, some other component" for every one of
-its interior offsets.
-
-### Degree 2 only, and the gate says why
-
-The arithmetic is written for `z^d + c` and the solver refuses every `d ≠ 2`. At
-a degree-`d` nucleus the multiplier vanishes to order `d − 1`, so **both** of its
-derivatives are zero at the `t = 0` end of the ray and Newton has no direction to
-move in. Generalizing needs a predictor for the ray's first step, which is a
-different piece of work. Degree 6 could not be labelled anyway —
-`labeling/README.md`'s *Degree 6 is never labelled*.
-
-### The `c`-spacing floor and an aimed list are in direct conflict
-
-[`pools.C_SPACING_FLOOR`] is `3.2e-2`, and an aimed ring at `ε ≤ 3.16e-2` of a
-component of scale 1 sits **inside** it by construction. `walk --seeds` does not
-enforce the floor — only the pool reader and [`supply.twins`] do — so a pilot
-runs; a *channel* would have to answer it. Measured 2026-09-21: of **6,963**
-admitted degree-2 parameter-plane locations, the floor against the tracked pool
-admits **19**. The ordinary twin channel on this plane is saturated, which is a
-fact about the floor and not about the plane.
-
 ## Is there a minibrot in this frame: the census instrument
 
-`minibrot.py` answers two questions about one frame, and `minibrots census` asks
-them of a whole population. They are two sides of the same copy and they are
-**not** the same reading:
-
-- **(a) the frame HOLDS a minibrot** — a copy seen from outside. A nucleus within
-  one frame width of centre whose atom is 1 to 32 frame widths *smaller* than the
-  frame. `--reading band`, [`minibrot.probe`].
-- **(c) the frame IS decoration of one** — the same copy seen from inside. A copy
-  of period `q > 1` whose atom is at least the frame's *width* and whose nucleus
-  is within `ENCLOSE_K` = **2.0** of that copy's own atom sizes. `--reading enclosing`,
-  [`minibrot.enclosing`].
-- They mostly **disagree**, and the named row satisfies both at once: it holds a
-  period-1026 atom 11.8 frame widths across, and it sits inside a period-27
-  satellite 754 times its own width.
-
-It was written for `minibrot_descent_census_ckpt140`, whose subject was a
-`threads` wallpaper at width `1.29e-9` that a person's eye called a successful
-minibrot descent, and the first thing it found is that this repository could not
-previously have agreed with him. `minibrot_enclosed_census_ckpt140` added (c),
-which is what that eye was actually reporting.
+`minibrot.py` answers two different questions, and `minibrots census` asks them of a
+population: **(a) the frame HOLDS a minibrot** (`--reading band`, `minibrot.probe`: a
+nucleus within a frame width of centre, its atom 1 to 32 frame widths smaller), and
+**(c) the frame IS decoration of one** (`--reading enclosing`, `minibrot.enclosing`).
+(b), depth below the walk's root, is route not frame; `minibrot.descent` keeps it as
+provenance.
 
 ```
 fractal-wallpapers minibrots probe --link "<an explorer link>"
@@ -1559,140 +247,18 @@ fractal-wallpapers minibrots examples --census records.jsonl --census verdicts.j
     --census pool.jsonl --k 2.0 --descents '<leg>_*'
 ```
 
-**The example set a writeup picks figures from is
-`artifacts/discovery/minibrot_examples.jsonl`, written at `--k 2.0`** — the
-geometric extent of a copy, so nothing a tighter reading might want is dropped, and
-every row carries each chain entry's own distance so tightening is a filter and
-never a re-run. A summary row heads the file with the counts at every cut from
-`TIGHT_ENCLOSE_K` (0.82) to 2.0, and four `example: descent_chain` rows follow it, one per tuned
-satellite, each a whole nesting as the rungs somebody rendered. **It is not
-tracked**, and not for size — 2,709 places at ~500 bytes was over `test_history_purity`'s
-per-file cap when this was decided and is under it since the cap went to 2 MiB — but
-because it is one command away from a census output: Matt's ruling of 2026-09-22 that an
-example set is an artifact and not a record.
-
-### The criterion is about the FRAME, and the other candidate is about the route
-
-Two readings were on the table. **(a)** the frame holds a nucleus within one
-frame width of centre whose atom is between 1 and 32 frame widths *smaller* than
-the frame; **(b)** the row sits `N` rungs and some decades below its walk's root.
-The named row satisfies both, so the tie is broken on what each is a reading
-*of*: (a) is a property of the view and two rows at one place answer identically,
-while (b) is a property of the route — **25,172 of the pool's 55,884 locations
-join to no walk row at all**, a reframing's own view among them, and *depth ≥ 5
-and two decades below the root* is cleared by **8,935 of the 30,712** that do,
-which makes it a reading of the search. [`minibrot.descent`] computes (b) anyway,
-because it is one pass over the ledgers and it is the provenance half of the
-story.
+The example set (`artifacts/discovery/minibrot_examples.jsonl`, `--k 2.0`) is an
+artifact, never tracked. A `--budget` pass is a seeded-shuffle sample. (c) is several
+times faster than (a), and both slow with depth.
 
 ### Criterion (c): the copy a frame is decoration of
 
-The candidates are **not** (a)'s ranked periods. They are the **record minima of
-`|z_k|`** along the `f64` critical orbit at the frame's centre: each `k` where
-the orbit sets a new record low is a copy that contains the frame, and they
-arrive nested, outermost first. At the named row the whole chain is
-`2, 27, 54, 1026`, which is four Newton solves against (a)'s 24 — (c) is the
-cheap reading, at **27 locations a second against (a)'s 2.6 to 10**. Over all
-1,200 `tuned129x_*` walk rows the chain holds the descent's own satellite period
-**every time**.
-
-**A bulb is not a copy, and without that the census measures nothing.** The
-period-2 bulb's atom is 0.5 wide and its nucleus sits about half of that from
-every frame in seahorse valley, so on distance alone it encloses them — while
-being eight decades too big to be what they decorate, and while being attached to
-the main body, whose decorations never count. A first pass over the twenty
-records' seats taken before this rule existed read **618 of 804** enclosed seats
-as period 2 and another 140 as period 3.
-
-So the chain is cut into **generations** — a copy, and the bulbs hanging off it —
-with the main body prepended as `period 1, size 1.0`. An entry is a bulb of one
-above it when its period is a multiple `m` and its size is within
-[`minibrot.BULB_SLACK`] of [`minibrot.bulb_scale`], `2·sin(π/m)/(m²(d−1))`. **The
-enclosing copy is the head of the last generation**, and a frame whose only
-generation is the main body's own is enclosed by nothing. At the named row the
-generations are `[1, 2]` and `[27, 54]`, so the answer is `27`.
-
-The law is tight and the populations are far apart. Against the main body's own
-scale of 1.0, its bulbs from `m = 2` to `m = 11` read **0.98 to 1.40** of it on
-all five planes; degree 2's primitive minibrots on the real antenna read 0.099 of
-it at period 3 and fall away fast — 0.016, 0.020, 0.0042, 1.1e-5 at periods 4 to
-7. A third of the law sits between the two with a factor of three to spare on the
-near side. The `1/(d−1)` is load-bearing: without it a degree-6 bulb reads 0.21
-of the law and is taken for a copy, which would make every frame in the main
-body's decorations on four of the five planes read enclosed by something.
-
-**`ENCLOSE_K` is 2.0, the geometric extent of a copy**, Matt's ruling of
-2026-09-22: a copy spans `[-2, 0.25]` in its own coordinates, so 2.0 holds all of
-its filigree. It was 0.82 until then, and 0.82 stays as `TIGHT_ENCLOSE_K` — the
-tight reading, what follows is how it was calibrated and why it was not a bound.
-
-⚠ **The tight reading is calibrated on one part of a copy.** The 202 `tuned129x_*` pool places are inside a
-period 22, 27, 33 or 35 satellite by construction and must read enclosed by it;
-their own distances are **0.6414 to 0.8184**, median 0.7747, and *the smallest K
-that reads ≥ 95% of them right* is **0.81 at 96.5%**, with 0.82 reading all 202.
-
-But that band is not a property of being inside a copy, it is a property of how
-deep those rows are. **The same four descents' own root frames, 25.89 atom sizes
-across, read 1.216, 1.289, 1.290 and 1.297** — one for one with their four
-satellites, every one outside 0.82. A descent starts near the copy's edge and
-works inward; 0.82 is where those descents ended up. And a copy spans
-`[-2, 0.25]` in its own coordinates, so its filigree reaches **2.0** atom sizes
-and a frame on a copy's antenna is nowhere near 0.82.
-
-⚠ **A cut that drops a copy but keeps its period doubling answers the
-doubling.** Those four root frames read `q = 70, 44, 66, 54` at 0.82 and
-`35, 22, 33, 27` at 1.35. The reading is never wrong in kind — the doubling does
-enclose the frame — it is one generation too deep, and `tests/test_minibrot.py`
-pins all four both ways.
-
-**Every census row carries `chain_table`** — the whole solved chain, each entry
-with its distance in its own atom sizes and its ratio — so the cut is re-swept off
-the output and never re-probed. `minibrot_enclosed_census_ckpt140`'s report has
-what the count does from 0.82 to 2.25. The bound is a decision about how much of
-a copy counts as its inside, and not a measurement.
-
-### The existing operator path cannot see these atoms, and the reason is the ceiling
-
-[`operators._solve_at_center`] is the same solve and is right for what it does,
-but it sweeps to [`operators.MAX_PERIOD`] = 64. A frame inside a period-`q`
-satellite has its atoms at multiples of `q`: the named row is inside a
-**period-27** satellite and the atom in its frame is **period 1026**, so the
-operator answers `nucleus_outside_frame` on a view squarely on top of a minibrot.
-`deep/README.md`'s *The reframing operators find nothing inside a copy* recorded
-that refusal on this exact descent and read it as the parent's nucleus being far
-away; it is that **and** the ceiling.
-
-Raising the ceiling costs arbitrary-precision Newton per candidate period, so the
-ranked periods are screened first in `f64` off a prefix sum the orbit scan already
-computes. Over 60 pool locations the screen cut the pass **158.2 s → 35.5 s** with
-**no verdict changed** — same 56 nuclei, same periods, same ratios — and the worst
-single probe fell from 101.3 s to 13.3 s. See the module docstring for why the
-slack is three decades.
-
-### What it costs, measured
-
-Three workers at below-normal priority, on this box, 2026-09-22. **(a) is the
-expensive reading and (c) is nearly free** — one is 24 Newton solves at periods
-in the thousands, the other is four at periods in the tens:
-
-| population | locations | (a) wall | (a) rate | in band | (c) wall | (c) rate | enclosed |
-|---|--:|--:|--:|--:|--:|--:|--:|
-| the twenty kept records' seats | 2,014 | 6m02s | 5.6/s | 1,025 (50.9%) | 1m14s | 27.3/s | 10 (0.5%) |
-| every human-labelled frame | 7,747 | 12m46s | 10.1/s | 3,143 (40.6%) | 4m26s | 29.2/s | 105 (1.4%) |
-| the rest of the pool | 17,817 | 1h55m | 2.6/s | 6,435 (36.1%) | 29m34s | 10.0/s | 255 (1.4%) |
-| **union** | **27,578** | **2h14m** | | **10,603 (38.4%)** | **35m14s** | | **370 (1.3%)** |
-
-That union is every parameter-plane location the pool holds — **21,049 of 55,884**,
-the other 34,835 being `julia:*` and `phoenix` — plus **6,529** human-labelled
-frames that hold no pool row. 197,254 Newton solves in all, 7.2 a probe.
-
-**The rate is a function of depth, not of size.** A labelled frame is shallow and
-its orbit escapes in tens of iterations; the pool's deep tail runs thousands before
-it escapes and ranks periods in the thousands. Four times the locations at a third
-of the rate is the whole difference between the second row and the third. Plan one
-of these by the population's width distribution.
-
-**A capped pass is a sample, not a region.** The probe order is a seeded shuffle
-rather than the key order, because the key order is the centre's real part: a
-`--budget` that cut a sorted pass short would hand back one side of the plane and
-call it a census.
+The candidates are the record minima of `|z_k|` along the critical orbit, nested
+outermost first, cut into generations (a copy and its bulbs, by `minibrot.bulb_scale`
+within `BULB_SLACK`); **the enclosing copy is the head of the last generation**, and
+main-body decoration is enclosed by nothing. **`ENCLOSE_K` is 2.0, a copy's geometric
+extent**; `TIGHT_ENCLOSE_K` (0.82) is where deep descents end, not a bound. ⚠ A cut
+that drops a copy but keeps its doubling answers the doubling. Every row carries
+`chain_table`, so a cut is re-swept off the output. `operators.MAX_PERIOD` (64) is why
+the operators answer `nucleus_outside_frame` inside a copy (`deep/README.md`'s *The
+reframing operators find nothing inside a copy*): its atoms sit at multiples of `q`.

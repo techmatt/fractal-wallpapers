@@ -201,8 +201,8 @@ MAX_SOLVES = 24
 #: it is not the default.
 #:
 #: **Every census row carries `chain_table`**, the whole solved chain with each
-#: entry's distance, so the cut is re-swept off the output — `discovery/README.md`'s
-#: *Criterion (c)* has what the count does between 0.82 and 2.25. ⚠ A cut that
+#: entry's distance, so the cut is re-swept off the output and never re-probed
+#: (`discovery/README.md`'s *Criterion (c)*). ⚠ A cut that
 #: drops a copy but keeps its period doubling answers the **doubling**: those
 #: four root frames read `q = 70, 44, 66, 54` at the tight reading, the copy in
 #: each case being the entry that was cut, and `35, 22, 33, 27` here.

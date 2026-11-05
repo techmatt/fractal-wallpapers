@@ -154,7 +154,7 @@ def pytest_collection_modifyitems(config, items) -> None:
 #: here is `torch` and `timm`, which `dev` will not buy at two gigabytes.
 #:
 #: **That is how a lane reading gets written down that nothing can reproduce.** The
-#: 3,383 in `tests/README.md`'s log was this: an interpreter with no `torch`, 65
+#: 3,383 once recorded for this tree was this: an interpreter with no `torch`, 65
 #: fast tests and 5 slow ones short of the same tree on a full install, and nothing
 #: on screen said so. Same argument as the deselect line below — a guard that goes
 #: quiet is a guard nobody notices going missing.
@@ -469,7 +469,7 @@ def _legs_that_appeared(before: dict) -> list[str]:
 #: there. One call per test is therefore quadratic in the test count: basetemp
 #: grows an entry per test and every later call reads all of them. It is the one
 #: cost in this suite that scales with the number of tests rather than with a
-#: store, which is why every reading in [`tests/README.md`]'s log was blind to it
+#: store, which is why every whole-lane reading was blind to it
 #: — it grew with the lane instead of stepping when something landed.
 #:
 #: Measured on this machine over a synthetic 3,500-test run, every test also

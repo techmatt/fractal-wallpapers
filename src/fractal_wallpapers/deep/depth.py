@@ -99,7 +99,7 @@ MIN_WIDTH = 1e-11
 #: **Degree 6 takes degree 5's floor**, by the pattern: the collapse is a
 #: high-degree failure — `z^(d−1)` contracts neighbouring orbits harder the higher
 #: `d` goes — so the plane above the one that collapses is given the same decade
-#: rather than the general floor. `deep/README.md` carries what was measured of it.
+#: rather than the general floor; no ladder of its own has been measured.
 DEGREE_MIN_WIDTH = {5: 1e-10, 6: 1e-10}
 
 

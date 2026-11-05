@@ -3,7 +3,7 @@ The deep run mode: sourcing, scoring and release below the shallow walk's floor.
 The ordinary walk stops at width `1e-9`. Everything under this directory is one
 answer to *what is down there*, built as a **separate mode** rather than as a
 lower floor on the existing one — its own roots, its own floor, its own clock —
-so that nothing about the shallow pipeline moves while the question is open.
+so that nothing about the shallow pipeline moves.
 
 ```
 depth      how deep this mode goes, the band a nucleus is framed in, the f64 wall
@@ -20,314 +20,163 @@ fractal-wallpapers deep walk  --wall-budget 28800 --out-dir artifacts/deep2
 fractal-wallpapers curate run --deep --harvest artifacts/deep --run deep1 -n 2
 ```
 
-**A production leg is launched with `--wall-budget`, not with `--seats`.** The
-flag takes seconds and covers the whole piece of work — this command *and* the
-evaluation frames that read it. Eight hours buys about **184 seats** where
-`deep_run1` took 32 by hand and spent a quarter of its clock. `--seats` and
-`--batches` still exist and still win when they are passed; left alone, they are
-what the budget fills.
+**A production leg is launched with `--wall-budget`, not with `--seats`.** The flag
+takes seconds and covers the whole piece of work — this command *and* the
+evaluation frames that read it; eight hours buys about **184 seats**. `--seats` and
+`--batches` still win when passed; left alone, they are what the budget fills.
 
-What follows is what to read before changing anything here.
+## What the mode is
 
-**Pure `f64`, end to end.** There is no perturbation kernel in this repository
-and this mode does not add one: the walk, the score and the release all run the
-same arithmetic the shallow path does. The arbitrary precision in `centers.py`
-exists only to say *where* a nucleus is — a center travels as decimal strings and
-is re-parsed to `f64` at every render, which is exactly what the shallow path
-already does with a shallower string.
-
-**The shelf that kernel sits on now has two ways off it, not one.** The first is
-the door below the coordinate wall, where two neighbouring sample centres are
-the same `f64` and no arithmetic in this repository can draw anything at all. The second is *correctness at
-depths already being drawn* — the escape counts up here are measurably wrong
-(below), and a low-precision delta against a high-precision reference orbit is
-the fix for that as much as it is the key to the next four decades. So a future
-run that wants deep frames to be **right** rather than merely reproducible is a
-reason to build it, on its own, without wanting a single extra decade of depth.
+**Pure `f64`, end to end.** There is no perturbation kernel in this repository and
+this mode adds none: walk, score and release run the shallow path's arithmetic. The
+arbitrary precision in `centers.py` only says *where* a nucleus is — a center travels
+as decimal strings re-parsed to `f64` at every render. A kernel would be the way past
+the coordinate wall **and** the way to make deep frames *right* rather than merely
+reproducible; either is a reason to build one.
 
 **Depth comes from which atom, not from how far a walk descended.** A seat is a
-nucleus whose own framing band already lands below the shallow floor, so the
-first frame this mode draws is one the shallow walk cannot reach. The alternative
-— lifting the walk's floor and descending — spends the whole budget on the space
-*between* atoms, which is the finding the maker's deep spec parked on: deep
-beauty is depth-band-local.
+nucleus whose own framing band already lands below the shallow floor, so the first
+frame drawn is one the shallow walk cannot reach. Lifting the walk's floor instead
+spends the budget on the space *between* atoms: deep beauty is depth-band-local.
 
-**The `f64` wall is relative, and it was being enforced as a constant.** The
-engine refused any view whose *output pixel* was under `1e-13`. That is a spacing
-compared against a number that is only right when the coordinates are of order
-one, and it ignored supersampling — so it refused width `2.56e-10` at release
-geometry while adjacent sample centres first collide between `1.4e-13` and
-`2.3e-12`, two to three decades lower. `engine/src/viewport.rs` now asks the
-question the arithmetic actually poses: *how many representable numbers does one
-sample step span?*, refusing below four. Nothing that used to be drawn is refused
-now; a great deal that was refused for the wrong reason is drawn.
+**The `f64` wall is relative.** `engine/src/viewport.rs` refuses a view when one
+sample step spans fewer than four representable numbers, rather than comparing an
+output pixel's spacing to a constant.
 
 **The floor is a policy and the wall is a measurement, and they are close here.**
-`depth.MIN_WIDTH` is `1e-11`. At release geometry the wall sits between `2e-12`
-and `9e-12` depending on `|c|`, so the margin at the large-`|c|` end is a factor
-of a few rather than decades. That is why `depth.releasable` is a check every
-seat passes before anything is rendered, rather than a sentence in a comment: a
-seat whose money shot fails it would produce finds that are refused at the last
-step of the run that made them.
+`depth.MIN_WIDTH` is `1e-11`; at release geometry the wall sits between `2e-12` and
+`9e-12` depending on `|c|`. So `depth.releasable` is a check every seat passes before
+anything is rendered: a seat whose money shot fails it would produce finds refused at
+the last step.
 
-**And the floor is an *aesthetic* floor, because there is a third wall above
-both of those and this mode does not clear it.** A sample coordinate can be
-perfectly distinct from its neighbour and the orbit run from it still be decided
-by rounding: `f64` carries about `1e-16`, a few thousand iterations of a
-stretching map spend it, and what comes back is not the value at that point.
-`julia_deep_eyetest`'s second addendum re-ran orbits at 50 digits against the
-engine's own `f64` and found the three planes `deep_run1` walked wrong on
-**8.0%, 14.5% and 22.0%** of sampled points at their deepest kept frames, by up
-to 669 iterations — and the onset is case-dependent, from `1e-4` on a
-period-198 mandelbrot node to `1e-10` on a benign degree-2 julia.
+### The aesthetic contract
 
-**The contract this mode ships under is therefore about pictures and not about
-escape counts.** Deep smooth output below the fidelity wall is
-deterministic — the same spec renders the same image every time — and partly
-*fictional* in its finest texture, and it is judged as art, by the same heads on
-the same pictures as everything else. Escape-count correctness is not claimed
-and is not the thing being sold. What is *not* acceptable is a picture that
-looks like arithmetic, which is what the degree-5 cap below is for.
+**The floor is an *aesthetic* floor**, because there is a third wall above both and
+this mode does not clear it: a sample can be distinct from its neighbour and its orbit
+still be decided by rounding. At the deepest kept frames the escape counts are wrong
+on a measurable share of points (8–22% on three planes, by up to hundreds of
+iterations), with an onset that varies by case from `1e-4` to `1e-10`.
+
+**The contract is about pictures and not about escape counts.** Deep smooth output
+below the fidelity wall is deterministic — the same spec renders the same image every
+time — and partly *fictional* in its finest texture, and it is judged as art, by the
+same heads on the same pictures as everything else. Escape-count correctness is not
+claimed. What is *not* acceptable is a picture that looks like arithmetic.
 
 **Degree 5 stops a decade early: `depth.DEGREE_MIN_WIDTH` puts its floor at
-`1e-10`.** It is the one plane where being wrong is visible. Its neighbouring
-orbits do not scatter, they collapse onto one value, and at `1e-11` two thirds
-of horizontally adjacent samples come back bit-identical — a mosaic of flat
-cells rather than fine texture. **Supersampling makes it worse**: 66.6% identical
-at ss1, 95.6% at ss8, because a finer grid puts the coordinates closer together
-and closeness is exactly what the orbit cannot keep apart. The other three
-planes keep `1e-11`; their errors are larger and invisible. **Degree 6 takes
-degree 5's `1e-10`** by the pattern rather than by a ladder of its own: the collapse
-is a high-degree failure, `z^(d−1)` pulling neighbouring orbits together harder as `d`
-rises, so the plane above the one that collapses is not handed the general floor. The floor is wired
-per degree in `depth.min_width`, so it reaches the seat window
-(`depth.seat_sizes`), the bands a plane is offered (`depth.open_bands` — degree
-5 loses the `floor` band outright) and the walk's own rung gate — `walk.Gates.for_family`
-reads the per-degree floor off the family it is handed, which is how a seat
-admitted above the floor is stopped from descending through it, and is why a
-walk with no per-degree floors still wires byte-identical payloads.
+`1e-10`.** Its neighbouring orbits collapse onto one value, and at `1e-11` two thirds
+of adjacent samples come back bit-identical — a mosaic of flat cells. Supersampling
+makes it worse (a finer grid puts coordinates closer). **Degree 6 takes degree 5's
+`1e-10` by the pattern**, not by a measurement of its own: `z^(d−1)` pulls orbits
+together harder as `d` rises. The other planes keep `1e-11`. The floor is wired per
+degree in `depth.min_width`, reaching the seat window (`depth.seat_sizes`), the bands
+offered (`depth.open_bands` — degree 5 loses `floor`), and the walk's rung gate
+(`walk.Gates.for_family`).
 
 **Standing check on any future deep release.** Render the winner at *eval* and at
-*release* geometry and eyeball the pair before shipping it. In the amplified
-regime the texture is grid-dependent — supersampling makes the degree-5 collapse
-worse rather than better, and the same is true in principle of any case near its
-own onset — so a frame that passed at 1920×1080 ss2 is not evidence about the
-same frame at 2560×1440 ss4. This is a two-picture eye check, not a metric.
+*release* geometry and eyeball the pair before shipping. Texture is grid-dependent
+here, so a frame that passed at 1920×1080 ss2 is not evidence about it at 2560×1440
+ss4. A two-picture eye check, not a metric.
+
+## How a run is judged, sourced and sized
 
 **Judging is the shipped head, at its existing floors, on record-and-rank.** No
-deep-specific gate, no deep-specific calibration, no deep labels. The location
-head has seen nothing below `1.8e-10` and exactly one held-out row below `1e-9`,
-so its scale down here is an extrapolation with a single point behind it — and
-the answer to that is to record what it said about every candidate at every fate
-and let a later reading decide, not to invent a second unmeasured opinion.
+deep-specific gate, calibration or labels. The location head has seen almost nothing
+below `1e-9`, so its scale here is an extrapolation; the answer is to record what it
+said about every candidate at every fate and let a later reading decide.
 
-**The reframing operators are off, and the reason is a number.** `discovery/
-operators.py` refuses a framing whose node-width spacing is within half a decade
-of the old `1e-13` wall, which puts its floor at `1.21e-10` — an order of
-magnitude above this mode's. Left on, every find below that comes back
-`f64_spacing_wall`. Nothing is lost: the operators are Newton on a nucleus
-followed by a framing in atom sizes, and that is precisely what `roots.py` does —
-at the precision the atom asks for, and as a source of seats rather than as a
-triggered move.
+**The reframing operators are off.** `discovery/operators.py`'s spacing guard puts its
+floor at `1.21e-10`, an order of magnitude above this mode's, so every find below it
+would come back `f64_spacing_wall`. Nothing is lost: `roots.py` does the same Newton
+and framing at the precision the atom asks for, as a source of seats.
 
-**Seats are the budget lever.** A leg is priced by how many nuclei it stands on,
-not by batches or rungs, because the cost of this mode is dominated by producing
-a place to stand. `--seats` is the flag; everything else divides the work at one
-of them.
-
-**And a lever nobody can read is a lever set wrong.** `deep_run1` was given eight
-hours, was seated at 32 by hand from conservative estimates, and spent **2h10m**
-— the frontier emptied at 470 of 2000 node slots with three quarters of the
-budget untouched. So `deep/budget.py` prices a seat off that run's own record
-and `--wall-budget` divides:
+**Seats are the budget lever**: this mode's cost is dominated by producing a place to
+stand. `deep/budget.py` prices a seat off a measured run and `--wall-budget` divides:
 
 ```text
-sourcing   379 s / 32 seats             11.8 s a seat
-walk       290 s / 470 nodes x 14.7      9.1 s a seat
-evaluation 254 / 741 x 12.8 s x 23.2   102   s a seat
-                                       -----
-                                       123   s a seat
+sourcing      11.8 s a seat
+walk           9.1 s a seat
+evaluation   102   s a seat
+             123   s a seat
 ```
 
-At eight hours, less a 15% margin for the estimate being `n = 1` and a flat 30
-minutes for the staging and the checks that do not scale, that is **22,680 s of
-usable budget and 184 seats** — 5.75x what was seated by hand. The evaluation
-frames are two thirds of it and are reserved rather than assumed: this command
-draws no finished frame, and a walk that spends to the last second is a walk
-nobody has time to look at. `--no-evaluation-reserve` is the walk-only run, and it
-is a different piece of work rather than a saving.
-
-They were the *gallery* until 2026-08-22 and they are not one: a gallery is a set
-of pictures somebody chose to look at, and these are the frames a deep run books
-so that it can be read at all. The word belongs to curation now, where it names
-the collection a released picture is in.
+The budget is reduced by `budget.MARGIN_SHARE` (15%) and `budget.FIXED_RESERVE`
+(30 minutes) first. The evaluation frames are two thirds of a seat's cost and are
+reserved, not assumed: a walk that spends to the last second is a walk nobody has time
+to look at. `--no-evaluation-reserve` is the walk-only run, a different piece of work
+rather than a saving.
 
 **The frontier emptying is not the end of the run.** With budget left beyond the
-margin the run **sources again into itself** — same ledger, same artifacts root,
-same `roots.Standing`, filling the family x band cells the earlier rounds left
-least full. That is within-run continuation and not a follow-up run: the
-no-back-to-back rule governs launching runs, and a run topping up its own seats
-mid-flight is simply a correctly sized one. Every round is still gated on
-don't-start-what-cannot-finish, against the same clock the batches are.
+margin the run **sources again into itself** — same ledger, same artifacts root, same
+`roots.Standing` — filling the family x band cells least full. That is within-run
+continuation, not a back-to-back run, and every round is gated on
+don't-start-what-cannot-finish. `--no-reseat`/`--reseat` default to saying nothing; the
+shipped default lives on `Limits`.
 
-`--no-reseat` turns the continuation off; both it and `--reseat` default to
-saying nothing, so the shipped default lives on `Limits` and not on a flag.
+**What a later round must not re-buy is one object**, `roots.Standing`: the
+per-family anchor queues (built once, *consumed*), the reflection keys the Newton
+channel stands on, the place keys and `ledger|root_id` lineages the continuation
+channel has taken, and the `family|band` cell fills. They are read and written
+together; a round handed four of them re-seats along the fifth.
 
-**What a second round must not re-buy is one object, not five arguments.**
-`roots.Standing` carries every axis a round has already spent: the per-family
-**anchor queues**, built on first use so the plane-seed file is read once a run
-and *consumed*, so an anchor a stalled ladder spent is gone and no later round
-pays to prove the same descent does not arrive; the reflection keys the Newton
-channel is already standing on; the place keys and the `ledger|root_id` lineages
-the continuation channel has already taken; and the `family|band` **cell fills**
-across every round, so a second round fills the cells the first one left least
-full instead of restarting its own round-robin. They are only ever read and
-written together, and a round handed four of them is a round that quietly
-re-seats along the axis left out. A single-round run ignores it: every entry
-point builds an empty one, and an empty one reproduces the old behaviour exactly.
+**A lineage is capped at `run.LINEAGE_ADMISSIONS` (24) admissions, because monotony is
+a supply problem**: an uncapped run put most of its admissions on a few roots and its
+frames were largely one composition. Past the cap the lineage stops expanding and its
+frontier nodes are evicted (a `lineage_capped` row). **Record-and-rank still governs**:
+nothing is deleted or retro-refused. The cap is asked per row at booking, so a lineage
+never finishes over it: later rows are `not_admitted` with `lineage_capped: true` and
+their score kept. `--lineage-cap 0` turns it off.
 
-**A lineage is capped at 24 admissions, because monotony is a supply problem.**
-`deep_run1` put 741 admissions on 15 of its 48 roots and 85 on one, and the 162
-frames of its floor set were largely one composition in 162 palettes. An
-evaluation pass can spread itself over lineages after the fact — that one had to,
-mid-leg — but it cannot get back the walk time that went into the lineage it then
-thinned. So the cap acts at supply time: past it the lineage stops expanding and
-its standing frontier nodes are evicted at the crossing, which is recorded as its
-own `lineage_capped` row. Twenty-four is half again the equal share of that run's
-own admissions over its own roots. **Record-and-rank still governs**: capped is
-not deleted, every booked row keeps the fate it earned, and nothing is
-retro-refused. **The cap is asked per row at booking, so a lineage never finishes
-over it**: rows from a node already in flight when it closed are recorded
-`not_admitted` with `lineage_capped: true` and their score kept. Until 2026-09-18
-the cap was asked only at expansion and a crossing batch booked every row it held.
-`--lineage-cap 0` turns it off.
+**Seats spread over family x band, because rank hides this mode's own subject.** The
+window is three equal-log depth bands (`depth.BAND_NAMES`, `floor` at `1e-11` to
+`upper` at the shallow floor), and seats fill family x band cells round-robin, least
+full first — a global rank does not reproduce the window, and the floor decade is a
+cell rather than a tail. A Newton descent is *aimed* at its cell by its size ceiling
+and credited to the band it lands in. The continuation channel cannot aim, so it
+spreads over the four planes and keeps a depth-first rank inside one.
 
-**Seats spread over family x band, because rank hides this mode's own subject.**
-The window is read in three equal-log **depth bands** — `depth.BAND_NAMES`, from
-`floor` at `1e-11` to `upper` at the shallow floor — and the seats fill the cells
-of family x band round-robin, least full first. The reason is a measurement, not
-a taste: a global rank does not reproduce the window. `deep_v0`'s release ranked
-by render score and its deepest picture landed at `4.4x` this mode's floor, and
-seats taken in anchor order fill from whichever family the plane-seed grid
-solved most of — so seats, quotas and galleries are all written per cell, and
-the floor decade, which is the decade this mode exists for, is a cell rather
-than a tail. A Newton descent is *aimed* at its cell by the size ceiling it
-hands the ladder, and aim is not arrival — a ladder that lands deeper than it was
-asked to is credited to the band it landed in rather than thrown away. The
-continuation channel cannot aim, since the band a row sits in is a fact about the
-ledger that admitted it, so it spreads over the four planes and keeps its own
-depth-first rank inside one.
+**Costs.** Sourcing is about 12 s a *descent* (a stalled ladder costs what an arriving
+one does); a walk batch of eight nodes about 4 s median, 16.5 s worst, against the
+900 s ceiling; an evaluation frame (1920x1080 ss2) 6–13 s of render plus about 4 s of
+colorize. **A deep release gets its own ceilings**: `curate run --deep` swaps in
+`run.HUNG_CEILING`, sized off measured deep release frames, because curation's backstop
+only raises itself off finished units. A run's measurements may still only raise it.
 
-**What a leg of this mode costs, measured.** `deep_run1` (32 seats, 60 batches, an
-idle machine): **sourcing ~12 s a seat** — and a ladder that stalls costs what one
-that arrives does, so the price is per *descent*, not per seat — **a walk batch of
-eight nodes 4.3 s median and 16.5 s worst** against the 900 s ceiling, and a
-finished 1920x1080 ss2 frame **5.8-12.5 s** of render plus about four seconds of
-colorize. That medium geometry is a seventh of a release frame's samples and is
-what the evaluation frames are drawn at; the release figures below are still the
-only ones the release ceiling may be read against.
-
-**A deep release is a different cost class and gets its own ceilings.**
-Curation's hung-unit backstop only ever raises itself off units a run has
-*finished*, so a class whose first row dies at the ceiling never teaches the run
-that the class is slow. `curate run --deep` swaps in `run.HUNG_CEILING`, which is
-sized off a measured deep release frame rather than off the shallow
-distribution. A run's own measurements may still only raise it.
-
-**`required_dps` is enforced here, and at these depths it never binds.**
-`discovery/nucleus.Atom.required_dps` has always been computed, recorded and
-ignored. `centers.solve` acts on it: it re-solves and re-measures at the demanded
-precision until the answer stops asking. It first exceeds the shallow 60 digits
-at `log₁₀|A| > 45`, about thirty decades below anything this mode frames, so what
-the enforcement buys today is that the rule is in the code rather than in a
-comment — and every center records the precision it settled at, so that claim is
-checkable rather than assertable.
+**`required_dps` is enforced.** `centers.solve` re-solves at the precision
+`discovery/nucleus.Atom.required_dps` demands until it stops asking, and every center
+records the precision it settled at. At this mode's depths it never exceeds the shallow
+60 digits.
 
 ## What v0 does not do
 
-Phoenix is out of scope entirely and fractional degrees are excluded. **Julia is
-in scope and has no deep supply on either channel**: a Julia viewport is a point
-of the *z*-plane and has no nucleus for Newton to solve, and no ledger in this
-project holds a Julia admission anywhere near the shallow floor for the
-continuation channel to carry. In practice v0 is the four parameter planes.
-
-**A deep julia center has to be *on the julia set*, and there is a cheap way to
-put it there.** `julia_deep_eyetest` measured what happens without one. Holding a
-labeled julia location's center and narrowing the frame collapses: over six
-julias and four widths, **22 of 24 frames come back with the engine's field
-constant to a fraction of an iteration**, two thirds of them already dead at
-`1e-3` and all of them by `1e-8`. This is not the `f64` wall — at `1e-11` the
-sample step still spans 70 ulps or more — it is that a julia set has measure zero
-in the *z*-plane, so a center that is not on it is in the open exterior, whose
-escape-time bands thin toward the set faster than the frame narrows. Two ways of
-finding a center were measured and one works:
-
-* **Bisecting escape-time level sets does not get there.** The point it converges
-  on, whose orbit survives 100 iterations, still sits `~1e-7` from the set,
-  because the derivative product along an orbit that lingers near the set grows
-  about a decade every nine iterations rather than doubling. Its frames are a
-  smooth ramp by `1e-7`.
-* **Orbit-guided inverse iteration does.** `z ← (z − c)^(1/d)` contracts, so it
-  reaches the set from anywhere; steering which of the `d` branches it takes by
-  the forward orbit of the place you meant carries the destination as well. Sixty
-  steps each way, one retry loop for the case where the orbit passes near the
-  critical point and the branch choice goes ambiguous. Every frame it produced at
-  `1e-11` is live and **passes `depth.releasable` at full release geometry**.
-
-**And a dead julia frame does not look dead.** The coloring stretches whatever
-range it is handed, so a field that is constant to five decimals arrives as a
-full-palette ramp or a few clean bands. Anything that screens julia frames for
-emptiness has to read the field's span, not the picture — and the span has to be
-taken over the samples that *escaped*, because an interior sample is a NaN and a
-plain min/max over a black frame says nothing at all.
-
-**Descending at a julia's center is a shallow maneuver, and no choice of `c`
-changes that.** The ceiling is about `1e-5` whatever the parameter is: at every
-tested `c`, from nuclei of large atoms to parameters `1e-22` from ∂M, the frame
-degenerates into one of two dead things — an interior basin (a black body, no
-sample escapes) or a `RAMP`, a frame of exterior that lies wholly inside one
-escape band and reads, often to the digit, as the critical point's own escape count.
-**Deep julia supply is viable only off-axis, at a point that is on the julia
-set**, which orbit-guided inverse iteration puts there cheaply. That is measured
-knowledge and not a plan: no julia seeder is built, and this mode is still the
+Phoenix is out of scope and fractional degrees are excluded. **Julia is in scope and
+has no deep supply on either channel**: a Julia viewport has no nucleus for Newton,
+and no ledger holds a Julia admission near the shallow floor. In practice v0 is the
 four parameter planes.
 
-**Choosing `c` near ∂M does not buy the descent depth either.** The obvious
-rescue for the maneuver above — pick a `c` hard against the boundary of its own
-parameter set, so that `z = 0` lands in the julia set rather than in an interior
-basin — was measured over fifteen parameters at four widths, descending at the
-critical point. **Nothing reached `1e-8`.** Grouped by distance to ∂M, rows still
-spanning more than one escape count:
+**A deep julia center has to be *on the julia set*.** A julia set has measure zero in
+the *z*-plane, so narrowing on a labelled center lands in the open exterior and the
+field goes constant by `1e-3` to `1e-8` — not the `f64` wall. Bisecting escape-time
+level sets stalls about `1e-7` from the set. **Orbit-guided inverse iteration** works:
+`z ← (z − c)^(1/d)` contracts onto the set, steered branch by branch by the forward
+orbit of the intended place; its `1e-11` frames are live and pass `depth.releasable`.
+No julia seeder is built.
 
-```text
-group                       ∂M gap          1e-3  1e-5  1e-8  1e-11
-nuclei of large atoms       1.6e-2..2.8e-2   0/3   0/3   0/3   0/3
-labeled julia c             2.7e-20..7.3e-4  2/6   1/6   0/6   0/6
-deep walk frames on a plane 1.5e-22..7.8e-12 2/3   2/3   0/3   0/3
-nuclei of the deepest atoms 1.6e-12..3.8e-10 1/3   0/3   0/3   0/3
-```
+**And a dead julia frame does not look dead.** The coloring stretches whatever range
+it is handed, so a near-constant field arrives as a full-palette ramp. Screen for
+emptiness by the field's span over the samples that *escaped* (interior samples are
+NaN), not by the picture.
 
-Two things fall out of that table. **The critical orbit's fate beats the
-distance.** A minibrot nucleus is ten decades nearer ∂M than a large atom's and
-behaves like it, not like a near-boundary parameter, because a nucleus is
-superattracting and `z = 0` is the middle of a black basin at every width.
-**And a frame that has fallen off the set sits at the critical point's own escape
-count** — often to the digit, `3139.02` across a frame whose critical orbit
-escapes at 3139. That is the number to read when asking how deep an origin
-descent got, and it is why proximity to ∂M measured in the *parameter* plane does
-not predict how far `z = 0` is from the julia set in the *dynamical* one.
-
-**Budget note: a black frame is the expensive one.** Every pixel of an
-interior-basin frame runs to the cap, so a `1e-11` frame at eval geometry costs
-60–75 s against 0.2 s for a live one. A deep julia sweep is priced by how many of
-its frames are interior, not by how many it draws.
+**Descending at a julia's center is a shallow maneuver**, about `1e-5` whatever `c` is,
+and choosing `c` near ∂M does not change it: the critical orbit's fate beats the
+distance (a nucleus is superattracting, so `z = 0` is a black basin at every width).
+A frame that has fallen off the set reads, often to the digit, as the critical point's
+own escape count. A black frame is the expensive one: every pixel runs to the cap.
 
 ## Tuning a good frame onto a satellite, and the width where it stops working
 
-Douady–Hubbard tuning re-aims a frame that works on the main Mandelbrot at the
-same position relative to a shallow satellite, and `discovery/nucleus.py`
-already holds every number it needs. For a seed at `c_seed` of width `w_seed`
-on the main set, whose nucleus is `0`, and a satellite at nucleus `c_sat`:
+Douady–Hubbard tuning re-aims a main-set frame at the same position relative to a
+satellite, from numbers `discovery/nucleus.py` already holds:
 
 ```text
 lambda   = 1/A = atom.window_scale * e^(i * atom.rotation)
@@ -335,129 +184,31 @@ c_tuned  = c_sat + lambda * c_seed
 w_tuned  = |lambda| * w_seed
 ```
 
-**The instrument is right and `tuning_test_seahorse_ckpt129` checked it three
-ways.** Tuning `c = -1` and the airplane `c = -1.7548776662466928` — the main
-set's period-2 and period-3 nuclei — lands Newton on **minimal** nuclei of
-exactly period `2p` and `3p` on all three satellites tested. The copy renders
-where the aim says, and it renders **rotated by `atom.rotation`**: at a
-satellite of rotation `+31.83°` the seahorse valley's wedge arrives turned by
-that much. `rotation_ambiguity` is zero at degree 2, so nothing has to be
-resolved there.
+The copy renders where the aim says, **rotated by `atom.rotation`**. **The aim misses
+by a fixed fraction of `|lambda|`** (worse on larger satellites), so the miss in tuned
+frame widths is `e / (|lambda| * w_seed)` and grows as the seed narrows: fine at
+`w_seed >= 0.1`, gone by `0.01`. **So a gallery seat is the wrong thing to tune**;
+tune the seed's neighbourhood at `w_seed = 0.1` and recover depth by descent. A nudge
+cannot rescue a dead tuned frame, and `curation.flatness.fraction` is not a deadness
+reading (a smooth gradient is locally planar); read `engine.screen`'s battery.
 
-**What limits the move is the aim's accuracy, and it is a fixed fraction of
-`|lambda|` rather than of the frame.** A copy is distorted, so the linear aim
-lands near and not on, and the miss measured at the period-`2p` anchor was
-`0.0036` of `|lambda|` on a period-22 satellite and `0.0325` on a period-35 one
-— **the larger the satellite, the worse the distortion**. The miss *in tuned
-frame widths* is therefore `e / (|lambda| * w_seed)`, which does not care how
-deep the satellite is and grows without bound as the seed gets finer:
+**Descending out of a tuned frame needs the relative floor**:
+`Gates(min_width=depth.deepest_releasable_width(c_re, c_im))`, a parameter rather than
+an override, since a tuned frame is already below `walk.Gates.min_width`. The release
+floor is the **satellite's**, not the seed's.
 
-```text
-w_seed   miss (frame widths)   seed interior / tuned interior   same picture?
-0.3          0.012                  0.8530 / 0.8564             yes
-0.1          0.036                  0.6344 / 0.6483             yes
-0.03         0.121                  0.2452 / 0.2883             degrading
-0.01         0.362                  0.0006 / 0.0719             no
-0.003        1.206                  0.0005 / 0.0009             no
-```
+**A tuned descent saturates.** It bottoms out against that floor after one to two
+decades and the frontier dies; past about sixteen batches more buy nothing. **Size a
+leg of this shape by places wanted, not by hours**: what bounds it is how many places
+a copy holds above the junk floor. A copy whose root expands once and stops holds
+nothing the gates admit at that scale.
 
-**So a gallery seat is the wrong thing to tune.** A seat's width is `1e-5` and
-below — `20260914T171846Z`'s mandelbrot seats in the seahorse valley have a
-median `w_seed` of `3.16e-6` — which puts the aim hundreds to thousands of frame
-widths off the composition it was aimed at. Eight of twelve tuned seats cleared
-the `f64` floor and four of those survived the structural battery, but what
-survived is *the satellite's own valley material at that scale*, not the seat's
-composition. The move transfers a **whole-valley** view; it does not transfer a
-wallpaper. The width to tune at is `w_seed >= 0.1`, and the descent below is how
-the depth is recovered afterwards.
+### The reframing operators find nothing inside a copy
 
-**A `+-0.5 w_tuned` nudge cannot rescue a dead tuned frame**, because the thing
-it is short by is three decades larger than the search. `engine.screen` is the
-right instrument to ask with — its `flat` and `interior_cap` clauses named every
-dead frame here correctly on the first call, over the whole ring in one engine
-process — but on a dead frame the entire ring comes back with one fate and there
-is nothing better in it to move to.
-
-**`curation.flatness.fraction` is not a deadness reading.** A dead tuned frame
-is a smooth gradient rather than a constant field, and a smooth gradient is
-locally *planar*: the frame that is visibly a set of soft diagonal bands read
-`0.4668` against `0.2396` for the live seed it was tuned from. Read the engine's
-own battery, the way *And a dead julia frame does not look dead* above says to
-read the field's span rather than the picture.
-
-**Descending out of a tuned frame needs the relative floor, not
-`walk.Gates.min_width`.** A tuned frame is already below the shallow walk's
-`1e-9` — `w_tuned` was `3.87e-11` on the frame descended from — so an ordinary
-walk refuses every candidate at the first rung and gets nowhere. `min_width` is
-a dataclass field, so this is a **parameter and not an override**:
-`Gates(min_width=depth.deepest_releasable_width(c_re, c_im))` hands the walk the
-engine's own relative floor at that place. That bought three rungs and 20
-admissions, every one of them live and releasable, stopping at depth 4 where the
-next rung falls under the floor — deepest stop `5.37e-12`, which is `4.73` ulp
-at release geometry against the engine's refusal at `4.0`.
-
-**The reframing operators find nothing inside a copy.** All 20 firings on that
-descent refused with `nucleus_outside_frame` — `snap_to_nucleus` twelve times,
-the neighbourhood and lateral operators four each. A frame inside a satellite is
-framed on the satellite's *decorations*, and the nucleus those operators would
-snap to is the parent's, thousands of frame widths away.
-
-⚠ **That refusal is half geometry and half the period ceiling**, found on
-2026-09-22 by `discovery/minibrot.py`. [`operators.MAX_PERIOD`] is 64 and the
-atoms inside a period-`q` copy sit at multiples of `q`, so a descent into a
-period-27 satellite has nothing an operator sweeping to 64 can name. The frame at
-`-0.782601984654748 + 0.15006989511782523i`, width `1.286e-9` — the one Matt's
-eye called a successful minibrot descent — holds a **period-1026** nucleus
-**0.15** frame widths off centre, framed at **11.8** atom sizes. The operators are
-right not to fire here — a `4 x size` framing of that atom reads
-`f64_margin_decades` **-0.07**, so the view they would build is past the spacing
-wall at release geometry. What is wrong is reading their refusal as *there is no
-minibrot in this frame*: the picture is of that atom's decorations at twelve
-sizes, which renders fine. `discovery/README.md`'s *Is there a minibrot in this
-frame* has the instrument.
-
-### Start at the neighbourhood width and every seed clears the floor
-
-`tuned_descents_1h_ckpt129` ran the recipe above at production scale — six seeds
-by four valley satellites — and the one change that matters is that the start
-frame is cut from the seed's **neighbourhood at 0.1** rather than from the seat:
-`c_start = c_sat + lambda * c_seed`, `w_start = |lambda| * 0.1`. That makes the
-aim's miss `0.036` frame widths for *every* seed alike, because the miss in frame
-widths is `e / (|lambda| * w_seed)` and `w_seed` is now a constant. **All 24 pairs
-cleared the node floor**, against four of twelve refused when the seat's own width
-was used — and the refusals were never about the satellite, they were `w_seed`.
-
-One consequence is worth knowing before planning a window: `c_start` is within
-`|lambda|` of `c_sat`, so the release floor is the **satellite's** and not the
-seed's. All 24 pairs read the same `4.547e-12`, and headroom is set by the
-satellite alone — `3.72` decades at `|lambda| = 2.4e-7` up to `5.38` at `1.1e-5`.
-
-### A tuned descent saturates, and more batches buy nothing
-
-The walk bottoms out against that floor after **1.3 to 2.0 decades** and the
-frontier then dies, so batch count stops mattering well before it stops being
-spent. Measured over all 24 pairs at three batches, thirteen at sixteen, and all
-24 again at thirty-six: **sixteen and thirty-six return identical candidate counts
-on every pair they share** — 72 and 72, 68 and 68, 64 and 64, 52 and 52, 48 and 48.
-Three batches is genuinely short (25 candidates against 55 on one pair), so the
-width is worth raising once; past about sixteen it is a no-op.
-
-**So a leg of this shape cannot be sized by a clock.** The 24 descents cost 195 s
-at three batches and 412 s at thirty-six, and what bounds the whole leg is the
-number of places a copy holds above the junk floor — 202 over the 24 pairs here —
-not the budget pointed at it. Plan one of these by places wanted, not by hours.
-
-**Deepen their places on a narrow roster only.** The 179 of the 202 not yet deepened
-cost about 17.5 wall s a shot on the full mined roster — one collection row per 88
-minutes on 2026-09-19 — so a floor leg over them names a narrow `--floor-modes`.
-`curation/LEGS.md`'s *The same recipe, run to the end of every list* has the reading.
-
-**They are done.** On 2026-09-21 all 179 took a `tia` row at `--floor-width 1` in 1,618 s
-of leg wall and cleared **6 (3.35%)**, one of them at `p_ge4` 1.0. Nothing is paged here
-any more; `curation/LEGS.md`'s *That list is CLOSED* carries the prices and the one
-surprise — the stored `smooth` score did not order the `tia` yield.
-
-**Four pairs produced four candidates each and stopped**, their root expanding
-once before every child fell under the floor. They are not failures of the aim:
-they are copies whose decorations at that scale hold nothing the gates admit, and
-they cost a second apiece to find out.
+On a tuned descent they refuse with `nucleus_outside_frame`. That is half geometry
+(the nucleus they would snap to is the parent's, thousands of frame widths away) and
+half the period ceiling: `operators.MAX_PERIOD` is 64 and the atoms inside a
+period-`q` copy sit at multiples of `q`. The operators are right not to fire — a
+`4 x size` framing of such an atom is past the spacing wall at release geometry — but
+their refusal does not mean *no minibrot in this frame*. `discovery/README.md`'s *Is
+there a minibrot in this frame* has the instrument.

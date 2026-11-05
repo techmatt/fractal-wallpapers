@@ -5,304 +5,130 @@ gate/<run>/<partition>.jsonl     one row per colorize attempt: kept, or dropped
 release/<run>/<partition>.jsonl  one row per scored candidate: released, or passed over
 runs.jsonl                       one row per run: the funnel, the cuts, the configuration
 runs/<run>.json                  that run's own summary, whole
-gallery/<pass>.json              one gallery pass: its slots, its seats and its retro table
 manufacture/<batch>/<kind>.jsonl what a manufactured row was made FOR, keyed on its render
 bar_exceptions.jsonl             rows a ruling keeps in service below an acting bar
 pins.txt                         explorer links to rows every solve seats first — edited by prompts
 pins.json                        each of those links resolved to its ledger row (`curate pins resolve`)
-supply_scores.manifest.json      what the untracked supply sidecar is, so a loss shows
-neutral_embeddings.manifest.json what the untracked embedding store is, and under what
-candidate_ledger/rows.manifest.json    what the untracked candidate ledger is
-candidate_ledger/scores.manifest.json  ...and its score sidecar, keyed on the judge
-candidate_ledger/ratchet.jsonl   how large that ledger has ever been, and what took rows off it
+rank_key/                        the rank key's fit and its population (`curation.rank_key`)
+*.manifest.json                  what an untracked store is, so a loss shows (below)
+candidate_ledger/ratchet.jsonl   how large the candidate ledger has ever been, and what took rows off
 ledger_provenance.json           which walk ledger each released row was drawn from
 ```
 
-**A link this repository writes is the explorer's permalink v4** *(find_minibrots_cap2_ckpt145)*.
-`pins.query_of` is the one writer: it spells a view the way `explorer/permalink.js`
-does, defaults left out, and since v4 it writes the recipe's cap as `n` whenever it is
-not what the engine's width policy gives at `w` (`engine.maxiter_for`, asked once a
-width; `warm_width_caps` asks a batch). `EXPLORER_BASE` says `v=4`. The links in
-`pins.txt` say `v=3` and stay valid — the explorer reads v1 to v4, and every one of the
-ten parses to the same engine spec it did — and `parse` reads a pin by place and mode
-whichever version it says, so `n` changes no resolution.
+`release/gallery1`–`gallery4` are the release-store rows of the retired gallery passes; they
+carry `collection: "gallery"`, a `slot` block, and, for a row re-seated from a run, a
+`source` block naming the row it came from under the id `<run>_<candidate>`.
 
-**Five of these describe files that are not here.** `supply_scores.manifest.json`
-names `artifacts/curation/supply_scores.jsonl` — the location head's read of the
-standing supply, and the one thing under the regenerable tree that this checkout
-cannot regenerate, because the ledgers it reads are under that tree too. It is
-tens of megabytes and it is rewritten whole on every `curate score`, so tracking
-it would put a fresh full-size blob in the history every harvest night; what is
-tracked is its row count, byte count, sha256 and per-ledger split, and the bytes
-live on both tiers. `curate sidecar save|check|restore` writes, reads and
-restores it, and `curate run` refuses to start when the live file is missing or
-holds fewer rows than the manifest records. The module is
-[`curation.durability`](../../src/fractal_wallpapers/curation/durability.py).
+**A link this repository writes is the explorer's permalink v4.** `pins.query_of` is the one
+writer: it spells a view as `explorer/permalink.js` does, defaults left out, and writes the
+cap as `n` whenever it is not `engine.maxiter_for` at `w`. `EXPLORER_BASE` says `v=4`. The
+explorer reads v1 to v4, so the `v=3` links in `pins.txt` stay valid, and `parse` reads a
+pin by place and mode whatever its version.
 
-`neutral_embeddings.manifest.json` is the same arrangement over
-`artifacts/curation/neutral_embeddings.jsonl`: one 384-dimensional DINOv2 vector
-per admitted location, which is what the gallery pass measures distance with.
-Tens of megabytes, appended to every time a harvest adds admissions, and it costs
-a pass of the encoder over the whole population to make again. What is tracked is
-the row count, the byte count, the sha256, the per-partition split, the count and
-size of the neutral JPEGs, and — the column the sidecar's manifest has no
-equivalent of — the **frozen choices** every vector was made under, with their
-digest. Change the colormap, the geometry, the mode or the encoder and every
-stored vector becomes a reading of a picture that no longer exists, while a
-cosine between two of them is still a number between -1 and 1; the digest is what
-makes that visible. `curate embed` fills the store, `curate embeddings
-save|check|restore` keeps it. The JPEGs are not copied: every row carries the
-family, viewport and maxiter its own picture re-renders from.
+## Manifests: tracked descriptions of untracked stores
 
-`candidate_ledger/ratchet.jsonl` is the one file here that describes an untracked
-store without being a manifest, and the difference is what it is for. A manifest
-says what the store **is** right now; this says how large it has ever been and
-what took rows off it since. The store deletes by design —
-`candidate_ledger.sweep.prune` drops rows every time a leg merges — so *the store
-only grows* is not a property anything can assert, and a census pinned as a floor
-goes red at the first prune with no repair available except repointing it, which
-asserts nothing. What is asserted instead is a **ratchet**: the count now, plus
-every deletion a transaction wrote down since the high-water mark, still reaches
-that mark. Two kinds of row, `mark` and `deleted`, each resolved per counter;
-`prune` appends both at the end of its transaction, and it is the only writer
-because `store.write` is an upsert and the orphan sweep takes pictures rather than
-rows. Read it with `curate candidate-ledger ratchet` (`--census` counts the live
-store against it); `tests/test_leveled_identity.py` is what holds the store to it,
-and `tests/test_ratchet.py` holds the arithmetic.
+Each `*.manifest.json` records an untracked store's row count, byte count and sha256 plus
+its own axes; the bytes live on both storage tiers (`curation.durability`). A store too big
+or too churned for the per-file history guard is described here rather than tracked.
 
-**The first two rows were written by hand and say so.** The mark is the census of
-2026-09-06 that `tests/test_leveled_identity.READING` records, and under it sits a
-single reconciliation of 22 `run_index_named` rows — unrecorded displacement-mining
-loss of the ckpt 113–114 era, entered once as an explicit act because those rows
-went before anything recorded a deletion and cannot be reconstructed. Re-baselining
-the mark to today's count would have swallowed that history and read exactly like
-the edit the guard exists to prevent.
+| manifest | untracked store (paths relative to `artifacts/curation/`) | kept by |
+|---|---|---|
+| `supply_scores.manifest.json` | `supply_scores.jsonl`, the location head's read of the supply | `curate sidecar save\|check\|restore`; rebuilt by `curate score` |
+| `score_amendments.manifest.json` | the score amendment overlaid on that sidecar | `curation.amend` |
+| `hunt_frames.manifest.json` | the hunt frame index every mining leg draws framings through | `curation.hunt` |
+| `neutral_embeddings.manifest.json` | `neutral_embeddings.jsonl`, one 384-d DINOv2 vector per admitted location | `curate embed`; `curate embeddings save\|check\|restore` |
+| `spiral_scores.manifest.json` | the spiral attribute's scores | `curation.spiral_scores` |
+| `palette_mass_sweep.manifest.json` | the palette colour-mass sweep | `curate mass-sweep save\|check\|restore` |
+| `colors/census.manifest.json` | the colour census | `curation.colors` |
+| `candidate_ledger/rows.manifest.json` | `candidate_ledger/rows.jsonl`, one row per recipe ever rendered | `curate candidate-ledger backfill\|census\|save\|check\|restore` |
+| `candidate_ledger/scores.manifest.json` | `scores.jsonl` beside it, one row per (recipe, judge artifact, regime) | as above |
+| `candidate_ledger/flatness.manifest.json`, `signatures.manifest.json` | the ledger's flatness and signature sidecars | `curation.flatness`, `curation.signatures` |
 
-`ledger_provenance.json` is the other half of the same question: what the
-collection's 1,050 released rows were drawn from. Eight walk ledgers, and on
-2026-08-22 **all eight still read** — one hot, seven on the archive tier. It is
-provenance rather than a repair, and a snapshot rather than a property: a row
-whose ledger went would still re-render from its own join, and what it would lose
-is the ability to be *offered* to another run, since an intake starts from
-ledgers. Regenerate it with `curate ledgers --write`, which resolves through the
-same tier funnel every reader uses — looking on the hot tier alone reports seven
-of the eight as lost.
+`curate run` refuses to start when a **guarded** file is missing or holds fewer rows than
+its manifest records: the supply sidecar, the score amendment and the hunt frame index
+(`curation.durables.guarded`), the inputs a run would otherwise read silently at stale
+values. The embedding manifest also records the **frozen choices** (colormap, geometry,
+mode, encoder) and their digest, since changing any of them makes every stored vector a
+reading of a picture that no longer exists. The candidate-ledger package's `store` half is
+what a reader of those files wants; its key type is `curation.recipes`.
 
-`candidate_ledger/rows.manifest.json` and `candidate_ledger/scores.manifest.json`
-are the same arrangement again, over the two files of the **candidate ledger**:
-`artifacts/curation/candidate_ledger/rows.jsonl`, one row per recipe this project
-has ever rendered, and `scores.jsonl` beside it, one row per (recipe, judge
-artifact, regime). The rows are tens of megabytes and the sidecar grows again
-with every judge that ships, so what the history keeps is the row count, the byte
-count, the sha256 and — the ledger's own column — the runs, the partitions and
-the distinct locations the rows stand on. `curate candidate-ledger backfill`
-builds them from the two decision stores without rendering anything, `census`
-reads the fill over the axes a solver's constraints act on, and
-`save|check|restore` keeps them. The module is the package
-[`curation.candidate_ledger`](../../src/fractal_wallpapers/curation/candidate_ledger/),
-whose `store` half is what a reader of these files wants, and the type its rows
-are keyed by is
-[`curation.recipes`](../../src/fractal_wallpapers/curation/recipes.py).
+**`candidate_ledger/ratchet.jsonl` asserts a ratchet, not a census.** The ledger deletes by
+design (`candidate_ledger.sweep.prune` on every merge), so what holds is: the count now, plus
+every deletion recorded since the high-water mark, reaches that mark. Rows are `mark` and
+`deleted`, resolved per counter; `prune` is the only writer. The first two rows were written
+by hand and say so (the baseline mark and one reconciliation of unrecorded loss); never
+re-baseline the mark. Read it with `curate candidate-ledger ratchet [--census]`;
+`tests/test_leveled_identity.py` holds the store to it and `tests/test_ratchet.py` the
+arithmetic.
 
-**A gallery pass writes into two of these and not into the other two.** Its
-attempts are pool rows like any run's, so they land in `gate/<pass>/` and
-`release/<pass>/` under the pass id — the pool is one store, and a second one
-would be a second answer to what the pool holds. Its *summary* does not go in
-`runs/` or `runs.jsonl`: a pass books no clock and measures no release rate that
-a later night's reservation should be derived from, so it keeps `gallery/`. A
-released row a pass writes carries `collection: "gallery"` where a run's carries
-`"diagnostic"`, and it carries a `slot` block naming which of the pass's slots it
-took, the chosen point that slot was hung on, and how far that point sat from the
-nearest other point the pass chose. A seated row that came out of an earlier run
-is written **again** under the pass's own candidate id (`<run>_<candidate>`) with
-a `source` block naming the row it came from — not a duplicate, but the second of
-two decisions about one picture: a run deciding what to keep, and the pass
-deciding what to ship.
+**`ledger_provenance.json`** names the walk ledgers the released rows were drawn from, a
+snapshot rather than a property. Regenerate it with `curate ledgers --write`, which resolves
+through the tier funnel (the hot tier alone reports archived ledgers as lost).
 
-**`bar_exceptions.jsonl` is the one file here a person writes.** Everything else
-is a run's own account of itself; this is a verdict about four rows of it. The
-retroactive bar pass (`curate reject`) is a *rule* read live against today's cuts,
-so it finds the same rows every time it is asked — and four run8h strange rows
-below the bar stay served on Matt's ruling. The bar has moved at every judge flip
-since they were ruled on; the row records the height and the artifact it sat under
-at the time (0.685 on the retired strange head) and is not restated, because the
-ruling was about those pictures rather than about a number. One row per excused
-release row, keyed on that row's own `run|stage|candidate`, carrying the bar it sat
-under, the score, who ruled and when and why. Per row and never per run or per
-head: an exception naming a run would excuse rows that run has not made yet, and
-one naming a head would retire the bar by the back door. It is read from the
-checkout rather than from the record root, so a rehearsal that redirects the store
-under `scratch/` does not stop the ruling applying.
+## The decision stores
 
-**Two modules read this file and nothing else does** — [`rejection.py`] and
-[`below_bar.py`], so the ruling reaches the retroactive pass and the glance sheet
-it is taken from, and reaches them through one predicate
-(`rejection.below_acting_bar`). **The gallery pass honours it indirectly**: it
-never opens this file, and what it does instead is exclude *rejected* rows from
-the pool (`gallery.pool_rows` tests `records.is_rejected` per row). An excused row
-is not a rejected row, so it stays in the pool and stays seatable — which is the
-same outcome by a different route, and the reason nothing here needs a third
-reader.
+**Two trees, a file per run per partition, one reader.** `records.read_decisions(stage)`
+reads the whole store in key order and `read_decisions(stage, run)` one run; nothing
+downstream knows there is more than one file. Per run and partition keeps every file well
+under the per-file history guard however long the project runs; `data/palette_choice/rows/`
+is laid out the same way.
 
-**The two decision stores are trees, a file per run per partition, and one reader
-over all of them.** `records.read_decisions(stage)` hands back the whole store in
-key order and `read_decisions(stage, run)` reads that run's directory alone;
-nothing downstream knows there is more than one file. Neither axis is invented for
-the filesystem's sake — the run was already the key's axis, and the partition is
-the axis every apportionment here is taken on, which is why
-`data/palette_choice/rows/` is written the same way down to the file names.
+**The pictures are regenerable and the population is not**, so decisions accumulate here
+as tracked text, passed-over rows included, and `runs.jsonl` carries the count every funnel
+stage passed *out of*.
 
-What it buys is a ceiling that does not move with the project's age. As one file
-per stage these grew for as long as the project does: `release.jsonl` was 918 KiB
-against the then 1 MiB `test_history_purity` guard by the third run. One file per run
-alone would not have been enough either — the 240-attempt run that followed wrote
-828 KiB of release rows. Per run and partition the largest file that run wrote is
-195 KiB, and a run five times its size still fits.
+**Every row carries its whole join**: the verdict, the location with every family constant,
+the mode, map, recipe, both heads' scores, the slot kind and the autolevel stamp of the
+render the decision was taken on.
 
-**The pictures are regenerable and the population is not.** A run over ledgers
-that have since grown, through heads that have since been re-shipped, cannot be
-re-run to recover what it decided — and the rate anybody later wants to compute
-has the deleted denominator in it. So the decisions accumulate here as tracked
-text, and `runs.jsonl` carries the counts every stage of the funnel passed *out
-of*, not only what survived.
+**`release_geometry`** is the frame and field supersample of the shipped picture
+(`recipe.render` is the candidate geometry). A solve picks it per pass (`--release-regime`,
+1280x720ss2 by default); `null` on a row with no picture; rows predating the field came from
+2560x1440 ss4 (`curation.checks.UNRECORDED_REGIME`). A colour census is a census at one
+release geometry.
 
-**Every row carries its whole join.** The verdict and the location with every
-family constant, the mode, the map, the recipe, the scores from both heads that
-touched it, which kind of slot it took, and the autolevel stamp of the render the
-decision was taken on — on one line. A row keyed on an identifier whose meaning
-lives in another file is orphaned the day that file moves.
+**Two autolevel stamps per released row.** The row's is the decision render's, at candidate
+geometry; the release render's is written by the parent to
+`artifacts/curation/runs/<run>/release/autolevel_stamps.jsonl`, and that is what
+`curate replay` rebuilds a shipped picture from.
 
-**Which pixels a row shipped is on the row.** `release_geometry` — the frame and
-the field supersample of the picture itself — because `recipe.render` is the
-*candidate* geometry the verdict was cast on and always was, and because a gallery
-pass chooses its regime per pass (`--release-regime`, 1280x720ss2 by default since
-2026-08-25) so the answer cannot be inferred from anything else. `null` on a row
-with no picture: naming a regime there would describe a render that does not
-exist. Rows written before the field existed do not carry it and every one of them
-came out of a 2560x1440 ss4 leg, which is what `curation.checks.UNRECORDED_REGIME`
-says and the only thing it is for.
+**A release verdict is one of three** (`run.release_verdict`): no slot is `passed_over`; a
+slot with a full-resolution picture is `released`; a slot whose render died is `killed`, its
+picture pointer cleared, so a candidate JPEG is never served as a wallpaper.
 
-**And a colour census over these rows is a census at ONE release geometry.** A
-share vector is not scale-free, so anything measured off a shipped picture is
-measured at that picture's own frame: a census taken over one `release_geometry`
-and one taken over another are two populations, and the field above is the only
-thing that tells them apart. The last such census over this store, what it read
-and why the measurement was retired, are in
-[`curation/MEASUREMENTS_decisions.md`](../../src/fractal_wallpapers/curation/MEASUREMENTS_decisions.md)'s
-*What the finished collection expressed, measured 2026-09-06*.
+**Which collection a picture is in is a field, not a verdict**: `collection` is
+`diagnostic` for what a run keeps and `gallery` for what the collection shipped. A run
+writes `diagnostic` on every row. The rows predating the field were backfilled to
+`diagnostic` once, the one rewrite of recorded data this store has had.
 
-**There are two autolevel stamps per released row, and only one of them is here.**
-The stamp on the row is the one from the render the *decision* was taken on, at
-candidate geometry. The release render is a second pass and gets its own stamp,
-written by the parent — never by a worker — to
-`artifacts/curation/runs/<run>/release/autolevel_stamps.jsonl`, and that is the
-one `curate replay` rebuilds a shipped picture from. A row's stamp does not
-describe the wallpaper; the sidecar's does.
+**Two readings of a row's picture, one of them a decision.** `scores` is what the run read on
+the night, and is never overwritten. `curate rescore` re-reads every candidate through the
+judge shipped now into `scores_current` (with that head's sha256 and `judge`; `head` stays
+the row's kind). Every cut reads `records.live_reading` (`scores_current` where present). An
+absent `scores_current` does not mean a stale reading: `rescore.artifact_of` finds the
+artifact from the block or the run's own summary, and `rescore.reading_on` qualifies on the
+artifact, never the field name.
 
-**Passed-over rows are here too**, and that is the half that is easy to skip. A
-record of what shipped can count what passed and never learn what it passed out
-of, which is the shape of every question about a release worth asking later.
+**A verdict taken after the run is added, never written over.** A released row a review takes
+back keeps `verdict: released` and gains a `rejected` block (who, when, why, the bar and
+artifact it failed); what a release *serves* is released minus rejected. A rejection by
+comparison (`curate retire-repeats`, one wallpaper per location) carries
+`reason: location_served`, `bar: null` and a `survivor` naming the wallpaper that kept the
+place.
 
-**A release verdict is one of three, and they are not two.** `run.release_verdict`
-reads a slot and a picture: a row that took no slot is `passed_over`, a row that
-took one and has a full-resolution picture is `released`, and a row that took one
-and has no picture is `killed` — its render died under it.
+**`bar_exceptions.jsonl` is the one file here a person writes**: one row per excused release
+row, keyed on its `run|stage|candidate`, with the bar it sat under, the score, who ruled,
+when and why. Per row, never per run or head: a run-wide exception would excuse rows not yet
+made, a head-wide one would retire the bar. It is read from the checkout, not the record
+root, so a redirected rehearsal still honours it. Its readers are `rejection.py` and
+`below_bar.py`, through `rejection.below_acting_bar`; pool readers exclude *rejected* rows
+(`records.is_rejected`), and an excused row is not rejected, so it stays seatable.
 
-**A row that took a slot and has no picture is not a released row.** The release
-verdict answers one question — is there a wallpaper at the end of this row — so a
-row whose full-resolution render was killed reads `verdict: killed` with its
-picture pointer cleared, rather than `released` pointing at the 640x360 candidate
-JPEG the gate decision was taken on. That render is on disk and resolves, so the
-difference is a listing serving a thumbnail as a wallpaper: `run3` released 39
-rows, made 37 pictures and shipped two such links. What a release *serves* asks
-for the picture as well as the verdict.
-
-**Which collection a picture is in is a field, not a fourth verdict.** The three
-verdicts answer "is there a wallpaper at the end of this row" and the rejection
-block answers "was it taken back"; *which collection it is in* is a third
-question, orthogonal to both, so every release row carries `collection`:
-`diagnostic` for what a run keeps, `gallery` for what the collection ships. A run
-writes `diagnostic` on every row it makes — a run releases ten pictures to look
-at, and choosing what is worth shipping is a decision over the whole accumulated
-pool rather than over one night's slice of it.
-
-**All 1,050 rows here were backfilled to `diagnostic` on 2026-08-22**, in the
-commit that added the field. That is a rewrite of recorded data, which this store
-otherwise never does, and it is defensible for one reason: every row here was
-written by a run, nothing had ever been chosen against a pool, and the
-alternative was a `null` that a later reader would have had to guess at. The
-rewrite touched that one field on every row and nothing else. `gallery` is free
-for it because the deep run's `gallery_frames_per_admission` was renamed the same
-day to what those frames are — evaluation frames.
-
-**A row carries two readings of its own picture, and only one of them is a
-decision.** `scores` is what the run read on the night it decided, on the artifact
-that was shipped then — that is the provenance and nothing overwrites it. Two of
-the six runs were judged by a strange head that has since been replaced, so their
-`P(≥3)` is a point on a scale that no longer exists and they have no `P(≥4)` at
-all. `curate rescore` reads every candidate render again through the head shipped
-now and puts the result in a **`scores_current`** block carrying that head's
-sha256. Every cut in curation reads the **live** block — `records.live_reading`,
-which is `scores_current` where a row has one — because a cut is a point on the
-scale the shipped judge emits and `scores` is a point on whatever was shipped that
-night. While one artifact stood behind both those were the same number; the
-2026-08-23 head flip is what made them differ.
-
-**An absent `scores_current` does not mean an absent reading.** A gallery pass
-copies the block onto its release rows and not onto its attempt rows, so
-gallery3's and gallery4's 10,846 attempts carry none on disk — and both passes ran
-*after* the flip, so their `scores` block is already the live judge's reading. The
-proof is the pass's own summary, `data/curation/gallery/<pass>/pass.json`, whose
-`config.heads.render` names the artifact that scored every row it made.
-`rescore.artifact_of` reads that, and `rescore.reading_on` is what a reader
-qualifies on: the artifact, never the field name.
-
-Read on 2026-08-22 against `smooth_render c0ac536d` and `strange_render a011188b`:
-the 925 rows already on those artifacts came back to within 6.8e-06 — identity, as
-it should be, the residue being half-precision and batching. The 125 rows on the
-retired three-class `79201d0c` moved: median `P(≥3)` 0.000 to 0.041, twelve rows
-above the 0.685 strange bar became ten, and all 125 gained the fourth cutpoint
-that head never had.
-
-**Re-read again on 2026-08-23** against the one `render` judge that replaced both,
-`b2e225a9`: all 4,784 pool rows, none of them already on that artifact, so
-every row moved. That pass also cleared the 3,592-row backlog of gallery-pass
-attempts the colour census flagged, in the gate store those passes kept — retired
-with them on 2026-09-06. The block now carries `judge` — the head that produced the
-numbers — beside `head`, which stays the row's KIND because that is what picks a
-floor and a slot.
-
-**A verdict taken after the run is added, never written over.** A released row a
-later review takes back keeps `verdict: released` — that is what the run decided
-and it stays true, and a store that edited it would delete the evidence the
-release path had a defect — and gains a `rejected` block: who, when, why, and the
-bar and artifact it failed. Scores are untouched. What a release *serves* is
-released minus rejected, and every listing reads that rather than the raw
-verdict. `run2`'s eleven below-bar strange rows are here on exactly those terms.
-
-**A rejection can be a comparison instead of a measurement, and then it names the
-row it lost to.** One wallpaper per location acts at selection from 2026-08-22 and
-cannot reach backwards, so `curate retire-repeats` applied it once to the
-collection that predates it: 27 locations were holding 59 wallpapers between them,
-each kept the highest `P(>=3)` on its own head's scale, and the other **32** rows
-carry a `rejected` block with `reason: location_served`, `bar: null` and a
-`survivor` field holding the key of the wallpaper that kept the place. 185 served
-became 153. A retired row is a second picture of a place the collection has, not a
-bad picture — which is why no bar is read here and why the survivor is on the row:
-a reader re-deriving it later would be re-deriving it against a collection that
-has moved.
-
-Rows upsert by key and the key carries the run id, so a re-run replaces its own
-rows byte for byte and a second run adds rows without touching the first.
-`runs/<run>.json` is the exception: it is written **whole** rather than upserted,
-so a resume replaces it outright and the interrupted attempt's own wall-clock
-record does not survive. What a resumed run reports is the resumed leg. A
-rehearsal must not write here at all — `curate run --ephemeral` redirects the
-whole store under `scratch/`, because a sixty-row smoke's decisions are
-indistinguishable in an accumulated file from a real release's.
-
-The pictures themselves, the candidate log and the run's release sheet land in
-the untracked `artifacts/curation/runs/<run>/`.
+**Rows upsert by key and the key carries the run id**, so a re-run replaces its own rows and a
+second run adds. `runs/<run>.json` is written whole, so a resumed run reports the resumed leg.
+A rehearsal writes nothing here: `curate run --ephemeral` redirects the store under
+`scratch/`. Pictures, the candidate log and the release sheet land in the untracked
+`artifacts/curation/runs/<run>/`.
 
 ```
 fractal-wallpapers curate score
@@ -317,16 +143,10 @@ fractal-wallpapers curate retire-repeats --rejector <who> --date <when> --dry-ru
 
 ## `manufacture/` — the half of a manufactured row a label store cannot hold
 
-`curate manufacture` forces the rare swatches onto places a person already scored
-a keeper, and puts the results in front of a person to correct. What comes back
-lands in `data/<kind>/rows/` like any other verdict, carrying the place, the mode,
-the map and every knob — everything needed to rebuild the picture, and nothing
-about **why that picture was made**.
-
-That half is here. One row per selected sheet row, per kind, carrying its
-`render_key` — the identity a finished-render verdict is cast on, so the join to
-the store is exact rather than by viewport arithmetic — beside the things only the
-batch knows:
+`curate manufacture` forces rare swatches onto places a person already scored a keeper and
+serves the results for correction. The verdicts land in `data/<kind>/rows/` with the whole
+render join; **why the picture was made** lands here: one row per selected sheet row, per
+kind, keyed on its `render_key`:
 
 ```text
 target       which thin swatch this row was manufactured for
@@ -336,24 +156,15 @@ sheet        what the codebook and the judge read off the picture SERVED
 candidate    the same two readings at candidate geometry, where the screen ran
 ```
 
-`batch.json` beside them is the selection: rows per kind, what fell short and
-where, the realized rows-per-map distribution, and the tier and arm splits. It is
-about a kilobyte and a half a row, so a 250-row kind is a third of a megabyte and
-the two kinds are two files — the history guard acts per file, and the split is
-the same one the gallery's slot records take for the same reason.
+`batch.json` beside them is the selection: rows per kind, shortfalls, the rows-per-map
+distribution, and the tier and arm splits. Two kinds are two files to stay under the
+per-file guard.
 
-**The arm is a batch and the tier is a row.** Two batches are registered per
-store — `manufactured_rare_colors` and `manufactured_rare_colors_contrast` —
-because the two arms are two draws and a registration is what says how a
-population was drawn. The tier is not: both tiers are the same draw reaching
-further down one ranked list, so it rides on the row rather than splitting the
-registry four ways.
+**The arm is a batch and the tier is a row**: `manufactured_rare_colors` and
+`manufactured_rare_colors_contrast` are registered per store, because each arm is a draw;
+both tiers are one draw, so the tier rides on the row.
 
-**These rows are the durable half; the sheets that produced them are not.** The
-verdicts live in `data/<kind>/rows/` and the why lives here, both tracked. The
-cut sheets a manufacture pass serves — its `artifacts/<name>/` directories of
-pictures and `sheet.jsonl` — are working material and may be deleted once their
-verdicts are ingested and the cutter has been exercised on the shipped judge.
-Nothing in this repository holds them: no `Durable` names them, no manifest
-counts them, and no reader resolves through them. That is deliberate and it is
-the rule for every sheet directory, not a property of one drop.
+**These rows and the verdicts are the durable halves; the cut sheets are not.** A
+manufacture pass's `artifacts/<name>/` sheet directories may be deleted once ingested;
+nothing tracked names, counts or resolves through them, which is the rule for every sheet
+directory.
