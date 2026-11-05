@@ -211,7 +211,6 @@ def harvest_minutes(args: argparse.Namespace):
     plan buys is that the number was arrived at from a time somebody named, on
     the record, in terms a readout can subtract afterwards.
     """
-    from fractal_wallpapers import schedule
     from fractal_wallpapers.curation import records
 
     if args.finish_by is None:
@@ -220,11 +219,11 @@ def harvest_minutes(args: argparse.Namespace):
     # The leg is read here rather than inside `schedule`: that module is
     # arithmetic about a night and stays clear of the record store, which is
     # above it. See [`schedule.release_rate`].
-    derived = schedule.plan(
+    derived = schedule_module.plan(
         args.finish_by,
         args.release_slots,
         curation_attempts(args),
-        schedule.release_rate(args.release_workers, records.latest_release_leg()),
+        schedule_module.release_rate(args.release_workers, records.latest_release_leg()),
         renders_views=harvest_draws_views(args),
         release_workers=args.release_workers,
     )

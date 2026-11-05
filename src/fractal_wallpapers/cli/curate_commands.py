@@ -26,18 +26,18 @@ four `--help` invocations doing it.
 
 ## What is here
 
-The `curate` parser and `steps` themselves, the five `add_steps` calls in the
+The `curate` parser and `steps` themselves, the seven `add_steps` calls in the
 order they register, and the nine verbs no family claimed: `reject`, `pool-draw`,
 `below-bar`, `repeats`, `retire-repeats`, `parity`, `replay`, `label-migration`
 and `label-fate`. They stay because each is the only verb of its kind — a
 one-verb family per noun would be five more modules to hold eleven handlers.
 
 The families are [`curate_ledger_commands`], [`curate_solve_commands`],
-[`curate_votes_commands`], [`curate_mine_commands`] and
-[`curate_colors_commands`]. Each is a module the package must resolve handler
-names through, so each is named in `cli/__init__.FAMILIES` as well — `GROUPS` is
-the list of modules that register a TOP-LEVEL command and a family registers
-none.
+[`curate_votes_commands`], [`curate_mine_commands`], [`curate_colors_commands`],
+[`curate_veto_commands`] and [`curate_atlas_commands`]. Each is a module the
+package must resolve handler names through, so each is named in
+`cli/__init__.FAMILIES` as well — `GROUPS` is the list of modules that register a
+TOP-LEVEL command and a family registers none.
 """
 
 from __future__ import annotations

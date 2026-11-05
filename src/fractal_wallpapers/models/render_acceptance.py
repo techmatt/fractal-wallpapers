@@ -40,9 +40,9 @@ boundary carries the same four rows among its six positives and is gated anyway,
 because it is a boundary the draw supports — but its interval is what decides,
 never its point estimate.
 
-**Note the count.** `models/strange_render/README.md` says six rows at `>=3`, four
-of them revised up on an anchored pass. Those are two different sixes and only
-four rows are superseded; the sheet holds 154 rows resolving to 150.
+**Note the count.** Six rows sit at `>=3` and four rows were revised up on an
+anchored pass; those are two different counts, only the four are superseded, and
+the sheet holds 154 rows resolving to 150.
 
 ## The comparison is paired and the cluster is the neighbourhood group
 

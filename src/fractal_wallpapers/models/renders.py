@@ -51,7 +51,6 @@ import hashlib
 import json
 import random
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 from fractal_wallpapers import engine
@@ -111,18 +110,6 @@ def build_record_path(head: str) -> Path:
 
 def log_path(head: str) -> Path:
     return cache_dir(head) / "build.log"
-
-
-@dataclass(frozen=True)
-class Job:
-    """One picture to make, and where it goes."""
-
-    name: str
-    row: dict
-
-    @property
-    def output(self) -> Path:
-        return crop_dir(self.row["_head"]) / f"{self.name}.jpg"
 
 
 def job_name(row: dict) -> str:
@@ -707,7 +694,6 @@ __all__ = [
     "SCHEMA",
     "SEED",
     "SPEC_MEMBERS",
-    "Job",
     "RenderCacheError",
     "build",
     "field_job_name",

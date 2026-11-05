@@ -584,13 +584,6 @@ def refusal_of(row: dict, kinds: dict, owed: bool = False) -> str | None:
     return None
 
 
-def _undumpable(sources: list, kinds: dict) -> int:
-    """How many of a population's rows are on a mode with no field to dump."""
-    from fractal_wallpapers.curation import colorize
-
-    return sum(1 for one in sources if kinds.get(one.mode) != colorize.FIELD_KIND)
-
-
 def population(bar: float | None = None, owed: bool = False, log=print) -> dict:
     """Everything this pass acts on, out of **one** stream of the ledger.
 

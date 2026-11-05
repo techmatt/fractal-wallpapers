@@ -104,10 +104,6 @@ CHUNK = 256
 WORKERS = 3
 
 
-class FlatnessError(RuntimeError):
-    """The sidecar cannot be read, or the sweep cannot be run."""
-
-
 # --------------------------------------------------------------------------- #
 # The reading.
 # --------------------------------------------------------------------------- #
@@ -411,7 +407,6 @@ __all__ = [
     "SIDECAR_NAME",
     "THRESHOLD",
     "WORKERS",
-    "FlatnessError",
     "by_recipe",
     "coverage",
     "durable",

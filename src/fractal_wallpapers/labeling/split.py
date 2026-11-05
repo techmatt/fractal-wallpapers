@@ -204,7 +204,7 @@ def write(split: Split) -> tuple[Path, Path]:
     with members.open("w", encoding="utf-8", newline="\n") as handle:
         for row in rows_of(split):
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    recipe.write_text(json.dumps(split.recipe(), indent=2) + "\n", encoding="utf-8")
+    recipe.write_text(json.dumps(split.recipe(), indent=2) + "\n", encoding="utf-8", newline="\n")
     return members, recipe
 
 

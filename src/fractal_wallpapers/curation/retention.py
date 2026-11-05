@@ -145,10 +145,6 @@ FAMILY_ALLOWANCE = 1
 SUCCESS_BAR = 0.5
 
 
-class RetentionError(RuntimeError):
-    """A retention decision cannot be made from what is on the row."""
-
-
 def _pair_of(row: dict) -> tuple:
     """`(location key, mode with its settings)` — the unit the ranking and the cursor are per.
 
@@ -666,9 +662,9 @@ def prune_report(rows: list, values: dict, keep: int | None = None) -> dict:
     """What [`candidate_ledger.prune`] would drop, off rows and rank values already read.
 
     Arithmetic and no store: the caller has done the reads, and this is the
-    ranking's own arithmetic over them. `candidate_ledger.prune(apply=False)` is
-    the door that does the reads and calls this, so there is one dry run in this
-    project and not two.
+    ranking's own arithmetic over them. Only the tests call it:
+    `candidate_ledger.prune(apply=False)` is the project's dry run, and it calls
+    [`decide`] directly.
     """
     verdicts = decide(rows, values, keep=keep)
     tally = dict.fromkeys(REASONS, 0)
@@ -707,7 +703,6 @@ __all__ = [
     "REASONS",
     "SCHEMA",
     "SUCCESS_BAR",
-    "RetentionError",
     "aggregates",
     "by_map_mode",
     "by_place_cell",

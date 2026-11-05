@@ -126,15 +126,6 @@ from fractal_wallpapers.supply.partitions import partition_of_row
 #: The schema every score row carries.
 SCHEMA = 1
 
-#: The picture a location is judged on, pre-colour. Re-exported rather than
-#: restated: [`fractal_wallpapers.models.location_view`] owns the recipe, because
-#: the walk scores through it too and a head asked about two distributions under
-#: one name is a head whose scores cannot be compared.
-VIEW_RESOLUTION = location_view.RESOLUTION
-VIEW_SUPERSAMPLE = location_view.SUPERSAMPLE
-VIEW_MODE = location_view.MODE
-VIEW_CURVE = location_view.CURVE
-
 
 class IntakeError(RuntimeError):
     """The supply cannot be read, or cannot be scored."""
@@ -1050,10 +1041,6 @@ __all__ = [
     "GATE",
     "RENDERED",
     "SCHEMA",
-    "VIEW_CURVE",
-    "VIEW_MODE",
-    "VIEW_RESOLUTION",
-    "VIEW_SUPERSAMPLE",
     "IntakeError",
     "canonical_map",
     "release_caps",

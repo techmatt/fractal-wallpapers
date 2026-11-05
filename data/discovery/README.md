@@ -50,8 +50,8 @@ a continuous root channel, `discovery.viewport_sampler`'s straddle refinement
 connectedness locus's boundary is and screens every draw. **This pool is still the
 default supply and is unchanged**; the sampler is opt-in and is what serves a plane
 after its pool is walked out, or a plane that has no pool. The mechanism is
-`discovery/README.md`'s *The viewport sampler* and `supply/README.md`'s *There is
-no continuous boundary sampler*, which is now the history of the gap it closed.
+`discovery/README.md`'s *The viewport sampler* and its *A parameter plane: straddle
+refinement*.
 
 Instead of a draw, a coarse grid — 340×191 — is laid over each family's home
 frame, every point is handed to this repository's own `identify_nucleus`, and each

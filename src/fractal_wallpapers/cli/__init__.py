@@ -7,7 +7,7 @@ a name, and `--help` text.
 One module per command group, each holding its handlers and its parser
 together, and [`build_parser`] is the list of them in the order they ship in.
 The one group too big to be one module is `curate`, which is nine command groups
-wearing one hat: [`FAMILIES`] names the five modules it was cut into, and
+wearing one hat: [`FAMILIES`] names the seven modules it was cut into, and
 `curate_commands` owns the `curate` parser and calls each family's `add_steps`.
 Module names carry a `_commands` suffix and that is load-bearing rather than
 decorative: eight top-level commands — `render`, `screen`, `walk`, `reframe`,
@@ -112,9 +112,8 @@ GROUPS: tuple[str, ...] = (
     "walkthrough_commands",
 )
 
-#: The modules that hold handlers but register **no top-level command**: the five
-#: `curate` families cut out of `curate_commands` on 2026-09-12, when that module
-#: reached 6,354 lines and forty-eight verbs. Their steps are registered by
+#: The modules that hold handlers but register **no top-level command**: the seven
+#: `curate` families cut out of `curate_commands`. Their steps are registered by
 #: [`curate_commands.add_commands`], which owns the `curate` parser and calls each
 #: family's `add_steps` in the order they appear here — so this list is the
 #: `curate --help` surface the way `GROUPS` is the top-level one. They are named

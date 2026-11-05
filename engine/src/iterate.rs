@@ -719,9 +719,10 @@ impl Orbit {
 /// the constant `c` for a parameter-plane family, the starting value `z₀` for a
 /// dynamical one. [`Family::seed`] makes that choice; this loop does not know
 /// which it got.
-// TODO(perf): the source project reached deep zoom by iterating a low-precision
-// delta against one high-precision reference orbit, rebasing when the delta grew
-// past the reference. That belongs here when deep zoom does.
+// Deep zoom does not pass through this loop: `render-link` hands a `dv=` view to
+// `deep.rs`, which draws it with the `perturbation` crate (a low-precision delta
+// against one high-precision reference orbit), behind the default `deep` feature.
+// `render` and `dump-field` stay on this `f64` path.
 /// **Always inlined, and it is worth about four times the field time.**
 ///
 /// This loop collapses to the bare recurrence only when the compiler can see the

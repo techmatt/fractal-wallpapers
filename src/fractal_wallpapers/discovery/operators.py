@@ -809,22 +809,13 @@ class ProbeGovernor:
         }
 
 
-#: Multibrot degree per c-plane family. The dynamical families are absent, and
-#: that absence is the rule: a Julia or Phoenix viewport is a *z*-plane point,
-#: which has no nucleus in the parameter-plane sense at all. The operators are
-#: not defined there and are skipped rather than faked.
-PARAMETER_PLANE_DEGREE = {
-    "mandelbrot": 2,
-    "multibrot3": 3,
-    "multibrot4": 4,
-    "multibrot5": 5,
-    "multibrot6": 6,
-}
-
-
 def degree_of(family: str, degree: int = 2) -> int | None:
     """The multibrot degree of a c-plane family, or `None` where reframing is
-    undefined."""
+    undefined.
+
+    The dynamical families answer `None`, and that is the rule: a Julia or Phoenix
+    viewport is a *z*-plane point, which has no nucleus in the parameter-plane
+    sense at all, so the operators are skipped there rather than faked."""
     if family == "mandelbrot":
         return 2
     if family == "multibrot":

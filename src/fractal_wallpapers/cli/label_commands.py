@@ -528,9 +528,9 @@ def add_commands(subcommands) -> None:
         choices=list(sheets_module.ORDERINGS),
         default="rank",
         help="which reading a FINISHED-RENDER page is ordered good-to-bad by: `rank`, the "
-        "head's expected tier over the whole scale (default), or `top`, its last cutpoint "
+        "head's expected tier over the whole scale (default); `top`, its last cutpoint "
         "alone — which is what separates rows at the good end of a page, where the "
-        "cutpoint below it is saturated",
+        "cutpoint below it is saturated; or `plan`, the plan's own `order_score` per unit",
     )
     building.add_argument(
         "--workers",
@@ -573,8 +573,9 @@ def add_commands(subcommands) -> None:
         "serve",
         help="serve a built sheet to a browser on this machine",
         description=(
-            "Binds exclusively, so a second launcher fails instead of silently co-hosting the "
-            "port and serving half the images out of the wrong directory."
+            "Binds each port exclusively, so a second launcher never co-hosts a port and "
+            "serves half the images out of the wrong directory: it takes the first free port "
+            "at or above --port instead, and the URL it prints is the one to open."
         ),
     )
     serving.add_argument("--sheet", required=True, help="a built sheet directory")
@@ -595,7 +596,8 @@ def add_commands(subcommands) -> None:
             "labels: a suggestion the labeler never reviewed is absent from that file and "
             "cannot reach a store as a verdict. Both counts are checked in both directions, "
             "nothing already stored is written twice, a verdict that changed is a new row "
-            "rather than an edit, and the evaluation pin is asserted after the write."
+            "rather than an edit, and the evaluation pin is asserted before the write and "
+            "after it."
         ),
     )
     ingesting.add_argument(

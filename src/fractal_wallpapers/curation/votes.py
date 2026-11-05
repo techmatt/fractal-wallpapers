@@ -403,7 +403,7 @@ def plan(
     for index, row in enumerate(rows):
         # The record's own mode and not the ledger recipe's, because the
         # supersample has to be decided before any recipe is read: a kit groups
-        # its render legs by mode and `recipes_for` is a lookup inside one of
+        # its render legs by mode and [`rows_for`] is a lookup inside one of
         # them. The two agree — the record's row is written off the recipe — and
         # if they ever did not, the record is what a seat IS.
         mode = str(row.get("mode") or "")
@@ -443,11 +443,6 @@ def rows_for(jobs: list[dict]) -> dict:
             f"{sorted(missing)[:3]}. A seat cannot be rendered without its recipe."
         )
     return rows
-
-
-def recipes_for(jobs: list[dict]) -> dict:
-    """`{key: recipe}` — [`rows_for`] with everything but the recipe dropped."""
-    return {key: row["recipe"] for key, row in rows_for(jobs).items()}
 
 
 def _borrowed(rows: dict, log=print) -> dict:
@@ -1923,7 +1918,6 @@ __all__ = [
     "parse_supersample_for",
     "plan",
     "read_me",
-    "recipes_for",
     "rotated",
     "rows_for",
     "render_fulls",
