@@ -7,7 +7,12 @@ fractal-wallpapers style show floating_on_dreams
 fractal-wallpapers style render floating_on_dreams --location <record.json> --colormap <any map>
 fractal-wallpapers style render floating_on_dreams --manifest <records.jsonl> --out-dir <dir>
 fractal-wallpapers style render <draft.json> --location <record.json>      # a draft, before it joins
+fractal-wallpapers style keep floating_on_dreams <picker>.choices.json     # save a picker's keeps
 ```
+
+`<name>.keeps.json` beside a style is not a style: it is the renders Matt kept from its
+pickers, each with what redraws it, and its pictures live in
+`fractal-drive-sync/style-keeps/<name>/` beside the reference.
 
 `--location` takes the same record `render --location` reads — `{family, viewport,
 maxiter}` is enough — and `--colormap` defaults to the style's suggested map. The
@@ -196,6 +201,12 @@ The item that brings a picture says "new style from <image>". The procedure:
 7. Write `reference`, `reuses`, `adds` and `suggested_colormap`, and check the existing
    modes still draw the same bytes (`fractal-wallpapers identity` before and after, when
    the engine changed).
+8. **Save Matt's keeps** once his choices come back: `fractal-wallpapers style keep <name>
+   <picker>.choices.json` writes `<name>.keeps.json` here (each kept render's location,
+   map, stack, size and note) and copies the pictures, with the reference, to
+   `fractal-drive-sync/style-keeps/<name>/`; a later round merges in. It reads a
+   `renders.jsonl` beside the picker manifest, one row per option (`style_keeps.py`'s
+   docstring has the shape), so step 6's builder writes one.
 
 ## The styles
 

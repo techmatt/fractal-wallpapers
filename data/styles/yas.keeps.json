@@ -1,0 +1,918 @@
+{
+  "schema": 1,
+  "name": "yas",
+  "reference": {
+    "image": "yas-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/yas",
+  "keeps": [
+    {
+      "id": "style_yas_r1/baseline/03_d4_julia_seven_arm_rosette__floating_on_dreams",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "baseline",
+          "key": "03_d4_julia_seven_arm_rosette__floating_on_dreams"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette: existing style floating_on_dreams",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette__floating_on_dreams.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@afb51c70",
+        "colormap": "yas",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/03_d4_julia_seven_arm_rosette__copper_fathom",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "03_d4_julia_seven_arm_rosette__copper_fathom"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette x copper_fathom",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette__copper_fathom.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Copper Fathom",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/03_d4_julia_seven_arm_rosette__hsv",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "03_d4_julia_seven_arm_rosette__hsv"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette x hsv",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette__hsv.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "hsv",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/03_d4_julia_seven_arm_rosette__lilac_vellum",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "03_d4_julia_seven_arm_rosette__lilac_vellum"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette x lilac_vellum",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette__lilac_vellum.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Lilac Vellum",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/03_d4_julia_seven_arm_rosette__nightfall_azure",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "03_d4_julia_seven_arm_rosette__nightfall_azure"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette x nightfall_azure",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette__nightfall_azure.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Nightfall Azure",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/03_d4_julia_seven_arm_rosette__twilight_procession",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "03_d4_julia_seven_arm_rosette__twilight_procession"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette x twilight_procession",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette__twilight_procession.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Twilight Procession",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/08_m2_seahorse_rosette_centered__copper_fathom",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "08_m2_seahorse_rosette_centered__copper_fathom"
+        }
+      ],
+      "label": "m2_seahorse_rosette_centered x copper_fathom",
+      "image": "style_yas_r1__08_m2_seahorse_rosette_centered__copper_fathom.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_rosette_centered",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.746425",
+            "center_im": "0.115138",
+            "width": "0.003"
+          },
+          "maxiter": 6000,
+          "symmetry": "~20-arm rosette",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "Mandelbrot seahorse valley: dense curved spokes from a red core, a seahorse curl top-left",
+          "preview": "out/yas/locs/prev/m2_seahorse_rosette_centered_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Copper Fathom",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/09_m2_seahorse_tail_spiral__copper_fathom",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "09_m2_seahorse_tail_spiral__copper_fathom"
+        }
+      ],
+      "label": "m2_seahorse_tail_spiral x copper_fathom",
+      "image": "style_yas_r1__09_m2_seahorse_tail_spiral__copper_fathom.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_tail_spiral",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7451635",
+            "center_im": "0.112591",
+            "width": "0.0012"
+          },
+          "maxiter": 6000,
+          "symmetry": "1-arm log spiral",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+          "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Copper Fathom",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/09_m2_seahorse_tail_spiral__hsv",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "09_m2_seahorse_tail_spiral__hsv"
+        }
+      ],
+      "label": "m2_seahorse_tail_spiral x hsv",
+      "image": "style_yas_r1__09_m2_seahorse_tail_spiral__hsv.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_tail_spiral",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7451635",
+            "center_im": "0.112591",
+            "width": "0.0012"
+          },
+          "maxiter": 6000,
+          "symmetry": "1-arm log spiral",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+          "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "hsv",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/09_m2_seahorse_tail_spiral__magma",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "09_m2_seahorse_tail_spiral__magma"
+        }
+      ],
+      "label": "m2_seahorse_tail_spiral x magma",
+      "image": "style_yas_r1__09_m2_seahorse_tail_spiral__magma.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_tail_spiral",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7451635",
+            "center_im": "0.112591",
+            "width": "0.0012"
+          },
+          "maxiter": 6000,
+          "symmetry": "1-arm log spiral",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+          "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "magma",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/palettes/09_m2_seahorse_tail_spiral__twilight_procession",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "09_m2_seahorse_tail_spiral__twilight_procession"
+        }
+      ],
+      "label": "m2_seahorse_tail_spiral x twilight_procession",
+      "image": "style_yas_r1__09_m2_seahorse_tail_spiral__twilight_procession.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_tail_spiral",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7451635",
+            "center_im": "0.112591",
+            "width": "0.0012"
+          },
+          "maxiter": 6000,
+          "symmetry": "1-arm log spiral",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+          "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "Twilight Procession",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/shortlist/03_d4_julia_seven_arm_rosette",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "03_d4_julia_seven_arm_rosette"
+        },
+        {
+          "row": "baseline",
+          "key": "style_03"
+        }
+      ],
+      "label": "d4_julia_seven_arm_rosette (7-arm whirl)",
+      "image": "style_yas_r1__03_d4_julia_seven_arm_rosette.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_seven_arm_rosette",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5813908968716722",
+              "0.04335873650854592"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.6141503475910278",
+            "center_im": "0.22241677111817412",
+            "width": "0.5"
+          },
+          "maxiter": 8000,
+          "symmetry": "7-arm whirl",
+          "source": "julia-plane d4, c = root of the 1/7 bulb + 0.03 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "quartic Julia, seven curling arms of rosette clusters around a small dark star core",
+          "preview": "out/yas/locs/prev/d4_julia_seven_arm_rosette_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "yas",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/shortlist/04_m2_julia_ten_arm_rosette_whirl",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "04_m2_julia_ten_arm_rosette_whirl"
+        }
+      ],
+      "label": "m2_julia_ten_arm_rosette_whirl (10-arm whirl (q=10))",
+      "image": "style_yas_r1__04_m2_julia_ten_arm_rosette_whirl.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_julia_ten_arm_rosette_whirl",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.3379862030829289",
+              "0.060691955502401314"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.4027837770418081",
+            "center_im": "0.31214931857876255",
+            "width": "0.25"
+          },
+          "maxiter": 10000,
+          "symmetry": "10-arm whirl (q=10)",
+          "source": "julia-plane d2, c = root of the 1/10 bulb + 0.01 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "ten arms of round rosettes swirling into a bright beaded core; loosest, most 'bubble' arms",
+          "preview": "out/yas/locs/prev/m2_julia_ten_arm_rosette_whirl_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "yas",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/shortlist/05_m2_julia_thirteen_arm_whirl",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "05_m2_julia_thirteen_arm_whirl"
+        }
+      ],
+      "label": "m2_julia_thirteen_arm_whirl (13-arm whirl (q=13))",
+      "image": "style_yas_r1__05_m2_julia_thirteen_arm_whirl.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_julia_thirteen_arm_whirl",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.3152551006569985",
+              "0.03281990568260475"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.43759588808262057",
+            "center_im": "0.26296268526388944",
+            "width": "0.3"
+          },
+          "maxiter": 10000,
+          "symmetry": "13-arm whirl (q=13)",
+          "source": "julia-plane d2, c = root of the 1/13 bulb + 0.015 along the main component's boundary tangent, framed on the repelling fixed point",
+          "note": "thirteen tight curved arms of pointed rosettes; star-shaped core, petal-like outer bulbs",
+          "preview": "out/yas/locs/prev/m2_julia_thirteen_arm_whirl_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "yas",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_yas_r1/shortlist/09_m2_seahorse_tail_spiral",
+      "picker": "style_yas_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "09_m2_seahorse_tail_spiral"
+        }
+      ],
+      "label": "m2_seahorse_tail_spiral (1-arm log spiral)",
+      "image": "style_yas_r1__09_m2_seahorse_tail_spiral.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_tail_spiral",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7451635",
+            "center_im": "0.112591",
+            "width": "0.0012"
+          },
+          "maxiter": 6000,
+          "symmetry": "1-arm log spiral",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+          "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+        },
+        "style": "yas",
+        "stack": "yas@f523cc26",
+        "colormap": "yas",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "floating_on_dreams@afb51c70": {
+      "name": "floating_on_dreams",
+      "interior": {
+        "palette": 1.0
+      },
+      "tone": {
+        "median": 0.686,
+        "p10": 0.506
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 6.0,
+            "rings": 0.8,
+            "slope": 0.4,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.42,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 60.0,
+            "rim": 0.25,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "transform": "sqrt"
+          },
+          "light": {
+            "bands": 24.0,
+            "rings": 0.75,
+            "slope": 0.3,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.45,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 50.0,
+            "rim": 0.25,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "threads",
+              "sigma": 0.05
+            }
+          },
+          "power": 1.5,
+          "color": {
+            "rgb": "#ffffff"
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "power": 4.0,
+          "color": {
+            "rgb": "#ffffff"
+          },
+          "blend": "screen",
+          "opacity": 0.85
+        },
+        {
+          "kind": "pattern",
+          "checker": {
+            "per_iteration": 1.0,
+            "sectors": 2
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "multiply",
+          "opacity": 0.12,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "transform": "sqrt"
+            },
+            "invert": true,
+            "power": 2.0
+          }
+        }
+      ]
+    },
+    "yas@f523cc26": {
+      "name": "yas",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.36,
+        "p10": 0.2
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "radial": {}
+          },
+          "palette": {
+            "gamma": 0.8
+          },
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              }
+            },
+            "amount": 0.3
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {}
+          },
+          "power": 4.0,
+          "color": {
+            "rgb": "#fff2d8"
+          },
+          "blend": "screen",
+          "opacity": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "transform": "sqrt"
+          },
+          "power": 1.0,
+          "color": {
+            "rgb": "#000000"
+          },
+          "blend": "normal",
+          "opacity": 0.35
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "transform": "sqrt",
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.12,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "add",
+          "opacity": 0.35
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "trap_cross"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "add",
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.08,
+            "fill": 0.25
+          },
+          "blend": "add",
+          "opacity": 0.4
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 4.0,
+            "phase": 0.5,
+            "edge": 0.08,
+            "fill": 0.2
+          },
+          "blend": "add",
+          "opacity": 0.3
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "curvature"
+            }
+          },
+          "sheet": {
+            "bands": 30.0,
+            "edge": 0.05,
+            "fill": 0.0
+          },
+          "blend": "screen",
+          "opacity": 0.15
+        }
+      ]
+    }
+  }
+}

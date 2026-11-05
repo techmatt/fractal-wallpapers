@@ -25,10 +25,40 @@ def style(args: argparse.Namespace) -> int:
             return 0
         if args.what == "tones":
             return check_tones(args, styles)
+        if args.what == "keep":
+            return keep_style(args)
         return render_style(args, styles)
     except styles.StyleError as refusal:
         print(refusal)
         return 1
+
+
+def keep_style(args: argparse.Namespace) -> int:
+    """Record a style picker's keeps and copy their pictures beside the reference."""
+    from fractal_wallpapers import style_keeps
+
+    named = {
+        key: resolve_input(getattr(args, key)) if getattr(args, key) else None
+        for key in ("manifest", "renders")
+    }
+    try:
+        done = style_keeps.keep(
+            args.name,
+            resolve_input(args.choices),
+            manifest_path=named["manifest"],
+            renders_path=named["renders"],
+        )
+    except style_keeps.KeepError as refusal:
+        print(refusal)
+        return 1
+    except RuntimeError as refusal:
+        print(str(refusal).removeprefix("engine failed: "))
+        return 1
+    print(
+        f"{done['kept']} kept ({done['copied']} copied, {done['drawn']} drawn again); "
+        f"{done['total']} in {tracked_name(done['record'])}; pictures in {done['folder']}"
+    )
+    return 0
 
 
 def check_tones(args: argparse.Namespace, styles) -> int:
@@ -131,6 +161,23 @@ def add_commands(subcommands) -> None:
     tones.add_argument(
         "--reference",
         help="the reference picture (default: the style file's, beside this checkout)",
+    )
+
+    keep = verbs.add_parser(
+        "keep",
+        help="record a style picker's keeps (data/styles/<name>.keeps.json) and copy their "
+        "pictures to fractal-drive-sync/style-keeps/<name>/; re-running merges",
+    )
+    keep.add_argument("name", help="the style the picker was for")
+    keep.add_argument("choices", help="the picker's saved <picker>.choices.json")
+    keep.add_argument(
+        "--manifest",
+        help="the picker manifest (default: the one the choices file names)",
+    )
+    keep.add_argument(
+        "--renders",
+        help="the renders sidecar, one row per option key (default: renders.jsonl beside "
+        "the manifest)",
     )
 
     render = verbs.add_parser(

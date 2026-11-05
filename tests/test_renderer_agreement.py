@@ -872,6 +872,13 @@ LOCATION_DOOR: dict[str, str] = {
     "`--colormap` or the style's suggested map, and the engine refuses a spec naming a style "
     "beside a mode, a coloring or params. No registry case is a style, so there is nothing "
     "for it to agree with byte for byte; `tests/test_styles.py` holds the door.",
+    "style_keeps": "`style keep`, redrawing a kept picture whose picker image is gone, from "
+    "its recorded location, map, stack and size: `locations.one_location(drawing=True)` -> "
+    "`styles.spec_of` (a style keep) or `locations.spec_of` (a mode's baseline tile) -> "
+    "`engine.render_report`. The record IS the render's inputs as the picker drew them, so "
+    "the door adds nothing; a style keep goes the `styles` door above and a mode keep the "
+    "`cli.draw_commands` one. `tests/test_style_keeps.py` holds that the redraw names the "
+    "recorded map, size and stack.",
 }
 
 

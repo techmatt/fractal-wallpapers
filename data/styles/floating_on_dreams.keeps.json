@@ -1,0 +1,749 @@
+{
+  "schema": 1,
+  "name": "floating_on_dreams",
+  "reference": {
+    "image": "floating-on-dreams-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/floating_on_dreams",
+  "keeps": [
+    {
+      "id": "style_floating_r1/palettes/00_d5_julia_ten_spokes__hsv",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "00_d5_julia_ten_spokes__hsv"
+        }
+      ],
+      "label": "d5_julia_ten_spokes x hsv",
+      "image": "style_floating_r1__00_d5_julia_ten_spokes__hsv.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_ten_spokes",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.7238315265432981",
+              "0.4047946727626354"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.8"
+          },
+          "maxiter": 25000,
+          "symmetry": "5-fold exact (10 spokes)",
+          "source": "julia-plane, c = multibrot5 dot 97 minibrot nucleus",
+          "note": "round disc at centre, ten spokes each a chain of round bulbs ending in small rosettes",
+          "preview": "out/style/shortlist/jm5_97_a.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "hsv",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/00_d5_julia_ten_spokes__lilac_vellum",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "00_d5_julia_ten_spokes__lilac_vellum"
+        }
+      ],
+      "label": "d5_julia_ten_spokes x lilac_vellum",
+      "image": "style_floating_r1__00_d5_julia_ten_spokes__lilac_vellum.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_ten_spokes",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.7238315265432981",
+              "0.4047946727626354"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.8"
+          },
+          "maxiter": 25000,
+          "symmetry": "5-fold exact (10 spokes)",
+          "source": "julia-plane, c = multibrot5 dot 97 minibrot nucleus",
+          "note": "round disc at centre, ten spokes each a chain of round bulbs ending in small rosettes",
+          "preview": "out/style/shortlist/jm5_97_a.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Lilac Vellum",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/00_d5_julia_ten_spokes__nightfall_azure",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "00_d5_julia_ten_spokes__nightfall_azure"
+        }
+      ],
+      "label": "d5_julia_ten_spokes x nightfall_azure",
+      "image": "style_floating_r1__00_d5_julia_ten_spokes__nightfall_azure.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_ten_spokes",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.7238315265432981",
+              "0.4047946727626354"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.8"
+          },
+          "maxiter": 25000,
+          "symmetry": "5-fold exact (10 spokes)",
+          "source": "julia-plane, c = multibrot5 dot 97 minibrot nucleus",
+          "note": "round disc at centre, ten spokes each a chain of round bulbs ending in small rosettes",
+          "preview": "out/style/shortlist/jm5_97_a.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Nightfall Azure",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/00_d5_julia_ten_spokes__twilight_procession",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "00_d5_julia_ten_spokes__twilight_procession"
+        }
+      ],
+      "label": "d5_julia_ten_spokes x twilight_procession",
+      "image": "style_floating_r1__00_d5_julia_ten_spokes__twilight_procession.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_ten_spokes",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.7238315265432981",
+              "0.4047946727626354"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.8"
+          },
+          "maxiter": 25000,
+          "symmetry": "5-fold exact (10 spokes)",
+          "source": "julia-plane, c = multibrot5 dot 97 minibrot nucleus",
+          "note": "round disc at centre, ten spokes each a chain of round bulbs ending in small rosettes",
+          "preview": "out/style/shortlist/jm5_97_a.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Twilight Procession",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/02_d4_julia_eight_spirals__hsv",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "02_d4_julia_eight_spirals__hsv"
+        }
+      ],
+      "label": "d4_julia_eight_spirals x hsv",
+      "image": "style_floating_r1__02_d4_julia_eight_spirals__hsv.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d4_julia_eight_spirals",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.3121390737927924",
+              "0.731057399117574"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.18"
+          },
+          "maxiter": 37000,
+          "symmetry": "4-fold exact (8 arms)",
+          "source": "julia-plane, c = multibrot4 dot 11 minibrot nucleus",
+          "note": "central disc, eight beaded arms, big spiral bulbs between them; fills 16:10 edge to edge",
+          "preview": "out/style/shortlist/jm4_11_e.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "hsv",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/06_d5_julia_bulb_ring__hsv",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "06_d5_julia_bulb_ring__hsv"
+        }
+      ],
+      "label": "d5_julia_bulb_ring x hsv",
+      "image": "style_floating_r1__06_d5_julia_bulb_ring__hsv.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_bulb_ring",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5850984939103108189061634407",
+              "0.8772204520633576375481566487"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.55"
+          },
+          "maxiter": 32000,
+          "symmetry": "5-fold exact",
+          "source": "julia-plane, c = multibrot5 dot 77 minibrot nucleus",
+          "note": "central disc with a ring of five pairs of round satellite bulbs; softest, most 'bubble' look",
+          "preview": "out/style/shortlist/jm5_77_b.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "hsv",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/06_d5_julia_bulb_ring__lilac_vellum",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "06_d5_julia_bulb_ring__lilac_vellum"
+        }
+      ],
+      "label": "d5_julia_bulb_ring x lilac_vellum",
+      "image": "style_floating_r1__06_d5_julia_bulb_ring__lilac_vellum.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_bulb_ring",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5850984939103108189061634407",
+              "0.8772204520633576375481566487"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.55"
+          },
+          "maxiter": 32000,
+          "symmetry": "5-fold exact",
+          "source": "julia-plane, c = multibrot5 dot 77 minibrot nucleus",
+          "note": "central disc with a ring of five pairs of round satellite bulbs; softest, most 'bubble' look",
+          "preview": "out/style/shortlist/jm5_77_b.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Lilac Vellum",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/06_d5_julia_bulb_ring__nightfall_azure",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "06_d5_julia_bulb_ring__nightfall_azure"
+        }
+      ],
+      "label": "d5_julia_bulb_ring x nightfall_azure",
+      "image": "style_floating_r1__06_d5_julia_bulb_ring__nightfall_azure.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_bulb_ring",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5850984939103108189061634407",
+              "0.8772204520633576375481566487"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.55"
+          },
+          "maxiter": 32000,
+          "symmetry": "5-fold exact",
+          "source": "julia-plane, c = multibrot5 dot 77 minibrot nucleus",
+          "note": "central disc with a ring of five pairs of round satellite bulbs; softest, most 'bubble' look",
+          "preview": "out/style/shortlist/jm5_77_b.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Nightfall Azure",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/06_d5_julia_bulb_ring__twilight_procession",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "06_d5_julia_bulb_ring__twilight_procession"
+        }
+      ],
+      "label": "d5_julia_bulb_ring x twilight_procession",
+      "image": "style_floating_r1__06_d5_julia_bulb_ring__twilight_procession.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_bulb_ring",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5850984939103108189061634407",
+              "0.8772204520633576375481566487"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.55"
+          },
+          "maxiter": 32000,
+          "symmetry": "5-fold exact",
+          "source": "julia-plane, c = multibrot5 dot 77 minibrot nucleus",
+          "note": "central disc with a ring of five pairs of round satellite bulbs; softest, most 'bubble' look",
+          "preview": "out/style/shortlist/jm5_77_b.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Twilight Procession",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/07_m2_eight_beaded_arms__lilac_vellum",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "07_m2_eight_beaded_arms__lilac_vellum"
+        }
+      ],
+      "label": "m2_eight_beaded_arms x lilac_vellum",
+      "image": "style_floating_r1__07_m2_eight_beaded_arms__lilac_vellum.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_eight_beaded_arms",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "0.27032010319836614",
+            "center_im": "-0.486064138034032",
+            "width": "0.0000000408493"
+          },
+          "maxiter": 35356,
+          "symmetry": "~8-fold",
+          "source": "mandelbrot dot 42, mandelbrot slot as framed",
+          "note": "minibrot with eight arms of evenly spaced beads, spiral rosettes in the corners",
+          "preview": "out/style/shortlist/mandelbrot_42.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "Lilac Vellum",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/palettes/07_m2_eight_beaded_arms__pink",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "07_m2_eight_beaded_arms__pink"
+        }
+      ],
+      "label": "m2_eight_beaded_arms x pink",
+      "image": "style_floating_r1__07_m2_eight_beaded_arms__pink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_eight_beaded_arms",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "0.27032010319836614",
+            "center_im": "-0.486064138034032",
+            "width": "0.0000000408493"
+          },
+          "maxiter": 35356,
+          "symmetry": "~8-fold",
+          "source": "mandelbrot dot 42, mandelbrot slot as framed",
+          "note": "minibrot with eight arms of evenly spaced beads, spiral rosettes in the corners",
+          "preview": "out/style/shortlist/mandelbrot_42.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "pink",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/shortlist/00_d5_julia_ten_spokes",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "00_d5_julia_ten_spokes"
+        },
+        {
+          "row": "baseline",
+          "key": "style_00"
+        }
+      ],
+      "label": "d5_julia_ten_spokes (5-fold exact (10 spokes))",
+      "image": "style_floating_r1__00_d5_julia_ten_spokes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_ten_spokes",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.7238315265432981",
+              "0.4047946727626354"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.8"
+          },
+          "maxiter": 25000,
+          "symmetry": "5-fold exact (10 spokes)",
+          "source": "julia-plane, c = multibrot5 dot 97 minibrot nucleus",
+          "note": "round disc at centre, ten spokes each a chain of round bulbs ending in small rosettes",
+          "preview": "out/style/shortlist/jm5_97_a.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "floating_on_dreams",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/shortlist/06_d5_julia_bulb_ring",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "06_d5_julia_bulb_ring"
+        }
+      ],
+      "label": "d5_julia_bulb_ring (5-fold exact)",
+      "image": "style_floating_r1__06_d5_julia_bulb_ring.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "d5_julia_bulb_ring",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5850984939103108189061634407",
+              "0.8772204520633576375481566487"
+            ]
+          },
+          "viewport": {
+            "center_re": "0",
+            "center_im": "0",
+            "width": "0.55"
+          },
+          "maxiter": 32000,
+          "symmetry": "5-fold exact",
+          "source": "julia-plane, c = multibrot5 dot 77 minibrot nucleus",
+          "note": "central disc with a ring of five pairs of round satellite bulbs; softest, most 'bubble' look",
+          "preview": "out/style/shortlist/jm5_77_b.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "floating_on_dreams",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_floating_r1/shortlist/07_m2_eight_beaded_arms",
+      "picker": "style_floating_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "07_m2_eight_beaded_arms"
+        },
+        {
+          "row": "baseline",
+          "key": "style_07"
+        }
+      ],
+      "label": "m2_eight_beaded_arms (~8-fold)",
+      "image": "style_floating_r1__07_m2_eight_beaded_arms.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_eight_beaded_arms",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "0.27032010319836614",
+            "center_im": "-0.486064138034032",
+            "width": "0.0000000408493"
+          },
+          "maxiter": 35356,
+          "symmetry": "~8-fold",
+          "source": "mandelbrot dot 42, mandelbrot slot as framed",
+          "note": "minibrot with eight arms of evenly spaced beads, spiral rosettes in the corners",
+          "preview": "out/style/shortlist/mandelbrot_42.png"
+        },
+        "style": "floating_on_dreams",
+        "stack": "floating_on_dreams@30c817b1",
+        "colormap": "floating_on_dreams",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "floating_on_dreams@30c817b1": {
+      "name": "floating_on_dreams",
+      "interior": {
+        "palette": 1.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 6.0,
+            "rings": 0.8,
+            "slope": 0.4,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.42,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 60.0,
+            "rim": 0.25,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "transform": "sqrt"
+          },
+          "light": {
+            "bands": 24.0,
+            "rings": 0.75,
+            "slope": 0.3,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.45,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 50.0,
+            "rim": 0.25,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "threads",
+              "sigma": 0.05
+            }
+          },
+          "power": 1.5,
+          "color": {
+            "rgb": "#ffffff"
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "power": 4.0,
+          "color": {
+            "rgb": "#ffffff"
+          },
+          "blend": "screen",
+          "opacity": 0.85
+        },
+        {
+          "kind": "pattern",
+          "checker": {
+            "per_iteration": 1.0,
+            "sectors": 2
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "multiply",
+          "opacity": 0.12,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              },
+              "transform": "sqrt"
+            },
+            "invert": true,
+            "power": 2.0
+          }
+        }
+      ]
+    }
+  }
+}

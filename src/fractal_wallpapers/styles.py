@@ -35,8 +35,10 @@ def styles_dir() -> Path:
 
 
 def names() -> list[str]:
-    """Every style there is, by file name."""
-    return sorted(path.stem for path in styles_dir().glob("*.json"))
+    """Every style there is, by file name; a style's `<name>.keeps.json` is not one."""
+    return sorted(
+        path.stem for path in styles_dir().glob("*.json") if not path.name.endswith(".keeps.json")
+    )
 
 
 def load(name: str) -> dict[str, Any]:
