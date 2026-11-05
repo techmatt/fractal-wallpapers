@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "ember_rose",
+  "kind": "sequential",
+  "source": "ember_rose, authored as 7 control points (black through maroon, crimson and a red-orange to an orange and a warm gold) as the albedo of the ember_rose style, from 406031.jpg: a black ground, red-orange threads and petals, copper lace, gold beads. The middle of the map is red rather than orange, since an orange at the reference's mid lightness reads brown, and its top stops at a warm gold, not a cream.",
+  "stops": [
+    [0.0, [4, 2, 2]],
+    [0.12, [60, 4, 4]],
+    [0.3, [150, 16, 10]],
+    [0.5, [210, 40, 16]],
+    [0.7, [232, 90, 30]],
+    [0.86, [240, 140, 56]],
+    [1.0, [250, 196, 110]]
+  ]
+}

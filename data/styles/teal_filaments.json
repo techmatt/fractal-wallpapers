@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "name": "teal_filaments",
+  "description": "soft glowing teal Julia filaments and curl clusters in a dark green-grey mist: each cluster a pale aqua glow with a wide haze round it, soft broad bands of mist sweeping round the structure, no hot white core",
+  "reference": {
+    "image": "alina-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a Julia set render with glow and mist (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "teal_filaments",
+  "reuses": [
+    "a literal dark green-grey ground (a glow at power near zero on de), under a dim fog of the inverted distance estimate through the map by rank at gamma 4",
+    "two wide falloff glows on de (8e-2 and 2e-2 frame widths) from the map's middle: the haze round each cluster",
+    "glow_filaments' falloff glows on de, softened: no hair-wide near-white add core, the innermost glow 4e-4 wide and screened from the map's middle, so dense lace stops at a mid tone instead of flooding white",
+    "field smooth as a period sheet with a scoop (fill 0.35, edge 0.12): soft broad bands of mist sweeping round the structure, where glow_filaments drew hair-thin equipotentials",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "teal_filaments",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.353,
+      "p10": 0.156
+    },
+    "layers": [
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "rgb": "#152b27"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 4.0
+        },
+        "opacity": 0.4
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "edge": 0.12,
+          "fill": 0.35
+        },
+        "color": {
+          "palette": 0.4
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.08,
+        "color": {
+          "palette": 0.4
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.02,
+        "color": {
+          "palette": 0.45
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.006,
+        "color": {
+          "palette": 0.24
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0012,
+        "color": {
+          "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.46
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      }
+    ]
+  }
+}

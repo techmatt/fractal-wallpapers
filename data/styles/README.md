@@ -338,6 +338,9 @@ pre-selected and its sidecar, and `style keep`.
 | `lit_petals` | `carnival-25.jpg` | `lit_petals` | nothing: the smooth count through a cyclic map, lit at `period` 3, and cycled three times under a `de` mask for the jewels |
 | `seahorse_halo` | `103489.jpg` | `seahorse_halo` | nothing: the smooth count through a cyclic map by rank at 1.5 cycles, a dark `de` hair, the tone pass |
 | `citadel` | `citadel.jpg` | `citadel_gold` | nothing: the same stack at 2 cycles; the map is `citadel_gold` because the library's older `citadel` is another map |
+| `teal_filaments` | `alina-25.jpg` | `teal_filaments` | nothing: `glow_filaments`' falloff glows softened, two wide haze glows and a scooped period sheet on the smooth count for the mist, on a literal ground |
+| `ember_rose` | `406031.jpg` | `ember_rose` | nothing: the `inside` channel cycled into petal rings, softened falloff threads, a bead lattice. Its structure, parabolic flowers, is one the galleries lack: its locations are hand-placed (step 4's exception) |
+| `star_eye` | `Abstract-Desktop-Backgrounds-Pictures.jpg` | `star_eye` | nothing: a falloff ring, the `lines` channel on both sides for the strands and the pupil's star. Its structure, quasicircle Julia sets, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -565,3 +568,32 @@ every band, and a slope-only gloss barely shows, so both are picker rows. The li
 already held a map named `citadel` (a pooled-library conversion, a washed brown, p90
 ~0.63 against 0.81 in this stack), so the matched map is `citadel_gold`. Locations are
 an ordinary scout of the parameter plane.
+
+The fifteenth to seventeenth styles came in one item, from three glow references built on
+`glow_filaments`: `teal_filaments` (soft teal curl clusters in a green-grey mist),
+`ember_rose` (a rose of layered petals in crimson, red-orange and gold, bead-studded, on
+black) and `star_eye` (a luminous blue ring round a star, strands radiating out). All
+three went in with **no new primitive**, and share one stack builder: a ground, a fog,
+softened falloff glows, a period sheet on the smooth count, and per style one more
+channel. Four lessons. **A soft thread is a mid-tone core, not a dim one**:
+`glow_filaments`' threads are hot because their innermost glow is a hair (2e-4) of the
+map's near-white top, added; screened from the map's middle at 4e-4 instead, dense curls
+stop at a pale aqua rather than flooding white. Dimming did nothing beyond that, as
+before: under a dark rank fog every teal draft read p90 ~0.85 against 0.666 whatever the
+glows' paints, because the tone pass lifts a dark ground with a curve that carries the
+structure to near-white. **The softness is the ground's**: a literal mid green-grey under
+a dim fog needs no such lift, and 36 of 40 teal drafts hold. **A rank fog always spends
+the map's top on the frame's nearest tenth**: `star_eye`'s ring drawn by the inverted
+distance by rank read p90 0.64–0.70 at most seats at any gamma or opacity, and dimming
+the other layers made it worse; a falloff glow (3e-2) for the ring over a quarter of the
+fog holds 27 of 40, every miss but one a view whose disc fills the frame. **A structure
+the galleries lack can be a family of Julia sets chosen for it**: the rose is a
+parabolic Julia set (`z^d + c` with a fixed point of multiplier `e^(2πi p/q)`, centred on
+it), whose basin's `inside` count cycled round the map draws petal rings layered about
+the parabolic point, and the eye is a quasicircle (`z^d + c` at small `c`) seen whole,
+where the `lines` channel inside the ring draws a star round the attracting fixed point.
+Narrow views of the flower read as a bullseye of polygons and views whose pupil is a flat
+disc read as one object, so both were dropped: **a frame must look as if zooming in would
+show more** (Matt's ruling). Parabolic seats are slow, since the whole basin iterates to
+the cap: a `--draft` took ~30 s at six threads at maxiter 3000, so their records carry
+maxiter 1000, which the `inside` channel's own 1000 already reads.

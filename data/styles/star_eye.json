@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "name": "star_eye",
+  "description": "a luminous blue eye on near-black: a Julia set's ring glowing pale blue round a dark pupil holding a star, fine field-line strands curving out of the ring and in to the star, faint equipotential rings beyond",
+  "reference": {
+    "image": "Abstract-Desktop-Backgrounds-Pictures.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style, signed Kerti Alev '07), 1920x1200"
+  },
+  "suggested_colormap": "star_eye",
+  "reuses": [
+    "a falloff glow on de 3e-2 of the frame wide from the map's middle, over a quarter-strength fog of the inverted distance estimate through the map by rank at gamma 4: the luminous ring hugging a quasicircle Julia set (the rank fog alone always spends the map's top on the frame's nearest tenth, and held p90 over the band)",
+    "field_lines' lines channel on both sides, its angle cut by a period sheet with a twist: fine strands curving out of the ring, and inside, a pinwheel that draws a star round the attracting fixed point",
+    "field smooth as a thin period sheet: faint equipotential rings beyond",
+    "glow_filaments' falloff glows on de, softened: no hair-wide near-white add core, the innermost glow 4e-4 wide and screened from the map's middle, so dense lace stops at a mid tone instead of flooding white",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "star_eye",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.221,
+      "p10": 0.054
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 4.0
+        },
+        "opacity": 0.25
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "lines": {
+            "radius": 2.0,
+            "twist": -2.5,
+            "divide": 1.5,
+            "side": "both"
+          }
+        },
+        "sheet": {
+          "period": 0.07,
+          "edge": 0.06,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "edge": 0.06,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.35
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.03,
+        "color": {
+          "palette": 0.5
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.008,
+        "color": {
+          "palette": 0.28
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0015,
+        "color": {
+          "palette": 0.4
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.52
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      }
+    ]
+  }
+}

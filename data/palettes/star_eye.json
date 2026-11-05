@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "star_eye",
+  "kind": "sequential",
+  "source": "star_eye, authored as 9 control points (a near-black navy through deep and mid blue to an ice white) as the albedo of the star_eye style, from Abstract-Desktop-Backgrounds-Pictures.jpg: a near-black blue ground, blue strands, pale blue rings with white cores.",
+  "stops": [
+    [0.0, [3, 6, 12]],
+    [0.13, [8, 20, 38]],
+    [0.27, [14, 40, 72]],
+    [0.41, [24, 70, 120]],
+    [0.55, [44, 110, 172]],
+    [0.69, [86, 156, 210]],
+    [0.81, [140, 196, 236]],
+    [0.92, [196, 228, 250]],
+    [1.0, [236, 248, 255]]
+  ]
+}

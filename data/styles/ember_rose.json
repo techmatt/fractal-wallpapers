@@ -1,0 +1,173 @@
+{
+  "schema": 1,
+  "name": "ember_rose",
+  "description": "a fractal rose on black: a parabolic flower's petals layered in rings of crimson, red-orange and gold with dark seams between them, fine glowing red threads along the set and tiny gold beads strung through the lace",
+  "reference": {
+    "image": "406031.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style), unsigned, 2560x1600"
+  },
+  "suggested_colormap": "ember_rose",
+  "reuses": [
+    "the inside channel (convergence count) through the map by rank at three cycles and gamma 0.4: a parabolic Julia set's basin drawn as rings of petals round the parabolic point, layered outwards",
+    "a dark multiply sheet on the same channel: the seams between the petals' rings",
+    "field smooth as a faint period sheet: thin strands in the dark",
+    "glow_filaments' falloff glows on de, softened: no hair-wide near-white add core, the innermost glow 4e-4 wide and screened from the map's middle, so dense lace stops at a mid tone instead of flooding white; painted red-orange, they are the threads along the lace",
+    "gilded_orbs' sparkle lattice (a bubble lattice of tiny discs bounded at 0.008 of the frame) masked towards the set and screened gold: the beads",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "ember_rose",
+    "interior": {
+      "rgb": "#060202"
+    },
+    "tone": {
+      "median": 0.276,
+      "p10": 0.012
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.0
+        },
+        "opacity": 0.8
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 3.0,
+          "gamma": 0.4
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "sheet": {
+          "bands": 9.0,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "color": {
+          "rgb": "#140302"
+        },
+        "blend": "multiply",
+        "opacity": 0.6
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "edge": 0.03,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.008,
+        "color": {
+          "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0015,
+        "color": {
+          "palette": 0.45
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.58
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.06,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.008
+          }
+        },
+        "power": 2.0,
+        "color": {
+          "rgb": "#ffd890"
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 1.5
+        }
+      }
+    ]
+  }
+}
