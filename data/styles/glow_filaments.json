@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "name": "glow_filaments",
+  "description": "luminous threads on black: every filament of the set a lime thread with a near-white core and a soft green halo, a wide dim bloom round the structure, and faint equipotential threads sweeping through the dark between",
+  "reference": {
+    "image": "Black-and-Green-Abstract-Wallpaper.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style, signed 'Verdantium'), 1920x1200"
+  },
+  "suggested_colormap": "glow_filaments",
+  "reuses": [
+    "the style compositor, its palette, glow and sheet layers, and the normal, screen and add blends",
+    "field de (the exterior distance estimate) as the palette's position: the map's dark end far from the set, deep green near it, the dim fog the threads float in",
+    "the glow layer, three times on de: a wide bloom, a halo a few pixels wide and a hair-thin core, each a position on the map",
+    "field smooth as a periodic sheet: one faint thread per escape step, the equipotentials, which sweep round the structure in long arcs through the negative space",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [
+    "member falloff on glow: the distance estimate read as a length rather than a frame-wide stretch, its position exp(-d / falloff) with d the distance to the set in frame widths, so a thread is the same width at every location and resolution: a hot core where the falloff is a hair, a halo and a bloom where it is wider",
+    "member log_density on tone: a flame fractal's log-density curve ln(1 + k*Y) / ln(1 + k) on the composite's luminance, hue kept, before the median and p10 are measured, so faint structure beside a bright core is lifted; not in this stack (it pushes the halos towards neon), offered as a variant"
+  ],
+  "style": {
+    "name": "glow_filaments",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.11,
+      "p10": 0.031
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.0
+        },
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.012,
+        "color": {
+          "palette": 0.42
+        },
+        "blend": "screen",
+        "opacity": 0.35
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.001,
+        "color": {
+          "palette": 0.62
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "add",
+        "opacity": 0.7
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "edge": 0.03,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      }
+    ]
+  }
+}

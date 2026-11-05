@@ -106,6 +106,38 @@ pub struct Tone {
     /// contrast is held as well as its key. Without it `b` is 0.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub p10: Option<f64>,
+    /// A flame fractal's log-density curve, laid on the composite before its
+    /// lightness is measured: each sample's luminance `Y` becomes
+    /// `ln(1 + k·Y) / ln(1 + k)`, its hue kept (a colour too saturated to be lifted
+    /// that far whitens instead, [`lifted`]; [`log_density`]). A faint thread
+    /// is lifted by far more than a bright one, so faint structure beside a hot
+    /// core stays visible, and the median and p10 targets are then met on the
+    /// compressed frame. Absent: no curve.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub log_density: Option<f64>,
+}
+
+/// The log-density curve [`Tone::log_density`] lays on a luminance in `[0, 1]`:
+/// `ln(1 + k·Y) / ln(1 + k)`, which fixes 0 and 1 and lifts everything between.
+pub fn log_density(luminance: f64, k: f64) -> f64 {
+    (k * luminance.clamp(0.0, 1.0)).ln_1p() / k.ln_1p()
+}
+
+/// A colour in `[0, 1]` of luminance `before` carried to luminance `after ≥ before`
+/// without clipping a channel: scaled while its brightest channel allows, then mixed
+/// towards white for the rest, so its hue holds and only a colour too saturated to
+/// be lifted that far loses chroma, the way an overexposed highlight does.
+fn lifted(rgb: [f64; 3], before: f64, after: f64) -> [f64; 3] {
+    let after = after.clamp(before, 1.0);
+    let peak = rgb.iter().cloned().fold(0.0, f64::max);
+    let scale = (after / before).min(1.0 / peak);
+    let scaled = rgb.map(|c| c * scale);
+    let reached = before * scale;
+    if after - reached <= 1e-12 || reached >= 1.0 {
+        return scaled;
+    }
+    let t = (after - reached) / (1.0 - reached);
+    scaled.map(|c| c + (1.0 - c) * t)
 }
 
 /// The farthest a tone curve's exponent goes either way: a frame a stack draws
@@ -258,6 +290,11 @@ pub struct Layer {
     /// `glow` only: the alpha is the channel's position to this power.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub power: Option<f64>,
+    /// `glow` on the distance estimate only: read the channel as a length rather
+    /// than a frame-wide stretch, its position `exp(−d / falloff)` with `d` the
+    /// distance to the set in frame widths ([`falloff`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub falloff: Option<f64>,
     /// `pattern` only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub checker: Option<Checker>,
@@ -370,6 +407,21 @@ impl Sheet {
         };
         self.fill * p + (1.0 - self.fill) * (-(1.0 - p) / self.edge).exp()
     }
+}
+
+/// A glow's position at distance `d` from the set, both it and `width` in frame
+/// widths: `exp(−d / width)`, 1 on the set and `1/e` one `width` away.
+///
+/// A frame-wide stretch of the distance estimate spends its range on whatever the
+/// frame holds, so a frame with one far void and a frame of dense filigree draw
+/// their threads at different widths, and the stretch's nearly-zero end crowds
+/// every thread into the same few percent. Read as a length, the distance is the
+/// same at every location and resolution: a thread is `width` of the frame wide,
+/// its core at full and its halo falling off exponentially, the way a flame
+/// fractal's luminous strands look. Two glows on the one channel at a hair's
+/// `width` and a wide one draw the hot core and the bloom round it.
+pub fn falloff(distance: f64, width: f64) -> f64 {
+    (-distance.max(0.0) / width).exp()
 }
 
 /// A channel read as an extra alpha on a layer.
@@ -532,6 +584,15 @@ impl Style {
                     self.name
                 ));
             }
+            if tone
+                .log_density
+                .is_some_and(|k| !(k.is_finite() && k > 0.0))
+            {
+                return Err(format!(
+                    "style '{}': tone log_density is a positive gain",
+                    self.name
+                ));
+            }
         }
         let mut sigmas = Vec::new();
         for (index, layer) in self.layers.iter().enumerate() {
@@ -549,7 +610,7 @@ impl Style {
             let allowed: &[&str] = match layer.kind {
                 Kind::Palette => &["channel", "palette", "warp"],
                 Kind::Light => &["channel", "light"],
-                Kind::Glow => &["channel", "color", "power"],
+                Kind::Glow => &["channel", "color", "power", "falloff"],
                 Kind::Pattern => &["color", "checker"],
                 Kind::Sheet => &["channel", "sheet", "color"],
             };
@@ -559,6 +620,7 @@ impl Style {
                 ("light", layer.light.is_some()),
                 ("color", layer.color.is_some()),
                 ("power", layer.power.is_some()),
+                ("falloff", layer.falloff.is_some()),
                 ("checker", layer.checker.is_some()),
                 ("sheet", layer.sheet.is_some()),
                 ("warp", layer.warp.is_some()),
@@ -579,6 +641,26 @@ impl Style {
             if let Some(power) = layer.power {
                 if !(power.is_finite() && power > 0.0) {
                     return Err(format!("{at}: power must be positive, got {power}"));
+                }
+            }
+            if let Some(falloff) = layer.falloff {
+                if !(falloff.is_finite() && falloff > 0.0) {
+                    return Err(format!(
+                        "{at}: falloff is a positive fraction of the frame width, got {falloff}"
+                    ));
+                }
+                match layer.channel.and_then(|source| source.field) {
+                    Some(FieldSpec::De { scale }) if scale.is_finite() && scale > 0.0 => {}
+                    Some(FieldSpec::De { .. }) => {
+                        return Err(format!(
+                            "{at}: a falloff divides the estimate's scale out; it must be positive"
+                        ));
+                    }
+                    _ => {
+                        return Err(format!(
+                            "{at}: a falloff reads a length, so its channel is the field 'de'"
+                        ));
+                    }
                 }
             }
             if let Some(palette) = &layer.palette {
@@ -1238,7 +1320,16 @@ pub fn paint(
                             continue;
                         }
                         let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
-                        let position = curve(stretch.position(value as f64));
+                        let position = curve(match (layer.falloff, layer.channel) {
+                            (Some(width), Some(source)) => {
+                                let scale = match source.field {
+                                    Some(FieldSpec::De { scale }) => scale,
+                                    _ => 1.0,
+                                };
+                                falloff(value as f64 / (scale * view.width), width)
+                            }
+                            _ => stretch.position(value as f64),
+                        });
                         let strength = position.powf(layer.power.unwrap_or(1.0));
                         let over = colors[index].unwrap_or([1.0; 3]);
                         rgb = blend(rgb, over, layer.blend, alpha * strength);
@@ -1347,6 +1438,20 @@ pub fn tone_curve(median: f64, p10: f64, tone: Tone) -> (f64, f64) {
 /// The percentiles are read on every `stride`-th sample, which is the frame's
 /// distribution to well inside a percent and keeps the measure off the clock.
 fn toned(linear: Vec<[f64; 3]>, tone: Tone) -> Vec<[f64; 3]> {
+    let linear = match tone.log_density {
+        None => linear,
+        Some(k) => linear
+            .into_par_iter()
+            .map(|rgb| {
+                let rgb = rgb.map(|c| c.clamp(0.0, 1.0));
+                let before = luminance_of(lightness(rgb));
+                if before <= 0.0 {
+                    return rgb;
+                }
+                lifted(rgb, before, log_density(before, k))
+            })
+            .collect(),
+    };
     let stride = (linear.len() / 1_000_000).max(1);
     let mut sampled: Vec<f64> = linear
         .iter()
@@ -1526,6 +1631,67 @@ mod tests {
         assert!(style.validate().unwrap_err().contains("period"));
     }
 
+    #[test]
+    fn a_falloff_glow_is_full_on_the_set_and_one_over_e_one_width_out() {
+        assert!((falloff(0.0, 0.01) - 1.0).abs() < 1e-12);
+        assert!((falloff(0.01, 0.01) - (-1.0f64).exp()).abs() < 1e-12);
+        assert!(falloff(0.1, 0.01) < 1e-4);
+        // A non-positive estimate (rounding at the boundary) is on the set.
+        assert!((falloff(-1e-9, 0.01) - 1.0).abs() < 1e-12);
+        let text = r##"{"name": "x", "layers": [{"kind": "glow", "channel": {"field": {"kind": "smooth"}},
+            "color": {"rgb": "#ffffff"}, "falloff": 0.01}]}"##;
+        let style: Style = serde_json::from_str(text).unwrap();
+        assert!(style.validate().unwrap_err().contains("field 'de'"));
+        let text = r##"{"name": "x", "layers": [{"kind": "glow", "channel": {"field": {"kind": "de", "scale": 0.0}},
+            "color": {"rgb": "#ffffff"}, "falloff": 0.01}]}"##;
+        let style: Style = serde_json::from_str(text).unwrap();
+        assert!(style.validate().unwrap_err().contains("scale"));
+        let text = r##"{"name": "x", "layers": [{"kind": "glow", "channel": {"field": {"kind": "de"}},
+            "color": {"rgb": "#ffffff"}, "falloff": -1.0}]}"##;
+        let style: Style = serde_json::from_str(text).unwrap();
+        assert!(style.validate().unwrap_err().contains("falloff"));
+    }
+
+    #[test]
+    fn a_falloff_glow_reads_a_length_whatever_the_estimate_is_scaled_by() {
+        let glow = |scale: f64, width: f64| {
+            let text = format!(
+                r##"{{"name": "x", "layers": [{{"kind": "glow", "channel":
+                {{"field": {{"kind": "de", "scale": {scale}}}}}, "color": {{"rgb": "#ffffff"}},
+                "blend": "add", "falloff": {width}}}]}}"##
+            );
+            let style: Style = serde_json::from_str(&text).unwrap();
+            let view = Viewport {
+                center: Complex::new(-0.1011, 0.9563),
+                width: 0.05,
+                out_width: 40,
+                out_height: 25,
+                supersample: 1,
+            };
+            let map = Colormap::from_stops(
+                "ramp",
+                crate::colormap::Kind::Sequential,
+                &[(0.0, [0, 0, 0]), (1.0, [255, 255, 255])],
+            )
+            .unwrap();
+            let family = Family::Multibrot { degree: 2 };
+            paint(&view, &family, 500, &style, &Palette::default(), &map)
+                .unwrap()
+                .linear
+        };
+        let plain = glow(1.0, 0.01);
+        let scaled = glow(1000.0, 0.01);
+        let close = plain
+            .iter()
+            .zip(&scaled)
+            .all(|(a, b)| (0..3).all(|k| (a[k] - b[k]).abs() < 1e-4));
+        assert!(close, "the estimate's scale moved the glow");
+        // A wider falloff lights more of the frame.
+        let wide = glow(1.0, 0.05);
+        let mean = |frame: &[[f64; 3]]| frame.iter().map(|rgb| rgb[1]).sum::<f64>();
+        assert!(mean(&wide) > mean(&plain));
+    }
+
     /// One escape-time view, small, and a stack that reads every channel the
     /// projection carries a Jacobian into: the distance estimate and the gradient.
     fn painted(projection: Option<&str>) -> Painted {
@@ -1612,6 +1778,7 @@ mod tests {
             Tone {
                 median: 0.6,
                 p10: None,
+                log_density: None,
             },
         );
         let mut light: Vec<f64> = out.iter().map(|&c| lightness(c)).collect();
@@ -1629,6 +1796,7 @@ mod tests {
             Tone {
                 median: 0.3,
                 p10: None,
+                log_density: None,
             },
         );
         assert!((warm[0][0] / warm[0][1] - 2.0).abs() < 1e-9);
@@ -1639,12 +1807,62 @@ mod tests {
         let tone = Tone {
             median: 0.36,
             p10: Some(0.2),
+            log_density: None,
         };
         let (b, g) = tone_curve(0.5, 0.1, tone);
         let curve = |l: f64| b + (1.0 - b) * l.powf(g);
         assert!((curve(0.5) - 0.36).abs() < 1e-9);
         assert!((curve(0.1) - 0.2).abs() < 0.01, "{}", curve(0.1));
         assert!((curve(1.0) - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn log_density_lifts_a_faint_thread_more_than_a_bright_one_and_keeps_the_ends() {
+        assert_eq!(log_density(0.0, 50.0), 0.0);
+        assert!((log_density(1.0, 50.0) - 1.0).abs() < 1e-12);
+        let (faint, bright) = (0.01, 0.5);
+        let lift = |y: f64| log_density(y, 50.0) / y;
+        assert!(lift(faint) > 3.0 * lift(bright));
+        // Through the tone pass: hue is kept, black stays black, white stays white,
+        // and the median still lands.
+        let frame = vec![
+            [0.02, 0.06, 0.01],
+            [0.02, 0.06, 0.01],
+            [0.2, 0.5, 0.1],
+            [0.0; 3],
+            [1.0; 3],
+        ];
+        let out = toned(
+            frame,
+            Tone {
+                median: 0.3,
+                p10: None,
+                log_density: Some(50.0),
+            },
+        );
+        assert!((out[0][1] / out[0][0] - 3.0).abs() < 1e-9);
+        assert!(
+            (lightness(out[0]) - 0.3).abs() < 0.01,
+            "{}",
+            lightness(out[0])
+        );
+        assert_eq!(out[3], [0.0; 3]);
+        assert!((lightness(out[4]) - 1.0).abs() < 1e-9);
+        // A saturated colour is never clipped channel by channel: it reaches its
+        // lifted luminance by scaling while it can and then whitening, so its
+        // brightest channel stays the brightest and nothing leaves [0, 1].
+        let orange = [1.0, 0.5, 0.0];
+        let before = luminance_of(lightness(orange));
+        let after = log_density(before, 50.0);
+        let out = lifted(orange, before, after);
+        assert!(out.iter().all(|c| (0.0..=1.0).contains(c)), "{out:?}");
+        assert!((luminance_of(lightness(out)) - after).abs() < 1e-9);
+        assert!(out[0] >= out[1] && out[1] >= out[2]);
+        // A dim one only scales, its hue exactly kept.
+        let dim = [0.1, 0.05, 0.0];
+        let before = luminance_of(lightness(dim));
+        let out = lifted(dim, before, log_density(before, 50.0));
+        assert!((out[0] / out[1] - 2.0).abs() < 1e-9 && out[2] == 0.0);
     }
 
     #[test]

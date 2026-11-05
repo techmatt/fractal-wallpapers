@@ -44,7 +44,11 @@ orbit never escaped and that no layer coloured (black when absent). `tone`
 composited, the frame's median lightness (CIE L\* over 100) is carried to `median`, and
 its 10th percentile to `p10` when given, through one curve `L ↦ b + (1 − b)·L^g` that
 keeps hue and pins white. It is how a stack fitted at one location keeps the
-reference's key at another, where more far field would otherwise draw it paler. A
+reference's key at another, where more far field would otherwise draw it paler.
+`tone` also takes `log_density` (`k`): a flame fractal's log-density curve
+`Y ↦ ln(1 + k·Y) / ln(1 + k)` on each sample's luminance, hue kept, laid before the
+median and p10 are measured, so faint structure beside a bright core is lifted
+(`glow_filaments` offers it at `k` = 30 as a variant). A
 **paint** is
 `{"rgb": "#rrggbb"}` or `{"palette": t}`, a position on whatever map the render was given
 — the second is what keeps a style in key with every palette.
@@ -102,7 +106,7 @@ a channel's position. A layer only touches samples where its channel has a value
 | --- | --- | --- |
 | `palette` | `channel`, `palette`, `warp` | the channel through the leveled spend to the map; `palette` is the engine's palette recipe less `mirror`, `reverse` and `rolloff` (`cycles`, `gamma`, `phase`, `transfer` — `rank` spends the map evenly over the frame's samples). `warp` (`{channel, amount}`) adds a second channel's rank in the frame, centred on 0, times `amount` to the position before the map is read: a radial palette warped by the smooth count follows the arms instead of drawing a target when the map is not in lightness order |
 | `light` | `channel`, `light` | relights the stack: the channel's position is a height, cut into `bands` rings whose cross-section is a tube (`rings` of the normal; the rest is a `slope` up the field), lit Blinn–Phong from `azimuth`/`elevation` with `ambient`, `diffuse`, `specular`, `shininess`, a `rim` and an optional `highlight` paint. The normal's direction is the channel's own gradient, read off the orbit, never off neighbouring samples |
-| `glow` | `channel`, `color`, `power` | the channel's position to `power` is an alpha for `color` under the blend |
+| `glow` | `channel`, `color`, `power`, `falloff` | the channel's position to `power` is an alpha for `color` under the blend. With `falloff` (on the `de` channel only) the position is not the frame's stretch but `exp(−d / falloff)`, `d` the distance to the set in frame widths: a thread of light the same width at every location, resolution and supersample. A hair's falloff (2e-4, half a pixel at 2560) is a hot core; 1e-3 a halo; 1e-2 a bloom |
 | `pattern` | `checker`, `color` | a checker of escape bands (`per_iteration`) by escape-angle sectors (`sectors`, 2 is binary decomposition) |
 | `sheet` | `channel`, `sheet`, `color` | translucent sheets: the channel cut into `bands` steps (offset by `phase`), by the sample's rank in the frame (`rank`, the default) or by the stretch; across each step the alpha rises from 0 to `fill` (the scoop) and then to 1 within `edge` of its far end (the rim). Without a `color` it paints the stack beneath, so `add` or `screen` brightens in whatever hue is there. One band of an inverted channel is a glow falling off exponentially from the channel's low end — a strand along a trap, light along the filaments |
 
@@ -171,6 +175,7 @@ The item that brings a picture says "new style from <image>". The procedure:
 | `floating_on_dreams` | `floating-on-dreams-25.jpg` | `floating_on_dreams` | the compositor, `gradient`, `inside`, `light`, `glow`, `pattern`, `mask` |
 | `yas` | `yas-25.jpg` | `yas` | `radial`, `sheet`, `invert`, `warp`, `tone` (and `tone` back onto `floating_on_dreams`) |
 | `teal_tunnel` | `795548-3840x2160-desktop-4k-fractal-background.jpg` | `teal_tunnel` | `projection` (`log_polar`), `period` on `light` and `sheet`, a location's own `projection` |
+| `glow_filaments` | `Black-and-Green-Abstract-Wallpaper.jpg` | `glow_filaments` | `falloff` on `glow`, `log_density` on `tone` |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -193,3 +198,18 @@ estimate must be read in samples (the Jacobian), or the whole outer frame is "fa
 tunnel are the smooth count cut once per self-similar repeat (`ring`), and the cells
 between the arms are the distance estimate's dark far side; at one cut per escape step
 the arches crowd into stripes.
+
+The fourth style came from a flame fractal, whose look is accumulated density, not a
+statistic of one orbit: luminous threads, a hot core, a soft halo. The distance
+estimate is the escape-time stand-in, and it went in as one member (`falloff`) that
+reads it as a length, so the threads keep their width wherever they are; the halo and
+bloom are the same layer at wider falloffs, and faint equipotential threads (a
+`period` sheet on the smooth count) supply the strands crossing the dark. Two lessons.
+**A distance glow paints whatever is finer than a pixel solid**: lace (seahorse
+valley, spiral arms, parabolic Julia sets) reads as a lit stencil, not as threads, at
+any falloff, so the style's locations are the ones whose set is thin — dendrites,
+Misiurewicz points, higher-degree Julia sets at Misiurewicz `c` (`c^(d−1) = ω − 1`, `ω`
+a `d`-th root of unity). **Under a tone target, dimming a layer does nothing**: the
+tone pass lifts it straight back, so a stack whose frame is half void meets the
+reference's key through the width of its glows and the fog in the void, never through
+their opacity.

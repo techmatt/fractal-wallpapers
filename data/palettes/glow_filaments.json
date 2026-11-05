@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "glow_filaments",
+  "kind": "sequential",
+  "source": "glow_filaments, authored as 10 control points (black through deep green and lime to a green-white) as the albedo of the glow_filaments style, its hues read off the reference by lightness twentile and its saturation pushed past the reference's olive mean, since the style's glows lay the map's ends over black and its tone pass sets the frame's key.",
+  "stops": [
+    [0.0, [2, 4, 2]],
+    [0.12, [5, 14, 6]],
+    [0.25, [9, 32, 11]],
+    [0.38, [18, 60, 20]],
+    [0.5, [34, 96, 30]],
+    [0.62, [64, 136, 40]],
+    [0.74, [108, 176, 60]],
+    [0.86, [164, 214, 116]],
+    [0.94, [210, 238, 182]],
+    [1.0, [240, 252, 230]]
+  ]
+}

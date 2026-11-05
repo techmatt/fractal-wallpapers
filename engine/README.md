@@ -969,6 +969,14 @@ about the middle it is the straight view (a crate test holds the composite to it
 Named modes do not take it: it is the style path's, and the identity battery read 0 of
 540 renders different.
 
+*(`008_style_glow_filaments`, 2026-11-04.)* A `glow` layer may carry a **`falloff`**:
+on the `de` channel only, its position is `exp(−d / falloff)` with `d` the raw distance
+estimate (its `scale` divided out) over the view's plane width, instead of the frame's
+stretch. It needs no measure, so a port reads it per sample with the view's width as
+its one constant. A **`tone`** may carry **`log_density`** `k`: before the tone's
+measure, each composite sample's luminance goes through `ln(1 + k·Y) / ln(1 + k)`, hue
+kept. Both are style-path members only.
+
 ## What each family's picture is symmetric under
 
 None of this is code — there is no symmetry pass in the crate and nothing folds a
