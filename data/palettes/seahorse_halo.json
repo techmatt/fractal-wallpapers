@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "name": "seahorse_halo",
+  "kind": "cyclic",
+  "source": "seahorse_halo, authored as 12 control points as the albedo of the seahorse_halo reference (103489.jpg), in the order its zoom runs from the far field inwards: the hot yellow and orange halo, a magenta flame, a dark navy and brown lace band, the saturated blue and cyan spiral clusters, a cream heart ringed with gold that returns to the halo, so the map is cyclic; every stop is more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [236, 200, 24]],
+    [0.09, [246, 150, 18]],
+    [0.18, [226, 84, 20]],
+    [0.26, [196, 30, 150]],
+    [0.34, [70, 20, 40]],
+    [0.42, [16, 28, 120]],
+    [0.51, [24, 92, 214]],
+    [0.6, [70, 190, 226]],
+    [0.68, [226, 244, 214]],
+    [0.77, [250, 214, 110]],
+    [0.87, [196, 196, 30]],
+    [1.0, [236, 200, 24]]
+  ]
+}

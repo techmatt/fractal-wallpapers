@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "citadel_gold",
+  "kind": "cyclic",
+  "source": "citadel_gold, authored as 11 control points as the albedo of the citadel reference (citadel.jpg), in the order its spiral's regions alternate: a deep plum, a maroon, a dark umber, burnished then pale gold, a narrow cream near-white, a mauve haze and a dusky purple returning to the plum, so the map is cyclic; the gold and purple stops are a little more saturated than the reference's pixels, and the cream is held narrow, since a wide one floods the far field white.",
+  "stops": [
+    [0.0, [52, 14, 40]],
+    [0.1, [104, 30, 48]],
+    [0.2, [76, 38, 22]],
+    [0.3, [150, 92, 34]],
+    [0.4, [206, 154, 60]],
+    [0.48, [236, 206, 130]],
+    [0.55, [246, 232, 206]],
+    [0.62, [196, 160, 150]],
+    [0.72, [130, 86, 110]],
+    [0.84, [84, 40, 90]],
+    [1.0, [52, 14, 40]]
+  ]
+}

@@ -197,3 +197,5 @@
 {"schema": 1, "kind": "admitted", "map": "shaded_blades", "group": "map:metal-emblem-25", "joined": true, "nearest": "map:metal-emblem-25", "m1": 0.038812}
 {"schema": 1, "kind": "admitted", "map": "glossy_lobes", "group": "map:glossy_lobes", "joined": false, "nearest": "map:Three Coals", "m1": 0.063752}
 {"schema": 1, "kind": "admitted", "map": "lit_petals", "group": "map:lit_petals", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.056743}
+{"schema": 1, "kind": "admitted", "map": "seahorse_halo", "group": "map:seahorse_halo", "joined": false, "nearest": "map:CMRmap", "m1": 0.098276}
+{"schema": 1, "kind": "admitted", "map": "citadel_gold", "group": "map:citadel_gold", "joined": false, "nearest": "map:ribbon_packing", "m1": 0.06391}

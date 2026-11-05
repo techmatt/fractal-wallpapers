@@ -336,6 +336,8 @@ pre-selected and its sidecar, and `style keep`.
 | `shaded_blades` | `chronoscope-25.jpg` | `shaded_blades` | the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound |
 | `glossy_lobes` | `blessed-by-the-night-25.jpg` | `glossy_lobes` | nothing: a disc lattice domed at `period` 2 under `shaded_blades`' strip blades, on `de`, `inside` and the sparkle lattice |
 | `lit_petals` | `carnival-25.jpg` | `lit_petals` | nothing: the smooth count through a cyclic map, lit at `period` 3, and cycled three times under a `de` mask for the jewels |
+| `seahorse_halo` | `103489.jpg` | `seahorse_halo` | nothing: the smooth count through a cyclic map by rank at 1.5 cycles, a dark `de` hair, the tone pass |
+| `citadel` | `citadel.jpg` | `citadel_gold` | nothing: the same stack at 2 cycles; the map is `citadel_gold` because the library's older `citadel` is another map |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -539,3 +541,27 @@ the jewels taken off read p90 0.75–0.79 against 0.65 at both formulation seats
 cream petals unbroken by the dark crust. The galleries hold petals at almost every
 non-spiral seat, so the locations are an ordinary scout with no ink filter, whirls
 dropped by eye.
+
+The thirteenth and fourteenth styles came in one item, from two crisp deep zooms that are
+close to plain escape time: `seahorse_halo` (saturated blue clusters ringed by gold,
+orange and magenta inside a hot yellow-orange halo) and `citadel` (gold, cream, mauve,
+plum and umber). The item allowed either to land as a palette alone if a matched map
+under a named mode caught it; **neither did**, and both are the same three-layer stack
+with no new primitive: the smooth count through a cyclic matched map **by rank**, a dark
+falloff hair on `de`, and the tone pass. Three lessons. **What a named mode lacks here is
+the rank spend, not a layer**: `smooth` with the matched map read far off the reference at
+every probe seat (`seahorse_halo`'s washed into one yellow, median up to 0.19 over and
+p10 up to 0.43 over; `citadel_gold`'s a dark maroon, median 0.17–0.24 against 0.45),
+while the same map by rank spreads the bands over the frame's samples and holds the
+balance at all 40 scout drafts of each. **The cycle count is the reference's order**:
+at one cycle `seahorse_halo` runs halo, magenta, navy, blue, cream once and gives the
+set's whole fringe the map's lime end, which the tone pass turns olive; at one and a half
+the fringe comes round to the blue and cream, the reference's heart. `citadel`'s regions
+alternate warm and dark across the frame, which two cycles draws. **A cream stop held
+wide floods a far field**: the first `citadel` map's cream spanned a fifth of the map and
+read white 0.056–0.096 against 0.034; held to a narrow stop between pale gold and mauve
+it reads 0.02–0.07 at full size. Lights did not help either: one ring a step corrugates
+every band, and a slope-only gloss barely shows, so both are picker rows. The library
+already held a map named `citadel` (a pooled-library conversion, a washed brown, p90
+~0.63 against 0.81 in this stack), so the matched map is `citadel_gold`. Locations are
+an ordinary scout of the parameter plane.

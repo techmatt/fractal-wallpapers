@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "name": "citadel",
+  "description": "a deep zoom in crisp escape bands of gold, cream, mauve, plum and umber, the regions alternating warm and dark across the frame, with fine dark lace along the set",
+  "reference": {
+    "image": "citadel.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom of a Mandelbrot spiral, unsigned, 2560x1600"
+  },
+  "suggested_colormap": "citadel_gold",
+  "reuses": [
+    "field smooth through the map by rank at two cycles: the regions alternate gold, cream, mauve and plum across the frame as the reference's do",
+    "glow_filaments' falloff glow on de, painted near-black plum and multiplied: the dark hair that keeps the lace crisp",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "citadel",
+    "interior": {
+      "rgb": "#1e0a18"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 2.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#140818"
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+      }
+    ],
+    "tone": {
+      "median": 0.45,
+      "p10": 0.132
+    }
+  }
+}
