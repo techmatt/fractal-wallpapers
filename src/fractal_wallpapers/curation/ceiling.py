@@ -562,7 +562,7 @@ class Rule:
         and the uniform cell share this is `49.99999999999999`, and the answer is
         **50** where the arithmetic says 51. Nothing shipped hits it — `k = 2` at
         the uniform share is `41.67` — and it was found pricing a counterfactual
-        (`curation/MEASUREMENTS.md`'s *What the colour ceiling costs at n=1000*).
+        (`curation/MEASUREMENTS_decisions.md`'s *What the colour ceiling costs at n=1000*).
         """
         return int(math.floor(self.k * self.share(name) * max(0, int(seats)))) + 1
 

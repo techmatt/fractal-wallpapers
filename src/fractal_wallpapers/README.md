@@ -81,8 +81,8 @@ here but `.leveled/` is outside that shape, and kept by this list, not a mechani
 | `artifacts/curation/tentative/<stamp>/` | the records `tentative.kept()` names (`PUBLISHED` plus the keep file), the whole input to `tentative.protected_keys()`. All twenty-one saved records are published |
 | `artifacts/curation/tentative/20260922T012627Z/` | `final139_general`: `tentative.DEFAULT`, `curation.backfill.DEFAULT_RECORD`, `fractal-website`'s general collection |
 | `artifacts/curation/tentative/20260922T220551Z/` | `final140_general2000`; re-seat: `curate solve record --n 2000 --solve-name final140_general2000` |
-| `artifacts/curation/viewer/` | **the page a person opens**, `tentative.viewer_dir()`: `curate solve browse <stamp> --viewer`, per collection `curate solve viewers`. No stamp in its name, so bookmarks survive; unstamped it shows `final139_general`. A derivation reaching pictures by relative path |
-| `artifacts/curation/tentative/keep.jsonl` | the keep list's unpublished half (`solve record` / `solve release`; last row per stamp wins) |
+| `artifacts/curation/viewer/` | **the page a person opens**, `tentative.viewer_dir()`: `curate solve browse <stamp> --viewer`, per collection `curate solve viewers`. No stamp in its name, so bookmarks survive; unstamped it shows `final139_general`. A derivation |
+| `artifacts/curation/tentative/keep.jsonl` | the keep list's unpublished half (`solve record` / `solve release`; last row per stamp wins); deleting it releases them all |
 | `artifacts/votes/` | vote kits |
 | `artifacts/curation/growth/20260902T150756Z/` | a fixed series' rung |
 | `data/coloring/texture_flat.jsonl` | old rows' flat-texture register |

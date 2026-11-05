@@ -23,8 +23,7 @@ machinery, the same absent `score`, a different shape of question. It asks which
 of **two** renders of one place is the better picture, on a three-point
 comparative scale, and its unit is a single composite tile carrying both. A `3`
 there says *the repeat won*, never *tier 3*, and no transformation makes the two
-commensurable; its README and `batch_caveats.md`'s *NOT-A-TIER* both say so
-because a verdict from it in a quality store corrupts every reading taken off
+commensurable; its README says so because a verdict from it in a quality store corrupts every reading taken off
 that store.
 
 `gallery_grade/` is a sixth store and the second one that is not a judge's. It is

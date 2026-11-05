@@ -546,7 +546,7 @@ PRECHECK_REMOVALS = 256
 #: own re-runs do.
 #:
 #: What the ratified bar does, measured 2026-09-07 at n=1000 over the
-#: 277,542-candidate pool — `curation/MEASUREMENTS.md`'s *What a `p_fine` bar on
+#: 277,542-candidate pool — `curation/MEASUREMENTS_decisions.md`'s *What a `p_fine` bar on
 #: the view buys at n=1000, measured 2026-09-07*: it keeps a **quarter** of the
 #: seatable pool (10,974 of 40,127 clearing rows), fills the same thousand seats,
 #: raises the sum **1786.5 -> 1876.6**, and costs a demand shortfall of **0 -> 18**.

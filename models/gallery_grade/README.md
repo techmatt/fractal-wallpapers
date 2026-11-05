@@ -176,8 +176,8 @@ on `<row>:<epoch>`); the CUDA kernels diverge in the first epoch, and the flat 3
 ★ **`torch.use_deterministic_algorithms(True)` makes it bit-for-bit reproducible, for
 about 8% per epoch.** `CUBLAS_WORKSPACE_CONFIG=:4096:8` must be set before torch is
 imported: `fractal_wallpapers.cli` sets it at entry, and `models/train.make_deterministic`
-turns the flag on and **refuses** when the variable is absent. `drop_high_asymmetric`
-calls it; other trainers do not yet. A whole 30-epoch run repeats bitwise (every loss,
+turns the flag on and **refuses** when the variable is absent. Every trainer calls it
+(`gallery_grade_train`, `render_train`, `finished_train`, `palette_train`). A whole 30-epoch run repeats bitwise (every loss,
 logit and checkpoint tensor).
 
 ⚠ **Verify at the horizon you fit at**: `CosineAnnealingLR`'s `T_max` is the epoch

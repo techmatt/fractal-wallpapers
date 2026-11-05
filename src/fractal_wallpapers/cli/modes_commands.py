@@ -12,7 +12,7 @@ def modes(args: argparse.Namespace) -> int:
 
     The tier is shown because it is the difference between a mode a run will draw
     and one only a person will ask for by name, and a list that hid it would read
-    as sixteen interchangeable choices plus three.
+    as one flat row of interchangeable choices.
 
     Takes the parsed arguments and reads none of them, because every handler
     has the same shape and one exception is worse than one unused parameter.

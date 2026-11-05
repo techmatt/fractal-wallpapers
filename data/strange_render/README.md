@@ -41,6 +41,8 @@ their labels measure agreement with that head. The **blind** batches (`blind_mod
 `blind_palettes_20260905`, a matched-pair sheet of a new colormap drop against the shipped
 library) are registered `eval_only`: bought to referee on unanchored labels, and spent
 the moment they enter a training split. There is no further unanchored reading to spend.
+`seated_and_head_top` is `eval_only` too, though anchored: a population the head selected
+is spent as an instrument the moment it trains one.
 
 **The pin is asserted on the location**, so a later batch that re-renders a pinned place
 under a fresh identifier cannot spend it by not naming it. **A verdict cast on a pinned

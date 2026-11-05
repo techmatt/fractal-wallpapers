@@ -16,8 +16,8 @@ intake.py         THE ingest: a page's export resolved against its sheet, into a
 finished_import.py the one-time import of the source's two finished-render corpora
 ```
 
-`finished_import` is **not** on a new label's path: a verdict goes `label build` → page →
-`label ingest` → `finished.append`, recipe whole at every step.
+`finished_import` is **not** on a new label's path (`label build` → page → `label ingest` →
+`finished.append`).
 
 ```
 label register --batch NAME --method "how it was drawn" [--head H] [--score-unconditioned]
@@ -33,18 +33,20 @@ label show
 label split [--seed 0] [--share 0.20] --write
 ```
 
+Without `--write`, `ingest`, `pin` and `split` print their plan and write nothing.
+
 ## The third kind of sheet: a location attribute
 
 An **attribute** store asks what a place *is* (`spiral` / `not_spiral`) in named classes.
 No judge reads the page, the order is a seeded shuffle, and a plan's prefill is a hint
-(`prefill_note`). The page casts numbers; the manifest's `classes` and `words` let
-`label ingest` turn each into a class once, at the seam.
+(`prefill_note`). The page casts numbers; `label ingest` turns each into a class
+through the manifest's `classes` and `words`.
 
 ### Reserving part of a sitting
 
 `label pin` writes a seeded uniform sample of a plan's units to the attribute store's
-`eval_split.jsonl` **before the sitting**, since a second batch name on the cards would
-reveal them. Their verdicts are collected; the pin forbids training on them.
+`eval_split.jsonl` **before the sitting**, in the one batch so no card reveals them. Their
+verdicts are collected; the pin forbids training on them.
 
 ### A PAIRED attribute: one tile, two renders, a comparative scale
 
@@ -66,8 +68,7 @@ fractal-wallpapers label build --head repeat_ab --batch <batch> \
 let it through**, at `finished_source`'s geometry. By default the page is blind: no
 prefill, a seeded shuffle, no `facts`, caption or `columns`. The judge's reading travels
 unrendered under `reading`, beside `drawn_as`. **No batch here can be eval-eligible**
-(`gallery_grade.register` refuses `score_unconditioned`/`eval_only`; no `eval_split.jsonl`;
-see `data/gallery_grade/README.md` and `data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*).
+(`data/gallery_grade/README.md`; `data/batch_caveats.md`'s *NEVER-AN-INSTRUMENT*).
 
 ### Once the store has a head, the same sheet cuts as a correction page
 
@@ -97,15 +98,15 @@ label*. `tests/test_veto.py` holds it.
 ### Cutting a sheet on the render pool
 
 `--workers N` cuts on threads; about 3.7 s a picture on three, so 1,000 tiles is an hour.
-Order, ids and names match the serial build. Default 1 (CI); the box's ceiling is three.
+Default 1 (CI); the box's ceiling is three.
 
 ## Serving a sheet to label
 
-A sheet directory holds `sheet.json`, `sheet.jsonl` and the pictures; its name need not be
-its batch, so find it with `label sheets --drops`. Serve one sheet per port (8020, 8021, …;
-default 8010), backgrounded. **`--port` is where it starts looking**: on a clash it walks
-upward, so **the printed URL is the only thing that says where a sheet is**. Check that
-`/sheet.jsonl` returns 200 before handing it over. Pictures are `cut####`, not unit ids.
+A sheet directory's name need not be its batch: find it with `label sheets --drops`. Serve
+one sheet per port (8020, 8021, …; default 8010), backgrounded.
+**`--port` is where it starts looking**: on a clash it walks upward, so **the printed URL
+is the only thing that says where a sheet is**. Check `/sheet.jsonl` returns 200
+before handing it over. Pictures are `cut####`, not unit ids.
 
 ### Where the labels land
 
@@ -170,8 +171,8 @@ place carries a training row; the contested count is recorded, never asserted.
 
 #### `eval_only` outranks the clock, and that is what stops the evaluation side shrinking
 
-`store.resolution_order` ranks an `eval_only` row after every other row on its key; the
-clock decides within a side. The canonical readers pass their registry.
+`store.resolution_order` ranks an `eval_only` row last on its key; the clock decides
+within a side.
 
 #### A pin may be written BEFORE the sitting, and one guard reads red while it waits
 
@@ -181,7 +182,8 @@ Reserve a blind sheet's training-free places when it is cut, under `split.json`'
 `test_the_pin_is_part_of_the_evaluation_side_and_carries_no_training_row` and
 `test_the_evaluation_side_is_in_the_plan` read red. Clear them: label → `label ingest
 --write` → settle the pin (stored rows replace the `score: null` placeholders; keys back to
-`finished_import.pin_document`'s) → `renders plan` → `renders build`.
+`finished_import.pin_document`'s) → `renders plan` → `renders build`. Giving a reservation
+up is deleting its rows from `eval_split.jsonl`, only for a sheet never to be labelled.
 
 ## What cutting a sheet costs, and why the number moves so much
 
@@ -194,7 +196,8 @@ on `phoenix:classic`. Price off a similar built sheet or a pilot **stratified by
 
 * **The kind names the store**: both kinds is two sheets and two batches.
 * **Route by `finished.routes_to` on the join to be rendered**, not `kind_of` on the
-  ledger row. `finished.append` extends the flat register on a miss; readers never do.
+  ledger row. On a register miss `label ingest` renders the span test (minutes on a deep
+  partition) and appends to tracked `data/coloring/texture_flat.jsonl`; readers never do.
 * **`--reuse-renders` misses every pool row** (640×360 candidates).
 * **Measure first**: render each unit via `colorize.render(level=True)` into
   `<sheet dir>/full/<sheets.cut_name(i)>.jpg` at three workers, write `leveled` back into
@@ -206,7 +209,8 @@ on `phoenix:classic`. Price off a similar built sheet or a pilot **stratified by
 A blind `finished_source` page is cut, then `sheet.jsonl` gets `facts: []`, `columns: {}`,
 empty captions, null suggestions and a seeded shuffle, and the manifest's
 `order`/`scorer`/`suggested_by` become `shuffle`/`none`/`none` with a `withheld` note. No
-render is paid. A gallery-grade sheet is blind already.
+render is paid. A gallery-grade sheet is blind already. The batch name is on the page: name
+a blind one for its population, not what it tests.
 
 ## A rule answers the mostly-black frames, and nobody is asked again
 
@@ -237,8 +241,7 @@ order, never the prefill. An adoption re-checks `sheets.score_pictures`,
 `/labels/` is root-anchored in `.gitignore` so `data/labels/` stays tracked. Ingest
 before the sheet moves: units number by row position, and a rebuild renumbers. `intake`
 writes the whole join to the store the sheet's head names (`Records`), checks counts both
-ways, never duplicates, appends a changed verdict, and asserts the pin. Pages and heads use
-`finished.SCALE` (1..4); `finished_import.SOURCE_SCALE` is the imported corpora's.
+ways, never duplicates, appends a changed verdict, and asserts the pin.
 
 ### A swept row and an agreeing verdict are the same row afterwards
 
@@ -267,7 +270,8 @@ Most finished-store renders join no ledger row (`curation.retention.render_key_o
 
 ## The scale is the corpus's; the class count is the model's
 
-Every judge is cast on 1..4; a checkpoint's class count is in its own config.
+Every judge is cast on `finished.SCALE`, 1..4 (the imported corpora's is
+`finished_import.SOURCE_SCALE`); a checkpoint's class count is in its own config.
 `finished_train.refuse_inexpressible` refuses a pass that cannot express a verdict.
 
 ## The order is the design

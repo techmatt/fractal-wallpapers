@@ -4234,7 +4234,7 @@ Matt's later without re-rendering the sitting.
 neutral, `3` the repeat is better. The verdicts land in the `repeat_ab` attribute
 store, whose rows carry `class` and no `score`, and they may never enter
 `smooth_render`, `strange_render` or `gallery_grade` as themselves or transformed.
-`data/repeat_ab/README.md` and `data/batch_caveats.md`'s *NOT-A-TIER* both say so.
+`data/repeat_ab/README.md` says so.
 
 **It holds the pool once**, in the population read, and no verdict from the first
 sitting survives — Matt released the partial labels on 2026-09-12 and
@@ -4381,7 +4381,7 @@ not *how does the pipeline score pictures a person liked*, but *what happened to
 one*. Five rungs, first that stops it.
 
 **It reads the third store alone since 2026-09-09**, `label_fate.STORE`, and
-`README.md`'s *It reads ONE of the three, and which one is the whole point* has why: a
+`curation/README.md`'s *It reads ONE of the three, and which one is the whole point* has why: a
 gallery-grade 4 is a verdict on a candidate this pool holds, a finished-render 4 is a
 verdict carried back to a ledger key, and whether the second implies the first is
 unanswered. A page over both asked a fate question of rows whose membership in the

@@ -217,6 +217,10 @@ leaves**, except unkept pool pictures: `storage pictures archive`, then `prune-h
 --apply`, read back by `paths.Tiers.resolve`. Training refuses mirrored pictures
 (`require_hot`); an unplugged disk raises `ArchiveUnreachable`, never a smaller pool.
 
+Two durables are saved by hand: `curate sidecar save` after every `curate score`, `curate
+embeddings save` after `curate embed`. ⚠ Before anything deletes or moves under the tree,
+run both and `curate signatures save`, then `check` each: `grown` is content on one disk.
+
 ## Every release render carries its explorer link
 
 `release.render_task` writes the explorer's link into the metadata (`embed_link`

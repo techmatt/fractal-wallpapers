@@ -845,6 +845,11 @@ def render(
     direct-trap family is excluded here, where the kind is known, and not by a
     test inside the operator.
 
+    Its maps come from the tracked library only (`engine_spec.spec_of` hard-wires
+    `paths.colormap_dir()`). A leg holding its maps elsewhere calls the halves itself:
+    [`field_of`], then [`recolored`] with `colormap_dir=`, then `autolevel.maybe_level`
+    with a rerender written through `autolevel.overriding_colormap` into scratch.
+
     ## The field is iterated once and spent many times
 
     `fields` names a directory the unit of work owns, and where one is given this

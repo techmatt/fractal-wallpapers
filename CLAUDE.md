@@ -19,6 +19,8 @@ a comment about another.
 
 **Cite a heading and a file, never a line number**: `curation/GALLERY.md`'s *What a pass
 costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit above it.
+`tests/test_doc_citations.py` resolves every citation of that form; renaming a heading
+means updating its citers.
 
 No test here enforces this; the guard is `builder/vocabulary.py` in the `fractal-website`
 checkout, swept by its `builder/checks.py`.
@@ -186,7 +188,8 @@ measurements behind these rules are in `tests/README.md`.
   "the fast-lane count" means*): an interpreter without `torch` silently collects a
   smaller suite, and `conftest` prints a red line naming the missing import.
 - **Measure on an idle box, literally**: beside a render run the lane is killed on commit
-  charge. A test whose claim is not about time never reads the wall clock.
+  charge. A test whose claim is not about time never reads the wall clock. Before
+  believing a lane, re-run one untouched engine-bound guard: a tenth off means the box.
 - **A lane that moves right after code landed is the code until measured otherwise.**
   The decisive check is a `git worktree` at `HEAD` with `FRACTAL_WALLPAPERS_HOT_ROOT` on
   the real store; with no test added, ask which store grew, which derivation is paid
@@ -212,8 +215,9 @@ Each prompt is a conductor queue item; conductor's preamble owns the report's pa
 header, the load budget and how to wait. This repository adds:
 
 - **The report goes where the preamble says, starting with its header**, ~60 lines,
-  written once with at most one trim pass: findings, numbers, decisions and surprises; no process narration or restated prompt.
-  **Tests are mentioned only for a red you could not fix.**
+  written once with at most one trim pass: findings, numbers, decisions and surprises;
+  no process narration or restated prompt. **Tests are mentioned only for a red you
+  could not fix.**
 - **End the console reply with `Report written to <path>`.**
 - **Commit to the branch you are on.**
 - **Every clock time is local 12-hour** (`5:25pm`, never `17:25` or UTC), in chat, ETAs

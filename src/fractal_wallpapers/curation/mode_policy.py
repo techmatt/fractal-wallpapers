@@ -52,8 +52,8 @@ separate claim, and it is measured. Fifty random mode/colormap draws at one fixe
 read `p_ge4` from 0.997 down to under 0.55 through the shipped render judge, and across
 locations four different modes — `stripe`, `tia`, `smooth`, `smooth_angle_min` — each won
 somewhere. The winner is the place's, not the roster's, so a search that collapsed to one
-globally-best mode would be leaving that spread on the table. `MEASUREMENTS.md`'s *A head
-does read a large spread across colorings AT ONE PLACE* is the reading.
+globally-best mode would be leaving that spread on the table. `MEASUREMENTS.md`'s *What
+`Palette.phase` moves, by mode* carries the reading.
 
 ## Reading the table is not syncing it
 

@@ -157,7 +157,7 @@ DEFAULT_DEPTH = 2
 #: nested walk had no check inside it, so a pass holding 7 seats ran 522.8 s
 #: against this 300 s on 150 million pairs. A budget whose granularity is the seat
 #: count binds least exactly where the gallery is small and the population large,
-#: which is the case it exists for. See `curation/GALLERY.md`'s *A budget to the
+#: which is the case it exists for. See `curation/GALLERY_decisions.md`'s *A budget to the
 #: pair, and the two records made before it was one*.
 DEFAULT_SECONDS = 300.0
 

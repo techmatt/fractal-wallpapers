@@ -3621,7 +3621,7 @@ next day on Matt's ruling, off the fine-tier head's pre-registered bar. `rank-ke
 is still what retention ranks on and is **no longer one flag away**: it was
 deprecated as a seating key on 2026-09-08 and is off `solve.OFFERED_KEYS`, so
 `--key` takes `cascade` or `p_ge4` and nothing else. It stays resolvable for the
-62 records that name it — see `README.md`'s *The prune ranks on `rank_key` and a
+62 records that name it — see `curation/README.md`'s *The prune ranks on `rank_key` and a
 gallery seats on the cascade*. Above `Q4_BAR` it orders on
 the **fine-tier head** —
 `models/gallery_grade/`, fitted on human verdicts about pictures that had already

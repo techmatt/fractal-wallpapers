@@ -162,7 +162,7 @@ On the anchor the switch loses above about 3e-12 and wins more the deeper (−97
 the seven deep frames it costs 9%–12%. `anchor 1e-22` and `tangle 1e-22` take opposite verdicts
 at one width: what it pays on is what the frame contains.
 
-#### In wasm the switch is dearer
+#### In wasm the switch is dearer, and the page now chooses it per frame
 
 It costs about half the loop's speed where it does not fire, so the frame decides:
 `band_ran()` and `band_saved()` price the full pass both ways from the quarter pass, and

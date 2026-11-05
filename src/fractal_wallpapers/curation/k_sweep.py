@@ -61,7 +61,7 @@ the ceiling loosens is a shape across 48 cells and not a number in a column.
 
 ## What it found the first time
 
-`curation/MEASUREMENTS.md`'s *What the colour ceiling costs at n=1000*: the worst
+`curation/MEASUREMENTS_decisions.md`'s *What the colour ceiling costs at n=1000*: the worst
 seat nearly doubles between `K = 2` and `K = 2.5` while every rung still fills, all
 of the growth is muted, and the cells that were short at `K = 2` end **shorter**,
 because the headroom is spent where the supply is. The refusal table says nothing
@@ -78,7 +78,7 @@ exactly that reason.
 
 ## What it found out at `K = 3.75`
 
-`curation/MEASUREMENTS.md`'s *What a colour ceiling four times the target rate
+`curation/MEASUREMENTS_decisions.md`'s *What a colour ceiling four times the target rate
 costs*: every rung still fills and every floor is still met, the pass turns from
 colour-bound to seat-bound between 2.5 and 3, the family allowance takes the same
 `K` and so never binds, and 23 of the 48 cells end **lower** than they began —

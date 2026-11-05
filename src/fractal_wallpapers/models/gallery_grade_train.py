@@ -631,7 +631,7 @@ class Unit:
     location: str = ""
     #: The **cut** a verdict was cast on, and the **block** of the draw it came
     #: from. Both are covariates the split balances and neither is ever shown to
-    #: the model — `data/batch_caveats.md`'s *The sheet is a covariate* is why
+    #: the model — `data/batch_caveats.md`'s *The three sheets are three scales* is why
     #: they are carried at all: the correction sitting's three sheets disagree at
     #: chi-square 69.39 over its 750 rows, so a fold that took them unevenly
     #: would move a recall gap for a reason that is not fit.

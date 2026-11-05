@@ -186,7 +186,8 @@ rolloff       on luminance
 
 `Palette`'s `scale`, `lambda`, `period` and `knee` are omitted at defaults and never emitted
 by the pipeline (`engine_spec.py`). Under absolute, gamma, cycles, transfer and curve do not
-apply (`Spend::Absolute`); `knee` acts only there (`place_absolute`).
+apply (`Spend::Absolute`); `knee` acts only there (`place_absolute`). A short absolute
+`period` bands at large `ν`: the lane is `f32` (step ~0.06 at `ν ≈ 10⁶`), so compress first.
 
 **Consumers pin by path** (the crate is `0.1.0`, never bumped); a build is identified by
 `engine_fingerprint.py`.

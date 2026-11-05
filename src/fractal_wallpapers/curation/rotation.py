@@ -2135,7 +2135,7 @@ def mine(
     So a resume cannot re-render merged work on this arm — which is why the
     `already_in_ledger` census below reads 0 by construction — and cannot continue
     anything either: the index skips fresh blocks. `curation/LEGS.md`'s
-    *`--from-block` cannot continue a mining plan, because a merge moves it* has
+    *⚠ `--from-block` cannot continue a mining plan, because a merge moves it* has
     the measurement and names the arms where it does bite.
 
     **Since 2026-09-12 that is REFUSED rather than described.** The plan records

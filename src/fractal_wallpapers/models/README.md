@@ -236,6 +236,9 @@ name the CUDA index's exact versions:
   -e ".[dev,cuda,solve]" torch==2.6.0+cu124 torchvision==0.21.0+cu124
 ```
 
+A plain `pip install -e ".[models]"` takes PyPI's torch: CPU on Windows and macOS, but
+the CUDA build (gigabytes of `nvidia-*` wheels) on Linux; there `uv` gets the CPU one.
+
 `roster` is the one stdlib-only module (`fetch-weights --check` runs on the base
 install): `HEADS`, `TAG`, `manifest_path()`. **`weights.json` lists shipped heads
 only**; the gallery-grade fp32 `best.pt` files `rotation.score_fine` needs travel in

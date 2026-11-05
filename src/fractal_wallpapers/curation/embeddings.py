@@ -321,7 +321,7 @@ def unreachable(pool: dict | None = None) -> dict:
     `--write` is the door for a *gallery pass's* unreached locations and is not
     the door for the opened backlog; it writes an empty manifest for that one.
     What the opened backlog is, and why no binding reaches it, is
-    `curation/LEGS.md`'s *`curate score` cannot reach the opened-but-unscored
+    `curation/LEGS.md`'s *⚠ No BINDING reaches the opened-but-unscored
     places*.
     """
     pool = judged_pool() if pool is None else pool

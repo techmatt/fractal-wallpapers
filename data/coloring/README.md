@@ -51,8 +51,9 @@ geometry: a candidate is drawn at 640x360ss2 and a labelled picture at
 
 Tracked, because routing that differed between two checkouts of one commit would
 be two corpora wearing one name. Each entry costs a render to establish — there is
-no proxy, and the two obvious ones are both wrong — so the file grows only when
-somebody runs the measurement.
+no proxy, and the two obvious ones are both wrong — so the file grows when somebody
+runs the measurement, and when `label ingest` lands a finished-render row the register
+has no entry for (`labeling.finished.routes_to(extend=True)` measures it then).
 
 ```
 fractal-wallpapers coloring texture-flat measure     # render what is unmeasured

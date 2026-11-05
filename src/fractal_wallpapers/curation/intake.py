@@ -556,7 +556,7 @@ def score(
     54 ledgers on both tiers still finds zero of them. 2,799 of the 2,827
     candidate rows at those places were made by `label_migration_0908`, which
     derives rows from the **label stores** at candidate geometry and never walks,
-    so there is no ledger row for this stage to read. `curation/LEGS.md`'s *No
+    so there is no ledger row for this stage to read. `curation/LEGS.md`'s *⚠ No
     BINDING reaches the opened-but-unscored places* carries the reading.
 
     `opened` is the door that closes it, added 2026-09-15, and it is a **fourth

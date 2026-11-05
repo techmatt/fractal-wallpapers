@@ -27,8 +27,9 @@ here loads a model.
 through `space`, each provenance row stamped `drop`. `kind` is measured on the gradient
 (`CLOSES`), because `mirror = the map is not cyclic` is read off it everywhere;
 `tests/test_authored_import.py` re-densifies the authored maps stop for stop.
-`library_import` brings a source-project map across; `admit` and
-`palette_sets.ADMITTED_DROPS` put a drop in the pool.
+`library_import` brings a source-project map across; `admit` (`palettes add`) admits
+one map to the library, and the `palette admit` command with
+`palette_sets.ADMITTED_DROPS` puts a drop in the pool.
 
 `provenance` writes one row per made map to `data/palettes/provenance.jsonl` (an authored
 map's brief and OKLCH control points; an extracted map's source image). It reads the
@@ -70,9 +71,10 @@ is `palettes groups` **plus** re-deriving `color_mass`.
 
 **Library, candidate pool, drawn set: three counts, never the same number.** The
 **library** is every file in `data/palettes` (`groups.library`). The **candidate pool**
-is `models.palette_sets.pool()["pool"]`, the library less `blue_orange`, which is
-instrument (`labeling.sheets.VIVID_COLORMAP`, and the tile floor's expansion in
-`engine/src/tiles.rs`). What a colorize **draws** from is smaller again: `colorize.pool`
+is `models.palette_sets.pool()["pool"]`, smaller: `blue_orange` (instrument:
+`labeling.sheets.VIVID_COLORMAP` and the tile floor's expansion in `engine/src/tiles.rs`)
+and `atlas_grey` are held back, and a map added since is not in it until somebody puts
+it there. What a colorize **draws** from is smaller again: `colorize.pool`
 reads the pool through `groups.collapse`, one member a group. `colorize.pool_record`
 names the group every absent map stood down for.
 

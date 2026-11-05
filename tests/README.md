@@ -10,8 +10,7 @@ cargo test --manifest-path engine/Cargo.toml        # ~7s warm, ~28s cold
 
 Run pytest with the checkout's `.venv` interpreter, on `.[dev,models]`, with a release
 engine built (`cargo build --release --manifest-path engine/Cargo.toml`); the walk tests
-skip without one. The checks that read the read-only extraction source skip where that
-checkout is absent, which is everywhere now, CI included.
+skip without one.
 
 `cargo test` builds the crate at `opt-level = 2` (`[profile.test]` in
 `engine/Cargo.toml`): the tests render, and unoptimized they run eight times longer.
@@ -24,6 +23,9 @@ or a store sweep; arithmetic stays fast however much of it there is. **A guard m
 be weakened or deleted for speed when the trade is named and priced** (what stopped being
 covered, at the site and in the report, with the seconds it bought). The marker, the flag
 and the held-back line live in `conftest.py`; `CLAUDE.md`'s *The two lanes* is the rule.
+
+A flag added to a nested `curate` verb fails `test_nested_verbs.py` until its `SURFACE`
+entry names it: fix the table, never the guard.
 
 ### The line is the point of the arrangement
 
@@ -81,6 +83,8 @@ kind of run**: `--slow`'s durations minus the slow-marked rows is not a fast lan
 a shared derivation is paid by whichever test reads it first, which differs between
 lanes. To attribute your own change, re-baseline on the same tree (stash, take the lane,
 restore, take it again, clean `git status`); to answer *box or tree*, profile one file.
+To split a count delta (your tests or the tree's), `git stash -u` then `pytest
+--collect-only -q`: a count needs no worktree, a clock does.
 
 ### The lane refuses the wrong interpreter at the door
 
@@ -214,11 +218,10 @@ carries a `forget_*` for tests that redirect the tree (`hunt.forget_recorded_pri
 ### A count is not a cost
 
 **Collected-item share predicts nothing about run time.** `test_colormaps.py`'s
-parametrize over `data/palettes` is about a fifth of the count and ~0.1 s of the clock; a
-shared parsed-package fixture was refused because the package sweep is ~35 ms. A count
-predicts what a reading is comparable with, which is why
+parametrize over `data/palettes` is about a fifth of the count and ~0.1 s of the clock. A
+count predicts what a reading is comparable with, which is why
 [the lanes' own count](#what-the-fast-lane-count-means) is kept: a colormap drop moves
-both counts. **Read a durations list, not a collection summary.**
+both counts.
 
 ### The candidate ledger is the thing that grows
 

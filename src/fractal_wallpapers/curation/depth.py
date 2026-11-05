@@ -679,10 +679,10 @@ def centered_modes() -> list[str]:
     it and minus `exp_smoothing`. Nine now.
 
     Declared here rather than left to whichever driver runs the leg, because it
-    *was* left there: the arm ran out of a scratch file, `curation/MEASUREMENTS.md`'s
-    *What the four knobs bought* is the only record of what it drew, and a ruling
-    about a roster nothing tracks is a ruling that has to be remembered rather than
-    read. The derivation
+    *was* left there: the arm ran out of a scratch file,
+    `curation/MEASUREMENTS_decisions.md`'s *What the four knobs bought* is the only
+    record of what it drew, and a ruling about a roster nothing tracks is a ruling
+    that has to be remembered rather than read. The derivation
     is kept — a mode added to the engine's catalogue and given a weight joins the
     dear half without an edit here — and only the exclusion is written out.
 
@@ -1328,7 +1328,7 @@ def proven_places(
     `p_ge4` at all — so it is drawn whatever its best field candidate reads.
     Without it the bar was a number only, and a manifest could therefore never do
     anything but *remove* places from the above-bar population: see
-    `LEGS_decisions.md`'s *`--floor-places` narrows the population and the
+    `LEGS_decisions.md`'s *`--floor-places` narrows the population and
     `Q4_BAR` still cuts it*, which measured 219 such places untried in the
     angle modes and unreachable by any floor leg. Admission does not lower the
     bar for anything else — an admitted key still has to be an opened, drawable

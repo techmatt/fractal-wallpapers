@@ -100,8 +100,8 @@ cargo build --release --manifest-path engine/Cargo.toml
   ([`timm/vit_small_patch14_dinov2.lvd142m`](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m),
   85 MB) into the Hugging Face cache (`HF_HOME`). Nothing else needs the network.
 
-**pip is the CPU-only alternative**
-([`models/README.md`](src/fractal_wallpapers/models/README.md) has CUDA):
+**pip is the alternative**, CPU torch on Windows and macOS but PyPI's CUDA build on
+Linux ([`models/README.md`](src/fractal_wallpapers/models/README.md) has both):
 
 ```
 python -m venv .venv
