@@ -214,6 +214,98 @@ fn encode(pixel: [f64; 3], row: &mut Vec<u8>) {
     }
 }
 
+/// A rectangle of an image, in its pixels (or samples) from the top-left.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Crop {
+    pub x: usize,
+    pub y: usize,
+    pub width: usize,
+    pub height: usize,
+}
+
+/// The run of source samples `[first, last]` a whole-frame reduction's output
+/// coordinates `[start, start + len)` read.
+fn reach_of(taps: &[Taps]) -> (usize, usize) {
+    let first = taps.iter().map(|t| t.start).min().unwrap_or(0);
+    let last = taps
+        .iter()
+        .map(|t| t.start + t.weights.len().max(1) - 1)
+        .max()
+        .unwrap_or(0);
+    (first, last)
+}
+
+/// The source samples output pixels `crop` of a whole-frame [`downsample`] read: the
+/// crop's own samples and an apron of the filter's reach, clipped to the frame. At
+/// one sample per pixel there is no filter ([`downsample`]'s skip), so it is the crop.
+pub fn source_of(
+    crop: Crop,
+    source_width: usize,
+    source_height: usize,
+    out_width: usize,
+    out_height: usize,
+    ss: u32,
+) -> Crop {
+    if ss == 1 && source_width == out_width && source_height == out_height {
+        return crop;
+    }
+    let horizontal = build_taps(out_width, source_width, ss);
+    let vertical = build_taps(out_height, source_height, ss);
+    let (x0, x1) = reach_of(&horizontal[crop.x..crop.x + crop.width]);
+    let (y0, y1) = reach_of(&vertical[crop.y..crop.y + crop.height]);
+    Crop {
+        x: x0,
+        y: y0,
+        width: x1 + 1 - x0,
+        height: y1 + 1 - y0,
+    }
+}
+
+/// Output pixels `crop` of a whole-frame [`downsample`], from the source samples
+/// [`source_of`] named for them (`linear`, row-major over `source`).
+///
+/// The kernels are the whole frame's, cut to the crop and moved to the source's
+/// origin, so every weight and every sum is the one the whole frame takes there:
+/// crops of one frame stitch to its [`downsample`] byte for byte.
+#[allow(clippy::too_many_arguments)]
+pub fn downsample_crop(
+    linear: &[[f64; 3]],
+    source: Crop,
+    source_width: usize,
+    source_height: usize,
+    out_width: usize,
+    out_height: usize,
+    crop: Crop,
+    ss: u32,
+) -> Vec<u8> {
+    if ss == 1 && source_width == out_width && source_height == out_height {
+        return encode_only(linear);
+    }
+    let moved = |taps: Vec<Taps>, start: usize, len: usize, origin: usize| -> Vec<Taps> {
+        taps.into_iter()
+            .skip(start)
+            .take(len)
+            .map(|t| Taps {
+                start: t.start - origin,
+                weights: t.weights,
+            })
+            .collect()
+    };
+    let horizontal = moved(
+        build_taps(out_width, source_width, ss),
+        crop.x,
+        crop.width,
+        source.x,
+    );
+    let vertical = moved(
+        build_taps(out_height, source_height, ss),
+        crop.y,
+        crop.height,
+        source.y,
+    );
+    apply_taps(linear, source.width, source.height, &horizontal, &vertical)
+}
+
 /// A buffer that is already at output resolution, encoded and nothing else.
 ///
 /// **In parallel, and that is not an optimization of the skip — it is what makes

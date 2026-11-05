@@ -1,0 +1,443 @@
+{
+  "schema": 1,
+  "name": "ember_rose",
+  "reference": {
+    "image": "406031.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style), unsigned, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/ember_rose",
+  "keeps": [
+    {
+      "id": "style_ember_rose_r1/formulations/f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose",
+      "picker": "style_ember_rose_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose"
+        }
+      ],
+      "label": "fine rings: the petals cycled five times round the map, not three (fl_d3_3_7_r1.0_w0.8)",
+      "image": "style_ember_rose_r1__f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "fl_d3_3_7_r1.0_w0.8",
+          "family": {
+            "kind": "julia",
+            "degree": 3,
+            "c": [
+              "0.24846318943338047",
+              "0.7133384314932694"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.12847252112000507",
+            "center_im": "0.5628748925386556",
+            "width": "0.8"
+          },
+          "maxiter": 1000,
+          "note": "degree-3 flower at internal angle 3/7, |lambda| 1.0, on the fixed point, 0.8 wide"
+        },
+        "style": "ember_rose_fine_rings",
+        "stack": "ember_rose_fine_rings@07c9ff98",
+        "colormap": "ember_rose",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_ember_rose_r1/locations/locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose",
+      "picker": "style_ember_rose_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose"
+        }
+      ],
+      "label": "fl_d2_1_7_r1.0_w0.8",
+      "image": "style_ember_rose_r1__locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "fl_d2_1_7_r1.0_w0.8",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.3673751344184454",
+              "0.14718376318855897"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.3117449009293668",
+            "center_im": "0.3909157412340149",
+            "width": "0.8"
+          },
+          "maxiter": 1000,
+          "note": "degree-2 flower at internal angle 1/7, |lambda| 1.0, on the fixed point, 0.8 wide"
+        },
+        "style": "ember_rose_current",
+        "stack": "ember_rose_current@8a9cd507",
+        "colormap": "ember_rose",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_ember_rose_r1/locations/locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose",
+      "picker": "style_ember_rose_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose"
+        }
+      ],
+      "label": "fl_d4_3_7_r1.0_w0.8",
+      "image": "style_ember_rose_r1__locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "fl_d4_3_7_r1.0_w0.8",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.5346676681245774",
+              "0.560855378131156"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.392773962878301",
+            "center_im": "0.49252297111599264",
+            "width": "0.8"
+          },
+          "maxiter": 1000,
+          "note": "degree-4 flower at internal angle 3/7, |lambda| 1.0, on the fixed point, 0.8 wide"
+        },
+        "style": "ember_rose_current",
+        "stack": "ember_rose_current@8a9cd507",
+        "colormap": "ember_rose",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "ember_rose_current@8a9cd507": {
+      "name": "ember_rose_current",
+      "interior": {
+        "rgb": "#060202"
+      },
+      "tone": {
+        "median": 0.276,
+        "p10": 0.012
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.0
+          },
+          "opacity": 0.8
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0,
+            "gamma": 0.4
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 9.0,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "rgb": "#140302"
+          },
+          "blend": "multiply",
+          "opacity": 0.6
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.03,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.008,
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.58
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.06,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.008
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "rgb": "#ffd890"
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 1.5
+          }
+        }
+      ]
+    },
+    "ember_rose_fine_rings@07c9ff98": {
+      "name": "ember_rose_fine_rings",
+      "interior": {
+        "rgb": "#060202"
+      },
+      "tone": {
+        "median": 0.276,
+        "p10": 0.012
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.0
+          },
+          "opacity": 0.8
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 5.0,
+            "gamma": 0.4
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 15.0,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "rgb": "#140302"
+          },
+          "blend": "multiply",
+          "opacity": 0.6
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.03,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.008,
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.58
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.06,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.008
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "rgb": "#ffd890"
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 1.5
+          }
+        }
+      ]
+    }
+  }
+}

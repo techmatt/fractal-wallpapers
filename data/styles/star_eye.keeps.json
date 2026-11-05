@@ -1,0 +1,547 @@
+{
+  "schema": 1,
+  "name": "star_eye",
+  "reference": {
+    "image": "Abstract-Desktop-Backgrounds-Pictures.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style, signed Kerti Alev '07), 1920x1200"
+  },
+  "folder": "fractal-drive-sync/style-keeps/star_eye",
+  "keeps": [
+    {
+      "id": "style_star_eye_r1/formulations/f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye",
+      "picker": "style_star_eye_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye"
+        }
+      ],
+      "label": "fine: the strands cut twice as finely and thinner (rg_d3_0.65_0.0_w4.5)",
+      "image": "style_star_eye_r1__f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "rg_d3_0.65_0.0_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 3,
+            "c": [
+              "0.65",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 3000,
+          "note": "degree-3 quasicircle Julia set (c = 0.650+0.000i), whole, a wiggled ring round an attracting basin"
+        },
+        "style": "star_eye_fine",
+        "stack": "star_eye_fine@b818c2cb",
+        "colormap": "star_eye",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_star_eye_r1/formulations/f_sharp__01_rg_d3_0.65_0.0_w4.5_star_eye",
+      "picker": "style_star_eye_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_sharp__01_rg_d3_0.65_0.0_w4.5_star_eye"
+        }
+      ],
+      "label": "sharp: glow_filaments' own threads (a hair-wide near-white core) on the ring (misses p90) (rg_d3_0.65_0.0_w4.5)",
+      "image": "style_star_eye_r1__f_sharp__01_rg_d3_0.65_0.0_w4.5_star_eye.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "rg_d3_0.65_0.0_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 3,
+            "c": [
+              "0.65",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 3000,
+          "note": "degree-3 quasicircle Julia set (c = 0.650+0.000i), whole, a wiggled ring round an attracting basin"
+        },
+        "style": "star_eye_sharp",
+        "stack": "star_eye_sharp@5d3233f2",
+        "colormap": "star_eye",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_star_eye_r1/locations/locations__02_rg_d3_0.65_0.0_w4.5_star_eye",
+      "picker": "style_star_eye_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__02_rg_d3_0.65_0.0_w4.5_star_eye"
+        }
+      ],
+      "label": "rg_d3_0.65_0.0_w4.5",
+      "image": "style_star_eye_r1__locations__02_rg_d3_0.65_0.0_w4.5_star_eye.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "rg_d3_0.65_0.0_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 3,
+            "c": [
+              "0.65",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 3000,
+          "note": "degree-3 quasicircle Julia set (c = 0.650+0.000i), whole, a wiggled ring round an attracting basin"
+        },
+        "style": "star_eye_current",
+        "stack": "star_eye_current@c9c5fd23",
+        "colormap": "star_eye",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_star_eye_r1/locations/locations__06_rg_d4_0.65_0.0_w4.5_star_eye",
+      "picker": "style_star_eye_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__06_rg_d4_0.65_0.0_w4.5_star_eye"
+        }
+      ],
+      "label": "rg_d4_0.65_0.0_w4.5",
+      "image": "style_star_eye_r1__locations__06_rg_d4_0.65_0.0_w4.5_star_eye.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "rg_d4_0.65_0.0_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.65",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 3000,
+          "note": "degree-4 quasicircle Julia set (c = 0.650+0.000i), whole, a wiggled ring round an attracting basin"
+        },
+        "style": "star_eye_current",
+        "stack": "star_eye_current@c9c5fd23",
+        "colormap": "star_eye",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "star_eye_current@c9c5fd23": {
+      "name": "star_eye_current",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.221,
+        "p10": 0.054
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 4.0
+          },
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "twist": -2.5,
+              "divide": 1.5,
+              "side": "both"
+            }
+          },
+          "sheet": {
+            "period": 0.07,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.008,
+          "color": {
+            "palette": 0.28
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.52
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        }
+      ]
+    },
+    "star_eye_fine@b818c2cb": {
+      "name": "star_eye_fine",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.221,
+        "p10": 0.054
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 4.0
+          },
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "twist": -2.5,
+              "divide": 1.5,
+              "side": "both"
+            }
+          },
+          "sheet": {
+            "period": 0.035,
+            "edge": 0.025,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.008,
+          "color": {
+            "palette": 0.28
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.52
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        }
+      ]
+    },
+    "star_eye_sharp@5d3233f2": {
+      "name": "star_eye_sharp",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.221,
+        "p10": 0.054
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 4.0
+          },
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "twist": -2.5,
+              "divide": 1.5,
+              "side": "both"
+            }
+          },
+          "sheet": {
+            "period": 0.07,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.012,
+          "color": {
+            "palette": 0.42
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.001,
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0002,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "add",
+          "opacity": 0.7
+        }
+      ]
+    }
+  }
+}

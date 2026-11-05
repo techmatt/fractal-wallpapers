@@ -11,7 +11,7 @@ from fractal_wallpapers import cli, style_catalog, styles
 
 def published():
     """The catalog's published rows."""
-    return [row for row in style_catalog.load()["modes"] if row["status"] == "publish"]
+    return [row for row in style_catalog.load()["modes"] if row.get("status") == "publish"]
 
 
 def test_the_catalog_holds_its_rows_and_agrees_with_the_styles():
@@ -19,7 +19,9 @@ def test_the_catalog_holds_its_rows_and_agrees_with_the_styles():
     assert style_catalog.check(catalog) == []
     names = [row["style"] for row in catalog["modes"]]
     assert len(names) == len(set(names)) >= 14
-    assert {row["status"] for row in catalog["modes"]} <= set(style_catalog.STATUSES)
+    # A row with no status is one Matt has not ruled on yet.
+    statuses = {row["status"] for row in catalog["modes"] if "status" in row}
+    assert statuses <= set(style_catalog.STATUSES)
 
 
 def test_the_catalog_is_not_a_style():

@@ -203,6 +203,65 @@ whole frame given its geometry and width. **tone** is a second measure, of the c
 `data/styles/README.md` owns kinds, channels, blends and how to make a style. **Lighting
 exists only in a style's `light` layer**; named modes carry no normal-map shading.
 
+The two halves are public, so a frame can be drawn in pieces:
+
+```
+style::measure(view, …)                    -> Measures   every layer's stretch or spend, each
+                                                         warp's and mask's, the tone curve
+style::tile(view, …, &measures, crop)      -> RGB        output pixels `crop`, its samples
+                                                         and the Lanczos apron gathered at
+                                                         the frame's own coordinates
+style::paint(view, …)                      -> Painted    both at once: the native `render`
+```
+
+Tiles against `measure` of the frame itself stitch to `paint`'s picture byte for byte
+(`tiles_stitch_to_the_whole_picture`; `resample::downsample_crop` cuts the frame's own
+kernels). Measured over a smaller frame of the same view, the tiles carry the preview's
+balance at full detail.
+
+### The style module: a custom mode in a page
+
+`../style-wasm/` is that split as a raw `wasm32-unknown-unknown` module (no wasm-bindgen,
+JSON in, length-prefixed JSON or bare RGBA out), and `style-wasm/js/style-wasm.mjs` is its
+whole glue, for a browser or Node:
+
+```
+cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml
+   -> style-wasm/target/wasm32-unknown-unknown/release/style_wasm.wasm
+
+open(request)               -> {ok, handle, maxiter, resolution, supersample, samples,
+                                mirror, style (the stack as drawn)} | {ok: false, why}
+measure(h, w, hgt, ss)      -> {ok, measured, supersample, tone: {b, g} | null,
+                                interior_fraction}         zeros: the picture's own frame
+tile(h, x, y, w, hgt)       -> RGBA, w·hgt·4 bytes, against the last measure; null: last_error()
+frame(h)                    -> RGBA of the whole picture in one pass (the native path)
+close(h)
+```
+
+A **request** is the CLI's inputs, not the engine's spec: `{schema: 1, location, style,
+knobs, settings, colormap, resolution, supersample}`. `location` is a record as
+`style render --location` reads it (`family`, `viewport`, `maxiter`, a place's own
+`projection` members); `style` is a stack; `knobs` its style file's `public.knobs` and
+`settings` `{name: value}` inside their ranges; `colormap` a `data/palettes/<name>.json`
+file whole (the matched map or any library map). The module lays the CLI's three rules on
+it — `styles.with_knobs` (applied in the knobs' order), `styles.projected`, and
+`styles.spec_of`'s fold of a sequential map under a repeating palette layer — then hands
+the engine the spec as JSON text, as a native render does. Plain `f64` only: no `deep`, and a
+view below the floor is refused as natively.
+
+**Progressive drawing** is `measure` on a small frame of the same aspect (a preview, its
+balance close to the final one), tiles at full size against it, then `measure()` at the
+picture's own size and tiles again for the exact picture. `frame` costs one pass;
+`measure()` plus tiles costs about two, since the tiles iterate again.
+
+`fractal-wallpapers style bundle` writes what a page draws from (default
+`artifacts/style-wasm/bundle.json`): `{schema, modes: [{name, style, palette, variant,
+what, knobs, stack, shown: [{keep, caption, location, colormap, stack}]}], colormaps: {name:
+file}}`, the published rows of `data/styles/catalog.json` with the style files' default stacks
+and every map they or their shown keeps name. A shown keep carries the stack it was drawn
+with, which for an early round's keep is not always the published one. `style wasm-parity` holds the module to the
+native engine under Node; `style wasm-speed` times it (`src/fractal_wallpapers/style_wasm.py`).
+
 ## What each family's picture is symmetric under
 
 No code folds a render; this is what `family.rs` implies. Multibrot (pixel `c`): `(d − 1)`-fold

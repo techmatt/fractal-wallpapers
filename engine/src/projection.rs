@@ -156,7 +156,7 @@ impl Projection {
         let x = col as f64 + 0.5 - map.center[0] * width;
         let y = map.center[1] * height - (row as f64 + 0.5);
         let r2 = x * x + y * y;
-        if !(r2 > 0.0) {
+        if r2.is_nan() || r2 <= 0.0 {
             return Sample {
                 point: view.center,
                 jacobian: None,

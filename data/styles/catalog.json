@@ -351,6 +351,71 @@
       "note": "Engine: lines channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
     },
     {
+      "style": "teal_filaments",
+      "score": 2,
+      "item": "022",
+      "reference": "alina-25.jpg",
+      "show": [
+        {
+          "keep": "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments",
+          "caption": "julia (quadratic)"
+        },
+        {
+          "keep": "style_teal_filaments_r1/formulations/f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments",
+          "caption": "variant: flame (log-density tone)"
+        }
+      ],
+      "what": "Soft glowing teal filaments in a green-grey mist: glow_filaments' falloff glows softened, two wide haze glows and a scooped period sheet for the mist.",
+      "kept": "1 location, flame formulation",
+      "note": "Engine: nothing new (falloff glow, period sheet, tone) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "star_eye",
+      "score": 3,
+      "item": "022",
+      "reference": "Abstract-Desktop-Backgrounds-Pictures.jpg",
+      "show": [
+        {
+          "keep": "style_star_eye_r1/locations/locations__02_rg_d3_0.65_0.0_w4.5_star_eye",
+          "caption": "julia multibrot3"
+        },
+        {
+          "keep": "style_star_eye_r1/locations/locations__06_rg_d4_0.65_0.0_w4.5_star_eye",
+          "caption": "julia multibrot4"
+        },
+        {
+          "keep": "style_star_eye_r1/formulations/f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye",
+          "caption": "variant: fine strands"
+        }
+      ],
+      "what": "A luminous blue eye: a quasicircle Julia set's ring glowing round a dark pupil holding a star, field-line strands curving out of the ring and in to the star.",
+      "kept": "2 locations, fine and sharp formulations",
+      "note": "Engine: nothing new (falloff ring, lines channel on both sides) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (quasicircles are not in the galleries)."
+    },
+    {
+      "style": "ember_rose",
+      "score": 2,
+      "item": "022",
+      "reference": "406031.jpg",
+      "show": [
+        {
+          "keep": "style_ember_rose_r1/locations/locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose",
+          "caption": "julia (quadratic) flower"
+        },
+        {
+          "keep": "style_ember_rose_r1/locations/locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose",
+          "caption": "julia multibrot4 flower"
+        },
+        {
+          "keep": "style_ember_rose_r1/formulations/f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose",
+          "caption": "variant: fine rings"
+        }
+      ],
+      "what": "A fractal rose on black: a parabolic flower's petals cycled into crimson-to-gold rings by the inside channel, softened falloff threads and a bead lattice.",
+      "kept": "2 locations, fine_rings formulation",
+      "note": "Engine: nothing new (inside channel, falloff glow, bubble lattice) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (parabolic flowers are not in the galleries)."
+    },
+    {
       "style": "leaf_veins",
       "score": 1,
       "status": "discarded",

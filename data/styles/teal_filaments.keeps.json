@@ -1,0 +1,362 @@
+{
+  "schema": 1,
+  "name": "teal_filaments",
+  "reference": {
+    "image": "alina-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a Julia set render with glow and mist (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/teal_filaments",
+  "keeps": [
+    {
+      "id": "style_teal_filaments_r1/formulations/f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments",
+      "picker": "style_teal_filaments_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments"
+        }
+      ],
+      "label": "flame: the tone pass's log-density curve (k 10) on top, a flame's lifted faint structure (cu_0.285_0.01_0_0_w2.8)",
+      "image": "style_teal_filaments_r1__f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "cu_0.285_0.01_0_0_w2.8",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.285",
+              "0.01"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "2.8"
+          },
+          "maxiter": 3000,
+          "note": "Julia c = 0.285+0.01i near a parabolic point: curl chains, 2.8 wide"
+        },
+        "style": "teal_filaments_flame",
+        "stack": "teal_filaments_flame@a0783c5c",
+        "colormap": "teal_filaments",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments",
+      "picker": "style_teal_filaments_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__11_julia-mandelbrot_db420796_teal_filaments"
+        }
+      ],
+      "label": "julia-mandelbrot_db420796",
+      "image": "style_teal_filaments_r1__locations__11_julia-mandelbrot_db420796_teal_filaments.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_db420796",
+          "family": {
+            "c": [
+              "-0.19006289202103677",
+              "-0.6647213277105323"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.21538737803990401",
+            "center_im": "-0.32520554944375757",
+            "width": "0.00328400283585344"
+          },
+          "maxiter": 15802,
+          "note": "final139_general seat 431 (smooth_stripe, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 431,
+            "key": "db420796e2287f4e",
+            "p_spiral": 0.279186
+          },
+          "ink": 0.08548
+        },
+        "style": "teal_filaments_current",
+        "stack": "teal_filaments_current@5754e18b",
+        "colormap": "teal_filaments",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "teal_filaments_current@5754e18b": {
+      "name": "teal_filaments_current",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.353,
+        "p10": 0.156
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "rgb": "#152b27"
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 4.0
+          },
+          "opacity": 0.4
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.12,
+            "fill": 0.35
+          },
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.08,
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.02,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.006,
+          "color": {
+            "palette": 0.24
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "palette": 0.36
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.46
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        }
+      ]
+    },
+    "teal_filaments_flame@a0783c5c": {
+      "name": "teal_filaments_flame",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.353,
+        "p10": 0.156,
+        "log_density": 10.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "rgb": "#152b27"
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 4.0
+          },
+          "opacity": 0.4
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.12,
+            "fill": 0.35
+          },
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.08,
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.02,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.006,
+          "color": {
+            "palette": 0.24
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "palette": 0.36
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.46
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        }
+      ]
+    }
+  }
+}

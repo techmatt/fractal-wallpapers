@@ -11,7 +11,12 @@ fractal-wallpapers style keep floating_on_dreams <picker>.choices.json     # sav
 fractal-wallpapers style knobs lit_petals                                  # its public knobs
 fractal-wallpapers style render lit_petals --location <record.json> --knob light_angle=200
 fractal-wallpapers style gallery                                           # rebuild custom-modes/
+fractal-wallpapers style bundle                                            # the published modes, for a page
+fractal-wallpapers style wasm-parity                                       # the WebAssembly module vs native
 ```
+
+The published modes run in a browser through `style-wasm/`, the compositor as
+WebAssembly; `engine/README.md`'s *The style module* has its API and the bundle's shape.
 
 `<name>.keeps.json` beside a style is not a style: it is the renders Matt kept from its
 pickers, each with what redraws it, and its pictures live in
@@ -227,7 +232,8 @@ does not expose and a value outside its range; the render log keeps the stack as
 ## The catalog
 
 `catalog.json` is the single record per mode: style, reference image, Matt's score
-(1–5), status (`publish`, `drop`, `discarded`), the published variant, the keeps the page
+(1–5), status (`publish`, `drop`, `discarded`; absent on a row Matt has not ruled on, whose
+page toggles start unmarked), the published variant, the keeps the page
 shows (`{keep, caption}`, ids from `<name>.keeps.json`), the card's text, and for a
 published mode `public` (`{name, palette, knobs}`). The published variant is always the
 style file's default stack: where Matt kept a formulation over the stack (`lit_petals`'

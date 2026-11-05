@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 
 from fractal_wallpapers import engine
 from fractal_wallpapers.cli.common import resolve_input, resolve_output
@@ -35,6 +36,8 @@ def style(args: argparse.Namespace) -> int:
             return list_knobs(args, styles)
         if args.what == "gallery":
             return build_gallery(args)
+        if args.what in ("bundle", "wasm-parity", "wasm-speed"):
+            return style_wasm_command(args)
         return render_style(args, styles)
     except styles.StyleError as refusal:
         print(refusal)
@@ -56,6 +59,55 @@ def list_knobs(args: argparse.Namespace, styles) -> int:
     for problem in problems:
         print(f"OUT OF STEP: {problem}")
     return 1 if problems else 0
+
+
+def style_wasm_command(args: argparse.Namespace) -> int:
+    """The WebAssembly module's bundle, and its parity and speed against the engine."""
+    from fractal_wallpapers import style_wasm
+
+    if args.what == "bundle":
+        out = resolve_output(args.out) if args.out else style_wasm.out_dir() / "bundle.json"
+        document = style_wasm.write_bundle(out)
+        print(
+            f"{len(document['modes'])} published modes, {len(document['colormaps'])} colormaps "
+            f"into {out}"
+        )
+        return 0
+    folder = resolve_output(args.out) if args.out else style_wasm.out_dir() / args.what
+    try:
+        if args.what == "wasm-speed":
+            rows = style_wasm.speed(folder)
+            for row in rows:
+                if row["ok"]:
+                    print(f"{row['id']:<20} {row['draw']:8.2f} s  maxiter {row['maxiter']}")
+                else:
+                    print(f"{row['id']:<20} FAILED: {row['why']}")
+            drawn = [row for row in rows if row["ok"]]
+            if drawn:
+                slowest = max(drawn, key=lambda row: row["draw"])
+                print(f"slowest: {slowest['id']} at {slowest['draw']:.2f} s")
+            return 0 if len(drawn) == len(rows) else 1
+        rows = style_wasm.parity(folder, tuple(args.resolution), args.supersample)
+    except style_wasm.StyleWasmError as refusal:
+        print(refusal)
+        return 1
+    except RuntimeError as refusal:
+        # The native engine's refusal, as `style render` prints it.
+        print(str(refusal).removeprefix("engine failed: "))
+        return 1
+    except subprocess.CalledProcessError as failure:
+        print(f"node stopped with exit code {failure.returncode}; rows so far in {folder}")
+        return 1
+    for row in rows:
+        if not row["ok"]:
+            print(f"{row['id']:<32} FAILED: {row['why']}")
+        elif row["identical"]:
+            print(f"{row['id']:<32} identical")
+        else:
+            print(f"{row['id']:<32} {row['pixels']} pixels differ, by at most {row['worst']}")
+    same = sum(1 for row in rows if row.get("identical"))
+    print(f"{same} of {len(rows)} byte-identical; rows in {folder / 'parity.jsonl'}")
+    return 0 if same == len(rows) else 1
 
 
 def build_gallery(args: argparse.Namespace) -> int:
@@ -441,6 +493,39 @@ def add_commands(subcommands) -> None:
     gallery.add_argument(
         "--out",
         help="the page's folder (default: fractal-drive-sync/custom-modes/ beside this checkout)",
+    )
+
+    bundle = verbs.add_parser(
+        "bundle",
+        help="write the published modes (stacks, knobs, shown keeps) and their colormaps as "
+        "the one JSON file a page draws them from",
+    )
+    bundle.add_argument(
+        "--out", help="the bundle (default: artifacts/style-wasm/bundle.json on the hot root)"
+    )
+    parity = verbs.add_parser(
+        "wasm-parity",
+        help="draw every keep the catalog shows for a published mode natively and as "
+        "WebAssembly under Node, and compare the bytes",
+    )
+    parity.add_argument(
+        "--resolution",
+        nargs=2,
+        type=int,
+        metavar=("W", "H"),
+        default=[640, 400],
+        help="output size in pixels (default: 640 400)",
+    )
+    parity.add_argument("--supersample", type=int, default=2, help="(default: 2)")
+    parity.add_argument(
+        "--out", help="the pictures and parity.jsonl (default: artifacts/style-wasm/wasm-parity)"
+    )
+    speed = verbs.add_parser(
+        "wasm-speed",
+        help="time one 1280x800 ss2 frame per published mode as WebAssembly, one thread",
+    )
+    speed.add_argument(
+        "--out", help="the pictures and speed.jsonl (default: artifacts/style-wasm/wasm-speed)"
     )
 
     render = verbs.add_parser(

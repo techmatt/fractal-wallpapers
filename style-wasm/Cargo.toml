@@ -1,0 +1,43 @@
+[package]
+name = "style-wasm"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.86"
+publish = false
+
+# The style compositor as a raw `wasm32-unknown-unknown` module: what Mandelnaut's
+# custom modes are drawn with. It is `../engine`'s own `style::measure` and
+# `style::tile` behind a handful of exports, and the three rules the CLI lays on a
+# style before the engine sees it (`styles.with_knobs`, `styles.projected`, the
+# mirror rule of `styles.spec_of`), so a page drawing a published mode draws the
+# pipeline's picture. `engine/README.md`'s *The style module* has the API.
+#
+# No wasm-bindgen, as the website's `engine-wasm`: JavaScript owns every buffer
+# through `alloc`/`dealloc`, and `js/style-wasm.mjs` is the whole of the glue.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# `default-features = false`: the `deep` backend is the native `render-link`'s, and a
+# custom mode never draws below the `f64` floor.
+fractal-engine = { path = "../engine", default-features = false }
+serde = { version = "1", features = ["derive"] }
+# **Without `float_roundtrip`, on purpose.** The native engine parses every number of
+# a spec with serde_json's default parser, and this module must read the same text to
+# the same bits; the feature would unify into the engine here and move them.
+# `raw_value` only adds a type: knob settings are kept as text and parsed exactly.
+serde_json = { version = "1", features = ["raw_value"] }
+
+# The module is built for release only. LTO dead-strips the image encoders out of it;
+# none of these settings changes an `f64` (Rust never contracts or reorders float
+# arithmetic), so the module draws the native engine's numbers.
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+# The crate's own tests render small frames; at `opt-level = 0` they take minutes.
+[profile.test]
+opt-level = 2

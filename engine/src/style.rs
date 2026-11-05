@@ -55,6 +55,7 @@ use crate::family::Family;
 use crate::field::{Field, FieldSpec};
 use crate::iterate::{self, Wants};
 use crate::projection::Projection;
+use crate::resample::{self, Crop};
 use crate::viewport::Viewport;
 
 /// A style as the render spec carries it: the stack, and what the set's inside is.
@@ -1259,6 +1260,9 @@ pub fn radial(center: [f64; 2], col: u32, row: u32, width: u32, height: u32) -> 
 
 /// What one escape loop left per sample: a lane per field, and the gradients.
 struct Channels {
+    /// The window of the frame's sample grid these lanes cover, in samples.
+    width: u32,
+    height: u32,
     fields: Vec<FieldSpec>,
     lanes: Vec<Vec<f32>>,
     /// Unit `∇ν` in the plane, `NaN` where the orbit did not escape.
@@ -1595,7 +1599,13 @@ pub fn gradient(last: Complex<f64>, derivative: Complex<f64>) -> Option<[f64; 2]
     (length.is_finite() && length > 0.0).then(|| [x / length, y / length])
 }
 
-fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Channels {
+fn gather(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    window: Window,
+) -> Channels {
     let fields = style.fields();
     let lights = style.lights();
     let wants = fields
@@ -1631,8 +1641,10 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         ..wants
     };
 
-    let width = view.sample_width();
-    let height = view.sample_height();
+    // The window's coordinates are the whole frame's — `sample_point(col, row)` with
+    // the global indices — so a window draws the same bits the whole frame would there.
+    let (frame_width, frame_height) = (view.sample_width(), view.sample_height());
+    let (width, height) = (window.width, window.height);
     let reach = style.inside();
     let traps = style.bubbles();
     let circles = style.lines();
@@ -1650,7 +1662,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         Vec<BubbleRow>,
         Vec<[Vec<f32>; 2]>,
     );
-    let rows: Vec<Row> = (0..height)
+    let rows: Vec<Row> = (window.row..window.row + height)
         .into_par_iter()
         .map(|row| {
             let mut bubble_rows: Vec<BubbleRow> =
@@ -1661,7 +1673,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
             let mut gradients = Vec::with_capacity(if lights { width as usize } else { 0 });
             let mut insides = Vec::with_capacity(if reach.is_some() { width as usize } else { 0 });
             let mut inside = 0u64;
-            for col in 0..width {
+            for col in window.col..window.col + width {
                 // Straight, or through the projection with its Jacobian: a distance
                 // estimate is rescaled to the local sample spacing (so the straight
                 // view's own is untouched) and a gradient pulled back to the frame.
@@ -1801,14 +1813,16 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         .map(|center| {
             let lane = (0..total)
                 .map(|i| {
-                    let (col, row) = (i as u32 % width, i as u32 / width);
-                    -radial(center, col, row, width, height) as f32
+                    let (col, row) = (window.col + i as u32 % width, window.row + i as u32 / width);
+                    -radial(center, col, row, frame_width, frame_height) as f32
                 })
                 .collect();
             (center, lane)
         })
         .collect();
     Channels {
+        width,
+        height,
         fields,
         lanes,
         gradient,
@@ -1829,25 +1843,59 @@ enum Measured {
     Nothing,
 }
 
-/// Iterate `view` once and composite the style's stack, sample by sample.
-pub fn paint(
-    view: &Viewport,
-    family: &Family,
-    maxiter: u32,
-    style: &Style,
-    palette: &Palette,
-    colormap: &Colormap,
-) -> Result<Painted, String> {
-    style.validate()?;
-    let channels = gather(view, family, maxiter, style);
-    let samples = (view.sample_width() * view.sample_height()) as usize;
+/// A rectangle of a frame's sample grid, in samples from its top-left.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Window {
+    pub col: u32,
+    pub row: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Window {
+    /// The whole of `view`'s sample grid.
+    pub fn whole(view: &Viewport) -> Window {
+        Window {
+            col: 0,
+            row: 0,
+            width: view.sample_width(),
+            height: view.sample_height(),
+        }
+    }
+}
+
+/// Every frame-wide statistic a stack's samples are composited against: each layer's
+/// stretch or spend, each warp's and mask's, and the tone curve the composite needed.
+///
+/// This is the **measure half** of a style render, held apart from the samples half so
+/// a frame can be drawn in pieces: [`measure`] takes it once over one frame (the frame
+/// itself, for the picture [`paint`] draws; a smaller frame of the same view, for a
+/// quick one), and [`tile`] composites any part of a frame against it.
+pub struct Measures {
+    layers: Vec<Measured>,
+    warps: Vec<Option<Spend>>,
+    masks: Vec<Option<Stretch>>,
+    tone: Option<(f64, f64)>,
+    /// Share of the measured frame's samples whose orbit never escaped.
+    pub interior_fraction: f64,
+}
+
+impl Measures {
+    /// The tone curve `(b, g)` of `L ↦ b + (1 − b)·L^g` the measured frame needed;
+    /// `None` without a `tone`, or when the frame already met it.
+    pub fn tone_curve(&self) -> Option<(f64, f64)> {
+        self.tone
+    }
+}
+
+/// The measure half over gathered channels: every layer's frame-wide statistic, once.
+/// The tone curve is the composite's, so it is left for [`measured_frame`] to fill.
+fn measure_layers(style: &Style, channels: &Channels) -> Measures {
     let field_of = |key: Key| Field {
         values: channels.lane(key).to_vec(),
-        width: view.sample_width(),
-        height: view.sample_height(),
+        width: channels.width,
+        height: channels.height,
     };
-
-    // The measure half: every frame-wide statistic, once.
     let measured: Vec<Measured> = style
         .layers
         .iter()
@@ -1869,15 +1917,13 @@ pub fn paint(
             _ => Measured::Nothing,
         })
         .collect();
-    let warps: Vec<Option<(Warp, Spend, &[f32])>> = style
+    let warps: Vec<Option<Spend>> = style
         .layers
         .iter()
         .map(|layer| {
-            layer.warp.map(|warp| {
-                let key = warp.channel.key();
-                let spend = Spend::measure(&field_of(key), Transfer::Rank);
-                (warp, spend, channels.lane(key))
-            })
+            layer
+                .warp
+                .map(|warp| Spend::measure(&field_of(warp.channel.key()), Transfer::Rank))
         })
         .collect();
     let masks: Vec<Option<Stretch>> = style
@@ -1887,6 +1933,38 @@ pub fn paint(
             layer.mask.map(|mask| {
                 Stretch::over(channels.lane(mask.channel.key()).iter().map(|&v| v as f64))
             })
+        })
+        .collect();
+    Measures {
+        layers: measured,
+        warps,
+        masks,
+        tone: None,
+        interior_fraction: channels.interior_fraction,
+    }
+}
+
+/// The samples half: a pure function of one sample's channels and the measures, so a
+/// window of the frame composites to the bytes the whole frame has there.
+fn composite(
+    view: &Viewport,
+    style: &Style,
+    colormap: &Colormap,
+    channels: &Channels,
+    measures: &Measures,
+) -> Vec<[f64; 3]> {
+    let samples = (channels.width * channels.height) as usize;
+    let measured = &measures.layers;
+    let masks = &measures.masks;
+    let warps: Vec<Option<(Warp, &Spend, &[f32])>> = style
+        .layers
+        .iter()
+        .zip(&measures.warps)
+        .map(|(layer, spend)| {
+            layer
+                .warp
+                .zip(spend.as_ref())
+                .map(|(warp, spend)| (warp, spend, channels.lane(warp.channel.key())))
         })
         .collect();
     let interior = style
@@ -1951,8 +2029,8 @@ pub fn paint(
         .any(|layer| layer.kind == Kind::Pattern)
         .then(|| channels.lane(Key::Field(FieldSpec::Decomposition)));
 
-    // The samples half: a pure function of one sample's channels and the above.
-    let linear: Vec<[f64; 3]> = (0..samples)
+    // A pure function of one sample's channels and the above.
+    (0..samples)
         .into_par_iter()
         .map(|i| {
             let escaped = smooth[i].is_finite();
@@ -2077,22 +2155,173 @@ pub fn paint(
             }
             rgb
         })
-        .collect();
+        .collect()
+}
 
+/// Gather the whole of `view`, measure it, composite it and tone it: the frame's
+/// measures, and its linear samples before the palette's rolloff.
+fn measured_frame(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    colormap: &Colormap,
+) -> Result<(Measures, Vec<[f64; 3]>), String> {
+    style.validate()?;
+    let channels = gather(view, family, maxiter, style, Window::whole(view));
+    let mut measures = measure_layers(style, &channels);
+    let linear = composite(view, style, colormap, &channels, &measures);
     let linear = match style.tone {
-        Some(tone) => toned(
-            linear,
-            tone,
-            view.sample_width() as usize,
-            view.supersample as usize,
-        ),
+        Some(tone) => {
+            let lifted = lift(linear, tone);
+            measures.tone = tone_of(
+                &lifted,
+                tone,
+                view.sample_width() as usize,
+                view.supersample as usize,
+            );
+            tone_applied(lifted, measures.tone)
+        }
         None => linear,
     };
+    Ok((measures, linear))
+}
+
+/// Iterate `view` once and composite the style's stack, sample by sample.
+pub fn paint(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    palette: &Palette,
+    colormap: &Colormap,
+) -> Result<Painted, String> {
+    let (measures, linear) = measured_frame(view, family, maxiter, style, colormap)?;
     Ok(Painted {
         linear: coloring::toned(linear, palette),
-        interior_fraction: channels.interior_fraction,
+        interior_fraction: measures.interior_fraction,
         texture_flat: None,
     })
+}
+
+/// The measure half alone: every frame-wide statistic of `view`, its tone curve with
+/// them. Measured over the frame a picture is then drawn at, [`tile`] draws exactly
+/// [`paint`]'s picture; measured over a smaller frame of the same view (a preview),
+/// the tiles are that preview's balance at full detail, at the preview's cost.
+pub fn measure(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    colormap: &Colormap,
+) -> Result<Measures, String> {
+    Ok(measured_frame(view, family, maxiter, style, colormap)?.0)
+}
+
+/// The samples half over one window of `view`'s sample grid, against `measures`:
+/// linear-light samples with the tone curve and the palette's rolloff laid on, as
+/// [`Painted::linear`] holds them for the same samples of the whole frame.
+#[allow(clippy::too_many_arguments)]
+pub fn paint_window(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    palette: &Palette,
+    colormap: &Colormap,
+    measures: &Measures,
+    window: Window,
+) -> Result<Vec<[f64; 3]>, String> {
+    style.validate()?;
+    if measures.layers.len() != style.layers.len() {
+        return Err(format!(
+            "the measures are of a stack of {} layers, and style '{}' has {}",
+            measures.layers.len(),
+            style.name,
+            style.layers.len()
+        ));
+    }
+    let whole = Window::whole(view);
+    let beyond = |start: u32, len: u32, end: u32| start.checked_add(len).is_none_or(|e| e > end);
+    if window.width == 0
+        || window.height == 0
+        || beyond(window.col, window.width, whole.width)
+        || beyond(window.row, window.height, whole.height)
+    {
+        return Err(format!(
+            "window {window:?} is not inside the frame's {}x{} samples",
+            whole.width, whole.height
+        ));
+    }
+    let channels = gather(view, family, maxiter, style, window);
+    let linear = composite(view, style, colormap, &channels, measures);
+    let linear = match style.tone {
+        Some(tone) => tone_applied(lift(linear, tone), measures.tone),
+        None => linear,
+    };
+    Ok(coloring::toned(linear, palette))
+}
+
+/// One tile of the finished picture: output pixels `[x, x + width) × [y, y + height)`
+/// of `view`, as sRGB8 (`RGB`, row-major), composited against `measures`.
+///
+/// The tile gathers the samples the whole frame's Lanczos reduction reads for those
+/// pixels — its own and an apron of the filter's reach — at the frame's own sample
+/// coordinates, and reduces them through the frame's own kernels
+/// ([`crate::resample::downsample_crop`]). So tiles measured against [`measure`] of
+/// `view` itself stitch to [`paint`]'s picture byte for byte.
+#[allow(clippy::too_many_arguments)]
+pub fn tile(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    palette: &Palette,
+    colormap: &Colormap,
+    measures: &Measures,
+    crop: Crop,
+) -> Result<Vec<u8>, String> {
+    let (out_width, out_height) = (view.out_width as usize, view.out_height as usize);
+    let beyond =
+        |start: usize, len: usize, end: usize| start.checked_add(len).is_none_or(|e| e > end);
+    if crop.width == 0
+        || crop.height == 0
+        || beyond(crop.x, crop.width, out_width)
+        || beyond(crop.y, crop.height, out_height)
+    {
+        return Err(format!(
+            "tile {crop:?} is not inside the {out_width}x{out_height} picture"
+        ));
+    }
+    let (source_width, source_height) =
+        (view.sample_width() as usize, view.sample_height() as usize);
+    let source = resample::source_of(
+        crop,
+        source_width,
+        source_height,
+        out_width,
+        out_height,
+        view.supersample,
+    );
+    let window = Window {
+        col: source.x as u32,
+        row: source.y as u32,
+        width: source.width as u32,
+        height: source.height as u32,
+    };
+    let linear = paint_window(
+        view, family, maxiter, style, palette, colormap, measures, window,
+    )?;
+    Ok(resample::downsample_crop(
+        &linear,
+        source,
+        source_width,
+        source_height,
+        out_width,
+        out_height,
+        crop,
+        view.supersample,
+    ))
 }
 
 /// CIE `L*` over 100 of a linear-light colour, clamped to `[0, 1]` first.
@@ -2248,8 +2477,21 @@ fn picture_percentiles(
 /// being made, and the solve is repeated with the targets moved by the miss, up to
 /// [`TONE_REFINEMENTS`] times; one curve is applied, once. At supersample 1 the
 /// picture is the samples and the first solve is exact.
+///
+/// The pass is three steps so a frame drawn in tiles can take the curve from one frame
+/// and lay it on another: [`lift`] and [`tone_applied`] are per sample, and only
+/// [`tone_of`] reads the frame.
+#[cfg(test)]
 fn toned(linear: Vec<[f64; 3]>, tone: Tone, width: usize, ss: usize) -> Vec<[f64; 3]> {
-    let linear = match tone.log_density {
+    let linear = lift(linear, tone);
+    let curve = tone_of(&linear, tone, width, ss);
+    tone_applied(linear, curve)
+}
+
+/// The tone's log-density curve on every sample ([`Tone::log_density`]); the samples
+/// as they are without one.
+fn lift(linear: Vec<[f64; 3]>, tone: Tone) -> Vec<[f64; 3]> {
+    match tone.log_density {
         None => linear,
         Some(k) => linear
             .into_par_iter()
@@ -2262,15 +2504,18 @@ fn toned(linear: Vec<[f64; 3]>, tone: Tone, width: usize, ss: usize) -> Vec<[f64
                 lifted(rgb, before, log_density(before, k))
             })
             .collect(),
-    };
-    let Some((median, p10)) = picture_percentiles(&linear, width, ss, None) else {
-        return linear;
-    };
+    }
+}
+
+/// The curve `(b, g)` carrying a lifted frame's picture to the tone's targets, or
+/// `None` where the frame has no picture or already meets them.
+fn tone_of(linear: &[[f64; 3]], tone: Tone, width: usize, ss: usize) -> Option<(f64, f64)> {
+    let (median, p10) = picture_percentiles(linear, width, ss, None)?;
     let (mut b, mut g) = tone_curve(median, p10, tone);
     if ss > 1 {
         let mut aim = tone;
         for _ in 0..TONE_REFINEMENTS {
-            let Some((got, got_low)) = picture_percentiles(&linear, width, ss, Some((b, g))) else {
+            let Some((got, got_low)) = picture_percentiles(linear, width, ss, Some((b, g))) else {
                 break;
             };
             let low_miss = tone.p10.map_or(0.0, |target| target - got_low);
@@ -2286,8 +2531,17 @@ fn toned(linear: Vec<[f64; 3]>, tone: Tone, width: usize, ss: usize) -> Vec<[f64
         }
     }
     if b == 0.0 && (g - 1.0).abs() < 1e-9 {
-        return linear;
+        return None;
     }
+    Some((b, g))
+}
+
+/// A tone curve [`tone_of`] solved, laid on every sample; the samples untouched
+/// without one.
+fn tone_applied(linear: Vec<[f64; 3]>, curve: Option<(f64, f64)>) -> Vec<[f64; 3]> {
+    let Some((b, g)) = curve else {
+        return linear;
+    };
     linear
         .into_par_iter()
         .map(|rgb| tone_sample(rgb, b, g))
@@ -2837,6 +3091,81 @@ mod tests {
         .unwrap();
         let family = Family::Multibrot { degree: 2 };
         paint(&view, &family, 500, &style, &Palette::default(), &map).unwrap()
+    }
+
+    /// Tiles measured against the frame itself stitch to [`paint`]'s picture byte for
+    /// byte, at both reductions (the ss1 skip and Lanczos), with every frame-wide
+    /// statistic in play: a rank spend, a warp, a mask, a radial, a bubble with its
+    /// gradient, a periodic sheet, the tone pass with a p10 and a log-density lift.
+    #[test]
+    fn tiles_stitch_to_the_whole_picture() {
+        let style: Style = serde_json::from_str(
+            r##"{"name": "x", "interior": {"palette": 0.8}, "layers": [
+                {"kind": "palette", "channel": {"field": {"kind": "smooth"}},
+                 "palette": {"transfer": {"kind": "rank"}, "cycles": 2.0},
+                 "warp": {"channel": {"radial": {}}, "amount": 0.2}},
+                {"kind": "palette", "channel": {"inside": {"iterations": 200}}},
+                {"kind": "light", "channel": {"bubble": {"center": [0.5, 0.5], "radius": 0.3,
+                 "read": "height", "spacing": 1.0}}, "light": {"period": 2.0}},
+                {"kind": "glow", "channel": {"field": {"kind": "de"}}, "falloff": 0.002,
+                 "color": {"rgb": "#ffeedd"}, "blend": "screen",
+                 "mask": {"channel": {"radial": {}}, "power": 2.0}},
+                {"kind": "sheet", "channel": {"field": {"kind": "smooth"}},
+                 "sheet": {"period": 3.0, "fill": 0.3}, "blend": "add", "opacity": 0.3}],
+              "tone": {"median": 0.4, "p10": 0.08, "log_density": 5.0}}"##,
+        )
+        .unwrap();
+        let map = Colormap::from_stops(
+            "ramp",
+            crate::colormap::Kind::Sequential,
+            &[
+                (0.0, [10, 20, 60]),
+                (0.5, [180, 60, 40]),
+                (1.0, [250, 240, 200]),
+            ],
+        )
+        .unwrap();
+        let family = Family::Multibrot { degree: 2 };
+        for supersample in [1, 2] {
+            let view = Viewport {
+                center: Complex::new(-0.7436, 0.1318),
+                width: 0.02,
+                out_width: 37,
+                out_height: 23,
+                supersample,
+            };
+            let palette = Palette::default();
+            let whole = paint(&view, &family, 400, &style, &palette, &map).unwrap();
+            let expected = resample::downsample(
+                &whole.linear,
+                view.sample_width() as usize,
+                view.sample_height() as usize,
+                37,
+                23,
+                supersample,
+            );
+            let measures = measure(&view, &family, 400, &style, &map).unwrap();
+            assert!(measures.tone_curve().is_some());
+            let mut stitched = vec![0u8; 37 * 23 * 3];
+            for (x, width) in [(0, 10), (10, 17), (27, 10)] {
+                for (y, height) in [(0, 9), (9, 14)] {
+                    let crop = Crop {
+                        x,
+                        y,
+                        width,
+                        height,
+                    };
+                    let rgb =
+                        tile(&view, &family, 400, &style, &palette, &map, &measures, crop).unwrap();
+                    for row in 0..height {
+                        let at = ((y + row) * 37 + x) * 3;
+                        stitched[at..at + width * 3]
+                            .copy_from_slice(&rgb[row * width * 3..(row + 1) * width * 3]);
+                    }
+                }
+            }
+            assert_eq!(stitched, expected, "supersample {supersample}");
+        }
     }
 
     #[test]

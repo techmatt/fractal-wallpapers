@@ -106,7 +106,8 @@ def check(catalog: dict[str, Any]) -> list[str]:
             continue
         if row.get("reference") != document["reference"]["image"]:
             problems.append(f"{name}: reference {row.get('reference')} is not the style's")
-        if row.get("status") not in STATUSES:
+        # No status is a mode Matt has not ruled on yet: its toggles start unmarked.
+        if "status" in row and row["status"] not in STATUSES:
             problems.append(f"{name}: status {row.get('status')} is not one of {STATUSES}")
         if row.get("score") not in range(1, 6):
             problems.append(f"{name}: score {row.get('score')} is not 1 to 5")
@@ -274,8 +275,8 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
 
 def page(catalog: dict[str, Any], cards: list[str], discarded: list[str], rest: list[str]) -> str:
     """The whole page."""
-    shown = [row for row in catalog["modes"] if row["status"] != "discarded"]
-    status = {row["style"]: row["status"] for row in shown}
+    shown = [row for row in catalog["modes"] if row.get("status") != "discarded"]
+    status = {row["style"]: row["status"] for row in shown if row.get("status")}
     digest = hashlib.sha256(json.dumps(status, sort_keys=True).encode("utf-8")).hexdigest()[:8]
     script = SCRIPT.replace("__STATUS__", json.dumps(status)).replace("__HASH__", digest)
     parts = [
@@ -319,7 +320,7 @@ def gallery(folder: Path, catalog: dict[str, Any] | None = None) -> dict[str, An
         ref_small = f"{name}__ref.jpg"
         written += shrink(reference, img / ref_small, REFERENCE_WIDTH, drawn)
         wanted.add(ref_small)
-        if row["status"] == "discarded":
+        if row.get("status") == "discarded":
             esc = html.escape
             discarded.append(
                 f'<div class="dis"><img loading="lazy" src="img/{ref_small}" alt=""><div>'
