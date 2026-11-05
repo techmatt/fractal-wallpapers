@@ -1,0 +1,381 @@
+{
+  "schema": 1,
+  "modes": [
+    {
+      "style": "bronze_packing",
+      "score": 4,
+      "status": "publish",
+      "item": "009",
+      "reference": "795549-3840x2160-desktop-4k-fractal-background.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_bronze_packing_r1/shortlist/00_julia-multibrot6_9cf619af",
+          "caption": "julia multibrot6 · matched map"
+        },
+        {
+          "keep": "style_bronze_packing_r1/shortlist/02_julia-multibrot3_b4307aa3",
+          "caption": "julia multibrot3 · matched map"
+        },
+        {
+          "keep": "style_bronze_packing_r1/shortlist/05_julia-multibrot3_c8f1fd60",
+          "caption": "julia multibrot3 · matched map"
+        }
+      ],
+      "public": {
+        "name": "brass-foam",
+        "palette": "bronze_packing",
+        "knobs": [
+          "disc_size",
+          "shine",
+          "rim_glow",
+          "star_rays"
+        ]
+      },
+      "what": "Discs packed inside discs: a new disc channel read at the step an orbit enters it, with metallic rims, nested beads and gold star-flowers from the set's interior.",
+      "kept": "5 locations, 4 palettes, 2 variants",
+      "note": "Engine: bubble channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the hero-circle seat and the two with star-flowers closest to the reference."
+    },
+    {
+      "style": "glossy_lobes",
+      "score": 4,
+      "status": "publish",
+      "item": "019",
+      "reference": "blessed-by-the-night-25.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_glossy_lobes_r1/locations/locations__01_julia-multibrot6_d70c928f_glossy_lobes",
+          "caption": "julia multibrot6"
+        },
+        {
+          "keep": "style_glossy_lobes_r1/locations/locations__02_multibrot5_538fb4d6_glossy_lobes",
+          "caption": "multibrot5"
+        },
+        {
+          "keep": "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes",
+          "caption": "mandelbrot"
+        }
+      ],
+      "public": {
+        "name": "lacquer-lobes",
+        "palette": "glossy_lobes",
+        "knobs": [
+          "light_angle",
+          "gloss",
+          "web_width",
+          "sparkle"
+        ]
+      },
+      "what": "Soft lit blue lobes (the disc grid, lit as one dome each) between gold star webs from the strip trap, with halo and sparkle.",
+      "kept": "3 locations, map_lobes formulation",
+      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default."
+    },
+    {
+      "style": "floating_on_dreams",
+      "score": 3,
+      "status": "publish",
+      "item": "002",
+      "reference": "floating-on-dreams-25.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_floating_r1/shortlist/00_d5_julia_ten_spokes",
+          "caption": "d5 julia, ten spokes"
+        },
+        {
+          "keep": "style_floating_r1/shortlist/06_d5_julia_bulb_ring",
+          "caption": "d5 julia, bulb ring"
+        },
+        {
+          "keep": "style_floating_r1/shortlist/07_m2_eight_beaded_arms",
+          "caption": "m2, eight beaded arms"
+        }
+      ],
+      "public": {
+        "name": "silk-waves",
+        "palette": "floating_on_dreams",
+        "knobs": [
+          "waves",
+          "light_angle",
+          "gloss",
+          "streaks",
+          "brightness"
+        ]
+      },
+      "what": "Lit layered waves: the first style; smooth bands lit as ring-banded surfaces with glow streaks.",
+      "kept": "3 locations, 11 palette renders",
+      "note": "Engine: compositor, gradient, inside, light, glow, pattern, mask (first style) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The 3 matched-map locations."
+    },
+    {
+      "style": "yas",
+      "score": 3,
+      "status": "publish",
+      "item": "003",
+      "reference": "yas-25.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_yas_r1/shortlist/09_m2_seahorse_tail_spiral",
+          "caption": "m2 seahorse tail spiral"
+        },
+        {
+          "keep": "style_yas_r1/shortlist/03_d4_julia_seven_arm_rosette",
+          "caption": "d4 julia, seven-arm rosette"
+        },
+        {
+          "keep": "style_yas_r1/shortlist/04_m2_julia_ten_arm_rosette_whirl",
+          "caption": "m2 julia, ten-arm whirl"
+        }
+      ],
+      "public": {
+        "name": "glass-whorl",
+        "palette": "yas",
+        "knobs": [
+          "swirl",
+          "core_glow",
+          "sheets",
+          "brightness"
+        ]
+      },
+      "what": "Radial colour lit from within: translucent stacked sheets with bright rims, hue falling away from a core.",
+      "kept": "4 locations, 10 palette renders",
+      "note": "Engine: radial, sheet, warp, invert, tone · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · 3 of 4 matched-map locations; the thirteen-arm whirl is a near-twin of the ten-arm one."
+    },
+    {
+      "style": "teal_tunnel",
+      "score": 3,
+      "status": "publish",
+      "item": "007",
+      "reference": "795548-3840x2160-desktop-4k-fractal-background.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_teal_tunnel_r1/variants/turns3",
+          "caption": "variant: three turns"
+        },
+        {
+          "keep": "style_teal_tunnel_r1/shortlist/09_m_seed4",
+          "caption": "mandelbrot seed4"
+        },
+        {
+          "keep": "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
+          "caption": "dendrite julia β"
+        }
+      ],
+      "public": {
+        "name": "arch-tunnel",
+        "palette": "teal_tunnel",
+        "knobs": [
+          "turns",
+          "light_angle",
+          "arch_glow",
+          "brightness"
+        ]
+      },
+      "what": "Log-polar tunnel: bevelled arches shrinking ring by ring to a vanishing point, navy cells between teal arms.",
+      "kept": "2 locations, yas palette, turns3 + straight",
+      "note": "Engine: log_polar projection, period on light/sheet · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published stack is five turns; three (kept) is inside its Arm count knob."
+    },
+    {
+      "style": "ribbon_packing",
+      "score": 3,
+      "status": "publish",
+      "item": "014",
+      "reference": "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_ribbon_packing_r1/locations/locations__01_julia-multibrot6_11c49c17_ribbon_packing",
+          "caption": "julia multibrot6"
+        },
+        {
+          "keep": "style_ribbon_packing_r1/locations/locations__07_julia-multibrot6_9aa8f703_ribbon_packing",
+          "caption": "julia multibrot6"
+        }
+      ],
+      "public": {
+        "name": "ribbon-foam",
+        "palette": "ribbon_packing",
+        "knobs": [
+          "disc_size",
+          "ribbon_gloss",
+          "star_rays",
+          "brightness"
+        ]
+      },
+      "what": "bronze_packing plus glossy blue crescent ribbons: the same disc grid read at two scales.",
+      "kept": "2 locations",
+      "note": "Engine: bubble shift + crescent · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "gilded_orbs",
+      "score": 3,
+      "status": "publish",
+      "item": "015",
+      "reference": "ancient-empires-25.jpg",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs",
+          "caption": "mandelbrot"
+        },
+        {
+          "keep": "style_gilded_orbs_r1/formulations/f_many_orbs__01_multibrot3_1ec297e1_gilded_orbs",
+          "caption": "variant: many orbs"
+        }
+      ],
+      "public": {
+        "name": "gilt-orbs",
+        "palette": "gilded_orbs",
+        "knobs": [
+          "orb_size",
+          "filigree",
+          "haze",
+          "sparkle",
+          "light_angle"
+        ]
+      },
+      "what": "Engraved gold filigree with jewel orbs, warm haze and sparkle; built from existing pieces.",
+      "kept": "1 location, many_orbs",
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob."
+    },
+    {
+      "style": "shaded_blades",
+      "score": 3,
+      "status": "publish",
+      "item": "018",
+      "reference": "chronoscope-25.jpg",
+      "variant": "lune_blades",
+      "show": [
+        {
+          "keep": "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
+          "caption": "variant: lune blades"
+        }
+      ],
+      "public": {
+        "name": "steel-blades",
+        "palette": "shaded_blades",
+        "knobs": [
+          "blade_size",
+          "fine_detail",
+          "light_angle",
+          "sheen"
+        ]
+      },
+      "what": "Smoothly shaded lune blades (the bubble's crescent, read at entry) over a hair of light along the set.",
+      "kept": "1 formulation",
+      "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Your note: giant blades occlude the finer ones, so Blade size tops out at the kept size."
+    },
+    {
+      "style": "lit_petals",
+      "score": 3,
+      "status": "publish",
+      "item": "020",
+      "reference": "carnival-25.jpg",
+      "variant": "soft",
+      "show": [
+        {
+          "keep": "style_lit_petals_r1/formulations/f_soft__01_julia-mandelbrot_17e354d3_lit_petals",
+          "caption": "variant: soft"
+        },
+        {
+          "keep": "style_lit_petals_r1/locations/locations__02_julia-mandelbrot_17e354d3_lit_petals",
+          "caption": "julia–mandelbrot"
+        },
+        {
+          "keep": "style_lit_petals_r1/locations/locations__08_julia-mandelbrot_06abe945_lit_petals",
+          "caption": "julia–mandelbrot"
+        }
+      ],
+      "public": {
+        "name": "soft-petals",
+        "palette": "lit_petals",
+        "knobs": [
+          "petal_depth",
+          "jewels",
+          "light_angle",
+          "brightness"
+        ]
+      },
+      "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
+      "kept": "2 locations, soft",
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · soft is now the style's default stack; the two location keeps were drawn in the earlier default (seamed petals)."
+    },
+    {
+      "style": "glow_filaments",
+      "score": 3,
+      "status": "drop",
+      "item": "008",
+      "reference": "Black-and-Green-Abstract-Wallpaper.jpg",
+      "show": [
+        {
+          "keep": "style_glow_filaments_r1/shortlist/08_j_curl_chain",
+          "caption": "julia curl chain"
+        },
+        {
+          "keep": "style_glow_filaments_r1/shortlist/09_m_spiral_pair",
+          "caption": "mandelbrot spiral pair"
+        },
+        {
+          "keep": "style_glow_filaments_r1/variants/no_fog",
+          "caption": "variant: no fog"
+        }
+      ],
+      "what": "Glowing threads from the distance estimate: near-white core, green halo and bloom, faint equipotential threads in the dark.",
+      "kept": "3 locations, no_fog variant",
+      "note": "Engine: glow falloff, tone log_density · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "field_lines",
+      "score": 3,
+      "status": "drop",
+      "item": "016",
+      "reference": "blood-price-25.jpg",
+      "show": [
+        {
+          "keep": "style_field_lines_r1/locations/locations__04_julia-d2-p2_04_field_lines",
+          "caption": "julia d2 p2"
+        },
+        {
+          "keep": "style_field_lines_r1/locations/locations__10_julia-d2-p5_30_field_lines",
+          "caption": "julia d2 p5"
+        },
+        {
+          "keep": "style_field_lines_r1/formulations/f_doubling__00_julia-d2-early_p2_10_field_lines",
+          "caption": "variant: doubling"
+        }
+      ],
+      "what": "Fine fanned field lines around a Julia set, pinwheels in each interior cell. You liked the background fans more than the foreground chain.",
+      "kept": "2 locations, doubling",
+      "note": "Engine: lines channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "leaf_veins",
+      "score": 1,
+      "status": "discarded",
+      "item": "017",
+      "reference": "commons_Fractal_Art_Series__2814465834074_29.jpg",
+      "show": [],
+      "note": "Nothing kept; its discontinuities read as ugly."
+    },
+    {
+      "style": "seahorse_halo",
+      "score": 1,
+      "status": "discarded",
+      "item": "021",
+      "reference": "103489.jpg",
+      "show": [],
+      "note": "Just ranked smooth shading with a vibrant palette. Its map seahorse_halo stays in the library as a candidate palette."
+    },
+    {
+      "style": "citadel",
+      "score": 1,
+      "status": "discarded",
+      "item": "021",
+      "reference": "citadel.jpg",
+      "show": [],
+      "note": "Same as seahorse_halo. Its map citadel_gold stays in the library as a candidate palette."
+    }
+  ]
+}

@@ -34,10 +34,17 @@ def styles_dir() -> Path:
     return repo_root() / "data" / "styles"
 
 
+#: The one JSON file under `data/styles/` that is neither a style nor its keeps: the
+#: custom-mode catalog (`style_catalog.py`).
+CATALOG_FILE = "catalog.json"
+
+
 def names() -> list[str]:
-    """Every style there is, by file name; a style's `<name>.keeps.json` is not one."""
+    """Every style there is, by file name; `<name>.keeps.json` and the catalog are not."""
     return sorted(
-        path.stem for path in styles_dir().glob("*.json") if not path.name.endswith(".keeps.json")
+        path.stem
+        for path in styles_dir().glob("*.json")
+        if not path.name.endswith(".keeps.json") and path.name != CATALOG_FILE
     )
 
 
@@ -188,6 +195,124 @@ def projected(style: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]:
         return style
     merged = {kind: {**members, **(overrides.get(kind) or {})} for kind, members in own.items()}
     return {**style, "projection": merged}
+
+
+#: The members of one public knob (`data/styles/README.md`'s *Public knobs*).
+KNOB_KEYS = ("name", "label", "what", "default", "range", "set")
+
+
+def targets(stack: Any, pointer: str) -> list[tuple[Any, Any]]:
+    """Every `(container, key)` a knob pointer names in a stack.
+
+    A pointer is `/`-separated, list indices as numbers; a `*` step matches every member
+    of that list or object under which the rest of the pointer exists, so
+    `/layers/*/light/azimuth` is every light's azimuth.
+    """
+    steps = [step for step in pointer.split("/") if step]
+    found: list[tuple[Any, Any]] = []
+
+    def walk(node: Any, rest: list[str]) -> None:
+        step, more = rest[0], rest[1:]
+        if step == "*":
+            keys = range(len(node)) if isinstance(node, list) else list(node or {})
+        elif isinstance(node, list):
+            keys = [int(step)] if step.isdigit() and int(step) < len(node) else []
+        else:
+            keys = [step] if isinstance(node, dict) and step in node else []
+        for key in keys:
+            if not more:
+                found.append((node, key))
+            elif isinstance(node[key], (dict, list)):
+                walk(node[key], more)
+
+    if steps:
+        walk(stack, steps)
+    return found
+
+
+def knob_writes(knob: dict[str, Any], value: float) -> list[tuple[str, float]]:
+    """What a knob at `value` writes: `(pointer, number)` per target, `scale·value + offset`."""
+    writes = []
+    for target in knob["set"]:
+        target = {"path": target} if isinstance(target, str) else target
+        number = float(target.get("scale", 1.0)) * value + float(target.get("offset", 0.0))
+        writes.append((target["path"], number))
+    return writes
+
+
+def check_public(document: dict[str, Any]) -> list[str]:
+    """Each way a style's `public` block disagrees with its stack; empty when it holds.
+
+    A knob's `default` is the kept version, so every value it writes at its default must
+    be the stack's own, and the default must lie in its `range`.
+    """
+    problems = []
+    knobs = (document.get("public") or {}).get("knobs") or []
+    seen = set()
+    for knob in knobs:
+        name = knob.get("name", "?")
+        missing = [key for key in KNOB_KEYS if key not in knob]
+        if missing:
+            problems.append(f"knob '{name}' has no {', '.join(missing)}")
+            continue
+        if name in seen:
+            problems.append(f"knob '{name}' is named twice")
+        seen.add(name)
+        low, high = knob["range"]
+        if not low <= knob["default"] <= high:
+            problems.append(f"knob '{name}': default {knob['default']} outside {low}..{high}")
+        for pointer, number in knob_writes(knob, float(knob["default"])):
+            places = targets(document["style"], pointer)
+            if not places:
+                problems.append(f"knob '{name}': {pointer} names nothing in the stack")
+            for node, key in places:
+                if not isinstance(node[key], (int, float)) or abs(node[key] - number) > 1e-9:
+                    problems.append(
+                        f"knob '{name}': {pointer} is {node[key]} in the stack, {number:g} "
+                        "at the knob's default"
+                    )
+                    break
+    return problems
+
+
+def with_knobs(document: dict[str, Any], settings: dict[str, float]) -> dict[str, Any]:
+    """The style file with its stack turned to `settings`, `{knob name: value}`.
+
+    Refuses a knob the style does not expose and a value outside its range: the range
+    is the span the look holds over, which is the knob's whole promise.
+    """
+    import copy
+
+    if not settings:
+        return document
+    knobs = {knob["name"]: knob for knob in (document.get("public") or {}).get("knobs") or []}
+    stack = copy.deepcopy(document["style"])
+    for name, value in settings.items():
+        knob = knobs.get(name)
+        if knob is None:
+            offered = ", ".join(knobs) or "none"
+            raise StyleError(f"style '{document['name']}' has no knob '{name}'; it has: {offered}")
+        low, high = knob["range"]
+        if not low <= value <= high:
+            raise StyleError(f"knob '{name}' is {low}..{high}; {value:g} is outside it")
+        for pointer, number in knob_writes(knob, value):
+            for node, key in targets(stack, pointer):
+                node[key] = int(round(number)) if isinstance(node[key], int) else number
+    return {**document, "style": stack}
+
+
+def parse_knobs(pairs: list[str] | None) -> dict[str, float]:
+    """`--knob NAME=VALUE` arguments as `{name: value}`."""
+    settings = {}
+    for pair in pairs or []:
+        name, sep, value = pair.partition("=")
+        try:
+            settings[name.strip()] = float(value)
+        except ValueError:
+            sep = ""
+        if not sep or not name.strip():
+            raise StyleError(f"--knob takes NAME=VALUE, a number; got '{pair}'")
+    return settings
 
 
 def spec_of(

@@ -18,6 +18,104 @@
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
+  "public": {
+    "knobs": [
+      {
+        "name": "orb_size",
+        "label": "Orb size",
+        "what": "the blue jewel orbs' size; larger draws more and bigger orbs over the filigree",
+        "default": 0.12,
+        "range": [
+          0.08,
+          0.3
+        ],
+        "set": [
+          "/layers/12/channel/bubble/radius",
+          "/layers/13/channel/bubble/radius",
+          "/layers/14/channel/bubble/radius",
+          "/layers/15/channel/bubble/radius",
+          "/layers/16/channel/bubble/radius",
+          {
+            "path": "/layers/12/channel/bubble/largest",
+            "scale": 0.5555555555555556,
+            "offset": 0.08333333333333333
+          },
+          {
+            "path": "/layers/13/channel/bubble/largest",
+            "scale": 0.5555555555555556,
+            "offset": 0.08333333333333333
+          },
+          {
+            "path": "/layers/14/channel/bubble/largest",
+            "scale": 0.5555555555555556,
+            "offset": 0.08333333333333333
+          },
+          {
+            "path": "/layers/15/channel/bubble/largest",
+            "scale": 0.5555555555555556,
+            "offset": 0.08333333333333333
+          },
+          {
+            "path": "/layers/16/channel/bubble/largest",
+            "scale": 0.5555555555555556,
+            "offset": 0.08333333333333333
+          }
+        ]
+      },
+      {
+        "name": "filigree",
+        "label": "Filigree lines",
+        "what": "the fine engraved lines in the gold",
+        "default": 0.4,
+        "range": [
+          0.15,
+          0.6
+        ],
+        "set": [
+          "/layers/2/opacity"
+        ]
+      },
+      {
+        "name": "haze",
+        "label": "Warm haze",
+        "what": "the soft glow round the set",
+        "default": 0.5,
+        "range": [
+          0.2,
+          0.7
+        ],
+        "set": [
+          "/layers/4/opacity"
+        ]
+      },
+      {
+        "name": "sparkle",
+        "label": "Sparkle",
+        "what": "the star points of light along the set",
+        "default": 1.0,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "set": [
+          "/layers/6/opacity"
+        ]
+      },
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "gilded_orbs",
     "interior": {

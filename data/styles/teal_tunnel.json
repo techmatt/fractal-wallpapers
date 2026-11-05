@@ -20,6 +20,62 @@
     "member period on light and sheet: a band every period of the channel's raw value, counted in the projection's rings, instead of across the frame's stretch, so the bands stay the same at every depth of a view without end",
     "location member projection: a record's own twist and ring, laid over the style's projection by `style render`"
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "turns",
+        "label": "Arm count",
+        "what": "how many times the plane wraps round the tunnel: more turns, more and narrower arms",
+        "default": 5.0,
+        "range": [
+          3.0,
+          6.0
+        ],
+        "set": [
+          "/projection/log_polar/turns"
+        ]
+      },
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      },
+      {
+        "name": "arch_glow",
+        "label": "Arch glow",
+        "what": "the light edging each arch",
+        "default": 0.7,
+        "range": [
+          0.3,
+          0.9
+        ],
+        "set": [
+          "/layers/3/opacity"
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.271,
+        "range": [
+          0.22,
+          0.33
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "teal_tunnel",
     "projection": {

@@ -20,6 +20,72 @@
     "bubble member shift [x, y] (in radii, length in (0, 1)): a face inside each bubble, internally tangent to its rim, centred shift*radius from the bubble's centre with radius (1 - |shift|)*radius; the shift is in the disc's own plane, so each bubble's pullback turns its crescent its own way",
     "bubble read crescent: across the lune between the rim and the face, a / (a + b) with a the distance outside the face and b the distance inside the rim (0 at the face, 1 at the rim, NaN on the face), with its own gradient (the plane gradient pulled back through conj(dz)) so a light lights each lune as a curved band"
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "disc_size",
+        "label": "Bubble size",
+        "what": "the largest bubble, as a share of the frame width; smaller packs more, finer bubbles",
+        "default": 0.12,
+        "range": [
+          0.06,
+          0.16
+        ],
+        "set": [
+          "/layers/2/channel/bubble/largest",
+          "/layers/3/channel/bubble/largest",
+          "/layers/4/channel/bubble/largest",
+          "/layers/5/channel/bubble/largest",
+          "/layers/6/channel/bubble/largest",
+          "/layers/7/channel/bubble/largest",
+          "/layers/8/channel/bubble/largest",
+          "/layers/9/channel/bubble/largest",
+          "/layers/10/channel/bubble/largest",
+          "/layers/11/channel/bubble/largest",
+          "/layers/2/warp/channel/bubble/largest"
+        ]
+      },
+      {
+        "name": "ribbon_gloss",
+        "label": "Ribbon gloss",
+        "what": "the highlight along each blue ribbon",
+        "default": 0.9,
+        "range": [
+          0.4,
+          1.0
+        ],
+        "set": [
+          "/layers/13/light/specular"
+        ]
+      },
+      {
+        "name": "star_rays",
+        "label": "Star rays",
+        "what": "the six-pointed star cut into each disc",
+        "default": 0.3,
+        "range": [
+          0.0,
+          0.6
+        ],
+        "set": [
+          "/layers/11/opacity"
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.287,
+        "range": [
+          0.24,
+          0.34
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "ribbon_packing",
     "interior": {

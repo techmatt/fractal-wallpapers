@@ -31,10 +31,48 @@ def style(args: argparse.Namespace) -> int:
             return scout_style(args)
         if args.what == "picker":
             return build_picker(args)
+        if args.what == "knobs":
+            return list_knobs(args, styles)
+        if args.what == "gallery":
+            return build_gallery(args)
         return render_style(args, styles)
     except styles.StyleError as refusal:
         print(refusal)
         return 1
+
+
+def list_knobs(args: argparse.Namespace, styles) -> int:
+    """Print a style's public knobs: name, default, range and what each turns."""
+    document = styles.load(args.name)
+    knobs = (document.get("public") or {}).get("knobs") or []
+    if not knobs:
+        print(f"style '{document['name']}' exposes no knobs")
+        return 1
+    for knob in knobs:
+        low, high = knob["range"]
+        print(f"{knob['name']:<16} {knob['default']:>8g}  {low:g}..{high:g}  {knob['label']}")
+        print(f"{'':<16} {knob['what']}")
+    problems = styles.check_public(document)
+    for problem in problems:
+        print(f"OUT OF STEP: {problem}")
+    return 1 if problems else 0
+
+
+def build_gallery(args: argparse.Namespace) -> int:
+    """Rebuild the custom-modes page from the catalog, the keeps and the references."""
+    from fractal_wallpapers import style_catalog
+
+    out = resolve_output(args.out) if args.out else style_catalog.gallery_folder()
+    try:
+        done = style_catalog.gallery(out)
+    except style_catalog.CatalogError as refusal:
+        print(refusal)
+        return 1
+    print(
+        f"{done['modes']} modes ({done['shown']} shown, {done['discarded']} discarded), "
+        f"{done['images']} images ({done['written']} written) into {done['page']}"
+    )
+    return 0
 
 
 def keep_style(args: argparse.Namespace) -> int:
@@ -224,7 +262,7 @@ def render_style(args: argparse.Namespace, styles) -> int:
     """Draw one location record, or every row of a manifest, in a style."""
     from fractal_wallpapers import locations
 
-    document = styles.load(args.name)
+    document = styles.with_knobs(styles.load(args.name), styles.parse_knobs(args.knob))
     from fractal_wallpapers import style_picker
 
     try:
@@ -390,6 +428,21 @@ def add_commands(subcommands) -> None:
         "the manifest)",
     )
 
+    knobs = verbs.add_parser(
+        "knobs", help="a style's public knobs: default, range, and what each one turns"
+    )
+    knobs.add_argument("name", help="a style name `style list` prints")
+
+    gallery = verbs.add_parser(
+        "gallery",
+        help="rebuild the custom-modes page (index.html and its downscaled images) from "
+        "data/styles/catalog.json, the keeps and the references",
+    )
+    gallery.add_argument(
+        "--out",
+        help="the page's folder (default: fractal-drive-sync/custom-modes/ beside this checkout)",
+    )
+
     render = verbs.add_parser(
         "render",
         help="draw a location record, or each row of a manifest, in a style with any colormap",
@@ -409,6 +462,13 @@ def add_commands(subcommands) -> None:
     render.add_argument(
         "--colormap",
         help="any colormap `palettes list` prints (default: the style's suggested one)",
+    )
+    render.add_argument(
+        "--knob",
+        action="append",
+        metavar="NAME=VALUE",
+        help="turn one of the style's public knobs (its file's `public` block; `style knobs` "
+        "lists them) inside its range; repeatable",
     )
     render.add_argument(
         "--resolution",

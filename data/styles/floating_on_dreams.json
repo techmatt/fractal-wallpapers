@@ -25,6 +25,76 @@
     "layer pattern: a checker of escape bands by escape-angle sectors",
     "mask: any channel as an extra alpha on a layer"
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "waves",
+        "label": "Wave count",
+        "what": "how many lit waves the outside of the set is cut into",
+        "default": 24.0,
+        "range": [
+          12.0,
+          36.0
+        ],
+        "set": [
+          "/layers/3/light/bands"
+        ]
+      },
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      },
+      {
+        "name": "gloss",
+        "label": "Gloss",
+        "what": "the highlight along every wave crest",
+        "default": 0.9,
+        "range": [
+          0.4,
+          1.0
+        ],
+        "set": [
+          "/layers/2/light/specular",
+          "/layers/3/light/specular"
+        ]
+      },
+      {
+        "name": "streaks",
+        "label": "Glow streaks",
+        "what": "the white streaks of light threaded through the waves",
+        "default": 0.6,
+        "range": [
+          0.0,
+          0.9
+        ],
+        "set": [
+          "/layers/4/opacity"
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.686,
+        "range": [
+          0.6,
+          0.74
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "floating_on_dreams",
     "interior": {"palette": 1.0},

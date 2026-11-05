@@ -1,0 +1,419 @@
+{
+  "schema": 1,
+  "name": "lit_petals",
+  "reference": {
+    "image": "carnival-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/lit_petals",
+  "keeps": [
+    {
+      "id": "style_lit_petals_r1/formulations/f_soft__01_julia-mandelbrot_17e354d3_lit_petals",
+      "picker": "style_lit_petals_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_soft__01_julia-mandelbrot_17e354d3_lit_petals"
+        }
+      ],
+      "label": "soft: the petals shaded by the slope of the count alone, no rings and no seam, one smooth sweep of light (julia-mandelbrot_17e354d3)",
+      "image": "style_lit_petals_r1__f_soft__01_julia-mandelbrot_17e354d3_lit_petals.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_17e354d3",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "1.0192054988872936",
+            "center_im": "-0.005539516535256361",
+            "width": "0.4951839999554471"
+          },
+          "maxiter": 7118,
+          "note": "final139_general seat 163 (smooth, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 163,
+            "key": "17e354d3a344983c",
+            "p_spiral": 0.033018
+          }
+        },
+        "style": "v_soft",
+        "stack": "v_soft@e4faad81",
+        "colormap": "lit_petals",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_lit_petals_r1/locations/locations__02_julia-mandelbrot_17e354d3_lit_petals",
+      "picker": "style_lit_petals_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__02_julia-mandelbrot_17e354d3_lit_petals"
+        }
+      ],
+      "label": "julia-mandelbrot_17e354d3",
+      "image": "style_lit_petals_r1__locations__02_julia-mandelbrot_17e354d3_lit_petals.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_17e354d3",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "1.0192054988872936",
+            "center_im": "-0.005539516535256361",
+            "width": "0.4951839999554471"
+          },
+          "maxiter": 7118,
+          "note": "final139_general seat 163 (smooth, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 163,
+            "key": "17e354d3a344983c",
+            "p_spiral": 0.033018
+          }
+        },
+        "style": "lit_petals",
+        "stack": "lit_petals@986ff46a",
+        "colormap": "lit_petals",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_lit_petals_r1/locations/locations__08_julia-mandelbrot_06abe945_lit_petals",
+      "picker": "style_lit_petals_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__08_julia-mandelbrot_06abe945_lit_petals"
+        }
+      ],
+      "label": "julia-mandelbrot_06abe945",
+      "image": "style_lit_petals_r1__locations__08_julia-mandelbrot_06abe945_lit_petals.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_06abe945",
+          "family": {
+            "c": [
+              "-0.75979921213082943251559944387997563",
+              "-0.084519262497371513929408867580943368"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.5160781614056555",
+            "center_im": "0.032401650985769956",
+            "width": "0.02058145031651321"
+          },
+          "maxiter": 12624,
+          "note": "final139_general seat 568 (tia, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 568,
+            "key": "06abe945a486b272",
+            "p_spiral": 0.01224
+          }
+        },
+        "style": "lit_petals",
+        "stack": "lit_petals@986ff46a",
+        "colormap": "lit_petals",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "lit_petals@986ff46a": {
+      "name": "lit_petals",
+      "interior": {
+        "rgb": "#12303a"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.25,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff2d0"
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 3.0,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "rgb": "#2a1418"
+          },
+          "blend": "multiply",
+          "opacity": 0.35
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0,
+            "phase": 0.0
+          },
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.5,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff2d0"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#1a0c10"
+          },
+          "blend": "multiply",
+          "opacity": 0.4
+        }
+      ],
+      "tone": {
+        "median": 0.323,
+        "p10": 0.12
+      }
+    },
+    "v_soft@e4faad81": {
+      "name": "v_soft",
+      "interior": {
+        "rgb": "#12303a"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.25,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff2d0"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0,
+            "phase": 0.0
+          },
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.5,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff2d0"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#1a0c10"
+          },
+          "blend": "multiply",
+          "opacity": 0.4
+        }
+      ],
+      "tone": {
+        "median": 0.323,
+        "p10": 0.12
+      }
+    }
+  }
+}

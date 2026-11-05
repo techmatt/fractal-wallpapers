@@ -18,6 +18,70 @@
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
+  "public": {
+    "knobs": [
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      },
+      {
+        "name": "gloss",
+        "label": "Gloss",
+        "what": "the highlight on each blue lobe",
+        "default": 0.9,
+        "range": [
+          0.4,
+          1.0
+        ],
+        "set": [
+          "/layers/2/light/specular",
+          "/layers/5/light/specular"
+        ]
+      },
+      {
+        "name": "web_width",
+        "label": "Web width",
+        "what": "how wide the gold star-web strands are",
+        "default": 0.1,
+        "range": [
+          0.06,
+          0.12
+        ],
+        "set": [
+          "/layers/7/channel/bubble/radius",
+          "/layers/8/channel/bubble/radius",
+          "/layers/9/channel/bubble/radius",
+          "/layers/10/channel/bubble/radius"
+        ]
+      },
+      {
+        "name": "sparkle",
+        "label": "Sparkle",
+        "what": "the star points of light along the set",
+        "default": 1.0,
+        "range": [
+          0.0,
+          1.0
+        ],
+        "set": [
+          "/layers/13/opacity",
+          {
+            "path": "/layers/14/opacity",
+            "scale": 0.6
+          }
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "glossy_lobes",
     "interior": {

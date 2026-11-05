@@ -10,13 +10,68 @@
   "suggested_colormap": "lit_petals",
   "reuses": [
     "field smooth through the map by rank, once: the depth order of the reference's rosette (teal ground, cream and gold outer petals, orange, maroon and plum inner ones), read off a cyclic map so the jewels can cycle it",
-    "the light layer on field smooth at period 3 (gilded_orbs' filigree at a third of its frequency): every three escape steps one soft dome, the petal",
-    "a period sheet on field smooth multiplied dark at the same period: the seam between petals",
-    "the same count cycled three times round the map and lit at one ring a step, masked to the set's neighbourhood by the inverted distance estimate at power 25: the jewels",
+    "the light layer on field smooth at period 3 with no tube (rings 0, slope 1: the soft formulation, Matt's keep and the default since item 025): every three escape steps one smooth rise, the petal",
+    "the same count cycled three times round the map and lit at one step a ring, masked to the set's neighbourhood by the inverted distance estimate at power 25: the jewels",
     "glow_filaments' falloff glow on de, painted near-black and multiplied: the dark hair outlining each jewel",
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
+  "public": {
+    "knobs": [
+      {
+        "name": "petal_depth",
+        "label": "Petal depth",
+        "what": "escape steps per lit petal: more makes fewer, broader petals",
+        "default": 3.0,
+        "range": [
+          2.0,
+          4.0
+        ],
+        "set": [
+          "/layers/1/light/period"
+        ]
+      },
+      {
+        "name": "jewels",
+        "label": "Jewels",
+        "what": "the cycled jewel colours crusting the petal edges",
+        "default": 0.9,
+        "range": [
+          0.4,
+          1.0
+        ],
+        "set": [
+          "/layers/2/opacity"
+        ]
+      },
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.323,
+        "range": [
+          0.28,
+          0.38
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "lit_petals",
     "interior": {
@@ -47,8 +102,8 @@
         },
         "light": {
           "period": 3.0,
-          "rings": 1.0,
-          "slope": 0.0,
+          "rings": 0.0,
+          "slope": 1.0,
           "azimuth": 135.0,
           "elevation": 40.0,
           "ambient": 0.45,
@@ -61,24 +116,6 @@
             "rgb": "#fff2d0"
           }
         }
-      },
-      {
-        "kind": "sheet",
-        "channel": {
-          "field": {
-            "kind": "smooth"
-          }
-        },
-        "sheet": {
-          "period": 3.0,
-          "edge": 0.06,
-          "fill": 0.0
-        },
-        "color": {
-          "rgb": "#2a1418"
-        },
-        "blend": "multiply",
-        "opacity": 0.35
       },
       {
         "kind": "palette",
@@ -114,8 +151,8 @@
         },
         "light": {
           "period": 1.0,
-          "rings": 1.0,
-          "slope": 0.0,
+          "rings": 0.0,
+          "slope": 1.0,
           "azimuth": 135.0,
           "elevation": 40.0,
           "ambient": 0.45,

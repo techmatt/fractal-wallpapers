@@ -8,11 +8,15 @@ fractal-wallpapers style render floating_on_dreams --location <record.json> --co
 fractal-wallpapers style render floating_on_dreams --manifest <records.jsonl> --out-dir <dir>
 fractal-wallpapers style render <draft.json> --location <record.json>      # a draft, before it joins
 fractal-wallpapers style keep floating_on_dreams <picker>.choices.json     # save a picker's keeps
+fractal-wallpapers style knobs lit_petals                                  # its public knobs
+fractal-wallpapers style render lit_petals --location <record.json> --knob light_angle=200
+fractal-wallpapers style gallery                                           # rebuild custom-modes/
 ```
 
 `<name>.keeps.json` beside a style is not a style: it is the renders Matt kept from its
 pickers, each with what redraws it, and its pictures live in
-`fractal-drive-sync/style-keeps/<name>/` beside the reference.
+`fractal-drive-sync/style-keeps/<name>/` beside the reference. Nor is **`catalog.json`**:
+the custom-mode catalog, one row per style that has been through a round (*The catalog*).
 
 `--location` takes the same record `render --location` reads — `{family, viewport,
 maxiter}` is enough — and `--colormap` defaults to the style's suggested map. The
@@ -41,6 +45,7 @@ makes — so the explorer can port it without anything here.
 | `suggested_colormap` | the map the stack was fitted with; any map renders |
 | `reuses` | the existing pieces the stack is built from |
 | `adds` | the primitives this style added to the engine, empty when it added none |
+| `public` | a published mode's knobs, `{"knobs": [...]}` (*Public knobs*); absent on the rest |
 | `style` | the stack, handed to the engine untouched as the render spec's `style` key |
 
 The stack is `{name, interior, tone, projection, layers}`. `interior` is a paint for a sample whose
@@ -197,6 +202,45 @@ Under a style the render spec's own `palette` carries the bake and the rolloff o
 CLI folds a sequential map (`mirror`) only when a palette layer repeats it (`cycles` > 1):
 at one traversal the fold would run the near-set end back to the far field's colour.
 
+## Public knobs
+
+A published mode exposes three to five knobs, the parameters most worth handing a user,
+in its file's `public` block:
+
+```
+{"name": "light_angle", "label": "Light direction", "what": "<one line a user reads>",
+ "default": 135.0, "range": [45.0, 225.0],
+ "set": ["/layers/*/light/azimuth", {"path": "/layers/14/opacity", "scale": 0.6, "offset": 0}]}
+```
+
+`default` is the kept version: every value the knob writes at its default is the stack's
+own (`styles.check_public`, which `style knobs` and the catalog's check run). `range`
+spans what Matt kept without breaking the look, read off a sweep of each knob's ends at a
+kept location, and **never past the size where a large shape starts hiding the finer
+scales** (see step 6's rule). `set` is where the value goes: a pointer into the stack,
+list indices as numbers and `*` for every member under which the rest exists, written as
+`scale·value + offset` (default 1 and 0), so one knob can move linked members together
+(`gilded_orbs`' `orb_size` moves each orb trap's `largest` with its `radius`, through its
+`many_orbs` keep). `style render --knob NAME=VALUE` turns one, refusing a name the style
+does not expose and a value outside its range; the render log keeps the stack as drawn.
+
+## The catalog
+
+`catalog.json` is the single record per mode: style, reference image, Matt's score
+(1–5), status (`publish`, `drop`, `discarded`), the published variant, the keeps the page
+shows (`{keep, caption}`, ids from `<name>.keeps.json`), the card's text, and for a
+published mode `public` (`{name, palette, knobs}`). The published variant is always the
+style file's default stack: where Matt kept a formulation over the stack (`lit_petals`'
+`soft`, `shaded_blades`' `lune_blades`), it became the default. Public names are
+proposals Matt may rename; they are data. `style_catalog.check` holds the rows to the
+style files (reference, knob names, colormap, keep ids).
+
+`fractal-wallpapers style gallery` rebuilds `fractal-drive-sync/custom-modes/index.html`
+and its downscaled pictures (`img/`, each traced in `img/sources.json` so a rebuild
+redraws only what moved) from the catalog, the keeps and the references. Its Publish /
+Maybe / Drop toggles start from each row's status, and a style in the library with no
+row is listed under *not yet catalogued*.
+
 ## A new style from a reference image
 
 The item that brings a picture says "new style from <image>". Run every engine-driving
@@ -280,6 +324,12 @@ globs, so background them yourself.
      threads, a single seat sometimes several minutes alone: give its background job a
      kill limit well past that.
 
+   **A render must always look as if zooming in would show more detail** (Matt's rule,
+   item 018). Large shapes — a trap's big early entries, wide blades or discs — must never
+   occlude the finer scales, or the frame reads as a finite set of objects instead of a
+   fractal. Check for it when picking locations and formulations, and drop or re-bound
+   (`largest`) a stack that fails it; a public knob's range stops short of it too.
+
    Render with `style render` (`--manifest` into one folder per row): each render is
    logged to `renders.jsonl` beside it. Then write a plan and build the picker:
 
@@ -301,6 +351,12 @@ globs, so background them yourself.
 9. **Save Matt's keeps** after each round: `fractal-wallpapers style keep <name>
    <picker>.choices.json` writes `<name>.keeps.json` here and copies the pictures, with
    the reference, to `fractal-drive-sync/style-keeps/<name>/`; a later round merges in.
+10. **Catalogue it and rebuild the page.** A new mode adds its row to `catalog.json`
+    (score and status as Matt gave them, the keeps to show with captions, the card's
+    text; a published mode its variant as the default stack, its `public` name and
+    palette, and its knobs in the style file), then `fractal-wallpapers style gallery`
+    rebuilds `fractal-drive-sync/custom-modes/`. Matt's score or status changing later is
+    the same two steps.
 
 ### The per-image prompt
 
@@ -318,7 +374,7 @@ Follow data/styles/README.md's *A new style from a reference image*. Commit when
 The procedure covers the rest by itself: the layer reading, any engine primitive and
 its identity check, the matched map and `palettes add`, the gallery scout with no
 spirals, the tone targets and the draft-size check, the picker with nothing
-pre-selected and its sidecar, and `style keep`.
+pre-selected and its sidecar, `style keep`, the catalog row and `style gallery`.
 
 ## The styles
 
@@ -333,9 +389,9 @@ pre-selected and its sidecar, and `style keep`.
 | `gilded_orbs` | `ancient-empires-25.jpg` | `gilded_orbs` | nothing: the old layers on `de`, `smooth`, `tia`, `inside` and two bubble traps |
 | `field_lines` | `blood-price-25.jpg` | `field_lines` | the `lines` channel (`angle`, `step`; `radius`, `arrive`, `settle`, `twist`, `divide`, `side`). Its structure, connected Julia sets with attracting basins, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `leaf_veins` | `commons_Fractal_Art_Series__2814465834074_29.jpg` | `leaf_veins` | nothing: old layers on `de`, `smooth` and `lines`. Its structure, dendrites, is one the galleries lack: its locations are hand-placed (step 4's exception) |
-| `shaded_blades` | `chronoscope-25.jpg` | `shaded_blades` | the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound |
+| `shaded_blades` | `chronoscope-25.jpg` | `shaded_blades` | the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound. Its default stack is the `lune_blades` formulation (crescent lunes, not strips), Matt's one keep |
 | `glossy_lobes` | `blessed-by-the-night-25.jpg` | `glossy_lobes` | nothing: a disc lattice domed at `period` 2 under `shaded_blades`' strip blades, on `de`, `inside` and the sparkle lattice |
-| `lit_petals` | `carnival-25.jpg` | `lit_petals` | nothing: the smooth count through a cyclic map, lit at `period` 3, and cycled three times under a `de` mask for the jewels |
+| `lit_petals` | `carnival-25.jpg` | `lit_petals` | nothing: the smooth count through a cyclic map, lit at `period` 3, and cycled three times under a `de` mask for the jewels. Its default stack is the `soft` formulation (no tube, no seam sheet), the one Matt kept |
 | `seahorse_halo` | `103489.jpg` | `seahorse_halo` | nothing: the smooth count through a cyclic map by rank at 1.5 cycles, a dark `de` hair, the tone pass |
 | `citadel` | `citadel.jpg` | `citadel_gold` | nothing: the same stack at 2 cycles; the map is `citadel_gold` because the library's older `citadel` is another map |
 | `teal_filaments` | `alina-25.jpg` | `teal_filaments` | nothing: `glow_filaments`' falloff glows softened, two wide haze glows and a scooped period sheet on the smooth count for the mist, on a literal ground |

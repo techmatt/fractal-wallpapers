@@ -1,0 +1,228 @@
+{
+  "schema": 1,
+  "name": "shaded_blades",
+  "reference": {
+    "image": "chronoscope-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal by its look (orbit-trap blades shaded by a gradient, signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/shaded_blades",
+  "keeps": [
+    {
+      "id": "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
+      "picker": "style_shaded_blades_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_lune_blades__00_multibrot3_1ec297e1_shaded_blades"
+        }
+      ],
+      "label": "lune blades, the stack without its headline addition: the blades are the crescents of a disc lattice (ribbon_packing's read) instead of the strip, lit across the lune (multibrot3_1ec297e1)",
+      "image": "style_shaded_blades_r1__f_lune_blades__00_multibrot3_1ec297e1_shaded_blades.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "multibrot3_1ec297e1",
+          "family": {
+            "kind": "multibrot",
+            "degree": 3
+          },
+          "viewport": {
+            "center_re": "0.4398699881452183",
+            "center_im": "0.016620335607234894",
+            "width": "0.00003340303017629088"
+          },
+          "maxiter": 23745,
+          "note": "final139_general seat 194 (threads, multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 194,
+            "key": "1ec297e128cc1556",
+            "p_spiral": 0.001535
+          },
+          "ink": 0.10524
+        },
+        "style": "v_lune_blades",
+        "stack": "v_lune_blades@6702144f",
+        "colormap": "shaded_blades",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "v_lune_blades@6702144f": {
+      "name": "v_lune_blades",
+      "interior": {
+        "rgb": "#0b0a0d"
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "power": 0.01,
+          "color": {
+            "rgb": "#0b0a0d"
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          },
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0002,
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.45,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.3,
+              "smallest": 0.006,
+              "shift": [
+                0.5,
+                0.2
+              ]
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 3.0,
+            "phase": 0.0
+          },
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.45,
+                "hit": 1,
+                "read": "crescent",
+                "spacing": 1.0,
+                "escaped": true,
+                "largest": 0.3,
+                "smallest": 0.006,
+                "shift": [
+                  0.5,
+                  0.2
+                ]
+              }
+            },
+            "power": 0.001
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.45,
+              "hit": 1,
+              "read": "crescent",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.3,
+              "smallest": 0.006,
+              "shift": [
+                0.5,
+                0.2
+              ]
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.5,
+            "shininess": 12.0,
+            "rim": 0.0,
+            "rim_power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.45,
+              "hit": 1,
+              "read": "crescent",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.3,
+              "smallest": 0.006,
+              "shift": [
+                0.5,
+                0.2
+              ]
+            },
+            "invert": true
+          },
+          "power": 10.0,
+          "color": {
+            "rgb": "#060508"
+          },
+          "blend": "normal",
+          "opacity": 0.5
+        }
+      ],
+      "tone": {
+        "median": 0.273,
+        "p10": 0.029
+      }
+    }
+  }
+}

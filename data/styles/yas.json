@@ -25,6 +25,66 @@
     "member invert on every channel: the position read from the other end",
     "style tone: per-frame tonal normalisation of the composite to a median and a p10 lightness"
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "swirl",
+        "label": "Swirl",
+        "what": "how far the colour bends along the arms instead of falling away in rings",
+        "default": 0.3,
+        "range": [
+          0.1,
+          0.5
+        ],
+        "set": [
+          "/layers/0/warp/amount"
+        ]
+      },
+      {
+        "name": "core_glow",
+        "label": "Core glow",
+        "what": "the warm light at the centre",
+        "default": 0.2,
+        "range": [
+          0.0,
+          0.4
+        ],
+        "set": [
+          "/layers/1/opacity"
+        ]
+      },
+      {
+        "name": "sheets",
+        "label": "Glass sheets",
+        "what": "the translucent stacked sheets and their bright rims",
+        "default": 0.4,
+        "range": [
+          0.2,
+          0.6
+        ],
+        "set": [
+          "/layers/5/opacity",
+          {
+            "path": "/layers/6/opacity",
+            "scale": 0.75
+          }
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.36,
+        "range": [
+          0.3,
+          0.44
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "yas",
     "interior": {

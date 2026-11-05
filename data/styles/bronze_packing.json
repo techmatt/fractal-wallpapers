@@ -21,6 +21,72 @@
   "adds": [
     "channel bubble {center, radius, hit, read, spacing, escaped, largest}: the disc |z - center| < radius read at the step the orbit enters it for the hit-th time, its own loop with dz kept so the height has a gradient. The samples entering first at step n are a conformal preimage of the disc, so they draw round discs, and later steps fill the gaps: a circle packing. read is height (1 - |z - center|/radius, a dome a light at period 2 lights as a hemisphere), step (one number per disc) or angle (rays from each disc's middle); hit 2 is a packing of smaller discs inside each disc of hit 1; spacing repeats the disc on a square lattice so almost every orbit lands in one; escaped reads only escaping orbits, leaving the set's components to the inside channel; largest passes over an entry whose disc pulls back larger than that fraction of the frame width (radius / |dz| > largest * width), so the packing starts at a frame-relative size at any zoom depth"
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "disc_size",
+        "label": "Bubble size",
+        "what": "the largest bubble, as a share of the frame width; smaller packs more, finer bubbles",
+        "default": 0.12,
+        "range": [
+          0.06,
+          0.16
+        ],
+        "set": [
+          "/layers/2/channel/bubble/largest",
+          "/layers/3/channel/bubble/largest",
+          "/layers/4/channel/bubble/largest",
+          "/layers/5/channel/bubble/largest",
+          "/layers/6/channel/bubble/largest",
+          "/layers/7/channel/bubble/largest",
+          "/layers/8/channel/bubble/largest",
+          "/layers/9/channel/bubble/largest",
+          "/layers/10/channel/bubble/largest",
+          "/layers/11/channel/bubble/largest",
+          "/layers/2/warp/channel/bubble/largest"
+        ]
+      },
+      {
+        "name": "shine",
+        "label": "Metal shine",
+        "what": "how bright the specular glint on each disc's dome is",
+        "default": 0.5,
+        "range": [
+          0.2,
+          0.9
+        ],
+        "set": [
+          "/layers/4/light/specular"
+        ]
+      },
+      {
+        "name": "rim_glow",
+        "label": "Rim glow",
+        "what": "the bright metallic ring round every disc",
+        "default": 1.0,
+        "range": [
+          0.4,
+          1.0
+        ],
+        "set": [
+          "/layers/6/opacity"
+        ]
+      },
+      {
+        "name": "star_rays",
+        "label": "Star rays",
+        "what": "the six-pointed star cut into each disc",
+        "default": 0.3,
+        "range": [
+          0.0,
+          0.6
+        ],
+        "set": [
+          "/layers/11/opacity"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "bronze_packing",
     "interior": {
