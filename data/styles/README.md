@@ -238,7 +238,10 @@ globs, so background them yourself.
      variants, the stack without its headline addition), each at the same two scouted
      locations, plus the closest named mode at one of them as the baseline;
    - **locations**: ten to twelve scouted seats, rendered at `--draft` and kept by eye
-     from the scout's forty, in the current formulation with the matched map.
+     from the scout's forty, in the current formulation with the matched map. The forty
+     drafts are one `style render --manifest … --draft` run of 10–15 minutes at four
+     threads, a single seat sometimes several minutes alone: give its background job a
+     kill limit well past that.
 
    Render with `style render` (`--manifest` into one folder per row): each render is
    logged to `renders.jsonl` beside it. Then write a plan and build the picker:
