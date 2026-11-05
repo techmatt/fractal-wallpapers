@@ -721,7 +721,9 @@ it, so views only turned about the frame's middle nest their rings into a bullse
 view's centre shifted 0.2 to 0.4 frame widths off makes the ring systems cross instead.
 Far from the set the level lines are still arcs, which is why `cipher-25.jpg`'s S-shaped
 ribbons swirling through the frame were not reached: its style draws silky arcs (a fine
-period sheet per veil for the strands) round the set. Its first fit read p90 ~0.40
+period sheet per veil for the strands) round the set; moving each view's set off the frame
+(shifts of 0.6 to 1 frame width) sweeps the arcs across it instead, the nearest its round
+one came to the ribbons. Its first fit read p90 ~0.40
 against 0.51 at most drafts, and brighter strands fixed that but washed the violet grey
 under `log_density`; the kept balance is bright rims and faint strands. **Veils need far field, which the
 galleries lack**: a gallery seat is a deep zoom of lace, where every view's bands crowd
