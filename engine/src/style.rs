@@ -272,6 +272,14 @@ pub struct Bubble {
     /// wherever the frame is, as a glow's `falloff` does. Absent: every entry counts.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub largest: Option<f64>,
+    /// The smallest shape drawn, as a fraction of the frame's width: the read ends,
+    /// `NaN`, at the first counted entry whose shape pulls back smaller than that
+    /// (`radius / |dz| < smallest · width`), and the sample is left to the layers
+    /// beneath. Entries only shrink along an orbit, so this is where the trap's
+    /// detail stops: the shapes stay large and solid, and what the frame holds finer
+    /// than the bound is whatever is under them. Absent: no bound.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smallest: Option<f64>,
     /// The **face**: a smaller disc inside each bubble, internally tangent to its rim,
     /// its centre moved from the bubble's by `shift` (a vector in radii, of length
     /// below 1) and its radius `(1 − |shift|)·radius`. What the `crescent` read paints
@@ -280,6 +288,37 @@ pub struct Bubble {
     /// turns it by its own `arg dz`: the crescents face every way. Absent: no face.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub shift: Option<[f64; 2]>,
+    /// The trap's shape: the disc, or the **strip** `|Im((z − center)·e^{−i·tilt})| <
+    /// radius` about the line through `center` at `tilt`, the line trap read at an
+    /// entry. Where a disc pulls back round, a strip pulls back through each critical
+    /// point of the iterate as a cross of arms tapering to points, so its entries are
+    /// pointed blades radiating from where they meet. With `spacing` the strip repeats
+    /// as parallel lines `spacing` apart. A strip has no face and no angle.
+    #[serde(skip_serializing_if = "BubbleShape::is_disc")]
+    pub shape: BubbleShape,
+    /// The direction, in degrees, that the `across` read is measured across (and the
+    /// strip's line runs along): 0 is the real axis.
+    #[serde(skip_serializing_if = "is_zero")]
+    pub tilt: f64,
+}
+
+fn is_zero(value: &f64) -> bool {
+    *value == 0.0
+}
+
+/// A bubble trap's shape.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BubbleShape {
+    #[default]
+    Disc,
+    Strip,
+}
+
+impl BubbleShape {
+    fn is_disc(&self) -> bool {
+        *self == BubbleShape::Disc
+    }
 }
 
 impl Default for Bubble {
@@ -292,7 +331,10 @@ impl Default for Bubble {
             spacing: None,
             escaped: false,
             largest: None,
+            smallest: None,
             shift: None,
+            shape: BubbleShape::Disc,
+            tilt: 0.0,
         }
     }
 }
@@ -327,10 +369,15 @@ pub enum BubbleRead {
     /// band towards the rim, so a light lights each lune as a curved band — on the
     /// early, large bubbles a ribbon sweeping the frame.
     Crescent,
+    /// Across the shape, perpendicular to [`Bubble::tilt`]: 0 at one edge, 1 at the
+    /// other (`(v/radius + 1)/2`, `v` the offset's component across). Its gradient is
+    /// one direction over the whole shape, pulled back through `dz`, so a light on it
+    /// shades each strip's blade from one edge to the other, as brushed metal.
+    Across,
 }
 
 /// How many reads a bubble loop has, one lane each.
-const BUBBLE_READS: usize = 4;
+const BUBBLE_READS: usize = 5;
 
 /// The **field-lines** channel: which way the orbit was heading where it crossed a
 /// circle of its own, outside the set and inside it.
@@ -1066,15 +1113,21 @@ impl Style {
                             && bubble.center.iter().all(|c| c.is_finite())
                             && bubble.spacing.is_none_or(|s| s.is_finite() && s > 0.0)
                             && bubble.largest.is_none_or(|l| l.is_finite() && l > 0.0)
+                            && bubble.smallest.is_none_or(|l| l.is_finite() && l > 0.0)
                             && bubble.shift.is_none_or(|[x, y]| {
                                 let length = x.hypot(y);
                                 length.is_finite() && length > 0.0 && length < 1.0
                             })
-                            && (bubble.read != BubbleRead::Crescent || bubble.shift.is_some()) => {}
+                            && (bubble.read != BubbleRead::Crescent || bubble.shift.is_some())
+                            && bubble.tilt.is_finite()
+                            && (bubble.shape == BubbleShape::Disc
+                                || (bubble.shift.is_none()
+                                    && bubble.read != BubbleRead::Angle)) => {}
                     (None, None, None, Some(_)) => {
                         return Err(format!(
-                            "{at}: a bubble needs hit >= 1, a positive radius, spacing and largest, \
-                             a finite centre, a shift of length in (0, 1), and a shift to read a crescent"
+                            "{at}: a bubble needs hit >= 1, a positive radius, spacing, largest and smallest, \
+                             a finite centre and tilt, a shift of length in (0, 1), a shift to read \
+                             a crescent, and no shift or angle on a strip"
                         ));
                     }
                     _ => {
@@ -1228,6 +1281,7 @@ struct BubbleLanes {
     reads: [Vec<f32>; BUBBLE_READS],
     gradient: Vec<[f32; 2]>,
     crescent_gradient: Vec<[f32; 2]>,
+    across_gradient: Vec<[f32; 2]>,
 }
 
 impl Channels {
@@ -1275,6 +1329,9 @@ impl Channels {
             Key::Field(_) => &self.gradient,
             Key::Bubble(bubble) if bubble.read == BubbleRead::Crescent => {
                 &self.bubble(bubble).crescent_gradient
+            }
+            Key::Bubble(bubble) if bubble.read == BubbleRead::Across => {
+                &self.bubble(bubble).across_gradient
             }
             Key::Bubble(bubble) => &self.bubble(bubble).gradient,
             // Refused by `Style::validate`: neither has an orbit gradient to light.
@@ -1357,14 +1414,28 @@ impl Entry {
     /// The four reads, in [`BubbleRead`]'s order; the crescent is `NaN` off the lune
     /// and on a trap without a face.
     pub fn reads(&self, trap: &Bubble) -> [f64; BUBBLE_READS] {
-        let turn = (self.offset.arg() / std::f64::consts::TAU).rem_euclid(1.0);
+        let across = (self.offset * across_axis(trap).conj()).re / trap.radius;
+        let (height, turn) = match trap.shape {
+            BubbleShape::Disc => (
+                1.0 - self.offset.norm() / trap.radius,
+                (self.offset.arg() / std::f64::consts::TAU).rem_euclid(1.0),
+            ),
+            BubbleShape::Strip => (1.0 - across.abs(), f64::NAN),
+        };
         let crescent = self.lune(trap).map_or(f64::NAN, |(across, _)| across);
         [
-            1.0 - self.offset.norm() / trap.radius,
+            height,
             self.step as f64,
             turn,
             crescent,
+            (across + 1.0) / 2.0,
         ]
+    }
+
+    /// The unit direction the `across` read climbs in the pixel: the trap's across
+    /// axis pulled back through `dz`.
+    pub fn across_shape(&self, trap: &Bubble) -> Option<[f64; 2]> {
+        pulled_back(self.derivative, across_axis(trap))
     }
 
     /// Where the entry sits across the lune between the rim and the face, and that
@@ -1399,12 +1470,32 @@ impl Entry {
         (length.is_finite() && length > 0.0).then(|| [pulled.re / length, pulled.im / length])
     }
 
-    /// The unit direction the height climbs: towards the bubble's middle. The height
-    /// is `1 − |z − center|/radius`, a negative multiple of `ln|z − center|`, so this
-    /// is [`gradient`] with the offset in place of `z`.
-    pub fn uphill(&self) -> Option<[f64; 2]> {
-        gradient(self.offset, self.derivative)
+    /// The unit direction the height climbs: towards the bubble's middle. On a disc
+    /// the height is `1 − |z − center|/radius`, a negative multiple of
+    /// `ln|z − center|`, so this is [`gradient`] with the offset in place of `z`; on a
+    /// strip it is the across axis towards the line, pulled back.
+    pub fn uphill(&self, trap: &Bubble) -> Option<[f64; 2]> {
+        match trap.shape {
+            BubbleShape::Disc => gradient(self.offset, self.derivative),
+            BubbleShape::Strip => {
+                let across = (self.offset * across_axis(trap).conj()).re;
+                pulled_back(self.derivative, -across.signum() * across_axis(trap))
+            }
+        }
     }
+}
+
+/// The unit vector across the trap's shape, perpendicular to its tilt: `i·e^{i·tilt}`.
+fn across_axis(trap: &Bubble) -> Complex<f64> {
+    Complex::from_polar(1.0, trap.tilt.to_radians()) * Complex::i()
+}
+
+/// A direction of the orbit's plane pulled back to the pixel (`∇ₚ = conj(dz)·∇`, as
+/// in [`gradient`]) and normalized.
+fn pulled_back(derivative: Complex<f64>, direction: Complex<f64>) -> Option<[f64; 2]> {
+    let pulled = derivative.conj() * direction;
+    let length = pulled.norm();
+    (length.is_finite() && length > 0.0).then(|| [pulled.re / length, pulled.im / length])
 }
 
 /// Where the orbit of `pixel` enters `trap`'s disc for the `hit`-th time, within
@@ -1422,9 +1513,14 @@ pub fn bubble(
     let least_sq = trap
         .largest
         .map_or(0.0, |largest| (trap.radius / (largest * width)).powi(2));
+    // |dz| past which an entry's shape pulls back smaller than `smallest` frames.
+    let most_sq = trap.smallest.map_or(f64::INFINITY, |smallest| {
+        (trap.radius / (smallest * width)).powi(2)
+    });
     let (mut z, mut z_prev, c) = family.seed(pixel);
     let (mut dz, mut dz_prev) = family.derivative_seed();
     let center = Complex::new(trap.center[0], trap.center[1]);
+    let turn_back = Complex::from_polar(1.0, -trap.tilt.to_radians());
     let (radius_sq, bailout_sq) = (
         trap.radius * trap.radius,
         iterate::BAILOUT * iterate::BAILOUT,
@@ -1442,15 +1538,33 @@ pub fn bubble(
         if magnitude_sq > bailout_sq || magnitude_sq.is_nan() {
             return None;
         }
-        let offset = match trap.spacing {
-            None => z - center,
-            Some(spacing) => {
-                let cell = (z - center) / spacing;
-                z - center - Complex::new(cell.re.round(), cell.im.round()) * spacing
+        let (offset, inside) = match trap.shape {
+            BubbleShape::Disc => {
+                let offset = match trap.spacing {
+                    None => z - center,
+                    Some(spacing) => {
+                        let cell = (z - center) / spacing;
+                        z - center - Complex::new(cell.re.round(), cell.im.round()) * spacing
+                    }
+                };
+                (offset, offset.norm_sqr() < radius_sq)
+            }
+            BubbleShape::Strip => {
+                // In the strip's own frame the line is the real axis: keep the part
+                // along it, and wrap the part across it onto the nearest line.
+                let own = (z - center) * turn_back;
+                let across = match trap.spacing {
+                    None => own.im,
+                    Some(spacing) => own.im - (own.im / spacing).round() * spacing,
+                };
+                let offset = Complex::new(own.re, across) * turn_back.conj();
+                (offset, across.abs() < trap.radius)
             }
         };
-        let inside = offset.norm_sqr() < radius_sq;
         if inside && !was_inside && dz.norm_sqr() >= least_sq {
+            if dz.norm_sqr() > most_sq {
+                return None;
+            }
             hits += 1;
             if hits == trap.hit {
                 return Some(Entry {
@@ -1522,7 +1636,12 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
     let reach = style.inside();
     let traps = style.bubbles();
     let circles = style.lines();
-    type BubbleRow = ([Vec<f32>; BUBBLE_READS], Vec<[f32; 2]>, Vec<[f32; 2]>);
+    type BubbleRow = (
+        [Vec<f32>; BUBBLE_READS],
+        Vec<[f32; 2]>,
+        Vec<[f32; 2]>,
+        Vec<[f32; 2]>,
+    );
     type Row = (
         Vec<Vec<f32>>,
         Vec<[f32; 2]>,
@@ -1591,7 +1710,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                     );
                     gradients.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
                 }
-                for ((trap, wanted), (reads, unit_lane, across_lane)) in
+                for ((trap, wanted), (reads, unit_lane, lune_lane, across_lane)) in
                     traps.iter().zip(&mut bubble_rows)
                 {
                     let entry = (orbit.escaped || !trap.escaped)
@@ -1607,10 +1726,13 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                         to_frame(unit).map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32])
                     };
                     if lights {
-                        unit_lane.push(unit(entry.and_then(|entry| entry.uphill())));
+                        unit_lane.push(unit(entry.and_then(|entry| entry.uphill(trap))));
                     }
                     if lights && wanted[BubbleRead::Crescent as usize] {
-                        across_lane.push(unit(entry.and_then(|entry| entry.across(trap))));
+                        lune_lane.push(unit(entry.and_then(|entry| entry.across(trap))));
+                    }
+                    if lights && wanted[BubbleRead::Across as usize] {
+                        across_lane.push(unit(entry.and_then(|entry| entry.across_shape(trap))));
                     }
                 }
                 for (trap, [angles, steps]) in circles.iter().zip(&mut lines_rows) {
@@ -1640,6 +1762,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
             reads: Default::default(),
             gradient: Vec::new(),
             crescent_gradient: Vec::new(),
+            across_gradient: Vec::new(),
         })
         .collect();
     let mut lines_lanes: Vec<(Lines, [Vec<f32>; 2])> = circles
@@ -1655,12 +1778,15 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                 lane.extend(part);
             }
         }
-        for (whole, (reads, unit_lane, across_lane)) in bubbles.iter_mut().zip(row_bubbles) {
+        for (whole, (reads, unit_lane, lune_lane, across_lane)) in
+            bubbles.iter_mut().zip(row_bubbles)
+        {
             for (lane, part) in whole.reads.iter_mut().zip(reads) {
                 lane.extend(part);
             }
             whole.gradient.extend(unit_lane);
-            whole.crescent_gradient.extend(across_lane);
+            whole.crescent_gradient.extend(lune_lane);
+            whole.across_gradient.extend(across_lane);
         }
         gradient.extend(row_gradient);
         for (value, unit) in row_insides {
@@ -2301,7 +2427,7 @@ mod tests {
                 };
                 entered += 1;
                 assert!(first.offset.norm() < 0.3, "{pixel}: {}", first.offset);
-                let [height, _, turn, crescent] = first.reads(&trap(1, spacing));
+                let [height, _, turn, crescent, _] = first.reads(&trap(1, spacing));
                 assert!(crescent.is_nan(), "no face, no crescent");
                 assert!((0.0..=1.0).contains(&height) && (0.0..1.0).contains(&turn));
                 if let Some(second) = bubble(&family, pixel, 500, &trap(2, spacing), 1.0) {
@@ -2406,6 +2532,38 @@ mod tests {
     }
 
     #[test]
+    fn a_smallest_bound_ends_the_read_where_the_shapes_get_too_small() {
+        // Every entry the bounded trap keeps is the unbounded trap's own entry, at a
+        // derivative within the bound; the ones it drops were past it.
+        let family = Family::Multibrot { degree: 2 };
+        let (width, smallest) = (1e-3, 2.0);
+        let bounded = Bubble {
+            smallest: Some(smallest),
+            ..trap(1, Some(1.0))
+        };
+        let most = 0.3 / (smallest * width);
+        let (mut kept, mut dropped) = (0, 0);
+        for pixel in grid() {
+            let Some(free) = bubble(&family, pixel, 500, &trap(1, Some(1.0)), width) else {
+                assert!(bubble(&family, pixel, 500, &bounded, width).is_none());
+                continue;
+            };
+            match bubble(&family, pixel, 500, &bounded, width) {
+                Some(held) => {
+                    assert_eq!(held, free, "{pixel}");
+                    assert!(held.derivative.norm() <= most * (1.0 + 1e-12));
+                    kept += 1;
+                }
+                None => {
+                    assert!(free.derivative.norm() > most * (1.0 - 1e-12), "{pixel}");
+                    dropped += 1;
+                }
+            }
+        }
+        assert!(kept > 50 && dropped > 50, "kept {kept}, dropped {dropped}");
+    }
+
+    #[test]
     fn the_bubble_gradients_point_up_the_height_and_across_the_crescent() {
         // Step the pixel a hair along the returned direction: the entry step is the
         // same and the height rises, so a light at period 2 domes every disc.
@@ -2420,11 +2578,11 @@ mod tests {
             let Some(entry) = bubble(&family, pixel, 500, &shape, 1.0) else {
                 continue;
             };
-            let [height, _, _, crescent] = entry.reads(&shape);
+            let [height, _, _, crescent, _] = entry.reads(&shape);
             let (read, [x, y]) = if (0.1..0.9).contains(&crescent) {
                 (3, entry.across(&shape).unwrap())
             } else if (0.1..0.9).contains(&height) {
-                (0, entry.uphill().unwrap())
+                (0, entry.uphill(&shape).unwrap())
             } else {
                 continue;
             };
@@ -2448,6 +2606,86 @@ mod tests {
         }
         assert!(checked > 50, "only {checked} samples checked");
         assert!(lunes > 10, "only {lunes} crescent samples checked");
+    }
+
+    #[test]
+    fn a_strip_is_entered_across_its_line_and_its_reads_climb_their_gradients() {
+        // A tilted strip on parallel lines: every entry lies within a radius of its
+        // line, the height and across reads are in [0, 1], and a hair along either
+        // read's returned direction raises that read on the same entry.
+        let family = Family::Multibrot { degree: 2 };
+        let strip = Bubble {
+            shape: BubbleShape::Strip,
+            tilt: 30.0,
+            radius: 0.2,
+            ..trap(1, Some(1.0))
+        };
+        let axis = Complex::from_polar(1.0, 30f64.to_radians()) * Complex::i();
+        let (mut entered, mut checked) = (0, [0; 2]);
+        for pixel in grid() {
+            let Some(entry) = bubble(&family, pixel, 500, &strip, 1.0) else {
+                continue;
+            };
+            entered += 1;
+            let reads = entry.reads(&strip);
+            let across = (entry.offset * axis.conj()).re;
+            assert!(across.abs() < 0.2, "{pixel}: {across}");
+            assert!((0.0..=1.0).contains(&reads[0]) && (0.0..=1.0).contains(&reads[4]));
+            assert!(
+                reads[2].is_nan() && reads[3].is_nan(),
+                "no angle or face on a strip"
+            );
+            for (slot, read) in [(0, 0usize), (1, 4)] {
+                if !(0.1..0.9).contains(&reads[read]) {
+                    continue;
+                }
+                let [x, y] = if read == 0 {
+                    entry.uphill(&strip).unwrap()
+                } else {
+                    entry.across_shape(&strip).unwrap()
+                };
+                let nudge = Complex::new(x * 1e-8, y * 1e-8);
+                let (Some(ahead), Some(behind)) = (
+                    bubble(&family, pixel + nudge, 500, &strip, 1.0),
+                    bubble(&family, pixel - nudge, 500, &strip, 1.0),
+                ) else {
+                    continue;
+                };
+                if ahead.step != entry.step || behind.step != entry.step {
+                    continue;
+                }
+                let (ahead, behind) = (ahead.reads(&strip)[read], behind.reads(&strip)[read]);
+                assert!(ahead > behind, "{pixel}: read {read}, {ahead} vs {behind}");
+                checked[slot] += 1;
+            }
+        }
+        assert!(entered > 100, "only {entered} entries");
+        assert!(
+            checked[0] > 30 && checked[1] > 30,
+            "only {checked:?} checked"
+        );
+        // A strip has no face and no angle; a disc keeps its old reads and spelling.
+        let style = |bubble: serde_json::Value| {
+            serde_json::from_value::<Style>(serde_json::json!({
+                "name": "strip",
+                "layers": [{"kind": "glow", "channel": {"bubble": bubble}, "color": {"palette": 0.5}}]
+            }))
+            .unwrap()
+            .validate()
+        };
+        let refused = [
+            serde_json::json!({"radius": 0.2, "shape": "strip", "shift": [0.3, 0.0]}),
+            serde_json::json!({"radius": 0.2, "shape": "strip", "read": "angle"}),
+        ];
+        assert!(refused.into_iter().all(|bubble| style(bubble).is_err()));
+        assert_eq!(
+            style(
+                serde_json::json!({"radius": 0.2, "shape": "strip", "tilt": 30.0, "read": "across"})
+            ),
+            Ok(())
+        );
+        let disc = serde_json::to_value(trap(1, Some(1.0))).unwrap();
+        assert!(disc.get("shape").is_none() && disc.get("tilt").is_none());
     }
 
     #[test]

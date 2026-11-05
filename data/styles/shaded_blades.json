@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "name": "shaded_blades",
+  "description": "broad curved blades and petals on near-black, each a solid copper, slate, maroon or cream sheet shaded edge to edge like brushed metal, overlapping in fans that meet at small spiky stars of the same blades in miniature, the finest detail left dark with a hair of light along the set",
+  "reference": {
+    "image": "chronoscope-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal by its look (orbit-trap blades shaded by a gradient, signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "shaded_blades",
+  "reuses": [
+    "the bubble trap's lattice, entry step, height and largest (bronze_packing, ribbon_packing), on the new strip shape: the line Im(z) = 0.5 turned 60 degrees, repeated every 2, a quarter wide, its blades no larger than 0.3 frames",
+    "the palette layer by rank on the entry step at three cycles: one flat colour per blade, neighbouring blades on different stops of a map whose hues alternate",
+    "the light layer at one band, rings 1, on the new across read: each blade a cylinder lit from one edge to the other, the brushed-metal sheen",
+    "a glow on the height, inverted, painted near-black: each blade darkening into its edges, so overlapping blades separate",
+    "glow_filaments' hair glow (falloff 2e-4) on de, under the blades: the set's filigree in the dark the smallest bound leaves",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [
+    "bubble member shape (disc | strip): the strip |Im((z - center) e^(-i tilt))| < radius, the line trap read at an entry; with spacing it repeats as parallel lines. Its pullbacks are crosses of tapering arms through each critical point of the iterate, so its entries are pointed blades; it has no face and no angle read",
+    "bubble member tilt (degrees): the strip's direction, and the axis the across read is measured across",
+    "bubble read across: (v / radius + 1) / 2, v the entry's offset across the tilt, 0 at one edge and 1 at the other, with its own gradient (the axis pulled back through conj(dz)) so a light shades every blade edge to edge",
+    "bubble member smallest (a fraction of the frame width): the read ends, NaN, at the first counted entry pulling back smaller than that, so the trap's detail stops there and the layers beneath show"
+  ],
+  "style": {
+    "name": "shaded_blades",
+    "interior": {
+      "rgb": "#0b0a0d"
+    },
+    "layers": [
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#0b0a0d"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        },
+        "opacity": 0.35
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.25,
+            "hit": 1,
+            "read": "step",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.3,
+            "smallest": 0.006,
+            "shape": "strip",
+            "tilt": 60.0
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0,
+          "cycles": 3.0,
+          "phase": 0.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.25,
+            "hit": 1,
+            "read": "across",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.3,
+            "smallest": 0.006,
+            "shape": "strip",
+            "tilt": 60.0
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 1.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.75,
+          "specular": 0.5,
+          "shininess": 12.0,
+          "rim": 0.0,
+          "rim_power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.25,
+            "hit": 1,
+            "read": "height",
+            "spacing": 2.0,
+            "escaped": true,
+            "largest": 0.3,
+            "smallest": 0.006,
+            "shape": "strip",
+            "tilt": 60.0
+          },
+          "invert": true
+        },
+        "power": 10.0,
+        "color": {
+          "rgb": "#060508"
+        },
+        "blend": "normal",
+        "opacity": 0.5
+      }
+    ],
+    "tone": {
+      "median": 0.273,
+      "p10": 0.029
+    }
+  }
+}

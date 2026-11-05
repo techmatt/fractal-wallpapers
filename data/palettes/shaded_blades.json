@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "shaded_blades",
+  "kind": "sequential",
+  "source": "shaded_blades, authored as 11 control points as the albedo of the shaded_blades style: the reference's blades by lightness decile, warm and cool interleaved so a few cycles over the trap's entry step give neighbouring blades different hues (near-black, maroon, slate, copper, blue-grey, cream), each more saturated than the reference's means, since the light's sheen and the tone pass grey them, and its top end (cream and pale silver) held a step darker than the reference's, since the style's light supplies the sheen and a frame filled by one cream blade otherwise reads p90 high.",
+  "stops": [
+    [0.0, [10, 8, 10]],
+    [0.1, [52, 16, 24]],
+    [0.2, [38, 50, 68]],
+    [0.3, [112, 42, 36]],
+    [0.4, [70, 88, 116]],
+    [0.5, [176, 92, 54]],
+    [0.6, [104, 118, 152]],
+    [0.7, [214, 132, 86]],
+    [0.8, [140, 154, 180]],
+    [0.9, [206, 182, 140]],
+    [1.0, [186, 194, 204]]
+  ]
+}

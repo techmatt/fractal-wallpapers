@@ -136,6 +136,21 @@ The shift lives in the disc's plane, so every disc's pullback turns its crescent
 way. On a trap with a large `largest` the early discs are frame-sized, and their
 crescents are ribbons sweeping the frame and curling round the discs they hug.
 
+`shape` `strip` swaps the disc for the **line trap** read at an entry: the strip
+`|Im((z − center)·e^(−i·tilt))| < radius` about the line through `center` at `tilt`
+degrees (default 0, the real axis), repeated as parallel lines `spacing` apart. A disc
+pulls back round; a strip pulls back through each critical point of the iterate as a
+cross of arms tapering to points, so its entries are pointed, curved **blades**, and the
+lattice's blades overlap in fans. `height` is `1 − |v|/radius` (1 on the line, 0 at
+either edge, `v` the offset across it), `step` is one number per blade, and a strip has
+no `angle` and no face. The read **`across`**, on either shape, is `(v/radius + 1)/2`
+across the `tilt`: 0 at one edge, 1 at the other, its gradient the across axis pulled
+back through `dz`, so a `light` at one band and `rings` 1 shades each blade from edge to
+edge as a lit cylinder. `smallest` (a fraction of the frame width) is `largest`'s
+partner: the read ends, `NaN`, at the first counted entry whose shape pulls back smaller
+than that, and since entries only shrink along an orbit it is where the trap's detail
+stops; what lies finer is left to the layers beneath.
+
 `{"lines": {radius, arrive, settle, twist, divide, read, side}}` is the **field-lines**
 channel: where the orbit crossed a circle of its own, outside the set and inside it. An
 escaping orbit is read at the step it first leaves `|z| < radius` (default 4; a radius
@@ -318,6 +333,7 @@ pre-selected and its sidecar, and `style keep`.
 | `gilded_orbs` | `ancient-empires-25.jpg` | `gilded_orbs` | nothing: the old layers on `de`, `smooth`, `tia`, `inside` and two bubble traps |
 | `field_lines` | `blood-price-25.jpg` | `field_lines` | the `lines` channel (`angle`, `step`; `radius`, `arrive`, `settle`, `twist`, `divide`, `side`). Its structure, connected Julia sets with attracting basins, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `leaf_veins` | `commons_Fractal_Art_Series__2814465834074_29.jpg` | `leaf_veins` | nothing: old layers on `de`, `smooth` and `lines`. Its structure, dendrites, is one the galleries lack: its locations are hand-placed (step 4's exception) |
+| `shaded_blades` | `chronoscope-25.jpg` | `shaded_blades` | the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -455,3 +471,25 @@ frame: wider Mandelbrot views add no density (each decoration is a copy of the l
 a log-polar view at three turns about a Misiurewicz point fills the frame with its arms
 but reads as a kaleidoscope star, a picker row rather than the default. **Judge a hair glow at `--draft` or larger**: at 640 wide a 2e-4 falloff is a
 fifth of a pixel and the veins blur into the shadow they sit in.
+
+The tenth style is broad shaded blades in copper, slate and cream on near-black, meeting at
+small spiky stars, and it went in as **one new shape of the bubble trap and two members**:
+the strip about a line (`shape`, `tilt`), the `across` read and the `smallest` bound.
+Everything else is old: a rank palette on the entry step at three cycles gives each blade
+one flat colour, a light at one band and `rings` 1 on `across` makes it a lit cylinder, an
+inverted glow on the height darkens its edges, and a falloff hair glow on `de` and a dim
+rank palette on the smooth count lie in the gaps beneath. Three lessons. **The shape of a
+trap is the shape of what it draws**: a disc's entries pull back round, so its crescents
+read as eyes, while a strip pulls back through each critical point as a cross of
+tapering arms, so a strip's entries are blades and the small ones crowding a critical
+point are spiky stars, the reference's ornaments, with no layer of their own. **An entry
+trap needs both bounds**: `largest` alone at 3 frames gives one blade filling the frame,
+at 0.3 a fan of them; with no lower bound the blades shrink into the set as hatching
+(striped fans of sub-pixel blades), and `smallest` 0.006 is what leaves the near-black
+gaps the reference is a fifth made of. **A dark reference's black share is held in the
+gaps, not by the ground's colour**: the tone pass carries p10 to 0.029 whatever the
+ground is, so a flat ground in a third of the frame reads black 0.30 against 0.22; a
+dim rank palette on the smooth count at 0.35 under the blades gives the gaps a gradient
+and the frame back its share. Its locations are an ordinary gallery scout
+(`--max-ink 0.12`); 32 of the 40 drafts hold the reference's balance, the misses frames
+flooded by one cream blade (p90) or by gap (black).
