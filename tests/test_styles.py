@@ -42,6 +42,24 @@ def test_the_tonal_check_holds_a_band_and_two_ceilings():
     assert [miss.split()[0] for miss in styles.tone_misses(paler, reference)] == ["median"]
     flooded = {**reference, "white": 0.07, "black": 0.0}
     assert [miss.split()[0] for miss in styles.tone_misses(flooded, reference)] == ["white"]
+    hot = {**reference, "p90": 0.71}
+    assert [miss.split()[0] for miss in styles.tone_misses(hot, reference)] == ["p90"]
+
+
+def test_a_draft_too_small_to_check_is_marked_not_passed(tmp_path, capsys):
+    from PIL import Image
+
+    from fractal_wallpapers.cli import style_commands
+
+    reference, small = tmp_path / "ref.png", tmp_path / "small.png"
+    Image.new("RGB", (1600, 1000), (119, 119, 119)).save(reference)
+    Image.new("RGB", (640, 400), (119, 119, 119)).save(small)
+    args = cli.build_parser().parse_args(
+        ["style", "tones", "yas", str(small), "--reference", str(reference)]
+    )
+    assert style_commands.check_tones(args, styles) == 1
+    out = capsys.readouterr().out
+    assert "DRAFT" in out and "1280x800 ss2" in out
 
 
 def test_the_tonal_check_reads_a_picture(tmp_path):

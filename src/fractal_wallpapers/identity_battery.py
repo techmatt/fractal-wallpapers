@@ -63,6 +63,16 @@ EDGE_MODES = (
 #: which `engine.run` sets.
 WORKERS = 3
 
+#: Threads each engine is told to use (`RAYON_NUM_THREADS`), so three engines take six
+#: of a twelve-thread box and leave the desktop the rest. Uncapped, each engine took
+#: every core and three of them saturated the box for the battery's five to seven
+#: minutes (`teal_tunnel`'s item). Hashes do not depend on it: the engine's output is
+#: the same at any thread count, which is what the battery holds it to.
+THREADS = 2
+
+#: The environment variable the engine's thread pool reads.
+THREADS_ENV = "RAYON_NUM_THREADS"
+
 
 def battery_dir() -> Path:
     """Where recordings land: `identity/` under the hot root."""
@@ -260,16 +270,40 @@ def draw(job, scratch: Path) -> tuple[str, str, float]:
     return name, digest, seconds
 
 
-def record(tag: str, edge_frames: bool = False, log=print) -> Path:
-    """Draw the battery through the built engine and write `<tag>.json` of hashes."""
+def record(
+    tag: str,
+    edge_frames: bool = False,
+    log=print,
+    workers: int = WORKERS,
+    threads: int | None = THREADS,
+) -> Path:
+    """Draw the battery through the built engine and write `<tag>.json` of hashes.
+
+    `workers` engines run at once, each told to use `threads` threads (`None` leaves
+    the engine its own default, every core).
+    """
+    import os
+
     directory = battery_dir()
     scratch = directory / f"{tag}.renders"
     scratch.mkdir(parents=True, exist_ok=True)
     todo = jobs(edge_frames)
-    log(f"{len(todo)} renders through {engine.engine_path()}, {WORKERS} at a time")
+    per = "all cores" if threads is None else f"{threads} threads"
+    log(f"{len(todo)} renders through {engine.engine_path()}, {workers} at a time, {per} each")
     started = time.perf_counter()
-    with ThreadPoolExecutor(WORKERS) as pool:
-        results = list(pool.map(lambda job: draw(job, scratch), todo))
+    previous = os.environ.get(THREADS_ENV)
+    if threads is None:
+        os.environ.pop(THREADS_ENV, None)
+    else:
+        os.environ[THREADS_ENV] = str(threads)
+    try:
+        with ThreadPoolExecutor(workers) as pool:
+            results = list(pool.map(lambda job: draw(job, scratch), todo))
+    finally:
+        if previous is None:
+            os.environ.pop(THREADS_ENV, None)
+        else:
+            os.environ[THREADS_ENV] = previous
     scratch.rmdir()
     document = {
         "schema": 1,

@@ -104,6 +104,7 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
     from PIL import Image
 
     with Image.open(path) as image:
+        drawn = image.width
         image = image.convert("RGB")
         image = image.resize((width, max(1, round(image.height * width / image.width))))
         rgb = np.asarray(image, dtype=np.float64) / 255.0
@@ -118,6 +119,7 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
         "p90": float(np.percentile(lightness, 90)),
         "white": float((lightness > 0.9).mean()),
         "black": float((lightness < 0.1).mean()),
+        "width": drawn,
     }
 
 
@@ -128,7 +130,27 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
 #: is 0.032 to 0.126 above its median. The white share is a ceiling, not a band: a
 #: palette that floods the frame with near-white (pink, at 0.21 to 0.26 against the
 #: reference's 0.13) was dropped too.
-TONE_BAND = {"median": 0.03, "p10": 0.05}
+#:
+#: `p90` is the one number the tone pass does not pin, so it is the one that tells a
+#: stack's highlights from the reference's. Its band was read off `teal_tunnel` and
+#: `glow_filaments`: the one `teal_tunnel` variant outside 0.10 (`bare_arches`, +0.108)
+#: was dropped, and every `glow_filaments` render sat +0.30 to +0.46 hot except the one
+#: variant Matt kept (`no_fog`, +0.093). A miss on every render of a stack is the
+#: stack's to fix (narrower glows, less fog), not the locations'.
+TONE_BAND = {"median": 0.03, "p10": 0.05, "p90": 0.10}
+
+#: The draft size whose tones are the full-resolution ones'. The tone pass meets its
+#: targets on the samples, and the check reads a picture resampled to 640 wide, so a
+#: picture at supersample 1 and 640 wide (or less) *is* the samples and holds by
+#: construction: `teal_tunnel`'s `m_seed0` and `m_seahorse_double` read median 0.271 at
+#: 640x400 ss1 and 0.305 and 0.303 (misses) at 2560x1600 ss2. At 1280x800 ss2 they read
+#: 0.305 and 0.302, within 0.003 of full size, at a quarter of its samples.
+DRAFT_RESOLUTION = (1280, 800)
+DRAFT_SUPERSAMPLE = 2
+
+#: Below this width a picture's tones are a guide, never the check (see
+#: [`DRAFT_RESOLUTION`]); `style tones` marks such a row instead of passing it.
+CHECKED_WIDTH = DRAFT_RESOLUTION[0]
 WHITE_ALLOWANCE = 0.05
 BLACK_ALLOWANCE = 0.05
 

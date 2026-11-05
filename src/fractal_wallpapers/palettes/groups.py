@@ -86,6 +86,7 @@ and not keyed, so nothing re-keys and nothing re-solves on this account.
 from __future__ import annotations
 
 import collections
+import concurrent.futures
 import json
 import os
 import random
@@ -202,11 +203,24 @@ def cloud(name: str, samples: int = SAMPLES):
     each entry, and coming back out of Oklab to measure a distance in it would be
     a round trip through a clip.
     """
+    from fractal_wallpapers.palettes import space
+
+    positions, colours, _kind = space.ramp(name)
+    return cloud_of(positions, colours, samples)
+
+
+def cloud_of(positions, colours, samples: int = SAMPLES):
+    """[`cloud`] of stops already in hand: `positions` in [0, 1], `colours` sRGB8.
+
+    The half of [`cloud`] that does not read the library, so a map that is not in
+    it yet — the one `palettes add` is admitting — is read by the same arithmetic.
+    """
     import numpy
 
     from fractal_wallpapers.palettes import space
 
-    positions, colours, _kind = space.ramp(name)
+    positions = numpy.asarray(positions, dtype=numpy.float64)
+    colours = numpy.asarray(colours, dtype=numpy.float64)
     order = numpy.argsort(positions, kind="stable")
     positions, lab = positions[order], space.oklab(colours[order])
     where = numpy.linspace(0.0, 1.0, samples)
@@ -263,6 +277,108 @@ def clouds(names, samples: int = SAMPLES, weight: float = HUE_WEIGHT):
     )
 
 
+def _quantile_grid(samples: int, quantiles: int):
+    """`(low, high, fraction)`: the two sorted indices each quantile sits between."""
+    import numpy
+
+    where = _quantile_positions(samples, quantiles)
+    low = numpy.floor(where).astype(numpy.intp)
+    high = numpy.minimum(low + 1, samples - 1)
+    return low, high, (where - low).astype(numpy.float32)
+
+
+def _signatures(points, block, grid):
+    """`[maps, quantiles * directions]`: each cloud projected on `block`, read at `grid`.
+
+    One map's row depends on that map's cloud alone — the projection is a matmul
+    per map and the sort is along each map's own samples — which is what lets
+    [`m1_to`] read the library in batches and land on [`m1`]'s numbers exactly.
+    [`m1`] itself stays on this spelling, so no committed grouping can move.
+    """
+    import numpy
+
+    low, high, fraction = grid
+    # [maps, samples, directions], sorted along the samples axis and read at the
+    # quantile positions. The sort is the whole cost of the pass.
+    projected = numpy.sort(points @ block.T, axis=1)
+    return numpy.ascontiguousarray(
+        (
+            projected[:, low, :] * (1.0 - fraction)[None, :, None]
+            + projected[:, high, :] * fraction[None, :, None]
+        ).reshape(len(points), -1)
+    )
+
+
+def _signatures_contiguous(points, block, grid):
+    """[`_signatures`], sorted along the contiguous axis: the same array, faster.
+
+    A sort hands back the same values in the same order whichever axis they were
+    laid along, so sorting each (map, direction) run contiguously and putting the
+    quantile reading back in [`_signatures`]' layout changes no element and no
+    order of the sum [`m1_to`] takes over them. About twice as fast — the trick
+    `pixel_clouds.signature` already plays — and held to `m1` exactly by
+    `tests/test_palette_add.py`.
+    """
+    import numpy
+
+    low, high, fraction = grid
+    # [maps, directions, samples], each run contiguous.
+    projected = numpy.sort(numpy.ascontiguousarray((points @ block.T).transpose(0, 2, 1)), axis=2)
+    read = projected[:, :, low] * (1.0 - fraction)[None, None, :] + (
+        projected[:, :, high] * fraction[None, None, :]
+    )
+    return numpy.ascontiguousarray(read.transpose(0, 2, 1)).reshape(len(points), -1)
+
+
+def m1_to(
+    one,
+    points,
+    count: int = DIRECTIONS,
+    quantiles: int = QUANTILES,
+    chunk: int = 128,
+    batch: int = 64,
+    workers: int = 4,
+):
+    """M1 from one weighted cloud to each of `points`: one row of [`m1`], not the matrix.
+
+    `one` is `[samples, 3]` and `points` `[maps, samples, 3]`, both as [`clouds`]
+    makes them (weighted, float32). Every step is [`m1`]'s — the same lattice,
+    chunked the same way, the same quantile grid, the same float64 sum over each
+    row of absolute differences, the same division and rounding — so where `one`
+    is one of the maps the matrix was taken over, the answer is that row of the
+    matrix, number for number. What is not paid is the pairwise loop over every
+    other map, which is most of a full grouping's cost: one map against the
+    1,027-map library is about sixteen seconds on four threads (2026-11-04), where
+    the same work on one thread with [`m1`]'s strided sort was fifty-three.
+    """
+    import numpy
+
+    points = numpy.asarray(points)
+    one = numpy.asarray(one)[None, ...]
+    samples = int(points.shape[1])
+    lattice = directions(count).astype(numpy.float32)
+    grid = _quantile_grid(samples, quantiles)
+    out = numpy.zeros(len(points), dtype=numpy.float64)
+    starts = range(0, len(points), batch)
+
+    def part(first: int, block, mine):
+        theirs = _signatures_contiguous(points[first : first + batch], block, grid)
+        return numpy.abs(theirs - mine).sum(axis=1, dtype=numpy.float64)
+
+    # The sort releases the GIL, so batches run side by side. Each batch adds into
+    # its own slice, in chunk order, so the threads change no sum.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
+        for start in range(0, count, chunk):
+            block = lattice[start : start + chunk]
+            mine = _signatures_contiguous(one, block, grid)[0]
+            held = len(starts)
+            made = pool.map(part, starts, [block] * held, [mine] * held)
+            for first, row in zip(starts, made, strict=True):
+                out[first : first + batch] += row
+    out /= float(count) * float(quantiles)
+    return numpy.round(out, PLACES)
+
+
 def m1(
     names,
     samples: int = SAMPLES,
@@ -287,23 +403,11 @@ def m1(
         raise GroupError(f"{total} map(s) cannot be grouped; the metric is pairwise")
     points = clouds(names, samples, weight)
     lattice = directions(count).astype(numpy.float32)
-    where = _quantile_positions(samples, quantiles)
-    low = numpy.floor(where).astype(numpy.intp)
-    high = numpy.minimum(low + 1, samples - 1)
-    fraction = (where - low).astype(numpy.float32)
+    grid = _quantile_grid(samples, quantiles)
 
     out = numpy.zeros((total, total), dtype=numpy.float64)
     for start in range(0, count, chunk):
-        block = lattice[start : start + chunk]
-        # [maps, samples, directions], sorted along the samples axis and read at
-        # the quantile positions. The sort is the whole cost of the pass.
-        projected = numpy.sort(points @ block.T, axis=1)
-        signature = numpy.ascontiguousarray(
-            (
-                projected[:, low, :] * (1.0 - fraction)[None, :, None]
-                + projected[:, high, :] * fraction[None, :, None]
-            ).reshape(total, -1)
-        )
+        signature = _signatures(points, lattice[start : start + chunk], grid)
         for index in range(total - 1):
             out[index, index + 1 :] += numpy.abs(signature[index + 1 :] - signature[index]).sum(
                 axis=1, dtype=numpy.float64
@@ -716,6 +820,7 @@ __all__ = [
     "average_linkage",
     "canonical",
     "cloud",
+    "cloud_of",
     "clouds",
     "collapse",
     "cut_at",
@@ -732,6 +837,7 @@ __all__ = [
     "label_rows",
     "library",
     "m1",
+    "m1_to",
     "read",
     "record",
     "record_path",

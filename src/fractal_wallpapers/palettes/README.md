@@ -7,6 +7,7 @@ fractal-wallpapers palettes groups
 fractal-wallpapers palettes reference-fields
 fractal-wallpapers palettes carriers
 fractal-wallpapers palettes produced
+fractal-wallpapers palettes add out/<style>/<name>.json --replace
 fractal-wallpapers palettes strip --name "Bone Vault" --out artifacts/figures/bone.png
 fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120
 ```

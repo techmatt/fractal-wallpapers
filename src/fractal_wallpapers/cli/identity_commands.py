@@ -13,7 +13,10 @@ def identity(args: argparse.Namespace) -> int:
     """
     from fractal_wallpapers import identity_battery
 
-    path = identity_battery.record(args.tag, edge_frames=args.edges)
+    threads = None if args.threads == 0 else args.threads
+    path = identity_battery.record(
+        args.tag, edge_frames=args.edges, workers=args.workers, threads=threads
+    )
     print(f"recorded {path}")
     if args.against is None:
         return 0
@@ -47,4 +50,26 @@ def add_commands(subcommands) -> None:
         "The cardioid, the bulb, each Multibrot degree's disk and each Julia plane's "
         "attracting-cycle disk, at widths 1e-2 to 1e-9 and two caps.",
     )
+    recording.add_argument(
+        "--workers",
+        type=int,
+        default=identity_battery_default("WORKERS"),
+        help="engines at once (default: %(default)s, the render pool's size; never more)",
+    )
+    recording.add_argument(
+        "--threads",
+        type=int,
+        default=identity_battery_default("THREADS"),
+        help="threads each engine uses (default: %(default)s, so the battery leaves the "
+        "desktop half the box; 0 lets each engine take every core). Hashes do not depend "
+        "on it",
+    )
     recording.set_defaults(handler=identity)
+
+
+def identity_battery_default(name: str) -> int:
+    """A battery constant for a flag's default. This imports the battery when the parser
+    is built, which the base install allows: it and `engine` are stdlib only."""
+    from fractal_wallpapers import identity_battery
+
+    return getattr(identity_battery, name)

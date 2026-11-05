@@ -349,6 +349,25 @@ pooled library already holds is refused until `renames.json` says what the map
 ships as and why. Re-ingesting a drop after a rename reports the map left behind
 under the old name; removing it is a person's call, not the ingest's.
 
+**One map, not a drop, comes in through `palettes add`** — the way a style admits the
+map it matched:
+
+```
+fractal-wallpapers palettes add <map.json>            first admission
+fractal-wallpapers palettes add <map.json> --replace  a re-tune of a map already here
+```
+
+It validates the document as `tests/test_colormaps.py` holds this directory, writes
+`<name>.json`, inserts an all-zero row in `palette_family_shares.csv` (exactly true: no
+ledger picture has been drawn in a map the library did not hold; a `--replace` keeps the
+row it has) and splices the map's own rows into `carriers.jsonl`, measured on three fresh
+recolours exactly as `palettes carriers` measures one map — every other row of both
+tables byte for byte, and the result is what a full `palettes carriers` would write but
+for the header's `seconds`. It **never writes `groups.jsonl`**; it prints the three
+nearest maps by M1 instead, and says so when the nearest is under the cut. About twenty
+seconds, most of it the M1 row. `palettes/admit.py`'s docstring has why each step is as
+narrow as it is.
+
 `ingest` is **bake, not offer**: a densified map is renderable immediately and is
 not in `../palette_choice/pool.json`, so nothing picks it until somebody adds it
 there.

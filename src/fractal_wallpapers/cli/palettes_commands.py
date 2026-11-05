@@ -93,6 +93,25 @@ def palettes_carriers(args: argparse.Namespace) -> int:
     return 0
 
 
+def palettes_add(args: argparse.Namespace) -> int:
+    """Admit one map to the library, with its produced row and its carrier rows."""
+    from fractal_wallpapers.palettes import admit, carriers, produced
+
+    try:
+        report = admit.run(Path(args.map), replace=args.replace)
+    except (
+        admit.AddError,
+        carriers.CarrierError,
+        produced.ProducedError,
+        FileNotFoundError,
+    ) as refusal:
+        print(f"[add] refused: {refusal}")
+        return 1
+    for line in admit.lines(report):
+        print(line)
+    return 0
+
+
 def palettes_produced(args: argparse.Namespace) -> int:
     """Rebuild the table of which colours each map has actually made."""
     from fractal_wallpapers.palettes import produced
@@ -168,7 +187,8 @@ def add_commands(subcommands) -> None:
             "be one choice, "
             "`reference-fields` remakes the pictures a palette sheet is judged on, "
             "`carriers` says which map can make a picture of which colour, "
-            "`produced` says which colours each map actually has made, and "
+            "`produced` says which colours each map actually has made, "
+            "`add` admits one map with its rows in both of those tables, and "
             "`strip` draws one map's gradient the way a render spends it."
         ),
     )
@@ -279,6 +299,27 @@ def add_commands(subcommands) -> None:
     )
     carrying.add_argument("--quiet", action="store_true", help="do not print progress")
     carrying.set_defaults(handler=palettes_carriers)
+
+    adding = steps.add_parser(
+        "add",
+        help="admit one colormap to the library, with its carrier and produced rows",
+        description=(
+            "Validates a map document the way tests/test_colormaps.py holds the library, "
+            "writes it to data/palettes/<name>.json, inserts its all-zero row in "
+            "palette_family_shares.csv and splices its own rows into carriers.jsonl — "
+            "measured exactly as `carriers` measures one map, on a fresh recolour — leaving "
+            "every other row of both untouched. groups.jsonl is never rewritten; the three "
+            "library maps nearest by M1 are printed instead. A name the library already "
+            "holds is refused without --replace."
+        ),
+    )
+    adding.add_argument("map", help="the map's JSON document, anywhere on disk")
+    adding.add_argument(
+        "--replace",
+        action="store_true",
+        help="re-tune a map the library already holds (its produced row is kept)",
+    )
+    adding.set_defaults(handler=palettes_add)
 
     producing = steps.add_parser(
         "produced",

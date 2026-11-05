@@ -151,62 +151,115 @@ at one traversal the fold would run the near-set end back to the far field's col
 
 ## A new style from a reference image
 
-The item that brings a picture says "new style from <image>". The procedure:
+The item that brings a picture says "new style from <image>". Run every engine-driving
+step at below-normal priority with `RAYON_NUM_THREADS=6`; `style render --manifest` and
+`style scout --max-ink`/`--thinnest` take minutes and are not on conductor's background
+globs, so background them yourself.
 
 1. **Read the picture into layers.** Name its structure (where to look), what carries the
    vibe (lighting, banding, overlays), the background, and the palette. Write each as a
    layer of the table above, and for each say whether a channel, a layer kind and a blend
-   that draw it already exist. Most will.
+   that draw it already exist. Most will. Draft and tune on hand-placed points or the
+   atlas (`artifacts/atlas/<plane>/dots.json`); those reach a picker only through step
+   4's exception.
 2. **Add a primitive only where one is missing**, in `engine/src/style.rs`, with a test, and
    list it under `adds`. A new channel is a `FieldSpec` already in the catalog wherever one
-   will do; a new field means a new `FieldSpec`, which every named mode can then use too.
-   Keep every primitive a function of one sample's channels — no neighbour reads.
+   will do. Keep every primitive a function of one sample's channels: no neighbour reads.
+   When the engine changed, `fractal-wallpapers identity <tag> --against <last tag>` must
+   read 0 differ (three engines at two threads each, about seven minutes).
 3. **Fit the palette with the lighting, not off the pixels.** The lighting supplies the
    near-whites, so a palette sampled naively is too pale. Author the map as albedo
-   (`data/palettes/README.md`, `data/palette_authoring/`), name it after the style, and
-   tune the stack and the map together on drafts: `style render <draft.json>` takes a
-   style file from anywhere, so a draft never has to enter `data/styles/` to be tried.
-4. **Shortlist locations** with the structure the picture has, framed for 16:10. **A
-   picker's locations are drawn from the published galleries, never a spiral** (Matt's
-   ruling: a spiral is a poor demonstration of a style): each `gallery.jsonl` row
-   carries a `spiral` flag and its `recipes.jsonl` row the `family`, `viewport` and
-   `maxiter` a location record needs. The atlas (`artifacts/atlas/<plane>/dots.json`)
-   and hand-placed points are for tuning drafts, not for the picker.
-5. **Hold the tonal balance.** Set the stack's `tone` to the reference's median and
-   p10 (`style tones <name>` prints them), then check every render against the
-   reference before it goes to a picker:
+   (`data/palettes/README.md`), name it after the style, and tune stack and map together
+   on drafts (`style render <draft.json>` takes a style file from anywhere). Admit it with
+   **`fractal-wallpapers palettes add <map.json>`** (`--replace` after a re-tune): it
+   writes the map, its zero `palette_family_shares.csv` row and its carrier rows, and
+   names the nearest library maps, saying so when one is a near-twin.
+4. **Scout the locations from the published galleries, never a spiral** (Matt's ruling):
+
+   ```
+   fractal-wallpapers style scout --out <dir>/scout.jsonl --n 40 [filters]
+   ```
+
+   draws seeded and stratified over partitions from `final139_general` (`--record`
+   names others), passing over every seat flagged `spiral` and any too deep for a double
+   render; the filters are `--kind julia|plane`, `--degree`, `--partition`, `--mode` and
+   `--max-p-spiral`. A style that needs a structure measures it: **ink** is the share of
+   the frame a half-pixel distance glow paints (`style_scout.PROBE`). On
+   `glow_filaments`'s 117 hand records thin dendrites read 0.003 to 0.025 and lace 0.1 to
+   0.5; its three keeps read 0.005, 0.052 and 0.079, and every render that flooded white
+   read above 0.11. The galleries are lace-heavy (median 0.23 over 120 seats, 11 at or
+   under 0.10, none under 0.03), so `--max-ink 0.10` keeps what a glow can draw and
+   `--thinnest --probe-limit 200` keeps the thinnest of a seeded 200 (a fifth of the
+   record; raise the limit for more). A `spiral: false` seat can still read as a whirl:
+   drop it by eye at step 6.
+
+   **The one exception** (Matt's ruling): a style whose entry under *The styles* names a
+   structure the galleries lack (thin dendrites for a glow) may fill its location row
+   with hand-placed or atlas points that have it, measured the same way
+   (`style scout --points <records.jsonl> --max-ink 0.03 --out …`) and checked by eye
+   to be non-spiral, since no spiral probe has read them. `glow_filaments` is the case:
+   three of its keeps were hand-placed, and a lace-leaning row shows a glow badly.
+5. **Hold the tonal balance.** Set the stack's `tone` to the reference's median and p10
+   (`style tones <name>` prints them), and check renders against the reference:
 
    ```
    fractal-wallpapers style tones <name> <rendered pictures…>
    ```
 
-   A picture **misses** when its median is more than 0.03 or its p10 more than 0.05
-   from the reference's, or its near-white or near-black share is more than 0.05 above
-   the reference's (`styles.TONE_BAND`, fitted on `floating_on_dreams`'s round one, where
-   the three Matt kept are exactly the three that hold). Re-tune a stack whose renders
-   miss, or drop the location, and say which.
+   A picture **misses** when its median is more than 0.03, its p10 more than 0.05 or its
+   p90 more than 0.10 from the reference's, or its near-white or near-black share is more
+   than 0.05 above it (`styles.TONE_BAND`). The tone pass pins the median and p10, so p90
+   is what tells the stack's highlights from the reference's: a stack whose every render
+   misses p90 is re-tuned (narrower glows, less fog), not its locations dropped.
+   **Check at `style render --draft`** (1280x800 ss2), whose tones are the full size's to
+   0.003: the pass meets its targets on the samples, so a 640-wide ss1 picture *is* the
+   samples and holds by construction, and `style tones` marks anything under 1280 wide
+   `DRAFT` instead of passing it.
+6. **Round one: formulations and locations, about twenty tiles.** Keeps are sparse (two
+   to four locations of nine to eleven), the agent's best location was never among them,
+   and the variant Matt kept was each time a different formulation from the one the
+   location row used. So round one asks the two independent questions first:
+   - **formulations**: four to six distinct readings of the look (the stack, its strongest
+     variants, the stack without its headline addition), each at the same two scouted
+     locations, plus the closest named mode at one of them as the baseline;
+   - **locations**: ten to twelve scouted seats, rendered at `--draft` and kept by eye
+     from the scout's forty, in the current formulation with the matched map.
 
-   **Draft the contrasting-palette row (step 6) at low resolution first.** A library map
-   the stack was not tuned for is where the failures hide: render each pairing small
-   (`style render <name> --manifest <best>.jsonl --colormap <map> --resolution 640 400
-   --supersample 1`), and look at every frame for bullseyes (concentric bands the map
-   turns into rings) and washed-out frames (the lighting's near-whites swallowing a pale
-   map; `style tones` flags these too). Drop or swap a failing map before any
-   full-resolution render is paid for.
-6. **Render for the picker**: every shortlisted location in the style with its map; the
-   best few with four to six contrasting library maps; the best two in the closest named
-   mode or style with the matched map, as the baseline the style is judged against.
-   **Every picker row defaults to nothing selected** (`"kind": "many"`, `"default": []`):
-   Matt selects the few he likes.
-7. Write `reference`, `reuses`, `adds` and `suggested_colormap`, and check the existing
-   modes still draw the same bytes (`fractal-wallpapers identity` before and after, when
-   the engine changed).
-8. **Save Matt's keeps** once his choices come back: `fractal-wallpapers style keep <name>
-   <picker>.choices.json` writes `<name>.keeps.json` here (each kept render's location,
-   map, stack, size and note) and copies the pictures, with the reference, to
-   `fractal-drive-sync/style-keeps/<name>/`; a later round merges in. It reads a
-   `renders.jsonl` beside the picker manifest, one row per option (`style_keeps.py`'s
-   docstring has the shape), so step 6's builder writes one.
+   Render with `style render` (`--manifest` into one folder per row): each render is
+   logged to `renders.jsonl` beside it. Then write a plan and build the picker:
+
+   ```
+   fractal-wallpapers style picker <plan.json>
+   ```
+
+   (`style_picker.py`'s docstring has the plan's shape; a named-mode baseline carries its
+   own `render`). It writes the JPEGs, a manifest whose every row is `"kind": "many"`,
+   `"default": []`, and the renders sidecar `style keep` needs.
+7. **Round two, once Matt's keeps are back: twelve tiles or fewer.** His kept
+   formulations at his kept locations, and three or four library maps on them, each map
+   drafted at `--draft` first and dropped on a bullseye (concentric bands the map turns
+   into rings), a wash, or a tone miss.
+8. Write `reference`, `reuses`, `adds` and `suggested_colormap` into the style file.
+9. **Save Matt's keeps** after each round: `fractal-wallpapers style keep <name>
+   <picker>.choices.json` writes `<name>.keeps.json` here and copies the pictures, with
+   the reference, to `fractal-drive-sync/style-keeps/<name>/`; a later round merges in.
+
+### The per-image prompt
+
+```
+Goal: a new style from <image>, in fractal-drive-sync/style-refs/.
+Name: <style_name>. The look, in a line: <what makes the picture>.
+Structure it needs (optional): <e.g. thin sets: --max-ink 0.10; Julia sets only: --kind julia>.
+  Lacking in the galleries? <yes: hand or atlas points via --points, per step 4's exception>.
+Keep / avoid (optional): <what must survive, what must not appear>.
+Round: 1 | 2 with <picker>.choices.json (round 2: the kept formulations and locations).
+Follow data/styles/README.md's *A new style from a reference image*. Commit when done.
+```
+
+The procedure covers the rest by itself: the layer reading, any engine primitive and
+its identity check, the matched map and `palettes add`, the gallery scout with no
+spirals, the tone targets and the draft-size check, the picker with nothing
+pre-selected and its sidecar, and `style keep`.
 
 ## The styles
 
@@ -271,6 +324,5 @@ bounding the disc size as a fraction of the frame (`largest`) is what makes the 
 stand at every location instead of at hand-placed shallow ones. And one about the tone
 check: this style's sub-pixel beads average up at supersample 2, so the frame's p10 at
 full resolution sits ~0.05–0.07 above the target the tone pass met on the samples; the
-stack's `p10` target (0.05) is set below the reference's (0.099) to land in its band, and
-a low-resolution ss1 draft misses on p10 for the same reason. Read a draft's tones as a
-guide and the full-resolution ones as the check.
+stack's `p10` target (0.05) is set below the reference's (0.099) to land in its band.
+That gap is why a tone check reads a `--draft` render, never an ss1 one.
