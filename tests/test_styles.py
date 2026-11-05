@@ -32,7 +32,7 @@ def test_every_style_file_reads_and_names_a_map_that_exists(name):
 
 
 def test_there_is_a_style():
-    assert {"floating_on_dreams", "yas"} <= set(styles.names())
+    assert {"floating_on_dreams", "yas", "teal_tunnel"} <= set(styles.names())
 
 
 def test_the_tonal_check_holds_a_band_and_two_ceilings():
@@ -85,6 +85,27 @@ def test_a_sequential_map_is_folded_only_when_a_layer_repeats_it(tmp_path):
     assert "palette" not in styles.spec_of(
         dict(LOCATION), repeated, tmp_path / "x.png", colormap="hsv"
     )
+
+
+def test_a_location_lays_its_own_twist_and_ring_over_the_style_projection(tmp_path):
+    document = styles.load("teal_tunnel")
+    own = document["style"]["projection"]["log_polar"]
+    row = {**LOCATION, "projection": {"log_polar": {"twist": 0.25, "ring": 4.0}}}
+    spec = styles.spec_of(row, document, tmp_path / "x.png")
+    merged = spec["style"]["projection"]["log_polar"]
+    assert merged == {**own, "twist": 0.25, "ring": 4.0}
+    assert document["style"]["projection"]["log_polar"] == own, "the style file is untouched"
+    # A straight style draws straight wherever it is drawn.
+    straight = styles.load("yas")
+    assert "projection" not in styles.spec_of(row, straight, tmp_path / "x.png")["style"]
+
+
+def test_a_location_record_keeps_its_projection():
+    from fractal_wallpapers import locations
+
+    row = {"schema": 1, **LOCATION, "projection": {"log_polar": {"twist": 0.1}}}
+    assert locations.record(row)["projection"] == {"log_polar": {"twist": 0.1}}
+    assert "projection" not in locations.record({"schema": 1, **LOCATION})
 
 
 def test_an_unknown_style_is_refused():

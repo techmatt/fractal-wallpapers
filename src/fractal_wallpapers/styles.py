@@ -144,6 +144,24 @@ def tone_misses(stats: dict[str, float], reference: dict[str, float]) -> list[st
     return misses
 
 
+def projected(style: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]:
+    """The stack, its projection's members overridden by the location's own.
+
+    A style's projection says how it looks at any place (`{"log_polar": {"turns": 4}}`);
+    what only one place knows — the `twist` that straightens its spiral, where its
+    vanishing point sits best in the frame — rides on the location record as the same
+    shape, `{"projection": {"log_polar": {"twist": 0.21}}}`, and is laid over it member
+    by member. A style without that projection ignores the record's: a straight style
+    stays straight wherever it is drawn.
+    """
+    overrides = row.get("projection") or {}
+    own = style.get("projection") or {}
+    if not overrides or not own:
+        return style
+    merged = {kind: {**members, **(overrides.get(kind) or {})} for kind, members in own.items()}
+    return {**style, "projection": merged}
+
+
 def spec_of(
     row: dict[str, Any],
     document: dict[str, Any],
@@ -164,7 +182,7 @@ def spec_of(
     spec.pop("mode", None)
     name = colormap or document["suggested_colormap"]
     spec["colormap"] = name
-    spec["style"] = document["style"]
+    spec["style"] = projected(document["style"], row)
     if repeats(document["style"]) and not is_cyclic(name):
         spec["palette"] = {"mirror": True}
     return spec

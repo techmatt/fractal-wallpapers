@@ -12,6 +12,7 @@
 //! coloring     field → linear-light RGB, through a stretch and a colormap
 //! direct_trap  the one coloring that paints during iteration and makes no field
 //! style        a declarative stack of layers over several channels of one orbit
+//! projection   a style's per-sample pre-map of the frame: the log-polar view
 //! dump         a field written to disk, and the record that says what it is
 //! resample     Lanczos-3 down to the target resolution, then sRGB
 //! ```
@@ -81,6 +82,7 @@ pub mod iterate;
 pub mod link;
 pub mod maxiter;
 pub mod mode;
+pub mod projection;
 pub mod resample;
 pub mod rng;
 pub mod screen;

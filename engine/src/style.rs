@@ -54,6 +54,7 @@ use crate::colormap::{Bake, Colormap, srgb_to_linear};
 use crate::family::Family;
 use crate::field::{Field, FieldSpec};
 use crate::iterate::{self, Wants};
+use crate::projection::Projection;
 use crate::viewport::Viewport;
 
 /// A style as the render spec carries it: the stack, and what the set's inside is.
@@ -73,6 +74,10 @@ pub struct Style {
     /// stack's own balance, whatever the location makes of it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tone: Option<Tone>,
+    /// Where each sample looks: a per-sample pre-map of the frame before anything is
+    /// iterated ([`crate::projection`]). Absent: the straight view.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projection: Option<Projection>,
 }
 
 /// Per-frame tonal normalisation: the composite's median lightness moved to `median`,
@@ -318,6 +323,10 @@ pub struct Sheet {
     /// sheet covers an equal share of the picture wherever the frame is; `false`
     /// cuts them by the channel's stretch, equal spans of value.
     pub rank: bool,
+    /// Cut a step every `period` of the channel's **raw** value instead, neither
+    /// rank nor stretch (and `bands` unread): see [`Light::period`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub period: Option<f64>,
 }
 
 impl Default for Sheet {
@@ -328,8 +337,22 @@ impl Default for Sheet {
             edge: 0.08,
             fill: 0.05,
             rank: true,
+            period: None,
         }
     }
+}
+
+/// Where in its step a raw value sits, for a layer cut every `period` of the
+/// channel's own value: `value / period + phase`, wrapped into `[0, 1)`.
+///
+/// A frame-wide cut (the rank, the stretch) spends its steps over whatever range the
+/// frame holds, so a view that runs ever deeper — the log-polar view, whose smooth
+/// count climbs by the same amount every octave inwards, without end — gets its
+/// steps smeared across the deep end. A cut in the value's own units is the same
+/// at every octave: at `period` 1 on the smooth count, one step per escape step,
+/// each step an equipotential ring, and the rings tile the self-similar view.
+pub fn periodic(value: f64, period: f64, phase: f64) -> f64 {
+    (value / period + phase).rem_euclid(1.0)
 }
 
 impl Sheet {
@@ -391,6 +414,12 @@ pub struct Light {
     /// The highlight's colour. White when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub highlight: Option<Paint>,
+    /// Cut a ring every `period` of the channel's **raw** value instead of `bands`
+    /// across the frame's stretch ([`periodic`]); the channel's curve and invert
+    /// then shape the height within each ring. On the smooth count at 1, every
+    /// ring is one escape step: equipotential tubes, the same at every depth.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub period: Option<f64>,
 }
 
 impl Default for Light {
@@ -408,6 +437,7 @@ impl Default for Light {
             rim: 0.0,
             rim_power: 3.0,
             highlight: None,
+            period: None,
         }
     }
 }
@@ -481,6 +511,11 @@ impl Style {
         if let Some(paint) = &self.interior {
             paint.validate("style interior")?;
         }
+        if let Some(projection) = &self.projection {
+            projection
+                .validate()
+                .map_err(|refusal| format!("style '{}': {refusal}", self.name))?;
+        }
         if let Some(tone) = self.tone {
             if !(tone.median > 0.0 && tone.median < 1.0) {
                 return Err(format!(
@@ -503,6 +538,13 @@ impl Style {
             let at = format!("style '{}' layer {index} ({:?})", self.name, layer.kind);
             if !(0.0..=1.0).contains(&layer.opacity) {
                 return Err(format!("{at}: opacity is in [0, 1], got {}", layer.opacity));
+            }
+            let period = (layer.light.as_ref().and_then(|light| light.period))
+                .or(layer.sheet.and_then(|sheet| sheet.period));
+            if period.is_some_and(|period| !(period.is_finite() && period > 0.0)) {
+                return Err(format!(
+                    "{at}: period is a positive number of the channel's units"
+                ));
             }
             let allowed: &[&str] = match layer.kind {
                 Kind::Palette => &["channel", "palette", "warp"],
@@ -879,7 +921,25 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
             let mut insides = Vec::with_capacity(if reach.is_some() { width as usize } else { 0 });
             let mut inside = 0u64;
             for col in 0..width {
-                let pixel = view.sample_point(col, row);
+                // Straight, or through the projection with its Jacobian: a distance
+                // estimate is rescaled to the local sample spacing (so the straight
+                // view's own is untouched) and a gradient pulled back to the frame.
+                let (pixel, projected) = match &style.projection {
+                    None => (view.sample_point(col, row), None),
+                    Some(projection) => {
+                        let sample = projection.sample(view, col, row);
+                        (sample.point, Some(sample))
+                    }
+                };
+                let to_frame = |unit: Option<[f64; 2]>| match projected {
+                    None => unit,
+                    Some(sample) => unit.and_then(|unit| sample.pull_back(unit)),
+                };
+                let de_scale = projected.map(|sample| {
+                    sample
+                        .spacing()
+                        .map_or(f64::NAN, |spacing| view.sample_spacing() / spacing)
+                });
                 let orbit = iterate::run(family, pixel, maxiter, &wants);
                 if !orbit.escaped {
                     inside += 1;
@@ -887,19 +947,26 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                 if let Some(iterations) = reach {
                     let read = (!orbit.escaped)
                         .then(|| self::inside(family, pixel, iterations))
-                        .flatten();
+                        .flatten()
+                        .and_then(|(value, unit)| Some((value, to_frame(Some(unit))?)));
                     insides.push(read.map_or((f32::NAN, [f32::NAN; 2]), |(value, [x, y])| {
                         (value as f32, [x as f32, y as f32])
                     }));
                 }
                 for (lane, field) in lanes.iter_mut().zip(&fields) {
-                    lane.push(field.reduce(&orbit).map_or(f32::NAN, |value| value as f32));
+                    let value = field.reduce(&orbit).map(|value| match (field, de_scale) {
+                        (FieldSpec::De { .. }, Some(scale)) => value * scale,
+                        _ => value,
+                    });
+                    lane.push(value.map_or(f32::NAN, |value| value as f32));
                 }
                 if lights {
-                    let unit = orbit
-                        .escaped
-                        .then(|| gradient(orbit.last, orbit.derivative))
-                        .flatten();
+                    let unit = to_frame(
+                        orbit
+                            .escaped
+                            .then(|| gradient(orbit.last, orbit.derivative))
+                            .flatten(),
+                    );
                     gradients.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
                 }
             }
@@ -1036,10 +1103,22 @@ pub fn paint(
                 .map_or([1.0; 3], |paint| paint.linear(colormap))
         })
         .collect();
+    // A layer's period is counted in the view's rings: escape steps, unprojected.
+    let ring = style.projection.map_or(1.0, |projection| projection.ring());
     let lights: Vec<Light> = style
         .layers
         .iter()
-        .map(|layer| layer.light.clone().unwrap_or_default())
+        .map(|layer| {
+            let light = layer.light.clone().unwrap_or_default();
+            // A periodic light's height is already its place in one ring.
+            match light.period {
+                Some(_) => Light {
+                    bands: 1.0,
+                    ..light
+                },
+                None => light,
+            }
+        })
         .collect();
     let smooth = channels.lane(Key::Field(FieldSpec::Smooth));
     let lanes: Vec<&[f32]> = style
@@ -1119,7 +1198,10 @@ pub fn paint(
                             continue;
                         }
                         let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
-                        let height = curve(stretch.position(value as f64));
+                        let height = curve(match lights[index].period {
+                            Some(period) => periodic(value as f64, period * ring, 0.0),
+                            None => stretch.position(value as f64),
+                        });
                         let lit = shade(
                             rgb,
                             height,
@@ -1135,12 +1217,17 @@ pub fn paint(
                             continue;
                         }
                         let curve = |x: f64| layer.channel.map_or(x, |s| s.curve(x));
-                        let position = curve(match &measured[index] {
-                            Measured::Ranked(spend) => spend.position(value as f64),
-                            Measured::Stretched(stretch) => stretch.position(value as f64),
+                        let mut sheet = layer.sheet.unwrap_or_default();
+                        let position = curve(match (&measured[index], sheet.period) {
+                            (_, Some(period)) => {
+                                let position = periodic(value as f64, period * ring, sheet.phase);
+                                (sheet.bands, sheet.phase) = (1.0, 0.0);
+                                position
+                            }
+                            (Measured::Ranked(spend), None) => spend.position(value as f64),
+                            (Measured::Stretched(stretch), None) => stretch.position(value as f64),
                             _ => unreachable!("the arm matched one of the two"),
                         });
-                        let sheet = layer.sheet.unwrap_or_default();
                         let over = colors[index].unwrap_or(rgb);
                         rgb = blend(rgb, over, layer.blend, alpha * sheet.alpha(position));
                     }
@@ -1413,6 +1500,7 @@ mod tests {
             edge: 0.05,
             fill: 0.1,
             rank: true,
+            period: None,
         };
         // Mid-face of the second step is half way up the scoop; just short of its
         // far edge is the rim.
@@ -1424,6 +1512,66 @@ mod tests {
         // and the very bottom is the first face's foot.
         assert!(sheet.alpha(1.0) > 0.99);
         assert!(sheet.alpha(0.0) < 0.01);
+    }
+
+    #[test]
+    fn a_period_cuts_the_raw_value_the_same_at_every_depth() {
+        assert!((periodic(7.25, 1.0, 0.0) - 0.25).abs() < 1e-12);
+        assert!((periodic(107.25, 1.0, 0.0) - 0.25).abs() < 1e-12);
+        assert!((periodic(9.0, 4.0, 0.5) - 0.75).abs() < 1e-12);
+        assert!((periodic(-0.25, 1.0, 0.0) - 0.75).abs() < 1e-12);
+        let text = r#"{"name": "x", "layers": [{"kind": "light", "channel": {"field": {"kind": "smooth"}},
+            "light": {"period": 0.0}}]}"#;
+        let style: Style = serde_json::from_str(text).unwrap();
+        assert!(style.validate().unwrap_err().contains("period"));
+    }
+
+    /// One escape-time view, small, and a stack that reads every channel the
+    /// projection carries a Jacobian into: the distance estimate and the gradient.
+    fn painted(projection: Option<&str>) -> Painted {
+        let text = format!(
+            r#"{{"name": "x", {} "layers": [
+                {{"kind": "palette", "channel": {{"field": {{"kind": "de"}}}}}},
+                {{"kind": "light", "channel": {{"field": {{"kind": "smooth"}}}}, "light": {{"period": 1.0}}}}]}}"#,
+            projection.map_or(String::new(), |p| format!(r#""projection": {p},"#))
+        );
+        let style: Style = serde_json::from_str(&text).unwrap();
+        let view = Viewport {
+            center: Complex::new(-0.1011, 0.9563),
+            width: 0.05,
+            out_width: 40,
+            out_height: 25,
+            supersample: 1,
+        };
+        let map = Colormap::from_stops(
+            "ramp",
+            crate::colormap::Kind::Sequential,
+            &[(0.0, [10, 20, 60]), (1.0, [200, 250, 250])],
+        )
+        .unwrap();
+        let family = Family::Multibrot { degree: 2 };
+        paint(&view, &family, 500, &style, &Palette::default(), &map).unwrap()
+    }
+
+    #[test]
+    fn the_log_polar_view_at_one_turn_about_the_middle_draws_the_straight_view() {
+        let straight = painted(None);
+        let projected = painted(Some(r#"{"log_polar": {}}"#));
+        // The two form each point by different arithmetic, a few ulps apart, and an
+        // orbit at the boundary can carry that into a different escape: allow a
+        // handful of samples, never a drift.
+        let differ = straight
+            .linear
+            .iter()
+            .zip(&projected.linear)
+            .filter(|(a, b)| (0..3).any(|k| (a[k] - b[k]).abs() > 1e-6))
+            .count();
+        assert!(
+            differ * 50 < straight.linear.len(),
+            "{differ} samples differ"
+        );
+        let turned = painted(Some(r#"{"log_polar": {"turns": 4, "twist": 0.3}}"#));
+        assert_ne!(straight.linear, turned.linear);
     }
 
     #[test]

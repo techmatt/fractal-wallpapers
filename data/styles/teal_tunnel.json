@@ -1,0 +1,137 @@
+{
+  "schema": 1,
+  "name": "teal_tunnel",
+  "description": "a tunnel of bevelled arches: navy cells between bright teal arms, ring after ring shrinking towards a vanishing point left of centre, each ring the next octave of a self-similar point, fine cyan filaments sparkling along the arms",
+  "reference": {
+    "image": "795548-3840x2160-desktop-4k-fractal-background.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (a wallpaper download, 3840x2160)"
+  },
+  "suggested_colormap": "teal_tunnel",
+  "reuses": [
+    "the style compositor, its palette, light and sheet layers, and the normal, screen and add blends",
+    "field de (the exterior distance estimate) as the palette's position: navy far from the set, teal at it, so the cells are dark and the arms bright",
+    "field de again as a halo sheet: a smooth teal band round every arm, the same width relative to the ring at every depth",
+    "field smooth as the light's height: one bevelled tube per ring, the arches",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [
+    "projection log_polar: a per-sample pre-map c = center + (width/2)·exp(u + i·v), the frame's log-radius and angle as the strip (u, v), so every octave round a self-similar point is one ring of the picture; turns, power, twist, angle and ring, with the distance estimate and the light's normal carried through its Jacobian",
+    "member period on light and sheet: a band every period of the channel's raw value, counted in the projection's rings, instead of across the frame's stretch, so the bands stay the same at every depth of a view without end",
+    "location member projection: a record's own twist and ring, laid over the style's projection by `style render`"
+  ],
+  "style": {
+    "name": "teal_tunnel",
+    "projection": {
+      "log_polar": {
+        "turns": 5,
+        "center": [0.36, 0.45]
+      }
+    },
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.271,
+      "p10": 0.075
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.6
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "sheet": {
+          "bands": 1.0,
+          "edge": 0.3,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.62
+        },
+        "blend": "normal",
+        "opacity": 0.85
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 0.95,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 50.0,
+          "ambient": 0.45,
+          "diffuse": 0.6,
+          "specular": 0.9,
+          "shininess": 30.0,
+          "rim": 0.3,
+          "rim_power": 3.0,
+          "highlight": {
+            "palette": 0.95
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "phase": 0.5,
+          "edge": 0.1,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.7
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "sheet": {
+          "bands": 1.0,
+          "edge": 0.02,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "add",
+        "opacity": 0.9
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "teal_tunnel",
+  "kind": "sequential",
+  "source": "teal_tunnel, authored as 10 control points (near-black navy through deep teal to bright cyan) as the albedo of the teal_tunnel style, read off its reference by lightness twentile and pulled darker at the low end, since the style's lights supply the band sheen and its tone pass sets the frame's key.",
+  "stops": [
+    [0.0, [3, 10, 20]],
+    [0.12, [6, 22, 38]],
+    [0.25, [10, 38, 58]],
+    [0.38, [14, 58, 78]],
+    [0.5, [18, 82, 98]],
+    [0.62, [24, 108, 118]],
+    [0.74, [34, 134, 140]],
+    [0.86, [60, 170, 172]],
+    [0.94, [110, 210, 210]],
+    [1.0, [190, 245, 240]]
+  ]
+}

@@ -38,7 +38,7 @@ makes — so the explorer can port it without anything here.
 | `adds` | the primitives this style added to the engine, empty when it added none |
 | `style` | the stack, handed to the engine untouched as the render spec's `style` key |
 
-The stack is `{name, interior, tone, layers}`. `interior` is a paint for a sample whose
+The stack is `{name, interior, tone, projection, layers}`. `interior` is a paint for a sample whose
 orbit never escaped and that no layer coloured (black when absent). `tone`
 (`{median, p10}`, optional) holds the frame's tonal balance: once the stack is
 composited, the frame's median lightness (CIE L\* over 100) is carried to `median`, and
@@ -48,6 +48,36 @@ reference's key at another, where more far field would otherwise draw it paler. 
 **paint** is
 `{"rgb": "#rrggbb"}` or `{"palette": t}`, a position on whatever map the render was given
 — the second is what keeps a style in key with every palette.
+
+`projection` (optional) is where each sample looks: a per-sample pre-map of the frame
+before anything is iterated (`engine/src/projection.rs`). The one kind is the
+**log-polar** (exponential-map) view, `{"log_polar": {center, turns, power, twist,
+angle, ring}}`: about a vanishing point at `center` (fractions of the frame from its
+top-left, default the middle; the location's viewport `center` is the plane point it
+shows), a sample at frame radius `r` and angle `θ` reads
+`c = center + (width/2)·exp(u + i·v)` with `u = power·ln(r / half the frame width)`
+and `v = turns·θ + twist·u + angle°`. Every octave round the point is then one ring of
+the picture, so a location whose structure repeats per octave — a Misiurewicz point, a
+Julia set's repelling fixed point — tiles the disc in rings of self-similar cells
+shrinking towards the point. `turns` (a whole number, default 1) copies the plane's
+full turn that many times round the disc; `power` defaults to `turns`, the conformal
+map where a cell keeps its shape; `twist` (radians per e-fold of the plane radius)
+shears the strip, and at a point whose structure turns by `arg λ` each time it shrinks
+by `|λ|` a twist of `arg λ / ln|λ|` (less whole turns) stacks every ring's copy straight
+above the last; `ring` is how many escape steps make one ring (below). At one turn and
+power one about the middle it is the straight view. The distance estimate and the
+light's gradient go through its Jacobian, so `de` is a distance in samples and a light's
+`azimuth` is the frame's.
+
+**What only a place knows rides on its location record**: a record may carry
+`"projection": {"log_polar": {"twist": …, "ring": …}}`, and `style render` lays it over
+the style's projection member by member (`styles.projected`); a style with no
+projection ignores it. `twist` and `ring` come from the point's multiplier `λ` (the
+derivative of its cycle) and the steps `p` per repeat: the smooth count climbs by `p`
+each time the structure shrinks by `|λ|`, so `ring = k·p` with `k` the repeats nearest
+the ring size the style wants. `teal_tunnel`'s shortlist was found that way: Misiurewicz
+points by Newton on `f^{k+p}(0) = f^k(0)` from a rough seed, and quadratic Julia sets
+at their fixed points `(1 ∓ √(1 − 4c))/2`, where `λ = 2z`.
 
 A **channel** is `{"field": <a field spec>, "transform": <curve>}`,
 `{"inside": {"iterations": N}, "transform": ...}` or `{"radial": {"center": [x, y]}}`,
@@ -75,6 +105,13 @@ a channel's position. A layer only touches samples where its channel has a value
 | `glow` | `channel`, `color`, `power` | the channel's position to `power` is an alpha for `color` under the blend |
 | `pattern` | `checker`, `color` | a checker of escape bands (`per_iteration`) by escape-angle sectors (`sectors`, 2 is binary decomposition) |
 | `sheet` | `channel`, `sheet`, `color` | translucent sheets: the channel cut into `bands` steps (offset by `phase`), by the sample's rank in the frame (`rank`, the default) or by the stretch; across each step the alpha rises from 0 to `fill` (the scoop) and then to 1 within `edge` of its far end (the rim). Without a `color` it paints the stack beneath, so `add` or `screen` brightens in whatever hue is there. One band of an inverted channel is a glow falling off exponentially from the channel's low end — a strand along a trap, light along the filaments |
+
+`light` and `sheet` also take **`period`**: cut a ring every `period` of the channel's
+*raw* value instead of `bands` across the frame's rank or stretch, counted in the
+projection's `ring`s (escape steps without one). A frame-wide cut spends its steps over
+whatever range the frame holds, and a log-polar view's smooth count climbs without end
+towards the vanishing point, so the steps smear into the deep end; a periodic cut is
+the same at every depth. On the smooth count it draws one equipotential tube per ring.
 
 Under a style the render spec's own `palette` carries the bake and the rolloff only. The
 CLI folds a sequential map (`mirror`) only when a palette layer repeats it (`cycles` > 1):
@@ -133,6 +170,7 @@ The item that brings a picture says "new style from <image>". The procedure:
 | --- | --- | --- | --- |
 | `floating_on_dreams` | `floating-on-dreams-25.jpg` | `floating_on_dreams` | the compositor, `gradient`, `inside`, `light`, `glow`, `pattern`, `mask` |
 | `yas` | `yas-25.jpg` | `yas` | `radial`, `sheet`, `invert`, `warp`, `tone` (and `tone` back onto `floating_on_dreams`) |
+| `teal_tunnel` | `795548-3840x2160-desktop-4k-fractal-background.jpg` | `teal_tunnel` | `projection` (`log_polar`), `period` on `light` and `sheet`, a location's own `projection` |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -145,3 +183,13 @@ rather than this picture: **a channel that is not structure, laid through the ma
 whole, turns every map not in lightness order into a target** — a style that colours
 by position has to bend that position by the fractal (`warp`), or it only holds its
 look with its own map.
+
+The third style changed *where* samples look, not how they are coloured, and went in
+by additions too: a projection in front of the iteration, and a `period` member on the
+two banding layers. Two lessons. **Under a view without a bottom, every frame-wide
+statistic is spent on the deep end**: rank and stretch cuts smear, and the distance
+estimate must be read in samples (the Jacobian), or the whole outer frame is "far".
+**Equipotentials run along the arms, not round the point**: the rings that make the
+tunnel are the smooth count cut once per self-similar repeat (`ring`), and the cells
+between the arms are the distance estimate's dark far side; at one cut per escape step
+the arches crowd into stripes.

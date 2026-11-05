@@ -957,6 +957,18 @@ a second measure, taken of the composite rather than of a channel — its median
 percentile lightness, read on a stride of samples — followed by one per-sample curve; a
 port measures it over the frame's composite before applying it to any band.
 
+*(`007_style_log_polar_tunnel`, 2026-11-04.)* A style may carry a **projection**
+(`src/projection.rs`): a per-sample pre-map of the frame before anything is iterated.
+The one kind is `log_polar`, `c = center + (width/2)·exp(u + i·v)` with `u` the
+frame's log-radius about a vanishing point and `v` its angle (times `turns`, plus a
+`twist` shear), so every octave round a self-similar point is one ring of the picture.
+It is a function of the sample's place alone, like `radial`, and carries its Jacobian
+to the two things that hold a plane length: the distance estimate is rescaled to the
+local sample spacing, and the light's gradient is pulled back to the frame. At one turn
+about the middle it is the straight view (a crate test holds the composite to it).
+Named modes do not take it: it is the style path's, and the identity battery read 0 of
+540 renders different.
+
 ## What each family's picture is symmetric under
 
 None of this is code — there is no symmetry pass in the crate and nothing folds a

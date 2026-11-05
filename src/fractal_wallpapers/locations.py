@@ -479,6 +479,10 @@ def record(row: dict, where: str = "record") -> dict:
     }
     if maxiter is not None:
         out["render"]["maxiter"] = int(maxiter)
+    # How this place reads in a projected view (`styles.projected`): a fact about
+    # the place, kept for a style that draws through a projection, never drawn alone.
+    if row.get("projection"):
+        out["projection"] = row["projection"]
     return out
 
 

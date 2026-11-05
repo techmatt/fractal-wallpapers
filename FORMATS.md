@@ -442,7 +442,7 @@ ignored.
 | `mode` | str | `smooth` | a name `fractal-wallpapers modes` prints; not with `coloring` |
 | `coloring` | object | none | a full coloring (field, transform, ...); not with `mode` |
 | `params` | {name: number} | `{}` | the mode's settings, beside `mode` only |
-| `style` | object | none | a style's stack, `{name, interior, tone, layers}` ([`data/styles/README.md`](data/styles/README.md)); not with `mode`, `coloring` or `params`, and the `palette` beside it carries `mirror`, `reverse` and `rolloff` only |
+| `style` | object | none | a style's stack, `{name, interior, tone, projection, layers}` ([`data/styles/README.md`](data/styles/README.md)); not with `mode`, `coloring` or `params`, and the `palette` beside it carries `mirror`, `reverse` and `rolloff` only |
 | `palette` | object | identity | how the colormap is spent; fields below |
 | `colormap` | str | required | a name `fractal-wallpapers palettes list` prints |
 | `colormap_dir` | path | `data/palettes` | where the colormap files are |
