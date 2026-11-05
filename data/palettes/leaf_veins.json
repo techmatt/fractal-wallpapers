@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "leaf_veins",
+  "kind": "sequential",
+  "source": "leaf_veins, authored as 10 control points as the albedo of the leaf_veins style: the reference's greens by lightness twentile (near-black olive through dark and mid leaf green to a pale lime), each a little more saturated than the reference's means, and its top a step paler than the reference's brightest twentile, since the style's tone pass sets the key and its veins and shadows multiply the map down.",
+  "stops": [
+    [0.0, [4, 6, 3]],
+    [0.12, [12, 18, 10]],
+    [0.25, [22, 34, 18]],
+    [0.38, [34, 54, 28]],
+    [0.5, [48, 76, 38]],
+    [0.62, [64, 100, 50]],
+    [0.74, [84, 126, 64]],
+    [0.86, [110, 158, 84]],
+    [0.94, [140, 190, 112]],
+    [1.0, [168, 214, 138]]
+  ]
+}

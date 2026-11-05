@@ -317,6 +317,7 @@ pre-selected and its sidecar, and `style keep`.
 | `ribbon_packing` | `795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg` | `ribbon_packing` | the bubble's `shift` (a face in each disc) and its `crescent` read |
 | `gilded_orbs` | `ancient-empires-25.jpg` | `gilded_orbs` | nothing: the old layers on `de`, `smooth`, `tia`, `inside` and two bubble traps |
 | `field_lines` | `blood-price-25.jpg` | `field_lines` | the `lines` channel (`angle`, `step`; `radius`, `arrive`, `settle`, `twist`, `divide`, `side`). Its structure, connected Julia sets with attracting basins, is one the galleries lack: its locations are hand-placed (step 4's exception) |
+| `leaf_veins` | `commons_Fractal_Art_Series__2814465834074_29.jpg` | `leaf_veins` | nothing: old layers on `de`, `smooth` and `lines`. Its structure, dendrites, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -433,3 +434,24 @@ hand-placed (step 4's exception), `c` found by Newton on the cycle's multiplier
 a median of 0.27, and the first fit's pale-rose top read p90 0.43–0.54; holding the map's
 top at a mid dusty rose, narrowing the chain's glows and a gamma of 1.4 on the sweeps
 brought the worst seats to ~0.42.
+
+The ninth style is a frame-filling tile of green leaves crossed by dark branching veins,
+and it went in with **no new primitive**: the veins are `glow_filaments`' falloff glows on
+`de` painted near-black, the side veins are `field_lines`' `lines` angle cut by two
+period sheets and multiplied dark, a rank overlay on the lines' step cuts the frame into
+bands, and a light on the smooth count domes each band. Three lessons. **Lace is not
+veins**: the galleries' seats draw as a dark stencil of beads and spirals under a dark
+distance glow, and only 1 of 200 probed `final139_general` seats reads ink at or under
+0.03, so the locations are dendrites placed by hand (step 4's exception): Julia sets at
+Misiurewicz `c` centred on points of the set found by inverse iteration, and the
+Mandelbrot plane at Misiurewicz points found by Newton on `f^(k+p)(0) = f^k(0)`, which
+read ink 0.001 to 0.05. **A sparse structure under a dark reference's tone target reads
+as smears**: the reference is a third near-black, so a frame whose veins cover a few
+percent has its far field pulled dark by the tone pass; reading the distance inverted
+(pale near the set, the map's dark end far from it) turns that dark into the shadow
+between leaves, each dendrite wearing a pale leaf blade, and keeps the balance at 10 of
+12 drafts. The reference's density, leaves everywhere, is still beyond one dendrite per
+frame: wider Mandelbrot views add no density (each decoration is a copy of the last), and
+a log-polar view at three turns about a Misiurewicz point fills the frame with its arms
+but reads as a kaleidoscope star, a picker row rather than the default. **Judge a hair glow at `--draft` or larger**: at 640 wide a 2e-4 falloff is a
+fifth of a pixel and the veins blur into the shadow they sit in.

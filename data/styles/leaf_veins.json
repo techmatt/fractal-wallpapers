@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "name": "leaf_veins",
+  "description": "dark branching veins in a frame of green leaves: each branch of a dendrite a crisp near-black vein with a short soft shadow, wrapped in a pale-lime leaf blade, fine dark side veins (field lines) running off it at an angle and cut into leaf-shaped bands, every band domed by a soft light, deep green shadow where the leaves leave off",
+  "reference": {
+    "image": "commons_Fractal_Art_Series__2814465834074_29.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a Wikimedia Commons 'Fractal Art Series' picture, 2560x1440; its maker's method is not stated (the dense leaf tile reads as a flame or IFS render)"
+  },
+  "suggested_colormap": "leaf_veins",
+  "reuses": [
+    "the palette layer by rank on the distance estimate, inverted: pale near the set, the map's dark end far from it, so each dendrite wears a leaf blade and the gaps between are shadow",
+    "field_lines' lines channel (radius 2, twist 1, divide 2) as two period sheets multiplied dark: side veins and finer veinlets running off every branch at an angle",
+    "the lines channel's step by rank, inverted, as an overlay: a tone per escape band, so the band seams cut the blades into leaf shapes",
+    "a light on the smooth count at one period a step (slope only): each band domed as a leaf",
+    "glow_filaments' falloff glows on de, painted dark instead of light: a soft shadow and a crisp hairline vein along every branch",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "leaf_veins",
+    "interior": {
+      "rgb": "#070c06"
+    },
+    "tone": {
+      "median": 0.182,
+      "p10": 0.028
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 0.6
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "lines": {
+            "radius": 2.0,
+            "twist": 1.0,
+            "divide": 2.0,
+            "side": "outside",
+            "read": "step"
+          },
+          "invert": true
+        },
+        "palette": {
+          "cycles": 1.7,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "blend": "overlay",
+        "opacity": 0.35
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "lines": {
+            "radius": 2.0,
+            "twist": 1.0,
+            "divide": 2.0,
+            "side": "outside"
+          }
+        },
+        "sheet": {
+          "period": 0.03,
+          "edge": 0.18,
+          "fill": 0.08
+        },
+        "color": {
+          "rgb": "#081206"
+        },
+        "blend": "multiply",
+        "opacity": 0.75
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "lines": {
+            "radius": 2.0,
+            "twist": 1.0,
+            "divide": 2.0,
+            "side": "outside"
+          }
+        },
+        "sheet": {
+          "period": 0.0077,
+          "edge": 0.25,
+          "fill": 0.1
+        },
+        "color": {
+          "rgb": "#0c1a0a"
+        },
+        "blend": "multiply",
+        "opacity": 0.35
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 0.0,
+          "slope": 1.0,
+          "azimuth": 120.0,
+          "elevation": 45.0,
+          "ambient": 0.55,
+          "diffuse": 0.6,
+          "specular": 0.0,
+          "shininess": 12.0,
+          "rim": 0.0,
+          "rim_power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.006,
+        "color": {
+          "rgb": "#0a1608"
+        },
+        "blend": "multiply",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0007,
+        "color": {
+          "rgb": "#0a1608"
+        },
+        "blend": "multiply",
+        "opacity": 0.65
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "rgb": "#050c04"
+        },
+        "blend": "normal",
+        "opacity": 0.95
+      }
+    ]
+  }
+}

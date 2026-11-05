@@ -193,3 +193,4 @@
 {"schema": 1, "kind": "admitted", "map": "ribbon_packing", "group": "map:ribbon_packing", "joined": false, "nearest": "map:commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c", "m1": 0.06812}
 {"schema": 1, "kind": "admitted", "map": "gilded_orbs", "group": "map:desert-nights-25", "joined": true, "nearest": "map:desert-nights-25", "m1": 0.032275}
 {"schema": 1, "kind": "admitted", "map": "field_lines", "group": "map:field_lines", "joined": false, "nearest": "map:Wine & Slate Candle", "m1": 0.053113}
+{"schema": 1, "kind": "admitted", "map": "leaf_veins", "group": "map:leaf_veins", "joined": false, "nearest": "map:Deco Malachite", "m1": 0.055499}
