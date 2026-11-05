@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "flame_veil_teal",
+  "kind": "sequential",
+  "source": "a near-black slate through deep teal and sea green to a pale aqua, the albedo of the flame_veil_teal style, from celestial-domain-25.jpg: teal veils and wisps on a dark slate ground (its magenta core is a literal paint of the stack, not the map's)",
+  "stops": [
+    [0.0, [16, 24, 32]],
+    [0.15, [32, 40, 50]],
+    [0.3, [36, 57, 65]],
+    [0.45, [33, 79, 81]],
+    [0.6, [41, 104, 102]],
+    [0.75, [58, 138, 132]],
+    [0.87, [108, 190, 178]],
+    [1.0, [200, 245, 235]]
+  ]
+}

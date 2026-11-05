@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "flame_veil_violet",
+  "kind": "sequential",
+  "source": "a navy black through indigo and violet-blue to a pale periwinkle, the albedo of the flame_veil_violet style, from cipher-25.jpg: silky violet-blue ribbons on a navy ground",
+  "stops": [
+    [0.0, [2, 6, 30]],
+    [0.15, [9, 27, 76]],
+    [0.3, [20, 40, 100]],
+    [0.45, [30, 52, 128]],
+    [0.6, [43, 68, 160]],
+    [0.75, [60, 88, 200]],
+    [0.88, [98, 133, 250]],
+    [1.0, [175, 200, 255]]
+  ]
+}

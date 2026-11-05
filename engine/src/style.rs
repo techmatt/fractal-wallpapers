@@ -161,6 +161,11 @@ pub struct Source {
     pub bubble: Option<Bubble>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lines: Option<Lines>,
+    /// `field` only: read the field off its own escape loop at a moved point of the
+    /// plane ([`View`]), so several layers can each draw one field of a different
+    /// view, crossing as translucent sheets. Absent: the frame's own view.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view: Option<View>,
     #[serde(default)]
     pub transform: Transform,
     /// Read the channel from the other end: `1 − position`, before the curve.
@@ -177,6 +182,81 @@ impl Source {
         } else {
             position
         })
+    }
+}
+
+/// Where a viewed field looks: the sample's plane point `p` moved to
+/// `p' = m + zoom·e^(i·turn)·(p − m) + shift·w` (`m` the frame's centre, `w` its
+/// width in the plane, `shift` in frame widths with `y` up), and its orbit run with
+/// `c` moved by `c` — the set's parameter on a dynamical plane, and so the pixel
+/// itself, a second shift in plane units, on a parameter plane.
+///
+/// A flame's veils are sheets of accumulated density crossing one another, which one
+/// escape loop cannot draw: every field of one orbit shares its level lines, so its
+/// bands nest and never cross. A field read through a turned, scaled or shifted view
+/// (or of a neighbouring Julia set) has level lines of its own, and translucent
+/// sheets of two or three views laid additively cross as veils do, brightest where
+/// they overlap. Still a pure function of one sample: a second escape loop at a
+/// second point, never a neighbour's value. A distance estimate read through a view
+/// is divided by `zoom`, so it stays a length in the frame.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct View {
+    /// Degrees, anticlockwise about the frame's centre.
+    pub turn: f64,
+    /// How many times wider than the frame the view is.
+    pub zoom: f64,
+    /// The view's centre moved by this many frame widths, `[x, y]` with `y` up.
+    pub shift: [f64; 2],
+    /// Added to the orbit's `c`, `[re, im]` in plane units.
+    pub c: [f64; 2],
+}
+
+impl Default for View {
+    fn default() -> View {
+        View {
+            turn: 0.0,
+            zoom: 1.0,
+            shift: [0.0; 2],
+            c: [0.0; 2],
+        }
+    }
+}
+
+impl View {
+    /// The family this view's loop runs: a dynamical plane's `c` moved; a parameter
+    /// plane's family as it is, its `c` being the pixel ([`View::point`]).
+    pub fn family(&self, family: &Family) -> Family {
+        let dc = Complex::new(self.c[0], self.c[1]);
+        match *family {
+            Family::Julia { degree, c } => Family::Julia { degree, c: c + dc },
+            Family::Phoenix { c, p, z_prev } => Family::Phoenix {
+                c: c + dc,
+                p,
+                z_prev,
+            },
+            Family::Multibrot { .. }
+            | Family::PhoenixM { .. }
+            | Family::FractionalMultibrot { .. } => *family,
+        }
+    }
+
+    /// The plane point this view reads for a sample at `pixel` of `frame`.
+    pub fn point(&self, family: &Family, frame: &Viewport, pixel: Complex<f64>) -> Complex<f64> {
+        let turn = Complex::from_polar(self.zoom, self.turn.to_radians());
+        let shift = Complex::new(self.shift[0], self.shift[1]) * frame.width;
+        let moved = frame.center + turn * (pixel - frame.center) + shift;
+        match family.pixel_is_z0() {
+            true => moved,
+            false => moved + Complex::new(self.c[0], self.c[1]),
+        }
+    }
+
+    fn is_valid(&self) -> bool {
+        self.turn.is_finite()
+            && self.zoom.is_finite()
+            && self.zoom > 0.0
+            && self.shift.iter().chain(&self.c).all(|v| v.is_finite())
     }
 }
 
@@ -557,6 +637,7 @@ pub fn lines(
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Key {
     Field(FieldSpec),
+    Viewed(FieldSpec, View),
     Inside,
     Radial([f64; 2]),
     Bubble(Bubble),
@@ -566,7 +647,10 @@ enum Key {
 impl Source {
     fn key(&self) -> Key {
         match (self.field, self.radial, self.bubble, self.lines) {
-            (Some(field), _, _, _) => Key::Field(field),
+            (Some(field), _, _, _) => match self.view {
+                Some(view) => Key::Viewed(field, view),
+                None => Key::Field(field),
+            },
             (None, Some(radial), _, _) => Key::Radial(radial.center),
             (None, None, Some(bubble), _) => Key::Bubble(bubble),
             (None, None, None, Some(lines)) => Key::Lines(lines),
@@ -1067,7 +1151,22 @@ impl Style {
                     "{at}: a light needs a channel with a gradient; radial has none, nor do lines"
                 ));
             }
+            if layer.kind == Kind::Light && layer.channel.is_some_and(|s| s.view.is_some()) {
+                return Err(format!(
+                    "{at}: a light reads the frame's own gradient; its channel takes no 'view'"
+                ));
+            }
             for source in layer.sources() {
+                if let Some(view) = source.view {
+                    if source.field.is_none() {
+                        return Err(format!("{at}: a 'view' moves a 'field' channel only"));
+                    }
+                    if !view.is_valid() {
+                        return Err(format!(
+                            "{at}: a view needs a finite turn, shift and c and a positive zoom"
+                        ));
+                    }
+                }
                 if let Some(lines) = source.lines {
                     let only = source.field.is_none()
                         && source.inside.is_none()
@@ -1171,20 +1270,37 @@ impl Style {
             }
         };
         for layer in &self.layers {
-            if let Some(field) = layer.channel.and_then(|source| source.field) {
-                take(field);
-            }
-            if let Some(field) = layer.mask.and_then(|mask| mask.channel.field) {
-                take(field);
-            }
-            if let Some(field) = layer.warp.and_then(|warp| warp.channel.field) {
-                take(field);
+            for source in layer.sources().filter(|source| source.view.is_none()) {
+                if let Some(field) = source.field {
+                    take(field);
+                }
             }
             if layer.kind == Kind::Pattern {
                 take(FieldSpec::Decomposition);
             }
         }
         fields
+    }
+
+    /// Every view a layer reads through, once each, with its fields in first-use order.
+    fn views(&self) -> Vec<(View, Vec<FieldSpec>)> {
+        let mut views: Vec<(View, Vec<FieldSpec>)> = Vec::new();
+        for source in self.layers.iter().flat_map(|layer| layer.sources()) {
+            let (Some(view), Some(field)) = (source.view, source.field) else {
+                continue;
+            };
+            let at = match views.iter().position(|(v, _)| *v == view) {
+                Some(at) => at,
+                None => {
+                    views.push((view, Vec::new()));
+                    views.len() - 1
+                }
+            };
+            if !views[at].1.contains(&field) {
+                views[at].1.push(field);
+            }
+        }
+        views
     }
 
     fn lights(&self) -> bool {
@@ -1277,6 +1393,8 @@ struct Channels {
     bubbles: Vec<BubbleLanes>,
     /// One entry per field-lines loop: its angle and step lanes.
     lines: Vec<(Lines, [Vec<f32>; 2])>,
+    /// One entry per view: the fields read through it and a lane per field.
+    viewed: Vec<(View, Vec<FieldSpec>, Vec<Vec<f32>>)>,
     interior_fraction: f64,
 }
 
@@ -1308,6 +1426,18 @@ impl Channels {
                     .expect("every field a layer reads was gathered");
                 &self.lanes[index]
             }
+            Key::Viewed(field, view) => {
+                let (_, fields, lanes) = self
+                    .viewed
+                    .iter()
+                    .find(|(v, _, _)| *v == view)
+                    .expect("every view a layer reads was gathered");
+                let index = fields
+                    .iter()
+                    .position(|f| *f == field)
+                    .expect("every field a view's layers read was gathered");
+                &lanes[index]
+            }
             Key::Bubble(bubble) => &self.bubble(bubble).reads[bubble.read as usize],
             Key::Lines(lines) => {
                 &self
@@ -1338,8 +1468,9 @@ impl Channels {
                 &self.bubble(bubble).across_gradient
             }
             Key::Bubble(bubble) => &self.bubble(bubble).gradient,
-            // Refused by `Style::validate`: neither has an orbit gradient to light.
-            Key::Radial(_) | Key::Lines(_) => &[],
+            // Refused by `Style::validate`: none has an orbit gradient to light (a
+            // view's would have to be turned back into the frame; no style lights one).
+            Key::Radial(_) | Key::Lines(_) | Key::Viewed(..) => &[],
         }
     }
 }
@@ -1599,15 +1730,8 @@ pub fn gradient(last: Complex<f64>, derivative: Complex<f64>) -> Option<[f64; 2]
     (length.is_finite() && length > 0.0).then(|| [x / length, y / length])
 }
 
-fn gather(
-    view: &Viewport,
-    family: &Family,
-    maxiter: u32,
-    style: &Style,
-    window: Window,
-) -> Channels {
-    let fields = style.fields();
-    let lights = style.lights();
+/// What one escape loop asks for its fields, with the proof of interior it may stop on.
+fn wants_of(fields: &[FieldSpec], family: &Family) -> Wants {
     let wants = fields
         .iter()
         .map(FieldSpec::wants)
@@ -1635,11 +1759,35 @@ fn gather(
             .all(FieldSpec::is_final_at_a_repeat)
             .then_some(iterate::Interior::REPEAT)
     };
-    let wants = Wants {
-        derivative: wants.derivative || lights,
+    Wants {
         interior: settle,
         ..wants
+    }
+}
+
+fn gather(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+    window: Window,
+) -> Channels {
+    let fields = style.fields();
+    let lights = style.lights();
+    let wants = Wants {
+        derivative: lights || fields.iter().any(|field| field.wants().derivative),
+        ..wants_of(&fields, family)
     };
+    // Each view runs its own loop on its own family, asking only what its fields need.
+    let views: Vec<(View, Family, Vec<FieldSpec>, Wants)> = style
+        .views()
+        .into_iter()
+        .map(|(view, fields)| {
+            let moved = view.family(family);
+            let wants = wants_of(&fields, &moved);
+            (view, moved, fields, wants)
+        })
+        .collect();
 
     // The window's coordinates are the whole frame's — `sample_point(col, row)` with
     // the global indices — so a window draws the same bits the whole frame would there.
@@ -1661,10 +1809,15 @@ fn gather(
         u64,
         Vec<BubbleRow>,
         Vec<[Vec<f32>; 2]>,
+        Vec<Vec<Vec<f32>>>,
     );
     let rows: Vec<Row> = (window.row..window.row + height)
         .into_par_iter()
         .map(|row| {
+            let mut viewed_rows: Vec<Vec<Vec<f32>>> = views
+                .iter()
+                .map(|(_, _, fields, _)| vec![Vec::with_capacity(width as usize); fields.len()])
+                .collect();
             let mut bubble_rows: Vec<BubbleRow> =
                 traps.iter().map(|_| Default::default()).collect();
             let mut lines_rows: Vec<[Vec<f32>; 2]> =
@@ -1713,6 +1866,18 @@ fn gather(
                     });
                     lane.push(value.map_or(f32::NAN, |value| value as f32));
                 }
+                for ((moved, family, fields, wants), lanes) in views.iter().zip(&mut viewed_rows) {
+                    let orbit =
+                        iterate::run(family, moved.point(family, view, pixel), maxiter, wants);
+                    for (lane, field) in lanes.iter_mut().zip(fields) {
+                        // A distance in the view's plane is `zoom` times one in the frame's.
+                        let value = field.reduce(&orbit).map(|value| match field {
+                            FieldSpec::De { .. } => value * de_scale.unwrap_or(1.0) / moved.zoom,
+                            _ => value,
+                        });
+                        lane.push(value.map_or(f32::NAN, |value| value as f32));
+                    }
+                }
                 if lights {
                     let unit = to_frame(
                         orbit
@@ -1757,7 +1922,15 @@ fn gather(
                     steps.push(step);
                 }
             }
-            (lanes, gradients, insides, inside, bubble_rows, lines_rows)
+            (
+                lanes,
+                gradients,
+                insides,
+                inside,
+                bubble_rows,
+                lines_rows,
+                viewed_rows,
+            )
         })
         .collect();
 
@@ -1781,9 +1954,26 @@ fn gather(
         .iter()
         .map(|trap| (*trap, Default::default()))
         .collect();
-    for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles, row_lines) in rows {
+    let mut viewed: Vec<(View, Vec<FieldSpec>, Vec<Vec<f32>>)> = views
+        .iter()
+        .map(|(view, _, fields, _)| {
+            (
+                *view,
+                fields.clone(),
+                vec![Vec::with_capacity(total); fields.len()],
+            )
+        })
+        .collect();
+    for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles, row_lines, row_viewed) in
+        rows
+    {
         for (lane, part) in lanes.iter_mut().zip(row_lanes) {
             lane.extend(part);
+        }
+        for ((_, _, whole), part) in viewed.iter_mut().zip(row_viewed) {
+            for (lane, part) in whole.iter_mut().zip(part) {
+                lane.extend(part);
+            }
         }
         for ((_, whole), part) in lines_lanes.iter_mut().zip(row_lines) {
             for (lane, part) in whole.iter_mut().zip(part) {
@@ -1831,6 +2021,7 @@ fn gather(
         radials,
         bubbles,
         lines: lines_lanes,
+        viewed,
         interior_fraction: inside as f64 / (width as f64 * height as f64).max(1.0),
     }
 }
@@ -3187,6 +3378,194 @@ mod tests {
         );
         let turned = painted(Some(r#"{"log_polar": {"turns": 4, "twist": 0.3}}"#));
         assert_ne!(straight.linear, turned.linear);
+    }
+
+    /// One layer reading `channel` (a source's JSON) at `family` over `center`/`width`.
+    fn viewed(
+        channel: &str,
+        layer: &str,
+        family: Family,
+        center: Complex<f64>,
+        width: f64,
+    ) -> Vec<[f64; 3]> {
+        let text = format!(
+            r##"{{"name": "x", "interior": {{"rgb": "#000000"}}, "layers": [
+                {{"channel": {channel}, {layer}}}]}}"##
+        );
+        let style: Style = serde_json::from_str(&text).unwrap();
+        style.validate().unwrap();
+        let view = Viewport {
+            center,
+            width,
+            out_width: 40,
+            out_height: 25,
+            supersample: 1,
+        };
+        let map = Colormap::from_stops(
+            "ramp",
+            crate::colormap::Kind::Sequential,
+            &[(0.0, [10, 20, 60]), (1.0, [250, 240, 200])],
+        )
+        .unwrap();
+        paint(&view, &family, 300, &style, &Palette::default(), &map)
+            .unwrap()
+            .linear
+    }
+
+    /// How many samples of two pictures differ: the same picture formed by different
+    /// arithmetic is a few ulps apart, and an orbit on a boundary can carry that
+    /// into another escape, so a handful are allowed and never a drift.
+    fn differing(a: &[[f64; 3]], b: &[[f64; 3]]) -> usize {
+        a.iter()
+            .zip(b)
+            .filter(|(a, b)| (0..3).any(|k| (a[k] - b[k]).abs() > 1e-6))
+            .count()
+    }
+
+    const SMOOTH_SHEET: &str = r##""kind": "sheet", "sheet": {"period": 1.0, "fill": 0.3},
+        "color": {"rgb": "#ffffff"}, "blend": "add""##;
+
+    #[test]
+    fn a_view_moves_the_point_its_field_is_read_at() {
+        let julia = Family::Julia {
+            degree: 2,
+            c: Complex::new(-0.12, 0.75),
+        };
+        let origin = Complex::new(0.0, 0.0);
+        let plain = r#"{"field": {"kind": "smooth"}}"#;
+        let frame = viewed(plain, SMOOTH_SHEET, julia, origin, 3.0);
+        // The identity view is the frame's own field.
+        let identity = viewed(
+            r#"{"field": {"kind": "smooth"}, "view": {}}"#,
+            SMOOTH_SHEET,
+            julia,
+            origin,
+            3.0,
+        );
+        assert!(differing(&frame, &identity) * 50 < frame.len());
+        // A quadratic Julia set is symmetric under z ↦ −z: a half turn about its
+        // centre draws it again, and a quarter turn does not.
+        let half = viewed(
+            r#"{"field": {"kind": "smooth"}, "view": {"turn": 180.0}}"#,
+            SMOOTH_SHEET,
+            julia,
+            origin,
+            3.0,
+        );
+        assert!(differing(&frame, &half) * 50 < frame.len());
+        let quarter = viewed(
+            r#"{"field": {"kind": "smooth"}, "view": {"turn": 90.0}}"#,
+            SMOOTH_SHEET,
+            julia,
+            origin,
+            3.0,
+        );
+        assert!(differing(&frame, &quarter) * 2 > frame.len());
+        // A zoom of 2 is a frame twice as wide, and a shift (in frame widths, y up)
+        // a frame centred there.
+        let wide = viewed(plain, SMOOTH_SHEET, julia, Complex::new(0.3, -0.15), 6.0);
+        let zoomed = viewed(
+            r#"{"field": {"kind": "smooth"}, "view": {"zoom": 2.0, "shift": [0.1, -0.05]}}"#,
+            SMOOTH_SHEET,
+            julia,
+            origin,
+            3.0,
+        );
+        assert!(differing(&wide, &zoomed) * 50 < wide.len());
+    }
+
+    #[test]
+    fn a_views_c_moves_a_julia_sets_parameter_and_a_parameter_planes_pixel() {
+        let origin = Complex::new(0.0, 0.0);
+        let at = |c: Complex<f64>| Family::Julia { degree: 2, c };
+        let moved = viewed(
+            r#"{"field": {"kind": "smooth"}, "view": {"c": [0.05, -0.1]}}"#,
+            SMOOTH_SHEET,
+            at(Complex::new(-0.12, 0.75)),
+            origin,
+            3.0,
+        );
+        let there = viewed(
+            r#"{"field": {"kind": "smooth"}}"#,
+            SMOOTH_SHEET,
+            at(Complex::new(-0.07, 0.65)),
+            origin,
+            3.0,
+        );
+        assert!(differing(&moved, &there) * 50 < moved.len());
+        let mandelbrot = Family::Multibrot { degree: 2 };
+        let shifted = viewed(
+            r#"{"field": {"kind": "smooth"}, "view": {"c": [0.002, 0.001]}}"#,
+            SMOOTH_SHEET,
+            mandelbrot,
+            Complex::new(-0.745, 0.11),
+            0.03,
+        );
+        let centred = viewed(
+            r#"{"field": {"kind": "smooth"}}"#,
+            SMOOTH_SHEET,
+            mandelbrot,
+            Complex::new(-0.743, 0.111),
+            0.03,
+        );
+        assert!(differing(&shifted, &centred) * 50 < shifted.len());
+    }
+
+    #[test]
+    fn a_distance_read_through_a_zoomed_view_is_a_frame_length() {
+        let glow =
+            r##""kind": "glow", "falloff": 0.01, "color": {"rgb": "#ffffff"}, "blend": "add""##;
+        let mandelbrot = Family::Multibrot { degree: 2 };
+        let center = Complex::new(-0.1011, 0.9563);
+        let wide = viewed(
+            r#"{"field": {"kind": "de"}}"#,
+            glow,
+            mandelbrot,
+            center,
+            0.1,
+        );
+        let zoomed = viewed(
+            r#"{"field": {"kind": "de"}, "view": {"zoom": 2.0}}"#,
+            glow,
+            mandelbrot,
+            center,
+            0.05,
+        );
+        assert!(differing(&wide, &zoomed) * 50 < wide.len());
+    }
+
+    #[test]
+    fn a_view_is_a_field_channels_and_no_lights() {
+        let refused = |channel: &str, kind: &str| {
+            let text = format!(
+                r#"{{"name": "x", "layers": [{{"kind": "{kind}", "channel": {channel}}}]}}"#
+            );
+            let style: Style = serde_json::from_str(&text).unwrap();
+            style.validate().unwrap_err()
+        };
+        assert!(
+            refused(r#"{"inside": {"iterations": 10}, "view": {}}"#, "palette").contains("view")
+        );
+        assert!(refused(r#"{"field": {"kind": "smooth"}, "view": {}}"#, "light").contains("view"));
+        assert!(
+            refused(
+                r#"{"field": {"kind": "smooth"}, "view": {"zoom": 0.0}}"#,
+                "palette"
+            )
+            .contains("zoom")
+        );
+        let style: Style = serde_json::from_str(
+            r#"{"name": "x", "layers": [
+                {"kind": "palette", "channel": {"field": {"kind": "smooth"}, "view": {"turn": 30.0}}},
+                {"kind": "palette", "channel": {"field": {"kind": "de"}, "view": {"turn": 30.0}}},
+                {"kind": "palette", "channel": {"field": {"kind": "smooth"}, "view": {"turn": 60.0}}}]}"#,
+        )
+        .unwrap();
+        style.validate().unwrap();
+        // One loop per view, and the frame's own reads only the smooth count it always has.
+        assert_eq!(style.views().len(), 2);
+        assert_eq!(style.views()[0].1.len(), 2);
+        assert_eq!(style.fields(), vec![FieldSpec::Smooth]);
     }
 
     #[test]

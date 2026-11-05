@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "flame_veil_chalk",
+  "kind": "sequential",
+  "source": "a navy through royal blue and slate to chalk grey and a pale stone, the albedo of the flame_veil_chalk style, from chalk-drawing-25.jpg: royal-blue and chalk-grey translucent shards round crisp pale Julia snowflakes",
+  "stops": [
+    [0.0, [5, 15, 45]],
+    [0.15, [12, 30, 95]],
+    [0.3, [25, 55, 170]],
+    [0.45, [60, 85, 150]],
+    [0.6, [110, 115, 125]],
+    [0.75, [150, 148, 135]],
+    [0.9, [200, 200, 188]],
+    [1.0, [240, 242, 236]]
+  ]
+}

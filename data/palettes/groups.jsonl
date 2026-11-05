@@ -203,3 +203,7 @@
 {"schema": 1, "kind": "admitted", "map": "ember_rose", "group": "map:ember_rose", "joined": false, "nearest": "map:gist_heat", "m1": 0.05213}
 {"schema": 1, "kind": "admitted", "map": "star_eye", "group": "m23", "joined": true, "nearest": "m23", "m1": 0.037931}
 {"schema": 1, "kind": "admitted", "map": "clockwork_rings", "group": "map:clockwork_rings", "joined": false, "nearest": "map:glow_filaments", "m1": 0.043079}
+{"schema": 1, "kind": "admitted", "map": "flame_veil_blue", "group": "map:flame_veil_blue", "joined": false, "nearest": "map:Signal & Sulphur", "m1": 0.084585}
+{"schema": 1, "kind": "admitted", "map": "flame_veil_teal", "group": "map:flame_veil_teal", "joined": false, "nearest": "map:Deep Current", "m1": 0.042643}
+{"schema": 1, "kind": "admitted", "map": "flame_veil_violet", "group": "map:flame_veil_violet", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.071906}
+{"schema": 1, "kind": "admitted", "map": "flame_veil_chalk", "group": "map:flame_veil_chalk", "joined": false, "nearest": "map:moon-over-mandelbrot-25", "m1": 0.044014}

@@ -112,6 +112,21 @@ and 0 at the farthest corner, for a picture whose hue and brightness fall away f
 centre. It has no gradient, so a `light` cannot read it, and the location has to put its
 core where `center` says.
 
+A `field` channel also takes **`view`** (`{turn, zoom, shift, c}`): the field read off
+its own escape loop at a moved point, `p' = m + zoom·e^(i·turn)·(p − m) + shift·w` (`m`
+the frame's centre, `w` its width in the plane, `turn` in degrees, `shift` `[x, y]` in
+frame widths with `y` up), with `c` (`[re, im]`, plane units) added to the orbit's `c`:
+a dynamical plane's parameter, so a neighbouring Julia set, and on a parameter plane the
+pixel itself. One escape loop's fields share their level lines, so their bands nest and
+never cross; a field read through a turned, scaled, off-centre view has level lines of
+its own, and sheets of several views laid additively cross as a flame's veils do. Each
+view is one more loop per sample beside the frame's own, so a stack of four views costs
+about five renders. A `de` read
+through a view is divided by `zoom`, so a falloff glow keeps its width; a `light` cannot
+read a viewed channel (its gradient is the frame's own). `turn`, `zoom` and `shift` are
+frame-relative and hold at any depth; `c` is in plane units, so it is for shallow,
+hand-placed seats (deep in a zoom any `c` worth seeing moves the view off the structure).
+
 `{"bubble": {center, radius, hit, read, spacing, escaped}}` is the **bubble trap**: the
 disc `|z − center| < radius` (`center` a plane point `[re, im]`) read at the step the
 orbit enters it for the `hit`-th time (default 1). The samples that first land in the disc
@@ -404,6 +419,10 @@ pre-selected and its sidecar, `style keep`, the catalog row and `style gallery`.
 | `ember_rose` | `406031.jpg` | `ember_rose` | nothing: the `inside` channel cycled into petal rings, softened falloff threads, a bead lattice. Its structure, parabolic flowers, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `star_eye` | `Abstract-Desktop-Backgrounds-Pictures.jpg` | `star_eye` | nothing: a falloff ring, the `lines` channel on both sides for the strands and the pupil's star. Its structure, quasicircle Julia sets, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `clockwork_rings` | `commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg` | `clockwork_rings` | nothing: period sheets on the smooth count for the rings, the `lines` angle for the hairlines, two single bubble discs whose pullbacks ride the rings, the `lines` channel inside for the lit and spoked basin. Its structure, concentric rings round a point, is one the galleries lack (measured): its locations are hand-placed (step 4's exception) |
+| `flame_veil_blue` | `bluebird-25.jpg` | `flame_veil_blue` | the `view` member of a field channel: scooped period sheets on the smooth count of four turned, scaled, off-centre views crossing additively, rims from the map's yellow end, the set a crisp hair beneath. Its structure, a thin set seen shallow with wide far field, is one the galleries lack (measured): its locations are hand-placed (step 4's exception) |
+| `flame_veil_teal` | `celestial-domain-25.jpg` | `flame_veil_teal` | nothing past `flame_veil_blue`'s `view`: its veils in teal, a radial magenta nebula and veil, a white falloff star masked to the centre. Hand-placed seats, as `flame_veil_blue` |
+| `flame_veil_violet` | `cipher-25.jpg` | `flame_veil_violet` | nothing past `view`: the veils on a pinwheel of views, each with a fine period sheet for its strands. Hand-placed seats, as `flame_veil_blue` |
+| `flame_veil_chalk` | `chalk-drawing-25.jpg` | `flame_veil_chalk` | nothing past `view`: rank sheets on the cross trap through moved views and `shaded_blades`' strip blades for the shards, a crisp hair on the frame's own Julia dust for the snowflakes. Hand-placed seats, as `flame_veil_blue` |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -684,6 +703,40 @@ reads median 0.23 over 200 `final139_general` seats (none at 0.7, five at 0.5) a
 median 0.82 at `star_eye`'s twelve quasicircle seats. Seats come from the fixed point's
 multiplier `λ` (`|λ| < 1`, `arg λ` near 0 or π so the basin does not spiral): `d·z^(d−1) = λ`,
 `c = z − z^d`. All 40 drafts and the eleven full renders hold the reference's balance.
+
+The nineteenth to twenty-second styles came in one item, from four flame fractals whose
+look is **veils**: translucent sheets of accumulated density crossing one another, lit at
+their edges (`bluebird-25.jpg`, `celestial-domain-25.jpg`, `cipher-25.jpg`,
+`chalk-drawing-25.jpg`). `glow_filaments` had reached a flame's threads but not its
+sheets, and the sheets went in as **one member**, `view`: a field read off its own escape
+loop at a turned, scaled, off-centre point. Everything else is old: per view a scooped
+period sheet on the smooth count (dim face, bright rim) and a second, edge-only sheet for
+the lit rim, screened over the frame's own, the set a crisp falloff hair underneath, and
+the tone pass with `log_density`. Four lessons. **One loop's level lines never cross**:
+every field of one orbit is banded along the same equipotentials, so sheets cut from one
+loop nest like onion skins; a second loop at a moved point has level lines of its own,
+and four such views' sheets cross at every angle, brightest where they overlap. **Views
+about one centre draw a tunnel**: a shallow set's equipotentials are near-circles round
+it, so views only turned about the frame's middle nest their rings into a bullseye; each
+view's centre shifted 0.2 to 0.4 frame widths off makes the ring systems cross instead.
+Far from the set the level lines are still arcs, which is why `cipher-25.jpg`'s S-shaped
+ribbons swirling through the frame were not reached: its style draws silky arcs (a fine
+period sheet per veil for the strands) round the set. Its first fit read p90 ~0.40
+against 0.51 at most drafts, and brighter strands fixed that but washed the violet grey
+under `log_density`; the kept balance is bright rims and faint strands. **Veils need far field, which the
+galleries lack**: a gallery seat is a deep zoom of lace, where every view's bands crowd
+into texture and the veils vanish into it. The share of a 320x200 frame lying over 0.02
+frame widths from the set reads median 0.285 over the scout's 40 gallery seats (5 at 0.5
+or more) and 0.544 over 40 hand seats (23), so the locations are hand-placed shallow
+Julia sets, Misiurewicz dendrites and whole multibrots (step 4's exception), with those
+five gallery seats in the pool; whole sets whose basin is a smooth disc read as one ring
+round a blob and were dropped by eye. **Straight-edged panes are not level lines**:
+`chalk-drawing-25.jpg`'s shards are flat polygons, and the nearest escape-time shapes are
+the cross trap's star-shaped level lines (rank sheets through two views) and
+`shaded_blades`' strip blades, pointed and curved; over a Julia dust drawn crisp they give
+translucent shards with snowflakes embedded, a partial reach, and stacking screened
+sheets flattened the frame until the tone pass could not pull its p10 down, so the
+ground went near-black and every fill thinned.
 
 **Re-drawing a shown keep** under a style's current stack (after its default changed) is
 a one-row picker: `style render <name> --location <the keep's location> --colormap <its

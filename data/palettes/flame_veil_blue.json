@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "flame_veil_blue",
+  "kind": "sequential",
+  "source": "a deep blue through azure and cyan to a lemon yellow, the albedo of the flame_veil_blue style, from bluebird-25.jpg: translucent blue sheets on a deep blue ground, their crossings and edges lit yellow",
+  "stops": [
+    [0.0, [8, 48, 88]],
+    [0.2, [14, 72, 112]],
+    [0.4, [28, 97, 131]],
+    [0.6, [43, 126, 161]],
+    [0.75, [61, 152, 184]],
+    [0.85, [95, 182, 190]],
+    [0.92, [150, 210, 150]],
+    [1.0, [215, 225, 110]]
+  ]
+}

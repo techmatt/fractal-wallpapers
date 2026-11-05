@@ -197,7 +197,9 @@ apply (`Spend::Absolute`); `knee` acts only there (`place_absolute`). A short ab
 The spec's `style` key draws through `src/style.rs`: one generic escape loop a sample, lanes
 per field plus the style's channels — **gradient** (analytic from `z`, `dz`), **inside** (a
 convergence count), **radial**, **bubble** (`style::bubble`, a disc read at the `hit`-th
-entry; with a `shift`, the crescent between its rim and an off-centre face). Each statistic is measured once, then composited per sample, so a band matches the
+entry; with a `shift`, the crescent between its rim and an off-centre face). A field read
+through a **view** (`style::View`: turned, scaled, shifted, `c` moved) runs one more escape
+loop per sample at the moved point, a lane per field per view. Each statistic is measured once, then composited per sample, so a band matches the
 whole frame given its geometry and width. **tone** is a second measure, of the composite. A
 `log_polar` **projection** (`src/projection.rs`) carries its Jacobian to `de` and the light.
 `data/styles/README.md` owns kinds, channels, blends and how to make a style. **Lighting
