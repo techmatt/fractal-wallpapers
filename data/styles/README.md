@@ -136,6 +136,28 @@ The shift lives in the disc's plane, so every disc's pullback turns its crescent
 way. On a trap with a large `largest` the early discs are frame-sized, and their
 crescents are ribbons sweeping the frame and curling round the discs they hug.
 
+`{"lines": {radius, arrive, settle, twist, divide, read, side}}` is the **field-lines**
+channel: where the orbit crossed a circle of its own, outside the set and inside it. An
+escaping orbit is read at the step it first leaves `|z| < radius` (default 4; a radius
+near the set's own size, 1.2 for a quadratic Julia set, puts several bands in the
+frame); an orbit that stays bounded is run `settle` steps (default 1000) onto its
+attracting cycle, the cycle found as the first repeat within 64 steps, and read at the
+first step it comes within `arrive` (default 0.05) of a cycle point `w`. `read` is
+`angle` (of `z`, or of `z − w` inside, a fraction of a turn) or `step` (the crossing's
+step, one number per band or arrival ring). The escape angle `decomposition` is the
+same angle read at the engine's `2¹⁶` bailout, where it has turned so often round each
+band that its level lines are straight rays crowding into moiré; read at a circle of a
+few units they are curves fanning out of the points that map to `0`, cut into sectors
+at the band seams, and inside, each cell of an attracting basin holds a pinwheel of
+lines into its centre. `twist` turns the angle by `twist·ln(|z| / radius)` radians
+(`ln(|z − w| / arrive)` inside), bending each band's lines into arcs; `divide` (outside
+only) divides the angle by `divide^step`, so the lines stop doubling with every band
+inwards (at the degree, each band holds as many as the one outside it). `side`
+(`both`, `outside`, `inside`) keeps one half of the frame, so the set and its outside
+take their own layers. Lines are cut by a sheet's `period` on the raw angle; a palette's
+stretch on a divided angle is spent on the outermost band. No gradient, so no `light`;
+a parabolic or Siegel interior, whose orbit never repeats, has no lines.
+
 Each **layer** is `{kind, blend, opacity, mask, …}`; `blend` is one of `normal`,
 `multiply`, `screen`, `overlay`, `min`, `add` (applied per channel in linear light),
 `opacity` is in [0, 1], and `mask` (`{channel, invert, power}`) multiplies the opacity by
@@ -252,7 +274,10 @@ globs, so background them yourself.
 
    (`style_picker.py`'s docstring has the plan's shape; a named-mode baseline carries its
    own `render`). It writes the JPEGs, a manifest whose every row is `"kind": "many"`,
-   `"default": []`, and the renders sidecar `style keep` needs.
+   `"default": []`, and the renders sidecar `style keep` needs. **The item's report header
+   carries one `pick: <manifest path>` line per picker it built** (the path from the repo
+   root), which is what makes conductor offer the Pick button; naming the picker only in
+   `carry:` or the body does not.
 7. **Round two, once Matt's keeps are back: twelve tiles or fewer.** His kept
    formulations at his kept locations, and three or four library maps on them, each map
    drafted at `--draft` first and dropped on a bullseye (concentric bands the map turns
@@ -271,6 +296,7 @@ Structure it needs (optional): <e.g. thin sets: --max-ink 0.10; Julia sets only:
   Lacking in the galleries? <yes: hand or atlas points via --points, per step 4's exception>.
 Keep / avoid (optional): <what must survive, what must not appear>.
 Round: 1 | 2 with <picker>.choices.json (round 2: the kept formulations and locations).
+The report header carries one `pick: <manifest path>` line per picker.
 Follow data/styles/README.md's *A new style from a reference image*. Commit when done.
 ```
 
@@ -290,6 +316,7 @@ pre-selected and its sidecar, and `style keep`.
 | `bronze_packing` | `795549-3840x2160-desktop-4k-fractal-background.jpg` | `bronze_packing` | the `bubble` channel (`height`, `step`, `angle`; `hit`, `spacing`, `escaped`) |
 | `ribbon_packing` | `795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg` | `ribbon_packing` | the bubble's `shift` (a face in each disc) and its `crescent` read |
 | `gilded_orbs` | `ancient-empires-25.jpg` | `gilded_orbs` | nothing: the old layers on `de`, `smooth`, `tia`, `inside` and two bubble traps |
+| `field_lines` | `blood-price-25.jpg` | `field_lines` | the `lines` channel (`angle`, `step`; `radius`, `arrive`, `settle`, `twist`, `divide`, `side`). Its structure, connected Julia sets with attracting basins, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -384,3 +411,25 @@ map, not the layers**: the lace takes the map's top end wherever the set is with
 hair, so the first fit's near-white top read p90 ~0.10 over the reference at most seats,
 and holding the map's top at a warm gold where the lights do not reach brought every
 render back into the band.
+
+The eighth style is a Julia set's cyan chain of cells over fans of fine field lines, and
+it went in as **one channel**, `lines`. The escape angle was already a field, but read at
+the engine's `2¹⁶` bailout its level lines are straight rays crowding into moiré; read
+where the orbit leaves a circle of radius 1.2 the same angle draws curved fans cut into
+sectors by the band seams, and read inside at the orbit's arrival near its attracting
+cycle it fills every cell with a pinwheel of lines into its centre. Everything else is
+old: a palette at one cycle on the angle for the broad rose sweeps, a rank palette on
+the step for a tone per band, two period sheets at incommensurate periods for the hair,
+the falloff glows for the chain. Three lessons. **Lines that double with every band
+average into flat tone**: each band's angle turns `dⁿ` times round the set, so a line
+period that reads well in the outer band is sub-pixel three bands in; `divide` (1.6 here)
+spreads them so each band keeps lines to the set. **The galleries hold no basins**: of
+`final139_general`'s 355 non-spiral Julia seats one shows three cells and 5% interior
+(the inside rendered white at 320x200, its components counted; the median seat's inside
+share is 0), so its locations are
+hand-placed (step 4's exception), `c` found by Newton on the cycle's multiplier
+(`f^p(z) = z`, `(f^p)'(z) = μ`) for a spiral `μ` in a component of period 1 to 5.
+**A low-contrast reference is held through the map's top again**: its p90 is 0.38 against
+a median of 0.27, and the first fit's pale-rose top read p90 0.43–0.54; holding the map's
+top at a mid dusty rose, narrowing the chain's glows and a gamma of 1.4 on the sweeps
+brought the worst seats to ~0.42.

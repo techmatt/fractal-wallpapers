@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "field_lines",
+  "kind": "sequential",
+  "source": "field_lines, authored as 9 control points as the albedo of the field_lines style: the reference's line colours by lightness, deep plum and maroon, dark slate and slate teal, mauve and dusty rose, ordered by lightness so the warm and cool lines alternate as the map repeats along them, and its top held at a mid dusty rose: the reference is low in contrast (p90 0.38), and a paler top end put every render's p90 0.05 to 0.16 over it. The set's cyan chain and its cream hairline are the style's own paints, not the map's.",
+  "stops": [
+    [0.0, [24, 9, 20]],
+    [0.14, [52, 20, 36]],
+    [0.28, [30, 50, 68]],
+    [0.42, [40, 74, 88]],
+    [0.56, [86, 56, 70]],
+    [0.68, [116, 80, 84]],
+    [0.8, [150, 110, 100]],
+    [0.91, [162, 126, 112]],
+    [1.0, [180, 148, 128]]
+  ]
+}

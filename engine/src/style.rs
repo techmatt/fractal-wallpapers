@@ -158,6 +158,8 @@ pub struct Source {
     pub radial: Option<Radial>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bubble: Option<Bubble>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lines: Option<Lines>,
     #[serde(default)]
     pub transform: Transform,
     /// Read the channel from the other end: `1 − position`, before the curve.
@@ -330,6 +332,179 @@ pub enum BubbleRead {
 /// How many reads a bubble loop has, one lane each.
 const BUBBLE_READS: usize = 4;
 
+/// The **field-lines** channel: which way the orbit was heading where it crossed a
+/// circle of its own, outside the set and inside it.
+///
+/// The escape angle ([`FieldSpec::Decomposition`]) is read at the engine's bailout,
+/// `2¹⁶`, where `zₙ` is so far out that its angle has turned `2ⁿ` times round each
+/// band: the frame fills with straight rays crowding into moiré. Read the angle where
+/// the orbit **first leaves `|z| < radius`** with `radius` a few units instead, and each
+/// band's level lines are the pullbacks of rays through a circle the orbit crosses
+/// slowly: fine curves fanning out of the points that map to `0`, cut into sectors by
+/// the band seams, which is what a "field lines" render draws.
+///
+/// **Inside**, an orbit falling into an attracting cycle is read the same way at its
+/// **arrival**: the first step it comes within `arrive` of a point of the cycle, at the
+/// angle of `z − w` there. Every interior cell then holds the pullback of a disc of
+/// rays round its centre, turned by the cycle's multiplier at each step, so a spiral
+/// multiplier draws a pinwheel of lines into each cell. The cycle is found per sample:
+/// `settle` steps, then the first repeat within [`LINES_LONGEST_CYCLE`] steps; an orbit
+/// that never repeats (a parabolic or Siegel point, a cap reached first) has no lines.
+///
+/// `read` is `angle` (a fraction of a turn, so a palette at many `cycles` or a sheet at
+/// a small `period` cuts it into lines) or `step` (the crossing's step: one number per
+/// band or ring, for a tone per sector). `side` keeps one half of the frame. Its own
+/// loop, stopping at the crossing outside; inside, two orbits of `settle` steps. It has
+/// no gradient, so a `light` cannot read it.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Lines {
+    /// The circle an escaping orbit is read leaving, about `0`.
+    pub radius: f64,
+    /// How near a point of its cycle a bounded orbit is read arriving.
+    pub arrive: f64,
+    /// Steps a bounded orbit runs before its cycle is read, and the most its arrival may take.
+    pub settle: u32,
+    /// Turns the angle by `twist·ln(|z| / radius)` radians outside (`ln(|z − w| / arrive)`
+    /// inside): the crossing's `|z|` runs across each band from the circle outwards, so
+    /// a twist bends every band's lines into arcs that sweep round it, and inside, at
+    /// `−arg λ / ln|λ|` for the cycle's multiplier `λ` (`|λ| < 1`, so the same sign as
+    /// `arg λ`), it lines the rings up into one log spiral per line. 0 leaves the
+    /// straight pullbacks.
+    pub twist: f64,
+    /// Outside only: divide the angle by `divide^step`. Each band's angle turns `dⁿ`
+    /// times round the set (`d` the degree), so at `divide` 1 every band holds twice the
+    /// lines of the band outside it (at degree 2) and the bands near the set average
+    /// into flat tone; at `divide = d` every band holds the same number of lines, which
+    /// thin out towards the set instead. A sheet's `period` cuts the divided value; a
+    /// palette's stretch would be spent on the outermost band, so lines take a sheet.
+    pub divide: f64,
+    pub read: LinesRead,
+    pub side: Side,
+}
+
+impl Default for Lines {
+    fn default() -> Lines {
+        Lines {
+            radius: 4.0,
+            arrive: 0.05,
+            settle: 1000,
+            twist: 0.0,
+            divide: 1.0,
+            read: LinesRead::Angle,
+            side: Side::Both,
+        }
+    }
+}
+
+impl Lines {
+    /// The loop this reads: both reads of one circle share it.
+    fn trap(&self) -> Lines {
+        Lines {
+            read: LinesRead::Angle,
+            ..*self
+        }
+    }
+}
+
+/// What the field-lines channel reads at the crossing.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LinesRead {
+    /// The direction of `z` (outside) or of `z − w` (inside), a fraction of a turn.
+    #[default]
+    Angle,
+    /// The step of the crossing.
+    Step,
+}
+
+/// Which samples a field-lines channel reads.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Side {
+    #[default]
+    Both,
+    /// Only orbits that escape.
+    Outside,
+    /// Only orbits that never escape.
+    Inside,
+}
+
+/// The longest cycle the field-lines channel looks for inside the set.
+pub const LINES_LONGEST_CYCLE: u32 = 64;
+
+/// The field-lines channel's two reads, `[angle, step]`, for one orbit, or `None`
+/// where it has none: see [`Lines`]. `escaped` is the escape loop's verdict.
+pub fn lines(
+    family: &Family,
+    pixel: Complex<f64>,
+    escaped: bool,
+    trap: &Lines,
+) -> Option<[f64; 2]> {
+    let turn = |w: Complex<f64>, scale: f64| {
+        // An arrival exactly on the cycle point has no length to bend by.
+        let bend = match (trap.twist, w.norm()) {
+            (0.0, _) | (_, 0.0) => 0.0,
+            (twist, length) => twist * (length / scale).ln(),
+        };
+        ((w.arg() + bend) / std::f64::consts::TAU).rem_euclid(1.0)
+    };
+    let (mut z, mut z_prev, c) = family.seed(pixel);
+    if escaped {
+        // The orbit passed the bailout, and `radius` is below it (`Style::validate`), so
+        // it crosses the circle within the escape loop's own steps.
+        let radius_sq = trap.radius * trap.radius;
+        let mut step = 0u32;
+        while z.norm_sqr() < radius_sq {
+            let next = family.step(z, z_prev, c);
+            (z_prev, z) = (z, next);
+            step += 1;
+            if z.norm_sqr().is_nan() || step == u32::MAX {
+                return None;
+            }
+        }
+        let angle = match trap.divide {
+            1.0 => turn(z, trap.radius),
+            divide => turn(z, trap.radius) / divide.powi(step as i32),
+        };
+        return Some([angle, step as f64]);
+    }
+    // Settle on the cycle, then find its length.
+    for _ in 0..trap.settle {
+        let next = family.step(z, z_prev, c);
+        (z_prev, z) = (z, next);
+    }
+    let tolerance = 1e-9 * z.norm().max(1.0);
+    let anchor = z;
+    let mut cycle = Vec::with_capacity(LINES_LONGEST_CYCLE as usize);
+    let (mut w, mut w_prev) = (z, z_prev);
+    for _ in 0..LINES_LONGEST_CYCLE {
+        cycle.push(w);
+        let next = family.step(w, w_prev, c);
+        (w_prev, w) = (w, next);
+        if (w - anchor).norm() < tolerance {
+            break;
+        }
+    }
+    if !(w - anchor).norm().is_finite() || (w - anchor).norm() >= tolerance {
+        return None;
+    }
+    // Run the orbit again and read its arrival within `arrive` of a point of the cycle.
+    let (mut z, mut z_prev, c) = family.seed(pixel);
+    let arrive_sq = trap.arrive * trap.arrive;
+    for step in 0..=trap.settle {
+        if let Some(point) = cycle
+            .iter()
+            .find(|&&point| (z - point).norm_sqr() < arrive_sq)
+        {
+            return Some([turn(z - point, trap.arrive), step as f64]);
+        }
+        let next = family.step(z, z_prev, c);
+        (z_prev, z) = (z, next);
+    }
+    None
+}
+
 /// Which lane a source reads.
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Key {
@@ -337,15 +512,17 @@ enum Key {
     Inside,
     Radial([f64; 2]),
     Bubble(Bubble),
+    Lines(Lines),
 }
 
 impl Source {
     fn key(&self) -> Key {
-        match (self.field, self.radial, self.bubble) {
-            (Some(field), _, _) => Key::Field(field),
-            (None, Some(radial), _) => Key::Radial(radial.center),
-            (None, None, Some(bubble)) => Key::Bubble(bubble),
-            (None, None, None) => Key::Inside,
+        match (self.field, self.radial, self.bubble, self.lines) {
+            (Some(field), _, _, _) => Key::Field(field),
+            (None, Some(radial), _, _) => Key::Radial(radial.center),
+            (None, None, Some(bubble), _) => Key::Bubble(bubble),
+            (None, None, None, Some(lines)) => Key::Lines(lines),
+            (None, None, None, None) => Key::Inside,
         }
     }
 }
@@ -833,13 +1010,44 @@ impl Style {
                     return Err(format!("{at}: mask power must be positive"));
                 }
             }
-            if layer.kind == Kind::Light && layer.channel.is_some_and(|s| s.radial.is_some()) {
+            if layer.kind == Kind::Light
+                && layer
+                    .channel
+                    .is_some_and(|s| s.radial.is_some() || s.lines.is_some())
+            {
                 return Err(format!(
-                    "{at}: a light needs a channel read off the orbit, which has a gradient; \
-                     radial has none"
+                    "{at}: a light needs a channel with a gradient; radial has none, nor do lines"
                 ));
             }
             for source in layer.sources() {
+                if let Some(lines) = source.lines {
+                    let only = source.field.is_none()
+                        && source.inside.is_none()
+                        && source.radial.is_none()
+                        && source.bubble.is_none();
+                    if !only {
+                        return Err(format!(
+                            "{at}: a channel names exactly one of 'field', 'inside', 'radial', \
+                             'bubble' and 'lines'"
+                        ));
+                    }
+                    if !(lines.radius.is_finite()
+                        && lines.radius > 0.0
+                        && lines.radius < iterate::BAILOUT
+                        && lines.arrive.is_finite()
+                        && lines.arrive > 0.0
+                        && lines.settle >= 1
+                        && lines.twist.is_finite()
+                        && lines.divide.is_finite()
+                        && lines.divide >= 1.0)
+                    {
+                        return Err(format!(
+                            "{at}: lines need a radius in (0, the bailout), a positive arrive, \
+                             settle >= 1, a finite twist and divide >= 1"
+                        ));
+                    }
+                    continue;
+                }
                 match (source.field, source.inside, source.radial, source.bubble) {
                     (Some(_), None, None, None) => {}
                     (None, Some(inside), None, None) if inside.iterations > 0 => {}
@@ -959,6 +1167,19 @@ impl Style {
         traps
     }
 
+    /// Every field-lines loop a layer reads (one per circle), once each.
+    fn lines(&self) -> Vec<Lines> {
+        let mut traps: Vec<Lines> = Vec::new();
+        for source in self.layers.iter().flat_map(|layer| layer.sources()) {
+            if let Some(lines) = source.lines {
+                if !traps.contains(&lines.trap()) {
+                    traps.push(lines.trap());
+                }
+            }
+        }
+        traps
+    }
+
     /// Every radial centre a layer reads, once each.
     fn radials(&self) -> Vec<[f64; 2]> {
         let mut centers: Vec<[f64; 2]> = Vec::new();
@@ -997,6 +1218,8 @@ struct Channels {
     /// One entry per bubble loop: its reads (empty where unasked), the height's unit
     /// gradient (empty without a light) and the crescent's (empty unless both asked).
     bubbles: Vec<BubbleLanes>,
+    /// One entry per field-lines loop: its angle and step lanes.
+    lines: Vec<(Lines, [Vec<f32>; 2])>,
     interior_fraction: f64,
 }
 
@@ -1028,6 +1251,14 @@ impl Channels {
                 &self.lanes[index]
             }
             Key::Bubble(bubble) => &self.bubble(bubble).reads[bubble.read as usize],
+            Key::Lines(lines) => {
+                &self
+                    .lines
+                    .iter()
+                    .find(|(trap, _)| *trap == lines.trap())
+                    .expect("every field-lines loop a layer reads was gathered")
+                    .1[lines.read as usize]
+            }
         }
     }
 
@@ -1046,8 +1277,8 @@ impl Channels {
                 &self.bubble(bubble).crescent_gradient
             }
             Key::Bubble(bubble) => &self.bubble(bubble).gradient,
-            // Refused by `Style::validate`: radial has no orbit gradient to light.
-            Key::Radial(_) => &[],
+            // Refused by `Style::validate`: neither has an orbit gradient to light.
+            Key::Radial(_) | Key::Lines(_) => &[],
         }
     }
 }
@@ -1290,6 +1521,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
     let height = view.sample_height();
     let reach = style.inside();
     let traps = style.bubbles();
+    let circles = style.lines();
     type BubbleRow = ([Vec<f32>; BUBBLE_READS], Vec<[f32; 2]>, Vec<[f32; 2]>);
     type Row = (
         Vec<Vec<f32>>,
@@ -1297,12 +1529,15 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         Vec<(f32, [f32; 2])>,
         u64,
         Vec<BubbleRow>,
+        Vec<[Vec<f32>; 2]>,
     );
     let rows: Vec<Row> = (0..height)
         .into_par_iter()
         .map(|row| {
             let mut bubble_rows: Vec<BubbleRow> =
                 traps.iter().map(|_| Default::default()).collect();
+            let mut lines_rows: Vec<[Vec<f32>; 2]> =
+                circles.iter().map(|_| Default::default()).collect();
             let mut lanes = vec![Vec::with_capacity(width as usize); fields.len()];
             let mut gradients = Vec::with_capacity(if lights { width as usize } else { 0 });
             let mut insides = Vec::with_capacity(if reach.is_some() { width as usize } else { 0 });
@@ -1378,8 +1613,17 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                         across_lane.push(unit(entry.and_then(|entry| entry.across(trap))));
                     }
                 }
+                for (trap, [angles, steps]) in circles.iter().zip(&mut lines_rows) {
+                    let read = match (trap.side, orbit.escaped) {
+                        (Side::Outside, false) | (Side::Inside, true) => None,
+                        _ => lines(family, pixel, orbit.escaped, trap),
+                    };
+                    let [angle, step] = read.map_or([f32::NAN; 2], |[a, s]| [a as f32, s as f32]);
+                    angles.push(angle);
+                    steps.push(step);
+                }
             }
-            (lanes, gradients, insides, inside, bubble_rows)
+            (lanes, gradients, insides, inside, bubble_rows, lines_rows)
         })
         .collect();
 
@@ -1398,9 +1642,18 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
             crescent_gradient: Vec::new(),
         })
         .collect();
-    for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles) in rows {
+    let mut lines_lanes: Vec<(Lines, [Vec<f32>; 2])> = circles
+        .iter()
+        .map(|trap| (*trap, Default::default()))
+        .collect();
+    for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles, row_lines) in rows {
         for (lane, part) in lanes.iter_mut().zip(row_lanes) {
             lane.extend(part);
+        }
+        for ((_, whole), part) in lines_lanes.iter_mut().zip(row_lines) {
+            for (lane, part) in whole.iter_mut().zip(part) {
+                lane.extend(part);
+            }
         }
         for (whole, (reads, unit_lane, across_lane)) in bubbles.iter_mut().zip(row_bubbles) {
             for (lane, part) in whole.reads.iter_mut().zip(reads) {
@@ -1437,6 +1690,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
         inside_gradient,
         radials,
         bubbles,
+        lines: lines_lanes,
         interior_fraction: inside as f64 / (width as f64 * height as f64).max(1.0),
     }
 }
@@ -2384,6 +2638,82 @@ mod tests {
         assert!(at(80, 50) < 0.01);
         assert!((at(130, 50) - at(80, 0)).abs() < 0.011);
         assert!((at(130, 50) - 0.505).abs() < 1e-3);
+    }
+
+    #[test]
+    fn field_lines_cross_the_circle_outside_and_arrive_at_the_cycle_inside() {
+        // c inside the main cardioid, multiplier 0.9·e^(0.3·2πi): an attracting fixed
+        // point w with 2w = mu, so every interior orbit spirals into it.
+        let mu = Complex::from_polar(0.9, 0.3 * std::f64::consts::TAU);
+        let c = mu / 2.0 - mu * mu / 4.0;
+        let w = mu / 2.0;
+        let family = Family::Julia { degree: 2, c };
+        let trap = Lines::default();
+        let wants = Wants::default();
+        let (mut outside, mut inside) = (0, 0);
+        for pixel in grid() {
+            let orbit = iterate::run(&family, pixel, 2000, &wants);
+            let Some([angle, step]) = lines(&family, pixel, orbit.escaped, &trap) else {
+                assert!(orbit.escaped, "{pixel}: an attracting basin always arrives");
+                continue;
+            };
+            assert!((0.0..1.0).contains(&angle), "{pixel}: {angle}");
+            // Replay the orbit to the crossing the channel reports.
+            let mut z = pixel;
+            for _ in 0..step as u32 {
+                z = z * z + c;
+            }
+            let at = if orbit.escaped {
+                outside += 1;
+                assert!(z.norm() >= trap.radius, "{pixel}: crossed at {z}");
+                if step >= 1.0 {
+                    let mut before = pixel;
+                    for _ in 0..step as u32 - 1 {
+                        before = before * before + c;
+                    }
+                    assert!(
+                        before.norm() < trap.radius,
+                        "{pixel}: not the first crossing"
+                    );
+                }
+                z
+            } else {
+                inside += 1;
+                assert!(
+                    (z - w).norm() < trap.arrive,
+                    "{pixel}: arrived at {z}, not {w}"
+                );
+                z - w
+            };
+            let turn = (at.arg() / std::f64::consts::TAU).rem_euclid(1.0);
+            assert!((turn - angle).abs() < 1e-6, "{pixel}: {turn} vs {angle}");
+        }
+        assert!(
+            outside > 100 && inside > 100,
+            "{outside} outside, {inside} inside"
+        );
+        // A side keeps its half: the outside read of a bounded orbit is refused by the
+        // caller, so here only the loops differ; a cycle that never repeats has no lines.
+        let parabolic = Family::Julia {
+            degree: 2,
+            c: Complex::new(0.25, 0.0),
+        };
+        assert!(lines(&parabolic, Complex::new(0.1, 0.0), false, &trap).is_none());
+    }
+
+    #[test]
+    fn a_light_on_lines_is_refused_and_lines_stand_alone() {
+        let light = r##"{"name": "x", "layers": [{"kind": "light", "channel": {"lines": {}}}]}"##;
+        let style: Style = serde_json::from_str(light).unwrap();
+        assert!(style.validate().unwrap_err().contains("nor do lines"));
+        let both = r##"{"name": "x", "layers": [{"kind": "glow", "color": {"rgb": "#ffffff"},
+            "channel": {"lines": {}, "field": {"kind": "smooth"}}}]}"##;
+        let style: Style = serde_json::from_str(both).unwrap();
+        assert!(style.validate().unwrap_err().contains("exactly one"));
+        let past = r##"{"name": "x", "layers": [{"kind": "glow", "color": {"rgb": "#ffffff"},
+            "channel": {"lines": {"radius": 1e9}}}]}"##;
+        let style: Style = serde_json::from_str(past).unwrap();
+        assert!(style.validate().unwrap_err().contains("bailout"));
     }
 
     #[test]

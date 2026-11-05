@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "name": "field_lines",
+  "description": "a connected Julia set as a bright cyan chain of packed cells, each cell a teal pinwheel of fine lines swirling into its centre, floating over fans of fine field lines in maroon, slate and dusty rose that sweep out from the set, cut into sectors where the escape bands meet",
+  "reference": {
+    "image": "blood-price-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "suggested_colormap": "field_lines",
+  "reuses": [
+    "the palette layer at one cycle (phase 0.35, gamma 1.4) on the lines' angle: broad slate-to-rose sweeps that turn twice as fast in each band inwards, so the inner bands fan",
+    "the palette layer by rank on the lines' step, inverted, as an overlay: a tone per band, darkest beside the set",
+    "two period sheets on the lines' angle (gilded_orbs' engraving cut): fine light lines screened in dusty rose and darker ones multiplied in plum, at incommensurate periods so the lines read as hair, not a grating",
+    "the same two sheets inside on the arrival angle, a teal one screened and a plain one multiplied: the pinwheels in each cell",
+    "a glow on the inverted arrival step: a dusty-rose glint at each cell's centre",
+    "glow_filaments' falloff glows on de: a teal haze, the cyan chain and a cream hairline along the set",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [
+    "the lines channel: the angle (or step) where an escaping orbit first leaves |z| < radius, and where a bounded orbit first comes within arrive of its attracting cycle; with twist (the angle turned by ln|z|) and divide (the angle over divide^step, so every band keeps its lines)"
+  ],
+  "style": {
+    "name": "field_lines",
+    "interior": {"rgb": "#0e4652"},
+    "tone": {"median": 0.267, "p10": 0.13},
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {"lines": {"radius": 1.2, "twist": 0.8, "side": "outside"}},
+        "palette": {"cycles": 1.0, "phase": 0.35, "gamma": 1.4}
+      },
+      {
+        "kind": "palette",
+        "channel": {"lines": {"radius": 1.2, "twist": 0.8, "side": "outside", "read": "step"}, "invert": true},
+        "palette": {"cycles": 1.3, "transfer": {"kind": "rank"}},
+        "blend": "overlay",
+        "opacity": 0.4
+      },
+      {
+        "kind": "sheet",
+        "channel": {"lines": {"radius": 1.2, "twist": 0.8, "divide": 1.6, "side": "outside"}},
+        "sheet": {"period": 0.0021, "edge": 0.35, "fill": 0.3},
+        "color": {"palette": 0.7},
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "sheet",
+        "channel": {"lines": {"radius": 1.2, "twist": 0.8, "divide": 1.6, "side": "outside"}},
+        "sheet": {"period": 0.0053, "edge": 0.3, "fill": 0.2},
+        "color": {"palette": 0.1},
+        "blend": "multiply",
+        "opacity": 0.5
+      },
+      {
+        "kind": "sheet",
+        "channel": {"lines": {"arrive": 0.03, "twist": 0.8, "side": "inside"}},
+        "sheet": {"period": 0.02, "edge": 0.35, "fill": 0.3},
+        "color": {"rgb": "#48a8b0"},
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "sheet",
+        "channel": {"lines": {"arrive": 0.03, "twist": 0.8, "side": "inside"}},
+        "sheet": {"period": 0.047, "edge": 0.3, "fill": 0.2},
+        "blend": "multiply",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {"lines": {"arrive": 0.03, "twist": 0.8, "side": "inside", "read": "step"}, "invert": true},
+        "power": 40.0,
+        "color": {"rgb": "#a06a60"},
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {"field": {"kind": "de"}},
+        "falloff": 0.008,
+        "color": {"rgb": "#1f7f8c"},
+        "blend": "screen",
+        "opacity": 0.35
+      },
+      {
+        "kind": "glow",
+        "channel": {"field": {"kind": "de"}},
+        "falloff": 0.001,
+        "color": {"rgb": "#3fd8e0"},
+        "blend": "screen",
+        "opacity": 0.75
+      },
+      {
+        "kind": "glow",
+        "channel": {"field": {"kind": "de"}},
+        "falloff": 0.0003,
+        "color": {"rgb": "#eaffd0"},
+        "blend": "add",
+        "opacity": 0.8
+      }
+    ]
+  }
+}
