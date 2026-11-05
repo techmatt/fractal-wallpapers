@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "gilded_orbs",
+  "kind": "sequential",
+  "source": "gilded_orbs, authored as 10 control points (near-black umber through bronze and old gold to a warm pale gold) as the albedo of the gilded_orbs style: the reference's warm pixels read by lightness decile, each pushed more saturated and the top end held below white, since the style's lights and glows supply the near-whites. The orbs' blue is the style's own paint, not the map's.",
+  "stops": [
+    [0.0, [10, 8, 5]],
+    [0.12, [27, 21, 12]],
+    [0.25, [47, 37, 20]],
+    [0.38, [73, 57, 30]],
+    [0.5, [104, 81, 40]],
+    [0.62, [140, 108, 52]],
+    [0.74, [178, 139, 66]],
+    [0.85, [205, 160, 80]],
+    [0.93, [226, 188, 110]],
+    [1.0, [242, 214, 156]]
+  ]
+}

@@ -289,6 +289,7 @@ pre-selected and its sidecar, and `style keep`.
 | `glow_filaments` | `Black-and-Green-Abstract-Wallpaper.jpg` | `glow_filaments` | `falloff` on `glow`, `log_density` on `tone` |
 | `bronze_packing` | `795549-3840x2160-desktop-4k-fractal-background.jpg` | `bronze_packing` | the `bubble` channel (`height`, `step`, `angle`; `hit`, `spacing`, `escaped`) |
 | `ribbon_packing` | `795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg` | `ribbon_packing` | the bubble's `shift` (a face in each disc) and its `crescent` read |
+| `gilded_orbs` | `ancient-empires-25.jpg` | `gilded_orbs` | nothing: the old layers on `de`, `smooth`, `tia`, `inside` and two bubble traps |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -362,3 +363,24 @@ everywhere; at 1.5 they are rare and off the frame's large discs). **A stack's p
 the new structure is a literal colour on purpose**: the ribbons are the contrast the
 picture is about, so they keep the reference's blue under every map, and the formulation
 painting them from the map is a picker row, not the default.
+
+The seventh style is gold filigree with blue jewel orbs strung along it, and it went in
+with **no new primitive**: the filigree is a light on the smooth count at one band a
+step, a period sheet of four fine lines a band and the `tia` field multiplied in as
+engraving; the haze and the hair of light are `glow_filaments`' falloff glows; the
+sparkles are a bubble lattice of tiny discs masked to the set; and each orb is one
+"jewel" (a flat blue glow, a domed light, gold rings cut by a sheet, a dark rim and an
+ice-white glint) laid on a channel highest at its middle. Two lessons. **A structure the
+galleries lack can come from a trap instead of a location.** The first reading put the
+orbs on the set's interior components, which the galleries almost never show: 25 of
+`final139_general`'s 890 non-spiral seats hold a round one and 9 hold three or more, and
+hand-placed hyperbolic Julia sets were no better (past degree 2 their basins are petalled
+polygons). One bubble disc with no `spacing` is the fix: unlike a lattice, which every
+orbit hits, a single disc is entered only by the orbits passing near it, so its
+pullbacks are a few round discs strung along the arms, at any location. The interior
+keeps the same jewel on the `inside` channel where a seat has one, the locations come
+from an ordinary gallery scout, and step 4's exception went unused. **A stack whose bright structure is lace misses p90 through the
+map, not the layers**: the lace takes the map's top end wherever the set is within a
+hair, so the first fit's near-white top read p90 ~0.10 over the reference at most seats,
+and holding the map's top at a warm gold where the lights do not reach brought every
+render back into the band.

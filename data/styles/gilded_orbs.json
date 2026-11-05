@@ -1,0 +1,369 @@
+{
+  "schema": 1,
+  "name": "gilded_orbs",
+  "description": "gold filigree on dark umber: engraved gold bands looping round the set, a warm gold haze with sparkles along it, and blue jewel orbs strung on the arms, each a domed blue core in concentric gold rings with an ice-white glint",
+  "reference": {
+    "image": "ancient-empires-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "suggested_colormap": "gilded_orbs",
+  "reuses": [
+    "field de, inverted, through the map by rank: dark umber far from the set, old gold beside it",
+    "the light layer on field smooth at period 1: one embossed band per escape step, the filigree's looping bands",
+    "a period sheet on field smooth (four fine lines a band) and field tia as a multiply glow: the engraving cut into the gold",
+    "glow_filaments' falloff glow on de: a warm haze 0.03 frame widths wide and a hair of light along the set",
+    "the bubble trap (bronze_packing), twice: a lattice of tiny discs as sparkles masked to the set, and one disc's bounded pullbacks as the orbs, each lit as a dome and cut into rings by a sheet",
+    "channel inside cut into six bands: every interior component the same jewel",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "gilded_orbs",
+    "interior": {
+      "rgb": "#132650"
+    },
+    "tone": {
+      "median": 0.231,
+      "p10": 0.061
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.8
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 0.8,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 45.0,
+          "ambient": 0.6,
+          "diffuse": 0.55,
+          "specular": 0.35,
+          "shininess": 30.0,
+          "rim": 0.3,
+          "rim_power": 3.0,
+          "highlight": {
+            "palette": 0.9
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 0.25,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "tia"
+          },
+          "invert": true
+        },
+        "power": 2.0,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.03,
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.35
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.06,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.004
+          }
+        },
+        "power": 12.0,
+        "color": {
+          "rgb": "#fff4d6"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#2f62b4"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "light": {
+          "bands": 6.0,
+          "rings": 0.55,
+          "slope": 0.35,
+          "azimuth": 135.0,
+          "elevation": 50.0,
+          "ambient": 0.55,
+          "diffuse": 0.55,
+          "specular": 0.9,
+          "shininess": 60.0,
+          "rim": 0.4,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#d8ecff"
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "sheet": {
+          "bands": 6.0,
+          "rank": false,
+          "edge": 0.14,
+          "fill": 0.0
+        },
+        "color": {
+          "rgb": "#e2c27a"
+        },
+        "blend": "normal",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          },
+          "invert": true
+        },
+        "power": 8.0,
+        "color": {
+          "rgb": "#0a0d18"
+        },
+        "blend": "normal",
+        "opacity": 0.85
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "power": 8.0,
+        "color": {
+          "rgb": "#d8ecff"
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.15
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#2f62b4"
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.15
+          }
+        },
+        "light": {
+          "bands": 5.0,
+          "rings": 0.55,
+          "slope": 0.35,
+          "azimuth": 135.0,
+          "elevation": 50.0,
+          "ambient": 0.55,
+          "diffuse": 0.55,
+          "specular": 0.9,
+          "shininess": 60.0,
+          "rim": 0.4,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#d8ecff"
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.15
+          }
+        },
+        "sheet": {
+          "bands": 5.0,
+          "rank": false,
+          "edge": 0.14,
+          "fill": 0.0
+        },
+        "color": {
+          "rgb": "#e2c27a"
+        },
+        "blend": "normal",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.15
+          },
+          "invert": true
+        },
+        "power": 8.0,
+        "color": {
+          "rgb": "#0a0d18"
+        },
+        "blend": "normal",
+        "opacity": 0.85
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.15
+          }
+        },
+        "power": 8.0,
+        "color": {
+          "rgb": "#d8ecff"
+        },
+        "blend": "screen",
+        "opacity": 0.9
+      }
+    ]
+  }
+}
