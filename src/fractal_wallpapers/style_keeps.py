@@ -23,6 +23,12 @@ A row with `mode` in place of `style` is a named mode's render (a baseline tile)
 Re-running merges: a keep already recorded stays, a new round's keeps are added, and a
 keep picked again gains the new row and note. A picture whose picker image is gone is
 drawn again from its record.
+
+**A redraw is not the picture kept.** The record holds what the picture was drawn
+from, not the engine that drew it, and the engine's tone pass has moved under it: since
+2026-11-04 it measures the block-averaged picture rather than the samples, so a keep
+drawn at supersample 2 before then comes back a little darker or lighter (up to ~0.03
+of median lightness). The saved picture is the keep; a redraw says so ([`REDRAWN`]).
 """
 
 from __future__ import annotations
@@ -37,6 +43,13 @@ from fractal_wallpapers.paths import repo_root
 
 #: The one schema a keeps file carries today.
 SCHEMA = 1
+
+#: What `style keep` says when it drew a keep again rather than copying its picture.
+REDRAWN = (
+    "{count} drawn again from the record under the current engine: a redraw, not the "
+    "picture kept. The tone pass measures the averaged picture since 2026-11-04, so a "
+    "supersampled keep drawn before then can read up to ~0.03 lighter or darker."
+)
 
 
 class KeepError(ValueError):

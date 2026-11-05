@@ -30,13 +30,15 @@ narrow as its table allows.
   recounted. The header's `seconds` is kept: it is what the last full build took,
   and this did not do one.
 
-**groups.jsonl is never written.** The grouping is a ruling Matt approved merge by
-merge, and a rerun of `palettes groups` would re-decide it over the whole library.
-What this prints instead is M1 from the new map to every map already in the
-library, through [`groups.m1_to`] — one row of [`groups.m1`]'s matrix, number for
-number, without the pairwise loop over everything else — and the three nearest. A
-nearest under [`groups.CUT`] is said plainly: the map is a near-twin of one the
-library already has.
+* **One admission row of `groups.jsonl`**, appended, for a map new to the library.
+  The grouping is a ruling Matt approved merge by merge, and a rerun of `palettes
+  groups` would re-decide it over the whole library, so it is never re-cut: M1 from
+  the new map to every map already in the library, through [`groups.m1_to`] — one
+  row of [`groups.m1`]'s matrix, number for number, without the pairwise loop over
+  everything else — places it ([`groups.place`]) in the nearest group within
+  [`groups.CUT`], or in a group of its own. Every existing line is untouched, so no
+  group id moves. A `--replace` re-tune writes no row: the map keeps its group. The
+  three nearest maps are printed beside it.
 
 ## Every refusal comes before the first write
 
@@ -446,7 +448,18 @@ def _weighted_cloud(document: dict):
 
 
 def nearest(document: dict, directory: Path | None = None, top: int = NEAREST) -> list:
-    """`[(map, M1)]`: the `top` library maps nearest this one, nearest first.
+    """`[(map, M1)]`: the `top` library maps nearest this one, nearest first."""
+    return closest(distances(document, directory), top)
+
+
+def closest(distance: dict, top: int = NEAREST) -> list:
+    """`[(map, M1)]`, the `top` nearest of a [`distances`] reading, ties by name."""
+    order = sorted(distance.items(), key=lambda item: (item[1], item[0]))
+    return order[:top]
+
+
+def distances(document: dict, directory: Path | None = None) -> dict:
+    """`{map: M1}` from this map to every other map of the library.
 
     Every other map's cloud is read off its own file in `directory`, through
     [`groups.cloud_of`] — the arithmetic [`groups.cloud`] spends on the library —
@@ -458,7 +471,7 @@ def nearest(document: dict, directory: Path | None = None, top: int = NEAREST) -
     name = str(document["name"])
     others = [each for each in groups.library(directory) if each != name]
     if not others:
-        return []
+        return {}
     held_clouds = []
     for each in others:
         path = where / f"{each}.json"
@@ -471,8 +484,7 @@ def nearest(document: dict, directory: Path | None = None, top: int = NEAREST) -
             ) from refusal
     points = numpy.stack(held_clouds).astype(numpy.float32)
     distance = groups.m1_to(_weighted_cloud(document).astype(numpy.float32), points)
-    order = sorted(range(len(others)), key=lambda index: (float(distance[index]), others[index]))
-    return [(others[index], float(distance[index])) for index in order[:top]]
+    return {each: float(distance[index]) for index, each in enumerate(others)}
 
 
 # --------------------------------------------------------------------------- #
@@ -520,13 +532,23 @@ def run(
     readings = readings_of(document, fields, recolour_to)
     carriers_new, spliced = carrier_text(name, readings, directory)
     map_new, wrote = map_text(document, source, directory)
-    near = nearest(document, directory)
+    distance = distances(document, directory)
+    near = closest(distance)
+    # A map new to the library is admitted to the grouping; a re-tune keeps the group
+    # it has, because a map that started one may have been joined since.
+    admission = None
+    if not already and groups.read(directory):
+        standing = groups.standing(list(distance), directory=directory)
+        admission = groups.place(name, distance, standing)
     path = where / f"{name}.json"
     if map_new is not None:
         _write(path, map_new)
     if produced_new is not None:
         _write(produced.record_path(directory), produced_new)
     _write(carriers.record_path(directory), carriers_new)
+    if admission is not None:
+        with groups.record_path(directory).open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(groups.text_of([admission]))
     return {
         "name": name,
         "path": str(path),
@@ -535,6 +557,7 @@ def run(
         "carriers": spliced,
         "nearest": near,
         "twin": bool(near) and near[0][1] < groups.CUT,
+        "admission": admission,
     }
 
 
@@ -552,15 +575,23 @@ def lines(report: dict) -> list[str]:
         f"[add] {produced.RECORD_NAME}: row {report['produced']}",
         f"[add] {carriers.RECORD_NAME}: {cells}; header now {carried['maps']} maps, "
         f"{carried['carriers']} carrier rows",
-        f"[add] {groups.RECORD_NAME}: not rewritten; nearest by M1 (cut {groups.CUT}):",
     ]
-    out += [f"[add]   {other}  {distance:.6f}" for other, distance in report["nearest"]]
-    if report["twin"]:
-        other, distance = report["nearest"][0]
+    admission = report.get("admission")
+    if admission is None:
+        out.append(f"[add] {groups.RECORD_NAME}: unchanged (a re-tune keeps its group)")
+    elif admission["joined"]:
         out.append(
-            f"[add] would group with {other} (M1 {distance:.6f} < {groups.CUT}): a near-twin "
-            "of a map the library already has"
+            f"[add] {groups.RECORD_NAME}: admitted into {admission['group']} (mean M1 "
+            f"{admission['m1']:.6f} within the cut {groups.CUT}); no group id moved"
         )
+    else:
+        out.append(
+            f"[add] {groups.RECORD_NAME}: admitted as its own group {admission['group']} "
+            f"(nearest {admission['nearest']} at mean M1 {admission['m1']}, over the cut "
+            f"{groups.CUT})"
+        )
+    out.append(f"[add] nearest maps by M1 (cut {groups.CUT}):")
+    out += [f"[add]   {other}  {distance:.6f}" for other, distance in report["nearest"]]
     return out
 
 
@@ -572,6 +603,8 @@ __all__ = [
     "carrier_state",
     "carrier_text",
     "case_clashes",
+    "closest",
+    "distances",
     "held",
     "map_text",
     "produced_text",

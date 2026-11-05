@@ -57,8 +57,21 @@ def palettes_ingest(args: argparse.Namespace) -> int:
 
 
 def palettes_groups(args: argparse.Namespace) -> int:
-    """Recompute which maps are near enough to be one choice, and rewrite the table."""
+    """Recompute which maps are near enough to be one choice, and rewrite the table;
+    or, with --admit, append maps the table has not seen without re-cutting it."""
     try:
+        if args.admit:
+            names = [
+                line.strip()
+                for line in Path(args.admit).read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.startswith("#")
+            ]
+            rows = palette_groups.admit(names, cut=args.cut)
+            for row in rows:
+                verdict = "joined" if row["joined"] else "alone "
+                print(f"{verdict} {row['group']:<32} {row['m1']}  {row['map']}")
+            print(json.dumps(palette_groups.coverage()))
+            return 0
         report = palette_groups.run(cut=args.cut, log=None if args.quiet else print)
     except palette_groups.GroupError as refusal:
         print(refusal)
@@ -264,6 +277,15 @@ def add_commands(subcommands) -> None:
     collapsing.add_argument(
         "--quiet", action="store_true", help="do not print the metric's progress"
     )
+    collapsing.add_argument(
+        "--admit",
+        metavar="FILE",
+        help=(
+            "a text file of library map names, one a line, that the table has not seen: "
+            "admit each in order (nearest group within the cut, or its own) and append "
+            "the rows, re-cutting nothing. `palettes add` does this for the map it adds"
+        ),
+    )
     collapsing.set_defaults(handler=palettes_groups)
 
     pinning = steps.add_parser(
@@ -308,8 +330,9 @@ def add_commands(subcommands) -> None:
             "writes it to data/palettes/<name>.json, inserts its all-zero row in "
             "palette_family_shares.csv and splices its own rows into carriers.jsonl — "
             "measured exactly as `carriers` measures one map, on a fresh recolour — leaving "
-            "every other row of both untouched. groups.jsonl is never rewritten; the three "
-            "library maps nearest by M1 are printed instead. A name the library already "
+            "every other row of both untouched. groups.jsonl gains one admission row — the "
+            "nearest group within the cut, or a group of its own — and is never re-cut; "
+            "the three library maps nearest by M1 are printed. A name the library already "
             "holds is refused without --replace."
         ),
     )

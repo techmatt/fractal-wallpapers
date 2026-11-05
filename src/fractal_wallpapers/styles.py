@@ -139,17 +139,21 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
 #: stack's to fix (narrower glows, less fog), not the locations'.
 TONE_BAND = {"median": 0.03, "p10": 0.05, "p90": 0.10}
 
-#: The draft size whose tones are the full-resolution ones'. The tone pass meets its
-#: targets on the samples, and the check reads a picture resampled to 640 wide, so a
-#: picture at supersample 1 and 640 wide (or less) *is* the samples and holds by
-#: construction: `teal_tunnel`'s `m_seed0` and `m_seahorse_double` read median 0.271 at
-#: 640x400 ss1 and 0.305 and 0.303 (misses) at 2560x1600 ss2. At 1280x800 ss2 they read
-#: 0.305 and 0.302, within 0.003 of full size, at a quarter of its samples.
+#: The cheap size a tone check reads. The engine's tone pass meets its targets on the
+#: finished picture (each pixel its block of supersamples averaged, since 2026-11-04),
+#: so every size's picture holds them at its own resolution. The check reads a copy
+#: resized to 640 wide, which averages a thin structure a second time, by more the
+#: larger the picture: `teal_tunnel`'s `m_seed0` reads median 0.271 at 640x400 ss1 (the
+#: picture the pass measured, so it holds by construction), 0.290 at 1280x800 ss2 and
+#: 0.297 at 2560x1600 ss2, against 0.305 at both before the pass read the picture. The
+#: draft is the full size's to about 0.01, at a quarter of its samples.
 DRAFT_RESOLUTION = (1280, 800)
 DRAFT_SUPERSAMPLE = 2
 
 #: Below this width a picture's tones are a guide, never the check (see
-#: [`DRAFT_RESOLUTION`]); `style tones` marks such a row instead of passing it.
+#: [`DRAFT_RESOLUTION`]): the check reads it unresampled, exactly as the pass measured
+#: it, so it says nothing of how a full-size render reads. `style tones` marks such a
+#: row instead of passing it.
 CHECKED_WIDTH = DRAFT_RESOLUTION[0]
 WHITE_ALLOWANCE = 0.05
 BLACK_ALLOWANCE = 0.05

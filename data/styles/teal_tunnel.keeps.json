@@ -1,0 +1,610 @@
+{
+  "schema": 1,
+  "name": "teal_tunnel",
+  "reference": {
+    "image": "795548-3840x2160-desktop-4k-fractal-background.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (a wallpaper download, 3840x2160)"
+  },
+  "folder": "fractal-drive-sync/style-keeps/teal_tunnel",
+  "keeps": [
+    {
+      "id": "style_teal_tunnel_r1/palettes/yas",
+      "picker": "style_teal_tunnel_r1",
+      "picked": [
+        {
+          "row": "palettes",
+          "key": "yas"
+        }
+      ],
+      "label": "yas",
+      "image": "style_teal_tunnel_r1__yas.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m_antenna_m31",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-1.5436890126920764",
+            "center_im": "0.0",
+            "width": "0.05"
+          },
+          "maxiter": 4000,
+          "projection": {
+            "log_polar": {
+              "twist": 0.0,
+              "ring": 5.0,
+              "turns": 8
+            }
+          },
+          "multiplier": [
+            1.67857,
+            180.0
+          ],
+          "source": "Misiurewicz point M(3,1) by Newton from (-1.5436890126920764+0j); lambda the cycle multiplier; twist the residual turn of 2 repeats over their e-folds",
+          "note": "the antenna's M(3,1) at -1.5437, eight turns: sixteen arms with bulb-studded spokes"
+        },
+        "style": "teal_tunnel",
+        "stack": "teal_tunnel@84390106",
+        "colormap": "yas",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
+      "picker": "style_teal_tunnel_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "01_j_dendrite_beta"
+        }
+      ],
+      "label": "j_dendrite_beta: dendrite Julia at its beta point (the end of the 0 ray), eight turns: one arm per turn, wide sweeping cells",
+      "image": "style_teal_tunnel_r1__01_j_dendrite_beta.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "j_dendrite_beta",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.0",
+              "1.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "1.3002425902201205",
+            "center_im": "-0.6248105338438266",
+            "width": "0.6"
+          },
+          "maxiter": 3000,
+          "projection": {
+            "log_polar": {
+              "twist": 0.07139,
+              "ring": 3.0,
+              "turns": 8
+            }
+          },
+          "multiplier": [
+            2.88515,
+            -25.666
+          ],
+          "source": "quadratic Julia set at its beta fixed point; lambda = 2z; twist is the residual turn of 12 repeats over their e-folds",
+          "note": "dendrite Julia at its beta point (the end of the 0 ray), eight turns: one arm per turn, wide sweeping cells"
+        },
+        "style": "teal_tunnel",
+        "stack": "teal_tunnel@84390106",
+        "colormap": "teal_tunnel",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_teal_tunnel_r1/shortlist/09_m_seed4",
+      "picker": "style_teal_tunnel_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "09_m_seed4"
+        }
+      ],
+      "label": "m_seed4: Mandelbrot M near -0.017 + 1.013i: two-arm branch, broad open cells",
+      "image": "style_teal_tunnel_r1__09_m_seed4.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m_seed4",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.0172659900544564",
+            "center_im": "1.0130368060126522",
+            "width": "0.02"
+          },
+          "maxiter": 4000,
+          "projection": {
+            "log_polar": {
+              "twist": 0.074,
+              "ring": 2.0
+            }
+          },
+          "multiplier": [
+            2.90417,
+            -25.48
+          ],
+          "source": "Misiurewicz point M(17,1) by Newton from (-0.017+1.0128j); lambda the cycle multiplier; twist the residual turn of 12 repeats over their e-folds",
+          "note": "Mandelbrot M near -0.017 + 1.013i: two-arm branch, broad open cells"
+        },
+        "style": "teal_tunnel",
+        "stack": "teal_tunnel@84390106",
+        "colormap": "teal_tunnel",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_teal_tunnel_r1/variants/straight",
+      "picker": "style_teal_tunnel_r1",
+      "picked": [
+        {
+          "row": "variants",
+          "key": "straight"
+        }
+      ],
+      "label": "straight: no projection at all: the same stack on the straight view of the same place",
+      "image": "style_teal_tunnel_r1__straight.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "j_dendrite_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.0",
+              "1.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.30024259022012045",
+            "center_im": "0.6248105338438266",
+            "width": "0.6"
+          },
+          "maxiter": 3000,
+          "projection": {
+            "log_polar": {
+              "twist": -0.23153,
+              "ring": 5.0
+            }
+          },
+          "multiplier": [
+            1.38641,
+            115.666
+          ],
+          "source": "quadratic Julia set at its alpha fixed point; lambda = 2z; twist is the residual turn of 3 repeats over their e-folds",
+          "note": "dendrite Julia (c = i) at its alpha point: three arms, fifteen at five turns, arches between"
+        },
+        "style": "teal_tunnel",
+        "stack": "teal_tunnel@ec83c1ad",
+        "colormap": "teal_tunnel",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_teal_tunnel_r1/variants/turns3",
+      "picker": "style_teal_tunnel_r1",
+      "picked": [
+        {
+          "row": "variants",
+          "key": "turns3"
+        }
+      ],
+      "label": "turns3: three turns: nine arms, bigger cells",
+      "image": "style_teal_tunnel_r1__turns3.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "j_dendrite_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.0",
+              "1.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.30024259022012045",
+            "center_im": "0.6248105338438266",
+            "width": "0.6"
+          },
+          "maxiter": 3000,
+          "projection": {
+            "log_polar": {
+              "twist": -0.23153,
+              "ring": 5.0
+            }
+          },
+          "multiplier": [
+            1.38641,
+            115.666
+          ],
+          "source": "quadratic Julia set at its alpha fixed point; lambda = 2z; twist is the residual turn of 3 repeats over their e-folds",
+          "note": "dendrite Julia (c = i) at its alpha point: three arms, fifteen at five turns, arches between"
+        },
+        "style": "teal_tunnel",
+        "stack": "teal_tunnel@5edd2b0d",
+        "colormap": "teal_tunnel",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "teal_tunnel@5edd2b0d": {
+      "name": "teal_tunnel_turns3",
+      "projection": {
+        "log_polar": {
+          "turns": 3,
+          "center": [
+            0.36,
+            0.45
+          ]
+        }
+      },
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.271,
+        "p10": 0.075
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.6
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "normal",
+          "opacity": 0.85
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.95,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.45,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 30.0,
+            "rim": 0.3,
+            "rim_power": 3.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "phase": 0.5,
+            "edge": 0.1,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.7
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.02,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "add",
+          "opacity": 0.9
+        }
+      ]
+    },
+    "teal_tunnel@84390106": {
+      "name": "teal_tunnel",
+      "projection": {
+        "log_polar": {
+          "turns": 5,
+          "center": [
+            0.36,
+            0.45
+          ]
+        }
+      },
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.271,
+        "p10": 0.075
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.6
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "normal",
+          "opacity": 0.85
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.95,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.45,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 30.0,
+            "rim": 0.3,
+            "rim_power": 3.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "phase": 0.5,
+            "edge": 0.1,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.7
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.02,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "add",
+          "opacity": 0.9
+        }
+      ]
+    },
+    "teal_tunnel@ec83c1ad": {
+      "name": "teal_tunnel_straight",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.271,
+        "p10": 0.075
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.6
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "normal",
+          "opacity": 0.85
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.95,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 50.0,
+            "ambient": 0.45,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 30.0,
+            "rim": 0.3,
+            "rim_power": 3.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "phase": 0.5,
+            "edge": 0.1,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.7
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "sheet": {
+            "bands": 1.0,
+            "edge": 0.02,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "add",
+          "opacity": 0.9
+        }
+      ]
+    }
+  }
+}

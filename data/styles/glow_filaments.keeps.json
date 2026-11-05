@@ -1,0 +1,330 @@
+{
+  "schema": 1,
+  "name": "glow_filaments",
+  "reference": {
+    "image": "Black-and-Green-Abstract-Wallpaper.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style, signed 'Verdantium'), 1920x1200"
+  },
+  "folder": "fractal-drive-sync/style-keeps/glow_filaments",
+  "keeps": [
+    {
+      "id": "style_glow_filaments_r1/shortlist/03_m_branching_dendrite",
+      "picker": "style_glow_filaments_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "03_m_branching_dendrite"
+        }
+      ],
+      "label": "m_branching_dendrite: Mandelbrot M(17,1) neighbourhood: a single thin branching dendrite crossing the frame, very sparse, large dark field right",
+      "image": "style_glow_filaments_r1__03_m_branching_dendrite.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m_branching_dendrite",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.0172659900544564",
+            "center_im": "1.0130368060126522",
+            "width": "0.006"
+          },
+          "maxiter": 4000,
+          "note": "Mandelbrot M(17,1) neighbourhood: a single thin branching dendrite crossing the frame, very sparse, large dark field right"
+        },
+        "style": "glow_filaments",
+        "stack": "glow_filaments@0cd49685",
+        "colormap": "glow_filaments",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_glow_filaments_r1/shortlist/08_j_curl_chain",
+      "picker": "style_glow_filaments_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "08_j_curl_chain"
+        }
+      ],
+      "label": "j_curl_chain: Julia c = -0.835-0.2321i: chains of feathered curls crossing the frame around a central dark pocket",
+      "image": "style_glow_filaments_r1__08_j_curl_chain.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "j_curl_chain",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.835",
+              "-0.2321"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.45",
+            "center_im": "0.05",
+            "width": "1.2"
+          },
+          "maxiter": 3000,
+          "note": "Julia c = -0.835-0.2321i: chains of feathered curls crossing the frame around a central dark pocket"
+        },
+        "style": "glow_filaments",
+        "stack": "glow_filaments@0cd49685",
+        "colormap": "glow_filaments",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_glow_filaments_r1/shortlist/09_m_spiral_pair",
+      "picker": "style_glow_filaments_r1",
+      "picked": [
+        {
+          "row": "shortlist",
+          "key": "09_m_spiral_pair"
+        }
+      ],
+      "label": "m_spiral_pair: seahorse-valley spirals near -0.7747+0.1374i: a spiral curl and a star cluster joined by threads, dark margins",
+      "image": "style_glow_filaments_r1__09_m_spiral_pair.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m_spiral_pair",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7746996",
+            "center_im": "0.1373981",
+            "width": "0.0001"
+          },
+          "maxiter": 5000,
+          "note": "seahorse-valley spirals near -0.7747+0.1374i: a spiral curl and a star cluster joined by threads, dark margins"
+        },
+        "style": "glow_filaments",
+        "stack": "glow_filaments@0cd49685",
+        "colormap": "glow_filaments",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_glow_filaments_r1/variants/no_fog",
+      "picker": "style_glow_filaments_r1",
+      "picked": [
+        {
+          "row": "variants",
+          "key": "no_fog"
+        }
+      ],
+      "label": "without the distance-estimate fog: darker threads, the web stronger",
+      "image": "style_glow_filaments_r1__no_fog.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "j_pinwheel_quintic",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "-0.5440605948663408",
+              "0.8878261996329314"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "1.4"
+          },
+          "maxiter": 3000,
+          "note": "quintic dendrite Julia (c a Misiurewicz point, f(c) fixed): four thin arms bending pinwheel-fashion, small curled side branches, dark between"
+        },
+        "style": "glow_filaments",
+        "stack": "glow_filaments@592b6d8c",
+        "colormap": "glow_filaments",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "glow_filaments@0cd49685": {
+      "name": "glow_filaments",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.11,
+        "p10": 0.031
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.0
+          },
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.012,
+          "color": {
+            "palette": 0.42
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.001,
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0002,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "add",
+          "opacity": 0.7
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.03,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        }
+      ]
+    },
+    "glow_filaments@592b6d8c": {
+      "name": "glow_filaments",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.11,
+        "p10": 0.031
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.012,
+          "color": {
+            "palette": 0.42
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.001,
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0002,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "add",
+          "opacity": 0.7
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.03,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        }
+      ]
+    }
+  }
+}

@@ -64,3 +64,129 @@
 {"schema": 1, "kind": "group", "group": "m63", "size": 5, "members": ["Coalglow", "Umber Rise", "molten-25", "ragnetic_field", "rite-of-passage-25"], "canonical": "molten-25", "label_rows": 1, "max_m1": 0.043757, "mean_m1": 0.034551}
 {"schema": 1, "kind": "group", "group": "m64", "size": 3, "members": ["Blush Room, Wine Dark", "Bone Vault", "Faded Salon"], "canonical": "Faded Salon", "label_rows": 1, "max_m1": 0.043825, "mean_m1": 0.035868}
 {"schema": 1, "kind": "group", "group": "m65", "size": 6, "members": ["103420", "cet_linear_kry_0_97_c73", "cet_linear_kry_5_95_c72", "cet_linear_kry_5_98_c75", "cet_linear_kryw_0_100_c71", "commons_Ms-0557-0645"], "canonical": "cet_linear_kry_0_97_c73", "label_rows": 4, "max_m1": 0.047766, "mean_m1": 0.027902}
+{"schema": 1, "kind": "admitted", "map": "Amber Signal", "group": "map:Amber Signal", "joined": false, "nearest": "map:Rust Kiln", "m1": 0.042868}
+{"schema": 1, "kind": "admitted", "map": "Arcade Black", "group": "map:Arcade Black", "joined": false, "nearest": "map:Fuchsia Ironworks", "m1": 0.069292}
+{"schema": 1, "kind": "admitted", "map": "Aurora Curtain", "group": "map:Aurora Curtain", "joined": false, "nearest": "map:cet_diverging_bwg_20_95_c41", "m1": 0.072668}
+{"schema": 1, "kind": "admitted", "map": "Aurora Undertow", "group": "map:Aurora Undertow", "joined": false, "nearest": "map:Abyss to Foam", "m1": 0.067604}
+{"schema": 1, "kind": "admitted", "map": "Bauhaus Primary", "group": "map:Bauhaus Primary", "joined": false, "nearest": "map:cmr.torch", "m1": 0.087724}
+{"schema": 1, "kind": "admitted", "map": "Bauhaus Workshop", "group": "map:Bauhaus Workshop", "joined": false, "nearest": "map:wallhaven_wallhaven-oxxve5", "m1": 0.085386}
+{"schema": 1, "kind": "admitted", "map": "Blossom Triad", "group": "map:Blossom Triad", "joined": false, "nearest": "map:Rose Against Cobalt", "m1": 0.068225}
+{"schema": 1, "kind": "admitted", "map": "Blush Vault", "group": "map:Blush Vault", "joined": false, "nearest": "map:Ash Rose Vault", "m1": 0.072084}
+{"schema": 1, "kind": "admitted", "map": "Blush and Bracken", "group": "map:Blush and Bracken", "joined": false, "nearest": "map:cmr.holly", "m1": 0.060438}
+{"schema": 1, "kind": "admitted", "map": "Boho Cloth", "group": "map:Boho Cloth", "joined": false, "nearest": "m63", "m1": 0.057777}
+{"schema": 1, "kind": "admitted", "map": "Boho Dust", "group": "map:Oxide and Ember", "joined": true, "nearest": "map:Oxide and Ember", "m1": 0.035342}
+{"schema": 1, "kind": "admitted", "map": "Boulevard Gold", "group": "map:Boulevard Gold", "joined": false, "nearest": "map:benediction-25", "m1": 0.075134}
+{"schema": 1, "kind": "admitted", "map": "Bramble at Dusk", "group": "map:Bramble at Dusk", "joined": false, "nearest": "map:Coal & Malachite", "m1": 0.066871}
+{"schema": 1, "kind": "admitted", "map": "Brass Tide", "group": "map:Brass Tide", "joined": false, "nearest": "map:Rust Lagoon", "m1": 0.047399}
+{"schema": 1, "kind": "admitted", "map": "Bronze Fern", "group": "map:Bronze Fern", "joined": false, "nearest": "map:xelan-25", "m1": 0.047815}
+{"schema": 1, "kind": "admitted", "map": "Burnished Deep", "group": "map:Burnished Deep", "joined": false, "nearest": "map:gemini-25", "m1": 0.054433}
+{"schema": 1, "kind": "admitted", "map": "Burnt Boulevard", "group": "map:Burnt Boulevard", "joined": false, "nearest": "map:forgery-25", "m1": 0.048386}
+{"schema": 1, "kind": "admitted", "map": "Butter Fathom", "group": "map:Butter Fathom", "joined": false, "nearest": "map:corporeal-25", "m1": 0.057968}
+{"schema": 1, "kind": "admitted", "map": "Butter Storm", "group": "map:Butter Storm", "joined": false, "nearest": "map:rolling", "m1": 0.057409}
+{"schema": 1, "kind": "admitted", "map": "Cellar & Yew", "group": "map:Cellar & Yew", "joined": false, "nearest": "map:labani", "m1": 0.05808}
+{"schema": 1, "kind": "admitted", "map": "Chart & Compass", "group": "map:Chart & Compass", "joined": false, "nearest": "map:Butter Fathom", "m1": 0.066601}
+{"schema": 1, "kind": "admitted", "map": "Chrome Violet Hour", "group": "map:Chrome Violet Hour", "joined": false, "nearest": "map:Widow's Gold", "m1": 0.093487}
+{"schema": 1, "kind": "admitted", "map": "Claret Ember", "group": "map:Claret Ember", "joined": false, "nearest": "m58", "m1": 0.064754}
+{"schema": 1, "kind": "admitted", "map": "Coal Amber", "group": "map:Amber Signal", "joined": true, "nearest": "map:Amber Signal", "m1": 0.025699}
+{"schema": 1, "kind": "admitted", "map": "Cobalt Detonation", "group": "map:Cobalt Detonation", "joined": false, "nearest": "map:Fire, One Cobalt Chip", "m1": 0.078936}
+{"schema": 1, "kind": "admitted", "map": "Cobalt Without Daylight", "group": "map:Cobalt Without Daylight", "joined": false, "nearest": "map:benediction-25", "m1": 0.053685}
+{"schema": 1, "kind": "admitted", "map": "Cochineal & Cream", "group": "map:Cochineal & Cream", "joined": false, "nearest": "map:cet_linear_tritanopic_krw_5_95_c46", "m1": 0.052734}
+{"schema": 1, "kind": "admitted", "map": "Copper Fathom", "group": "map:Copper Fathom", "joined": false, "nearest": "map:Steel & Ember", "m1": 0.049887}
+{"schema": 1, "kind": "admitted", "map": "Coral Nocturne", "group": "map:Coral Nocturne", "joined": false, "nearest": "map:Cochineal & Cream", "m1": 0.063867}
+{"schema": 1, "kind": "admitted", "map": "Coral Signal", "group": "map:Coral Signal", "joined": false, "nearest": "map:Petrol & Coal", "m1": 0.044192}
+{"schema": 1, "kind": "admitted", "map": "Counter Chrome", "group": "map:Counter Chrome", "joined": false, "nearest": "map:Teal Amber Orchid", "m1": 0.064489}
+{"schema": 1, "kind": "admitted", "map": "Damson and Ore", "group": "map:Damson and Ore", "joined": false, "nearest": "map:Plum in Ash", "m1": 0.066234}
+{"schema": 1, "kind": "admitted", "map": "Deco Lacquer", "group": "map:Deco Lacquer", "joined": false, "nearest": "map:green-dragon-25", "m1": 0.045783}
+{"schema": 1, "kind": "admitted", "map": "Deco Malachite", "group": "map:Deco Malachite", "joined": false, "nearest": "map:Sage Ascending", "m1": 0.041401}
+{"schema": 1, "kind": "admitted", "map": "Delft Deep", "group": "map:Delft Deep", "joined": false, "nearest": "map:Ice Spire", "m1": 0.042523}
+{"schema": 1, "kind": "admitted", "map": "Ember Gilt", "group": "map:Ember Gilt", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kyw_5_95_c49", "m1": 0.060564}
+{"schema": 1, "kind": "admitted", "map": "Ember Over Tidewater", "group": "map:Forge and Frost", "joined": true, "nearest": "map:Forge and Frost", "m1": 0.035883}
+{"schema": 1, "kind": "admitted", "map": "Ember Terracotta", "group": "map:Ember Terracotta", "joined": false, "nearest": "map:strange-creature-25", "m1": 0.06369}
+{"schema": 1, "kind": "admitted", "map": "Ensign", "group": "map:Ensign", "joined": false, "nearest": "map:Fuchsia Ironworks", "m1": 0.074854}
+{"schema": 1, "kind": "admitted", "map": "Fathom Ice", "group": "map:Fathom Ice", "joined": false, "nearest": "m23", "m1": 0.040103}
+{"schema": 1, "kind": "admitted", "map": "Fern Ladder", "group": "map:Sage Ascending", "joined": true, "nearest": "map:Sage Ascending", "m1": 0.031768}
+{"schema": 1, "kind": "admitted", "map": "Field at Dusk", "group": "map:Field at Dusk", "joined": false, "nearest": "map:flyline", "m1": 0.060719}
+{"schema": 1, "kind": "admitted", "map": "Formica Neon", "group": "map:Formica Neon", "joined": false, "nearest": "map:Rose and Verdigris", "m1": 0.050359}
+{"schema": 1, "kind": "admitted", "map": "Gilded Moss", "group": "map:Gilded Moss", "joined": false, "nearest": "map:Deco Lacquer", "m1": 0.041907}
+{"schema": 1, "kind": "admitted", "map": "Gold Leaf on Lacquer", "group": "map:Ember Gilt", "joined": true, "nearest": "map:Ember Gilt", "m1": 0.030603}
+{"schema": 1, "kind": "admitted", "map": "Gold Leaf, Deep Water", "group": "map:Gold Leaf, Deep Water", "joined": false, "nearest": "map:Smoke & Madder", "m1": 0.070673}
+{"schema": 1, "kind": "admitted", "map": "Harbour Sand", "group": "map:Harbour Sand", "joined": false, "nearest": "map:to-the-bone-25", "m1": 0.057284}
+{"schema": 1, "kind": "admitted", "map": "Harbour Spark", "group": "map:Harbour Spark", "joined": false, "nearest": "m23", "m1": 0.050116}
+{"schema": 1, "kind": "admitted", "map": "Harvest Wallpaper", "group": "map:Harvest Wallpaper", "joined": false, "nearest": "map:Ember Gradient", "m1": 0.046638}
+{"schema": 1, "kind": "admitted", "map": "Hollow Lantern", "group": "map:Hollow Lantern", "joined": false, "nearest": "map:fractal_stripes_bends_lines_116839_2560x1600", "m1": 0.040953}
+{"schema": 1, "kind": "admitted", "map": "Indigo Marquee", "group": "map:Indigo Marquee", "joined": false, "nearest": "map:Field at Dusk", "m1": 0.076415}
+{"schema": 1, "kind": "admitted", "map": "Indigo Rungs", "group": "map:Indigo Rungs", "joined": false, "nearest": "map:gossamer-25", "m1": 0.04682}
+{"schema": 1, "kind": "admitted", "map": "Ivory Gilt", "group": "map:Ivory Gilt", "joined": false, "nearest": "map:BrBG", "m1": 0.062277}
+{"schema": 1, "kind": "admitted", "map": "Jungle Canopy", "group": "map:Emerald Furnace", "joined": true, "nearest": "map:Emerald Furnace", "m1": 0.038241}
+{"schema": 1, "kind": "admitted", "map": "Jungle Floor", "group": "map:Jungle Floor", "joined": false, "nearest": "map:green-spine-25", "m1": 0.051437}
+{"schema": 1, "kind": "admitted", "map": "Kiln Triad", "group": "map:Kiln Triad", "joined": false, "nearest": "map:Forge Sweep", "m1": 0.055562}
+{"schema": 1, "kind": "admitted", "map": "Lacquer & Bone", "group": "map:Lacquer & Bone", "joined": false, "nearest": "map:Cochineal & Cream", "m1": 0.04089}
+{"schema": 1, "kind": "admitted", "map": "Ladder to Ice", "group": "map:Indigo Rungs", "joined": true, "nearest": "map:Indigo Rungs", "m1": 0.034619}
+{"schema": 1, "kind": "admitted", "map": "Lagoon Neon", "group": "map:Lagoon Neon", "joined": false, "nearest": "m30", "m1": 0.092524}
+{"schema": 1, "kind": "admitted", "map": "Lavender Bleach", "group": "map:Lavender Bleach", "joined": false, "nearest": "map:Prism Veil", "m1": 0.055094}
+{"schema": 1, "kind": "admitted", "map": "Memphis Blackboard", "group": "map:Memphis Blackboard", "joined": false, "nearest": "map:Azure, Gold, Oxblood", "m1": 0.078729}
+{"schema": 1, "kind": "admitted", "map": "Memphis Chalkline", "group": "map:Memphis Chalkline", "joined": false, "nearest": "map:Arcade Black", "m1": 0.075667}
+{"schema": 1, "kind": "admitted", "map": "Mesa Noon", "group": "map:Mesa Noon", "joined": false, "nearest": "map:Petrol & Coral", "m1": 0.044407}
+{"schema": 1, "kind": "admitted", "map": "Mesa Shadow", "group": "map:Mesa Shadow", "joined": false, "nearest": "map:Copper Reef", "m1": 0.047651}
+{"schema": 1, "kind": "admitted", "map": "Midnight Regalia", "group": "map:Midnight Regalia", "joined": false, "nearest": "map:Steel & Ember", "m1": 0.050317}
+{"schema": 1, "kind": "admitted", "map": "Moss and Ore", "group": "map:Moss and Ore", "joined": false, "nearest": "map:Deco Malachite", "m1": 0.040026}
+{"schema": 1, "kind": "admitted", "map": "Mustard Field", "group": "map:Mustard Field", "joined": false, "nearest": "map:Ember Gilt", "m1": 0.059005}
+{"schema": 1, "kind": "admitted", "map": "Nebula Flare", "group": "map:Nebula Flare", "joined": false, "nearest": "map:Nightfall Spectrum", "m1": 0.074836}
+{"schema": 1, "kind": "admitted", "map": "Nebula Veil", "group": "map:Nebula Veil", "joined": false, "nearest": "map:let-there-be-light-25", "m1": 0.059644}
+{"schema": 1, "kind": "admitted", "map": "Neon Bramble", "group": "map:Neon Bramble", "joined": false, "nearest": "map:Formica Neon", "m1": 0.055224}
+{"schema": 1, "kind": "admitted", "map": "Neon Causeway", "group": "map:Neon Causeway", "joined": false, "nearest": "map:cmr.flamingo", "m1": 0.081303}
+{"schema": 1, "kind": "admitted", "map": "Neon Grid", "group": "map:Neon Grid", "joined": false, "nearest": "map:Fuchsia Beacon", "m1": 0.092394}
+{"schema": 1, "kind": "admitted", "map": "Neon Pop Flash", "group": "map:Neon Pop Flash", "joined": false, "nearest": "map:Three Fires", "m1": 0.072221}
+{"schema": 1, "kind": "admitted", "map": "Nineties Arcade", "group": "map:Nineties Arcade", "joined": false, "nearest": "map:Three Coals in Ash", "m1": 0.060315}
+{"schema": 1, "kind": "admitted", "map": "Nineties Dusk", "group": "map:Nineties Dusk", "joined": false, "nearest": "map:Three-Point Fire-Ice", "m1": 0.060239}
+{"schema": 1, "kind": "admitted", "map": "Ochre Loam", "group": "map:Ochre Loam", "joined": false, "nearest": "m39", "m1": 0.046792}
+{"schema": 1, "kind": "admitted", "map": "Olive Cellar", "group": "map:Olive Cellar", "joined": false, "nearest": "map:Moss, Clay & Gold", "m1": 0.053844}
+{"schema": 1, "kind": "admitted", "map": "Oxblood Procession", "group": "map:Oxblood Procession", "joined": false, "nearest": "map:Ash Rose Vault", "m1": 0.054996}
+{"schema": 1, "kind": "admitted", "map": "Oxblood Standard", "group": "map:Oxblood Standard", "joined": false, "nearest": "m58", "m1": 0.051428}
+{"schema": 1, "kind": "admitted", "map": "Oxblood Thicket", "group": "map:Oxblood Thicket", "joined": false, "nearest": "map:Moss and Ore", "m1": 0.06929}
+{"schema": 1, "kind": "admitted", "map": "Patina Brass", "group": "map:Petrol Boundary", "joined": true, "nearest": "map:Petrol Boundary", "m1": 0.03843}
+{"schema": 1, "kind": "admitted", "map": "Peacock Nocturne", "group": "map:Peacock Nocturne", "joined": false, "nearest": "m42", "m1": 0.060147}
+{"schema": 1, "kind": "admitted", "map": "Peacock Regalia", "group": "map:Peacock Regalia", "joined": false, "nearest": "map:Peacock Nocturne", "m1": 0.054619}
+{"schema": 1, "kind": "admitted", "map": "Petal Dusk", "group": "map:Petal Dusk", "joined": false, "nearest": "map:Blush Vault", "m1": 0.063938}
+{"schema": 1, "kind": "admitted", "map": "Pewter Bloom", "group": "map:Pewter Bloom", "joined": false, "nearest": "map:bone", "m1": 0.046054}
+{"schema": 1, "kind": "admitted", "map": "Phosphor Deep", "group": "map:Phosphor Deep", "joined": false, "nearest": "map:cet_linear_kgy_5_95_c69", "m1": 0.048442}
+{"schema": 1, "kind": "admitted", "map": "Plum Gilding", "group": "map:Plum Gilding", "joined": false, "nearest": "map:High Gold", "m1": 0.061667}
+{"schema": 1, "kind": "admitted", "map": "Porcelain Field", "group": "map:Porcelain Field", "joined": false, "nearest": "map:creeping-frost-25", "m1": 0.060476}
+{"schema": 1, "kind": "admitted", "map": "Pumpkin Cellar", "group": "map:fractal_stripes_bends_lines_116839_2560x1600", "joined": true, "nearest": "map:fractal_stripes_bends_lines_116839_2560x1600", "m1": 0.03132}
+{"schema": 1, "kind": "admitted", "map": "Reef Without Sun", "group": "map:Reef Without Sun", "joined": false, "nearest": "map:Verdigris & One Spark", "m1": 0.044991}
+{"schema": 1, "kind": "admitted", "map": "Reef at Midnight", "group": "map:Reef at Midnight", "joined": false, "nearest": "map:Bramble at Dusk", "m1": 0.075844}
+{"schema": 1, "kind": "admitted", "map": "Regalia & Sulphur", "group": "map:Regalia & Sulphur", "joined": false, "nearest": "map:Field at Dusk", "m1": 0.054249}
+{"schema": 1, "kind": "admitted", "map": "Regatta Ice", "group": "map:Regatta Ice", "joined": false, "nearest": "map:Coldhearth", "m1": 0.058335}
+{"schema": 1, "kind": "admitted", "map": "Reliquary", "group": "map:Reliquary", "joined": false, "nearest": "map:Nineties Dusk", "m1": 0.071265}
+{"schema": 1, "kind": "admitted", "map": "Reliquary Vespers", "group": "map:Reliquary Vespers", "joined": false, "nearest": "map:Reliquary", "m1": 0.066049}
+{"schema": 1, "kind": "admitted", "map": "Rust & Rainlight", "group": "map:Rust & Rainlight", "joined": false, "nearest": "map:Oxblood, One Cold Spark", "m1": 0.050432}
+{"schema": 1, "kind": "admitted", "map": "Rust in the Slate Vault", "group": "map:Rust in the Slate Vault", "joined": false, "nearest": "m27", "m1": 0.063379}
+{"schema": 1, "kind": "admitted", "map": "Sage Ember", "group": "map:Sage Ember", "joined": false, "nearest": "map:Copper Verdigris", "m1": 0.058361}
+{"schema": 1, "kind": "admitted", "map": "Sage Ladder", "group": "map:Pale Reed Hollow", "joined": true, "nearest": "map:Pale Reed Hollow", "m1": 0.039228}
+{"schema": 1, "kind": "admitted", "map": "Sherbet Flare", "group": "map:Sherbet Flare", "joined": false, "nearest": "map:Bone and Blush", "m1": 0.069551}
+{"schema": 1, "kind": "admitted", "map": "Siren, Lights Out", "group": "map:Siren, Lights Out", "joined": false, "nearest": "map:Neon Grid", "m1": 0.079691}
+{"schema": 1, "kind": "admitted", "map": "Sixties Cellar", "group": "map:Ochre Loam", "joined": true, "nearest": "map:Ochre Loam", "m1": 0.039697}
+{"schema": 1, "kind": "admitted", "map": "Sixties Poster", "group": "map:Sixties Poster", "joined": false, "nearest": "map:Kiln Triad", "m1": 0.048172}
+{"schema": 1, "kind": "admitted", "map": "Slate Ladder", "group": "map:not-yet-lost-25", "joined": true, "nearest": "map:not-yet-lost-25", "m1": 0.039693}
+{"schema": 1, "kind": "admitted", "map": "Sorbet Cellar", "group": "map:Sorbet Cellar", "joined": false, "nearest": "map:Muted Triune", "m1": 0.054046}
+{"schema": 1, "kind": "admitted", "map": "Sorbet Vault", "group": "map:Sorbet Vault", "joined": false, "nearest": "map:Pale Triad", "m1": 0.044793}
+{"schema": 1, "kind": "admitted", "map": "Spice Procession", "group": "map:Spice Procession", "joined": false, "nearest": "map:Ember Terracotta", "m1": 0.053673}
+{"schema": 1, "kind": "admitted", "map": "Sulphur in the Vault", "group": "map:Sulphur in the Vault", "joined": false, "nearest": "map:Twilight Bridge", "m1": 0.073494}
+{"schema": 1, "kind": "admitted", "map": "Terminal Flare", "group": "map:Terminal Flare", "joined": false, "nearest": "map:green-spine-25", "m1": 0.060846}
+{"schema": 1, "kind": "admitted", "map": "Tidewater, No Sky", "group": "map:Tidewater, No Sky", "joined": false, "nearest": "map:Cyanotype Furnace", "m1": 0.045459}
+{"schema": 1, "kind": "admitted", "map": "Turkish Grind", "group": "map:Turkish Grind", "joined": false, "nearest": "m50", "m1": 0.050137}
+{"schema": 1, "kind": "admitted", "map": "Ultraviolet Siren", "group": "map:Ultraviolet Siren", "joined": false, "nearest": "map:Fuchsia Cliffside", "m1": 0.064307}
+{"schema": 1, "kind": "admitted", "map": "Umber & Ember", "group": "map:Umber & Ember", "joined": false, "nearest": "map:chronoscope-25", "m1": 0.040384}
+{"schema": 1, "kind": "admitted", "map": "Umber Ground", "group": "map:Umber Ground", "joined": false, "nearest": "map:Turkish Grind", "m1": 0.044525}
+{"schema": 1, "kind": "admitted", "map": "Varnish and Bone", "group": "map:Varnish and Bone", "joined": false, "nearest": "map:Ash Ember Arc", "m1": 0.040725}
+{"schema": 1, "kind": "admitted", "map": "Vermilion Chapel", "group": "map:Vermilion Chapel", "joined": false, "nearest": "map:Oxblood Thicket", "m1": 0.042147}
+{"schema": 1, "kind": "admitted", "map": "Vice Nightfall", "group": "map:Vice Nightfall", "joined": false, "nearest": "map:Neon Causeway", "m1": 0.078943}
+{"schema": 1, "kind": "admitted", "map": "Y2K Bubblegum", "group": "map:Y2K Bubblegum", "joined": false, "nearest": "map:Pale Fire Rose", "m1": 0.077307}
+{"schema": 1, "kind": "admitted", "map": "Y2K Chrome", "group": "map:Y2K Chrome", "joined": false, "nearest": "map:Y2K Bubblegum", "m1": 0.069567}
+{"schema": 1, "kind": "admitted", "map": "Yew Without Moon", "group": "map:Yew Without Moon", "joined": false, "nearest": "map:Cellar & Yew", "m1": 0.052515}
+{"schema": 1, "kind": "admitted", "map": "atlas_grey", "group": "map:peekaboo-25", "joined": true, "nearest": "map:peekaboo-25", "m1": 0.023877}
+{"schema": 1, "kind": "admitted", "map": "floating_on_dreams", "group": "map:floating_on_dreams", "joined": false, "nearest": "map:dimensionality-25", "m1": 0.059655}
+{"schema": 1, "kind": "admitted", "map": "yas", "group": "map:yas", "joined": false, "nearest": "map:dynamo-25", "m1": 0.060634}
+{"schema": 1, "kind": "admitted", "map": "teal_tunnel", "group": "map:wallhaven_wallhaven-39lg2d", "joined": true, "nearest": "map:wallhaven_wallhaven-39lg2d", "m1": 0.030788}
+{"schema": 1, "kind": "admitted", "map": "glow_filaments", "group": "map:glow_filaments", "joined": false, "nearest": "map:Emerald Furnace", "m1": 0.047482}
+{"schema": 1, "kind": "admitted", "map": "bronze_packing", "group": "map:Rust Kiln", "joined": true, "nearest": "map:Rust Kiln", "m1": 0.037838}

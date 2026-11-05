@@ -245,28 +245,55 @@ def test_a_name_differing_only_in_case_is_refused_even_with_replace(library, mon
     assert _files(where) == before
 
 
-def test_the_whole_command_writes_three_things_and_never_the_grouping(library, monkeypatch) -> None:
+def test_the_whole_command_writes_four_things_and_never_recuts_the_grouping(
+    library, monkeypatch
+) -> None:
     where, outside = library
-    grouping = (where / groups.RECORD_NAME).read_bytes()
+    cut = (where / groups.RECORD_NAME).read_bytes()
     monkeypatch.setattr(
         admit, "readings_of", lambda document, fields, recolour_to: _readings_from_rows(NEW)
     )
     report = admit.run(outside / f"{NEW}.json", directory=where)
-    assert (where / groups.RECORD_NAME).read_bytes() == grouping
+    # The grouping gains one admission row and every line it held is untouched.
+    grouping = (where / groups.RECORD_NAME).read_bytes()
+    assert grouping.startswith(cut)
+    added = groups.text_of([report["admission"]]).encode("utf-8")
+    assert grouping == cut + added
+    assert report["admission"]["map"] == NEW
+    assert groups.admitted(where)[-1] == report["admission"]
+    assert any(groups.RECORD_NAME in line for line in admit.lines(report))
     assert (where / f"{NEW}.json").read_bytes() == (colormap_dir() / f"{NEW}.json").read_bytes()
     assert report["map"] == "written" and report["produced"] == "added"
     assert [name for name, _ in report["nearest"]] == [
         name for name, _ in sorted(report["nearest"], key=lambda item: item[1])
     ]
     assert len(report["nearest"]) == admit.NEAREST
-    assert any("not rewritten" in line for line in admit.lines(report))
 
-    # The second call is a re-tune: refused bare, admitted with replace, row kept.
+    # The second call is a re-tune: refused bare, admitted with replace, row kept, and
+    # the grouping untouched: a re-tune keeps the group it has.
     with pytest.raises(admit.AddError, match="--replace"):
         admit.run(outside / f"{NEW}.json", directory=where)
     again = admit.run(outside / f"{NEW}.json", replace=True, directory=where)
     assert again["map"] == "unchanged" and again["produced"] == "kept"
+    assert again["admission"] is None
     assert (where / groups.RECORD_NAME).read_bytes() == grouping
+
+
+def test_an_admission_joins_the_nearest_group_within_the_cut_or_starts_its_own() -> None:
+    """[`groups.place`] on made-up distances: a group's distance is the mean to its
+    members, the nearest within the cut is joined, and none within it starts one."""
+    held = {"m01": ["a", "b"], "map:c": ["c"]}
+    near = {"a": 0.01, "b": 0.05, "c": 0.032}
+    row = groups.place("x", near, held)
+    assert row["joined"] and row["group"] == "m01" and row["m1"] == 0.03
+    far = {"a": 0.03, "b": 0.07, "c": 0.045}
+    row = groups.place("x", far, held)
+    assert not row["joined"] and row["group"] == "map:x"
+    # The nearest group is the mean's: c at 0.045, not m01's nearer member at 0.03.
+    assert row["nearest"] == "map:c" and row["m1"] == 0.045
+    # A pre-cut singleton is joined under its own id, so nothing renames it.
+    single = {"a": 0.2, "b": 0.2, "c": 0.01}
+    assert groups.place("x", single, held)["group"] == "map:c"
 
 
 # --------------------------------------------------------------------------- #

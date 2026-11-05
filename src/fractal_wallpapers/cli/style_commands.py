@@ -62,6 +62,8 @@ def keep_style(args: argparse.Namespace) -> int:
         f"{done['kept']} kept ({done['copied']} copied, {done['drawn']} drawn again); "
         f"{done['total']} in {tracked_name(done['record'])}; pictures in {done['folder']}"
     )
+    if done["drawn"]:
+        print(style_keeps.REDRAWN.format(count=done["drawn"]))
     return 0
 
 
@@ -211,9 +213,9 @@ def check_tones(args: argparse.Namespace, styles) -> int:
     if drafts:
         size = "x".join(map(str, styles.DRAFT_RESOLUTION))
         print(
-            f"{drafts} under {styles.CHECKED_WIDTH} wide: a picture that small is the samples the "
-            f"tone pass met its targets on, so its tones are a guide, not the check; draft at "
-            f"--draft ({size} ss{styles.DRAFT_SUPERSAMPLE}) to check"
+            f"{drafts} under {styles.CHECKED_WIDTH} wide: the check reads a picture that small "
+            f"exactly as the tone pass measured it, so its tones are a guide, not the check; "
+            f"draft at --draft ({size} ss{styles.DRAFT_SUPERSAMPLE}) to check"
         )
     return 1 if failed else 0
 

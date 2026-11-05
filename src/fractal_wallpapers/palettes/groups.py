@@ -70,6 +70,18 @@ The table is deliberately conservative. Sixty-five groups over 143 maps out of
 901 — the other 758 are singletons, and a singleton is not a claim that a map is
 unique, only that nothing in the library came within the cut of it.
 
+## A map that arrives after the cut is admitted, never re-cut
+
+The cut is a ruling Matt approved merge by merge, so a new map never re-decides it.
+[`admit`] places it instead: it joins the nearest existing group when its mean M1 to
+that group's members is within [`CUT`] — a pre-cut singleton counts as a group of one,
+`map:<name>`, and keeps that id when a newcomer joins it — and otherwise starts its own,
+which a later newcomer may join. The record gains one `admitted` row per map and no
+other line changes, so no group id moves and nothing keyed on one (`color_mass`, a
+recipe's `palette_group`) shifts. `palettes add` admits the map it adds;
+`palettes groups --admit <list>` admits a backlog in order. [`coverage`] is the count
+that says every library map is either one the cut saw or one admitted since.
+
 ## A variant of a map is in its base map's group
 
 [`palettes.variants`] makes a new map by moving one axis of an existing one, and
@@ -107,6 +119,10 @@ RECORD_NAME = "groups.jsonl"
 #: The two kinds of row the record holds: one header, then one row per group.
 METHOD_ROW = "method"
 GROUP_ROW = "group"
+
+#: The row a map admitted after the cut carries ([`admit`]): which group it joined, or
+#: that it started its own. Appended, never re-cut, so no group id the cut made moves.
+ADMITTED_ROW = "admitted"
 
 #: Where the **marks the cut was read off** live, beside the table they decide.
 #: JSONL like everything else here, and for the same reason.
@@ -353,28 +369,58 @@ def m1_to(
     """
     import numpy
 
+    return m1_from(
+        numpy.asarray(one)[None, ...],
+        points,
+        count=count,
+        quantiles=quantiles,
+        chunk=chunk,
+        batch=batch,
+        workers=workers,
+    )[0]
+
+
+def m1_from(
+    ones,
+    points,
+    count: int = DIRECTIONS,
+    quantiles: int = QUANTILES,
+    chunk: int = 128,
+    batch: int = 64,
+    workers: int = 4,
+):
+    """`[len(ones), len(points)]`: [`m1_to`] for several maps at once, number for number.
+
+    Each of `points` is projected and sorted once per chunk of directions however many
+    rows are asked for, which is the whole cost; a hundred new maps against the library
+    is then a minute rather than a hundred times [`m1_to`]'s sixteen seconds.
+    """
+    import numpy
+
     points = numpy.asarray(points)
-    one = numpy.asarray(one)[None, ...]
+    ones = numpy.asarray(ones)
     samples = int(points.shape[1])
     lattice = directions(count).astype(numpy.float32)
     grid = _quantile_grid(samples, quantiles)
-    out = numpy.zeros(len(points), dtype=numpy.float64)
+    out = numpy.zeros((len(ones), len(points)), dtype=numpy.float64)
     starts = range(0, len(points), batch)
 
     def part(first: int, block, mine):
         theirs = _signatures_contiguous(points[first : first + batch], block, grid)
-        return numpy.abs(theirs - mine).sum(axis=1, dtype=numpy.float64)
+        return numpy.stack(
+            [numpy.abs(theirs - row).sum(axis=1, dtype=numpy.float64) for row in mine]
+        )
 
     # The sort releases the GIL, so batches run side by side. Each batch adds into
     # its own slice, in chunk order, so the threads change no sum.
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, int(workers))) as pool:
         for start in range(0, count, chunk):
             block = lattice[start : start + chunk]
-            mine = _signatures_contiguous(one, block, grid)[0]
+            mine = _signatures_contiguous(ones, block, grid)
             held = len(starts)
             made = pool.map(part, starts, [block] * held, [mine] * held)
-            for first, row in zip(starts, made, strict=True):
-                out[first : first + batch] += row
+            for first, rows in zip(starts, made, strict=True):
+                out[:, first : first + batch] += rows
     out /= float(count) * float(quantiles)
     return numpy.round(out, PLACES)
 
@@ -666,12 +712,23 @@ def cut_from_marks(rows: list[dict] | None = None, directory: Path | None = None
 def member_groups(directory: Path | None = None) -> dict[str, str]:
     """`{map: group id}` for every map the committed table puts in a group.
 
-    Singletons are absent, because the record does not write them: a group of one
+    A map admitted after the cut into a group ([`admit`]) is here under that group's
+    id. Singletons are absent, because the record does not write them: a group of one
     names no decision. A caller that needs a total function over the library —
     the gallery pass's group cap does — reads a missing name as its own group,
     which is what a singleton is.
     """
-    return {name: str(row["group"]) for row in groups(directory) for name in row["members"]}
+    rows = read(directory)
+    table = {
+        name: str(row["group"])
+        for row in rows
+        if row.get("kind") == GROUP_ROW
+        for name in row["members"]
+    }
+    for row in rows:
+        if row.get("kind") == ADMITTED_ROW and row.get("joined"):
+            table[row["map"]] = str(row["group"])
+    return table
 
 
 def group_of(name: str, table: dict | None = None, directory: Path | None = None) -> str:
@@ -709,6 +766,132 @@ def group_of(name: str, table: dict | None = None, directory: Path | None = None
         return lookup[name]
     base = variants.base_of(name)
     return lookup.get(base, f"map:{base}")
+
+
+# --------------------------------------------------------------------------- #
+# Admission: a map arriving after the cut joins the table without a re-cut.
+# --------------------------------------------------------------------------- #
+def admitted(directory: Path | None = None) -> list[dict]:
+    """The admission rows, in the order the maps were admitted."""
+    return [row for row in read(directory) if row.get("kind") == ADMITTED_ROW]
+
+
+def standing(names, table: dict | None = None, directory: Path | None = None) -> dict:
+    """`{group id: [members]}` over `names`, every map in exactly one group.
+
+    A map no row names is a group of one under `map:<name>`, as [`group_of`] says.
+    """
+    lookup = member_groups(directory) if table is None else table
+    held: dict[str, list[str]] = collections.defaultdict(list)
+    for name in names:
+        held[group_of(name, lookup)].append(name)
+    return dict(held)
+
+
+def place(name: str, distance: dict, held: dict, cut: float = CUT) -> dict:
+    """The admission row for `name`: the group it joins, or the one it starts.
+
+    `distance` is `{map: M1 from name}` over every member of `held`. A group's
+    distance is the **mean** M1 to its members, which is the question average
+    linkage asks of a merge; the nearest group within `cut` is joined (ties by id),
+    and otherwise the map is a group of its own, `map:<name>`, which a later map may
+    join. Nothing already in a group moves, so no group id changes.
+    """
+    best = None
+    for group in sorted(held):
+        members = [member for member in held[group] if member != name]
+        if not members:
+            continue
+        mean = sum(float(distance[member]) for member in members) / len(members)
+        if best is None or mean < best[1]:
+            best = (group, mean)
+    joined = best is not None and best[1] <= cut
+    return {
+        "schema": SCHEMA,
+        "kind": ADMITTED_ROW,
+        "map": name,
+        "group": best[0] if joined else f"map:{name}",
+        "joined": joined,
+        "nearest": None if best is None else best[0],
+        "m1": None if best is None else round(best[1], 6),
+    }
+
+
+def admit(
+    names, directory: Path | None = None, cut: float = CUT, write_to: bool = True
+) -> list[dict]:
+    """Admit library maps the table has not seen, in the order given, and append them.
+
+    Each map is placed against every library map not still waiting in `names`, so a
+    later map can join a group an earlier one started. The table's existing rows are
+    kept byte for byte; only admission rows are added.
+    """
+    names = [str(name) for name in names]
+    rows = read(directory)
+    if not rows or rows[0].get("kind") != METHOD_ROW:
+        raise GroupError(f"{record_path(directory)} has no grouping to admit maps to")
+    library_names = library(directory)
+    missing = [name for name in names if name not in library_names]
+    if missing:
+        raise GroupError(f"{missing[0]!r} is not a map in the library, so it cannot be admitted")
+    seen = {row["map"] for row in rows if row.get("kind") == ADMITTED_ROW}
+    grouped = {member for row in rows if row.get("kind") == GROUP_ROW for member in row["members"]}
+    again = [name for name in names if name in seen or name in grouped]
+    if again or len(set(names)) != len(names):
+        raise GroupError(f"{(again or names)[0]!r} is already in the table, or named twice")
+    if not names:
+        return []
+    where = Path(directory) if directory is not None else colormap_dir()
+    matrix = m1_from(_clouds_in(names, where), _clouds_in(library_names, where))
+    column = {name: index for index, name in enumerate(library_names)}
+    added = []
+    table = member_groups(directory)
+    for at, name in enumerate(names):
+        waiting = set(names[at:])
+        held = standing([each for each in library_names if each not in waiting], table)
+        distance = {each: float(matrix[at, column[each]]) for each in column}
+        row = place(name, distance, held, cut)
+        added.append(row)
+        if row["joined"]:
+            table[name] = row["group"]
+    if write_to:
+        path = record_path(directory)
+        with path.open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write(text_of(added))
+    return added
+
+
+def _clouds_in(names, directory: Path):
+    """[`clouds`] read off the map files in `directory` rather than the shipped library."""
+    import numpy
+
+    out = []
+    for name in names:
+        document = json.loads((Path(directory) / f"{name}.json").read_text(encoding="utf-8"))
+        stops = document["stops"]
+        out.append(weighted(cloud_of([stop[0] for stop in stops], [stop[1] for stop in stops])))
+    return numpy.stack(out).astype(numpy.float32)
+
+
+def coverage(directory: Path | None = None) -> dict:
+    """How the table covers the library: the maps cut over, the maps admitted since.
+
+    The cut's own header counts the maps it was taken over and does not name them, so
+    coverage is a count: every library map is either one the cut saw or one admitted
+    after it, which holds exactly when the two counts add up to the library's.
+    """
+    rows = read(directory)
+    header = rows[0] if rows else {}
+    library_names = set(library(directory))
+    names = [row["map"] for row in rows if row.get("kind") == ADMITTED_ROW]
+    return {
+        "library": len(library_names),
+        "cut_over": int(header.get("maps", 0)),
+        "admitted": len(names),
+        "unknown": sorted(set(names) - library_names),
+        "covered": int(header.get("maps", 0)) + len(names) == len(library_names)
+        and set(names) <= library_names,
+    }
 
 
 def run(directory: Path | None = None, cut: float = CUT, log=None) -> dict:
@@ -803,6 +986,13 @@ def collapse(names, seed: int, directory: Path | None = None) -> tuple[list[str]
 
 
 __all__ = [
+    "ADMITTED_ROW",
+    "admit",
+    "admitted",
+    "coverage",
+    "m1_from",
+    "place",
+    "standing",
     "COLLAPSE_DEFAULT",
     "COLLAPSE_ENV",
     "CUT",

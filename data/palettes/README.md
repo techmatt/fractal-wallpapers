@@ -148,18 +148,27 @@ it and is never offered for a wallpaper. Being grey, it is dominant in no cell, 
 `carriers.jsonl` names it in an `uncarried` row rather than leaving it absent, and a
 reader grouping the library by colour — the website's library page — skips the maps
 those rows name. What a colorize actually **draws** from
-is 942, because 143 of the 1,020 collapse into 65 groups and each group stands one
-member up (`877 singletons + 65 = 942`). The count is seed-independent — a
-different `--seed` stands a different member up, never a different number of them
-— so 942 is the width of the drawable pool for every run with the collapse on.
+was 942 under the cut alone, because 143 of the 1,020 collapse into 65 groups and
+each group stands one member up (`877 singletons + 65 = 942`); since the backlog's
+admissions (2026-11-04) it is **930**, twelve of the joined maps being in the pool.
+The count is seed-independent — a different `--seed` stands a different member up,
+never a different number of them — so it is the width of the drawable pool for every
+run with the collapse on.
 
-**The 143 and the 65 are the table's, not the library's**, and the table was cut
-over the 901 maps here on 2026-08-25: `classic-pairs-2026-09`'s 120 arrived after
-it and are singletons until somebody re-cuts. Fifteen pairs sit at or under the
-cut that the table has never seen — ten of a new map against a shipped one,
-nearest 0.0313, five inside the drop, nearest 0.0257 — and they are listed in
-that ingest's report rather than merged, because over-admission is the standing
-ruling and what leaves is Matt's call.
+**The 143 and the 65 are the cut's, not the library's**, and the cut was taken
+over the 901 maps here on 2026-08-25. **A map arriving since is admitted, never
+re-cut** (Matt's ruling, 2026-11-04): it joins the nearest existing group when its
+mean M1 to that group's members is within the cut, and otherwise starts its own,
+as one appended `admitted` row, so no group id the cut made moves and nothing keyed
+on one (`color_mass`, a recipe's `palette_group`) shifts. A pre-cut singleton a
+newcomer joins keeps its own id, `map:<name>`. `palettes add` admits the map it
+adds; `palettes groups --admit <list>` admits a backlog in order. The 126 maps
+added between the cut and 2026-11-04 were admitted in commit order: 15 joined a
+group, every one of them a singleton (`bronze_packing` joined `Rust Kiln`,
+`teal_tunnel` joined `wallhaven_wallhaven-39lg2d`), and 111 stand alone; no
+cut group gained a member. `groups.coverage()` is the count that says every library
+map is either cut over or admitted. Rerunning `palettes groups` without `--admit`
+is a full re-cut and drops the admissions; it is Matt's call, not a refresh.
 
 Regenerating the table is not cheap: `fractal-wallpapers palettes groups` is
 **about five minutes** — 279 s measured on this repository's own machine for the

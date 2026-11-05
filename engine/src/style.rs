@@ -87,7 +87,8 @@ pub struct Style {
 /// against structure; at a location with more far field the same stack draws a
 /// paler (or darker) picture, and the style's balance does not hold. This is the
 /// one frame-wide measurement taken of the **composite** rather than of a channel:
-/// the median of CIE `L*` (over 100) across the frame's samples, and then every
+/// the median of CIE `L*` (over 100) across the finished picture — each pixel its
+/// block of supersamples averaged, not the samples themselves ([`toned`]) — and then every
 /// sample's lightness goes through the one curve `L ↦ b + (1 − b)·L^g` that carries
 /// that median to the target, its hue and chroma ratios kept (each linear channel
 /// scaled by the change in luminance, so a lifted saturated colour can clip at the
@@ -1624,7 +1625,12 @@ pub fn paint(
         .collect();
 
     let linear = match style.tone {
-        Some(tone) => toned(linear, tone),
+        Some(tone) => toned(
+            linear,
+            tone,
+            view.sample_width() as usize,
+            view.supersample as usize,
+        ),
         None => linear,
     };
     Ok(Painted {
@@ -1701,11 +1707,93 @@ pub fn tone_curve(median: f64, p10: f64, tone: Tone) -> (f64, f64) {
     (best.1, best.2)
 }
 
-/// Measure the composite's lightness and carry it to the tone's targets.
+/// How close the picture's median and p10 must come to the targets before the tone
+/// pass stops re-solving its curve: well inside the band `style tones` checks.
+const TONE_SETTLED: f64 = 0.001;
+
+/// How many times the curve is re-solved against the picture it makes.
+const TONE_REFINEMENTS: usize = 3;
+
+/// One sample through the tone curve `L ↦ b + (1 − b)·L^g`, its hue and chroma kept.
+fn tone_sample(rgb: [f64; 3], b: f64, g: f64) -> [f64; 3] {
+    let curve = |l: f64| (b + (1.0 - b) * l.powf(g)).clamp(0.0, 1.0);
+    let l = lightness(rgb);
+    let before = luminance_of(l);
+    if before <= 0.0 {
+        return [luminance_of(curve(0.0)); 3];
+    }
+    let scale = luminance_of(curve(l)) / before;
+    rgb.map(|c| c.clamp(0.0, 1.0) * scale)
+}
+
+/// The **picture's** median and 10th-percentile lightness: each output pixel the mean
+/// of its `ss × ss` block of samples in linear light (each sample through the curve
+/// `(b, g)` first, when one is given), read on every `stride`-th pixel.
 ///
-/// The percentiles are read on every `stride`-th sample, which is the frame's
-/// distribution to well inside a percent and keeps the measure off the clock.
-fn toned(linear: Vec<[f64; 3]>, tone: Tone) -> Vec<[f64; 3]> {
+/// The block mean stands in for the resample's Lanczos filter: the percentiles of the
+/// two agree to the third decimal, and the mean is a few additions a pixel.
+fn picture_percentiles(
+    linear: &[[f64; 3]],
+    width: usize,
+    ss: usize,
+    curve: Option<(f64, f64)>,
+) -> Option<(f64, f64)> {
+    let ss = ss.max(1);
+    let out_width = width / ss;
+    let pixels = if out_width == 0 {
+        0
+    } else {
+        linear.len() / (ss * ss * out_width) * out_width
+    };
+    let stride = (pixels / 1_000_000).max(1);
+    let mut sampled: Vec<f64> = (0..pixels)
+        .into_par_iter()
+        .step_by(stride)
+        .map(|pixel| {
+            let (row, col) = (pixel / out_width, pixel % out_width);
+            let mut sum = [0.0; 3];
+            for dy in 0..ss {
+                let start = (row * ss + dy) * width + col * ss;
+                for &rgb in &linear[start..start + ss] {
+                    let rgb = match curve {
+                        Some((b, g)) => tone_sample(rgb, b, g),
+                        None => rgb.map(|c| c.clamp(0.0, 1.0)),
+                    };
+                    for k in 0..3 {
+                        sum[k] += rgb[k];
+                    }
+                }
+            }
+            let n = (ss * ss) as f64;
+            lightness(sum.map(|c| c / n))
+        })
+        .collect();
+    if sampled.is_empty() {
+        return None;
+    }
+    let middle = sampled.len() / 2;
+    let median = *sampled.select_nth_unstable_by(middle, f64::total_cmp).1;
+    let tenth = sampled.len() / 10;
+    let p10 = *sampled.select_nth_unstable_by(tenth, f64::total_cmp).1;
+    Some((median, p10))
+}
+
+/// Measure the **picture's** lightness and carry it to the tone's targets.
+///
+/// The percentiles are the finished picture's, not the samples': each output pixel
+/// is its block of supersamples averaged ([`picture_percentiles`]), because that is
+/// what a person, and `style tones`, reads. A thin dark filament or a sub-pixel bead
+/// is a dark sample but only a darker pixel, so the samples' median sits below the
+/// picture's, and by how much depends on the supersample: measured on the samples, a
+/// 2560x1600 ss2 frame drew up to 0.03 lighter than the target its samples met.
+///
+/// The curve is applied to the samples and the average is taken after it, and the
+/// average of a curve is not the curve of the average, so one solve lands near the
+/// target rather than on it. The picture the curve would make is measured without
+/// being made, and the solve is repeated with the targets moved by the miss, up to
+/// [`TONE_REFINEMENTS`] times; one curve is applied, once. At supersample 1 the
+/// picture is the samples and the first solve is exact.
+fn toned(linear: Vec<[f64; 3]>, tone: Tone, width: usize, ss: usize) -> Vec<[f64; 3]> {
     let linear = match tone.log_density {
         None => linear,
         Some(k) => linear
@@ -1720,35 +1808,34 @@ fn toned(linear: Vec<[f64; 3]>, tone: Tone) -> Vec<[f64; 3]> {
             })
             .collect(),
     };
-    let stride = (linear.len() / 1_000_000).max(1);
-    let mut sampled: Vec<f64> = linear
-        .iter()
-        .step_by(stride)
-        .map(|&c| lightness(c))
-        .collect();
-    if sampled.is_empty() {
+    let Some((median, p10)) = picture_percentiles(&linear, width, ss, None) else {
         return linear;
+    };
+    let (mut b, mut g) = tone_curve(median, p10, tone);
+    if ss > 1 {
+        let mut aim = tone;
+        for _ in 0..TONE_REFINEMENTS {
+            let Some((got, got_low)) = picture_percentiles(&linear, width, ss, Some((b, g))) else {
+                break;
+            };
+            let low_miss = tone.p10.map_or(0.0, |target| target - got_low);
+            let miss = tone.median - got;
+            if miss.abs() < TONE_SETTLED && low_miss.abs() < TONE_SETTLED {
+                break;
+            }
+            aim.median = (aim.median + miss).clamp(0.01, 0.99);
+            aim.p10 = aim
+                .p10
+                .map(|low| (low + low_miss).clamp(0.0, aim.median - 0.01));
+            (b, g) = tone_curve(median, p10, aim);
+        }
     }
-    let middle = sampled.len() / 2;
-    let median = *sampled.select_nth_unstable_by(middle, f64::total_cmp).1;
-    let tenth = sampled.len() / 10;
-    let p10 = *sampled.select_nth_unstable_by(tenth, f64::total_cmp).1;
-    let (b, g) = tone_curve(median, p10, tone);
     if b == 0.0 && (g - 1.0).abs() < 1e-9 {
         return linear;
     }
-    let curve = |l: f64| (b + (1.0 - b) * l.powf(g)).clamp(0.0, 1.0);
     linear
         .into_par_iter()
-        .map(|rgb| {
-            let l = lightness(rgb);
-            let before = luminance_of(l);
-            if before <= 0.0 {
-                return [luminance_of(curve(0.0)); 3];
-            }
-            let scale = luminance_of(curve(l)) / before;
-            rgb.map(|c| c.clamp(0.0, 1.0) * scale)
-        })
+        .map(|rgb| tone_sample(rgb, b, g))
         .collect()
 }
 
@@ -2179,6 +2266,7 @@ mod tests {
             .chain([0.0, 1.0])
             .map(|y| [y; 3])
             .collect();
+        let width = greys.len();
         let out = toned(
             greys,
             Tone {
@@ -2186,6 +2274,8 @@ mod tests {
                 p10: None,
                 log_density: None,
             },
+            width,
+            1,
         );
         let mut light: Vec<f64> = out.iter().map(|&c| lightness(c)).collect();
         light.sort_by(f64::total_cmp);
@@ -2204,8 +2294,59 @@ mod tests {
                 p10: None,
                 log_density: None,
             },
+            3,
+            1,
         );
         assert!((warm[0][0] / warm[0][1] - 2.0).abs() < 1e-9);
+    }
+
+    /// **The tone pass reads the picture, not the samples.** Every 2x2 block here
+    /// holds one black sample (a sub-pixel bead) beside three greys, so the samples'
+    /// median is a grey's and the picture's, each block averaged, is darker. Toned at
+    /// ss 2, the averaged picture lands both targets; the samples do not.
+    #[test]
+    fn a_supersampled_tone_lands_on_the_averaged_picture() {
+        let (out_width, out_height, ss) = (60, 40, 2);
+        let width = out_width * ss;
+        let mut frame = vec![[0.0; 3]; width * out_height * ss];
+        for row in 0..out_height * ss {
+            for col in 0..width {
+                let pixel = (row / ss) * out_width + col / ss;
+                let grey = luminance_of(0.2 + 0.7 * pixel as f64 / (out_width * out_height) as f64);
+                let bead = row % ss == 0 && col % ss == 0;
+                frame[row * width + col] = if bead { [0.0; 3] } else { [grey; 3] };
+            }
+        }
+        let tone = Tone {
+            median: 0.4,
+            p10: Some(0.2),
+            log_density: None,
+        };
+        let out = toned(frame, tone, width, ss);
+        let mut picture: Vec<f64> = (0..out_width * out_height)
+            .map(|pixel| {
+                let (row, col) = (pixel / out_width, pixel % out_width);
+                let mut sum = 0.0;
+                for dy in 0..ss {
+                    for dx in 0..ss {
+                        sum += out[(row * ss + dy) * width + col * ss + dx][1];
+                    }
+                }
+                lightness([sum / (ss * ss) as f64; 3])
+            })
+            .collect();
+        picture.sort_by(f64::total_cmp);
+        let median = picture[picture.len() / 2];
+        let p10 = picture[picture.len() / 10];
+        assert!((median - 0.4).abs() < 0.005, "picture median {median}");
+        assert!((p10 - 0.2).abs() < 0.005, "picture p10 {p10}");
+        let mut samples: Vec<f64> = out.iter().map(|&c| lightness(c)).collect();
+        samples.sort_by(f64::total_cmp);
+        assert!(
+            (samples[samples.len() / 2] - 0.4).abs() > 0.02,
+            "the samples' median {} is not the picture's",
+            samples[samples.len() / 2]
+        );
     }
 
     #[test]
@@ -2245,6 +2386,8 @@ mod tests {
                 p10: None,
                 log_density: Some(50.0),
             },
+            5,
+            1,
         );
         assert!((out[0][1] / out[0][0] - 3.0).abs() < 1e-9);
         assert!(

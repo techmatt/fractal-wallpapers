@@ -9,6 +9,10 @@ exactly the number the record already carries.
 The ruling being pinned: **65 groups over 143 of 901 maps, largest 6**, at cut
 0.039735. Anything that moves those numbers has changed what a group means, and
 the change belongs in front of a person rather than in a diff.
+
+Maps arriving after the cut are **admitted**, never re-cut (Matt's ruling,
+2026-11-04): each joins the nearest existing group within the cut or starts its own,
+as an appended row, so the ruling's rows and ids above stay exactly as approved.
 """
 
 from __future__ import annotations
@@ -61,6 +65,58 @@ def test_the_table_holds_together_as_a_partition_of_what_it_names() -> None:
         assert row["mean_m1"] <= row["max_m1"] <= head["cut"] or row["size"] > 2
         seen.extend(row["members"])
     assert len(seen) == len(set(seen)) == head["grouped"]
+
+
+#: Admissions named in the item that admitted the backlog (2026-11-04): the style map
+#: `bronze_packing` joined the pre-cut singleton `Rust Kiln`, under that map's own id.
+NAMED_ADMISSIONS = {"bronze_packing": "map:Rust Kiln"}
+
+
+def test_the_cut_is_kept_whole_and_admissions_only_follow_it() -> None:
+    """**No group id the cut made moves.** The header and the 65 rows the ruling
+    approved come first and unchanged in count and id; everything after them is an
+    admission row, so a map arriving later can only add, never re-cut."""
+    rows = groups.read()
+    head = rows[0]
+    cut = rows[1 : 1 + head["groups"]]
+    assert all(row["kind"] == groups.GROUP_ROW for row in cut)
+    assert [row["group"] for row in cut] == [f"m{n:02d}" for n in range(1, head["groups"] + 1)]
+    assert all(row["kind"] == groups.ADMITTED_ROW for row in rows[1 + head["groups"] :])
+
+
+def test_every_library_map_is_cut_over_or_admitted() -> None:
+    """The table covers the library: the cut's 901 and every map admitted since."""
+    reading = groups.coverage()
+    assert reading["covered"], reading
+    assert not reading["unknown"]
+
+
+def test_each_admission_is_a_placement_the_cut_allows() -> None:
+    """A joined map sits within the cut of a group that exists before it, under that
+    group's id; a map that joined nothing is its own `map:<name>` and was over the
+    cut from everything. No admitted map is in one of the cut's rows."""
+    rows = groups.read()
+    cut_members = {name for row in groups.groups() for name in row["members"]}
+    cut_ids = {row["group"] for row in groups.groups()}
+    library = set(groups.library())
+    admitted_so_far: set[str] = set()
+    for row in groups.admitted():
+        name = row["map"]
+        assert name in library and name not in cut_members and name not in admitted_so_far
+        if row["joined"]:
+            assert row["m1"] <= groups.CUT
+            group = row["group"]
+            founder = group.removeprefix("map:")
+            assert group in cut_ids or (
+                group.startswith("map:") and founder in library and founder not in cut_members
+            )
+        else:
+            assert row["group"] == f"map:{name}"
+            assert row["m1"] is None or row["m1"] > groups.CUT
+        admitted_so_far.add(name)
+    assert len(rows) == 1 + rows[0]["groups"] + len(admitted_so_far)
+    for name, group in NAMED_ADMISSIONS.items():
+        assert groups.group_of(name) == group
 
 
 def test_the_merges_the_sheet_was_marked_on() -> None:
@@ -160,12 +216,22 @@ def test_average_linkage_merges_by_the_group_and_not_by_its_nearest_member() -> 
 # --------------------------------------------------------------------------- #
 # The read-time collapse.
 # --------------------------------------------------------------------------- #
+def every_group(names) -> list[dict]:
+    """Each group of two or more over `names`: the cut's rows and the groups admissions
+    grew (a pre-cut singleton joined, or a newcomer that was), as `{group, members}`."""
+    return [
+        {"group": group, "members": members}
+        for group, members in sorted(groups.standing(names).items())
+        if len(members) > 1
+    ]
+
+
 def test_the_collapse_stands_one_member_of_each_group_up() -> None:
     """One member per group survives, every other member of that group is gone,
     and nothing that was not in a group is touched."""
     names = groups.library()
     pool, record = groups.collapse(names, seed=0)
-    table = groups.groups()
+    table = every_group(names)
 
     assert record["collapsed"] is True
     assert record["library"] == len(names)
@@ -330,9 +396,13 @@ def test_the_collapse_is_what_it_was_for_a_pool_of_library_maps() -> None:
     this a fix rather than a re-seeding of every run record in the store."""
     names = groups.library()
     pool, record = groups.collapse(names, seed=0)
-    table = {row["group"]: sorted(row["members"]) for row in groups.groups()}
+    cut = {row["group"]: sorted(row["members"]) for row in groups.groups()}
+    table = {row["group"]: sorted(row["members"]) for row in every_group(names)}
     assert record["groups_collapsed"] == len(table)
-    assert set(record["drawn"]) == set(table)
+    assert set(record["drawn"]) == set(table) >= set(cut)
+    # Admissions grow only `map:` groups, which sort after every id the cut made, so
+    # the cut's groups draw exactly as before any map was admitted.
+    assert all(group.startswith("map:") for group in set(table) - set(cut))
     for group, members in table.items():
         assert record["drawn"][group] in members
         assert [name for name in members if name in set(pool)] == [record["drawn"][group]]

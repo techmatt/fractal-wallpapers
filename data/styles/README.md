@@ -211,10 +211,14 @@ globs, so background them yourself.
    than 0.05 above it (`styles.TONE_BAND`). The tone pass pins the median and p10, so p90
    is what tells the stack's highlights from the reference's: a stack whose every render
    misses p90 is re-tuned (narrower glows, less fog), not its locations dropped.
-   **Check at `style render --draft`** (1280x800 ss2), whose tones are the full size's to
-   0.003: the pass meets its targets on the samples, so a 640-wide ss1 picture *is* the
-   samples and holds by construction, and `style tones` marks anything under 1280 wide
-   `DRAFT` instead of passing it.
+   **Check at `style render --draft`** (1280x800 ss2), the cheap size, whose tones are the
+   full size's to about 0.01. The pass measures the finished picture (each pixel its block
+   of supersamples averaged), so every size's picture meets the targets at its own
+   resolution; `style tones` reads a copy resized to 640 wide, which averages thin
+   structure once more, so a thin-structured frame can read ~0.02–0.03 off its target at
+   full size and a little less at the draft, still inside the band. A 640-wide ss1
+   picture is read exactly as the pass measured it and holds by construction, so
+   `style tones` marks anything under 1280 wide `DRAFT` instead of passing it.
 6. **Round one: formulations and locations, about twenty tiles.** Keeps are sparse (two
    to four locations of nine to eleven), the agent's best location was never among them,
    and the variant Matt kept was each time a different formulation from the one the
@@ -322,7 +326,9 @@ leaves the inside to the `inside` channel. **A gallery location is a deep zoom**
 every early disc pulls back far larger than the frame and crosses it as straight bands;
 bounding the disc size as a fraction of the frame (`largest`) is what makes the style
 stand at every location instead of at hand-placed shallow ones. And one about the tone
-check: this style's sub-pixel beads average up at supersample 2, so the frame's p10 at
-full resolution sits ~0.05–0.07 above the target the tone pass met on the samples; the
-stack's `p10` target (0.05) is set below the reference's (0.099) to land in its band.
-That gap is why a tone check reads a `--draft` render, never an ss1 one.
+check: this style's sub-pixel beads average up at supersample 2, so while the tone pass
+measured the samples, the frame's p10 at full resolution sat ~0.05–0.07 above its
+target, and the stack's `p10` was hand-lowered to 0.05 to land in the band. That gap is
+why the pass now measures the averaged picture: the stack holds the reference's own
+0.099, and its picture reads p10 0.100 at both 1280x800 and 2560x1600; `style tones`'
+640-wide copy reads 0.13–0.14, in band.
