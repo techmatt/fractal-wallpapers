@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "ribbon_packing",
+  "kind": "sequential",
+  "source": "ribbon_packing, authored as 10 control points (deep violet-navy through plum and mauve to copper, orange-gold and a warm cream) as the albedo of the ribbon_packing style: the discs' plum and mauve read off the reference's warm pixels by lightness decile, the field's orange pushed warmer and more saturated than its mean (which the mauve discs grey), since the style's lights supply the near-whites. The ribbons' blue is the style's own paint, not the map's.",
+  "stops": [
+    [0.0, [12, 9, 30]],
+    [0.12, [32, 22, 50]],
+    [0.25, [58, 40, 70]],
+    [0.38, [90, 64, 94]],
+    [0.5, [128, 94, 118]],
+    [0.6, [160, 118, 120]],
+    [0.7, [190, 120, 72]],
+    [0.82, [226, 152, 60]],
+    [0.92, [246, 202, 112]],
+    [1.0, [255, 242, 214]]
+  ]
+}

@@ -190,3 +190,4 @@
 {"schema": 1, "kind": "admitted", "map": "teal_tunnel", "group": "map:wallhaven_wallhaven-39lg2d", "joined": true, "nearest": "map:wallhaven_wallhaven-39lg2d", "m1": 0.030788}
 {"schema": 1, "kind": "admitted", "map": "glow_filaments", "group": "map:glow_filaments", "joined": false, "nearest": "map:Emerald Furnace", "m1": 0.047482}
 {"schema": 1, "kind": "admitted", "map": "bronze_packing", "group": "map:Rust Kiln", "joined": true, "nearest": "map:Rust Kiln", "m1": 0.037838}
+{"schema": 1, "kind": "admitted", "map": "ribbon_packing", "group": "map:ribbon_packing", "joined": false, "nearest": "map:commons_Mandelbrot_5_B_C3_B4ng_Ng_C5_A9_Gi_C3_A1c", "m1": 0.06812}

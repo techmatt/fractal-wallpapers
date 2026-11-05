@@ -270,6 +270,14 @@ pub struct Bubble {
     /// wherever the frame is, as a glow's `falloff` does. Absent: every entry counts.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub largest: Option<f64>,
+    /// The **face**: a smaller disc inside each bubble, internally tangent to its rim,
+    /// its centre moved from the bubble's by `shift` (a vector in radii, of length
+    /// below 1) and its radius `(1 − |shift|)·radius`. What the `crescent` read paints
+    /// is the lune between the two: widest opposite the shift, nothing where the face
+    /// touches the rim. The shift is in the disc's own plane, so each bubble's pullback
+    /// turns it by its own `arg dz`: the crescents face every way. Absent: no face.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shift: Option<[f64; 2]>,
 }
 
 impl Default for Bubble {
@@ -282,6 +290,7 @@ impl Default for Bubble {
             spacing: None,
             escaped: false,
             largest: None,
+            shift: None,
         }
     }
 }
@@ -311,7 +320,15 @@ pub enum BubbleRead {
     /// The angle of `z − center` at the entry, as a fraction of a turn: rays from
     /// each bubble's middle, which a sheet cuts into a star.
     Angle,
+    /// Across the lune between the rim and the face ([`Bubble::shift`]): 0 at the
+    /// face's edge, 1 at the rim, `NaN` on the face. Its gradient points across the
+    /// band towards the rim, so a light lights each lune as a curved band — on the
+    /// early, large bubbles a ribbon sweeping the frame.
+    Crescent,
 }
+
+/// How many reads a bubble loop has, one lane each.
+const BUBBLE_READS: usize = 4;
 
 /// Which lane a source reads.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -840,10 +857,16 @@ impl Style {
                             && bubble.radius > 0.0
                             && bubble.center.iter().all(|c| c.is_finite())
                             && bubble.spacing.is_none_or(|s| s.is_finite() && s > 0.0)
-                            && bubble.largest.is_none_or(|l| l.is_finite() && l > 0.0) => {}
+                            && bubble.largest.is_none_or(|l| l.is_finite() && l > 0.0)
+                            && bubble.shift.is_none_or(|[x, y]| {
+                                let length = x.hypot(y);
+                                length.is_finite() && length > 0.0 && length < 1.0
+                            })
+                            && (bubble.read != BubbleRead::Crescent || bubble.shift.is_some()) => {}
                     (None, None, None, Some(_)) => {
                         return Err(format!(
-                            "{at}: a bubble needs hit >= 1, a positive radius, spacing and largest, and a finite centre"
+                            "{at}: a bubble needs hit >= 1, a positive radius, spacing and largest, \
+                             a finite centre, a shift of length in (0, 1), and a shift to read a crescent"
                         ));
                     }
                     _ => {
@@ -916,9 +939,9 @@ impl Style {
     }
 
     /// Every bubble loop a layer reads (one per disc and hit), once each, and the
-    /// reads asked of it: height, step, angle.
-    fn bubbles(&self) -> Vec<(Bubble, [bool; 3])> {
-        let mut traps: Vec<(Bubble, [bool; 3])> = Vec::new();
+    /// reads asked of it: height, step, angle, crescent.
+    fn bubbles(&self) -> Vec<(Bubble, [bool; BUBBLE_READS])> {
+        let mut traps: Vec<(Bubble, [bool; BUBBLE_READS])> = Vec::new();
         for source in self.layers.iter().flat_map(|layer| layer.sources()) {
             let Some(bubble) = source.bubble else {
                 continue;
@@ -927,7 +950,7 @@ impl Style {
             let at = match traps.iter().position(|(t, _)| *t == trap) {
                 Some(at) => at,
                 None => {
-                    traps.push((trap, [false; 3]));
+                    traps.push((trap, [false; BUBBLE_READS]));
                     traps.len() - 1
                 }
             };
@@ -971,16 +994,17 @@ struct Channels {
     inside_gradient: Vec<[f32; 2]>,
     /// One lane per radial centre the stack reads.
     radials: Vec<([f64; 2], Vec<f32>)>,
-    /// One entry per bubble loop: its reads (empty where unasked) and the height's
-    /// unit gradient (empty without a light).
+    /// One entry per bubble loop: its reads (empty where unasked), the height's unit
+    /// gradient (empty without a light) and the crescent's (empty unless both asked).
     bubbles: Vec<BubbleLanes>,
     interior_fraction: f64,
 }
 
 struct BubbleLanes {
     trap: Bubble,
-    reads: [Vec<f32>; 3],
+    reads: [Vec<f32>; BUBBLE_READS],
     gradient: Vec<[f32; 2]>,
+    crescent_gradient: Vec<[f32; 2]>,
 }
 
 impl Channels {
@@ -1018,6 +1042,9 @@ impl Channels {
         match key {
             Key::Inside => &self.inside_gradient,
             Key::Field(_) => &self.gradient,
+            Key::Bubble(bubble) if bubble.read == BubbleRead::Crescent => {
+                &self.bubble(bubble).crescent_gradient
+            }
             Key::Bubble(bubble) => &self.bubble(bubble).gradient,
             // Refused by `Style::validate`: radial has no orbit gradient to light.
             Key::Radial(_) => &[],
@@ -1096,10 +1123,49 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// The three reads, in [`BubbleRead`]'s order.
-    pub fn reads(&self, radius: f64) -> [f64; 3] {
+    /// The four reads, in [`BubbleRead`]'s order; the crescent is `NaN` off the lune
+    /// and on a trap without a face.
+    pub fn reads(&self, trap: &Bubble) -> [f64; BUBBLE_READS] {
         let turn = (self.offset.arg() / std::f64::consts::TAU).rem_euclid(1.0);
-        [1.0 - self.offset.norm() / radius, self.step as f64, turn]
+        let crescent = self.lune(trap).map_or(f64::NAN, |(across, _)| across);
+        [
+            1.0 - self.offset.norm() / trap.radius,
+            self.step as f64,
+            turn,
+            crescent,
+        ]
+    }
+
+    /// Where the entry sits across the lune between the rim and the face, and that
+    /// position's gradient in the disc's plane, when it is on the lune at all.
+    ///
+    /// With `a` the distance outside the face's edge and `b` the distance inside the
+    /// rim, the position is `a / (a + b)`: 0 at the face, 1 at the rim, the same
+    /// fraction of the band's width wherever the band is wide or thin. Its gradient
+    /// is `(b·∇a − a·∇b) / (a + b)²`, with `∇a` the unit vector from the face's centre
+    /// and `∇b` the unit vector towards the bubble's.
+    fn lune(&self, trap: &Bubble) -> Option<(f64, Complex<f64>)> {
+        let [x, y] = trap.shift?;
+        let shift = Complex::new(x, y) * trap.radius;
+        let face = trap.radius * (1.0 - shift.norm() / trap.radius);
+        let from_face = self.offset - shift;
+        let (a, b) = (from_face.norm() - face, trap.radius - self.offset.norm());
+        if !(a > 0.0 && b >= 0.0) {
+            return None;
+        }
+        let along = |v: Complex<f64>| v / v.norm();
+        let grad = (along(from_face) * b + along(self.offset) * a) / (a + b).powi(2);
+        Some((a / (a + b), grad))
+    }
+
+    /// The unit direction the crescent read climbs in the pixel, towards the rim:
+    /// the plane gradient pulled back through `dz` (`∇ₚ = conj(dz)·∇`, as in
+    /// [`gradient`]).
+    pub fn across(&self, trap: &Bubble) -> Option<[f64; 2]> {
+        let (_, grad) = self.lune(trap)?;
+        let pulled = self.derivative.conj() * grad;
+        let length = pulled.norm();
+        (length.is_finite() && length > 0.0).then(|| [pulled.re / length, pulled.im / length])
     }
 
     /// The unit direction the height climbs: towards the bubble's middle. The height
@@ -1224,7 +1290,7 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
     let height = view.sample_height();
     let reach = style.inside();
     let traps = style.bubbles();
-    type BubbleRow = ([Vec<f32>; 3], Vec<[f32; 2]>);
+    type BubbleRow = ([Vec<f32>; BUBBLE_READS], Vec<[f32; 2]>, Vec<[f32; 2]>);
     type Row = (
         Vec<Vec<f32>>,
         Vec<[f32; 2]>,
@@ -1290,19 +1356,26 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
                     );
                     gradients.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
                 }
-                for ((trap, wanted), (reads, unit_lane)) in traps.iter().zip(&mut bubble_rows) {
+                for ((trap, wanted), (reads, unit_lane, across_lane)) in
+                    traps.iter().zip(&mut bubble_rows)
+                {
                     let entry = (orbit.escaped || !trap.escaped)
                         .then(|| bubble(family, pixel, maxiter, trap, view.width))
                         .flatten();
-                    let values = entry.map_or([f64::NAN; 3], |entry| entry.reads(trap.radius));
+                    let values = entry.map_or([f64::NAN; BUBBLE_READS], |entry| entry.reads(trap));
                     for ((lane, value), want) in reads.iter_mut().zip(values).zip(wanted) {
                         if *want {
                             lane.push(value as f32);
                         }
                     }
+                    let unit = |unit: Option<[f64; 2]>| {
+                        to_frame(unit).map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32])
+                    };
                     if lights {
-                        let unit = to_frame(entry.and_then(|entry| entry.uphill()));
-                        unit_lane.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
+                        unit_lane.push(unit(entry.and_then(|entry| entry.uphill())));
+                    }
+                    if lights && wanted[BubbleRead::Crescent as usize] {
+                        across_lane.push(unit(entry.and_then(|entry| entry.across(trap))));
                     }
                 }
             }
@@ -1322,17 +1395,19 @@ fn gather(view: &Viewport, family: &Family, maxiter: u32, style: &Style) -> Chan
             trap: *trap,
             reads: Default::default(),
             gradient: Vec::new(),
+            crescent_gradient: Vec::new(),
         })
         .collect();
     for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles) in rows {
         for (lane, part) in lanes.iter_mut().zip(row_lanes) {
             lane.extend(part);
         }
-        for (whole, (reads, unit_lane)) in bubbles.iter_mut().zip(row_bubbles) {
+        for (whole, (reads, unit_lane, across_lane)) in bubbles.iter_mut().zip(row_bubbles) {
             for (lane, part) in whole.reads.iter_mut().zip(reads) {
                 lane.extend(part);
             }
             whole.gradient.extend(unit_lane);
+            whole.crescent_gradient.extend(across_lane);
         }
         gradient.extend(row_gradient);
         for (value, unit) in row_insides {
@@ -1972,7 +2047,8 @@ mod tests {
                 };
                 entered += 1;
                 assert!(first.offset.norm() < 0.3, "{pixel}: {}", first.offset);
-                let [height, _, turn] = first.reads(0.3);
+                let [height, _, turn, crescent] = first.reads(&trap(1, spacing));
+                assert!(crescent.is_nan(), "no face, no crescent");
                 assert!((0.0..=1.0).contains(&height) && (0.0..1.0).contains(&turn));
                 if let Some(second) = bubble(&family, pixel, 500, &trap(2, spacing), 1.0) {
                     assert!(second.step > first.step, "{pixel}");
@@ -1982,6 +2058,55 @@ mod tests {
         assert!(
             entered > 100,
             "only {entered} entries: the grid does not exercise the trap"
+        );
+    }
+
+    #[test]
+    fn a_crescent_is_the_lune_between_the_rim_and_the_face() {
+        // Face shifted right by half a radius: radius 0.15, centred at +0.15. The lune
+        // is widest on the left, 0 at the face's edge, 1 at the rim, NaN on the face.
+        let face = Bubble {
+            shift: Some([0.5, 0.0]),
+            ..trap(1, None)
+        };
+        let at = |x: f64, y: f64| Entry {
+            step: 3,
+            offset: Complex::new(x, y),
+            derivative: Complex::new(2.0, 0.0),
+        };
+        let across = |x: f64, y: f64| at(x, y).reads(&face)[3];
+        assert!(
+            across(0.2, 0.0).is_nan() && across(0.15, 0.1).is_nan(),
+            "on the face"
+        );
+        assert!(across(0.31, 0.0).is_nan() || across(0.31, 0.0) > 1.0 - 1e-9);
+        assert!(across(-0.2999, 0.0) > 0.99 && across(-0.0001, 0.0) < 0.01);
+        let middle = across(-0.15, 0.0);
+        assert!((middle - 0.5).abs() < 1e-9, "{middle}");
+        // Climbs towards the rim: leftwards on the left, through a real dz.
+        let [x, y] = at(-0.15, 0.0).across(&face).unwrap();
+        assert!(x < -0.99 && y.abs() < 1e-9, "{x} {y}");
+        // A conformal turn of dz turns the direction with it (∇ₚ = conj(dz)·∇).
+        let turned = Entry {
+            derivative: Complex::new(0.0, 2.0),
+            ..at(-0.15, 0.0)
+        };
+        let [x, y] = turned.across(&face).unwrap();
+        assert!(x.abs() < 1e-9 && (y.abs() - 1.0).abs() < 1e-9, "{x} {y}");
+        // A face needs a shift of length in (0, 1), and a crescent needs a face.
+        let style = |bubble: serde_json::Value| {
+            serde_json::from_value::<Style>(serde_json::json!({
+                "name": "lune",
+                "layers": [{"kind": "glow", "channel": {"bubble": bubble}, "color": {"palette": 0.5}}]
+            }))
+            .unwrap()
+            .validate()
+        };
+        assert!(style(serde_json::json!({"radius": 0.3, "read": "crescent"})).is_err());
+        assert!(style(serde_json::json!({"radius": 0.3, "shift": [1.0, 0.0]})).is_err());
+        assert_eq!(
+            style(serde_json::json!({"radius": 0.3, "shift": [0.3, 0.2], "read": "crescent"})),
+            Ok(())
         );
     }
 
@@ -2027,21 +2152,28 @@ mod tests {
     }
 
     #[test]
-    fn the_bubble_gradient_points_up_the_height() {
+    fn the_bubble_gradients_point_up_the_height_and_across_the_crescent() {
         // Step the pixel a hair along the returned direction: the entry step is the
         // same and the height rises, so a light at period 2 domes every disc.
+        // The same claim for the crescent's direction, across the lune towards the rim.
         let family = Family::Multibrot { degree: 2 };
-        let shape = trap(1, Some(1.0));
-        let mut checked = 0;
+        let shape = Bubble {
+            shift: Some([0.4, 0.3]),
+            ..trap(1, Some(1.0))
+        };
+        let (mut checked, mut lunes) = (0, 0);
         for pixel in grid() {
             let Some(entry) = bubble(&family, pixel, 500, &shape, 1.0) else {
                 continue;
             };
-            let height = entry.reads(0.3)[0];
-            if !(0.1..0.9).contains(&height) {
+            let [height, _, _, crescent] = entry.reads(&shape);
+            let (read, [x, y]) = if (0.1..0.9).contains(&crescent) {
+                (3, entry.across(&shape).unwrap())
+            } else if (0.1..0.9).contains(&height) {
+                (0, entry.uphill().unwrap())
+            } else {
                 continue;
-            }
-            let [x, y] = entry.uphill().unwrap();
+            };
             let h = 1e-8;
             let nudge = Complex::new(x * h, y * h);
             // A hair away the orbit can cross into another disc, or out of the cap:
@@ -2055,10 +2187,13 @@ mod tests {
             if ahead.step != entry.step || behind.step != entry.step {
                 continue;
             }
-            assert!(ahead.reads(0.3)[0] > behind.reads(0.3)[0], "{pixel}");
+            let (ahead, behind) = (ahead.reads(&shape)[read], behind.reads(&shape)[read]);
+            assert!(ahead > behind, "{pixel}: read {read}, {ahead} vs {behind}");
             checked += 1;
+            lunes += usize::from(read == 3);
         }
         assert!(checked > 50, "only {checked} samples checked");
+        assert!(lunes > 10, "only {lunes} crescent samples checked");
     }
 
     #[test]

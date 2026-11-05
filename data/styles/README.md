@@ -125,6 +125,17 @@ deep in a zoom every early step's disc is far larger than the frame and draws a 
 edge across it, and with the bound the packing starts at the same frame-relative size at
 any depth. Its own loop, stopping at the entry, with `dz` kept.
 
+`shift` (`[x, y]` in radii, length in (0, 1)) gives each disc a **face**: a smaller disc
+inside it, internally tangent to its rim, centred `shift·radius` from its middle, of
+radius `(1 − |shift|)·radius`. The read `crescent` is the lune between rim and face,
+`a / (a + b)` with `a` the distance outside the face and `b` the distance inside the rim
+(0 at the face, 1 at the rim, nothing on the face), widest opposite the shift and
+vanishing where the face touches the rim. Its gradient is its own (the lune's, pulled
+back through `dz`), so a `light` at one band lights each lune as a glossy curved band.
+The shift lives in the disc's plane, so every disc's pullback turns its crescent its own
+way. On a trap with a large `largest` the early discs are frame-sized, and their
+crescents are ribbons sweeping the frame and curling round the discs they hug.
+
 Each **layer** is `{kind, blend, opacity, mask, …}`; `blend` is one of `normal`,
 `multiply`, `screen`, `overlay`, `min`, `add` (applied per channel in linear light),
 `opacity` is in [0, 1], and `mask` (`{channel, invert, power}`) multiplies the opacity by
@@ -274,6 +285,7 @@ pre-selected and its sidecar, and `style keep`.
 | `teal_tunnel` | `795548-3840x2160-desktop-4k-fractal-background.jpg` | `teal_tunnel` | `projection` (`log_polar`), `period` on `light` and `sheet`, a location's own `projection` |
 | `glow_filaments` | `Black-and-Green-Abstract-Wallpaper.jpg` | `glow_filaments` | `falloff` on `glow`, `log_density` on `tone` |
 | `bronze_packing` | `795549-3840x2160-desktop-4k-fractal-background.jpg` | `bronze_packing` | the `bubble` channel (`height`, `step`, `angle`; `hit`, `spacing`, `escaped`) |
+| `ribbon_packing` | `795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg` | `ribbon_packing` | the bubble's `shift` (a face in each disc) and its `crescent` read |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -332,3 +344,18 @@ target, and the stack's `p10` was hand-lowered to 0.05 to land in the band. That
 why the pass now measures the averaged picture: the stack holds the reference's own
 0.099, and its picture reads p10 0.100 at both 1280x800 and 2560x1600; `style tones`'
 640-wide copy reads 0.13–0.14, in band.
+
+The sixth style is the fifth's packing swept by glossy blue ribbons, and the ribbons went
+in as one member and one read of the same trap: a face set off-centre in each disc
+(`shift`) and the lune between them (`crescent`). Read off a trap whose `largest` is
+frame-sized, the lunes of the early discs are broad bands across the frame, and the
+packing's own trap (bounded at a tenth of the frame) packs their faces, so **the two
+layers are one lattice of discs read at two scales**. A reading needed no new layer kind:
+a glow at power near zero paints the lune flat, and a light on it at one band makes the
+tube. Two lessons. **A ribbon trap bounded near the packing's scale shows the bound**:
+where a disc pulls back just over `largest` it is passed over and its neighbour entered
+later instead, so its lune is cut by a straight edge (at `largest` 0.4 the cuts are
+everywhere; at 1.5 they are rare and off the frame's large discs). **A stack's paint for
+the new structure is a literal colour on purpose**: the ribbons are the contrast the
+picture is about, so they keep the reference's blue under every map, and the formulation
+painting them from the map is a picker row, not the default.

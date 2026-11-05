@@ -1,0 +1,447 @@
+{
+  "schema": 1,
+  "name": "ribbon_packing",
+  "description": "a circle packing swept by glossy blue ribbons: plum and mauve discs of every size, each packed with smaller beads, on an orange-gold field of cusp discs, and over them broad lit bands that curl round the larger discs, each the crescent between a disc's rim and a face set off-centre inside it",
+  "reference": {
+    "image": "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown; a circle packing with offset faces (likely an inversion or Kleinian render, as bronze_packing's sibling reference), 3840x2160 (a 4k desktop background)"
+  },
+  "suggested_colormap": "ribbon_packing",
+  "reuses": [
+    "bronze_packing's packing whole (its smooth, inside and bubble layers, light, glows and rays), the discs' entry step spent over the map's middle half (cycles 0.5, phase 0.35) so the large discs are mauve and the late cusp discs orange, and the nested beads at opacity 0.5",
+    "a second bubble trap on the same lattice with largest 1.5: its early discs pull back frame-sized, so their crescents sweep the frame as ribbons over the packing",
+    "a glow at power 0.02 on the crescent: the ribbon's flat paint, a literal blue so the ribbons hold their contrast under every map",
+    "the light layer on the crescent at one band, rings 1: each ribbon a glossy tube",
+    "two glows on the crescent: a multiplied dark seam at the face's edge, a screened bright edge at the rim",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [
+    "bubble member shift [x, y] (in radii, length in (0, 1)): a face inside each bubble, internally tangent to its rim, centred shift*radius from the bubble's centre with radius (1 - |shift|)*radius; the shift is in the disc's own plane, so each bubble's pullback turns its crescent its own way",
+    "bubble read crescent: across the lune between the rim and the face, a / (a + b) with a the distance outside the face and b the distance inside the rim (0 at the face, 1 at the rim, NaN on the face), with its own gradient (the plane gradient pulled back through conj(dz)) so a light lights each lune as a curved band"
+  ],
+  "style": {
+    "name": "ribbon_packing",
+    "interior": {
+      "palette": 0.8
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 0.6,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "step",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0,
+          "cycles": 0.5,
+          "phase": 0.35
+        },
+        "warp": {
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "amount": -0.3
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 2,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        },
+        "opacity": 0.5
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "light": {
+          "period": 2.0,
+          "rings": 0.4,
+          "slope": 0.0,
+          "ambient": 0.6,
+          "diffuse": 0.5,
+          "specular": 0.5,
+          "shininess": 40.0,
+          "rim": 0.6,
+          "rim_power": 4.0,
+          "highlight": {
+            "palette": 0.97
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          },
+          "invert": true
+        },
+        "power": 6.0,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          },
+          "invert": true
+        },
+        "power": 40.0,
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "add",
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "power": 30.0,
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 2,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          },
+          "invert": true
+        },
+        "power": 30.0,
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 2,
+            "read": "height",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "power": 30.0,
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "step",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "power": 3.0,
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "angle",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.12
+          }
+        },
+        "sheet": {
+          "bands": 6.0,
+          "rank": false,
+          "edge": 0.04,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "crescent",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 1.5,
+            "shift": [
+              0.11,
+              0.06
+            ]
+          }
+        },
+        "power": 0.02,
+        "color": {
+          "rgb": "#2458b0"
+        },
+        "blend": "normal",
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "crescent",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 1.5,
+            "shift": [
+              0.11,
+              0.06
+            ]
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "ambient": 0.55,
+          "diffuse": 0.6,
+          "specular": 0.9,
+          "shininess": 24.0,
+          "rim": 0.3,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#a8dcff"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "crescent",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 1.5,
+            "shift": [
+              0.11,
+              0.06
+            ]
+          },
+          "invert": true
+        },
+        "power": 14.0,
+        "color": {
+          "rgb": "#0a1440"
+        },
+        "blend": "multiply",
+        "opacity": 0.85
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "hit": 1,
+            "read": "crescent",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 1.5,
+            "shift": [
+              0.11,
+              0.06
+            ]
+          }
+        },
+        "power": 40.0,
+        "color": {
+          "rgb": "#a8dcff"
+        },
+        "blend": "screen",
+        "opacity": 0.6
+      }
+    ],
+    "tone": {
+      "median": 0.287,
+      "p10": 0.086
+    }
+  }
+}
