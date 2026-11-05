@@ -11,11 +11,11 @@ from __future__ import annotations
 
 import ast
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
 
+from conftest import tracked_sources
 from fractal_wallpapers.labeling import store
 
 JULIA = {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}
@@ -175,17 +175,6 @@ STORE_MODULE = "src/fractal_wallpapers/labeling/store.py"
 
 #: The path segment that addresses them.
 SEGMENT = "labels"
-
-
-def tracked_sources() -> list[str]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z", "src"],
-        cwd=REPO_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return [name for name in result.stdout.split("\0") if name.endswith(".py")]
 
 
 def addresses_the_records(source: str) -> bool:

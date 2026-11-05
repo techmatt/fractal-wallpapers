@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import ast
 import json
-import subprocess
 from pathlib import Path
 
 import pytest
 
+from conftest import tracked_sources
 from fractal_wallpapers.labeling import finished, gallery_grade, intake, sheets
 from fractal_wallpapers.labeling import registry as registry_module
 
@@ -580,17 +580,6 @@ def test_a_drop_ingests_end_to_end_and_the_store_reads_it_back(tmp_path, monkeyp
 # --------------------------------------------------------------------------- #
 # The choke point.
 # --------------------------------------------------------------------------- #
-def tracked_sources() -> list[str]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z", "src"],
-        cwd=REPO_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return [name for name in result.stdout.split("\0") if name.endswith(".py")]
-
-
 def addresses_the_records(source: str, segment: str) -> bool:
     """Whether this source builds a path through the store's own name.
 

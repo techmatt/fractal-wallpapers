@@ -19,8 +19,7 @@ a comment about another.
 
 **Cite a heading and a file, never a line number**: `curation/GALLERY.md`'s *What a pass
 costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit above it.
-`tests/test_doc_citations.py` resolves every citation of that form; renaming a heading
-means updating its citers.
+`tests/test_doc_citations.py` resolves every citation of that form.
 
 No test here enforces this; the guard is `builder/vocabulary.py` in the `fractal-website`
 checkout, swept by its `builder/checks.py`.
@@ -95,8 +94,8 @@ unpublished record.
   `tests/test_tentative.py`. Tracking a record's text *is* publishing it. A
   `--force-fill` record is never published (`tentative.refuse_forced`).
 - **An unstamped read means `tentative.DEFAULT`** (`final139_general`), never the newest
-  stamp: the twenty-one are peers. `portable.REFERENCE` (`fractal_wallpapers/portable.py`) names
-  `final139_green`, as `GENERAL_CHECK` names `final139_general`. The page a person opens
+  stamp: the twenty-one are peers. `portable.REFERENCE` (in the package's `portable.py`)
+  names `final139_green`, as `GENERAL_CHECK` names `final139_general`. The page a person opens
   is the `artifacts/curation/viewer/` row of `src/fractal_wallpapers/README.md`'s keep
   roster.
 - **An unpublished record is DISCARDED by default; keeping needs a reason.** An item that
@@ -105,7 +104,8 @@ unpublished record.
   `curate solve release <stamp>` afterwards.
 - **What is kept is `tentative.kept()`**, `PUBLISHED` plus the keep file
   (`tentative.keep_path()`), never a count of store folders. `tentative.protected_keys()`
-  reads it and nothing else: preservation is a named row, never a folder existing.
+  reads it and nothing else: preservation is a named row, never a folder existing, and
+  it never sweeps the whole store.
 - **Durability is a backup, not git**: `storage export` runs only at Matt's direction,
   and no tracked text names an export or a standing instance. Restore is
   `src/fractal_wallpapers/README.md`'s *Continuing on a fresh box*.
@@ -140,8 +140,8 @@ unpublished record.
   `fractal-engine.exe`, or any at normal priority, makes this desktop unusable.
   `engine.run` sets the priority; only the count is the caller's.
 - **One pool-holding process per box.** `curate growth`, `curate solve run`, `curate
-  solve record` and the slow test lane each hold the candidate pool whole (hundreds of
-  MB) and never run beside each other.
+  solve record` and the slow test lane each hold the candidate pool whole and never run
+  beside each other.
 
 ## Checks to run before committing
 
@@ -163,9 +163,8 @@ a bare call interrupts the whole lane at collection.
 
 **`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
 (`perturbation/README.md`'s *Running it*), the website's own item; website items never
-commit here. The website also reads this repo's docs: its `builder/checks.py` parses the
-root `README.md`'s explorer links, and it cites `perturbation/README.md`'s numbered
-headings, so neither is renamed casually.
+commit here. The website also parses the root `README.md`'s explorer links and cites
+`perturbation/README.md`'s numbered headings.
 
 **CI** runs `pytest --slow` on three OSes with torch and no weights or store; a test
 needing shipped heads skips on a missing file. Reading a red without `gh` and
@@ -193,7 +192,8 @@ measurements behind these rules are in `tests/README.md`.
 - **A lane that moves right after code landed is the code until measured otherwise.**
   The decisive check is a `git worktree` at `HEAD` with `FRACTAL_WALLPAPERS_HOT_ROOT` on
   the real store; with no test added, ask which store grew, which derivation is paid
-  twice, and what is paid once per test.
+  twice, and what is paid once per test. Re-measure after a merge; suspect the disk after
+  moving hundreds of thousands of paths.
 - **A fixture redirects a store at the tier roots, never per accessor.**
 - **Read the candidate ledger once a session**, through `conftest.tracked_ledger`; a
   direct `candidate_ledger.read()` adds ~40 s. A guard sweeping the ledger takes a
@@ -204,8 +204,9 @@ measurements behind these rules are in `tests/README.md`.
   parametrized, so a colormap drop moves both counts.
 - **A guard may be weakened or deleted to make a lane faster**, but the trade is **named
   and priced**: what stopped being covered, at the site and in the report, with the
-  seconds it bought (`--durations=0 --durations-min=0` summed by file). Prefer thinning a
-  claim (a smaller sample) to dropping one (fewer modes), and measure after marking.
+  seconds it bought (`--durations=0 --durations-min=0` summed by file). Take pure wins
+  first, prefer thinning a claim (a smaller sample) to dropping one (fewer modes), and
+  measure after marking: a moved guard can hand its cost to a sibling.
 - **The fast lane prints how many tests it held back**, and that line is the point:
   `tests/conftest.py` owns the marker, the flag and the line.
 
@@ -247,13 +248,12 @@ deleting one means deciding what its reader does instead:
 - `labeling/finished_import.py`: `run` has no caller; its conversions (`recipe_of`,
   `family_of`, `mode_of`, `engine_modes`, …) are read by `models.renders.verify`,
   `models.palette_sets.extract` and two tests.
-- `palettes/library_import.py`: `authored_import.py` writes every authored drop through
-  its `write`, `palettes add` (`admit.py`) through its `text_of`; `palette_sets.run` and
-  `finished_import.run` call its `run`. Only its source-pool reader is build-era.
-- The `--source` commands `renders verify`, `renders preregister`
-  (`finished_acceptance.vendor`) and `palette extract` are those readers, so they go
-  first. `palette label` and `palette score` reach the source through
-  `palette_teacher`'s pointer, and `palettes provenance` reads its `BATCHES`.
+- `palettes/library_import.py`: `authored_import.py` writes through its `write`,
+  `palettes add` through its `text_of`; `palette_sets.run` and `finished_import.run`
+  call its `run`. Only its source-pool reader is build-era.
+- The `--source` commands `renders verify`, `renders preregister` and `palette extract`
+  are those readers, so they go first; `palette label|score` (via `palette_teacher`) and
+  `palettes provenance` read the source too.
 - `models/acceptance.py`'s extraction half (`INCUMBENT_*`, `beside`,
   `ExtractionSourceGone`, `extraction_source`), called by `head preregister`; every read
   of a bar runs on the vendored yardstick, which stays.

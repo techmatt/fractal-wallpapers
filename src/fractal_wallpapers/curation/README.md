@@ -27,9 +27,10 @@ legs       hunt · mine · depth · shrinkage · remode · rotation · repetitio
            · phase_response · pool_draw · manufacture · label_migration
 gallery    view · rules · rank_key · ceiling · headroom · growth · solve · augment
            · selection · tentative · targets · pins · veto · trace · k_sweep
+           · growth_plot · k_sweep_plot
 release    release · full_set · fulls · packs · explorer_link · embed_link · votes
            · rejection · records · run · run_layout · pacing · checks
-pages      page · sheet · seat_sheet · below_bar · candidate_page · viewers
+pages      page · page_order · sheet · seat_sheet · below_bar · candidate_page · viewers
            · label_fate · atlas/
 colour     colors · color_sheets · swatch_frequency · palette_coverage
 ```

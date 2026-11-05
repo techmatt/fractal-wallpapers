@@ -318,6 +318,23 @@ RECORDS_AT_START = pytest.StashKey[dict]()
 LEGS_AT_START = pytest.StashKey[dict]()
 
 
+@functools.cache
+def tracked_sources() -> tuple[str, ...]:
+    """Every tracked `.py` file under `src`, repo-relative, for the source sweeps.
+
+    One `git ls-files` a session, shared by the guards that read the package's
+    text to find who builds a path through a store's name.
+    """
+    result = subprocess.run(
+        ["git", "ls-files", "-z", "src"],
+        cwd=repo_root(),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return tuple(name for name in result.stdout.split(chr(0)) if name.endswith(".py"))
+
+
 def tracked_records() -> dict:
     """`{repo-relative name: sha256}` for every tracked record this run must not move.
 

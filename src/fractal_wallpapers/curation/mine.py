@@ -1135,9 +1135,9 @@ def run(
         made.append(row)
         hunt._append(profile_file, {"schema": SCHEMA, **row})
         # On the **sequence** row and not on `row`: `made` is held whole for the
-        # length of the leg and feeds `arm_readout`, `compare` and `extrapolate`,
-        # none of which reads a stamp, so a kilobyte a candidate there would be
-        # tens of megabytes of readouts carrying a curve nothing in them wants.
+        # length of the leg and feeds `arm_readout`, which reads no stamp, so a
+        # kilobyte a candidate there would be tens of megabytes of readouts carrying
+        # a curve nothing in them wants.
         # [`curation.depth`] writes the same file the same way for the same reason.
         hunt._append(
             sequence_file,

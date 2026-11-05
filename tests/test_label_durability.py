@@ -21,6 +21,7 @@ from pathlib import Path
 
 import pytest
 
+from conftest import tracked_sources
 from fractal_wallpapers.labeling import finished, store
 from fractal_wallpapers.labeling import registry as registry_module
 
@@ -28,17 +29,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 #: The one module allowed to know where the finished-render records live.
 FINISHED_MODULE = "src/fractal_wallpapers/labeling/finished.py"
-
-
-def tracked_sources() -> list[str]:
-    result = subprocess.run(
-        ["git", "ls-files", "-z", "src"],
-        cwd=REPO_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return [name for name in result.stdout.split("\0") if name.endswith(".py")]
 
 
 # --------------------------------------------------------------------------- #
