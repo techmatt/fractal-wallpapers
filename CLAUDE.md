@@ -154,6 +154,14 @@ cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warning
 cargo test --release --manifest-path perturbation/Cargo.toml
 ```
 
+An item that touches the style path (`engine/src/style.rs`, `style-wasm/`, a style's
+stack or the bundle) also runs:
+
+```
+cargo test --release --manifest-path style-wasm/Cargo.toml
+cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml
+```
+
 Run pytest with the checkout's own `.venv` interpreter: one gallery guard spawns
 `sys.executable` and imports the package, and any other interpreter fails it in a way
 that reads as a process-control bug. The walk tests need a **release** engine

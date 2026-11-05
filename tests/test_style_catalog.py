@@ -105,6 +105,8 @@ def test_the_gallery_starts_each_toggle_from_the_status(tmp_path, monkeypatch):
     page = (folder / "index.html").read_text(encoding="utf-8")
     assert json.dumps({"yas": "publish", "field_lines": "drop"}) in page
     assert 'data-id="yas"' in page and "glass-whorl" in page and "Discarded" in page
+    assert 'id="lb"' in page and "Escape" in page and 'target="_blank"' not in page
+    assert page.count('class="zoom"') == 3 and 'data-cap="leaf_veins · reference · ' in page
     assert not (folder / "img" / "stale.jpg").exists()
     with Image.open(folder / "img" / "yas__ref.jpg") as small:
         assert small.width == style_catalog.REFERENCE_WIDTH

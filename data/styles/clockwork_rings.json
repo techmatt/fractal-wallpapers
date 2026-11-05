@@ -1,0 +1,404 @@
+{
+  "schema": 1,
+  "name": "clockwork_rings",
+  "description": "a clock face of light on dark olive: a quasicircle Julia set's basin lit green-gold round a hot heart and ringed and spoked, concentric equipotential rings beyond it crossed by fine radial field lines, and small luminous gear discs riding the rings, more and smaller on every ring inwards",
+  "reference": {
+    "image": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style), Wikimedia Commons, 'Chaos Clock - The Steampunk Spell-Shaper'"
+  },
+  "suggested_colormap": "clockwork_rings",
+  "reuses": [
+    "a quasicircle Julia set seen whole (z^d + c at the fixed point's multiplier |lam| < 1, arg near 0 or pi): its equipotentials are near-circles round the set and its field lines run out radially, the concentric structure the galleries lack (step 4's exception)",
+    "field smooth as two period sheets, one a step and four a step: the rings and the clock face's graduations",
+    "field_lines' lines channel outside, its angle divided and cut by a fine period sheet with no twist: the radial hairlines",
+    "two single bubble discs outside the set (gilded_orbs' unlatticed trap, bounded by largest and smallest): each pulls back as d discs a ring inwards, d times as many and smaller each ring, so the discs ride the rings and crowd to the set; each has a dim fill, a bright rim (the height inverted), spokes (its angle in a twelve-band sheet) and a hot middle",
+    "star_eye's lines channel inside: the arrival step inverted is the hot heart round the attracting fixed point, its angle cut into 36 spokes; the inside channel's bands ring each preimage of the fixed point",
+    "glow_filaments' falloff glows on de, softened (teal_filaments' 4e-4 screened core)",
+    "a fog of the inverted distance estimate by rank, and the tone pass at the reference's median and p10"
+  ],
+  "adds": [],
+  "style": {
+    "name": "clockwork_rings",
+    "interior": {
+      "palette": 0.4
+    },
+    "tone": {
+      "median": 0.141,
+      "p10": 0.023
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.2
+        },
+        "opacity": 0.45
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "lines": {
+            "radius": 2.0,
+            "divide": 2.0,
+            "side": "outside"
+          }
+        },
+        "sheet": {
+          "period": 0.01,
+          "edge": 0.08,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "edge": 0.05,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.55
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 0.25,
+          "edge": 0.06,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              2.0,
+              0.0
+            ],
+            "radius": 0.45,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          }
+        },
+        "color": {
+          "palette": 0.35
+        },
+        "blend": "screen",
+        "power": 0.01,
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              2.0,
+              0.0
+            ],
+            "radius": 0.45,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.95
+        },
+        "blend": "screen",
+        "power": 10.0,
+        "opacity": 0.9
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              2.0,
+              0.0
+            ],
+            "radius": 0.45,
+            "read": "angle",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          }
+        },
+        "sheet": {
+          "bands": 12.0,
+          "rank": false,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              2.0,
+              0.0
+            ],
+            "radius": 0.45,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "power": 12.0,
+        "opacity": 0.7
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              -1.5,
+              1.6
+            ],
+            "radius": 0.45,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          }
+        },
+        "color": {
+          "palette": 0.35
+        },
+        "blend": "screen",
+        "power": 0.01,
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              -1.5,
+              1.6
+            ],
+            "radius": 0.45,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.95
+        },
+        "blend": "screen",
+        "power": 10.0,
+        "opacity": 0.9
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              -1.5,
+              1.6
+            ],
+            "radius": 0.45,
+            "read": "angle",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          }
+        },
+        "sheet": {
+          "bands": 12.0,
+          "rank": false,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              -1.5,
+              1.6
+            ],
+            "radius": 0.45,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.1,
+            "smallest": 0.003
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "power": 12.0,
+        "opacity": 0.7
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "color": {
+          "palette": 0.5
+        },
+        "blend": "normal",
+        "power": 0.01,
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "lines": {
+            "arrive": 0.05,
+            "side": "inside",
+            "read": "step"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "power": 2.5,
+        "opacity": 0.85
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "sheet": {
+          "bands": 12.0,
+          "rank": false,
+          "edge": 0.08,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "lines": {
+            "arrive": 0.05,
+            "side": "inside"
+          }
+        },
+        "sheet": {
+          "period": 0.027777777777777776,
+          "edge": 0.1,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "falloff": 0.012,
+        "opacity": 0.35
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.7
+        },
+        "blend": "screen",
+        "falloff": 0.0015,
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.82
+        },
+        "blend": "screen",
+        "falloff": 0.0004,
+        "opacity": 0.45
+      }
+    ]
+  }
+}

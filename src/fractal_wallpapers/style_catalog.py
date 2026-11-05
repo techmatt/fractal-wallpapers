@@ -206,6 +206,30 @@ ul{color:var(--mute)}textarea{width:100%;height:110px;background:var(--panel);co
 border:1px solid var(--line);border-radius:6px;font:12px ui-monospace,monospace;display:none;\
 margin-top:8px}
 @media(max-width:900px){.row{grid-template-columns:repeat(2,minmax(0,1fr))}.pub{margin-left:0}}
+#lb{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.88);display:none;\
+align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:24px;\
+cursor:zoom-out}
+#lb.on{display:flex}#lb img{max-width:96vw;max-height:88vh;object-fit:contain;\
+border-radius:6px;cursor:default;box-shadow:0 8px 40px #000}
+#lb .cap{color:#cfd3d8;font-size:13px;text-align:center;max-width:90vw}#lb .x{position:absolute;\
+top:12px;right:18px;color:#cfd3d8;font-size:28px;background:none;border:0;cursor:pointer}
+"""
+
+OVERLAY = (
+    '<div id="lb" role="dialog" aria-modal="true" aria-label="Expanded image">'
+    '<button class="x" aria-label="Close">×</button><img alt=""><div class="cap"></div></div>'
+)
+
+OVERLAY_SCRIPT = """\
+(()=>{const lb=document.getElementById('lb'),im=lb.querySelector('img'),\
+cap=lb.querySelector('.cap');
+function close(){lb.classList.remove('on');im.removeAttribute('src')}
+document.addEventListener('click',e=>{const a=e.target.closest('a.zoom');if(!a)return;\
+e.preventDefault();im.src=a.getAttribute('href');cap.textContent=a.dataset.cap||'';\
+lb.classList.add('on')});
+lb.addEventListener('click',e=>{if(e.target!==im)close()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&lb.classList.contains('on'))\
+close()})})();
 """
 
 SCRIPT = """\
@@ -228,10 +252,22 @@ paint();
 
 INTRO = (
     "Each render mode beside the reference that guided it, your score, and up to three of "
-    "your keeps (click any image for full size). Each toggle starts from the catalog's "
-    "status (data/styles/catalog.json); mark each one to publish to Mandelnaut's "
+    "your keeps (click any image for full size; Esc closes it). Each toggle starts from the "
+    "catalog's status (data/styles/catalog.json); mark each one to publish to Mandelnaut's "
     "custom-modes dropdown."
 )
+
+
+def zoom(full: str, small: str, caption: str) -> str:
+    """A thumbnail that opens `full` in the page's overlay, captioned mode and picture.
+
+    `full` is already a URL path (`link`); the href stays the full picture, so the page
+    still works with scripts off.
+    """
+    return (
+        f'<a class="zoom" href="{full}" data-cap="{html.escape(caption, quote=True)}">'
+        f'<img loading="lazy" src="{small}" alt=""></a>'
+    )
 
 
 def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) -> str:
@@ -239,15 +275,15 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
     name = row["style"]
     esc = html.escape
     meta = f"item {row['item']} · kept: {row['kept']}" if row.get("kept") else f"item {row['item']}"
+    reference = f"reference · {row['reference']}"
     figures = [
-        f'<figure class="ref"><a href="{images["ref_link"]}" target="_blank"><img loading="lazy" '
-        f'src="{images["ref"]}" alt=""></a><figcaption>reference · {esc(row["reference"])}'
-        "</figcaption></figure>"
+        f'<figure class="ref">{zoom(images["ref_link"], images["ref"], f"{name} · {reference}")}'
+        f"<figcaption>{esc(reference)}</figcaption></figure>"
     ]
     for shown, (small, full) in zip(row.get("show", []), images["keeps"], strict=True):
         figures.append(
-            f'<figure><a href="{full}" target="_blank"><img loading="lazy" src="{small}" '
-            f'alt=""></a><figcaption>{esc(shown["caption"])}</figcaption></figure>'
+            f"<figure>{zoom(full, small, name + ' · ' + shown['caption'])}"
+            f"<figcaption>{esc(shown['caption'])}</figcaption></figure>"
         )
     public = ""
     if row.get("public"):
@@ -293,7 +329,10 @@ def page(catalog: dict[str, Any], cards: list[str], discarded: list[str], rest: 
     if rest:
         items = "".join(f"<li>{html.escape(name)}</li>" for name in rest)
         parts.append(f"<h3>In the library, not yet catalogued</h3><ul>{items}</ul>")
-    parts.append(f"</main><script>\n{script}</script></body></html>\n")
+    parts.append(
+        f"</main><script>\n{script}</script>{OVERLAY}<script>\n{OVERLAY_SCRIPT}</script>"
+        "</body></html>\n"
+    )
     return "\n".join(parts)
 
 
@@ -322,8 +361,10 @@ def gallery(folder: Path, catalog: dict[str, Any] | None = None) -> dict[str, An
         wanted.add(ref_small)
         if row.get("status") == "discarded":
             esc = html.escape
+            full = link(reference, folder)
+            caption = f"{name} · reference · {row['reference']}"
             discarded.append(
-                f'<div class="dis"><img loading="lazy" src="img/{ref_small}" alt=""><div>'
+                f'<div class="dis">{zoom(full, f"img/{ref_small}", caption)}<div>'
                 f"<b>{esc(name)}</b> (item {esc(row['item'])}) {stars(row['score'])}<br>"
                 f"{esc(row.get('note', ''))}</div></div>"
             )

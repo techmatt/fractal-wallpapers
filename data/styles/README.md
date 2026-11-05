@@ -403,6 +403,7 @@ pre-selected and its sidecar, `style keep`, the catalog row and `style gallery`.
 | `teal_filaments` | `alina-25.jpg` | `teal_filaments` | nothing: `glow_filaments`' falloff glows softened, two wide haze glows and a scooped period sheet on the smooth count for the mist, on a literal ground |
 | `ember_rose` | `406031.jpg` | `ember_rose` | nothing: the `inside` channel cycled into petal rings, softened falloff threads, a bead lattice. Its structure, parabolic flowers, is one the galleries lack: its locations are hand-placed (step 4's exception) |
 | `star_eye` | `Abstract-Desktop-Backgrounds-Pictures.jpg` | `star_eye` | nothing: a falloff ring, the `lines` channel on both sides for the strands and the pupil's star. Its structure, quasicircle Julia sets, is one the galleries lack: its locations are hand-placed (step 4's exception) |
+| `clockwork_rings` | `commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg` | `clockwork_rings` | nothing: period sheets on the smooth count for the rings, the `lines` angle for the hairlines, two single bubble discs whose pullbacks ride the rings, the `lines` channel inside for the lit and spoked basin. Its structure, concentric rings round a point, is one the galleries lack (measured): its locations are hand-placed (step 4's exception) |
 
 The second style was the test of whether the framework takes a very different picture
 by additions or needs reshaping. **By additions**: a picture lit from within, its
@@ -659,3 +660,33 @@ disc read as one object, so both were dropped: **a frame must look as if zooming
 show more** (Matt's ruling). Parabolic seats are slow, since the whole basin iterates to
 the cap: a `--draft` took ~30 s at six threads at maxiter 3000, so their records carry
 maxiter 1000, which the `inside` channel's own 1000 already reads.
+
+The eighteenth style is a flame-fractal clock: concentric glowing rings round a
+green-gold core, small luminous discs riding the rings, fine radial lines, on dark olive.
+It went in with **no new primitive**, on `star_eye`'s quasicircle Julia sets seen whole.
+Three lessons. **Outside a quasicircle the escape-time fields are already a clock face**:
+its equipotentials are near-circles round the set, so a period sheet on the smooth count
+draws the rings (a second at a quarter period the graduations), and its field lines run
+out radially, so the `lines` angle cut fine with no twist draws the hairlines. **A single
+disc outside the set rides the rings**: its pullbacks lie on the equipotentials, `d` discs
+a ring, `d` times as many and smaller each ring inwards, crowding to the set, so the
+riding discs are also the frame's proof that zooming in shows more; two discs at
+different angles double them without a lattice, which would pack the whole frame. **Light
+a basin from its attracting point, not its convergence count**: the `inside` count peaks
+at every preimage of the fixed point, so as a glow it lit a dozen equal hot spots in a
+flat olive blob; the `lines` channel's arrival step inverted lights the basin outwards
+from the fixed point, its angle cut into 36 spokes, while the `inside` bands ring each
+preimage, smaller and smaller towards the set. Seats whose basin is a smooth disc with
+few preimages still read as one object and were dropped by eye. The structure was
+measured: a 320x200 rank render of the smooth count, scored by the share of its variance
+a function of the radius alone explains (best of 25 centres in the frame's middle third),
+reads median 0.23 over 200 `final139_general` seats (none at 0.7, five at 0.5) against
+median 0.82 at `star_eye`'s twelve quasicircle seats. Seats come from the fixed point's
+multiplier `λ` (`|λ| < 1`, `arg λ` near 0 or π so the basin does not spiral): `d·z^(d−1) = λ`,
+`c = z − z^d`. All 40 drafts and the eleven full renders hold the reference's balance.
+
+**Re-drawing a shown keep** under a style's current stack (after its default changed) is
+a one-row picker: `style render <name> --location <the keep's location> --colormap <its
+public palette>`, `style picker` on a plan naming the picture, a choices file keeping it,
+`style keep`; then point the catalog's `show` at the new id and rebuild `style bundle`
+and `style gallery`.

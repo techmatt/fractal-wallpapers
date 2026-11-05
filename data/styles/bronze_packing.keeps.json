@@ -454,6 +454,129 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_bronze_packing_rekeep/rekeep/rekeep_0_00_julia-multibrot6_9cf619af",
+      "picker": "style_bronze_packing_rekeep",
+      "picked": [
+        {
+          "row": "rekeep",
+          "key": "rekeep_0_00_julia-multibrot6_9cf619af"
+        }
+      ],
+      "label": "00_julia-multibrot6_9cf619af, published stack, default knobs",
+      "image": "style_bronze_packing_rekeep__rekeep_0_00_julia-multibrot6_9cf619af.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "00_julia-multibrot6_9cf619af",
+          "family": {
+            "c": [
+              "0.6768149646310875",
+              "0.03142641012857843"
+            ],
+            "degree": 6,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6976021029860747",
+            "center_im": "0.16697627061124376",
+            "width": "0.0006634180709363431"
+          },
+          "maxiter": 18571,
+          "note": "final139_general seat 848 (threads, julia:multibrot6)"
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@fc9bbf6d",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_bronze_packing_rekeep/rekeep/rekeep_1_02_julia-multibrot3_b4307aa3",
+      "picker": "style_bronze_packing_rekeep",
+      "picked": [
+        {
+          "row": "rekeep",
+          "key": "rekeep_1_02_julia-multibrot3_b4307aa3"
+        }
+      ],
+      "label": "02_julia-multibrot3_b4307aa3, published stack, default knobs",
+      "image": "style_bronze_packing_rekeep__rekeep_1_02_julia-multibrot3_b4307aa3.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "02_julia-multibrot3_b4307aa3",
+          "family": {
+            "c": [
+              "0.118076218180586",
+              "0.7935778714194577"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.7999937459218279",
+            "center_im": "-0.2685633247535766",
+            "width": "0.1788914760514211"
+          },
+          "maxiter": 8881,
+          "note": "final139_general seat 500 (smooth_stripe, julia:multibrot3)"
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@fc9bbf6d",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
+      "picker": "style_bronze_packing_rekeep",
+      "picked": [
+        {
+          "row": "rekeep",
+          "key": "rekeep_2_05_julia-multibrot3_c8f1fd60"
+        }
+      ],
+      "label": "05_julia-multibrot3_c8f1fd60, published stack, default knobs",
+      "image": "style_bronze_packing_rekeep__rekeep_2_05_julia-multibrot3_c8f1fd60.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "05_julia-multibrot3_c8f1fd60",
+          "family": {
+            "c": [
+              "0.15672426598054978",
+              "0.8134251857082828"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.2741353766303502",
+            "center_im": "0.15108303238335868",
+            "width": "0.00023772125105866196"
+          },
+          "maxiter": 20348,
+          "note": "final139_general seat 160 (smooth_mean_angle, julia:multibrot3)"
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@fc9bbf6d",
+        "colormap": "bronze_packing",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -1041,6 +1164,311 @@
       "tone": {
         "median": 0.321,
         "p10": 0.05
+      }
+    },
+    "bronze_packing@fc9bbf6d": {
+      "name": "bronze_packing",
+      "interior": {
+        "palette": 0.8
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 0.6,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          },
+          "warp": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "hit": 1,
+                "read": "height",
+                "spacing": 1.0,
+                "escaped": true,
+                "largest": 0.12
+              }
+            },
+            "amount": -0.3
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 2,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          },
+          "opacity": 0.35
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "light": {
+            "period": 2.0,
+            "rings": 0.4,
+            "slope": 0.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 0.5,
+            "shininess": 40.0,
+            "rim": 0.6,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.97
+            }
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            },
+            "invert": true
+          },
+          "power": 6.0,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            },
+            "invert": true
+          },
+          "power": 40.0,
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "add",
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "power": 30.0,
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 2,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            },
+            "invert": true
+          },
+          "power": 30.0,
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 2,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "power": 30.0,
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "power": 3.0,
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "angle",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "sheet": {
+            "bands": 6.0,
+            "rank": false,
+            "edge": 0.04,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        }
+      ],
+      "tone": {
+        "median": 0.321,
+        "p10": 0.099
       }
     }
   }

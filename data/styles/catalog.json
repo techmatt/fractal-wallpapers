@@ -10,15 +10,15 @@
       "variant": "current",
       "show": [
         {
-          "keep": "style_bronze_packing_r1/shortlist/00_julia-multibrot6_9cf619af",
+          "keep": "style_bronze_packing_rekeep/rekeep/rekeep_0_00_julia-multibrot6_9cf619af",
           "caption": "julia multibrot6 · matched map"
         },
         {
-          "keep": "style_bronze_packing_r1/shortlist/02_julia-multibrot3_b4307aa3",
+          "keep": "style_bronze_packing_rekeep/rekeep/rekeep_1_02_julia-multibrot3_b4307aa3",
           "caption": "julia multibrot3 · matched map"
         },
         {
-          "keep": "style_bronze_packing_r1/shortlist/05_julia-multibrot3_c8f1fd60",
+          "keep": "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
           "caption": "julia multibrot3 · matched map"
         }
       ],
@@ -280,11 +280,7 @@
           "caption": "variant: soft"
         },
         {
-          "keep": "style_lit_petals_r1/locations/locations__02_julia-mandelbrot_17e354d3_lit_petals",
-          "caption": "julia–mandelbrot"
-        },
-        {
-          "keep": "style_lit_petals_r1/locations/locations__08_julia-mandelbrot_06abe945_lit_petals",
+          "keep": "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945",
           "caption": "julia–mandelbrot"
         }
       ],
@@ -300,7 +296,7 @@
       },
       "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
       "kept": "2 locations, soft",
-      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · soft is now the style's default stack; the two location keeps were drawn in the earlier default (seamed petals)."
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · soft is now the style's default stack; its location keep is re-drawn in it at its default knobs (the earlier seamed-petals keep of the soft keep's own seat is no longer shown)."
     },
     {
       "style": "glow_filaments",

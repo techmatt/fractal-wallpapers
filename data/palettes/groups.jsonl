@@ -202,3 +202,4 @@
 {"schema": 1, "kind": "admitted", "map": "teal_filaments", "group": "map:skyroads-25", "joined": true, "nearest": "map:skyroads-25", "m1": 0.038559}
 {"schema": 1, "kind": "admitted", "map": "ember_rose", "group": "map:ember_rose", "joined": false, "nearest": "map:gist_heat", "m1": 0.05213}
 {"schema": 1, "kind": "admitted", "map": "star_eye", "group": "m23", "joined": true, "nearest": "m23", "m1": 0.037931}
+{"schema": 1, "kind": "admitted", "map": "clockwork_rings", "group": "map:clockwork_rings", "joined": false, "nearest": "map:glow_filaments", "m1": 0.043079}
