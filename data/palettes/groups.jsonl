@@ -213,3 +213,8 @@
 {"schema": 1, "kind": "admitted", "map": "crisis_smooth", "group": "map:crisis_smooth", "joined": false, "nearest": "m11", "m1": 0.055862}
 {"schema": 1, "kind": "admitted", "map": "dalooka_smooth", "group": "map:dalooka_smooth", "joined": false, "nearest": "map:Cobalt-Rust Double Flare", "m1": 0.059654}
 {"schema": 1, "kind": "admitted", "map": "corkscrew_smooth", "group": "map:corkscrew_smooth", "joined": false, "nearest": "map:High Cyan, Low Gold", "m1": 0.053485}
+{"schema": 1, "kind": "admitted", "map": "flame_wisp_amber", "group": "map:flame_wisp_amber", "joined": false, "nearest": "map:Burnt Boulevard", "m1": 0.049531}
+{"schema": 1, "kind": "admitted", "map": "flame_wisp_crimson", "group": "map:flame_wisp_crimson", "joined": false, "nearest": "map:Nebula Flare", "m1": 0.122623}
+{"schema": 1, "kind": "admitted", "map": "flame_wisp_frost", "group": "map:Delft Deep", "joined": true, "nearest": "map:Delft Deep", "m1": 0.027773}
+{"schema": 1, "kind": "admitted", "map": "flame_wisp_spark", "group": "map:flame_wisp_spark", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.053887}
+{"schema": 1, "kind": "admitted", "map": "flame_wisp_waves", "group": "map:flame_wisp_waves", "joined": false, "nearest": "map:flame_veil_teal", "m1": 0.047372}

@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "flame_wisp_waves",
+  "kind": "sequential",
+  "source": "a near-black slate through petrol and teal to a pale cyan, the albedo of the flame_wisp_waves style, from commons_Waves_Apophysis_Fractal_Flame.jpg: teal crescent wisps on a dark slate ground (its red and orange streaks are literal paints of the stack, not the map's)",
+  "stops": [
+    [0.0, [8, 14, 18]],
+    [0.2, [16, 30, 36]],
+    [0.4, [26, 52, 60]],
+    [0.6, [44, 86, 96]],
+    [0.8, [86, 142, 152]],
+    [1.0, [170, 220, 226]]
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "flame_wisp_crimson",
+  "kind": "sequential",
+  "source": "a navy through cobalt, violet and magenta to crimson and a hot rose, the albedo of the flame_wisp_crimson style, from deaths-icy-hand-25.jpg: dense blue swirls turning red through violet",
+  "stops": [
+    [0.0, [8, 8, 40]],
+    [0.2, [18, 24, 108]],
+    [0.4, [38, 52, 196]],
+    [0.55, [92, 40, 188]],
+    [0.7, [158, 30, 146]],
+    [0.85, [218, 22, 70]],
+    [1.0, [255, 84, 96]]
+  ]
+}

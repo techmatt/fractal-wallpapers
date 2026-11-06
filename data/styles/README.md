@@ -31,7 +31,9 @@ renders Matt kept from a style's pickers (pictures in
 `--location` takes a record as `render --location` reads it (`{family, viewport,
 maxiter}`); `--colormap` defaults to the suggested map. Full size is 2560x1600 ss2,
 `--draft` 1280x800 ss2. A render takes every core; `RAYON_NUM_THREADS=6` caps it, and at
-six threads a full-size frame takes 10 to 110 s, each `view` about one render more.
+six threads a full-size frame takes 10 to 110 s, each `view` about one render more: a
+six-view stack ran about two minutes a full-size frame and over four on a parabolic or
+phoenix seat, so its round one is drawn at `--draft`.
 
 ## The file
 
@@ -222,3 +224,8 @@ General lessons; the named style's `notes` hold the detail.
   flame's veils (`flame_veil_blue`). The same route gives density: five views of a
   dendrite's `de` filled a frame with crossing veins where one left gaps (a scratch run
   after `leaf_veins`, item 029; not yet a style).
+- Smooth-count sheets through views are a few broad arcs, nesting as rings round the set
+  however fine the period; a flame's fine strands are the `stripe` average's crests (a
+  glow at power 10), which run along the field lines, across the level lines, and seven
+  loops of them fill the frame (`flame_wisp_waves` and its four siblings). Like veils they
+  need far field: on lace the set's own hair floods them.
