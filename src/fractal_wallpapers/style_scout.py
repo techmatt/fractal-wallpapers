@@ -4,7 +4,9 @@ A style picker shows Matt the style at places he already judged worth a seat, so
 locations come from the published gallery records, **never a spiral** (his ruling: a
 spiral is a poor demonstration of a style). Hand-placed points and the atlas tune
 drafts, and go to a picker only for a style that needs a structure the galleries lack,
-measured by [`measure`] (Matt's ruling on item 011). Every gallery row carries the spiral probe's
+measured by [`measure`] (Matt's ruling on item 011). The one turn of the spiral rule is a
+reference that is itself a spiral zoom: `--spiral` draws only spiral seats (item 031).
+Every gallery row carries the spiral probe's
 verdict (`spiral`, and `p_spiral` behind it), and its record's `recipes.jsonl` the
 `family`, `viewport` and `maxiter` a location record needs, so the draw renders
 nothing until a style needs a structure measured.
@@ -115,11 +117,14 @@ def candidates(
     kinds: list[str] | None = None,
     degrees: list[int] | None = None,
     modes: list[str] | None = None,
+    spiral: bool = False,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     """Every seat of the named records a picker may show, once each by key.
 
     Returns `(seats, passed)`: each seat `{row, recipe, record}`, and how many were
-    passed over for each reason.
+    passed over for each reason. `spiral` turns the spiral rule round: only seats the
+    probe flagged a spiral, for a reference that is itself a spiral zoom (the exception
+    Matt opened on item 031); `max_p_spiral` does not apply under it.
     """
     from fractal_wallpapers.curation import tentative
 
@@ -134,11 +139,13 @@ def candidates(
             if row["key"] in seen:
                 passed["repeat"] += 1
                 continue
-            if row.get("spiral") is not False:
+            # A row the probe never read counts as a spiral by default and as none under
+            # `spiral`: either way it is passed over.
+            if row.get("spiral") is not spiral:
                 passed["spiral"] += 1
                 continue
             p = row.get("p_spiral")
-            if max_p_spiral is not None and (p is None or p > max_p_spiral):
+            if not spiral and max_p_spiral is not None and (p is None or p > max_p_spiral):
                 passed["p_spiral"] += 1
                 continue
             if recipe is None or float(recipe["viewport"]["width"]) < MIN_WIDTH:

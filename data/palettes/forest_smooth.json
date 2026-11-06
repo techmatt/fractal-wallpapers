@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "forest_smooth",
+  "kind": "cyclic",
+  "source": "forest_smooth, authored as 13 control points as the albedo of the forest_smooth reference (commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222.jpg), in the order its bands run from the far field inwards: the far field's tan, a dark slate-green leaf band, royal blue and periwinkle, pale sky, a pale lime leaf, pink, mint, a white ring and the navy-black ring at the spiral's heart; cyclic, every stop more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [176, 140, 92]],
+    [0.1, [40, 72, 66]],
+    [0.19, [140, 178, 160]],
+    [0.28, [22, 40, 196]],
+    [0.37, [82, 116, 228]],
+    [0.46, [160, 206, 232]],
+    [0.55, [222, 236, 172]],
+    [0.64, [240, 152, 182]],
+    [0.72, [56, 206, 152]],
+    [0.8, [236, 248, 244]],
+    [0.88, [14, 22, 44]],
+    [0.94, [84, 112, 120]],
+    [1.0, [176, 140, 92]]
+  ]
+}

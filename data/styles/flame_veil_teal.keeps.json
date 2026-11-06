@@ -1,0 +1,285 @@
+{
+  "schema": 1,
+  "name": "flame_veil_teal",
+  "reference": {
+    "image": "celestial-domain-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/flame_veil_teal",
+  "keeps": [
+    {
+      "id": "style_flame_veil_teal_r1/formulations/f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal",
+      "picker": "style_flame_veil_teal_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal"
+        }
+      ],
+      "label": "no_views: one moved view only (the core's), so no crossing veils (vj_d2_r1.08_t0.131_whole)",
+      "image": "style_flame_veil_teal_r1__f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "vj_d2_r1.08_t0.131_whole",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.3889675417982833",
+              "0.10480482214569203"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "3.4"
+          },
+          "maxiter": 800,
+          "note": "degree-2 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.131), whole; seed 28, draw 0"
+        },
+        "style": "flame_veil_teal__no_views",
+        "stack": "flame_veil_teal__no_views@cd1b98f8",
+        "colormap": "flame_veil_teal",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "flame_veil_teal__no_views@cd1b98f8": {
+      "name": "flame_veil_teal__no_views",
+      "interior": {
+        "palette": 0.04
+      },
+      "tone": {
+        "median": 0.289,
+        "p10": 0.148,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.04
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.0,
+            "fill": 0.3,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.0,
+            "fill": 0.0,
+            "edge": 0.04
+          },
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.32
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 58.0,
+              "zoom": 1.3,
+              "shift": [
+                0.32,
+                0.12
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.37,
+            "fill": 0.3,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 58.0,
+              "zoom": 1.3,
+              "shift": [
+                0.32,
+                0.12
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.37,
+            "fill": 0.0,
+            "edge": 0.04
+          },
+          "color": {
+            "palette": 0.93
+          },
+          "blend": "screen",
+          "opacity": 0.32
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {}
+          },
+          "power": 4.0,
+          "color": {
+            "rgb": "#6a1840"
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 58.0,
+              "zoom": 1.3,
+              "shift": [
+                0.32,
+                0.12
+              ]
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "phase": 0.5,
+            "fill": 0.3,
+            "edge": 0.12
+          },
+          "color": {
+            "rgb": "#b02a6e"
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "mask": {
+            "channel": {
+              "radial": {}
+            },
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 58.0,
+              "zoom": 1.3,
+              "shift": [
+                0.32,
+                0.12
+              ]
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "phase": 0.5,
+            "fill": 0.0,
+            "edge": 0.04
+          },
+          "color": {
+            "rgb": "#e070b0"
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "mask": {
+            "channel": {
+              "radial": {}
+            },
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "rgb": "#ffe8f6"
+          },
+          "blend": "add",
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "radial": {}
+            },
+            "power": 14.0
+          }
+        }
+      ]
+    }
+  }
+}

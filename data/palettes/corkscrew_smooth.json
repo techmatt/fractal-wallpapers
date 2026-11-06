@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "corkscrew_smooth",
+  "kind": "cyclic",
+  "source": "corkscrew_smooth, authored as 9 control points as the albedo of the corkscrew_smooth reference (corkscrew-25.jpg), in the order its bands run from the far field inwards: dark teal, slate green, khaki, pale cream, black, teal blue and sky blue on the ribbons, a deep teal back to the start; cyclic, every stop more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [16, 62, 64]],
+    [0.14, [56, 96, 86]],
+    [0.28, [150, 160, 110]],
+    [0.42, [234, 236, 190]],
+    [0.54, [8, 14, 14]],
+    [0.68, [20, 128, 168]],
+    [0.82, [118, 182, 248]],
+    [0.91, [8, 90, 100]],
+    [1.0, [16, 62, 64]]
+  ]
+}

@@ -182,6 +182,20 @@ def kept(
     return list(keeps.values()), stacks
 
 
+def rows_of(choices: dict[str, Any], name: str) -> dict[str, Any]:
+    """The choices rows that are style `name`'s.
+
+    A picker for one style has plain row ids (`locations`), all its own. A picker for a
+    group of styles scopes each row as `<style>/<row>`, and only
+    the named style's rows are its keeps, so `style keep` runs once per style on the one
+    choices file.
+    """
+    rows = [
+        row for row in choices["rows"] if "/" not in row["id"] or row["id"].split("/", 1)[0] == name
+    ]
+    return {**choices, "rows": rows}
+
+
 def merge(old: dict[str, Any], keeps: list[dict[str, Any]], stacks: dict) -> dict[str, Any]:
     """The keeps file with a round's keeps laid over it; nothing recorded is dropped."""
     by_id = {entry["id"]: entry for entry in old.get("keeps", [])}
@@ -240,6 +254,7 @@ def keep(
     manifest_path = manifest_path or manifest_of(choices)
     manifest = read_json(manifest_path, "picker manifest")
     renders = read_renders(renders_path or manifest_path.parent / "renders.jsonl")
+    choices = rows_of(choices, name)
     keeps, stacks = kept(choices, manifest, renders, manifest_path.parent)
 
     folder = folder or keeps_folder(name)

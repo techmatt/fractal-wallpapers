@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "council_smooth",
+  "kind": "cyclic",
+  "source": "council_smooth, authored as 9 control points as the albedo of the council_smooth reference (council.jpg), in the order its bands run from the far field inwards: a pale pink-white ground, dusty rose-grey lace, slate blue-grey and a paler grey-blue, wine and a deep maroon, then a dusty mauve and pale pink back to the ground; cyclic, every stop more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [252, 232, 230]],
+    [0.14, [200, 176, 184]],
+    [0.28, [112, 106, 136]],
+    [0.4, [168, 162, 184]],
+    [0.54, [122, 46, 64]],
+    [0.66, [66, 16, 26]],
+    [0.8, [148, 98, 114]],
+    [0.9, [236, 214, 214]],
+    [1.0, [252, 232, 230]]
+  ]
+}

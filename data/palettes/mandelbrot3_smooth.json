@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "mandelbrot3_smooth",
+  "kind": "cyclic",
+  "source": "mandelbrot3_smooth, authored as 13 control points as the albedo of the mandelbrot3_smooth reference (commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt.png), in the order its bands run from the far field inwards: cream white, taupe beige, salmon pink, slate lavender, pale lavender, near-white, saturated gold, bronze olive, pale lemon and beige: the far field's pale bands and the bulbs' gold-salmon-lavender alternation, the gold held to a fifth of the map; cyclic, every stop more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [246, 240, 234]],
+    [0.09, [206, 180, 156]],
+    [0.18, [230, 146, 120]],
+    [0.28, [100, 98, 142]],
+    [0.36, [116, 112, 150]],
+    [0.45, [196, 196, 220]],
+    [0.54, [250, 250, 252]],
+    [0.63, [226, 170, 12]],
+    [0.7, [130, 92, 14]],
+    [0.78, [96, 72, 22]],
+    [0.86, [240, 212, 110]],
+    [0.93, [222, 202, 184]],
+    [1.0, [246, 240, 234]]
+  ]
+}

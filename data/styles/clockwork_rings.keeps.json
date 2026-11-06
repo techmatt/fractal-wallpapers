@@ -1,0 +1,1368 @@
+{
+  "schema": 1,
+  "name": "clockwork_rings",
+  "reference": {
+    "image": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal (Apophysis-style), Wikimedia Commons, 'Chaos Clock - The Steampunk Spell-Shaper'"
+  },
+  "folder": "fractal-drive-sync/style-keeps/clockwork_rings",
+  "keeps": [
+    {
+      "id": "style_clockwork_rings_r1/formulations/f_bare_rings__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings",
+      "picker": "style_clockwork_rings_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_bare_rings__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings"
+        }
+      ],
+      "label": "bare_rings: no radial hairlines and no graduation rings (cw_d5_+0.530-0.001i_w4.5)",
+      "image": "style_clockwork_rings_r1__f_bare_rings__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "cw_d5_+0.530-0.001i_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5304799349278261",
+              "-0.0006334475268432857"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 1000,
+          "note": "degree-5 quasicircle Julia set (c = 0.530-0.001i, fixed-point multiplier 0.781-0.014i), whole; seed 27, draw 27"
+        },
+        "style": "clockwork_rings_bare_rings",
+        "stack": "clockwork_rings_bare_rings@13415f1d",
+        "colormap": "clockwork_rings",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_clockwork_rings_r1/formulations/f_big_discs__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings",
+      "picker": "style_clockwork_rings_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_big_discs__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings"
+        }
+      ],
+      "label": "big_discs: the discs larger (radius 0.7, largest 0.16 of the frame) (cw_d5_+0.530-0.001i_w4.5)",
+      "image": "style_clockwork_rings_r1__f_big_discs__01_cw_d5_+0.530-0.001i_w4.5_clockwork_rings.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "cw_d5_+0.530-0.001i_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 5,
+            "c": [
+              "0.5304799349278261",
+              "-0.0006334475268432857"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 1000,
+          "note": "degree-5 quasicircle Julia set (c = 0.530-0.001i, fixed-point multiplier 0.781-0.014i), whole; seed 27, draw 27"
+        },
+        "style": "clockwork_rings_big_discs",
+        "stack": "clockwork_rings_big_discs@92bfab5e",
+        "colormap": "clockwork_rings",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_clockwork_rings_r1/locations/locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings",
+      "picker": "style_clockwork_rings_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings"
+        }
+      ],
+      "label": "cw_d2_+0.250+0.015i_w6.0",
+      "image": "style_clockwork_rings_r1__locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "cw_d2_+0.250+0.015i_w6.0",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.25004424436085954",
+              "0.015033783086175187"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "6.0"
+          },
+          "maxiter": 1000,
+          "note": "degree-2 quasicircle Julia set (c = 0.250+0.015i, fixed-point multiplier 0.827+0.174i), whole; seed 27, draw 4"
+        },
+        "style": "clockwork_rings_current",
+        "stack": "clockwork_rings_current@f4e392a2",
+        "colormap": "clockwork_rings",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_clockwork_rings_r1/locations/locations__05_cw_d4_-0.235+0.389i_w4.5_clockwork_rings",
+      "picker": "style_clockwork_rings_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__05_cw_d4_-0.235+0.389i_w4.5_clockwork_rings"
+        }
+      ],
+      "label": "cw_d4_-0.235+0.389i_w4.5",
+      "image": "style_clockwork_rings_r1__locations__05_cw_d4_-0.235+0.389i_w4.5_clockwork_rings.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "cw_d4_-0.235+0.389i_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "-0.2350903887101123",
+              "0.38917026530776927"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 1000,
+          "note": "degree-4 quasicircle Julia set (c = -0.235+0.389i, fixed-point multiplier 0.614+0.081i), whole; seed 27, draw 26"
+        },
+        "style": "clockwork_rings_current",
+        "stack": "clockwork_rings_current@f4e392a2",
+        "colormap": "clockwork_rings",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_clockwork_rings_r1/locations/locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings",
+      "picker": "style_clockwork_rings_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings"
+        }
+      ],
+      "label": "cw_d3_+0.367-0.026i_w4.5",
+      "image": "style_clockwork_rings_r1__locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "cw_d3_+0.367-0.026i_w4.5",
+          "family": {
+            "kind": "julia",
+            "degree": 3,
+            "c": [
+              "0.3673894812034459",
+              "-0.02581424880992935"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "4.5"
+          },
+          "maxiter": 1000,
+          "note": "degree-3 quasicircle Julia set (c = 0.367-0.026i, fixed-point multiplier 0.610-0.185i), whole; seed 27, draw 33"
+        },
+        "style": "clockwork_rings_current",
+        "stack": "clockwork_rings_current@f4e392a2",
+        "colormap": "clockwork_rings",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "clockwork_rings_bare_rings@13415f1d": {
+      "name": "clockwork_rings_bare_rings",
+      "interior": {
+        "palette": 0.4
+      },
+      "tone": {
+        "median": 0.141,
+        "p10": 0.023
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.2
+          },
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "divide": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.01,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.05,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.55
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.25,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "power": 0.01,
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "power": 10.0,
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "angle",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "power": 12.0,
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "power": 0.01,
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "power": 10.0,
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "angle",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "power": 12.0,
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "normal",
+          "power": 0.01,
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "lines": {
+              "arrive": 0.05,
+              "side": "inside",
+              "read": "step"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "power": 2.5,
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "arrive": 0.05,
+              "side": "inside"
+            }
+          },
+          "sheet": {
+            "period": 0.027777777777777776,
+            "edge": 0.1,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "falloff": 0.012,
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "falloff": 0.0015,
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.82
+          },
+          "blend": "screen",
+          "falloff": 0.0004,
+          "opacity": 0.45
+        }
+      ]
+    },
+    "clockwork_rings_big_discs@92bfab5e": {
+      "name": "clockwork_rings_big_discs",
+      "interior": {
+        "palette": 0.4
+      },
+      "tone": {
+        "median": 0.141,
+        "p10": 0.023
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.2
+          },
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "divide": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.01,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.05,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.55
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.25,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.7,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "power": 0.01,
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.7,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "power": 10.0,
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.7,
+              "read": "angle",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.7,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "power": 12.0,
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.7,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "power": 0.01,
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.7,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "power": 10.0,
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.7,
+              "read": "angle",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.7,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.16,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "power": 12.0,
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "normal",
+          "power": 0.01,
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "lines": {
+              "arrive": 0.05,
+              "side": "inside",
+              "read": "step"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "power": 2.5,
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "arrive": 0.05,
+              "side": "inside"
+            }
+          },
+          "sheet": {
+            "period": 0.027777777777777776,
+            "edge": 0.1,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "falloff": 0.012,
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "falloff": 0.0015,
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.82
+          },
+          "blend": "screen",
+          "falloff": 0.0004,
+          "opacity": 0.45
+        }
+      ]
+    },
+    "clockwork_rings_current@f4e392a2": {
+      "name": "clockwork_rings_current",
+      "interior": {
+        "palette": 0.4
+      },
+      "tone": {
+        "median": 0.141,
+        "p10": 0.023
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.2
+          },
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "radius": 2.0,
+              "divide": 2.0,
+              "side": "outside"
+            }
+          },
+          "sheet": {
+            "period": 0.01,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.05,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.55
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 0.25,
+            "edge": 0.06,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "power": 0.01,
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "power": 10.0,
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "angle",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                2.0,
+                0.0
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "power": 12.0,
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "power": 0.01,
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "power": 10.0,
+          "opacity": 0.9
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "angle",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.12,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                -1.5,
+                1.6
+              ],
+              "radius": 0.45,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.1,
+              "smallest": 0.003
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "power": 12.0,
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "normal",
+          "power": 0.01,
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "lines": {
+              "arrive": 0.05,
+              "side": "inside",
+              "read": "step"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "power": 2.5,
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "rank": false,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.4
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "lines": {
+              "arrive": 0.05,
+              "side": "inside"
+            }
+          },
+          "sheet": {
+            "period": 0.027777777777777776,
+            "edge": 0.1,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "falloff": 0.012,
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "falloff": 0.0015,
+          "opacity": 0.4
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.82
+          },
+          "blend": "screen",
+          "falloff": 0.0004,
+          "opacity": 0.45
+        }
+      ]
+    }
+  }
+}

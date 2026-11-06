@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "name": "council_smooth",
+  "description": "a pinwheel spiral of wine and maroon at the centre of a pale pink-white field of grey-blue lace and small rose spirals",
+  "reference": {
+    "image": "council.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom of the Mandelbrot set, unsigned, 2560x1600"
+  },
+  "suggested_colormap": "council_smooth",
+  "reuses": [
+    "seahorse_halo's stack: the smooth count through the matched map by rank at 2 cycles, the reference's band order",
+    "glow_filaments' falloff glow on de, painted near-black and multiplied at half opacity: the dark hair that keeps the lace crisp",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing: the smooth count through council_smooth by rank at 2 cycles, a dark `de` hair, the tone pass",
+    "Fitted: the first map read hot pink and missed p10 at 25 of 28 drafts (0.40-0.44 against 0.30); a dustier rose, a second grey-blue stop and a wider wine-maroon span held all six check drafts.",
+    "Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw."
+  ],
+  "style": {
+    "name": "council_smooth",
+    "interior": {
+      "rgb": "#2a0810"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 2.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#1e0610"
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+      }
+    ],
+    "tone": {
+      "median": 0.643,
+      "p10": 0.302
+    }
+  }
+}

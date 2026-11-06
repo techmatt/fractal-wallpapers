@@ -437,6 +437,109 @@
       "reference": "citadel.jpg",
       "show": [],
       "note": "Same as seahorse_halo. Its map citadel_gold stays in the library as a candidate palette."
+    },
+    {
+      "style": "clockwork_rings",
+      "score": 4,
+      "item": "027",
+      "reference": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg",
+      "show": [
+        {
+          "keep": "style_clockwork_rings_r1/locations/locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings",
+          "caption": "julia mandelbrot"
+        },
+        {
+          "keep": "style_clockwork_rings_r1/locations/locations__05_cw_d4_-0.235+0.389i_w4.5_clockwork_rings",
+          "caption": "julia multibrot4"
+        },
+        {
+          "keep": "style_clockwork_rings_r1/locations/locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings",
+          "caption": "julia multibrot3"
+        }
+      ],
+      "what": "A clock face of light: a quasicircle Julia set's basin lit green-gold round a hot heart, concentric equipotential rings beyond it and small luminous gear discs riding them.",
+      "kept": "3 locations, bare-rings and big-discs formulations",
+      "note": "Engine: nothing new · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "flame_veil_blue",
+      "score": 2,
+      "item": "028",
+      "reference": "bluebird-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
+          "caption": "julia mandelbrot"
+        },
+        {
+          "keep": "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue",
+          "caption": "julia multibrot4"
+        }
+      ],
+      "what": "Translucent blue flame veils crossing over a crisp fractal, their rims lit lemon yellow, on a deep blue ground: several views of one loop crossing.",
+      "kept": "2 locations",
+      "note": "Engine: the `view` member of a field channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "flame_veil_teal",
+      "score": 2,
+      "item": "028",
+      "reference": "celestial-domain-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_veil_teal_r1/formulations/f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal",
+          "caption": "variant: one view"
+        }
+      ],
+      "what": "Teal and aqua flame veils and wisps sweeping round a magenta nebula with a white star at its core, on a dark slate ground.",
+      "kept": "the one-view formulation",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "flame_veil_violet",
+      "score": 2,
+      "item": "028",
+      "reference": "cipher-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_veil_violet_r1/locations/locations__02_vj_d3_r1.08_t0.124_whole_flame_veil_violet",
+          "caption": "julia multibrot3"
+        },
+        {
+          "keep": "style_flame_veil_violet_r1/locations/locations__05_vj_d3_r1.08_t0.320_whole_flame_veil_violet",
+          "caption": "julia multibrot3"
+        },
+        {
+          "keep": "style_flame_veil_violet_r1/locations/locations__07_vm_d3_flame_veil_violet",
+          "caption": "julia multibrot3"
+        }
+      ],
+      "what": "Violet-blue flame ribbons swirling round the frame, each a veil of fine silky strands, a few teal, on a navy ground.",
+      "kept": "3 locations, the no-strands formulation",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "flame_veil_chalk",
+      "score": 2,
+      "item": "028",
+      "reference": "chalk-drawing-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_veil_chalk_r1/locations/locations__00_vj_d2_r1.08_t0.131_whole_flame_veil_chalk",
+          "caption": "julia mandelbrot"
+        },
+        {
+          "keep": "style_flame_veil_chalk_r1/locations/locations__04_vj_d2_r1.0_t0.767_whole_flame_veil_chalk",
+          "caption": "julia mandelbrot"
+        },
+        {
+          "keep": "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
+          "caption": "variant: blades only"
+        }
+      ],
+      "what": "Angular translucent shards in royal blue and chalk grey crossing soft grey veils, with crisp pale Julia snowflakes among them.",
+      "kept": "2 locations, the blades-only formulation",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
     }
   ]
 }

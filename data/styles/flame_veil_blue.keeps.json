@@ -1,0 +1,390 @@
+{
+  "schema": 1,
+  "name": "flame_veil_blue",
+  "reference": {
+    "image": "bluebird-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/flame_veil_blue",
+  "keeps": [
+    {
+      "id": "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
+      "picker": "style_flame_veil_blue_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue"
+        }
+      ],
+      "label": "vj_d2_r1.0_t0.196_whole",
+      "image": "style_flame_veil_blue_r1__locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "vj_d2_r1.0_t0.196_whole",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.3605747742216498",
+              "0.3161477247853334"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "3.4"
+          },
+          "maxiter": 800,
+          "note": "degree-2 Julia set, fixed-point multiplier 1.0*e^(2 pi i 0.196), whole; seed 28, draw 25"
+        },
+        "style": "flame_veil_blue",
+        "stack": "flame_veil_blue@e9e33b9f",
+        "colormap": "flame_veil_blue",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue",
+      "picker": "style_flame_veil_blue_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "locations__08_vm_d4_flame_veil_blue"
+        }
+      ],
+      "label": "vm_d4",
+      "image": "style_flame_veil_blue_r1__locations__08_vm_d4_flame_veil_blue.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "vm_d4",
+          "family": {
+            "kind": "julia",
+            "degree": 4,
+            "c": [
+              "0.7937005259840998",
+              "0.7937005259840998"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "2.7"
+          },
+          "maxiter": 800,
+          "note": "degree-4 Misiurewicz dendrite (c^(d-1) = w - 1), whole"
+        },
+        "style": "flame_veil_blue",
+        "stack": "flame_veil_blue@e9e33b9f",
+        "colormap": "flame_veil_blue",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "flame_veil_blue@e9e33b9f": {
+      "name": "flame_veil_blue",
+      "interior": {
+        "palette": 0.12
+      },
+      "tone": {
+        "median": 0.435,
+        "p10": 0.317,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.12
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.0,
+            "fill": 0.22,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.0,
+            "fill": 0.0,
+            "edge": 0.02
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 58.0,
+              "zoom": 1.3,
+              "shift": [
+                0.32,
+                0.12
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.37,
+            "fill": 0.22,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 58.0,
+              "zoom": 1.3,
+              "shift": [
+                0.32,
+                0.12
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.37,
+            "fill": 0.0,
+            "edge": 0.02
+          },
+          "color": {
+            "palette": 0.86
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.0,
+              "zoom": 0.9,
+              "shift": [
+                -0.28,
+                0.2
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.74,
+            "fill": 0.22,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.96
+          },
+          "blend": "screen",
+          "opacity": 0.22
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.0,
+              "zoom": 0.9,
+              "shift": [
+                -0.28,
+                0.2
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.74,
+            "fill": 0.0,
+            "edge": 0.02
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 251.0,
+              "zoom": 1.7,
+              "shift": [
+                0.08,
+                -0.36
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.10999999999999988,
+            "fill": 0.22,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 251.0,
+              "zoom": 1.7,
+              "shift": [
+                0.08,
+                -0.36
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.10999999999999988,
+            "fill": 0.0,
+            "edge": 0.02
+          },
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 313.0,
+              "zoom": 1.15,
+              "shift": [
+                -0.18,
+                -0.22
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.48,
+            "fill": 0.22,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.58
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 313.0,
+              "zoom": 1.15,
+              "shift": [
+                -0.18,
+                -0.22
+              ]
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "phase": 0.48,
+            "fill": 0.0,
+            "edge": 0.02
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0006,
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        }
+      ]
+    }
+  }
+}

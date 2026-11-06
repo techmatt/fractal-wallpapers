@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "name": "corkscrew_smooth",
+  "description": "a double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each ribbon polished with a metallic sheen",
+  "reference": {
+    "image": "corkscrew-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom of a double spiral (exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "corkscrew_smooth",
+  "reuses": [
+    "seahorse_halo's stack: the smooth count through the matched map by rank at 2 cycles, the reference's band order",
+    "glow_filaments' falloff glow on de, painted near-black and multiplied at half opacity: the dark hair that keeps the lace crisp",
+    "a `light` on the smooth count at sixteen rank bands: the ribbons' metallic sheen",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing: the smooth count through corkscrew_smooth by rank at 2 cycles, a dark `de` hair, a `light` on the smooth count at sixteen rank bands (specular 0.8, shininess 40) for the ribbons' metallic sheen, the tone pass",
+    "Fitted: held at all 28 spiral-pool drafts as first authored. The sheen is a band seam light, which the README warns cuts organic looks; the reference's ribbons have hard edges, so it stays, and no_sheen is a picker row.",
+    "Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw."
+  ],
+  "style": {
+    "name": "corkscrew_smooth",
+    "interior": {
+      "rgb": "#050a0a"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 2.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#040a0a"
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 16.0,
+          "rings": 0.8,
+          "slope": 0.1,
+          "azimuth": 135.0,
+          "elevation": 50.0,
+          "ambient": 0.75,
+          "diffuse": 0.45,
+          "specular": 0.8,
+          "shininess": 40.0,
+          "rim": 0.0,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#fffbe8"
+          }
+        }
+      }
+    ],
+    "tone": {
+      "median": 0.46,
+      "p10": 0.134
+    }
+  }
+}

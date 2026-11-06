@@ -78,6 +78,12 @@ def test_a_scout_filters_for_the_structure_a_style_needs(gallery):
     assert keys(max_p_spiral=0.2) == {"01", "03"}
 
 
+def test_a_spiral_scout_draws_only_spirals_for_a_spiral_reference(gallery):
+    seats, passed = style_scout.candidates(["A"], spiral=True, max_p_spiral=0.2)
+    assert [seat["row"]["key"][-2:] for seat in seats] == ["02"]
+    assert passed["spiral"] == 4
+
+
 def test_the_draw_is_seeded_and_takes_every_partition_in_turn(gallery):
     seats, _ = style_scout.candidates(["A", "B"])
     first = [row["name"] for row in style_scout.draw(seats, 3, seed=7)[0]]

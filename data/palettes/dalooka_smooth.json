@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "dalooka_smooth",
+  "kind": "cyclic",
+  "source": "dalooka_smooth, authored as 9 control points as the albedo of the dalooka_smooth reference (dalooka.jpg), in the order its bands run from the far field inwards: white, pale ice blue, steel blue, navy, a dark wine-brown, rust and a bright peach glint held narrow, a peach-white back to white; cyclic, every stop more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [246, 248, 244]],
+    [0.16, [190, 212, 224]],
+    [0.32, [100, 138, 176]],
+    [0.48, [24, 42, 82]],
+    [0.6, [66, 20, 24]],
+    [0.7, [176, 76, 42]],
+    [0.78, [246, 178, 128]],
+    [0.86, [246, 226, 210]],
+    [1.0, [246, 248, 244]]
+  ]
+}

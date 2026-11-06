@@ -118,7 +118,10 @@ before 030 copied `sheet.py` and `draft.sh` from one results folder to the next:
    lace 0.1 to 0.5, and a glow floods white above about 0.11. The galleries are
    lace-heavy (median 0.23, none under 0.03), so `--max-ink 0.10` keeps what a glow can
    draw and `--thinnest --probe-limit 200` the thinnest of a seeded 200. Drop by eye a
-   `spiral: false` seat that still reads as a whirl.
+   `spiral: false` seat that still reads as a whirl. **`--spiral` turns the rule round,
+   only when the reference itself is a spiral** (Matt's ruling, item 031): the draw keeps
+   spiral-flagged seats alone. The galleries hold plenty (`final140_general2000` 201 of
+   2000, most `julia:mandelbrot` and `mandelbrot`).
 
    **The one exception** (Matt's ruling): a style needing a structure the galleries lack,
    measured, may fill its row with hand-placed or atlas points that have it, measured the
@@ -165,6 +168,9 @@ before 030 copied `sheet.py` and `draft.sh` from one results folder to the next:
 9. **Save Matt's keeps** after each round: `fractal-wallpapers style keep <name>
    <picker>.choices.json` writes `<name>.keeps.json` and copies the pictures, with the
    reference, to `fractal-drive-sync/style-keeps/<name>/`; a later round merges in.
+   **One picker for a group of styles** scopes its row ids `<style>/<row>`
+   (`forest_smooth/locations`): `style keep <name>` takes only that style's rows (and any
+   unscoped ones), so it runs once per style on the one choices file.
 10. **Catalogue it**: its `catalog.json` row (score and status as Matt gave them, keeps
     with captions, the card's text; a published mode its `public` name, palette and
     knobs), then `style gallery`. A later score or status change is the same two steps.

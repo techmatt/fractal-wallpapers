@@ -137,5 +137,19 @@ def test_a_kept_key_without_a_render_row_refuses(tmp_path, places):
         run(choices, places)
 
 
+def test_a_group_pickers_keeps_go_to_the_style_each_row_names():
+    choices = {
+        "name": "style_group_r1",
+        "rows": [
+            {"id": "yas/locations", "keys": ["a"]},
+            {"id": "ember_rose/locations", "keys": ["b"]},
+            {"id": "formulations", "keys": ["c"]},
+        ],
+    }
+    rows = style_keeps.rows_of(choices, "yas")["rows"]
+    assert [row["id"] for row in rows] == ["yas/locations", "formulations"]
+    assert len(choices["rows"]) == 3, "the caller's choices are left whole"
+
+
 def test_a_keeps_file_is_not_a_style():
     assert not any(name.endswith(".keeps") for name in styles.names())

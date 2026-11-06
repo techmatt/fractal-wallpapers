@@ -196,7 +196,8 @@ def contact_sheet(args: argparse.Namespace) -> int:
 
 
 def scout_style(args: argparse.Namespace) -> int:
-    """Draw a picker's candidate locations from the published galleries, never a spiral."""
+    """Draw a picker's candidate locations from the published galleries, never a spiral
+    unless `--spiral` asks for only spirals."""
     from collections import Counter
 
     from fractal_wallpapers import style_scout
@@ -216,6 +217,7 @@ def scout_style(args: argparse.Namespace) -> int:
             kinds=args.kind,
             degrees=args.degree,
             modes=args.mode,
+            spiral=args.spiral,
         )
     except (style_scout.ScoutError, tentative.TentativeRefused) as refusal:
         print(refusal)
@@ -241,6 +243,8 @@ def scout_style(args: argparse.Namespace) -> int:
         if scratch.is_dir() and not any(scratch.iterdir()):
             scratch.rmdir()
     style_scout.write(drawn, out)
+    if args.spiral:
+        passed["not spiral"] = passed.pop("spiral")
     skipped = ", ".join(f"{count} {why}" for why, count in passed.items() if count)
     by = Counter(row["name"].rsplit("_", 1)[0] for row in drawn)
     print(f"{len(seats)} seats to draw from ({skipped or 'none'} passed over)")
@@ -494,6 +498,12 @@ def add_commands(subcommands) -> None:
         type=float,
         help="pass over a seat whose spiral probe reads above this, beside the `spiral` flag "
         "every row carries (the flag sits near 0.3)",
+    )
+    scout.add_argument(
+        "--spiral",
+        action="store_true",
+        help="only seats the probe flagged a spiral, never otherwise: for a reference that "
+        "is itself a spiral zoom (README's step 4)",
     )
     scout.add_argument(
         "--partition",

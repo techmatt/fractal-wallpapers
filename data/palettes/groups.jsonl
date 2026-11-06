@@ -207,3 +207,9 @@
 {"schema": 1, "kind": "admitted", "map": "flame_veil_teal", "group": "map:flame_veil_teal", "joined": false, "nearest": "map:Deep Current", "m1": 0.042643}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_violet", "group": "map:flame_veil_violet", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.071906}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_chalk", "group": "map:flame_veil_chalk", "joined": false, "nearest": "map:moon-over-mandelbrot-25", "m1": 0.044014}
+{"schema": 1, "kind": "admitted", "map": "forest_smooth", "group": "map:forest_smooth", "joined": false, "nearest": "map:Harbour Sand", "m1": 0.055373}
+{"schema": 1, "kind": "admitted", "map": "mandelbrot3_smooth", "group": "map:mandelbrot3_smooth", "joined": false, "nearest": "map:Jqmsl", "m1": 0.063683}
+{"schema": 1, "kind": "admitted", "map": "council_smooth", "group": "map:council_smooth", "joined": false, "nearest": "map:Oxblood Procession", "m1": 0.051076}
+{"schema": 1, "kind": "admitted", "map": "crisis_smooth", "group": "map:crisis_smooth", "joined": false, "nearest": "m11", "m1": 0.055862}
+{"schema": 1, "kind": "admitted", "map": "dalooka_smooth", "group": "map:dalooka_smooth", "joined": false, "nearest": "map:Cobalt-Rust Double Flare", "m1": 0.059654}
+{"schema": 1, "kind": "admitted", "map": "corkscrew_smooth", "group": "map:corkscrew_smooth", "joined": false, "nearest": "map:High Cyan, Low Gold", "m1": 0.053485}

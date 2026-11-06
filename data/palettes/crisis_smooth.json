@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "crisis_smooth",
+  "kind": "cyclic",
+  "source": "crisis_smooth, authored as 9 control points as the albedo of the crisis_smooth reference (crisis-25.jpg), in the order its bands run from the far field inwards: orange, peach cream, a warm grey, sky blue, royal blue, indigo, a deep plum-maroon and rust back to the orange; cyclic, every stop more saturated than the reference's pixels, which the tone pass pulls towards grey.",
+  "stops": [
+    [0.0, [226, 112, 64]],
+    [0.13, [240, 200, 160]],
+    [0.25, [150, 138, 124]],
+    [0.38, [120, 192, 236]],
+    [0.5, [22, 100, 210]],
+    [0.63, [40, 28, 128]],
+    [0.76, [52, 6, 22]],
+    [0.88, [166, 64, 38]],
+    [1.0, [226, 112, 64]]
+  ]
+}
