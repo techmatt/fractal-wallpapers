@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "name": "cauliflower_scales",
+  "description": "billowing scales of cauliflower: each escape band a lit scale, tan to blue, covered in a packing of small domed bumps, faint feathered strands over it",
+  "reference": {
+    "image": "corporeal-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "cauliflower_scales",
+  "reuses": [
+    "light at period 1 (lit_petals)",
+    "bubble lattice domed at period 2 (glossy_lobes)",
+    "stripe crests through views (flame_wisp_waves)"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing new to the engine: the smooth count through the tan-to-blue map at two cycles by rank, a light at `period` 1 on it (rings 0.8) so each escape band is one lit scale with its shadowed underside, and the cauliflower: a disc lattice (radius 0.45, spacing 1) bounded 0.001 to 0.03 frames and domed by a light at `period` 2 (glossy_lobes' lesson), so every scale is packed with bumps at every size down to a pixel; faint stripe crests through two views as the feathered strands, the tone pass.",
+    "Fitted: a near-white highlight on the scales' lit faces, since at the map's pale stone every round-one draft read p90 0.55 to 0.61 against 0.68.",
+    "Lessons: item 033 brought three references whose look is a smooth, heavily lit surface rather than thin glows (consequences-25.jpg, crystal-flood-25.jpg, corporeal-25.jpg). **The surface is a light on the frame's own smooth count at one band with no ring** (`bands` 1, `rings` 0, a `slope`): every sample tilts the same amount down the count's gradient, so the field reads as one glossy relief whose shading turns with the level lines, and the lace near the set, where the gradient turns fastest, keeps every finer scale lit; no big shape hides the small ones, because the relief has no shapes of its own. A light cannot read a view, so crossing views ride on the relief as sheets laid before it (lit with it) or after it. **The tone pass is not a free fix for a stack far off the reference's key**: untoned, the first molten fit read median 0.58 and p10 0.31 against 0.44 and 0.12, and the pass darkening that much turned every gold olive and every pale stop salmon; the fix was a darker albedo (rank gamma 1.5, a multiply of the far field towards the map's dark end) and saturated highlights, so the pass moves little. Likewise a light's gain over about 1 clips a red and climbs its green, so a red relief lit at ambient 0.5 + diffuse 0.7 read gold everywhere. Locations are gallery scouts: `--max-ink 0.10` (seed 33) for the two reliefs, which want far field between the lace, and the plain draw for the scales, which cover lace too. Round one is drawn at --draft (a frame of up to six loops took about 10 s at six threads)."
+  ],
+  "style": {
+    "name": "cauliflower_scales",
+    "interior": {
+      "palette": 0.08
+    },
+    "tone": {
+      "median": 0.423,
+      "p10": 0.275
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 2.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.8,
+          "slope": 0.3,
+          "azimuth": 160.0,
+          "elevation": 35.0,
+          "ambient": 0.55,
+          "diffuse": 0.7,
+          "specular": 0.4,
+          "shininess": 10.0,
+          "rim": 0.0,
+          "rim_power": 3.0,
+          "period": 1.0,
+          "highlight": {
+            "rgb": "#f2ede4"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "escaped": true,
+            "radius": 0.45,
+            "spacing": 1.0,
+            "largest": 0.03,
+            "smallest": 0.001,
+            "read": "height"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 160.0,
+          "elevation": 35.0,
+          "ambient": 0.55,
+          "diffuse": 0.7,
+          "specular": 0.2,
+          "shininess": 8.0,
+          "rim": 0.0,
+          "rim_power": 3.0,
+          "period": 2.0,
+          "highlight": {
+            "palette": 0.4
+          }
+        },
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 12.0
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.9,
+            "shift": [
+              -0.125,
+              -0.171
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.42
+        },
+        "blend": "screen",
+        "opacity": 0.15,
+        "power": 12.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 12.0
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 1.3,
+            "shift": [
+              -0.09,
+              0.286
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.42
+        },
+        "blend": "screen",
+        "opacity": 0.15,
+        "power": 12.0
+      }
+    ]
+  }
+}

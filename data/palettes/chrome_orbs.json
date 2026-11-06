@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "chrome_orbs",
+  "kind": "sequential",
+  "source": "a near-black blue-grey through slate and pewter to a pale silver, the albedo of the chrome_orbs style, from crystal-flood-25.jpg: glossy chrome swirls (its red and gold orbs are literal paints of the stack, not the map's)",
+  "stops": [
+    [0.0, [14, 16, 20]],
+    [0.2, [40, 44, 52]],
+    [0.4, [78, 82, 92]],
+    [0.6, [118, 122, 130]],
+    [0.8, [158, 160, 166]],
+    [1.0, [196, 196, 200]]
+  ]
+}

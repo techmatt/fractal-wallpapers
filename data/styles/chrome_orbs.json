@@ -1,0 +1,232 @@
+{
+  "schema": 1,
+  "name": "chrome_orbs",
+  "description": "glossy chrome swirls: a mirror-bright relief of the smooth count in silver and slate with white star lines, crossed by chrome ribbons, red orbs swelling to gold strung along the arms",
+  "reference": {
+    "image": "crystal-flood-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "chrome_orbs",
+  "reuses": [
+    "light (slope relief on the smooth count)",
+    "sheet through view (flame_veil_blue)",
+    "one bubble disc (gilded_orbs)",
+    "radial mask"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing new to the engine: the smooth count through the chrome map at four cycles by rank, a mirror-bright slope relief (slope 2.2, specular 1, shininess 40, rim 0.6, white highlight), two views' level lines as white ribbon edges, the far field multiplied dark, a white `de` hair for the star lines, and the orbs: one bubble disc with no `spacing` (gilded_orbs' lesson: its pullbacks string along the arms), bounded 0.012 to 0.12 frames, a soft red glow, gold under a radial mask round the bottom right corner, an orange bloom added.",
+    "Fitted: untoned the chrome read p10 0.43 against 0.11; the far-field multiply supplies the reference's black gaps. Where a seat's orbits all pass the disc (a parabolic or dense phoenix seat) the orbs flood the frame as clipped orange wedges: those seats were dropped by eye.",
+    "Lessons: item 033 brought three references whose look is a smooth, heavily lit surface rather than thin glows (consequences-25.jpg, crystal-flood-25.jpg, corporeal-25.jpg). **The surface is a light on the frame's own smooth count at one band with no ring** (`bands` 1, `rings` 0, a `slope`): every sample tilts the same amount down the count's gradient, so the field reads as one glossy relief whose shading turns with the level lines, and the lace near the set, where the gradient turns fastest, keeps every finer scale lit; no big shape hides the small ones, because the relief has no shapes of its own. A light cannot read a view, so crossing views ride on the relief as sheets laid before it (lit with it) or after it. **The tone pass is not a free fix for a stack far off the reference's key**: untoned, the first molten fit read median 0.58 and p10 0.31 against 0.44 and 0.12, and the pass darkening that much turned every gold olive and every pale stop salmon; the fix was a darker albedo (rank gamma 1.5, a multiply of the far field towards the map's dark end) and saturated highlights, so the pass moves little. Likewise a light's gain over about 1 clips a red and climbs its green, so a red relief lit at ambient 0.5 + diffuse 0.7 read gold everywhere. Locations are gallery scouts: `--max-ink 0.10` (seed 33) for the two reliefs, which want far field between the lace, and the plain draw for the scales, which cover lace too. Round one is drawn at --draft (a frame of up to six loops took about 10 s at six threads)."
+  ],
+  "style": {
+    "name": "chrome_orbs",
+    "interior": {
+      "palette": 0.05
+    },
+    "tone": {
+      "median": 0.4,
+      "p10": 0.107
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 4.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.0,
+          "slope": 2.2,
+          "azimuth": 135.0,
+          "elevation": 45.0,
+          "ambient": 0.45,
+          "diffuse": 0.5,
+          "specular": 1.0,
+          "shininess": 40.0,
+          "rim": 0.6,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#ffffff"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.8,
+            "shift": [
+              -0.146,
+              -0.2
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 5.0,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "color": {
+          "palette": 1.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 1.4,
+            "shift": [
+              -0.105,
+              0.334
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 5.0,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "color": {
+          "palette": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.8,
+        "power": 3.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "falloff": 0.00025
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "escaped": true,
+            "radius": 0.3,
+            "largest": 0.12,
+            "smallest": 0.012
+          }
+        },
+        "color": {
+          "rgb": "#d41206"
+        },
+        "blend": "normal",
+        "opacity": 0.92,
+        "power": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "escaped": true,
+            "radius": 0.3,
+            "largest": 0.12,
+            "smallest": 0.012
+          }
+        },
+        "color": {
+          "rgb": "#ffc020"
+        },
+        "blend": "normal",
+        "opacity": 1.0,
+        "power": 0.4,
+        "mask": {
+          "channel": {
+            "radial": {
+              "center": [
+                0.85,
+                0.85
+              ]
+            }
+          },
+          "power": 2.5
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "escaped": true,
+            "radius": 0.3,
+            "largest": 0.12,
+            "smallest": 0.012
+          }
+        },
+        "color": {
+          "rgb": "#ff5a18"
+        },
+        "blend": "add",
+        "opacity": 0.35,
+        "power": 3.0
+      }
+    ]
+  }
+}

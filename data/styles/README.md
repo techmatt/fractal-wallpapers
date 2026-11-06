@@ -230,3 +230,10 @@ General lessons; the named style's `notes` hold the detail.
   loops of them fill the frame (`flame_wisp_waves` and its four siblings). Far out the
   crests are near-straight rays; views narrower than the frame read nearer the set, where
   they curl. Like veils they need far field: on lace the set's own hair floods them.
+- A smooth, heavily lit surface is a `light` on the frame's own smooth count at one band
+  with no ring (`rings` 0, a `slope`): one glossy relief whose lace keeps every finer scale
+  lit, so it never hides them; at `period` 1 each band is a lit scale, and a bounded disc
+  lattice domed at `period` 2 over it is a cauliflower texture (`molten_flow`,
+  `chrome_orbs`, `cauliflower_scales`). Fit its key in the albedo, not the tone pass: a
+  pass that darkens a pale stack far casts gold olive, and a light's gain over about 1
+  clips a red into gold (`molten_flow`).

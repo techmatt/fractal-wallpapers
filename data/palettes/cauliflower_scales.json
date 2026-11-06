@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "cauliflower_scales",
+  "kind": "sequential",
+  "source": "a dark umber through tan and a pale stone to cerulean and azure, the albedo of the cauliflower_scales style, from corporeal-25.jpg: billowing scales of lit cauliflower texture, tan on one side and blue on the other",
+  "stops": [
+    [0.0, [62, 46, 32]],
+    [0.2, [140, 112, 80]],
+    [0.4, [180, 168, 150]],
+    [0.6, [120, 150, 172]],
+    [0.8, [58, 120, 176]],
+    [1.0, [36, 92, 160]]
+  ]
+}

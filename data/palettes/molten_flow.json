@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "molten_flow",
+  "kind": "sequential",
+  "source": "a near-black oxblood through crimson, vermilion and orange to a warm gold, the albedo of the molten_flow style, from consequences-25.jpg: lit molten fire flowing in broad folds with flame lace along their edges",
+  "stops": [
+    [0.0, [40, 2, 2]],
+    [0.25, [120, 8, 4]],
+    [0.5, [200, 30, 8]],
+    [0.7, [236, 90, 14]],
+    [0.85, [255, 180, 44]],
+    [1.0, [255, 246, 190]]
+  ]
+}

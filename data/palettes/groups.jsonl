@@ -218,3 +218,6 @@
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_frost", "group": "map:Delft Deep", "joined": true, "nearest": "map:Delft Deep", "m1": 0.027773}
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_spark", "group": "map:flame_wisp_spark", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.053887}
 {"schema": 1, "kind": "admitted", "map": "flame_wisp_waves", "group": "map:flame_wisp_waves", "joined": false, "nearest": "map:flame_veil_teal", "m1": 0.047372}
+{"schema": 1, "kind": "admitted", "map": "molten_flow", "group": "map:molten_flow", "joined": false, "nearest": "map:Ember Terracotta", "m1": 0.045409}
+{"schema": 1, "kind": "admitted", "map": "chrome_orbs", "group": "map:peekaboo-25", "joined": true, "nearest": "map:peekaboo-25", "m1": 0.030606}
+{"schema": 1, "kind": "admitted", "map": "cauliflower_scales", "group": "map:cauliflower_scales", "joined": false, "nearest": "map:to-the-bone-25", "m1": 0.058906}
