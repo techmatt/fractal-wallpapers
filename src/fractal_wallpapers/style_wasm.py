@@ -79,10 +79,9 @@ def colormap_of(name: str) -> dict[str, Any]:
 
 def keep_stacks(style: str) -> dict[str, Any]:
     """A style's keeps' stacks as drawn, by the id each keep's render names."""
-    from fractal_wallpapers import styles
+    from fractal_wallpapers import style_keeps
 
-    path = styles.styles_dir() / f"{style}.keeps.json"
-    return json.loads(path.read_text(encoding="utf-8"))["stacks"]
+    return style_keeps.read_record(style)["stacks"]
 
 
 def published_rows() -> list[dict[str, Any]]:

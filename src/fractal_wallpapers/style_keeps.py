@@ -39,7 +39,10 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import DRIVE_SYNC_NAME, drive_sync, repo_root
+
+#: The folder under `fractal-drive-sync/` the kept pictures go to, one folder a style.
+KEEPS_FOLDER = "style-keeps"
 
 #: The one schema a keeps file carries today.
 SCHEMA = 1
@@ -58,12 +61,26 @@ class KeepError(ValueError):
 
 def keeps_path(name: str) -> Path:
     """The tracked record of one style's keeps."""
-    return repo_root() / "data" / "styles" / f"{name}.keeps.json"
+    from fractal_wallpapers import styles
+
+    return styles.styles_dir() / f"{name}.keeps.json"
+
+
+def read_record(name: str) -> dict[str, Any]:
+    """One style's keeps record, `{keeps, stacks, …}`; empty lists when it has none.
+
+    The one reader of `<name>.keeps.json`: the catalog reads its `keeps`, the
+    WebAssembly bundle its `stacks`.
+    """
+    path = keeps_path(name)
+    if not path.is_file():
+        return {"keeps": [], "stacks": {}}
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def keeps_folder(name: str) -> Path:
     """Where one style's kept pictures go: beside the reference pictures, never git."""
-    return repo_root().parent / "fractal-drive-sync" / "style-keeps" / name
+    return drive_sync() / KEEPS_FOLDER / name
 
 
 def read_json(path: Path, what: str) -> Any:
@@ -249,7 +266,7 @@ def keep(
         "schema": SCHEMA,
         "name": name,
         "reference": document["reference"],
-        "folder": f"fractal-drive-sync/style-keeps/{name}",
+        "folder": f"{DRIVE_SYNC_NAME}/{KEEPS_FOLDER}/{name}",
         **merged,
     }
     with record.open("w", encoding="utf-8", newline="\n") as handle:

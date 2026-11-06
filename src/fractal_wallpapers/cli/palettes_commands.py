@@ -108,7 +108,15 @@ def palettes_carriers(args: argparse.Namespace) -> int:
 
 def palettes_add(args: argparse.Namespace) -> int:
     """Admit one map to the library, with its produced row and its carrier rows."""
-    from fractal_wallpapers.palettes import admit, carriers, produced
+    from fractal_wallpapers.curation import colorize
+    from fractal_wallpapers.palettes import (
+        admit,
+        carriers,
+        dominance,
+        groups,
+        produced,
+        reference_fields,
+    )
 
     try:
         report = admit.run(Path(args.map), replace=args.replace)
@@ -116,6 +124,10 @@ def palettes_add(args: argparse.Namespace) -> int:
         admit.AddError,
         carriers.CarrierError,
         produced.ProducedError,
+        reference_fields.ReferenceFieldError,
+        colorize.ColorizeError,
+        dominance.DominanceError,
+        groups.GroupError,
         FileNotFoundError,
     ) as refusal:
         print(f"[add] refused: {refusal}")

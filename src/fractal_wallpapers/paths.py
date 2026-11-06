@@ -176,6 +176,16 @@ def repo_root() -> Path:
     raise RuntimeError("could not locate the repository root")
 
 
+#: The synced folder beside this checkout that holds what a style round shows and
+#: keeps: reference pictures, kept pictures, the custom-modes page. Never git.
+DRIVE_SYNC_NAME = "fractal-drive-sync"
+
+
+def drive_sync() -> Path:
+    """The `fractal-drive-sync/` folder beside this checkout (it may be absent)."""
+    return repo_root().parent / DRIVE_SYNC_NAME
+
+
 def local_settings_path() -> Path:
     """Where this machine's untracked settings live, whether or not it has any."""
     return repo_root() / LOCAL_SETTINGS_NAME

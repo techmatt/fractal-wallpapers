@@ -266,7 +266,14 @@ def scout_points(args: argparse.Namespace, style_scout) -> int:
             "--thinnest, or --measure to read every point"
         )
         return 1
-    points = style_picker.records_as_written(resolve_input(args.points))
+    try:
+        points = style_picker.records_as_written(resolve_input(args.points))
+    except (OSError, ValueError) as unreadable:
+        print(f"cannot read the points {args.points}: {unreadable}")
+        return 1
+    if not points:
+        print(f"{args.points} holds no location records (JSONL, one object a line)")
+        return 1
     out = resolve_output(args.out)
     scratch = out.parent / f"{out.stem}.probe"
     try:
@@ -302,12 +309,19 @@ def build_picker(args: argparse.Namespace) -> int:
     from fractal_wallpapers.paths import repo_root
 
     plan_path = resolve_input(args.plan)
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    try:
+        plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as unreadable:
+        print(f"cannot read the plan {plan_path}: {unreadable}")
+        return 1
     folder = Path(resolve_output(args.out or f"artifacts/pickers/{plan.get('name', '')}"))
     try:
         done = style_picker.build(plan, folder, repo_root(), resolve=resolve_input)
-    except (style_picker.PickerError, KeyError) as refusal:
+    except style_picker.PickerError as refusal:
         print(refusal)
+        return 1
+    except KeyError as missing:
+        print(f"the plan {plan_path.name} lacks a member: {missing}")
         return 1
     print(
         f"{done['options']} options in {done['rows']} rows: {tracked_name(done['manifest'])}, "

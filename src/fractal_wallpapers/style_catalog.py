@@ -32,7 +32,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.paths import drive_sync
 
 #: The one schema the catalog carries today.
 SCHEMA = 1
@@ -59,7 +59,7 @@ def catalog_path() -> Path:
 
 def gallery_folder() -> Path:
     """Where the page goes: beside the reference pictures, never git."""
-    return repo_root().parent / "fractal-drive-sync" / "custom-modes"
+    return drive_sync() / "custom-modes"
 
 
 def load(path: Path | None = None) -> dict[str, Any]:
@@ -78,10 +78,7 @@ def keeps_of(style: str) -> dict[str, dict[str, Any]]:
     """A style's recorded keeps, by id; empty when it has none."""
     from fractal_wallpapers import style_keeps
 
-    path = style_keeps.keeps_path(style)
-    if not path.is_file():
-        return {}
-    return {entry["id"]: entry for entry in json.loads(path.read_text("utf-8"))["keeps"]}
+    return {entry["id"]: entry for entry in style_keeps.read_record(style)["keeps"]}
 
 
 def check(catalog: dict[str, Any]) -> list[str]:
