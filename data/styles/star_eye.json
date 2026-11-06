@@ -16,6 +16,10 @@
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
+  "notes": [
+    "Added: nothing: a falloff ring, the `lines` channel on both sides for the strands and the pupil's star. Its structure, quasicircle Julia sets, is one the galleries lack: its locations are hand-placed (step 4's exception)",
+    "Lessons: came in one item with teal_filaments; its notes hold them."
+  ],
   "style": {
     "name": "star_eye",
     "interior": {

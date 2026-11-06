@@ -279,6 +279,27 @@ def test_the_whole_command_writes_four_things_and_never_recuts_the_grouping(
     assert (where / groups.RECORD_NAME).read_bytes() == grouping
 
 
+@pytest.mark.parametrize("from_outside", [False, True], ids=["the-library-file", "a-copy"])
+def test_a_draft_map_already_in_the_library_is_admitted_to_the_grouping(
+    library, monkeypatch, from_outside
+) -> None:
+    """A style's map sits at `data/palettes/<name>.json` before it is admitted. Handed
+    over itself it is a first admission and the file is left alone; handed over from a
+    copy it needs `--replace`, and either way it gains its one admission row."""
+    where, outside = library
+    shutil.copyfile(outside / f"{NEW}.json", where / f"{NEW}.json")
+    cut = (where / groups.RECORD_NAME).read_bytes()
+    monkeypatch.setattr(
+        admit, "readings_of", lambda document, fields, recolour_to: _readings_from_rows(NEW)
+    )
+    source = outside / f"{NEW}.json" if from_outside else where / f"{NEW}.json"
+    report = admit.run(source, replace=from_outside, directory=where)
+    assert report["admission"] is not None and report["admission"]["map"] == NEW
+    grouping = (where / groups.RECORD_NAME).read_bytes()
+    assert grouping == cut + groups.text_of([report["admission"]]).encode("utf-8")
+    assert report["map"] == ("unchanged" if from_outside else "already in the library")
+
+
 def test_an_admission_joins_the_nearest_group_within_the_cut_or_starts_its_own() -> None:
     """[`groups.place`] on made-up distances: a group's distance is the mean to its
     members, the nearest within the cut is joined, and none within it starts one."""
@@ -323,9 +344,7 @@ def test_nearest_reads_the_maps_off_the_library_it_is_pointed_at(library) -> Non
 # The real recolour, where the engine and the reference fields are on this box.
 # --------------------------------------------------------------------------- #
 def _fields_on_disk():
-    try:
-        engine.engine_path()
-    except FileNotFoundError:
+    if not engine.is_built():
         return None
     found = {row["class"]: reference_fields.field_path(row) for row in reference_fields.read()}
     return found if all(path.is_file() for path in found.values()) else None

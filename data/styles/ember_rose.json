@@ -17,6 +17,10 @@
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
+  "notes": [
+    "Added: nothing: the `inside` channel cycled into petal rings, softened falloff threads, a bead lattice. Its structure, parabolic flowers, is one the galleries lack: its locations are hand-placed (step 4's exception)",
+    "Lessons: came in one item with teal_filaments; its notes hold them."
+  ],
   "style": {
     "name": "ember_rose",
     "interior": {

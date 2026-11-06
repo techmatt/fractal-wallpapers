@@ -8,12 +8,7 @@ import pytest
 
 from fractal_wallpapers import cli, engine, styles
 
-try:
-    ENGINE = engine.engine_path()
-except FileNotFoundError:
-    ENGINE = None
-
-needs_engine = pytest.mark.skipif(ENGINE is None, reason="the engine is not built")
+needs_engine = pytest.mark.skipif(not engine.is_built(), reason="the engine is not built")
 
 #: A location every style draws something of: a Julia set with a round interior.
 LOCATION = {

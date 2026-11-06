@@ -15,6 +15,10 @@
     "the tone pass with log_density"
   ],
   "adds": [],
+  "notes": [
+    "Added: nothing past `flame_veil_blue`'s `view`: its veils in teal, a radial magenta nebula and veil, a white falloff star masked to the centre. Hand-placed seats, as `flame_veil_blue`",
+    "Lessons: came in one item with flame_veil_blue; its notes hold them."
+  ],
   "style": {
     "name": "flame_veil_teal",
     "interior": {

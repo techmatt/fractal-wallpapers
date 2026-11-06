@@ -98,6 +98,19 @@ def test_a_measured_draw_keeps_the_thin_or_the_thinnest(gallery, monkeypatch, tm
     assert [row["ink"] for row in best] == [0.02, 0.05] and len(read) == 4
 
 
+def test_a_measurement_keeps_every_point_in_order_and_a_floor_keeps_the_dense(
+    monkeypatch, tmp_path
+):
+    readings = {"a": 0.30, "b": 0.02, "c": 0.08}
+    monkeypatch.setattr(style_scout, "ink", lambda location, scratch: readings[location["name"]])
+    points = [{"name": name} for name in ("a", "b", "c")]
+    every, read = style_scout.measure(points, 1, 0.05, False, tmp_path, every=True)
+    assert [row["name"] for row in every] == ["a", "b", "c"] and len(read) == 3
+    assert [row["ink"] for row in every] == [0.30, 0.02, 0.08]
+    dense, _ = style_scout.measure(points, 5, None, False, tmp_path, min_ink=0.05)
+    assert [row["name"] for row in dense] == ["a", "c"]
+
+
 def test_a_drawn_seat_is_a_location_record_naming_its_seat(gallery):
     seats, _ = style_scout.candidates(["A"], partitions=["mandelbrot"])
     (record,) = style_scout.draw(seats, 5, seed=0)[0]
@@ -235,5 +248,11 @@ def test_the_cli_parses_the_new_verbs():
     assert args.what == "scout" and args.kind == ["julia"] and args.max_ink == 0.03
     assert parser.parse_args(["style", "picker", "plan.json"]).what == "picker"
     assert parser.parse_args(["style", "render", "yas", "--location", "l.json", "--draft"]).draft
+    measured = parser.parse_args(
+        ["style", "scout", "--out", "x.jsonl", "--points", "p.jsonl", "--measure"]
+    )
+    assert measured.measure and measured.min_ink is None
+    sheet = parser.parse_args(["style", "sheet", "s.png", "drafts", "--columns", "4"])
+    assert sheet.what == "sheet" and sheet.sources == ["drafts"] and sheet.tile_width == 640
     battery = parser.parse_args(["identity", "t"])
     assert battery.threads == 2 and battery.workers == 3

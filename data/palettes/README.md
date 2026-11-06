@@ -215,9 +215,17 @@ offer**: the map is renderable at once and not in `../palette_choice/pool.json`.
 matched):
 
 ```
-fractal-wallpapers palettes add <map.json>            first admission
-fractal-wallpapers palettes add <map.json> --replace  a re-tune of a map already here
+fractal-wallpapers palettes add data/palettes/<name>.json            first admission
+fractal-wallpapers palettes add data/palettes/<name>.json --replace  a re-tune of it
 ```
+
+A style's draft map already sits at `data/palettes/<name>.json` (renders read a map by
+name), and handing over **that same file** is the first admission: the file is left as it
+is and the tables and groups are written. A copy from elsewhere while the library file
+exists needs `--replace`, and is still a first admission to the groups while no table
+names the map. Never move the library file while a render reads it. A new map that carries `dark_vivid_lime` moves
+`tests/test_curation_ceiling.py`'s pinned carrier-table reading: re-pin it, naming the map
+in its docstring.
 
 It validates the document as `tests/test_colormaps.py` does, writes `<name>.json`, inserts
 an all-zero `palette_family_shares.csv` row (`--replace` keeps the existing one), splices

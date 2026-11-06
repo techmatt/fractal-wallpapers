@@ -10,7 +10,7 @@ pixel — this module only reads the file and writes a spec.
 A style renders with **any** colormap. The suggested one is what the stack was
 fitted against, not a requirement; the website will choose a style and a palette
 independently. `data/styles/README.md` has the file format and the procedure for
-turning a new reference image into a style.
+turning a new reference image into a style; `data/styles/STACK.md` the stack's members.
 """
 
 from __future__ import annotations
@@ -158,10 +158,12 @@ DRAFT_RESOLUTION = (1280, 800)
 DRAFT_SUPERSAMPLE = 2
 
 #: Below this width a picture's tones are a guide, never the check (see
-#: [`DRAFT_RESOLUTION`]): the check reads it unresampled, exactly as the pass measured
-#: it, so it says nothing of how a full-size render reads. `style tones` marks such a
-#: row instead of passing it.
+#: [`DRAFT_RESOLUTION`]): a 640-wide picture is read exactly as the pass measured it,
+#: and any small one says little of how a full-size render reads. `style tones` marks
+#: such a row instead of passing it.
 CHECKED_WIDTH = DRAFT_RESOLUTION[0]
+#: How far above the reference's own share a picture's near-white and near-black may
+#: sit (`TONE_BAND` holds the rest of the band).
 WHITE_ALLOWANCE = 0.05
 BLACK_ALLOWANCE = 0.05
 

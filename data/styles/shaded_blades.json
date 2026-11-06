@@ -80,6 +80,10 @@
       }
     ]
   },
+  "notes": [
+    "Added: the bubble trap's `strip` shape (`shape`, `tilt`), the `across` read and the `smallest` bound. Its default stack is the `lune_blades` formulation (crescent lunes, not strips), Matt's one keep",
+    "Lessons: The tenth style is broad shaded blades in copper, slate and cream on near-black, meeting at small spiky stars, and it went in as **one new shape of the bubble trap and two members**: the strip about a line (`shape`, `tilt`), the `across` read and the `smallest` bound. Everything else is old: a rank palette on the entry step at three cycles gives each blade one flat colour, a light at one band and `rings` 1 on `across` makes it a lit cylinder, an inverted glow on the height darkens its edges, and a falloff hair glow on `de` and a dim rank palette on the smooth count lie in the gaps beneath. Three lessons. **The shape of a trap is the shape of what it draws**: a disc's entries pull back round, so its crescents read as eyes, while a strip pulls back through each critical point as a cross of tapering arms, so a strip's entries are blades and the small ones crowding a critical point are spiky stars, the reference's ornaments, with no layer of their own. **An entry trap needs both bounds**: `largest` alone at 3 frames gives one blade filling the frame, at 0.3 a fan of them; with no lower bound the blades shrink into the set as hatching (striped fans of sub-pixel blades), and `smallest` 0.006 is what leaves the near-black gaps the reference is a fifth made of. **A dark reference's black share is held in the gaps, not by the ground's colour**: the tone pass carries p10 to 0.029 whatever the ground is, so a flat ground in a third of the frame reads black 0.30 against 0.22; a dim rank palette on the smooth count at 0.35 under the blades gives the gaps a gradient and the frame back its share. Its locations are an ordinary gallery scout (`--max-ink 0.12`); 32 of the 40 drafts hold the reference's balance, the misses frames flooded by one cream blade (p90) or by gap (black)."
+  ],
   "style": {
     "name": "shaded_blades",
     "interior": {

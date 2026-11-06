@@ -227,19 +227,23 @@ def draw(
     limit: int | None = None,
     scratch: Path | None = None,
     log=None,
+    min_ink: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[float]]:
     """`n` location records, and every ink reading taken on the way.
 
-    With neither `max_ink` nor `thinnest` nothing is rendered: the first `n` seats in
-    draw order. Otherwise seats are probed in draw order, at most `limit` of them
-    ([`PROBE_TRIES`] per seat asked for by default): with `max_ink` a seat reading more
-    is passed over and the probing stops once `n` are kept; with `thinnest` all `limit`
-    are probed and the `n` thinnest kept, thinnest first.
+    With no ink filter (`max_ink`, `min_ink`) and no `thinnest`, nothing is rendered:
+    the first `n` seats in draw order. Otherwise seats are probed in draw order, at most
+    `limit` of them ([`PROBE_TRIES`] per seat asked for by default): a seat reading
+    above `max_ink` or below `min_ink` is passed over and the probing stops once `n` are
+    kept; with `thinnest` all `limit` are probed and the `n` thinnest kept, thinnest
+    first.
     """
     order = [location_of(seat) for seat in shuffled(seats, seed)]
-    if max_ink is None and not thinnest:
+    if max_ink is None and min_ink is None and not thinnest:
         return order[:n], []
-    return measure(order[: limit or n * PROBE_TRIES], n, max_ink, thinnest, scratch, log)
+    return measure(
+        order[: limit or n * PROBE_TRIES], n, max_ink, thinnest, scratch, log, min_ink=min_ink
+    )
 
 
 def measure(
@@ -249,28 +253,35 @@ def measure(
     thinnest: bool,
     scratch: Path | None,
     log=None,
+    min_ink: float | None = None,
+    every: bool = False,
 ) -> tuple[list[dict[str, Any]], list[float]]:
     """Probe location records in order for ink and keep as [`draw`] says.
 
     Also the door for **hand-placed or atlas points**, which a picker may show only for
-    a style whose README entry names a structure the galleries lack (Matt's ruling on
-    item 011): they are measured exactly as gallery seats are, and carry the reading.
+    a style that needs a structure the galleries lack (Matt's ruling on item 011): they
+    are measured exactly as gallery seats are, and carry the reading. With `every`, each
+    record is probed and kept in its own order with its reading, whatever `n` and the
+    filters say: a measurement, not a draw.
     """
     if scratch is None:
         raise ScoutError("measuring ink needs a scratch folder")
     scratch.mkdir(parents=True, exist_ok=True)
     kept, readings = [], []
     for location in order:
-        if not thinnest and len(kept) >= n:
+        if not (thinnest or every) and len(kept) >= n:
             break
         location = {**location, "name": location.get("name") or f"point_{len(readings):03d}"}
         reading = ink(location, scratch)
         readings.append(reading)
         if log is not None:
             log(f"[scout] {len(readings)}: {location['name']} ink {reading:.4f}")
-        if max_ink is None or reading <= max_ink:
+        inside = (max_ink is None or reading <= max_ink) and (min_ink is None or reading >= min_ink)
+        if every or inside:
             location["ink"] = round(reading, 5)
             kept.append(location)
+    if every:
+        return kept, readings
     if thinnest:
         kept.sort(key=lambda location: location["ink"])
     return kept[:n], readings

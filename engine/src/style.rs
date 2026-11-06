@@ -16,15 +16,21 @@
 //! the named colorings. Nothing here reads a neighbouring sample: the one thing
 //! that looks like it must, a surface normal, is read analytically off the orbit
 //! (`z` and `dz` at the escape), so a band of rows composites to the same bytes
-//! as the whole frame and the explorer can port it by porting this file.
+//! as the whole frame, and `style-wasm/` compiles this file unchanged for a page.
 //!
-//! What the channels are:
+//! What the channels are (`data/styles/STACK.md` has every member):
 //!
 //! ```text
 //! any FieldSpec    smooth, decomposition, de, threads, trap_cross, stripe, … —
-//!                  the field catalog read as channels, each its own reduce()
+//!                  the field catalog read as channels, each its own reduce();
+//!                  through a `view`, the same read off a moved point's own loop
 //! gradient         the unit direction ∇ν points, from w = dz/z: (−Re w, Im w);
-//!                  the light layer's normal is built on it
+//!                  a light on any field channel builds its normal on it
+//! inside           a convergence count, defined only inside the set
+//! radial           how near a sample is to a point of the frame
+//! bubble           a disc or strip trap read at an entry (height, step, angle,
+//!                  crescent, across)
+//! lines            the angle or step where the orbit crosses a circle of its own
 //! ```
 //!
 //! The layer kinds, in the order a stack usually has them:
@@ -35,6 +41,7 @@
 //!           rings, a Blinn–Phong highlight and a rim, on the gradient's normal
 //! glow      a channel as an alpha, a constant or palette colour blended through it
 //! pattern   a checker of escape bands × escape-angle sectors, as an alpha
+//! sheet     a channel cut into steps, each a scooped face under a bright rim
 //! ```
 //!
 //! Every layer may carry a `mask`, a channel read as an extra alpha. Blends are
@@ -147,7 +154,8 @@ fn lifted(rgb: [f64; 3], before: f64, after: f64) -> [f64; 3] {
 const TONE_LIMIT: f64 = 8.0;
 
 /// A channel and the curve its stretched position goes through: a field of the
-/// catalog, the inside channel, the radial channel or a bubble — exactly one.
+/// catalog, the inside channel, the radial channel, a bubble or field lines — exactly
+/// one.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Source {
@@ -1317,7 +1325,7 @@ impl Style {
     }
 
     /// Every bubble loop a layer reads (one per disc and hit), once each, and the
-    /// reads asked of it: height, step, angle, crescent.
+    /// reads asked of it: height, step, angle, crescent, across.
     fn bubbles(&self) -> Vec<(Bubble, [bool; BUBBLE_READS])> {
         let mut traps: Vec<(Bubble, [bool; BUBBLE_READS])> = Vec::new();
         for source in self.layers.iter().flat_map(|layer| layer.sources()) {
@@ -1546,7 +1554,7 @@ pub struct Entry {
 }
 
 impl Entry {
-    /// The four reads, in [`BubbleRead`]'s order; the crescent is `NaN` off the lune
+    /// The five reads, in [`BubbleRead`]'s order; the crescent is `NaN` off the lune
     /// and on a trap without a face.
     pub fn reads(&self, trap: &Bubble) -> [f64; BUBBLE_READS] {
         let across = (self.offset * across_axis(trap).conj()).re / trap.radius;

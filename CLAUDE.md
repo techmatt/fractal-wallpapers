@@ -183,7 +183,9 @@ reproducing it locally is `tests/README.md`'s *Reading and reproducing a CI red*
 `python -m pytest` is the **fast lane** and every item runs it, test written or not.
 `python -m pytest --slow` runs everything; CI runs it, and an item runs it only when its
 prompt names it, comparing the two lanes' collected counts when it does. The
-measurements behind these rules are in `tests/README.md`.
+measurements behind these rules are in `tests/README.md`. `-n 6` (pytest-xdist, in `dev`)
+runs the fast lane inside the box's thread budget, but prints no held-back line: read a
+count off a serial run (`tests/README.md`'s *On a parallel runner*).
 
 - **Any red is a lane to read**; there is no expected failure.
 - **Never repoint a census constant at today's reading.** A census that went red because

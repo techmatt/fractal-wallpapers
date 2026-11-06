@@ -5,8 +5,8 @@
 //! pre-map put in front of that, before anything is iterated: the sample's place in
 //! the frame becomes a `c` some other way, and the orbit, the fields and the
 //! compositor never know. It is a pure function of the sample's position and the
-//! view, so a band of rows draws the same bytes as the whole frame and the explorer
-//! can port it as a function of the pixel.
+//! view, so a band of rows draws the same bytes as the whole frame, and `style-wasm/`
+//! compiles it unchanged for a page.
 //!
 //! The one projection is the **log-polar** (exponential-map) view. Around a
 //! vanishing point at frame position `p₀`, a sample at offset `p` (radius `r`,

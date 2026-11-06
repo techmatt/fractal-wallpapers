@@ -15,6 +15,10 @@
     "the tone pass with log_density"
   ],
   "adds": [],
+  "notes": [
+    "Added: nothing past `view`: the veils on a pinwheel of views, each with a fine period sheet for its strands. Hand-placed seats, as `flame_veil_blue`",
+    "Lessons: came in one item with flame_veil_blue; its notes hold them."
+  ],
   "style": {
     "name": "flame_veil_violet",
     "interior": {

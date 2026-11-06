@@ -1,4 +1,4 @@
-"""`style`: the named layer stacks, and drawing a location in one."""
+"""`style`: the named layer stacks, and the round that makes, keeps and publishes one."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from fractal_wallpapers.paths import tracked_name
 
 
 def style(args: argparse.Namespace) -> int:
-    """List the styles, show one, or render locations in one."""
+    """Dispatch one `style` verb; a style refusal prints as one line."""
     from fractal_wallpapers import styles
 
     try:
@@ -36,6 +36,8 @@ def style(args: argparse.Namespace) -> int:
             return list_knobs(args, styles)
         if args.what == "gallery":
             return build_gallery(args)
+        if args.what == "sheet":
+            return contact_sheet(args)
         if args.what in ("bundle", "wasm-parity", "wasm-speed"):
             return style_wasm_command(args)
         return render_style(args, styles)
@@ -51,11 +53,13 @@ def list_knobs(args: argparse.Namespace, styles) -> int:
     if not knobs:
         print(f"style '{document['name']}' exposes no knobs")
         return 1
+    problems = styles.check_public(document)
     for knob in knobs:
+        if any(key not in knob for key in styles.KNOB_KEYS):
+            continue  # check_public names what it lacks, below
         low, high = knob["range"]
         print(f"{knob['name']:<16} {knob['default']:>8g}  {low:g}..{high:g}  {knob['label']}")
         print(f"{'':<16} {knob['what']}")
-    problems = styles.check_public(document)
     for problem in problems:
         print(f"OUT OF STEP: {problem}")
     return 1 if problems else 0
@@ -63,8 +67,18 @@ def list_knobs(args: argparse.Namespace, styles) -> int:
 
 def style_wasm_command(args: argparse.Namespace) -> int:
     """The WebAssembly module's bundle, and its parity and speed against the engine."""
-    from fractal_wallpapers import style_wasm
+    from fractal_wallpapers import style_catalog, style_wasm
 
+    try:
+        return wasm_verb(args, style_wasm)
+    except style_catalog.CatalogError as refusal:
+        # The catalog out of step with the style files, as `style gallery` prints it.
+        print(refusal)
+        return 1
+
+
+def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
+    """`bundle`, `wasm-parity` or `wasm-speed`, once the catalog has loaded."""
     if args.what == "bundle":
         out = resolve_output(args.out) if args.out else style_wasm.out_dir() / "bundle.json"
         document = style_wasm.write_bundle(out)
@@ -157,6 +171,31 @@ def keep_style(args: argparse.Namespace) -> int:
     return 0
 
 
+def contact_sheet(args: argparse.Namespace) -> int:
+    """Lay finished pictures out as one labelled contact sheet."""
+    from fractal_wallpapers import style_sheet
+
+    out = resolve_output(args.out)
+    try:
+        pictures = style_sheet.pictures_of([resolve_input(source) for source in args.sources])
+        done = style_sheet.contact_sheet(
+            pictures,
+            out,
+            columns=args.columns,
+            width=args.tile_width,
+            crop=tuple(args.crop) if args.crop else None,
+            labels=not args.no_labels,
+        )
+    except style_sheet.SheetError as refusal:
+        print(refusal)
+        return 1
+    print(
+        f"{done['tiles']} tiles, {done['columns']}x{done['rows']}, "
+        f"{done['width']}x{done['height']} into {tracked_name(out)}"
+    )
+    return 0
+
+
 def scout_style(args: argparse.Namespace) -> int:
     """Draw a picker's candidate locations from the published galleries, never a spiral."""
     from collections import Counter
@@ -166,6 +205,9 @@ def scout_style(args: argparse.Namespace) -> int:
 
     if args.points:
         return scout_points(args, style_scout)
+    if args.measure:
+        print("--measure reads a --points file whole; a gallery draw keeps --n")
+        return 1
     named = args.record or [style_scout.default_record()]
     try:
         seats, passed = style_scout.candidates(
@@ -191,6 +233,7 @@ def scout_style(args: argparse.Namespace) -> int:
             limit=args.probe_limit,
             scratch=scratch,
             log=None if args.quiet else print,
+            min_ink=args.min_ink,
         )
     except RuntimeError as refusal:
         print(str(refusal).removeprefix("engine failed: "))
@@ -217,8 +260,11 @@ def scout_points(args: argparse.Namespace, style_scout) -> int:
     """Measure hand-placed or atlas points for a structure the galleries lack."""
     from fractal_wallpapers import style_picker
 
-    if args.max_ink is None and not args.thinnest:
-        print("--points is for a structure the galleries lack: give --max-ink or --thinnest")
+    if args.max_ink is None and args.min_ink is None and not (args.thinnest or args.measure):
+        print(
+            "--points is for a structure the galleries lack: give --max-ink, --min-ink, "
+            "--thinnest, or --measure to read every point"
+        )
         return 1
     points = style_picker.records_as_written(resolve_input(args.points))
     out = resolve_output(args.out)
@@ -231,6 +277,8 @@ def scout_points(args: argparse.Namespace, style_scout) -> int:
             args.thinnest,
             scratch,
             log=None if args.quiet else print,
+            min_ink=args.min_ink,
+            every=args.measure,
         )
     except RuntimeError as refusal:
         print(str(refusal).removeprefix("engine failed: "))
@@ -303,8 +351,9 @@ def check_tones(args: argparse.Namespace, styles) -> int:
     if drafts:
         size = "x".join(map(str, styles.DRAFT_RESOLUTION))
         print(
-            f"{drafts} under {styles.CHECKED_WIDTH} wide: the check reads a picture that small "
-            f"exactly as the tone pass measured it, so its tones are a guide, not the check; "
+            f"{drafts} under {styles.CHECKED_WIDTH} wide: a picture that small reads about as "
+            f"the tone pass measured it whatever the stack, so its tones are a guide, not the "
+            f"check; "
             f"draft at --draft ({size} ss{styles.DRAFT_SUPERSAMPLE}) to check"
         )
     return 1 if failed else 0
@@ -370,13 +419,14 @@ def add_commands(subcommands) -> None:
     """Register this group's commands, in the order they ship in."""
     group = subcommands.add_parser(
         "style",
-        help="the named layer stacks (data/styles/): list, show, or render a location in one",
+        help="the named layer stacks (data/styles/): render, scout, tone-check, pick, keep and "
+        "publish them",
     )
     group.set_defaults(handler=style)
     verbs = group.add_subparsers(dest="what", required=True)
     verbs.add_parser("list", help="every style, its suggested colormap and what it is")
     show = verbs.add_parser("show", help="print one style file whole")
-    show.add_argument("name", help="a style name `style list` prints")
+    show.add_argument("name", help="a style name `style list` prints, or a draft .json")
     tones = verbs.add_parser(
         "tones",
         help="hold rendered pictures' lightness against the style's reference picture",
@@ -433,6 +483,12 @@ def add_commands(subcommands) -> None:
         "dendrites, 0.10 is what a distance glow draws without flooding (README)",
     )
     scout.add_argument(
+        "--min-ink",
+        type=float,
+        help="keep a probed seat only when its ink is at least this: for a look that wants "
+        "the set dense (dark structure on a light ground)",
+    )
+    scout.add_argument(
         "--thinnest",
         action="store_true",
         help="probe a batch (--probe-limit) and keep the --n thinnest, thinnest first: for a "
@@ -441,14 +497,22 @@ def add_commands(subcommands) -> None:
     scout.add_argument(
         "--probe-limit",
         type=int,
-        help="seats a measured draw probes at most (default: ten per seat asked for)",
+        help="seats a measured draw probes at most (default: ten per seat asked for; under "
+        "--points, every point in the file)",
     )
     scout.add_argument(
         "--points",
         metavar="FILE",
         help="measure these hand-placed or atlas location records (JSONL) instead of a "
-        "gallery: only for a style whose README entry names a structure the galleries lack; "
-        "needs --max-ink or --thinnest",
+        "gallery, in the file's order (the gallery filters and --seed do not apply): only for "
+        "a style that needs a structure the galleries lack; needs --max-ink, --min-ink, "
+        "--thinnest or --measure",
+    )
+    scout.add_argument(
+        "--measure",
+        action="store_true",
+        help="with --points: probe every point and write each, in the file's order, with its "
+        "ink, keeping none back (--n and the ink filters do not apply)",
     )
     scout.add_argument("--quiet", action="store_true", help="do not print each probe")
 
@@ -483,7 +547,7 @@ def add_commands(subcommands) -> None:
     knobs = verbs.add_parser(
         "knobs", help="a style's public knobs: default, range, and what each one turns"
     )
-    knobs.add_argument("name", help="a style name `style list` prints")
+    knobs.add_argument("name", help="a style name `style list` prints, or a draft .json")
 
     gallery = verbs.add_parser(
         "gallery",
@@ -528,11 +592,42 @@ def add_commands(subcommands) -> None:
         "--out", help="the pictures and speed.jsonl (default: artifacts/style-wasm/wasm-speed)"
     )
 
+    sheet = verbs.add_parser(
+        "sheet",
+        help="lay finished pictures out as one labelled contact sheet (each tile "
+        "<folder>/<name>), for looking at a round's drafts at once",
+    )
+    sheet.add_argument("out", help="the sheet to write (.png, or .jpg)")
+    sheet.add_argument(
+        "sources",
+        nargs="+",
+        help="folders (their pictures by name), pictures, or .txt manifests of one picture "
+        "path per line; in the order given",
+    )
+    sheet.add_argument(
+        "--columns",
+        type=int,
+        default=8,
+        help="tiles per row (default: 8; a manifest "
+        "render's variants-by-seats grid wants one column per variant)",
+    )
+    sheet.add_argument(
+        "--tile-width", type=int, default=640, help="each tile's width in pixels (default: 640)"
+    )
+    sheet.add_argument(
+        "--crop",
+        nargs=4,
+        type=int,
+        metavar=("X", "Y", "W", "H"),
+        help="a box in each picture's own pixels, taken before scaling (a detail at full size)",
+    )
+    sheet.add_argument("--no-labels", action="store_true", help="tiles without their names")
+
     render = verbs.add_parser(
         "render",
         help="draw a location record, or each row of a manifest, in a style with any colormap",
     )
-    render.add_argument("name", help="a style name `style list` prints")
+    render.add_argument("name", help="a style name `style list` prints, or a draft .json")
     where = render.add_mutually_exclusive_group(required=True)
     where.add_argument(
         "--location",

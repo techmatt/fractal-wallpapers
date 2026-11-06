@@ -9,7 +9,7 @@ fractal-wallpapers palettes reference-fields
 fractal-wallpapers palettes carriers
 fractal-wallpapers palettes produced
 fractal-wallpapers palettes color-mass [--only-new]
-fractal-wallpapers palettes add out/<style>/<name>.json --replace
+fractal-wallpapers palettes add data/palettes/<name>.json [--replace]
 fractal-wallpapers palettes strip --name "Bone Vault" --out artifacts/figures/bone.png
 fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120 [--no-mirror]
 ```

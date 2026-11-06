@@ -76,6 +76,10 @@
       }
     ]
   },
+  "notes": [
+    "Added: `projection` (`log_polar`), `period` on `light` and `sheet`, a location's own `projection`",
+    "Lessons: The third style changed *where* samples look, not how they are coloured, and went in by additions too: a projection in front of the iteration, and a `period` member on the two banding layers. Two lessons. **Under a view without a bottom, every frame-wide statistic is spent on the deep end**: rank and stretch cuts smear, and the distance estimate must be read in samples (the Jacobian), or the whole outer frame is \"far\". **Equipotentials run along the arms, not round the point**: the rings that make the tunnel are the smooth count cut once per self-similar repeat (`ring`), and the cells between the arms are the distance estimate's dark far side; at one cut per escape step the arches crowd into stripes."
+  ],
   "style": {
     "name": "teal_tunnel",
     "projection": {

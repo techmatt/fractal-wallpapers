@@ -258,7 +258,10 @@ checkout's interpreter. Reproducing the lean install is a mask at `sys.meta_path
 
 ## On a parallel runner
 
-`pytest-xdist` is not used. Under it the controller prints neither the deselection nor
-the held-back line (the hooks run in the workers), so the fast lane goes quiet; and
+`pytest-xdist` is in `dev` so a lane can keep to a thread budget: `python -m pytest -n 6`
+ran the fast lane in 54 s against 141 s serial (2026-11-06, the same 5190 passed and one
+skip). The default lane stays serial, because under xdist the controller prints neither
+the deselection nor the held-back line (the hooks run in the workers), so the fast lane
+goes quiet: read a count off a serial run. Keep `--slow` serial as well, since
 `--slow`'s big costs drive an engine already rayon across every core, plus a ~6 GB
 ledger read every worker would pay again.

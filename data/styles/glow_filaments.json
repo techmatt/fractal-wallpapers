@@ -19,6 +19,10 @@
     "member falloff on glow: the distance estimate read as a length rather than a frame-wide stretch, its position exp(-d / falloff) with d the distance to the set in frame widths, so a thread is the same width at every location and resolution: a hot core where the falloff is a hair, a halo and a bloom where it is wider",
     "member log_density on tone: a flame fractal's log-density curve ln(1 + k*Y) / ln(1 + k) on the composite's luminance, hue kept, before the median and p10 are measured, so faint structure beside a bright core is lifted; not in this stack (it pushes the halos towards neon), offered as a variant"
   ],
+  "notes": [
+    "Added: `falloff` on `glow`, `log_density` on `tone`",
+    "Lessons: The fourth style came from a flame fractal, whose look is accumulated density, not a statistic of one orbit: luminous threads, a hot core, a soft halo. The distance estimate is the escape-time stand-in, and it went in as one member (`falloff`) that reads it as a length, so the threads keep their width wherever they are; the halo and bloom are the same layer at wider falloffs, and faint equipotential threads (a `period` sheet on the smooth count) supply the strands crossing the dark. Two lessons. **A distance glow paints whatever is finer than a pixel solid**: lace (seahorse valley, spiral arms, parabolic Julia sets) reads as a lit stencil, not as threads, at any falloff, so the style's locations are the ones whose set is thin — dendrites, Misiurewicz points, higher-degree Julia sets at Misiurewicz `c` (`c^(d−1) = ω − 1`, `ω` a `d`-th root of unity). **Under a tone target, dimming a layer does nothing**: the tone pass lifts it straight back, so a stack whose frame is half void meets the reference's key through the width of its glows and the fog in the void, never through their opacity."
+  ],
   "style": {
     "name": "glow_filaments",
     "interior": {

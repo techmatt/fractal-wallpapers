@@ -236,15 +236,6 @@ def map_text(document: dict, source: Path, directory: Path | None = None) -> tup
     return text, "replaced" if target.is_file() else "written"
 
 
-def place(document: dict, source: Path, directory: Path | None = None) -> tuple[Path, str]:
-    """`(path, what happened)`: the map written into the library unless it is already there."""
-    target = _library_dir(directory) / f"{document['name']}.json"
-    text, verb = map_text(document, source, directory)
-    if text is not None:
-        _write(target, text)
-    return target, verb
-
-
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8", newline="\n")
@@ -497,7 +488,8 @@ def run(
     fields: dict | None = None,
     recolour_to: Path | None = None,
 ) -> dict:
-    """Admit the map at `source`. Refuses before writing anything, or writes all three.
+    """Admit the map at `source`. Refuses before writing anything, or writes all four:
+    the map, its produced row, its carrier rows, and its groups admission row.
 
     `fields` is `{class: dumped field}` and `recolour_to` the recolour tree, both
     the real ones unless a caller — a test — hands its own.
@@ -535,9 +527,12 @@ def run(
     distance = distances(document, directory)
     near = closest(distance)
     # A map new to the library is admitted to the grouping; a re-tune keeps the group
-    # it has, because a map that started one may have been joined since.
+    # it has, because a map that started one may have been joined since. New means no
+    # table names it: a library file alone (a style's draft map, admitted from a copy
+    # under --replace) has never been grouped.
     admission = None
-    if not already and groups.read(directory):
+    tabled = [where_held for where_held in already if where_held != f"{name}.json"]
+    if not tabled and groups.read(directory):
         standing = groups.standing(list(distance), directory=directory)
         admission = groups.place(name, distance, standing)
     path = where / f"{name}.json"
@@ -606,14 +601,13 @@ __all__ = [
     "closest",
     "distances",
     "held",
-    "map_text",
-    "produced_text",
     "lines",
     "load",
+    "map_text",
     "nearest",
-    "place",
     "problems",
     "produced_row",
+    "produced_text",
     "readings_of",
     "run",
     "splice",

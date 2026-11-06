@@ -14,6 +14,10 @@
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
+  "notes": [
+    "Added: nothing: the same stack at 2 cycles; the map is `citadel_gold` because the library's older `citadel` is another map",
+    "Lessons: came in one item with seahorse_halo; its notes hold them."
+  ],
   "style": {
     "name": "citadel",
     "interior": {

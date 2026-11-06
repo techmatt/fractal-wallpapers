@@ -95,6 +95,9 @@
       }
     ]
   },
+  "notes": [
+    "Added: the compositor, `gradient`, `inside`, `light`, `glow`, `pattern`, `mask`"
+  ],
   "style": {
     "name": "floating_on_dreams",
     "interior": {"palette": 1.0},

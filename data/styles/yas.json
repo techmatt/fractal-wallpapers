@@ -85,6 +85,10 @@
       }
     ]
   },
+  "notes": [
+    "Added: `radial`, `sheet`, `invert`, `warp`, `tone` (and `tone` back onto `floating_on_dreams`)",
+    "Lessons: The second style was the test of whether the framework takes a very different picture by additions or needs reshaping. **By additions**: a picture lit from within, its structure inside the depth rather than on a lit surface, needed one channel that is not read off the orbit (`radial`), one layer kind (`sheet`), a member every channel has (`invert`), a member of the palette layer (`warp`) and one frame-wide pass after compositing (`tone`). No existing layer, blend or file changed shape; `floating_on_dreams` gained a `tone` and draws its old stack. The one lesson that is about the framework rather than this picture: **a channel that is not structure, laid through the map whole, turns every map not in lightness order into a target** — a style that colours by position has to bend that position by the fractal (`warp`), or it only holds its look with its own map."
+  ],
   "style": {
     "name": "yas",
     "interior": {
