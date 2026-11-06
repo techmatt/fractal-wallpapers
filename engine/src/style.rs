@@ -128,7 +128,7 @@ pub struct Tone {
 
 /// The log-density curve [`Tone::log_density`] lays on a luminance in `[0, 1]`:
 /// `ln(1 + k·Y) / ln(1 + k)`, which fixes 0 and 1 and lifts everything between.
-pub fn log_density(luminance: f64, k: f64) -> f64 {
+pub(crate) fn log_density(luminance: f64, k: f64) -> f64 {
     (k * luminance.clamp(0.0, 1.0)).ln_1p() / k.ln_1p()
 }
 
@@ -567,11 +567,11 @@ pub enum Side {
 }
 
 /// The longest cycle the field-lines channel looks for inside the set.
-pub const LINES_LONGEST_CYCLE: u32 = 64;
+pub(crate) const LINES_LONGEST_CYCLE: u32 = 64;
 
 /// The field-lines channel's two reads, `[angle, step]`, for one orbit, or `None`
 /// where it has none: see [`Lines`]. `escaped` is the escape loop's verdict.
-pub fn lines(
+pub(crate) fn lines(
     family: &Family,
     pixel: Complex<f64>,
     escaped: bool,
@@ -817,7 +817,7 @@ impl Default for Sheet {
 /// steps smeared across the deep end. A cut in the value's own units is the same
 /// at every octave: at `period` 1 on the smooth count, one step per escape step,
 /// each step an equipotential ring, and the rings tile the self-similar view.
-pub fn periodic(value: f64, period: f64, phase: f64) -> f64 {
+pub(crate) fn periodic(value: f64, period: f64, phase: f64) -> f64 {
     (value / period + phase).rem_euclid(1.0)
 }
 
@@ -849,7 +849,7 @@ impl Sheet {
 /// its core at full and its halo falling off exponentially, the way a flame
 /// fractal's luminous strands look. Two glows on the one channel at a hair's
 /// `width` and a wide one draw the hot core and the bloom round it.
-pub fn falloff(distance: f64, width: f64) -> f64 {
+pub(crate) fn falloff(distance: f64, width: f64) -> f64 {
     (-distance.max(0.0) / width).exp()
 }
 
@@ -1375,7 +1375,7 @@ impl Style {
 }
 
 /// The radial channel of one sample: its distance from `center`, in frame heights.
-pub fn radial(center: [f64; 2], col: u32, row: u32, width: u32, height: u32) -> f64 {
+pub(crate) fn radial(center: [f64; 2], col: u32, row: u32, width: u32, height: u32) -> f64 {
     let (width, height) = (width as f64, height as f64);
     let x = (col as f64 + 0.5 - center[0] * width) / height;
     let y = (row as f64 + 0.5 - center[1] * height) / height;
@@ -1504,7 +1504,7 @@ impl Channels {
 /// own loop rather than a channel of [`iterate::run`]: it needs `dz` at one chosen
 /// step, which no field keeps, and it runs only for the samples the escape loop
 /// already found inside. The recurrence is [`Family::step`]'s, not a copy of it.
-pub fn inside(family: &Family, pixel: Complex<f64>, iterations: u32) -> Option<(f64, [f64; 2])> {
+pub(crate) fn inside(family: &Family, pixel: Complex<f64>, iterations: u32) -> Option<(f64, [f64; 2])> {
     let (mut z, mut z_prev, c) = family.seed(pixel);
     let (mut dz, mut dz_prev) = family.derivative_seed();
     let mut best = (f64::INFINITY, z, dz);
@@ -1643,7 +1643,7 @@ fn pulled_back(derivative: Complex<f64>, direction: Complex<f64>) -> Option<[f64
 /// `maxiter` steps and before it escapes. An entry is a step inside the disc after
 /// one outside it; the seed counts as outside, so `z₁` in the disc is the first.
 /// `width` is the frame's width in the plane, read only by [`Bubble::largest`].
-pub fn bubble(
+pub(crate) fn bubble(
     family: &Family,
     pixel: Complex<f64>,
     maxiter: u32,
@@ -1729,7 +1729,7 @@ pub fn bubble(
 /// direction is `(−Re w, Im w)` normalized, and its length — which runs off to
 /// infinity at the boundary — is deliberately thrown away: the light layer spends
 /// its tilt on the *profile* of the height, not on how steep the count is here.
-pub fn gradient(last: Complex<f64>, derivative: Complex<f64>) -> Option<[f64; 2]> {
+pub(crate) fn gradient(last: Complex<f64>, derivative: Complex<f64>) -> Option<[f64; 2]> {
     let w = derivative / last;
     let (x, y) = (-w.re, w.im);
     let length = x.hypot(y);
@@ -2419,7 +2419,7 @@ pub fn measure(
 /// linear-light samples with the tone curve and the palette's rolloff laid on, as
 /// [`Painted::linear`] holds them for the same samples of the whole frame.
 #[allow(clippy::too_many_arguments)]
-pub fn paint_window(
+pub(crate) fn paint_window(
     view: &Viewport,
     family: &Family,
     maxiter: u32,
@@ -2522,7 +2522,7 @@ pub fn tile(
 }
 
 /// CIE `L*` over 100 of a linear-light colour, clamped to `[0, 1]` first.
-pub fn lightness(rgb: [f64; 3]) -> f64 {
+pub(crate) fn lightness(rgb: [f64; 3]) -> f64 {
     let y = (0.2126 * rgb[0].clamp(0.0, 1.0)
         + 0.7152 * rgb[1].clamp(0.0, 1.0)
         + 0.0722 * rgb[2].clamp(0.0, 1.0))
@@ -2548,7 +2548,7 @@ fn luminance_of(lightness: f64) -> f64 {
 const LSTAR_KNEE: f64 = 6.0 / 29.0;
 
 /// The exponent [`Tone`] spends: `g` with `median^g = target`, within the limit.
-pub fn tone_exponent(median: f64, target: f64) -> f64 {
+pub(crate) fn tone_exponent(median: f64, target: f64) -> f64 {
     if !(median > 0.0 && median < 1.0) {
         return 1.0;
     }
@@ -2562,7 +2562,7 @@ pub fn tone_exponent(median: f64, target: f64) -> f64 {
 /// from `g` through the median and `g` is searched on a log grid within the limit
 /// for the 10th percentile's best fit — a grid rather than a root-finder because
 /// the fit need not cross zero, and the nearest miss is still the right curve.
-pub fn tone_curve(median: f64, p10: f64, tone: Tone) -> (f64, f64) {
+pub(crate) fn tone_curve(median: f64, p10: f64, tone: Tone) -> (f64, f64) {
     let Some(target_low) = tone.p10 else {
         return (0.0, tone_exponent(median, tone.median));
     };
@@ -2771,7 +2771,7 @@ fn mix(a: [f64; 3], b: [f64; 3], t: f64) -> [f64; 3] {
 /// normal's in-plane part is `x` along the gradient and its height `√(1 − x²)`.
 /// The slope tilts the whole surface down the gradient — a surface rising towards
 /// the set faces away from it — and `rings` mixes the two.
-pub fn shade(
+pub(crate) fn shade(
     rgb: [f64; 3],
     height: f64,
     along: [f64; 2],
