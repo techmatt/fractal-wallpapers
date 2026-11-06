@@ -214,8 +214,7 @@ def ink(location: dict[str, Any], scratch: Path) -> float:
         raise RuntimeError(f"probe of {location['name']} unreadable: {unreadable}") from None
     finally:
         picture.unlink(missing_ok=True)
-    linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
-    return float((linear @ np.array([0.2126, 0.7152, 0.0722])).mean())
+    return float(styles.luminance_of(rgb).mean())
 
 
 def draw(

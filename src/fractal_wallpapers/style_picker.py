@@ -71,7 +71,8 @@ def log_row(
 
 
 def records_as_written(path: Path) -> list[dict[str, Any]]:
-    """The location records in a file exactly as written: one JSON object, or JSONL.
+    """The location records in a file exactly as written: one JSON object, a JSON array
+    of them (as `locations.read_one` takes), or JSONL.
 
     What a render log keeps, because a record read for drawing has its cap folded into
     the render and its `name`, `note` and provenance dropped, and a redraw from that
@@ -82,6 +83,8 @@ def records_as_written(path: Path) -> list[dict[str, Any]]:
         whole = json.loads(text)
     except json.JSONDecodeError:
         return [json.loads(line) for line in text.splitlines() if line.strip()]
+    if isinstance(whole, list):
+        return [row for row in whole if isinstance(row, dict)]
     return [whole] if isinstance(whole, dict) else []
 
 

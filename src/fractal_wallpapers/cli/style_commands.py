@@ -9,6 +9,7 @@ import subprocess
 from fractal_wallpapers import engine
 from fractal_wallpapers.cli.common import resolve_input, resolve_output
 from fractal_wallpapers.paths import tracked_name
+from fractal_wallpapers.style_wasm import PARITY_RESOLUTION, PARITY_SUPERSAMPLE
 
 
 def style(args: argparse.Namespace) -> int:
@@ -16,38 +17,34 @@ def style(args: argparse.Namespace) -> int:
     from fractal_wallpapers import styles
 
     try:
-        if args.what == "list":
-            for name in styles.names():
-                document = styles.load(name)
-                print(f"{name:<24} {document['suggested_colormap']:<24} {document['description']}")
-            return 0
-        if args.what == "show":
-            print(json.dumps(styles.load(args.name), indent=2, ensure_ascii=False))
-            return 0
-        if args.what == "tones":
-            return check_tones(args, styles)
-        if args.what == "keep":
-            return keep_style(args)
-        if args.what == "scout":
-            return scout_style(args)
-        if args.what == "picker":
-            return build_picker(args)
-        if args.what == "knobs":
-            return list_knobs(args, styles)
-        if args.what == "gallery":
-            return build_gallery(args)
-        if args.what == "sheet":
-            return contact_sheet(args)
-        if args.what in ("bundle", "wasm-parity", "wasm-speed"):
-            return style_wasm_command(args)
-        return render_style(args, styles)
+        return VERBS[args.what](args)
     except styles.StyleError as refusal:
         print(refusal)
         return 1
 
 
-def list_knobs(args: argparse.Namespace, styles) -> int:
+def list_styles(args: argparse.Namespace) -> int:
+    """Every style, its suggested colormap and what it is."""
+    from fractal_wallpapers import styles
+
+    for name in styles.names():
+        document = styles.load(name)
+        print(f"{name:<24} {document['suggested_colormap']:<24} {document['description']}")
+    return 0
+
+
+def show_style(args: argparse.Namespace) -> int:
+    """One style file, whole."""
+    from fractal_wallpapers import styles
+
+    print(json.dumps(styles.load(args.name), indent=2, ensure_ascii=False))
+    return 0
+
+
+def list_knobs(args: argparse.Namespace) -> int:
     """Print a style's public knobs: name, default, range and what each turns."""
+    from fractal_wallpapers import styles
+
     document = styles.load(args.name)
     knobs = (document.get("public") or {}).get("knobs") or []
     if not knobs:
@@ -162,8 +159,10 @@ def keep_style(args: argparse.Namespace) -> int:
     except RuntimeError as refusal:
         print(str(refusal).removeprefix("engine failed: "))
         return 1
+    saved = done["kept"] - done["copied"] - done["drawn"]
+    already = f", {saved} already saved" if saved else ""
     print(
-        f"{done['kept']} kept ({done['copied']} copied, {done['drawn']} drawn again); "
+        f"{done['kept']} kept ({done['copied']} copied, {done['drawn']} drawn again{already}); "
         f"{done['total']} in {tracked_name(done['record'])}; pictures in {done['folder']}"
     )
     if done["drawn"]:
@@ -204,7 +203,7 @@ def scout_style(args: argparse.Namespace) -> int:
     from fractal_wallpapers.curation import tentative
 
     if args.points:
-        return scout_points(args, style_scout)
+        return scout_points(args)
     if args.measure:
         print("--measure reads a --points file whole; a gallery draw keeps --n")
         return 1
@@ -256,9 +255,9 @@ def scout_style(args: argparse.Namespace) -> int:
     return 0 if drawn else 1
 
 
-def scout_points(args: argparse.Namespace, style_scout) -> int:
+def scout_points(args: argparse.Namespace) -> int:
     """Measure hand-placed or atlas points for a structure the galleries lack."""
-    from fractal_wallpapers import style_picker
+    from fractal_wallpapers import style_picker, style_scout
 
     if args.max_ink is None and args.min_ink is None and not (args.thinnest or args.measure):
         print(
@@ -330,9 +329,11 @@ def build_picker(args: argparse.Namespace) -> int:
     return 0
 
 
-def check_tones(args: argparse.Namespace, styles) -> int:
+def check_tones(args: argparse.Namespace) -> int:
     """Hold each picture's lightness against the style's reference; 1 when any misses."""
     from pathlib import Path
+
+    from fractal_wallpapers import styles
 
     document = styles.load(args.name)
     named = args.reference
@@ -373,12 +374,11 @@ def check_tones(args: argparse.Namespace, styles) -> int:
     return 1 if failed else 0
 
 
-def render_style(args: argparse.Namespace, styles) -> int:
+def render_style(args: argparse.Namespace) -> int:
     """Draw one location record, or every row of a manifest, in a style."""
-    from fractal_wallpapers import locations
+    from fractal_wallpapers import locations, style_picker, styles
 
     document = styles.with_knobs(styles.load(args.name), styles.parse_knobs(args.knob))
-    from fractal_wallpapers import style_picker
 
     try:
         if args.location:
@@ -427,6 +427,24 @@ def render_style(args: argparse.Namespace, styles) -> int:
         )
         style_picker.append_log([drawn], output.parent)
     return 0
+
+
+#: Each `style` verb's handler, by the verb's name.
+VERBS = {
+    "list": list_styles,
+    "show": show_style,
+    "tones": check_tones,
+    "keep": keep_style,
+    "scout": scout_style,
+    "picker": build_picker,
+    "knobs": list_knobs,
+    "gallery": build_gallery,
+    "sheet": contact_sheet,
+    "bundle": style_wasm_command,
+    "wasm-parity": style_wasm_command,
+    "wasm-speed": style_wasm_command,
+    "render": render_style,
+}
 
 
 def add_commands(subcommands) -> None:
@@ -591,10 +609,15 @@ def add_commands(subcommands) -> None:
         nargs=2,
         type=int,
         metavar=("W", "H"),
-        default=[640, 400],
-        help="output size in pixels (default: 640 400)",
+        default=list(PARITY_RESOLUTION),
+        help="output size in pixels (default: {} {})".format(*PARITY_RESOLUTION),
     )
-    parity.add_argument("--supersample", type=int, default=2, help="(default: 2)")
+    parity.add_argument(
+        "--supersample",
+        type=int,
+        default=PARITY_SUPERSAMPLE,
+        help=f"samples per output pixel, per axis (default: {PARITY_SUPERSAMPLE})",
+    )
     parity.add_argument(
         "--out", help="the pictures and parity.jsonl (default: artifacts/style-wasm/wasm-parity)"
     )

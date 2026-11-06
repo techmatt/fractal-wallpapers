@@ -27,6 +27,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from fractal_wallpapers.styles import DRAFT_RESOLUTION, DRAFT_SUPERSAMPLE
+
 #: The bundle's shape. A page reads it and nothing else of this checkout.
 BUNDLE_SCHEMA = 1
 
@@ -37,8 +39,8 @@ PARITY_RESOLUTION = (640, 400)
 PARITY_SUPERSAMPLE = 2
 
 #: The speed reading's frame: the draft size `style render --draft` checks at.
-SPEED_RESOLUTION = (1280, 800)
-SPEED_SUPERSAMPLE = 2
+SPEED_RESOLUTION = DRAFT_RESOLUTION
+SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 
 #: The tile the parity check's tiled draw cuts the picture into.
 PARITY_TILE = (256, 256)

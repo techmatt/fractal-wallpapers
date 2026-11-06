@@ -100,6 +100,17 @@ def reference_path(document: dict[str, Any]) -> Path:
 TONES = ("median", "p10", "p90", "white", "black")
 
 
+def luminance_of(rgb):
+    """Each pixel's linear (Rec. 709) luminance, from sRGB in [0, 1] (an `(…, 3)` array).
+
+    What `tones` takes lightness from and `style_scout.ink` averages.
+    """
+    import numpy as np
+
+    linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    return linear @ np.array([0.2126, 0.7152, 0.0722])
+
+
 def tones(path: Path, width: int = 640) -> dict[str, float]:
     """A picture's lightness distribution: what the tonal check compares.
 
@@ -115,8 +126,7 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
         image = image.convert("RGB")
         image = image.resize((width, max(1, round(image.height * width / image.width))))
         rgb = np.asarray(image, dtype=np.float64) / 255.0
-    linear = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
-    luminance = linear @ np.array([0.2126, 0.7152, 0.0722])
+    luminance = luminance_of(rgb)
     knee = 6 / 29
     f = np.where(luminance > knee**3, np.cbrt(luminance), luminance / (3 * knee**2) + 4 / 29)
     lightness = (116 * f - 16) / 100

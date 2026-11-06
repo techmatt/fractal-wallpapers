@@ -146,6 +146,9 @@ def test_the_render_log_keeps_the_record_as_written_cap_and_all(tmp_path):
     path = tmp_path / "x.json"
     path.write_text(json.dumps(written), encoding="utf-8")
     assert style_picker.records_as_written(path) == [written]
+    listed = tmp_path / "listed.json"
+    listed.write_text(json.dumps([written]), encoding="utf-8")
+    assert style_picker.records_as_written(listed) == [written]
     read = locations.read_one(path, drawing=True)
     folded = style_picker.log_row(tmp_path / "a.png", read, "yas", "yas", [8, 5], 1, {})
     assert folded["location"]["maxiter"] == 5000
@@ -240,7 +243,7 @@ def test_a_key_used_in_two_rows_is_refused(tmp_path):
         style_picker.build(plan, tmp_path / "picker", tmp_path)
 
 
-def test_the_cli_parses_the_new_verbs():
+def test_the_cli_parses_scout_picker_sheet_draft_and_the_identity_battery():
     parser = cli.build_parser()
     args = parser.parse_args(
         ["style", "scout", "--out", "x.jsonl", "--kind", "julia", "--max-ink", "0.03"]

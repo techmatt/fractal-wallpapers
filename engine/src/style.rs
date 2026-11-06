@@ -1577,7 +1577,7 @@ impl Entry {
 
     /// The unit direction the `across` read climbs in the pixel: the trap's across
     /// axis pulled back through `dz`.
-    pub fn across_shape(&self, trap: &Bubble) -> Option<[f64; 2]> {
+    pub fn across_uphill(&self, trap: &Bubble) -> Option<[f64; 2]> {
         pulled_back(self.derivative, across_axis(trap))
     }
 
@@ -1606,11 +1606,9 @@ impl Entry {
     /// The unit direction the crescent read climbs in the pixel, towards the rim:
     /// the plane gradient pulled back through `dz` (`∇ₚ = conj(dz)·∇`, as in
     /// [`gradient`]).
-    pub fn across(&self, trap: &Bubble) -> Option<[f64; 2]> {
+    pub fn crescent_uphill(&self, trap: &Bubble) -> Option<[f64; 2]> {
         let (_, grad) = self.lune(trap)?;
-        let pulled = self.derivative.conj() * grad;
-        let length = pulled.norm();
-        (length.is_finite() && length > 0.0).then(|| [pulled.re / length, pulled.im / length])
+        pulled_back(self.derivative, grad)
     }
 
     /// The unit direction the height climbs: towards the bubble's middle. On a disc
@@ -1914,10 +1912,10 @@ fn gather(
                         unit_lane.push(unit(entry.and_then(|entry| entry.uphill(trap))));
                     }
                     if lights && wanted[BubbleRead::Crescent as usize] {
-                        lune_lane.push(unit(entry.and_then(|entry| entry.across(trap))));
+                        lune_lane.push(unit(entry.and_then(|entry| entry.crescent_uphill(trap))));
                     }
                     if lights && wanted[BubbleRead::Across as usize] {
-                        across_lane.push(unit(entry.and_then(|entry| entry.across_shape(trap))));
+                        across_lane.push(unit(entry.and_then(|entry| entry.across_uphill(trap))));
                     }
                 }
                 for (trap, [angles, steps]) in circles.iter().zip(&mut lines_rows) {
@@ -2917,14 +2915,14 @@ mod tests {
         let middle = across(-0.15, 0.0);
         assert!((middle - 0.5).abs() < 1e-9, "{middle}");
         // Climbs towards the rim: leftwards on the left, through a real dz.
-        let [x, y] = at(-0.15, 0.0).across(&face).unwrap();
+        let [x, y] = at(-0.15, 0.0).crescent_uphill(&face).unwrap();
         assert!(x < -0.99 && y.abs() < 1e-9, "{x} {y}");
         // A conformal turn of dz turns the direction with it (∇ₚ = conj(dz)·∇).
         let turned = Entry {
             derivative: Complex::new(0.0, 2.0),
             ..at(-0.15, 0.0)
         };
-        let [x, y] = turned.across(&face).unwrap();
+        let [x, y] = turned.crescent_uphill(&face).unwrap();
         assert!(x.abs() < 1e-9 && (y.abs() - 1.0).abs() < 1e-9, "{x} {y}");
         // A face needs a shift of length in (0, 1), and a crescent needs a face.
         let style = |bubble: serde_json::Value| {
@@ -3033,7 +3031,7 @@ mod tests {
             };
             let [height, _, _, crescent, _] = entry.reads(&shape);
             let (read, [x, y]) = if (0.1..0.9).contains(&crescent) {
-                (3, entry.across(&shape).unwrap())
+                (3, entry.crescent_uphill(&shape).unwrap())
             } else if (0.1..0.9).contains(&height) {
                 (0, entry.uphill(&shape).unwrap())
             } else {
@@ -3095,7 +3093,7 @@ mod tests {
                 let [x, y] = if read == 0 {
                     entry.uphill(&strip).unwrap()
                 } else {
-                    entry.across_shape(&strip).unwrap()
+                    entry.across_uphill(&strip).unwrap()
                 };
                 let nudge = Complex::new(x * 1e-8, y * 1e-8);
                 let (Some(ahead), Some(behind)) = (

@@ -52,7 +52,7 @@ def test_a_draft_too_small_to_check_is_marked_not_passed(tmp_path, capsys):
     args = cli.build_parser().parse_args(
         ["style", "tones", "yas", str(small), "--reference", str(reference)]
     )
-    assert style_commands.check_tones(args, styles) == 1
+    assert style_commands.check_tones(args) == 1
     out = capsys.readouterr().out
     assert "DRAFT" in out and "1280x800 ss2" in out
 

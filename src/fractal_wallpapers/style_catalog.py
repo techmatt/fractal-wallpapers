@@ -108,8 +108,13 @@ def check(catalog: dict[str, Any]) -> list[str]:
             problems.append(f"{name}: status {row.get('status')} is not one of {STATUSES}")
         if row.get("score") not in range(1, 6):
             problems.append(f"{name}: score {row.get('score')} is not 1 to 5")
+        if not row.get("item"):
+            problems.append(f"{name}: names no item")
         keeps = keeps_of(name)
         for shown in row.get("show", []):
+            if "keep" not in shown or "caption" not in shown:
+                problems.append(f"{name}: a shown keep is {{keep, caption}}, not {shown}")
+                continue
             if shown["keep"] not in keeps:
                 problems.append(f"{name}: shows '{shown['keep']}', not in its keeps")
         public = row.get("public")
