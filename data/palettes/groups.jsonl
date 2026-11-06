@@ -221,3 +221,4 @@
 {"schema": 1, "kind": "admitted", "map": "molten_flow", "group": "map:molten_flow", "joined": false, "nearest": "map:Ember Terracotta", "m1": 0.045409}
 {"schema": 1, "kind": "admitted", "map": "chrome_orbs", "group": "map:peekaboo-25", "joined": true, "nearest": "map:peekaboo-25", "m1": 0.030606}
 {"schema": 1, "kind": "admitted", "map": "cauliflower_scales", "group": "map:cauliflower_scales", "joined": false, "nearest": "map:to-the-bone-25", "m1": 0.058906}
+{"schema": 1, "kind": "admitted", "map": "crescent_lines", "group": "map:crescent_lines", "joined": false, "nearest": "map:Opal & Ink", "m1": 0.056669}

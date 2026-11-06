@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "name": "crescent_lines",
+  "description": "fine hair-like streamlines sweeping the whole frame round a small minibrot whose rim glows orange, on deep blue",
+  "reference": {
+    "image": "crescent-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "suggested_colormap": "crescent_lines",
+  "reuses": [
+    "the named mode stripe's field, the stripe average at density 6, through the map at three cycles as the base palette: every level line of the average a strand running along the field lines, debanded, so it sweeps across the escape bands without a seam",
+    "the palette layer by rank on the smooth count, inverted and overlaid at 0.6: the broad light and dark, the far field toward the map's top",
+    "glow_filaments' falloff glows on de, painted literal orange: a rust bloom (3e-3), an orange halo (3e-4) and a cream hairline (1e-4) along the set",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing new to the engine. Its locations are hand-placed minibrots (step 4's exception): a nucleus by Newton on f^p(0) = 0, framed 30 to 60 of its size estimates wide and set off-centre (item 034's working scripts, nuclei.py and seats.py, in its results folder).",
+    "Lessons: item 034 brought crescent-25.jpg, hair-fine streamlines sweeping the whole frame round a small minibrot, and the prompt named field_lines' `lines` channel for them. **The field-lines channel draws a minibrot's field one band at a time**: its angle is read per crossing step, so every band seam cuts the lines, and on a deep seat the bands nest round the minibrot as rings of fans (the `fans` formulation). `divide` 2 is the external angle less a jump of a multiple of 2^-step at each seam, and a scratch engine change dividing from the frame's least step instead (so the outermost band reads the angle whole at any depth) proved the limit: lines run on across a seam only while the period divides the jump, so a count of lines fine enough to read is seamless only in the outermost few bands and the rest of the frame takes the period's whole range as one flat tone. It was reverted, unshipped. **The stripe average's level lines are the streamlines**: they run along the field lines and are debanded, so through the map at a few cycles they sweep across every band and into the set's filaments, which is what the named mode stripe already draws at one cycle (the round's baseline, the nearest any reading came to the reference). Two limits read off the drafts: at a high density (10 to 24) the average is noise near the set, so crests of it (a high-power glow) light the far field only (the `crests` formulation); and at six cycles on a 1280 draft the strands alias into moire, so three is the default. **The galleries hold no small minibrot**: of final139_general's 129 non-spiral Mandelbrot seats one reads under ink 0.10 (`style scout --partition mandelbrot --max-ink 0.10`, median 0.198); of sixty hand-placed nuclei in the body, thirty-five did, and seats on the needle and near the tip at i read thinner still (a starburst of filaments rather than a dendrite)."
+  ],
+  "style": {
+    "name": "crescent_lines",
+    "interior": {
+      "rgb": "#020208"
+    },
+    "tone": {
+      "median": 0.272,
+      "p10": 0.153
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 6.0
+          }
+        },
+        "palette": {
+          "cycles": 3.0
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "invert": true
+        },
+        "palette": {
+          "cycles": 1.0,
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.2
+        },
+        "blend": "overlay",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.003,
+        "color": {
+          "rgb": "#b0562a"
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#ff9a3c"
+        },
+        "blend": "screen",
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0001,
+        "color": {
+          "rgb": "#ffe2a8"
+        },
+        "blend": "add",
+        "opacity": 0.8
+      }
+    ]
+  }
+}

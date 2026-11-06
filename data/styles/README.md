@@ -230,6 +230,12 @@ General lessons; the named style's `notes` hold the detail.
   loops of them fill the frame (`flame_wisp_waves` and its four siblings). Far out the
   crests are near-straight rays; views narrower than the frame read nearer the set, where
   they curl. Like veils they need far field: on lace the set's own hair floods them.
+- Streamlines over a whole frame are the stripe average's level lines through the map at
+  a few cycles: they run along the field lines and are debanded, so they cross every
+  escape band unbroken, where the `lines` channel's angle is cut at each band seam and
+  draws fans (`crescent_lines`). Three cycles at density 6; at six a draft aliases, and
+  at density 10 and over the average is noise near the set. A small minibrot is a seat
+  the galleries lack: Newton on `f^p(0) = 0` places one (`crescent_lines`' notes).
 - A smooth, heavily lit surface is a `light` on the frame's own smooth count at one band
   with no ring (`rings` 0, a `slope`): one glossy relief whose lace keeps every finer scale
   lit, so it never hides them; at `period` 1 each band is a lit scale, and a bounded disc
