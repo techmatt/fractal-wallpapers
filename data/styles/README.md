@@ -227,5 +227,6 @@ General lessons; the named style's `notes` hold the detail.
 - Smooth-count sheets through views are a few broad arcs, nesting as rings round the set
   however fine the period; a flame's fine strands are the `stripe` average's crests (a
   glow at power 10), which run along the field lines, across the level lines, and seven
-  loops of them fill the frame (`flame_wisp_waves` and its four siblings). Like veils they
-  need far field: on lace the set's own hair floods them.
+  loops of them fill the frame (`flame_wisp_waves` and its four siblings). Far out the
+  crests are near-straight rays; views narrower than the frame read nearer the set, where
+  they curl. Like veils they need far field: on lace the set's own hair floods them.
