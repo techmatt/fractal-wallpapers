@@ -21,7 +21,7 @@
   "style": {
     "name": "gold_arcs",
     "interior": {
-      "rgb": "#6a4220"
+      "rgb": "#4a2a12"
     },
     "tone": {
       "median": 0.547,
@@ -37,7 +37,7 @@
         },
         "palette": {
           "cycles": 1.0,
-          "gamma": 1.8,
+          "gamma": 2.5,
           "phase": 0.0,
           "transfer": {
             "kind": "rank"

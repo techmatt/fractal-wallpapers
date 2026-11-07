@@ -37,7 +37,7 @@
         },
         "palette": {
           "cycles": 1.0,
-          "gamma": 5.0,
+          "gamma": 3.5,
           "phase": 0.0,
           "transfer": {
             "kind": "rank"
@@ -66,7 +66,7 @@
             }
           },
           "invert": true,
-          "power": 0.7
+          "power": 0.4
         }
       },
       {
@@ -81,7 +81,7 @@
           "palette": 0.8
         },
         "blend": "screen",
-        "opacity": 0.9,
+        "opacity": 1.0,
         "power": 10.0,
         "mask": {
           "channel": {
@@ -90,7 +90,7 @@
             }
           },
           "invert": true,
-          "power": 2.5
+          "power": 1.5
         }
       },
       {
