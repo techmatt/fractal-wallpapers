@@ -339,7 +339,8 @@ General lessons; the named style's `notes` hold the detail.
   hole probe, interior white over black, read 0 on every one; phoenix-classic seats hold
   interior but read as whirls): a Julia set at a hyperbolic centre (Newton on
   `f^p(0) = 0`) has round Fatou components at every scale, measured as hand seats. Lace
-  that hugs them is the stripe average's crests at density 2 to 4 masked by the inverted
+  that hugs them is the stripe average's crests at density 2 (a second density on the
+  same loop draws as the first today: `docs/qa-findings.md`) masked by the inverted
   `de` over a dark ground (gamma 2 to 5); a light on `inside` at one band, `rings` 1, domes
   each hole as a glass bead, and `inside` through a palette at cycles 3 is a bullseye
   (`cream_lace`, `copper_mail`, `ember_plume` and `gold_arcs`, one stack in four maps;

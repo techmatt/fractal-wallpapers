@@ -115,7 +115,26 @@ re-reports a line on it. The checker that found most of the style ones is
   saved-state key hashes only statuses); it drops them. `style gallery --out` on another
   drive raised on a relative link; such links are `file://` URLs.
 
+- A knob's write was rounded wherever the file spelled the member as an integer (`1`),
+  natively but not in the module, so a draft's opacity knob was an on/off switch on the
+  CLI and a slider on the page; both now round by the same named members.
+- `style render` read `--location`/`--manifest` through the output resolver (an
+  archived input was refused as if being written) and a missing manifest raised; a
+  draft's malformed knob, a truncated renders sidecar line, a choices file without rows
+  and a picker plan that is not an object each raised. All refuse in one line.
+
 ### Deferred to Matt
+
+- **Two `stripe` densities on one escape loop collapse to the first** (the loop's
+  `Wants` keeps one density; validation never asks). Measured: in `cream_lace` moving
+  the second strand layer's density from 4 to 9 changes no pixel, moving the first
+  changes 7.6%. So the "density 4" strands of `bead_strands`, `copper_mail`,
+  `cream_lace`, `ember_plume` and `gold_arcs` draw at 2, and `flame_wisp_amber`'s 10 at
+  3; the README's "crests at density 2 to 4" lesson was read off pictures drawn this way.
+  Options: one running sum per density in a loop (the right fix: every shipped stack
+  then draws what it says, and those six change), or refuse a second density per loop
+  (refuses the six). Recommend the first, with an identity run and a re-look of the
+  six, none of them published. *(Matt's call: their kept look moves)*
 
 - **The tone sweep reads 28 of 129 kept seats and palette entries outside their
   reference's band at draft size** under today's engine, every one on p90 (the number

@@ -281,6 +281,13 @@ def projected(style: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]:
 #: The members of one public knob (`data/styles/README.md`'s *Public knobs*).
 KNOB_KEYS = ("name", "label", "what", "default", "range", "set")
 
+#: The stack members the engine reads as whole numbers, so a knob's write there is
+#: rounded (half to even); every other member takes the number as it is. The module's
+#: `INTEGER_MEMBERS` is the same list (`tests/test_style_wasm.py` holds them equal).
+#: Rounding by how a file happened to spell a number made `"opacity": 1` an on/off
+#: switch under a knob natively and a slider on the page.
+INTEGER_MEMBERS = ("iterations", "hit", "settle", "sectors", "turns")
+
 
 def targets(stack: Any, pointer: str) -> list[tuple[Any, Any]]:
     """Every `(container, key)` a knob pointer names in a stack.
@@ -311,6 +318,33 @@ def targets(stack: Any, pointer: str) -> list[tuple[Any, Any]]:
     return found
 
 
+def knob_shape(knob: Any) -> str | None:
+    """What is wrong with a knob's shape, or None: a draft's hand-written knob lacking
+    `set` or with a three-number `range` once raised a traceback from `--knob`."""
+    if not isinstance(knob, dict):
+        return f"a knob is an object, not {knob!r}"
+    name = knob.get("name", "?")
+    missing = [key for key in KNOB_KEYS if key not in knob]
+    if missing:
+        return f"knob '{name}' has no {', '.join(missing)}"
+    numbers = (int, float)
+    bounds = knob["range"]
+    if not (
+        isinstance(bounds, list)
+        and len(bounds) == 2
+        and all(isinstance(b, numbers) and not isinstance(b, bool) for b in bounds)
+    ):
+        return f"knob '{name}': range is two numbers, not {bounds!r}"
+    if not isinstance(knob["default"], numbers) or isinstance(knob["default"], bool):
+        return f"knob '{name}': default is a number, not {knob['default']!r}"
+    sets = knob["set"]
+    if not isinstance(sets, list) or not all(
+        isinstance(t, str) or (isinstance(t, dict) and isinstance(t.get("path"), str)) for t in sets
+    ):
+        return f"knob '{name}': set is a list of pointers or {{path, scale, offset}}"
+    return None
+
+
 def knob_writes(knob: dict[str, Any], value: float) -> list[tuple[str, float]]:
     """What a knob at `value` writes: `(pointer, number)` per target, `scale·value + offset`."""
     writes = []
@@ -331,11 +365,11 @@ def check_public(document: dict[str, Any]) -> list[str]:
     knobs = (document.get("public") or {}).get("knobs") or []
     seen = set()
     for knob in knobs:
-        name = knob.get("name", "?")
-        missing = [key for key in KNOB_KEYS if key not in knob]
-        if missing:
-            problems.append(f"knob '{name}' has no {', '.join(missing)}")
+        wrong = knob_shape(knob)
+        if wrong is not None:
+            problems.append(wrong)
             continue
+        name = knob["name"]
         if name in seen:
             problems.append(f"knob '{name}' is named twice")
         seen.add(name)
@@ -366,7 +400,12 @@ def with_knobs(document: dict[str, Any], settings: dict[str, float]) -> dict[str
 
     if not settings:
         return document
-    knobs = {knob["name"]: knob for knob in (document.get("public") or {}).get("knobs") or []}
+    listed = (document.get("public") or {}).get("knobs") or []
+    for knob in listed:
+        wrong = knob_shape(knob)
+        if wrong is not None:
+            raise StyleError(f"style '{document['name']}': {wrong}")
+    knobs = {knob["name"]: knob for knob in listed}
     stack = copy.deepcopy(document["style"])
     for name, value in settings.items():
         knob = knobs.get(name)
@@ -378,7 +417,7 @@ def with_knobs(document: dict[str, Any], settings: dict[str, float]) -> dict[str
             raise StyleError(f"knob '{name}' is {low}..{high}; {value:g} is outside it")
         for pointer, number in knob_writes(knob, value):
             for node, key in targets(stack, pointer):
-                node[key] = int(round(number)) if isinstance(node[key], int) else number
+                node[key] = int(round(number)) if key in INTEGER_MEMBERS else number
     return {**document, "style": stack}
 
 

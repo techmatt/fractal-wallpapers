@@ -150,6 +150,10 @@ def build(plan: dict[str, Any], folder: Path, base: Path, resolve=None) -> dict[
     images: dict[Path, str] = {}
     rows, sidecar, todo = [], [], []
     for row in plan["rows"]:
+        if not isinstance(row, dict) or not all(
+            isinstance(option, dict) for option in row.get("options") or []
+        ):
+            raise PickerError(f"picker {name}: a row and each option are objects, not {row!r}")
         ident = row.get("id") or ""
         if not ident or ident.casefold() in ids:
             raise PickerError(f"picker {name}: row id {ident!r} is empty or repeated")

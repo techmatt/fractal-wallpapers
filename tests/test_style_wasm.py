@@ -62,6 +62,8 @@ def test_the_module_s_integer_members_are_the_ones_the_style_files_write_as_inte
         walk(styles.load(name)["style"])
     assert whole <= named, whole - named
     assert not named & fractional, named & fractional
+    # Both sides round by the same names, never by how a file spelled the number.
+    assert set(styles.INTEGER_MEMBERS) == named
 
 
 def test_the_bundle_command_writes_it(tmp_path):

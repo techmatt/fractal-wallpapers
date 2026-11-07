@@ -107,6 +107,16 @@ def test_a_whole_number_member_stays_whole():
     turned = styles.with_knobs(styles.load("teal_tunnel"), {"turns": 3})
     assert turned["style"]["projection"]["log_polar"]["turns"] == 3
     assert isinstance(turned["style"]["projection"]["log_polar"]["turns"], int)
+    # A member a file happens to spell as `1` is still a number, not an on/off switch.
+    document = styles.load("lit_petals")
+    spelled = json.loads(json.dumps(document))
+    spelled["style"]["layers"][2]["opacity"] = 1
+    spelled["public"]["knobs"] = [
+        {**knob, "default": 1.0, "range": [0.4, 1.0]}
+        for knob in spelled["public"]["knobs"]
+        if knob["name"] == "jewels"
+    ]
+    assert styles.with_knobs(spelled, {"jewels": 0.6})["style"]["layers"][2]["opacity"] == 0.6
 
 
 def test_knob_arguments_parse_and_refuse_a_bad_pair():

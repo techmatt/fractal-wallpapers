@@ -110,7 +110,12 @@ def read_renders(path: Path) -> dict[str, dict[str, Any]]:
     for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not line.strip():
             continue
-        row = json.loads(line)
+        try:
+            row = json.loads(line)
+        except ValueError as unreadable:
+            raise KeepError(f"{path.name} line {number} is not JSON: {unreadable}") from None
+        if not isinstance(row, dict):
+            raise KeepError(f"{path.name} line {number}: a row is an object")
         if "key" not in row or "location" not in row or ("style" in row) == ("mode" in row):
             raise KeepError(f"{path.name} line {number}: a row is key, location, style or mode")
         rows[row["key"]] = row
@@ -261,6 +266,12 @@ def keep(
     # scoped by the name it was drawn under.
     mode = document["name"]
     choices = read_json(choices_path, "choices file")
+    if (
+        not isinstance(choices, dict)
+        or not choices.get("name")
+        or not isinstance(choices.get("rows"), list)
+    ):
+        raise KeepError(f"the choices file {choices_path} names no picker and rows")
     manifest_path = manifest_path or manifest_of(choices)
     manifest = read_json(manifest_path, "picker manifest")
     renders = read_renders(renders_path or manifest_path.parent / "renders.jsonl")

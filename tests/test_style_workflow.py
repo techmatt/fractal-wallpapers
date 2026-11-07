@@ -290,6 +290,16 @@ def test_a_key_or_a_render_that_could_not_be_kept_is_refused_at_build(tmp_path):
         style_picker.build(plan, tmp_path / "picker", tmp_path)
 
 
+def test_a_broken_sidecar_line_or_plan_row_is_refused_not_raised(tmp_path):
+    sidecar = tmp_path / "renders.jsonl"
+    sidecar.write_text('{"key": "a", "loc', encoding="utf-8")
+    with pytest.raises(style_keeps.KeepError, match="not JSON"):
+        style_keeps.read_renders(sidecar)
+    plan = {"name": "style_x_r1", "rows": ["not a row"]}
+    with pytest.raises(style_picker.PickerError, match="objects"):
+        style_picker.build(plan, tmp_path / "picker", tmp_path)
+
+
 def test_a_points_file_with_a_line_that_is_no_record_is_refused(tmp_path):
     points = tmp_path / "points.jsonl"
     points.write_text('{"name": "a"}\n"just a string"\n', encoding="utf-8")

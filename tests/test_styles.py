@@ -146,6 +146,25 @@ def test_an_unreadable_reference_is_refused_not_raised(tmp_path, capsys):
     assert "cannot read the reference" in capsys.readouterr().out
 
 
+def test_a_draft_knob_of_the_wrong_shape_is_refused_not_raised():
+    """A hand-written knob lacking `set`, or with a three-number range, once raised a
+    traceback from `--knob` and `style knobs`."""
+    document = json.loads(json.dumps(styles.load("lit_petals")))
+    knob = document["public"]["knobs"][0]
+    for broken in ({k: v for k, v in knob.items() if k != "set"}, {**knob, "range": [0, 1, 2]}):
+        document["public"]["knobs"][0] = broken
+        with pytest.raises(styles.StyleError):
+            styles.with_knobs(document, {knob["name"]: knob["default"]})
+        assert styles.check_public(document)
+
+
+def test_a_missing_manifest_is_a_refusal(tmp_path):
+    from fractal_wallpapers import locations
+
+    with pytest.raises(locations.LocationError, match="cannot read the manifest"):
+        locations.read(tmp_path / "typo.jsonl")
+
+
 def test_a_manifest_rows_name_is_one_file_name():
     from fractal_wallpapers.cli.style_commands import file_name
 

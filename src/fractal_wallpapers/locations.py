@@ -501,7 +501,11 @@ def read(path: Path, *, drawing: bool = False) -> list[dict]:
     """
     path = Path(path)
     rows = []
-    with path.open(encoding="utf-8") as handle:
+    try:
+        handle = path.open(encoding="utf-8")
+    except OSError as unreadable:
+        raise LocationError(f"cannot read the manifest {path}: {unreadable}") from unreadable
+    with handle:
         for number, line in enumerate(handle, start=1):
             if not line.strip():
                 continue

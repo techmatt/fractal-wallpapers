@@ -52,8 +52,8 @@ def list_knobs(args: argparse.Namespace) -> int:
         return 1
     problems = styles.check_public(document)
     for knob in knobs:
-        if any(key not in knob for key in styles.KNOB_KEYS):
-            continue  # check_public names what it lacks, below
+        if styles.knob_shape(knob) is not None:
+            continue  # check_public names what is wrong with it, below
         low, high = knob["range"]
         print(f"{knob['name']:<16} {knob['default']:>8g}  {low:g}..{high:g}  {knob['label']}")
         print(f"{'':<16} {knob['what']}")
@@ -368,6 +368,9 @@ def build_picker(args: argparse.Namespace) -> int:
     except (OSError, ValueError) as unreadable:
         print(f"cannot read the plan {plan_path}: {unreadable}")
         return 1
+    if not isinstance(plan, dict):
+        print(f"the plan {plan_path.name} is an object (style_picker.py's docstring has it)")
+        return 1
     folder = Path(resolve_output(args.out or f"artifacts/pickers/{plan.get('name', '')}"))
     try:
         done = style_picker.build(plan, folder, repo_root(), resolve=resolve_input)
@@ -453,11 +456,12 @@ def render_style(args: argparse.Namespace) -> int:
     document = styles.with_knobs(document, knobs)  # refuses a bad knob before any render
 
     try:
+        # Inputs: read through the tiers, where an archived record is still readable.
         if args.location:
-            source = resolve_output(args.location)
+            source = resolve_input(args.location)
             rows = [locations.read_one(source, drawing=True)]
         else:
-            source = resolve_output(args.manifest)
+            source = resolve_input(args.manifest)
             rows = locations.read(source, drawing=True)
     except locations.LocationError as refusal:
         print(refusal)
@@ -570,8 +574,8 @@ def add_commands(subcommands) -> None:
     """Register this group's commands, in the order they ship in."""
     group = subcommands.add_parser(
         "style",
-        help="the named layer stacks (data/styles/): render, scout, tone-check, pick, keep and "
-        "publish them",
+        help="the named layer stacks (data/styles/): render, scout, tone-check, pick, keep, "
+        "publish and sweep-check them",
     )
     group.set_defaults(handler=style)
     verbs = group.add_subparsers(dest="what", required=True)
