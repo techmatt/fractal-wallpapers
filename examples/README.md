@@ -28,11 +28,10 @@ The link leaves out `m`, `level` and every shade key but `phase`, so it takes th
 explorer's defaults (`permalink.js`): mode `smooth`, no autolevel curve, and the engine's
 default palette recipe with only the phase moved — which is `engine_spec.recipe(phase=…)`
 exactly. The cap is the engine's depth policy in both places. The render spec is
-`curation.pins.parse` of the link with those defaults and no autolevel; `render` has no
-flag for a palette phase, so it goes to `engine.render_report` as a spec rather than
-through the command line. It was written as `v=3`, and is spelled `v=4` now because that
-is what the explorer rewrites it to on arrival: nothing a smooth-mode view says changed
-between the two, and `render-link` draws both to the same pixels.
+`curation.pins.parse` of the link with those defaults and no autolevel, and `render
+--phase` sets the same knob from the command line. It is spelled `v=4` because that is
+what the explorer rewrites an older link to on arrival: nothing a smooth-mode view says
+differs between the versions, and `render-link` draws them to the same pixels.
 
 ## The three that are seats
 
@@ -45,21 +44,18 @@ fractal-wallpapers render \
   --key <seat> --out artifacts/example.jpg
 ```
 
-**On a clone the second line is enough.** These three seats were cut from
-`20260914T171846Z`, which went with every other saved record on 2026-09-21. All three
-keys are also seats of `final139_general` above, which was **published on 2026-09-29**
-with its `recipes.jsonl` tracked, so a clone with no ledger draws them from the tracked
-file. The first line rebuilds that file out of the candidate ledger, and only the machine
-that holds the ledger can run it. The keys are unchanged; only the stamp that resolves
-them is.
+**On a clone the second line is enough.** All three keys are seats of
+`final139_general` (the stamp above), a published record whose `recipes.jsonl` is
+tracked, so a clone with no ledger draws them from the tracked file. The first line
+rebuilds that file out of the candidate ledger, and only the machine that holds the
+ledger can run it.
 
 Each seat's link in the root README is `curation.explorer_link.query_of` of the seat's
 recipe, with the tone curve its run or `autolevel_backfill.jsonl` recorded: the link the
 embedded stamps carry and the site's gallery row for the seat carries, byte for byte.
 **Never `pins.query_of`**, which is a writer for authoring pins and drops `mirror`, the
-`level` curve and a mode's parameters. The strip carried its spelling until 2026-09-28, and
-`mandelbrot_stripe.jpg`, whose palette has `mirror: true`, opened in the un-mirrored map.
-The site's `builder check` runs a `readmes` check that holds every link in this README to
+`level` curve and a mode's parameters: `mandelbrot_stripe.jpg`'s palette has `mirror:
+true`, and its link would open in the un-mirrored map. The site's `builder check` runs a `readmes` check that holds every link in this README to
 parsing as its own canonical spelling, and each seat's to the contract's link for its
 recipe, reading the `seat` column above.
 
@@ -67,6 +63,5 @@ Replacing one is two steps and neither is optional: redraw and rescale the pictu
 and repoint the `<img>` and its link in the root README. A file added or renamed also moves the
 `ALLOWLIST` entry, which is what makes a fifth picture a decision rather than a copy.
 
-A fourth seat, `julia_smooth.jpg` (`2fd9890d`, julia (mandelbrot), `smooth`, glowdon),
-left the strip on 2026-09-23 on Matt's call. Its pin in `data/curation/pins.txt` stays,
+A picture leaving the strip leaves its pin in `data/curation/pins.txt` where it is,
 because a pin is a seating decision and not a README one.

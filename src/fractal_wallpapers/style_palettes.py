@@ -113,7 +113,8 @@ def values_between(base: dict[str, Any], other: dict[str, Any]) -> dict[str, Any
 
 
 def _drops(count: int, missing: int):
-    """Every way of dropping `missing` of `count` layers, fewest early drops first."""
+    """Every way of dropping `missing` of `count` layers, in index order: the earliest
+    layer first. `values_between` takes the first that aligns."""
     from itertools import combinations
 
     yield from (set(chosen) for chosen in combinations(range(count), missing))
@@ -195,8 +196,18 @@ def add_keeps(
     return added
 
 
-def check_row(row: dict[str, Any], stack: dict[str, Any], keeps: dict[str, Any]) -> list[str]:
-    """Each way a row's palette set disagrees with its stack, keeps and score."""
+def check_row(
+    row: dict[str, Any],
+    stack: dict[str, Any],
+    keeps: dict[str, Any],
+    *,
+    maps: set[str] | None = None,
+) -> list[str]:
+    """Each way a row's palette set disagrees with its stack, keeps and score.
+
+    `maps` is the library's map names (`library_maps`), read here when not given: a
+    caller checking many rows reads them once.
+    """
     from fractal_wallpapers import styles
 
     name = row.get("style", "?")
@@ -206,7 +217,7 @@ def check_row(row: dict[str, Any], stack: dict[str, Any], keeps: dict[str, Any])
         return [f"{name}: names no palettes (a mode is a stack and a palette set)"]
     problems = []
     seen = set()
-    maps = library_maps()
+    maps = maps if maps is not None else library_maps()
     for index, entry in enumerate(palettes):
         colormap = entry.get("colormap")
         if colormap in seen:

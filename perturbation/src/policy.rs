@@ -5,7 +5,7 @@
 //! frame's own escape-count distribution, so a sixth to a third of a busy frame
 //! runs out of iterations and is painted `NaN` — interior — when it was exterior
 //! all along. Nothing on the page looks wrong. The seven frames of
-//! `tests/frames.rs` are the cases, and on five of them twice the cap resolves
+//! `tests/common`'s `DEEP_FRAMES` are the cases, and on five of them twice the cap resolves
 //! the whole picture for about 3% more mean iterations.
 //!
 //! **A width rule was not available.** `anchor 1e-22` is 100% proven interior at
@@ -296,7 +296,7 @@ pub fn settle(spec: &Spec, cols: u32, rows: u32) -> Result<Settled, String> {
 /// rather than its left edge.
 ///
 /// Public so that a harness walking the same cells reads this rule rather than
-/// keeping a second copy of it *(deep_refactor_ckpt138)*: `tests/common`'s
+/// keeping a second copy of it: `tests/common`'s
 /// `walk_cells` is written to match [`probe_rows`], and a spread that agreed
 /// with it today and drifted tomorrow is exactly the failure that would make a
 /// measurement and the shipped probe quietly different pictures.

@@ -34,10 +34,13 @@ def add_commands(subcommands) -> None:
             "The last step of the README's path. Writes, into one folder: judges-check/, "
             "walk-stats/, candidates/, gallery/ and trace/, each a portable bundle "
             "(index.html, page.json and only the pictures it shows, re-encoded small); the "
-            "harvest's summary.json, stats.json and the keep list's keep.jsonl; and an "
-            "index.html linking them. Nothing is rendered or judged again: the first three "
-            "are drawn from the page.json their own commands left, and a page whose command "
-            "was not run is listed with that command. Default artifacts/walkthrough/."
+            "harvest's summary.json, stats.json and the keep list's keep.jsonl; render/, "
+            "the README's two render examples redrawn and timed here; parameters.json; "
+            "help/, the --help text of every command on the path; and an index.html "
+            "linking them. Nothing is judged again. The first three bundles are drawn from "
+            "the page.json their own commands left, and a page whose command was not run is "
+            "listed with that command; gallery/ and trace/ are derived fresh from the "
+            "record. Default artifacts/walkthrough/."
         ),
     )
     parser.add_argument("--out", metavar="DIR", help="the folder (default artifacts/walkthrough)")

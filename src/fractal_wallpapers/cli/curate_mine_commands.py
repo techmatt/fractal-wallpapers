@@ -13,9 +13,6 @@ helpers ([`depth_leg_flags`], [`mine_draw_flags`], [`hunt_draw_flags`],
 `phase-response` is the one that touches neither — it renders a stated panel to
 measure what an axis *does*, holds no pool and merges nothing.
 [`curation/LEGS.md`] is the reference for what each one costs.
-
-Cut out of `curate_commands` on 2026-09-12 with four sibling families; that
-module's docstring carries the reversal and what it cost.
 """
 
 from __future__ import annotations

@@ -11,10 +11,7 @@ an eye.
 [`themed_flags`], [`spiral_cap_value`], [`mode_ceiling_value`] and the key-file
 readers — because `solve run` and `solve record` are the only two commands that
 take them and they must take the SAME ones. `tests/test_nested_verbs.py` holds
-that agreement; a helper copied rather than shared is how the two drifted before.
-
-Cut out of `curate_commands` on 2026-09-12 with four sibling families; that
-module's docstring carries the reversal and what it cost.
+that agreement; a helper copied rather than shared is how the two would drift.
 """
 
 from __future__ import annotations

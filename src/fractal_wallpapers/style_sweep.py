@@ -10,8 +10,9 @@ change. For each style it draws, at a small size:
 
 Every picture is checked where it lands ([`look`], [`FLAGS`]): an engine refusal, a flat
 frame, one washed white or drowned black, a knob whose two ends draw the same picture, a
-palette entry drawn identical to the default, and a render far slower per sample than
-the sweep's median. The pictures are the captures (one folder per style, a contact sheet
+palette entry drawn identical to the default, a render far slower per sample than its
+style's median, and, with `--tones`, a seat or palette entry outside its reference's tone
+band. The pictures are the captures (one folder per style, a contact sheet
 each under `sheets/`), and `sweep.jsonl` holds one row per picture with its numbers and
 flags. Nothing is written outside `--out`.
 

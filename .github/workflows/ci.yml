@@ -6,18 +6,16 @@ on:
   pull_request:
 
 jobs:
-  # The engine first, and the full lane after it. Both orders ran green before
-  # 2026-09-14 and only one of them proved anything: with `--slow` ahead of
-  # `cargo build --release`, every engine-backed test skipped itself — the walk
-  # tests look for a release binary and stand down without one — so a green badge
-  # meant the suite had been collected, not that the renderer worked.
+  # The engine first, and the full lane after it: the walk tests look for a release
+  # binary and skip without one, so with `--slow` ahead of `cargo build --release`
+  # every engine-backed test would stand down and a green badge would mean the suite
+  # had been collected, not that the renderer worked.
   #
   # Three platforms, because the claim is that a person can install and run this on
   # any of them, and the install is the README's: `uv sync` with all three extras.
-  # That makes this job the torch one too. A separate `models` job used to prove
-  # the judges on one OS with pip; it is folded in here, and the lean install it
-  # left behind is still proved — by `tests/test_base_install.py`, in a
-  # subprocess with torch, torchvision and timm refused, on every platform.
+  # That makes this job the torch one too. The lean install is still proved, by
+  # `tests/test_base_install.py`, in a subprocess with torch, torchvision and timm
+  # refused, on every platform.
   check:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -130,9 +128,10 @@ jobs:
       # The full lane. `--slow` is what CI and a pre-checkpoint run give: the
       # default run holds back the renders, the training loops and the store
       # sweeps, which is right for an edit-run loop and wrong for a gate. `-rs`
-      # so a skip is NAMED: zero skips is the normal reading on a machine with a
-      # warm render cache, and a lane that quietly stopped running a file is the
-      # failure this whole arrangement exists to catch. Through the checkout's
-      # `.venv`, which `conftest` insists on wherever one exists.
+      # names every skip: on a runner, tests needing shipped heads, weights or a
+      # store skip by design, so read the names, not the count; a lane that quietly
+      # stopped running a file is the failure this whole arrangement exists to
+      # catch. Through the checkout's `.venv`, which `uv sync` creates and which
+      # `conftest` insists on wherever one exists.
       - name: Test
         run: uv run --no-sync python -m pytest --slow -rs

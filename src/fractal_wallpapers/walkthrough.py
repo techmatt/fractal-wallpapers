@@ -21,7 +21,8 @@ DIR/parameters.json   everything a reader can set on one render (`parameters.py`
 DIR/help/             the `--help` text of every command on the README's path
 ```
 
-**Nothing on the path is rendered or judged again.** A grid page's bundle is drawn
+**Nothing on the path is judged again, and only the render examples are drawn
+again.** A grid page's bundle is drawn
 from the `page.json` its own command left beside it, so each still names the command
 that produced it. A page that was never made is listed as missing with that command,
 rather than made here, because making it is a step of the path with its own cost.

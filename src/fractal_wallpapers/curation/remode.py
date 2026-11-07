@@ -116,7 +116,7 @@ RECORD_NAME = "remode.json"
 #: pool, the same number every leg here takes and a rule about the desktop rather
 #: than a tuning knob. The priority half is [`engine.run`]'s, which spawns
 #: below-normal by construction, so it is not this module's to remember.
-WORKERS = 3
+WORKERS = release.DEFAULT_WORKERS
 
 #: How long the leg may spend **rendering**, in wall seconds. Not the wall clock
 #: of the invocation: reading the ledger and resolving the twins sit outside it —

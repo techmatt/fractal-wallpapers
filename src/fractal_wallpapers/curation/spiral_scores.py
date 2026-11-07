@@ -22,10 +22,8 @@ moves `P(spiral)` by at most **1.3e-4**, mean 1.2e-5, and flips **no verdict at 
 at 0.3, 0.5 or 0.7. So reading the packed store is not an approximation worth a
 caveat, and it is the reason this store exists rather than a re-render leg.
 
-A location the embedding store has *not* reached still needs its picture drawn, and
-[`score_records`] is that path — one neutral render and one encoder pass each, about
-0.05 s a location, measured over 9,401 of them. It is the exception; [`build`] is the
-ordinary case.
+A location the embedding store has *not* reached gets no spiral score until
+`curate embed` reaches it, and reads as unknown until then.
 
 ## Two provenances, and a row carries both
 
@@ -407,69 +405,6 @@ def build(limit: int | None = None, path: Path | None = None, log=print) -> dict
     return report
 
 
-def score_records(records: list[dict], directory=None, path: Path | None = None, log=print) -> dict:
-    """Score locations the embedding store has not reached. **Renders and encodes.**
-
-    The exception path, and the expensive one: about 0.05 s a location against a dot
-    product. `records` carry a family, a viewport and a maxiter, as
-    [`spiral_probe.features`] wants them, each also carrying the location `key` this
-    store rows on.
-
-    Its rows land under the same two provenances as [`build`]'s, so a store filled
-    both ways is still one reading. The picture stamp is recomputed here because
-    there is no embedding row to inherit one from, and it is the encoder-inclusive
-    digest and not the manifest's regime stamp — see the module docstring.
-    """
-    import torch
-
-    from fractal_wallpapers.curation import neutral
-    from fractal_wallpapers.models import embedding, spiral_probe
-
-    started = time.monotonic()
-    path = store_path() if path is None else Path(path)
-    document = spiral_probe.read(spiral_probe.probe_path(spiral_probe.SHIPPED))
-    digest = probe_digest(document)
-
-    stored = stored_keys(path)
-    outstanding = [record for record in records if str(record["key"]) not in stored]
-    log(f"[spiral-scores] {len(outstanding):,} of {len(records):,} record(s) need a render")
-    if not outstanding:
-        return {"asked": len(records), "wrote": 0, "seconds": round(time.monotonic() - started, 2)}
-
-    model = embedding.build()
-    where = "cuda" if torch.cuda.is_available() else "cpu"
-    encoder = embedding.describe(model.to(where), device=where)
-    stamp = neutral.stamp(
-        {"variant": encoder["variant"], "dim": encoder["dim"], "precision": encoder["precision"]}
-    )
-    refuse_a_second_provenance(path, stamp, digest)
-
-    features = spiral_probe.features(
-        outstanding, spiral_probe.SHIPPED, directory=directory, log=log
-    )
-    probability = spiral_probe.score(document, features)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        for record, value in zip(outstanding, probability, strict=True):
-            handle.write(
-                json.dumps(
-                    row_of(record["key"], value, stamp, document["feature_set"], digest),
-                    ensure_ascii=False,
-                )
-                + "\n"
-            )
-    seconds = time.monotonic() - started
-    log(f"[spiral-scores] {len(outstanding):,} rendered and scored in {seconds:.0f}s")
-    return {
-        "asked": len(records),
-        "wrote": len(outstanding),
-        "stamp": stamp,
-        "probe_digest": digest,
-        "seconds_per_location": round(seconds / max(1, len(outstanding)), 4),
-        "seconds": round(seconds, 2),
-    }
-
-
 __all__ = [
     "LEG",
     "SCHEMA",
@@ -483,7 +418,6 @@ __all__ = [
     "read",
     "refuse_a_second_provenance",
     "row_of",
-    "score_records",
     "score_vectors",
     "spirals",
     "store",

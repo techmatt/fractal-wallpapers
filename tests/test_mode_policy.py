@@ -22,9 +22,9 @@ def artifacts_on_disk(tmp_path, monkeypatch):
     """A hot root these fixtures can plant a picture in that is not the real one.
 
     [`solve.pool`] asks whether a row's picture is **on disk**, so `_ledger_row`
-    has to plant one — and without this it planted `mp_keep.jpg` and
-    `mp_drop.jpg` into the checkout's own `artifacts/`, where they outlived the
-    run. The same fixture `test_solve` uses, for the same reason.
+    has to plant one — and without this it would plant its pictures into the
+    checkout's own `artifacts/`, where they outlive the run. The same fixture
+    `test_pool` uses, for the same reason.
     """
     root = tmp_path / "artifacts"
     root.mkdir(parents=True, exist_ok=True)

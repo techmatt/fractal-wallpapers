@@ -21,8 +21,8 @@
 //! the tests at the foot of this file hold the two to each other.
 //!
 //! **The constants are this file's and the page never restates them.** They were chosen
-//! by pilot (`explorer_param_derive_ckpt128`), against one view Matt judged by eye and a
-//! spread of seats and failures around it; the report beside that prompt has the numbers.
+//! by pilot, against one view Matt judged by eye and a spread of seats and failures
+//! around it.
 //!
 //! **Two copies of this file exist, on purpose and for now.** This is the engine's; the
 //! other is `explorer/engine-wasm/src/derive.rs` in the `fractal-website` checkout, which

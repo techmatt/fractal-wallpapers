@@ -202,11 +202,6 @@ PRICE_AFTER = 3
 #: `pc20m`.
 EMA_ALPHA = 0.1
 
-#: Where a partition's price is read on its own measurements: **the dearest of
-#: them**. The budget question is *can this one finish*, and a mean answers a
-#: different question — half of a partition's candidates cost more than its mean.
-PRICE_AT = "max"
-
 
 class HuntRefused(RuntimeError):
     """A hunt cannot be planned, or the record it would look its frames up in cannot."""
@@ -1224,7 +1219,12 @@ class Price:
         self.ema[cell] = seconds if held is None else (1.0 - EMA_ALPHA) * held + EMA_ALPHA * seconds
 
     def of(self, partition: str) -> float:
-        """What to reserve for one more candidate of this partition."""
+        """What to reserve for one more candidate of this partition.
+
+        Read at **the dearest** of its own measurements. The budget question is *can
+        this one finish*, and a mean answers a different question — half of a
+        partition's candidates cost more than its mean.
+        """
         measured = self.seen.get(str(partition)) or []
         if len(measured) < self.after:
             everything = [value for values in self.seen.values() for value in values]

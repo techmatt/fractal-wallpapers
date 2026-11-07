@@ -603,6 +603,9 @@ def add_commands(subcommands) -> None:
     """Register this group's commands, in the order they ship in."""
     from fractal_wallpapers.curation import run as curation_run
     from fractal_wallpapers.discovery.walk import Limits as WalkLimits
+    from fractal_wallpapers.supply import allocation
+    from fractal_wallpapers.supply import census as census_module
+    from fractal_wallpapers.supply import refill as refill_module
     from fractal_wallpapers.supply.partitions import ALL_PARTITIONS
 
     production = subcommands.add_parser(
@@ -824,27 +827,35 @@ def add_commands(subcommands) -> None:
     economics.add_argument(
         "--floor",
         type=float,
-        default=0.05,
-        help="the share of the clock every partition floors at (default: 0.05)",
+        default=allocation.FLOOR_FRACTION,
+        help=f"the share of the clock every partition floors at "
+        f"(default: {allocation.FLOOR_FRACTION})",
     )
     economics.add_argument(
         "--discount",
         type=float,
-        help="what an unlabelled machine-scored find is worth against the deficit "
-        "(default: 0.2); 0 reproduces the labels-only deficit exactly",
+        help=f"what an unlabelled machine-scored find is worth against the deficit "
+        f"(default: {census_module.MACHINE_STOCK_DISCOUNT}); 0 reproduces the labels-only "
+        f"deficit exactly",
     )
     economics.add_argument("--prices", help="a cost-to-find seed table other than the shipped one")
     economics.add_argument(
-        "--low-water", type=int, default=8, help="a partition below this many nodes is starved"
+        "--low-water",
+        type=int,
+        default=refill_module.LOW_WATER,
+        help="a partition below this many nodes is starved",
     )
     economics.add_argument(
-        "--cooldown", type=int, default=10, help="batches a partition waits between refills"
+        "--cooldown",
+        type=int,
+        default=refill_module.COOLDOWN,
+        help="batches a partition waits between refills",
     )
     economics.add_argument(
         "--refill-share",
         type=float,
-        default=0.25,
-        help="share of the loop's clock refills may spend (default: 0.25)",
+        default=refill_module.SHARE,
+        help=f"share of the loop's clock refills may spend (default: {refill_module.SHARE})",
     )
     economics.add_argument(
         "--lineage-cap",
@@ -1101,10 +1112,13 @@ def add_commands(subcommands) -> None:
     standing.add_argument(
         "--discount",
         type=float,
-        help="what an unlabelled machine-scored find is worth against the deficit "
-        "(default: 0.2); 0 reproduces the labels-only deficit exactly",
+        help=f"what an unlabelled machine-scored find is worth against the deficit "
+        f"(default: {census_module.MACHINE_STOCK_DISCOUNT}); 0 reproduces the labels-only "
+        f"deficit exactly",
     )
-    standing.add_argument("--floor", type=float, default=0.05, help="the per-partition floor")
+    standing.add_argument(
+        "--floor", type=float, default=allocation.FLOOR_FRACTION, help="the per-partition floor"
+    )
     standing.add_argument("--prices", help="a cost-to-find seed table other than the shipped one")
     standing.set_defaults(handler=census)
 

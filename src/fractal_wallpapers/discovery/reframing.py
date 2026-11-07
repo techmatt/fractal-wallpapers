@@ -219,7 +219,6 @@ yet.
 from __future__ import annotations
 
 import json
-import math
 import random
 import time
 from dataclasses import dataclass, field, replace
@@ -2463,25 +2462,6 @@ def read(path: Path) -> list[dict]:
     ]
 
 
-def frame_multiple(row: dict) -> float | None:
-    """How many atom sizes wide the chosen frame is — the audit's `f`.
-
-    Read off the row's own atom and viewport rather than off the rung it names, so
-    a row whose frame was re-read from the engine still reports the frame that was
-    drawn.
-    """
-    atom = (row.get("reframing") or {}).get("atom") or {}
-    scale = atom.get("window_scale")
-    width = (row.get("viewport") or {}).get("width")
-    if not scale or width is None:
-        return None
-    try:
-        value = float(width) / float(scale)
-    except (TypeError, ValueError, ZeroDivisionError):
-        return None
-    return value if math.isfinite(value) else None
-
-
 __all__ = [
     "BARREN",
     "CENTERED",
@@ -2526,7 +2506,6 @@ __all__ = [
     "fate_of",
     "fire",
     "first_row",
-    "frame_multiple",
     "frame_of",
     "is_a_leg",
     "is_head_q4",

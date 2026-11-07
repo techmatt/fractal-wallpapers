@@ -1,7 +1,8 @@
 """Which engine build drew a picture, asked as a digest of what it draws.
 
-Every pixel here is made by one Rust binary, and until now nothing in the
-identity chain said *which* binary. [`fractal_wallpapers.discovery.identity`]
+Every pixel here is made by Rust, and this module is what in the identity chain
+says *which* build of the `fractal-engine` binary drew one.
+[`fractal_wallpapers.discovery.identity`]
 pins four settings — the colormap, that the map is cyclic, the node frame, and
 the iteration cap policy — and all four can hold while the engine underneath
 them is a different program. A cached view is a picture some build drew on some
@@ -73,8 +74,8 @@ cannot carry this: putting the fingerprint in the name would rename every view
 on every engine change and orphan the `score_view` each ledger row records. The
 stamp goes *beside* the picture instead, in one JSONL per view directory —
 [`Stamps`] — and a view the manifest says nothing about is [`UNKNOWN`], which is
-not the current build and is therefore stale. That is the honest reading: every
-view drawn before this module existed was drawn by a build nobody wrote down.
+not the current build and is therefore stale. That is the honest reading: an
+unstamped view was drawn by a build nobody wrote down.
 """
 
 from __future__ import annotations
@@ -332,8 +333,7 @@ def _digest(binary: str, count: int) -> str:
 
     A **count** rather than a probe tuple, so the identity digest is a prefix of
     the coverage one by construction: the two cannot come to disagree about what
-    probe 3 is, and the material behind [`current`] is byte for byte the material
-    it was before [`TRAP_PROBES`] existed.
+    probe 3 is, and the material behind [`current`] never reads [`TRAP_PROBES`].
     """
     marks = [[index, _mark(binary, index)] for index in range(int(count))]
     material = json.dumps(marks, sort_keys=True, ensure_ascii=False)

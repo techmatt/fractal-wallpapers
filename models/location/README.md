@@ -50,7 +50,7 @@ and priced.
 
 `restatement.json` and `adoption.json` are that decision, and they are the two
 records of the 2026-08-20 flip. **What serves now is `seed0_all_regimes`**, sha
-`f8f80511…`, under `weights-v2`.
+`f8f80511…`, under the tag the location row of `models/weights.json` names.
 
 `restatement.json` is a measurement and it could only be taken once, before the
 artifact moved: every acting cut on this head's scale, restated as the candidate
@@ -88,7 +88,6 @@ artifact `fractal-wallpapers fetch-weights` downloads and hash-checks. A flip
 checkpoint: a `torch` archive carries its own file name inside itself, and
 `torch.save` is not byte-reproducible run to run, so a re-cast is a file no bar
 has read. The corollary is that the retired artifact's hash cannot be rebuilt
-from `seed0/head_best.pt` — its bytes were the asset published under `weights-v1`,
-a release deleted on 2026-09-30 because nothing fetched it, so the hash in
-`adoption.json` now names bytes no release holds. Its manifest row lives in git
+from `seed0/head_best.pt`, and its release was deleted because nothing fetched it,
+so the hash in `adoption.json` names bytes no release holds. Its manifest row lives in git
 history.

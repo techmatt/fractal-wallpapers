@@ -451,8 +451,8 @@ def spec_of(
     ramp and run the near-set end back to the far field's colour.
 
     `knobs` are turned after the record's projection is laid over the stack, so a knob
-    asked for wins over a record that carries the same member (`teal_tunnel`'s keeps
-    carry `turns`, which once silenced its `turns` knob).
+    asked for wins over a record that carries the same member (a log-polar record's
+    `turns` under a `turns` knob).
     """
     from fractal_wallpapers import locations
 

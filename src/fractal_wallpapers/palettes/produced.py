@@ -45,7 +45,7 @@ this module's docstring and `data/palettes/README.md` carrying the method that a
 CSV has nowhere to put. About fifty kilobytes over the library, well under
 `test_history_purity`'s per-file cap. The ledger it is read from is a regenerable
 artifact and is not tracked; `fractal-wallpapers palettes produced` rebuilds the
-table in about a minute.
+table in one streamed pass (`data/palettes/README.md` has its time).
 """
 
 from __future__ import annotations
@@ -86,11 +86,10 @@ def record_path(directory: Path | None = None) -> Path:
 
 
 def library_names(directory: Path | None = None) -> list[str]:
-    """Every map in the library, by name, sorted the way the directory lists them."""
-    from fractal_wallpapers.paths import colormap_dir
+    """Every map in the library, by name, sorted: [`groups.library`], the one spelling."""
+    from fractal_wallpapers.palettes import groups
 
-    where = Path(directory) if directory is not None else colormap_dir()
-    return sorted(path.stem for path in where.glob("*.json"))
+    return groups.library(directory)
 
 
 def columns() -> list[str]:

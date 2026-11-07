@@ -7,9 +7,6 @@ the levelling they were drawn under and re-derives a curve for the ones that
 cannot. The four are one module because each reads
 [`curation/colors.py`]'s census and the first three are the same numbers asked
 three ways.
-
-Cut out of `curate_commands` on 2026-09-12 with four sibling families; that
-module's docstring carries the reversal and what it cost.
 """
 
 from __future__ import annotations

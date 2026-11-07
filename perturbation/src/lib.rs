@@ -53,8 +53,8 @@ pub const SCHEMA: u32 = 1;
 /// **On**, and the README carries the evidence and the caveat. Across both
 /// ladders, and at every threshold from `2^-300` to `2^-4`, it never painted
 /// interior a sample the plain run escaped from — but beside a parabolic point it
-/// did, at every degree, until interior_switch_fix_ckpt162 made the threshold a
-/// gate in front of a proof (README §3). What it *saves* depends
+/// did, at every degree, as a bare threshold; so the threshold is a gate in front
+/// of a proof (README §3). What it *saves* depends
 /// entirely on the view: 75% to 98% on a frame inside a minibrot, and −9% on the
 /// audit's anchor, where only about seventeen periods fit inside the cap and
 /// `|dz|` has no room to fall.
@@ -81,11 +81,10 @@ pub const DELTA_ULPS: f64 = 4.0;
 /// to the same cap, and a frame at 1e-28 would be a black disc.
 ///
 /// So the shape is the engine's, restated rather than imported — this crate does
-/// not link the engine — and only the ceiling moves. **Touching
-/// `maxiter::for_width` itself was never an option**: it is read by
-/// `spec.rs::resolve`, `MaxiterSpec::caps`, `screen.rs`, `expand.rs`, the wasm
-/// `maxiter_for_width` and Python's `engine.maxiter_for`, so a wider ceiling
-/// there moves the cap of every shallow picture the project has.
+/// not link the engine — and only the ceiling moves. **`maxiter::for_width`
+/// itself stays as it is**: it sets the cap of every shallow render, link and
+/// search the project draws, so a wider ceiling there would move every shallow
+/// picture.
 pub mod cap {
     /// The view width the policy is calibrated at, the engine's `HOME_WIDTH`.
     pub const HOME_WIDTH: f64 = 3.0;
@@ -105,15 +104,16 @@ pub mod cap {
     /// and 117,518 at 1e-28 — but the doublings do reach it, and it binds on the
     /// degree-6 near-parabolic body frames, which are still a fifth the cap's fault
     /// here. The limit is kept and the page says where it binds, rather than being
-    /// raised (`README.md` §10).
+    /// raised (`fractal-website/explorer/perturb-wasm/README.md`, *10. Degrees three
+    /// to six*).
     ///
-    /// **One of two ceilings** *(Matt, cap_split_ckpt145)*: nothing automatic may
+    /// **One of two ceilings**, by Matt's ruling: nothing automatic may
     /// run away, so this one stays where it was, and a cap somebody asks for
     /// deliberately is held to [`EXPLICIT_CEILING`] instead.
     pub const AUTOMATIC_CEILING: f64 = 1_000_000.0;
 
-    /// **The ceiling on a cap somebody asks for**, twice the automatic one *(Matt,
-    /// cap_split_ckpt145)*: a typed `n` or one in a link (`permalink.js`'s
+    /// **The ceiling on a cap somebody asks for**, twice the automatic one by Matt's
+    /// ruling: a typed `n` or one in a link (`permalink.js`'s
     /// `CAP_LIMIT` is this number, and `deep.test.mjs` holds the two together),
     /// Halve and Double, an opened minibrot's thirty-two periods
     /// (`nuclei::open_cap`, in the website wrapper's
@@ -121,7 +121,7 @@ pub mod cap {
     /// (`builder/descent.py`).
     /// None of those is a loop the page runs on its own, so none of them can run
     /// away; what bounds them is the reference orbit, sixteen bytes a point and
-    /// one copy per worker (`README.md` §8 has the measurement).
+    /// one copy per worker (`README.md` §8's *Two ceilings* list).
     pub const EXPLICIT_CEILING: f64 = 2_000_000.0;
 
     /// The iteration cap for a view of the given plane width.
@@ -172,7 +172,7 @@ pub struct Spec {
     /// No meaning without [`Spec::julia`], and refused without it.
     pub anchor: Anchor,
     pub interior: bool,
-    /// The degree of `z ↦ z^d + c`, from two to six *(deep_degrees_ckpt140)*.
+    /// The degree of `z ↦ z^d + c`, from two to six.
     /// **Absent is two**, which is what every spec written before this member
     /// existed is, and it is the one member that means the same thing on both
     /// sides of the Mandelbrot/Julia fork: the Multibrot set of degree `d` and the

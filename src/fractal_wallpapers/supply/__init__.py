@@ -13,26 +13,7 @@ serve     divide the batch's slots by how far each partition is below its intent
 credit    what the batch found, deduplicated, back into the price and the stock
 ```
 
-```text
-partitions   what the books are kept separately for
-release_mix  one ratio table, shipped as data
-currency     what a find is worth, and where the cuts are
-location     what "the same location" means, once
-ledgers      the union of everything every walk has found
-census       stock, target, and the standing deficit
-prices       cost to find: the measured estimate and the seed it starts from
-apportion    a share vector into whole slots, without zeroing anybody
-allocation   the floor, the water-filling, and the floor's carry
-quota        the object a run holds; the only thing that decides the mix
-refill       what to do about a partition whose queue has run dry
-twins        Julia parameters derived from the parent plane's admissions
-proven       parameter-plane roots at every location a human scored a keeper
-saturation   cross-run memory, straight off the ledgers
-novelty      the two levers against monotony: the discount and the share
-autopsy      what each claim on the batch bought, in pictures
-tau_h        how good a cheap look must be before a real one is paid for
-harvest      the production loop, and everything that keeps it honest
-```
+The module map is the package's `README.md`.
 
 Four ideas run through all of it, and each one is a mistake somebody made first.
 

@@ -90,7 +90,7 @@ candidate-ledger score` (resumable) is the fix. **`gallery-grade score-pool` run
 any merge** and before a cascade solve: until it does, merged rows have no `p_fine` and
 cannot be seated. It is minutes warm, several times that cold.
 
-### The two retired artifacts were dropped
+### The sidecar holds the shipped judge only
 
 The sidecar holds the shipped judge's reading only; a retired one goes once its
 before-and-after is taken. The artifact/regime guard stays for the next adoption.
@@ -153,7 +153,7 @@ included); the other protections. The rest lose row and picture together.
 `retention.py` decides and never deletes. Three aggregates survive every attempt:
 `(location, mode)`, `(colormap, mode)` and `(location, cell)` counts.
 
-### What retention does not reach, and the levelled colormaps swept on 2026-08-30
+### What retention does not reach, and the swept levelled colormaps
 
 A prune takes a dropped row's picture and `<stem>.leveled/` only; `fields/` and run
 records are outside it. The pool's levelled colormaps were swept except beside kept
@@ -204,7 +204,7 @@ fine bar, refused by a rule, seated. Verbs `keys` (before the solve, for `solve 
 `data/gallery_grade/` alone (`label_fate.STORE`): its 4s are verdicts on this pool's own
 candidates.
 
-### The picture beside a refused card is not the seat at its place, and that took two goes
+### The picture beside a refused card is not the seat at its place
 
 A card shows the marginal member of `rules.State.counted_requirements` for the refusing
 rule; only for `location` is that the seat at the place.

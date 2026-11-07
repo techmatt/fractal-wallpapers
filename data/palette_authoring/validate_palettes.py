@@ -14,9 +14,10 @@ skipped, so a directory that also holds a record about its batches walks cleanly
 
 The exit code is 0 exactly when there are no ERRORs. Warnings never change it.
 
-**This file is authoritative for the mechanical rules.** `generator_prompt.md`
-restates the same numbers in prose for the model's benefit; if a threshold moves,
-it moves in the CONFIG block below and the prompt is edited to match.
+**This file is authoritative for the mechanical rules.** The three
+`generator_prompt*.md` briefs restate the same numbers in prose for the model's
+benefit; if a threshold moves, it moves in the CONFIG block below and the briefs
+are edited to match.
 
 Two severities, and the split is deliberately permissive:
 

@@ -111,13 +111,16 @@ def check(catalog: dict[str, Any]) -> list[str]:
     public_names = set()
     aliases: set[str] = set()
     files = set(styles.names())
+    maps = style_palettes.library_maps()
     for row in catalog["modes"]:
         name = row.get("style", "?")
         if name in seen:
             problems.append(f"{name}: two rows")
         seen.add(name)
         if name not in files:
-            problems.append(f"{name}: a row names a style file, never an alias")
+            problems.append(
+                f"{name}: no style file {name}.json (a row names a style file, never an alias)"
+            )
             continue
         try:
             document = styles.load(name)
@@ -134,7 +137,7 @@ def check(catalog: dict[str, Any]) -> list[str]:
         if not row.get("item"):
             problems.append(f"{name}: names no item")
         keeps = keeps_of(name)
-        problems += style_palettes.check_row(row, document["style"], keeps)
+        problems += style_palettes.check_row(row, document["style"], keeps, maps=maps)
         for alias in row.get("aliases", []):
             if alias in aliases or alias in files:
                 problems.append(f"{name}: alias {alias} is another style or another alias")
@@ -162,7 +165,7 @@ def check(catalog: dict[str, Any]) -> list[str]:
         if public.get("name") in public_names:
             problems.append(f"{name}: public name {public.get('name')} is taken")
         public_names.add(public.get("name"))
-        if public.get("palette") not in style_palettes.library_maps():
+        if public.get("palette") not in maps:
             problems.append(f"{name}: no colormap '{public.get('palette')}'")
         knobs = [knob["name"] for knob in (document.get("public") or {}).get("knobs") or []]
         if public.get("knobs") != knobs:
@@ -417,7 +420,8 @@ def page(catalog: dict[str, Any], cards: list[str], discarded: list[str], rest: 
 def gallery(folder: Path, catalog: dict[str, Any] | None = None) -> dict[str, Any]:
     """Rebuild the page in `folder` and its pictures in `folder/img/`.
 
-    A picture is redrawn only when its source is newer; an `img/` file no row names is
+    A picture is redrawn only when the source it was shrunk from changed (another keep, or
+    the same file redrawn: `img/sources.json`); an `img/` file no row names is
     removed, since the folder is the page's own.
     """
     from fractal_wallpapers import style_keeps, styles

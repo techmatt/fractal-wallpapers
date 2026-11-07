@@ -46,7 +46,10 @@ through the manifest's `classes` and `words`.
 
 `label pin` writes a seeded uniform sample of a plan's units to the attribute store's
 `eval_split.jsonl` **before the sitting**, in the one batch so no card reveals them. Their
-verdicts are collected; the pin forbids training on them.
+verdicts are collected; the pin forbids training on them. An attribute store's pin is
+`attributes.write_pin` / `attributes.assert_pin_holds`, never the `finished.*` pair: its
+reservation is intra-batch, so an ordinary ingest of a verdict at a pinned place is
+allowed, and only training on it is refused.
 
 ### A PAIRED attribute: one tile, two renders, a comparative scale
 
@@ -81,8 +84,8 @@ survives ingest inside `selected_on`, which `intake` copies whole.
 
 ### Keep the plan
 
-A row carries `leveled` as a boolean, not the directory, so the plan is the only thing
-that rebuilds a levelled picture as judged; sheets are regenerable, plans are not.
+A row carries `leveled` as a boolean, so only the plan rebuilds a levelled picture as
+judged; sheets are regenerable, plans are not.
 `gallery_grade.plan_paths()` is the accessor. The label protection holds a graded row's
 candidate in the pool (`curation/README.md`'s *What is kept, and why each rule is the
 rule it is*).
@@ -97,38 +100,34 @@ label*. `tests/test_veto.py` holds it.
 
 ### Cutting a sheet on the render pool
 
-`--workers N` cuts on threads; about 3.7 s a picture on three, so 1,000 tiles is an hour.
-Default 1 (CI); the box's ceiling is three.
+`--workers N` cuts on threads (about 3.7 s a picture on three); default 1, ceiling three.
 
 ## Serving a sheet to label
 
 A sheet directory's name need not be its batch: find it with `label sheets --drops`. Serve
-one sheet per port (8020, 8021, …; default 8010), backgrounded.
-**`--port` is where it starts looking**: on a clash it walks upward, so **the printed URL
-is the only thing that says where a sheet is**. Check `/sheet.jsonl` returns 200
-before handing it over. Pictures are `cut####`, not unit ids.
+one sheet per port (default 8010), backgrounded. **`--port` is where it starts looking**:
+on a clash it walks upward, so **the printed URL is the only thing that says where a sheet
+is**; check `/sheet.jsonl` returns 200 before handing it over. Pictures are `cut####`.
 
 ### Where the labels land
 
 Saving writes `labels/<head>.<batch>.json` (`store.export_path`). Serving is not ingesting.
 **`labels/` is an inbox of what is unprocessed**: `label ingest --write` ends by moving the
-drop to `labels/archive/` (`store.archive_export`, last; a repeat name becomes
-`<name>-2.json`; a `--labels` file outside the inbox stays). Moved, never deleted, and a
-spent drop re-ingested can revert later verdicts. A sitting is finished when its drops are
-on disk: a page never exported leaves nothing.
+drop to `labels/archive/` (`store.archive_export`; a repeat name becomes `<name>-2.json`;
+a `--labels` file outside the inbox stays). A spent drop re-ingested can revert later
+verdicts. A sitting is finished when its drops are on disk.
 
 #### And the ingest cannot tell which cut the drop came from
 
-Two cuts of one batch share a drop name, and a drop joins by position: a shorter export
-against a longer sheet is accepted with every row on the wrong picture. **Match the unit
-count before ingesting**; retire a superseded cut once its replacement is labelled.
+Two cuts of one batch share a drop name and a drop joins by position, so a shorter export
+against a longer sheet lands every row on the wrong picture. **Match the unit count before
+ingesting**; retire a superseded cut once its replacement is labelled.
 
 #### A hand-renamed drop is the working answer to one batch cut into several sheets
 
 Save each sheet's export under its own name and run `label ingest --sheet <dir> --labels
-<file>` per sheet, oldest first. Check no two drops are identical and each count matches one
-cut; on a score-ordered page, position against verdict is strongly negative when bound
-right. Each row records its `sheet`.
+<file>` per sheet, oldest first, checking no two drops are identical and each count matches
+one cut. Each row records its `sheet`.
 
 #### Cut a batch into sheets of UNEQUAL size
 
@@ -155,7 +154,7 @@ A finished store's evaluation side is an `eval_only` batch, cut blind, pinned on
 *location*. Another batch's verdict at a pinned place may neither train nor join it, so
 `label ingest` counts it as `withheld on a pinned location` and leaves it in the export
 (pairs go whole). The pin is asserted before the write and after
-(`asserted_before_writing`); `tests/test_finished_store.py` holds the invariant.
+(`asserted_before_writing`).
 
 ### Ingesting a NEW `eval_only` batch does not refresh the pin, and the store notices
 
@@ -189,15 +188,15 @@ up is deleting its rows from `eval_split.jsonl`, only for a sheet never to be la
 
 Label geometry is `sheets.LABEL_RESOLUTION` and `LABEL_SUPERSAMPLE` (1280×720 ss2), its
 one spelling. A location unit is two renders, a finished one one. **Cost follows the
-material, not maxiter or unit count**: ~1 s a unit for `smooth`, 4–7 s textured, a minute
-on `phoenix:classic`. Price off a similar built sheet or a pilot **stratified by mode**.
+material, not maxiter or unit count** (seconds for `smooth`, a minute on `phoenix:classic`):
+price off a similar built sheet or a pilot **stratified by mode**.
 
 ### Cutting a finished-render sheet out of the candidate pool
 
 * **The kind names the store**: both kinds is two sheets and two batches.
 * **Route by `finished.routes_to` on the join to be rendered**, not `kind_of` on the
-  ledger row. On a register miss `label ingest` renders the span test (minutes on a deep
-  partition) and appends to tracked `data/coloring/texture_flat.jsonl`; readers never do.
+  ledger row. On a register miss `label ingest` renders the span test and appends to
+  tracked `data/coloring/texture_flat.jsonl`; readers never do.
 * **`--reuse-renders` misses every pool row** (640×360 candidates).
 * **Measure first**: render each unit via `colorize.render(level=True)` into
   `<sheet dir>/full/<sheets.cut_name(i)>.jpg` at three workers, write `leveled` back into
@@ -206,11 +205,11 @@ on `phoenix:classic`. Price off a similar built sheet or a pilot **stratified by
 
 ### A blind page is cut and then stripped
 
-A blind `finished_source` page is cut, then `sheet.jsonl` gets `facts: []`, `columns: {}`,
-empty captions, null suggestions and a seeded shuffle, and the manifest's
-`order`/`scorer`/`suggested_by` become `shuffle`/`none`/`none` with a `withheld` note. No
-render is paid. A gallery-grade sheet is blind already. The batch name is on the page: name
-a blind one for its population, not what it tests.
+A blind `finished_source` page is cut, then stripped (no render paid): `sheet.jsonl` gets
+`facts: []`, `columns: {}`, empty captions, null suggestions and a seeded shuffle; the
+manifest's `order`/`scorer`/`suggested_by` become `shuffle`/`none`/`none` with a `withheld`
+note. A gallery-grade sheet is blind already. Name a blind batch for its population, not
+what it tests: the name is on the page.
 
 ## A rule answers the mostly-black frames, and nobody is asked again
 
@@ -277,4 +276,5 @@ Every judge is cast on `finished.SCALE`, 1..4 (the imported corpora's is
 ## The order is the design
 
 A batch registers before it has rows; stores append and resolve latest-wins; the split is
-drawn over `groups.py`'s groups and shipped. `--no-scoring` cuts an instrument. **A suggestion is not a label.**
+drawn over `groups.py`'s groups and shipped. `--no-scoring` cuts an instrument. **A
+suggestion is not a label.**

@@ -7,7 +7,7 @@ generator_prompt.md                     the brief
 generator_prompt_focus_color.md         the same brief, aimed at one colour region
 generator_prompt_specific_palettes.md   the same brief, aimed at one named colour pairing
 classic_palettes.json                   the pairings that third brief is conditioned on
-generator_prompt_opener.txt             what to hand a run BEFORE either brief
+generator_prompt_opener.txt             what to hand a run BEFORE any brief
 validate_palettes.py                    the mechanical checker every brief names
 ```
 
@@ -39,7 +39,7 @@ run that emitted a name another run in the same drop also emitted still reports 
 as a duplicate here; `../palettes/batches/<drop>/renames.json` is where that was
 settled, and it is the file `--dir` names as skipped.
 
-`validate_palettes.py` is **authoritative for the mechanical rules**. Both briefs
+`validate_palettes.py` is **authoritative for the mechanical rules**. All three briefs
 restate its numbers in prose for the model's benefit; if a threshold moves it moves
 in that file's CONFIG block and the briefs are edited to match. Its exit code is 0
 exactly when there are no ERRORs — warnings never change it, because the failure

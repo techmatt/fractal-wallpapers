@@ -35,7 +35,7 @@
 //! So every entry carries a [`Tier`]. A **production** mode may be drawn by
 //! anything; a **niche** mode is renderable on demand by name and is excluded from
 //! every production draw. The exclusion is enforced at the one place a mode is
-//! drawn, reading [`production`] — not at each caller, which is how a rule four
+//! drawn, [`production_names`] — not at each caller, which is how a rule four
 //! call sites have to remember becomes a rule one of them forgets.
 //!
 //! [`crate::field::FieldSpec::Discrete`] is the harder case and stays out of the
@@ -380,7 +380,7 @@ pub fn resolve(name: &str, family: Option<&Family>) -> Result<Coloring, String> 
     })
 }
 
-/// The base every composite and the one modulate build on.
+/// The base every composite and both modulates build on.
 fn smooth_base() -> Layer {
     Layer {
         field: FieldSpec::Smooth,

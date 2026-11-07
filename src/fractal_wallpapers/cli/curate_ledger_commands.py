@@ -14,9 +14,6 @@ which of it ships. Three shapes, and the file is in registration order:
 * **The pool itself.** `candidate-ledger` is the big one: fifteen verbs over the
   ledger a hundred million rows of mining wrote, including the orphan sweep and
   the seat ratchet.
-
-Cut out of `curate_commands` on 2026-09-12 with four sibling families; that
-module's docstring carries the reversal and what it cost.
 """
 
 from __future__ import annotations
@@ -33,6 +30,7 @@ from fractal_wallpapers.cli.common import (
     keeping_verbs,
     ledger_flags,
     resolve_output,
+    run_keeping_verb,
     write_tracked_json,
 )
 
@@ -60,67 +58,23 @@ def curate_score(args: argparse.Namespace) -> int:
 
 def curate_sidecar(args: argparse.Namespace) -> int:
     """Record, check or restore the supply sidecar against its tracked manifest."""
-    from fractal_wallpapers.curation import durability, durables
+    from fractal_wallpapers.curation import durables
 
-    durable = durables.sidecar()
-    doing = {
-        "save": lambda: durability.save(durable),
-        "check": lambda: durability.check(durable),
-        "restore": lambda: durability.restore(durable, force=args.force),
-    }[args.what]
-    try:
-        report = doing()
-    except durability.DurableLost as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    # `check` is the one that answers a yes/no question, so it is the one with an
-    # exit code worth reading. A short or missing sidecar is a build failure.
-    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
-        return 1
-    return 0
+    return run_keeping_verb(args, durables.sidecar())
 
 
 def curate_amendments(args: argparse.Namespace) -> int:
     """Record, check or restore the score amendment against its tracked manifest."""
-    from fractal_wallpapers.curation import amend, durability
+    from fractal_wallpapers.curation import amend
 
-    durable = amend.durable()
-    doing = {
-        "save": lambda: durability.save(durable),
-        "check": lambda: durability.check(durable),
-        "restore": lambda: durability.restore(durable, force=args.force),
-    }[args.what]
-    try:
-        report = doing()
-    except durability.DurableLost as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
-        return 1
-    return 0
+    return run_keeping_verb(args, amend.durable())
 
 
 def curate_frames(args: argparse.Namespace) -> int:
     """Record, check or restore the hunt frame index against its tracked manifest."""
-    from fractal_wallpapers.curation import durability, hunt
+    from fractal_wallpapers.curation import hunt
 
-    durable = hunt.frames_durable()
-    doing = {
-        "save": lambda: durability.save(durable),
-        "check": lambda: durability.check(durable),
-        "restore": lambda: durability.restore(durable, force=args.force),
-    }[args.what]
-    try:
-        report = doing()
-    except durability.DurableLost as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
-        return 1
-    return 0
+    return run_keeping_verb(args, hunt.frames_durable())
 
 
 def curate_mass_sweep_extend(args: argparse.Namespace) -> int:
@@ -227,28 +181,14 @@ def curate_embed(args: argparse.Namespace) -> int:
 
 def curate_embeddings(args: argparse.Namespace) -> int:
     """Record, check or restore the embedding store against its tracked manifest."""
-    from fractal_wallpapers.curation import durability, embeddings
+    from fractal_wallpapers.curation import embeddings
 
-    which = embeddings.store()
-    doing = {
-        "save": lambda: durability.save(which),
-        "check": lambda: durability.check(which),
-        "restore": lambda: durability.restore(which, force=args.force),
-    }[args.what]
-    try:
-        report = doing()
-    except durability.DurableLost as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
-        return 1
-    return 0
+    return run_keeping_verb(args, embeddings.store())
 
 
 def curate_spiral_scores(args: argparse.Namespace) -> int:
     """Score every embedded location through the shipped spiral probe, or keep the store."""
-    from fractal_wallpapers.curation import durability, spiral_scores
+    from fractal_wallpapers.curation import spiral_scores
 
     if args.what == "build":
         try:
@@ -259,21 +199,7 @@ def curate_spiral_scores(args: argparse.Namespace) -> int:
         print(json.dumps(report, indent=2))
         return 0
 
-    which = spiral_scores.store()
-    doing = {
-        "save": lambda: durability.save(which),
-        "check": lambda: durability.check(which),
-        "restore": lambda: durability.restore(which, force=args.force),
-    }[args.what]
-    try:
-        report = doing()
-    except durability.DurableLost as refusal:
-        print(refusal)
-        return 1
-    print(json.dumps(report, indent=2))
-    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
-        return 1
-    return 0
+    return run_keeping_verb(args, spiral_scores.store())
 
 
 def curate_neighbours(args: argparse.Namespace) -> int:

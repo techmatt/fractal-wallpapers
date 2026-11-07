@@ -6,8 +6,7 @@
 //! this way: it runs once per frame, and everything per-sample is `f64`.
 //!
 //! **Why fixed point and not a float bignum.** The audit priced four options for
-//! a 50,000-iteration reference orbit at ~128 bits
-//! (`audit_deep_mode_seam_ckpt135` part 1 §5): astro-float at 134 KB of wasm and
+//! a 50,000-iteration reference orbit at ~128 bits: astro-float at 134 KB of wasm and
 //! 26 ms, dashu-float at 220 KB and 55 ms, double-double at 3.6 KB and 2.0 ms,
 //! and this at 7.3 KB and 3.8 ms. Double-double is faster and smaller and is
 //! still the wrong answer, because its 106 bits are a ceiling: there is no way to
@@ -129,9 +128,9 @@ impl Fx {
     /// fraction bits and the product carries twice that; the sign goes on after.
     ///
     /// **The limb count is a constant inside the multiply, not a variable**,
-    /// which is what [`mul_at`] is for *(deep_refactor_ckpt138)*: every trip count
-    /// is known where it used to be read from `self`. §4 of the crate README has
-    /// what that was worth.
+    /// which is what [`mul_at`] is for: every trip count is known at compile time
+    /// rather than read from `self`. §4 of the crate README has what that is
+    /// worth.
     ///
     /// **The window is the exact product's, and it is found without most of the
     /// product.** [`product`] sums only the columns that can reach the window,
@@ -213,10 +212,9 @@ impl Fx {
     /// The exact decimal, truncated toward zero at `places` fraction digits.
     ///
     /// **This is how a coordinate computed here becomes a coordinate a link can
-    /// carry**, and until `deep_nearby_minibrots_ckpt138` there was no way out at
-    /// all: [`Fx::parse`] read a centre in and [`Fx::to_f64`] was the only way
-    /// back, which keeps two limbs and so throws away every digit that says where
-    /// a deep view is. A nucleus solved at 1e-44 that could only leave as a double
+    /// carry**: [`Fx::parse`] reads a centre in, and [`Fx::to_f64`] is the only
+    /// other way back, which keeps two limbs and so throws away every digit that
+    /// says where a deep view is. A nucleus solved at 1e-44 that could only leave as a double
     /// would be a tile nobody could open.
     ///
     /// **Exact at the full length.** A fraction of `64(n-1)` bits is a decimal of
@@ -939,7 +937,7 @@ fn straight<const N: usize, const SQUARE: bool>(a: &[u64; N], b: &[u64; N]) -> (
 
 /// `2^k`, without `powi`'s loop and without libm.
 ///
-/// Public since `deep_nearby_minibrots_ckpt138`, which carries a nucleus's
+/// Public for the website wrapper's `nuclei`, which carries a nucleus's
 /// derivative as a mantissa and a power-of-two exponent — the interior switch's
 /// representation — and needs the exponent spent when the two are divided.
 pub fn pow2(k: i32) -> f64 {
@@ -961,7 +959,7 @@ mod tests {
         Fx::parse(text, 4).unwrap()
     }
 
-    /// [`Fx::mul`] as it was written until `deep_refactor_ckpt138`: one
+    /// [`Fx::mul`] without its per-limb-count dispatch: one
     /// unspecialized loop over a scratch array of the widest number this module
     /// carries. Kept here and nowhere else, as the thing the dispatch is held
     /// to.

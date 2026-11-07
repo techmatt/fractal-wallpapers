@@ -20,17 +20,14 @@ dependencies = ["mpmath>=1.3"]
 [project.optional-dependencies]
 # The suite and the linter, plus SciPy for one guard: `curate rank-key`'s IRLS is
 # hand-written because `sklearn` is not in this project's dependency set, and a
-# hand-written fit has to be checked against something that was not. Nothing this
-# package ships imports SciPy any more — the MILP that did is retired.
+# hand-written fit has to be checked against something that was not
+# (`tests/test_rank_key.py`). Nothing this package ships imports SciPy.
 #
 # `numpy` and `pillow` are here because **the suite does not run without them**,
-# which is a different question from what the package needs. 113 tests failed on
-# `.[dev]` for want of `PIL` alone on 2026-09-15, and three modules imported it at
-# module level and took the whole CI run down at collection — every `check` job
-# since 2026-09-11 died in under four seconds without executing a test. numpy was
-# already here by accident: `scipy` requires `numpy<2.8,>=2.0.0`, so the lane has
-# always had it without `dev` ever saying so, and a dependency the suite relies on
-# by accident is one that leaves when its supplier does.
+# which is a different question from what the package needs: a module importing one
+# at module level takes the whole lane down at collection. Each is named outright
+# rather than left to arrive through another dependency, because a dependency the
+# suite relies on by accident is one that leaves when its supplier does.
 #
 # This does NOT put them in the package's own path. `pip install -e .` is
 # unchanged and stays torch-free, `tests/test_base_install.py` proves it in a
@@ -55,7 +52,7 @@ models = [
 ]
 # `models` on the CUDA build, for a machine with an NVIDIA card that trains heads:
 # an hour on a GPU against most of a week without one. **Opt-in and never the
-# default**, Matt's principle of 2026-09-25 — nothing heavy is installed unless
+# default**, Matt's principle — nothing heavy is installed unless
 # someone asks for it, and the CUDA wheels are gigabytes. It is `models`'s list
 # again rather than an addition to it because the two cannot be installed
 # together (`[tool.uv] conflicts`): one environment holds one torch. Keep the two
@@ -68,10 +65,8 @@ cuda = [
   "pillow>=11",
 ]
 # Choosing the gallery. `numpy` and `pillow` are what read the ledger's colours
-# and the pixel clouds the diversity rule acts on, and that is the whole of it —
-# there is NO SOLVER here any more. The exact MILP `curate solve` used to hand its
-# program to was measured infeasible at n=1000 against a thirty-minute bar and is
-# retired, and SciPy went with it. Its own extra and not part of `models`: the leg
+# and the pixel clouds the diversity rule acts on, and that is the whole of it: no
+# solver library, and no torch. Its own extra and not part of `models`: the leg
 # reads scores off a store and never loads a head, so a machine that chooses a
 # gallery does not need torch, and a machine that only renders needs
 # neither.
@@ -96,9 +91,9 @@ solve = [
 #
 # Scoping a source by `extra` is how uv selects an index per extra, and it only
 # forks the resolution for extras declared as conflicting — without the
-# `conflicts` line, `models` resolves to cu124 as well. Checked with a universal
-# `uv lock` on 2026-09-25: `models` gave `torch 2.14.0+cpu` on Linux and `2.14.0`
-# elsewhere, `cuda` gave `2.6.0+cu124` on Windows and Linux x86_64.
+# `conflicts` line, `models` resolves to cu124 as well. A universal `uv lock` shows
+# it: `models` gives a `+cpu` torch on Linux and PyPI's elsewhere, `cuda` gives
+# `+cu124` on Windows and Linux x86_64.
 [tool.uv]
 conflicts = [[{ extra = "models" }, { extra = "cuda" }]]
 
@@ -131,14 +126,13 @@ namespaces = true
 
 # The labeling rig's page is an asset of the package that serves it, not a
 # resource the server looks up on disk: an installed checkout has to be able to
-# hand a browser the same page a working tree does. **Both** files, and the
-# second one was missing here until 2026-09-04: `page.html` pulls
-# `export_control.js` with a `<script src>` and `server.CONTROL` opens it off
-# `__file__`, so a non-editable install served a page whose exports lost their
-# naming — silently, because a `<script>` that 404s fails in the browser console
-# and nowhere the rig can see. `tests/test_label_export.py` now holds every
-# non-Python file in the package to being declared here, so the next asset
-# anyone adds in any package is caught rather than remembered.
+# hand a browser the same page a working tree does. **Both** files: `page.html`
+# pulls `export_control.js` with a `<script src>` and `server.CONTROL` opens it off
+# `__file__`, so a non-editable install missing it would serve a page whose exports
+# lose their naming — silently, because a `<script>` that 404s fails in the browser
+# console and nowhere the rig can see. `tests/test_label_export.py` holds every
+# non-Python file in the package to being declared here, so the next asset anyone
+# adds in any package is caught rather than remembered.
 [tool.setuptools.package-data]
 "fractal_wallpapers.labeling" = ["page.html", "export_control.js"]
 

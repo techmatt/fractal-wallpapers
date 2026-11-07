@@ -45,7 +45,7 @@ import statistics
 import time
 from pathlib import Path
 
-from fractal_wallpapers.curation import hunt
+from fractal_wallpapers.curation import hunt, release
 from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 from fractal_wallpapers.paths import tracked_name, under
 
@@ -84,8 +84,8 @@ PER_ARM = 20
 #: **Three**, which is the locked render-pool shape rather than a tuning knob:
 #: more than three `fractal-engine` processes at once makes this machine's
 #: desktop unusable while the leg runs, and this leg drives the engine like any
-#: other. It was six, which was the one leg here disagreeing with the rule.
-WORKERS = 3
+#: other.
+WORKERS = release.DEFAULT_WORKERS
 
 
 class ShrinkageRefused(RuntimeError):

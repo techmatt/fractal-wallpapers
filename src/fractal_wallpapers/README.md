@@ -43,14 +43,15 @@ fractal-wallpapers storage archive tiles       # hot -> archive
 fractal-wallpapers storage restore tiles       # archive -> hot
 ```
 
-`storage.py` alone moves tiers (copy, verify, delete). Records name tree files through **`tracked_name(path)`** (checkout-relative, or
+`storage.py` alone moves tiers (copy, verify, delete). Records name tree files through
+**`tracked_name(path)`** (checkout-relative, or
 `artifacts/<rest>` on either tier, so a ledger's name, which keys curation's sidecar rows,
 survives archiving) and read them back through **`rehome(stored, tiers=None)`** (takes
 `artifacts/<rest>` or an absolute path; `None` for one outside any artifacts tree).
 Guard: `tests/test_storage_tiers.py`.
 
-- **Hand `tiers` in on any loop over a store**: ~1.8 ms a row bare, <10 µs with
-  `Tiers.current()` taken once above the loop.
+- **Hand `tiers` in on any loop over a store**: take `Tiers.current()` once above the
+  loop, or every row re-reads the settings.
 - **Never build a tree path as a bare `Path("artifacts") / …`**: it follows the shell's
   working directory, not the hot root. Use `under()` or `cli.resolve_output`; a
   module-level location is an accessor *function* (`carriers.recolour_dir()`,
@@ -104,7 +105,7 @@ Reader pages (`artifacts/judges/`, `candidate_page/`, `trace/<stamp>/`,
   `would_delete: 0`), through `rescore.origin_of`'s chain. Deleting them is Matt's call.
 - **The ten Durables**, under `artifacts/curation/`: `supply_scores.jsonl`,
   `score_amendments.jsonl`, `hunt/frames.jsonl` (these three are `durables.guarded()`;
-  `curate run` refuses without them, and `frames.jsonl` has no rebuild), the ledger's rows
+  `curate run` refuses without them; `frames.jsonl` has no rebuild), the ledger's rows
   and scores, the flatness and reduced-signature sidecars, the neutral embeddings, the
   spiral scores and the palette colour-mass sweep log.
 - **`.leveled/` is the exception**: inside `pictures/`, so `orphans` takes the unnamed
@@ -154,8 +155,8 @@ if `rustup show` is not MSVC, `cargo +stable-x86_64-pc-windows-msvc build --rele
 engine fingerprint in the import's output**: `amend.read` keeps only rows drawn by the
 running build, so a differing build must re-derive amendments with `curate redraw`.
 
-Of the untracked weights beside the heads, only the gallery-grade arm's three `best.pt`
-are opened by a production verb (`rotation.score_fine`), so only they travel.
+The three `best.pt` travel because `rotation.score_fine` opens them; no other untracked
+weight is read by a production verb.
 
 ## One shape for a place, and one reader for it
 
@@ -193,22 +194,21 @@ unchanged source and a moved mode catalog. Each view directory's `drawn_by.jsonl
 ⚠ **Never pin a `job_name` digest in a test.** `spec_of` writes `paths.colormap_dir()`
 into the spec as an absolute path, so the digest differs per machine (why
 `candidate_ledger` drops `colormap_dir` from the recipe key). Assert two rows agree or
-differ. A re-clone renames every cached picture; moving the hot root renames nothing; a
-catalog edit re-keys nothing (`renders.SPEC_MEMBERS` carries `mode` and `mode_params`), and
+differ. A re-clone renames every cached picture; moving the hot root or editing the
+catalog re-keys nothing (`renders.SPEC_MEMBERS` carries `mode` and `mode_params`), and
 only the fingerprint catches it.
 
-⚠ **Never patch `renders.colormap_dir`.** `spec_of` reads `engine_spec.colormap_dir`;
-patching the re-export silently tests the real checkout.
+⚠ **Patch `engine_spec.colormap_dir`, never `paths.colormap_dir`.** `spec_of` reads
+the name `engine_spec` bound at import, so patching `paths` silently tests the real
+checkout.
 
 ## A record's prose has one copy in the source and a whole copy on every row
 
 Beside `reachable` is `reachable_is`: a sentence saying what the number and `null` mean.
-**A row read years later off the archive still says what it ran under, with no
-checkout.** The prose is a module-level **`SCHEMA_NOTES: dict[str, str]` beside the
+**A row read off the archive says what it ran under, with no checkout.** The prose is a module-level **`SCHEMA_NOTES: dict[str, str]` beside the
 module's `SCHEMA`**, read at write time; the finished sentence goes on the row.
 
-- *Not a pointer*: a row never carries a note key for a checkout to resolve. Do not
-  re-propose it.
+- *Not a pointer*: a row never carries a note key for a checkout to resolve.
 - *Not versioned*: a note true when written is correct about its row. A note *wrong when
   written* gets a line below.
 - *Not a rewrite*: two spellings of one field stay as `<field>.<which>` (`solve.py`'s

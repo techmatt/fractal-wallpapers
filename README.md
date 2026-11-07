@@ -54,6 +54,8 @@ explorer view renders here at full size.
 ## What is where
 
 - `engine/`: the Rust renderer
+- `perturbation/`: the deep-zoom kernel, which the website's explorer also runs
+- `style-wasm/`: the style module, built for WebAssembly
 - `src/fractal_wallpapers/`: the Python side: `discovery/` and `supply/` (the search),
   `deep/` (below the walk's depth), `palettes/` and `coloring/`, `labeling/` (human
   ratings), `models/` (the judges), `curation/` (the pool and the gallery solve), `cli/`
@@ -61,13 +63,14 @@ explorer view renders here at full size.
   for `fractal-wallpapers style render`)
 - `models/`: each judge's tracked metadata; weights are fetched beside it
 - `tests/`, and `examples/` (the four pictures above)
+- `docs/qa-findings.md`: what bug hunts found, and what became of each
 
-Every directory has a README; there is no `docs/`.
+Every stage directory has a README.
 
 ## Requirements
 
 * **Python 3.11+.**
-* **Rust 1.85+**, from [rustup](https://rustup.rs). On Windows use MSVC: the GNU
+* **Rust 1.86+**, from [rustup](https://rustup.rs). On Windows use MSVC: the GNU
   toolchain runs 2 to 17 times slower (`rustup default stable-msvc`).
 * **A linker**: Windows, the `Desktop development with C++` workload of
   [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/);
@@ -133,8 +136,8 @@ engine/target/release/fractal-engine render-link --size 2560x1440 --out artifact
 
 The first spells a quadratic Julia set out in flags (about 3 s). The second draws an
 explorer link, copied from the explorer or any wallpaper's metadata (about 5 s): a
-complete recipe read as text, nothing fetched, no Python or weights needed. It embeds the
-link, so the picture reopens its view when dropped on the explorer. Every settable knob,
+complete recipe, no Python or weights needed. It embeds the link, so the picture reopens
+its view when dropped on the explorer. Every settable knob,
 with default and range, is in step 10's `parameters.json` and each command's `--help`.
 
 **2. Check the install** (under a minute):
@@ -157,7 +160,7 @@ fractal-wallpapers harvest export
 fractal-wallpapers harvest stats
 ```
 
-The harvest walks the twelve families into `artifacts/harvest/walk.jsonl`
+The harvest walks the twelve families into a `walk.jsonl` under `artifacts/harvest/`
 ([FORMATS.md](FORMATS.md#walkjsonl)); `curate score` reads each place through the
 location judge into `artifacts/curation/supply_scores.jsonl`
 ([FORMATS.md](FORMATS.md#supply_scoresjsonl)); `export` joins them into

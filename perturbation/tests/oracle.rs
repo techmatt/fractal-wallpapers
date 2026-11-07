@@ -264,9 +264,9 @@ fn walk(spec: Spec) -> Rung {
     // to sixteen digits. Doubling the limbs is the oracle catching up, and the
     // first run of this ladder without it is the reason the sentence is here.
     //
-    // **And since `deep_degrees_ckpt140` the kernel's own orbit is sized that way
-    // too**, because it had the same problem and no oracle to hide behind: its `c`
-    // was held to the view's bits, which is short of what separates `step²`. So
+    // **And the kernel's own orbit is sized that way too**, because it has the same
+    // problem and no oracle to hide behind: a `c` held to the view's bits is short
+    // of what separates `step²`. So
     // the oracle now takes one limb past what the spec asks for, which is past the
     // squared step by construction.
     let oracle_limbs = if spec.julia.is_some() && spec.entry() == 0 {
@@ -615,14 +615,13 @@ const M31: (&str, &str) = (
     "0",
 );
 
-/// **The origin anchor, at a `c` the orbit cannot hold exactly** *(deep_degrees_ckpt140)*.
+/// **The origin anchor, at a `c` the orbit cannot hold exactly.**
 ///
 /// At `z = 0` a pixel's first step is its offset squared, so the reference has to
-/// separate `step²` and not `step`. Before this ladder existed the kernel sized the
-/// orbit for `step`, and `audit_deep_families_ckpt140` measured what that drew on
-/// the committed crate at this `c` and this tile: a median error of **6.6 smooth
+/// separate `step²` and not `step`. An orbit sized for `step` draws, at this `c`
+/// and this tile, a median error of **6.6 smooth
 /// counts at 1e-30, 34 at 1e-36 and 11 at 1e-40**, against **6e-14** with the bits
-/// [`perturbation::reference::limbs_pow`] now gives. The dendrite ladders above could
+/// [`perturbation::reference::limbs_pow`] gives. The dendrite ladders above could
 /// not see it, because `c = i` is dyadic.
 #[test]
 #[ignore = "seconds"]
@@ -810,8 +809,8 @@ fn degree_assertions(label: &str, rung: &Rung) {
     );
 }
 
-/// **The degree-`d` kernel against the fixed-point oracle, below the wall**
-/// *(deep_degrees_ckpt140)*: each degree's `M(2,1)` at 1e-16, 1e-28 and 1e-40, the
+/// **The degree-`d` kernel against the fixed-point oracle, below the wall**:
+/// each degree's `M(2,1)` at 1e-16, 1e-28 and 1e-40, the
 /// interior switch on as the page runs it, and every sample iterated the long way
 /// at the same degree with no reference and no delta.
 #[test]
@@ -852,9 +851,9 @@ fn the_degree_d_julia_kernel_matches_the_oracle_at_the_parameter() {
 
 /// **And at `z = 0`, where the orbit has to hold `d` times the view's bits.**
 ///
-/// At the view's own limbs `audit_deep_families_ckpt140` measured degrees three to
-/// six off by a median 0.27, 0.078, 0.014 and 0.0047 counts, and at degree three it
-/// starts as shallow as 1e-12. The widths are the audit's: `16·10^(−40/d)`, which
+/// At the view's own limbs degrees three to six measure off by a median 0.27,
+/// 0.078, 0.014 and 0.0047 counts, and at degree three it starts as shallow as
+/// 1e-12. The widths are: `16·10^(−40/d)`, which
 /// puts the pixels at `z₁` about 1e-40 apart at every degree.
 #[test]
 #[ignore = "seconds"]
@@ -894,8 +893,8 @@ fn the_degree_d_origin_anchor_holds_its_parameter_to_d_times_the_bits() {
 ///
 /// `tangle 1e-28` at its settled cap of 235,036, a 32×18 tile of the frame's own
 /// grid, as the little-endian lanes [`compute_rows`] hands the page — hashed, and
-/// held to the hash the kernel produced *before* the degree was a parameter
-/// (`deep_degrees_ckpt140`, taken on the commit it was written against). The
+/// held to the hash the kernel produced *before* the degree was a parameter,
+/// taken on the commit before that change. The
 /// const generic folds the degree-2 step, derivative and smooth count back to the
 /// lines that were there, and this is what says the fold happened.
 #[test]

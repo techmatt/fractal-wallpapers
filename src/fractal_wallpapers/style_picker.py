@@ -33,6 +33,10 @@ from typing import Any
 #: The render log's name, beside the pictures it describes.
 LOG_NAME = "renders.jsonl"
 
+#: The renders sidecar's name, in the picker's folder: one row per option key, which
+#: `style keep` reads. Same name as the render log, a different file in a different folder.
+SIDECAR_NAME = "renders.jsonl"
+
 #: JPEG quality for a picker tile: what every style picker so far was built at.
 QUALITY = 92
 
@@ -216,7 +220,7 @@ def build(plan: dict[str, Any], folder: Path, base: Path, resolve=None) -> dict[
     manifest_path = folder / "manifest.json"
     with manifest_path.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
-    renders_path = folder / "renders.jsonl"
+    renders_path = folder / SIDECAR_NAME
     with renders_path.open("w", encoding="utf-8", newline="\n") as handle:
         for row in sidecar:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")

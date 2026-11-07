@@ -1,9 +1,11 @@
 """The only interface to the Rust renderer.
 
-Every pixel in this project is made by the `fractal-engine` binary. No other
-Python module invokes it, imports a renderer, or computes image data itself:
-if Python needs pixels, it calls through here and gets back a field or an
-image path. Keeping the boundary in one file is what lets the engine change
+Every pixel in this project is made by Rust: the native `fractal-engine` binary,
+reached through here, or the style-wasm build of the same compositor, which
+`style_wasm` runs only to parity-check and time it. No other Python module invokes
+the engine, imports a renderer, or computes image data itself: if Python needs
+pixels, it calls through here and gets back a field or an image path. Keeping the
+boundary in one file is what lets the engine change
 (new fractal family, new precision, GPU backend) without touching Python.
 
 The wire between the two halves is a JSON object on stdin and a JSON report on
@@ -48,10 +50,12 @@ __all__ = [
     "production_modes",
     "recolor",
     "render",
+    "render_link",
     "render_report",
     "run",
     "screen",
     "tiles",
+    "usage",
 ]
 
 ENGINE_BINARY_NAME = "fractal-engine"
@@ -84,8 +88,7 @@ def is_built() -> bool:
     the mistake this exists to remove: a guard spelled `not
     engine.engine_path().is_file()` at a test module's top level explodes while
     pytest is still collecting, which interrupts the whole lane rather than
-    skipping one file. Sixteen test modules wrote the try/except by hand before
-    this was here.
+    skipping one file: a module-level guard must not raise during collection.
     """
     try:
         engine_path()
@@ -192,11 +195,12 @@ def run(
     and the engine starts no grandchildren, so there is nothing left behind.
 
     **Every engine this project starts is below-normal priority, and it is set
-    here** rather than by each leg dropping itself first. A leg that forgot made
-    the desktop unusable for as long as it ran, and forgetting is the normal
+    here** rather than by each leg dropping itself first. A leg that forgets makes
+    the desktop unusable for as long as it runs, and forgetting is the normal
     case: the engine is reached from subcommands, from tests and from one-off
-    scripts, and only two passes in the tree ever called
-    [`process_control.set_background_priority`]. The flag is a `creationflags`
+    calls. A pass that drops its own priority with
+    [`process_control.set_background_priority`] covers only itself; the flag on
+    the spawn covers every caller. The flag is a `creationflags`
     value and is `0` off Windows, which is what `subprocess` wants there.
     """
     command = [str(engine_path()), subcommand, *arguments]

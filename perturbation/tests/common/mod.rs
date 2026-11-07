@@ -24,11 +24,10 @@ use perturbation::{Anchor, Spec};
 
 /// One deep frame: where it is, how wide, and the cap it was measured at.
 ///
-/// **Named rather than positional, and that is the whole reason it is a struct**
-/// *(deep_refactor_ckpt138)*. This was a six-field tuple decoded as `frame.4`
-/// and `frame.5` at four call sites, and those two are both `u32` — a cap and
-/// the multiple of the policy cap it is — so swapping them would have drawn a
-/// picture and moved a table rather than failing.
+/// **Named rather than positional, and that is the whole reason it is a struct.**
+/// Two of its fields are both `u32` — a cap and the multiple of the policy cap it
+/// is — so a tuple read by position could swap them and draw a picture and move a
+/// table rather than failing.
 pub struct Frame {
     pub label: &'static str,
     pub re: &'static str,
@@ -120,7 +119,7 @@ pub const DEEP_FRAMES: &[Frame] = &[
     // going down — but the deepest whose centre fitted the 64 characters
     // `explorer/deep-link.js` capped a coordinate at when it was chosen, with the
     // eight guard digits that put the truncation well under a pixel. It is 63.
-    // The deep cap is 128 since gpu_deep_ship_ckpt162; the frame stays as chosen.
+    // The deep cap is now 128; the frame stays as chosen.
     Frame {
         label: "tangle 1e-54",
         re: "-0.745017728290198619298779298918851031533262270733325571484375",
@@ -260,7 +259,7 @@ pub const FINE_SUPERSAMPLE: u32 = 2;
 pub const FINE_LANES: f64 =
     (CANVAS.0 * FINE_SUPERSAMPLE) as f64 * (CANVAS.1 * FINE_SUPERSAMPLE) as f64;
 
-/// **The deep frames at degrees three to six** *(deep_degrees_ckpt140)*: the same
+/// **The deep frames at degrees three to six**: the same
 /// seven kinds of frame as [`DEEP_FRAMES`], found the same way.
 ///
 /// `fractal-website/explorer/perturb-wasm/tests/descend.rs`'s
@@ -565,11 +564,11 @@ pub const M21: &[(u32, &str, &str)] = &[
     ),
 ];
 
-/// **Each degree's island pin** *(deep_degrees_ckpt140)*: a minibrot of about 1e-12
+/// **Each degree's island pin**: a minibrot of about 1e-12
 /// found off that degree's `M(2,1)`, whose body the website wrapper's `nuclei`'s
 /// size estimate was held to an area measured without it —
-/// `fractal-website/explorer/perturb-wasm/src/nuclei.rs`'s pin tests and the
-/// crate README §10. `(degree, period, re, im, body)`, the body being the measured one.
+/// `fractal-website/explorer/perturb-wasm/src/nuclei.rs`'s pin tests and
+/// `fractal-website/explorer/perturb-wasm/README.md`, *10. Degrees three to six*. `(degree, period, re, im, body)`, the body being the measured one.
 pub const PINS: &[(u32, u32, &str, &str, f64)] = &[
     (
         3,
@@ -692,12 +691,11 @@ pub fn canvas_spec(frame: &Control, maxiter: Option<u32>) -> Spec {
 /// Walk `cols × rows` cells of a spec's sample grid and hand each outcome back.
 ///
 /// **Written to match [`policy::probe_rows`], which is shipped behaviour and
-/// stays exactly as it is** *(deep_refactor_ckpt138)*. Four harnesses across
-/// two files each had their own copy of this loop — build the orbit, make a
-/// kernel at the spec's entry, take the centre offset, walk rows and columns,
-/// `spec.dc`, `sample_with` — differing only in what they tallied, and one of
-/// them had quietly dropped the clamp on [`policy::spread`]. They tally through
-/// the closure now and the walk is one thing.
+/// stays exactly as it is.** Build the orbit, make a kernel at the spec's
+/// entry, take the centre offset, walk rows and columns, `spec.dc`,
+/// `sample_with`: every harness walks the grid this way, differing only in what
+/// it tallies, so they tally through the closure and the walk is one thing —
+/// a private copy is how one would drop the clamp on [`policy::spread`].
 ///
 /// `cols` and `rows` are the grid to spread over the frame, exactly as a probe's
 /// are: pass `spec.sample_width()` and `spec.sample_height()` to visit every

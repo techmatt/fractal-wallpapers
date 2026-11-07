@@ -6,10 +6,13 @@
 //! ```text
 //! spec         a render described as JSON — family, viewport, coloring, colormap
 //! mode         the named colorings: what a render asks for instead of parameters
+//! viewport     the frame in the plane, and whether f64 can still resolve it
+//! maxiter      the iteration cap a view's width deserves
 //! family       the recurrence itself: what z starts at, and what one step does
 //! iterate      one escape-time loop, and the channels an orbit is worth reading
 //! field        those channels reduced over a supersampled grid → a scalar field
 //! coloring     field → linear-light RGB, through a stretch and a colormap
+//! colormap     stops on disk, baked through OKLab into a 4096-entry table
 //! direct_trap  the one coloring that paints during iteration and makes no field
 //! style        a declarative stack of layers over several channels of one orbit
 //! projection   a style's per-sample pre-map of the frame: the log-polar view
@@ -60,8 +63,7 @@
 //! the field comes from `../perturbation`, the kernel the explorer's Deep tab compiles
 //! to wasm, behind the default `deep` feature, and goes back through [`coloring`] like
 //! any other. Deliberately absent: lighting in any named mode — a style's `light`
-//! layer ([`style`]) is the one place a surface is lit — and any fast path that trades
-//! a branch for clarity.
+//! layer ([`style`]) is the one place a surface is lit.
 
 pub mod autolevel;
 pub mod coloring;

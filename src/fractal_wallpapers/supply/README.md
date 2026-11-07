@@ -82,7 +82,7 @@ the junk floor kills.
 
 **The exploration share is spread evenly over the drawable partitions, carried across
 batches** (`Exploration.taken`, checkpointed): a batch holds one or two share slots
-against ten partitions. `exploration_slots` never sees an intent. `share.weight_source`
+against every drawable partition (twelve in `ALL_PARTITIONS`). `exploration_slots` never sees an intent. `share.weight_source`
 reads `even_carry`; a 0.0 in `quota.exploration.realized.per_partition` beside a
 non-empty `novel_queues` is a defect.
 
@@ -148,7 +148,7 @@ Under `--low-water` (`LOW_WATER` 8, which is `Limits.batch`) a partition is hand
 `--cooldown` batches (`COOLDOWN` 10). `starved` already skips `remaining <= 0`, so on a
 live shelf the cooldown only idles screened viewports. **The cadence was the whole of
 it** on a one-partition pinned-plane leg: `--low-water 16 --cooldown 1` runs its clock
-out. The defaults suit a ten-partition run and stay.
+out. The defaults suit an all-partition run and stay.
 
 ## Degree 6: twelve partitions, two with no labels behind them
 
@@ -157,7 +157,9 @@ out. The defaults suit a ten-partition run and stay.
 measured at **2.736 active minutes a unit (`multibrot6`) and 0.027 (`julia:multibrot6`)**.
 **Nothing label-fed will ever serve them** (`partitions.NEVER_LABELLED`): the sampler is
 the plane's one root source, so a harvest turns it on for `multibrot6` unnamed
-(`cli.supply_commands.build_sampler_channel`); the twin feeds off its plane.
+(`cli.supply_commands.build_sampler_channel`); the twin feeds off its plane. On a mixed
+harvest the pair together is capped at `allocation.CAPPED_GROUP_SHARE` (10%) of the
+clock, never below its floors. A run naming only the pair is not capped.
 
 ```
 fractal-wallpapers harvest --partition multibrot6 --root-channel viewport_sampler

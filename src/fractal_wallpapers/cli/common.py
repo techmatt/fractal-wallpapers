@@ -36,7 +36,7 @@ def speak_utf8() -> None:
     em-dash in this project's prose landed as the byte `0x97` and every reader
     that assumed UTF-8 — PowerShell 7, a browser, `git`, this repository's own
     files — showed it as a replacement character. Worse where the character is
-    not in cp1252 at all: `curate derive-tau-h --help` and `label build --help`
+    not in cp1252 at all: `derive-tau-h --help` and `label build --help`
     carry a `τ` and a `→`, and those did not mojibake, they raised
     `UnicodeEncodeError` and took the command down while argparse was printing.
 
@@ -160,7 +160,7 @@ class Parser(argparse.ArgumentParser):
 
     A subclass rather than `formatter_class=` at every site, because
     `add_subparsers` defaults `parser_class` to `type(self)`: one class named
-    once at the root reaches all 48 `curate` steps and all 102 nested verbs,
+    once at the root reaches every `curate` step and every nested verb,
     where the keyword argument would have to be repeated at every `add_parser`
     call and would be silently missing from the next one written.
     """
@@ -825,3 +825,29 @@ def keeping_verbs(verbs, *, noun: str, force: str, order=("check", "save", "rest
             )
             restoring.add_argument("--force", action="store_true", help=force)
     return verbs
+
+
+def run_keeping_verb(args: argparse.Namespace, durable) -> int:
+    """Run the [`keeping_verbs`] verb `args.what` names on one durable store.
+
+    The handler half of the trio, for a store kept through `curation.durability`
+    as it stands. Prints the report as JSON. `check` is the one that answers a
+    yes/no question, so it is the one with an exit code worth reading: a short or
+    missing store is a build failure.
+    """
+    from fractal_wallpapers.curation import durability
+
+    doing = {
+        "save": lambda: durability.save(durable),
+        "check": lambda: durability.check(durable),
+        "restore": lambda: durability.restore(durable, force=args.force),
+    }[args.what]
+    try:
+        report = doing()
+    except durability.DurableLost as refusal:
+        print(refusal)
+        return 1
+    print(json.dumps(report, indent=2))
+    if args.what == "check" and report.get("verdict") in {"short", "missing"}:
+        return 1
+    return 0

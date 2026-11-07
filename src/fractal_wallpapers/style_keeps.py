@@ -39,6 +39,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from fractal_wallpapers import style_picker
 from fractal_wallpapers.paths import DRIVE_SYNC_NAME, drive_sync, repo_root
 
 #: The folder under `fractal-drive-sync/` the kept pictures go to, one folder a style.
@@ -274,7 +275,7 @@ def keep(
         raise KeepError(f"the choices file {choices_path} names no picker and rows")
     manifest_path = manifest_path or manifest_of(choices)
     manifest = read_json(manifest_path, "picker manifest")
-    renders = read_renders(renders_path or manifest_path.parent / "renders.jsonl")
+    renders = read_renders(renders_path or manifest_path.parent / style_picker.SIDECAR_NAME)
     choices = rows_of(choices, name)
     keeps, stacks = kept(choices, manifest, renders, manifest_path.parent)
 

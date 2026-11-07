@@ -57,7 +57,6 @@ its file, so it can never be mistaken for the release asset.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import random
 import zipfile
@@ -65,6 +64,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from fractal_wallpapers.paths import repo_root
+from fractal_wallpapers.storage import sha256_of
 
 #: The schema of [`MANIFEST_NAME`].
 SCHEMA = 1
@@ -451,14 +451,6 @@ def readme_text(pack: Pack, partial: bool) -> str:
         "",
     ]
     return "\n".join(lines)
-
-
-def sha256_of(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for block in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def write_zip(

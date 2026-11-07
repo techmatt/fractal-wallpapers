@@ -3,9 +3,8 @@
 //! **The module's one import, and it exists because a wasm call cannot be looked
 //! into.** A reference orbit at a cap of a million, or one rung of the cap probe on
 //! a frame beside a parabolic point, is seconds inside a single export, and until
-//! it returns the worker that made the call can say nothing at all. The page could
-//! not tell a slow frame from a stranded pool, and that was the whole of the
-//! problem `deep_tab_activity_and_layout_ckpt141` was sent to fix.
+//! it returns the worker that made the call can say nothing at all. Without a
+//! report the page cannot tell a slow frame from a stranded pool.
 //!
 //! So the long loops call [`report`] with how much of their own work is done, and
 //! on `wasm32` that is `env.progress(done, total)`, supplied by whoever instantiates

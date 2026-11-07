@@ -147,7 +147,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import page
+from fractal_wallpapers.curation import page, release
 from fractal_wallpapers.labeling import gallery_grade
 from fractal_wallpapers.labeling.sheets import LABEL_RESOLUTION, LABEL_SUPERSAMPLE
 
@@ -210,8 +210,9 @@ PAGE_WIDTH = 640
 PAGE_QUALITY = 88
 
 #: How many engines the render verb drives. **Three**, this machine's render
-#: pool, and a rule about the desktop rather than a knob.
-WORKERS = 3
+#: pool, read off the module that owns it, and a rule about the desktop rather than a
+#: knob.
+WORKERS = release.DEFAULT_WORKERS
 
 #: The kill deadline stamped onto every render task, in seconds. A label-geometry
 #: render is four times a candidate's pixels, so this is [`solve.ROW_BACKSTOP`]'s

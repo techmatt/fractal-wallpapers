@@ -13,9 +13,8 @@
 //! with.
 //!
 //! **The record is `tests/common` and the harnesses are
-//! `fractal-website/explorer/perturb-wasm/tests/measure.rs`**
-//! *(deep_refactor_ckpt138)*. This file was both and was 800 lines of it; what
-//! is left is the part that costs nothing and catches the two ways a committed
+//! `fractal-website/explorer/perturb-wasm/tests/measure.rs`**; this file is
+//! the part that costs nothing and catches the two ways a committed
 //! frame goes quietly wrong. Every file under `tests/` is its own crate, which
 //! is why the frames themselves sit in a directory module the binaries declare
 //! rather than in this one.
@@ -49,8 +48,8 @@ use perturbation::cap;
 #[test]
 fn the_deep_frames_are_spellable_and_at_the_cap_they_claim() {
     /// `explorer/deep-link.js`'s `COORDINATE_LIMIT`: the deep contract's own
-    /// cap, `deep-fx.js`'s 120-digit `MAX_SCALE` and eight
-    /// (gpu_deep_ship_ckpt162). It shared the shallow contract's 64 until then.
+    /// cap, `deep-fx.js`'s 120-digit `MAX_SCALE` and eight, apart from the
+    /// shallow contract's 64.
     const COORDINATE_LIMIT: usize = 120 + 8;
     assert_eq!(DEEP_FRAMES.len(), 7, "the descent settled on seven");
     // And seven at each higher degree, the same seven kinds.

@@ -1,7 +1,8 @@
 """The style compositor as WebAssembly: the bundle a page draws from, and its checks.
 
 The module is `style-wasm/` (`engine/README.md`'s *The style module*): the engine's own
-`style::measure` and `style::tile` behind a few raw exports, with the three rules
+`style::measure`, `style::tile` and `style::paint` (the whole frame in one pass) behind a
+few raw exports, with the three rules
 `style render` lays on a style file before the engine sees it. This side writes what a
 page needs to draw a published mode without copying one by hand, the **bundle**, and
 holds the module to the native engine:

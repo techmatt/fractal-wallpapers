@@ -78,6 +78,7 @@ from pathlib import Path
 
 from fractal_wallpapers.curation import page as page_module
 from fractal_wallpapers.curation import recipes as recipes_module
+from fractal_wallpapers.curation import release
 from fractal_wallpapers.labeling import finished
 from fractal_wallpapers.paths import repo_root
 
@@ -143,8 +144,9 @@ PAGE_WIDTH = 640
 PAGE_QUALITY = 88
 
 #: How many engines the render stage drives. **Three**, this machine's render
-#: pool, and a rule about the desktop rather than a knob.
-WORKERS = 3
+#: pool, read off the module that owns it, and a rule about the desktop rather than a
+#: knob.
+WORKERS = release.DEFAULT_WORKERS
 
 #: How many pictures a judge reads at once.
 SCORE_BATCH = 128

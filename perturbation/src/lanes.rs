@@ -1,4 +1,4 @@
-//! Two samples a vector: the band fill in wasm, on `f64x2` *(deep_wait_ckpt163)*.
+//! Two samples a vector: the band fill in wasm, on `f64x2`.
 //!
 //! **Why.** The scalar step is one chain of dependent `f64` operations, add → multiply →
 //! subtract → add, so one sample keeps a core's floating-point ports about a third

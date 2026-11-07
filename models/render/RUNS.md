@@ -15,11 +15,11 @@ one of those.
 
 ```text
 run                      role                       backbone  seed  epoch  reads
-deploy_v6_seed0          deploy band `deploy_v6`    small     0     12     SHIPS (weights-v6)
+deploy_v6_seed0          deploy band `deploy_v6`    small     0     12     SHIPS
 deploy_v6_seed1          deploy band `deploy_v6`    small     1     13     band mate
 deploy_v6_seed2          deploy band `deploy_v6`    small     2      9     band mate
 deploy_seed0             deploy band `deploy`       small     0      3     band mate
-deploy_seed1             deploy band `deploy`       small     1     17     shipped weights-v5
+deploy_seed1             deploy band `deploy`       small     1     17     shipped before `deploy_v6`
 deploy_seed2             deploy band `deploy`       small     2      9     band mate
 enlarged_corpus_seed0    candidate `enlarged_corpus` small    0      5     comparison_enlarged_corpus
 enlarged_corpus_seed1    candidate `enlarged_corpus` small    1      5     comparison_enlarged_corpus
@@ -47,9 +47,9 @@ on two different slices.
 ## What each role means
 
 **The two deploy bands** are `renders deploy`, three seeds each over the corpus as
-it stood. `deploy` shipped weights-v5 out of `deploy_seed1`; `deploy_v6` shipped
-weights-v6 out of `deploy_v6_seed0` on 2026-09-03 and `render.v5.fp16.pt` sits
-beside the shipped artifact so a revert is one act. **v6 puts a flat `1.0000` on
+it stood. The shipped render head is `deploy_v6_seed0` (its tag is the render row of
+`models/weights.json`); `deploy_seed1` shipped before it, and `render.v5.fp16.pt`
+sits beside the shipped artifact so a revert is one act. **v6 puts a flat `1.0000` on
 thousands of rows** [measured, ckpt 103], which is the shape of a gate rather than
 a ranker: two thirds of what it is surest about is a three, and it has no order
 inside its own top on any kind. Read a v6 top-end ordering as absent rather than

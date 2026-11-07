@@ -5,7 +5,8 @@ objects (so children die with the parent) and priority classes (so a sweep does
 not make the desktop unusable). Those calls live here and nowhere else, so the
 rest of the package stays plain cross-platform Python.
 
-**Both functions return what actually happened, never a bare success.** A cleanup
+**`set_background_priority` and `bind_children_to_parent` return what actually
+happened, never a bare success.** A cleanup
 guarantee that could not be installed must not be reported as installed: a release
 pass that thinks its engines will be reaped, and is wrong, leaves a full-resolution
 render running after the run that owned it is gone. On anything but Windows the
@@ -186,7 +187,7 @@ def hold(path) -> int | None:
     exist. The file's *contents* are nothing, deliberately: anything written in it
     would be a claim about a process that is usually no longer there.
 
-    The one platform branch: `LockFile` on Windows, `flock` on POSIX. Both are
+    `msvcrt.locking` on Windows, `flock` on POSIX. Both are
     held by the handle rather than by the process, so a second `hold` of the same
     path inside one process refuses exactly as another process's would.
     """
@@ -226,4 +227,11 @@ def let_go(handle: int | None) -> None:
         os.close(handle)
 
 
-__all__ = ["IS_WINDOWS", "bind_children_to_parent", "hold", "let_go", "set_background_priority"]
+__all__ = [
+    "IS_WINDOWS",
+    "bind_children_to_parent",
+    "child_priority_flags",
+    "hold",
+    "let_go",
+    "set_background_priority",
+]

@@ -2,18 +2,11 @@
 
 A walk descends from a seed, one rung at a time, keeping what survives the
 structural gates and reframing onto the nuclei it passes. Nothing here judges a
-picture: the gates are geometry and the scorer that will judge is a seam
-([`scoring`]) with a null implementation behind it today.
+picture: the gates are geometry, and the judgement is a seam ([`scoring`]):
+`LocationScorer` reads each survivor through the shipped location head, and
+`NullScorer` stands in under `--no-scoring`.
 
-```text
-pools      the tracked seed pools, and the spacing the Julia one has to keep
-walk       the frontier, the batch, the reserved floors, the run loop
-nucleus    Newton on a nucleus, the atom instrument, the canonical key
-operators  reframing a found view onto the atoms around it
-ledger     one JSONL record, one schema, a fate on every row
-scoring    the seam a trained head arrives through
-viewport_sampler  fresh roots for a plane: viewports drawn and screened
-```
+The module map is the package's `README.md`.
 """
 
 from __future__ import annotations

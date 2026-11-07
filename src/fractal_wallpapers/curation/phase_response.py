@@ -82,6 +82,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from fractal_wallpapers.curation import release
 from fractal_wallpapers.paths import under
 
 #: The schema every row and record this module writes carries.
@@ -179,9 +180,9 @@ DEFAULT_MAPS = 2
 DEFAULT_SEED = 0
 
 #: The workers a pass drives the engine with. This machine's rule and not a knob —
-#: more than three `fractal-engine` at once makes the desktop unusable — restated
-#: off the module that owns it.
-DEFAULT_WORKERS = 3
+#: more than three `fractal-engine` at once makes the desktop unusable — read off
+#: the module that owns it.
+DEFAULT_WORKERS = release.DEFAULT_WORKERS
 
 
 class PhaseResponseRefused(RuntimeError):

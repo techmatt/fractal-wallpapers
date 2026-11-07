@@ -28,8 +28,9 @@ src/lanes.rs           the same loop two samples a vector, wasm SIMD builds only
 src/policy.rs          the cap a frame asks for (§8)
 src/json.rs            a reader for one flat JSON object (the spec)
 src/progress.rs        a wasm build's one import, env.progress
-src/lib.rs             the spec, anchors, the width's cap, compute_rows, compute_listed,
-                       pack_reference, band_ran, band_saved
+src/lib.rs             the spec, anchors, the width's cap, compute_rows, compute_rows_counted
+                       (a Band with its own counters, the engine's entry point), compute_listed,
+                       pack_reference, unpack_reference, band_ran, band_saved
 smooth-cases.json      the engine's own samples, as the pin
 tests/oracle.rs        the kernel against a brute-force oracle (ignored by default)
 tests/parity.rs        every bit out, pinned per spec: parity-specs.jsonl → parity-pins.txt
@@ -67,8 +68,11 @@ delta lane and a two-point reference).
 ## What the engine needed
 
 **Nothing**; the engine depends on this crate, never the reverse. The engine's private
-`iterate::smooth_count` is restated in `src/kernel.rs`, and `smooth-cases.json` (field samples
-plus `(escape step, |z|², smooth)` triples, which hold exactly) pins it to the engine.
+`iterate::smooth_count` is restated in `src/kernel.rs`, and two pins hold the copy to it:
+`smooth-cases.json` (field samples plus `(escape step, |z|², smooth)` triples, which hold
+exactly, recorded on one machine) runs from this crate alone, and the engine's
+`the_deep_kernels_smooth_count_is_this_one` (under its `deep` feature) runs the two side by side,
+bit for bit, at degrees two to six on any platform.
 
 ## Proof
 
@@ -188,8 +192,8 @@ out.
   `policy::next_cap`, `policy::settle`, `nuclei::tile_cap`); `plan`'s `ceiling`.
 - **`cap::EXPLICIT_CEILING`, 2,000,000**: caps asked for (`nuclei::open_cap`, `permalink.js`'s
   `CAP_LIMIT`, held by `deep.test.mjs`, Halve/Double, a typed cap, builder-pinned caps);
-  `plan`'s `explicit_ceiling`. Bounded by orbit memory, sixteen bytes a point per worker (see
-  `fractal-website/explorer/README.md`, *Two ceilings*).
+  `plan`'s `explicit_ceiling`. Bounded by orbit memory, sixteen bytes a point per worker (the
+  page's side is the "Two cap ceilings" bullet of `fractal-website/explorer/README.md`).
 
 `next_cap` past the automatic ceiling returns its input.
 

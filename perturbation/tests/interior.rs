@@ -1,18 +1,17 @@
-//! The interior switch never paints an escaping sample black
-//! *(interior_switch_fix_ckpt162)*.
+//! The interior switch never paints an escaping sample black.
 //!
-//! `gpu_model_stage1_ckpt162` found two long-orbit frames where the shipped switch
-//! called escaping samples interior: the degree-2 main cusp and an imploded Julia set.
+//! Two long-orbit frames are where a bare threshold calls escaping samples interior:
+//! the degree-2 main cusp and an imploded Julia set.
 //! Both sit beside a parabolic point, where an orbit creeps up on a fixed point with
-//! `|f'| = 1` and `|dz|²` decays like a power of `n` rather than geometrically, so the
-//! old `|dz|² < 2^-64` rule fired a long way before the escape. These are those two
+//! `|f'| = 1` and `|dz|²` decays like a power of `n` rather than geometrically, so a
+//! bare `|dz|² < 2^-64` rule fires a long way before the escape. These are those two
 //! frames built the same way at a gate of a million steps rather than ten million
 //! (`scratch/gpu-model/longorbit.jsonl` has the originals), and the cusp again at every
 //! degree the kernel draws.
 //!
 //! Each holds three things on a row of samples down the frame's middle: that the
 //! switch-off loop escapes every one of them, that `|dz|²` is under the gate half way
-//! through the gate's passage — so the old rule would have stopped them there — and that
+//! through the gate's passage — so a bare threshold would stop them there — and that
 //! the switch on lands on exactly the count the switch off does.
 
 use perturbation::Spec;

@@ -137,8 +137,15 @@ def palettes_add(args: argparse.Namespace) -> int:
         if row.get("status") == "discarded":
             print(f"[add] refused: {args.mode} is discarded; a palette round needs a live mode")
             return 1
+    # The ledger is tallied before anything is written, so the produced table is rebuilt
+    # whole rather than left behind the ledger; a box with no ledger splices a zero row.
     try:
-        report = admit.run(Path(args.map), replace=args.replace)
+        counts, _read = produced.tally()
+    except produced.ProducedError:
+        counts = None
+        print(f"[add] no candidate ledger here: {produced.RECORD_NAME} gains a zero row only")
+    try:
+        report = admit.run(Path(args.map), replace=args.replace, counts=counts)
     except (
         admit.AddError,
         carriers.CarrierError,
@@ -387,10 +394,11 @@ def add_commands(subcommands) -> None:
         help="admit one colormap to the library, with its carrier and produced rows",
         description=(
             "Validates a map document the way tests/test_colormaps.py holds the library, "
-            "writes it to data/palettes/<name>.json, inserts its all-zero row in "
-            "palette_family_shares.csv and splices its own rows into carriers.jsonl — "
+            "writes it to data/palettes/<name>.json, rebuilds palette_family_shares.csv "
+            "from the candidate ledger (an all-zero row only, on a box without one) and "
+            "splices its own rows into carriers.jsonl — "
             "measured exactly as `carriers` measures one map, on a fresh recolour — leaving "
-            "every other row of both untouched. groups.jsonl gains one admission row — the "
+            "every other carrier row untouched. groups.jsonl gains one admission row — the "
             "nearest group within the cut, or a group of its own — and is never re-cut; "
             "the three library maps nearest by M1 are printed. A name the library already "
             "holds is refused without --replace."
@@ -400,7 +408,7 @@ def add_commands(subcommands) -> None:
     adding.add_argument(
         "--replace",
         action="store_true",
-        help="re-tune a map the library already holds (its produced row is kept)",
+        help="re-tune a map the library already holds (its group is kept)",
     )
     adding.add_argument(
         "--mode",
@@ -426,7 +434,7 @@ def add_commands(subcommands) -> None:
             "twelve hue families. `carriers` asks what a map CAN carry, by recolouring three "
             "reference fields; this asks what it HAS made, by tallying the verdict every "
             "ledger row already carries. Decodes no picture and renders nothing — one "
-            "streamed pass over the ledger, about a minute."
+            "streamed pass over the ledger, about twenty seconds."
         ),
     )
     producing.add_argument("--quiet", action="store_true", help="do not print progress")

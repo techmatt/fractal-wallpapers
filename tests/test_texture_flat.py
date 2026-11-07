@@ -240,7 +240,7 @@ def test_a_mode_with_no_texture_never_reaches_the_register(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def artifacts_on_disk(tmp_path, monkeypatch):
-    """A hot root these fixtures can plant a picture in. [`test_solve`]'s fixture,
+    """A hot root these fixtures can plant a picture in. [`test_pool`]'s fixture,
     for its reason: `solve.pool` refuses a row whose named picture is not on disk,
     so a fixture that only names a path is a fixture the pool drops."""
     from fractal_wallpapers import paths

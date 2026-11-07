@@ -149,6 +149,18 @@ def test_the_produced_row_is_inserted_in_order_and_every_other_line_is_untouched
     assert path.read_text(encoding="utf-8").splitlines(keepends=True) == after
 
 
+def test_a_ledger_tally_rebuilds_the_produced_table_whole(library) -> None:
+    """Given the ledger's counts, the table is what `palettes produced` would write over
+    the library plus the new map, so a stale row moves with the admission."""
+    where, _outside = library
+    counts = {"twilight": {"": 7, "blue": 3}, NEW: {"": 2, "orange": 2}}
+    text, verb = admit.produced_text(NEW, where, counts)
+    assert verb == "rebuilt"
+    assert text == produced.text_of(produced.rows_for(counts, sorted([*MAPS, NEW])))
+    with pytest.raises(admit.AddError, match="not in this library"):
+        admit.produced_text(NEW, where, {"no_such_map": {"": 1}})
+
+
 def test_the_carrier_splice_is_the_record_a_full_build_would_write(library) -> None:
     """Splice `yas` into a record without it and get the record with it, byte for byte."""
     where, outside = library

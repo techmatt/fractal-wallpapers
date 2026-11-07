@@ -74,7 +74,7 @@ record it wrote, not a re-thinning. The mandelbrot plane read 0 `lost` after it 
 checks: `colormap <name>`, `mirror on a cyclic map`, `curve <name>`, and
 `autolevel band_autolevel/v1` for a `lost` tone.
 
-## The five planes
+## The planes
 
 `PLANES` in `__init__.py` is the table: a family for the plate and the ledger partitions
 whose places land on it, named as the website's `builder/atlas.py` names its partitions.
@@ -82,7 +82,7 @@ whose places land on it, named as the website's `builder/atlas.py` names its par
 | `--plane` | plate family | partitions | a dot's `kind` |
 | --- | --- | --- | --- |
 | `mandelbrot` | `mandelbrot`, degree 2 | `mandelbrot`, `julia:mandelbrot` | `mandelbrot` / `julia` |
-| `multibrot3`, `4`, `5` | `multibrot` at that degree | `multibrotN`, `julia:multibrotN` | `mandelbrot` / `julia` |
+| `multibrot3`, `4`, `5`, `6` | `multibrot` at that degree | `multibrotN`, `julia:multibrotN` | `mandelbrot` / `julia` |
 | `phoenix` | the classic slice, `partitions.CLASSIC_PHOENIX_POINT` | `phoenix:classic` | `julia` |
 
 A multibrot plane is the Mandelbrot plane at another degree, and its Julia slots are drawn

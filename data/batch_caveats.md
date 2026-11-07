@@ -17,8 +17,7 @@ is about nothing, and keeping it beside the registries is what makes it findable
 from the rows it constrains.
 
 Entries are added when a population is drawn, not when somebody is caught reading
-it wrong. Ids below were checked against the registries on 2026-08-23 and are
-spelled as those files spell them.
+it wrong. Every id below is spelled as its registry spells it.
 
 ---
 
@@ -545,14 +544,14 @@ number is the one a root draw sees.
 
 ---
 
-## Five batches reach the candidate ledger; the other twenty-one do not
+## Five batches reach the candidate ledger; the rest do not
 
 *Registries: both. Measured 2026-08-28 over the 9,427 resolved scored rows.*
 
 A finished-render row carries its whole recipe, so nothing about the *picture* is
 missing from any of these batches. What is missing from most of them is the
 **model column**: `P(>=4)` exists only for rows whose recipe is a row of the
-candidate ledger, and only four batches were drawn over that ledger —
+candidate ledger, and only five batches were drawn over that ledger —
 `p_ge4_calibration_smooth` (123), `p_ge4_calibration_strange` (115),
 `released_top_end` (116), `under_seen_modes` (496) and `seated_and_head_top`
 (200), which join at 100%. Everything else was drawn over the **location
@@ -918,7 +917,7 @@ learn and not a duplicate.
 
 ---
 
-### Reading this file from code
+## Reading this file from code
 
 Nothing parses it. It is prose beside the registries on purpose: a caveat that a
 reader has to obey is a caveat a reader has to *read*, and encoding these as

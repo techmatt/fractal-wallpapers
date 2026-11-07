@@ -9,7 +9,8 @@ fractal-wallpapers palettes reference-fields
 fractal-wallpapers palettes carriers
 fractal-wallpapers palettes produced
 fractal-wallpapers palettes color-mass [--only-new]
-fractal-wallpapers palettes add data/palettes/<name>.json [--replace]
+fractal-wallpapers palettes add data/palettes/<name>.json [--replace] [--mode <mode>]
+fractal-wallpapers palettes remove <name>
 fractal-wallpapers palettes strip --name "Bone Vault" --out artifacts/figures/bone.png
 fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120 [--no-mirror]
 ```
@@ -17,7 +18,7 @@ fractal-wallpapers palettes strip --manifest names.txt --width 1600 --height 120
 `palettes` is the **library**; `palette` is the head that picks between its maps. Nothing
 here loads a model.
 
-**Every record beside the maps is `.jsonl`, never `.json`**: every library reader globs
+**Every record beside the maps is `.jsonl` or `.csv`, never `.json`**: every library reader globs
 `data/palettes/*.json` and takes the stem as a map name.
 
 ## Getting maps in, and the colour arithmetic
@@ -27,8 +28,8 @@ here loads a model.
 through `space`, each provenance row stamped `drop`. `kind` is measured on the gradient
 (`CLOSES`), because `mirror = the map is not cyclic` is read off it everywhere;
 `tests/test_authored_import.py` re-densifies the authored maps stop for stop.
-`library_import` brings a source-project map across; `admit` (`palettes add`) admits
-one map to the library, and the `palette admit` command with
+`library_import` brings a source-project map across; `admit` (`palettes add` /
+`palettes remove`) admits one map to the library or takes one no tile kept out, and the `palette admit` command with
 `palette_sets.ADMITTED_DROPS` puts a drop in the pool.
 
 `provenance` writes one row per made map to `data/palettes/provenance.jsonl` (an authored
@@ -75,11 +76,11 @@ is `models.palette_sets.pool()["pool"]`, smaller: `blue_orange` (instrument:
 `labeling.sheets.VIVID_COLORMAP` and the tile floor's expansion in `engine/src/tiles.rs`)
 and `atlas_grey` are held back, and a map added since is not in it until somebody puts
 it there. What a colorize **draws** from is smaller again: `colorize.pool`
-reads the pool through `groups.collapse`, one member a group. `colorize.pool_record`
+reads it through `groups.collapse`, one member a group. `colorize.pool_record`
 names the group every absent map stood down for.
 
 **The drawn count is seed-independent; which maps is not.** `collapse` draws the standing
-member on the seed: Matt's rule, since no member deserves the slot permanently. `groups.canonical` is what a
+member on the seed (Matt's rule). `groups.canonical` is what a
 record *names*, never what the pool draws. `FRACTAL_WALLPAPERS_PALETTE_GROUPS=off` turns
 the collapse off for one run (read at call time; a typo falls back to the default).
 
@@ -110,8 +111,7 @@ bound holds of the **lookup**, not of the stored picture: supersampling and JPEG
 colour after the lookup (worst on high-frequency fields, `gaussian_int` and the direct
 traps, which `autolevel.applies_to` excludes), and autolevel rewrites the stops. So a
 ramp read is a **necessary condition on the map, not a prediction about the
-picture**, and none at all for the noisy modes: a ramp that could lead a family delivered
-it 23–33% of the time, one that could not 0.1–0.4%.
+picture**, and none at all for the noisy modes.
 
 ## `color_mass` — how much of each colour a (group, mode) pair actually makes
 
@@ -136,8 +136,7 @@ fractal-wallpapers palettes color-mass --only-new  cut those pairs in, and only 
 full `build` would drop it. `extend` appends only groups with no row, old rows
 byte-identical. The cost a leg sizes on is
 [`curation/MEASUREMENTS.md`](../curation/MEASUREMENTS.md)'s *What a `color_mass` close
-costs a map* (about 138 s a map over the whole grid); all 18 modes are owed, since the
-grid guard holds the map to them.
+costs a map*; all 18 modes are owed, since the grid guard holds the map to them.
 
 **`color_mass.delivering(cells, cutoff, within)` is the one reader that turns the map into
 a cut** (`curate depth --draw-cells`): maps are expected to put at least `cutoff`
@@ -161,8 +160,8 @@ fractal-wallpapers curate mass-sweep save|check|restore
 The sweep log (`artifacts/curation/palette_mass_sweep/rows.jsonl`, one row per (group,
 mode, location) with recipe and cost) is **not tracked and not hot**: a copy under
 `<archive>/curation_backup/palette_mass_sweep/`, a tracked manifest at
-`data/curation/palette_mass_sweep.manifest.json`. Nothing reads it; it is insurance, and
-re-deriving it is 52.1 engine hours. `missing` is normal.
+`data/curation/palette_mass_sweep.manifest.json`. Nothing reads it; it is insurance
+(re-deriving it is days of engine time). `missing` is normal.
 
 ## `variants` — one map, one axis moved
 
@@ -216,8 +215,7 @@ dropped from numerator and denominator**, so shares are of the picture's colour.
 is DOMINANT when it leads and holds ≥ 0.10, or holds ≥ 0.15 alone; over the twelve hue
 families, 0.20 / 0.30. A picture may be dominant in several cells or none, and there is
 no floor under the raw share (deliberate, named in the module). **The family union is
-bounded at three by arithmetic** (`floor(1 / FAMILY_ALONE)`), and the measured mean is
-1.25: three at once is under a tenth of a percent of the store.
+bounded at three by arithmetic** (`floor(1 / FAMILY_ALONE)`).
 
 `pixel_clouds` is M1 on 4,096 seeded **pixels** at census size; within
 `curation.ceiling.TAU` two pictures are one wallpaper by the gallery's twin test. It does
@@ -229,8 +227,7 @@ not substitute for `groups`.
 `recolor`, so the strip gets a wallpaper's bake, table and fold (folded unless cyclic;
 `--no-mirror` unfolds). Coloring normalizes against its own 0.5th and
 99.5th percentiles, so the outer half percent of a strip is the end colour held flat; no
-choice of ramp values avoids that clip (the stretch is affine-invariant), and it cannot
-be compensated for in the ramp, but it can be **inverted**: see
+ramp avoids that clip (the stretch is affine-invariant), but it can be **inverted**: see
 [`data/palettes/README.md`](../../../data/palettes/README.md#reading-a-python-side-gradient-against-the-rust-bake).
 
 `strip.draw(..., colormap_dir=...)` (Python only; no CLI flag) draws the ramp a

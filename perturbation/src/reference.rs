@@ -41,14 +41,13 @@ pub fn limbs_for(width: f64, sample_width: u32) -> usize {
 /// The limb count for a view whose neighbouring samples are told apart only at
 /// `step^power`, and not at `step`.
 ///
-/// **This is the Julia origin anchor's rule** *(deep_degrees_ckpt140)*. At `z = 0`
+/// **This is the Julia origin anchor's rule.** At `z = 0`
 /// the first step is `z₁ = z₀^d + c`, so two pixels one step apart at `z₀` are
 /// `step^d` apart at `z₁`, and everything after that is iterated from `z₁`. The
 /// reference `c` and its orbit therefore have to hold `c` to the bits that
 /// separate `step^d`, which is `d` times the view's own — sized for `step` alone,
 /// the orbit's last bit is coarser than the difference between two pixels and the
-/// picture is of the truncation. `audit_deep_families_ckpt140` measured it on the
-/// shipped d=2 tab: a median error of **6.6 smooth counts at 1e-30 and 34 at
+/// picture is of the truncation. Measured on the d=2 tab, that is a median error of **6.6 smooth counts at 1e-30 and 34 at
 /// 1e-36**, against 6e-14 with the bits this gives. `power = 1` is
 /// [`limbs_for`], which is every other view.
 ///
@@ -267,8 +266,8 @@ fn finished(points: Vec<[f64; 2]>, escaped: bool, period: Option<u32>, n: usize)
 /// loses nothing, because an iterate that size is outside every set this draws and
 /// on its way out: what the kernel reads off it is `|z|` against the bailout and
 /// a smooth count, which want relative precision, and `f64` is relative precision.
-/// `audit_deep_families_ckpt140` held the same tail against a fixed-point oracle at
-/// every degree and it agreed to 7e-15.
+/// Held against a fixed-point oracle at every degree, the same tail agrees to
+/// 7e-15.
 ///
 /// `z^d` in fixed point is `d − 1` complex multiplies of the iterate by itself,
 /// the first of them two squares and one product and every later one four

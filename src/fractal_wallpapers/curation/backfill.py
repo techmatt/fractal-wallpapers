@@ -56,6 +56,7 @@ import time
 from pathlib import Path
 
 from fractal_wallpapers.coloring import autolevel
+from fractal_wallpapers.curation import tentative
 from fractal_wallpapers.paths import colormap_dir, under
 
 #: The schema every backfill row carries.
@@ -182,13 +183,9 @@ def agreement(stamp: dict, shipped: list | None, stops: list) -> str:
     return AGREES if rebuilt == shipped else DIFFERS
 
 
-#: Which record's seats a backfill sweeps unless a caller names another. The
-#: general n=1000 of 2026-09-21, `final139_general` — the seating of the pool as
-#: mining closed, and the one record here that is a whole gallery rather than a
-#: collection. It replaced the n=1000 of 2026-09-08 when the ruling that closed
-#: mining removed every earlier saved record; a default has to name a record that
-#: exists, so this constant moves with the keep list rather than outliving it.
-DEFAULT_RECORD = "20260922T012627Z"
+#: Which record's seats a backfill sweeps unless a caller names another: the
+#: unstamped default.
+DEFAULT_RECORD = tentative.DEFAULT
 
 #: How often the leg says where it is. A backfill is hundreds of renders and the
 #: only thing that distinguishes a slow one from a hung one is a line.
@@ -217,8 +214,6 @@ def seats_of(stamp: str) -> list[str]:
     records it no longer covers are the ones nothing resolves. Naming a stamp
     directly still reads any record on this machine, on or off that list.
     """
-    from fractal_wallpapers.curation import tentative
-
     if str(stamp) == EVERY_PROTECTED:
         return sorted(tentative.protected_keys())
     return [str(row["key"]) for row in tentative.read_rows(stamp)]
@@ -288,7 +283,7 @@ def survey(stamp: str = DEFAULT_RECORD, atlas: str | None = None) -> dict:
     arithmetic over [`curation.tentative.protected_keys`], which is why that
     number is here rather than estimated in a report.
     """
-    from fractal_wallpapers.curation import candidate_ledger, tentative
+    from fractal_wallpapers.curation import candidate_ledger
     from fractal_wallpapers.curation import stamps as stamps_module
 
     _label, keys, extras = _population(stamp, atlas)

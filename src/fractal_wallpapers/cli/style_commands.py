@@ -453,7 +453,7 @@ def render_style(args: argparse.Namespace) -> int:
     if not args.name.endswith(".json"):
         document = styles.at_palette(document, args.colormap)
     knobs = styles.parse_knobs(args.knob)
-    document = styles.with_knobs(document, knobs)  # refuses a bad knob before any render
+    styles.with_knobs(document, knobs)  # refuses a bad knob before any render; spec_of turns them
 
     try:
         # Inputs: read through the tiers, where an archived record is still readable.
@@ -572,6 +572,8 @@ VERBS = {
 
 def add_commands(subcommands) -> None:
     """Register this group's commands, in the order they ship in."""
+    from fractal_wallpapers import style_sweep
+
     group = subcommands.add_parser(
         "style",
         help="the named layer stacks (data/styles/): render, scout, tone-check, pick, keep, "
@@ -869,7 +871,10 @@ def add_commands(subcommands) -> None:
     sweep.add_argument("names", nargs="*", help="styles to sweep (default: every style)")
     sweep.add_argument("--out", required=True, help="the folder for pictures, rows and sheets")
     sweep.add_argument(
-        "--seats", type=int, default=2, help="kept seats drawn per style (default: 2)"
+        "--seats",
+        type=int,
+        default=style_sweep.SEATS,
+        help=f"kept seats drawn per style (default: {style_sweep.SEATS})",
     )
     sweep.add_argument(
         "--seed", type=int, default=0, help="the gallery draw's seed, for styles with no keeps"
@@ -892,10 +897,13 @@ def add_commands(subcommands) -> None:
         nargs=2,
         type=int,
         metavar=("W", "H"),
-        default=[320, 200],
-        help="picture size (default: 320 200)",
+        default=list(style_sweep.RESOLUTION),
+        help="picture size (default: {} {})".format(*style_sweep.RESOLUTION),
     )
     sweep.add_argument(
-        "--supersample", type=int, default=1, help="samples per pixel, per axis (default: 1)"
+        "--supersample",
+        type=int,
+        default=style_sweep.SUPERSAMPLE,
+        help=f"samples per pixel, per axis (default: {style_sweep.SUPERSAMPLE})",
     )
     sweep.add_argument("--quiet", action="store_true", help="print only the flags and summary")

@@ -68,6 +68,7 @@ from fractal_wallpapers.curation import (
     solve,
 )
 from fractal_wallpapers.paths import tracked_name, under
+from fractal_wallpapers.storage import sha256_of
 
 #: The schema every record and every row this module writes carries.
 SCHEMA = 1
@@ -1304,16 +1305,6 @@ ORIGIN_MERGE_NAME = "merge.origin.json"
 UNPACKED_NAME = "unpacked.json"
 
 
-def _sha256_of(path: Path) -> str:
-    import hashlib
-
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _package_files(root: Path) -> list[str]:
     """Every file a package directory holds, as posix names relative to it."""
     return sorted(
@@ -1392,7 +1383,7 @@ def package(name: str, out: Path, log=print) -> dict:
         else:
             shutil.copyfile(here, there)
         size = there.stat().st_size
-        listed.append({"path": relative, "bytes": size, "sha256": _sha256_of(there)})
+        listed.append({"path": relative, "bytes": size, "sha256": sha256_of(there)})
         total += size
         if at % 250 == 0:
             log(f"[package] {at:,} of {len(files) + len(pictures):,} file(s)")
@@ -1472,7 +1463,7 @@ def unpack(
             for path, row in named.items()
             if not (source / PurePosixPath(path)).is_file()
             or (source / PurePosixPath(path)).stat().st_size != int(row["bytes"])
-            or _sha256_of(source / PurePosixPath(path)) != str(row["sha256"])
+            or sha256_of(source / PurePosixPath(path)) != str(row["sha256"])
         ]
         if extra or bad:
             raise MineRefused(
@@ -1554,7 +1545,7 @@ def unpack(
             )
             there.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(source / PurePosixPath(relative), there)
-            if manifest is not None and _sha256_of(there) != shas[relative]:
+            if manifest is not None and sha256_of(there) != shas[relative]:
                 raise MineRefused(f"{there} was written as bytes the manifest does not name.")
         landing.rename(destination)
     except BaseException:

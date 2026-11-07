@@ -6,8 +6,9 @@ rust-version = "1.86"
 publish = false
 
 # The style compositor as a raw `wasm32-unknown-unknown` module: what Mandelnaut's
-# custom modes are drawn with. It is `../engine`'s own `style::measure` and
-# `style::tile` behind a handful of exports, and the three rules the CLI lays on a
+# custom modes are drawn with. It is `../engine`'s own `style::measure`, `style::tile`
+# and `style::paint` (the whole frame in one pass) behind a handful of exports, and the
+# three rules the CLI lays on a
 # style before the engine sees it (`styles.with_knobs`, `styles.projected`, the
 # mirror rule of `styles.spec_of`), so a page drawing a published mode draws the
 # pipeline's picture. `engine/README.md`'s *The style module* has the API.

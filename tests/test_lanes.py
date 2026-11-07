@@ -330,7 +330,8 @@ def test_a_leg_that_went_away_during_the_run_is_not_a_fault() -> None:
 def test_the_live_listing_is_a_fixed_name_and_never_a_walk() -> None:
     """`CLAUDE.md`'s rule: this tree carries four hundred thousand untracked files
     and a recursive walk of it takes minutes. Each entry is a path at a fixed
-    depth and the listing is one `scandir` of it."""
+    depth and the listing is one `iterdir()` of it: a single directory listing,
+    never a walk."""
     import inspect
 
     assert conftest.LIVE_LEG_DIRS == (("curation", "runs"),)

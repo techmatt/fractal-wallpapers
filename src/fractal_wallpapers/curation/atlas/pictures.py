@@ -24,7 +24,10 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-WORKERS = 3
+from fractal_wallpapers.curation import release
+
+#: How many engines the pictures are drawn on: this machine's render pool.
+WORKERS = release.DEFAULT_WORKERS
 
 #: Samples a pixel along each axis, for the plate and the thumbnails both.
 SUPERSAMPLE = 2

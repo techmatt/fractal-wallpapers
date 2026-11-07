@@ -12,9 +12,9 @@ can always make again: tile caches, location views, render caches, the pictures
 a study looked at. That tree grows to a hundred gigabytes, which is more than a
 system drive wants to carry, so it is a *setting* rather than a place.
 
-It is two settings, because the disk it moved to turned out to be a USB hard
-drive and a hard drive is not a peer of an SSD. A pass over the tile cache is
-about an hour of pure seeking there against four minutes on NVMe. So:
+It is two settings, because the bulk disk may be a USB hard drive and a hard
+drive is not a peer of an SSD. A pass over the tile cache is about an hour of
+pure seeking there against four minutes on NVMe. So:
 
 * the **hot root** is where work happens and where every write lands. Default:
   `artifacts/` under the checkout, which is what CI and a fresh clone get and is
@@ -60,12 +60,12 @@ so a ledger name that is a sidecar's join key survives the move.
 The other thing here is one naming convention, and it is here because two callers
 need it and neither owns the other: every picture this project makes is written
 to a temporary and renamed into place, so **a file's presence means it is
-complete**. A release row and a location's canonical view both learned that the
-hard way — the first from a deadline kill that left a decodable but unfinished
-picture the resume counted as done, the second because its cache is addressed by
-the digest of a recipe and nothing would ever re-make a truncated entry.
+complete**. A release row needs it because a deadline kill can leave a
+decodable but unfinished picture a resume would count as done; a location's
+canonical view needs it because its cache is addressed by the digest of a recipe
+and nothing would ever re-make a truncated entry.
 
-That convention is load-bearing twice over now: tier resolution asks whether a
+Tier resolution leans on the same convention: it asks whether a
 name is *there*, and a half-copied subtree that answered yes would be a tier
 answer that is wrong. It is why `storage` copies, verifies and only then deletes.
 """
@@ -286,8 +286,8 @@ class Tiers:
 
     A *snapshot*: one instance reads the settings once and remembers what it
     found about each name it was asked about. That is for the caller re-homing a
-    million manifest rows, which would otherwise stat two disks per row — the
-    same reason `rehome` used to take an already-resolved root. Everything else
+    million manifest rows, which would otherwise stat two disks per row (why
+    `rehome` takes a `tiers` argument). Everything else
     calls `Tiers.current()` per question and pays one small file read for an
     answer that is never stale.
 
@@ -382,7 +382,7 @@ class Tiers:
         made where writes land. Raises `ArchiveUnreachable` only when the hot copy
         is gone and the mirror is on a disk that is not here.
         """
-        named = [str(part) for part in parts if str(part) not in ("", ".")]
+        named = _named(parts)
         if not named:
             return self.hot
         here = self.unit(named[0]).joinpath(*named[1:])
@@ -397,7 +397,7 @@ class Tiers:
         For the callers that look at the hot pictures directories as directories:
         a sweep listing what is on disk, the move filling the mirror from them.
         """
-        named = [str(part) for part in parts if str(part) not in ("", ".")]
+        named = _named(parts)
         if not named:
             return self.hot
         return self.unit(named[0]).joinpath(*named[1:])
@@ -409,8 +409,8 @@ class Tiers:
         so with the archive unplugged and the mirror not hot this raises
         `ArchiveUnreachable` — the point of asking is that the hot copy is gone.
         """
-        named = [str(part) for part in parts if str(part) not in ("", ".")]
-        if not (len(named) in (4, 5) and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR):
+        named = _named(parts)
+        if not (is_pool_picture(named) or is_pool_pictures_dir(named)):
             return None
         return self.unit(POOL_PICTURES_NAME).joinpath(*named[1:])
 
@@ -454,13 +454,29 @@ def is_pool_picture(named) -> bool:
     return len(named) == 5 and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR
 
 
+def is_pool_pictures_dir(named) -> bool:
+    """Whether a name below the tree is the directory `curation/<group>/<leg>/pictures`."""
+    return len(named) == 4 and named[0] == POOL_NAME and named[3] == POOL_PICTURES_DIR
+
+
+def _named(parts) -> list[str]:
+    """A relative name's components as strings, the empty and `.` ones dropped."""
+    return [str(part) for part in parts if str(part) not in ("", ".")]
+
+
 def stored_parts(stored) -> list[str] | None:
     """The components of a stored name below its artifacts component, or `None`.
 
-    `rehome`'s reading of a record's path, for a caller that wants the name
+    `rehome`'s reading of a record's path, also for a caller that wants the name
     without resolving it — a batch that lists directories rather than stat-ing
     files.
     """
+    # `str.split` and not `PurePosixPath(...).parts`. The only components this
+    # reads are the ones AFTER the artifacts name, and the empty and `.` components
+    # pathlib would drop are dropped here, so the two agree and a root component can
+    # never be among the ones handed on. Over the candidate ledger that is 823,000
+    # fewer `_parse_path` calls a sweep; the same class of cost as `rehome`'s
+    # `tiers` argument.
     parts = str(stored).replace("\\", "/").split("/")
     for index in range(len(parts) - 1, -1, -1):
         if parts[index] == ARTIFACTS_NAME:
@@ -498,7 +514,7 @@ def rehome(stored, tiers: Tiers | None = None) -> Path | None:
     settings once and each subtree's tier once instead of once per row.
 
     **It is not a micro-optimization and the ratio is 246x**, measured on this
-    machine 2026-09-06: **1,813 us** a call bare against **7.4 us** with the tiers
+    machine: **1,813 us** a call bare against **7.4 us** with the tiers
     handed in. Over the candidate ledger's 308,419 rows that is **9.3 minutes
     against 2.3 seconds** — the difference between a sweep that is worth
     backgrounding and one that finishes while you read the command back. A
@@ -506,18 +522,10 @@ def rehome(stored, tiers: Tiers | None = None) -> Path | None:
     announce itself: the loop is correct either way, it just sits there. Resolve
     `Tiers.current()` once above the loop.
     """
-    # `str.split` and not `PurePosixPath(...).parts`. The only components this
-    # reads are the ones AFTER the artifacts name, and `resolve` already drops the
-    # empty and `.` components that pathlib was being built to drop — so the two
-    # agree here, and a root component can never be among the ones handed on. Over
-    # the candidate ledger that is 823,000 fewer `_parse_path` calls a sweep; it is
-    # the same class of cost as the `tiers` argument below. 2026-09-15.
-    parts = str(stored).replace("\\", "/").split("/")
-    for index in range(len(parts) - 1, -1, -1):
-        if parts[index] == ARTIFACTS_NAME:
-            here = Tiers.current() if tiers is None else tiers
-            return here.resolve(parts[index + 1 :])
-    return None
+    parts = stored_parts(stored)
+    if parts is None:
+        return None
+    return (Tiers.current() if tiers is None else tiers).resolve(parts)
 
 
 def colormap_dir() -> Path:

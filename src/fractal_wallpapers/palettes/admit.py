@@ -1,13 +1,13 @@
 """Admit one colormap to the library: `fractal-wallpapers palettes add <map.json>`.
 
 A style that matches its own map has to land it in `data/palettes/` with the two
-tracked tables beside it agreeing that it is there. Done by hand that was three
+tracked tables beside it agreeing that it is there. Done by hand that is four
 steps, each with a trap: write the file, rerun `palettes carriers` over the whole
-library (about eighty seconds, 2,703 recolours, to change one map's rows), and
-splice a row of zeros into `palette_family_shares.csv`, because `palettes
-produced` re-tallies the whole candidate ledger and churns every row a pass has
-touched since it last ran. This is those three steps as one command, each made as
-narrow as its table allows.
+library (about eighty seconds, 2,703 recolours, to change one map's rows), bring
+`palette_family_shares.csv` up to the map, and place it among the groups without
+re-cutting them. This is those steps as one command. [`remove`] (`palettes
+remove`) is the inverse for a map no tile kept: it drops the map's file, produced
+row, carrier rows and admitted groups row.
 
 ## What it writes, and what it does not
 
@@ -15,13 +15,16 @@ narrow as its table allows.
   [`library_import.text_of`] — one stop a line, which is the shape every tracked
   map already round-trips through. Not written when the file handed over already
   *is* that file.
-* **One row of `palette_family_shares.csv`**, all zeros, inserted at the map's
-  place in the library's sorted order. Zero is exactly true and not a
-  placeholder: that table counts candidate-ledger pictures drawn in a map, and none
-  has been drawn in one the library did not hold. Every other line is untouched,
-  and the table is refused rather than rewritten if it does not round-trip through
-  [`produced.read`] / [`produced.text_of`] byte for byte. Under `--replace` an
-  existing row is kept as it is: a re-tuned map keeps the pictures it has made.
+* **`palette_family_shares.csv`, rebuilt from the ledger.** The command tallies
+  the candidate ledger first ([`produced.tally`], about twenty seconds, read-only)
+  and the whole table is rewritten from it over the library plus this map: what a
+  `palettes produced` run would write. Every row a pass touched since the last
+  rebuild moves with it, so the table never falls behind the ledger one admission
+  at a time. On a box with no ledger the map's all-zero row is inserted at its
+  sorted place instead and every other line is untouched; zero is exactly true,
+  since no picture has been drawn in a map the library did not hold. Either way
+  the table is refused rather than rewritten if it does not round-trip through
+  [`produced.read`] / [`produced.text_of`] byte for byte.
 * **This map's rows of `carriers.jsonl`**, measured exactly as [`carriers.run`]
   measures one map — its own recolour onto each reference field, read by
   [`dominance.of_picture`], turned into rows by [`carriers.rows_for`] or
@@ -42,7 +45,7 @@ narrow as its table allows.
 
 ## Every refusal comes before the first write
 
-All three texts are built and checked, and M1 is taken, before any file in the
+Every text is built and checked, and M1 is taken, before any file in the
 library is opened for writing — the carrier text through `carriers.write` itself,
 into a scratch directory, so its derivation check is the build's. A map reading on
 a dominance threshold under rounding is refused there, as `palettes carriers`
@@ -77,7 +80,14 @@ import bisect
 import json
 from pathlib import Path
 
-from fractal_wallpapers.palettes import carriers, dominance, groups, produced, reference_fields
+from fractal_wallpapers.palettes import (
+    carriers,
+    dominance,
+    groups,
+    produced,
+    reference_fields,
+    variants,
+)
 
 #: Characters a map's name may not hold, because the name is a filename on every
 #: platform the library is read on and `~` is [`palettes.variants`]' mark.
@@ -261,12 +271,21 @@ def produced_rows(directory: Path | None = None) -> list[dict]:
     return rows
 
 
-def produced_text(name: str, directory: Path | None = None) -> tuple[str | None, str]:
-    """`(text to write or None, "added" | "kept")` for the produced table. Writes nothing.
+def produced_text(
+    name: str, directory: Path | None = None, counts: dict | None = None
+) -> tuple[str | None, str]:
+    """`(text to write or None, "added" | "kept" | "rebuilt")` for the produced table.
+    Writes nothing.
 
     Refused unless the table covers exactly the library less this map, in sorted
     order: an insertion into a table about some other library, or one out of order,
     would be a row in a place a full `palettes produced` would not put it.
+
+    `counts` is a [`produced.tally`] of the ledger. Given, the whole table is rebuilt
+    from it over the library plus this map, exactly what `palettes produced` would
+    write, so an admission leaves the table current rather than only one row right.
+    Without it (no ledger on this box, or a test's small library) the map's all-zero
+    row is spliced in and every other line is left as it was.
     """
     rows = produced_rows(directory)
     names = [row[produced.NAME_COLUMN] for row in rows]
@@ -283,6 +302,18 @@ def produced_text(name: str, directory: Path | None = None) -> tuple[str | None,
             f"{produced.RECORD_NAME} is not about this library less {name!r} (missing "
             f"{missing[:3]}, extra {extra[:3]}); rebuild it with `palettes produced`"
         )
+    if counts is not None:
+        library = sorted(expected | {name})
+        unknown = sorted(set(counts) - set(library))
+        if unknown:
+            raise AddError(
+                f"{len(unknown)} map(s) the ledger names are not in this library: "
+                f"{unknown[:3]}; `palettes produced` would refuse the same table"
+            )
+        text = produced.text_of(produced.rows_for(counts, library))
+        if text == produced.record_path(directory).read_text(encoding="utf-8"):
+            return None, "kept"
+        return text, "rebuilt"
     if name in names:
         return None, "kept"
     zero = produced.rows_for({}, [name])[0]
@@ -323,7 +354,7 @@ def readings_of(
     name = str(document["name"])
     fields = reference_fields.fields() if fields is None else fields
     where = carriers.recolour_dir() if recolour_to is None else Path(recolour_to)
-    mirror = document["kind"] != "cyclic"
+    mirror = variants.mirror_for(document["kind"])
     readings = {}
     with tempfile.TemporaryDirectory(prefix="palettes-add-") as scratch:
         maps = Path(scratch)
@@ -487,12 +518,15 @@ def run(
     directory: Path | None = None,
     fields: dict | None = None,
     recolour_to: Path | None = None,
+    counts: dict | None = None,
 ) -> dict:
     """Admit the map at `source`. Refuses before writing anything, or writes all four:
-    the map, its produced row, its carrier rows, and its groups admission row.
+    the map, the produced table, its carrier rows, and its groups admission row.
 
     `fields` is `{class: dumped field}` and `recolour_to` the recolour tree, both
-    the real ones unless a caller — a test — hands its own.
+    the real ones unless a caller — a test — hands its own. `counts`, a ledger
+    tally, rebuilds the produced table whole ([`produced_text`]); the command
+    passes one whenever this box has a ledger.
     """
     source = Path(source)
     document = load(source)
@@ -517,10 +551,10 @@ def run(
             "re-tune it"
         )
     # Everything that can refuse does so before the library is touched: both tables
-    # are checked to be spliceable, the map is measured off a scratch copy, all three
-    # texts are built and checked, and M1 is taken. Only then is anything written.
+    # are checked to be spliceable, the map is measured off a scratch copy, every
+    # text is built and checked, and M1 is taken. Only then is anything written.
     carrier_state(name, directory)
-    produced_new, row = produced_text(name, directory)
+    produced_new, row = produced_text(name, directory, counts)
     readings = readings_of(document, fields, recolour_to)
     carriers_new, spliced = carrier_text(name, readings, directory)
     map_new, wrote = map_text(document, source, directory)
@@ -658,7 +692,12 @@ def lines(report: dict) -> list[str]:
         cells = f"{carried['rows']} row(s): {', '.join(carried['cells'])}"
     out = [
         f"[add] {report['name']}: {tracked_name(Path(report['path']))} ({report['map']})",
-        f"[add] {produced.RECORD_NAME}: row {report['produced']}",
+        f"[add] {produced.RECORD_NAME}: "
+        + (
+            "rebuilt from the ledger"
+            if report["produced"] == "rebuilt"
+            else f"row {report['produced']}"
+        ),
         f"[add] {carriers.RECORD_NAME}: {cells}; header now {carried['maps']} maps, "
         f"{carried['carriers']} carrier rows",
     ]

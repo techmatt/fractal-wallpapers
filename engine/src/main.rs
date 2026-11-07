@@ -14,10 +14,13 @@
 //!                                         # an explorer link → the wallpaper, link embedded
 //! ```
 //!
-//! One JSON object in, one file out, and a JSON report on stdout describing what
-//! happened. `render-link` is the one subcommand that takes flags rather than a
-//! spec: its input is a link somebody copied, and a spec would be a second spelling
-//! of it. The report is the record: it carries the location's decimal strings
+//! Every subcommand but `render-link` and `modes` reads one JSON spec, and each
+//! prints a JSON report on stdout describing what happened. `render`, `recolor`
+//! and `render-link` write the picture and `dump-field` the field; `expand`,
+//! `screen` and `tiles` write thumbnails or tiles; `home-view`, `maxiter` and
+//! `modes` write nothing but the report. `render-link` is the one subcommand that
+//! takes flags rather than a spec: its input is a link somebody copied, and a spec
+//! would be a second spelling of it. The report is the record: it carries the location's decimal strings
 //! back unchanged alongside the values the engine filled in for itself, so a
 //! render can be repeated from its own output.
 //!
@@ -595,7 +598,7 @@ struct LinkArgs {
 }
 
 /// The release regime's supersample is 2 (`release.RELEASE_REGIME`); the production
-/// setting this command defaults to is 3, on Matt's call for `render_link_ckpt148`.
+/// setting this command defaults to is 3, on Matt's call.
 const DEFAULT_SUPERSAMPLE: u32 = 3;
 
 fn link_args(args: &[String]) -> Result<LinkArgs, String> {

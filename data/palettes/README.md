@@ -172,7 +172,7 @@ library does not hold.
 fractal-wallpapers palettes produced
 ```
 
-One streamed pass, about nine seconds, no render. `tests/test_palette_produced.py` holds
+One streamed pass, about twenty seconds over a 567k-row ledger, no render. `tests/test_palette_produced.py` holds
 the file to its shape and three calibration reads (**`Blues` reads `azure`**: the wheel is
 Oklab hue angle). The website imports it with `python -m builder explorer --families`,
 applies its own 5% bar and freezes the result on `explorer/palettes.jsonl`; the bar is
@@ -229,11 +229,12 @@ names the map. Never move the library file while a render reads it. A new map th
 `tests/test_curation_ceiling.py`'s pinned carrier-table reading: re-pin it, naming the map
 in its docstring.
 
-It validates the document as `tests/test_colormaps.py` does, writes `<name>.json`, inserts
-an all-zero `palette_family_shares.csv` row (`--replace` keeps the existing one), splices
-the map's own rows into `carriers.jsonl` from three fresh recolours (every other row byte
-for byte), and admits the map to the groups. About twenty seconds.
-`palettes/admit.py`'s docstring has why each step is as narrow as it is.
+It validates the document as `tests/test_colormaps.py` does, writes `<name>.json`, rebuilds
+`palette_family_shares.csv` from the candidate ledger as `palettes produced` would (a box
+with no ledger gets the map's all-zero row only), splices the map's own rows into
+`carriers.jsonl` from three fresh recolours (every other row byte for byte), and admits
+the map to the groups. About forty seconds, half of it the ledger tally.
+`palettes/admit.py`'s docstring has why each step is shaped as it is.
 
 A drop's files stay here, not beside the brief, because a batch file and
 `provenance.jsonl` are one record split in two.

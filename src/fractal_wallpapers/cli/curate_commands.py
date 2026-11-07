@@ -1,28 +1,14 @@
 """`curate`: the `curate` parser itself, and the verbs no family claimed.
 
-## The cut, and the decision it reverses
+## How `curate` is cut
 
-This module argued against being split, and the argument was good for as long as
-the answer was three files cut along `curation/`'s own doc taxonomy: **registration
-order is `--help`**, `argparse` prints the verbs in the order they are added, and
-`README.md`'s, `GALLERY.md`'s and `LEGS.md`'s verbs are not contiguous in that
-order — nine store verbs sit inside the legs' run alone. A doc-aligned cut cost
-either a reordered surface or an `add_commands` faking the old order out of three
-modules' registrations, and neither was worth a smaller file.
-
-**What changed is the size, not the argument.** The file reached 6,354 lines and
-forty-eight verbs, 28% of it argparse `help=` prose, and `curate` stopped being
-one command group under any reading: it is the ledger, the solve, the votes, the
-legs and the colour census wearing one hat. So the cut landed on 2026-09-12 along
-the **noun** rather than along the docs, which is contiguous almost everywhere —
-and the price the old argument named was paid deliberately: `curate --help` now
-lists its verbs **grouped by family** instead of in the order they accreted.
-`seat-sheet` moved up beside `solve`, `retention` down beside the legs, and
-`autolevel` up beside `colors`. Nothing pins that order (`test_nested_verbs.py`
-pins each group's verbs against `SURFACE`, which is per group and by set at the
-top level), and grouping by noun is the reason the cut was worth making: the
-session that found `--no-render` on `solve run` and not on `solve record` spent
-four `--help` invocations doing it.
+`curate` is the ledger, the solve, the votes, the legs and the colour census
+wearing one hat, so its verbs live in families cut along the **noun** rather than
+along `curation/`'s doc taxonomy. **Registration order is `--help`**: `argparse`
+prints the verbs in the order they are added, so `curate --help` lists its verbs
+**grouped by family**, in the order of the `add_steps` calls below. Nothing pins
+that cross-family order (`test_nested_verbs.py` pins each group's verbs against
+`SURFACE`, which is per group and by set at the top level).
 
 ## What is here
 
@@ -30,7 +16,7 @@ The `curate` parser and `steps` themselves, the seven `add_steps` calls in the
 order they register, and the nine verbs no family claimed: `reject`, `pool-draw`,
 `below-bar`, `repeats`, `retire-repeats`, `parity`, `replay`, `label-migration`
 and `label-fate`. They stay because each is the only verb of its kind — a
-one-verb family per noun would be five more modules to hold eleven handlers.
+one-verb family per noun would be more modules to hold nine handlers.
 
 The families are [`curate_ledger_commands`], [`curate_solve_commands`],
 [`curate_votes_commands`], [`curate_mine_commands`], [`curate_colors_commands`],

@@ -11,8 +11,8 @@
 //! z  = Z[m] + δ                     the actual iterate, and what escapes
 //! ```
 //!
-//! **At degree `d` the recurrence is `δ' = (Z + δ)^d − Z^d + dc`**
-//! *(deep_degrees_ckpt140)*, taken as the binomial in Horner form — see
+//! **At degree `d` the recurrence is `δ' = (Z + δ)^d − Z^d + dc`**,
+//! taken as the binomial in Horner form — see
 //! [`factor`]. Nothing else in this file knows the degree except the interior
 //! switch's slope and the smooth count's base, and at `d = 2` all three fold
 //! back to the lines above.
@@ -63,7 +63,7 @@ use crate::reference::{BAILOUT, Reference};
 /// How far `|dz|²` has to fall before a sample is *tried* for interior, as a
 /// power-of-two exponent. See [`Kernel::interior`] and [`Kernel::floor`].
 ///
-/// **The gate, and since interior_switch_fix_ckpt162 never the verdict**: a sample
+/// **The gate, never the verdict**: a sample
 /// under it is handed to the proof (`Kernel::prove`), which stops it only when a
 /// disc about its orbit maps into itself.
 ///
@@ -156,10 +156,14 @@ pub struct Kernel<'a> {
     pub maxiter: u32,
     /// Derivative-based interior detection.
     ///
-    /// **Why it exists.** The engine has no interior shortcut of any kind: no
-    /// cardioid or bulb test, no cycle detection, so every interior sample pays
-    /// the full cap. On the audit's anchor frame that is 38.9% of samples paying
-    /// 48,551 iterations each, which is more than half the frame's time.
+    /// **Why it exists.** The engine's own interior tests — the cardioid and
+    /// main-component tests in `field::sweep_row`, the exact-repeat check of
+    /// `iterate::Interior` — are `f64` tests on the shallow plane. Below its floor
+    /// the frame is drawn here, and without a gate of its own every interior sample
+    /// pays the full cap: on the audit's anchor frame that is 38.9% of samples
+    /// paying 48,551 iterations each, which is more than half the frame's time.
+    /// This crate's gate is the derivative product below, closed by
+    /// `Kernel::prove`.
     ///
     /// **What it tests.** `dz_n = ∏ 2·z_k` is the derivative of the `n`-fold map
     /// along the orbit. Inside a hyperbolic component the orbit falls into an
@@ -167,10 +171,10 @@ pub struct Kernel<'a> {
     /// multiplier; outside it grows. So a product that has fallen under
     /// [`INTERIOR_EXPONENT`] is *probably* in the basin of an attractor, and that
     /// sample is then proved bounded or let run — **the product is the gate and
-    /// the proof is a disc that maps into itself** (`Kernel::prove`). Until
-    /// interior_switch_fix_ckpt162 the product was the verdict, and beside a
-    /// parabolic point, where it decays like a power of `n` on an orbit that
-    /// still escapes, it painted the exterior black. The derivative
+    /// the proof is a disc that maps into itself** (`Kernel::prove`). The product
+    /// alone is not a verdict: beside a parabolic point it decays like a power of
+    /// `n` on an orbit that still escapes, and would paint the exterior black. The
+    /// derivative
     /// with respect to `z₀` — the usual one — is useless here, because
     /// Mandelbrot fixes `z₀ = 0` and the product is identically zero from its
     /// first factor. **On a Julia frame the two coincide**: `z₀` is the pixel
@@ -313,7 +317,7 @@ impl<'a> Kernel<'a> {
     /// loop is exactly the loop it would have been written as by hand, and the
     /// Mandelbrot one is byte for byte the loop that was here before.
     ///
-    /// **`D` is the degree, const for the same reason** *(deep_degrees_ckpt140)*:
+    /// **`D` is the degree, const for the same reason**:
     /// the step is a different number of multiplies at every degree, and a degree
     /// read from a field would be a loop over the binomial per iteration. At
     /// `D = 2` the step, the derivative and the smooth count are the lines that
@@ -462,7 +466,7 @@ impl<'a> Kernel<'a> {
 
     /// The rest of a sample the gate has fired on: the same loop, carrying a proof.
     ///
-    /// **Why the gate is not the verdict** *(interior_switch_fix_ckpt162)*. A small
+    /// **Why the gate is not the verdict.** A small
     /// `|dz|` says the map has been contracting along this orbit so far, which is
     /// what an attracting cycle does and also what a neutral one does on the way
     /// in. Beside a parabolic point — the main cusp, a copy's cusp, an imploded
@@ -470,7 +474,7 @@ impl<'a> Kernel<'a> {
     /// side where it is just below one, so the product decays like a power of
     /// `n` rather than geometrically: on the degree-2 cusp `log₂|dz|²` crosses
     /// −64 at 2.2e5 iterations, bottoms out at −79 at 5e6, and the sample escapes
-    /// at 1e7. The old switch called every such sample interior.
+    /// at 1e7. A threshold alone calls every such sample interior.
     ///
     /// **The proof is a disc that maps into itself.** If the disc `B` of radius
     /// `ρ₀` about an iterate `z_s` satisfies `f^k(B) ⊂ B` for some `k ≥ 1`, the
@@ -738,8 +742,7 @@ impl<'a> Kernel<'a> {
 /// The degrees this kernel draws: `z^d + c` for `d` from two to six, which is every
 /// integer degree the shallow contract offers (`multibrot3..6`, `julia..julia6`).
 ///
-/// **Integer degrees only, and that is `audit_deep_families_ckpt140`'s finding
-/// rather than a gap.** A fractional degree needs a branch cut, and perturbation
+/// **Integer degrees only, and that is a finding rather than a gap.** A fractional degree needs a branch cut, and perturbation
 /// fails exactly on the seam the fractional figure exists to show.
 pub const DEGREES: core::ops::RangeInclusive<u32> = 2..=6;
 
@@ -1010,10 +1013,13 @@ pub(crate) fn interior_outcome(
 ///
 /// `nu = (n + 1) − log_d( ln|z| / ln B )`, with `B = 65536` and `d = 2`. This is
 /// `fractal_engine::iterate::smooth_count` written out rather than called: the
-/// engine's copy is private, and the audit's ruling was to re-state it here with
-/// a test pinning it to the engine's own output rather than open a function next
-/// door for it. `smooth-cases.json` is that pin — 400 samples of the engine's
-/// `smooth` field, committed, and `cargo test` holds this to them bit for bit.
+/// engine's copy is private and the engine depends on this crate, never the
+/// reverse. Two pins hold the copy to the engine. `smooth-cases.json` — 400
+/// samples of the engine's `smooth` field, recorded on one machine and committed —
+/// runs from this crate alone, and `cargo test` holds this to them bit for bit.
+/// The engine's `the_deep_kernels_smooth_count_is_this_one` (in `iterate.rs`,
+/// under its `deep` feature) runs the two side by side, bit for bit, at degrees
+/// two to six on whatever platform it is built on.
 ///
 /// The fallback matters and is the engine's: an overshoot that is not finite and
 /// positive gives back the integer count rather than a `NaN`, because `NaN` in
@@ -1137,12 +1143,12 @@ mod tests {
         f64::NAN
     }
 
-    /// **The degree-`d` step, held to the plain loop where `f64` is still right**
-    /// *(deep_degrees_ckpt140)*: the whole Multibrot set of each degree, 41×41
+    /// **The degree-`d` step, held to the plain loop where `f64` is still right**:
+    /// the whole Multibrot set of each degree, 41×41
     /// across a width of three about a point just off the origin, so the grid
     /// straddles the boundary everywhere and the reference is not the centre of
-    /// symmetry. `audit_deep_families_ckpt140` found no mask disagreement at three,
-    /// four and five and one sample of 1,681 at six — a point within an ulp of the
+    /// symmetry. The masks agree at three,
+    /// four and five and disagree on one sample of 1,681 at six — a point within an ulp of the
     /// boundary, which is the plain loop's to be wrong about as often as ours.
     #[test]
     fn a_shallow_frame_matches_the_plain_f64_loop_at_every_degree() {

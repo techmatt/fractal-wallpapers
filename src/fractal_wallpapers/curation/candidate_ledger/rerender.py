@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 
+from fractal_wallpapers.curation import release
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import SCHEMA
@@ -55,7 +56,7 @@ RE_RENDER_UNIT = "re_render"
 #: pool — the same number every leg here takes, and a rule about the desktop
 #: rather than a tuning knob. The priority half is [`engine.run`]'s and needs
 #: nothing here.
-RE_RENDER_WORKERS = 3
+RE_RENDER_WORKERS = release.DEFAULT_WORKERS
 
 
 #: Wall seconds a picture at [`RE_RENDER_WORKERS`], which prices the leg at its

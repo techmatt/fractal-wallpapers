@@ -166,10 +166,9 @@ fn at_mut<'a>(mut node: &'a mut Value, path: &[Step]) -> &'a mut Value {
 /// The stack's members the engine reads as integers: `inside.iterations`, a bubble's
 /// `hit`, the lines' `settle`, a checker's `sectors`, a projection's `turns`.
 ///
-/// `styles.with_knobs` rounds a knob's write where the member is a JSON integer in the
-/// file; a page's stack has been through `JSON.parse`, which keeps no difference between
-/// `1` and `1.0`, so here it is the member's name, which says the same of every style
-/// file (`tests/test_style_wasm.py` holds the two to agreeing).
+/// A knob's write to one of these is rounded half to even, by the member's name, on both
+/// sides: `styles.INTEGER_MEMBERS` is the same list and `styles.with_knobs` rounds the
+/// same way (`tests/test_style_wasm.py` holds the two lists equal).
 pub const INTEGER_MEMBERS: [&str; 5] = ["iterations", "hit", "settle", "sectors", "turns"];
 
 /// The stack turned to `settings`, as `styles.with_knobs` turns it: each knob writes

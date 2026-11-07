@@ -167,12 +167,8 @@ def run_dir(arm: str, fold: int, seed: int) -> Path:
 # The arms.
 # --------------------------------------------------------------------------- #
 #: The realized input shape of every band on the record, read off the shipped
-#: artifact rather than off a declaration. Arm B doubles both axes of it, which
-#: is what preserves the convention: the resize is a whole-frame anisotropic
-#: stretch with no crop at deploy, so doubling both axes keeps the same picture
-#: at four times the pixels and changes nothing else about what arrives.
+#: artifact rather than off a declaration.
 SHIPPED_DIMS = (head.TARGET_WIDTH, head.TARGET_HEIGHT)
-DOUBLED_DIMS = (SHIPPED_DIMS[0] * 2, SHIPPED_DIMS[1] * 2)
 
 #: **The aspect every picture this judge has ever read.** The stores' renders are
 #: 1280x720, the candidate a mining pass scores is 640x360 and a location tile is
@@ -463,18 +459,6 @@ def pooled(arm: str, rule: str, seed: int, folds=None) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # The primary: the shipped rank key, refit on each arm's own predictions.
 # --------------------------------------------------------------------------- #
-#: The members of [`curation.rank_key.COLUMNS`] a retrain does NOT move. The
-#: place's own reading and the dead-space fraction are facts about the picture
-#: rather than about the judge, so they are joined once and every arm is handed
-#: the same ones; the two the judge owns are exactly what an arm substitutes.
-#:
-#: `stratum_score` was a third until 2026-09-06 and went with the rank key's own
-#: column. **A cache written before that carries it and is a row shape short of
-#: the current one** — [`rank_key_columns`] takes `rebuild=True` for that.
-CARRIED_COLUMNS = ("loc_p_ge4", "flat16_1.0")
-
-#: The judge's own two columns in the key, in the order the key reads them.
-JUDGE_COLUMNS = ("p_ge3", "p_ge4")
 
 
 def columns_path() -> Path:
@@ -494,6 +478,13 @@ def rank_key_columns(rebuild: bool = False, log=train.say) -> dict:
 
     Keyed by the **render job name**, which is what an out-of-fold reading
     already carries, so the two join without going back to either store.
+
+    The half is the members of [`curation.rank_key.COLUMNS`] a retrain does NOT
+    move: `loc_p_ge4` (the place's own reading) and `flat16_1.0` (the dead-space
+    fraction) are facts about the picture rather than about the judge, so they are
+    joined once and every arm is handed the same ones; the judge's own `p_ge3` and
+    `p_ge4` are exactly what an arm substitutes ([`key_readings`]). A cache of an
+    older row shape is rebuilt with `rebuild=True`.
     """
     cache = columns_path()
     if cache.is_file() and not rebuild:
@@ -1298,8 +1289,6 @@ def autopsy_sheet(document: dict, labels: tuple[str, str], output: Path, note: s
 __all__ = [
     "ARMS",
     "ASPECT_DIMS",
-    "CARRIED_COLUMNS",
-    "JUDGE_COLUMNS",
     "SOURCE_ASPECT",
     "columns_path",
     "key_delta",
@@ -1310,7 +1299,6 @@ __all__ = [
     "BAR",
     "BOOTSTRAP_SEED",
     "CHECKPOINTS",
-    "DOUBLED_DIMS",
     "DRAWS",
     "EPOCHS",
     "MODE_FLOOR_N",

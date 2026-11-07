@@ -1221,7 +1221,7 @@ def delete_pictures(named, log=print) -> dict:
     picture. So **a sheet rebuilt from a swept candidate needs that candidate
     re-rendered first** (`curate candidate-ledger re-render`), or it is the silent
     plain-map picture above. `curation/README.md`'s *What retention does not reach,
-    and the levelled colormaps swept on 2026-08-30* carries both sweeps.
+    and the swept levelled colormaps* has the rule.
 
     The colormap is swept whether or not the JPEG was still there: a row is being
     dropped either way, and a colormap outliving an already-deleted picture is

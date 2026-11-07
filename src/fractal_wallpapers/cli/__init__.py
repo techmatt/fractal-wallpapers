@@ -6,8 +6,8 @@ a name, and `--help` text.
 
 One module per command group, each holding its handlers and its parser
 together, and [`build_parser`] is the list of them in the order they ship in.
-The one group too big to be one module is `curate`, which is nine command groups
-wearing one hat: [`FAMILIES`] names the seven modules it was cut into, and
+The one group too big to be one module is `curate`, which is seven families plus
+the verbs no family claimed: [`FAMILIES`] names the seven modules, and
 `curate_commands` owns the `curate` parser and calls each family's `add_steps`.
 Module names carry a `_commands` suffix and that is load-bearing rather than
 decorative: eight top-level commands — `render`, `screen`, `walk`, `reframe`,
@@ -20,11 +20,9 @@ that collision impossible for every group at once instead of by exception.
 A command whose second word is a VERB spells it as a real `add_subparsers`, never
 as a `choices=` positional inside one parser. The two look alike from the command
 line and are not alike: a positional puts the whole group's flags on every verb,
-so `curate sidecar check --force` was accepted and dropped on the floor, `curate
-solve record` accepted twenty-two flags a record cannot pass through, and `--help`
-at the group printed every verb's flags at once with nothing saying which belonged
-to which. Sixteen groups and sixty-five verbs were spelled that way and none are
-now; `tests/test_nested_verbs.py` holds the surface and the pin. The verb's dest is
+so a verb accepts flags it then ignores, and `--help` at the group prints every
+verb's flags at once with nothing saying which belongs to which.
+`tests/test_nested_verbs.py` holds the surface and the pin. The verb's dest is
 `what` and the handler is `set_defaults` on the GROUP parser, so one handler still
 serves a whole group and resolves to one binding through [`__getattr__`]. Where the
 verb is optional — `curate flatness`, `curate signatures`, `curate rank-key` all
@@ -39,9 +37,9 @@ reasoning: the ruling, the date, the measurement behind the number.
 [`common.TieredHelp`] prints the first sentence and marks the cut with `…`;
 `FRACTAL_WALLPAPERS_HELP=full` prints the whole thing. So the reasoning stays
 beside the flag it is about rather than one file away, and a person reaching for
-`--help` gets the one-line contract: `curate solve record --help` was 237 lines
-and is 96. `tests/test_help_tiers.py` holds the rule, and the thing it actually
-catches is a new help string whose *first sentence* is a paragraph.
+`--help` gets the one-line contract. `tests/test_help_tiers.py` holds the rule,
+and the thing it actually catches is a new help string whose *first sentence* is
+a paragraph.
 
 A command carrying twenty flags or more groups its help with
 `add_argument_group`, and once one flag on a command is grouped they all are —
@@ -56,10 +54,9 @@ parser; `common.location_arguments` is the exception and makes its own three,
 because the fourteen flags it adds are themselves three questions.
 
 Handler names resolve through [`__getattr__`] rather than being re-exported,
-which is the rule the candidate-ledger split arrived at the hard way: written
-eagerly, `from .draw_commands import render as render` makes two independent
-bindings of one function and a monkeypatch of either stops moving the other.
-Resolving keeps one binding per name, which is what
+because written eagerly, `from .draw_commands import render as render` makes two
+independent bindings of one function and a monkeypatch of either stops moving the
+other. Resolving keeps one binding per name, which is what
 `parse([...]).handler is cli.<name>` asserts.
 """
 
@@ -130,11 +127,9 @@ FAMILIES: tuple[str, ...] = (
     "curate_atlas_commands",
 )
 
-#: Where [`__getattr__`] looks, in order. The groups first, then the families,
-#: then the shared helpers, then `paths` — whose five names this module carried
-#: while the CLI was one file, and which callers still reach for through it.
+#: Where [`__getattr__`] looks, in order: the groups, then the families, then the
+#: shared helpers.
 _LOOKUP: tuple[str, ...] = GROUPS + FAMILIES + ("common",)
-_LAST_RESORT = "fractal_wallpapers.paths"
 
 
 def __getattr__(name: str):
@@ -151,17 +146,14 @@ def __getattr__(name: str):
             return getattr(import_module(f"{__name__}.{module}"), name)
         except AttributeError:
             continue
-    try:
-        return getattr(import_module(_LAST_RESORT), name)
-    except AttributeError:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def build_parser() -> argparse.ArgumentParser:
     # [`common.Parser`] and not `argparse.ArgumentParser`: it is the two-tier
     # `--help`, and it is set ONCE here because `add_subparsers` defaults
     # `parser_class` to `type(self)`, so the class reaches every step and every
-    # nested verb without a `formatter_class=` at any of the 150-odd sites.
+    # nested verb without a `formatter_class=` at any `add_parser` site.
     # Imported here and not at module scope, so importing this package still
     # costs nothing: `common` reaches the labeling stores for its head lists.
     from fractal_wallpapers.cli.common import Parser

@@ -25,8 +25,8 @@ overwriting the other.
 
 **It holds ONE artifact today and the key is still right.** The two retired
 judges' rows — 289,645 of 574,162, half the file — were dropped on 2026-09-06
-once the comparisons they backed had been taken; `curation/README.md`'s *The two
-retired artifacts were dropped* has the derivation. The morning after the next
+once the comparisons they backed had been taken; `curation/README.md`'s *The sidecar
+holds the shipped judge only* has the derivation. The morning after the next
 adoption this is back to two, which is what the key is for.
 
 The backfill measured the other half of that. The 126 duplicate renders make 128

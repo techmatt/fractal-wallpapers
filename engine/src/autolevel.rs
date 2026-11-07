@@ -24,7 +24,7 @@
 //! the measurement is already made: its permalink carries the curve the run
 //! derived, and the apply half replays it — which is the whole reason the explorer
 //! can show a seat's own colour without reading a picture it has not drawn yet.
-//! A view a reader made has no record, and since `autolevel_port_ckpt127` the
+//! A view a reader made has no record, so the
 //! measure half is ported too ([`tone_stats`], [`derive_curve`]) and runs on the
 //! finished picture that view drew. Its pins are at the foot of this file: the
 //! stored curve out of the stored statistics on every backfill row, bit for bit,
@@ -432,7 +432,7 @@ fn densify(stops: &[(f64, [u8; 3])]) -> (Vec<f64>, Vec<[f64; 3]>) {
 /// up to 5e-10 moves the interpolation fraction of the table samples beside it, by
 /// about 1e-9 in linear light, and an output byte changes only where that lands on a
 /// rounding boundary. A replica bake over every map found 0 of 4,829,184 entries move
-/// their sRGB8 byte (`cpu_default_and_rust_audit_ckpt148`).
+/// their sRGB8 byte.
 pub fn curved_stops(stops: &[(f64, [u8; 3])], curve: &Curve) -> Vec<(f64, [u8; 3])> {
     // A ramp of fewer than two stops is not a ramp, and `from_stops_baked` is where
     // that is refused. Handing it back untouched keeps the refusal there rather than

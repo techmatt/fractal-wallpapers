@@ -19,11 +19,13 @@ ledger     one JSONL record, one schema, a fate on every row
 scoring    the seam a trained head arrives through
 identity   why the gate render is the picture that head was trained on
 boundary   a seeded uniform draw, screened by those same gates
+plane_seeds  the tracked parameter-plane seed pool: a nucleus grid over each plane's home frame (derive-plane-seeds)
 viewport_sampler  the same idea as a root channel: a ladder on the pinned plane, a boundary refinement on a parameter plane
 ```
 
 Nothing here judges a picture: the gates are geometry, and the judgement is a seam
-(`scoring.py`) with a null scorer behind it. Module docstrings hold the mechanics.
+(`scoring.py`): `LocationScorer` reads each survivor through the shipped location head,
+and `NullScorer` stands in under `--no-scoring`. Module docstrings hold the mechanics.
 
 ## Which of the three commands to reach for
 
@@ -133,12 +135,11 @@ the old one). Its cost is its own bucket, `refine_minutes`.
 **Reframing operators are triggered, never a source.** `snap_to_nucleus` emits one
 `Reframing` per `operators.FRAMINGS` rung (own width, 4x, 16x the atom), never inward.
 The probe is about a third of a harvest's active clock, mostly `expand_neighborhood`;
-never price it by a short A/B leg (batch variance is ±23%).
-`--neighborhood`/`--no-neighborhood` is a tri-state; the default lives on
+never price it by a short A/B leg. `--neighborhood`/`--no-neighborhood` is a tri-state; the default lives on
 `walk.Reframings`.
 
 **A root's frame is the engine's** (`engine.home_view`; `tests/test_home_views.py`).
-`julia:multibrot3`–`5` have no pool: `supply.twins` makes their roots per run, so only
+`julia:multibrot3`–`6` have no pool: `supply.twins` makes their roots per run, so only
 a harvest reaches them.
 
 **A walk scores the gate render** (byte-identical to the node-regime tile).
@@ -194,8 +195,7 @@ fractal-wallpapers harvest --minutes 10 --partition phoenix:classic --root-chann
 A quad-tree refined only where a child **straddles** (interior and escaped samples
 both, off one `engine.dump_field` probe of its parent); every straddler between
 `--sampler-widest` (0.1) and `--sampler-narrowest` (1e-3) is screened and served
-round-robin over the band's rungs, a rung grown `CHUNK` (256) parents at a time. About
-39% survive the screen; admissions are new places, concentrated on a few lineages.
+round-robin over the band's rungs, a rung grown `CHUNK` (256) parents at a time.
 
 **Degree 6 has no labels and this is its whole supply** (`labeling/README.md`'s
 *Degree 6 is never labelled*). On `multibrot6` the yield climbs as the band narrows to
@@ -210,9 +210,8 @@ fractal-wallpapers harvest --partition multibrot5 --root-channel viewport_sample
 
 #### The straddle probe
 
-`PROBE_RESOLUTION` is 64 x 36 at maxiter 256: the same ~6 ms as 32 x 18 (a probe is
-process start), 99.2% agreement with `interior_cap`, and 2 of 176 screen survivors
-missed, where 32 x 18 drops the filament an exterior child hangs on.
+`PROBE_RESOLUTION` is 64 x 36 at maxiter 256; `viewport_sampler.py`'s docstrings at
+the two constants have why.
 
 **`--foci`** (`walk`, `harvest`) adds a `foci` row per expanded node; candidate rows
 are byte-identical either way.
@@ -248,8 +247,7 @@ fractal-wallpapers minibrots examples --census records.jsonl --census verdicts.j
 ```
 
 The example set (`artifacts/discovery/minibrot_examples.jsonl`, `--k 2.0`) is an
-artifact, never tracked. A `--budget` pass is a seeded-shuffle sample. (c) is several
-times faster than (a), and both slow with depth.
+artifact, never tracked. A `--budget` pass is a seeded-shuffle sample.
 
 ### Criterion (c): the copy a frame is decoration of
 

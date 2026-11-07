@@ -89,6 +89,6 @@ day a machine first ran the command became this project's embedding basis, and a
 store filled against one revision cannot be compared with one filled against
 another.
 
-`render/` carries twenty-five run directories and a name does not say which band
+`render/` carries many run directories, and a name does not say which band
 it realizes. [`render/RUNS.md`](render/RUNS.md) is the index: one line per
 directory, to the band or role it belongs to.

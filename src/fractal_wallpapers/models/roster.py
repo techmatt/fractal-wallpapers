@@ -1,4 +1,4 @@
-"""Which heads exist. Three strings, and nothing that knows how to run one.
+"""Which heads exist. A few strings, and nothing that knows how to run one.
 
 The roster is the one fact about the judges that something outside `models/`
 has to read. `fetch-weights --check` is the dry run a release is cut after, and
@@ -6,7 +6,7 @@ what it does is manifest JSON, a file stat and a sha256 — stdlib work, run by 
 fresh clone that installed the base package and nothing else. It still has to
 know which heads a complete release carries, and asking `ship` for that name
 would hand a stdlib check the whole training stack: torch, timm, numpy, two
-gigabytes of CUDA wheels, to read a tuple of three strings.
+gigabytes of CUDA wheels, to read a tuple of strings.
 
 So the roster lives here and `ship` imports it, rather than the other way
 around. The dependency arrow points from the heavy module to the light one,

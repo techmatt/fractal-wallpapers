@@ -1190,8 +1190,7 @@ mod tests {
         }
     }
 
-    /// **Stopping an orbit once it is proven interior moves no sample** *(website
-    /// interior_seam_deep_autorender_ckpt146, interior_seam_orbit_modes_ckpt147)*. Every
+    /// **Stopping an orbit once it is proven interior moves no sample.** Every
     /// field an interior test is handed to — the escape-only fields, the traps, every
     /// lattice reduction that is final at a repeat, and the address in all three windows
     /// — over every family, and over the Julia planes at the site's shipped constant,

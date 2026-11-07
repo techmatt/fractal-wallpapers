@@ -89,9 +89,10 @@ To split a count delta (your tests or the tree's), `git stash -u` then `pytest
 ### The lane refuses the wrong interpreter at the door
 
 Where the checkout holds a `.venv` and pytest is not running on it, `pytest_configure`
-raises a `UsageError` naming the interpreter it wants (CI has no `.venv` and never sees
-it). `FRACTAL_WALLPAPERS_ANY_INTERPRETER=1` measures on another one on purpose. Without
-it, `pythonpath = ["src"]` lets any interpreter collect and pass a smaller suite.
+raises a `UsageError` naming the interpreter it wants (CI's `uv sync` creates the `.venv`
+and `uv run` runs on it). `FRACTAL_WALLPAPERS_ANY_INTERPRETER=1` measures on another on
+purpose. Without the check, `pythonpath = ["src"]` lets any interpreter pass a smaller
+suite.
 
 ### An extra reaches a lane two ways, and they are different faults
 
@@ -104,16 +105,17 @@ it, `pythonpath = ["src"]` lets any interpreter collect and pass a smaller suite
   `conftest.pytest_runtest_call` catches `ModuleNotFoundError` for a genuinely absent
   optional dependency and skips. On `.[dev,models]` it is inert.
 
-Both guards read their population from `cli.EXTRA_FOR` less `dev`.
+`test_lanes.py` reads its population from `cli.EXTRA_FOR` less what `dev` installs;
+`conftest.pytest_runtest_call` reads all of `cli.EXTRA_FOR`.
 
 ## Shared readings of the tracked records
 
 `conftest.py` holds session-scoped fixtures over the tracked records: `shipped_labels`,
 `shipped_scored`, `shipped_tile_plan`, `shipped_render_cache`, `shipped_label_pool`,
 `shipped_cyclic_maps`, `distillation_rows` and `tracked_ledger`. Each costs a second or
-more and is asked by more than one file. Fixtures rather than module caches, so the
-sharing is opt-in: a test that redirects a store never asks and cannot be handed the
-tracked corpus. Nothing writes to them. A new test file reaches for these first.
+more. Fixtures rather than module caches, so the sharing is opt-in: a test that
+redirects a store never asks and cannot be handed the tracked corpus. Nothing writes to
+them; a new test file reaches for these first.
 
 ### `shipped_label_pool` hands back fresh pictures on every call
 
@@ -137,13 +139,14 @@ the candidate ledger's row files, the flatness and signature sidecars, the suppl
 and every durable copy address a root, so setting the two moves all of them. **Set them
 with `monkeypatch.setenv` and redirect nothing else you do not have to.**
 
-A per-accessor redirect is complete only against the call graph the day it was written:
-they have overwritten tracked manifests, read this machine's live sidecars, and (moving
-only the tracked tier with `records.use(tmp_path)`) written run directories into the live
-`artifacts/curation/runs/`. **A store has two tiers; a fixture is not done at one.**
+A per-accessor redirect is complete only against the call graph the day it was written,
+and `records.use(tmp_path)` moves only the tracked tier. **A store has two tiers; a
+fixture is not done at one.**
 
-### Two accessors still have to be patched, and both are the tracked half
+### Three accessors still have to be patched, and all three are the tracked half
 
+- `labeling.store.label_dir()` resolves off `repo_root()`, and `conftest.store_dir`
+  patches it: the empty label store most label tests take.
 - `candidate_ledger.store.manifest_dir()` resolves off the tracked tree
   (`records.default_root()`, off `repo_root()`), not off a tier, and `repo_root` is
   imported by value into dozens of modules, so there is no root to set.
@@ -172,9 +175,8 @@ covered) plus the names in `HELD_STILL` at session start, re-hashes at finish, a
 the run naming any that moved (`pytest_sessionfinish`). The same hook asks it of the
 regenerable tier: `LIVE_LEG_DIRS` lists the immediate children of
 `artifacts/curation/runs` at start and finish, and a name that appeared fails the run.
-**A name at a fixed depth, never a walk**: one `scandir` twice a session. One mechanism
-and two snapshots, deliberately, under one heading and one writer; `test_lanes.py`
-guards the detector, including that it stays a `scandir`.
+**A name at a fixed depth, never a walk**: `test_lanes.py` guards the detector,
+including that it stays one `iterdir()`.
 
 ## Where the time goes
 
@@ -192,15 +194,11 @@ What dominates today, in order:
 | ~10 s each | `test_render_head`, `test_distinct`, `test_candidate_ledger`, `test_hunt` |
 | ~7 s each | `test_train`'s two epochs, `test_renders`' regeneration, `test_ledger_tracking`'s merges |
 
-`test_ledger_tracking`'s merges are honest: each reads the release sidecar once, as
-production does.
-
 ### A cost paid once per test scales with the suite, and hides from every reading
 
 A growing store steps the lane the day it grows; a per-test cost grows milliseconds at a
-time and never reaches a durations list (the case was `tmp_path_factory.mktemp` in an
-autouse fixture, quadratic in the test count; `conftest`'s comment at its `tmp_path`
-override has the numbers). Only a by-file sum of every test finds it.
+time and never reaches a durations list (`conftest`'s comment at its `tmp_path` override
+has the example). Only a by-file sum of every test finds it.
 
 ### A derivation paid twice is the thing to look for
 
@@ -254,14 +252,13 @@ engine binary into its `engine/target/release/`, set `FRACTAL_WALLPAPERS_HOT_ROO
 `FRACTAL_WALLPAPERS_ARCHIVE_ROOT` to empty, and run `pytest --slow` there with this
 checkout's interpreter. Reproducing the lean install is a mask at `sys.meta_path`
 (`test_base_install.py` carries the finder) blocking `torch,torchvision,timm` and **not**
-`numpy`, which `scipy` brings.
+`numpy`, which `dev` installs.
 
 ## On a parallel runner
 
 `pytest-xdist` is in `dev` so a lane can keep to a thread budget: `python -m pytest -n 6`
-ran the fast lane in 54 s against 141 s serial (2026-11-06, the same 5190 passed and one
-skip). The default lane stays serial, because under xdist the controller prints neither
-the deselection nor the held-back line (the hooks run in the workers), so the fast lane
-goes quiet: read a count off a serial run. Keep `--slow` serial as well, since
-`--slow`'s big costs drive an engine already rayon across every core, plus a ~6 GB
+runs the fast lane in under half the serial time, with the same counts. The default lane
+stays serial: under xdist the controller prints neither the deselection nor the held-back
+line (the hooks run in the workers), so read a count off a serial run. Keep `--slow`
+serial too: its big costs drive an engine already rayon across every core, plus a ~6 GB
 ledger read every worker would pay again.

@@ -1301,9 +1301,9 @@ pub struct Decimal {
 const MAX_SCALE: i64 = 120;
 
 /// `deep-link.js`'s `COORDINATE_LIMIT`: the deep contract's own cap on a coordinate's
-/// length, [`MAX_SCALE`] and eight, so the link never binds before the centre guard does
-/// (gpu_deep_ship_ckpt162). The shallow reader keeps [`COORDINATE_LIMIT`]'s 64; until
-/// ckpt162 the deep reader shared it, which ended a deep link near 1e-45 to 1e-54.
+/// length, [`MAX_SCALE`] and eight, so the link never binds before the centre guard does.
+/// The shallow reader keeps [`COORDINATE_LIMIT`]'s 64, which would end a deep link near
+/// 1e-45 to 1e-54.
 const DEEP_COORDINATE_LIMIT: usize = MAX_SCALE as usize + 8;
 
 /// `deep-link.js`'s `WRITTEN_OUT_CEILING`: at and past this magnitude a deep coordinate has
@@ -1501,7 +1501,7 @@ pub struct DeepView {
     pub level: Option<Curve>,
     /// Whether the link named its `scale`: `deep-link.js`'s `canonicalize` keeps stating
     /// a scale that was stated, `leveled` included, and adds none to a link that asked for
-    /// the arrival fit by naming none *(deep_leveled_link_and_recolour_ckpt150)*.
+    /// the arrival fit by naming none.
     pub scale_stated: bool,
 }
 
@@ -1517,7 +1517,7 @@ fn deep_coordinate(text: &str, key: &str) -> Result<Decimal, String> {
     }
     // Held to the cap as it will be written back, as `deep-link.js` holds it: a number past
     // `WRITTEN_OUT_CEILING` has more integer digits than the cap before it is built, and
-    // anything else is measured once it is spelled (gpu_deep_ship_ckpt162's review).
+    // anything else is measured once it is spelled.
     let too_wide = || {
         format!(
             "{key} is longer than {DEEP_COORDINATE_LIMIT} characters written out; the link says \
@@ -1631,7 +1631,7 @@ pub fn parse_deep(search: &str, context: &Context) -> Result<DeepView, String> {
         ));
     }
     // The syntax, and not the centre guard: a width is a double, and `shortest` spells one
-    // below about 1e-104 past 120 places (`deep-link.js`'s `width`, gpu_deep_ship_ckpt162).
+    // below about 1e-104 past 120 places (`deep-link.js`'s `width`).
     let trimmed_width = width_text.trim();
     if trimmed_width.is_empty() || !is_decimal(trimmed_width) {
         return Err(format!(
@@ -1640,7 +1640,7 @@ pub fn parse_deep(search: &str, context: &Context) -> Result<DeepView, String> {
     }
     let width = number(width_text);
     // The floor, and a positive width a double holds as 0 (`1e-400`) is under it rather than
-    // "not positive" (`deep-link.js`'s `width`, gpu_deep_ship_ckpt162's review).
+    // "not positive" (`deep-link.js`'s `width`).
     let mantissa = trimmed_width.split(['e', 'E']).next().unwrap_or("");
     let positive =
         !trimmed_width.starts_with('-') && mantissa.bytes().any(|b| (b'1'..=b'9').contains(&b));

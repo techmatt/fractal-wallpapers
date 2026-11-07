@@ -67,7 +67,7 @@ from dataclasses import field as dataclass_field
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fractal_wallpapers.curation import candidate_ledger
+from fractal_wallpapers.curation import candidate_ledger, release
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -139,7 +139,7 @@ TOLERANCE = 0.9
 #: How many engines this pass drives at once. **Three**, this machine's render
 #: pool, the same number every leg here takes and a rule about the desktop rather
 #: than a tuning knob.
-WORKERS = 3
+WORKERS = release.DEFAULT_WORKERS
 
 #: How many (location, mode) groups are rendered before the pass stops to score
 #: what it made. A chunk is the finest point the pass can be interrupted at with

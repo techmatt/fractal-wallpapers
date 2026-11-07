@@ -5,9 +5,6 @@ with a build/serve/ingest cycle of its own, and it sits between the gallery half
 and the legs without belonging to either. A vote is a human comparison of two
 finished wallpapers, which makes this the only `curate` group whose input is a
 person rather than the engine.
-
-Cut out of `curate_commands` on 2026-09-12 with four sibling families; that
-module's docstring carries the reversal and what it cost.
 """
 
 from __future__ import annotations

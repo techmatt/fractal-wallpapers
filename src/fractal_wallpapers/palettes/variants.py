@@ -96,7 +96,7 @@ class VariantError(RuntimeError):
 def mirror_for(kind: str) -> bool:
     """Whether a render through a map of this `kind` folds it.
 
-    THE one spelling of the pair. The engine refuses `mirror` on a cyclic map and
+    The one spelling of it by kind. The engine refuses `mirror` on a cyclic map and
     production folds everything else, so the two are one decision — and a variant
     that moves `kind` has to move this with it or the render is refused.
     """

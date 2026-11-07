@@ -60,13 +60,13 @@ def _wrong_interpreter() -> str | None:
     that is the whole reason this exists. `pythonpath = ["src"]` in
     `pyproject.toml` gets pytest importing the package from anything on the path,
     so a bare `python -m pytest` collects and passes — with every module that
-    gates on `torch` or `PIL` through a module-level `importorskip` silently
+    gates on `torch` or `timm` through a module-level `importorskip` silently
     absent. [`SKIPPED_WHOLE`] reports that at the *end*, which is a red line under
     a green run and is read after the number has already been written down.
 
-    So it is refused at the door instead. The condition is narrow on purpose: only
-    where the checkout **has** a `.venv` and this is not it, which makes it inert
-    in CI — CI builds its own environment and has no `.venv` to be wrong about.
+    So it is refused at the door instead. The condition is narrow on purpose: it
+    applies only where the checkout **has** a `.venv` and this is not it. CI's
+    `uv sync` makes that `.venv` and `uv run` runs on it, so CI passes the check.
     """
     if os.environ.get(INTERPRETER_WAIVER):
         return None
@@ -81,7 +81,7 @@ def _wrong_interpreter() -> str | None:
     return (
         f"this is {sys.executable}, not the checkout's own interpreter at "
         f"{CHECKOUT_VENV}. A lane run on another interpreter is a SMALLER SUITE and "
-        "not a failure: every module gating on torch or PIL is skipped whole at "
+        "not a failure: every module gating on torch or timm is skipped whole at "
         "collection, so the run goes green over a count nothing can reproduce, and "
         "one gallery guard that spawns sys.executable fails for the environment "
         "rather than for the tree. Run "
@@ -146,17 +146,16 @@ def pytest_collection_modifyitems(config, items) -> None:
 #:
 #: A module-level `pytest.importorskip` does not skip its tests — it stops the
 #: module being collected at all, so its tests are absent from the collected total
-#: rather than counted and skipped. Eight modules gate on `torch` that way and five
-#: more on `PIL`, and the whole block leaves a single "skipped" apiece behind it.
+#: rather than counted and skipped, and the whole block leaves a single "skipped"
+#: apiece behind it.
 #:
-#: Since 2026-09-15 the `PIL` gates are inert on every install this project uses:
-#: `dev` buys pillow, because the suite does not run without it. What still gates
-#: here is `torch` and `timm`, which `dev` will not buy at two gigabytes.
+#: The `numpy` and `PIL` gates are inert on every install this project uses: `dev`
+#: buys both, because the suite does not run without them. What still gates here is
+#: `torch` and `timm`, which `dev` will not buy at two gigabytes.
 #:
-#: **That is how a lane reading gets written down that nothing can reproduce.** The
-#: 3,383 once recorded for this tree was this: an interpreter with no `torch`, 65
-#: fast tests and 5 slow ones short of the same tree on a full install, and nothing
-#: on screen said so. Same argument as the deselect line below — a guard that goes
+#: **That is how a lane reading gets written down that nothing can reproduce**: an
+#: interpreter with no `torch` collects a smaller suite, and nothing on screen says
+#: so unless this does. Same argument as the deselect line below — a guard that goes
 #: quiet is a guard nobody notices going missing.
 SKIPPED_WHOLE: dict[str, str] = {}
 
@@ -281,15 +280,14 @@ def pytest_runtest_call(item):
 #: and its copy but not its manifest writes `tmp_path` counts into the history,
 #: and nothing says so.
 #:
-#: **That is not hypothetical.** During the candidate-ledger split an intermediate
-#: `__init__` re-exported `manifest_dir` eagerly, which made two bindings of one
-#: function; the redirect moved the store's and left `flatness.durable()` on the
-#: real tree, and `data/curation/candidate_ledger/{flatness,signatures}` were
-#: overwritten with one-row counts off a temporary ledger. A person noticed.
+#: The shape of the miss: a package `__init__` that re-exports `manifest_dir`
+#: eagerly makes two bindings of one function, so a redirect can move one and leave
+#: a durable's manifest on the real tree, overwritten with counts off a temporary
+#: ledger.
 #:
 #: Discovered through `git ls-files` rather than listed, because a hand list goes
-#: stale the first time a durable is added. **20 files, 104 KB** as of 2026-09-04;
-#: hashing them twice a session does not show up against a three-minute lane.
+#: stale the first time a durable is added: every git-tracked `*manifest.json`;
+#: hashing them twice a session is negligible.
 MANIFEST_SUFFIX = "manifest.json"
 
 #: The tracked files a **runtime writer** appends to that are not manifests, named
@@ -304,14 +302,13 @@ HELD_STILL = ("data/curation/candidate_ledger/ratchet.jsonl",)
 #: `repo_root()`; these resolve off a tier, so a fixture *can* move them — and the
 #: class of miss is a fixture that moves one tier and not the other. That is what
 #: `records.use(tmp_path)` does: the decision rows go to a temporary store and the
-#: run's release sheet, written through `run_layout.run_dir()`, does not. Two test
-#: files leaked whole run directories onto this machine's live tree that way,
-#: `runs/r` and `runs/earlier`, until 2026-09-07; a leg that nothing ran is then a
+#: run's release sheet, written through `run_layout.run_dir()`, does not, so a whole
+#: run directory lands on this machine's live tree; a leg that nothing ran is then a
 #: leg every inventory and the orphan sweep have to have an answer for.
 #:
 #: A **name at a fixed depth**, never a walk: this is the tree `CLAUDE.md` says a
-#: recursive grep takes tens of minutes over. One `scandir` of about fifteen
-#: entries, twice a session.
+#: recursive grep takes tens of minutes over. One `iterdir()` of a fixed path (a
+#: single directory listing), twice a session.
 LIVE_LEG_DIRS = (("curation", "runs"),)
 
 RECORDS_AT_START = pytest.StashKey[dict]()
@@ -405,17 +402,15 @@ def pytest_sessionfinish(session, exitstatus) -> None:
     it never looked.
 
     On the **tracked** tier that path resolves off `repo_root()`, so there is no
-    root to redirect it at — `repo_root` is imported by value into three dozen
-    modules. A durable's manifest is the shape, and [`HELD_STILL`]'s ratchet log
-    joined it on 2026-09-07 when `prune` gained a tracked writer.
+    root to redirect it at — `repo_root` is imported by value into dozens of
+    modules. A durable's manifest is the shape, and [`HELD_STILL`]'s ratchet log,
+    which `prune` writes, is the same class.
 
     On the **regenerable** tier the path does follow a root; what goes wrong is
     that a fixture moves the other one. `records.use(tmp_path)` sends the decision
     rows to a temporary store and leaves the run's release sheet going through
-    `run_layout.run_dir()` to the live artifacts tree — which is how
-    `artifacts/curation/runs/{r,earlier}` came to be two whole legs nothing ever
-    ran, found on 2026-09-07 by an audit of what the orphan sweep was looking at.
-    [`LIVE_LEG_DIRS`] is that half.
+    `run_layout.run_dir()` to the live artifacts tree, which leaves a whole leg
+    nothing ever ran. [`LIVE_LEG_DIRS`] is that half.
 
     **One mechanism and two snapshots**, deliberately: a second hook reporting the
     same class of fault through a second writer is the thing that goes quiet when
@@ -543,11 +538,11 @@ def no_signature_sidecar(monkeypatch, _absent_sidecar_root):
     runs after this one, so its `monkeypatch.setattr` is the one that stands.
 
     **A serial name in one session directory, not a directory apiece.** What this
-    owes each test is a private path that does not exist, and a directory was
-    never part of that — it was only how `mktemp` spelled *unique*, at the price
+    owes each test is a private path that does not exist, and a directory is not
+    part of that — `mktemp` would only spell *unique*, at the price
     [`_TMP_SERIAL`] measures. The parent here exists, so a `signatures.write`
-    through the patch still lands somewhere private and still succeeds, which is
-    exactly what happened before. Nothing in the suite does: the three files that
+    through the patch still lands somewhere private and still succeeds. Nothing in
+    the suite does: the three files that
     write a sidecar — `test_signatures`, [`test_ledger_tracking`] and
     [`test_candidate_ledger`] — each replace this patch with their own store
     first. The uniqueness stays anyway, because it costs a counter.
@@ -715,12 +710,9 @@ def shipped_label_pool():
 
     The same argument as [`shipped_render_cache`] one module up. Laying this out
     sweeps every scored row of both finished stores, digests a recipe per row and
-    asks the render cache for its picture, and until this existed the slow lane
-    paid for it eight times: the deleted `test_render_cv` twice — once directly
-    and once inside `assignment`, which calls `pool` itself — `test_render_deploy`
-    four times, once in its module fixture and once per seed in the three-seed
-    guard, and `test_render_dose` and `test_render_grade` once each. On this
-    machine, 2026-08-31, that was 52.4 s of a 563 s lane.
+    asks the render cache for its picture, about four seconds a time; without the
+    fixture every module fixture and every seed of a multi-seed guard pays it again,
+    and `assignment` pays it once more inside, because it calls `pool` itself.
 
     **The pictures are handed out fresh on every call, and that is the whole
     reason this is a factory rather than a value.** `render_deploy.sides_for`
@@ -775,12 +767,11 @@ def distillation_rows():
 def _pool_scores_once() -> dict:
     """The fine-tier head's read of the seating pool, read **once** for the session.
 
-    9.2 MiB and 42,300 rows on this machine, 0.21 s to parse. That was paid once a
-    pass and nobody noticed until `distinct.preselect` started resolving the column
-    itself on 2026-09-09 — the fold picks its survivor on `p_fine` now, and it runs
-    on passes where nothing upstream has read it, so it has to. Every synthetic
-    `headroom.census` and `solve.solve` in this suite then paid the read again, and
-    the fast lane went 124.06 s to 129.13 s over six added guards.
+    A fraction of a second to parse, paid once a pass in production. But
+    `distinct.preselect` resolves the column itself — the fold picks its survivor on
+    `p_fine`, on passes where nothing upstream has read it — so without this every
+    synthetic `headroom.census` and `solve.solve` in this suite would pay the read
+    again.
     """
     from fractal_wallpapers.models import gallery_grade_train
 
@@ -840,11 +831,10 @@ def no_live_supply_sidecar(monkeypatch, _absent_supply_root, _live_supply_sideca
     the tree. It passes here and fails everywhere else, which is the failure this
     is written to make impossible rather than to catch later.
 
-    **It was not hypothetical.** `test_forced.py`'s offer-and-refuse guard let
-    [`solve.solve`] resolve its own order, which reaches
-    [`solve.ranking_for`] → [`curation.rank_key`] → [`intake.read_scores`], and it
-    was one of the reasons CI's `models` job was red while the same test was green
-    on Matt's box. `ranking_for`'s own docstring says what to do instead: *a caller
+    A test that lets [`solve.solve`] resolve its own order reaches
+    [`solve.ranking_for`] → [`curation.rank_key`] → [`intake.read_scores`], and
+    without this it is green on the one machine holding the sidecar and red on a
+    CI runner. `ranking_for`'s own docstring says what to do instead: *a caller
     with an order already in hand passes it straight to `solve(order=...)` and
     never reaches here*.
 
@@ -860,11 +850,11 @@ def no_live_supply_sidecar(monkeypatch, _absent_supply_root, _live_supply_sideca
     `FRACTAL_WALLPAPERS_HOT_ROOT` to its own `tmp_path` is asking about the store
     it just wrote, and still gets it: only the answer that *is* this machine's live
     sidecar is swapped for one that is not there. Replacing the accessor outright
-    was the first spelling of this and it was wrong in the direction this suite has
-    been bitten by three times — see *Redirecting a store: at the roots, never per
-    accessor* in `tests/README.md` — because it takes `test_curation_intake.py`'s
-    own three-row store away from it too, and a fixture that breaks the tests
-    about a store is not a fixture about this machine's copy of it.
+    would be wrong in the direction *Redirecting a store: at the roots, never per
+    accessor* in `tests/README.md` warns of, because it takes
+    `test_curation_intake.py`'s own three-row store away from it too, and a fixture
+    that breaks the tests about a store is not a fixture about this machine's copy
+    of it.
     """
     from fractal_wallpapers.curation import intake
 
@@ -883,12 +873,10 @@ def no_live_supply_sidecar(monkeypatch, _absent_supply_root, _live_supply_sideca
 def tracked_ledger():
     """The candidate ledger and its score sidecar, read **once** for the session.
 
-    The dearest reading in this repository by a wide margin, and until this
-    existed the slow lane paid for it eight times: four module fixtures derived
-    the same pool independently, and three more guards read the rows again to
-    census them. On this machine, 2026-08-29, one reading is 21.9 s for the rows,
-    4.2 s for the sidecar and 13.4 s to lay the pool out over them — so the four
-    duplicated derivations alone were 138 s of a 1,088 s lane.
+    The dearest reading in this repository by a wide margin: roughly 40 s on this
+    machine (the rows, the sidecar, and laying the pool out over them), which every
+    module fixture deriving the pool and every guard censusing the rows would
+    otherwise pay again.
 
     Why the whole file rather than the six fields the censuses read: a projection
     is a second opinion about which fields a row has, and a guard handed a

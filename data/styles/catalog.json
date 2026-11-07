@@ -34,7 +34,7 @@
       },
       "what": "Discs packed inside discs: a new disc channel read at the step an orbit enters it, with metallic rims, nested beads and gold star-flowers from the set's interior.",
       "kept": "5 locations, 4 palettes, 2 variants",
-      "note": "Engine: bubble channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the hero-circle seat and the two with star-flowers closest to the reference.",
+      "note": "Engine: bubble channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the hero-circle seat and the two with star-flowers closest to the reference. · Matt: higher quality than most, though there is no strict tangent Kleinian hierarchy.",
       "palettes": [
         {
           "colormap": "bronze_packing",
@@ -113,7 +113,7 @@
       },
       "what": "Soft lit blue lobes (the disc grid, lit as one dome each) between gold star webs from the strip trap, with halo and sparkle.",
       "kept": "3 locations, map_lobes formulation",
-      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default.",
+      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default. · Matt: reasonably good.",
       "palettes": [
         {
           "colormap": "glossy_lobes",
@@ -162,7 +162,7 @@
       },
       "what": "Lit layered waves: the first style; smooth bands lit as ring-banded surfaces with glow streaks.",
       "kept": "3 locations, 11 palette renders",
-      "note": "Engine: compositor, gradient, inside, light, glow, pattern, mask (first style) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The 3 matched-map locations.",
+      "note": "Engine: compositor, gradient, inside, light, glow, pattern, mask (first style) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The 3 matched-map locations. · Matt: 3 of 10 locations kept, the others too light (the `tone` pass fixed 4 of those 7); he likes its wave nature.",
       "palettes": [
         {
           "colormap": "floating_on_dreams",
@@ -255,7 +255,7 @@
       },
       "what": "Radial colour lit from within: translucent stacked sheets with bright rims, hue falling away from a core.",
       "kept": "4 locations, 10 palette renders",
-      "note": "Engine: radial, sheet, warp, invert, tone · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · 3 of 4 matched-map locations; the thirteen-arm whirl is a near-twin of the ten-arm one.",
+      "note": "Engine: radial, sheet, warp, invert, tone · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · 3 of 4 matched-map locations; the thirteen-arm whirl is a near-twin of the ten-arm one. · Matt: 4 of 9 spirals kept; Copper Fathom and hsv are the strongest palettes.",
       "palettes": [
         {
           "colormap": "yas",
@@ -356,7 +356,7 @@
       },
       "what": "Log-polar tunnel: bevelled arches shrinking ring by ring to a vanishing point, navy cells between teal arms.",
       "kept": "2 locations, yas palette, turns3 + straight",
-      "note": "Engine: log_polar projection, period on light/sheet · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published stack is five turns; three (kept) is inside its Arm count knob.",
+      "note": "Engine: log_polar projection, period on light/sheet · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published stack is five turns; three (kept) is inside its Arm count knob. · Matt: 2 of 9 locations kept; the reference's corner gems are not drawn.",
       "palettes": [
         {
           "colormap": "teal_tunnel",
@@ -408,7 +408,7 @@
       },
       "what": "bronze_packing plus glossy blue crescent ribbons: the same disc grid read at two scales.",
       "kept": "2 locations",
-      "note": "Engine: bubble shift + crescent · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: bubble shift + crescent · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: warmer and browner than the lilac reference.",
       "palettes": [
         {
           "colormap": "ribbon_packing",
@@ -451,7 +451,7 @@
       },
       "what": "Engraved gold filigree with jewel orbs, warm haze and sparkle; built from existing pieces.",
       "kept": "1 location, many_orbs",
-      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob.",
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob. · Matt: 1 of 12 locations kept; wide minibrot interiors wash to a pale blob.",
       "palettes": [
         {
           "colormap": "gilded_orbs",
@@ -489,7 +489,7 @@
       },
       "what": "Smoothly shaded lune blades (the bubble's crescent, read at entry) over a hair of light along the set.",
       "kept": "1 formulation",
-      "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Your note: giant blades occlude the finer ones, so Blade size tops out at the kept size.",
+      "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Matt: giant foreground blades occlude the finer ones and kill the fractal feel, so Blade size tops out at the kept size.",
       "palettes": [
         {
           "colormap": "shaded_blades",
@@ -529,7 +529,7 @@
       },
       "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
       "kept": "2 locations, soft",
-      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · soft is now the style's default stack; its location keep is re-drawn in it at its default knobs (the earlier seamed-petals keep of the soft keep's own seat is no longer shown).",
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the jewels read as engraved crust more than gems, so soft is the published formulation and the style's default stack; its location keep is re-drawn in it at its default knobs (the earlier seamed-petals keep of the soft keep's own seat is no longer shown).",
       "palettes": [
         {
           "colormap": "lit_petals",
@@ -566,7 +566,7 @@
       ],
       "what": "Glowing threads from the distance estimate: near-white core, green halo and bloom, faint equipotential threads in the dark.",
       "kept": "3 locations, no_fog variant",
-      "note": "Engine: glow falloff, tone log_density · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: glow falloff, tone log_density · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: its threads are sharper and brighter than the flame's soft strands, so it is dropped from publishing.",
       "palettes": [
         {
           "colormap": "glow_filaments",
@@ -603,7 +603,7 @@
       ],
       "what": "Fine fanned field lines around a Julia set, pinwheels in each interior cell. You liked the background fans more than the foreground chain.",
       "kept": "2 locations, doubling",
-      "note": "Engine: lines channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: lines channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: mediocre overall; he likes the background fans more than the foreground chain, and it is dropped from publishing.",
       "palettes": [
         {
           "colormap": "field_lines",
@@ -634,7 +634,7 @@
       ],
       "what": "Soft glowing teal filaments in a green-grey mist: glow_filaments' falloff glows softened, two wide haze glows and a scooped period sheet for the mist.",
       "kept": "1 location, flame formulation",
-      "note": "Engine: nothing new (falloff glow, period sheet, tone) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (falloff glow, period sheet, tone) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but nothing exciting.",
       "palettes": [
         {
           "colormap": "teal_filaments",
@@ -668,7 +668,7 @@
       ],
       "what": "A luminous blue eye: a quasicircle Julia set's ring glowing round a dark pupil holding a star, field-line strands curving out of the ring and in to the star.",
       "kept": "2 locations, fine and sharp formulations",
-      "note": "Engine: nothing new (falloff ring, lines channel on both sides) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (quasicircles are not in the galleries).",
+      "note": "Engine: nothing new (falloff ring, lines channel on both sides) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (quasicircles are not in the galleries). · Matt: its discontinuities are jarring.",
       "palettes": [
         {
           "colormap": "star_eye",
@@ -704,7 +704,7 @@
       ],
       "what": "A fractal rose on black: a parabolic flower's petals cycled into crimson-to-gold rings by the inside channel, softened falloff threads and a bead lattice.",
       "kept": "2 locations, fine_rings formulation",
-      "note": "Engine: nothing new (inside channel, falloff glow, bubble lattice) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (parabolic flowers are not in the galleries).",
+      "note": "Engine: nothing new (inside channel, falloff glow, bubble lattice) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (parabolic flowers are not in the galleries). · Matt: okay but nothing spectacular.",
       "palettes": [
         {
           "colormap": "ember_rose",
@@ -725,7 +725,7 @@
       "item": "017",
       "reference": "commons_Fractal_Art_Series__2814465834074_29.jpg",
       "show": [],
-      "note": "Nothing kept; its discontinuities read as ugly.",
+      "note": "Matt: nothing kept; its discontinuities read as ugly (a judgement on this style, not on discontinuities in general), so it is dropped.",
       "palettes": []
     },
     {
@@ -735,7 +735,7 @@
       "item": "021",
       "reference": "103489.jpg",
       "show": [],
-      "note": "Just ranked smooth shading with a vibrant palette. Its map seahorse_halo stays in the library as a candidate palette.",
+      "note": "Matt: discarded as a mode, just ranked smooth shading with a vibrant palette. Its map seahorse_halo stays in the library as a candidate palette.",
       "palettes": []
     },
     {
@@ -745,7 +745,7 @@
       "item": "021",
       "reference": "citadel.jpg",
       "show": [],
-      "note": "Same as seahorse_halo. Its map citadel_gold stays in the library as a candidate palette.",
+      "note": "Matt: discarded as a mode, just ranked smooth shading with a vibrant palette. Its map citadel_gold stays in the library as a candidate palette.",
       "palettes": []
     },
     {
@@ -769,7 +769,7 @@
       ],
       "what": "A clock face of light: a quasicircle Julia set's basin lit green-gold round a hot heart, concentric equipotential rings beyond it and small luminous gear discs riding them.",
       "kept": "3 locations, bare-rings and big-discs formulations",
-      "note": "Engine: nothing new · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: good.",
       "palettes": [
         {
           "colormap": "clockwork_rings",
@@ -802,7 +802,7 @@
       ],
       "what": "Translucent blue flame veils crossing over a crisp fractal, their rims lit lemon yellow, on a deep blue ground: several views of one loop crossing.",
       "kept": "2 locations",
-      "note": "Engine: the `view` member of a field channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: the `view` member of a field channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
       "palettes": [
         {
           "colormap": "flame_veil_blue",
@@ -828,7 +828,7 @@
       ],
       "what": "Teal and aqua flame veils and wisps sweeping round a magenta nebula with a white star at its core, on a dark slate ground.",
       "kept": "the one-view formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
       "palettes": [
         {
           "colormap": "flame_veil_teal",
@@ -861,7 +861,7 @@
       ],
       "what": "Violet-blue flame ribbons swirling round the frame, each a veil of fine silky strands, a few teal, on a navy ground.",
       "kept": "3 locations, the no-strands formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
       "palettes": [
         {
           "colormap": "flame_veil_violet",
@@ -897,7 +897,7 @@
       ],
       "what": "Angular translucent shards in royal blue and chalk grey crossing soft grey veils, with crisp pale Julia snowflakes among them.",
       "kept": "2 locations, the blades-only formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
       "palettes": [
         {
           "colormap": "flame_veil_chalk",
@@ -919,7 +919,7 @@
       "show": [],
       "what": "A double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each polished with a metallic sheen.",
       "kept": "nothing",
-      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two.",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: none amazing; no further work.",
       "palettes": [
         {
           "colormap": "corkscrew_smooth",
@@ -937,7 +937,7 @@
       "show": [],
       "what": "Fine teal flame wisps and crescents crossing over smouldering red and orange streaks on a dark slate ground.",
       "kept": "nothing",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two.",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: lost the fractal feel; not promoted.",
       "palettes": [
         {
           "colormap": "flame_wisp_waves",
@@ -960,7 +960,7 @@
       ],
       "what": "Glowing orange and gold flame ribbons curling over one another in a warm brown haze, brightest at the middle.",
       "kept": "the close-views formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted.",
       "palettes": [
         {
           "colormap": "flame_wisp_amber",
@@ -985,7 +985,7 @@
       ],
       "what": "Lit blue flame veils and strands crossing on a deep blue ground, strewn with gold star sparks.",
       "kept": "the close-views formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted.",
       "palettes": [
         {
           "colormap": "flame_wisp_spark",
@@ -1010,7 +1010,7 @@
       ],
       "what": "Frosted blue and white flame veils, their strands feathered with a crisp white rime along the set, on a near-black ground.",
       "kept": "2 locations",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic seat, the one where the strands follow the set (Matt: the only great one).",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic seat, the one where the strands follow the set (Matt: the only great one). · Its score is that one keep's, phoenix-classic_618cd4e4.",
       "palettes": [
         {
           "colormap": "flame_wisp_frost",
@@ -1031,7 +1031,7 @@
       "show": [],
       "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
       "kept": "nothing",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two.",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: lost the fractal feel; not promoted.",
       "palettes": [
         {
           "colormap": "flame_wisp_crimson",
@@ -1058,7 +1058,7 @@
       ],
       "what": "Molten fire flowing in broad lit folds: a glossy relief of the smooth count in crimson, orange and gold, with translucent folds and flame lace along the set.",
       "kept": "2 locations",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass.",
       "palettes": [
         {
           "colormap": "molten_flow",
@@ -1332,7 +1332,7 @@
       ],
       "what": "Smooth escape bands through a matched map, a dark hair keeping the lace crisp: one stack, a palette for each reference whose tiles were kept.",
       "kept": "three palettes (council, crisis, dalooka): 4 locations, 2 no-hair formulations",
-      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer.",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer. · Matt: none amazing (forest, mandelbrot3, council, crisis and dalooka alike); the palettes are saved and there is no further work.",
       "palettes": [
         {
           "colormap": "council_smooth",
@@ -1419,6 +1419,86 @@
       "what": "black chrome blades fanning along a spiral over brushed silver and bronze, a blue-grey hair along the set's lace",
       "kept": "nothing",
       "note": "Kept nothing in round one (item 036); its map left the library, since only picked palettes are saved."
+    },
+    {
+      "style": "cream_lace",
+      "score": 3,
+      "item": "037",
+      "reference": "devilfish-25.jpg",
+      "show": [],
+      "what": "A glowing cream and blue lace of fine strands pierced by dark round holes of every size, each rim a bright thread, feathered blue strands on near black.",
+      "kept": "round one's picks not yet saved as keeps",
+      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt: the interior colouring (the bubbles) is liked.",
+      "palettes": [
+        {
+          "colormap": "cream_lace",
+          "values": {},
+          "keeps": []
+        }
+      ]
+    },
+    {
+      "style": "copper_mail",
+      "score": 3,
+      "item": "037",
+      "reference": "dragon-mail-25.jpg",
+      "show": [],
+      "what": "A copper lattice of lens-shaped holes, a warm lace of fine strands round every hole and dark brown in each.",
+      "kept": "round one's picks not yet saved as keeps",
+      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt: the interior colouring (the bubbles) is liked.",
+      "palettes": [
+        {
+          "colormap": "copper_mail",
+          "values": {},
+          "keeps": []
+        }
+      ]
+    },
+    {
+      "style": "gold_arcs",
+      "score": 3,
+      "item": "037",
+      "reference": "flamed-25.jpg",
+      "show": [],
+      "what": "Bright gold arcs of lace sweeping round holes of every size on a warm amber veil.",
+      "kept": "round one's picks not yet saved as keeps",
+      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt: the interior colouring (the bubbles) is liked.",
+      "palettes": [
+        {
+          "colormap": "gold_arcs",
+          "values": {},
+          "keeps": []
+        }
+      ]
+    },
+    {
+      "style": "bead_strands",
+      "score": 3,
+      "item": "037",
+      "reference": "deepsea-life-25.jpg",
+      "show": [],
+      "what": "Blue glowing strands strung with bead bubbles, every hole of the set a glass bead with a bright rim, on violet black.",
+      "kept": "round one's picks not yet saved as keeps",
+      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt scored it 3 with no reason recorded.",
+      "palettes": [
+        {
+          "colormap": "bead_strands",
+          "values": {},
+          "keeps": []
+        }
+      ]
+    },
+    {
+      "style": "ember_plume",
+      "score": 1,
+      "status": "discarded",
+      "item": "037",
+      "reference": "dreaming-25.jpg",
+      "show": [],
+      "palettes": [],
+      "what": "a fiery plume of lace, red and orange round black holes of every size, feathering out into blue and violet strands on black",
+      "kept": "nothing",
+      "note": "Matt: nothing kept in round one (item 037), so it is dropped."
     }
   ]
 }
