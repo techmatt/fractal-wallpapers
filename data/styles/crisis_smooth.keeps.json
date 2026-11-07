@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "name": "crisis_smooth",
+  "reference": {
+    "image": "crisis-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom (exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/crisis_smooth",
+  "keeps": [
+    {
+      "id": "style_smooth_palettes_r1/crisis_smooth/locations/crisis__loc__02_julia-mandelbrot_f682af93_crisis_smooth",
+      "picker": "style_smooth_palettes_r1",
+      "picked": [
+        {
+          "row": "crisis_smooth/locations",
+          "key": "crisis__loc__02_julia-mandelbrot_f682af93_crisis_smooth"
+        }
+      ],
+      "label": "julia-mandelbrot_f682af93",
+      "image": "style_smooth_palettes_r1__crisis__loc__02_julia-mandelbrot_f682af93_crisis_smooth.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_f682af93",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-1.515162206906952",
+            "center_im": "0.018894489205932737",
+            "width": "0.04640390887340657"
+          },
+          "maxiter": 11217,
+          "note": "final140_general2000 seat 24 (stripe, julia:mandelbrot)",
+          "gallery": {
+            "record": "final140_general2000",
+            "seat": 24,
+            "key": "f682af9370201ce1",
+            "p_spiral": 0.920996
+          }
+        },
+        "style": "crisis_smooth",
+        "stack": "crisis_smooth@0410ebf7",
+        "colormap": "crisis_smooth",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "crisis_smooth@0410ebf7": {
+      "name": "crisis_smooth",
+      "interior": {
+        "rgb": "#1a0410"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.5,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#140410"
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        }
+      ],
+      "tone": {
+        "median": 0.43,
+        "p10": 0.074
+      }
+    }
+  }
+}

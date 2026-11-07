@@ -1,0 +1,168 @@
+{
+  "schema": 1,
+  "name": "dalooka_smooth",
+  "reference": {
+    "image": "dalooka.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom of the Mandelbrot set, unsigned, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/dalooka_smooth",
+  "keeps": [
+    {
+      "id": "style_smooth_palettes_r1/dalooka_smooth/formulations/dalooka__f_no_hair__00_mandelbrot_984f58af_dalooka_smooth",
+      "picker": "style_smooth_palettes_r1",
+      "picked": [
+        {
+          "row": "dalooka_smooth/formulations",
+          "key": "dalooka__f_no_hair__00_mandelbrot_984f58af_dalooka_smooth"
+        }
+      ],
+      "label": "no_hair: the matched map alone (no dark hair on the set) (mandelbrot_984f58af)",
+      "image": "style_smooth_palettes_r1__dalooka__f_no_hair__00_mandelbrot_984f58af_dalooka_smooth.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_984f58af",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.05738180661091015",
+            "center_im": "0.6687454091639854",
+            "width": "0.0000009184635068034582"
+          },
+          "maxiter": 29967,
+          "note": "final140_general2000 seat 885 (tia, mandelbrot)",
+          "gallery": {
+            "record": "final140_general2000",
+            "seat": 885,
+            "key": "984f58af4a6a7319",
+            "p_spiral": 0.008542
+          }
+        },
+        "style": "dalooka_smooth",
+        "stack": "dalooka_smooth@3d02448e",
+        "colormap": "dalooka_smooth",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth",
+      "picker": "style_smooth_palettes_r1",
+      "picked": [
+        {
+          "row": "dalooka_smooth/locations",
+          "key": "dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth"
+        }
+      ],
+      "label": "mandelbrot_4f741337",
+      "image": "style_smooth_palettes_r1__dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_4f741337",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.7805192962538873",
+            "center_im": "-0.13533181800963165",
+            "width": "0.000000012327752366020986"
+          },
+          "maxiter": 37430,
+          "note": "final140_general2000 seat 287 (stripe, mandelbrot)",
+          "gallery": {
+            "record": "final140_general2000",
+            "seat": 287,
+            "key": "4f741337934507d2",
+            "p_spiral": 0.067975
+          }
+        },
+        "style": "dalooka_smooth",
+        "stack": "dalooka_smooth@58122e2a",
+        "colormap": "dalooka_smooth",
+        "resolution": [
+          2560,
+          1600
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "dalooka_smooth@3d02448e": {
+      "name": "dalooka_smooth",
+      "interior": {
+        "rgb": "#10182c"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.5,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        }
+      ],
+      "tone": {
+        "median": 0.616,
+        "p10": 0.243
+      }
+    },
+    "dalooka_smooth@58122e2a": {
+      "name": "dalooka_smooth",
+      "interior": {
+        "rgb": "#10182c"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.5,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#101828"
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        }
+      ],
+      "tone": {
+        "median": 0.616,
+        "p10": 0.243
+      }
+    }
+  }
+}

@@ -1,0 +1,317 @@
+{
+  "schema": 1,
+  "name": "molten_flow",
+  "reference": {
+    "image": "consequences-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/molten_flow",
+  "keeps": [
+    {
+      "id": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
+      "picker": "style_liquid_surfaces_r1",
+      "picked": [
+        {
+          "row": "molten_flow/locations",
+          "key": "molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow"
+        }
+      ],
+      "label": "julia-multibrot3_7e312206",
+      "image": "style_liquid_surfaces_r1__molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
+      "picker": "style_liquid_surfaces_r1",
+      "picked": [
+        {
+          "row": "molten_flow/locations",
+          "key": "molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow"
+        }
+      ],
+      "label": "julia-multibrot3_84b3a609",
+      "image": "style_liquid_surfaces_r1__molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_84b3a609",
+          "family": {
+            "c": [
+              "0.41691379606409645",
+              "0.006939104737155305"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.027438092472795966",
+            "center_im": "0.04998729490643852",
+            "width": "0.0002453809994285905"
+          },
+          "maxiter": 20293,
+          "note": "final139_general seat 359 (smooth_angle_min, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 359,
+            "key": "84b3a6092d582f93",
+            "p_spiral": 0.003588
+          },
+          "ink": 0.07894
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "molten_flow@fa7a5b16": {
+      "name": "molten_flow",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.442,
+        "p10": 0.117
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.7,
+              "shift": [
+                -0.154,
+                -0.21
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.35
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 1.058,
+              "shift": [
+                -0.111,
+                0.35
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.525
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.6,
+              "shift": [
+                0.426,
+                -0.144
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.7
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.35,
+                0.3
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 8.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.5,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.35,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 12.0,
+            "rim": 0.35,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.9
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "power": 3.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.2
+          },
+          "blend": "multiply",
+          "opacity": 0.5,
+          "falloff": 0.0006
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.0002
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 10.0
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "name": "crescent_lines",
+  "reference": {
+    "image": "crescent-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/crescent_lines",
+  "keeps": [
+    {
+      "id": "style_crescent_lines_r1/crescent_lines/formulations/crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines",
+      "picker": "style_crescent_lines_r1",
+      "picked": [
+        {
+          "row": "crescent_lines/formulations",
+          "key": "crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines"
+        }
+      ],
+      "label": "ribbons: one cycle, broad ribbons as the named mode stripe draws them (minibrot-p7_14)",
+      "image": "style_crescent_lines_r1__crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "minibrot-p7_14",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.8327762007232420435",
+            "center_im": "-0.00022884157026841273",
+            "width": "0.002955666111827974"
+          },
+          "maxiter": 5800,
+          "note": "hand-placed: period-7 minibrot nucleus by Newton, size 9.85e-05, frame 30 sizes wide (nuclei.py seed 35, start -1.903866+0.000000i); off-centre by seats.py (scale 1, seed 14)"
+        },
+        "style": "crescent_lines_ribbons",
+        "stack": "crescent_lines_ribbons@5c85b64d",
+        "colormap": "crescent_lines",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__03_minibrot-p9_06_crescent_lines",
+      "picker": "style_crescent_lines_r1",
+      "picked": [
+        {
+          "row": "crescent_lines/locations",
+          "key": "crescent_lines__loc__03_minibrot-p9_06_crescent_lines"
+        }
+      ],
+      "label": "minibrot-p9_06",
+      "image": "style_crescent_lines_r1__crescent_lines__loc__03_minibrot-p9_06_crescent_lines.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "minibrot-p9_06",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.143351400187997243672",
+            "center_im": "1.05143798940230187191",
+            "width": "0.0004783313612811232"
+          },
+          "maxiter": 6600,
+          "note": "hand-placed: period-9 minibrot nucleus by Newton, size 1.59e-05, frame 30 sizes wide (nuclei.py seed 35, start -0.123006+1.057794i); off-centre by seats.py (scale 1, seed 6)"
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@3864667b",
+        "colormap": "crescent_lines",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__08_minibrot-p9_07_crescent_lines",
+      "picker": "style_crescent_lines_r1",
+      "picked": [
+        {
+          "row": "crescent_lines/locations",
+          "key": "crescent_lines__loc__08_minibrot-p9_07_crescent_lines"
+        }
+      ],
+      "label": "minibrot-p9_07",
+      "image": "style_crescent_lines_r1__crescent_lines__loc__08_minibrot-p9_07_crescent_lines.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "minibrot-p9_07",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "0.362642112172226818",
+            "center_im": "0.6639337940267630696",
+            "width": "0.007037687233682698"
+          },
+          "maxiter": 6600,
+          "note": "hand-placed: period-9 minibrot nucleus by Newton, size 0.000235, frame 60 sizes wide (nuclei.py seed 34, start 0.346720+0.582615i); off-centre by seats.py (scale 0.5, seed 1)",
+          "ink": 0.01144
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@3864667b",
+        "colormap": "crescent_lines",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "crescent_lines@3864667b": {
+      "name": "crescent_lines",
+      "interior": {
+        "rgb": "#020208"
+      },
+      "tone": {
+        "median": 0.272,
+        "p10": 0.153
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 6.0
+            }
+          },
+          "palette": {
+            "cycles": 3.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.2
+          },
+          "blend": "overlay",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "rgb": "#b0562a"
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#ff9a3c"
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0001,
+          "color": {
+            "rgb": "#ffe2a8"
+          },
+          "blend": "add",
+          "opacity": 0.8
+        }
+      ]
+    },
+    "crescent_lines_ribbons@5c85b64d": {
+      "name": "crescent_lines_ribbons",
+      "interior": {
+        "rgb": "#020208"
+      },
+      "tone": {
+        "median": 0.272,
+        "p10": 0.153
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 6.0
+            }
+          },
+          "palette": {
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.2
+          },
+          "blend": "overlay",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "rgb": "#b0562a"
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#ff9a3c"
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0001,
+          "color": {
+            "rgb": "#ffe2a8"
+          },
+          "blend": "add",
+          "opacity": 0.8
+        }
+      ]
+    }
+  }
+}

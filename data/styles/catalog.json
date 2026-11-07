@@ -540,6 +540,220 @@
       "what": "Angular translucent shards in royal blue and chalk grey crossing soft grey veils, with crisp pale Julia snowflakes among them.",
       "kept": "2 locations, the blades-only formulation",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "forest_smooth",
+      "score": 2,
+      "item": "031",
+      "reference": "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222.jpg",
+      "show": [],
+      "what": "A deep spiral zoom in crisp smooth escape bands: tan far field, slate-green and lime leaves, blue and periwinkle swirls, rings round a navy-black heart.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two."
+    },
+    {
+      "style": "mandelbrot3_smooth",
+      "score": 2,
+      "item": "031",
+      "reference": "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt.png",
+      "show": [],
+      "what": "A multibrot3 spiral of bulbs in pale pastry tones: cream, taupe and lavender bands, bulbs in gold, salmon, slate lavender, white and bronze.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two."
+    },
+    {
+      "style": "council_smooth",
+      "score": 2,
+      "item": "031",
+      "reference": "council.jpg",
+      "show": [
+        {
+          "keep": "style_smooth_palettes_r1/council_smooth/locations/council__loc__01_julia-mandelbrot_69e07a2f_council_smooth",
+          "caption": "julia mandelbrot"
+        },
+        {
+          "keep": "style_smooth_palettes_r1/council_smooth/locations/council__loc__05_mandelbrot_4cb9b83b_council_smooth",
+          "caption": "mandelbrot"
+        },
+        {
+          "keep": "style_smooth_palettes_r1/council_smooth/formulations/council__f_no_hair__00_mandelbrot_4199ca9b_council_smooth",
+          "caption": "variant: no hair (the matched map alone)"
+        }
+      ],
+      "what": "A wine and maroon pinwheel spiral in a pale pink-white field of grey-blue lace and small rose spirals: the smooth count through the matched map.",
+      "kept": "2 locations, the no-hair formulation",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "crisis_smooth",
+      "score": 2,
+      "item": "031",
+      "reference": "crisis-25.jpg",
+      "show": [
+        {
+          "keep": "style_smooth_palettes_r1/crisis_smooth/locations/crisis__loc__02_julia-mandelbrot_f682af93_crisis_smooth",
+          "caption": "julia mandelbrot"
+        }
+      ],
+      "what": "Feathery escape bands in orange, peach cream, sky and royal blue, indigo and maroon, curling into a dark blue spiral heart.",
+      "kept": "1 location",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "dalooka_smooth",
+      "score": 2,
+      "item": "031",
+      "reference": "dalooka.jpg",
+      "show": [
+        {
+          "keep": "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth",
+          "caption": "mandelbrot"
+        },
+        {
+          "keep": "style_smooth_palettes_r1/dalooka_smooth/formulations/dalooka__f_no_hair__00_mandelbrot_984f58af_dalooka_smooth",
+          "caption": "variant: no hair (the matched map alone)"
+        }
+      ],
+      "what": "A chain of spirals in ice white and steel blue: navy-edged blue clouds, rust and peach hot cores along a crackled lace spine.",
+      "kept": "1 location, the no-hair formulation",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "corkscrew_smooth",
+      "score": 2,
+      "item": "031",
+      "reference": "corkscrew-25.jpg",
+      "show": [],
+      "what": "A double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each polished with a metallic sheen.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two."
+    },
+    {
+      "style": "flame_wisp_waves",
+      "score": 2,
+      "item": "032",
+      "reference": "commons_Waves_Apophysis_Fractal_Flame.jpg",
+      "show": [],
+      "what": "Fine teal flame wisps and crescents crossing over smouldering red and orange streaks on a dark slate ground.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two."
+    },
+    {
+      "style": "flame_wisp_amber",
+      "score": 2,
+      "item": "032",
+      "reference": "convocation-dragons-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_wisps_r1/flame_wisp_amber/formulations/amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber",
+          "caption": "variant: close views"
+        }
+      ],
+      "what": "Glowing orange and gold flame ribbons curling over one another in a warm brown haze, brightest at the middle.",
+      "kept": "the close-views formulation",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "flame_wisp_spark",
+      "score": 2,
+      "item": "032",
+      "reference": "cosmic-forces-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
+          "caption": "variant: close views"
+        }
+      ],
+      "what": "Lit blue flame veils and strands crossing on a deep blue ground, strewn with gold star sparks.",
+      "kept": "the close-views formulation",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "flame_wisp_frost",
+      "score": 4,
+      "item": "032",
+      "reference": "creeping-frost-25.jpg",
+      "show": [
+        {
+          "keep": "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost",
+          "caption": "phoenix (classic)"
+        }
+      ],
+      "what": "Frosted blue and white flame veils, their strands feathered with a crisp white rime along the set, on a near-black ground.",
+      "kept": "2 locations",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic seat, the one where the strands follow the set (Matt: the only great one)."
+    },
+    {
+      "style": "flame_wisp_crimson",
+      "score": 2,
+      "item": "032",
+      "reference": "deaths-icy-hand-25.jpg",
+      "show": [],
+      "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two."
+    },
+    {
+      "style": "molten_flow",
+      "score": 4,
+      "item": "033",
+      "reference": "consequences-25.jpg",
+      "show": [
+        {
+          "keep": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
+          "caption": "julia multibrot3"
+        },
+        {
+          "keep": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
+          "caption": "julia multibrot3"
+        }
+      ],
+      "what": "Molten fire flowing in broad lit folds: a glossy relief of the smooth count in crimson, orange and gold, with translucent folds and flame lace along the set.",
+      "kept": "2 locations",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size)"
+    },
+    {
+      "style": "chrome_orbs",
+      "score": 2,
+      "item": "033",
+      "reference": "crystal-flood-25.jpg",
+      "show": [],
+      "what": "Glossy chrome swirls: a mirror-bright relief of the smooth count in silver and slate, chrome ribbons, red orbs swelling to gold along the arms.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale."
+    },
+    {
+      "style": "cauliflower_scales",
+      "score": 2,
+      "item": "033",
+      "reference": "corporeal-25.jpg",
+      "show": [],
+      "what": "Billowing cauliflower scales: each escape band a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
+      "kept": "nothing",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale."
+    },
+    {
+      "style": "crescent_lines",
+      "score": 3,
+      "item": "034",
+      "reference": "crescent-25.jpg",
+      "show": [
+        {
+          "keep": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__03_minibrot-p9_06_crescent_lines",
+          "caption": "mandelbrot minibrot (period 9)"
+        },
+        {
+          "keep": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__08_minibrot-p9_07_crescent_lines",
+          "caption": "mandelbrot minibrot (period 9)"
+        },
+        {
+          "keep": "style_crescent_lines_r1/crescent_lines/formulations/crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines",
+          "caption": "variant: ribbons (one cycle)"
+        }
+      ],
+      "what": "Fine hair-like streamlines sweeping the whole frame round a small minibrot whose rim glows orange, on deep blue: the stripe average's streamlines.",
+      "kept": "2 locations, the ribbons formulation",
+      "note": "Engine: nothing new (streamlines from the stripe average) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the sweeping lines that break up the stripe pattern are pleasing in some ways."
     }
   ]
 }

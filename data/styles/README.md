@@ -85,6 +85,12 @@ catalog's `show` at the new id and rebuild `style bundle` and `style gallery`.
 
 ## A new style from a reference image
 
+**The goal of every style is the fractal feel** (Matt's rule). A render should promise
+more detail if you zoomed in, and its structure should read as the fractal's own.
+Frame-filling strokes with no tie to the set ("a few lines") fail even when they match
+the reference: Matt scored 032's flame wisps 2/5 for this, and only `flame_wisp_frost`'s
+phoenix seat, where the strands followed the set, scored 4.
+
 The item that brings a picture says "new style from <image>". The engine runs itself at
 below-normal priority; cap its threads with `RAYON_NUM_THREADS=6`, and background
 `style render --manifest` and `style scout --max-ink`/`--thinnest` (minutes each). Items
