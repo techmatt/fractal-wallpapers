@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "gold_arcs",
+  "kind": "sequential",
+  "source": "an olive umber through burnt orange and amber to gold and a pale butter yellow, the albedo of the gold_arcs style, from flamed-25.jpg: gold arcs on an amber veil",
+  "stops": [
+    [0.0, [74, 54, 32]],
+    [0.3, [150, 92, 42]],
+    [0.5, [206, 120, 50]],
+    [0.7, [230, 150, 62]],
+    [0.85, [242, 186, 88]],
+    [1.0, [250, 214, 132]]
+  ]
+}

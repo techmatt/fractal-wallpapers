@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "cream_lace",
+  "kind": "sequential",
+  "source": "a blue black through deep teal and steel blue to bronze, cream and ivory, the albedo of the cream_lace style, from devilfish-25.jpg: cream and blue lace round dark holes",
+  "stops": [
+    [0.0, [2, 4, 8]],
+    [0.3, [8, 24, 38]],
+    [0.5, [34, 92, 124]],
+    [0.65, [112, 92, 62]],
+    [0.8, [196, 156, 98]],
+    [0.92, [234, 212, 168]],
+    [1.0, [252, 244, 226]]
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "ember_plume",
+  "kind": "sequential",
+  "source": "a black through indigo and royal blue to cyan, gold, orange and a crimson at the set, the albedo of the ember_plume style, from dreaming-25.jpg: a fiery plume pierced by holes",
+  "stops": [
+    [0.0, [2, 2, 6]],
+    [0.3, [14, 16, 66]],
+    [0.48, [40, 66, 186]],
+    [0.6, [74, 176, 210]],
+    [0.72, [240, 176, 66]],
+    [0.86, [236, 104, 42]],
+    [1.0, [176, 34, 52]]
+  ]
+}

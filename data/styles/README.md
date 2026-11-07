@@ -256,3 +256,11 @@ General lessons; the named style's `notes` hold the detail.
   siblings, one stack in six maps). On a dark reference the p90 misses are the blades'
   highlights: a saturated paint and spine glow, never a pale highlight, which reads steel
   (`violet_star_arms`).
+- Holes at every scale are the set's interior, which the galleries' Julia seats lack (a
+  hole probe, interior white over black, read 0 on every one; phoenix-classic seats hold
+  interior but read as whirls): a Julia set at a hyperbolic centre (Newton on
+  `f^p(0) = 0`) has round Fatou components at every scale, measured as hand seats. Lace
+  that hugs them is the stripe average's crests at density 2 to 4 masked by the inverted
+  `de` over a dark ground (gamma 2 to 5); a light on `inside` at one band, `rings` 1, domes
+  each hole as a glass bead, and `inside` through a palette at cycles 3 is a bullseye
+  (`cream_lace` and its four siblings, one stack in five maps).

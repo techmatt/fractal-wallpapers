@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "bead_strands",
+  "kind": "sequential",
+  "source": "a violet black through indigo and periwinkle to ice blue and white, the albedo of the bead_strands style, from deepsea-life-25.jpg: glowing strands strung with bubbles",
+  "stops": [
+    [0.0, [2, 2, 8]],
+    [0.3, [22, 18, 50]],
+    [0.5, [60, 52, 124]],
+    [0.7, [100, 100, 196]],
+    [0.85, [150, 162, 236]],
+    [1.0, [196, 210, 252]]
+  ]
+}

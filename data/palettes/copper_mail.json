@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "copper_mail",
+  "kind": "sequential",
+  "source": "a dark maroon brown through rust and copper to amber and a pale gold, the albedo of the copper_mail style, from dragon-mail-25.jpg: a copper lattice of lens holes",
+  "stops": [
+    [0.0, [44, 16, 10]],
+    [0.3, [86, 36, 18]],
+    [0.5, [142, 70, 32]],
+    [0.7, [190, 108, 46]],
+    [0.85, [218, 146, 70]],
+    [1.0, [236, 184, 112]]
+  ]
+}
