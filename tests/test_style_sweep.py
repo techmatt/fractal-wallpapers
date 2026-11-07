@@ -87,6 +87,15 @@ def test_a_style_with_no_keeps_draws_gallery_seats():
     assert seats == [{"location": {"name": "g0"}, "colormap": None}]
 
 
+def test_a_gallery_sweep_draws_every_seat_and_a_seatless_style_is_skipped():
+    gallery = [{"name": "g0"}, {"name": "g1"}, {"name": "g2"}]
+    todo = style_sweep.plan(["yas"], 3, gallery, from_gallery=True)
+    seats = [item for item in todo if item["variant"].startswith("seat")]
+    assert [item["location"]["name"] for item in seats] == ["g0", "g1", "g2"]
+    # A style with no keeps on a box with no published gallery has nowhere to be drawn.
+    assert style_sweep.plan(["cream_lace"], 2, []) == []
+
+
 def test_the_cli_parses_a_sweep_and_scout_refuses_a_count_below_one(capsys):
     from fractal_wallpapers.cli import style_commands
 

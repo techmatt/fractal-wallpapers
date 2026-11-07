@@ -185,6 +185,9 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
 
     with Image.open(path) as image:
         drawn = image.width
+        if image.mode in ("I", "I;16", "I;16B", "I;16L"):
+            # A 16-bit grey picture: Pillow's own conversion clips it to white.
+            image = image.point(lambda value: value / 256).convert("L")
         image = image.convert("RGB")
         image = image.resize((width, max(1, round(image.height * width / image.width))))
         rgb = np.asarray(image, dtype=np.float64) / 255.0
@@ -417,6 +420,6 @@ def spec_of(
     spec["style"] = projected(document["style"], row)
     if knobs:
         spec["style"] = with_knobs({**document, "style": spec["style"]}, knobs)["style"]
-    if repeats(document["style"]) and not is_cyclic(name):
+    if repeats(spec["style"]) and not is_cyclic(name):  # the stack as turned, as the module
         spec["palette"] = {"mirror": True}
     return spec

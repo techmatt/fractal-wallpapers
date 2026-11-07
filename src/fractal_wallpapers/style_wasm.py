@@ -197,8 +197,10 @@ def native_rgb(
     resolution: tuple[int, int],
     supersample: int,
     output: Path,
+    knobs: dict[str, float] | None = None,
 ) -> tuple[bytes, dict[str, Any]]:
-    """The native engine's picture of one record, through `style render`'s own spec."""
+    """The native engine's picture of one record, through `style render`'s own spec:
+    `knobs` turned after the record's projection, as `style render --knob` turns them."""
     from PIL import Image
 
     from fractal_wallpapers import engine, locations, styles
@@ -209,7 +211,7 @@ def native_rgb(
         "resolution": list(resolution),
         "supersample": supersample,
     }
-    spec = styles.spec_of(row, document, output, colormap=colormap)
+    spec = styles.spec_of(row, document, output, colormap=colormap, knobs=knobs)
     report = engine.render_report(spec)
     with Image.open(output) as picture:
         return picture.convert("RGB").tobytes(), report
@@ -243,7 +245,8 @@ def run_node(jobs: list[dict[str, Any]], folder: Path) -> list[dict[str, Any]]:
 def compare(native: bytes, rgba: bytes) -> dict[str, Any]:
     """How far the module's RGBA is from the native RGB: pixels that differ, worst step."""
     if len(rgba) % 4 or len(rgba) // 4 * 3 != len(native):
-        return {"identical": False, "pixels": None, "worst": None}
+        why = f"size: the module drew {len(rgba) / 4:g} pixels, native {len(native) // 3}"
+        return {"identical": False, "pixels": None, "worst": None, "why": why}
     rgb = bytearray(len(native))
     rgb[0::3], rgb[1::3], rgb[2::3] = rgba[0::4], rgba[1::4], rgba[2::4]
     differ, worst = 0, 0
@@ -270,8 +273,9 @@ def parity(
 
     Three kinds of job: each shown keep's own record (its stack as drawn, its map), in
     one pass; the first keep of each mode again in tiles against its own measures, which
-    must be the same bytes; and the mode's published stack at that keep with every knob
-    at its range's middle, which holds the module's knob rules to `styles.with_knobs`.
+    must be the same bytes; and the mode's published stack with every knob at its range's
+    middle, at that keep and at every keep whose record carries its own projection, which
+    holds the module's knob rules to `style render --knob`'s (a knob wins over a record).
     """
     from fractal_wallpapers import style_catalog, styles
 
@@ -285,27 +289,28 @@ def parity(
             stack = stacks[render["stack"]]
             ident = f"{row['style']}__{index}"
             drawn = {**document, "style": stack}
-            natives[ident] = (render["location"], drawn, render["colormap"])
+            natives[ident] = (render["location"], drawn, render["colormap"], None)
             colormap = colormap_of(render["colormap"])
             asked = request(render["location"], stack, colormap, resolution, supersample)
             jobs.append({"id": ident, "request": asked, "draw": "frame"})
-            if index:
+            if index and not render["location"].get("projection"):
                 continue
-            jobs.append(
-                {
-                    "id": f"{ident}__tiles",
-                    "request": asked,
-                    "draw": {"measure": {}, "tile": list(PARITY_TILE)},
-                    "same_as": ident,
-                }
-            )
+            if not index:
+                jobs.append(
+                    {
+                        "id": f"{ident}__tiles",
+                        "request": asked,
+                        "draw": {"measure": {}, "tile": list(PARITY_TILE)},
+                        "same_as": ident,
+                    }
+                )
             knobs = document["public"]["knobs"]
             settings = midpoints(knobs)
-            turned = styles.with_knobs(document, settings)
             natives[f"{ident}__knobs"] = (
                 render["location"],
-                turned,
+                document,
                 row["public"]["palette"],
+                settings,
             )
             jobs.append(
                 {
@@ -328,11 +333,13 @@ def parity(
         ident = job["id"]
         result = rows[ident]
         base = job.get("same_as", ident)
-        location, drawn, colormap = natives[base]
+        location, drawn, colormap, settings = natives[base]
         native_png = folder / f"{base}.native.png"
         if not native_png.is_file() or "same_as" not in job:
             started = time.perf_counter()
-            native, _ = native_rgb(location, drawn, colormap, resolution, supersample, native_png)
+            native, _ = native_rgb(
+                location, drawn, colormap, resolution, supersample, native_png, knobs=settings
+            )
             native_seconds = time.perf_counter() - started
         else:
             from PIL import Image

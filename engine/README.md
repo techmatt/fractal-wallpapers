@@ -248,8 +248,9 @@ knobs, settings, colormap, resolution, supersample}`. `location` is a record as
 `projection` members); `style` is a stack; `knobs` its style file's `public.knobs` and
 `settings` `{name: value}` inside their ranges; `colormap` a `data/palettes/<name>.json`
 file whole (the matched map or any library map). The module lays the CLI's three rules on
-it — `styles.with_knobs` (applied in the knobs' order), `styles.projected`, and
-`styles.spec_of`'s fold of a sequential map under a repeating palette layer — then hands
+it — `styles.projected`, then `styles.with_knobs` (applied in the knobs' order, so a knob
+wins over a record carrying the same member), and `styles.spec_of`'s fold of a sequential
+map under a repeating palette layer — then hands
 the engine the spec as JSON text, as a native render does. Plain `f64` only: no `deep`, and a
 view below the floor is refused as natively.
 
@@ -259,9 +260,11 @@ picture's own size and tiles again for the exact picture. `frame` costs one pass
 `measure()` plus tiles costs about two, since the tiles iterate again.
 
 `fractal-wallpapers style bundle` writes what a page draws from (default
-`artifacts/style-wasm/bundle.json`): `{schema, modes: [{name, style, palette, variant,
-what, knobs, stack, shown: [{keep, caption, location, colormap, stack}]}], colormaps: {name:
-file}}`, the published rows of `data/styles/catalog.json` with the style files' default stacks
+`artifacts/style-wasm/bundle.json`): `{schema, modes: [{name, style, palette, palettes,
+variant, what, knobs, stack, shown: [{keep, caption, location, colormap, stack}]}],
+colormaps: {name: file}}`, `palettes` the mode's set, `[{colormap, values, score}]`, whose
+`values` the page writes over `stack` at their pointers (`style_palettes.apply`) before it
+opens a session; the published rows of `data/styles/catalog.json` with the style files' default stacks
 and every map they or their shown keeps name. A shown keep carries the stack it was drawn
 with, which for an early round's keep is not always the published one. `style wasm-parity` holds the module to the
 native engine under Node; `style wasm-speed` times it (`src/fractal_wallpapers/style_wasm.py`).

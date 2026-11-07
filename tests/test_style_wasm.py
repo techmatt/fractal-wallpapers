@@ -97,7 +97,7 @@ def test_the_module_draws_the_native_picture_with_its_knobs_turned(tmp_path):
     results = style_wasm.run_node(jobs, tmp_path)
     assert all(result["ok"] for result in results), results
     native, _ = style_wasm.native_rgb(
-        location, styles.with_knobs(document, settings), palette, size, 2, tmp_path / "n.png"
+        location, document, palette, size, 2, tmp_path / "n.png", knobs=settings
     )
     for job in ("frame", "tiles"):
         rgba = (tmp_path / f"{job}.rgba").read_bytes()

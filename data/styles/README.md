@@ -18,6 +18,7 @@ fractal-wallpapers style render lit_petals --location <record.json> --knob light
 fractal-wallpapers style gallery                                           # rebuild custom-modes/
 fractal-wallpapers style bundle                                            # the published modes, for a page
 fractal-wallpapers style wasm-parity                                       # the WebAssembly module vs native
+fractal-wallpapers style wasm-speed                                        # its frame time, one thread
 fractal-wallpapers style sweep --out <dir> [names…]                        # the checker (below)
 ```
 
@@ -129,7 +130,8 @@ catalog's `show` at the new id and rebuild `style bundle` and `style gallery`.
 `style sweep --out <dir>` is the checker a bug hunt runs, and anyone after an engine or
 stack change: every style (or the names given) drawn at 320x200 at its first `--seats`
 keeps (seeded gallery seats for a style with none), each public knob at both ends of its
-range and each palette entry of its mode's set. Each picture is checked as it lands and
+range and each palette entry of its mode's set; `--gallery` draws every style at
+`--seats` seeded gallery seats instead, places it was never tuned on (vary `--seed`). Each picture is checked as it lands and
 flagged `failed` (the engine refused), `flat`, `washed`, `drowned`, `dead_knob` (both
 ends byte-identical), `same_palette` (an entry drawing the default's pixels) or `slow`
 (over eight times its style's median per sample); `style_sweep.FLAGS` has the
@@ -226,8 +228,10 @@ before 030 copied `sheet.py` and `draft.sh` from one results folder to the next:
    period sheet on the `lines` angle or a `light` at `period` 1 on the smooth count cut
    the frame along band seams. Keep one only where the reference has hard edges.
 
-   Render with `style render` (`--manifest` into one folder per row; each render logged
-   to `renders.jsonl` beside it), then `fractal-wallpapers style picker <plan.json>`
+   Render with `style render` (`--manifest` into one folder per row, and per stack in the
+   formulations row: a picture is named by seat and map, so a second stack drawn into the
+   same folder replaces the first, which the command says as `REPLACED`; each render
+   logged to `renders.jsonl` beside it), then `fractal-wallpapers style picker <plan.json>`
    (`style_picker.py`'s docstring has the plan's shape). It writes the JPEGs, a manifest
    whose rows are `"kind": "many"`, `"default": []`, and the sidecar `style keep` needs.
    **The report header carries one `pick: <manifest path>` line per picker** (from the

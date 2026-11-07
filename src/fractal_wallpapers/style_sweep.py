@@ -115,15 +115,26 @@ def seats_of(name: str, gallery: list[dict[str, Any]], count: int) -> list[dict[
     return seats or [{"location": row, "colormap": None} for row in gallery[:count]]
 
 
-def plan(names: list[str], seats: int, gallery: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Every picture the sweep draws: `{style, variant, location, colormap, knobs}`."""
+def plan(
+    names: list[str], seats: int, gallery: list[dict[str, Any]], from_gallery: bool = False
+) -> list[dict[str, Any]]:
+    """Every picture the sweep draws: `{style, variant, location, colormap, knobs}`.
+
+    `from_gallery` draws every style at the gallery seats instead of its keeps: places
+    nobody picked it for, which is where a stack meets what it was never tuned on.
+    """
     from fractal_wallpapers import styles
 
     rows = styles.catalog_rows()
     todo = []
     for name in names:
         document = styles.load(name)
-        places = seats_of(name, gallery, seats)
+        if from_gallery:
+            places = [{"location": row, "colormap": None} for row in gallery]
+        else:
+            places = seats_of(name, gallery, seats)
+        if not places:
+            continue  # no keeps and no gallery on this box: nothing to draw it at
         for index, place in enumerate(places):
             todo.append(
                 {"style": name, "variant": f"seat{index}", **place, "knobs": {}, "against": None}
@@ -236,17 +247,22 @@ def sweep(
     resolution=RESOLUTION,
     supersample: int = SUPERSAMPLE,
     log=print,
+    from_gallery: bool = False,
 ) -> list[dict[str, Any]]:
-    """Draw and check every planned picture into `out`; the rows, also in `sweep.jsonl`."""
+    """Draw and check every planned picture into `out`; the rows, also in `sweep.jsonl`.
+
+    `from_gallery` draws each style at `seats` seeded gallery seats instead of its keeps.
+    """
     from fractal_wallpapers import style_sheet
 
     out.mkdir(parents=True, exist_ok=True)
     try:
         gallery = gallery_seats(seats, seed)
     except Exception as unread:  # noqa: BLE001 - a box without the published records
-        log(f"no gallery seats ({unread}); styles without keeps are skipped")
+        if log is not None:
+            log(f"no gallery seats ({unread}); styles without keeps are skipped")
         gallery = []
-    todo = [item for item in plan(names, seats, gallery) if item["location"]]
+    todo = [item for item in plan(names, seats, gallery, from_gallery) if item["location"]]
     rows = []
     for index, item in enumerate(todo, start=1):
         row = draw(item, out, resolution, supersample)

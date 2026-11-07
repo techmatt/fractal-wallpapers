@@ -24,6 +24,33 @@ def test_the_catalog_holds_its_rows_and_agrees_with_the_styles():
     assert statuses <= set(style_catalog.STATUSES)
 
 
+#: Shown keeps whose record carries a projection member a knob writes, at a value outside
+#: the knob's range, by (style, keep): a picture the page shows that no setting of its
+#: own slider draws. `docs/qa-findings.md` has each; what to do is Matt's call.
+OUT_OF_RANGE_SHOWN = {("teal_tunnel", "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta")}
+
+
+@pytest.mark.parametrize("row", published(), ids=lambda row: row["style"])
+def test_a_shown_keep_is_one_its_own_knobs_can_draw(row):
+    document = styles.load(row["style"])
+    keeps = style_catalog.keeps_of(row["style"])
+    for shown in row.get("show", []):
+        place = keeps[shown["keep"]]["render"]["location"].get("projection") or {}
+        outside = []
+        for knob in document["public"]["knobs"]:
+            for pointer in knob["set"]:
+                if not isinstance(pointer, str):
+                    continue  # a scaled write's member is not on the knob's own scale
+                steps = pointer.strip("/").split("/")
+                if steps[0] != "projection" or len(steps) != 3:
+                    continue
+                value = (place.get(steps[1]) or {}).get(steps[2])
+                low, high = knob["range"]
+                if value is not None and not low <= value <= high:
+                    outside.append((knob["name"], value))
+        assert bool(outside) == ((row["style"], shown["keep"]) in OUT_OF_RANGE_SHOWN), outside
+
+
 def test_the_catalog_is_not_a_style():
     assert styles.CATALOG_FILE.removesuffix(".json") not in styles.names()
 

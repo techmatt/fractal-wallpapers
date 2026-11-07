@@ -126,6 +126,26 @@ def test_an_unknown_style_is_refused():
         styles.load("not_a_style")
 
 
+def test_a_sixteen_bit_grey_picture_reads_its_own_lightness(tmp_path):
+    """Pillow's own conversion clipped a 16-bit grey picture to white."""
+    from PIL import Image
+
+    deep, shallow = tmp_path / "deep.png", tmp_path / "shallow.png"
+    Image.new("I;16", (64, 40), 20000).save(deep)
+    Image.new("L", (64, 40), round(20000 / 256)).save(shallow)
+    assert styles.tones(deep)["median"] == pytest.approx(styles.tones(shallow)["median"])
+
+
+def test_an_unreadable_reference_is_refused_not_raised(tmp_path, capsys):
+    from fractal_wallpapers.cli import style_commands
+
+    broken = tmp_path / "ref.png"
+    broken.write_text("not a picture", encoding="utf-8")
+    args = cli.build_parser().parse_args(["style", "tones", "yas", "--reference", str(broken)])
+    assert style_commands.check_tones(args) == 1
+    assert "cannot read the reference" in capsys.readouterr().out
+
+
 def test_a_manifest_rows_name_is_one_file_name():
     from fractal_wallpapers.cli.style_commands import file_name
 

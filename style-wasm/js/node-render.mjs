@@ -1,4 +1,4 @@
-// Draw a list of style requests under Node, for `fractal-wallpapers style wasm-check`:
+// Draw a list of style requests under Node, for `fractal-wallpapers style wasm-parity` and `wasm-speed`:
 //
 //   node node-render.mjs <style_wasm.wasm> <jobs.json> <out dir>
 //

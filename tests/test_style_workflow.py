@@ -249,6 +249,54 @@ def test_a_key_used_in_two_rows_is_refused(tmp_path):
         style_picker.build(plan, tmp_path / "picker", tmp_path)
 
 
+def test_a_picture_offered_twice_is_one_image_and_one_keep_picked_twice(tmp_path):
+    """Each option once got its own JPEG, so `style keep` recorded and copied one
+    picture twice, never the one keep picked twice its docstring promised."""
+    png = picture(tmp_path / "a.png")
+    location = {"schema": 1, "family": {"kind": "mandelbrot"}, "maxiter": 9}
+    row = style_picker.log_row(png, location, "yas", "yas", [16, 10], 1, {"name": "yas"})
+    style_picker.append_log([row], tmp_path)
+    plan = {
+        "name": "style_x_r1",
+        "rows": [
+            {"id": "one", "options": [{"picture": "a.png"}]},
+            {"id": "two", "options": [{"picture": "a.png", "key": "a_again"}]},
+        ],
+    }
+    folder = tmp_path / "picker"
+    style_picker.build(plan, folder, tmp_path)
+    manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    images = [row["options"][0]["image"] for row in manifest["rows"]]
+    assert images == ["one/a.jpg", "one/a.jpg"]
+    choices = {
+        "name": "style_x_r1",
+        "rows": [{"id": "one", "keys": ["a"]}, {"id": "two", "keys": ["a_again"]}],
+    }
+    renders = style_keeps.read_renders(folder / "renders.jsonl")
+    keeps, _ = style_keeps.kept(choices, manifest, renders, folder)
+    assert len(keeps) == 1 and len(keeps[0]["picked"]) == 2
+
+
+def test_a_key_or_a_render_that_could_not_be_kept_is_refused_at_build(tmp_path):
+    png = picture(tmp_path / "a.png")
+    plan = {"name": "style_x_r1", "rows": [{"id": "r", "options": [{"picture": "a.png"}]}]}
+    plan["rows"][0]["options"][0]["render"] = {"location": {}, "mode": "smooth"}
+    with pytest.raises(style_picker.PickerError, match="lacks colormap"):
+        style_picker.build(plan, tmp_path / "picker", tmp_path)
+    row = style_picker.log_row(png, {"family": {}}, "yas", "yas", [16, 10], 1, {})
+    style_picker.append_log([row], tmp_path)
+    plan["rows"][0]["options"][0] = {"picture": "a.png", "key": "a/b"}
+    with pytest.raises(style_picker.PickerError, match="file name"):
+        style_picker.build(plan, tmp_path / "picker", tmp_path)
+
+
+def test_a_points_file_with_a_line_that_is_no_record_is_refused(tmp_path):
+    points = tmp_path / "points.jsonl"
+    points.write_text('{"name": "a"}\n"just a string"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="line 2"):
+        style_picker.records_as_written(points)
+
+
 def test_the_cli_parses_scout_picker_sheet_draft_and_the_identity_battery():
     parser = cli.build_parser()
     args = parser.parse_args(

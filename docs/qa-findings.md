@@ -43,6 +43,31 @@ re-reports a line on it. The checker that found most of the style ones is
   and then misread them (a lambda measured the compressed field and placed the raw one;
   absolute clamped every smooth count to the map's end). `Style::validate` refuses them;
   `STACK.md` says so. No shipped style used one.
+- **The WebAssembly module turned knobs before laying the record's projection**, so on
+  the page `arch-tunnel`'s `turns` knob did nothing at a keep whose record carries
+  `turns`, and once the CLI was fixed the page and native drew different pictures.
+  `style-wasm`'s `Session::open` now lays the record first, as `styles.spec_of`; the fold
+  is decided on the stack as turned on both sides. `wasm-parity` built its native knob
+  reference in the old order (so it could not see this) and ran knobs only at each
+  mode's first keep; it now turns them as `style render --knob` does, also at every
+  shown keep whose record carries a projection. `engine/README.md` gives the new order
+  and the bundle's `palettes`.
+- `wasm-parity` printed "None pixels differ, by at most None" on a size mismatch; it
+  names the sizes.
+- `style tones` raised a traceback on an unreadable reference, and read a 16-bit grey
+  PNG as white.
+- `style picker` gave a picture offered under two keys two JPEGs, so `style keep`
+  recorded and copied it twice; it is now one image, one keep picked twice. A key with
+  `/` (two keys then saved to one file) and a baseline `render` lacking a member (a
+  traceback at keep time, after the picking) are refused when the picker is built.
+- `style scout --points`: a line that is not an object raised `TypeError`; a hand
+  point's name was used as the probe's file path (`a/b` left folders, `../x` wrote
+  beside `--out`); an empty draw truncated an earlier manifest at `--out`.
+- `style render --manifest` silently replaced a picture drawn by another stack at the
+  same seat and map (README step 6's formulations row, drawn into one folder); it now
+  prints `REPLACED`, and the README says one folder per stack.
+- `style sweep --gallery` (added for the hunt's long runs) draws every style at seeded
+  gallery seats instead of its keeps.
 - `STACK.md` now says that every `inside` channel in a stack shares one loop at the
   largest `iterations`, and that a `light` at `rings` 0 ignores `bands` and `period`.
 
@@ -60,9 +85,9 @@ re-reports a line on it. The checker that found most of the style ones is
 - **`arch-tunnel` (`teal_tunnel`) shows a keep its own `turns` knob cannot reach**: the
   shown keep `shortlist/01_j_dendrite_beta` (and the `palettes/yas` keep) carry
   `projection.log_polar.turns` 8 in their location, the knob's range is 3..6, and the
-  bundle hands the page that location. Here `style render --knob turns=…` now wins over
-  the record; whether the page lays the record over the knob is the website's code.
-  Options: widen the range to 8 (if eight turns still holds the look), drop `turns` from
+  bundle hands the page that location. A knob now wins over the record on both sides,
+  so a page that sends the knob's setting draws that keep at 5 turns, not the 8 it was
+  kept at, and no setting returns it to 8. Options: widen the range to 8 (if eight turns still holds the look), drop `turns` from
   those records (the picture was drawn at 8, so its caption would lie), or show another
   keep. Recommend widening the range to 3..8, read off a sweep at 8. *(Matt's call)*
 - **Field-lines interior needs the orbit within 1e-9 of its cycle after `settle`
@@ -90,6 +115,11 @@ re-reports a line on it. The checker that found most of the style ones is
   carries a seat's `turns`/`twist` in its stack and a new palette entry read off it gets
   `{}`. Recommend logging the pre-projection stack, with the bundle and parity paths
   projecting a keep's stack over its location.
+
+- **`style tones` drops an RGBA picture's alpha**, measuring transparent areas as their
+  hidden colour. Style references are finished pictures; recommend leaving it.
+- **The website must rebake its module** for the knob-order fix to reach the page
+  (`style-wasm` is built here, served there): the website's item.
 
 ### Won't fix
 

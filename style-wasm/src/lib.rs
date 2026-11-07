@@ -20,9 +20,9 @@
 //! explorer draw progressively and settle later.
 //!
 //! **The request is the CLI's inputs, not the engine's spec.** What a `style render`
-//! does to a style file before the engine sees it — the knobs ([`with_knobs`], after
-//! `styles.with_knobs`), a location's own projection members ([`projected`], after
-//! `styles.projected`), and the fold of a sequential map under a repeating palette
+//! does to a style file before the engine sees it — a location's own projection
+//! members ([`projected`], after `styles.projected`), then the knobs ([`with_knobs`],
+//! after `styles.with_knobs`, so a knob wins over a record), and the fold of a sequential map under a repeating palette
 //! layer ([`mirrored`], after `styles.spec_of`) — happens here, so a page hands over
 //! the bundle's style and a knob setting and gets the pipeline's picture.
 //!
@@ -315,8 +315,11 @@ impl Session {
                 )),
             })
             .collect::<Result<BTreeMap<String, f64>, String>>()?;
-        let stack = with_knobs(&request.style, &request.knobs, &settings)?;
-        let stack = projected(&stack, request.location.projection.as_ref());
+        // The record's own projection first, then the knobs: a knob asked for wins over
+        // a record carrying the same member (teal_tunnel's keeps carry `turns`), as
+        // `styles.spec_of` turns them.
+        let stack = projected(&request.style, request.location.projection.as_ref());
+        let stack = with_knobs(&stack, &request.knobs, &settings)?;
         let colormap = &request.colormap;
         let mut spec = json!({
             "schema": 1,
@@ -628,6 +631,35 @@ mod tests {
         );
         let straight = json!({"layers": []});
         assert_eq!(projected(&straight, Some(&place)), straight);
+    }
+
+    #[test]
+    fn a_knob_wins_over_the_record_s_own_projection_member() {
+        // teal_tunnel's keeps carry `turns` in their record, which once silenced its
+        // `turns` knob on the page: the record is laid first, then the knob.
+        let request = json!({
+            "schema": 1,
+            "location": {"family": {"kind": "mandelbrot"},
+                         "viewport": {"center_re": "-1.5437", "center_im": "0",
+                                      "width": "0.05"}, "maxiter": 300,
+                         "projection": {"log_polar": {"turns": 8, "twist": 0.1}}},
+            "style": {"name": "x",
+                      "projection": {"log_polar": {"turns": 5}},
+                      "layers": [{"kind": "palette",
+                                  "channel": {"field": {"kind": "smooth"}}}]},
+            "knobs": [{"name": "turns", "range": [3.0, 6.0],
+                       "set": ["/projection/log_polar/turns"]}],
+            "settings": {"turns": 4},
+            "colormap": {"name": "ramp", "kind": "sequential", "source": "a test",
+                         "stops": [[0.0, [10, 20, 60]], [1.0, [250, 240, 200]]]},
+            "resolution": [8, 5],
+            "supersample": 1,
+        });
+        let session = Session::open(&request.to_string()).unwrap();
+        assert_eq!(
+            session.drawn["projection"]["log_polar"],
+            json!({"turns": 4, "twist": 0.1})
+        );
     }
 
     #[test]

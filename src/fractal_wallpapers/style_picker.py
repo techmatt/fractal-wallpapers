@@ -82,7 +82,15 @@ def records_as_written(path: Path) -> list[dict[str, Any]]:
     try:
         whole = json.loads(text)
     except json.JSONDecodeError:
-        return [json.loads(line) for line in text.splitlines() if line.strip()]
+        rows = []
+        for number, line in enumerate(text.splitlines(), 1):
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                raise ValueError(f"line {number} is a {type(row).__name__}, not a record") from None
+            rows.append(row)
+        return rows
     if isinstance(whole, list):
         return [row for row in whole if isinstance(row, dict)]
     return [whole] if isinstance(whole, dict) else []
@@ -131,6 +139,9 @@ def build(plan: dict[str, Any], folder: Path, base: Path, resolve=None) -> dict[
         raise PickerError(f"picker {name} has no rows")
     keys: set[str] = set()
     ids: set[str] = set()
+    # One image per picture: a picture offered twice (a baseline row reusing a shortlist
+    # tile) shows the same JPEG, so `style keep` records it as one keep picked twice.
+    images: dict[Path, str] = {}
     rows, sidecar, todo = [], [], []
     for row in plan["rows"]:
         ident = row.get("id") or ""
@@ -148,6 +159,8 @@ def build(plan: dict[str, Any], folder: Path, base: Path, resolve=None) -> dict[
             # Folded, because a key is a file name and Windows reads two spellings as one.
             if key.casefold() in keys:
                 raise PickerError(f"picker {name}: key {key!r} is used twice; keys are global")
+            if any(ch in key for ch in '/\\:*?"<>|'):
+                raise PickerError(f"picker {name}: key {key!r} is a file name; no / or :")
             keys.add(key.casefold())
             drawn = option.get("render") or read_log(picture.parent).get(picture.name)
             if drawn is None:
@@ -155,8 +168,21 @@ def build(plan: dict[str, Any], folder: Path, base: Path, resolve=None) -> dict[
                     f"picker {name}: {picture.name} has no row in {picture.parent / LOG_NAME} "
                     "and no 'render' of its own, so a keep of it could not be saved"
                 )
-            image = f"{ident}/{key}.jpg"
-            todo.append((picture, folder / image))
+            lacking = [
+                member
+                for member in ("location", "colormap", "resolution", "supersample")
+                if member not in drawn
+            ]
+            if lacking or ("style" in drawn) == ("mode" in drawn):
+                raise PickerError(
+                    f"picker {name}: {picture.name}'s render lacks {', '.join(lacking) or 'one'}"
+                    " of style or mode, so a keep of it could not be saved"
+                )
+            same = picture.resolve()
+            image = images.get(same)
+            if image is None:
+                image = images[same] = f"{ident}/{key}.jpg"
+                todo.append((picture, folder / image))
             sidecar.append({"key": key, **{k: v for k, v in drawn.items() if k != "picture"}})
             entry = {"key": key, "image": image}
             if option.get("label"):

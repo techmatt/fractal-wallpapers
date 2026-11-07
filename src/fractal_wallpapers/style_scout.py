@@ -205,20 +205,23 @@ def ink(location: dict[str, Any], scratch: Path) -> float:
 
     from fractal_wallpapers import engine, locations, styles
 
-    row = locations.one_location(location, location["name"], drawing=True)
+    named = str(location.get("name") or "a point")
+    row = locations.one_location(location, named, drawing=True)
     row["render"] = {
         **row["render"],
         "resolution": list(PROBE_RESOLUTION),
         "supersample": 1,
     }
     document = {"style": PROBE, "suggested_colormap": "hsv"}
-    picture = scratch / f"{location['name']}.png"
+    # A hand point's name may hold `/` or `..`: the probe's file is named by the row's
+    # digest, never by a path the name could spell.
+    picture = scratch / f"{locations.name_of(row)}.png"
     try:
         engine.render_report(styles.spec_of(row, document, picture))
         with Image.open(picture) as image:
             rgb = np.asarray(image.convert("RGB"), dtype=np.float64) / 255.0
     except OSError as unreadable:
-        raise RuntimeError(f"probe of {location['name']} unreadable: {unreadable}") from None
+        raise RuntimeError(f"probe of {named} unreadable: {unreadable}") from None
     finally:
         picture.unlink(missing_ok=True)
     return float(styles.luminance_of(rgb).mean())

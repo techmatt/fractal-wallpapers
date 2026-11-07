@@ -114,6 +114,8 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
             print(f"{row['id']:<32} FAILED: {row['why']}")
         elif row["identical"]:
             print(f"{row['id']:<32} identical")
+        elif row.get("pixels") is None:
+            print(f"{row['id']:<32} {row.get('why', 'not comparable')}")
         else:
             print(f"{row['id']:<32} {row['pixels']} pixels differ, by at most {row['worst']}")
     same = sum(1 for row in rows if row.get("identical"))
@@ -289,7 +291,8 @@ def scout_style(args: argparse.Namespace) -> int:
     finally:
         if scratch.is_dir() and not any(scratch.iterdir()):
             scratch.rmdir()
-    style_scout.write(drawn, out)
+    if drawn:  # an empty draw leaves an earlier manifest at --out alone
+        style_scout.write(drawn, out)
     if args.spiral:
         passed["not spiral"] = passed.pop("spiral")
     skipped = ", ".join(f"{count} {why}" for why, count in passed.items() if count)
@@ -343,7 +346,8 @@ def scout_points(args: argparse.Namespace) -> int:
     finally:
         if scratch.is_dir() and not any(scratch.iterdir()):
             scratch.rmdir()
-    style_scout.write(kept, out)
+    if kept:  # an empty draw leaves an earlier manifest at --out alone
+        style_scout.write(kept, out)
     print(
         f"{len(readings)} points probed, {len(kept)} kept into {tracked_name(out)}; none of "
         "them was read by the spiral probe, so check each by eye"
@@ -392,7 +396,11 @@ def check_tones(args: argparse.Namespace) -> int:
     if not reference.is_file():
         print(f"no reference picture at {reference}; pass --reference")
         return 1
-    held = styles.tones(reference)
+    try:
+        held = styles.tones(reference)
+    except OSError as unreadable:
+        print(f"cannot read the reference {reference}: {unreadable}")
+        return 1
     header = " ".join(f"{key:>6}" for key in styles.TONES)
     print(f"{'':<8} {header}  picture")
     print(f"{'ref':<8} {' '.join(f'{held[k]:6.3f}' for k in styles.TONES)}  {reference.name}")
@@ -490,6 +498,13 @@ def render_style(args: argparse.Namespace) -> int:
         drawn = style_picker.log_row(
             output, raw, document["name"], colormap, resolution, supersample, spec["style"]
         )
+        before = style_picker.read_log(output.parent).get(output.name)
+        if before is not None and before.get("stack") != drawn["stack"]:
+            # Two formulations at one seat and map share a picture name: the folder keeps
+            # only the last, so each stack wants its own folder (README's step 6).
+            print(
+                f"REPLACED {output.name}: it was drawn by another stack; give each its own folder"
+            )
         style_picker.append_log([drawn], output.parent)
     return 0
 
@@ -512,6 +527,7 @@ def sweep_styles(args: argparse.Namespace) -> int:
         resolution=tuple(args.resolution),
         supersample=args.supersample,
         log=None if args.quiet else print,
+        from_gallery=args.gallery,
     )
     flagged = [row for row in rows if row["flags"]]
     for row in flagged:
@@ -852,6 +868,12 @@ def add_commands(subcommands) -> None:
         "--seed", type=int, default=0, help="the gallery draw's seed, for styles with no keeps"
     )
     sweep.add_argument(
+        "--gallery",
+        action="store_true",
+        help="draw every style at --seats seeded gallery seats instead of its keeps: places "
+        "it was never tuned on (vary --seed for more)",
+    )
+    sweep.add_argument(
         "--resolution",
         nargs=2,
         type=int,
@@ -859,5 +881,7 @@ def add_commands(subcommands) -> None:
         default=[320, 200],
         help="picture size (default: 320 200)",
     )
-    sweep.add_argument("--supersample", type=int, default=1, help="(default: 1)")
+    sweep.add_argument(
+        "--supersample", type=int, default=1, help="samples per pixel, per axis (default: 1)"
+    )
     sweep.add_argument("--quiet", action="store_true", help="print only the flags and summary")
