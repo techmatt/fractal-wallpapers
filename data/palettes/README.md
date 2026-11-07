@@ -217,6 +217,8 @@ matched):
 ```
 fractal-wallpapers palettes add data/palettes/<name>.json            first admission
 fractal-wallpapers palettes add data/palettes/<name>.json --replace  a re-tune of it
+fractal-wallpapers palettes add <map.json> --mode <mode>            a palette for a mode's set
+fractal-wallpapers palettes remove <name>                           a map no tile kept leaves
 ```
 
 A style's draft map already sits at `data/palettes/<name>.json` (renders read a map by

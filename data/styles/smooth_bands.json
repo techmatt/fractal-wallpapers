@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "name": "smooth_bands",
+  "description": "crisp smooth escape bands through a map matched to the reference, by rank at the reference's band order, with a dark hair on de keeping the lace sharp",
+  "reference": {
+    "image": "council.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time deep zoom of the Mandelbrot set, unsigned, 2560x1600"
+  },
+  "suggested_colormap": "council_smooth",
+  "reuses": [
+    "seahorse_halo's stack: the smooth count through the matched map by rank at 2 cycles, the reference's band order",
+    "glow_filaments' falloff glow on de, painted near-black and multiplied at half opacity: the dark hair that keeps the lace crisp",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "council_smooth: Added: nothing: the smooth count through council_smooth by rank at 2 cycles, a dark `de` hair, the tone pass",
+    "council_smooth: Fitted: the first map read hot pink and missed p10 at 25 of 28 drafts (0.40-0.44 against 0.30); a dustier rose, a second grey-blue stop and a wider wine-maroon span held all six check drafts.",
+    "council_smooth: Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw.",
+    "crisis_smooth: Added: nothing: the smooth count through crisis_smooth by rank at 1.5 cycles, a dark `de` hair, the tone pass",
+    "crisis_smooth: Fitted: held at all 28 spiral-pool drafts as first authored. The reference's feathery strokes are not drawn: this is only its palette and cycling.",
+    "crisis_smooth: Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw.",
+    "dalooka_smooth: Added: nothing: the smooth count through dalooka_smooth by rank at 1.5 cycles, a dark `de` hair, the tone pass",
+    "dalooka_smooth: Fitted: the first map gave rust a third of the frame; holding the rust and peach to a narrow span and running a peach-white back to white held all 16 pool drafts. The reference's stippled grain is not drawn. Locations are degree-2 seats from the default draw (no spirals, Matt's ruling).",
+    "dalooka_smooth: Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw.",
+    "forest_smooth: Added: nothing: the smooth count through forest_smooth by rank at 2 cycles, a dark `de` hair, the tone pass",
+    "forest_smooth: Fitted: held the reference's balance at all 28 spiral-pool drafts as first authored.",
+    "forest_smooth: Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw.",
+    "mandelbrot3_smooth: Added: nothing: the smooth count through mandelbrot3_smooth by rank at 3 cycles, a dark `de` hair, the tone pass",
+    "mandelbrot3_smooth: Fitted: the first map read gold-heavy and missed p10 high (0.58-0.65 against 0.52); narrowing the gold to a fifth of the map and widening the slate-lavender and bronze stops brought five of six check drafts inside the band. Locations are multibrot3 seats from the default draw (no spirals, Matt's ruling).",
+    "mandelbrot3_smooth: Lessons: item 031 brought six references Matt liked for their palette and its colour cycling, all close to plain smooth escape time, so each is seahorse_halo's light stack (the smooth count through a cyclic matched map by rank, a dark `de` hair, the tone pass) with its own map and cycle count, no new primitive. The cycle count is read off the reference's band order from the far field to the spiral's heart. The maps were fitted on pool drafts: a map whose dark stops are narrow misses p10 high at every seat (the tone pass pins the median but cannot make a dark the map does not spend), fixed by widening the dark stops, never by darkening the interior. The spiral references (forest, council, crisis, corkscrew) are scouted with `style scout --spiral` (Matt's ruling on item 031: only when the reference itself is a spiral); mandelbrot3 and dalooka with the default draw."
+  ],
+  "style": {
+    "name": "smooth_bands",
+    "interior": {
+      "rgb": "#2a0810"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 2.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "rgb": "#1e0610"
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+      }
+    ],
+    "tone": {
+      "median": 0.643,
+      "p10": 0.302
+    }
+  }
+}

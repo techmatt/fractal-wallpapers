@@ -95,7 +95,8 @@ def published_rows() -> list[dict[str, Any]]:
 def bundle() -> dict[str, Any]:
     """Every published mode as a page draws it, and every map they name.
 
-    A mode is its public name and palette, its knobs (the style file's `public.knobs`
+    A mode is its public name and palette, its palette set (`palettes`: each kept map
+    and the values tuned for it, which a page cycles), its knobs (the style file's `public.knobs`
     whole: label, line, default, range, and where each writes), the stack, and the keeps
     the catalog shows, each with the location and map it was drawn at: the places a page
     can open the mode at, known to hold the look.
@@ -125,11 +126,26 @@ def bundle() -> dict[str, Any]:
             maps.setdefault(render["colormap"], colormap_of(render["colormap"]))
         palette = row["public"]["palette"]
         maps.setdefault(palette, colormap_of(palette))
+        # The set a page cycles: each kept map with the values tuned for it, written over
+        # `stack` at their pointers (`style_palettes`), the default first.
+        palettes = []
+        for entry in row["palettes"]:
+            if not entry.get("keeps"):
+                continue  # still in its first round: not a kept palette yet
+            maps.setdefault(entry["colormap"], colormap_of(entry["colormap"]))
+            palettes.append(
+                {
+                    "colormap": entry["colormap"],
+                    "values": entry.get("values") or {},
+                    **({"score": entry["score"]} if "score" in entry else {}),
+                }
+            )
         modes.append(
             {
                 "name": row["public"]["name"],
                 "style": row["style"],
                 "palette": palette,
+                "palettes": palettes,
                 "variant": row["variant"],
                 "what": row.get("what", document["description"]),
                 "knobs": document["public"]["knobs"],

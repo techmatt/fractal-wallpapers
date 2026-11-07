@@ -362,3 +362,28 @@ def test_a_fresh_recolour_reads_back_the_committed_rows(tmp_path) -> None:
     readings = admit.readings_of(document, fields, tmp_path / "recolours")
     want = [row for row in carriers.read() if row.get("map") == NEW]
     assert carriers.rows_for(NEW, readings) == want, "and the stale picture was not read"
+
+
+def test_remove_takes_an_admitted_map_out_of_every_table_and_nothing_else(library) -> None:
+    """`palettes remove` is the inverse of an admission: a map no tile kept leaves."""
+    where, _ = library
+    gone = "copper_arms"
+    shutil.copyfile(colormap_dir() / f"{gone}.json", where / f"{gone}.json")
+    names = sorted([*MAPS, gone])
+    (where / produced.RECORD_NAME).write_text(_produced_text(names), encoding="utf-8", newline="\n")
+    (where / carriers.RECORD_NAME).write_text(_carrier_text(names), encoding="utf-8", newline="\n")
+    grouping = groups.read(where)
+    report = admit.remove(gone, directory=where)
+    assert not (where / f"{gone}.json").exists()
+    assert (where / produced.RECORD_NAME).read_text(encoding="utf-8") == _produced_text(MAPS)
+    assert (where / carriers.RECORD_NAME).read_text(encoding="utf-8") == _carrier_text(MAPS)
+    assert groups.read(where) == [row for row in grouping if row.get("map") != gone]
+    assert report["groups"] == 1 and report["maps"] == len(MAPS)
+
+
+def test_remove_refuses_a_map_the_grouping_cut_placed(library) -> None:
+    where, _ = library
+    before = _files(where)
+    with pytest.raises(admit.AddError, match="cut placed it"):
+        admit.remove("Garnet Tide", directory=where)
+    assert _files(where) == before

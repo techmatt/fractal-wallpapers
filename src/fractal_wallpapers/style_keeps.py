@@ -242,14 +242,20 @@ def keep(
     renders_path: Path | None = None,
     folder: Path | None = None,
     record: Path | None = None,
+    catalog: bool = True,
 ) -> dict[str, Any]:
     """Record a picker's keeps for style `name` and copy (or redraw) their pictures.
 
-    Returns `{record, folder, kept, copied, drawn}`: the counts are this round's.
+    Each kept tile's map joins the mode's palette set in `catalog.json` (`catalog`
+    False leaves it alone). Returns `{record, folder, kept, copied, drawn, total, mode,
+    palettes}`: the counts are this round's, `palettes` the maps new to the set.
     """
     from fractal_wallpapers import engine, styles
 
     document = styles.load(name)
+    # A style merged into a mode keeps under the mode: its picker's rows are still
+    # scoped by the name it was drawn under.
+    mode = document["name"]
     choices = read_json(choices_path, "choices file")
     manifest_path = manifest_path or manifest_of(choices)
     manifest = read_json(manifest_path, "picker manifest")
@@ -257,8 +263,11 @@ def keep(
     choices = rows_of(choices, name)
     keeps, stacks = kept(choices, manifest, renders, manifest_path.parent)
 
-    folder = folder or keeps_folder(name)
-    record = record or keeps_path(name)
+    folder = folder or keeps_folder(mode)
+    # Only a keep into the tracked record moves the tracked catalog: a test's scratch
+    # record never does.
+    catalog = catalog and record is None
+    record = record or keeps_path(mode)
     folder.mkdir(parents=True, exist_ok=True)
     reference = styles.reference_path(document)
     if not reference.is_file():
@@ -279,13 +288,14 @@ def keep(
     merged = merge(old, keeps, stacks)
     written = {
         "schema": SCHEMA,
-        "name": name,
-        "reference": document["reference"],
-        "folder": f"{DRIVE_SYNC_NAME}/{KEEPS_FOLDER}/{name}",
+        "name": mode,
+        "reference": old.get("reference") or document["reference"],
+        "folder": f"{DRIVE_SYNC_NAME}/{KEEPS_FOLDER}/{mode}",
         **merged,
     }
     with record.open("w", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(written, indent=2, ensure_ascii=False) + "\n")
+    added = palettes_from(mode, keeps, merged["stacks"]) if catalog else None
     return {
         "record": record,
         "folder": folder,
@@ -293,4 +303,31 @@ def keep(
         "copied": copied,
         "drawn": drawn,
         "total": len(merged["keeps"]),
+        "mode": mode,
+        "palettes": added,
     }
+
+
+def palettes_from(
+    mode: str, keeps: list[dict[str, Any]], stacks: dict[str, Any], path: Path | None = None
+) -> list[str] | None:
+    """Lay kept tiles' maps into the mode's palette set in `catalog.json`; the maps new to
+    it, or None when the mode has no catalog row yet (step 10 writes it, then `style
+    palettes <mode> --sync` reads every keep in)."""
+    from fractal_wallpapers import style_catalog, style_palettes, styles
+
+    path = path or style_catalog.catalog_path()
+    if not path.is_file():
+        return None
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    row = next((r for r in catalog["modes"] if r.get("style") == mode), None)
+    if row is None:
+        return None
+    document = styles.load(mode)
+    empty = not row.get("palettes")
+    added = style_palettes.add_keeps(row, document["style"], keeps, stacks)
+    if empty:
+        # A new row's set: the map the stack was fitted with is its default.
+        row["palettes"].sort(key=lambda e: e["colormap"] != document["suggested_colormap"])
+    style_catalog.write(catalog, path)
+    return added

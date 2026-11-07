@@ -207,8 +207,6 @@
 {"schema": 1, "kind": "admitted", "map": "flame_veil_teal", "group": "map:flame_veil_teal", "joined": false, "nearest": "map:Deep Current", "m1": 0.042643}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_violet", "group": "map:flame_veil_violet", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.071906}
 {"schema": 1, "kind": "admitted", "map": "flame_veil_chalk", "group": "map:flame_veil_chalk", "joined": false, "nearest": "map:moon-over-mandelbrot-25", "m1": 0.044014}
-{"schema": 1, "kind": "admitted", "map": "forest_smooth", "group": "map:forest_smooth", "joined": false, "nearest": "map:Harbour Sand", "m1": 0.055373}
-{"schema": 1, "kind": "admitted", "map": "mandelbrot3_smooth", "group": "map:mandelbrot3_smooth", "joined": false, "nearest": "map:Jqmsl", "m1": 0.063683}
 {"schema": 1, "kind": "admitted", "map": "council_smooth", "group": "map:council_smooth", "joined": false, "nearest": "map:Oxblood Procession", "m1": 0.051076}
 {"schema": 1, "kind": "admitted", "map": "crisis_smooth", "group": "map:crisis_smooth", "joined": false, "nearest": "m11", "m1": 0.055862}
 {"schema": 1, "kind": "admitted", "map": "dalooka_smooth", "group": "map:dalooka_smooth", "joined": false, "nearest": "map:Cobalt-Rust Double Flare", "m1": 0.059654}
@@ -222,11 +220,9 @@
 {"schema": 1, "kind": "admitted", "map": "chrome_orbs", "group": "map:peekaboo-25", "joined": true, "nearest": "map:peekaboo-25", "m1": 0.030606}
 {"schema": 1, "kind": "admitted", "map": "cauliflower_scales", "group": "map:cauliflower_scales", "joined": false, "nearest": "map:to-the-bone-25", "m1": 0.058906}
 {"schema": 1, "kind": "admitted", "map": "crescent_lines", "group": "map:crescent_lines", "joined": false, "nearest": "map:Opal & Ink", "m1": 0.056669}
-{"schema": 1, "kind": "admitted", "map": "chrome_blades", "group": "map:peekaboo-25", "joined": true, "nearest": "map:peekaboo-25", "m1": 0.034872}
 {"schema": 1, "kind": "admitted", "map": "copper_arms", "group": "map:copper_arms", "joined": false, "nearest": "map:Petrol Boundary", "m1": 0.059402}
 {"schema": 1, "kind": "admitted", "map": "cream_tubes", "group": "map:cream_tubes", "joined": false, "nearest": "map:chiaris-25", "m1": 0.051139}
 {"schema": 1, "kind": "admitted", "map": "golden_petals", "group": "map:golden_petals", "joined": false, "nearest": "map:city_of_lights", "m1": 0.061087}
-{"schema": 1, "kind": "admitted", "map": "teal_tubes", "group": "map:teal_tubes", "joined": false, "nearest": "map:Teal Against Rust", "m1": 0.063185}
 {"schema": 1, "kind": "admitted", "map": "violet_star_arms", "group": "map:violet_star_arms", "joined": false, "nearest": "map:wallhaven_wallhaven-2ex5zg", "m1": 0.055631}
 {"schema": 1, "kind": "admitted", "map": "bead_strands", "group": "map:bead_strands", "joined": false, "nearest": "map:Opal & Ink", "m1": 0.044027}
 {"schema": 1, "kind": "admitted", "map": "copper_mail", "group": "map:flame_wisp_amber", "joined": true, "nearest": "map:flame_wisp_amber", "m1": 0.029909}

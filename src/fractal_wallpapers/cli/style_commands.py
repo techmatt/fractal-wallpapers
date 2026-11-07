@@ -167,6 +167,44 @@ def keep_style(args: argparse.Namespace) -> int:
     )
     if done["drawn"]:
         print(style_keeps.REDRAWN.format(count=done["drawn"]))
+    if done["palettes"] is None:
+        print(
+            f"{done['mode']} has no catalog row yet: once step 10 writes it, "
+            f"`style palettes {done['mode']} --sync` lays its keeps' maps into its set"
+        )
+    elif done["palettes"]:
+        print(f"new in {done['mode']}'s palette set: {', '.join(done['palettes'])}")
+    return 0
+
+
+def show_palettes(args: argparse.Namespace) -> int:
+    """A mode's palette set; `--sync` lays every keep's map into it first."""
+    from fractal_wallpapers import style_catalog, style_keeps, style_palettes, styles
+
+    document = styles.load(args.name)
+    mode = document["name"]
+    if args.sync:
+        record = style_keeps.read_record(mode)
+        added = style_keeps.palettes_from(mode, record["keeps"], record["stacks"])
+        if added is None:
+            print(f"{mode} has no catalog row: write it first (README's step 10)")
+            return 1
+        print(f"new in {mode}'s set: {', '.join(added) or 'none'}")
+    rows = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))["modes"]
+    row = next((r for r in rows if r["style"] == mode), None)
+    if row is None:
+        print(f"{mode} has no catalog row")
+        return 1
+    for index, entry in enumerate(row.get("palettes", [])):
+        score = f"{entry['score']}/5" if "score" in entry else "-"
+        was = f"  (was {entry['was']})" if entry.get("was") else ""
+        default = "  default" if not index else ""
+        print(
+            f"{entry['colormap']:<24} {score:>4}  {len(entry.get('keeps', []))} kept  "
+            f"{len(entry.get('values') or {})} values{was}{default}"
+        )
+    best = style_palettes.score_of(row)
+    print(f"{mode}: {len(row.get('palettes', []))} palettes, score {best}")
     return 0
 
 
@@ -382,7 +420,12 @@ def render_style(args: argparse.Namespace) -> int:
     """Draw one location record, or every row of a manifest, in a style."""
     from fractal_wallpapers import locations, style_picker, styles
 
-    document = styles.with_knobs(styles.load(args.name), styles.parse_knobs(args.knob))
+    # A map in the mode's palette set draws with the values tuned for it; a draft is
+    # drawn as written.
+    document = styles.load(args.name)
+    if not args.name.endswith(".json"):
+        document = styles.at_palette(document, args.colormap)
+    document = styles.with_knobs(document, styles.parse_knobs(args.knob))
 
     try:
         if args.location:
@@ -442,6 +485,7 @@ VERBS = {
     "scout": scout_style,
     "picker": build_picker,
     "knobs": list_knobs,
+    "palettes": show_palettes,
     "gallery": build_gallery,
     "sheet": contact_sheet,
     "bundle": style_wasm_command,
@@ -591,6 +635,18 @@ def add_commands(subcommands) -> None:
     )
     knobs.add_argument("name", help="a style name `style list` prints, or a draft .json")
 
+    palettes = verbs.add_parser(
+        "palettes",
+        help="a mode's palette set (catalog.json): each kept map, its score, keeps and tuned "
+        "values, the default first",
+    )
+    palettes.add_argument("name", help="a mode, or a style name merged into one")
+    palettes.add_argument(
+        "--sync",
+        action="store_true",
+        help="first lay every keep's map into the set (after step 10 writes a new row)",
+    )
+
     gallery = verbs.add_parser(
         "gallery",
         help="rebuild the custom-modes page (index.html and its downscaled images) from "
@@ -688,7 +744,8 @@ def add_commands(subcommands) -> None:
     )
     render.add_argument(
         "--colormap",
-        help="any colormap `palettes list` prints (default: the style's suggested one)",
+        help="any colormap `palettes list` prints (default: the style's suggested one); a map "
+        "in the mode's palette set draws with the values tuned for it",
     )
     render.add_argument(
         "--knob",

@@ -108,6 +108,7 @@ def palettes_carriers(args: argparse.Namespace) -> int:
 
 def palettes_add(args: argparse.Namespace) -> int:
     """Admit one map to the library, with its produced row and its carrier rows."""
+    from fractal_wallpapers import style_catalog, styles
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.palettes import (
         admit,
@@ -118,6 +119,13 @@ def palettes_add(args: argparse.Namespace) -> int:
         reference_fields,
     )
 
+    row = None
+    if args.mode:
+        catalog = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))
+        row = next((r for r in catalog["modes"] if r["style"] == args.mode), None)
+        if row is None or args.mode not in styles.names():
+            print(f"[add] refused: no mode {args.mode!r} in {style_catalog.catalog_path().name}")
+            return 1
     try:
         report = admit.run(Path(args.map), replace=args.replace)
     except (
@@ -134,6 +142,35 @@ def palettes_add(args: argparse.Namespace) -> int:
         return 1
     for line in admit.lines(report):
         print(line)
+    if row is not None:
+        # A palette for the mode's next round: it stays in the set once a tile in it is
+        # kept, and `palettes remove` takes it out when none is.
+        if not any(entry["colormap"] == report["name"] for entry in row["palettes"]):
+            row["palettes"].append({"colormap": report["name"], "values": {}, "keeps": []})
+            style_catalog.write(catalog)
+        print(
+            f"[add] {args.mode}'s palette set: {report['name']} in its round (no keeps yet); "
+            f"tune its values in catalog.json, render with `style render {args.mode} "
+            f"--colormap {report['name']}`"
+        )
+    return 0
+
+
+def palettes_remove(args: argparse.Namespace) -> int:
+    """Take a map no tile kept out of the library and its tables."""
+    from fractal_wallpapers.palettes import admit
+
+    try:
+        report = admit.remove(args.name)
+    except admit.AddError as refusal:
+        print(f"[remove] refused: {refusal}")
+        return 1
+    sets = f"; dropped from {', '.join(report['sets'])}'s palette set" if report["sets"] else ""
+    print(
+        f"[remove] {report['name']}: map, {report['produced']} produced row, "
+        f"{report['carriers']} carrier row(s), {report['groups']} groups row; library now "
+        f"{report['maps']} maps{sets}"
+    )
     return 0
 
 
@@ -354,7 +391,20 @@ def add_commands(subcommands) -> None:
         action="store_true",
         help="re-tune a map the library already holds (its produced row is kept)",
     )
+    adding.add_argument(
+        "--mode",
+        help="a custom mode whose stack the map was tuned for: it joins the mode's palette "
+        "set (catalog.json) as a palette in its round, kept once a tile in it is",
+    )
     adding.set_defaults(handler=palettes_add)
+
+    removing = steps.add_parser(
+        "remove",
+        help="take a map no tile kept out of the library, with its produced, carrier and "
+        "groups rows (refused while a kept palette or a live style draws in it)",
+    )
+    removing.add_argument("name", help="the library map's name")
+    removing.set_defaults(handler=palettes_remove)
 
     producing = steps.add_parser(
         "produced",

@@ -11,7 +11,14 @@ as a custom mode for the explorer's dropdown:
                 "public": {"name": "<public name>", "palette": "<matched colormap>",
                            "knobs": ["<knob name in the style file's public block>", ...]},
                 "what": "<one line>", "kept": "<what was kept, in words>",
-                "note": "<the card's footnote>"}]}
+                "note": "<the card's footnote>",
+                "palettes": [{"colormap": "<map>", "values": {...}, "keeps": [...],
+                              "score": 1-5}, ...],
+                "aliases": ["<a style name merged into this mode>", ...]}]}
+
+A row is a **mode**: one stack (its style file) and its palette set, the default first
+(`style_palettes.py` has an entry's shape and the merge rule); its score is its best
+palette's. An alias is a style merged into the mode, which still opens by that name.
 
 `public` is a published mode's alone, and its knobs are named here and defined in the
 style file (`data/styles/README.md`'s *Public knobs*), so `check` holds the two to
@@ -74,6 +81,14 @@ def load(path: Path | None = None) -> dict[str, Any]:
     return catalog
 
 
+def write(catalog: dict[str, Any], path: Path | None = None) -> Path:
+    """The catalog written back in its own shape (two-space JSON, LF)."""
+    path = path or catalog_path()
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
+    return path
+
+
 def keeps_of(style: str) -> dict[str, dict[str, Any]]:
     """A style's recorded keeps, by id; empty when it has none."""
     from fractal_wallpapers import style_keeps
@@ -83,7 +98,7 @@ def keeps_of(style: str) -> dict[str, dict[str, Any]]:
 
 def check(catalog: dict[str, Any]) -> list[str]:
     """Each way the catalog disagrees with itself or the styles; empty when it holds."""
-    from fractal_wallpapers import styles
+    from fractal_wallpapers import style_palettes, styles
     from fractal_wallpapers.paths import colormap_dir
 
     if catalog.get("schema") != SCHEMA:
@@ -91,11 +106,16 @@ def check(catalog: dict[str, Any]) -> list[str]:
     problems = []
     seen = set()
     public_names = set()
+    aliases: set[str] = set()
+    files = set(styles.names())
     for row in catalog["modes"]:
         name = row.get("style", "?")
         if name in seen:
             problems.append(f"{name}: two rows")
         seen.add(name)
+        if name not in files:
+            problems.append(f"{name}: a row names a style file, never an alias")
+            continue
         try:
             document = styles.load(name)
         except styles.StyleError as refusal:
@@ -111,6 +131,14 @@ def check(catalog: dict[str, Any]) -> list[str]:
         if not row.get("item"):
             problems.append(f"{name}: names no item")
         keeps = keeps_of(name)
+        problems += style_palettes.check_row(row, document["style"], keeps)
+        for alias in row.get("aliases", []):
+            if alias in aliases or alias in files:
+                problems.append(f"{name}: alias {alias} is another style or another alias")
+            aliases.add(alias)
+        for entry in row.get("palettes", []):
+            if entry.get("was") and entry["was"] not in row.get("aliases", []):
+                problems.append(f"{name}: palette {entry['colormap']} was {entry['was']}, no alias")
         for shown in row.get("show", []):
             if "keep" not in shown or "caption" not in shown:
                 problems.append(f"{name}: a shown keep is {{keep, caption}}, not {shown}")
@@ -202,6 +230,9 @@ figure.ref img{outline:2px solid var(--acc);outline-offset:-2px}figcaption{font-
 color:var(--mute);margin-top:4px;overflow-wrap:anywhere}
 .foot{font-size:12px;color:var(--mute);margin:10px 0 0}h3{margin:28px 0 8px}
 .public{font-size:13px;margin:8px 0 0}.public b{color:var(--acc)}
+.sets{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0;font-size:12px;color:var(--mute)}\
+.sw{display:flex;flex-direction:column;gap:3px;width:150px}.sw i{display:block;height:16px;\
+border-radius:4px;border:1px solid var(--line)}.sw.trial{opacity:.5}
 .dis{display:flex;gap:12px;align-items:center;margin:8px 0;color:var(--mute)}\
 .dis img{width:200px;aspect-ratio:16/10;object-fit:cover;border-radius:6px;opacity:.75}
 ul{color:var(--mute)}textarea{width:100%;height:110px;background:var(--panel);color:var(--ink);\
@@ -272,6 +303,38 @@ def zoom(full: str, small: str, caption: str) -> str:
     )
 
 
+def gradient(colormap: str) -> str:
+    """A library map as a CSS gradient, stop for stop (a sequential map unmirrored)."""
+    from fractal_wallpapers.paths import colormap_dir
+
+    path = colormap_dir() / f"{colormap}.json"
+    if not path.is_file():
+        return "#000"
+    stops = json.loads(path.read_text(encoding="utf-8"))["stops"]
+    parts = [f"rgb({r},{g},{b}) {100 * float(at):.1f}%" for at, (r, g, b) in stops]
+    return f"linear-gradient(90deg,{','.join(parts)})"
+
+
+def swatches(row: dict[str, Any]) -> str:
+    """The mode's palette set as swatches, the default first; an entry still in its first
+    round (no keeps yet) is dimmed."""
+    esc = html.escape
+    chips = []
+    for index, entry in enumerate(row.get("palettes", [])):
+        keeps = len(entry.get("keeps", []))
+        score = f" · {entry['score']}/5" if "score" in entry else ""
+        was = f" (was {entry['was']})" if entry.get("was") else ""
+        tip = f"{entry['colormap']}{was}{score} · {keeps} kept" + (
+            " · default" if not index else ""
+        )
+        style = f"background:{gradient(entry['colormap'])}"
+        chips.append(
+            f'<span class="sw{"" if keeps else " trial"}" title="{esc(tip, quote=True)}">'
+            f'<i style="{esc(style, quote=True)}"></i>{esc(entry["colormap"])}{esc(score)}</span>'
+        )
+    return f'\n <p class="sets">{"".join(chips)}</p>' if chips else ""
+
+
 def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) -> str:
     """One mode's section: header and toggles, its line, the reference and keeps."""
     name = row["style"]
@@ -305,7 +368,7 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
         '<button data-v="maybe">Maybe</button><button data-v="drop">Drop</button></div>'
         "</header>\n"
         f' <p class="what">{esc(row.get("what", document["description"]))}</p>\n'
-        f' <div class="row">{"".join(figures)}</div>{public}\n'
+        f' <div class="row">{"".join(figures)}</div>{swatches(row)}{public}\n'
         f' <p class="foot">{esc(row.get("note", ""))}</p>\n'
         "</section>"
     )

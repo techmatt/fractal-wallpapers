@@ -12,6 +12,7 @@ fractal-wallpapers style scout --out <scout.jsonl> [filters]               # sea
 fractal-wallpapers style tones <name> <pictures…>                          # tone check (step 5)
 fractal-wallpapers style picker <plan.json>                                # a picker (step 6)
 fractal-wallpapers style keep floating_on_dreams <picker>.choices.json     # save a picker's keeps
+fractal-wallpapers style palettes glossy_spirals                          # a mode's palette set
 fractal-wallpapers style knobs lit_petals                                  # its public knobs
 fractal-wallpapers style render lit_petals --location <record.json> --knob light_angle=200
 fractal-wallpapers style gallery                                           # rebuild custom-modes/
@@ -71,14 +72,53 @@ a name the style does not expose and a value outside its range.
 
 `catalog.json` is one row per mode: style, reference, Matt's score (1–5), status
 (`publish`, `drop`, `discarded`; absent until he rules), the published variant, the
-keeps the page shows (`{keep, caption}`), the card's text, and for a published mode
-`public` (`{name, palette, knobs}`). The published variant is always the style file's
-default stack: a formulation Matt kept over it became the default. Public names are
-proposals Matt may rename. `style_catalog.check` holds the rows to the style files.
+keeps the page shows (`{keep, caption}`), the card's text, its **palette set**
+(`palettes`, below), the old style names it answers to (`aliases`), and for a
+published mode `public` (`{name, palette, knobs}`, `palette` the set's first). The
+published variant is always the style file's default stack: a formulation Matt kept
+over it became the default. Public names are proposals Matt may rename.
+`style_catalog.check` holds the rows to the style files.
+
+## Palette sets
+
+**A custom render mode is a stack plus a palette set.** Styles with the same layers and
+channels, differing only in palette or numbers, are one mode; a different structure is
+another mode, even from the same item. Each entry of a row's `palettes` is a map with
+the few values tuned for it, its keeps and its score (`style_palettes.py` has the
+shape):
+
+```
+{"colormap": "copper_arms", "was": "copper_arms", "reference": "eventide-25.jpg",
+ "values": {"/layers/3/color": {"palette": 0.72}, "/tone/median": 0.238, ...},
+ "keeps": ["<keep id>", ...], "score": 3}
+```
+
+The first entry is the default and is the stack's own (no values); the mode's score is
+its best entry's. A value is a pointer into the stack, as a knob's, and the number or
+colour written there; a layer an entry does without is its `opacity` at 0.
+`style render <mode> --colormap <map>` draws a map in the set with its values;
+`style palettes <mode>` lists the set.
+
+**Only picked palettes are saved** (Matt's rule): a map joins a set only through a kept
+tile. `style keep` lays each kept tile's map into the mode's set; a map no tile kept
+leaves the library, `fractal-wallpapers palettes remove <map>` (its file, produced,
+carrier and groups rows; refused while a kept palette or a live style draws in it). A
+style merged into a mode keeps resolving under its old name (`styles.alias_of`): to its
+entry, or to the mode's default when it kept nothing, so `style render`, `style keep`
+and a picker's scoped rows (`golden_petals/locations`) still work.
+
+The merges so far: `glossy_spirals` (item 036: violet_star_arms, golden_petals,
+copper_arms, cream_tubes) and `smooth_bands` (item 031: council, crisis and dalooka;
+forest_smooth and mandelbrot3_smooth kept nothing). Kept apart by structure:
+`corkscrew_smooth` (a sheen layer more) and the flame families, whose members differ in
+channels and layer kinds (028's `flame_veil_*`, 032's `flame_wisp_*`).
 
 `style gallery` rebuilds `fractal-drive-sync/custom-modes/` (its `index.html` and the
-downscaled `img/`, traced in `img/sources.json` so a rebuild redraws only what moved);
-a style with no row is listed under *not yet catalogued*. **Re-drawing a shown keep**
+downscaled `img/`, traced in `img/sources.json` so a rebuild redraws only what moved):
+one card per mode with its palette swatches, a palette still in its first round dimmed;
+a style with no row is listed under *not yet catalogued*. `style bundle`, which the
+website writes as its `custom-modes.json`, carries each published mode's set (its kept
+entries, values and all) for the page to cycle. **Re-drawing a shown keep**
 under a changed default is a one-row picker: `style render` at the keep's location and
 public palette, `style picker`, a choices file keeping it, `style keep`; then point the
 catalog's `show` at the new id and rebuild `style bundle` and `style gallery`.
@@ -104,6 +144,13 @@ before 030 copied `sheet.py` and `draft.sh` from one results folder to the next:
    accumulated density (a flame's veils, leaves edge to edge) needs several `view`s or a
    new primitive, and round one says so. Draft on hand-placed points or the atlas
    (`artifacts/atlas/<plane>/dots.json`); those reach a picker only by step 4's exception.
+   **First ask whether an existing mode's stack already fits** (`style list`, the
+   gallery's cards): the same layers and channels, only the map and a few numbers to
+   tune. If one does, the result is **a new palette entry, not a new style**: author the
+   map (step 3), admit it with `palettes add <map.json> --mode <mode>`, tune its values
+   in the entry (*Palette sets*) on `style render <mode> --colormap <map>` drafts, and run
+   steps 4 to 9 for the mode; the entry stays only if a tile in it is kept, and
+   `palettes remove <map>` ends it if none is.
 2. **Add a primitive only where one is missing**, in `engine/src/style.rs`, with a test,
    listed under `adds`; a function of one sample's channels, no neighbour reads. When the
    engine changed, `fractal-wallpapers identity <tag> --against <last tag>` must read 0
@@ -177,11 +224,16 @@ before 030 copied `sheet.py` and `draft.sh` from one results folder to the next:
    <picker>.choices.json` writes `<name>.keeps.json` and copies the pictures, with the
    reference, to `fractal-drive-sync/style-keeps/<name>/`; a later round merges in.
    **One picker for a group of styles** scopes its row ids `<style>/<row>`
-   (`forest_smooth/locations`): `style keep <name>` takes only that style's rows (and any
-   unscoped ones), so it runs once per style on the one choices file.
+   (`council_smooth/locations`): `style keep <name>` takes only that style's rows (and any
+   unscoped ones), so it runs once per style on the one choices file. A style merged into
+   a mode keeps into the mode. Each kept tile's map joins the mode's palette set; a map
+   no tile kept goes, `palettes remove <map>`.
 10. **Catalogue it**: its `catalog.json` row (score and status as Matt gave them, keeps
     with captions, the card's text; a published mode its `public` name, palette and
-    knobs), then `style gallery`. A later score or status change is the same two steps.
+    knobs), with `"palettes": []`, then `style palettes <name> --sync` to lay its keeps'
+    maps in (the suggested map first; give each entry Matt's score) and `style gallery`.
+    A later score or status change is an entry's score, the row's, and the gallery. When
+    a new style's stack turns out to be an existing mode's, merge it (*Palette sets*).
 
 ### The per-image prompt
 
@@ -252,8 +304,8 @@ General lessons; the named style's `notes` hold the detail.
 - Glossy blades along a spiral's arms are one strip trap's entries lit `across` over that
   relief: one strip, not a lattice (a lattice fans shards over the whole frame), bounded
   0.015 to 0.08 frames and masked by the inverted smooth count so they live in the far
-  field and the lace stays on top; unbounded they swallow it (`golden_petals` and its five
-  siblings, one stack in six maps). On a dark reference the p90 misses are the blades'
+  field and the lace stays on top; unbounded they swallow it (`glossy_spirals`,
+  item 036's six references; four palettes kept). On a dark reference the p90 misses are the blades'
   highlights: a saturated paint and spine glow, never a pale highlight, which reads steel
   (`violet_star_arms`).
 - Holes at every scale are the set's interior, which the galleries' Julia seats lack (a

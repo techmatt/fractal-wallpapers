@@ -48,15 +48,65 @@ def names() -> list[str]:
     )
 
 
+def catalog_rows() -> list[dict[str, Any]]:
+    """The catalog's rows as written, unchecked: what an alias is looked up in.
+
+    `style_catalog.load` is the checked read; this one serves `load`, which the check
+    itself calls.
+    """
+    path = styles_dir() / CATALOG_FILE
+    if not path.is_file():
+        return []
+    return json.loads(path.read_text(encoding="utf-8")).get("modes", [])
+
+
+def alias_of(name: str) -> tuple[str, str | None] | None:
+    """`(mode, colormap)` for a style name merged into a mode, or None.
+
+    A style merged into a mode keeps resolving (`data/styles/README.md`'s *Palette
+    sets*): to the palette entry that was it, or to the mode's default when none was
+    kept.
+    """
+    for row in catalog_rows():
+        if name in row.get("aliases", []):
+            entry = next((e for e in row.get("palettes", []) if e.get("was") == name), None)
+            return row["style"], entry["colormap"] if entry else None
+    return None
+
+
+def at_palette(document: dict[str, Any], colormap: str | None) -> dict[str, Any]:
+    """The style at one of its mode's palette entries: the entry's values written into the
+    stack and its map suggested. A map the set does not hold leaves the stack as it is.
+    """
+    from fractal_wallpapers import style_palettes
+
+    if not colormap:
+        return document
+    row = next((r for r in catalog_rows() if r.get("style") == document["name"]), None)
+    entry = style_palettes.entry_for(row, colormap) if row else None
+    if entry is None:
+        return document
+    # From the mode's own stack, so an alias already at one entry moves to another whole.
+    own = (styles_dir() / f"{document['name']}.json").read_text(encoding="utf-8")
+    stack = style_palettes.apply(json.loads(own)["style"], entry.get("values") or {})
+    return {**document, "style": stack, "suggested_colormap": colormap}
+
+
 def load(name: str) -> dict[str, Any]:
     """Read one style file and check its outer shape; the engine checks the stack.
 
     `name` is a style under `data/styles/`, or the path of a draft `.json` anywhere,
     which is how a style is tuned before it joins the library: a draft is held to the
-    same shape except that its file name need not be its name.
+    same shape except that its file name need not be its name. A style merged into a
+    mode (`alias_of`) reads as the mode at the palette that was it.
     """
     draft = name.endswith(".json")
     path = Path(name) if draft else styles_dir() / f"{name}.json"
+    if not path.is_file() and not draft:
+        alias = alias_of(name)
+        if alias is not None:
+            mode, colormap = alias
+            return at_palette(load(mode), colormap)
     if not path.is_file():
         raise StyleError(f"no style '{name}' under {styles_dir()}; there are: {', '.join(names())}")
     document = json.loads(path.read_text(encoding="utf-8"))

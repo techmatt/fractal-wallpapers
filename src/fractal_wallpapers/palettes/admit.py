@@ -556,6 +556,90 @@ def run(
     }
 
 
+def users(name: str) -> list[str]:
+    """What still draws in a map: a catalog palette entry with keeps, or a style that
+    suggests it and is not discarded."""
+    from fractal_wallpapers import styles
+
+    rows = {row["style"]: row for row in styles.catalog_rows()}
+    found = []
+    for row in rows.values():
+        for entry in row.get("palettes", []):
+            if entry["colormap"] == name and entry.get("keeps"):
+                found.append(f"{row['style']}'s kept palette")
+    for style in styles.names():
+        if (rows.get(style) or {}).get("status") == "discarded":
+            continue
+        if styles.load(style)["suggested_colormap"] == name:
+            found.append(f"style {style}'s suggested map")
+    return found
+
+
+def remove(name: str, directory: Path | None = None) -> dict:
+    """Take a map out of the library: its file, produced row, carrier rows and groups
+    admission row; and any keep-less entry naming it from a mode's palette set.
+
+    The inverse of [`run`] for a map no tile kept (Matt's rule: only picked palettes
+    are saved). Refused while anything still draws in it ([`users`]), and for a map the
+    grouping's own cut placed or another map joined, which only a re-cut could move.
+    Every refusal comes before the first write.
+    """
+    from fractal_wallpapers import style_catalog
+
+    where = _library_dir(directory)
+    path = where / f"{name}.json"
+    if not path.is_file():
+        raise AddError(f"the library holds no map {name!r}")
+    using = users(name) if directory is None else []
+    if using:
+        raise AddError(f"{name!r} is still drawn in: {', '.join(using)}")
+    rows = groups.read(directory)
+    admitted = [r for r in rows if r.get("kind") == "admitted" and r.get("map") == name]
+    joined = [
+        r["map"]
+        for r in rows
+        if r.get("kind") == "admitted" and r.get("map") != name and r.get("group") == f"map:{name}"
+    ]
+    if rows and (not admitted or joined):
+        why = f"{', '.join(joined)} joined its group" if joined else "the grouping's cut placed it"
+        raise AddError(f"{name!r} cannot leave {groups.RECORD_NAME} by itself: {why}")
+    produced_list = produced_rows(directory)
+    kept_rows = [row for row in produced_list if row[produced.NAME_COLUMN] != name]
+    header, by_map, library = carrier_state(name, directory)
+    library = [each for each in library if each != name]
+    body = [row for each in library for row in by_map[each]]
+    header["maps"] = len(library)
+    header["carriers"] = sum(1 for row in body if row["kind"] == carriers.CARRIER_ROW)
+    header["uncarried"] = sum(1 for row in body if row["kind"] == carriers.UNCARRIED_ROW)
+    carrier_new = carriers.text_of([header, *body])
+    # Written last, in the order nothing reads half-done: the tables, then the map.
+    _write(produced.record_path(directory), produced.text_of(kept_rows))
+    _write(carriers.record_path(directory), carrier_new)
+    if rows:
+        _write(
+            groups.record_path(directory), groups.text_of([r for r in rows if r not in admitted])
+        )
+    path.unlink()
+    dropped = []
+    if directory is None and style_catalog.catalog_path().is_file():
+        catalog = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))
+        for row in catalog["modes"]:
+            before = len(row.get("palettes", []))
+            row["palettes"] = [e for e in row.get("palettes", []) if e["colormap"] != name]
+            if len(row["palettes"]) != before:
+                dropped.append(row["style"])
+        if dropped:
+            style_catalog.write(catalog)
+    return {
+        "name": name,
+        "produced": len(produced_list) - len(kept_rows),
+        "carriers": sum(len(rows_of) for each, rows_of in by_map.items() if each == name),
+        "groups": len(admitted),
+        "maps": header["maps"],
+        "sets": dropped,
+    }
+
+
 def lines(report: dict) -> list[str]:
     """What the command prints: one line a table, then the nearest maps."""
     from fractal_wallpapers.paths import tracked_name
