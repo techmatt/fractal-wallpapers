@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "teal_tubes",
+  "kind": "sequential",
+  "source": "a dark umber through bronze to a deep teal, aqua and a pale sea green, the albedo of the teal_tubes style, from exile-25.jpg: teal tubes on bronze",
+  "stops": [
+    [0.0, [38, 24, 10]],
+    [0.25, [112, 76, 36]],
+    [0.45, [150, 112, 62]],
+    [0.6, [18, 88, 110]],
+    [0.8, [28, 158, 170]],
+    [1.0, [96, 224, 200]]
+  ]
+}

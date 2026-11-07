@@ -249,3 +249,10 @@ General lessons; the named style's `notes` hold the detail.
   `chrome_orbs`, `cauliflower_scales`). Fit its key in the albedo, not the tone pass: a
   pass that darkens a pale stack far casts gold olive, and a light's gain over about 1
   clips a red into gold (`molten_flow`).
+- Glossy blades along a spiral's arms are one strip trap's entries lit `across` over that
+  relief: one strip, not a lattice (a lattice fans shards over the whole frame), bounded
+  0.015 to 0.08 frames and masked by the inverted smooth count so they live in the far
+  field and the lace stays on top; unbounded they swallow it (`golden_petals` and its five
+  siblings, one stack in six maps). On a dark reference the p90 misses are the blades'
+  highlights: a saturated paint and spine glow, never a pale highlight, which reads steel
+  (`violet_star_arms`).

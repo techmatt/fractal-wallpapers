@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "cream_tubes",
+  "kind": "sequential",
+  "source": "a slate blue through a dark olive to gold, cream and a pale ivory, the albedo of the cream_tubes style, from fools-paradise-25.jpg: cream satin tubes on slate",
+  "stops": [
+    [0.0, [16, 28, 38]],
+    [0.3, [38, 54, 66]],
+    [0.5, [108, 98, 66]],
+    [0.7, [178, 166, 124]],
+    [0.85, [218, 212, 178]],
+    [1.0, [240, 236, 214]]
+  ]
+}

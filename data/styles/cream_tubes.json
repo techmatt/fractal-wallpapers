@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "name": "cream_tubes",
+  "description": "satin cream tubes coiling along a spiral on slate blue, threaded with olive-gold lace and rings of small spiral copies",
+  "reference": {
+    "image": "fools-paradise-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "cream_tubes",
+  "reuses": [
+    "light (slope relief on the smooth count, molten_flow)",
+    "strip trap blades lit across (shaded_blades)",
+    "de falloff glows (glow_filaments)"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing new to the engine; the map cream_tubes (slate blue, olive, gold to cream and ivory), a white highlight.",
+    "Lessons: item 036 brought six references whose look is glossy lit tubes or blades sweeping along a spiral's arms with the set's filigree all round them (dessert-union, evening-radiance, eventide, exile, fools-paradise, deadly-nightshade, all -25.jpg), and they went in as **one stack in six palettes**: molten_flow's glossy relief (a light on the smooth count at one band, no ring), a strip trap's blades lit edge to edge as cylinders (shaded_blades), and falloff glows on `de` laid last. **One strip, not a lattice**: a lattice of strips is a target every orbit hits, so its blades fan over the whole frame as shards and arcs; one strip (radius 0.3 through 0.5, no `spacing`) is missed by most orbits, and its entries string along the arms as a staircase of petals. **Bound both ends and fade towards the set**: unbounded at 0.15 of the frame the blades read as a gloss sheet that swallows the lace, leaving only its hair; at `largest` 0.08 and `smallest` 0.015, masked by the inverted smooth count to power 3, they sit in the far field between the spiral copies and the filigree stays on top. A magnified view (zoom 0.3) of the same count as rimmed sheets gives a ghost of bigger arms beneath, the references' blurred copies, but a light cannot read a view, so the ghost is never lit (the `ghost` formulation). Seats are a `--spiral` scout (seed 36) over final139_general and final140_general2000; dense lace seats read the blades as hatching and were dropped, and the phoenix-classic spirals, whose big arms are a clear staircase, read best. Round one is drawn at --draft (about 1 s a frame at six threads)."
+  ],
+  "style": {
+    "name": "cream_tubes",
+    "interior": {
+      "palette": 0.5
+    },
+    "tone": {
+      "median": 0.439,
+      "p10": 0.116
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.0,
+          "slope": 1.4,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.6,
+          "specular": 0.9,
+          "shininess": 20.0,
+          "rim": 0.3,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#ffffff"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.4,
+        "power": 3.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "shape": "strip",
+            "read": "height",
+            "escaped": true,
+            "largest": 0.08,
+            "smallest": 0.015
+          }
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "normal",
+        "opacity": 0.92,
+        "power": 0.01,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "shape": "strip",
+            "read": "across",
+            "escaped": true,
+            "largest": 0.08,
+            "smallest": 0.015
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.4,
+          "diffuse": 0.7,
+          "specular": 0.9,
+          "shininess": 20.0,
+          "rim": 0.0,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#ffffff"
+          }
+        },
+        "opacity": 1.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "shape": "strip",
+            "read": "height",
+            "escaped": true,
+            "largest": 0.08,
+            "smallest": 0.015
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.5
+        },
+        "blend": "normal",
+        "opacity": 0.55,
+        "power": 8.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "shape": "strip",
+            "read": "height",
+            "escaped": true,
+            "largest": 0.08,
+            "smallest": 0.015
+          }
+        },
+        "color": {
+          "rgb": "#ffffff"
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 3.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.4
+        },
+        "blend": "multiply",
+        "opacity": 0.45,
+        "falloff": 0.0005
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "falloff": 0.0002
+      }
+    ]
+  }
+}

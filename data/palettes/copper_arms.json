@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "copper_arms",
+  "kind": "sequential",
+  "source": "a deep teal through a dark olive bronze to copper and a pale gold, the albedo of the copper_arms style, from eventide-25.jpg: copper spiral arms on teal",
+  "stops": [
+    [0.0, [6, 52, 62]],
+    [0.3, [20, 92, 98]],
+    [0.5, [88, 72, 42]],
+    [0.7, [176, 100, 42]],
+    [0.85, [226, 160, 82]],
+    [1.0, [252, 222, 150]]
+  ]
+}

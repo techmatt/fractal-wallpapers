@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "chrome_blades",
+  "kind": "sequential",
+  "source": "a pale silver through pewter and a dark bronze to a blue black, the albedo of the chrome_blades style, from deadly-nightshade-25.jpg: black chrome blades on brushed silver",
+  "stops": [
+    [0.0, [226, 230, 238]],
+    [0.3, [150, 154, 166]],
+    [0.5, [104, 90, 64]],
+    [0.7, [56, 58, 66]],
+    [0.85, [18, 20, 24]],
+    [1.0, [4, 4, 6]]
+  ]
+}

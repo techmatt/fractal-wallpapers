@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "golden_petals",
+  "kind": "sequential",
+  "source": "a violet black through smoke grey and bronze to amber and a pale gold, the albedo of the golden_petals style, from dessert-union-25.jpg: gold satin petals in spirals on violet black",
+  "stops": [
+    [0.0, [12, 6, 18]],
+    [0.25, [62, 54, 66]],
+    [0.45, [140, 82, 32]],
+    [0.65, [214, 146, 50]],
+    [0.85, [240, 196, 92]],
+    [1.0, [252, 230, 160]]
+  ]
+}
