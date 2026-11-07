@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "name": "leaf_veins",
-  "description": "dark branching veins in a frame of green leaves: each branch of a dendrite a crisp near-black vein with a short soft shadow, wrapped in a pale-lime leaf blade, fine dark side veins (field lines) running off it at an angle and cut into leaf-shaped bands, every band domed by a soft light, deep green shadow where the leaves leave off",
+  "description": "dark branching veins in a frame of green leaves: each branch of a dendrite a crisp near-black vein with a short soft shadow, wrapped in a pale-lime leaf blade, fine dark side veins (field lines) running off it at an angle and cut into leaf-shaped bands, every band softly lit by its slope, deep green shadow where the leaves leave off",
   "reference": {
     "image": "commons_Fractal_Art_Series__2814465834074_29.jpg",
     "folder": "fractal-drive-sync/style-refs",
@@ -9,17 +9,17 @@
   },
   "suggested_colormap": "leaf_veins",
   "reuses": [
-    "the palette layer by rank on the distance estimate, inverted: pale near the set, the map's dark end far from it, so each dendrite wears a leaf blade and the gaps between are shadow",
+    "the palette layer by rank on the distance estimate, not inverted: the map's dark end near the set, its pale end far from it",
     "field_lines' lines channel (radius 2, twist 1, divide 2) as two period sheets multiplied dark: side veins and finer veinlets running off every branch at an angle",
     "the lines channel's step by rank, inverted, as an overlay: a tone per escape band, so the band seams cut the blades into leaf shapes",
-    "a light on the smooth count at one period a step (slope only): each band domed as a leaf",
+    "a light on the smooth count, slope only (rings 0, so its period is unread)",
     "glow_filaments' falloff glows on de, painted dark instead of light: a soft shadow and a crisp hairline vein along every branch",
     "the tone pass, at the reference's median and p10"
   ],
   "adds": [],
   "notes": [
     "Added: nothing: old layers on `de`, `smooth` and `lines`. Its structure, dendrites, is one the galleries lack: its locations are hand-placed (step 4's exception)",
-    "Lessons: The ninth style is a frame-filling tile of green leaves crossed by dark branching veins, and it went in with **no new primitive**: the veins are `glow_filaments`' falloff glows on `de` painted near-black, the side veins are `field_lines`' `lines` angle cut by two period sheets and multiplied dark, a rank overlay on the lines' step cuts the frame into bands, and a light on the smooth count domes each band. Three lessons. **Lace is not veins**: the galleries' seats draw as a dark stencil of beads and spirals under a dark distance glow, and only 1 of 200 probed `final139_general` seats reads ink at or under 0.03, so the locations are dendrites placed by hand (step 4's exception): Julia sets at Misiurewicz `c` centred on points of the set found by inverse iteration, and the Mandelbrot plane at Misiurewicz points found by Newton on `f^(k+p)(0) = f^k(0)`, which read ink 0.001 to 0.05. **A sparse structure under a dark reference's tone target reads as smears**: the reference is a third near-black, so a frame whose veins cover a few percent has its far field pulled dark by the tone pass; reading the distance inverted (pale near the set, the map's dark end far from it) turns that dark into the shadow between leaves, each dendrite wearing a pale leaf blade, and keeps the balance at 10 of 12 drafts. The reference's density, leaves everywhere, is still beyond one dendrite per frame: wider Mandelbrot views add no density (each decoration is a copy of the last), and a log-polar view at three turns about a Misiurewicz point fills the frame with its arms but reads as a kaleidoscope star, a picker row rather than the default. **Judge a hair glow at `--draft` or larger**: at 640 wide a 2e-4 falloff is a fifth of a pixel and the veins blur into the shadow they sit in."
+    "Lessons: The ninth style is a frame-filling tile of green leaves crossed by dark branching veins, and it went in with **no new primitive**: the veins are `glow_filaments`' falloff glows on `de` painted near-black, the side veins are `field_lines`' `lines` angle cut by two period sheets and multiplied dark, a rank overlay on the lines' step cuts the frame into bands, and a light on the smooth count shades the frame by its slope alone. Three lessons. **Lace is not veins**: the galleries' seats draw as a dark stencil of beads and spirals under a dark distance glow, and only 1 of 200 probed `final139_general` seats reads ink at or under 0.03, so the locations are dendrites placed by hand (step 4's exception): Julia sets at Misiurewicz `c` centred on points of the set found by inverse iteration, and the Mandelbrot plane at Misiurewicz points found by Newton on `f^(k+p)(0) = f^k(0)`, which read ink 0.001 to 0.05. **A sparse structure under a dark reference's tone target reads as smears**: the reference is a third near-black, so a frame whose veins cover a few percent has its far field pulled dark by the tone pass; the kept stack reads the distance by rank without inverting it (the map's dark end near the set, its pale end far from it), and keeps the balance at 10 of 12 drafts. The reference's density, leaves everywhere, is still beyond one dendrite per frame: wider Mandelbrot views add no density (each decoration is a copy of the last), and a log-polar view at three turns about a Misiurewicz point fills the frame with its arms but reads as a kaleidoscope star, a picker row rather than the default. **Judge a hair glow at `--draft` or larger**: at 640 wide a 2e-4 falloff is a fifth of a pixel and the veins blur into the shadow they sit in."
   ],
   "style": {
     "name": "leaf_veins",

@@ -522,7 +522,6 @@
         "name": "soft-petals",
         "palette": "lit_petals",
         "knobs": [
-          "petal_depth",
           "jewels",
           "light_angle",
           "brightness"

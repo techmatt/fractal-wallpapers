@@ -10,7 +10,7 @@
   "suggested_colormap": "flame_wisp_spark",
   "reuses": [
     "the stripe average (field `stripe`) through flame_veil_blue's `view`s, six of them on a golden-angle spiral plus the frame's own: per loop a soft veil (density 3, power 2) and fine strands (density 10, power 10), screened: crossing strands filling the frame",
-    "glow_filaments' falloff hair with a halo, in gold, on the set's `de` through the frame and three of the views: the star sparks",
+    "glow_filaments' falloff hair with a halo, in gold, on the set's `de` through the frame and one view (turn 137.5, zoom 0.8): the star sparks",
     "the tone pass with log_density, at the reference's median and p10"
   ],
   "adds": [],

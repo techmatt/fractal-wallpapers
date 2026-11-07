@@ -111,13 +111,19 @@ def read_log(directory: Path) -> dict[str, dict[str, Any]]:
 
 def append_log(rows: list[dict[str, Any]], directory: Path) -> Path:
     """Lay rows into a folder's render log: a picture drawn again replaces its row."""
+    from fractal_wallpapers.paths import writing_path
+
     held = read_log(directory)
     for row in rows:
         held[row["picture"]] = row
     path = directory / LOG_NAME
-    with path.open("w", encoding="utf-8", newline="\n") as handle:
+    # Built beside and swapped in: the whole log is rewritten after every picture, and a
+    # run killed mid-write would otherwise leave every picture in the folder unrecorded.
+    scratch = writing_path(path)
+    with scratch.open("w", encoding="utf-8", newline="\n") as handle:
         for name in sorted(held):
             handle.write(json.dumps(held[name], ensure_ascii=False) + "\n")
+    scratch.replace(path)
     return path
 
 

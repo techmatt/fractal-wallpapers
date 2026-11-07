@@ -10,7 +10,7 @@
   "suggested_colormap": "lit_petals",
   "reuses": [
     "field smooth through the map by rank, once: the depth order of the reference's rosette (teal ground, cream and gold outer petals, orange, maroon and plum inner ones), read off a cyclic map so the jewels can cycle it",
-    "the light layer on field smooth at period 3 with no tube (rings 0, slope 1: the soft formulation, Matt's keep and the default since item 025): every three escape steps one smooth rise, the petal",
+    "the light layer on field smooth with no tube (rings 0, slope 1: the soft formulation, Matt's keep and the default since item 025): one smooth relief tilted along the count's gradient, its period 3 unread at rings 0 (item 039 dropped the petal_depth knob that turned it)",
     "the same count cycled three times round the map and lit at one step a ring, masked to the set's neighbourhood by the inverted distance estimate at power 25: the jewels",
     "glow_filaments' falloff glow on de, painted near-black and multiplied: the dark hair outlining each jewel",
     "the tone pass, at the reference's median and p10"
@@ -18,19 +18,6 @@
   "adds": [],
   "public": {
     "knobs": [
-      {
-        "name": "petal_depth",
-        "label": "Petal depth",
-        "what": "escape steps per lit petal: more makes fewer, broader petals",
-        "default": 3.0,
-        "range": [
-          2.0,
-          4.0
-        ],
-        "set": [
-          "/layers/1/light/period"
-        ]
-      },
       {
         "name": "jewels",
         "label": "Jewels",

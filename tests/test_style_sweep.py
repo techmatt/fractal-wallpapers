@@ -68,6 +68,21 @@ def test_a_knob_whose_ends_match_is_dead_and_a_slow_end_is_named(tmp_path):
     assert rows[0]["flags"] == [] and rows[1]["flags"] == []
 
 
+def test_a_tone_miss_is_flagged_only_at_a_checked_width(tmp_path):
+    reference = picture(tmp_path / "ref.png", (120, 120, 120))
+    document = {"reference": {"folder": str(tmp_path), "image": reference.name}}
+    same = picture(tmp_path / "same.png", (120, 120, 120), size=(1280, 800))
+    pale = picture(tmp_path / "pale.png", (220, 220, 220), size=(1280, 800))
+    small = picture(tmp_path / "small.png", (220, 220, 220), size=(320, 200))
+    assert style_sweep.tone_flags(same, document)[1] == []
+    numbers, flags = style_sweep.tone_flags(pale, document)
+    assert flags == ["tone_miss"] and numbers["tone_misses"]
+    numbers, flags = style_sweep.tone_flags(small, document)
+    assert flags == [] and numbers["tone_misses"] and not numbers["tone_checked"]
+    gone = {"reference": {"folder": str(tmp_path), "image": "gone.png"}}
+    assert style_sweep.tone_flags(pale, gone) == ({}, [])
+
+
 def test_the_plan_draws_seats_both_knob_ends_and_every_palette_entry():
     name = "lit_petals"
     document = styles.load(name)

@@ -101,8 +101,9 @@ colour written there; a layer an entry does without is its `opacity` at 0.
 `style render <mode> --colormap <map>` draws a map in the set with its values;
 `style palettes <mode>` lists the set.
 
-**Only picked palettes are saved** (Matt's rule): a map joins a set only through a kept
-tile. `style keep` lays each kept tile's map into the mode's set; a map no tile kept
+**Only picked palettes are saved** (Matt's rule): a map stays in a set only through a
+kept tile (`palettes add --mode` puts it in for a round, unkept). `style keep` lays each
+kept tile's map into the mode's set; a map no tile kept
 leaves the library, `fractal-wallpapers palettes remove <map>` (its file, produced,
 carrier and groups rows; refused while a kept palette or a live style draws in it). A
 style merged into a mode keeps resolving under its old name (`styles.alias_of`): to its
@@ -290,11 +291,10 @@ General lessons; the named style's `notes` hold the detail.
 - p90 misses are fixed at the map's top end (`gilded_orbs`, `field_lines`); a wide
   cream stop floods a far field (`citadel`). What a named mode lacks is often the rank
   spend, and the cycle count is the reference's order (`seahorse_halo`).
-- A light's `period` sets what one dome is: 1 corrugates, 2 domes a disc, 3 a petal
+- A light's `period` sets what one dome is, 1 corrugating and 2 doming a disc
   (`glossy_lobes`), but only with `rings` above 0: at `rings` 0 the normal is the slope
-  alone and the period draws nothing (`lit_petals`' kept formulation, whose
-  `petal_depth` knob is therefore dead; `docs/qa-findings.md`). On lace, decoration colour comes from a cyclic map
-  (`lit_petals`).
+  alone, the same in every ring, and the period draws nothing. On lace, decoration colour
+  comes from a cyclic map (`lit_petals`).
 - A dark reference's black share is held in the gaps, not the ground (`shaded_blades`); a
   rank fog spends the map's top on the nearest tenth (`star_eye`).
 - A structure the galleries lack comes from a trap, a family chosen for it, or hand
@@ -318,9 +318,10 @@ General lessons; the named style's `notes` hold the detail.
   the galleries lack: Newton on `f^p(0) = 0` places one (`crescent_lines`' notes).
 - A smooth, heavily lit surface is a `light` on the frame's own smooth count at one band
   with no ring (`rings` 0, a `slope`): one glossy relief whose lace keeps every finer scale
-  lit, so it never hides them; at `period` 1 each band is a lit scale, and a bounded disc
-  lattice domed at `period` 2 over it is a cauliflower texture (`molten_flow`,
-  `chrome_orbs`, `cauliflower_scales`). Fit its key in the albedo, not the tone pass: a
+  lit, so it never hides them (`molten_flow`, `chrome_orbs`). Lit scales want a ring:
+  `rings` about 0.8 and a small `slope` at `period` 1 make each band a lit scale (at
+  `rings` 0 the period draws nothing), and a bounded disc lattice domed at `period` 2
+  over it is a cauliflower texture (`cauliflower_scales`). Fit its key in the albedo, not the tone pass: a
   pass that darkens a pale stack far casts gold olive, and a light's gain over about 1
   clips a red into gold (`molten_flow`).
 - Glossy blades along a spiral's arms are one strip trap's entries lit `across` over that
@@ -337,4 +338,5 @@ General lessons; the named style's `notes` hold the detail.
   that hugs them is the stripe average's crests at density 2 to 4 masked by the inverted
   `de` over a dark ground (gamma 2 to 5); a light on `inside` at one band, `rings` 1, domes
   each hole as a glass bead, and `inside` through a palette at cycles 3 is a bullseye
-  (`cream_lace` and its four siblings, one stack in five maps).
+  (`cream_lace`, `copper_mail`, `ember_plume` and `gold_arcs`, one stack in four maps;
+  `bead_strands` adds the `inside` rim glow and the bead light).

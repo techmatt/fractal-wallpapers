@@ -195,14 +195,10 @@ def test_a_merged_name_holds_its_tones_to_its_own_reference():
     assert mode["reference"]["image"] == merged[0][0]["reference"]
 
 
-#: Public knobs that write only a light's `period` or `bands` where its `rings` is 0, by
-#: (style, knob): there the normal is the slope alone and the knob draws nothing.
-#: `docs/qa-findings.md` has each; what to do with one is Matt's call.
-DEAD_KNOBS = {("lit_petals", "petal_depth")}
-
-
 @pytest.mark.parametrize("name", styles.names())
 def test_no_public_knob_turns_only_what_a_flat_light_ignores(name):
+    """A knob writing only a light's `period` or `bands` where its `rings` is 0 moves no
+    pixel: there the normal is the slope alone (`lit_petals`' `petal_depth`, dropped)."""
     document = styles.load(name)
     lights = [layer.get("light") for layer in document["style"]["layers"]]
     for knob in (document.get("public") or {}).get("knobs") or []:
@@ -214,7 +210,7 @@ def test_no_public_knob_turns_only_what_a_flat_light_ignores(name):
             and node.get("rings", 0.7) == 0
             for node, key in places
         )
-        assert dead == ((name, knob["name"]) in DEAD_KNOBS), (name, knob["name"])
+        assert not dead, (name, knob["name"])
 
 
 def test_the_cli_parses_a_style_render():

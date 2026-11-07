@@ -17,7 +17,7 @@
   ],
   "adds": [
     "member falloff on glow: the distance estimate read as a length rather than a frame-wide stretch, its position exp(-d / falloff) with d the distance to the set in frame widths, so a thread is the same width at every location and resolution: a hot core where the falloff is a hair, a halo and a bloom where it is wider",
-    "member log_density on tone: a flame fractal's log-density curve ln(1 + k*Y) / ln(1 + k) on the composite's luminance, hue kept, before the median and p10 are measured, so faint structure beside a bright core is lifted; not in this stack (it pushes the halos towards neon), offered as a variant"
+    "member log_density on tone: a flame fractal's log-density curve ln(1 + k*Y) / ln(1 + k) on the composite's luminance, hue kept, before the median and p10 are measured, so faint structure beside a bright core is lifted; not in this stack: tried here, it pushed the halos towards neon and was not kept"
   ],
   "notes": [
     "Added: `falloff` on `glow`, `log_density` on `tone`",

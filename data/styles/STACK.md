@@ -17,7 +17,8 @@ reference's key at another, where more far field would otherwise draw it paler.
 `tone` also takes `log_density` (`k`): a flame fractal's log-density curve
 `Y ↦ ln(1 + k·Y) / ln(1 + k)` on each sample's luminance, hue kept, laid before the
 median and p10 are measured, so faint structure beside a bright core is lifted
-(`glow_filaments` offers it at `k` = 30 as a variant). A
+(`glow_filaments` tried it at `k` = 30 and did not keep it; the flame styles use `k` 8
+to 10). A
 **paint** is
 `{"rgb": "#rrggbb"}` or `{"palette": t}`, a position on whatever map the render was given
 — the second is what keeps a style in key with every palette.
@@ -100,7 +101,8 @@ again after the orbit left it: smaller discs packed inside each disc of hit 1.
 `spacing` repeats the disc on a square lattice through `center`: one disc is a target
 most orbits miss for good, a lattice is one almost every orbit lands in, so the discs
 fill the frame. Keep the critical point (`0`) off every disc — `center` `[0.5, 0.5]` at
-spacing 1 does — or the discs it falls in pull back as peanuts, not circles. `escaped`
+spacing 1 does while `radius` is under 0.7 (the default 1 does not) — or the discs it
+falls in pull back as peanuts, not circles. `escaped`
 reads only orbits that escape: inside the set the orbit settles on its cycle, and a
 cycle sitting in a disc draws the whole component as one smeared bubble, which the
 `inside` channel paints better. `largest` (a fraction of the frame width) passes over
@@ -160,7 +162,8 @@ a parabolic or Siegel interior, whose orbit never repeats, has no lines.
 ## Layers
 
 Each **layer** is `{kind, blend, opacity, mask, …}`; `blend` is one of `normal`,
-`multiply`, `screen`, `overlay`, `min`, `add` (applied per channel in linear light),
+`multiply`, `screen`, `overlay`, `min`, `add` (applied per channel in linear light; a
+`light` takes `normal` only, mixing its relit colour in by opacity),
 `opacity` is in [0, 1], and `mask` (`{channel, invert, power}`) multiplies the opacity by
 a channel's position. A layer only touches samples where its channel has a value.
 

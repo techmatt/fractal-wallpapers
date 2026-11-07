@@ -71,17 +71,43 @@ re-reports a line on it. The checker that found most of the style ones is
 - `STACK.md` now says that every `inside` channel in a stack shares one loop at the
   largest `iterations`, and that a `light` at `rings` 0 ignores `bands` and `period`.
 
+- **`lit_petals`' public knob `petal_depth` was dead** (published `soft-petals`): it
+  wrote `/layers/1/light/period`, but that light has `rings` 0, where the normal is the
+  slope alone, so both ends drew byte-identical pictures (the sweep's `dead_knob`).
+  Dropped from the style file's `public` and the catalog row (Matt's ruling, option a);
+  the README lesson on a light's period no longer cites `lit_petals`, and
+  `tests/test_styles.py` holds every knob to moving something. The website's
+  custom-modes bundle needs a rebake to lose the slider.
+- `renders.jsonl` was rewritten in place after every picture, so a run killed mid-write
+  left every picture in the folder unrecorded; it is now written beside and swapped in.
+- `style sweep --tones` holds each seat and palette entry to its reference's band at a
+  checked width; a backgrounded sweep's progress lines now flush.
+- Docs against the code: `STACK.md` claimed `glow_filaments` offers `log_density` 30 as a
+  variant (never kept), that `center [0.5, 0.5]` at spacing 1 keeps `0` off the discs
+  (only under radius 0.7; the default is 1), and listed six blends for every layer (a
+  `light` takes `normal` only). The README's relief lesson cited `cauliflower_scales` for
+  rings 0 (its scales need rings 0.8), called the lace-and-holes styles one stack in five
+  maps (`bead_strands` has two layers more), and said a map joins a set only through a
+  kept tile (`palettes add --mode` puts one in for a round). All corrected.
+- Style notes against their own stacks, corrected in prose only (no stack, knob or name
+  touched): `leaf_veins` (de palette not inverted; a rings-0 light domes nothing),
+  `flame_veil_blue` (sheet fill 0.22), `flame_wisp_spark` (one view, not three), four
+  lace styles' `inside` reuse and shared notes, `bead_strands` (periwinkle highlight),
+  `flame_wisp_waves` (one literal rose, no orange), `bronze_packing` (five height glows),
+  `seahorse_halo` (the fringe lands on blue at 1.5 cycles), `shaded_blades` (crescent
+  reads; one darkened edge), `glow_filaments` (`log_density` tried, not kept).
+
 ### Deferred to Matt
 
-- **`lit_petals`' public knob `petal_depth` is dead** (published mode): it writes
-  `/layers/1/light/period`, but that light has `rings` 0, where the normal is the slope
-  alone and the same in every ring, so both ends draw byte-identical pictures (the sweep's
-  `dead_knob`). The style's notes ("every three escape steps one smooth rise, the
-  petal") describe a ramp the engine does not draw. Options: drop the knob (style file,
-  catalog `public`, bundle); re-point it at something live; or give the light a small
-  `rings` so period draws (changes the kept look). Recommend dropping it: the kept look
-  stays and the page stops offering a slider that does nothing. *(Matt's call)*
-  `tests/test_styles.py`'s `DEAD_KNOBS` names it until ruled.
+- **The tone sweep reads 28 of 129 kept seats and palette entries outside their
+  reference's band at draft size** under today's engine, every one on p90 (the number
+  the tone pass does not pin): `yas` (published) +0.10 to +0.25 at both seats and five of
+  its seven maps, `glow_filaments` +0.30 (README's known heat), `flame_wisp_frost`, the
+  four lace-and-holes styles +0.14 to +0.22, `molten_flow` p10 +0.11 with p90 −0.15,
+  `chrome_blades` and `leaf_veins` low. They are kept pictures, so nothing is broken;
+  recommend no re-tune unless a published mode's card reads hot to you (`yas` is the
+  one), and re-reading this with `style sweep --tones` after any tone-pass change.
+  Rows: item 039's working papers, `tone_sweep.md` (untracked). *(Matt's call)*
 - **`arch-tunnel` (`teal_tunnel`) shows a keep its own `turns` knob cannot reach**: the
   shown keep `shortlist/01_j_dendrite_beta` (and the `palettes/yas` keep) carry
   `projection.log_polar.turns` 8 in their location, the knob's range is 3..6, and the

@@ -56,6 +56,7 @@ FLAGS = {
     "dead_knob": "the knob's two ends draw the same picture",
     "same_palette": "a palette entry draws the same picture as the default",
     "slow": f"over {SLOW_FACTOR:g}x its style's median seconds per sample",
+    "tone_miss": "with --tones at a checked width, outside its reference's band (TONE_BAND)",
 }
 
 
@@ -168,8 +169,35 @@ def plan(
     return todo
 
 
-def draw(item: dict[str, Any], folder: Path, resolution, supersample: int) -> dict[str, Any]:
-    """Draw one planned picture as `style render` would; its row, without flags yet."""
+#: References already measured, by path: a sweep reads each once.
+_HELD: dict[Path, dict[str, float]] = {}
+
+
+def tone_flags(picture: Path, document: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """The picture's tones against its style's reference (a merged entry's own), and
+    `tone_miss` when it misses the band at a checked width; nothing without a reference."""
+    from fractal_wallpapers import styles
+
+    reference = styles.reference_path(document)
+    if not reference.is_file():
+        return {}, []
+    if reference not in _HELD:
+        _HELD[reference] = styles.tones(reference)
+    stats = styles.tones(picture)
+    misses = styles.tone_misses(stats, _HELD[reference])
+    checked = stats["width"] >= styles.CHECKED_WIDTH
+    numbers = {"tone_misses": misses, "tone_checked": checked}
+    return numbers, ["tone_miss"] if misses and checked else []
+
+
+def draw(
+    item: dict[str, Any], folder: Path, resolution, supersample: int, tones: bool = False
+) -> dict[str, Any]:
+    """Draw one planned picture as `style render` would; its row, without flags yet.
+
+    `tones` holds a seat or palette entry (not a knob end, which may move the balance by
+    design) to its reference ([`tone_flags`]).
+    """
     from fractal_wallpapers import engine, locations, styles
 
     document = styles.at_palette(styles.load(item["style"]), item["colormap"])
@@ -195,6 +223,7 @@ def draw(item: dict[str, Any], folder: Path, resolution, supersample: int) -> di
     seconds = time.perf_counter() - started
     samples = resolution[0] * resolution[1] * supersample**2
     numbers = look(output)
+    toned, missed = tone_flags(output, document) if tones and not item["knobs"] else ({}, [])
     return {
         **row,
         "colormap": spec["colormap"],
@@ -203,7 +232,8 @@ def draw(item: dict[str, Any], folder: Path, resolution, supersample: int) -> di
         "per_msample": round(seconds / (samples / 1e6), 3),
         "interior": report.get("interior_fraction"),
         **{key: round(value, 4) for key, value in numbers.items()},
-        "flags": flags_of(numbers),
+        **toned,
+        "flags": flags_of(numbers) + missed,
     }
 
 
@@ -248,6 +278,7 @@ def sweep(
     supersample: int = SUPERSAMPLE,
     log=print,
     from_gallery: bool = False,
+    tones: bool = False,
 ) -> list[dict[str, Any]]:
     """Draw and check every planned picture into `out`; the rows, also in `sweep.jsonl`.
 
@@ -265,7 +296,7 @@ def sweep(
     todo = [item for item in plan(names, seats, gallery, from_gallery) if item["location"]]
     rows = []
     for index, item in enumerate(todo, start=1):
-        row = draw(item, out, resolution, supersample)
+        row = draw(item, out, resolution, supersample, tones)
         rows.append(row)
         if log is not None:
             mark = ",".join(row["flags"]) or "ok"

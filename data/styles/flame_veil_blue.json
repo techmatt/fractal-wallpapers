@@ -9,7 +9,7 @@
   },
   "suggested_colormap": "flame_veil_blue",
   "reuses": [
-    "field smooth as scooped period sheets (fill 0.3, edge 0.12) screened in blue, one per view: the translucent sheets",
+    "field smooth as scooped period sheets (fill 0.22, edge 0.12) screened in blue, one per view: the translucent sheets",
     "a second period sheet per view, edge only, from the map's yellow end: the lit rims",
     "glow_filaments' falloff hair on the frame's own de: the crisp set under the veils",
     "the tone pass with log_density, at the reference's median and p10"

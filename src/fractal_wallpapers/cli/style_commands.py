@@ -511,6 +511,7 @@ def render_style(args: argparse.Namespace) -> int:
 
 def sweep_styles(args: argparse.Namespace) -> int:
     """Draw every style small at its kept seats, knob ends and palette entries; check each."""
+    import functools
     from collections import Counter
 
     from fractal_wallpapers import style_sweep, styles
@@ -526,8 +527,10 @@ def sweep_styles(args: argparse.Namespace) -> int:
         seed=args.seed,
         resolution=tuple(args.resolution),
         supersample=args.supersample,
-        log=None if args.quiet else print,
+        # Flushed: a sweep is backgrounded with its output to a log someone is reading.
+        log=None if args.quiet else functools.partial(print, flush=True),
         from_gallery=args.gallery,
+        tones=args.tones,
     )
     flagged = [row for row in rows if row["flags"]]
     for row in flagged:
@@ -872,6 +875,13 @@ def add_commands(subcommands) -> None:
         action="store_true",
         help="draw every style at --seats seeded gallery seats instead of its keeps: places "
         "it was never tuned on (vary --seed for more)",
+    )
+    sweep.add_argument(
+        "--tones",
+        action="store_true",
+        help="hold each seat and palette entry to its reference's tone band (`style tones`); "
+        "flagged only at 1280 wide or more, so pair it with --resolution 1280 800 "
+        "--supersample 2",
     )
     sweep.add_argument(
         "--resolution",
