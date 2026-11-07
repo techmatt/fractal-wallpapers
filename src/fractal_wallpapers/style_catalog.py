@@ -145,6 +145,9 @@ def check(catalog: dict[str, Any]) -> list[str]:
                 continue
             if shown["keep"] not in keeps:
                 problems.append(f"{name}: shows '{shown['keep']}', not in its keeps")
+            elif "stack" not in keeps[shown["keep"]]["render"]:
+                # The bundle and the parity run draw a shown keep from its stack.
+                problems.append(f"{name}: shows '{shown['keep']}', a named-mode baseline keep")
         public = row.get("public")
         if row.get("status") != "publish":
             if public:

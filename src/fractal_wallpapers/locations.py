@@ -544,21 +544,35 @@ def read_one(path: Path, *, drawing: bool = False) -> dict:
     same reason and with the same default.
     """
     path = Path(path)
-    text = path.read_text(encoding="utf-8").strip()
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+    except OSError as unreadable:
+        raise LocationError(f"cannot read the location {path}: {unreadable}") from unreadable
     if not text:
         raise LocationError(f"{path} is empty")
-    if text.lstrip().startswith("["):
-        rows = json.loads(text)
-        if len(rows) != 1:
-            raise LocationError(f"{path} holds {len(rows)} locations; --manifest takes many")
-        return one_location(rows[0], str(path), drawing=drawing)
+    # The whole file first: a record written indented (as a keeps file or `style show`
+    # prints one) is one object over many lines, not a manifest.
+    try:
+        whole = json.loads(text)
+    except json.JSONDecodeError:
+        whole = None
+    if isinstance(whole, list):
+        if len(whole) != 1:
+            raise LocationError(f"{path} holds {len(whole)} locations; --manifest takes many")
+        return one_location(whole[0], str(path), drawing=drawing)
+    if whole is not None:
+        return one_location(whole, str(path), drawing=drawing)
     lines = [line for line in text.splitlines() if line.strip()]
     if len(lines) > 1:
         raise LocationError(
             f"{path} holds {len(lines)} rows, and this takes one location. A file of many "
             f"is a manifest — pass it as one."
         )
-    return one_location(json.loads(lines[0]), str(path), drawing=drawing)
+    try:
+        row = json.loads(lines[0])
+    except json.JSONDecodeError as bad:
+        raise LocationError(f"{path}: not JSON: {bad}") from bad
+    return one_location(row, str(path), drawing=drawing)
 
 
 def write(rows, path: Path) -> Path:

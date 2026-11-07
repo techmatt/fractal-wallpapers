@@ -153,3 +153,30 @@ def test_a_group_pickers_keeps_go_to_the_style_each_row_names():
 
 def test_a_keeps_file_is_not_a_style():
     assert not any(name.endswith(".keeps") for name in styles.names())
+
+
+def test_a_new_rows_default_palette_is_the_stacks_own(tmp_path):
+    """Step 10's `--sync` read the default entry's values off its first keep, often a
+    round-one formulation, and wrote a catalog `style_catalog.load` then refused."""
+    import copy
+
+    document = styles.load("lit_petals")
+    formulation = copy.deepcopy(document["style"])
+    formulation["layers"][2]["opacity"] = 0.5
+    catalog = tmp_path / "catalog.json"
+    catalog.write_text(
+        json.dumps({"schema": 1, "modes": [{"style": "lit_petals", "palettes": []}]}),
+        encoding="utf-8",
+    )
+    keeps = [
+        {
+            "id": "r1/formulations/half_jewels",
+            "render": {"style": "lit_petals", "colormap": "lit_petals", "stack": "s1"},
+        }
+    ]
+    added = style_keeps.palettes_from("lit_petals", keeps, {"s1": formulation}, path=catalog)
+    assert added == ["lit_petals"]
+    row = json.loads(catalog.read_text(encoding="utf-8"))["modes"][0]
+    assert row["palettes"][0]["colormap"] == "lit_petals"
+    assert row["palettes"][0]["values"] == {}
+    assert row["palettes"][0]["keeps"] == ["r1/formulations/half_jewels"]

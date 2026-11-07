@@ -158,6 +158,20 @@ def test_one_location_is_read_from_an_object_or_from_a_one_row_manifest(tmp_path
         locations.read_one(many)
 
 
+def test_one_location_reads_indented_and_refuses_what_does_not_read(tmp_path) -> None:
+    """A record written indented (as a keeps file prints one) is one object, not a
+    manifest of many rows; a missing or garbled file is a refusal, not a traceback."""
+    indented = tmp_path / "indented.json"
+    indented.write_text(json.dumps(LABEL_ROW, indent=2), encoding="utf-8")
+    assert locations.read_one(indented) == locations.record(LABEL_ROW)
+    with pytest.raises(locations.LocationError, match="cannot read"):
+        locations.read_one(tmp_path / "missing.json")
+    garbled = tmp_path / "garbled.json"
+    garbled.write_text("{not json", encoding="utf-8")
+    with pytest.raises(locations.LocationError, match="not JSON"):
+        locations.read_one(garbled)
+
+
 def test_two_records_that_would_draw_one_picture_name_one_file() -> None:
     """The name is a digest of everything the engine is told and nothing else, so
     a batch is resumable and two spellings of one picture do not make two."""

@@ -89,7 +89,12 @@ def at_palette(document: dict[str, Any], colormap: str | None) -> dict[str, Any]
     # From the mode's own stack, so an alias already at one entry moves to another whole.
     own = (styles_dir() / f"{document['name']}.json").read_text(encoding="utf-8")
     stack = style_palettes.apply(json.loads(own)["style"], entry.get("values") or {})
-    return {**document, "style": stack, "suggested_colormap": colormap}
+    moved = {**document, "style": stack, "suggested_colormap": colormap}
+    if entry.get("reference"):
+        # The entry was fitted to its own picture, beside the mode's: `style tones` on a
+        # merged name holds a render to it, not to the mode's reference.
+        moved["reference"] = {**document["reference"], "image": entry["reference"]}
+    return moved
 
 
 def load(name: str) -> dict[str, Any]:
@@ -107,16 +112,23 @@ def load(name: str) -> dict[str, Any]:
         if alias is not None:
             mode, colormap = alias
             return at_palette(load(mode), colormap)
+    if not path.is_file() and draft:
+        raise StyleError(f"no draft style file at {path}")
     if not path.is_file():
         raise StyleError(f"no style '{name}' under {styles_dir()}; there are: {', '.join(names())}")
-    document = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as unreadable:
+        raise StyleError(f"style '{name}' does not read: {unreadable}") from unreadable
+    if not isinstance(document, dict):
+        raise StyleError(f"style '{name}' is not a style file (a JSON object)")
     if document.get("schema") != SCHEMA:
         raise StyleError(f"style '{name}' has schema {document.get('schema')}, expected {SCHEMA}")
     for key in ("name", "description", "reference", "reuses", "adds", "suggested_colormap"):
         if key not in document:
             raise StyleError(f"style '{name}' has no '{key}'")
-    if "style" not in document:
-        raise StyleError(f"style '{name}' has no 'style'")
+    if not isinstance(document.get("style"), dict):
+        raise StyleError(f"style '{name}' has no 'style' stack (an object)")
     if document["style"].get("name") != document["name"]:
         raise StyleError(f"style '{name}': its stack is named '{document['style'].get('name')}'")
     if not draft and document["name"] != name:
@@ -382,6 +394,7 @@ def spec_of(
     document: dict[str, Any],
     output: Path,
     colormap: str | None = None,
+    knobs: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     """The engine spec drawing one location record in a style.
 
@@ -390,6 +403,10 @@ def spec_of(
     suggested one. **The fold is the style's rule**: a sequential map is mirrored only
     when a palette layer repeats it, since at one traversal the fold would halve the
     ramp and run the near-set end back to the far field's colour.
+
+    `knobs` are turned after the record's projection is laid over the stack, so a knob
+    asked for wins over a record that carries the same member (`teal_tunnel`'s keeps
+    carry `turns`, which once silenced its `turns` knob).
     """
     from fractal_wallpapers import locations
 
@@ -398,6 +415,8 @@ def spec_of(
     name = colormap or document["suggested_colormap"]
     spec["colormap"] = name
     spec["style"] = projected(document["style"], row)
+    if knobs:
+        spec["style"] = with_knobs({**document, "style": spec["style"]}, knobs)["style"]
     if repeats(document["style"]) and not is_cyclic(name):
         spec["palette"] = {"mirror": True}
     return spec

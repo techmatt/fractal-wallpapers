@@ -126,6 +126,77 @@ def test_an_unknown_style_is_refused():
         styles.load("not_a_style")
 
 
+def test_a_manifest_rows_name_is_one_file_name():
+    from fractal_wallpapers.cli.style_commands import file_name
+
+    assert file_name("00_a b/c:d_Lilac Vellum.png") == "00_a b_c_d_Lilac Vellum.png"
+
+
+def test_a_draft_that_does_not_read_is_refused_not_raised(tmp_path):
+    """A broken draft once came back as a JSON traceback from `style show` and `render`."""
+    garbled = tmp_path / "garbled.json"
+    garbled.write_text("{not json", encoding="utf-8")
+    with pytest.raises(styles.StyleError, match="does not read"):
+        styles.load(str(garbled))
+    listed = tmp_path / "listed.json"
+    listed.write_text("[]", encoding="utf-8")
+    with pytest.raises(styles.StyleError, match="not a style file"):
+        styles.load(str(listed))
+    with pytest.raises(styles.StyleError, match="no draft style file"):
+        styles.load(str(tmp_path / "missing.json"))
+
+
+def test_a_knob_asked_for_wins_over_the_records_own_projection(tmp_path):
+    """`teal_tunnel`'s keeps carry `turns`, which once silenced its `turns` knob."""
+    document = styles.load("teal_tunnel")
+    row = {**LOCATION, "projection": {"log_polar": {"turns": 8, "twist": 0.1}}}
+    plain = styles.spec_of(row, document, tmp_path / "x.png")
+    assert plain["style"]["projection"]["log_polar"]["turns"] == 8
+    turned = styles.spec_of(row, document, tmp_path / "x.png", knobs={"turns": 3})
+    assert turned["style"]["projection"]["log_polar"]["turns"] == 3
+    assert turned["style"]["projection"]["log_polar"]["twist"] == 0.1
+
+
+def test_a_merged_name_holds_its_tones_to_its_own_reference():
+    """A palette entry was fitted to its own picture: `style tones crisis_smooth` once read
+    `smooth_bands`' reference instead."""
+    rows = styles.catalog_rows()
+    merged = [
+        (row, entry)
+        for row in rows
+        for entry in row.get("palettes", [])
+        if entry.get("was") and entry.get("reference")
+    ]
+    assert merged, "the catalog holds a merged entry with its own reference"
+    for _row, entry in merged:
+        document = styles.load(entry["was"])
+        assert document["reference"]["image"] == entry["reference"], entry["was"]
+    mode = styles.load(merged[0][0]["style"])
+    assert mode["reference"]["image"] == merged[0][0]["reference"]
+
+
+#: Public knobs that write only a light's `period` or `bands` where its `rings` is 0, by
+#: (style, knob): there the normal is the slope alone and the knob draws nothing.
+#: `docs/qa-findings.md` has each; what to do with one is Matt's call.
+DEAD_KNOBS = {("lit_petals", "petal_depth")}
+
+
+@pytest.mark.parametrize("name", styles.names())
+def test_no_public_knob_turns_only_what_a_flat_light_ignores(name):
+    document = styles.load(name)
+    lights = [layer.get("light") for layer in document["style"]["layers"]]
+    for knob in (document.get("public") or {}).get("knobs") or []:
+        pointers = [s if isinstance(s, str) else s["path"] for s in knob["set"]]
+        places = [place for p in pointers for place in styles.targets(document["style"], p)]
+        dead = bool(places) and all(
+            key in ("period", "bands")
+            and any(node is light for light in lights)
+            and node.get("rings", 0.7) == 0
+            for node, key in places
+        )
+        assert dead == ((name, knob["name"]) in DEAD_KNOBS), (name, knob["name"])
+
+
 def test_the_cli_parses_a_style_render():
     args = cli.build_parser().parse_args(
         ["style", "render", "floating_on_dreams", "--location", "x.json", "--colormap", "hsv"]

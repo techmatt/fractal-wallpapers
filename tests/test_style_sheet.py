@@ -25,6 +25,9 @@ def test_a_folder_gives_its_pictures_by_name_and_a_manifest_its_lines(tmp_path):
     assert [path.name for path in found] == ["a.png", "b.png", "b.png"]
     with pytest.raises(style_sheet.SheetError, match="no picture"):
         style_sheet.pictures_of([tmp_path / "missing.png"])
+    # A mistyped manifest is the same refusal, once a FileNotFoundError traceback.
+    with pytest.raises(style_sheet.SheetError, match="no picture"):
+        style_sheet.pictures_of([tmp_path / "missing.txt"])
 
 
 def test_tiles_keep_their_aspect_and_rows_take_the_tallest(tmp_path):

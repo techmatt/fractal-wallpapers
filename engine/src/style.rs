@@ -1100,6 +1100,20 @@ impl Style {
                          layer's — the map is baked once for the whole stack"
                     ));
                 }
+                // A layer spends its map through the frame's leveled spend of the raw
+                // channel: these members were parsed and then read wrongly (a lambda
+                // measured the compressed field but placed the raw one, an absolute
+                // scale clamped every smooth count to the map's end).
+                if palette.scale != coloring::Scale::Leveled
+                    || palette.lambda != 1.0
+                    || palette.period != 1.0
+                    || palette.knee.is_some()
+                {
+                    return Err(format!(
+                        "{at}: a layer's palette is cycles, gamma, phase and transfer; \
+                         scale, lambda, period and knee are a named mode's, not a layer's"
+                    ));
+                }
             }
             if layer.kind == Kind::Light {
                 if layer.blend != Blend::Normal {
@@ -1504,7 +1518,11 @@ impl Channels {
 /// own loop rather than a channel of [`iterate::run`]: it needs `dz` at one chosen
 /// step, which no field keeps, and it runs only for the samples the escape loop
 /// already found inside. The recurrence is [`Family::step`]'s, not a copy of it.
-pub(crate) fn inside(family: &Family, pixel: Complex<f64>, iterations: u32) -> Option<(f64, [f64; 2])> {
+pub(crate) fn inside(
+    family: &Family,
+    pixel: Complex<f64>,
+    iterations: u32,
+) -> Option<(f64, [f64; 2])> {
     let (mut z, mut z_prev, c) = family.seed(pixel);
     let (mut dz, mut dz_prev) = family.derivative_seed();
     let mut best = (f64::INFINITY, z, dz);
@@ -3200,6 +3218,28 @@ mod tests {
             "light": {"period": 0.0}}]}"#;
         let style: Style = serde_json::from_str(text).unwrap();
         assert!(style.validate().unwrap_err().contains("period"));
+    }
+
+    #[test]
+    fn a_layer_palette_refuses_the_named_modes_members_it_would_misread() {
+        for member in [
+            r#""lambda": 0.0"#,
+            r#""scale": "absolute""#,
+            r#""knee": 3.0"#,
+            r#""period": 2.0"#,
+        ] {
+            let text = format!(
+                r#"{{"name": "x", "layers": [{{"kind": "palette",
+                    "channel": {{"field": {{"kind": "smooth"}}}}, "palette": {{{member}}}}}]}}"#
+            );
+            let style: Style = serde_json::from_str(&text).unwrap();
+            let refusal = style.validate().unwrap_err();
+            assert!(refusal.contains("not a layer's"), "{member}: {refusal}");
+        }
+        let plain = r#"{"name": "x", "layers": [{"kind": "palette",
+            "channel": {"field": {"kind": "smooth"}}, "palette": {"cycles": 3.0}}]}"#;
+        let style: Style = serde_json::from_str(plain).unwrap();
+        assert!(style.validate().is_ok());
     }
 
     #[test]

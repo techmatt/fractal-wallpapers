@@ -50,7 +50,7 @@ def pictures_of(sources: Sequence[Path]) -> list[Path]:
                     if path.suffix.lower() in PICTURE_SUFFIXES and path.is_file()
                 )
             )
-        elif source.suffix.lower() == ".txt":
+        elif source.suffix.lower() == ".txt" and source.is_file():
             for line in source.read_text(encoding="utf-8").splitlines():
                 if line.strip():
                     pictures.append(source.parent / line.strip())

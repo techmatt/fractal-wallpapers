@@ -204,7 +204,9 @@ def show_palettes(args: argparse.Namespace) -> int:
             f"{len(entry.get('values') or {})} values{was}{default}"
         )
     best = style_palettes.score_of(row)
-    print(f"{mode}: {len(row.get('palettes', []))} palettes, score {best}")
+    scored = f"score {best}" if best is not None else "no score"
+    status = f" ({row['status']})" if row.get("status") else ""
+    print(f"{mode}: {len(row.get('palettes', []))} palettes, {scored}{status}")
     return 0
 
 
@@ -241,6 +243,13 @@ def scout_style(args: argparse.Namespace) -> int:
     from fractal_wallpapers import style_scout
     from fractal_wallpapers.curation import tentative
 
+    if args.n < 1 and not args.measure:
+        # A negative count sliced from the end and drew nearly the whole gallery.
+        print(f"--n is how many seats to draw, at least 1; got {args.n}")
+        return 1
+    if args.probe_limit is not None and args.probe_limit < 1:
+        print(f"--probe-limit is at least 1; got {args.probe_limit}")
+        return 1
     if args.points:
         return scout_points(args)
     if args.measure:
@@ -416,6 +425,13 @@ def check_tones(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def file_name(text: str) -> str:
+    """One picture's file name: a record's name may hold a separator or a character Windows
+    refuses (a hand point named `a/b` once drew into a folder `00_a`); spaces, which
+    colormap names hold, stay."""
+    return "".join("_" if ch in '/\\:*?"<>|' else ch for ch in text)
+
+
 def render_style(args: argparse.Namespace) -> int:
     """Draw one location record, or every row of a manifest, in a style."""
     from fractal_wallpapers import locations, style_picker, styles
@@ -425,7 +441,8 @@ def render_style(args: argparse.Namespace) -> int:
     document = styles.load(args.name)
     if not args.name.endswith(".json"):
         document = styles.at_palette(document, args.colormap)
-    document = styles.with_knobs(document, styles.parse_knobs(args.knob))
+    knobs = styles.parse_knobs(args.knob)
+    document = styles.with_knobs(document, knobs)  # refuses a bad knob before any render
 
     try:
         if args.location:
@@ -456,12 +473,13 @@ def render_style(args: argparse.Namespace) -> int:
         directory = resolve_output(args.out_dir)
         directory.mkdir(parents=True, exist_ok=True)
         targets = [
-            directory / f"{index:02d}_{raw.get('name') or locations.name_of(row)}_{colormap}.png"
+            directory
+            / file_name(f"{index:02d}_{raw.get('name') or locations.name_of(row)}_{colormap}.png")
             for index, (row, raw) in enumerate(zip(rows, written, strict=True))
         ]
 
     for row, raw, output in zip(rows, written, targets, strict=True):
-        spec = styles.spec_of(row, document, output, colormap=args.colormap)
+        spec = styles.spec_of(row, document, output, colormap=args.colormap, knobs=knobs)
         try:
             report = engine.render_report(spec)
         except RuntimeError as refusal:
@@ -474,6 +492,39 @@ def render_style(args: argparse.Namespace) -> int:
         )
         style_picker.append_log([drawn], output.parent)
     return 0
+
+
+def sweep_styles(args: argparse.Namespace) -> int:
+    """Draw every style small at its kept seats, knob ends and palette entries; check each."""
+    from collections import Counter
+
+    from fractal_wallpapers import style_sweep, styles
+
+    names = args.names or styles.names()
+    for name in names:
+        styles.load(name)  # a misspelt name refuses before anything is drawn
+    out = resolve_output(args.out)
+    rows = style_sweep.sweep(
+        out,
+        names,
+        seats=args.seats,
+        seed=args.seed,
+        resolution=tuple(args.resolution),
+        supersample=args.supersample,
+        log=None if args.quiet else print,
+    )
+    flagged = [row for row in rows if row["flags"]]
+    for row in flagged:
+        why = f"  {row['why']}" if row.get("why") else ""
+        print(f"FLAG {row['style']}/{row['variant']}: {', '.join(row['flags'])}{why}")
+    counts = Counter(flag for row in flagged for flag in row["flags"])
+    summary = ", ".join(f"{count} {flag}" for flag, count in sorted(counts.items()))
+    print(
+        f"{len(rows)} pictures of {len(set(row['style'] for row in rows))} styles, "
+        f"{len(flagged)} flagged ({summary or 'none'}); rows in {tracked_name(out)}/sweep.jsonl, "
+        "contact sheets in sheets/"
+    )
+    return 1 if flagged else 0
 
 
 #: Each `style` verb's handler, by the verb's name.
@@ -492,6 +543,7 @@ VERBS = {
     "wasm-parity": style_wasm_command,
     "wasm-speed": style_wasm_command,
     "render": render_style,
+    "sweep": sweep_styles,
 }
 
 
@@ -784,3 +836,28 @@ def add_commands(subcommands) -> None:
         default="artifacts/styles",
         help="where a --manifest run's pictures go (default: artifacts/styles)",
     )
+
+    sweep = verbs.add_parser(
+        "sweep",
+        help="the style checker: draw every style small at its kept seats, each public knob "
+        "at both ends and each palette entry, and flag refusals, flat, washed or black "
+        "frames, dead knobs, palette entries drawing the default, and slow renders",
+    )
+    sweep.add_argument("names", nargs="*", help="styles to sweep (default: every style)")
+    sweep.add_argument("--out", required=True, help="the folder for pictures, rows and sheets")
+    sweep.add_argument(
+        "--seats", type=int, default=2, help="kept seats drawn per style (default: 2)"
+    )
+    sweep.add_argument(
+        "--seed", type=int, default=0, help="the gallery draw's seed, for styles with no keeps"
+    )
+    sweep.add_argument(
+        "--resolution",
+        nargs=2,
+        type=int,
+        metavar=("W", "H"),
+        default=[320, 200],
+        help="picture size (default: 320 200)",
+    )
+    sweep.add_argument("--supersample", type=int, default=1, help="(default: 1)")
+    sweep.add_argument("--quiet", action="store_true", help="print only the flags and summary")

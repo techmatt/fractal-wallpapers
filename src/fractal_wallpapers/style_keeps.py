@@ -87,14 +87,18 @@ def read_json(path: Path, what: str) -> Any:
     """One JSON document, or a refusal naming what it was meant to be."""
     if not path.is_file():
         raise KeepError(f"no {what} at {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as unreadable:
+        raise KeepError(f"the {what} {path} is not JSON: {unreadable}") from unreadable
 
 
 def manifest_of(choices: dict[str, Any]) -> Path:
     """The picker manifest a choices file names, relative to this checkout's parent."""
     named = choices.get("manifest")
     if not named:
-        raise KeepError(f"choices '{choices.get('name')}' name no manifest; pass --manifest")
+        named_as = f"'{choices['name']}'" if choices.get("name") else "file"
+        raise KeepError(f"the choices {named_as} names no manifest; pass --manifest")
     return repo_root().parent / named
 
 
@@ -329,5 +333,11 @@ def palettes_from(
     if empty:
         # A new row's set: the map the stack was fitted with is its default.
         row["palettes"].sort(key=lambda e: e["colormap"] != document["suggested_colormap"])
+        first = row["palettes"][0] if row["palettes"] else None
+        if first is not None and first["colormap"] == document["suggested_colormap"]:
+            # The default is the stack's own by definition. Its values were read off the
+            # first keep in the map, often a round-one formulation, and a default with
+            # values is a catalog `style_catalog.load` refuses (gallery, bundle, parity).
+            first["values"] = {}
     style_catalog.write(catalog, path)
     return added

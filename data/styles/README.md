@@ -18,6 +18,7 @@ fractal-wallpapers style render lit_petals --location <record.json> --knob light
 fractal-wallpapers style gallery                                           # rebuild custom-modes/
 fractal-wallpapers style bundle                                            # the published modes, for a page
 fractal-wallpapers style wasm-parity                                       # the WebAssembly module vs native
+fractal-wallpapers style sweep --out <dir> [names…]                        # the checker (below)
 ```
 
 A style is several channels of **one** escape loop per sample (more through a channel's
@@ -122,6 +123,21 @@ entries, values and all) for the page to cycle. **Re-drawing a shown keep**
 under a changed default is a one-row picker: `style render` at the keep's location and
 public palette, `style picker`, a choices file keeping it, `style keep`; then point the
 catalog's `show` at the new id and rebuild `style bundle` and `style gallery`.
+
+## Checking the library
+
+`style sweep --out <dir>` is the checker a bug hunt runs, and anyone after an engine or
+stack change: every style (or the names given) drawn at 320x200 at its first `--seats`
+keeps (seeded gallery seats for a style with none), each public knob at both ends of its
+range and each palette entry of its mode's set. Each picture is checked as it lands and
+flagged `failed` (the engine refused), `flat`, `washed`, `drowned`, `dead_knob` (both
+ends byte-identical), `same_palette` (an entry drawing the default's pixels) or `slow`
+(over eight times its style's median per sample); `style_sweep.FLAGS` has the
+thresholds. It writes one folder of pictures per style, a contact sheet each under
+`sheets/`, and `sweep.jsonl`, and exits 1 when anything is flagged. The whole library,
+about 200 pictures, took under four minutes at six threads (`RAYON_NUM_THREADS=6`).
+Read the sheets as well as the flags: a flag is a symptom, the sheet is the look. What
+hunts found is `docs/qa-findings.md`.
 
 ## A new style from a reference image
 
@@ -271,7 +287,9 @@ General lessons; the named style's `notes` hold the detail.
   cream stop floods a far field (`citadel`). What a named mode lacks is often the rank
   spend, and the cycle count is the reference's order (`seahorse_halo`).
 - A light's `period` sets what one dome is: 1 corrugates, 2 domes a disc, 3 a petal
-  (`glossy_lobes`, `lit_petals`). On lace, decoration colour comes from a cyclic map
+  (`glossy_lobes`), but only with `rings` above 0: at `rings` 0 the normal is the slope
+  alone and the period draws nothing (`lit_petals`' kept formulation, whose
+  `petal_depth` knob is therefore dead; `docs/qa-findings.md`). On lace, decoration colour comes from a cyclic map
   (`lit_petals`).
 - A dark reference's black share is held in the gaps, not the ground (`shaded_blades`); a
   rank fog spends the map's top on the nearest tenth (`star_eye`).
