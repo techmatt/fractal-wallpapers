@@ -57,7 +57,11 @@ def catalog_rows() -> list[dict[str, Any]]:
     path = styles_dir() / CATALOG_FILE
     if not path.is_file():
         return []
-    return json.loads(path.read_text(encoding="utf-8")).get("modes", [])
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("modes", [])
+    except ValueError as unreadable:
+        # Tuned by hand (README's *A new style from a reference image*, step 1).
+        raise StyleError(f"the catalog {path.name} is not JSON: {unreadable}") from None
 
 
 def alias_of(name: str) -> tuple[str, str | None] | None:

@@ -13,6 +13,7 @@ inside [`contact_sheet`], so the base install still imports this module.
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -63,6 +64,20 @@ def pictures_of(sources: Sequence[Path]) -> list[Path]:
     return pictures
 
 
+def fitted(text: str, room: float, width_of) -> str:
+    """`text`, its middle elided with `…` until `width_of` it fits in `room` pixels: a long
+    `<folder>/<name>` was cut off at a narrow tile's edge, losing the name's end."""
+    if width_of(text) <= room:
+        return text
+    head, tail = len(text) // 2, len(text) // 2
+    while head + tail > 2:
+        head, tail = max(1, head - 1), max(1, tail - 1)
+        shorter = f"{text[:head]}…{text[-tail:]}"
+        if width_of(shorter) <= room:
+            return shorter
+    return text[:1] + "…"
+
+
 def label_of(picture: Path) -> str:
     """`<folder>/<name>`: which row of a manifest render a tile is, at a glance."""
     return f"{picture.parent.name}/{picture.stem}"
@@ -104,9 +119,12 @@ def contact_sheet(
             (width, max(1, round(width * tile.height / tile.width))), Image.Resampling.LANCZOS
         )
         if labels:
-            ImageDraw.Draw(tile).text(
+            draw = ImageDraw.Draw(tile)
+            room = tile.width - 2 * LABEL_INSET[0]
+            label = fitted(label_of(picture), room, functools.partial(draw.textlength, font=font))
+            draw.text(
                 LABEL_INSET,
-                label_of(picture),
+                label,
                 fill=LABEL_FILL,
                 font=font,
                 stroke_width=1,

@@ -612,6 +612,14 @@ def remove(name: str, directory: Path | None = None) -> dict:
     header["carriers"] = sum(1 for row in body if row["kind"] == carriers.CARRIER_ROW)
     header["uncarried"] = sum(1 for row in body if row["kind"] == carriers.UNCARRIED_ROW)
     carrier_new = carriers.text_of([header, *body])
+    catalog = None
+    if directory is None and style_catalog.catalog_path().is_file():
+        # Read before the first write: a catalog garbled by hand once left the map gone
+        # and its palette set still naming it.
+        try:
+            catalog = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))
+        except ValueError as unreadable:
+            raise AddError(f"the catalog is not JSON: {unreadable}") from None
     # Written last, in the order nothing reads half-done: the tables, then the map.
     _write(produced.record_path(directory), produced.text_of(kept_rows))
     _write(carriers.record_path(directory), carrier_new)
@@ -621,8 +629,7 @@ def remove(name: str, directory: Path | None = None) -> dict:
         )
     path.unlink()
     dropped = []
-    if directory is None and style_catalog.catalog_path().is_file():
-        catalog = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))
+    if catalog is not None:
         for row in catalog["modes"]:
             before = len(row.get("palettes", []))
             row["palettes"] = [e for e in row.get("palettes", []) if e["colormap"] != name]

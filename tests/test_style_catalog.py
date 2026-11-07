@@ -51,6 +51,18 @@ def test_a_shown_keep_is_one_its_own_knobs_can_draw(row):
         assert bool(outside) == ((row["style"], shown["keep"]) in OUT_OF_RANGE_SHOWN), outside
 
 
+def test_a_catalog_garbled_by_hand_is_refused_not_raised(tmp_path, monkeypatch):
+    """The README sends a person into catalog.json to tune an entry's values; a typo
+    there once raised a JSON traceback from the gallery, the bundle and every alias."""
+    garbled = tmp_path / styles.CATALOG_FILE
+    garbled.write_text('{"schema": 1, "modes": [', encoding="utf-8")
+    with pytest.raises(style_catalog.CatalogError, match="not JSON"):
+        style_catalog.load(garbled)
+    monkeypatch.setattr(styles, "styles_dir", lambda: tmp_path)
+    with pytest.raises(styles.StyleError, match="not JSON"):
+        styles.catalog_rows()
+
+
 def test_the_catalog_is_not_a_style():
     assert styles.CATALOG_FILE.removesuffix(".json") not in styles.names()
 

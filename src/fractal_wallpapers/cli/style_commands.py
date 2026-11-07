@@ -181,7 +181,7 @@ def keep_style(args: argparse.Namespace) -> int:
 
 def show_palettes(args: argparse.Namespace) -> int:
     """A mode's palette set; `--sync` lays every keep's map into it first."""
-    from fractal_wallpapers import style_catalog, style_keeps, style_palettes, styles
+    from fractal_wallpapers import style_keeps, style_palettes, styles
 
     document = styles.load(args.name)
     mode = document["name"]
@@ -192,7 +192,7 @@ def show_palettes(args: argparse.Namespace) -> int:
             print(f"{mode} has no catalog row: write it first (README's step 10)")
             return 1
         print(f"new in {mode}'s set: {', '.join(added) or 'none'}")
-    rows = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))["modes"]
+    rows = styles.catalog_rows()
     row = next((r for r in rows if r["style"] == mode), None)
     if row is None:
         print(f"{mode} has no catalog row")

@@ -267,7 +267,10 @@ colormaps: {name: file}}`, `palettes` the mode's set, `[{colormap, values, score
 opens a session; the published rows of `data/styles/catalog.json` with the style files' default stacks
 and every map they or their shown keeps name. A shown keep carries the stack it was drawn
 with, which for an early round's keep is not always the published one. `style wasm-parity` holds the module to the
-native engine under Node; `style wasm-speed` times it (`src/fractal_wallpapers/style_wasm.py`).
+native engine under Node; `style wasm-speed` times it (`src/fractal_wallpapers/style_wasm.py`):
+at item 039 a published mode's 1280x800 ss2 frame took 15 s (`floating_on_dreams`,
+`lit_petals`) to 91 s (`gilded_orbs`; `glossy_lobes` 74 s, the bubble traps 54 to 55 s)
+on one thread, so a page draws a preview first.
 
 ## What each family's picture is symmetric under
 

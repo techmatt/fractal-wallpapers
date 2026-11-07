@@ -126,3 +126,18 @@ def test_every_merged_style_still_opens_as_its_palette_of_the_mode():
                 continue
             assert document["suggested_colormap"] == entry["colormap"]
             assert document["style"] == style_palettes.apply(mode["style"], entry["values"])
+
+
+def test_a_palette_round_refuses_a_merged_name_and_a_discarded_mode(tmp_path, capsys):
+    """Refused before the map is read: a merged name points at its mode, and a discarded
+    mode takes no palette round."""
+    from fractal_wallpapers import cli
+
+    rows = styles.catalog_rows()
+    alias = next(a for row in rows for a in row.get("aliases", []))
+    gone = next(row["style"] for row in rows if row.get("status") == "discarded")
+    unread = tmp_path / "map.json"
+    assert cli.main(["palettes", "add", str(unread), "--mode", alias]) == 1
+    assert "merged into" in capsys.readouterr().out
+    assert cli.main(["palettes", "add", str(unread), "--mode", gone]) == 1
+    assert "discarded" in capsys.readouterr().out

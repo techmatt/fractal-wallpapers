@@ -36,7 +36,11 @@ maxiter}`); `--colormap` defaults to the suggested map. Full size is 2560x1600 s
 `--draft` 1280x800 ss2. A render takes every core; `RAYON_NUM_THREADS=6` caps it, and at
 six threads a full-size frame takes 10 to 110 s, each `view` about one render more: a
 six-view stack ran about two minutes a full-size frame and over four on a parabolic or
-phoenix seat, so its round one is drawn at `--draft`.
+phoenix seat, so its round one is drawn at `--draft`. Each view also holds its own
+channel lanes for the whole frame: a full-size frame of the flame stacks (six to seven
+loops) committed 2 to 3 GiB in one engine (item 039: `flame_veil_violet` 3.0,
+`flame_wisp_spark` 2.0), which counts against the commit charge a test lane beside it
+needs: beside a render run the lane is killed on commit charge (CLAUDE.md).
 
 ## The file
 

@@ -121,10 +121,21 @@ def palettes_add(args: argparse.Namespace) -> int:
 
     row = None
     if args.mode:
-        catalog = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))
+        try:
+            catalog = json.loads(style_catalog.catalog_path().read_text(encoding="utf-8"))
+        except ValueError as unreadable:
+            print(f"[add] refused: {style_catalog.catalog_path().name} is not JSON: {unreadable}")
+            return 1
         row = next((r for r in catalog["modes"] if r["style"] == args.mode), None)
+        merged = styles.alias_of(args.mode)
+        if row is None and merged is not None:
+            print(f"[add] refused: {args.mode} is merged into {merged[0]}; pass --mode {merged[0]}")
+            return 1
         if row is None or args.mode not in styles.names():
             print(f"[add] refused: no mode {args.mode!r} in {style_catalog.catalog_path().name}")
+            return 1
+        if row.get("status") == "discarded":
+            print(f"[add] refused: {args.mode} is discarded; a palette round needs a live mode")
             return 1
     try:
         report = admit.run(Path(args.map), replace=args.replace)

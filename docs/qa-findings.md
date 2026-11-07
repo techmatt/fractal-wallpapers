@@ -97,6 +97,16 @@ re-reports a line on it. The checker that found most of the style ones is
   `seahorse_halo` (the fringe lands on blue at 1.5 cycles), `shaded_blades` (crescent
   reads; one darkened edge), `glow_filaments` (`log_density` tried, not kept).
 
+- `palettes add --mode <merged name>` refused with "no mode"; it now names the mode to
+  pass. A discarded mode is refused a palette round.
+- `style sheet` cut a long `<folder>/<name>` label at a narrow tile's edge, losing the
+  name's end; it elides the middle.
+- A typo in `catalog.json`, which the README sends a person into by hand, raised a JSON
+  traceback from `style gallery`, `bundle`, `wasm-parity`, `style palettes`,
+  `palettes add --mode`, `style keep` and every lookup of an old merged name. Each now
+  refuses with the parse error. `palettes remove` read it only after deleting the map's
+  file and rows, breaking its own "every refusal before the first write"; it reads first.
+
 ### Deferred to Matt
 
 - **The tone sweep reads 28 of 129 kept seats and palette entries outside their
@@ -108,6 +118,16 @@ re-reports a line on it. The checker that found most of the style ones is
   recommend no re-tune unless a published mode's card reads hot to you (`yas` is the
   one), and re-reading this with `style sweep --tones` after any tone-pass change.
   Rows: item 039's working papers, `tone_sweep.md` (untracked). *(Matt's call)*
+- **A published mode's full frame is slow on the page**: `style wasm-speed` reads 15 to
+  91 s per 1280x800 ss2 frame on one thread (`gilded_orbs` 91, `glossy_lobes` 74, the
+  bubble traps 54 to 55, `yas` 47). The module already has the progressive route
+  (`measure` on a preview, tiles after). Options: tiles on several workers (the tile API
+  allows it), a lower page `maxiter` for the deep seats (18,000 to 32,000 here), or
+  shown keeps at shallower seats. Recommend workers first: no picture changes.
+  *(the website's item; Matt's call on maxiter)*
+- **Multi-view flame stacks commit 2 to 3 GiB per full-size frame** (`flame_veil_violet`
+  3.0, `flame_wisp_spark` 2.0, at 22 to 61 s on six threads, inside the README's times).
+  Noted in `data/styles/README.md`; no change recommended.
 - **`arch-tunnel` (`teal_tunnel`) shows a keep its own `turns` knob cannot reach**: the
   shown keep `shortlist/01_j_dendrite_beta` (and the `palettes/yas` keep) carry
   `projection.log_polar.turns` 8 in their location, the knob's range is 3..6, and the

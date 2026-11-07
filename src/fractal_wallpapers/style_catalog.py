@@ -74,7 +74,11 @@ def load(path: Path | None = None) -> dict[str, Any]:
     path = path or catalog_path()
     if not path.is_file():
         raise CatalogError(f"no catalog at {path}")
-    catalog = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        catalog = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as unreadable:
+        # The README sends a person into this file by hand to tune an entry's values.
+        raise CatalogError(f"the catalog {path.name} is not JSON: {unreadable}") from None
     problems = check(catalog)
     if problems:
         raise CatalogError("catalog out of step:\n  " + "\n  ".join(problems))

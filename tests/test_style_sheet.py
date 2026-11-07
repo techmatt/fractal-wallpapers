@@ -44,6 +44,15 @@ def test_tiles_keep_their_aspect_and_rows_take_the_tallest(tmp_path):
         assert sheet.getpixel((16, 26)) == (0, 0, 0)  # and below it is the ground
 
 
+def test_a_long_label_is_elided_in_the_middle_to_fit_its_tile():
+    width = len  # one pixel a character
+    assert style_sheet.fitted("short/name", 20, width) == "short/name"
+    long = "locations/05_multibrot3_f95d4b63_copper_arms"
+    fitted = style_sheet.fitted(long, 20, width)
+    assert len(fitted) <= 20 and "…" in fitted
+    assert fitted.startswith("locat") and fitted.endswith("arms")
+
+
 def test_a_crop_leaving_the_picture_is_refused(tmp_path):
     one = picture(tmp_path / "one.png", (40, 25))
     with pytest.raises(style_sheet.SheetError, match="leaves"):

@@ -323,7 +323,7 @@ def palettes_from(
     path = path or style_catalog.catalog_path()
     if not path.is_file():
         return None
-    catalog = json.loads(path.read_text(encoding="utf-8"))
+    catalog = read_json(path, "catalog")
     row = next((r for r in catalog["modes"] if r.get("style") == mode), None)
     if row is None:
         return None
