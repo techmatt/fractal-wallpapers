@@ -1,21 +1,19 @@
 """The twin channel: Julia parameters derived from the parent plane's admissions.
 
-Three partitions in this registry had no channel at all. `julia:multibrot3`,
-`julia:multibrot4` and `julia:multibrot5` are a third of the release's supporting
-families and there is no tracked pool of degree-3, -4 or -5 Julia parameters to
-seed them from — the only tracked `c`-pools are degree 2 and Phoenix, and nothing
-in the walk crosses a family. So the allocator carried standing demand for them,
-folded it into their parent planes every batch, and the parents manufactured
-nothing, because the step that turns a parameter-plane find into a Julia root did
-not exist. This module is that step.
+Every dynamical twin of a parameter plane is fed here: `julia:mandelbrot` and
+`julia:multibrot3` through `julia:multibrot6`. Above degree 2 there is no tracked
+pool of Julia parameters to seed a twin from — the only tracked `c`-pools are
+degree 2 and Phoenix, and nothing in the walk crosses a family — so without the
+step that turns a parameter-plane find into a Julia root, the allocator's standing
+demand for those twins would fold into their parent planes every batch and
+manufacture nothing. This module is that step. `julia:multibrot6` is fed the same
+way, off a plane whose admissions are machine scores alone, because degree 6 is
+never labelled (`partitions.NEVER_LABELLED`).
 
-**It serves the degree-2 twin too, and that is the later half of the story.**
-The channel was held off `julia:mandelbrot` until 2026-09-12 on the ground that a
-derived parameter must not displace the tracked pool a three-stage screen left.
-What that exclusion protected was real but structural rather than about
-coarseness — see [`POOLED_TWINS`] — and the result was that the one degree with a
-curated pool was the only one that could not grow: 209 rows, no writer, and no
-re-derivation command anywhere in this repository.
+**It serves the degree-2 twin too.** That twin's tracked pool (209 rows) has no
+writer and no re-derivation command in this repository, so this channel is the
+only way it grows. A derived parameter must not displace that pool, and what
+keeps it from doing so is structural — see [`POOLED_TWINS`].
 
 ```text
 an admitted location of the degree-d parameter plane
@@ -44,10 +42,10 @@ admissions, as they land**. All three go through
 [`fractal_wallpapers.supply.currency`], so there is no fourth floor here and
 nothing to restate when the good floor moves.
 
-Reading only the run's own admissions was the first shape, and it does not work
-on the head that shipped: a plane seed root's first rung scores `1e-3` and below,
-so a parameter plane admits nothing inside a short run and the channel it feeds
-would be permanently empty on a machine with no history. The standing legs are
+Reading only the run's own admissions would not work on the head that ships: a
+plane seed root's first rung scores `1e-3` and below, so a parameter plane admits
+nothing inside a short run and the channel it feeds would be permanently empty on
+a machine with no history. The standing legs are
 what make it a channel on day one rather than a channel in principle.
 
 ## The c-spacing floor is the pool's invariant and it applies here too
@@ -64,11 +62,11 @@ The floor is per twin partition, because two twins of different degree are
 different families and a distance between their parameters compares nothing.
 
 **A twin that also holds a tracked pool has that pool's parameters reserved into
-its floor**, which is what makes serving the degree-2 twin safe. Before this, two
-floors ran over two disjoint sets and neither crossed: `pools.julia_pool` checks
-spacing over the pool's own rows, and this channel spaces an offer against the
-list *it* accepted, which starts empty. A derived `c` could therefore land on top
-of a curated one and neither check would see it. A reservation claims floor space
+its floor**, which is what makes serving the degree-2 twin safe. Without it, two
+floors would run over two disjoint sets and neither would cross: `pools.julia_pool`
+checks spacing over the pool's own rows, and this channel spaces an offer against
+the list *it* accepted, which starts empty, so a derived `c` could land on top of a
+curated one and neither check would see it. A reservation claims floor space
 without becoming a seed, so the pool is never re-derived and never queued twice.
 
 ## What is spaced against, and what is only counted
@@ -90,8 +88,8 @@ A parent plane with no admissions yet cannot produce a `c`, and a twin whose
 queue is empty for that reason is not broken — it is waiting on its parent. It
 says so, with the parent's admission count and its own skip count, in the same
 place every other deferred partition says why. A run whose twins are quiet and
-whose readout does not explain it is how three partitions went unsupplied for a
-whole production run without anyone being able to point at the reason.
+whose readout does not explain it leaves whole partitions unsupplied with nobody
+able to point at the reason.
 """
 
 from __future__ import annotations
@@ -125,29 +123,25 @@ SKIP_SAMPLE = 12
 #: a three-stage screen did.
 SEED_CHANNEL = "twin:"
 
-#: Twins that also hold a tracked `c`-pool of their own. The same list this
-#: constant has always held; what changed on 2026-09-12 is what it does.
+#: Twins that also hold a tracked `c`-pool of their own, and its job is spacing:
+#: a pooled twin has its pool's parameters reserved into the c-spacing floor, and
+#: the channel serves it beside the pool.
 #:
-#: It named the twins this channel refused to serve, on the ground that the
-#: degree-2 pool is what a three-stage screen left — filament detail at several
-#: scales together with a composed interior lake — and that the centre of a
-#: parameter-plane find is a coarser instrument than that, so it must not
-#: *displace* it. **The displacement was literal rather than a judgement about
-#: coarseness**: [`fractal_wallpapers.supply.refill.Refill._pool`] reads its twin
-#: branch before its `julia:mandelbrot` branch, so a served degree-2 twin would
-#: have had the derived list handed over *instead of* the pool's 209 rows rather
-#: than alongside them. That is a queue collision, and a queue collision is fixed
-#: where the queue is made.
+#: The degree-2 pool is what a three-stage screen left — filament detail at
+#: several scales together with a composed interior lake — and a derived parameter
+#: must not *displace* it. That guarantee is about the queue rather than the
+#: coarseness of a parameter-plane centre:
+#: [`fractal_wallpapers.supply.refill.Refill._twin_queue`] interleaves the pool's
+#: 209 rows with the derived list rather than handing the derived list over
+#: *instead of* them, and a queue collision is fixed where the queue is made.
 #:
-#: On the coarseness itself the record disagrees: inside `julia:mandelbrot` the
-#: pool's own screened virgin rows return 0.71 (`near_boundary`) and 1.24
-#: (`near_minibrot`) admissions a root against 19.05 for `ranked_harvest` and
-#: 30.57 for `proven`. Per-root rates favour a channel fed by admitted stock by
-#: construction, so that is not evidence a derived `c` is *better* — it is
-#: evidence the screen was not buying what the exclusion said it was.
-#:
-#: So the list stays and its job is now spacing: a pooled twin has its pool's
-#: parameters reserved into the c-spacing floor, and the channel serves it.
+#: On the coarseness itself the record does not favour the pool: inside
+#: `julia:mandelbrot` the pool's own screened virgin rows return 0.71
+#: (`near_boundary`) and 1.24 (`near_minibrot`) admissions a root against 19.05 for
+#: `ranked_harvest` and 30.57 for `proven`. Per-root rates favour a channel fed by
+#: admitted stock by construction, so that is not evidence a derived `c` is
+#: *better* — it is evidence the screen does not buy enough to justify keeping the
+#: twin channel off degree 2.
 POOLED_TWINS = frozenset({"julia:mandelbrot"})
 
 

@@ -9,30 +9,29 @@ records and the engine reads.
 
 ## Why they are at the floor rather than in `models.renders`
 
-They were in [`models.renders`] and `recipe` in [`labeling.finished`], which is
-where they are *used* most — but not where they are used *first*.
-[`engine_fingerprint`] draws six probes through this exact derivation, on purpose:
-the number that names an engine build has to be a fingerprint of the production
-path, not of a second way to ask for pixels. So the fingerprint reached up into
-the render cache and the label store, from a module both of them import, through
-imports written inside function bodies — and that arrow held `engine_fingerprint`
-inside the tree's largest import cycle.
+[`models.renders`] and [`labeling.finished`] are where these are *used* most, but
+not where they are used *first*. [`engine_fingerprint`] draws six probes through
+this exact derivation, on purpose: the number that names an engine build has to be
+a fingerprint of the production path, not of a second way to ask for pixels. With
+the derivation in the render cache and the label store, the fingerprint would
+reach up into both from a module both of them import, through imports written
+inside function bodies, and that arrow would hold `engine_fingerprint` inside an
+import cycle.
 
-The arrow is turned around the way [`models.roster`] turned it around for `ship`:
-this module imports `engine` and `paths` and nothing else, and the heavier modules
+So the arrow points down, the way [`models.roster`] points it for `ship`: this
+module imports `engine` and `paths` and nothing else, and the heavier modules
 import *it*. `renders.spec_of`, `renders.coloring_of`, `renders.catalog`,
-`renders.RenderCacheError` and `finished.recipe` all still resolve — they are
-imported there rather than re-exported through a wrapper, so there is one function
-object per name, which is the property [`curation.candidate_ledger`]'s `__init__`
-had to be rewritten to keep. The five themselves are derivations over a dict with
-no store behind them, and nothing redirects one.
+`renders.RenderCacheError` and `finished.recipe` resolve too: they are imported
+there rather than re-exported through a wrapper, so there is one function object
+per name, the property [`curation.candidate_ledger`]'s `__init__` keeps as well.
+The five themselves are derivations over a dict with no store behind them, and
+nothing redirects one.
 
 **What a test does redirect is [`colormap_dir`], and it has to be redirected
 here.** `spec_of` writes that one absolute path into the spec, so the field-name
-digests in `tests/test_curation_colorize.py` pin it — and a fixture that pinned
-`renders.colormap_dir` after this move would be holding a name `spec_of` no
-longer reads, silently digesting the checkout instead of the field. That fixture
-names this module.
+digests in `tests/test_curation_colorize.py` pin it, and a fixture that pinned
+`renders.colormap_dir` would be holding a name `spec_of` does not read, silently
+digesting the checkout instead of the field. That fixture names this module.
 """
 
 from __future__ import annotations

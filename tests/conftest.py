@@ -637,16 +637,16 @@ def registered(store_dir):
 def shipped_cyclic_maps():
     """The maps production does not fold, read **once** for the session.
 
-    `models.palette_sets.cyclic` parses every one of the 1,021 tracked colormap
-    documents on every call — **0.85 s** on this machine, measured 2026-09-11 —
-    and it is reached by anything that builds a recipe, because the fold is the
-    map's own kind. So a file whose every test resolves a recipe pays that per
-    test: `tests/test_repetition.py` was 9.45 s over 17 tests before this and
-    1.3 s after, with nothing else changed.
+    The answer is a parse of every tracked colormap document (under a second;
+    `models.palette_sets.cyclic` carries the measurement), and it is reached by
+    anything that builds a recipe, because the fold is the map's own kind.
+    `palette_sets.cyclic` memoizes it per process, so this fixture is not what
+    keeps the parse to one: it is the suite's one named reading of it, taken through
+    `colorize.cyclic` as production takes it, which a test asks for by name.
 
     A test that wants it in a module's own namespace patches `colorize.cyclic` to
-    hand this back. That is not a stub — it is the tracked answer, read at the
-    same accessor, once.
+    hand back a copy of this. That is not a stub: it is the tracked answer, read at
+    the same accessor, once.
     """
     from fractal_wallpapers.curation import colorize
 

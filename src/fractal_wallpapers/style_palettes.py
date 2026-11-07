@@ -144,14 +144,14 @@ def entry_for(row: dict[str, Any], colormap: str) -> dict[str, Any] | None:
 
 
 def is_score(value: Any) -> bool:
-    """A score Matt gives: a whole number 1 to 5. `4.0` passed `in range(1, 6)` and then
-    crashed the gallery's stars."""
+    """A score Matt gives: a whole number 1 to 5, never a float such as `4.0` (which
+    `in range(1, 6)` admits and the gallery's stars cannot draw) or a bool."""
     return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 5
 
 
 def library_maps() -> set[str]:
-    """The library's map names, exactly as spelled: a path test on Windows let a
-    wrong-case name pass, which `entry_for`'s exact match then never found."""
+    """The library's map names, exactly as spelled: a path test is case-blind on Windows,
+    and `entry_for` matches a name exactly, so membership is read off this set."""
     from fractal_wallpapers.paths import colormap_dir
 
     return {path.stem for path in colormap_dir().glob("*.json")}

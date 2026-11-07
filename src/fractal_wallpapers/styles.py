@@ -218,21 +218,20 @@ def tones(path: Path, width: int = 640) -> dict[str, float]:
 #: reference's 0.13) was dropped too.
 #:
 #: `p90` is the one number the tone pass does not pin, so it is the one that tells a
-#: stack's highlights from the reference's. Its band was read off `teal_tunnel` and
-#: `glow_filaments`: the one `teal_tunnel` variant outside 0.10 (`bare_arches`, +0.108)
-#: was dropped, and every `glow_filaments` render sat +0.30 to +0.46 hot except the one
-#: variant Matt kept (`no_fog`, +0.093). A miss on every render of a stack is the
-#: stack's to fix (narrower glows, less fog), not the locations'.
+#: stack's highlights from the reference's. Its 0.10 is read off Matt's keeps: the
+#: variants he kept sat within it (the nearest at +0.093), and every one he dropped for
+#: hot highlights sat beyond it (+0.108 to +0.46). A miss on every render of a stack is
+#: the stack's to fix (narrower glows, less fog), not the locations'.
 TONE_BAND = {"median": 0.03, "p10": 0.05, "p90": 0.10}
 
 #: The cheap size a tone check reads. The engine's tone pass meets its targets on the
-#: finished picture (each pixel its block of supersamples averaged, since 2026-11-04),
-#: so every size's picture holds them at its own resolution. The check reads a copy
-#: resized to 640 wide, which averages a thin structure a second time, by more the
-#: larger the picture: `teal_tunnel`'s `m_seed0` reads median 0.271 at 640x400 ss1 (the
-#: picture the pass measured, so it holds by construction), 0.290 at 1280x800 ss2 and
-#: 0.297 at 2560x1600 ss2, against 0.305 at both before the pass read the picture. The
-#: draft is the full size's to about 0.01, at a quarter of its samples.
+#: finished picture (each pixel its block of supersamples averaged), so every size's
+#: picture holds them at its own resolution. The check reads a copy resized to 640
+#: wide, which averages a thin structure a second time, by more the larger the
+#: picture: one measured render read median 0.271 at 640x400 ss1 (the picture the pass
+#: measured, so it holds by construction), 0.290 at 1280x800 ss2 and 0.297 at
+#: 2560x1600 ss2. The draft is the full size's to about 0.01, at a quarter of its
+#: samples.
 DRAFT_RESOLUTION = (1280, 800)
 DRAFT_SUPERSAMPLE = 2
 

@@ -315,8 +315,8 @@ impl Session {
             })
             .collect::<Result<BTreeMap<String, f64>, String>>()?;
         // The record's own projection first, then the knobs: a knob asked for wins over
-        // a record carrying the same member (teal_tunnel's keeps carry `turns`), as
-        // `styles.spec_of` turns them.
+        // a record carrying the same member (a keep whose record carries `turns` beside
+        // a `turns` knob), as `styles.spec_of` turns them.
         let stack = projected(&request.style, request.location.projection.as_ref());
         let stack = with_knobs(&stack, &request.knobs, &settings)?;
         let colormap = &request.colormap;
@@ -634,8 +634,8 @@ mod tests {
 
     #[test]
     fn a_knob_wins_over_the_record_s_own_projection_member() {
-        // teal_tunnel's keeps carry `turns` in their record, which once silenced its
-        // `turns` knob on the page: the record is laid first, then the knob.
+        // A keep whose record carries `turns` must not silence the style's `turns`
+        // knob on the page: the record is laid first, then the knob.
         let request = json!({
             "schema": 1,
             "location": {"family": {"kind": "mandelbrot"},

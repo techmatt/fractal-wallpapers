@@ -44,11 +44,11 @@ different rosters, and that is the check a new mode trips.
 
 The probe set cannot simply grow. [`current`] is a digest over the probes'
 `(index, bytes)` pairs, so a seventh row moves it — and every stamp already
-written names the old number. On the machine this split was made on that was
-**48,571 stamped views under one fingerprint**, across the walk ledgers' views,
-their framings and flip samples, the reframing rungs and one gallery pass's
-framings; adding a probe would have marked every one of them stale, and a stale
-view is one that gets drawn again for a reason that is not a changed engine.
+written names the old number. A working store holds **tens of thousands of
+stamped views under one fingerprint**, across the walk ledgers' views, their
+framings and flip samples, the reframing rungs and the gallery passes' framings;
+adding a probe marks every one of them stale, and a stale view is one that gets
+drawn again for a reason that is not a changed engine.
 
 So there are two sets and two digests. [`IDENTITY_PROBES`] is the six, and
 [`current`] — the number a stamp carries — digests exactly those, in exactly that

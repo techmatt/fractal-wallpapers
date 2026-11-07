@@ -13,12 +13,9 @@ around. The dependency arrow points from the heavy module to the light one,
 which is the only direction that keeps the check runnable where it is run — and
 this is the one module under `models/` that a base install can import.
 
-[`manifest_path`] is here for the same argument and it arrived later, by the same
-route. The file it names is the one `--check` reads, and it had **two**
-derivations: `ship.manifest_path()` and a `Path("models") / "weights.json"` of
-`cli.weights_commands`' own — because reaching for `ship` from the stdlib-only
-path is exactly what the roster exists to avoid, so the command that needs it
-most could not use it. It is one function here, `ship` imports it beside `HEADS`,
+[`manifest_path`] is here for the same argument. The file it names is the one
+`--check` reads, and the stdlib-only command that needs it most cannot reach for
+`ship` to find it. So it is one function here: `ship` imports it beside `HEADS`,
 and [`fractal_wallpapers.cuts`] reads it without importing the training stack:
 naming which artifact is shipped right now is a question about the manifest, not
 about the code that writes it.
@@ -35,19 +32,16 @@ from fractal_wallpapers.paths import repo_root
 #: cannot run that head at all, and the only way to notice is to have written
 #: the roster down somewhere a check can read it.
 #:
-#: **`render` replaced `smooth_render` and `strange_render`** on 2026-08-23: one
-#: judge over both kinds, adopted on a non-inferiority band. The two LABEL STORES
-#: keep their names and their paths — a store is a corpus and those did not merge
-#: — so the old names still appear wherever they name stored data. They are gone
-#: from the roster because a roster names what ships.
+#: **`render` is one judge over both kinds**, smooth and strange. The two LABEL
+#: STORES keep the names `smooth_render` and `strange_render` and their paths — a
+#: store is a corpus and those are two corpora — so those names appear wherever
+#: they name stored data, and never here, because a roster names what ships.
 #:
-#: **`gallery_grade` is the fourth and arrived 2026-09-14.** It is the fine head,
-#: whose `p_fine` gates the seating bar, the cascade order and every veto row's
-#: reading, and until this it was *unobtainable at any price*: off this tuple, no
-#: manifest row, its checkpoints untracked like every other head's and in no
-#: release, so a clone could read its configs and its per-sheet scores and never
-#: run it. That shut the whole scored half of this repository behind a head nobody
-#: outside this machine could get.
+#: **`gallery_grade` is the fine head**, whose `p_fine` gates the seating bar, the
+#: cascade order and every veto row's reading. A head off this tuple has no
+#: manifest row and is in no release, so a clone could read its configs and its
+#: per-sheet scores and never run it; the scored half of this repository needs
+#: this one in the release like the rest.
 #:
 #: ⚠ **Its asset is k=3 checkpoints in ONE file**, which is a shape no other row
 #: here has. The shipped recipe averages three seeds on the probability scale, so
@@ -58,19 +52,16 @@ from fractal_wallpapers.paths import repo_root
 HEADS = ("location", "render", "palette", "gallery_grade")
 
 
-#: **The release every head ships in**, and there is one of it.
-#:
-#: Matt's decision of 2026-09-14, replacing a per-head numbering that had reached
-#: `weights-v1` … `weights-v7`: four heads across four tags, three of which held a
-#: single asset, and a clone's `fetch-weights` resolving four different releases to
-#: assemble one set of judges. **One package, one tag, four assets.**
+#: **The release every head ships in**, and there is one of it: one dated tag for
+#: every head, so a clone's `fetch-weights` resolves one release to assemble one
+#: set of judges (Matt's decision of 2026-09-14). **One package, one tag, one asset
+#: per head.**
 #:
 #: **Dated rather than numbered, deliberately.** The version history of a head is
 #: its `sha256` in [`manifest_path`] and that file's git history; a tag is a name
 #: for a set of bytes somebody uploaded on a day. A number implies a sequence a
-#: reader has to trace back, and `weights-v6` said nothing about *which* heads were
-#: in it or when — `weights-v2` and `weights-v6` differ by four versions and by two
-#: days.
+#: reader has to trace back, and says nothing about *which* heads are in it or
+#: when.
 #:
 #: ⚠ **A published tag is NEVER moved.** A future change cuts a new dated tag and
 #: rewrites these rows to point at it; it does not replace assets under this name.

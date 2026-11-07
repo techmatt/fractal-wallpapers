@@ -96,13 +96,12 @@ def help_summary(text: str) -> str:
     first and the reasoning after — the ruling that set the flag, the date it
     changed, the measurement behind the number — and that reasoning is genuinely
     the best explanation of those flags anywhere, so it is kept. It is just not
-    what a person reaching for `--help` is asking for. 798 help strings carry
-    72,280 characters between them and `curate solve record --help` spent about
-    forty lines on `--themed`, `--themed-cap` and `--themed-radius` alone, which
-    is how a session came to need four `--help` invocations to find that
-    `--no-render` is on `solve run` and not on `solve record`.
+    what a person reaching for `--help` is asking for. Untrimmed, a command's
+    `--help` runs to dozens of lines for a single group of flags (`curate solve
+    record`'s `--themed`, `--themed-cap` and `--themed-radius`), and a question as
+    plain as which subcommand carries `--no-render` is lost in the reasoning.
 
-    Trimmed here rather than by rewriting all 798, because a rewrite either
+    Trimmed here rather than by rewriting every help string, because a rewrite either
     throws the reasoning away or moves it one file from the flag it is about, and
     because a second copy of a contract is a copy that drifts. [`TieredHelp`]
     applies this at format time and `FRACTAL_WALLPAPERS_HELP=full` turns it off,

@@ -121,17 +121,15 @@ def redirect(monkeypatch, root, manifests):
     Returns `(live, copies)` — where the store's files and their durable copies
     now resolve — because the tests assert against both.
 
-    This used to patch five accessors, and the reason it does not any more is the
-    defect the session guard in `conftest` exists for. Every one of those paths
-    already resolves through a **root**: the live files and both sidecars through
-    `paths.under("curation", …)`, the copies off `hot_root()`/`archive_root()`.
-    Setting the two roots redirects all four at once, and it redirects the ones
-    nobody thought of too — a redirect written per accessor is complete only
-    against the call graph on the day it was written, which is exactly how
-    `flatness.sidecar_path` came to be forgotten and this machine's real sidecar
-    came to be rewritten with a temporary ledger's keys.
+    Every one of the store's paths resolves through a **root**: the live files and
+    the sidecars through `paths.under("curation", …)`, the copies off
+    `hot_root()`/`archive_root()`. Setting the two roots redirects them all at once,
+    including any a later reader adds; a redirect written per accessor is complete
+    only against the call graph on the day it was written, and a store it misses is
+    the machine's real one, rewritten with a temporary ledger's keys (the defect the
+    session guard in `conftest` exists for).
 
-    **Two accessors are still patched and each is patched for its own reason.**
+    **This fixture patches two accessors, each for its own reason.**
     `manifest_dir` resolves off `repo_root()` rather than off a tier, so there is
     no root to set: that is the tracked half, and it is the half the guard in
     `conftest` covers. `signatures.sidecar_path` is patched to *undo* the autouse
@@ -148,13 +146,10 @@ def redirect(monkeypatch, root, manifests):
     live = root / "curation" / candidate_ledger.store.UNIT
     copies = root / durability.BACKUP_UNIT / candidate_ledger.store.UNIT
     live.mkdir(parents=True, exist_ok=True)
-    # And the store the prune reads that the five accessor patches never
-    # redirected: the supply sidecar (`intake`). Redirecting at the root redirects
-    # it too, which is how it came out that every test in this file had been
-    # reading THIS MACHINE's real 67k-row supply — and would have failed on a
-    # fresh clone, where the file does not exist. Empty is the honest fixture:
-    # none of these synthetic keys was ever in it. The expressed readout was the
-    # second such store until 2026-09-06, when the rank key stopped reading it.
+    # The prune also reads the supply sidecar (`intake`), which the root redirects
+    # too, so a test here never reads the machine's real supply and runs the same on
+    # a fresh clone, where the file does not exist. Empty is the honest fixture:
+    # none of these synthetic keys was ever in it.
     (root / "curation").mkdir(parents=True, exist_ok=True)
     (root / "curation" / "supply_scores.jsonl").touch()
     monkeypatch.setattr(signatures, "sidecar_path", lambda: live / signatures.SIDECAR_NAME)

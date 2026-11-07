@@ -175,10 +175,9 @@ class Refill:
         self._twin_mark: dict = {}
         #: A continuous partition's merge state — see [`_continuous_queue`].
         self._streams: dict = {}
-        # The tracked pool is the default channel for the parameter planes, not a
-        # fallback nobody reaches: a run that had to be handed a seed file to
-        # refill four of its ten partitions is a run that silently does not, and
-        # the first production run spent two hours proving it.
+        # The tracked pool is the default channel for the parameter planes it
+        # covers, not a fallback nobody reaches: a run that had to be handed a seed
+        # file to refill those planes is a run that silently does not.
         self._seeds = Path(seeds) if seeds is not None else _tracked_plane_pool()
 
     # ----------------------------------------------------------- the channels

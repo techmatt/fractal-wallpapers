@@ -937,14 +937,13 @@ def themed_flags(container):
         help="the palette-group cap a THEMED pass runs under, overriding the computed "
         "one. Unset is ceiling.themed_group_cap: max(1, floor("
         f"{ceiling_module.THEMED_GROUP_CAP_RATE:g} x n)), three times the main gallery's "
-        "rate, raised from twice it on 2026-09-12. A "
+        "rate. A "
         "themed pool holds a few dozen palette groups against the whole pool's hundreds, "
         "so the general cap was measured as the BINDING rule over a themed pool at every "
-        "shipping size, which is why a themed pass gets its own. It was ceil(2 x n / P) "
-        "until 2026-09-05, where P counted the groups fielding "
-        f"{ceiling_module.THEMED_CAP_PLACES}+ distinct places — a cap that moved with the "
-        "pool, so two themes at one n ran under two caps; P is still measured and recorded "
-        "and denominates nothing. `--group-cap` still names the main gallery's rule and a "
+        "shipping size, which is why a themed pass gets its own. It is a rate of n so "
+        "that two themes at one n run under one cap; P, the count of groups fielding "
+        f"{ceiling_module.THEMED_CAP_PLACES}+ distinct places, is measured and recorded "
+        "and denominates nothing. `--group-cap` names the main gallery's rule and a "
         "themed pass ignores it. Ignored without `--themed`",
     )
     container.add_argument(

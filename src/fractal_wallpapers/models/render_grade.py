@@ -1,30 +1,26 @@
 """Grading the render judge on a statistic that can resolve, and fitting the bar off it.
 
-A cross-validation screen — deleted on 2026-09-04, recoverable from git history —
-read three arms over these folds and came back null. The machinery was sound; the
-**declared slice** was not. It cut the motivating
-population down to 43 strange rows — 25 fours against 18 non-fours — by
+The screen — a cross-validation over these folds, recoverable from git history —
+read its arms on a **declared slice**, and that slice cannot resolve. It cuts the
+motivating population down to 43 strange rows — 25 fours against 18 non-fours — by
 restricting to the band where the shipped judge's `P(>=4)` sits in [0.60, 0.95),
 and a 95% interval on an AUC over 43 rows is about +/-0.19. Only an enormous
-effect was visible there, every arm's interval spanned zero, and a null on 43
+effect is visible there, every arm's interval spans zero, and a null on 43
 rows is not a measurement.
 
-This module re-runs that comparison against **the same question, unbanded**:
-`AUC(>=4)` over every strange row a person scored 3 or 4. That is 1,021 rows over
-the whole store and about 200 in any one fold, four to five times the declared
-slice, and it is the statistic the screen's own report named as the better
-instrument. The band is where a bar would *act*; it is not where the evidence is.
+This module asks **the same question, unbanded**: `AUC(>=4)` over every strange
+row a person scored 3 or 4. That is 1,021 rows over the whole store and about 200
+in any one fold, four to five times the declared slice. The band is where a bar
+would *act*; it is not where the evidence is.
 
-## ★ The primary is the RANK KEY, and that is a later correction
+## ★ The primary is the RANK KEY
 
-Everything above is the ckpt-88 reading and its arithmetic still stands. What
-moved at ckpt 91 is what the comparison turns on. `P(>=4)` is **one of four
-columns** [`curation.rank_key`] reads — five until the calibration stratum came
-out on 2026-09-06 — and the key — not the column — is what
-orders seats; so a retrain that improved the column and left the key alone would
-have improved nothing anybody ships. [`key_delta`] is the declared primary: the
-key **refit on each arm's own out-of-fold predictions**, ordering the rows a
-person scored 3 or 4, pooled over both kinds.
+That arithmetic stands, but it is not what the comparison turns on. `P(>=4)` is
+**one of four columns** [`curation.rank_key`] reads, and the key — not the
+column — is what orders seats; so a retrain that improved the column and left the
+key alone would have improved nothing anybody ships. [`key_delta`] is the
+declared primary: the key **refit on each arm's own out-of-fold predictions**,
+ordering the rows a person scored 3 or 4, pooled over both kinds.
 
 Refitting per arm is deliberate rather than a convenience. CORN's scale is set by
 the training prior, so every retrain moves the whole probability axis; a key
@@ -34,7 +30,7 @@ change. Fitting per arm makes it drop out, and it is what an adoption would do
 anyway — the key is *on* the adoption checklist, not beside it.
 
 The strange-side `AUC(>=4)` over 3-or-4 rows stays on every table under
-`motivating` and now decides nothing.
+`motivating` and decides nothing.
 
 ## Two things are tested at once and one of them is free
 
@@ -46,8 +42,8 @@ seen this material at its own aspect ratio**, in training or at deploy, and the
 3.7% horizontal stretch is not a property of one corpus but of every reading the
 judge has ever taken. [`ASPECT_DIMS`] closes it at the shipped width.
 
-⚠ The **resolution** axis was arm B until ckpt 91 and is not an arm here any
-more. Its gain was measured at label geometry, where 768x448 takes 37% of a
+⚠ The **resolution** axis is not an arm here. Its gain is measured at label
+geometry, where 768x448 takes 37% of a
 1280x720 source; mining scores the 640x360 candidate, where 384x224 already
 takes 37% and 768x448 *exceeds the source*. That is a scoring check over two
 retired checkpoints rather than a training run, and it is priced in minutes.
@@ -667,15 +663,15 @@ def key_delta(candidate: list[dict], reference: list[dict]) -> dict:
 # The bar. Declared in `render_judge_grade.md` before any number here existed.
 # --------------------------------------------------------------------------- #
 #: **The primary is the RANK KEY, not the judge's own AUC.** `P(>=4)` is one of
-#: five columns [`curation.rank_key`] reads, and the key is what orders seats —
+#: four columns [`curation.rank_key`] reads, and the key is what orders seats —
 #: so what a retrain has to move is the key's ordering, not a column's. The key
 #: is refit per arm on that arm's own out-of-fold predictions, which is what
 #: makes the CORN scale shift drop out: an arm is ranked by the best key its own
 #: numbers support, and no comparison here carries a calibration sensitivity.
 #:
 #: Pooled over both kinds, because the key's weights are shared over both. The
-#: strange-only `AUC(>=4)` over 3-or-4 rows that was the ckpt-88 primary stays on
-#: every table under `motivating` and now decides nothing.
+#: strange-only `AUC(>=4)` over 3-or-4 rows stays on every table under
+#: `motivating`, reported and deciding nothing.
 BAR: dict = {
     "primary": {
         "name": "rank_key_auc_ge4_three_against_four",
