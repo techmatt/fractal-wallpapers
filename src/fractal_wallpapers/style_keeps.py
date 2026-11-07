@@ -332,9 +332,15 @@ def palettes_from(
     added = style_palettes.add_keeps(row, document["style"], keeps, stacks)
     if empty:
         # A new row's set: the map the stack was fitted with is its default.
-        row["palettes"].sort(key=lambda e: e["colormap"] != document["suggested_colormap"])
+        suggested = document["suggested_colormap"]
+        row["palettes"].sort(key=lambda e: e["colormap"] != suggested)
         first = row["palettes"][0] if row["palettes"] else None
-        if first is not None and first["colormap"] == document["suggested_colormap"]:
+        if first is not None and first["colormap"] != suggested:
+            # No tile was kept in the map the stack was fitted with: it still heads the
+            # set, the stack's own, unkept, rather than a tuned map taking its place.
+            first = {"colormap": suggested, "values": {}, "keeps": []}
+            row["palettes"].insert(0, first)
+        if first is not None:
             # The default is the stack's own by definition. Its values were read off the
             # first keep in the map, often a round-one formulation, and a default with
             # values is a catalog `style_catalog.load` refuses (gallery, bundle, parity).

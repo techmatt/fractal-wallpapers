@@ -103,7 +103,6 @@ def keeps_of(style: str) -> dict[str, dict[str, Any]]:
 def check(catalog: dict[str, Any]) -> list[str]:
     """Each way the catalog disagrees with itself or the styles; empty when it holds."""
     from fractal_wallpapers import style_palettes, styles
-    from fractal_wallpapers.paths import colormap_dir
 
     if catalog.get("schema") != SCHEMA:
         return [f"schema {catalog.get('schema')}, expected {SCHEMA}"]
@@ -130,7 +129,7 @@ def check(catalog: dict[str, Any]) -> list[str]:
         # No status is a mode Matt has not ruled on yet: its toggles start unmarked.
         if "status" in row and row["status"] not in STATUSES:
             problems.append(f"{name}: status {row.get('status')} is not one of {STATUSES}")
-        if row.get("score") not in range(1, 6):
+        if not style_palettes.is_score(row.get("score")):
             problems.append(f"{name}: score {row.get('score')} is not 1 to 5")
         if not row.get("item"):
             problems.append(f"{name}: names no item")
@@ -163,7 +162,7 @@ def check(catalog: dict[str, Any]) -> list[str]:
         if public.get("name") in public_names:
             problems.append(f"{name}: public name {public.get('name')} is taken")
         public_names.add(public.get("name"))
-        if not (colormap_dir() / f"{public.get('palette')}.json").is_file():
+        if public.get("palette") not in style_palettes.library_maps():
             problems.append(f"{name}: no colormap '{public.get('palette')}'")
         knobs = [knob["name"] for knob in (document.get("public") or {}).get("knobs") or []]
         if public.get("knobs") != knobs:
@@ -204,8 +203,13 @@ def stars(score: int) -> str:
 
 
 def link(target: Path, folder: Path) -> str:
-    """`target` relative to the page, as a URL path."""
-    return html.escape(Path(os.path.relpath(target, folder)).as_posix(), quote=True)
+    """`target` relative to the page, as a URL path; a `file://` URL when the page is on
+    another drive (Windows has no relative path across drives: `--out` there raised)."""
+    try:
+        relative = Path(os.path.relpath(target, folder)).as_posix()
+    except ValueError:
+        relative = Path(target).resolve().as_uri()
+    return html.escape(relative, quote=True)
 
 
 STYLE_SHEET = """\
@@ -275,6 +279,8 @@ close()})})();
 SCRIPT = """\
 const S=__STATUS__;const K='custom-modes-choices-__HASH__';let c={...S};
 try{const s=JSON.parse(localStorage.getItem(K)||'null');if(s)c=s}catch(e){}
+const ids=new Set([...document.querySelectorAll('.mode')].map(s=>s.dataset.id));
+for(const k in c)if(!ids.has(k))delete c[k];
 function save(){try{localStorage.setItem(K,JSON.stringify(c))}catch(e){}}
 function paint(){let n={publish:0,maybe:0,drop:0},t=0;document.querySelectorAll('.mode')\
 .forEach(s=>{t++;const v=c[s.dataset.id];if(v)n[v]++;s.querySelectorAll('.pub button')\

@@ -128,6 +128,16 @@ def test_every_merged_style_still_opens_as_its_palette_of_the_mode():
             assert document["style"] == style_palettes.apply(mode["style"], entry["values"])
 
 
+def test_a_score_is_a_whole_number_and_a_map_is_spelled_exactly():
+    """`4.0` passed `in range(1, 6)` and crashed the gallery's stars; a wrong-case map
+    passed a Windows path test and was never found by `entry_for`."""
+    assert style_palettes.is_score(4) and not style_palettes.is_score(4.0)
+    assert not style_palettes.is_score(True) and not style_palettes.is_score(6)
+    row = {"style": "m", "palettes": [{"colormap": "HSV", "values": {}, "keeps": []}]}
+    problems = style_palettes.check_row(row, STACK, {})
+    assert any("no colormap 'HSV'" in problem for problem in problems)
+
+
 def test_a_palette_round_refuses_a_merged_name_and_a_discarded_mode(tmp_path, capsys):
     """Refused before the map is read: a merged name points at its mode, and a discarded
     mode takes no palette round."""

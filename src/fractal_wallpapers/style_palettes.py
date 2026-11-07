@@ -142,6 +142,20 @@ def entry_for(row: dict[str, Any], colormap: str) -> dict[str, Any] | None:
     return next((e for e in row.get("palettes", []) if e["colormap"] == colormap), None)
 
 
+def is_score(value: Any) -> bool:
+    """A score Matt gives: a whole number 1 to 5. `4.0` passed `in range(1, 6)` and then
+    crashed the gallery's stars."""
+    return isinstance(value, int) and not isinstance(value, bool) and 1 <= value <= 5
+
+
+def library_maps() -> set[str]:
+    """The library's map names, exactly as spelled: a path test on Windows let a
+    wrong-case name pass, which `entry_for`'s exact match then never found."""
+    from fractal_wallpapers.paths import colormap_dir
+
+    return {path.stem for path in colormap_dir().glob("*.json")}
+
+
 def score_of(row: dict[str, Any]) -> int | None:
     """The mode's score: its best entry's."""
     scores = [entry["score"] for entry in row.get("palettes", []) if "score" in entry]
@@ -184,7 +198,6 @@ def add_keeps(
 def check_row(row: dict[str, Any], stack: dict[str, Any], keeps: dict[str, Any]) -> list[str]:
     """Each way a row's palette set disagrees with its stack, keeps and score."""
     from fractal_wallpapers import styles
-    from fractal_wallpapers.paths import colormap_dir
 
     name = row.get("style", "?")
     palettes = row.get("palettes")
@@ -193,12 +206,13 @@ def check_row(row: dict[str, Any], stack: dict[str, Any], keeps: dict[str, Any])
         return [f"{name}: names no palettes (a mode is a stack and a palette set)"]
     problems = []
     seen = set()
+    maps = library_maps()
     for index, entry in enumerate(palettes):
         colormap = entry.get("colormap")
         if colormap in seen:
             problems.append(f"{name}: palette {colormap} is in the set twice")
         seen.add(colormap)
-        if not (colormap_dir() / f"{colormap}.json").is_file():
+        if colormap not in maps:
             problems.append(f"{name}: no colormap '{colormap}' in the library")
         values = entry.get("values")
         if not isinstance(values, dict):
@@ -210,7 +224,7 @@ def check_row(row: dict[str, Any], stack: dict[str, Any], keeps: dict[str, Any])
             apply(stack, values)
         except styles.StyleError as refusal:
             problems.append(f"{name}: palette {colormap}: {refusal}")
-        if "score" in entry and entry["score"] not in range(1, 6):
+        if "score" in entry and not is_score(entry["score"]):
             problems.append(f"{name}: palette {colormap} scores {entry['score']}, not 1 to 5")
         for ident in entry.get("keeps", []):
             keep = keeps.get(ident)

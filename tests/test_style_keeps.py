@@ -180,3 +180,16 @@ def test_a_new_rows_default_palette_is_the_stacks_own(tmp_path):
     assert row["palettes"][0]["colormap"] == "lit_petals"
     assert row["palettes"][0]["values"] == {}
     assert row["palettes"][0]["keeps"] == ["r1/formulations/half_jewels"]
+
+    # No tile kept in the suggested map: it still heads the set, unkept, and the kept
+    # map keeps its tuned values behind it.
+    catalog.write_text(
+        json.dumps({"schema": 1, "modes": [{"style": "lit_petals", "palettes": []}]}),
+        encoding="utf-8",
+    )
+    elsewhere = [{**keeps[0], "render": {**keeps[0]["render"], "colormap": "magma"}}]
+    style_keeps.palettes_from("lit_petals", elsewhere, {"s1": formulation}, path=catalog)
+    row = json.loads(catalog.read_text(encoding="utf-8"))["modes"][0]
+    assert [entry["colormap"] for entry in row["palettes"]] == ["lit_petals", "magma"]
+    assert row["palettes"][0] == {"colormap": "lit_petals", "values": {}, "keeps": []}
+    assert row["palettes"][1]["values"]

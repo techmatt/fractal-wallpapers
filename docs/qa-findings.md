@@ -106,6 +106,14 @@ re-reports a line on it. The checker that found most of the style ones is
   `palettes add --mode`, `style keep` and every lookup of an old merged name. Each now
   refuses with the parse error. `palettes remove` read it only after deleting the map's
   file and rows, breaking its own "every refusal before the first write"; it reads first.
+- The catalog check passed a score of `4.0`, which then crashed `style gallery`'s stars,
+  and a wrong-case colormap (a Windows path test), which `entry_for` then never matched.
+  Scores are whole numbers 1 to 5 and maps are matched by exact name.
+- `--sync` on a new row with no tile kept in the suggested map left a tuned map heading
+  the set; the suggested map is put first, unkept, the stack's own.
+- The gallery page's Copy choices exported marks for modes no longer on the page (the
+  saved-state key hashes only statuses); it drops them. `style gallery --out` on another
+  drive raised on a relative link; such links are `file://` URLs.
 
 ### Deferred to Matt
 
@@ -166,6 +174,24 @@ re-reports a line on it. The checker that found most of the style ones is
   hidden colour. Style references are finished pictures; recommend leaving it.
 - **The website must rebake its module** for the knob-order fix to reach the page
   (`style-wasm` is built here, served there): the website's item.
+
+- **The tone pass does not re-aim at supersample 1**: a lift that pushes a saturated
+  channel past 1 clips, so the picture lands short of its median target, and the
+  measure-and-re-aim loop runs only above ss1. Drafts and full renders are ss2, so it
+  touches the scout's probes and ss1 previews. Recommend carrying a lift with `lifted`
+  (no channel past 1) and running the loop at ss1 too; moves ss1 pixels, wants an
+  identity run.
+- **A stretched `light` draws its top-clipped 0.5% as the start of a new tube**: at
+  height exactly 1 the band phase wraps to 0, flipping the shading along the plateau;
+  `Sheet::alpha` already guards the same wrap. Moves pixels of published stacks with a
+  banded light (`floating_on_dreams`); recommend the guard with an identity run and a
+  parity rebake.
+- **Validation refuses a `threads` field on the frame beside one through a view at
+  another `sigma`**, though each is its own loop. Refusal only; recommend checking per
+  loop when a style wants it.
+- **A palette entry's value is checked only for its pointer**, not for writing the same
+  kind of node (a number over a colour passes, then fails at the engine or on the page).
+  Recommend comparing kinds in `check_row`.
 
 ### Won't fix
 
