@@ -10,9 +10,12 @@ convention is Matt's ruling, and changing one is his call.
 
 **Nothing ships under a name the article wouldn't teach.** Names say what a thing
 *does* (`coloring/`, `discovery/`, `curation/`, `labeling/`); a name that needs a
-paragraph of history is the wrong name. Vocabulary from earlier private versions of this
-project does not transfer: rename on the way in. No test here enforces it; the guard is
-`builder/vocabulary.py` in the `fractal-website` checkout.
+paragraph of history is the wrong name.
+
+**No wording or prose check gates this repo** (Matt's ruling: the prose passes are done).
+Checks hold structure and data (formats, references, tiers, knob ranges, citations that
+resolve), never vocabulary or style; an item does not run a prose pass unless its prompt
+asks for one.
 
 **Comments and docstrings illustrate a shape, never a live instance.** Write
 `<head>.<sheet>.json`, not a real drop's name, or a grep for the live name answers out of

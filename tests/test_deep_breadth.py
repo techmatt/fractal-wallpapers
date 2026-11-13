@@ -15,7 +15,6 @@ engine would have made.
 from __future__ import annotations
 
 import random
-from pathlib import Path
 
 import pytest
 
@@ -550,15 +549,3 @@ def test_a_budgeted_run_raises_the_anchor_pool_to_what_its_projection_needs() ->
     # A person who asked for more still gets more.
     asked = parse(["deep", "walk", "--wall-budget", "3600", "--anchors", "5000"])
     assert cli.deep_anchor_pool(asked) == 5000
-
-
-def test_the_deep_run_uses_the_word_seats_and_the_supply_engine_keeps_refill() -> None:
-    """A guard on the naming rule at the one place these two nearly collided.
-
-    `supply.refill` is a fact about release stock. What this mode does when its
-    frontier empties is seat more nuclei, and calling that a refill would make a
-    grep for either answer with the other.
-    """
-    source = (deep_run.__file__, roots_module.__file__)
-    for path in source:
-        assert "refill" not in Path(path).read_text(encoding="utf-8").lower()
