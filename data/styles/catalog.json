@@ -1575,6 +1575,91 @@
       "what": "a fiery plume of lace, red and orange round black holes of every size, feathering out into blue and violet strands on black",
       "kept": "nothing",
       "note": "Kept nothing in round one (item 037); its map left the library, since only picked palettes are saved."
+    },
+    {
+      "style": "soft_veils",
+      "score": 5,
+      "item": "041",
+      "reference": "fish-head-25.jpg",
+      "show": [
+        {
+          "keep": "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal",
+          "caption": "teal"
+        },
+        {
+          "keep": "style_soft_veils_r1/locations/loc__01_vj_d5_r1.08_t0.421_whole_soft_veils_neon",
+          "caption": "neon"
+        },
+        {
+          "keep": "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember",
+          "caption": "ember"
+        }
+      ],
+      "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them: one stack, a palette for each reference.",
+      "kept": "four palettes (soft_veils_teal, _neon, _ember, _drift): 4 locations and 1 formulation (current)",
+      "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do.",
+      "palettes": [
+        {
+          "colormap": "soft_veils_teal",
+          "values": {},
+          "keeps": [
+            "style_soft_veils_r1/formulations/f_current__00_vm_d3_soft_veils_teal",
+            "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal"
+          ],
+          "score": 5
+        },
+        {
+          "colormap": "soft_veils_ember",
+          "values": {
+            "/layers/13/opacity": 0.3,
+            "/layers/14/opacity": 0.3,
+            "/layers/15/opacity": 0.3,
+            "/layers/16/opacity": 0.3,
+            "/layers/17/opacity": 0.3,
+            "/layers/18/opacity": 0.3,
+            "/tone/median": 0.226,
+            "/tone/p10": 0.072
+          },
+          "keeps": [
+            "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember"
+          ],
+          "score": 5
+        },
+        {
+          "colormap": "soft_veils_neon",
+          "values": {
+            "/layers/13/opacity": 0.3,
+            "/layers/14/opacity": 0.3,
+            "/layers/15/opacity": 0.3,
+            "/layers/16/opacity": 0.3,
+            "/layers/17/opacity": 0.3,
+            "/layers/18/opacity": 0.3,
+            "/tone/median": 0.098,
+            "/tone/p10": 0.004
+          },
+          "keeps": [
+            "style_soft_veils_r1/locations/loc__01_vj_d5_r1.08_t0.421_whole_soft_veils_neon"
+          ],
+          "score": 5
+        },
+        {
+          "colormap": "soft_veils_drift",
+          "values": {
+            "/layers/13/opacity": 0.35,
+            "/layers/14/opacity": 0.35,
+            "/layers/15/opacity": 0.35,
+            "/layers/16/opacity": 0.35,
+            "/layers/17/opacity": 0.35,
+            "/layers/18/opacity": 0.35,
+            "/tone/median": 0.281,
+            "/tone/p10": 0.0
+          },
+          "keeps": [
+            "style_soft_veils_r1/locations/loc__02_vm_d5_soft_veils_drift"
+          ],
+          "score": 5
+        }
+      ]
     }
   ]
 }

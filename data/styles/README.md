@@ -234,3 +234,6 @@ Each style's `notes` hold what its rounds taught. The general lessons:
   packs orbs along the set, shrinking towards it; one that reaches the set cuts its
   discs into crescents. An escaping orbit crosses the annulus once, so one disc is
   sparse and four at the compass points pack (`plastic_orbs`).
+- Fine lines that follow the set are a sheet of the smooth count at frame rank (`bands`
+  in the hundreds, no fill, a narrow rim), not at a `period`: periodic equipotentials
+  crowd into the set and alias to mush, rank cuts stay evenly spaced (`banded_lines`).

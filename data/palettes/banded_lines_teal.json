@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "banded_lines_teal",
+  "kind": "sequential",
+  "source": "a deep sea-blue through teal and sea green to a pale mint, then umber, ochre gold and cream, the albedo of the banded_lines style's echoes-of-the-mind-25.jpg entry: striped teal and gold bands crossed by glinting arcs",
+  "stops": [
+    [0.0, [4, 26, 38]],
+    [0.16, [10, 78, 92]],
+    [0.32, [40, 140, 130]],
+    [0.46, [140, 190, 140]],
+    [0.6, [110, 80, 34]],
+    [0.76, [196, 156, 58]],
+    [0.9, [232, 204, 110]],
+    [1.0, [248, 240, 205]]
+  ]
+}

@@ -229,10 +229,12 @@
 {"schema": 1, "kind": "admitted", "map": "cream_lace", "group": "map:cream_lace", "joined": false, "nearest": "map:Smoke & Madder", "m1": 0.046463}
 {"schema": 1, "kind": "admitted", "map": "gold_arcs", "group": "map:gold_arcs", "joined": false, "nearest": "map:Harvest Wallpaper", "m1": 0.054382}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_teal", "group": "map:soft_veils_teal", "joined": false, "nearest": "map:skyroads-25", "m1": 0.043109}
-{"schema": 1, "kind": "admitted", "map": "soft_veils_olive", "group": "map:soft_veils_olive", "joined": false, "nearest": "map:dynamo-25", "m1": 0.05626}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_neon", "group": "map:soft_veils_neon", "joined": false, "nearest": "map:Cobalt Orchid", "m1": 0.074301}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_ember", "group": "map:soft_veils_ember", "joined": false, "nearest": "map:Oxblood Standard", "m1": 0.052139}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_drift", "group": "map:soft_veils_drift", "joined": false, "nearest": "m23", "m1": 0.041005}
 {"schema": 1, "kind": "admitted", "map": "plastic_orbs", "group": "map:plastic_orbs", "joined": false, "nearest": "map:cream_tubes", "m1": 0.047945}
 {"schema": 1, "kind": "admitted", "map": "plastic_orbs_gemini", "group": "map:plastic_orbs_gemini", "joined": false, "nearest": "map:congruity-25", "m1": 0.043417}
 {"schema": 1, "kind": "admitted", "map": "plastic_orbs_dynamo", "group": "map:plastic_orbs_dynamo", "joined": false, "nearest": "map:Petrol & Amber", "m1": 0.043548}
+{"schema": 1, "kind": "admitted", "map": "banded_lines_rose", "group": "map:banded_lines_rose", "joined": false, "nearest": "map:Three Jewels", "m1": 0.077289}
+{"schema": 1, "kind": "admitted", "map": "banded_lines_teal", "group": "map:banded_lines_teal", "joined": false, "nearest": "map:Petrol Noon", "m1": 0.057181}
+{"schema": 1, "kind": "admitted", "map": "banded_lines_cobalt", "group": "map:banded_lines_cobalt", "joined": false, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.050278}

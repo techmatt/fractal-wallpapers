@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "name": "banded_lines",
+  "description": "bands of fine parallel lines sweeping through and around the set: hair-fine equipotential lines at an even spacing, a second family crossing them in a hatch, each escape band its own shade over a dark ramp, the set a pale hair along their spine",
+  "reference": {
+    "image": "forbidden-borders-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "suggested_colormap": "banded_lines_rose",
+  "reuses": [
+    "the palette layer by rank on the inverted smooth count, at a gamma of 2.4: a dark ramp that lifts only far from the set",
+    "a period sheet at one escape step on the smooth count, multiplied: a shade per escape band (the references' hard-edged bands)",
+    "rank sheets of the smooth count (the sheet layer's `bands` at frame rank), here at 220 and 420 bands with no fill and a narrow rim: hairlines along the equipotentials, screened light and multiplied dark",
+    "flame_veil_blue's `view` (turned 30°, zoom 0.9) on a third rank sheet at 160 bands: a second family of equipotentials crossing the first",
+    "glow_filaments' falloff glows on de: a halo and a pale hair along the set",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "The look, refined from the three references (forbidden-borders and echoes-of-the-mind, -25.jpg, signed exoteric.roach.org, and fractal_abstraction_lines): fine parallel lines gathered into bands, each band a sweep of evenly spaced hairlines that bends with the structure; two families crossing at a shallow angle so their crossings glint (forbidden-borders' periwinkle hatch over maroon and navy arcs), coarsened into broad alternating stripes in echoes-of-the-mind's teal and gold, and fanned off a white spine on black in abstraction_lines' cobalt. The lines carry the vibe; the ground is a dark ramp and the band shade.",
+    "Added: nothing new to the engine. The lines are the set's own equipotentials, cut by a sheet at **frame rank** (`bands`, not `period`): a `period` on the raw smooth count crowds without bound into the set and aliases to grey mush at a draft, while equal-rank cuts space the lines by area, so they stay a few pixels apart everywhere and still bend round every filament. The crossing family is the same cut through a turned `view`. Palette entries, one per reference (banded_lines_rose the default from forbidden-borders; _teal from echoes-of-the-mind: 90 filled bands for broad stripes and a stronger band shade, tone 0.458/0.165; _cobalt from abstraction_lines: the ramp not inverted, so the set is the bright spine and the far field black, tone 0.1/0.0 against the reference's 0.0 median, which a tone curve cannot reach).",
+    "Lessons (round one, item 043): **the field-lines channel does not carry a deep seat**: `lines` at radius 2 on a gallery Julia seat drew fine hatch only in the outermost band and noise everywhere nearer the set, and `divide` 2 flattened it to tone (crescent_lines' finding, met again). **The stripe average's level lines read as scribble, not bands**, through a crossing view. **A rank sheet on a view at few bands (9) draws soft blobs**, wide translucent shapes over the set; the bright glints are a period sheet on the frame's own count instead (the `glints` formulation). The scout's thin seats (`--max-ink 0.10`, phoenix left out: a phoenix draft costs minutes) gave 22 of 40, half of them spirals, dropped by eye."
+  ],
+  "style": {
+    "name": "banded_lines",
+    "interior": {
+      "rgb": "#06040c"
+    },
+    "tone": {
+      "median": 0.205,
+      "p10": 0.046
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "invert": true
+        },
+        "palette": {
+          "cycles": 1.0,
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.4
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "edge": 0.5,
+          "fill": 0.5
+        },
+        "color": {
+          "palette": 0.05
+        },
+        "blend": "multiply",
+        "opacity": 0.25
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "bands": 220.0,
+          "edge": 0.14,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.85
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 30.0,
+            "zoom": 0.9
+          }
+        },
+        "sheet": {
+          "bands": 160.0,
+          "edge": 0.14,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.75
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "bands": 420.0,
+          "edge": 0.25,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.02
+        },
+        "blend": "multiply",
+        "opacity": 0.25
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.003,
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "add",
+        "opacity": 0.6
+      }
+    ]
+  }
+}
