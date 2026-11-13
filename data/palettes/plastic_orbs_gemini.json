@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "plastic_orbs_gemini",
+  "kind": "sequential",
+  "source": "plastic_orbs_gemini, authored as 9 control points as the albedo of the plastic_orbs style from gemini-25.jpg: a near-black plum ground through maroon and rust (the reference's lower deciles) into tan and a warm cream for the satin webs, each stop a little more saturated than the reference's means and its top below them, since the lights supply the near-whites; the blue orbs are the stack's literal paint.",
+  "stops": [
+    [0.0, [12, 8, 12]],
+    [0.15, [30, 14, 20]],
+    [0.3, [58, 26, 26]],
+    [0.45, [92, 44, 34]],
+    [0.58, [128, 70, 46]],
+    [0.7, [170, 108, 64]],
+    [0.82, [206, 150, 92]],
+    [0.92, [226, 184, 122]],
+    [1.0, [240, 212, 152]]
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "plastic_orbs_dynamo",
+  "kind": "sequential",
+  "source": "plastic_orbs_dynamo, authored as 9 control points as the albedo of the plastic_orbs style from dynamo-25.jpg: a deep teal ground through sea teal (the reference's lower deciles), crossing a burnt orange (its streaks) into tan and a pale celadon cream for the satin webs, the top held below the reference's brightest decile since the lights supply the near-whites; the pale orbs are the entry's literal paint.",
+  "stops": [
+    [0.0, [8, 40, 44]],
+    [0.15, [14, 62, 66]],
+    [0.3, [24, 90, 92]],
+    [0.45, [44, 118, 116]],
+    [0.58, [168, 110, 56]],
+    [0.7, [200, 156, 98]],
+    [0.82, [214, 196, 148]],
+    [0.92, [216, 228, 196]],
+    [1.0, [230, 244, 228]]
+  ]
+}

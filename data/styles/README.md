@@ -230,3 +230,7 @@ Each style's `notes` hold what its rounds taught. The general lessons:
 - The stripe average runs out as straight rays far from the set: a sheet or crest of it
   through views wants the inverted `de` as a mask, or it cuts frame-filling blades
   (`soft_veils`). A Julia set at a repelling fixed point can still hold a wide interior.
+- A bubble disc placed off the set (beyond every gallery degree's radius, `escaped`)
+  packs orbs along the set, shrinking towards it; one that reaches the set cuts its
+  discs into crescents. An escaping orbit crosses the annulus once, so one disc is
+  sparse and four at the compass points pack (`plastic_orbs`).
