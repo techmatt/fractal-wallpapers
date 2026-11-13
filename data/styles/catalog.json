@@ -353,15 +353,15 @@
       "show": [
         {
           "keep": "style_teal_tunnel_r1/variants/turns3",
-          "caption": "Three turns of the tunnel: nine arms and bigger cells"
+          "caption": "Teal arches curling off a branching Julia set, nine arms to a turn"
         },
         {
           "keep": "style_teal_tunnel_r1/shortlist/09_m_seed4",
-          "caption": "A two-arm branch of the Mandelbrot set seen as a tunnel"
+          "caption": "Teal arches along a two-arm branch of the Mandelbrot set"
         },
         {
           "keep": "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
-          "caption": "A branching Julia set seen down the end of one branch"
+          "caption": "Teal arches running down a branching Julia set towards its tip"
         }
       ],
       "public": {
