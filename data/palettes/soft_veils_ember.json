@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "soft_veils_ember",
+  "kind": "sequential",
+  "source": "a dark oxblood through rust and orange to cream, with a steel blue between, the albedo of the soft_veils style's detonation-25.jpg entry: orange veils and cream feathered strands bursting from a hot core on a dark brown ground",
+  "stops": [
+    [0.0, [20, 8, 6]],
+    [0.2, [62, 22, 14]],
+    [0.4, [150, 50, 20]],
+    [0.55, [96, 118, 150]],
+    [0.7, [222, 104, 44]],
+    [0.85, [226, 180, 140]],
+    [1.0, [250, 234, 210]]
+  ]
+}

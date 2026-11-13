@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "soft_veils_drift",
+  "kind": "sequential",
+  "source": "a black through navy and cobalt to sky blue and a pale sand, the albedo of the soft_veils style's drift-25.jpg entry: combed blue ribbons and one sand-coloured sheaf on black",
+  "stops": [
+    [0.0, [2, 3, 6]],
+    [0.2, [16, 32, 66]],
+    [0.4, [34, 72, 130]],
+    [0.6, [60, 130, 190]],
+    [0.8, [120, 190, 220]],
+    [1.0, [226, 214, 166]]
+  ]
+}

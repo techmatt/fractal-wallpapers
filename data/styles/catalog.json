@@ -1421,71 +1421,147 @@
       "note": "Kept nothing in round one (item 036); its map left the library, since only picked palettes are saved."
     },
     {
-      "style": "cream_lace",
+      "style": "lace_holes",
       "score": 3,
       "item": "037",
       "reference": "devilfish-25.jpg",
       "show": [],
-      "what": "A glowing cream and blue lace of fine strands pierced by dark round holes of every size, each rim a bright thread, feathered blue strands on near black.",
-      "kept": "round one's picks not yet saved as keeps",
-      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt: the interior colouring (the bubbles) is liked.",
+      "what": "A glowing lace web of fine strands pierced by round holes of every size, each hole domed as a lit glass bead: one stack, a palette for each reference.",
+      "kept": "four palettes (cream_lace, copper_mail, gold_arcs, bead_strands): 2 locations and 5 formulations (3 bubbles, 2 current)",
+      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim, an inside rim glow and an inside light doming each hole; Julia holes placed by hand) · the default stack is the bubbles formulation, bead_strands' structure, so all four kept styles are one mode; ember_plume kept nothing and was discarded · Matt: okay; the interior colouring approaches, the bubbles formulation, are cool.",
       "palettes": [
         {
           "colormap": "cream_lace",
+          "was": "cream_lace",
+          "reference": "devilfish-25.jpg",
           "values": {},
-          "keeps": []
-        }
-      ]
-    },
-    {
-      "style": "copper_mail",
-      "score": 3,
-      "item": "037",
-      "reference": "dragon-mail-25.jpg",
-      "show": [],
-      "what": "A copper lattice of lens-shaped holes, a warm lace of fine strands round every hole and dark brown in each.",
-      "kept": "round one's picks not yet saved as keeps",
-      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt: the interior colouring (the bubbles) is liked.",
-      "palettes": [
+          "keeps": [
+            "style_lace_holes_r1/cream_lace/formulations/cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
+            "style_lace_holes_r1/cream_lace/formulations/cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace"
+          ],
+          "score": 3
+        },
         {
           "colormap": "copper_mail",
-          "values": {},
-          "keeps": []
-        }
-      ]
-    },
-    {
-      "style": "gold_arcs",
-      "score": 3,
-      "item": "037",
-      "reference": "flamed-25.jpg",
-      "show": [],
-      "what": "Bright gold arcs of lace sweeping round holes of every size on a warm amber veil.",
-      "kept": "round one's picks not yet saved as keeps",
-      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt: the interior colouring (the bubbles) is liked.",
-      "palettes": [
+          "was": "copper_mail",
+          "reference": "dragon-mail-25.jpg",
+          "values": {
+            "/interior": {
+              "rgb": "#5a2412"
+            },
+            "/layers/0/palette/gamma": 2.5,
+            "/layers/1/color": {
+              "palette": 0.6
+            },
+            "/layers/1/opacity": 0.9,
+            "/layers/2/color": {
+              "palette": 0.75
+            },
+            "/layers/3/color": {
+              "palette": 0.9
+            },
+            "/layers/4/light/highlight": {
+              "palette": 0.9
+            },
+            "/layers/5/color": {
+              "palette": 0.7
+            },
+            "/layers/5/opacity": 0.35,
+            "/layers/6/color": {
+              "palette": 0.75
+            },
+            "/tone/median": 0.328,
+            "/tone/p10": 0.158
+          },
+          "keeps": [
+            "style_lace_holes_r1/copper_mail/locations/copper_mail__loc__09_hand_basilica2_value_copper_mail",
+            "style_lace_holes_r1/copper_mail/formulations/copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail"
+          ],
+          "score": 3
+        },
         {
           "colormap": "gold_arcs",
-          "values": {},
-          "keeps": []
-        }
-      ]
-    },
-    {
-      "style": "bead_strands",
-      "score": 3,
-      "item": "037",
-      "reference": "deepsea-life-25.jpg",
-      "show": [],
-      "what": "Blue glowing strands strung with bead bubbles, every hole of the set a glass bead with a bright rim, on violet black.",
-      "kept": "round one's picks not yet saved as keeps",
-      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim; Julia holes placed by hand) · Matt scored it 3 with no reason recorded.",
-      "palettes": [
+          "was": "gold_arcs",
+          "reference": "flamed-25.jpg",
+          "values": {
+            "/interior": {
+              "rgb": "#4a2a12"
+            },
+            "/layers/0/palette/gamma": 2.5,
+            "/layers/1/color": {
+              "palette": 0.9
+            },
+            "/layers/1/opacity": 0.9,
+            "/layers/2/color": {
+              "palette": 1.0
+            },
+            "/layers/3/color": {
+              "palette": 1.0
+            },
+            "/layers/4/light/highlight": {
+              "palette": 1.0
+            },
+            "/layers/5/color": {
+              "palette": 0.9
+            },
+            "/layers/5/opacity": 0.35,
+            "/layers/6/color": {
+              "palette": 1.0
+            },
+            "/layers/6/opacity": 0.7,
+            "/tone/median": 0.547,
+            "/tone/p10": 0.364
+          },
+          "keeps": [
+            "style_lace_holes_r1/gold_arcs/formulations/gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
+          ],
+          "score": 3
+        },
         {
           "colormap": "bead_strands",
-          "values": {},
-          "keeps": []
+          "was": "bead_strands",
+          "reference": "deepsea-life-25.jpg",
+          "values": {
+            "/layers/1/color": {
+              "palette": 0.65
+            },
+            "/layers/1/mask/power": 1.5,
+            "/layers/1/opacity": 0.9,
+            "/layers/2/color": {
+              "palette": 0.92
+            },
+            "/layers/2/mask/power": 4.0,
+            "/layers/2/opacity": 0.7,
+            "/layers/3/color": {
+              "palette": 0.85
+            },
+            "/layers/4/light/highlight": {
+              "palette": 0.85
+            },
+            "/layers/5/color": {
+              "palette": 0.7
+            },
+            "/layers/5/falloff": 0.001,
+            "/layers/5/opacity": 0.3,
+            "/layers/6/color": {
+              "palette": 1.0
+            },
+            "/layers/6/opacity": 0.7,
+            "/tone/median": 0.185,
+            "/tone/p10": 0.0
+          },
+          "keeps": [
+            "style_lace_holes_r1/bead_strands/locations/bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
+            "style_lace_holes_r1/bead_strands/formulations/bead_strands__f_current__01_hand_basilica2_alpha_bead_strands"
+          ],
+          "score": 3
         }
+      ],
+      "aliases": [
+        "bead_strands",
+        "copper_mail",
+        "cream_lace",
+        "gold_arcs"
       ]
     },
     {
@@ -1498,7 +1574,7 @@
       "palettes": [],
       "what": "a fiery plume of lace, red and orange round black holes of every size, feathering out into blue and violet strands on black",
       "kept": "nothing",
-      "note": "Matt: nothing kept in round one (item 037), so it is dropped."
+      "note": "Kept nothing in round one (item 037); its map left the library, since only picked palettes are saved."
     }
   ]
 }

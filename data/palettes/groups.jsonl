@@ -227,5 +227,9 @@
 {"schema": 1, "kind": "admitted", "map": "bead_strands", "group": "map:bead_strands", "joined": false, "nearest": "map:Opal & Ink", "m1": 0.044027}
 {"schema": 1, "kind": "admitted", "map": "copper_mail", "group": "map:flame_wisp_amber", "joined": true, "nearest": "map:flame_wisp_amber", "m1": 0.029909}
 {"schema": 1, "kind": "admitted", "map": "cream_lace", "group": "map:cream_lace", "joined": false, "nearest": "map:Smoke & Madder", "m1": 0.046463}
-{"schema": 1, "kind": "admitted", "map": "ember_plume", "group": "map:ember_plume", "joined": false, "nearest": "map:Ice-to-Ember Cliff", "m1": 0.088299}
 {"schema": 1, "kind": "admitted", "map": "gold_arcs", "group": "map:gold_arcs", "joined": false, "nearest": "map:Harvest Wallpaper", "m1": 0.054382}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_teal", "group": "map:soft_veils_teal", "joined": false, "nearest": "map:skyroads-25", "m1": 0.043109}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_olive", "group": "map:soft_veils_olive", "joined": false, "nearest": "map:dynamo-25", "m1": 0.05626}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_neon", "group": "map:soft_veils_neon", "joined": false, "nearest": "map:Cobalt Orchid", "m1": 0.074301}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_ember", "group": "map:soft_veils_ember", "joined": false, "nearest": "map:Oxblood Standard", "m1": 0.052139}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_drift", "group": "map:soft_veils_drift", "joined": false, "nearest": "m23", "m1": 0.041005}

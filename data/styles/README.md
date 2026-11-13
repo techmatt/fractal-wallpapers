@@ -227,3 +227,6 @@ Each style's `notes` hold what its rounds taught. The general lessons:
   target dimming does nothing; balance comes from glow widths, fog and trap coverage.
 - A gallery seat is a deep zoom: bound an entry trap by frame fraction (`largest`).
 - A minibrot or hyperbolic Julia seat is Newton on `f^p(0) = 0` (`crescent_lines`).
+- The stripe average runs out as straight rays far from the set: a sheet or crest of it
+  through views wants the inverted `de` as a mask, or it cuts frame-filling blades
+  (`soft_veils`). A Julia set at a repelling fixed point can still hold a wide interior.
