@@ -546,6 +546,17 @@
             "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945"
           ],
           "score": 3
+        },
+        {
+          "colormap": "golden_egg_petals",
+          "values": {
+            "/interior": {
+              "rgb": "#0a0a10"
+            },
+            "/tone/median": 0.456,
+            "/tone/p10": 0.194
+          },
+          "keeps": []
         }
       ]
     },
@@ -616,7 +627,8 @@
           "keeps": [
             "style_field_lines_r1/formulations/f_doubling__00_julia-d2-early_p2_10_field_lines",
             "style_field_lines_r1/locations/locations__04_julia-d2-p2_04_field_lines",
-            "style_field_lines_r1/locations/locations__10_julia-d2-p5_30_field_lines"
+            "style_field_lines_r1/locations/locations__10_julia-d2-p5_30_field_lines",
+            "style_banded_lines_r1/formulations/baseline_field_lines__01_julia-mandelbrot_ac9b1000_field_lines"
           ],
           "score": 3
         }
@@ -649,6 +661,57 @@
             "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments"
           ],
           "score": 2
+        },
+        {
+          "colormap": "law_of_ice_glow",
+          "values": {
+            "/layers/0/color": {
+              "rgb": "#080c48"
+            },
+            "/layers/3/color": {
+              "palette": 0.62
+            },
+            "/layers/4/color": {
+              "palette": 0.66
+            },
+            "/layers/5/color": {
+              "palette": 0.6
+            },
+            "/layers/6/color": {
+              "palette": 0.74
+            },
+            "/layers/7/color": {
+              "palette": 0.8
+            },
+            "/tone/median": 0.694,
+            "/tone/p10": 0.214,
+            "/layers/1/opacity": 0.9,
+            "/layers/3/opacity": 0.3,
+            "/layers/2/opacity": 0.2,
+            "/layers/6/opacity": 0.25,
+            "/layers/7/opacity": 0.25
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "holy_dark_glow",
+          "values": {
+            "/layers/0/color": {
+              "rgb": "#0a0c10"
+            },
+            "/tone/median": 0.159,
+            "/tone/p10": 0.036,
+            "/layers/3/color": {
+              "palette": 0.7
+            },
+            "/layers/4/color": {
+              "palette": 0.75
+            },
+            "/layers/7/color": {
+              "palette": 0.95
+            }
+          },
+          "keeps": []
         }
       ]
     },
@@ -1391,6 +1454,48 @@
             "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth"
           ],
           "score": 2
+        },
+        {
+          "colormap": "krinshinda_smooth",
+          "values": {
+            "/interior": {
+              "rgb": "#3c1408"
+            },
+            "/layers/0/palette/cycles": 1.0,
+            "/layers/1/color": {
+              "rgb": "#0a0614"
+            },
+            "/tone/median": 0.182,
+            "/tone/p10": 0.033
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "lander_smooth",
+          "values": {
+            "/interior": {
+              "rgb": "#1a0806"
+            },
+            "/layers/0/palette/cycles": 1.0,
+            "/layers/1/color": {
+              "rgb": "#050310"
+            },
+            "/tone/median": 0.024,
+            "/tone/p10": 0.003
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "learned_smooth",
+          "values": {
+            "/interior": {
+              "rgb": "#14303c"
+            },
+            "/layers/0/palette/cycles": 6.0,
+            "/tone/median": 0.606,
+            "/tone/p10": 0.303
+          },
+          "keeps": []
         }
       ],
       "aliases": [
@@ -1668,6 +1773,53 @@
           "colormap": "jewel_lace_amber",
           "values": {},
           "keeps": []
+        }
+      ]
+    },
+    {
+      "style": "plastic_orbs",
+      "score": 1,
+      "status": "discarded",
+      "item": "042",
+      "reference": "eirene-25.jpg",
+      "show": [],
+      "palettes": [],
+      "what": "glossy plastic orbs packed along the set: four circle packings of domed blue discs, each with one hard highlight and a pale rim, shrinking as they crowd the set's cream satin lace, over a dark ground with soft lit tubes of the smooth count",
+      "kept": "nothing",
+      "note": "Kept nothing in round one (item 042); its three maps left the library, since only picked palettes are saved · Matt: these don't look fractal in a good way."
+    },
+    {
+      "style": "banded_lines",
+      "score": 2,
+      "item": "043",
+      "reference": "forbidden-borders-25.jpg",
+      "show": [],
+      "what": "Bands of fine parallel lines sweeping through and around the set: evenly spaced equipotential hairlines, a second family crossing them, each escape band its own shade: one stack, a palette for each reference.",
+      "kept": "two palettes (banded_lines_teal, banded_lines_rose): 1 palette tile (teal) and 1 formulation (glints, in rose)",
+      "note": "Engine: nothing new (sheets of the smooth count at frame rank through the frame and a turned view, a band shade, a de hair) · no rose locations and no cobalt kept; cobalt's map left the library, rose stays only as the glints keep's map; the field_lines baseline tile kept is a field_lines keep · Matt: okay to keep but not great; the banding is mostly too high frequency.",
+      "palettes": [
+        {
+          "colormap": "banded_lines_rose",
+          "values": {},
+          "keeps": [
+            "style_banded_lines_r1/formulations/f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose"
+          ],
+          "score": 2
+        },
+        {
+          "colormap": "banded_lines_teal",
+          "values": {
+            "/layers/1/opacity": 0.45,
+            "/layers/2/sheet/bands": 90,
+            "/layers/2/sheet/edge": 0.5,
+            "/layers/2/sheet/fill": 0.4,
+            "/tone/median": 0.458,
+            "/tone/p10": 0.165
+          },
+          "keeps": [
+            "style_banded_lines_r1/banded_lines_teal/pal__01_julia-multibrot4_364f02ea_banded_lines_teal"
+          ],
+          "score": 2
         }
       ]
     }

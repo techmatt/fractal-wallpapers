@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "law_of_ice_glow",
+  "kind": "sequential",
+  "source": "law_of_ice_glow, authored as 7 control points as the albedo of law-of-ice-25.jpg, for teal_filaments: an indigo-navy ground through royal blue and cyan to an ice white, the glows' colours read off its upper half.",
+  "stops": [
+    [0.0, [10, 12, 60]],
+    [0.2, [28, 44, 150]],
+    [0.4, [40, 110, 210]],
+    [0.6, [50, 170, 240]],
+    [0.75, [110, 210, 250]],
+    [0.88, [190, 240, 255]],
+    [1.0, [245, 252, 255]]
+  ]
+}

@@ -9,6 +9,54 @@
   "folder": "fractal-drive-sync/style-keeps/field_lines",
   "keeps": [
     {
+      "id": "style_banded_lines_r1/formulations/baseline_field_lines__01_julia-mandelbrot_ac9b1000_field_lines",
+      "picker": "style_banded_lines_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "baseline_field_lines__01_julia-mandelbrot_ac9b1000_field_lines"
+        }
+      ],
+      "label": "baseline · julia-mandelbrot_ac9b1000",
+      "image": "style_banded_lines_r1__baseline_field_lines__01_julia-mandelbrot_ac9b1000_field_lines.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_ac9b1000",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.28334304300385627",
+            "center_im": "0.0024695816391402704",
+            "width": "1.3389441805159024"
+          },
+          "maxiter": 5396,
+          "note": "final139_general seat 898 (direct_trap_screen, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 898,
+            "key": "ac9b1000580a5758",
+            "p_spiral": 0.056706
+          },
+          "ink": 0.09999
+        },
+        "style": "field_lines",
+        "stack": "field_lines@e593f8ba",
+        "colormap": "field_lines",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_field_lines_r1/formulations/f_doubling__00_julia-d2-early_p2_10_field_lines",
       "picker": "style_field_lines_r1",
       "picked": [

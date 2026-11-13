@@ -1,0 +1,392 @@
+{
+  "schema": 1,
+  "name": "banded_lines",
+  "reference": {
+    "image": "forbidden-borders-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/banded_lines",
+  "keeps": [
+    {
+      "id": "style_banded_lines_r1/banded_lines_teal/pal__01_julia-multibrot4_364f02ea_banded_lines_teal",
+      "picker": "style_banded_lines_r1",
+      "picked": [
+        {
+          "row": "banded_lines_teal",
+          "key": "pal__01_julia-multibrot4_364f02ea_banded_lines_teal"
+        }
+      ],
+      "label": "julia-multibrot4_364f02ea",
+      "image": "style_banded_lines_r1__pal__01_julia-multibrot4_364f02ea_banded_lines_teal.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot4_364f02ea",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.34472225250015903",
+            "center_im": "-0.5616321060941554",
+            "width": "1.106692474831146"
+          },
+          "maxiter": 5726,
+          "note": "final139_general seat 982 (itinerary, julia:multibrot4)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 982,
+            "key": "364f02eae7d2c1f3",
+            "p_spiral": 0.014195
+          },
+          "ink": 0.09507
+        },
+        "style": "e_banded_lines_teal",
+        "stack": "e_banded_lines_teal@0b096c02",
+        "colormap": "banded_lines_teal",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_banded_lines_r1/formulations/f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose",
+      "picker": "style_banded_lines_r1",
+      "picked": [
+        {
+          "row": "formulations",
+          "key": "f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose"
+        }
+      ],
+      "label": "glints · julia-mandelbrot_ac9b1000",
+      "image": "style_banded_lines_r1__f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_ac9b1000",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.28334304300385627",
+            "center_im": "0.0024695816391402704",
+            "width": "1.3389441805159024"
+          },
+          "maxiter": 5396,
+          "note": "final139_general seat 898 (direct_trap_screen, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 898,
+            "key": "ac9b1000580a5758",
+            "p_spiral": 0.056706
+          },
+          "ink": 0.09999
+        },
+        "style": "f_glints",
+        "stack": "f_glints@beec7da1",
+        "colormap": "banded_lines_rose",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "e_banded_lines_teal@0b096c02": {
+      "name": "e_banded_lines_teal",
+      "interior": {
+        "rgb": "#06040c"
+      },
+      "tone": {
+        "median": 0.458,
+        "p10": 0.165
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.4
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.5,
+            "fill": 0.5
+          },
+          "color": {
+            "palette": 0.05
+          },
+          "blend": "multiply",
+          "opacity": 0.45
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 90,
+            "edge": 0.5,
+            "fill": 0.4
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 30.0,
+              "zoom": 0.9
+            }
+          },
+          "sheet": {
+            "bands": 160,
+            "edge": 0.14,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.75
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 420,
+            "edge": 0.25,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.02
+          },
+          "blend": "multiply",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "add",
+          "opacity": 0.6
+        }
+      ]
+    },
+    "f_glints@beec7da1": {
+      "name": "f_glints",
+      "interior": {
+        "rgb": "#06040c"
+      },
+      "tone": {
+        "median": 0.205,
+        "p10": 0.046
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.4
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.5,
+            "fill": 0.5
+          },
+          "color": {
+            "palette": 0.05
+          },
+          "blend": "multiply",
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 220,
+            "edge": 0.14,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.85
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 30.0,
+              "zoom": 0.9
+            }
+          },
+          "sheet": {
+            "bands": 160,
+            "edge": 0.14,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.75
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 420,
+            "edge": 0.25,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.02
+          },
+          "blend": "multiply",
+          "opacity": 0.25
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 2.0,
+            "edge": 0.03,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "add",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "add",
+          "opacity": 0.6
+        }
+      ]
+    }
+  }
+}

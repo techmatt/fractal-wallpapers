@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "holy_dark_glow",
+  "kind": "sequential",
+  "source": "holy_dark_glow, authored as 7 control points as the albedo of holy-dark-25.jpg, for teal_filaments: a blue-black ground through slate and steel blue to a silver white.",
+  "stops": [
+    [0.0, [8, 10, 14]],
+    [0.2, [20, 26, 36]],
+    [0.4, [40, 52, 70]],
+    [0.6, [76, 94, 120]],
+    [0.75, [120, 140, 170]],
+    [0.88, [180, 196, 220]],
+    [1.0, [235, 242, 250]]
+  ]
+}

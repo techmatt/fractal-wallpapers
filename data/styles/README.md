@@ -240,3 +240,7 @@ Each style's `notes` hold what its rounds taught. The general lessons:
 - Points of light on the lace are a disc lattice masked to the set, a halo under a core;
   a strip lattice is no star flare: `largest` bounds a strip's width, not its length, so
   its pullbacks run as frame-crossing hairs (`jewel_lace`).
+- A plain escape-time reference is a palette entry, not a style: smooth or striped
+  colouring goes to `smooth_bands` (hard-edged stripes are a stepped map at more cycles),
+  a glow round the set to `teal_filaments`, lit relief to `lit_petals`. A glow entry on a
+  bright reference misses p10: its only darks are the far field (`law_of_ice_glow`).

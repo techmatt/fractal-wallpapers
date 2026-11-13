@@ -232,12 +232,14 @@
 {"schema": 1, "kind": "admitted", "map": "soft_veils_neon", "group": "map:soft_veils_neon", "joined": false, "nearest": "map:Cobalt Orchid", "m1": 0.074301}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_ember", "group": "map:soft_veils_ember", "joined": false, "nearest": "map:Oxblood Standard", "m1": 0.052139}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_drift", "group": "map:soft_veils_drift", "joined": false, "nearest": "m23", "m1": 0.041005}
-{"schema": 1, "kind": "admitted", "map": "plastic_orbs", "group": "map:plastic_orbs", "joined": false, "nearest": "map:cream_tubes", "m1": 0.047945}
-{"schema": 1, "kind": "admitted", "map": "plastic_orbs_gemini", "group": "map:plastic_orbs_gemini", "joined": false, "nearest": "map:congruity-25", "m1": 0.043417}
-{"schema": 1, "kind": "admitted", "map": "plastic_orbs_dynamo", "group": "map:plastic_orbs_dynamo", "joined": false, "nearest": "map:Petrol & Amber", "m1": 0.043548}
 {"schema": 1, "kind": "admitted", "map": "banded_lines_rose", "group": "map:banded_lines_rose", "joined": false, "nearest": "map:Three Jewels", "m1": 0.077289}
 {"schema": 1, "kind": "admitted", "map": "banded_lines_teal", "group": "map:banded_lines_teal", "joined": false, "nearest": "map:Petrol Noon", "m1": 0.057181}
-{"schema": 1, "kind": "admitted", "map": "banded_lines_cobalt", "group": "map:banded_lines_cobalt", "joined": false, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.050278}
 {"schema": 1, "kind": "admitted", "map": "jewel_lace", "group": "map:jewel_lace", "joined": false, "nearest": "map:Claret Ember", "m1": 0.066664}
 {"schema": 1, "kind": "admitted", "map": "jewel_lace_eternity", "group": "map:jewel_lace_eternity", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "m1": 0.06299}
 {"schema": 1, "kind": "admitted", "map": "jewel_lace_amber", "group": "map:jewel_lace_amber", "joined": false, "nearest": "map:forgery-25", "m1": 0.046603}
+{"schema": 1, "kind": "admitted", "map": "krinshinda_smooth", "group": "map:krinshinda_smooth", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kbw_5_98_c40", "m1": 0.085757}
+{"schema": 1, "kind": "admitted", "map": "lander_smooth", "group": "map:lander_smooth", "joined": false, "nearest": "map:Warm Core in the Deep", "m1": 0.077002}
+{"schema": 1, "kind": "admitted", "map": "learned_smooth", "group": "map:learned_smooth", "joined": false, "nearest": "map:abstract-wallpaper-backgrounds-hd", "m1": 0.06039}
+{"schema": 1, "kind": "admitted", "map": "law_of_ice_glow", "group": "map:law_of_ice_glow", "joined": false, "nearest": "map:transcendence-25", "m1": 0.049391}
+{"schema": 1, "kind": "admitted", "map": "holy_dark_glow", "group": "map:holy_dark_glow", "joined": false, "nearest": "map:not-yet-lost-25", "m1": 0.045816}
+{"schema": 1, "kind": "admitted", "map": "golden_egg_petals", "group": "map:golden_egg_petals", "joined": false, "nearest": "map:Three Jewels, Pale Room", "m1": 0.058255}

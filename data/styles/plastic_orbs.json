@@ -7,7 +7,7 @@
     "folder": "fractal-drive-sync/style-refs",
     "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
   },
-  "suggested_colormap": "plastic_orbs",
+  "suggested_colormap": "cream_tubes",
   "reuses": [
     "the bubble trap's disc (bronze_packing, glossy_lobes) as the orbs, four times: discs of radius 0.8 at 2.4 and -2.4 on both axes, read at entry on escaping orbits only, between 0.003 (smallest) and 0.08 (largest) frames wide, painted a literal blue",
     "glossy_lobes' dome: a light on each disc's height at period 2, rings 1, here at specular 1 and shininess 60 for a hard plastic glint, and an inverted height glow for a pale rim",
@@ -18,6 +18,7 @@
   ],
   "adds": [],
   "notes": [
+    "Discarded (item 045): Matt's verdict on round one, \"these don't look fractal in a good way\", kept nothing, so its three maps (plastic_orbs, plastic_orbs_gemini, plastic_orbs_dynamo) left the library (only picked palettes are saved); it suggests cream_tubes, the library map nearest plastic_orbs by M1 when it was admitted.",
     "The look, refined from the three references (dynamo, eirene, gemini, all -25.jpg, Apophysis-style flames signed exoteric.roach.org, the artist of glossy_lobes' reference): glossy, plastic-looking orbs, each one smooth dome with one hard white glint and a soft rim, sitting in the holes of a satin web; the web is broad cream sheets whose strands gather at bright star junctions, the orbs smaller and more crowded where the web is finest (gemini's row of orbs shrinking down a spiral arm is the clearest). eirene is blue orbs on slate with ivory webs, gemini blue orbs on maroon with tan webs, dynamo pale celadon orbs on teal with cream and orange webs and cyan at the junctions. Read as one stack in three maps: the orbs carry the vibe.",
     "Added: nothing. The orbs are the bubble trap's disc placed off the set (centre 2.4, radius 0.8, so the disc stays outside every gallery degree's set and only escaping orbits cross it): each entry pulls back as a round disc, smaller each step towards the set, so the packing is the set's own and promises more orbs at every zoom.",
     "Round one taught three things. **A disc that reaches the set cuts its orbs**: at centre 1.6, radius 0.7 the disc overlapped the degree-5 and -6 sets and phoenix seats, and the orbs drew as crescents and fragments; at 2.4 and 0.8 every orb is whole. **One disc is sparse, four are packed**: an escaping orbit crosses the annulus once, so one disc catches the few orbits passing its sector; four discs at the compass points fill the gaps along the set. **The lace sets the p90, not the glows**: with a rank ground at gamma 1 every draft read p90 0.82 against eirene's 0.56; narrowing the glows bought 0.68 and a gamma-3.5 ground (more of the frame dark, the cream only next to the set) 0.57 to 0.64, all twelve location drafts holding. Known flaw: an orb near the 0.08-frame `largest` bound can be cut along an edge, since the bound reads `radius / |dz|` per sample and that varies across one disc; a few per frame, at the largest orbs.",
