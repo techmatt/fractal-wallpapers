@@ -244,3 +244,7 @@ Each style's `notes` hold what its rounds taught. The general lessons:
   colouring goes to `smooth_bands` (hard-edged stripes are a stepped map at more cycles),
   a glow round the set to `teal_filaments`, lit relief to `lit_petals`. A glow entry on a
   bright reference misses p10: its only darks are the far field (`law_of_ice_glow`).
+- An entry's map is read at fixed slots of its stack, so a many-hued reference puts each
+  hue at the slot that draws it, and screen-blended layers wash towards the map's top:
+  push the albedo well past the reference's saturation (`soft_veils`' notes have the
+  slots).

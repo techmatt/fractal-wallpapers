@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "soft_veils_moss",
+  "kind": "sequential",
+  "source": "soft_veils_moss, authored as 8 control points as the albedo of the soft_veils style's entry from hazy-summer-garden-25.jpg: a deep teal-green ground through green and sage, a rose-red and tan bloom, to gold-cream.",
+  "stops": [
+    [0.0, [14, 52, 44]],
+    [0.2, [30, 90, 72]],
+    [0.38, [80, 130, 96]],
+    [0.5, [130, 150, 110]],
+    [0.62, [190, 96, 86]],
+    [0.76, [216, 170, 120]],
+    [0.9, [236, 214, 160]],
+    [1.0, [246, 240, 214]]
+  ]
+}

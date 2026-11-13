@@ -7,7 +7,7 @@
     "folder": "fractal-drive-sync/style-refs",
     "made_with": "a flame fractal render (lace, lens petals and star flares), 2560x1600"
   },
-  "suggested_colormap": "jewel_lace",
+  "suggested_colormap": "Claret Ember",
   "reuses": [
     "gilded_orbs' ground: field de, inverted, through the map by rank (gamma 2.2 here): blue-black far from the set, the map's copper top beside it",
     "gilded_orbs' engraving: a period sheet on field smooth (four fine lines a band), screened, and field tia multiplied in",
@@ -18,6 +18,7 @@
   ],
   "adds": [],
   "notes": [
+    "Discarded (item 046): Matt's verdict on round one, \"nothing in here looks aesthetically interesting enough to add\", kept nothing in the stack, so its maps (jewel_lace, jewel_lace_eternity) left the library (only picked palettes are saved); it suggests Claret Ember, the library map nearest jewel_lace by M1 when it was admitted. The one tile kept, jewel_lace_amber on soft_veils, became soft_veils' soft_veils_amber entry. No round two.",
     "The look, refined from the three references: fractal_patterns_abstract_dark is fine cream-and-copper lace on a blue-black void, glittering with four-pointed star flares, its copper lens petals each lit from a bright centre; eternity-in-a-moment (exoteric.roach.org) is gold and ice-blue gear-lace round glossy blue orbs on deep blue; fractal-abstract-abstraction-art-artwork-wallpaper-17 is an amber flame flower whose only jewels are small gold droplets on hair stems. What the three share is the headline: fine structure studded with small lit points, never large ones.",
     "Added: nothing new to the engine. The stack is gilded_orbs' ground and engraving without its period-1 ribbon light (the `ribbons` formulation puts it back, masked to the set), its orbs held to beads (largest 0.035, not 0.15) and its sparkle lattice grown from a pin-prick (largest 0.004) to a visible star point (largest 0.025, a halo under the core). Palette entries, one per reference: jewel_lace the default (patterns_abstract_dark); jewel_lace_eternity (blue beads, tone 0.335/0.119); jewel_lace_amber (gold beads, tone 0.332/0.188).",
     "Lessons (round one, item 044): **a strip lattice is not a star flare**: hair strips at spacing 1 pull back as long frame-crossing hairs whatever `largest` says, since `largest` bounds a strip's width and not its length, so they fail the fractal-feel rule; round disc points with a halo stand in for the flares. **An angle sheet on a single disc's pullbacks reads as torn shards**, not rays, at seats where the discs pull back near a critical point (the `rays` formulation). The period-1 ribbon light paints the far field in broad satin tubes even masked by the inverted de; without it the void stays dark, as the reference's. eternity-in-a-moment is gilded_orbs' own artist and look; round one offers it both as a jewel_lace entry and on gilded_orbs."

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "soft_veils_magenta",
+  "kind": "sequential",
+  "source": "soft_veils_magenta, authored as 8 control points as the albedo of the soft_veils style's entry from intermission-25.jpg: a deep plum ground, a magenta mist and magenta-pink veils, then orange and gold wisps to a cream.",
+  "stops": [
+    [0.0, [34, 4, 26]],
+    [0.2, [90, 12, 64]],
+    [0.4, [170, 30, 120]],
+    [0.55, [220, 60, 150]],
+    [0.7, [235, 90, 140]],
+    [0.8, [255, 150, 40]],
+    [0.92, [255, 200, 80]],
+    [1.0, [255, 240, 200]]
+  ]
+}

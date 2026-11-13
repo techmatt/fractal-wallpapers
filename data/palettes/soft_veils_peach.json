@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "soft_veils_peach",
+  "kind": "sequential",
+  "source": "soft_veils_peach, authored as 6 control points as the albedo of the soft_veils style's entry from just-peachy-25.jpg: a warm brown-tan ground through khaki and peach to cream: translucent cream veils on tan.",
+  "stops": [
+    [0.0, [70, 52, 34]],
+    [0.25, [120, 94, 64]],
+    [0.45, [168, 140, 100]],
+    [0.65, [214, 180, 130]],
+    [0.82, [240, 214, 168]],
+    [1.0, [255, 244, 214]]
+  ]
+}

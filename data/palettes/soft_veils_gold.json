@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "soft_veils_gold",
+  "kind": "sequential",
+  "source": "soft_veils_gold, authored as 7 control points as the albedo of the soft_veils style's entry from goldenrod-25.jpg: a black ground through dark olive-brown and ochre to gold and a pale gold.",
+  "stops": [
+    [0.0, [6, 5, 2]],
+    [0.2, [40, 32, 8]],
+    [0.4, [100, 78, 14]],
+    [0.58, [160, 124, 24]],
+    [0.72, [200, 160, 40]],
+    [0.86, [230, 196, 80]],
+    [1.0, [250, 232, 150]]
+  ]
+}

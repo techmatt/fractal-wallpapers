@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "soft_veils_crimson",
+  "kind": "sequential",
+  "source": "soft_veils_crimson, authored as 8 control points as the albedo of the soft_veils style's entry from holey-trinity-25.jpg: a black ground, a crimson and magenta veil field, then the spirals' pink-violet, violet-blue and blue to an ice white.",
+  "stops": [
+    [0.0, [10, 2, 10]],
+    [0.2, [60, 6, 30]],
+    [0.38, [130, 16, 56]],
+    [0.5, [190, 30, 90]],
+    [0.62, [200, 80, 190]],
+    [0.75, [140, 110, 240]],
+    [0.88, [70, 160, 250]],
+    [1.0, [190, 230, 255]]
+  ]
+}

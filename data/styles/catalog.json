@@ -461,11 +461,6 @@
             "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs"
           ],
           "score": 3
-        },
-        {
-          "colormap": "jewel_lace_eternity",
-          "values": {},
-          "keeps": []
         }
       ]
     },
@@ -1706,7 +1701,7 @@
         }
       ],
       "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them: one stack, a palette for each reference.",
-      "kept": "four palettes (soft_veils_teal, _neon, _ember, _drift): 4 locations and 1 formulation (current)",
+      "kept": "five palettes (soft_veils_teal, _neon, _ember, _drift, _amber): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044)",
       "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do.",
       "palettes": [
         {
@@ -1770,8 +1765,152 @@
           "score": 5
         },
         {
-          "colormap": "jewel_lace_amber",
+          "colormap": "soft_veils_amber",
           "values": {},
+          "keeps": [
+            "style_jewel_lace_r1/soft_veils/amber/veil__01_julia-multibrot4_a3fdcc6f_jewel_lace_amber"
+          ]
+        },
+        {
+          "colormap": "soft_veils_rose",
+          "values": {
+            "/layers/13/opacity": 0.35,
+            "/layers/14/opacity": 0.35,
+            "/layers/15/opacity": 0.35,
+            "/layers/16/opacity": 0.35,
+            "/layers/17/opacity": 0.35,
+            "/layers/18/opacity": 0.35,
+            "/tone/median": 0.38,
+            "/tone/p10": 0.226
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_fire",
+          "values": {
+            "/layers/7/opacity": 0.45,
+            "/layers/8/opacity": 0.45,
+            "/layers/9/opacity": 0.45,
+            "/layers/10/opacity": 0.45,
+            "/layers/11/opacity": 0.45,
+            "/layers/12/opacity": 0.45,
+            "/layers/13/opacity": 0.25,
+            "/layers/14/opacity": 0.25,
+            "/layers/15/opacity": 0.25,
+            "/layers/16/opacity": 0.25,
+            "/layers/17/opacity": 0.25,
+            "/layers/18/opacity": 0.25,
+            "/tone/median": 0.507,
+            "/tone/p10": 0.309
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_copper",
+          "values": {
+            "/layers/1/opacity": 0.08,
+            "/layers/2/opacity": 0.08,
+            "/layers/3/opacity": 0.08,
+            "/layers/4/opacity": 0.08,
+            "/layers/5/opacity": 0.08,
+            "/layers/6/opacity": 0.08,
+            "/layers/7/opacity": 0.6,
+            "/layers/8/opacity": 0.6,
+            "/layers/9/opacity": 0.6,
+            "/layers/10/opacity": 0.6,
+            "/layers/11/opacity": 0.6,
+            "/layers/12/opacity": 0.6,
+            "/tone/median": 0.325,
+            "/tone/p10": 0.177
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_peach",
+          "values": {
+            "/tone/median": 0.577,
+            "/tone/p10": 0.42
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_magenta",
+          "values": {
+            "/layers/7/opacity": 0.4,
+            "/layers/8/opacity": 0.4,
+            "/layers/9/opacity": 0.4,
+            "/layers/10/opacity": 0.4,
+            "/layers/11/opacity": 0.4,
+            "/layers/12/opacity": 0.4,
+            "/layers/13/opacity": 0.3,
+            "/layers/14/opacity": 0.3,
+            "/layers/15/opacity": 0.3,
+            "/layers/16/opacity": 0.3,
+            "/layers/17/opacity": 0.3,
+            "/layers/18/opacity": 0.3,
+            "/tone/median": 0.296,
+            "/tone/p10": 0.074
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_moss",
+          "values": {
+            "/layers/1/opacity": 0.2,
+            "/layers/2/opacity": 0.2,
+            "/layers/3/opacity": 0.2,
+            "/layers/4/opacity": 0.2,
+            "/layers/5/opacity": 0.2,
+            "/layers/6/opacity": 0.2,
+            "/layers/13/opacity": 0.3,
+            "/layers/14/opacity": 0.3,
+            "/layers/15/opacity": 0.3,
+            "/layers/16/opacity": 0.3,
+            "/layers/17/opacity": 0.3,
+            "/layers/18/opacity": 0.3,
+            "/tone/median": 0.446,
+            "/tone/p10": 0.305
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_crimson",
+          "values": {
+            "/layers/1/opacity": 0.15,
+            "/layers/2/opacity": 0.15,
+            "/layers/3/opacity": 0.15,
+            "/layers/4/opacity": 0.15,
+            "/layers/5/opacity": 0.15,
+            "/layers/6/opacity": 0.15,
+            "/layers/13/opacity": 0.3,
+            "/layers/14/opacity": 0.3,
+            "/layers/15/opacity": 0.3,
+            "/layers/16/opacity": 0.3,
+            "/layers/17/opacity": 0.3,
+            "/layers/18/opacity": 0.3,
+            "/tone/median": 0.147,
+            "/tone/p10": 0.075
+          },
+          "keeps": []
+        },
+        {
+          "colormap": "soft_veils_gold",
+          "values": {
+            "/layers/7/opacity": 0.4,
+            "/layers/8/opacity": 0.4,
+            "/layers/9/opacity": 0.4,
+            "/layers/10/opacity": 0.4,
+            "/layers/11/opacity": 0.4,
+            "/layers/12/opacity": 0.4,
+            "/layers/13/opacity": 0.25,
+            "/layers/14/opacity": 0.25,
+            "/layers/15/opacity": 0.25,
+            "/layers/16/opacity": 0.25,
+            "/layers/17/opacity": 0.25,
+            "/layers/18/opacity": 0.25,
+            "/tone/median": 0.324,
+            "/tone/p10": 0.019
+          },
           "keeps": []
         }
       ]
@@ -1822,6 +1961,18 @@
           "score": 2
         }
       ]
+    },
+    {
+      "style": "jewel_lace",
+      "score": 1,
+      "status": "discarded",
+      "item": "044",
+      "reference": "fractal_patterns_abstract_dark_108576_2560x1600.jpg",
+      "show": [],
+      "palettes": [],
+      "what": "fine copper lace on a blue-black ground studded with lit jewels: copper beads strung along the set's arms, each with a white glint, and star points of light where the lace is densest",
+      "kept": "nothing",
+      "note": "Kept nothing of its own in round one (item 044); its maps left the library, since only picked palettes are saved. Its one kept tile, the amber map on soft_veils, is soft_veils' soft_veils_amber entry · Matt: nothing in here looks aesthetically interesting enough to add."
     }
   ]
 }

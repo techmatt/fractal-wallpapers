@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "soft_veils_fire",
+  "kind": "sequential",
+  "source": "soft_veils_fire, authored as 8 control points as the albedo of the soft_veils style's entry from hellid-25.jpg: a dark oxblood ground, a red haze, then the flames' red-orange, orange and amber to a yellow and a pale straw.",
+  "stops": [
+    [0.0, [70, 12, 6]],
+    [0.2, [130, 20, 8]],
+    [0.4, [190, 30, 10]],
+    [0.5, [230, 70, 10]],
+    [0.65, [250, 120, 10]],
+    [0.8, [255, 180, 20]],
+    [0.9, [255, 210, 60]],
+    [1.0, [255, 240, 150]]
+  ]
+}
