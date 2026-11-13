@@ -153,7 +153,11 @@ cargo test --release --manifest-path perturbation/Cargo.toml
 
 **CI lints with the newest stable Rust**, so a clippy release adds lints to code that
 has not changed. Run `rustup update stable` before the clippy lines; a local toolchain
-behind CI's passes code that CI fails.
+behind CI's passes code that CI fails. CI also compiles on Linux and macOS, where some
+errors exist that Windows never reports (an unmangled export named like a libc symbol);
+an item touching a crate's exports or `cfg(unix)` code repeats its clippy line with
+`--target x86_64-unknown-linux-gnu --target-dir out/xtarget`, a type check needing no
+linker (`rustup target add x86_64-unknown-linux-gnu` once).
 
 An item that touches the style path (`engine/src/style.rs`, `style-wasm/`, a style's
 stack or the bundle) also runs:

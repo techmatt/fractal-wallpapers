@@ -469,8 +469,11 @@ fn with_session<T>(handle: u32, run: impl FnOnce(&mut Session) -> T) -> Result<T
 
 /// Open a session on one picture. JSON: `{ok, handle, maxiter, resolution, supersample,
 /// samples, mirror, style}`, or `{ok: false, why}`.
-#[unsafe(no_mangle)]
-pub extern "C" fn open(request_ptr: *const u8, request_len: usize) -> *mut u8 {
+///
+/// Exported as `open` on wasm32 only: a native unmangled `open` (and `close`) would
+/// replace the C library's own on Linux and macOS, which rustc refuses to compile.
+#[cfg_attr(target_arch = "wasm32", unsafe(export_name = "open"))]
+pub extern "C" fn open_session(request_ptr: *const u8, request_len: usize) -> *mut u8 {
     let report = match text(request_ptr, request_len).and_then(|t| Session::open(&t)) {
         Ok(session) => {
             let mut summary = session.summary();
@@ -521,9 +524,9 @@ pub extern "C" fn frame(handle: u32) -> *mut u8 {
     }
 }
 
-/// Free a session.
-#[unsafe(no_mangle)]
-pub extern "C" fn close(handle: u32) {
+/// Free a session. Exported as `close` on wasm32 only, as [`open_session`] is `open`.
+#[cfg_attr(target_arch = "wasm32", unsafe(export_name = "close"))]
+pub extern "C" fn close_session(handle: u32) {
     let mut sessions = SESSIONS.lock().unwrap();
     if let Some(slot) = handle
         .checked_sub(1)
