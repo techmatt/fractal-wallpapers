@@ -418,7 +418,7 @@ impl FieldSpec {
         match *self {
             FieldSpec::Smooth => orbit.escaped.then_some(orbit.smooth),
             FieldSpec::Discrete { cycle } => orbit.escaped.then(|| match cycle {
-                Some(length) => (orbit.iteration % length.get()) as f64,
+                Some(length) => (orbit.iteration % length) as f64,
                 None => orbit.iteration as f64,
             }),
             FieldSpec::Stripe { .. } => orbit.escaped.then(|| orbit.stripe.deband(fade)).flatten(),

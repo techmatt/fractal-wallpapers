@@ -208,10 +208,10 @@ fn decimal(value: &Fx, limbs: usize) -> String {
     let mut digits = String::with_capacity(places);
     for _ in 0..places {
         let mut carry = 0u64;
-        for index in 0..limbs {
-            let low = (fraction.w[index] & 0xffff_ffff) * 10 + carry;
-            let high = (fraction.w[index] >> 32) * 10 + (low >> 32);
-            fraction.w[index] = (low & 0xffff_ffff) | ((high & 0xffff_ffff) << 32);
+        for word in fraction.w.iter_mut().take(limbs) {
+            let low = (*word & 0xffff_ffff) * 10 + carry;
+            let high = (*word >> 32) * 10 + (low >> 32);
+            *word = (low & 0xffff_ffff) | ((high & 0xffff_ffff) << 32);
             carry = high >> 32;
         }
         digits.push((b'0' + fraction.w[limbs - 1] as u8) as char);

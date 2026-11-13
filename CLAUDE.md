@@ -143,14 +143,24 @@ python -m ruff check . && python -m ruff format --check .
 python -m pytest
 cargo build --manifest-path engine/Cargo.toml
 cargo test --manifest-path engine/Cargo.toml
+cargo fmt --check --manifest-path engine/Cargo.toml
+cargo fmt --check --manifest-path perturbation/Cargo.toml
+cargo clippy --manifest-path engine/Cargo.toml -- -D warnings
+cargo clippy --manifest-path engine/Cargo.toml --no-default-features -- -D warnings
 cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warnings
 cargo test --release --manifest-path perturbation/Cargo.toml
 ```
+
+**CI lints with the newest stable Rust**, so a clippy release adds lints to code that
+has not changed. Run `rustup update stable` before the clippy lines; a local toolchain
+behind CI's passes code that CI fails.
 
 An item that touches the style path (`engine/src/style.rs`, `style-wasm/`, a style's
 stack or the bundle) also runs:
 
 ```
+cargo fmt --check --manifest-path style-wasm/Cargo.toml
+cargo clippy --manifest-path style-wasm/Cargo.toml --all-targets -- -D warnings
 cargo test --release --manifest-path style-wasm/Cargo.toml
 cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml
 ```
@@ -163,7 +173,8 @@ the lane at collection.
 
 **`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
 (`perturbation/README.md`'s *Running it*), the website's own item; website items never
-commit here. The website also parses the root `README.md`'s explorer links and cites
+commit here. CI also lints its two wasm builds (`.github/workflows/ci.yml`'s *Check the
+kernel for wasm32* step); an edit there runs that step's two commands. The website also parses the root `README.md`'s explorer links and cites
 `perturbation/README.md`'s numbered headings.
 
 **CI** runs `pytest --slow` on three OSes with torch and no weights or store; a test

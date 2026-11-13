@@ -983,9 +983,9 @@ mod tests {
             p[i + halves] = carry as u32;
         }
         let mut r = Fx::zero(n);
-        for k in 0..n {
+        for (k, word) in r.w.iter_mut().enumerate().take(n) {
             let src = 2 * (n - 1 + k);
-            r.w[k] = (p[src] as u64) | ((p[src + 1] as u64) << 32);
+            *word = (p[src] as u64) | ((p[src + 1] as u64) << 32);
         }
         if sa ^ sb { r.neg() } else { r }
     }
