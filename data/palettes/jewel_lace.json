@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "jewel_lace",
+  "kind": "sequential",
+  "source": "jewel_lace, authored as 10 control points (blue-black through plum and mauve-brown to copper and a warm rose gold) as the albedo of the jewel_lace style, from the fractal_patterns_abstract_dark reference's pixels read by lightness decile, each pushed more saturated and the top end held below white, since the style's star points and glows supply the near-whites.",
+  "stops": [
+    [0.0, [8, 6, 20]],
+    [0.12, [22, 15, 34]],
+    [0.25, [38, 26, 44]],
+    [0.38, [58, 36, 50]],
+    [0.5, [84, 50, 56]],
+    [0.62, [116, 64, 58]],
+    [0.74, [154, 84, 62]],
+    [0.85, [190, 116, 82]],
+    [0.93, [214, 152, 116]],
+    [1.0, [232, 186, 152]]
+  ]
+}

@@ -238,3 +238,6 @@
 {"schema": 1, "kind": "admitted", "map": "banded_lines_rose", "group": "map:banded_lines_rose", "joined": false, "nearest": "map:Three Jewels", "m1": 0.077289}
 {"schema": 1, "kind": "admitted", "map": "banded_lines_teal", "group": "map:banded_lines_teal", "joined": false, "nearest": "map:Petrol Noon", "m1": 0.057181}
 {"schema": 1, "kind": "admitted", "map": "banded_lines_cobalt", "group": "map:banded_lines_cobalt", "joined": false, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.050278}
+{"schema": 1, "kind": "admitted", "map": "jewel_lace", "group": "map:jewel_lace", "joined": false, "nearest": "map:Claret Ember", "m1": 0.066664}
+{"schema": 1, "kind": "admitted", "map": "jewel_lace_eternity", "group": "map:jewel_lace_eternity", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "m1": 0.06299}
+{"schema": 1, "kind": "admitted", "map": "jewel_lace_amber", "group": "map:jewel_lace_amber", "joined": false, "nearest": "map:forgery-25", "m1": 0.046603}

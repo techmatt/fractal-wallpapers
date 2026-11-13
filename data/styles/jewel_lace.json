@@ -1,0 +1,265 @@
+{
+  "schema": 1,
+  "name": "jewel_lace",
+  "description": "fine copper lace on a blue-black ground, studded with lit jewels: the set's filigree a pale hair over engraved escape lines, small domed copper beads strung along its arms each with a white glint, and star points of light glittering where the lace is densest",
+  "reference": {
+    "image": "fractal_patterns_abstract_dark_108576_2560x1600.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame fractal render (lace, lens petals and star flares), 2560x1600"
+  },
+  "suggested_colormap": "jewel_lace",
+  "reuses": [
+    "gilded_orbs' ground: field de, inverted, through the map by rank (gamma 2.2 here): blue-black far from the set, the map's copper top beside it",
+    "gilded_orbs' engraving: a period sheet on field smooth (four fine lines a band), screened, and field tia multiplied in",
+    "glow_filaments' falloff glows on de: a dim haze 0.02 frame widths wide and a pale hair along the set",
+    "gilded_orbs' jewel on one bubble disc's bounded pullbacks (no spacing, escaped, largest 0.035): a flat fill, a domed light, a dark rim and a white glint",
+    "gilded_orbs' sparkle lattice (bubble discs at spacing 1, largest 0.025), masked to the set: a warm halo and a white core per point",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "The look, refined from the three references: fractal_patterns_abstract_dark is fine cream-and-copper lace on a blue-black void, glittering with four-pointed star flares, its copper lens petals each lit from a bright centre; eternity-in-a-moment (exoteric.roach.org) is gold and ice-blue gear-lace round glossy blue orbs on deep blue; fractal-abstract-abstraction-art-artwork-wallpaper-17 is an amber flame flower whose only jewels are small gold droplets on hair stems. What the three share is the headline: fine structure studded with small lit points, never large ones.",
+    "Added: nothing new to the engine. The stack is gilded_orbs' ground and engraving without its period-1 ribbon light (the `ribbons` formulation puts it back, masked to the set), its orbs held to beads (largest 0.035, not 0.15) and its sparkle lattice grown from a pin-prick (largest 0.004) to a visible star point (largest 0.025, a halo under the core). Palette entries, one per reference: jewel_lace the default (patterns_abstract_dark); jewel_lace_eternity (blue beads, tone 0.335/0.119); jewel_lace_amber (gold beads, tone 0.332/0.188).",
+    "Lessons (round one, item 044): **a strip lattice is not a star flare**: hair strips at spacing 1 pull back as long frame-crossing hairs whatever `largest` says, since `largest` bounds a strip's width and not its length, so they fail the fractal-feel rule; round disc points with a halo stand in for the flares. **An angle sheet on a single disc's pullbacks reads as torn shards**, not rays, at seats where the discs pull back near a critical point (the `rays` formulation). The period-1 ribbon light paints the far field in broad satin tubes even masked by the inverted de; without it the void stays dark, as the reference's. eternity-in-a-moment is gilded_orbs' own artist and look; round one offers it both as a jewel_lace entry and on gilded_orbs."
+  ],
+  "style": {
+    "name": "jewel_lace",
+    "interior": {
+      "rgb": "#0b0814"
+    },
+    "tone": {
+      "median": 0.265,
+      "p10": 0.046
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "invert": true
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.2
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 0.25,
+          "edge": 0.12,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.4
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "tia"
+          },
+          "invert": true
+        },
+        "power": 2.0,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.02,
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.035
+          }
+        },
+        "power": 0.01,
+        "color": {
+          "rgb": "#c8552c"
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.035
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.9,
+          "slope": 0.3,
+          "elevation": 50.0,
+          "ambient": 0.6,
+          "diffuse": 0.5,
+          "specular": 0.7,
+          "shininess": 50.0,
+          "rim": 0.35,
+          "highlight": {
+            "rgb": "#ffe8d0"
+          }
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.035
+          },
+          "invert": true
+        },
+        "power": 10.0,
+        "color": {
+          "rgb": "#0a0812"
+        },
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.12,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.035
+          }
+        },
+        "power": 10.0,
+        "color": {
+          "rgb": "#fff0dc"
+        },
+        "blend": "add",
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.1,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.025
+          }
+        },
+        "power": 3.0,
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "add",
+        "opacity": 0.6,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.1,
+            "spacing": 1.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.025
+          }
+        },
+        "power": 10.0,
+        "color": {
+          "rgb": "#fff4e2"
+        },
+        "blend": "add",
+        "opacity": 1.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 2.0
+        }
+      }
+    ]
+  }
+}

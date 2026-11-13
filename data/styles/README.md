@@ -237,3 +237,6 @@ Each style's `notes` hold what its rounds taught. The general lessons:
 - Fine lines that follow the set are a sheet of the smooth count at frame rank (`bands`
   in the hundreds, no fill, a narrow rim), not at a `period`: periodic equipotentials
   crowd into the set and alias to mush, rank cuts stay evenly spaced (`banded_lines`).
+- Points of light on the lace are a disc lattice masked to the set, a halo under a core;
+  a strip lattice is no star flare: `largest` bounds a strip's width, not its length, so
+  its pullbacks run as frame-crossing hairs (`jewel_lace`).

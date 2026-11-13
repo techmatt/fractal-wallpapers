@@ -461,6 +461,11 @@
             "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs"
           ],
           "score": 3
+        },
+        {
+          "colormap": "jewel_lace_eternity",
+          "values": {},
+          "keeps": []
         }
       ]
     },
@@ -1658,6 +1663,11 @@
             "style_soft_veils_r1/locations/loc__02_vm_d5_soft_veils_drift"
           ],
           "score": 5
+        },
+        {
+          "colormap": "jewel_lace_amber",
+          "values": {},
+          "keeps": []
         }
       ]
     }

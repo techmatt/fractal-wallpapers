@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "jewel_lace_amber",
+  "kind": "sequential",
+  "source": "jewel_lace_amber, authored as 10 control points (dark maroon through rust and burnt orange to amber and a deep gold) as the albedo of the jewel_lace style, from the fractal-abstract-abstraction-art-artwork-wallpaper-17 reference's pixels read by lightness decile, each pushed more saturated and the top end held at a gold below white, since the style's star points and glows supply the near-whites.",
+  "stops": [
+    [0.0, [30, 8, 4]],
+    [0.12, [62, 16, 6]],
+    [0.25, [90, 28, 8]],
+    [0.38, [114, 40, 10]],
+    [0.5, [140, 56, 12]],
+    [0.62, [164, 72, 14]],
+    [0.74, [188, 96, 18]],
+    [0.85, [210, 128, 24]],
+    [0.93, [226, 160, 34]],
+    [1.0, [238, 190, 60]]
+  ]
+}
