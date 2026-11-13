@@ -63,6 +63,41 @@ def test_a_catalog_garbled_by_hand_is_refused_not_raised(tmp_path, monkeypatch):
         styles.catalog_rows()
 
 
+def test_a_row_names_its_references_its_own_first_and_its_entries_among_them():
+    row = {
+        "reference": "a-25.jpg",
+        "references": ["a-25.jpg", "b.jpg"],
+        "palettes": [{"colormap": "m", "reference": "b.jpg"}],
+    }
+    assert style_catalog.check_references(row) == []
+    assert style_catalog.check_references({**row, "references": "a-25.jpg"})
+    assert style_catalog.check_references({**row, "references": ["b.jpg", "a-25.jpg"]})
+    assert style_catalog.check_references({**row, "references": ["a-25.jpg", "a-25.jpg"]})
+    assert style_catalog.check_references({**row, "references": ["a-25.jpg", "x/b.jpg"]})
+    lost = {**row, "palettes": [{"colormap": "m", "reference": "c.jpg"}]}
+    assert style_catalog.check_references(lost) == [
+        "palette m's reference c.jpg is not in references"
+    ]
+
+
+def test_unused_references_are_the_triage_yes_rows_no_row_names(tmp_path):
+    assert style_catalog.triage_id("commons_Chaos_Clock_-_The_Spell-Shaper.jpg") == (
+        "commons_chaos_clock___the_spell_shaper"
+    )
+    assert style_catalog.triage_id("forest_00024_1.17e222.jpg") == "forest_00024_1_17e222"
+    choices = tmp_path / "triage.choices.json"
+    rows = [
+        {"id": "fish_head_25", "key": "yes"},
+        {"id": "gyre_25", "key": "yes"},
+        {"id": "lethe_25", "key": "no"},
+    ]
+    choices.write_text(json.dumps({"rows": rows}), encoding="utf-8")
+    catalog = {"modes": [{"style": "soft_veils", "references": ["fish-head-25.jpg"]}]}
+    assert style_catalog.unused_references(choices, catalog) == [{"id": "gyre_25", "file": ""}]
+    with pytest.raises(style_catalog.CatalogError):
+        style_catalog.unused_references(tmp_path / "gone.json", catalog)
+
+
 def test_the_catalog_is_not_a_style():
     assert styles.CATALOG_FILE.removesuffix(".json") not in styles.names()
 

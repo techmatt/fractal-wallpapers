@@ -393,6 +393,28 @@ def test_remove_takes_an_admitted_map_out_of_every_table_and_nothing_else(librar
     assert report["groups"] == 1 and report["maps"] == len(MAPS)
 
 
+def test_rename_moves_a_map_through_every_table_and_back_byte_for_byte(library) -> None:
+    """`palettes rename`: the name moves, the sorted tables re-sort, the stops stay."""
+    where, _ = library
+    old, new = "copper_arms", "zz_renamed_arms"
+    shutil.copyfile(colormap_dir() / f"{old}.json", where / f"{old}.json")
+    names = sorted([*MAPS, old])
+    (where / produced.RECORD_NAME).write_text(_produced_text(names), encoding="utf-8", newline="\n")
+    (where / carriers.RECORD_NAME).write_text(_carrier_text(names), encoding="utf-8", newline="\n")
+    before = _files(where)
+    admit.rename(old, new, directory=where)
+    assert not (where / f"{old}.json").exists()
+    document = json.loads((where / f"{new}.json").read_text(encoding="utf-8"))
+    assert document["name"] == new
+    renamed = sorted([*MAPS, new])
+    assert [row[produced.NAME_COLUMN] for row in produced.read(where)] == renamed
+    assert [r for r in groups.read(where) if r.get("map") == new]
+    with pytest.raises(admit.AddError, match="already holds"):
+        admit.rename(new, MAPS[0], directory=where)
+    admit.rename(new, old, directory=where)
+    assert _files(where) == before
+
+
 def test_remove_refuses_a_map_the_grouping_cut_placed(library) -> None:
     where, _ = library
     before = _files(where)

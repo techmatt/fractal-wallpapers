@@ -195,6 +195,100 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__01_julia-mandelbrot_06abe945_golden_egg_petals",
+      "picker": "style_mode_entries_r1",
+      "picked": [
+        {
+          "row": "lit_petals/golden_egg_petals",
+          "key": "golden_egg_petals__01_julia-mandelbrot_06abe945_golden_egg_petals"
+        }
+      ],
+      "label": "julia-mandelbrot_06abe945",
+      "image": "style_mode_entries_r1__golden_egg_petals__01_julia-mandelbrot_06abe945_golden_egg_petals.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_06abe945",
+          "family": {
+            "c": [
+              "-0.75979921213082943251559944387997563",
+              "-0.084519262497371513929408867580943368"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.5160781614056555",
+            "center_im": "0.032401650985769956",
+            "width": "0.02058145031651321"
+          },
+          "maxiter": 12624,
+          "note": "final139_general seat 568 (tia, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 568,
+            "key": "06abe945a486b272",
+            "p_spiral": 0.01224
+          }
+        },
+        "style": "lit_petals",
+        "stack": "lit_petals@a539bee8",
+        "colormap": "golden_egg_petals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__default__00_julia-mandelbrot_17e354d3_lit_petals",
+      "picker": "style_mode_entries_r1",
+      "picked": [
+        {
+          "row": "lit_petals/golden_egg_petals",
+          "key": "golden_egg_petals__default__00_julia-mandelbrot_17e354d3_lit_petals"
+        }
+      ],
+      "label": "lit_petals default (lit_petals) · julia-mandelbrot_17e354d3",
+      "image": "style_mode_entries_r1__golden_egg_petals__default__00_julia-mandelbrot_17e354d3_lit_petals.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_17e354d3",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "1.0192054988872936",
+            "center_im": "-0.005539516535256361",
+            "width": "0.4951839999554471"
+          },
+          "maxiter": 7118,
+          "note": "final139_general seat 163 (smooth, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 163,
+            "key": "17e354d3a344983c",
+            "p_spiral": 0.033018
+          }
+        },
+        "style": "lit_petals",
+        "stack": "lit_petals@b3388c0d",
+        "colormap": "lit_petals",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -337,6 +431,129 @@
       "tone": {
         "median": 0.323,
         "p10": 0.12
+      }
+    },
+    "lit_petals@a539bee8": {
+      "name": "lit_petals",
+      "interior": {
+        "rgb": "#0a0a10"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.25,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff2d0"
+            }
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 3.0,
+            "phase": 0.0
+          },
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.5,
+            "shininess": 14.0,
+            "rim": 0.15,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#fff2d0"
+            }
+          },
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 25.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#1a0c10"
+          },
+          "blend": "multiply",
+          "opacity": 0.4
+        }
+      ],
+      "tone": {
+        "median": 0.456,
+        "p10": 0.194
       }
     },
     "lit_petals@b3388c0d": {

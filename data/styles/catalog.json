@@ -7,6 +7,9 @@
       "status": "publish",
       "item": "009",
       "reference": "795549-3840x2160-desktop-4k-fractal-background.jpg",
+      "references": [
+        "795549-3840x2160-desktop-4k-fractal-background.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -86,6 +89,9 @@
       "status": "publish",
       "item": "019",
       "reference": "blessed-by-the-night-25.jpg",
+      "references": [
+        "blessed-by-the-night-25.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -134,6 +140,9 @@
       "status": "publish",
       "item": "002",
       "reference": "floating-on-dreams-25.jpg",
+      "references": [
+        "floating-on-dreams-25.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -228,6 +237,9 @@
       "status": "publish",
       "item": "003",
       "reference": "yas-25.jpg",
+      "references": [
+        "yas-25.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -329,6 +341,9 @@
       "status": "publish",
       "item": "007",
       "reference": "795548-3840x2160-desktop-4k-fractal-background.jpg",
+      "references": [
+        "795548-3840x2160-desktop-4k-fractal-background.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -385,6 +400,9 @@
       "status": "publish",
       "item": "014",
       "reference": "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg",
+      "references": [
+        "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -427,6 +445,9 @@
       "status": "publish",
       "item": "015",
       "reference": "ancient-empires-25.jpg",
+      "references": [
+        "ancient-empires-25.jpg"
+      ],
       "variant": "current",
       "show": [
         {
@@ -470,6 +491,9 @@
       "status": "publish",
       "item": "018",
       "reference": "chronoscope-25.jpg",
+      "references": [
+        "chronoscope-25.jpg"
+      ],
       "variant": "lune_blades",
       "show": [
         {
@@ -507,6 +531,10 @@
       "status": "publish",
       "item": "020",
       "reference": "carnival-25.jpg",
+      "references": [
+        "carnival-25.jpg",
+        "golden-egg-closeup-25.jpg"
+      ],
       "variant": "soft",
       "show": [
         {
@@ -528,8 +556,8 @@
         ]
       },
       "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
-      "kept": "2 locations, soft",
-      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the jewels read as engraved crust more than gems, so soft is the published formulation and the style's default stack; its location keep is re-drawn in it at its default knobs (the earlier seamed-petals keep of the soft keep's own seat is no longer shown).",
+      "kept": "2 locations, soft; the golden_egg_petals palette (item 045)",
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the jewels read as engraved crust more than gems, so soft is the published formulation and the style's default stack; its location keep is re-drawn in it at its default knobs (the earlier seamed-petals keep of the soft keep's own seat is no longer shown). · Matt (item 045 entries): some palettes are okay but nothing amazing.",
       "palettes": [
         {
           "colormap": "lit_petals",
@@ -538,7 +566,8 @@
             "style_lit_petals_r1/formulations/f_soft__01_julia-mandelbrot_17e354d3_lit_petals",
             "style_lit_petals_r1/locations/locations__02_julia-mandelbrot_17e354d3_lit_petals",
             "style_lit_petals_r1/locations/locations__08_julia-mandelbrot_06abe945_lit_petals",
-            "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945"
+            "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945",
+            "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__default__00_julia-mandelbrot_17e354d3_lit_petals"
           ],
           "score": 3
         },
@@ -551,7 +580,10 @@
             "/tone/median": 0.456,
             "/tone/p10": 0.194
           },
-          "keeps": []
+          "keeps": [
+            "style_mode_entries_r1/lit_petals/golden_egg_petals/golden_egg_petals__01_julia-mandelbrot_06abe945_golden_egg_petals"
+          ],
+          "reference": "golden-egg-closeup-25.jpg"
         }
       ]
     },
@@ -561,6 +593,9 @@
       "status": "drop",
       "item": "008",
       "reference": "Black-and-Green-Abstract-Wallpaper.jpg",
+      "references": [
+        "Black-and-Green-Abstract-Wallpaper.jpg"
+      ],
       "show": [
         {
           "keep": "style_glow_filaments_r1/shortlist/08_j_curl_chain",
@@ -598,6 +633,9 @@
       "status": "drop",
       "item": "016",
       "reference": "blood-price-25.jpg",
+      "references": [
+        "blood-price-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_field_lines_r1/locations/locations__04_julia-d2-p2_04_field_lines",
@@ -634,6 +672,11 @@
       "score": 2,
       "item": "022",
       "reference": "alina-25.jpg",
+      "references": [
+        "alina-25.jpg",
+        "law-of-ice-25.jpg",
+        "holy-dark-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments",
@@ -646,7 +689,7 @@
       ],
       "what": "Soft glowing teal filaments in a green-grey mist: glow_filaments' falloff glows softened, two wide haze glows and a scooped period sheet for the mist.",
       "kept": "1 location, flame formulation",
-      "note": "Engine: nothing new (falloff glow, period sheet, tone) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but nothing exciting.",
+      "note": "Engine: nothing new (falloff glow, period sheet, tone) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · law-of-ice and holy-dark were tried as palettes (item 045) and kept nothing; their maps left the library. · Matt: okay but nothing exciting.",
       "palettes": [
         {
           "colormap": "teal_filaments",
@@ -656,57 +699,6 @@
             "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments"
           ],
           "score": 2
-        },
-        {
-          "colormap": "law_of_ice_glow",
-          "values": {
-            "/layers/0/color": {
-              "rgb": "#080c48"
-            },
-            "/layers/3/color": {
-              "palette": 0.62
-            },
-            "/layers/4/color": {
-              "palette": 0.66
-            },
-            "/layers/5/color": {
-              "palette": 0.6
-            },
-            "/layers/6/color": {
-              "palette": 0.74
-            },
-            "/layers/7/color": {
-              "palette": 0.8
-            },
-            "/tone/median": 0.694,
-            "/tone/p10": 0.214,
-            "/layers/1/opacity": 0.9,
-            "/layers/3/opacity": 0.3,
-            "/layers/2/opacity": 0.2,
-            "/layers/6/opacity": 0.25,
-            "/layers/7/opacity": 0.25
-          },
-          "keeps": []
-        },
-        {
-          "colormap": "holy_dark_glow",
-          "values": {
-            "/layers/0/color": {
-              "rgb": "#0a0c10"
-            },
-            "/tone/median": 0.159,
-            "/tone/p10": 0.036,
-            "/layers/3/color": {
-              "palette": 0.7
-            },
-            "/layers/4/color": {
-              "palette": 0.75
-            },
-            "/layers/7/color": {
-              "palette": 0.95
-            }
-          },
-          "keeps": []
         }
       ]
     },
@@ -715,6 +707,9 @@
       "score": 3,
       "item": "022",
       "reference": "Abstract-Desktop-Backgrounds-Pictures.jpg",
+      "references": [
+        "Abstract-Desktop-Backgrounds-Pictures.jpg"
+      ],
       "show": [
         {
           "keep": "style_star_eye_r1/locations/locations__02_rg_d3_0.65_0.0_w4.5_star_eye",
@@ -751,6 +746,9 @@
       "score": 2,
       "item": "022",
       "reference": "406031.jpg",
+      "references": [
+        "406031.jpg"
+      ],
       "show": [
         {
           "keep": "style_ember_rose_r1/locations/locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose",
@@ -787,6 +785,9 @@
       "status": "discarded",
       "item": "017",
       "reference": "commons_Fractal_Art_Series__2814465834074_29.jpg",
+      "references": [
+        "commons_Fractal_Art_Series__2814465834074_29.jpg"
+      ],
       "show": [],
       "note": "Matt: nothing kept; its discontinuities read as ugly (a judgement on this style, not on discontinuities in general), so it is dropped.",
       "palettes": []
@@ -797,6 +798,9 @@
       "status": "discarded",
       "item": "021",
       "reference": "103489.jpg",
+      "references": [
+        "103489.jpg"
+      ],
       "show": [],
       "note": "Matt: discarded as a mode, just ranked smooth shading with a vibrant palette. Its map seahorse_halo stays in the library as a candidate palette.",
       "palettes": []
@@ -807,6 +811,9 @@
       "status": "discarded",
       "item": "021",
       "reference": "citadel.jpg",
+      "references": [
+        "citadel.jpg"
+      ],
       "show": [],
       "note": "Matt: discarded as a mode, just ranked smooth shading with a vibrant palette. Its map citadel_gold stays in the library as a candidate palette.",
       "palettes": []
@@ -816,6 +823,9 @@
       "score": 4,
       "item": "027",
       "reference": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg",
+      "references": [
+        "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg"
+      ],
       "show": [
         {
           "keep": "style_clockwork_rings_r1/locations/locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings",
@@ -853,6 +863,9 @@
       "score": 2,
       "item": "028",
       "reference": "bluebird-25.jpg",
+      "references": [
+        "bluebird-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
@@ -883,6 +896,9 @@
       "score": 2,
       "item": "028",
       "reference": "celestial-domain-25.jpg",
+      "references": [
+        "celestial-domain-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_veil_teal_r1/formulations/f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal",
@@ -908,6 +924,9 @@
       "score": 2,
       "item": "028",
       "reference": "cipher-25.jpg",
+      "references": [
+        "cipher-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_veil_violet_r1/locations/locations__02_vj_d3_r1.08_t0.124_whole_flame_veil_violet",
@@ -944,6 +963,9 @@
       "score": 2,
       "item": "028",
       "reference": "chalk-drawing-25.jpg",
+      "references": [
+        "chalk-drawing-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_veil_chalk_r1/locations/locations__00_vj_d2_r1.08_t0.131_whole_flame_veil_chalk",
@@ -979,6 +1001,9 @@
       "score": 2,
       "item": "031",
       "reference": "corkscrew-25.jpg",
+      "references": [
+        "corkscrew-25.jpg"
+      ],
       "show": [],
       "what": "A double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each polished with a metallic sheen.",
       "kept": "nothing",
@@ -997,6 +1022,9 @@
       "score": 2,
       "item": "032",
       "reference": "commons_Waves_Apophysis_Fractal_Flame.jpg",
+      "references": [
+        "commons_Waves_Apophysis_Fractal_Flame.jpg"
+      ],
       "show": [],
       "what": "Fine teal flame wisps and crescents crossing over smouldering red and orange streaks on a dark slate ground.",
       "kept": "nothing",
@@ -1015,6 +1043,9 @@
       "score": 2,
       "item": "032",
       "reference": "convocation-dragons-25.jpg",
+      "references": [
+        "convocation-dragons-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_wisps_r1/flame_wisp_amber/formulations/amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber",
@@ -1040,6 +1071,9 @@
       "score": 2,
       "item": "032",
       "reference": "cosmic-forces-25.jpg",
+      "references": [
+        "cosmic-forces-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
@@ -1065,6 +1099,9 @@
       "score": 4,
       "item": "032",
       "reference": "creeping-frost-25.jpg",
+      "references": [
+        "creeping-frost-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost",
@@ -1091,6 +1128,9 @@
       "score": 2,
       "item": "032",
       "reference": "deaths-icy-hand-25.jpg",
+      "references": [
+        "deaths-icy-hand-25.jpg"
+      ],
       "show": [],
       "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
       "kept": "nothing",
@@ -1109,6 +1149,9 @@
       "score": 4,
       "item": "033",
       "reference": "consequences-25.jpg",
+      "references": [
+        "consequences-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
@@ -1139,6 +1182,9 @@
       "score": 2,
       "item": "033",
       "reference": "crystal-flood-25.jpg",
+      "references": [
+        "crystal-flood-25.jpg"
+      ],
       "show": [],
       "what": "Glossy chrome swirls: a mirror-bright relief of the smooth count in silver and slate, chrome ribbons, red orbs swelling to gold along the arms.",
       "kept": "nothing",
@@ -1157,6 +1203,9 @@
       "score": 2,
       "item": "033",
       "reference": "corporeal-25.jpg",
+      "references": [
+        "corporeal-25.jpg"
+      ],
       "show": [],
       "what": "Billowing cauliflower scales: each escape band a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
       "kept": "nothing",
@@ -1175,6 +1224,9 @@
       "score": 3,
       "item": "034",
       "reference": "crescent-25.jpg",
+      "references": [
+        "crescent-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__03_minibrot-p9_06_crescent_lines",
@@ -1210,6 +1262,12 @@
       "score": 3,
       "item": "036",
       "reference": "evening-radiance-25.jpg",
+      "references": [
+        "evening-radiance-25.jpg",
+        "dessert-union-25.jpg",
+        "eventide-25.jpg",
+        "fools-paradise-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_glossy_spirals_r1/violet_star_arms/locations/violet_star_arms__loc__03_phoenix-classic_3d18ef0b_violet_star_arms",
@@ -1379,6 +1437,16 @@
       "score": 2,
       "item": "031",
       "reference": "council.jpg",
+      "references": [
+        "council.jpg",
+        "crisis-25.jpg",
+        "dalooka.jpg",
+        "commons_Kalles_Fraktaler_adventurous-forest_00024_1.17e222.jpg",
+        "commons_Mandelbrot_3_Xo_C3_A1y_B_C3_A1nh_Ng_E1_BB_8Dt.png",
+        "krinshinda.jpg",
+        "lander.jpg",
+        "learned.jpg"
+      ],
       "show": [
         {
           "keep": "style_smooth_palettes_r1/council_smooth/locations/council__loc__01_julia-mandelbrot_69e07a2f_council_smooth",
@@ -1394,8 +1462,8 @@
         }
       ],
       "what": "Smooth escape bands through a matched map, a dark hair keeping the lace crisp: one stack, a palette for each reference whose tiles were kept.",
-      "kept": "three palettes (council, crisis, dalooka): 4 locations, 2 no-hair formulations",
-      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer. · Matt: none amazing (forest, mandelbrot3, council, crisis and dalooka alike); the palettes are saved and there is no further work.",
+      "kept": "five palettes (council, crisis, dalooka; krinshinda and learned from item 045, lander kept nothing): 4 locations, 2 no-hair formulations",
+      "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer. · Matt: none amazing (forest, mandelbrot3, council, crisis and dalooka alike); the palettes are saved and there is no further work. · Matt (item 045 entries): some palettes are okay but nothing amazing.",
       "palettes": [
         {
           "colormap": "council_smooth",
@@ -1405,7 +1473,8 @@
           "keeps": [
             "style_smooth_palettes_r1/council_smooth/formulations/council__f_no_hair__00_mandelbrot_4199ca9b_council_smooth",
             "style_smooth_palettes_r1/council_smooth/locations/council__loc__01_julia-mandelbrot_69e07a2f_council_smooth",
-            "style_smooth_palettes_r1/council_smooth/locations/council__loc__05_mandelbrot_4cb9b83b_council_smooth"
+            "style_smooth_palettes_r1/council_smooth/locations/council__loc__05_mandelbrot_4cb9b83b_council_smooth",
+            "style_mode_entries_r1/smooth_bands/krinshinda_smooth/krinshinda_smooth__default__01_mandelbrot_4cb9b83b_council_smooth"
           ],
           "score": 2
         },
@@ -1463,22 +1532,10 @@
             "/tone/median": 0.182,
             "/tone/p10": 0.033
           },
-          "keeps": []
-        },
-        {
-          "colormap": "lander_smooth",
-          "values": {
-            "/interior": {
-              "rgb": "#1a0806"
-            },
-            "/layers/0/palette/cycles": 1.0,
-            "/layers/1/color": {
-              "rgb": "#050310"
-            },
-            "/tone/median": 0.024,
-            "/tone/p10": 0.003
-          },
-          "keeps": []
+          "keeps": [
+            "style_mode_entries_r1/smooth_bands/krinshinda_smooth/krinshinda_smooth__01_mandelbrot_4cb9b83b_krinshinda_smooth"
+          ],
+          "reference": "krinshinda.jpg"
         },
         {
           "colormap": "learned_smooth",
@@ -1490,7 +1547,10 @@
             "/tone/median": 0.606,
             "/tone/p10": 0.303
           },
-          "keeps": []
+          "keeps": [
+            "style_mode_entries_r1/smooth_bands/learned_smooth/learned_smooth__02_julia-mandelbrot_69e07a2f_learned_smooth"
+          ],
+          "reference": "learned.jpg"
         }
       ],
       "aliases": [
@@ -1507,6 +1567,9 @@
       "status": "discarded",
       "item": "036",
       "reference": "exile-25.jpg",
+      "references": [
+        "exile-25.jpg"
+      ],
       "show": [],
       "palettes": [],
       "what": "glossy teal tubes spiralling over brushed bronze, small teal spiral copies feathered along every arm",
@@ -1519,6 +1582,9 @@
       "status": "discarded",
       "item": "036",
       "reference": "deadly-nightshade-25.jpg",
+      "references": [
+        "deadly-nightshade-25.jpg"
+      ],
       "show": [],
       "palettes": [],
       "what": "black chrome blades fanning along a spiral over brushed silver and bronze, a blue-grey hair along the set's lace",
@@ -1530,6 +1596,12 @@
       "score": 3,
       "item": "037",
       "reference": "devilfish-25.jpg",
+      "references": [
+        "devilfish-25.jpg",
+        "dragon-mail-25.jpg",
+        "flamed-25.jpg",
+        "deepsea-life-25.jpg"
+      ],
       "show": [],
       "what": "A glowing lace web of fine strands pierced by round holes of every size, each hole domed as a lit glass bead: one stack, a palette for each reference.",
       "kept": "four palettes (cream_lace, copper_mail, gold_arcs, bead_strands): 2 locations and 5 formulations (3 bubbles, 2 current)",
@@ -1675,6 +1747,9 @@
       "status": "discarded",
       "item": "037",
       "reference": "dreaming-25.jpg",
+      "references": [
+        "dreaming-25.jpg"
+      ],
       "show": [],
       "palettes": [],
       "what": "a fiery plume of lace, red and orange round black holes of every size, feathering out into blue and violet strands on black",
@@ -1686,6 +1761,22 @@
       "score": 5,
       "item": "041",
       "reference": "fish-head-25.jpg",
+      "references": [
+        "fish-head-25.jpg",
+        "detonation-25.jpg",
+        "fiery-descent-25.jpg",
+        "drift-25.jpg",
+        "flit-25.jpg",
+        "fractal-abstract-abstraction-art-artwork-wallpaper-17.jpg",
+        "grandmother-25.jpg",
+        "hellid-25.jpg",
+        "hollow-worlds-25.jpg",
+        "just-peachy-25.jpg",
+        "intermission-25.jpg",
+        "hazy-summer-garden-25.jpg",
+        "holey-trinity-25.jpg",
+        "goldenrod-25.jpg"
+      ],
       "show": [
         {
           "keep": "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal",
@@ -1701,7 +1792,7 @@
         }
       ],
       "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them: one stack, a palette for each reference.",
-      "kept": "five palettes (soft_veils_teal, _neon, _ember, _drift, _amber): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044)",
+      "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing",
       "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do.",
       "palettes": [
         {
@@ -1709,7 +1800,8 @@
           "values": {},
           "keeps": [
             "style_soft_veils_r1/formulations/f_current__00_vm_d3_soft_veils_teal",
-            "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal"
+            "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal",
+            "style_soft_veils_entries_r1/soft_veils/teal_default/01_vj_d3_r1.08_t0.124_whole_soft_veils_teal"
           ],
           "score": 5
         },
@@ -1728,7 +1820,8 @@
           "keeps": [
             "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember"
           ],
-          "score": 5
+          "score": 5,
+          "reference": "detonation-25.jpg"
         },
         {
           "colormap": "soft_veils_neon",
@@ -1745,7 +1838,8 @@
           "keeps": [
             "style_soft_veils_r1/locations/loc__01_vj_d5_r1.08_t0.421_whole_soft_veils_neon"
           ],
-          "score": 5
+          "score": 5,
+          "reference": "fiery-descent-25.jpg"
         },
         {
           "colormap": "soft_veils_drift",
@@ -1762,28 +1856,17 @@
           "keeps": [
             "style_soft_veils_r1/locations/loc__02_vm_d5_soft_veils_drift"
           ],
-          "score": 5
+          "score": 5,
+          "reference": "drift-25.jpg"
         },
         {
           "colormap": "soft_veils_amber",
           "values": {},
           "keeps": [
             "style_jewel_lace_r1/soft_veils/amber/veil__01_julia-multibrot4_a3fdcc6f_jewel_lace_amber"
-          ]
-        },
-        {
-          "colormap": "soft_veils_rose",
-          "values": {
-            "/layers/13/opacity": 0.35,
-            "/layers/14/opacity": 0.35,
-            "/layers/15/opacity": 0.35,
-            "/layers/16/opacity": 0.35,
-            "/layers/17/opacity": 0.35,
-            "/layers/18/opacity": 0.35,
-            "/tone/median": 0.38,
-            "/tone/p10": 0.226
-          },
-          "keeps": []
+          ],
+          "reference": "fractal-abstract-abstraction-art-artwork-wallpaper-17.jpg",
+          "score": 5
         },
         {
           "colormap": "soft_veils_fire",
@@ -1803,27 +1886,11 @@
             "/tone/median": 0.507,
             "/tone/p10": 0.309
           },
-          "keeps": []
-        },
-        {
-          "colormap": "soft_veils_copper",
-          "values": {
-            "/layers/1/opacity": 0.08,
-            "/layers/2/opacity": 0.08,
-            "/layers/3/opacity": 0.08,
-            "/layers/4/opacity": 0.08,
-            "/layers/5/opacity": 0.08,
-            "/layers/6/opacity": 0.08,
-            "/layers/7/opacity": 0.6,
-            "/layers/8/opacity": 0.6,
-            "/layers/9/opacity": 0.6,
-            "/layers/10/opacity": 0.6,
-            "/layers/11/opacity": 0.6,
-            "/layers/12/opacity": 0.6,
-            "/tone/median": 0.325,
-            "/tone/p10": 0.177
-          },
-          "keeps": []
+          "keeps": [
+            "style_soft_veils_entries_r1/soft_veils/fire/02_vm_d5_soft_veils_fire"
+          ],
+          "reference": "hellid-25.jpg",
+          "score": 5
         },
         {
           "colormap": "soft_veils_peach",
@@ -1831,67 +1898,11 @@
             "/tone/median": 0.577,
             "/tone/p10": 0.42
           },
-          "keeps": []
-        },
-        {
-          "colormap": "soft_veils_magenta",
-          "values": {
-            "/layers/7/opacity": 0.4,
-            "/layers/8/opacity": 0.4,
-            "/layers/9/opacity": 0.4,
-            "/layers/10/opacity": 0.4,
-            "/layers/11/opacity": 0.4,
-            "/layers/12/opacity": 0.4,
-            "/layers/13/opacity": 0.3,
-            "/layers/14/opacity": 0.3,
-            "/layers/15/opacity": 0.3,
-            "/layers/16/opacity": 0.3,
-            "/layers/17/opacity": 0.3,
-            "/layers/18/opacity": 0.3,
-            "/tone/median": 0.296,
-            "/tone/p10": 0.074
-          },
-          "keeps": []
-        },
-        {
-          "colormap": "soft_veils_moss",
-          "values": {
-            "/layers/1/opacity": 0.2,
-            "/layers/2/opacity": 0.2,
-            "/layers/3/opacity": 0.2,
-            "/layers/4/opacity": 0.2,
-            "/layers/5/opacity": 0.2,
-            "/layers/6/opacity": 0.2,
-            "/layers/13/opacity": 0.3,
-            "/layers/14/opacity": 0.3,
-            "/layers/15/opacity": 0.3,
-            "/layers/16/opacity": 0.3,
-            "/layers/17/opacity": 0.3,
-            "/layers/18/opacity": 0.3,
-            "/tone/median": 0.446,
-            "/tone/p10": 0.305
-          },
-          "keeps": []
-        },
-        {
-          "colormap": "soft_veils_crimson",
-          "values": {
-            "/layers/1/opacity": 0.15,
-            "/layers/2/opacity": 0.15,
-            "/layers/3/opacity": 0.15,
-            "/layers/4/opacity": 0.15,
-            "/layers/5/opacity": 0.15,
-            "/layers/6/opacity": 0.15,
-            "/layers/13/opacity": 0.3,
-            "/layers/14/opacity": 0.3,
-            "/layers/15/opacity": 0.3,
-            "/layers/16/opacity": 0.3,
-            "/layers/17/opacity": 0.3,
-            "/layers/18/opacity": 0.3,
-            "/tone/median": 0.147,
-            "/tone/p10": 0.075
-          },
-          "keeps": []
+          "keeps": [
+            "style_soft_veils_entries_r1/soft_veils/peach/01_vj_d3_r1.08_t0.124_whole_soft_veils_peach"
+          ],
+          "reference": "just-peachy-25.jpg",
+          "score": 5
         },
         {
           "colormap": "soft_veils_gold",
@@ -1911,7 +1922,11 @@
             "/tone/median": 0.324,
             "/tone/p10": 0.019
           },
-          "keeps": []
+          "keeps": [
+            "style_soft_veils_entries_r1/soft_veils/gold/01_vj_d3_r1.08_t0.124_whole_soft_veils_gold"
+          ],
+          "reference": "goldenrod-25.jpg",
+          "score": 5
         }
       ]
     },
@@ -1921,6 +1936,11 @@
       "status": "discarded",
       "item": "042",
       "reference": "eirene-25.jpg",
+      "references": [
+        "eirene-25.jpg",
+        "dynamo-25.jpg",
+        "gemini-25.jpg"
+      ],
       "show": [],
       "palettes": [],
       "what": "glossy plastic orbs packed along the set: four circle packings of domed blue discs, each with one hard highlight and a pale rim, shrinking as they crowd the set's cream satin lace, over a dark ground with soft lit tubes of the smooth count",
@@ -1932,6 +1952,11 @@
       "score": 2,
       "item": "043",
       "reference": "forbidden-borders-25.jpg",
+      "references": [
+        "forbidden-borders-25.jpg",
+        "echoes-of-the-mind-25.jpg",
+        "fractal_abstraction_lines_130499_2560x1600.jpg"
+      ],
       "show": [],
       "what": "Bands of fine parallel lines sweeping through and around the set: evenly spaced equipotential hairlines, a second family crossing them, each escape band its own shade: one stack, a palette for each reference.",
       "kept": "two palettes (banded_lines_teal, banded_lines_rose): 1 palette tile (teal) and 1 formulation (glints, in rose)",
@@ -1958,7 +1983,8 @@
           "keeps": [
             "style_banded_lines_r1/banded_lines_teal/pal__01_julia-multibrot4_364f02ea_banded_lines_teal"
           ],
-          "score": 2
+          "score": 2,
+          "reference": "echoes-of-the-mind-25.jpg"
         }
       ]
     },
@@ -1968,6 +1994,11 @@
       "status": "discarded",
       "item": "044",
       "reference": "fractal_patterns_abstract_dark_108576_2560x1600.jpg",
+      "references": [
+        "fractal_patterns_abstract_dark_108576_2560x1600.jpg",
+        "fractal-abstract-abstraction-art-artwork-wallpaper-17.jpg",
+        "eternity-in-a-moment-25.jpg"
+      ],
       "show": [],
       "palettes": [],
       "what": "fine copper lace on a blue-black ground studded with lit jewels: copper beads strung along the set's arms, each with a white glint, and star points of light where the lace is densest",

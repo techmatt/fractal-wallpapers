@@ -6,6 +6,8 @@ as a custom mode for the explorer's dropdown:
     {"schema": 1,
      "modes": [{"style": "<style name>", "score": 1-5, "status": "publish|drop|discarded",
                 "item": "<queue item>", "reference": "<the style file's reference image>",
+                "references": ["<that image>", "<every other reference the mode was
+                               fitted or tried against, kept or not>", ...],
                 "variant": "<the published variant: the style file's default stack>",
                 "show": [{"keep": "<keep id in <style>.keeps.json>", "caption": "..."}],
                 "public": {"name": "<public name>", "palette": "<matched colormap>",
@@ -19,6 +21,10 @@ as a custom mode for the explorer's dropdown:
 A row is a **mode**: one stack (its style file) and its palette set, the default first
 (`style_palettes.py` has an entry's shape and the merge rule); its score is its best
 palette's. An alias is a style merged into the mode, which still opens by that name.
+
+`references` names every reference file (in `fractal-drive-sync/style-refs/`) the mode
+answers, including those whose entries kept nothing, so `style refs --unused` can say
+which pictures Matt marked for a mode no row has tried yet.
 
 `public` is a published mode's alone, and its knobs are named here and defined in the
 style file (`data/styles/README.md`'s *Public knobs*), so `check` holds the two to
@@ -129,6 +135,7 @@ def check(catalog: dict[str, Any]) -> list[str]:
             continue
         if row.get("reference") != document["reference"]["image"]:
             problems.append(f"{name}: reference {row.get('reference')} is not the style's")
+        problems += [f"{name}: {problem}" for problem in check_references(row)]
         # No status is a mode Matt has not ruled on yet: its toggles start unmarked.
         if "status" in row and row["status"] not in STATUSES:
             problems.append(f"{name}: status {row.get('status')} is not one of {STATUSES}")
@@ -174,6 +181,74 @@ def check(catalog: dict[str, Any]) -> list[str]:
             problems.append(f"{name}: {len(knobs)} public knobs, not 3 to 5")
         problems += [f"{name}: {problem}" for problem in styles.check_public(document)]
     return problems
+
+
+def check_references(row: dict[str, Any]) -> list[str]:
+    """A row's `references`: file names, no repeats, the style's own first, and every
+    palette entry's reference among them."""
+    names = row.get("references")
+    if not isinstance(names, list) or not all(isinstance(n, str) and n for n in names):
+        return ["references is a list of reference file names (README's *The catalog*)"]
+    problems = []
+    if not names or names[0] != row.get("reference"):
+        problems.append(f"references starts {names[:1]}, not the style's {row.get('reference')}")
+    if len(set(names)) != len(names):
+        problems.append("references names one file twice")
+    problems += [
+        f"a path in references: {n}" for n in names if "/" in n or "\\" in n
+    ]  # names only: the folder is the style file's
+    for entry in row.get("palettes", []):
+        if entry.get("reference") and entry["reference"] not in names:
+            problems.append(
+                f"palette {entry['colormap']}'s reference {entry['reference']} is not in references"
+            )
+    return problems
+
+
+def triage_id(name: str) -> str:
+    """A reference file's row id in a triage picker: its stem lowercased, each character
+    other than a letter or digit an underscore (`fish-head-25.jpg` is `fish_head_25`)."""
+    stem = Path(name).stem.lower()
+    return "".join(ch if ch.isascii() and ch.isalnum() else "_" for ch in stem)
+
+
+def named_references(catalog: dict[str, Any]) -> dict[str, list[str]]:
+    """Every reference file the catalog names, and the modes naming it."""
+    found: dict[str, list[str]] = {}
+    for row in catalog["modes"]:
+        for name in row.get("references", []):
+            found.setdefault(name, []).append(row["style"])
+    return found
+
+
+def unused_references(choices: Path, catalog: dict[str, Any]) -> list[dict[str, str]]:
+    """A triage picker's `yes` rows that no catalog row names, in the choices' order:
+    each `{id, file}`, `file` the picker row's label when its manifest is readable."""
+    try:
+        document = json.loads(choices.read_text(encoding="utf-8"))
+        rows = document["rows"]
+    except (OSError, ValueError, KeyError, TypeError) as unreadable:
+        raise CatalogError(f"cannot read the choices {choices}: {unreadable}") from None
+    labels = {}
+    manifest = document.get("manifest")
+    if manifest:
+        # Written from the folder above the checkouts (`<repo>/artifacts/pickers/...`).
+        from fractal_wallpapers.paths import repo_root
+
+        path = repo_root().parent / manifest
+        try:
+            labels = {
+                row["id"]: row.get("label", "")
+                for row in json.loads(path.read_text(encoding="utf-8"))["rows"]
+            }
+        except (OSError, ValueError, KeyError, TypeError):
+            labels = {}
+    used = {triage_id(name) for name in named_references(catalog)}
+    return [
+        {"id": row["id"], "file": labels.get(row["id"], "")}
+        for row in rows
+        if row.get("key") == "yes" and row["id"] not in used
+    ]
 
 
 #: Beside the page's pictures: which source and stamp each was shrunk from, so a rebuild

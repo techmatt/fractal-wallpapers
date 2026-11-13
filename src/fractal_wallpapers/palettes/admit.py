@@ -7,7 +7,8 @@ library (about eighty seconds, 2,703 recolours, to change one map's rows), bring
 `palette_family_shares.csv` up to the map, and place it among the groups without
 re-cutting them. This is those steps as one command. [`remove`] (`palettes
 remove`) is the inverse for a map no tile kept: it drops the map's file, produced
-row, carrier rows and admitted groups row.
+row, carrier rows and admitted groups row. [`rename`] (`palettes rename`) moves an
+admitted map to a new name in all of those, the catalog, style files and keep records.
 
 ## What it writes, and what it does not
 
@@ -679,6 +680,124 @@ def remove(name: str, directory: Path | None = None) -> dict:
         "maps": header["maps"],
         "sets": dropped,
     }
+
+
+def _renamed_json(path: Path, rename, old: str) -> str | None:
+    """`path`'s JSON with `rename(document)` applied, as two-space text; None when the
+    file did not move. Refused when a file naming `old` is not already that text, since
+    rewriting it would move bytes this command does not mean to."""
+    text = path.read_text(encoding="utf-8")
+    if json.dumps(old, ensure_ascii=False) not in text:
+        return None
+    document = json.loads(text)
+    if json.dumps(document, indent=2, ensure_ascii=False) + "\n" != text:
+        raise AddError(f"{path.name} does not read back to its own text; not rewritten")
+    if not rename(document):
+        return None
+    return json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+
+
+def rename(old: str, new: str, directory: Path | None = None) -> dict:
+    """Give a library map a new name everywhere the repository spells it: its file (and
+    the file's `name`), its produced row, carrier rows and groups rows (its own, the group
+    id `map:<old>` its joiners carry, and `nearest`), the catalog's palette entries and
+    public palettes, the style files that suggest it and the keep records drawn in it.
+
+    The stops are untouched, so no table needs re-measuring: only the name moves, and
+    the sorted tables re-sort. A keep's id and picture name keep the old name (they are
+    names of what was picked, not of the map). Refused when `new` is taken or not a legal
+    name, or when the grouping's cut placed `old` (only a re-cut could move it); every
+    refusal comes before the first write. A `directory` (a test's library) renames in its
+    file and tables alone.
+    """
+    from fractal_wallpapers import style_catalog, style_keeps, styles
+    from fractal_wallpapers.palettes import library_import
+
+    where = _library_dir(directory)
+    path = where / f"{old}.json"
+    if not path.is_file():
+        raise AddError(f"the library holds no map {old!r}")
+    if not new or FORBIDDEN & set(new) or new != new.strip():
+        raise AddError(f"{new!r} is not a map name (none of {''.join(sorted(FORBIDDEN))})")
+    if (where / f"{new}.json").is_file() or case_clashes(new, directory):
+        raise AddError(f"the library already holds a map named {new!r}")
+    rows = groups.read(directory)
+    if rows and not any(r.get("kind") == "admitted" and r.get("map") == old for r in rows):
+        raise AddError(f"the grouping's cut placed {old!r}, so only a re-cut could rename it")
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["name"] = new
+    map_new = library_import.text_of(document)
+    produced_list = produced_rows(directory)
+    for row in produced_list:
+        if row[produced.NAME_COLUMN] == old:
+            row[produced.NAME_COLUMN] = new
+    produced_list.sort(key=lambda row: row[produced.NAME_COLUMN])
+    header, by_map, _ = carrier_state(old, directory)
+    moved = by_map.pop(old, [])
+    for row in moved:
+        row["map"] = new
+    by_map[new] = moved
+    body = [row for each in sorted(by_map) for row in by_map[each]]
+    carrier_new = carriers.text_of([header, *body])
+    group_id = f"map:{old}"
+    for row in rows:
+        for key in ("map", "group", "nearest"):
+            if row.get(key) == old and key == "map":
+                row[key] = new
+            elif row.get(key) == group_id:
+                row[key] = f"map:{new}"
+
+    def in_catalog(catalog: dict) -> bool:
+        touched = False
+        for row in catalog["modes"]:
+            for entry in row.get("palettes", []):
+                if entry["colormap"] == old:
+                    entry["colormap"], touched = new, True
+            if (row.get("public") or {}).get("palette") == old:
+                row["public"]["palette"], touched = new, True
+        return touched
+
+    def in_style(style: dict) -> bool:
+        if style.get("suggested_colormap") != old:
+            return False
+        style["suggested_colormap"] = new
+        return True
+
+    def in_keeps(record: dict) -> bool:
+        touched = False
+        for keep in record.get("keeps", []):
+            if (keep.get("render") or {}).get("colormap") == old:
+                keep["render"]["colormap"], touched = new, True
+        return touched
+
+    texts = {}
+    if directory is None and style_catalog.catalog_path().is_file():
+        texts[style_catalog.catalog_path()] = _renamed_json(
+            style_catalog.catalog_path(), in_catalog, old
+        )
+    for style in styles.names() if directory is None else []:
+        texts[styles.styles_dir() / f"{style}.json"] = _renamed_json(
+            styles.styles_dir() / f"{style}.json", in_style, old
+        )
+        record = style_keeps.keeps_path(style)
+        if record.is_file():
+            texts[record] = _renamed_json(record, in_keeps, old)
+    # Written last, the tables before the map, as `remove` writes.
+    _write(produced.record_path(directory), produced.text_of(produced_list))
+    _write(carriers.record_path(directory), carrier_new)
+    if rows:
+        _write(groups.record_path(directory), groups.text_of(rows))
+    _write(where / f"{new}.json", map_new)
+    path.unlink()
+    for klass in reference_fields.CLASSES if directory is None else []:
+        # The recolour cache is by name: carry the picture rather than redraw it.
+        picture = carriers.recolour_dir() / klass / f"{old}.jpg"
+        if picture.is_file():
+            picture.replace(picture.with_name(f"{new}.jpg"))
+    changed = [target for target, text in texts.items() if text is not None]
+    for target in changed:
+        _write(target, texts[target])
+    return {"old": old, "new": new, "carriers": len(moved), "files": changed}
 
 
 def lines(report: dict) -> list[str]:

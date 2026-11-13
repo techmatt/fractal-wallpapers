@@ -140,6 +140,29 @@ def build_gallery(args: argparse.Namespace) -> int:
     return 0
 
 
+def list_references(args: argparse.Namespace) -> int:
+    """Each reference file the catalog names and its modes; `--unused` a triage's
+    `yes` rows no row names yet."""
+    from fractal_wallpapers import style_catalog
+
+    try:
+        catalog = style_catalog.load()
+        if args.unused:
+            rows = style_catalog.unused_references(resolve_input(args.unused), catalog)
+            for row in rows:
+                print(f"{row['id']:<56} {row['file']}")
+            print(f"{len(rows)} picked yes and named by no catalog row")
+            return 0
+    except style_catalog.CatalogError as refusal:
+        print(refusal)
+        return 1
+    named = style_catalog.named_references(catalog)
+    for name, modes in sorted(named.items(), key=lambda item: item[0].lower()):
+        print(f"{name:<64} {', '.join(modes)}")
+    print(f"{len(named)} reference files named by {len(catalog['modes'])} modes")
+    return 0
+
+
 def keep_style(args: argparse.Namespace) -> int:
     """Record a style picker's keeps and copy their pictures beside the reference."""
     from fractal_wallpapers import style_keeps
@@ -394,8 +417,7 @@ def check_tones(args: argparse.Namespace) -> int:
     from fractal_wallpapers import styles
 
     document = styles.load(args.name)
-    named = args.reference
-    reference = resolve_input(named) if named else styles.reference_path(document)
+    reference = reference_of(document, args.reference)
     if not reference.is_file():
         print(f"no reference picture at {reference}; pass --reference")
         return 1
@@ -434,6 +456,24 @@ def check_tones(args: argparse.Namespace) -> int:
             f"draft at --draft ({size} ss{styles.DRAFT_SUPERSAMPLE}) to check"
         )
     return 1 if failed else 0
+
+
+def reference_of(document: dict, named: str | None):
+    """The picture `style tones --reference` names: a path; a palette entry of the mode
+    (its `reference`); or a file name in the style's reference folder (style-refs/)."""
+    from pathlib import Path
+
+    from fractal_wallpapers import styles
+
+    if not named:
+        return styles.reference_path(document)
+    path = resolve_input(named)
+    if path.is_file() or len(Path(named).parts) > 1:
+        return path
+    row = next((r for r in styles.catalog_rows() if r["style"] == document["name"]), {})
+    entry = next((e for e in row.get("palettes", []) if e["colormap"] == named), {})
+    image = entry.get("reference") or named
+    return styles.reference_path({"reference": {**document["reference"], "image": image}})
 
 
 def file_name(text: str) -> str:
@@ -561,6 +601,7 @@ VERBS = {
     "knobs": list_knobs,
     "palettes": show_palettes,
     "gallery": build_gallery,
+    "refs": list_references,
     "sheet": contact_sheet,
     "bundle": style_wasm_command,
     "wasm-parity": style_wasm_command,
@@ -596,7 +637,9 @@ def add_commands(subcommands) -> None:
     )
     tones.add_argument(
         "--reference",
-        help="the reference picture (default: the style file's, beside this checkout)",
+        help="the reference picture (default: the style file's, beside this checkout): a "
+        "path, a file name in style-refs/, or one of the mode's palette entries, which "
+        "reads the reference its catalog entry names (an entry against its own picture)",
     )
 
     scout = verbs.add_parser(
@@ -734,6 +777,18 @@ def add_commands(subcommands) -> None:
         help="the page's folder (default: fractal-drive-sync/custom-modes/ beside this checkout)",
     )
 
+    refs = verbs.add_parser(
+        "refs",
+        help="each reference file the catalog's rows name (`references`) and the modes "
+        "naming it; --unused lists a triage's yes rows no row names",
+    )
+    refs.add_argument(
+        "--unused",
+        metavar="CHOICES",
+        help="a triage picker's saved choices (wallpaper_triage.choices.json): print its "
+        "`yes` rows that no catalog row names, so no one matches names by hand",
+    )
+
     bundle = verbs.add_parser(
         "bundle",
         help="write the published modes (stacks, knobs, shown keeps) and their colormaps as "
@@ -786,6 +841,7 @@ def add_commands(subcommands) -> None:
     )
     sheet.add_argument(
         "--columns",
+        "--cols",
         type=int,
         default=8,
         help="tiles per row (default: 8; a manifest "

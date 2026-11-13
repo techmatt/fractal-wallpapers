@@ -7,9 +7,10 @@ fractal-wallpapers style render <name|draft.json> --location <record.json> [--co
 fractal-wallpapers style render <name> --manifest <records.jsonl> --out-dir <dir> [--draft]
 fractal-wallpapers style sheet <sheet.png> <folder|picture|list.txt…>   # a labelled contact sheet
 fractal-wallpapers style scout --out <scout.jsonl> [filters]             # seats (step 4)
-fractal-wallpapers style tones <name> <pictures…>                        # tone check (step 5)
+fractal-wallpapers style tones <name> <pictures…> [--reference <entry|image>]  # tone check (step 5)
 fractal-wallpapers style picker <plan.json>                              # a picker (step 6)
 fractal-wallpapers style keep <name> <picker>.choices.json               # save a picker's keeps
+fractal-wallpapers style refs [--unused <triage>.choices.json]           # references named, or not yet
 fractal-wallpapers style gallery | bundle                                # custom-modes/; the page's modes
 fractal-wallpapers style wasm-parity | wasm-speed                        # WebAssembly vs native; frame time
 fractal-wallpapers style sweep --out <dir> [names…]                      # the checker (below)
@@ -61,13 +62,23 @@ a name the style does not expose and a value outside its range.
 
 ## The catalog
 
-`catalog.json` is one row per mode: style, reference, Matt's score (1–5), status
+`catalog.json` is one row per mode: style, reference, **`references`** (every reference
+file the mode was fitted or tried against, kept or not: the style's own first, then each
+palette entry's and each merged or dropped entry's, by file name in `style-refs/`), Matt's
+score (1–5), status
 (`publish`, `drop`, `discarded`; absent until he rules), the published variant, the
 keeps the page shows (`{keep, caption}`), the card's text, its **palette set**
 (`palettes`, below), the old style names it answers to (`aliases`), and for a
 published mode `public` (`{name, palette, knobs}`, `palette` the set's first). The
 published variant is always the style file's default stack. Public names are proposals
 Matt may rename. `style_catalog.check` holds the rows to the style files.
+
+**Which references are still untried**: `style refs --unused <triage>.choices.json`
+prints the triage picker's `yes` rows (the planner's
+`picks/wallpaper_triage.choices.json`) that no row's `references` names, matching a
+file to its row id as the picker made it (lowercased, each other character `_`); `style
+refs` alone lists each named file and its modes. A reference tried as an entry that kept
+nothing stays in `references`, so it never reads as untried again.
 
 ## Palette sets
 
@@ -90,7 +101,9 @@ entry drops is its `opacity` at 0); `style render <mode> --colormap <map>` appli
 kept tile (`palettes add --mode` puts it in for a round, unkept). `style keep` lays each
 kept tile's map into the mode's set; a map no tile kept leaves the library by
 `fractal-wallpapers palettes remove <map>` (its file, produced, carrier and groups rows;
-refused while a kept palette or a live style draws in it). A style merged into a mode
+refused while a kept palette or a live style draws in it). A kept map that outgrew its
+name (an entry kept on another mode) moves with **`palettes rename <old> <new>`**: its
+file, the three tables, catalog entries, suggested maps and keep records, never by hand. A style merged into a mode
 keeps resolving under its old name (`styles.alias_of`): to its entry, or to the mode's
 default when it kept nothing, so `style render`, `style keep` and a picker's scoped rows
 still work.
@@ -134,7 +147,11 @@ The item that brings a picture says "new style from <image>". Cap the engine wit
    entry, not a new style**: author the map (step 3), admit it with `palettes add
    <map.json> --mode <mode>`, tune its values (*Palette sets*) on `style render <mode>
    --colormap <map>` drafts, and run steps 4 to 9 for the mode; the entry stays only if
-   a tile in it is kept.
+   a tile in it is kept. **Then test distinctness, not only fit**: if the new stack is
+   an existing mode's layers with members removed or resized, it is that mode's palette
+   entry or formulation, not a new mode. Grep the catalog's `what` lines for the look
+   line's nouns (`git grep -n '"what"' data/styles/catalog.json | grep -i <noun>`) and
+   name the nearest mode before drafting.
 2. **Add a primitive only where one is missing**, in `engine/src/style.rs`, with a test,
    listed under `adds`; a function of one sample's channels, no neighbour reads. When the
    engine changed, `fractal-wallpapers identity <tag> --against <last tag>` must read 0
@@ -168,7 +185,9 @@ The item that brings a picture says "new style from <image>". Cap the engine wit
    over 0.10 off, or its near-white or near-black share over 0.05 above the reference's
    (`styles.TONE_BAND`). A stack whose every render misses p90 is re-tuned (narrower
    glows, less fog), not its locations dropped. Check at `--draft`; `style tones` marks
-   anything under 1280 wide `DRAFT`.
+   anything under 1280 wide `DRAFT`. A palette entry is held to **its own** reference:
+   `style tones <mode> <pictures…> --reference <entry map>` reads the reference its
+   catalog entry names (or pass a file name in `style-refs/`, or a path).
 6. **Round one: formulations and locations, about twenty tiles**, asking both:
    **formulations**, four to
    six readings (the stack, its strongest variants, the stack without its headline
@@ -187,7 +206,13 @@ The item that brings a picture says "new style from <image>". Cap the engine wit
    Render with `style render --manifest` into one folder per row and per stack (a
    picture is named by seat and map, so a second stack in one folder replaces the first,
    printed `REPLACED`; renders are logged to `renders.jsonl` beside them), then `style
-   picker <plan.json>` (`style_picker.py`'s docstring has the plan's shape). **The
+   picker <plan.json>` (`style_picker.py`'s docstring has the plan's shape); pickers
+   land in `artifacts/pickers/<name>/`. `style sheet --cols N` lays drafts out N to a
+   row for a look first. **Entry tiles** (a palette entry's round) are drawn from draft
+   `e_<map>.json` files, the mode's stack with the entry's values written in; `style
+   keep` diffs each kept tile's stack against the default to write the entry's
+   `values`. A row for another mode in one picker is scoped `<mode>/<row>` (step 9).
+   **The
    report header carries one `pick: <manifest path>` line per picker** (from the repo
    root); that line, not `carry:` or the body, makes conductor offer the Pick button.
 7. **Round two, once Matt's keeps are back: twelve tiles or fewer.** His kept
@@ -201,7 +226,9 @@ The item that brings a picture says "new style from <image>". Cap the engine wit
    once per style on the one choices file, taking its rows and unscoped ones. Maps go
    as *Palette sets* says.
 10. **Catalogue it**: its `catalog.json` row (*The catalog*; score and status as Matt
-    gave them) with `"palettes": []`, then `style palettes <name> --sync` to lay its
+    gave them) with `"palettes": []` and `references` naming its reference (a palette
+    entry's round adds the entry's file to the mode's `references` and the entry's
+    `reference`, kept or not), then `style palettes <name> --sync` to lay its
     keeps' maps in (the suggested map first; each entry Matt's score) and `style
     gallery`. A new style whose stack is an existing mode's is merged into it.
 
@@ -210,6 +237,7 @@ The item that brings a picture says "new style from <image>". Cap the engine wit
 ```
 Goal: a new style from <image>, in fractal-drive-sync/style-refs/.
 Name: <style_name>. The look, in a line: <what makes the picture>.
+Nearest mode: <name>; what must differ from it: <headline>.
 Structure it needs (optional): <e.g. thin sets: --max-ink 0.10; Julia sets only: --kind julia>.
   Lacking in the galleries? <yes: hand or atlas points via --points, per step 4's exception>.
   Reachable by one escape loop? (optional) <yes | no: density from several views or a new primitive>.

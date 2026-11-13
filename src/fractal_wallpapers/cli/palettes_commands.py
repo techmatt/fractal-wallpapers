@@ -192,6 +192,24 @@ def palettes_remove(args: argparse.Namespace) -> int:
     return 0
 
 
+def palettes_rename(args: argparse.Namespace) -> int:
+    """Move a map to a new name everywhere the repository spells it."""
+    from fractal_wallpapers.palettes import admit
+    from fractal_wallpapers.paths import tracked_name
+
+    try:
+        report = admit.rename(args.old, args.new)
+    except admit.AddError as refusal:
+        print(f"[rename] refused: {refusal}")
+        return 1
+    files = ", ".join(tracked_name(path) for path in report["files"]) or "none"
+    print(
+        f"[rename] {report['old']} -> {report['new']}: map, produced row, "
+        f"{report['carriers']} carrier row(s), groups rows; also {files}"
+    )
+    return 0
+
+
 def palettes_produced(args: argparse.Namespace) -> int:
     """Rebuild the table of which colours each map has actually made."""
     from fractal_wallpapers.palettes import produced
@@ -424,6 +442,15 @@ def add_commands(subcommands) -> None:
     )
     removing.add_argument("name", help="the library map's name")
     removing.set_defaults(handler=palettes_remove)
+
+    renaming = steps.add_parser(
+        "rename",
+        help="give a library map a new name in its file, the produced, carrier and groups "
+        "tables, the catalog's palette sets, style files and keep records (stops untouched)",
+    )
+    renaming.add_argument("old", help="the library map's name")
+    renaming.add_argument("new", help="its new name")
+    renaming.set_defaults(handler=palettes_rename)
 
     producing = steps.add_parser(
         "produced",

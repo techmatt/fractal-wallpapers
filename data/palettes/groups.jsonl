@@ -235,17 +235,9 @@
 {"schema": 1, "kind": "admitted", "map": "banded_lines_rose", "group": "map:banded_lines_rose", "joined": false, "nearest": "map:Three Jewels", "m1": 0.077289}
 {"schema": 1, "kind": "admitted", "map": "banded_lines_teal", "group": "map:banded_lines_teal", "joined": false, "nearest": "map:Petrol Noon", "m1": 0.057181}
 {"schema": 1, "kind": "admitted", "map": "krinshinda_smooth", "group": "map:krinshinda_smooth", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kbw_5_98_c40", "m1": 0.085757}
-{"schema": 1, "kind": "admitted", "map": "lander_smooth", "group": "map:lander_smooth", "joined": false, "nearest": "map:Warm Core in the Deep", "m1": 0.077002}
 {"schema": 1, "kind": "admitted", "map": "learned_smooth", "group": "map:learned_smooth", "joined": false, "nearest": "map:abstract-wallpaper-backgrounds-hd", "m1": 0.06039}
-{"schema": 1, "kind": "admitted", "map": "law_of_ice_glow", "group": "map:law_of_ice_glow", "joined": false, "nearest": "map:transcendence-25", "m1": 0.049391}
-{"schema": 1, "kind": "admitted", "map": "holy_dark_glow", "group": "map:holy_dark_glow", "joined": false, "nearest": "map:not-yet-lost-25", "m1": 0.045816}
 {"schema": 1, "kind": "admitted", "map": "golden_egg_petals", "group": "map:golden_egg_petals", "joined": false, "nearest": "map:Three Jewels, Pale Room", "m1": 0.058255}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_amber", "group": "map:soft_veils_amber", "joined": false, "nearest": "map:forgery-25", "m1": 0.046603}
-{"schema": 1, "kind": "admitted", "map": "soft_veils_rose", "group": "map:soft_veils_rose", "joined": false, "nearest": "map:cmr.sepia", "m1": 0.049759}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_fire", "group": "map:soft_veils_fire", "joined": false, "nearest": "map:nova-25", "m1": 0.062529}
-{"schema": 1, "kind": "admitted", "map": "soft_veils_copper", "group": "map:soft_veils_copper", "joined": false, "nearest": "map:lit_petals", "m1": 0.065051}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_peach", "group": "map:soft_veils_peach", "joined": false, "nearest": "map:Ash Ember Arc", "m1": 0.040147}
-{"schema": 1, "kind": "admitted", "map": "soft_veils_magenta", "group": "map:soft_veils_magenta", "joined": false, "nearest": "map:intermission-25", "m1": 0.049512}
-{"schema": 1, "kind": "admitted", "map": "soft_veils_moss", "group": "map:soft_veils_moss", "joined": false, "nearest": "map:Green Triad Dusk", "m1": 0.059487}
-{"schema": 1, "kind": "admitted", "map": "soft_veils_crimson", "group": "map:soft_veils_crimson", "joined": false, "nearest": "m28", "m1": 0.088251}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_gold", "group": "map:soft_veils_gold", "joined": false, "nearest": "map:Ember Gilt", "m1": 0.042029}
