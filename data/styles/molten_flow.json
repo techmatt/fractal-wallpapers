@@ -20,6 +20,50 @@
     "Fitted: see the lessons. Round one holds none of its twenty drafts: p90 reads 0.71 to 0.81 against the reference's 0.87 (its yellow-white heart is wider than a relief's highlights reach), and at wide shallow seats p10 reads 0.22 to 0.28 against 0.12, the folds' and strands' screen lifting the far field's darks past what the tone curve's exponent bound can pull down. Neither a darker map (rank gamma 1.5) nor a stronger far-field multiply moved p10; by eye the drafts read as the reference's molten fire, so round one shows them and the fit waits on Matt's keeps.",
     "Lessons: item 033 brought three references whose look is a smooth, heavily lit surface rather than thin glows (consequences-25.jpg, crystal-flood-25.jpg, corporeal-25.jpg). **The surface is a light on the frame's own smooth count at one band with no ring** (`bands` 1, `rings` 0, a `slope`): every sample tilts the same amount down the count's gradient, so the field reads as one glossy relief whose shading turns with the level lines, and the lace near the set, where the gradient turns fastest, keeps every finer scale lit; no big shape hides the small ones, because the relief has no shapes of its own. A light cannot read a view, so crossing views ride on the relief as sheets laid before it (lit with it) or after it. **The tone pass is not a free fix for a stack far off the reference's key**: untoned, the first molten fit read median 0.58 and p10 0.31 against 0.44 and 0.12, and the pass darkening that much turned every gold olive and every pale stop salmon; the fix was a darker albedo (rank gamma 1.5, a multiply of the far field towards the map's dark end) and saturated highlights, so the pass moves little. Likewise a light's gain over about 1 clips a red and climbs its green, so a red relief lit at ambient 0.5 + diffuse 0.7 read gold everywhere. Locations are gallery scouts: `--max-ink 0.10` (seed 33) for the two reliefs, which want far field between the lace, and the plain draw for the scales, which cover lace too. Round one is drawn at --draft (a frame of up to six loops took about 10 s at six threads)."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 120.0,
+        "range": [30.0, 210.0],
+        "set": ["/layers/*/light/azimuth"]
+      },
+      {
+        "name": "folds",
+        "label": "Flowing folds",
+        "what": "how strongly the translucent folds with lit edges show across the fire",
+        "default": 0.4,
+        "range": [0.0, 0.7],
+        "set": ["/layers/1/opacity", "/layers/2/opacity", "/layers/3/opacity"]
+      },
+      {
+        "name": "heart_glow",
+        "label": "Golden heart",
+        "what": "the bright gold glow towards the upper left of the frame",
+        "default": 0.8,
+        "range": [0.0, 1.0],
+        "set": ["/layers/4/opacity"]
+      },
+      {
+        "name": "flame_strands",
+        "label": "Flame strands",
+        "what": "the fine strands of flame that trace the fire's flow",
+        "default": 0.25,
+        "range": [0.0, 0.6],
+        "set": ["/layers/9/opacity"]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.442,
+        "range": [0.36, 0.52],
+        "set": ["/tone/median"]
+      }
+    ]
+  },
   "style": {
     "name": "molten_flow",
     "interior": {

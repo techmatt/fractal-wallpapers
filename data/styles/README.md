@@ -66,7 +66,10 @@ a name the style does not expose and a value outside its range.
 file the mode was fitted or tried against, kept or not: the style's own first, then each
 palette entry's and each merged or dropped entry's, by file name in `style-refs/`), Matt's
 score (1–5), status
-(`publish`, `drop`, `discarded`; absent until he rules), the published variant, the
+(`publish`, `drop`, `discarded`; absent until he rules), a published mode's **tier**
+(`curated`, the website's *Custom* list: four or five knobs, kept pictures only; or
+`lab`, *Custom (lab)*: knobs optional, and a mode whose rounds kept nothing shows an
+example, a round-one draft's location, map and picture), the published variant, the
 keeps the page shows (`{keep, caption}`), the card's text, its **palette set**
 (`palettes`, below), the old style names it answers to (`aliases`), and for a
 published mode `public` (`{name, palette, knobs}`, `palette` the set's first). The
@@ -113,7 +116,9 @@ traced in `img/sources.json` so a rebuild redraws only what moved), one card per
 `style bundle` (the website's `custom-modes.json`) carries each published mode's kept
 entries. **Re-drawing a shown keep**
 under a changed default is a one-row picker: `style render` at the keep's location and
-public palette, `style picker`, a choices file keeping it, `style keep`; then point the
+public palette (a draft `.json` whose `name` is the keep stack's own `name`, or it is
+refused), `style picker`, a choices file keeping it (`{name, rows: [{id, keys, notes}]}`),
+`style keep` (with `--manifest <picker>/manifest.json` when the choices name none); then point the
 catalog's `show` at the new id and rebuild `style bundle` and `style gallery`.
 
 ## Checking the library

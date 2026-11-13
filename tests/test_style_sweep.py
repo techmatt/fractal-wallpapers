@@ -62,10 +62,17 @@ def test_a_knob_whose_ends_match_is_dead_and_a_slow_end_is_named(tmp_path):
             "per_msample": 20,
         },
     ]
+    # A second seat costs what its location costs: judged only against its own seat-mates.
+    todo.append({"style": "s", "variant": "seat1", "knobs": {}, "against": None})
+    rows.append(
+        {"style": "s", "variant": "seat1", "picture": str(other), "flags": [], "per_msample": 90}
+    )
+    rows[-1]["location"] = "deep_phoenix"
     style_sweep.compare(rows, todo)
     assert rows[2]["flags"] == ["dead_knob"]
     assert rows[3]["flags"] == ["same_palette", "slow"]
     assert rows[0]["flags"] == [] and rows[1]["flags"] == []
+    assert rows[4]["flags"] == []
 
 
 def test_a_tone_miss_is_flagged_only_at_a_checked_width(tmp_path):

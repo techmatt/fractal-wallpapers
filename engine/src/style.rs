@@ -1280,6 +1280,26 @@ impl Style {
                 sigmas.len()
             ));
         }
+        // Each loop (the frame's, and one per view) keeps one running sum per stripe
+        // density, up to `1 + MORE_STRIPES` of them.
+        let loops = std::iter::once(self.fields()).chain(self.views().into_iter().map(|(_, f)| f));
+        for fields in loops {
+            let densities: Vec<f64> = fields
+                .iter()
+                .filter_map(|field| match field {
+                    FieldSpec::Stripe { density } => Some(*density),
+                    _ => None,
+                })
+                .collect();
+            let count = Wants::stripe_count(&densities);
+            if count > 1 + iterate::MORE_STRIPES {
+                return Err(format!(
+                    "style '{}' asks one escape loop for {count} stripe densities; it carries {}",
+                    self.name,
+                    1 + iterate::MORE_STRIPES
+                ));
+            }
+        }
         Ok(())
     }
 

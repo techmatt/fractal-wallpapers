@@ -19,17 +19,25 @@ def test_the_bundle_carries_every_published_mode_whole():
     for mode, row in zip(document["modes"], published, strict=True):
         source = styles.load(row["style"])
         assert mode["name"] == row["public"]["name"]
+        assert mode["tier"] == row["tier"] and mode["tier"] in style_catalog.TIERS
         assert mode["stack"] == source["style"]
-        assert mode["knobs"] == source["public"]["knobs"]
+        assert mode["knobs"] == ((source.get("public") or {}).get("knobs") or [])
         assert mode["palette"] in document["colormaps"]
-        assert [shown["keep"] for shown in mode["shown"]] == [s["keep"] for s in row["show"]]
+        assert mode["shown"], f"{row['style']} opens nowhere"
+        assert [s.get("keep") for s in mode["shown"]] == [s.get("keep") for s in row["show"]]
         keeps = style_catalog.keeps_of(row["style"])
         stacks = style_wasm.keep_stacks(row["style"])
-        for shown in mode["shown"]:
+        for shown, item in zip(mode["shown"], row["show"], strict=True):
+            assert shown["colormap"] in document["colormaps"]
+            if "keep" not in item:  # a lab example: its draft's place, the mode's stack
+                assert shown["location"] == item["location"]
+                assert shown["stack"] == source["style"]
+                continue
             render = keeps[shown["keep"]]["render"]
             assert shown["location"] == render["location"]
             assert shown["stack"] == stacks[render["stack"]]
-            assert shown["colormap"] in document["colormaps"]
+    tiers = {mode["tier"] for mode in document["modes"]}
+    assert tiers == set(style_catalog.TIERS), "the bundle carries both tiers, told apart"
     for name, colormap in document["colormaps"].items():
         assert colormap == style_wasm.colormap_of(name)
 

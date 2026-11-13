@@ -16,8 +16,100 @@
   "adds": [],
   "notes": [
     "Added: nothing new to the engine: seven loops' stripe crests through the frost map, a white falloff hair and halo on the frame's own `de` for the frosted rime along the set, the tone pass at the reference's near-black p10.",
-    "Lessons: item 032 brought five flame references whose look is fine strands and wisps filling the frame (commons_Waves_Apophysis_Fractal_Flame.jpg, convocation-dragons-25.jpg, cosmic-forces-25.jpg, creeping-frost-25.jpg, deaths-icy-hand-25.jpg), after item 028's flame_veil_* scored 2/5 as a few broad sheets. **The strands are the stripe average, not the smooth count**: sheets cut from the smooth count follow its level lines, which nest round the set as rings (through six views at period 0.25 they drew a tunnel of ellipses), while the stripe average's crests run along the orbit's field lines, across the level lines, as fine as its density asks; raised to power 10 only the crests light, and seven loops (the frame and six views on a golden-angle spiral, turned, scaled 0.8 to 1.9 and shifted up to 0.55 frame widths) cross their strands over the whole frame. Under them the same field at density 3 and power 2 is the soft veil. Far from the set the crests run as near-straight rays (ten views at density 8 read as a fan of straight lines); nearer the set they curl, so the strands curl most on seats with set in the frame, and views narrower than the frame (zoom 0.3 to 0.7, centres within 0.25 frame widths: the `close_views` formulation) curl them everywhere, the nearest the round came to the curled ribbons and swirls of convocation-dragons and deaths-icy-hand. **Wisps need far field, as veils did**: of the forty-seat gallery draw (`style scout --n 40`) seven showed the wisps and the rest were filled by lace (the set's own hair floods it), so the locations are item 028's hand-placed shallow seats (its measurement: far-field share median 0.285 over 40 gallery seats, 0.544 over 40 hand seats) with those seven gallery seats (step 4's exception). A full-size frame of seven loops took about two minutes at six threads, a parabolic (r 1.0) or phoenix seat over four; round one is drawn at --draft."
+    "Lessons: item 032 brought five flame references whose look is fine strands and wisps filling the frame (commons_Waves_Apophysis_Fractal_Flame.jpg, convocation-dragons-25.jpg, cosmic-forces-25.jpg, creeping-frost-25.jpg, deaths-icy-hand-25.jpg), after item 028's flame_veil_* scored 2/5 as a few broad sheets. **The strands are the stripe average, not the smooth count**: sheets cut from the smooth count follow its level lines, which nest round the set as rings (through six views at period 0.25 they drew a tunnel of ellipses), while the stripe average's crests run along the orbit's field lines, across the level lines, as fine as its density asks; raised to power 10 only the crests light, and seven loops (the frame and six views on a golden-angle spiral, turned, scaled 0.8 to 1.9 and shifted up to 0.55 frame widths) cross their strands over the whole frame. Under them the same field at density 3 and power 2 is the soft veil. Far from the set the crests run as near-straight rays (ten views at density 8 read as a fan of straight lines); nearer the set they curl, so the strands curl most on seats with set in the frame, and views narrower than the frame (zoom 0.3 to 0.7, centres within 0.25 frame widths: the `close_views` formulation) curl them everywhere, the nearest the round came to the curled ribbons and swirls of convocation-dragons and deaths-icy-hand. **Wisps need far field, as veils did**: of the forty-seat gallery draw (`style scout --n 40`) seven showed the wisps and the rest were filled by lace (the set's own hair floods it), so the locations are item 028's hand-placed shallow seats (its measurement: far-field share median 0.285 over 40 gallery seats, 0.544 over 40 hand seats) with those seven gallery seats (step 4's exception). A full-size frame of seven loops took about two minutes at six threads, a parabolic (r 1.0) or phoenix seat over four; round one is drawn at --draft.",
+    "Item 050: the strands' stripe density reads 3, not the 10 above: until then one escape loop carried one stripe density, the first a layer asked for, so 10 was never drawn. The stack now says what every kept picture shows (Matt's ruling; pixel-identical)."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "veils",
+        "label": "Soft veils",
+        "what": "the broad, misty blue veils drifting behind the strands",
+        "default": 0.16,
+        "range": [
+          0.04,
+          0.4
+        ],
+        "set": [
+          "/layers/1/opacity",
+          "/layers/2/opacity",
+          "/layers/3/opacity",
+          "/layers/4/opacity",
+          "/layers/5/opacity",
+          "/layers/6/opacity",
+          "/layers/7/opacity"
+        ]
+      },
+      {
+        "name": "strands",
+        "label": "Frost strands",
+        "what": "the fine crossing strands of frost that fill the frame",
+        "default": 0.28,
+        "range": [
+          0.1,
+          0.5
+        ],
+        "set": [
+          "/layers/8/opacity",
+          "/layers/9/opacity",
+          "/layers/10/opacity",
+          "/layers/11/opacity",
+          "/layers/12/opacity",
+          "/layers/13/opacity",
+          "/layers/14/opacity"
+        ]
+      },
+      {
+        "name": "rime",
+        "label": "White rime",
+        "what": "how brightly the crisp white rime glows along the edge of the set",
+        "default": 0.85,
+        "range": [
+          0.3,
+          1.0
+        ],
+        "set": [
+          "/layers/16/opacity",
+          {
+            "path": "/layers/15/opacity",
+            "scale": 0.47058823529411764,
+            "offset": 0
+          }
+        ]
+      },
+      {
+        "name": "rime_reach",
+        "label": "Rime reach",
+        "what": "how far the white glow of the rime spreads out from the set",
+        "default": 0.0012,
+        "range": [
+          0.0005,
+          0.003
+        ],
+        "set": [
+          "/layers/15/falloff",
+          {
+            "path": "/layers/16/falloff",
+            "scale": 0.20833333333333334,
+            "offset": 0
+          }
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.287,
+        "range": [
+          0.22,
+          0.36
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "flame_wisp_frost",
     "interior": {
@@ -200,7 +292,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           }
         },
         "power": 10.0,
@@ -215,7 +307,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           },
           "view": {
             "turn": 137.5,
@@ -238,7 +330,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           },
           "view": {
             "turn": 275.0,
@@ -261,7 +353,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           },
           "view": {
             "turn": 52.5,
@@ -284,7 +376,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           },
           "view": {
             "turn": 190.0,
@@ -307,7 +399,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           },
           "view": {
             "turn": 327.5,
@@ -330,7 +422,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 3.0
           },
           "view": {
             "turn": 105.0,

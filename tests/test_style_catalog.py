@@ -33,11 +33,10 @@ OUT_OF_RANGE_SHOWN = {("teal_tunnel", "style_teal_tunnel_r1/shortlist/01_j_dendr
 @pytest.mark.parametrize("row", published(), ids=lambda row: row["style"])
 def test_a_shown_keep_is_one_its_own_knobs_can_draw(row):
     document = styles.load(row["style"])
-    keeps = style_catalog.keeps_of(row["style"])
-    for shown in row.get("show", []):
-        place = keeps[shown["keep"]]["render"]["location"].get("projection") or {}
+    for shown in style_catalog.shown_of(row):
+        place = shown["location"].get("projection") or {}
         outside = []
-        for knob in document["public"]["knobs"]:
+        for knob in (document.get("public") or {}).get("knobs") or []:
             for pointer in knob["set"]:
                 if not isinstance(pointer, str):
                     continue  # a scaled write's member is not on the knob's own scale
@@ -48,7 +47,8 @@ def test_a_shown_keep_is_one_its_own_knobs_can_draw(row):
                 low, high = knob["range"]
                 if value is not None and not low <= value <= high:
                     outside.append((knob["name"], value))
-        assert bool(outside) == ((row["style"], shown["keep"]) in OUT_OF_RANGE_SHOWN), outside
+        named = (row["style"], shown.get("keep"))
+        assert bool(outside) == (named in OUT_OF_RANGE_SHOWN), outside
 
 
 def test_a_catalog_garbled_by_hand_is_refused_not_raised(tmp_path, monkeypatch):
@@ -105,16 +105,52 @@ def test_the_catalog_is_not_a_style():
 @pytest.mark.parametrize("row", published(), ids=lambda row: row["style"])
 def test_a_published_mode_exposes_knobs_whose_defaults_are_its_stack(row):
     document = styles.load(row["style"])
-    knobs = document["public"]["knobs"]
-    assert 3 <= len(knobs) <= 5
-    assert styles.check_public(document) == []
+    knobs = (document.get("public") or {}).get("knobs") or []
+    low, high = style_catalog.KNOBS[row["tier"]]
+    assert low <= len(knobs) <= high
+    if knobs:
+        assert styles.check_public(document) == []
     assert row["public"]["palette"] == document["suggested_colormap"]
+
+
+def test_the_two_tiers_are_matt_s_ruling():
+    """Custom: the nine first published and the seven item 050 added; Custom (lab): every
+    other mode Matt did not drop or discard."""
+    rows = style_catalog.load()["modes"]
+    curated = {row["style"] for row in rows if row.get("tier") == "curated"}
+    assert curated == CURATED
+    for row in rows:
+        ruled_out = row.get("status") in ("drop", "discarded")
+        assert (row.get("status") == "publish") != ruled_out, row["style"]
+        if not ruled_out:
+            assert row["tier"] == ("curated" if row["style"] in CURATED else "lab")
+
+
+CURATED = {
+    *("bronze_packing", "glossy_lobes", "floating_on_dreams", "yas", "teal_tunnel"),
+    *("ribbon_packing", "gilded_orbs", "shaded_blades", "lit_petals"),
+    *("soft_veils", "clockwork_rings", "molten_flow", "flame_wisp_frost", "crescent_lines"),
+    *("glossy_spirals", "lace_holes"),
+}
+
+
+def test_an_example_is_a_lab_mode_s_and_names_a_place_and_a_map():
+    maps = {"m"}
+    place = {"family": {"kind": "mandelbrot"}, "viewport": {}, "maxiter": 100}
+    lab = {"tier": "lab"}
+    good = {"location": place, "colormap": "m", "caption": "c", "picture": "artifacts/p.png"}
+    assert style_catalog.check_example(lab, good, maps) == []
+    assert style_catalog.check_example({"tier": "curated"}, good, maps)
+    assert style_catalog.check_example(lab, {**good, "colormap": "x"}, maps)
+    assert style_catalog.check_example(lab, {**good, "caption": ""}, maps)
+    assert style_catalog.check_example(lab, {**good, "picture": "C:\\p.png"}, maps)
+    assert style_catalog.check_example(lab, {**good, "location": {}}, maps)
 
 
 @pytest.mark.parametrize("row", published(), ids=lambda row: row["style"])
 def test_every_knob_moves_its_stack_at_either_end(row):
     document = styles.load(row["style"])
-    for knob in document["public"]["knobs"]:
+    for knob in (document.get("public") or {}).get("knobs") or []:
         for end in knob["range"]:
             if end == knob["default"]:
                 continue

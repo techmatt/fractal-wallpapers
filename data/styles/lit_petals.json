@@ -56,6 +56,19 @@
         "set": [
           "/tone/median"
         ]
+      },
+      {
+        "name": "gloss",
+        "label": "Gloss",
+        "what": "how bright the shine on each petal's crest is",
+        "default": 0.5,
+        "range": [
+          0.15,
+          0.9
+        ],
+        "set": [
+          "/layers/3/light/specular"
+        ]
       }
     ]
   },

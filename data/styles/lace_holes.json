@@ -20,8 +20,92 @@
     "copper_mail: Added: nothing new to the engine; the map copper_mail (maroon brown, rust, copper to amber and pale gold), ground at gamma 2.5 so the strands read, the map's top held at a muted copper and the holes a mid brown: dragon-mail's p90 is 0.528, and with a pale gold top every render missed it by 0.2; the tone pass then flattens the holes towards the lace's tone.",
     "gold_arcs: Added: nothing new to the engine; the map gold_arcs (olive umber, burnt orange, amber, gold, butter yellow), the brightest reference (median 0.547), holes an amber brown rather than dark, as the reference's are.",
     "bead_strands: Added: nothing new to the engine; the map bead_strands (violet black, indigo, periwinkle, to ice blue at its top), every hole a glass bead: an inverted `inside` glow at power 6 and a light domed on `inside`, its highlight the map's periwinkle at 0.85.",
-    "Lessons: item 037 brought five references whose look is a glowing lace web of fine strands pierced by round holes of every size (devilfish, dreaming, dragon-mail, flamed, deepsea-life, all -25.jpg), and they went in as **four on one stack; bead_strands adds an inside rim glow and the bead light**. **The holes are the set's interior**, and the galleries have none to offer: a hole probe (the interior white, the rest black) read 0.000 on every Julia seat of a 60-seat scout, and of 150 plane seats only phoenix-classic held interior, which reads as whirls. So the seats are hand-placed Julia sets of z^d + c at the centre of a hyperbolic component (Newton on f^p(0) = 0), whose Fatou components are round discs at every scale: whole sets and the framings where holes of many sizes meet; the pinwheels at a repelling fixed point have holes too big. **Strands that hug the set**: the stripe average's crests at density 2 and 4 (a glow at power 10, flame_wisp_waves), masked by the inverted `de` at power 1 to 3, so they feather out of the lace round each hole and die into the ground; 032's strands ignored the set because nothing tied them to it. The ground is the smooth count by rank at gamma 2 to 5, dark, so the strands carry the lace; at gamma 1 the near-set band is one flat cream fill. The interior paint wants pure black on the dark references: the tone pass lifts a dark navy hole to slate. `inside` read as a palette at three cycles is a bullseye in every hole (the `inner` formulation keeps it at 0.12); an inverted `inside` glow at power 16 is invisible, at 6 a soft inner rim, and a `light` on `inside` at one band with `rings` 1 domes each component as a lit glass bead (bead_strands' default, the `bubbles` formulation elsewhere). Round one is drawn at --draft (about 2 s a frame at six threads)."
+    "Lessons: item 037 brought five references whose look is a glowing lace web of fine strands pierced by round holes of every size (devilfish, dreaming, dragon-mail, flamed, deepsea-life, all -25.jpg), and they went in as **four on one stack; bead_strands adds an inside rim glow and the bead light**. **The holes are the set's interior**, and the galleries have none to offer: a hole probe (the interior white, the rest black) read 0.000 on every Julia seat of a 60-seat scout, and of 150 plane seats only phoenix-classic held interior, which reads as whirls. So the seats are hand-placed Julia sets of z^d + c at the centre of a hyperbolic component (Newton on f^p(0) = 0), whose Fatou components are round discs at every scale: whole sets and the framings where holes of many sizes meet; the pinwheels at a repelling fixed point have holes too big. **Strands that hug the set**: the stripe average's crests at density 2 and 4 (a glow at power 10, flame_wisp_waves), masked by the inverted `de` at power 1 to 3, so they feather out of the lace round each hole and die into the ground; 032's strands ignored the set because nothing tied them to it. The ground is the smooth count by rank at gamma 2 to 5, dark, so the strands carry the lace; at gamma 1 the near-set band is one flat cream fill. The interior paint wants pure black on the dark references: the tone pass lifts a dark navy hole to slate. `inside` read as a palette at three cycles is a bullseye in every hole (the `inner` formulation keeps it at 0.12); an inverted `inside` glow at power 16 is invisible, at 6 a soft inner rim, and a `light` on `inside` at one band with `rings` 1 domes each component as a lit glass bead (bead_strands' default, the `bubbles` formulation elsewhere). Round one is drawn at --draft (about 2 s a frame at six threads).",
+    "Item 050: the engine now keeps one stripe sum per density, so the density-4 strands draw as written for the first time (they drew at 2 before); every keep was redrawn."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light on the glass beads comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      },
+      {
+        "name": "bead_gloss",
+        "label": "Bead gloss",
+        "what": "how tight and glassy the shine on each bead is, from a broad soft sheen to a small sharp spark",
+        "default": 40.0,
+        "range": [
+          6.0,
+          150.0
+        ],
+        "set": [
+          "/layers/4/light/shininess"
+        ]
+      },
+      {
+        "name": "rim_glow",
+        "label": "Hole rim glow",
+        "what": "how far the glow inside each hole's rim reaches towards its centre",
+        "default": 6.0,
+        "range": [
+          2.5,
+          14.0
+        ],
+        "set": [
+          "/layers/3/power"
+        ]
+      },
+      {
+        "name": "strands",
+        "label": "Strand strength",
+        "what": "how thick and bright the fine strands of the lace web are",
+        "default": 1.0,
+        "range": [
+          0.5,
+          1.6
+        ],
+        "set": [
+          {
+            "path": "/layers/1/power",
+            "scale": -10.0,
+            "offset": 20.0
+          },
+          {
+            "path": "/layers/2/power",
+            "scale": -10.0,
+            "offset": 20.0
+          }
+        ]
+      },
+      {
+        "name": "strand_fade",
+        "label": "Strand fade",
+        "what": "how quickly the strands fade into the dark as they leave the lace",
+        "default": 1.0,
+        "range": [
+          0.3,
+          3.0
+        ],
+        "set": [
+          "/layers/1/mask/power",
+          {
+            "path": "/layers/2/mask/power",
+            "scale": 3.0,
+            "offset": 0.0
+          }
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "lace_holes",
     "interior": {

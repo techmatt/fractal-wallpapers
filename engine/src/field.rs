@@ -421,7 +421,10 @@ impl FieldSpec {
                 Some(length) => (orbit.iteration % length) as f64,
                 None => orbit.iteration as f64,
             }),
-            FieldSpec::Stripe { .. } => orbit.escaped.then(|| orbit.stripe.deband(fade)).flatten(),
+            FieldSpec::Stripe { density } => orbit
+                .escaped
+                .then(|| orbit.stripe_at(density).deband(fade))
+                .flatten(),
             FieldSpec::Tia => orbit.escaped.then(|| orbit.tia.deband(fade)).flatten(),
             FieldSpec::Curvature => orbit
                 .escaped

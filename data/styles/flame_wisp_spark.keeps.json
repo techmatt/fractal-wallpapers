@@ -40,7 +40,7 @@
           "note": "degree-2 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.131), whole; seed 28, draw 0"
         },
         "style": "flame_wisp_spark__close_views",
-        "stack": "flame_wisp_spark__close_views@4f3b14bf",
+        "stack": "flame_wisp_spark__close_views@cc3fae69",
         "colormap": "flame_wisp_spark",
         "resolution": [
           1280,
@@ -51,7 +51,7 @@
     }
   ],
   "stacks": {
-    "flame_wisp_spark__close_views@4f3b14bf": {
+    "flame_wisp_spark__close_views@cc3fae69": {
       "name": "flame_wisp_spark__close_views",
       "interior": {
         "palette": 0.02
@@ -233,7 +233,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             }
           },
           "power": 10.0,
@@ -248,7 +248,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             },
             "view": {
               "turn": 137.5,
@@ -271,7 +271,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             },
             "view": {
               "turn": 275.0,
@@ -294,7 +294,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             },
             "view": {
               "turn": 52.5,
@@ -317,7 +317,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             },
             "view": {
               "turn": 190.0,
@@ -340,7 +340,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             },
             "view": {
               "turn": 327.5,
@@ -363,7 +363,7 @@
           "channel": {
             "field": {
               "kind": "stripe",
-              "density": 10.0
+              "density": 3.0
             },
             "view": {
               "turn": 105.0,

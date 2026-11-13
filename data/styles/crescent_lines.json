@@ -19,6 +19,86 @@
     "Added: nothing new to the engine. Its locations are hand-placed minibrots (step 4's exception): a nucleus by Newton on f^p(0) = 0, framed 30 to 60 of its size estimates wide and set off-centre (item 034's working scripts, nuclei.py and seats.py, in its results folder).",
     "Lessons: item 034 brought crescent-25.jpg, hair-fine streamlines sweeping the whole frame round a small minibrot, and the prompt named field_lines' `lines` channel for them. **The field-lines channel draws a minibrot's field one band at a time**: its angle is read per crossing step, so every band seam cuts the lines, and on a deep seat the bands nest round the minibrot as rings of fans (the `fans` formulation). `divide` 2 is the external angle less a jump of a multiple of 2^-step at each seam, and a scratch engine change dividing from the frame's least step instead (so the outermost band reads the angle whole at any depth) proved the limit: lines run on across a seam only while the period divides the jump, so a count of lines fine enough to read is seamless only in the outermost few bands and the rest of the frame takes the period's whole range as one flat tone. It was reverted, unshipped. **The stripe average's level lines are the streamlines**: they run along the field lines and are debanded, so through the map at a few cycles they sweep across every band and into the set's filaments, which is what the named mode stripe already draws at one cycle (the round's baseline, the nearest any reading came to the reference). Two limits read off the drafts: at a high density (10 to 24) the average is noise near the set, so crests of it (a high-power glow) light the far field only (the `crests` formulation); and at six cycles on a 1280 draft the strands alias into moire, so three is the default. **The galleries hold no small minibrot**: of final139_general's 129 non-spiral Mandelbrot seats one reads under ink 0.10 (`style scout --partition mandelbrot --max-ink 0.10`, median 0.198); of sixty hand-placed nuclei in the body, thirty-five did, and seats on the needle and near the tip at i read thinner still (a starburst of filaments rather than a dendrite)."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "streamlines",
+        "label": "Streamline count",
+        "what": "how many fine lines sweep round the set; fewer draws broad ribbons, more draws hair-fine strands",
+        "default": 3.0,
+        "range": [
+          1.0,
+          4.0
+        ],
+        "set": [
+          "/layers/0/palette/cycles"
+        ]
+      },
+      {
+        "name": "shading",
+        "label": "Light and shade",
+        "what": "the broad light and dark that rises from the set toward the frame's edge",
+        "default": 0.6,
+        "range": [
+          0.2,
+          0.9
+        ],
+        "set": [
+          "/layers/1/opacity"
+        ]
+      },
+      {
+        "name": "haze",
+        "label": "Rust haze",
+        "what": "the soft rust-coloured bloom round the set",
+        "default": 0.5,
+        "range": [
+          0.0,
+          0.9
+        ],
+        "set": [
+          "/layers/2/opacity"
+        ]
+      },
+      {
+        "name": "glow_size",
+        "label": "Glow size",
+        "what": "how far the orange glow spreads out from the set's rim and spokes",
+        "default": 1.0,
+        "range": [
+          0.4,
+          3.0
+        ],
+        "set": [
+          {
+            "path": "/layers/2/falloff",
+            "scale": 0.003
+          },
+          {
+            "path": "/layers/3/falloff",
+            "scale": 0.0003
+          },
+          {
+            "path": "/layers/4/falloff",
+            "scale": 0.0001
+          }
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.272,
+        "range": [
+          0.2,
+          0.34
+        ],
+        "set": [
+          "/tone/median"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "crescent_lines",
     "interior": {

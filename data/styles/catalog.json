@@ -5,6 +5,7 @@
       "style": "bronze_packing",
       "score": 4,
       "status": "publish",
+      "tier": "curated",
       "item": "009",
       "reference": "795549-3840x2160-desktop-4k-fractal-background.jpg",
       "references": [
@@ -14,15 +15,15 @@
       "show": [
         {
           "keep": "style_bronze_packing_rekeep/rekeep/rekeep_0_00_julia-multibrot6_9cf619af",
-          "caption": "julia multibrot6 · matched map"
+          "caption": "A six-fold Julia set packed with brass discs inside discs"
         },
         {
           "keep": "style_bronze_packing_rekeep/rekeep/rekeep_1_02_julia-multibrot3_b4307aa3",
-          "caption": "julia multibrot3 · matched map"
+          "caption": "A three-fold Julia set foaming with nested brass beads"
         },
         {
           "keep": "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
-          "caption": "julia multibrot3 · matched map"
+          "caption": "Another three-fold Julia set, gold star-flowers among its discs"
         }
       ],
       "public": {
@@ -35,7 +36,7 @@
           "star_rays"
         ]
       },
-      "what": "Discs packed inside discs: a new disc channel read at the step an orbit enters it, with metallic rims, nested beads and gold star-flowers from the set's interior.",
+      "what": "Discs packed inside discs along the fractal, with metallic rims, nested beads and gold star-flowers blooming from inside the set.",
       "kept": "5 locations, 4 palettes, 2 variants",
       "note": "Engine: bubble channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the hero-circle seat and the two with star-flowers closest to the reference. · Matt: higher quality than most, though there is no strict tangent Kleinian hierarchy.",
       "palettes": [
@@ -87,6 +88,7 @@
       "style": "glossy_lobes",
       "score": 4,
       "status": "publish",
+      "tier": "curated",
       "item": "019",
       "reference": "blessed-by-the-night-25.jpg",
       "references": [
@@ -96,15 +98,15 @@
       "show": [
         {
           "keep": "style_glossy_lobes_r1/locations/locations__01_julia-multibrot6_d70c928f_glossy_lobes",
-          "caption": "julia multibrot6"
+          "caption": "Blue lacquered lobes between gold star webs on a six-fold Julia set"
         },
         {
           "keep": "style_glossy_lobes_r1/locations/locations__02_multibrot5_538fb4d6_glossy_lobes",
-          "caption": "multibrot5"
+          "caption": "Lit lobes along the edge of a four-fold Multibrot set"
         },
         {
           "keep": "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes",
-          "caption": "mandelbrot"
+          "caption": "Lit lobes along the edge of the Mandelbrot set"
         }
       ],
       "public": {
@@ -117,7 +119,7 @@
           "sparkle"
         ]
       },
-      "what": "Soft lit blue lobes (the disc grid, lit as one dome each) between gold star webs from the strip trap, with halo and sparkle.",
+      "what": "Soft lit blue lobes, each a glossy dome, between gold star webs, with a halo and sparkle.",
       "kept": "3 locations, map_lobes formulation",
       "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default. · Matt: reasonably good.",
       "palettes": [
@@ -138,6 +140,7 @@
       "style": "floating_on_dreams",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "002",
       "reference": "floating-on-dreams-25.jpg",
       "references": [
@@ -147,15 +150,15 @@
       "show": [
         {
           "keep": "style_floating_r1/shortlist/00_d5_julia_ten_spokes",
-          "caption": "d5 julia, ten spokes"
+          "caption": "A five-fold Julia set whose lit waves fan into ten spokes"
         },
         {
           "keep": "style_floating_r1/shortlist/06_d5_julia_bulb_ring",
-          "caption": "d5 julia, bulb ring"
+          "caption": "A five-fold Julia set ringed with bulbs"
         },
         {
           "keep": "style_floating_r1/shortlist/07_m2_eight_beaded_arms",
-          "caption": "m2, eight beaded arms"
+          "caption": "Eight beaded arms at the edge of the Mandelbrot set"
         }
       ],
       "public": {
@@ -169,7 +172,7 @@
           "brightness"
         ]
       },
-      "what": "Lit layered waves: the first style; smooth bands lit as ring-banded surfaces with glow streaks.",
+      "what": "Lit layered waves: smooth colour bands shaded as rippled surfaces, with streaks of glow.",
       "kept": "3 locations, 11 palette renders",
       "note": "Engine: compositor, gradient, inside, light, glow, pattern, mask (first style) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The 3 matched-map locations. · Matt: 3 of 10 locations kept, the others too light (the `tone` pass fixed 4 of those 7); he likes its wave nature.",
       "palettes": [
@@ -235,6 +238,7 @@
       "style": "yas",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "003",
       "reference": "yas-25.jpg",
       "references": [
@@ -244,15 +248,15 @@
       "show": [
         {
           "keep": "style_yas_r1/shortlist/09_m2_seahorse_tail_spiral",
-          "caption": "m2 seahorse tail spiral"
+          "caption": "A seahorse-tail spiral in the Mandelbrot set, lit from within"
         },
         {
           "keep": "style_yas_r1/shortlist/03_d4_julia_seven_arm_rosette",
-          "caption": "d4 julia, seven-arm rosette"
+          "caption": "A seven-arm rosette in a four-fold Julia set"
         },
         {
           "keep": "style_yas_r1/shortlist/04_m2_julia_ten_arm_rosette_whirl",
-          "caption": "m2 julia, ten-arm whirl"
+          "caption": "A ten-arm whirl in a Julia set"
         }
       ],
       "public": {
@@ -339,6 +343,7 @@
       "style": "teal_tunnel",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "007",
       "reference": "795548-3840x2160-desktop-4k-fractal-background.jpg",
       "references": [
@@ -348,15 +353,15 @@
       "show": [
         {
           "keep": "style_teal_tunnel_r1/variants/turns3",
-          "caption": "variant: three turns"
+          "caption": "Three turns of the tunnel: nine arms and bigger cells"
         },
         {
           "keep": "style_teal_tunnel_r1/shortlist/09_m_seed4",
-          "caption": "mandelbrot seed4"
+          "caption": "A two-arm branch of the Mandelbrot set seen as a tunnel"
         },
         {
           "keep": "style_teal_tunnel_r1/shortlist/01_j_dendrite_beta",
-          "caption": "dendrite julia β"
+          "caption": "A branching Julia set seen down the end of one branch"
         }
       ],
       "public": {
@@ -398,6 +403,7 @@
       "style": "ribbon_packing",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "014",
       "reference": "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg",
       "references": [
@@ -407,11 +413,11 @@
       "show": [
         {
           "keep": "style_ribbon_packing_r1/locations/locations__01_julia-multibrot6_11c49c17_ribbon_packing",
-          "caption": "julia multibrot6"
+          "caption": "Blue ribbons and brass discs packed through a six-fold Julia set"
         },
         {
           "keep": "style_ribbon_packing_r1/locations/locations__07_julia-multibrot6_9aa8f703_ribbon_packing",
-          "caption": "julia multibrot6"
+          "caption": "Another six-fold Julia set packed with ribbons and discs"
         }
       ],
       "public": {
@@ -424,7 +430,7 @@
           "brightness"
         ]
       },
-      "what": "bronze_packing plus glossy blue crescent ribbons: the same disc grid read at two scales.",
+      "what": "Brass discs packed inside discs, threaded with glossy blue crescent ribbons.",
       "kept": "2 locations",
       "note": "Engine: bubble shift + crescent · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: warmer and browner than the lilac reference.",
       "palettes": [
@@ -443,6 +449,7 @@
       "style": "gilded_orbs",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "015",
       "reference": "ancient-empires-25.jpg",
       "references": [
@@ -452,11 +459,11 @@
       "show": [
         {
           "keep": "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs",
-          "caption": "mandelbrot"
+          "caption": "Engraved gold filigree and jewel orbs along the Mandelbrot set"
         },
         {
           "keep": "style_gilded_orbs_r1/formulations/f_many_orbs__01_multibrot3_1ec297e1_gilded_orbs",
-          "caption": "variant: many orbs"
+          "caption": "More and bigger orbs along a two-fold Multibrot set"
         }
       ],
       "public": {
@@ -470,7 +477,7 @@
           "light_angle"
         ]
       },
-      "what": "Engraved gold filigree with jewel orbs, warm haze and sparkle; built from existing pieces.",
+      "what": "Engraved gold filigree set with jewel orbs, a warm haze and sparkle.",
       "kept": "1 location, many_orbs",
       "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob. · Matt: 1 of 12 locations kept; wide minibrot interiors wash to a pale blob.",
       "palettes": [
@@ -489,6 +496,7 @@
       "style": "shaded_blades",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "018",
       "reference": "chronoscope-25.jpg",
       "references": [
@@ -498,7 +506,7 @@
       "show": [
         {
           "keep": "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
-          "caption": "variant: lune blades"
+          "caption": "Smoothly shaded crescent blades along a two-fold Multibrot set"
         }
       ],
       "public": {
@@ -511,7 +519,7 @@
           "sheen"
         ]
       },
-      "what": "Smoothly shaded lune blades (the bubble's crescent, read at entry) over a hair of light along the set.",
+      "what": "Smoothly shaded crescent blades over a hairline of light along the set.",
       "kept": "1 formulation",
       "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Matt: giant foreground blades occlude the finer ones and kill the fractal feel, so Blade size tops out at the kept size.",
       "palettes": [
@@ -529,6 +537,7 @@
       "style": "lit_petals",
       "score": 3,
       "status": "publish",
+      "tier": "curated",
       "item": "020",
       "reference": "carnival-25.jpg",
       "references": [
@@ -539,11 +548,11 @@
       "show": [
         {
           "keep": "style_lit_petals_r1/formulations/f_soft__01_julia-mandelbrot_17e354d3_lit_petals",
-          "caption": "variant: soft"
+          "caption": "A Julia set's petals shaded softly, without jewels"
         },
         {
           "keep": "style_lit_petals_rekeep/rekeep/rekeep_2_julia-mandelbrot_06abe945",
-          "caption": "julia–mandelbrot"
+          "caption": "Lit petals with jewelled edges on a Julia set"
         }
       ],
       "public": {
@@ -552,10 +561,11 @@
         "knobs": [
           "jewels",
           "light_angle",
-          "brightness"
+          "brightness",
+          "gloss"
         ]
       },
-      "what": "Smoothly lit petals with jewelled edges, on a wrap-around palette.",
+      "what": "Smoothly lit petals with jewelled edges, the colours cycling round each one.",
       "kept": "2 locations, soft; the golden_egg_petals palette (item 045)",
       "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the jewels read as engraved crust more than gems, so soft is the published formulation and the style's default stack; its location keep is re-drawn in it at its default knobs (the earlier seamed-petals keep of the soft keep's own seat is no longer shown). · Matt (item 045 entries): some palettes are okay but nothing amazing.",
       "palettes": [
@@ -670,6 +680,8 @@
     {
       "style": "teal_filaments",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "022",
       "reference": "alina-25.jpg",
       "references": [
@@ -677,17 +689,23 @@
         "law-of-ice-25.jpg",
         "holy-dark-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_teal_filaments_r1/locations/locations__11_julia-mandelbrot_db420796_teal_filaments",
-          "caption": "julia (quadratic)"
+          "caption": "A Julia set's filaments glowing teal in a green-grey mist"
         },
         {
           "keep": "style_teal_filaments_r1/formulations/f_flame__00_cu_0.285_0.01_0_0_w2.8_teal_filaments",
-          "caption": "variant: flame (log-density tone)"
+          "caption": "The same glow with a flame-like lift, round a Julia set's spiral"
         }
       ],
-      "what": "Soft glowing teal filaments in a green-grey mist: glow_filaments' falloff glows softened, two wide haze glows and a scooped period sheet for the mist.",
+      "public": {
+        "name": "teal-mist",
+        "palette": "teal_filaments",
+        "knobs": []
+      },
+      "what": "Soft glowing teal filaments in a green-grey mist.",
       "kept": "1 location, flame formulation",
       "note": "Engine: nothing new (falloff glow, period sheet, tone) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · law-of-ice and holy-dark were tried as palettes (item 045) and kept nothing; their maps left the library. · Matt: okay but nothing exciting.",
       "palettes": [
@@ -705,26 +723,34 @@
     {
       "style": "star_eye",
       "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "022",
       "reference": "Abstract-Desktop-Backgrounds-Pictures.jpg",
       "references": [
         "Abstract-Desktop-Backgrounds-Pictures.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_star_eye_r1/locations/locations__02_rg_d3_0.65_0.0_w4.5_star_eye",
-          "caption": "julia multibrot3"
+          "caption": "A cubic Julia set's ring glowing round a dark pupil"
         },
         {
           "keep": "style_star_eye_r1/locations/locations__06_rg_d4_0.65_0.0_w4.5_star_eye",
-          "caption": "julia multibrot4"
+          "caption": "A quartic Julia set's ring glowing round a dark pupil"
         },
         {
           "keep": "style_star_eye_r1/formulations/f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye",
-          "caption": "variant: fine strands"
+          "caption": "Finer strands curving out of the ring"
         }
       ],
-      "what": "A luminous blue eye: a quasicircle Julia set's ring glowing round a dark pupil holding a star, field-line strands curving out of the ring and in to the star.",
+      "public": {
+        "name": "star-eye",
+        "palette": "star_eye",
+        "knobs": []
+      },
+      "what": "A luminous blue eye: a Julia set's ring glowing round a dark pupil that holds a star, fine strands curving out of the ring and in to the star.",
       "kept": "2 locations, fine and sharp formulations",
       "note": "Engine: nothing new (falloff ring, lines channel on both sides) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (quasicircles are not in the galleries). · Matt: its discontinuities are jarring.",
       "palettes": [
@@ -744,26 +770,34 @@
     {
       "style": "ember_rose",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "022",
       "reference": "406031.jpg",
       "references": [
         "406031.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_ember_rose_r1/locations/locations__03_fl_d2_1_7_r1.0_w0.8_ember_rose",
-          "caption": "julia (quadratic) flower"
+          "caption": "A Julia flower, its petals ringed crimson to gold on black"
         },
         {
           "keep": "style_ember_rose_r1/locations/locations__11_fl_d4_3_7_r1.0_w0.8_ember_rose",
-          "caption": "julia multibrot4 flower"
+          "caption": "A quartic Julia flower, ringed crimson to gold"
         },
         {
           "keep": "style_ember_rose_r1/formulations/f_fine_rings__01_fl_d3_3_7_r1.0_w0.8_ember_rose",
-          "caption": "variant: fine rings"
+          "caption": "Finer rings through a cubic Julia flower's petals"
         }
       ],
-      "what": "A fractal rose on black: a parabolic flower's petals cycled into crimson-to-gold rings by the inside channel, softened falloff threads and a bead lattice.",
+      "public": {
+        "name": "ember-rose",
+        "palette": "ember_rose",
+        "knobs": []
+      },
+      "what": "A fractal rose on black: a Julia flower's petals ringed crimson to gold, with soft threads and a scattering of beads.",
       "kept": "2 locations, fine_rings formulation",
       "note": "Engine: nothing new (inside channel, falloff glow, bubble lattice) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (parabolic flowers are not in the galleries). · Matt: okay but nothing spectacular.",
       "palettes": [
@@ -821,26 +855,40 @@
     {
       "style": "clockwork_rings",
       "score": 4,
+      "status": "publish",
+      "tier": "curated",
       "item": "027",
       "reference": "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg",
       "references": [
         "commons_Chaos_Clock_-_The_Steampunk_Spell-Shaper.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_clockwork_rings_r1/locations/locations__01_cw_d2_+0.250+0.015i_w6.0_clockwork_rings",
-          "caption": "julia mandelbrot"
+          "caption": "A two-fold Julia set lit green-gold from two hot points, ringed like a clock face, with glowing gear discs riding the rings"
         },
         {
           "keep": "style_clockwork_rings_r1/locations/locations__05_cw_d4_-0.235+0.389i_w4.5_clockwork_rings",
-          "caption": "julia multibrot4"
+          "caption": "A four-fold Julia set glowing round four bright hearts, fine radial lines and concentric rings spreading out into the dark"
         },
         {
           "keep": "style_clockwork_rings_r1/locations/locations__08_cw_d3_+0.367-0.026i_w4.5_clockwork_rings",
-          "caption": "julia multibrot3"
+          "caption": "A three-fold Julia set like a brass clockwork, small spoked discs circling it, more and smaller on each ring inwards"
         }
       ],
-      "what": "A clock face of light: a quasicircle Julia set's basin lit green-gold round a hot heart, concentric equipotential rings beyond it and small luminous gear discs riding them.",
+      "public": {
+        "name": "gear-halo",
+        "palette": "clockwork_rings",
+        "knobs": [
+          "disc_size",
+          "rings",
+          "hairlines",
+          "heart",
+          "brightness"
+        ]
+      },
+      "what": "A clock face of light: a Julia set lit green-gold from a hot heart, concentric rings and fine radial lines around it, and small glowing gear discs riding the rings.",
       "kept": "3 locations, bare-rings and big-discs formulations",
       "note": "Engine: nothing new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: good.",
       "palettes": [
@@ -861,22 +909,30 @@
     {
       "style": "flame_veil_blue",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "028",
       "reference": "bluebird-25.jpg",
       "references": [
         "bluebird-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
-          "caption": "julia mandelbrot"
+          "caption": "Blue flame veils with lemon rims crossing a Julia set"
         },
         {
           "keep": "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue",
-          "caption": "julia multibrot4"
+          "caption": "Blue flame veils crossing a quartic Julia set"
         }
       ],
-      "what": "Translucent blue flame veils crossing over a crisp fractal, their rims lit lemon yellow, on a deep blue ground: several views of one loop crossing.",
+      "public": {
+        "name": "blue-veils",
+        "palette": "flame_veil_blue",
+        "knobs": []
+      },
+      "what": "Translucent blue flame veils crossing over a crisp fractal, their rims lit lemon yellow, on a deep blue ground.",
       "kept": "2 locations",
       "note": "Engine: the `view` member of a field channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
       "palettes": [
@@ -894,17 +950,25 @@
     {
       "style": "flame_veil_teal",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "028",
       "reference": "celestial-domain-25.jpg",
       "references": [
         "celestial-domain-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_flame_veil_teal_r1/formulations/f_no_views__01_vj_d2_r1.08_t0.131_whole_flame_veil_teal",
-          "caption": "variant: one view"
+          "caption": "Teal veils and wisps swept round a magenta glow"
         }
       ],
+      "public": {
+        "name": "teal-nebula",
+        "palette": "flame_veil_teal",
+        "knobs": []
+      },
       "what": "Teal and aqua flame veils and wisps sweeping round a magenta nebula with a white star at its core, on a dark slate ground.",
       "kept": "the one-view formulation",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
@@ -922,25 +986,33 @@
     {
       "style": "flame_veil_violet",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "028",
       "reference": "cipher-25.jpg",
       "references": [
         "cipher-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_flame_veil_violet_r1/locations/locations__02_vj_d3_r1.08_t0.124_whole_flame_veil_violet",
-          "caption": "julia multibrot3"
+          "caption": "Violet ribbons of silky strands swirling round a cubic Julia set"
         },
         {
           "keep": "style_flame_veil_violet_r1/locations/locations__05_vj_d3_r1.08_t0.320_whole_flame_veil_violet",
-          "caption": "julia multibrot3"
+          "caption": "A second cubic Julia set wrapped in violet ribbons"
         },
         {
           "keep": "style_flame_veil_violet_r1/locations/locations__07_vm_d3_flame_veil_violet",
-          "caption": "julia multibrot3"
+          "caption": "A third, wrapped closer in violet ribbons"
         }
       ],
+      "public": {
+        "name": "violet-ribbons",
+        "palette": "flame_veil_violet",
+        "knobs": []
+      },
       "what": "Violet-blue flame ribbons swirling round the frame, each a veil of fine silky strands, a few teal, on a navy ground.",
       "kept": "3 locations, the no-strands formulation",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
@@ -961,25 +1033,33 @@
     {
       "style": "flame_veil_chalk",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "028",
       "reference": "chalk-drawing-25.jpg",
       "references": [
         "chalk-drawing-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_flame_veil_chalk_r1/locations/locations__00_vj_d2_r1.08_t0.131_whole_flame_veil_chalk",
-          "caption": "julia mandelbrot"
+          "caption": "Royal blue and chalk grey shards crossing soft veils round a Julia set"
         },
         {
           "keep": "style_flame_veil_chalk_r1/locations/locations__04_vj_d2_r1.0_t0.767_whole_flame_veil_chalk",
-          "caption": "julia mandelbrot"
+          "caption": "Shards and veils round another Julia set, seen wider"
         },
         {
           "keep": "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
-          "caption": "variant: blades only"
+          "caption": "The shards alone, round a cubic Julia set"
         }
       ],
+      "public": {
+        "name": "chalk-shards",
+        "palette": "flame_veil_chalk",
+        "knobs": []
+      },
       "what": "Angular translucent shards in royal blue and chalk grey crossing soft grey veils, with crisp pale Julia snowflakes among them.",
       "kept": "2 locations, the blades-only formulation",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
@@ -999,12 +1079,46 @@
     {
       "style": "corkscrew_smooth",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "031",
       "reference": "corkscrew-25.jpg",
       "references": [
         "corkscrew-25.jpg"
       ],
-      "show": [],
+      "variant": "current",
+      "show": [
+        {
+          "location": {
+            "schema": 1,
+            "name": "mandelbrot_a576a186",
+            "family": {
+              "kind": "mandelbrot"
+            },
+            "viewport": {
+              "center_re": "-0.057393975462538264",
+              "center_im": "0.6687441333707804",
+              "width": "5.791027080260847e-05"
+            },
+            "maxiter": 8000,
+            "note": "final140_general2000 seat 596 (smooth_stripe, mandelbrot)",
+            "gallery": {
+              "record": "final140_general2000",
+              "seat": 596,
+              "key": "a576a186e672f073",
+              "p_spiral": 0.360055
+            }
+          },
+          "colormap": "corkscrew_smooth",
+          "picture": "artifacts/pickers/style_smooth_palettes_r1/corkscrew_smooth/locations/corkscrew__loc__00_mandelbrot_a576a186_corkscrew_smooth.jpg",
+          "caption": "Banded ribbons with a metallic sheen spiralling into the Mandelbrot set"
+        }
+      ],
+      "public": {
+        "name": "corkscrew-ribbons",
+        "palette": "corkscrew_smooth",
+        "knobs": []
+      },
       "what": "A double spiral of banded ribbons in dark teal, khaki, cream, black and sky blue, each polished with a metallic sheen.",
       "kept": "nothing",
       "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: none amazing; no further work.",
@@ -1020,12 +1134,45 @@
     {
       "style": "flame_wisp_waves",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "032",
       "reference": "commons_Waves_Apophysis_Fractal_Flame.jpg",
       "references": [
         "commons_Waves_Apophysis_Fractal_Flame.jpg"
       ],
-      "show": [],
+      "variant": "current",
+      "show": [
+        {
+          "location": {
+            "schema": 1,
+            "name": "vj_d3_r0.9_t0.213_whole",
+            "family": {
+              "kind": "julia",
+              "degree": 3,
+              "c": [
+                "0.499207869014702",
+                "0.1915299847431088"
+              ]
+            },
+            "viewport": {
+              "center_re": "0.0",
+              "center_im": "0.0",
+              "width": "2.9"
+            },
+            "maxiter": 800,
+            "note": "degree-3 Julia set, fixed-point multiplier 0.9*e^(2 pi i 0.213), whole; seed 28, draw 2"
+          },
+          "colormap": "flame_wisp_waves",
+          "picture": "artifacts/pickers/style_flame_wisps_r1/flame_wisp_waves/locations/waves__loc__00_vj_d3_r0.9_t0.213_whole_flame_wisp_waves.jpg",
+          "caption": "Teal flame wisps over smouldering red streaks round a cubic Julia set"
+        }
+      ],
+      "public": {
+        "name": "ember-waves",
+        "palette": "flame_wisp_waves",
+        "knobs": []
+      },
       "what": "Fine teal flame wisps and crescents crossing over smouldering red and orange streaks on a dark slate ground.",
       "kept": "nothing",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: lost the fractal feel; not promoted.",
@@ -1041,17 +1188,25 @@
     {
       "style": "flame_wisp_amber",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "032",
       "reference": "convocation-dragons-25.jpg",
       "references": [
         "convocation-dragons-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
-          "keep": "style_flame_wisps_r1/flame_wisp_amber/formulations/amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber",
-          "caption": "variant: close views"
+          "keep": "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
+          "caption": "Orange and gold flame ribbons curling round a Julia set"
         }
       ],
+      "public": {
+        "name": "amber-flames",
+        "palette": "flame_wisp_amber",
+        "knobs": []
+      },
       "what": "Glowing orange and gold flame ribbons curling over one another in a warm brown haze, brightest at the middle.",
       "kept": "the close-views formulation",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted.",
@@ -1060,7 +1215,8 @@
           "colormap": "flame_wisp_amber",
           "values": {},
           "keeps": [
-            "style_flame_wisps_r1/flame_wisp_amber/formulations/amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber"
+            "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
+            "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp"
           ],
           "score": 2
         }
@@ -1069,17 +1225,25 @@
     {
       "style": "flame_wisp_spark",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "032",
       "reference": "cosmic-forces-25.jpg",
       "references": [
         "cosmic-forces-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
-          "caption": "variant: close views"
+          "caption": "Lit blue flame veils strewn with gold sparks round a Julia set"
         }
       ],
+      "public": {
+        "name": "spark-veils",
+        "palette": "flame_wisp_spark",
+        "knobs": []
+      },
       "what": "Lit blue flame veils and strands crossing on a deep blue ground, strewn with gold star sparks.",
       "kept": "the close-views formulation",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted.",
@@ -1097,17 +1261,31 @@
     {
       "style": "flame_wisp_frost",
       "score": 4,
+      "status": "publish",
+      "tier": "curated",
       "item": "032",
       "reference": "creeping-frost-25.jpg",
       "references": [
         "creeping-frost-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost",
-          "caption": "phoenix (classic)"
+          "caption": "A phoenix fractal's frosted fronds curling into spirals, feathered blue strands sweeping round them on a dark ground"
         }
       ],
+      "public": {
+        "name": "frost-feather",
+        "palette": "flame_wisp_frost",
+        "knobs": [
+          "veils",
+          "strands",
+          "rime",
+          "rime_reach",
+          "brightness"
+        ]
+      },
       "what": "Frosted blue and white flame veils, their strands feathered with a crisp white rime along the set, on a near-black ground.",
       "kept": "2 locations",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic seat, the one where the strands follow the set (Matt: the only great one). · Its score is that one keep's, phoenix-classic_618cd4e4.",
@@ -1126,12 +1304,45 @@
     {
       "style": "flame_wisp_crimson",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "032",
       "reference": "deaths-icy-hand-25.jpg",
       "references": [
         "deaths-icy-hand-25.jpg"
       ],
-      "show": [],
+      "variant": "current",
+      "show": [
+        {
+          "location": {
+            "schema": 1,
+            "name": "vj_d3_r1.08_t0.233_half",
+            "family": {
+              "kind": "julia",
+              "degree": 3,
+              "c": [
+                "0.5725430504740137",
+                "0.2247090894760434"
+              ]
+            },
+            "viewport": {
+              "center_re": "0.22343447665427688",
+              "center_im": "0.20019249397075162",
+              "width": "1.595"
+            },
+            "maxiter": 800,
+            "note": "degree-3 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.233), half-zoomed towards the fixed point; seed 28, draw 7"
+          },
+          "colormap": "flame_wisp_crimson",
+          "picture": "artifacts/pickers/style_flame_wisps_r1/flame_wisp_crimson/locations/crimson__loc__00_vj_d3_r1.08_t0.233_half_flame_wisp_crimson.jpg",
+          "caption": "Flame swirls turning cobalt to crimson round a cubic Julia set"
+        }
+      ],
+      "public": {
+        "name": "crimson-swirl",
+        "palette": "flame_wisp_crimson",
+        "knobs": []
+      },
       "what": "Dense flame swirls and strands, cobalt blue on one side turning through violet to crimson round a red glow on the other.",
       "kept": "nothing",
       "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. · Matt: lost the fractal feel; not promoted.",
@@ -1147,22 +1358,36 @@
     {
       "style": "molten_flow",
       "score": 4,
+      "status": "publish",
+      "tier": "curated",
       "item": "033",
       "reference": "consequences-25.jpg",
       "references": [
         "consequences-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
-          "caption": "julia multibrot3"
+          "caption": "A three-fold Julia set whose gold-beaded lace arches over deep fiery funnels, a warm glow rising behind it"
         },
         {
           "keep": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
-          "caption": "julia multibrot3"
+          "caption": "Close in on the same three-fold Julia set, golden lace curling into spirals as streams of molten orange sweep past"
         }
       ],
-      "what": "Molten fire flowing in broad lit folds: a glossy relief of the smooth count in crimson, orange and gold, with translucent folds and flame lace along the set.",
+      "public": {
+        "name": "molten-folds",
+        "palette": "molten_flow",
+        "knobs": [
+          "light_angle",
+          "folds",
+          "heart_glow",
+          "flame_strands",
+          "brightness"
+        ]
+      },
+      "what": "Molten fire flowing in broad lit folds: a glossy relief in crimson, orange and gold, crossed by translucent folds, with flame lace along the edge of the set.",
       "kept": "2 locations",
       "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass.",
       "palettes": [
@@ -1180,13 +1405,60 @@
     {
       "style": "chrome_orbs",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "033",
       "reference": "crystal-flood-25.jpg",
       "references": [
         "crystal-flood-25.jpg"
       ],
-      "show": [],
-      "what": "Glossy chrome swirls: a mirror-bright relief of the smooth count in silver and slate, chrome ribbons, red orbs swelling to gold along the arms.",
+      "variant": "current",
+      "show": [
+        {
+          "location": {
+            "schema": 1,
+            "name": "phoenix_8944e53b",
+            "family": {
+              "c": [
+                "-0.5266783574752247",
+                "-0.652322729101436"
+              ],
+              "kind": "phoenix",
+              "p": [
+                "-0.28353182998131243",
+                "-0.02545285599096059"
+              ],
+              "z_prev": [
+                "-0.10324356398202189",
+                "0.43684294503006016"
+              ]
+            },
+            "viewport": {
+              "center_re": "0.3689396303645971",
+              "center_im": "0.544919975370715",
+              "width": "0.004227518793228761"
+            },
+            "maxiter": 15365,
+            "note": "final139_general seat 765 (stripe, phoenix)",
+            "gallery": {
+              "record": "final139_general",
+              "seat": 765,
+              "key": "8944e53b63ac90a6",
+              "p_spiral": 0.091065
+            },
+            "ink": 0.04698
+          },
+          "colormap": "chrome_orbs",
+          "picture": "artifacts/pickers/style_liquid_surfaces_r1/chrome_orbs/locations/chrome_orbs__loc__00_phoenix_8944e53b_chrome_orbs.jpg",
+          "caption": "Mirror-bright chrome swirls and red orbs on a Phoenix fractal"
+        }
+      ],
+      "public": {
+        "name": "chrome-orbs",
+        "palette": "chrome_orbs",
+        "knobs": []
+      },
+      "what": "Glossy chrome swirls: a mirror-bright relief in silver and slate, chrome ribbons, and red orbs swelling to gold along the arms.",
       "kept": "nothing",
       "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale.",
       "palettes": [
@@ -1201,13 +1473,48 @@
     {
       "style": "cauliflower_scales",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "033",
       "reference": "corporeal-25.jpg",
       "references": [
         "corporeal-25.jpg"
       ],
-      "show": [],
-      "what": "Billowing cauliflower scales: each escape band a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
+      "variant": "current",
+      "show": [
+        {
+          "location": {
+            "schema": 1,
+            "name": "multibrot4_2210d3d1",
+            "family": {
+              "kind": "multibrot",
+              "degree": 4
+            },
+            "viewport": {
+              "center_re": "0.31869821889647776",
+              "center_im": "0.7500258281221991",
+              "width": "0.000001192820594349849"
+            },
+            "maxiter": 29514,
+            "note": "final139_general seat 362 (tia, multibrot4)",
+            "gallery": {
+              "record": "final139_general",
+              "seat": 362,
+              "key": "2210d3d1453f93f9",
+              "p_spiral": 0.027748
+            }
+          },
+          "colormap": "cauliflower_scales",
+          "picture": "artifacts/pickers/style_liquid_surfaces_r1/cauliflower_scales/locations/cauliflower_scales__loc__00_multibrot4_2210d3d1_cauliflower_scales.jpg",
+          "caption": "Lit scales packed along the edge of a quartic Multibrot set"
+        }
+      ],
+      "public": {
+        "name": "cauliflower-scales",
+        "palette": "cauliflower_scales",
+        "knobs": []
+      },
+      "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
       "kept": "nothing",
       "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale.",
       "palettes": [
@@ -1222,26 +1529,40 @@
     {
       "style": "crescent_lines",
       "score": 3,
+      "status": "publish",
+      "tier": "curated",
       "item": "034",
       "reference": "crescent-25.jpg",
       "references": [
         "crescent-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__03_minibrot-p9_06_crescent_lines",
-          "caption": "mandelbrot minibrot (period 9)"
+          "caption": "A tiny copy of the Mandelbrot set deep inside the original, its branching arms glowing orange while fine blue streamlines sweep round them"
         },
         {
           "keep": "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__08_minibrot-p9_07_crescent_lines",
-          "caption": "mandelbrot minibrot (period 9)"
+          "caption": "Fern-like orange branches spreading out from a small dark island, combed by thousands of hair-fine blue lines"
         },
         {
           "keep": "style_crescent_lines_r1/crescent_lines/formulations/crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines",
-          "caption": "variant: ribbons (one cycle)"
+          "caption": "A small Mandelbrot island at the centre of a glowing star of spokes, with the field round it drawn as broad flowing ribbons"
         }
       ],
-      "what": "Fine hair-like streamlines sweeping the whole frame round a small minibrot whose rim glows orange, on deep blue: the stripe average's streamlines.",
+      "public": {
+        "name": "ember-streams",
+        "palette": "crescent_lines",
+        "knobs": [
+          "streamlines",
+          "shading",
+          "haze",
+          "glow_size",
+          "brightness"
+        ]
+      },
+      "what": "Fine, hair-like streamlines sweep the whole frame around a small copy of the Mandelbrot set whose rim glows orange against deep blue.",
       "kept": "2 locations, the ribbons formulation",
       "note": "Engine: nothing new (streamlines from the stripe average) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the sweeping lines that break up the stripe pattern are pleasing in some ways.",
       "palettes": [
@@ -1260,6 +1581,8 @@
     {
       "style": "glossy_spirals",
       "score": 3,
+      "status": "publish",
+      "tier": "curated",
       "item": "036",
       "reference": "evening-radiance-25.jpg",
       "references": [
@@ -1268,21 +1591,33 @@
         "eventide-25.jpg",
         "fools-paradise-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_glossy_spirals_r1/violet_star_arms/locations/violet_star_arms__loc__03_phoenix-classic_3d18ef0b_violet_star_arms",
-          "caption": "violet_star_arms · {'c': ['0.5667', '0.0'], 'kind': 'phoenix', 'p': ['-0.5', '0.0'], 'z_prev': ['0.0', '0.0']}"
+          "caption": "A phoenix spiral turning in on itself, glossy violet blades stepping down its arms out of the dark"
         },
         {
           "keep": "style_glossy_spirals_r1/golden_petals/locations/golden_petals__loc__05_julia-multibrot5_d032aac0_golden_petals",
-          "caption": "golden_petals · {'c': ['0.7938711418480588', '0.7500643262828857'], 'degree': 5, 'kind': 'julia'}"
+          "caption": "A five-fold Julia set in bronze and pale gold, satin petals strung along each arm of its spiral"
         },
         {
           "keep": "style_glossy_spirals_r1/copper_arms/locations/copper_arms__loc__05_multibrot3_f95d4b63_copper_arms",
-          "caption": "copper_arms · {'degree': 3, 'kind': 'multibrot'}"
+          "caption": "Deep inside a three-armed fractal, a copper spiral of lace with polished blades fanned over a teal sea"
         }
       ],
-      "what": "Glossy blades lit like satin along a spiral's arms, over a lit relief of the smooth count with the filigree on top: one stack, a palette for each reference.",
+      "public": {
+        "name": "satin-spiral",
+        "palette": "violet_star_arms",
+        "knobs": [
+          "light_angle",
+          "blade_size",
+          "shadow",
+          "relief",
+          "lace_glow"
+        ]
+      },
+      "what": "Glossy blades lit like satin sweep along a spiral's arms, over a softly sculpted relief, with the fractal's fine lace laid on top.",
       "kept": "four palettes (violet_star_arms, golden_petals, copper_arms, cream_tubes): 5 locations and 2 ghost formulations",
       "note": "Engine: nothing new (strip trap blades lit across over the slope relief) · reproducible: every keep has its full render record · Matt: a few are okay (round one); teal_tubes and chrome_blades kept nothing and were discarded.",
       "palettes": [
@@ -1435,6 +1770,8 @@
     {
       "style": "smooth_bands",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "031",
       "reference": "council.jpg",
       "references": [
@@ -1447,21 +1784,27 @@
         "lander.jpg",
         "learned.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_smooth_palettes_r1/council_smooth/locations/council__loc__01_julia-mandelbrot_69e07a2f_council_smooth",
-          "caption": "julia mandelbrot"
+          "caption": "Smooth colour bands round a Julia set, a dark hairline keeping the lace crisp"
         },
         {
           "keep": "style_smooth_palettes_r1/crisis_smooth/locations/crisis__loc__02_julia-mandelbrot_f682af93_crisis_smooth",
-          "caption": "julia mandelbrot"
+          "caption": "Smooth bands in a second palette round another Julia set"
         },
         {
           "keep": "style_smooth_palettes_r1/dalooka_smooth/locations/dalooka__loc__03_mandelbrot_4f741337_dalooka_smooth",
-          "caption": "mandelbrot"
+          "caption": "Smooth bands in a third palette at the edge of the Mandelbrot set"
         }
       ],
-      "what": "Smooth escape bands through a matched map, a dark hair keeping the lace crisp: one stack, a palette for each reference whose tiles were kept.",
+      "public": {
+        "name": "smooth-bands",
+        "palette": "council_smooth",
+        "knobs": []
+      },
+      "what": "Smooth bands of colour flowing out from the set, a dark hairline keeping its lace crisp, in a choice of palettes.",
       "kept": "five palettes (council, crisis, dalooka; krinshinda and learned from item 045, lander kept nothing): 4 locations, 2 no-hair formulations",
       "note": "Engine: nothing new (the smooth count through a matched map, as seahorse_halo) · forest_smooth and mandelbrot3_smooth kept nothing: their maps left the library and their names open this mode's default · corkscrew_smooth stays its own style: its sheen is a third layer. · Matt: none amazing (forest, mandelbrot3, council, crisis and dalooka alike); the palettes are saved and there is no further work. · Matt (item 045 entries): some palettes are okay but nothing amazing.",
       "palettes": [
@@ -1594,6 +1937,8 @@
     {
       "style": "lace_holes",
       "score": 3,
+      "status": "publish",
+      "tier": "curated",
       "item": "037",
       "reference": "devilfish-25.jpg",
       "references": [
@@ -1602,8 +1947,33 @@
         "flamed-25.jpg",
         "deepsea-life-25.jpg"
       ],
-      "show": [],
-      "what": "A glowing lace web of fine strands pierced by round holes of every size, each hole domed as a lit glass bead: one stack, a palette for each reference.",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
+          "caption": "Cream lace branching across a Julia set, every hole domed like a glass bead"
+        },
+        {
+          "keep": "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
+          "caption": "Violet strands pouring between a Julia set's chain of beaded holes"
+        },
+        {
+          "keep": "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
+          "caption": "A copper chain of lit beads strung through glowing strands"
+        }
+      ],
+      "public": {
+        "name": "glass-beads",
+        "palette": "cream_lace",
+        "knobs": [
+          "light_angle",
+          "bead_gloss",
+          "rim_glow",
+          "strands",
+          "strand_fade"
+        ]
+      },
+      "what": "A glowing lace web of fine strands, pierced by round holes of every size, each hole lit like a glass bead.",
       "kept": "four palettes (cream_lace, copper_mail, gold_arcs, bead_strands): 2 locations and 5 formulations (3 bubbles, 2 current)",
       "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim, an inside rim glow and an inside light doming each hole; Julia holes placed by hand) · the default stack is the bubbles formulation, bead_strands' structure, so all four kept styles are one mode; ember_plume kept nothing and was discarded · Matt: okay; the interior colouring approaches, the bubbles formulation, are cool.",
       "palettes": [
@@ -1613,8 +1983,10 @@
           "reference": "devilfish-25.jpg",
           "values": {},
           "keeps": [
-            "style_lace_holes_r1/cream_lace/formulations/cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
-            "style_lace_holes_r1/cream_lace/formulations/cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace"
+            "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
+            "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
+            "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
+            "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace"
           ],
           "score": 3
         },
@@ -1651,8 +2023,10 @@
             "/tone/p10": 0.158
           },
           "keeps": [
-            "style_lace_holes_r1/copper_mail/locations/copper_mail__loc__09_hand_basilica2_value_copper_mail",
-            "style_lace_holes_r1/copper_mail/formulations/copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail"
+            "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail",
+            "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
+            "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
+            "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail"
           ],
           "score": 3
         },
@@ -1690,7 +2064,8 @@
             "/tone/p10": 0.364
           },
           "keeps": [
-            "style_lace_holes_r1/gold_arcs/formulations/gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
+            "style_lace_holes_resave/redrawn/06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs",
+            "style_lace_holes_resave/redrawn/06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
           ],
           "score": 3
         },
@@ -1728,8 +2103,10 @@
             "/tone/p10": 0.0
           },
           "keeps": [
-            "style_lace_holes_r1/bead_strands/locations/bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
-            "style_lace_holes_r1/bead_strands/formulations/bead_strands__f_current__01_hand_basilica2_alpha_bead_strands"
+            "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
+            "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
+            "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
+            "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands"
           ],
           "score": 3
         }
@@ -1759,6 +2136,8 @@
     {
       "style": "soft_veils",
       "score": 5,
+      "status": "publish",
+      "tier": "curated",
       "item": "041",
       "reference": "fish-head-25.jpg",
       "references": [
@@ -1777,21 +2156,33 @@
         "holey-trinity-25.jpg",
         "goldenrod-25.jpg"
       ],
+      "variant": "current",
       "show": [
         {
           "keep": "style_soft_veils_r1/locations/loc__02_vj_d2_r1.08_t0.188_whole_soft_veils_teal",
-          "caption": "teal"
+          "caption": "A classic Julia set wound into spirals, sea-green veils of light folding round its arms"
         },
         {
           "keep": "style_soft_veils_r1/locations/loc__01_vj_d5_r1.08_t0.421_whole_soft_veils_neon",
-          "caption": "neon"
+          "caption": "A five-fold Julia set glowing violet and pink against a near-black night, fine wisps feathering off its veils"
         },
         {
           "keep": "style_soft_veils_r1/locations/loc__00_vj_d3_r1.08_t0.124_whole_soft_veils_ember",
-          "caption": "ember"
+          "caption": "A three-fold Julia set in smoky bronze, its sheets of light thinning into a dark ground"
         }
       ],
-      "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them: one stack, a palette for each reference.",
+      "public": {
+        "name": "veil-drift",
+        "palette": "soft_veils_teal",
+        "knobs": [
+          "veils",
+          "wisps",
+          "haze",
+          "halo",
+          "brightness"
+        ]
+      },
+      "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them.",
       "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing",
       "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do.",
       "palettes": [
@@ -1950,6 +2341,8 @@
     {
       "style": "banded_lines",
       "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "043",
       "reference": "forbidden-borders-25.jpg",
       "references": [
@@ -1957,8 +2350,23 @@
         "echoes-of-the-mind-25.jpg",
         "fractal_abstraction_lines_130499_2560x1600.jpg"
       ],
-      "show": [],
-      "what": "Bands of fine parallel lines sweeping through and around the set: evenly spaced equipotential hairlines, a second family crossing them, each escape band its own shade: one stack, a palette for each reference.",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_banded_lines_r1/banded_lines_teal/pal__01_julia-multibrot4_364f02ea_banded_lines_teal",
+          "caption": "Bands of fine teal hairlines sweeping round a quartic Julia set"
+        },
+        {
+          "keep": "style_banded_lines_r1/formulations/f_glints__01_julia-mandelbrot_ac9b1000_banded_lines_rose",
+          "caption": "Rose hairline bands with glints along a Julia set"
+        }
+      ],
+      "public": {
+        "name": "line-bands",
+        "palette": "banded_lines_rose",
+        "knobs": []
+      },
+      "what": "Bands of fine parallel hairlines sweeping through and around the set, a second family crossing them, each band its own shade.",
       "kept": "two palettes (banded_lines_teal, banded_lines_rose): 1 palette tile (teal) and 1 formulation (glints, in rose)",
       "note": "Engine: nothing new (sheets of the smooth count at frame rank through the frame and a turned view, a band shade, a de hair) · no rose locations and no cobalt kept; cobalt's map left the library, rose stays only as the glints keep's map; the field_lines baseline tile kept is a field_lines keep · Matt: okay to keep but not great; the banding is mostly too high frequency.",
       "palettes": [

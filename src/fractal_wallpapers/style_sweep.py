@@ -10,8 +10,8 @@ change. For each style it draws, at a small size:
 
 Every picture is checked where it lands ([`look`], [`FLAGS`]): an engine refusal, a flat
 frame, one washed white or drowned black, a knob whose two ends draw the same picture, a
-palette entry drawn identical to the default, a render far slower per sample than its
-style's median, and, with `--tones`, a seat or palette entry outside its reference's tone
+palette entry drawn identical to the default, a render far slower per sample than the
+others drawn at its seat, and, with `--tones`, a seat or palette entry outside its reference's tone
 band. The pictures are the captures (one folder per style, a contact sheet
 each under `sheets/`), and `sweep.jsonl` holds one row per picture with its numbers and
 flags. Nothing is written outside `--out`.
@@ -45,8 +45,8 @@ DROWNED_SHARE = 0.95
 #: none at all. A faint knob (a sparkle's opacity) moves a 320-wide picture by well under
 #: a level, so anything above nothing is a knob doing something.
 SAME_PICTURE = 0.0
-#: Seconds per million samples above this many times the style's own median: a knob end
-#: or seat far slower than the rest of its style (a heavy stack is slow everywhere).
+#: Seconds per million samples above this many times the median at the same seat: a knob end
+#: or palette entry far slower than the rest drawn there (a heavy stack is slow everywhere).
 SLOW_FACTOR = 8.0
 
 FLAGS = {
@@ -56,7 +56,7 @@ FLAGS = {
     "drowned": f"over {DROWNED_SHARE:.0%} of the frame near black",
     "dead_knob": "the knob's two ends draw the same picture",
     "same_palette": "a palette entry draws the same picture as the default",
-    "slow": f"over {SLOW_FACTOR:g}x its style's median seconds per sample",
+    "slow": f"over {SLOW_FACTOR:g}x the median seconds per sample at its seat",
     "tone_miss": "with --tones at a checked width, outside its reference's band (TONE_BAND)",
 }
 
@@ -251,14 +251,20 @@ def compare(rows: list[dict[str, Any]], todo: list[dict[str, Any]]) -> None:
         row["against"] = {"variant": other["variant"], "difference": round(gap, 5)}
         if gap <= SAME_PICTURE:
             row["flags"].append("dead_knob" if item["knobs"] else "same_palette")
+    # Judged against pictures at the same seat: a location's cap and interior share set
+    # its cost per sample (a deep-capped Phoenix seat runs ~20x a shallow one under one
+    # stack), so a second seat drawn alone is not judged; every knob end and palette
+    # entry is drawn at the first seat, so those still are.
     for name in {row["style"] for row in rows}:
         own = [row for row in rows if row["style"] == name and "per_msample" in row]
-        if len(own) < 3:
-            continue
-        median = statistics.median(row["per_msample"] for row in own)
-        for row in own:
-            if row["per_msample"] > SLOW_FACTOR * median:
-                row["flags"].append("slow")
+        for seat in {row.get("location") for row in own}:
+            mates = [row for row in own if row.get("location") == seat]
+            if len(mates) < 3:
+                continue
+            median = statistics.median(row["per_msample"] for row in mates)
+            for row in mates:
+                if row["per_msample"] > SLOW_FACTOR * median:
+                    row["flags"].append("slow")
 
 
 def gallery_seats(count: int, seed: int) -> list[dict[str, Any]]:

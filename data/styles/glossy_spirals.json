@@ -24,6 +24,78 @@
     "cream_tubes: Added: nothing new to the engine; the map cream_tubes (slate blue, olive, gold to cream and ivory), a white highlight.",
     "cream_tubes: Lessons: item 036 brought six references whose look is glossy lit tubes or blades sweeping along a spiral's arms with the set's filigree all round them (dessert-union, evening-radiance, eventide, exile, fools-paradise, deadly-nightshade, all -25.jpg), and they went in as **one stack in six palettes**: molten_flow's glossy relief (a light on the smooth count at one band, no ring), a strip trap's blades lit edge to edge as cylinders (shaded_blades), and falloff glows on `de` laid last. **One strip, not a lattice**: a lattice of strips is a target every orbit hits, so its blades fan over the whole frame as shards and arcs; one strip (radius 0.3 through 0.5, no `spacing`) is missed by most orbits, and its entries string along the arms as a staircase of petals. **Bound both ends and fade towards the set**: unbounded at 0.15 of the frame the blades read as a gloss sheet that swallows the lace, leaving only its hair; at `largest` 0.08 and `smallest` 0.015, masked by the inverted smooth count to power 3, they sit in the far field between the spiral copies and the filigree stays on top. A magnified view (zoom 0.3) of the same count as rimmed sheets gives a ghost of bigger arms beneath, the references' blurred copies, but a light cannot read a view, so the ghost is never lit (the `ghost` formulation). Seats are a `--spiral` scout (seed 36) over final139_general and final140_general2000; dense lace seats read the blades as hatching and were dropped, and the phoenix-classic spirals, whose big arms are a clear staircase, read best. Round one is drawn at --draft (about 1 s a frame at six threads)."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "light_angle",
+        "label": "Light direction",
+        "what": "where the light comes from, in degrees round the frame (135 is the upper left)",
+        "default": 135.0,
+        "range": [
+          45.0,
+          225.0
+        ],
+        "set": [
+          "/layers/*/light/azimuth"
+        ]
+      },
+      {
+        "name": "blade_size",
+        "label": "Blade size",
+        "what": "how long the glossy blades along the spiral arms may grow",
+        "default": 0.08,
+        "range": [
+          0.05,
+          0.12
+        ],
+        "set": [
+          "/layers/3/channel/bubble/largest",
+          "/layers/4/channel/bubble/largest",
+          "/layers/5/channel/bubble/largest",
+          "/layers/6/channel/bubble/largest"
+        ]
+      },
+      {
+        "name": "shadow",
+        "label": "Background shadow",
+        "what": "how deeply the open background between the arms falls into shadow",
+        "default": 0.9,
+        "range": [
+          0.2,
+          1.0
+        ],
+        "set": [
+          "/layers/2/opacity"
+        ]
+      },
+      {
+        "name": "relief",
+        "label": "Relief depth",
+        "what": "how deeply the background is sculpted by the light",
+        "default": 1.2,
+        "range": [
+          0.5,
+          2.0
+        ],
+        "set": [
+          "/layers/1/light/slope"
+        ]
+      },
+      {
+        "name": "lace_glow",
+        "label": "Lace glow",
+        "what": "the soft light along the fine lace at the set's edge",
+        "default": 0.6,
+        "range": [
+          0.1,
+          0.9
+        ],
+        "set": [
+          "/layers/8/opacity"
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "glossy_spirals",
     "interior": {

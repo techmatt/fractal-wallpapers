@@ -5,11 +5,14 @@ as a custom mode for the explorer's dropdown:
 
     {"schema": 1,
      "modes": [{"style": "<style name>", "score": 1-5, "status": "publish|drop|discarded",
+                "tier": "curated|lab",
                 "item": "<queue item>", "reference": "<the style file's reference image>",
                 "references": ["<that image>", "<every other reference the mode was
                                fitted or tried against, kept or not>", ...],
                 "variant": "<the published variant: the style file's default stack>",
-                "show": [{"keep": "<keep id in <style>.keeps.json>", "caption": "..."}],
+                "show": [{"keep": "<keep id in <style>.keeps.json>", "caption": "..."}
+                         | {"location": {...}, "colormap": "<map>", "picture":
+                            "<repo-relative draft picture>", "caption": "..."}],
                 "public": {"name": "<public name>", "palette": "<matched colormap>",
                            "knobs": ["<knob name in the style file's public block>", ...]},
                 "what": "<one line>", "kept": "<what was kept, in words>",
@@ -29,6 +32,12 @@ which pictures Matt marked for a mode no row has tried yet.
 `public` is a published mode's alone, and its knobs are named here and defined in the
 style file (`data/styles/README.md`'s *Public knobs*), so `check` holds the two to
 agreeing. Names are proposals Matt may rename: they are data, never code.
+
+A published mode is in one of two **tiers** (Matt's ruling): `curated` (the website's
+*Custom* list) carries four or five knobs and shows only kept pictures; `lab` (*Custom
+(lab)*) may carry fewer knobs, none at all, and may show an **example** in place of a
+keep: a round-one draft's location and map (its picture under `artifacts/pickers/`),
+a place the mode opens at and draws, for a mode whose rounds kept nothing.
 
 `style gallery` rebuilds `fractal-drive-sync/custom-modes/`: `index.html` and the
 downscaled pictures in `img/` (each style's reference and the keeps the row shows,
@@ -52,6 +61,10 @@ SCHEMA = 1
 
 #: A row's status: shown with a toggle (`publish`, `drop`), or listed as discarded.
 STATUSES = ("publish", "drop", "discarded")
+
+#: A published mode's tier, and the knob counts each holds it to (Matt's ruling).
+TIERS = ("curated", "lab")
+KNOBS = {"curated": (4, 5), "lab": (0, 5)}
 
 #: The page's picture sizes: a keep and a reference, at most this wide.
 KEEP_WIDTH = 960
@@ -153,6 +166,9 @@ def check(catalog: dict[str, Any]) -> list[str]:
             if entry.get("was") and entry["was"] not in row.get("aliases", []):
                 problems.append(f"{name}: palette {entry['colormap']} was {entry['was']}, no alias")
         for shown in row.get("show", []):
+            if "keep" not in shown and "location" in shown:
+                problems += [f"{name}: {problem}" for problem in check_example(row, shown, maps)]
+                continue
             if "keep" not in shown or "caption" not in shown:
                 problems.append(f"{name}: a shown keep is {{keep, caption}}, not {shown}")
                 continue
@@ -163,12 +179,20 @@ def check(catalog: dict[str, Any]) -> list[str]:
                 problems.append(f"{name}: shows '{shown['keep']}', a named-mode baseline keep")
         public = row.get("public")
         if row.get("status") != "publish":
-            if public:
-                problems.append(f"{name}: a {row.get('status')} mode has a public block")
+            if public or "tier" in row:
+                problems.append(f"{name}: a {row.get('status')} mode has a public block or tier")
+            continue
+        tier = row.get("tier")
+        if tier not in TIERS:
+            problems.append(f"{name}: a published mode's tier is one of {TIERS}, not {tier}")
             continue
         if not row.get("variant") or not public:
             problems.append(f"{name}: a published mode names its variant and public block")
             continue
+        if not row.get("show"):
+            problems.append(f"{name}: a published mode shows at least one example")
+        if tier == "curated" and any("keep" not in shown for shown in row.get("show", [])):
+            problems.append(f"{name}: a curated mode shows kept pictures only")
         if public.get("name") in public_names:
             problems.append(f"{name}: public name {public.get('name')} is taken")
         public_names.add(public.get("name"))
@@ -177,10 +201,72 @@ def check(catalog: dict[str, Any]) -> list[str]:
         knobs = [knob["name"] for knob in (document.get("public") or {}).get("knobs") or []]
         if public.get("knobs") != knobs:
             problems.append(f"{name}: knobs {public.get('knobs')}, the style file's {knobs}")
-        if not 3 <= len(knobs) <= 5:
-            problems.append(f"{name}: {len(knobs)} public knobs, not 3 to 5")
-        problems += [f"{name}: {problem}" for problem in styles.check_public(document)]
+        low, high = KNOBS[tier]
+        if not low <= len(knobs) <= high:
+            problems.append(f"{name}: {len(knobs)} public knobs, not {low} to {high} ({tier})")
+        if knobs:
+            problems += [f"{name}: {problem}" for problem in styles.check_public(document)]
     return problems
+
+
+def check_example(row: dict[str, Any], shown: dict[str, Any], maps: Any) -> list[str]:
+    """A shown example (a lab mode's draft location in place of a keep)."""
+    problems = []
+    if row.get("tier") != "lab":
+        problems.append("only a lab mode shows an example in place of a keep")
+    if not shown.get("caption"):
+        problems.append(f"an example has a caption: {shown}")
+    location = shown.get("location")
+    if not isinstance(location, dict) or not {"family", "viewport"} <= set(location):
+        problems.append("an example's location is a {family, viewport, maxiter} record")
+    if shown.get("colormap") not in maps:
+        problems.append(f"an example's colormap {shown.get('colormap')} is not in the library")
+    picture = shown.get("picture", "")
+    if picture and (Path(picture).is_absolute() or "\\" in picture):
+        problems.append(f"an example's picture is repo-relative with /: {picture}")
+    return problems
+
+
+def shown_of(row: dict[str, Any]) -> list[dict[str, Any]]:
+    """Each picture a row shows, as a page opens it: `{caption, location, colormap, stack,
+    picture}` (`keep` too for a keep), a keep's own render record or an example's draft.
+
+    An example draws the mode's own stack; `picture` is its draft (a `Path`), or None.
+    """
+    from fractal_wallpapers import style_keeps, styles
+    from fractal_wallpapers.paths import repo_root
+
+    keeps = keeps_of(row["style"])
+    stacks = style_keeps.read_record(row["style"])["stacks"]
+    out = []
+    for shown in row.get("show", []):
+        if "keep" in shown:
+            render = keeps[shown["keep"]]["render"]
+            out.append(
+                {
+                    "keep": shown["keep"],
+                    "caption": shown["caption"],
+                    "location": render["location"],
+                    "colormap": render["colormap"],
+                    # The stack the keep was drawn with, which an earlier round's keep may
+                    # have drawn before the published stack settled.
+                    "stack": stacks[render["stack"]],
+                    "picture": style_keeps.keeps_folder(row["style"])
+                    / keeps[shown["keep"]]["image"],
+                }
+            )
+        else:
+            picture = shown.get("picture")
+            out.append(
+                {
+                    "caption": shown["caption"],
+                    "location": shown["location"],
+                    "colormap": shown["colormap"],
+                    "stack": styles.load(row["style"])["style"],
+                    "picture": repo_root() / picture if picture else None,
+                }
+            )
+    return out
 
 
 def check_references(row: dict[str, Any]) -> list[str]:
@@ -448,7 +534,8 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
             f"{esc(knob['label'])} ({knob['range'][0]:g}–{knob['range'][1]:g})" for knob in knobs
         )
         public = (
-            f'\n <p class="public">Public: <b>{esc(row["public"]["name"])}</b> · palette '
+            f'\n <p class="public">Public ({esc(row.get("tier", "?"))}): '
+            f"<b>{esc(row['public']['name'])}</b> · palette "
             f"{esc(row['public']['palette'])} · variant {esc(row['variant'])} · knobs: {dials}</p>"
         )
     return (
@@ -499,7 +586,7 @@ def gallery(folder: Path, catalog: dict[str, Any] | None = None) -> dict[str, An
     the same file redrawn: `img/sources.json`); an `img/` file no row names is
     removed, since the folder is the page's own.
     """
-    from fractal_wallpapers import style_keeps, styles
+    from fractal_wallpapers import styles
 
     catalog = catalog or load()
     img = folder / "img"
@@ -526,10 +613,11 @@ def gallery(folder: Path, catalog: dict[str, Any] | None = None) -> dict[str, An
                 f"{esc(row.get('note', ''))}</div></div>"
             )
             continue
-        keeps = keeps_of(name)
         pictures = []
-        for index, shown in enumerate(row.get("show", [])):
-            source = style_keeps.keeps_folder(name) / keeps[shown["keep"]]["image"]
+        for index, shown in enumerate(shown_of(row)):
+            source = shown["picture"]
+            if source is None:
+                raise CatalogError(f"{name}: example {index} names no picture to show")
             small = f"{name}__{index}.jpg"
             written += shrink(source, img / small, KEEP_WIDTH, drawn)
             wanted.add(small)

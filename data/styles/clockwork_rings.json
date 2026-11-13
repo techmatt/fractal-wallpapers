@@ -22,6 +22,56 @@
     "Added: nothing: period sheets on the smooth count for the rings, the `lines` angle for the hairlines, two single bubble discs whose pullbacks ride the rings, the `lines` channel inside for the lit and spoked basin. Its structure, concentric rings round a point, is one the galleries lack (measured): its locations are hand-placed (step 4's exception)",
     "Lessons: The eighteenth style is a flame-fractal clock: concentric glowing rings round a green-gold core, small luminous discs riding the rings, fine radial lines, on dark olive. It went in with **no new primitive**, on `star_eye`'s quasicircle Julia sets seen whole. Three lessons. **Outside a quasicircle the escape-time fields are already a clock face**: its equipotentials are near-circles round the set, so a period sheet on the smooth count draws the rings (a second at a quarter period the graduations), and its field lines run out radially, so the `lines` angle cut fine with no twist draws the hairlines. **A single disc outside the set rides the rings**: its pullbacks lie on the equipotentials, `d` discs a ring, `d` times as many and smaller each ring inwards, crowding to the set, so the riding discs are also the frame's proof that zooming in shows more; two discs at different angles double them without a lattice, which would pack the whole frame. **Light a basin from its attracting point, not its convergence count**: the `inside` count peaks at every preimage of the fixed point, so as a glow it lit a dozen equal hot spots in a flat olive blob; the `lines` channel's arrival step inverted lights the basin outwards from the fixed point, its angle cut into 36 spokes, while the `inside` bands ring each preimage, smaller and smaller towards the set. Seats whose basin is a smooth disc with few preimages still read as one object and were dropped by eye. The structure was measured: a 320x200 rank render of the smooth count, scored by the share of its variance a function of the radius alone explains (best of 25 centres in the frame's middle third), reads median 0.23 over 200 `final139_general` seats (none at 0.7, five at 0.5) against median 0.82 at `star_eye`'s twelve quasicircle seats. Seats come from the fixed point's multiplier `λ` (`|λ| < 1`, `arg λ` near 0 or π so the basin does not spiral): `d·z^(d−1) = λ`, `c = z − z^d`. All 40 drafts and the eleven full renders hold the reference's balance."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "disc_size",
+        "label": "Disc size",
+        "what": "the size of the glowing gear discs that ride the rings; larger draws bigger discs on every ring",
+        "default": 0.45,
+        "range": [0.3, 0.7],
+        "set": [
+          "/layers/*/channel/bubble/radius",
+          {"path": "/layers/*/channel/bubble/largest", "scale": 0.24, "offset": -0.008}
+        ]
+      },
+      {
+        "name": "rings",
+        "label": "Ring brightness",
+        "what": "how brightly the concentric rings round the set are drawn",
+        "default": 0.55,
+        "range": [0.15, 0.85],
+        "set": [
+          "/layers/2/opacity",
+          {"path": "/layers/3/opacity", "scale": 0.45454545454545453}
+        ]
+      },
+      {
+        "name": "hairlines",
+        "label": "Radial lines",
+        "what": "the fine lines running straight out from the set, like the marks on a clock face",
+        "default": 0.5,
+        "range": [0.0, 0.85],
+        "set": ["/layers/1/opacity"]
+      },
+      {
+        "name": "heart",
+        "label": "Heart glow",
+        "what": "the warm light spreading out from the centre of the set",
+        "default": 0.85,
+        "range": [0.2, 1.0],
+        "set": ["/layers/13/opacity"]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the frame's median lightness, which the tone pass holds the picture to",
+        "default": 0.141,
+        "range": [0.09, 0.2],
+        "set": ["/tone/median"]
+      }
+    ]
+  },
   "style": {
     "name": "clockwork_rings",
     "interior": {

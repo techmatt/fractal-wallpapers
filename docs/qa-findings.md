@@ -122,19 +122,15 @@ re-reports a line on it. The checker that found most of the style ones is
   archived input was refused as if being written) and a missing manifest raised; a
   draft's malformed knob, a truncated renders sidecar line, a choices file without rows
   and a picker plan that is not an object each raised. All refuse in one line.
+- **Two `stripe` densities on one escape loop collapsed to the first** (the loop's
+  `Wants` kept one density). Fixed in item 050 by Matt's ruling: one running sum per
+  density (`Wants::more_stripes`, up to four a loop; validation refuses a fifth).
+  `lace_holes` and `flame_wisp_amber` now draw what their stacks say and their keeps
+  were redrawn; `soft_veils`, the other four `flame_wisp_*` and `ember_plume` had each
+  collapsed layer's density rewritten to the one it drew, pixel-identical (his answer:
+  their kept look stays).
 
 ### Deferred to Matt
-
-- **Two `stripe` densities on one escape loop collapse to the first** (the loop's
-  `Wants` keeps one density; validation never asks). Measured: in `cream_lace` moving
-  the second strand layer's density from 4 to 9 changes no pixel, moving the first
-  changes 7.6%. So the "density 4" strands of `bead_strands`, `copper_mail`,
-  `cream_lace`, `ember_plume` and `gold_arcs` draw at 2, and `flame_wisp_amber`'s 10 at
-  3; the README's "crests at density 2 to 4" lesson was read off pictures drawn this way.
-  Options: one running sum per density in a loop (the right fix: every shipped stack
-  then draws what it says, and those six change), or refuse a second density per loop
-  (refuses the six). Recommend the first, with an identity run and a re-look of the
-  six, none of them published. *(Matt's call: their kept look moves)*
 
 - **The tone sweep reads 28 of 129 kept seats and palette entries outside their
   reference's band at draft size** under today's engine, every one on p90 (the number

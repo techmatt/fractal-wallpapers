@@ -9,16 +9,16 @@
   "folder": "fractal-drive-sync/style-keeps/lace_holes",
   "keeps": [
     {
-      "id": "style_lace_holes_r1/bead_strands/formulations/bead_strands__f_current__01_hand_basilica2_alpha_bead_strands",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "bead_strands/formulations",
-          "key": "bead_strands__f_current__01_hand_basilica2_alpha_bead_strands"
+          "row": "redrawn",
+          "key": "00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand"
         }
       ],
       "label": "current: stripe-crest strands feathering out of de lace, dark holes (hand_basilica2_alpha)",
-      "image": "style_lace_holes_r1__bead_strands__f_current__01_hand_basilica2_alpha_bead_strands.jpg",
+      "image": "style_lace_holes_resave__00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -47,19 +47,20 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/bead_strands/formulations/bead_strands__f_current__01_hand_basilica2_alpha_bead_strands"
     },
     {
-      "id": "style_lace_holes_r1/bead_strands/locations/bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "bead_strands/locations",
-          "key": "bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands"
+          "row": "redrawn",
+          "key": "01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands"
         }
       ],
       "label": "hand_rabbitbud_alpha_deep",
-      "image": "style_lace_holes_r1__bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands.jpg",
+      "image": "style_lace_holes_resave__01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -88,19 +89,20 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/bead_strands/locations/bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands"
     },
     {
-      "id": "style_lace_holes_r1/copper_mail/formulations/copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "copper_mail/formulations",
-          "key": "copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail"
+          "row": "redrawn",
+          "key": "02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail"
         }
       ],
       "label": "bubbles: each hole a lit glass bead (hand_basilica2_alpha)",
-      "image": "style_lace_holes_r1__copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail.jpg",
+      "image": "style_lace_holes_resave__02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -129,19 +131,20 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/copper_mail/formulations/copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail"
     },
     {
-      "id": "style_lace_holes_r1/copper_mail/locations/copper_mail__loc__09_hand_basilica2_value_copper_mail",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "copper_mail/locations",
-          "key": "copper_mail__loc__09_hand_basilica2_value_copper_mail"
+          "row": "redrawn",
+          "key": "03_copper_mail__loc__09_hand_basilica2_value_copper_mail"
         }
       ],
       "label": "hand_basilica2_value",
-      "image": "style_lace_holes_r1__copper_mail__loc__09_hand_basilica2_value_copper_mail.jpg",
+      "image": "style_lace_holes_resave__03_copper_mail__loc__09_hand_basilica2_value_copper_mail.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -170,19 +173,20 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/copper_mail/locations/copper_mail__loc__09_hand_basilica2_value_copper_mail"
     },
     {
-      "id": "style_lace_holes_r1/cream_lace/formulations/cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "cream_lace/formulations",
-          "key": "cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace"
+          "row": "redrawn",
+          "key": "04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace"
         }
       ],
       "label": "bubbles: each hole a lit glass bead (hand_rabbitbud_alpha)",
-      "image": "style_lace_holes_r1__cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace.jpg",
+      "image": "style_lace_holes_resave__04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -211,19 +215,20 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/cream_lace/formulations/cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace"
     },
     {
-      "id": "style_lace_holes_r1/cream_lace/formulations/cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "cream_lace/formulations",
-          "key": "cream_lace__f_current__01_hand_basilica2_alpha_cream_lace"
+          "row": "redrawn",
+          "key": "05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace"
         }
       ],
       "label": "current: stripe-crest strands feathering out of de lace, dark holes (hand_basilica2_alpha)",
-      "image": "style_lace_holes_r1__cream_lace__f_current__01_hand_basilica2_alpha_cream_lace.jpg",
+      "image": "style_lace_holes_resave__05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -252,19 +257,20 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/cream_lace/formulations/cream_lace__f_current__01_hand_basilica2_alpha_cream_lace"
     },
     {
-      "id": "style_lace_holes_r1/gold_arcs/formulations/gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs",
-      "picker": "style_lace_holes_r1",
+      "id": "style_lace_holes_resave/redrawn/06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs",
+      "picker": "style_lace_holes_resave",
       "picked": [
         {
-          "row": "gold_arcs/formulations",
-          "key": "gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
+          "row": "redrawn",
+          "key": "06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
         }
       ],
       "label": "bubbles: each hole a lit glass bead (hand_basilica2_alpha)",
-      "image": "style_lace_holes_r1__gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs.jpg",
+      "image": "style_lace_holes_resave__06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -293,7 +299,8 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/gold_arcs/formulations/gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
     }
   ],
   "stacks": {

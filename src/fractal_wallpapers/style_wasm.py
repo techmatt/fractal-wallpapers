@@ -96,35 +96,26 @@ def published_rows() -> list[dict[str, Any]]:
 def bundle() -> dict[str, Any]:
     """Every published mode as a page draws it, and every map they name.
 
-    A mode is its public name and palette, its palette set (`palettes`: each kept map
-    and the values tuned for it, which a page cycles), its knobs (the style file's `public.knobs`
-    whole: label, line, default, range, and where each writes), the stack, and the keeps
+    A mode is its public name, its tier (`curated` or `lab`, which a page lists apart) and
+    palette, its palette set (`palettes`: each kept map and the values tuned for it, which a
+    page cycles), its knobs (the style file's `public.knobs` whole: label, line, default,
+    range, and where each writes; a lab mode's may be empty), the stack, and the pictures
     the catalog shows, each with the location and map it was drawn at: the places a page
-    can open the mode at, known to hold the look.
+    can open the mode at, known to hold the look (a lab example's is a draft's).
     """
     from fractal_wallpapers import style_catalog, styles
 
     modes, maps = [], {}
     for row in published_rows():
         document = styles.load(row["style"])
-        keeps = style_catalog.keeps_of(row["style"])
-        stacks = keep_stacks(row["style"])
         shown = []
-        for item in row.get("show", []):
-            render = keeps[item["keep"]]["render"]
-            shown.append(
-                {
-                    "keep": item["keep"],
-                    "caption": item["caption"],
-                    "location": render["location"],
-                    "colormap": render["colormap"],
-                    # The stack the keep was drawn with, which an earlier round's keep
-                    # may have drawn before the published stack settled: the keep's own
-                    # picture is this, and the mode's `stack` at its location is close.
-                    "stack": stacks[render["stack"]],
-                }
-            )
-            maps.setdefault(render["colormap"], colormap_of(render["colormap"]))
+        # A keep's stack is the one it was drawn with, which an earlier round's keep may
+        # have drawn before the published stack settled: the keep's own picture is this,
+        # and the mode's `stack` at its location is close. A lab example (no `keep`) is a
+        # draft's location under the mode's own stack.
+        for item in style_catalog.shown_of(row):
+            shown.append({key: value for key, value in item.items() if key != "picture"})
+            maps.setdefault(item["colormap"], colormap_of(item["colormap"]))
         palette = row["public"]["palette"]
         maps.setdefault(palette, colormap_of(palette))
         # The set a page cycles: each kept map with the values tuned for it, written over
@@ -145,11 +136,13 @@ def bundle() -> dict[str, Any]:
             {
                 "name": row["public"]["name"],
                 "style": row["style"],
+                # `curated` is the website's *Custom* list, `lab` its *Custom (lab)*.
+                "tier": row["tier"],
                 "palette": palette,
                 "palettes": palettes,
                 "variant": row["variant"],
                 "what": row.get("what", document["description"]),
-                "knobs": document["public"]["knobs"],
+                "knobs": (document.get("public") or {}).get("knobs") or [],
                 "stack": document["style"],
                 "shown": shown,
             }
@@ -283,11 +276,8 @@ def parity(
     jobs, natives = [], {}
     for row in published_rows():
         document = styles.load(row["style"])
-        keeps = style_catalog.keeps_of(row["style"])
-        stacks = keep_stacks(row["style"])
-        for index, item in enumerate(row.get("show", [])):
-            render = keeps[item["keep"]]["render"]
-            stack = stacks[render["stack"]]
+        for index, render in enumerate(style_catalog.shown_of(row)):
+            stack = render["stack"]
             ident = f"{row['style']}__{index}"
             drawn = {**document, "style": stack}
             natives[ident] = (render["location"], drawn, render["colormap"], None)
@@ -305,7 +295,7 @@ def parity(
                         "same_as": ident,
                     }
                 )
-            knobs = document["public"]["knobs"]
+            knobs = (document.get("public") or {}).get("knobs") or []
             settings = midpoints(knobs)
             natives[f"{ident}__knobs"] = (
                 render["location"],
@@ -375,8 +365,7 @@ def speed(folder: Path) -> list[dict[str, Any]]:
         if not row.get("show"):
             continue
         document = styles.load(row["style"])
-        first = row["show"][0]["keep"]
-        location = style_catalog.keeps_of(row["style"])[first]["render"]["location"]
+        location = style_catalog.shown_of(row)[0]["location"]
         jobs.append(
             {
                 "id": row["style"],

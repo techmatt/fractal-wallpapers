@@ -22,8 +22,98 @@
     "Palette entries, one per kept reference (maps soft_veils_teal, _neon, _ember, _drift; teal is the default): each differs only in `/tone/median` and `/tone/p10` (the reference's: 0.374/0.212, 0.098/0.004, 0.226/0.072, 0.281/0.000) and the wisps' opacity (`/layers/13` to `/layers/18`: 0.12 for teal, 0.3 for neon and ember, 0.35 for drift). Round one kept a tile in each but olive (flit-25.jpg), whose map left the library; Matt scored the mode 5, a new mode rather than a flame_veil variant.",
     "Lessons (round one, item 041): **the stripe average's level lines are rays far from the set**: rank sheets cut from them (this style's first draw, the `stripe_veils` formulation) and its unmasked crests both cut the far field into straight, frame-filling blades, the failure the fractal-feel rule names. The smooth count's sheets fold round the set's lobes instead, and masked by the inverted `de` they read as density gathered round the set rather than rings round it, which is what item 028's unmasked period sheets (a tunnel at shallow seats) lacked. **Thin sets only**: a repelling fixed point does not make a Julia set thin (four of 032's r 1.08 seats drew a flat interior over half the frame), and on dense dust the set's own hair floods the frame and misses p90 by 0.13 to 0.29, so the seats are Misiurewicz dendrites and sparse spiral dust from 032's hand pool (step 4's exception, 028's far-field measurement). The pool's phoenix seats took about 270 s a draft against 7 to 20 s for a hand seat. drift's combed opaque ribbons are the furthest reach: the entry gives its palette and darkness, not its fibres.",
     "Entries from eight more flame references (item 046, round one; all -25.jpg): soft_veils_rose (grandmother), _fire (hellid), _copper (hollow-worlds), _peach (just-peachy), _magenta (intermission), _moss (hazy-summer-garden), _crimson (holey-trinity), _gold (goldenrod); and soft_veils_amber, jewel_lace_amber renamed, the one tile kept from jewel_lace's round (item 044). Each takes its reference's tone and moves the haze (`/layers/1` to `/layers/6`), veils (`/layers/7` to `/layers/12`) or wisps (`/layers/13` to `/layers/18`) together. **A many-hued reference places each hue at the slot that draws it**: the ground at 0.04, the haze 0.35 to 0.45, the veils 0.5 to 0.85, the wisps 0.75 to 1.0; the screens wash everything towards the map's top, so the albedo is pushed well past the reference's saturation (rose, fire, copper and magenta read tan and grey at the reference's own colours). Not carried: hazy-summer-garden's cloud of tiny bubbles (a dense small-disc dust, a bubble lattice masked to the far field rather than to the set) and holey-trinity's glowing spirals in dark bubbles (a bubble trap's discs with a spiral sheet inside them, plastic_orbs' placement); each is drawn once as the nearest entry. hollow-worlds' large hollow shells and intermission's concentric discs and frame-crossing lines are left out by the fractal-feel rule. The entries miss p90 by 0.1 to 0.25 at most seats (fire, rose, copper, magenta): the stack's brightest parts are thin wisps and the set's hair, and the references' lights are broad.",
-    "Round one of item 046 kept fire (hellid, at vm_d5), peach and gold (just-peachy, goldenrod, at vj_d3 t0.124) and a teal default tile at vj_d3 t0.124; rose, copper, magenta, moss and crimson kept nothing and their maps left the library. Every kept entry, soft_veils_amber with them, takes the mode's score, 5. No round two."
+    "Round one of item 046 kept fire (hellid, at vm_d5), peach and gold (just-peachy, goldenrod, at vj_d3 t0.124) and a teal default tile at vj_d3 t0.124; rose, copper, magenta, moss and crimson kept nothing and their maps left the library. Every kept entry, soft_veils_amber with them, takes the mode's score, 5. No round two.",
+    "Item 050: the wisps' stripe density reads 2, not the 10 above: until then one escape loop carried one stripe density, the first a layer asked for, so 10 was never drawn. The stack now says what every kept picture shows (Matt's ruling; pixel-identical)."
   ],
+  "public": {
+    "knobs": [
+      {
+        "name": "veils",
+        "label": "Veil strength",
+        "what": "how bright the translucent sheets of light folding round the set are",
+        "default": 0.3,
+        "range": [
+          0.1,
+          0.6
+        ],
+        "set": [
+          "/layers/7/opacity",
+          "/layers/8/opacity",
+          "/layers/9/opacity",
+          "/layers/10/opacity",
+          "/layers/11/opacity",
+          "/layers/12/opacity"
+        ]
+      },
+      {
+        "name": "wisps",
+        "label": "Wisps",
+        "what": "the fine feathered strands of light drifting off the veils",
+        "default": 0.12,
+        "range": [
+          0.0,
+          0.4
+        ],
+        "set": [
+          "/layers/13/opacity",
+          "/layers/14/opacity",
+          "/layers/15/opacity",
+          "/layers/16/opacity",
+          "/layers/17/opacity",
+          "/layers/18/opacity"
+        ]
+      },
+      {
+        "name": "haze",
+        "label": "Background haze",
+        "what": "the faint coloured mist behind the veils",
+        "default": 0.08,
+        "range": [
+          0.0,
+          0.4
+        ],
+        "set": [
+          "/layers/1/opacity",
+          "/layers/2/opacity",
+          "/layers/3/opacity",
+          "/layers/4/opacity",
+          "/layers/5/opacity",
+          "/layers/6/opacity"
+        ]
+      },
+      {
+        "name": "halo",
+        "label": "Halo",
+        "what": "the soft glow hugging the fractal's own fine threads",
+        "default": 0.35,
+        "range": [
+          0.0,
+          0.8
+        ],
+        "set": [
+          "/layers/19/opacity"
+        ]
+      },
+      {
+        "name": "brightness",
+        "label": "Brightness",
+        "what": "the picture's overall lightness, from a dark night sky to a bright glow",
+        "default": 0.374,
+        "range": [
+          0.25,
+          0.5
+        ],
+        "set": [
+          "/tone/median",
+          {
+            "path": "/tone/p10",
+            "scale": 1.0,
+            "offset": -0.162
+          }
+        ]
+      }
+    ]
+  },
   "style": {
     "name": "soft_veils",
     "interior": {
@@ -391,7 +481,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 2.0
           }
         },
         "power": 10.0,
@@ -415,7 +505,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 2.0
           },
           "view": {
             "turn": 137.5,
@@ -447,7 +537,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 2.0
           },
           "view": {
             "turn": 275.0,
@@ -479,7 +569,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 2.0
           },
           "view": {
             "turn": 52.5,
@@ -511,7 +601,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 2.0
           },
           "view": {
             "turn": 190.0,
@@ -543,7 +633,7 @@
         "channel": {
           "field": {
             "kind": "stripe",
-            "density": 10.0
+            "density": 2.0
           },
           "view": {
             "turn": 327.5,

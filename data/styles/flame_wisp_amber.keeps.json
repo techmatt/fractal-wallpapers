@@ -9,16 +9,16 @@
   "folder": "fractal-drive-sync/style-keeps/flame_wisp_amber",
   "keeps": [
     {
-      "id": "style_flame_wisps_r1/flame_wisp_amber/formulations/amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber",
-      "picker": "style_flame_wisps_r1",
+      "id": "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
+      "picker": "style_flame_wisp_amber_resave",
       "picked": [
         {
-          "row": "flame_wisp_amber/formulations",
-          "key": "amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber"
+          "row": "redrawn",
+          "key": "00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp"
         }
       ],
       "label": "close_views: six views narrower than the frame (zoom 0.3 to 0.7) near its middle, so the strands curl round the set instead of running out straight (vj_d2_r1.08_t0.131_whole)",
-      "image": "style_flame_wisps_r1__amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber.jpg",
+      "image": "style_flame_wisp_amber_resave__00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp.jpg",
       "render": {
         "location": {
           "schema": 1,
@@ -47,7 +47,8 @@
           800
         ],
         "supersample": 2
-      }
+      },
+      "note": "Redrawn under one stripe sum per density (item 050): replaces style_flame_wisps_r1/flame_wisp_amber/formulations/amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_amber"
     }
   ],
   "stacks": {

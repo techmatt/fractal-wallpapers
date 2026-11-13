@@ -61,7 +61,9 @@ is `linear`, `sqrt`, `log` or `scurve`, applied after the frame's stretch (and t
 invert). `inside` is the one channel defined only inside the set: a smooth convergence
 count, highest at each bulb's nucleus, so banding it draws rings into every bulb. Every
 `inside` channel in a stack reads one loop, run at the largest `iterations` any asks
-for. `radial` is the one channel not read off the orbit: nearness to a frame point
+for. Each loop (the frame's, and each view's) keeps one running sum per `stripe`
+density, up to four; a fifth is refused. `radial` is the one channel not read off the
+orbit: nearness to a frame point
 (`center` in fractions from the top-left), 1 at the core and 0 at the farthest corner.
 It has no gradient, so a `light` cannot read it, and the location has to put its core
 where `center` says.

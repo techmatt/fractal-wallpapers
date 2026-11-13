@@ -37,6 +37,9 @@ pub const BAILOUT: f64 = 65536.0; // 2^16
 /// How often [`run`] asks whether an orbit is proven interior, in steps. See the loop.
 const INTERIOR_EVERY: u32 = 16;
 
+/// How many stripe densities one loop carries beyond the first ([`Wants::more_stripes`]).
+pub const MORE_STRIPES: usize = 3;
+
 /// Which per-iteration channels this render actually reads.
 ///
 /// `Option` carries both halves of the question — whether a channel is wanted
@@ -46,6 +49,10 @@ const INTERIOR_EVERY: u32 = 16;
 pub struct Wants {
     /// Stripe average, at this sine density.
     pub stripe: Option<f64>,
+    /// Further stripe densities the same loop carries, one running sum each: a
+    /// style's layers on one escape loop may ask for several (a strand at 2 under
+    /// crests at 4). Empty slots first-free; never the density `stripe` holds.
+    pub more_stripes: [Option<f64>; MORE_STRIPES],
     /// Triangle-inequality average.
     pub tia: bool,
     /// Curvature average.
@@ -269,15 +276,43 @@ fn julia_disk(family: &Family, degree: u32) -> Option<Interior> {
 }
 
 impl Wants {
+    /// How many distinct stripe densities `fields` would ask one loop for: past
+    /// `1 + MORE_STRIPES`, [`Wants::union`] drops the extras.
+    pub fn stripe_count<'a>(densities: impl IntoIterator<Item = &'a f64>) -> usize {
+        let mut seen: Vec<f64> = Vec::new();
+        for &density in densities {
+            if !seen.contains(&density) {
+                seen.push(density);
+            }
+        }
+        seen.len()
+    }
+
     /// Everything two fields between them ask for, in one pass.
     ///
     /// Where both want the same channel with a different constant the first
-    /// wins; [`crate::coloring::Coloring`] refuses to build such a pair, because
-    /// one orbit cannot carry two stripe densities and silently picking one is
-    /// how a render stops meaning what its record says it means.
+    /// wins, except stripe: every distinct density gets its own running sum, the
+    /// first in `stripe` and the rest in `more_stripes` (past [`MORE_STRIPES`] the
+    /// extra is dropped: [`Wants::stripe_count`] lets a caller refuse that first).
+    /// [`crate::coloring::Coloring`] still refuses two fields of one kind.
     pub fn union(self, other: Wants) -> Wants {
+        let mut more = self.more_stripes;
+        for density in std::iter::once(other.stripe)
+            .chain(other.more_stripes)
+            .flatten()
+        {
+            let held =
+                self.stripe.or(other.stripe) == Some(density) || more.contains(&Some(density));
+            if held {
+                continue;
+            }
+            if let Some(slot) = more.iter_mut().find(|slot| slot.is_none()) {
+                *slot = Some(density);
+            }
+        }
         Wants {
             stripe: self.stripe.or(other.stripe),
+            more_stripes: more,
             tia: self.tia || other.tia,
             curvature: self.curvature || other.curvature,
             trap_circle: self.trap_circle.or(other.trap_circle),
@@ -611,6 +646,8 @@ pub struct Orbit {
     pub smooth: f64,
     /// Mean of `½ + ½·sin(density · arg z)`.
     pub stripe: Average,
+    /// The same mean at each of [`Wants::more_stripes`]' densities, beside it.
+    pub more_stripes: [(f64, Average); MORE_STRIPES],
     /// Mean of the triangle-inequality ratio.
     pub tia: Average,
     /// Mean turning angle between consecutive steps.
@@ -646,6 +683,7 @@ impl Orbit {
             iteration: 0,
             smooth: f64::NAN,
             stripe: Average::default(),
+            more_stripes: [(0.0, Average::default()); MORE_STRIPES],
             tia: Average::default(),
             curvature: Average::default(),
             trap_circle: f64::INFINITY,
@@ -658,6 +696,15 @@ impl Orbit {
             last: Complex::new(0.0, 0.0),
             derivative: Complex::new(0.0, 0.0),
         }
+    }
+
+    /// The stripe average at `density`: its own running sum when the loop carried
+    /// that density beside the first ([`Wants::more_stripes`]), else the first's.
+    pub fn stripe_at(&self, density: f64) -> &Average {
+        self.more_stripes
+            .iter()
+            .find(|(held, _)| *held == density)
+            .map_or(&self.stripe, |(_, average)| average)
     }
 
     /// The exterior distance estimate: how far this point is from the set.
@@ -758,6 +805,9 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
 
     let mut orbit = Orbit::new();
     orbit.last = z;
+    for (slot, density) in orbit.more_stripes.iter_mut().zip(wants.more_stripes) {
+        slot.0 = density.unwrap_or(0.0);
+    }
 
     // **A head address opening on `z₀` spells its first symbol here.** Every other
     // channel accumulates from `n = 1`, which for an average is a rounding
@@ -840,6 +890,11 @@ pub fn run(family: &Family, pixel: Complex<f64>, maxiter: u32, wants: &Wants) ->
             orbit
                 .stripe
                 .push(0.5 + 0.5 * (density * z.im.atan2(z.re)).sin());
+            for (slot, more) in orbit.more_stripes.iter_mut().zip(wants.more_stripes) {
+                if let Some(density) = more {
+                    slot.1.push(0.5 + 0.5 * (density * z.im.atan2(z.re)).sin());
+                }
+            }
         }
         if wants.tia {
             // Where the actual step landed, between the closest and farthest the
@@ -988,6 +1043,7 @@ mod tests {
     fn everything() -> Wants {
         Wants {
             stripe: Some(6.0),
+            more_stripes: [Some(3.0), None, None],
             tia: true,
             curvature: true,
             trap_circle: Some(1.0),
@@ -1538,6 +1594,28 @@ mod tests {
         assert_eq!(both.trap_circle, Some(1.0));
         assert!(!both.tia);
         assert!(!both.derivative);
+    }
+
+    /// Two stripe densities on one loop each keep their own running sum: the
+    /// second reads exactly what a loop asking for it alone reads, never the first.
+    #[test]
+    fn one_loop_carries_one_stripe_sum_per_density() {
+        let at = |density: f64| Wants {
+            stripe: Some(density),
+            ..Wants::default()
+        };
+        let both = at(2.0).union(at(4.0)).union(at(2.0));
+        assert_eq!(both.stripe, Some(2.0));
+        assert_eq!(both.more_stripes, [Some(4.0), None, None]);
+        let family = Family::Multibrot { degree: 2 };
+        let pixel = Complex::new(0.36, 0.62);
+        let together = run(&family, pixel, 500, &both);
+        let alone = run(&family, pixel, 500, &at(4.0));
+        let first = run(&family, pixel, 500, &at(2.0));
+        assert!(together.escaped);
+        assert_eq!(together.stripe_at(4.0), &alone.stripe);
+        assert_eq!(together.stripe_at(2.0), &first.stripe);
+        assert_ne!(together.stripe_at(4.0), together.stripe_at(2.0));
     }
 
     /// The derivative recurrence is differentiated from the recurrence itself, so

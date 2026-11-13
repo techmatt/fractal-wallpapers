@@ -214,10 +214,13 @@ it, then `measure()` at the picture's own size and tile again. `frame` costs one
 `measure()` plus tiles about two; a full frame takes seconds to over a minute on one thread.
 
 `fractal-wallpapers style bundle` writes what a page draws from (default
-`artifacts/style-wasm/bundle.json`): `{schema, modes: [{name, style, palette, palettes,
-variant, what, knobs, stack, shown: [{keep, caption, location, colormap, stack}]}],
-colormaps: {name: file}}`, one mode per published row of `data/styles/catalog.json`
-(`style_wasm.bundle`'s docstring). `palettes` is `[{colormap, values, score}]`; the page
+`artifacts/style-wasm/bundle.json`): `{schema, modes: [{name, style, tier, palette,
+palettes, variant, what, knobs, stack, shown: [{keep, caption, location, colormap,
+stack}]}], colormaps: {name: file}}`, one mode per published row of
+`data/styles/catalog.json` (`style_wasm.bundle`'s docstring). `tier` is `curated` (the
+*Custom* list) or `lab` (*Custom (lab)*); a lab mode's `knobs` may be empty, and a shown
+example has no `keep` (a draft's place, drawn with the mode's own stack). `palettes` is
+`[{colormap, values, score}]`; the page
 writes `values` over `stack` at their pointers (`style_palettes.apply`) before opening a
 session. A shown keep carries the stack it was drawn with. `style wasm-parity` and `style
 wasm-speed` hold the module to the native engine under Node (`style_wasm.py`).
