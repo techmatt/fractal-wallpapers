@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "name": "ribbed_tubes",
+  "description": "ribbed glossy hoses curling out of the set: every escape band one lit tube segment, teal and blue in the far field, with grey lace dust sitting on the set between them",
+  "reference": {
+    "image": "giger-esque-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "suggested_colormap": "ribbed_tubes",
+  "reuses": [
+    "a light on the smooth count at period 1 with rings 1 (lit_petals' and molten_flow's light, cut per escape step): each escape band one lit cylinder segment, a rib",
+    "the smooth count at frame rank through the map (smooth_bands' palette layer)",
+    "the escape-band checker (pattern, sectors 2), off by default: heliograph's scale tiles",
+    "glow_filaments' falloff glows on de: a dark halo parting the lace from the tubes, a grey dust glow and a hair of light"
+  ],
+  "adds": [],
+  "notes": [
+    "Added: nothing new to the engine. Item 052 brought six glossy tube and spiral references (giger-esque, malign, gyre, happy-hours, into-forever, heliograph, all -25.jpg); four went into existing modes as palette entries and the two whose tubes or scales are **segmented per escape band** became this mode: glossy_spirals' blades are one strip trap's pullbacks and glossy_lobes' are a disc lattice, and neither draws a rib.",
+    "Lessons (round one): **a light at `period` 1 on the smooth count is a ribbed hose**: each escape step is one lit tube across the band, so the far field's wide bands read as fat segments and the bands crowding the set as ever finer ribs, which is what promises more detail on zoom. The README's warning that a period-1 light cuts seams holds, and here the seams are the reference's: giger's hoses are ribbed edge to edge. The far field is the map's low end, so the map runs bright teal there and greys towards the set (a dark low end painted the hoses black). The checker on the same bands (sectors 2) tiles each rib into heliograph's scales; it is a member at opacity 0, so heliograph_scales is an entry, not a mode."
+  ],
+  "style": {
+    "name": "ribbed_tubes",
+    "interior": {
+      "palette": 0.9
+    },
+    "tone": {
+      "median": 0.181,
+      "p10": 0.017
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 1.0,
+          "rings": 1.0,
+          "slope": 0.3,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.35,
+          "diffuse": 0.75,
+          "specular": 0.8,
+          "shininess": 16.0,
+          "rim": 0.25,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#cfe6ff"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "pattern",
+        "checker": {
+          "sectors": 2
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "rgb": "#03050c"
+        },
+        "blend": "multiply",
+        "opacity": 0.6,
+        "falloff": 0.002
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.86
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "falloff": 0.0005
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.8,
+        "falloff": 0.0002
+      }
+    ]
+  }
+}

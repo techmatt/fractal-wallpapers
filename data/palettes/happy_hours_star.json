@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "happy_hours_star",
+  "kind": "sequential",
+  "source": "a red black through maroon, plum and crimson to amber, gold and a pale cream, the albedo of happy-hours-25.jpg's entry in glossy_lobes: a glowing gold star spiral with sparkle dust on dark red filigree",
+  "stops": [
+    [0.0, [16, 2, 6]],
+    [0.16, [52, 8, 16]],
+    [0.32, [82, 30, 70]],
+    [0.46, [140, 24, 20]],
+    [0.62, [214, 104, 20]],
+    [0.8, [246, 176, 50]],
+    [0.92, [252, 214, 120]],
+    [1.0, [255, 238, 200]]
+  ]
+}

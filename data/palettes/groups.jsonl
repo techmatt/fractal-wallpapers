@@ -241,3 +241,9 @@
 {"schema": 1, "kind": "admitted", "map": "soft_veils_fire", "group": "map:soft_veils_fire", "joined": false, "nearest": "map:nova-25", "m1": 0.062529}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_peach", "group": "map:soft_veils_peach", "joined": false, "nearest": "map:Ash Ember Arc", "m1": 0.040147}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_gold", "group": "map:soft_veils_gold", "joined": false, "nearest": "map:Ember Gilt", "m1": 0.042029}
+{"schema": 1, "kind": "admitted", "map": "ribbed_tubes", "group": "map:ribbed_tubes", "joined": false, "nearest": "map:wallhaven_wallhaven-4xy8el", "m1": 0.048871}
+{"schema": 1, "kind": "admitted", "map": "heliograph_scales", "group": "map:Hollow Lantern", "joined": true, "nearest": "map:Hollow Lantern", "m1": 0.034082}
+{"schema": 1, "kind": "admitted", "map": "malign_tubes", "group": "map:malign_tubes", "joined": false, "nearest": "map:jadanti", "m1": 0.076688}
+{"schema": 1, "kind": "admitted", "map": "gyre_blades", "group": "map:gyre_blades", "joined": false, "nearest": "map:riding-on-the-tide-25", "m1": 0.066761}
+{"schema": 1, "kind": "admitted", "map": "into_forever_rays", "group": "map:into_forever_rays", "joined": false, "nearest": "map:along-the-starry-way-25", "m1": 0.051129}
+{"schema": 1, "kind": "admitted", "map": "happy_hours_star", "group": "map:happy_hours_star", "joined": false, "nearest": "m61", "m1": 0.063681}

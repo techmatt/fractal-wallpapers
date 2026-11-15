@@ -92,7 +92,8 @@
       "item": "019",
       "reference": "blessed-by-the-night-25.jpg",
       "references": [
-        "blessed-by-the-night-25.jpg"
+        "blessed-by-the-night-25.jpg",
+        "happy-hours-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -133,6 +134,60 @@
             "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes"
           ],
           "score": 4
+        },
+        {
+          "colormap": "happy_hours_star",
+          "values": {
+            "/interior": {
+              "palette": 0.1
+            },
+            "/layers/0/color": {
+              "palette": 0.06
+            },
+            "/layers/1/opacity": 0.0,
+            "/layers/10/channel/bubble/largest": 0.03,
+            "/layers/10/channel/bubble/radius": 0.06,
+            "/layers/10/channel/bubble/smallest": 0.004,
+            "/layers/11/color": {
+              "palette": 0.46
+            },
+            "/layers/11/opacity": 0.8,
+            "/layers/12/color": {
+              "palette": 0.46
+            },
+            "/layers/12/opacity": 0.7,
+            "/layers/2/light/ambient": 1.0,
+            "/layers/2/light/diffuse": 0.0,
+            "/layers/2/light/rim": 0.0,
+            "/layers/2/light/specular": 0.0,
+            "/layers/3/opacity": 0.0,
+            "/layers/4/opacity": 0.0,
+            "/layers/5/light/ambient": 1.0,
+            "/layers/5/light/diffuse": 0.0,
+            "/layers/5/light/rim": 0.0,
+            "/layers/5/light/specular": 0.0,
+            "/layers/6/opacity": 0.0,
+            "/layers/7/channel/bubble/largest": 0.03,
+            "/layers/7/channel/bubble/radius": 0.06,
+            "/layers/7/channel/bubble/smallest": 0.004,
+            "/layers/7/color": {
+              "palette": 0.8
+            },
+            "/layers/7/opacity": 0.8,
+            "/layers/8/channel/bubble/largest": 0.03,
+            "/layers/8/channel/bubble/radius": 0.06,
+            "/layers/8/channel/bubble/smallest": 0.004,
+            "/layers/8/color": {
+              "palette": 1.0
+            },
+            "/layers/9/channel/bubble/largest": 0.03,
+            "/layers/9/channel/bubble/radius": 0.06,
+            "/layers/9/channel/bubble/smallest": 0.004,
+            "/tone/median": 0.119,
+            "/tone/p10": 0.004
+          },
+          "keeps": [],
+          "reference": "happy-hours-25.jpg"
         }
       ]
     },
@@ -1589,7 +1644,10 @@
         "evening-radiance-25.jpg",
         "dessert-union-25.jpg",
         "eventide-25.jpg",
-        "fools-paradise-25.jpg"
+        "fools-paradise-25.jpg",
+        "malign-25.jpg",
+        "gyre-25.jpg",
+        "into-forever-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1758,6 +1816,118 @@
             "style_glossy_spirals_r1/cream_tubes/locations/cream_tubes__loc__06_phoenix_3f0cb289_cream_tubes"
           ],
           "score": 3
+        },
+        {
+          "colormap": "malign_tubes",
+          "values": {
+            "/interior": {
+              "palette": 0.3
+            },
+            "/layers/0/palette/gamma": 1.0,
+            "/layers/1/light/highlight": {
+              "rgb": "#ffd6c8"
+            },
+            "/layers/1/light/slope": 0.6,
+            "/layers/2/opacity": 0.3,
+            "/layers/3/color": {
+              "palette": 0.9
+            },
+            "/layers/4/light/highlight": {
+              "rgb": "#ffc8b0"
+            },
+            "/layers/4/light/specular": 0.9,
+            "/layers/5/color": {
+              "palette": 0.82
+            },
+            "/layers/6/color": {
+              "rgb": "#ff7a5a"
+            },
+            "/layers/6/opacity": 0.5,
+            "/layers/7/color": {
+              "palette": 0.0
+            },
+            "/layers/7/opacity": 0.6,
+            "/layers/8/color": {
+              "palette": 0.62
+            },
+            "/layers/8/opacity": 0.5,
+            "/tone/median": 0.242,
+            "/tone/p10": 0.083
+          },
+          "keeps": [],
+          "reference": "malign-25.jpg"
+        },
+        {
+          "colormap": "gyre_blades",
+          "values": {
+            "/interior": {
+              "palette": 0.4
+            },
+            "/layers/0/palette/gamma": 1.0,
+            "/layers/1/light/highlight": {
+              "rgb": "#fff0d8"
+            },
+            "/layers/1/light/slope": 1.0,
+            "/layers/2/opacity": 0.4,
+            "/layers/3/color": {
+              "palette": 0.9
+            },
+            "/layers/4/light/highlight": {
+              "rgb": "#fff0d8"
+            },
+            "/layers/5/color": {
+              "palette": 0.68
+            },
+            "/layers/6/color": {
+              "rgb": "#ffe0b0"
+            },
+            "/layers/6/opacity": 0.4,
+            "/layers/7/color": {
+              "palette": 0.0
+            },
+            "/layers/8/color": {
+              "palette": 0.38
+            },
+            "/tone/median": 0.233,
+            "/tone/p10": 0.067
+          },
+          "keeps": [],
+          "reference": "gyre-25.jpg"
+        },
+        {
+          "colormap": "into_forever_rays",
+          "values": {
+            "/interior": {
+              "palette": 0.1
+            },
+            "/layers/0/palette/gamma": 1.0,
+            "/layers/1/light/highlight": {
+              "rgb": "#d8f0ff"
+            },
+            "/layers/1/light/slope": 0.4,
+            "/layers/2/opacity": 0.5,
+            "/layers/3/channel/bubble/largest": 0.2,
+            "/layers/3/color": {
+              "palette": 0.6
+            },
+            "/layers/3/opacity": 0.0,
+            "/layers/4/channel/bubble/largest": 0.2,
+            "/layers/4/opacity": 0.0,
+            "/layers/5/channel/bubble/largest": 0.2,
+            "/layers/5/opacity": 0.0,
+            "/layers/6/channel/bubble/largest": 0.2,
+            "/layers/6/color": {
+              "rgb": "#9fe8ff"
+            },
+            "/layers/6/power": 8.0,
+            "/layers/8/color": {
+              "palette": 0.78
+            },
+            "/tone/median": 0.33,
+            "/tone/p10": 0.06
+          },
+          "keeps": [],
+          "reference": "into-forever-25.jpg"
         }
       ],
       "aliases": [

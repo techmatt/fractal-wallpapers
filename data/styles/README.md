@@ -281,3 +281,14 @@ Each style's `notes` hold what its rounds taught. The general lessons:
   hue at the slot that draws it, and screen-blended layers wash towards the map's top:
   push the albedo well past the reference's saturation (`soft_veils`' notes have the
   slots).
+- A light at `period` 1 on the smooth count is a ribbed hose: one lit tube per escape
+  step, fat in the far field and ever finer towards the set (`ribbed_tubes`); the far
+  field is the map's low end, so a hose map is bright there, not dark.
+- An entry's value must name a member the stack writes: a `light` layer carries no
+  `opacity` in most files, so an entry that drops one sets it neutral (`ambient` 1,
+  `diffuse`, `specular` and `rim` 0) instead (`glossy_lobes`' `happy_hours_star`).
+- The strip trap's blades drawn as a narrow screen glow on their `height` (power 8), no
+  fill and no light, read as soft luminous blades, not as thin rays crossing between
+  spiral centres (`glossy_spirals`' `into_forever_rays`, round one): the blades taper
+  from a wide base, so one loop does not reach a ray. Blurred streaks behind a star are
+  a view (the `ghost` sheet), one more loop.

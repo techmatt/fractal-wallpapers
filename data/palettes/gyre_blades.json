@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "gyre_blades",
+  "kind": "sequential",
+  "source": "a violet black through deep violet and a bright blue violet, then chocolate, copper and cream, the albedo of gyre-25.jpg's entry in glossy_spirals: copper, cream and violet blades round a spiral core",
+  "stops": [
+    [0.0, [16, 8, 30]],
+    [0.2, [60, 34, 130]],
+    [0.38, [110, 80, 236]],
+    [0.52, [72, 30, 16]],
+    [0.68, [176, 92, 36]],
+    [0.84, [226, 168, 104]],
+    [1.0, [240, 226, 190]]
+  ]
+}

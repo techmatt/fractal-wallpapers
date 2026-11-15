@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "ribbed_tubes",
+  "kind": "sequential",
+  "source": "a deep blue through teal and cyan blue, darkening to slate violet, then lavender grey to a pale grey, the albedo of the ribbed_tubes style, from giger-esque-25.jpg: ribbed teal and blue hoses in the far field, grey lace at the set",
+  "stops": [
+    [0.0, [18, 46, 120]],
+    [0.22, [16, 108, 168]],
+    [0.4, [20, 140, 190]],
+    [0.58, [16, 76, 130]],
+    [0.74, [52, 50, 84]],
+    [0.88, [104, 100, 124]],
+    [1.0, [212, 210, 220]]
+  ]
+}

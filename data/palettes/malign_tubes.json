@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "malign_tubes",
+  "kind": "sequential",
+  "source": "a charcoal through smoke grey to a pale grey, then oxblood, crimson and coral, the albedo of malign-25.jpg's entry in glossy_spirals: red glossy tubes spiralling over a grey gradient",
+  "stops": [
+    [0.0, [16, 16, 18]],
+    [0.3, [58, 58, 64]],
+    [0.62, [118, 118, 126]],
+    [0.76, [146, 144, 150]],
+    [0.82, [110, 18, 30]],
+    [0.9, [196, 42, 54]],
+    [0.96, [246, 104, 82]],
+    [1.0, [64, 60, 68]]
+  ]
+}
