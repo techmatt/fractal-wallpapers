@@ -1422,7 +1422,8 @@
       "item": "033",
       "reference": "consequences-25.jpg",
       "references": [
-        "consequences-25.jpg"
+        "consequences-25.jpg",
+        "interstellar-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1458,6 +1459,38 @@
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow"
           ],
           "score": 4
+        },
+        {
+          "colormap": "interstellar_webs",
+          "values": {
+            "/tone/median": 0.201,
+            "/tone/p10": 0.07,
+            "/interior": {
+              "palette": 0.05
+            },
+            "/layers/1/color": {
+              "palette": 0.78
+            },
+            "/layers/2/color": {
+              "palette": 0.64
+            },
+            "/layers/3/color": {
+              "palette": 0.9
+            },
+            "/layers/4/color": {
+              "palette": 0.12
+            },
+            "/layers/4/opacity": 0.5,
+            "/layers/5/light/highlight": {
+              "palette": 0.92
+            },
+            "/layers/6/opacity": 0.45,
+            "/layers/9/color": {
+              "palette": 0.9
+            }
+          },
+          "keeps": [],
+          "reference": "interstellar-25.jpg"
         }
       ]
     },
@@ -1537,7 +1570,8 @@
       "item": "033",
       "reference": "corporeal-25.jpg",
       "references": [
-        "corporeal-25.jpg"
+        "corporeal-25.jpg",
+        "horror-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1582,6 +1616,32 @@
           "values": {},
           "keeps": [],
           "score": 2
+        },
+        {
+          "colormap": "horror_scales",
+          "values": {
+            "/tone/median": 0.092,
+            "/tone/p10": 0.011,
+            "/interior": {
+              "palette": 0.0
+            },
+            "/layers/1/light/highlight": {
+              "palette": 0.95
+            },
+            "/layers/1/light/ambient": 0.35,
+            "/layers/1/light/rim": 0.5,
+            "/layers/2/light/ambient": 0.45,
+            "/layers/3/color": {
+              "palette": 0.43
+            },
+            "/layers/3/opacity": 0.45,
+            "/layers/4/color": {
+              "palette": 0.43
+            },
+            "/layers/4/opacity": 0.45
+          },
+          "keeps": [],
+          "reference": "horror-25.jpg"
         }
       ]
     },
@@ -2051,7 +2111,8 @@
         "devilfish-25.jpg",
         "dragon-mail-25.jpg",
         "flamed-25.jpg",
-        "deepsea-life-25.jpg"
+        "deepsea-life-25.jpg",
+        "horror-25.jpg"
       ],
       "variant": "current",
       "show": [

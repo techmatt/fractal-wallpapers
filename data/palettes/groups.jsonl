@@ -249,3 +249,5 @@
 {"schema": 1, "kind": "admitted", "map": "greenhorn", "group": "map:greenhorn", "joined": false, "nearest": "map:house-of-ivory-25", "m1": 0.059886}
 {"schema": 1, "kind": "admitted", "map": "sliced_strips", "group": "map:sliced_strips", "joined": false, "nearest": "map:Copper Fathom", "m1": 0.062219}
 {"schema": 1, "kind": "admitted", "map": "cut_tiles", "group": "map:cut_tiles", "joined": false, "nearest": "map:riding-on-the-tide-25", "m1": 0.083507}
+{"schema": 1, "kind": "admitted", "map": "horror_scales", "group": "map:horror_scales", "joined": false, "nearest": "map:Oxblood Standard", "m1": 0.056892}
+{"schema": 1, "kind": "admitted", "map": "interstellar_webs", "group": "map:interstellar_webs", "joined": false, "nearest": "map:dessert-union-25", "m1": 0.049599}

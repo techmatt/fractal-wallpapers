@@ -302,6 +302,17 @@ Each style's `notes` hold what its rounds taught. The general lessons:
 - Hard-cut flat tiles are the strip trap's `step` through the map at a few `cycles`, laid
   `normal`; one narrow strip painted solid only at its coarse entries makes gaps, and a
   `de` hairline multiplied over keeps lace inside them (`cut_tiles`).
+- A `view` is one more escape loop over the whole frame, and a turned or zoomed-out view of
+  a deep seat can land on interior points, each iterated to the seat's `maxiter`: a
+  three-view stack at a phoenix seat with `maxiter` 14,428 drew nothing in 13 minutes where
+  the same seat without views took under a minute. Draw a view-heavy stack's formulations
+  at seats of low `maxiter` (a few thousand) and time one draft before a batch
+  (`scaled_folds`).
+- On a dark reference the tone pass sets the median, so a layer that sinks the far field
+  to black makes the pass lift everything else: a far-field multiply turned
+  `scaled_folds`' lace bone white at median 0.092. Keep the ground in the map's dark end
+  instead. Viewed sheets over dense lace alias into a pale wash; mask them by `de` (not
+  inverted) so they stay off the set.
 - A packing entry whose reference has a few big circles rather than beads re-bounds every
   bubble read's `largest` (0.6, not 0.12) and makes the disc fill translucent, or it reads
   as the mode recoloured (`bronze_packing`'s `greenhorn`).

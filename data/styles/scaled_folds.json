@@ -1,0 +1,294 @@
+{
+  "schema": 1,
+  "name": "scaled_folds",
+  "description": "lit scaly folds in dark red and grey-green on black: cauliflower_scales' lit escape bands packed with small domed cells, crossed by three views' translucent folds kept off the lace, fine red veins along the set",
+  "reference": {
+    "image": "horror-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "horror_scales",
+  "reuses": [
+    "cauliflower_scales' stack (light at period 1, bubble lattice domed at period 2, stripe crests through views)",
+    "molten_flow's three views as translucent sheets",
+    "de glow (lace_holes)"
+  ],
+  "adds": [],
+  "notes": "From horror-25.jpg (item 054). Nearest mode: cauliflower_scales, whose lit bands and domed bubble cells are horror's scales; lace_holes, the prompt's guess, draws a glowing web with lit holes and no relief. What this adds over the entry (horror_scales in cauliflower_scales): molten_flow's three viewed sheets as translucent folds laid before the lights, masked by the set's distance so they stay off the lace (unmasked, at a lace-dense seat the views' bands alias into a pale wash over the finer scales), and red veins: the stripe average's crests masked to the set and a red de hairline. A far-field multiply to black was tried and dropped: sinking the ground makes the tone pass (median 0.092) lift everything else, and the lace went bone white. Seats are a plain gallery scout with --min-ink 0.15 (seed 54): the reference is textured edge to edge. No engine change.",
+  "style": {
+    "name": "scaled_folds",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.092,
+      "p10": 0.011
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 2.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.7,
+            "shift": [
+              -0.154,
+              -0.21
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 3.0,
+          "edge": 0.05,
+          "fill": 0.08
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "color": {
+          "palette": 0.26
+        },
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 1.058,
+            "shift": [
+              -0.111,
+              0.35
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 3.0,
+          "edge": 0.05,
+          "fill": 0.08
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "color": {
+          "palette": 0.58
+        },
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 52.5,
+            "zoom": 1.6,
+            "shift": [
+              0.426,
+              -0.144
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 3.0,
+          "edge": 0.05,
+          "fill": 0.08
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "color": {
+          "palette": 0.43
+        },
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.8,
+          "slope": 0.3,
+          "azimuth": 160.0,
+          "elevation": 35.0,
+          "ambient": 0.35,
+          "diffuse": 0.7,
+          "specular": 0.4,
+          "shininess": 10.0,
+          "rim": 0.5,
+          "rim_power": 3.0,
+          "period": 1.0,
+          "highlight": {
+            "palette": 0.95
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "escaped": true,
+            "radius": 0.45,
+            "spacing": 1.0,
+            "largest": 0.03,
+            "smallest": 0.001,
+            "read": "height"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 1.0,
+          "slope": 0.0,
+          "azimuth": 160.0,
+          "elevation": 35.0,
+          "ambient": 0.45,
+          "diffuse": 0.7,
+          "specular": 0.2,
+          "shininess": 8.0,
+          "rim": 0.0,
+          "rim_power": 3.0,
+          "period": 2.0,
+          "highlight": {
+            "palette": 0.4
+          }
+        },
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 12.0
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.9,
+            "shift": [
+              -0.125,
+              -0.171
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.43
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "power": 12.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 12.0
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 1.3,
+            "shift": [
+              -0.09,
+              0.286
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.43
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "power": 12.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 6.0
+          }
+        },
+        "color": {
+          "palette": 0.43
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 14.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "power": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.43
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "falloff": 0.0003
+      }
+    ]
+  }
+}

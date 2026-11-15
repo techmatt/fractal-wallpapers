@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "interstellar_webs",
+  "kind": "sequential",
+  "source": "a navy through steel blue, a dark maroon and copper to orange and pale gold, the albedo of interstellar-25.jpg's entry in molten_flow: orange-copper webs folding over blue hollows, sparkle dust between them",
+  "stops": [
+    [0.0, [4, 10, 30]],
+    [0.1, [14, 40, 96]],
+    [0.22, [40, 96, 170]],
+    [0.3, [80, 140, 210]],
+    [0.36, [64, 24, 24]],
+    [0.48, [140, 56, 22]],
+    [0.62, [210, 104, 36]],
+    [0.76, [240, 150, 60]],
+    [0.88, [252, 200, 120]],
+    [1.0, [255, 244, 222]]
+  ]
+}

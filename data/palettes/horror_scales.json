@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "horror_scales",
+  "kind": "sequential",
+  "source": "a black through deep maroon, a dark grey-green and blood red to sage grey and bone, the albedo of horror-25.jpg's entry in cauliflower_scales: lit scaly folds in dark red and grey-green on black, fine red veins between them",
+  "stops": [
+    [0.0, [4, 2, 2]],
+    [0.12, [38, 6, 8]],
+    [0.26, [40, 50, 42]],
+    [0.4, [176, 22, 20]],
+    [0.46, [196, 40, 30]],
+    [0.58, [84, 98, 86]],
+    [0.72, [120, 26, 24]],
+    [0.86, [150, 156, 132]],
+    [1.0, [214, 200, 168]]
+  ]
+}
