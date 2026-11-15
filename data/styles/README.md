@@ -288,7 +288,8 @@ Each style's `notes` hold what its rounds taught. The general lessons:
   `opacity` in most files, so an entry that drops one sets it neutral (`ambient` 1,
   `diffuse`, `specular` and `rim` 0) instead (`glossy_lobes`' `happy_hours_star`).
 - The strip trap's blades drawn as a narrow screen glow on their `height` (power 8), no
-  fill and no light, read as soft luminous blades, not as thin rays crossing between
-  spiral centres (`glossy_spirals`' `into_forever_rays`, round one): the blades taper
-  from a wide base, so one loop does not reach a ray. Blurred streaks behind a star are
-  a view (the `ghost` sheet), one more loop.
+  fill and no light, read as soft luminous blades (`glossy_spirals`'
+  `into_forever_rays`, round one); a narrow strip (radius 0.06, power 12) thins them to
+  luminous arcs, the nearest one loop gets to light rays, though they curve with the
+  arms rather than run straight between spiral centres. Blurred streaks behind a star
+  are a view (the `ghost` sheet), one more loop.
