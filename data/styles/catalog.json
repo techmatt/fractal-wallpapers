@@ -9,7 +9,8 @@
       "item": "009",
       "reference": "795549-3840x2160-desktop-4k-fractal-background.jpg",
       "references": [
-        "795549-3840x2160-desktop-4k-fractal-background.jpg"
+        "795549-3840x2160-desktop-4k-fractal-background.jpg",
+        "greenhorn-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -81,6 +82,32 @@
             "style_bronze_packing_r1/palettes/twilight"
           ],
           "score": 4
+        },
+        {
+          "colormap": "greenhorn",
+          "values": {
+            "/tone/median": 0.303,
+            "/tone/p10": 0.14,
+            "/layers/5/opacity": 0.95,
+            "/layers/11/opacity": 0.5,
+            "/layers/2/channel/bubble/largest": 0.6,
+            "/layers/3/channel/bubble/largest": 0.6,
+            "/layers/4/channel/bubble/largest": 0.6,
+            "/layers/5/channel/bubble/largest": 0.6,
+            "/layers/6/channel/bubble/largest": 0.6,
+            "/layers/7/channel/bubble/largest": 0.6,
+            "/layers/8/channel/bubble/largest": 0.6,
+            "/layers/9/channel/bubble/largest": 0.6,
+            "/layers/10/channel/bubble/largest": 0.6,
+            "/layers/11/channel/bubble/largest": 0.6,
+            "/layers/2/warp/channel/bubble/largest": 0.6,
+            "/layers/2/opacity": 0.6,
+            "/layers/3/opacity": 0.0,
+            "/layers/8/opacity": 0.15,
+            "/layers/9/opacity": 0.15
+          },
+          "keeps": [],
+          "reference": "greenhorn-25.jpg"
         }
       ]
     },
@@ -122,7 +149,7 @@
       },
       "what": "Soft lit blue lobes, each a glossy dome, between gold star webs, with a halo and sparkle.",
       "kept": "3 locations, map_lobes formulation",
-      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default. · Matt: reasonably good.",
+      "note": "Engine: bubble disc + strip (existing) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · The published lobes are the literal blue; map_lobes (painted from the map) is kept but not the default. · Matt: reasonably good; item 052's happy_hours_star entry kept nothing and left the set.",
       "palettes": [
         {
           "colormap": "glossy_lobes",
@@ -134,60 +161,6 @@
             "style_glossy_lobes_r1/locations/locations__09_mandelbrot_c7223dda_glossy_lobes"
           ],
           "score": 4
-        },
-        {
-          "colormap": "happy_hours_star",
-          "values": {
-            "/interior": {
-              "palette": 0.1
-            },
-            "/layers/0/color": {
-              "palette": 0.06
-            },
-            "/layers/1/opacity": 0.0,
-            "/layers/10/channel/bubble/largest": 0.03,
-            "/layers/10/channel/bubble/radius": 0.06,
-            "/layers/10/channel/bubble/smallest": 0.004,
-            "/layers/11/color": {
-              "palette": 0.46
-            },
-            "/layers/11/opacity": 0.8,
-            "/layers/12/color": {
-              "palette": 0.46
-            },
-            "/layers/12/opacity": 0.7,
-            "/layers/2/light/ambient": 1.0,
-            "/layers/2/light/diffuse": 0.0,
-            "/layers/2/light/rim": 0.0,
-            "/layers/2/light/specular": 0.0,
-            "/layers/3/opacity": 0.0,
-            "/layers/4/opacity": 0.0,
-            "/layers/5/light/ambient": 1.0,
-            "/layers/5/light/diffuse": 0.0,
-            "/layers/5/light/rim": 0.0,
-            "/layers/5/light/specular": 0.0,
-            "/layers/6/opacity": 0.0,
-            "/layers/7/channel/bubble/largest": 0.03,
-            "/layers/7/channel/bubble/radius": 0.06,
-            "/layers/7/channel/bubble/smallest": 0.004,
-            "/layers/7/color": {
-              "palette": 0.8
-            },
-            "/layers/7/opacity": 0.8,
-            "/layers/8/channel/bubble/largest": 0.03,
-            "/layers/8/channel/bubble/radius": 0.06,
-            "/layers/8/channel/bubble/smallest": 0.004,
-            "/layers/8/color": {
-              "palette": 1.0
-            },
-            "/layers/9/channel/bubble/largest": 0.03,
-            "/layers/9/channel/bubble/radius": 0.06,
-            "/layers/9/channel/bubble/smallest": 0.004,
-            "/tone/median": 0.119,
-            "/tone/p10": 0.004
-          },
-          "keeps": [],
-          "reference": "happy-hours-25.jpg"
         }
       ]
     },
@@ -462,7 +435,8 @@
       "item": "014",
       "reference": "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg",
       "references": [
-        "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg"
+        "795565-3840x2160-desktop-4k-fractal-wallpaper-image.jpg",
+        "greenhorn-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -969,7 +943,8 @@
       "item": "028",
       "reference": "bluebird-25.jpg",
       "references": [
-        "bluebird-25.jpg"
+        "bluebird-25.jpg",
+        "ice-grotto-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -999,6 +974,23 @@
             "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue"
           ],
           "score": 2
+        },
+        {
+          "colormap": "ice_grotto",
+          "values": {
+            "/tone/median": 0.416,
+            "/tone/p10": 0.173,
+            "/layers/2/color": {
+              "palette": 1.0
+            },
+            "/layers/2/blend": "normal",
+            "/layers/6/color": {
+              "palette": 0.94
+            },
+            "/layers/2/opacity": 0.9
+          },
+          "keeps": [],
+          "reference": "ice-grotto-25.jpg"
         }
       ]
     },
@@ -1093,7 +1085,8 @@
       "item": "028",
       "reference": "chalk-drawing-25.jpg",
       "references": [
-        "chalk-drawing-25.jpg"
+        "chalk-drawing-25.jpg",
+        "ivory-and-lace-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1128,6 +1121,17 @@
             "style_flame_veil_chalk_r1/locations/locations__04_vj_d2_r1.0_t0.767_whole_flame_veil_chalk"
           ],
           "score": 2
+        },
+        {
+          "colormap": "ivory_lace",
+          "values": {
+            "/tone/median": 0.839,
+            "/tone/p10": 0.577,
+            "/layers/10/opacity": 0.55,
+            "/layers/11/opacity": 0.5
+          },
+          "keeps": [],
+          "reference": "ivory-and-lace-25.jpg"
         }
       ]
     },
@@ -1647,7 +1651,8 @@
         "fools-paradise-25.jpg",
         "malign-25.jpg",
         "gyre-25.jpg",
-        "into-forever-25.jpg"
+        "into-forever-25.jpg",
+        "ivory-and-lace-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1676,8 +1681,8 @@
         ]
       },
       "what": "Glossy blades lit like satin sweep along a spiral's arms, over a softly sculpted relief, with the fractal's fine lace laid on top.",
-      "kept": "four palettes (violet_star_arms, golden_petals, copper_arms, cream_tubes): 5 locations and 2 ghost formulations",
-      "note": "Engine: nothing new (strip trap blades lit across over the slope relief) · reproducible: every keep has its full render record · Matt: a few are okay (round one); teal_tubes and chrome_blades kept nothing and were discarded.",
+      "kept": "five palettes (violet_star_arms, golden_petals, copper_arms, cream_tubes, malign_tubes): 5 locations, 2 ghost formulations and 1 malign_tubes entry tile",
+      "note": "Engine: nothing new (strip trap blades lit across over the slope relief) · reproducible: every keep has its full render record · Matt: a few are okay (round one); teal_tubes and chrome_blades kept nothing and were discarded; of item 052's entries malign_tubes kept one tile (okay but not amazing), gyre_blades and into_forever_rays kept nothing and left the set.",
       "palettes": [
         {
           "colormap": "violet_star_arms",
@@ -1854,80 +1859,11 @@
             "/tone/median": 0.242,
             "/tone/p10": 0.083
           },
-          "keeps": [],
-          "reference": "malign-25.jpg"
-        },
-        {
-          "colormap": "gyre_blades",
-          "values": {
-            "/interior": {
-              "palette": 0.4
-            },
-            "/layers/0/palette/gamma": 1.0,
-            "/layers/1/light/highlight": {
-              "rgb": "#fff0d8"
-            },
-            "/layers/1/light/slope": 1.0,
-            "/layers/2/opacity": 0.4,
-            "/layers/3/color": {
-              "palette": 0.9
-            },
-            "/layers/4/light/highlight": {
-              "rgb": "#fff0d8"
-            },
-            "/layers/5/color": {
-              "palette": 0.68
-            },
-            "/layers/6/color": {
-              "rgb": "#ffe0b0"
-            },
-            "/layers/6/opacity": 0.4,
-            "/layers/7/color": {
-              "palette": 0.0
-            },
-            "/layers/8/color": {
-              "palette": 0.38
-            },
-            "/tone/median": 0.233,
-            "/tone/p10": 0.067
-          },
-          "keeps": [],
-          "reference": "gyre-25.jpg"
-        },
-        {
-          "colormap": "into_forever_rays",
-          "values": {
-            "/interior": {
-              "palette": 0.1
-            },
-            "/layers/0/palette/gamma": 1.0,
-            "/layers/1/light/highlight": {
-              "rgb": "#d8f0ff"
-            },
-            "/layers/1/light/slope": 0.4,
-            "/layers/2/opacity": 0.5,
-            "/layers/3/channel/bubble/largest": 0.2,
-            "/layers/3/color": {
-              "palette": 0.6
-            },
-            "/layers/3/opacity": 0.0,
-            "/layers/4/channel/bubble/largest": 0.2,
-            "/layers/4/opacity": 0.0,
-            "/layers/5/channel/bubble/largest": 0.2,
-            "/layers/5/opacity": 0.0,
-            "/layers/6/channel/bubble/largest": 0.2,
-            "/layers/6/color": {
-              "rgb": "#9fe8ff"
-            },
-            "/layers/6/power": 8.0,
-            "/layers/8/color": {
-              "palette": 0.78
-            },
-            "/tone/median": 0.33,
-            "/tone/p10": 0.06
-          },
-          "keeps": [],
-          "reference": "into-forever-25.jpg"
+          "keeps": [
+            "style_glossy_tubes_r1/glossy_spirals/malign_tubes/malign_tubes__02_julia-mandelbrot_e403d1d6_malign_tubes"
+          ],
+          "reference": "malign-25.jpg",
+          "score": 2
         }
       ],
       "aliases": [
@@ -2582,6 +2518,73 @@
       "what": "fine copper lace on a blue-black ground studded with lit jewels: copper beads strung along the set's arms, each with a white glint, and star points of light where the lace is densest",
       "kept": "nothing",
       "note": "Kept nothing of its own in round one (item 044); its maps left the library, since only picked palettes are saved. Its one kept tile, the amber map on soft_veils, is soft_veils' soft_veils_amber entry · Matt: nothing in here looks aesthetically interesting enough to add."
+    },
+    {
+      "style": "ribbed_tubes",
+      "score": 2,
+      "status": "publish",
+      "tier": "lab",
+      "item": "052",
+      "reference": "giger-esque-25.jpg",
+      "references": [
+        "giger-esque-25.jpg",
+        "heliograph-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_glossy_tubes_r1/ribbed_tubes/locations/loc__05_mandelbrot_26914365_ribbed_tubes",
+          "caption": "Ribbed steel-blue hoses coiling into a Mandelbrot spiral, grey lace between the coils"
+        },
+        {
+          "keep": "style_glossy_tubes_r1/ribbed_tubes/locations/loc__08_phoenix-classic_3b6d967c_ribbed_tubes",
+          "caption": "A phoenix spiral of glossy blue ribs, ever finer towards its centre, in a grey lace fringe"
+        },
+        {
+          "keep": "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales",
+          "caption": "Bronze and black scale bands chequering a phoenix spiral's arms on a sand ground"
+        }
+      ],
+      "public": {
+        "name": "ribbed-hoses",
+        "palette": "ribbed_tubes",
+        "knobs": []
+      },
+      "what": "Glossy ribbed hoses curling out of the set, one lit segment per escape band, fat in the far field and ever finer towards the grey lace.",
+      "kept": "two palettes (ribbed_tubes, heliograph_scales): 2 locations, 2 formulations (fat ribs, scales) and 1 heliograph_scales entry tile",
+      "note": "Engine: nothing new (a light at period 1 on the smooth count over the count through the map, de glows for the lace; the escape-band checker for heliograph's scales) · reproducible: every keep has its full render record · Matt: okay but not amazing (round one).",
+      "palettes": [
+        {
+          "colormap": "ribbed_tubes",
+          "values": {},
+          "keeps": [
+            "style_glossy_tubes_r1/ribbed_tubes/formulations/f_fat_ribs__00_mandelbrot_4199ca9b_ribbed_tubes",
+            "style_glossy_tubes_r1/ribbed_tubes/formulations/f_scales__00_mandelbrot_4199ca9b_ribbed_tubes",
+            "style_glossy_tubes_r1/ribbed_tubes/locations/loc__05_mandelbrot_26914365_ribbed_tubes",
+            "style_glossy_tubes_r1/ribbed_tubes/locations/loc__08_phoenix-classic_3b6d967c_ribbed_tubes"
+          ],
+          "score": 2
+        },
+        {
+          "colormap": "heliograph_scales",
+          "reference": "heliograph-25.jpg",
+          "values": {
+            "/layers/1/light/highlight": {
+              "rgb": "#ffe2c0"
+            },
+            "/layers/2/opacity": 0.7,
+            "/layers/4/color": {
+              "palette": 0.8
+            },
+            "/tone/median": 0.283,
+            "/tone/p10": 0.019
+          },
+          "keeps": [
+            "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales"
+          ],
+          "score": 2
+        }
+      ]
     }
   ]
 }

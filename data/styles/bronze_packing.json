@@ -128,6 +128,7 @@
       },
       {
         "kind": "palette",
+        "opacity": 1.0,
         "channel": {
           "bubble": {
             "center": [

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "cut_tiles",
+  "kind": "sequential",
+  "source": "a dark plum through violet, cobalt and lavender to coral, peach and a pale apricot, the albedo of the cut_tiles style, from lethe-25.jpg: hard-cut tiles in violet, peach and blue along lattice-patterned bands",
+  "stops": [
+    [0.0, [44, 12, 62]],
+    [0.2, [104, 52, 156]],
+    [0.38, [76, 78, 214]],
+    [0.52, [150, 122, 222]],
+    [0.68, [222, 108, 92]],
+    [0.84, [242, 168, 118]],
+    [1.0, [252, 222, 172]]
+  ]
+}

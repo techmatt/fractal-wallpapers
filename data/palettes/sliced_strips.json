@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "sliced_strips",
+  "kind": "sequential",
+  "source": "a blue black through navy and steel blue to a pale cyan, then a dark copper rising to tan, the albedo of the sliced_strips style, from linear-dimensions-25.jpg: blue and copper fractal strips sliced and offset along a diagonal",
+  "stops": [
+    [0.0, [2, 6, 14]],
+    [0.2, [6, 26, 60]],
+    [0.4, [16, 72, 130]],
+    [0.55, [70, 150, 210]],
+    [0.62, [70, 40, 16]],
+    [0.8, [180, 112, 56]],
+    [1.0, [236, 196, 146]]
+  ]
+}

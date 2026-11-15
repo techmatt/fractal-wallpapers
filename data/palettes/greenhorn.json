@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "greenhorn",
+  "kind": "sequential",
+  "source": "a green black through bottle green and sage to grey and a glowing mint, the albedo of greenhorn-25.jpg's entry in bronze_packing: big green circles with glowing curves threading between them",
+  "stops": [
+    [0.0, [6, 18, 14]],
+    [0.2, [22, 52, 42]],
+    [0.4, [46, 86, 72]],
+    [0.6, [92, 116, 106]],
+    [0.75, [136, 146, 136]],
+    [0.85, [168, 174, 164]],
+    [0.92, [110, 232, 196]],
+    [1.0, [224, 255, 242]]
+  ]
+}

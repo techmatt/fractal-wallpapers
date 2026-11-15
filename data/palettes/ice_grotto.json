@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "ice_grotto",
+  "kind": "sequential",
+  "source": "a navy through cobalt and sky blue to ice white, ending in a thin scarlet, the albedo of ice-grotto-25.jpg's entry in flame_veil_blue: soft blue arcs crossing, a red rim line along some of them",
+  "stops": [
+    [0.0, [4, 14, 44]],
+    [0.12, [8, 34, 92]],
+    [0.3, [16, 64, 146]],
+    [0.5, [34, 104, 196]],
+    [0.62, [62, 136, 214]],
+    [0.75, [104, 168, 232]],
+    [0.88, [168, 210, 246]],
+    [0.95, [228, 242, 255]],
+    [0.97, [236, 246, 255]],
+    [1.0, [214, 44, 20]]
+  ]
+}

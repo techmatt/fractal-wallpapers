@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "ivory_lace",
+  "kind": "sequential",
+  "source": "a dark olive grey through warm grey and stone to cream, ivory and white, the albedo of ivory-and-lace-25.jpg's entry in flame_veil_chalk: cream and white crossed sheets folded like paper petals over grey lace",
+  "stops": [
+    [0.0, [62, 60, 48]],
+    [0.15, [104, 102, 88]],
+    [0.3, [150, 150, 140]],
+    [0.45, [186, 184, 170]],
+    [0.6, [226, 214, 160]],
+    [0.75, [238, 228, 184]],
+    [0.9, [248, 246, 236]],
+    [1.0, [255, 255, 252]]
+  ]
+}

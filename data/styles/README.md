@@ -293,3 +293,15 @@ Each style's `notes` hold what its rounds taught. The general lessons:
   luminous arcs, the nearest one loop gets to light rays, though they curve with the
   arms rather than run straight between spiral centres. Blurred streaks behind a star
   are a view (the `ghost` sheet), one more loop.
+- Straight slices that cut the set are the strip trap's coarse entries used as a `mask`
+  (power 0.001, so solid) on a viewed field: far from the set the escape map is near
+  affine across the frame, so a first entry pulls back as a straight band. `smallest` (a
+  quarter of the frame) is what keeps them few: unbounded, nearly every orbit lands in
+  some entry and the view covers the frame. Thin seats only; lace hides them
+  (`sliced_strips`).
+- Hard-cut flat tiles are the strip trap's `step` through the map at a few `cycles`, laid
+  `normal`; one narrow strip painted solid only at its coarse entries makes gaps, and a
+  `de` hairline multiplied over keeps lace inside them (`cut_tiles`).
+- A packing entry whose reference has a few big circles rather than beads re-bounds every
+  bubble read's `largest` (0.6, not 0.12) and makes the disc fill translucent, or it reads
+  as the mode recoloured (`bronze_packing`'s `greenhorn`).

@@ -1,0 +1,209 @@
+{
+  "schema": 1,
+  "name": "sliced_strips",
+  "description": "blue and copper fractal strips sliced and offset along a diagonal like a shifted mirror: straight hard-edged slices, each holding a point-mirrored, shifted copy of the set with its full lace, over lit blue satin folds",
+  "reference": {
+    "image": "linear-dimensions-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "suggested_colormap": "sliced_strips",
+  "reuses": [
+    "the strip trap (glossy_spirals, flame_veil_chalk)",
+    "view",
+    "light",
+    "de glow"
+  ],
+  "adds": [],
+  "notes": "From linear-dimensions-25.jpg (item 053). The slices are the strip trap's coarse entries (radius 0.2, tilt 35, largest 2.0, smallest 0.25): far from the set the escape map is near affine across the frame, so its first entries pull back as straight parallel bands, and nearer the set as finer, bent ones. Each slice masks in a viewed field (turn 180, shift [0.1, -0.06]), the set's own structure mirrored and offset, with its own de hairline, so every piece keeps the fractal's detail; an inverted strip glow darkens the cut edges. smallest is what keeps the slices few: without it nearly every orbit lands in some entry and the view covers the frame. The light's specular is 0.3: at 0.6 the copper highlights put p90 0.1 to 0.2 over the reference's on nine of ten drafts. Wants thin seats (--max-ink 0.06 to 0.10); on lace-dense seats the slices vanish into the lace. No engine change.",
+  "style": {
+    "name": "sliced_strips",
+    "tone": {
+      "median": 0.194,
+      "p10": 0.017
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.2
+        }
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 180.0,
+            "zoom": 1.0,
+            "shift": [
+              0.1,
+              -0.06
+            ]
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.2
+        },
+        "mask": {
+          "channel": {
+            "bubble": {
+              "shape": "strip",
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.2,
+              "spacing": 1.0,
+              "tilt": 35.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 2.0,
+              "smallest": 0.25
+            }
+          },
+          "power": 0.001
+        }
+      },
+      {
+        "kind": "palette",
+        "blend": "screen",
+        "opacity": 0.25,
+        "channel": {
+          "bubble": {
+            "shape": "strip",
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.2,
+            "spacing": 1.0,
+            "tilt": 35.0,
+            "read": "step",
+            "escaped": true,
+            "largest": 2.0,
+            "smallest": 0.25
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 6.0,
+          "rings": 0.7,
+          "slope": 0.2,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.7,
+          "specular": 0.3,
+          "shininess": 25.0
+        }
+      },
+      {
+        "kind": "glow",
+        "blend": "multiply",
+        "opacity": 0.8,
+        "channel": {
+          "bubble": {
+            "shape": "strip",
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.2,
+            "spacing": 1.0,
+            "tilt": 35.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 2.0,
+            "smallest": 0.25
+          },
+          "invert": true
+        },
+        "power": 12.0,
+        "color": {
+          "palette": 0.0
+        }
+      },
+      {
+        "kind": "glow",
+        "blend": "screen",
+        "opacity": 0.6,
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "palette": 0.55
+        }
+      },
+      {
+        "kind": "glow",
+        "blend": "screen",
+        "opacity": 0.6,
+        "channel": {
+          "field": {
+            "kind": "de"
+          },
+          "view": {
+            "turn": 180.0,
+            "zoom": 1.0,
+            "shift": [
+              0.1,
+              -0.06
+            ]
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "palette": 0.55
+        },
+        "mask": {
+          "channel": {
+            "bubble": {
+              "shape": "strip",
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.2,
+              "spacing": 1.0,
+              "tilt": 35.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 2.0,
+              "smallest": 0.25
+            }
+          },
+          "power": 0.001
+        }
+      }
+    ]
+  }
+}

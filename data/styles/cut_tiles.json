@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "name": "cut_tiles",
+  "description": "hard-cut tiles in violet, peach and blue round small spirals, white gaps between them holding the set's grey lace, along escape bands patterned with a brick lattice",
+  "reference": {
+    "image": "lethe-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "suggested_colormap": "cut_tiles",
+  "reuses": [
+    "the strip trap (glossy_spirals)",
+    "escape-band checker (ribbed_tubes)",
+    "de glow"
+  ],
+  "adds": [],
+  "notes": "From lethe-25.jpg (item 053). The tiles are the strip trap's blades read as `step` at three cycles of the map, laid normal, so each blade is one flat hue with a hard edge, cut by the set's own pullbacks; the brick lattice is the escape-band checker at 16 sectors multiplied in; the dark seams are a period-1 sheet on the smooth count; the white gaps are a second, narrow strip (tilt 90, radius 0.04) painted solid only at its coarse entries (largest 0.35, smallest 0.12), with the set's de hairline multiplied over them so each gap still holds lace. Round one first drew the gaps at radius 0.08 down to 0.06 of the frame: at a slow-escaping Mandelbrot spiral every step lands another entry in that window and white flooded the frame. A spiral reference, so spiral seats. No engine change.",
+  "style": {
+    "name": "cut_tiles",
+    "tone": {
+      "median": 0.383,
+      "p10": 0.077
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0
+        }
+      },
+      {
+        "kind": "palette",
+        "blend": "normal",
+        "opacity": 0.9,
+        "channel": {
+          "bubble": {
+            "shape": "strip",
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "tilt": 0.0,
+            "read": "step",
+            "escaped": true,
+            "largest": 0.6,
+            "smallest": 0.015
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 3.0
+        }
+      },
+      {
+        "kind": "pattern",
+        "blend": "multiply",
+        "opacity": 0.55,
+        "checker": {
+          "per_iteration": 1.0,
+          "sectors": 16
+        },
+        "color": {
+          "palette": 0.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "opacity": 0.7,
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 1.0,
+          "fill": 0.0,
+          "edge": 0.12
+        },
+        "color": {
+          "palette": 0.0
+        }
+      },
+      {
+        "kind": "glow",
+        "opacity": 1.0,
+        "channel": {
+          "bubble": {
+            "shape": "strip",
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.04,
+            "spacing": 1.0,
+            "tilt": 90.0,
+            "read": "height",
+            "escaped": true,
+            "largest": 0.35,
+            "smallest": 0.12
+          }
+        },
+        "power": 0.001,
+        "color": {
+          "rgb": "#ffffff"
+        }
+      },
+      {
+        "kind": "glow",
+        "blend": "multiply",
+        "opacity": 0.6,
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.0
+        }
+      }
+    ]
+  }
+}
