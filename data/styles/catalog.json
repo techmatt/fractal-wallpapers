@@ -1325,7 +1325,7 @@
       },
       "what": "Frosted blue and white flame veils, their strands feathered with a crisp white rime along the set, on a near-black ground.",
       "kept": "2 locations",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic seat, the one where the strands follow the set (Matt: the only great one). · Its score is that one keep's, phoenix-classic_618cd4e4.",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic seat, the one where the strands follow the set (Matt: the only great one), opened at an iteration cap of 1000 in place of the seat's 9062: the same picture by eye at a seventh of the drawing time. · Its score is that one keep's, phoenix-classic_618cd4e4.",
       "palettes": [
         {
           "colormap": "flame_wisp_frost",
