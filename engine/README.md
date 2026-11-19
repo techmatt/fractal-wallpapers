@@ -182,6 +182,10 @@ crop, with its Lanczos apron, against them) and `style::paint` (both at once, th
 `render`). Tiles against `measure` of the frame itself stitch to `paint`'s picture byte for
 byte (`tiles_stitch_to_the_whole_picture`).
 
+A style's **post stage** (`src/post.rs`; the stack's `post`) is the one part that reads
+neighbouring samples: passes over the whole composited frame and its lanes, run before the
+tone is measured. `paint` and `measure` run it; `tile` refuses a style that has one.
+
 ### The style module: a custom mode in a page
 
 `../style-wasm/` is that split as a raw `wasm32-unknown-unknown` module (no wasm-bindgen,
@@ -193,7 +197,8 @@ cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm
    -> style-wasm/target/wasm32-unknown-unknown/release/style_wasm.wasm
 
 open(request)               -> {ok, handle, maxiter, resolution, supersample, samples,
-                                mirror, style (the stack as drawn)} | {ok: false, why}
+                                mirror, post (drawn whole: `frame`, never `tile`),
+                                style (the stack as drawn)} | {ok: false, why}
 measure(h, w, hgt, ss)      -> {ok, measured, supersample, tone: {b, g} | null,
                                 interior_fraction}         zeros: the picture's own frame
 tile(h, x, y, w, hgt)       -> RGBA, w·hgt·4 bytes, against the last measure; null: last_error()

@@ -122,3 +122,65 @@ def test_the_module_draws_the_native_picture_with_its_knobs_turned(tmp_path):
             # off Windows, so the bar is a step on a few pixels, never a drift.
             assert found["pixels"] is not None, (job, found)
             assert found["worst"] <= 2 and found["pixels"] * 200 <= len(native) // 3, found
+
+
+#: A post stage on a plain stack: the mosaic on each lattice, every shading member set.
+POST_STACKS = {
+    "triangles": {"largest": 0.25, "smallest": 0.01, "levels": 6, "fold": 0.3, "relief": 6.0},
+    "spiral": {
+        "spiral": {"arms": 9, "twist": 0.5},
+        "smallest": 0.02,
+        "fill": "turned",
+        "turn": 40.0,
+        "height": {"field": {"kind": "smooth"}},
+        "relief": 20.0,
+        "seam": {"width": 0.002, "color": {"palette": 0.0}, "opacity": 0.8},
+    },
+}
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not (engine.is_built() and style_wasm.wasm_path().is_file() and shutil.which("node")),
+    reason="needs the release engine, the built module (style_wasm.BUILD) and node",
+)
+@pytest.mark.parametrize("lattice", sorted(POST_STACKS))
+def test_the_module_draws_a_post_stage_as_the_native_engine_does(tmp_path, lattice):
+    """A post pass reads the whole frame, so it is drawn whole on both sides (`frame`),
+    and the module refuses it in tiles."""
+    stack = {
+        "name": "posted",
+        "tone": {"median": 0.4, "p10": 0.15},
+        "layers": [
+            {
+                "kind": "palette",
+                "channel": {"field": {"kind": "smooth"}},
+                "palette": {"transfer": {"kind": "rank"}},
+            }
+        ],
+        "post": [{"kind": "mosaic", **POST_STACKS[lattice]}],
+    }
+    assert style_wasm.has_post(stack)
+    palette = style_wasm.published_rows()[0]["public"]["palette"]
+    document = {"name": "posted", "suggested_colormap": palette, "style": stack}
+    size = (160, 100)
+    asked = style_wasm.request(
+        style_wasm.POST_SEAT, stack, style_wasm.colormap_of(palette), size, 2
+    )
+    jobs = [
+        {"id": "frame", "request": asked, "draw": "frame"},
+        {"id": "tiles", "request": asked, "draw": {"measure": {}, "tile": [80, 50]}},
+    ]
+    frame, tiles = style_wasm.run_node(jobs, tmp_path)
+    assert frame["ok"], frame
+    assert not tiles["ok"] and "post stage" in tiles["why"], tiles
+    native, _ = style_wasm.native_rgb(
+        style_wasm.POST_SEAT, document, palette, size, 2, tmp_path / "n.png"
+    )
+    found = style_wasm.compare(native, (tmp_path / "frame.rgba").read_bytes())
+    if sys.platform == "win32":
+        assert found["identical"], found
+    else:
+        # As above, and a unit in the last place can also move one facet's edge or
+        # split: a few pixels by any step, never the frame.
+        assert found["pixels"] is not None and found["pixels"] * 50 <= len(native) // 3, found

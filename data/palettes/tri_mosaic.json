@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "tri_mosaic",
+  "kind": "sequential",
+  "source": "a deep navy through slate teal and umber to rust, orange and a pale cream, the albedo of the tri_mosaic style, from wallhaven-47k2py: flat triangles nested in triangles, navy grounds against orange and cream bands",
+  "stops": [
+    [0.0, [8, 38, 62]],
+    [0.16, [18, 66, 92]],
+    [0.3, [96, 70, 66]],
+    [0.42, [166, 78, 40]],
+    [0.56, [214, 118, 48]],
+    [0.7, [238, 180, 96]],
+    [0.84, [246, 226, 160]],
+    [1.0, [250, 238, 190]]
+  ]
+}

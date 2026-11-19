@@ -243,7 +243,7 @@ unknown keys are refused. Required: `schema` (1), `family`, `resolution` (`[w, h
 `{center_re, center_im, width}` (decimal strings; home view), `supersample` (1),
 `maxiter`, `colormap_dir` (`data/palettes`), `palette`, `allow_unresolvable_in_f64`
 (false), and one coloring: `mode` (`smooth`) with `params` `{name: number}`, or
-`coloring`, or `style` `{name, interior, tone, projection, layers}`
+`coloring`, or `style` `{name, interior, tone, projection, layers, post}`
 ([`data/styles/STACK.md`](data/styles/STACK.md)), whose `palette` holds only `mirror`,
 `reverse`, `rolloff`.
 

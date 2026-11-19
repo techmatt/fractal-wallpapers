@@ -19,6 +19,10 @@
 //! preview's balance at full detail for the preview's cost, which is what lets an
 //! explorer draw progressively and settle later.
 //!
+//! **A style with a post stage is drawn whole.** Its passes read neighbouring samples
+//! across the frame ([`fractal_engine::post`]), so `tile` refuses it and `frame` is its
+//! one draw; `open` says so (`"post": true`), and `measure` still reports its tone.
+//!
 //! **The request is the CLI's inputs, not the engine's spec.** What a `style render`
 //! does to a style file before the engine sees it — a location's own projection
 //! members ([`projected`], after `styles.projected`), then the knobs ([`with_knobs`],
@@ -164,12 +168,21 @@ fn at_mut<'a>(mut node: &'a mut Value, path: &[Step]) -> &'a mut Value {
 }
 
 /// The stack's members the engine reads as integers: `inside.iterations`, a bubble's
-/// `hit`, the lines' `settle`, a checker's `sectors`, a projection's `turns`.
+/// `hit`, the lines' `settle`, a checker's `sectors`, a projection's `turns`, a mosaic's
+/// `levels` and its spiral's `arms`.
 ///
 /// A knob's write to one of these is rounded half to even, by the member's name, on both
 /// sides: `styles.INTEGER_MEMBERS` is the same list and `styles.with_knobs` rounds the
 /// same way (`tests/test_style_wasm.py` holds the two lists equal).
-pub const INTEGER_MEMBERS: [&str; 5] = ["iterations", "hit", "settle", "sectors", "turns"];
+pub const INTEGER_MEMBERS: [&str; 7] = [
+    "iterations",
+    "hit",
+    "settle",
+    "sectors",
+    "turns",
+    "levels",
+    "arms",
+];
 
 /// The stack turned to `settings`, as `styles.with_knobs` turns it: each knob writes
 /// `scale·value + offset` to every member its pointers name, rounded half to even where
@@ -368,6 +381,8 @@ impl Session {
             "supersample": self.view.supersample,
             "samples": [self.view.sample_width(), self.view.sample_height()],
             "mirror": self.palette.bake.mirror,
+            // A post stage reads the whole frame: `frame` draws it, `tile` refuses.
+            "post": !self.style.post.is_empty(),
             "style": self.drawn,
         })
     }
@@ -468,7 +483,7 @@ fn with_session<T>(handle: u32, run: impl FnOnce(&mut Session) -> T) -> Result<T
 }
 
 /// Open a session on one picture. JSON: `{ok, handle, maxiter, resolution, supersample,
-/// samples, mirror, style}`, or `{ok: false, why}`.
+/// samples, mirror, post, style}`, or `{ok: false, why}`.
 ///
 /// Exported as `open` on wasm32 only: a native unmangled `open` (and `close`) would
 /// replace the C library's own on Linux and macOS, which rustc refuses to compile.
@@ -716,5 +731,58 @@ mod tests {
             stitched[y * 29 * 3..(y + height) * 29 * 3].copy_from_slice(&rgb);
         }
         assert_eq!(stitched, whole);
+    }
+
+    #[test]
+    fn a_post_stage_is_drawn_whole_and_never_in_tiles() {
+        let request = |post: Value| {
+            json!({
+                "schema": 1,
+                "location": {"family": {"kind": "mandelbrot"},
+                             "viewport": {"center_re": "-0.745", "center_im": "0.112",
+                                          "width": "0.01"}, "maxiter": 600},
+                "style": {"name": "x", "layers": [
+                    {"kind": "palette", "channel": {"field": {"kind": "smooth"}},
+                     "palette": {"transfer": {"kind": "rank"}}}],
+                  "tone": {"median": 0.4}, "post": post},
+                "knobs": [{"name": "depth", "range": [1.0, 6.0],
+                           "set": ["/post/0/levels"]}],
+                "settings": {"depth": 2.5},
+                "colormap": {"name": "ramp", "kind": "sequential", "source": "a test",
+                             "stops": [[0.0, [10, 20, 60]], [1.0, [250, 240, 200]]]},
+                "resolution": [48, 30],
+                "supersample": 2,
+            })
+        };
+        let mosaic = json!([{"kind": "mosaic", "largest": 0.5, "smallest": 0.2, "levels": 4}]);
+        let mut session = Session::open(&request(mosaic).to_string()).unwrap();
+        assert_eq!(session.summary()["post"], json!(true));
+        // A knob's write to a mosaic's `levels` is a whole number, rounded half to even.
+        assert_eq!(session.drawn["post"][0]["levels"], json!(2));
+        let whole = session.frame().unwrap();
+        assert_eq!(whole.len(), 48 * 30 * 3);
+        session.measure(0, 0, 0).unwrap();
+        let refusal = session
+            .tile(Crop {
+                x: 0,
+                y: 0,
+                width: 8,
+                height: 8,
+            })
+            .unwrap_err();
+        assert!(refusal.contains("post stage"), "{refusal}");
+        // The facets are flat: far fewer colours than the same stack unprocessed.
+        let colours = |rgb: &[u8]| {
+            let mut seen: Vec<&[u8]> = rgb.chunks_exact(3).collect();
+            seen.sort();
+            seen.dedup();
+            seen.len()
+        };
+        let mut plain = request(json!([]));
+        plain["knobs"] = json!([]);
+        plain["settings"] = json!({});
+        let plain = Session::open(&plain.to_string()).unwrap();
+        assert_eq!(plain.summary()["post"], json!(false));
+        assert!(colours(&whole) < colours(&plain.frame().unwrap()));
     }
 }

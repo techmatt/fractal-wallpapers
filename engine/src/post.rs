@@ -1,0 +1,1279 @@
+//! The **post stage** of a style: passes over the whole composited frame.
+//!
+//! A style's layers are per-sample ([`crate::style`]): each is a function of one
+//! sample's channels, so a window of the frame composites alone. A post pass is the
+//! other kind of step, the one a layer may never be: it reads **neighbours**. It runs
+//! once the stack is composited and before the tone is measured, over the frame's
+//! linear samples and the channels the escape loop left beside them (the distance to
+//! the set, whether the orbit escaped, a height), so a pass can follow the fractal
+//! rather than the pixels, and the style's tone is held on the picture the pass made.
+//!
+//! **A pass is a pure function of the frame's buffers**, in sample order, so
+//! `style-wasm/` draws it to the same picture as the native engine; and because it
+//! needs the whole frame, a style with a post stage is drawn whole
+//! ([`crate::style::paint`]), never in tiles. Every size a pass takes is a fraction of
+//! the frame's width, so a draft and the full-size frame are the same picture.
+//!
+//! The one pass is the **mosaic**: a recursive tiling whose cells split where the set
+//! is, each cell a flat facet of the picture under it.
+//!
+//! ```text
+//! lattice    equilateral triangles, each split in four by its edges' midpoints; or
+//!            (`spiral`) quads of a log-polar lattice about a point, split in four
+//! split      a cell splits while the set is within `reach` cell edges of it (or it
+//!            straddles the set's edge, or the picture inside varies by `detail`),
+//!            down to `smallest`: big, calm cells far from the set, ever finer at it
+//! fill       `flat`: the mean of the picture under the facet; `turned`: the picture
+//!            itself, turned about the facet's middle
+//! shade      `relief`: each facet tilted to the plane fitted through a height under
+//!            it; `fold`: each facet a low pyramid, one face per edge; both lit from
+//!            `azimuth`
+//! inlay      each facet's own children, and theirs, drawn into it as faint lighter
+//!            and darker cells: nested detail where the tiling itself is calm
+//! seam       a thin line along every facet's rim
+//! ```
+
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::colormap::Colormap;
+use crate::style::{Paint, Source};
+
+/// One pass of a style's post stage.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Pass {
+    Mosaic(Mosaic),
+}
+
+/// What a facet of the mosaic is filled with.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Fill {
+    /// The mean of the picture under the facet: one flat colour.
+    #[default]
+    Flat,
+    /// The picture itself, turned about the facet's middle.
+    Turned,
+}
+
+/// The log-polar lattice: `arms` square-ish quads round each ring about `center`.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Spiral {
+    /// The point the rings shrink to, in fractions of the frame from its top-left.
+    pub center: [f64; 2],
+    /// Quads round one ring.
+    pub arms: u32,
+    /// How many quads each ring is turned past the one outside it: the rings' seams
+    /// line up at 0 and run as spiral arms otherwise.
+    pub twist: f64,
+}
+
+impl Default for Spiral {
+    fn default() -> Spiral {
+        Spiral {
+            center: [0.5, 0.5],
+            arms: 12,
+            twist: 0.0,
+        }
+    }
+}
+
+/// The cells a facet would split into, drawn into it without splitting it.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Inlay {
+    /// How many times the facet is split for the pattern (at most [`INLAID`]), never to
+    /// cells under the mosaic's `smallest`.
+    #[serde(default = "two")]
+    pub levels: u32,
+    /// How far a cell is lightened or darkened at each level, a share of its colour.
+    pub amount: f64,
+}
+
+fn two() -> u32 {
+    2
+}
+
+/// The deepest an inlay goes.
+pub const INLAID: u32 = 6;
+
+/// A line along every facet's rim.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Seam {
+    /// The rim's width in frame widths, never more than [`SEAM_SHARE`] of the facet's
+    /// edge, so a small facet keeps its face.
+    pub width: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Paint>,
+    #[serde(default = "one")]
+    pub opacity: f64,
+}
+
+fn one() -> f64 {
+    1.0
+}
+
+/// The steepest a facet tilts (rise over run), however fast the height under it
+/// climbs: at the default elevation of 45 a face turned from the light is dimmed to
+/// about a third (under about 31 degrees it can reach black).
+pub const STEEPEST: f64 = 0.6;
+
+/// The most of a facet's edge its seam takes.
+pub const SEAM_SHARE: f64 = 0.08;
+
+/// The most `levels` a mosaic may ask for (a spiral's quads over `largest` split
+/// further, down to it, first), and the most cells it may hold: a bound on memory
+/// (about 150 bytes a cell) however a style is written. [`SMALLEST_LARGEST`] and
+/// [`SMALLEST`] bound the lattice itself, so the count is small before it is taken.
+pub const DEEPEST: u32 = 10;
+pub const MOST_CELLS: usize = 6_000_000;
+pub const SMALLEST_LARGEST: f64 = 1.0 / 256.0;
+pub const SMALLEST: f64 = 1e-5;
+
+/// The mosaic pass. Every length is a fraction of the frame's width.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Mosaic {
+    /// The log-polar quad lattice; absent, the triangle lattice.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spiral: Option<Spiral>,
+    /// Triangles only: the lattice turned by this many degrees.
+    pub tilt: f64,
+    /// The edge of the largest cell: the triangle lattice's own, and the size above
+    /// which a spiral's quad always splits.
+    pub largest: f64,
+    /// No cell's edge is below this: the floor the splitting stops at.
+    pub smallest: f64,
+    /// The most times a cell of the largest size splits.
+    pub levels: u32,
+    /// A cell splits while the set is within this many of its edges of it; 0 leaves
+    /// only the cells the set's edge crosses.
+    pub reach: f64,
+    /// A cell also splits while the picture inside it varies by more than this (the
+    /// standard deviation of its root luminance); 0 turns the rule off.
+    pub detail: f64,
+    pub fill: Fill,
+    /// `turned`: degrees each facet's view is turned, times a number per facet: a
+    /// triangle's one of −1, 0, 1; a quad's column round its ring, counted at its middle
+    /// (so 360 over the `arms` turns each view with the ring).
+    pub turn: f64,
+    /// The facet's tilt per unit of height across one of its edges, the plane fitted
+    /// to `height` under it; 0 leaves the facets level.
+    pub relief: f64,
+    /// The height `relief` reads: a plain field channel, stretched over the frame.
+    /// Absent: the picture's own root luminance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<Source>,
+    /// The slope of each facet's faces as a low pyramid, one face per edge.
+    pub fold: f64,
+    /// Where the light on `relief` and `fold` comes from, degrees anticlockwise.
+    pub azimuth: f64,
+    pub elevation: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inlay: Option<Inlay>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seam: Option<Seam>,
+}
+
+impl Default for Mosaic {
+    fn default() -> Mosaic {
+        Mosaic {
+            spiral: None,
+            tilt: 0.0,
+            largest: 0.25,
+            smallest: 0.004,
+            levels: 6,
+            reach: 1.0,
+            detail: 0.0,
+            fill: Fill::Flat,
+            turn: 0.0,
+            relief: 0.0,
+            height: None,
+            fold: 0.0,
+            azimuth: 135.0,
+            elevation: 45.0,
+            inlay: None,
+            seam: None,
+        }
+    }
+}
+
+impl Pass {
+    /// Refuse a pass that would draw something other than what it says.
+    pub fn validate(&self) -> Result<(), String> {
+        let Pass::Mosaic(mosaic) = self;
+        mosaic.validate()
+    }
+}
+
+impl Mosaic {
+    fn validate(&self) -> Result<(), String> {
+        let finite = [
+            self.tilt,
+            self.reach,
+            self.detail,
+            self.turn,
+            self.relief,
+            self.fold,
+            self.azimuth,
+            self.elevation,
+        ];
+        if finite.iter().any(|value| !value.is_finite()) {
+            return Err("mosaic: every member is a finite number".into());
+        }
+        if !(self.smallest >= SMALLEST && self.smallest <= self.largest && self.largest <= 4.0) {
+            return Err(format!(
+                "mosaic: {SMALLEST} <= smallest <= largest <= 4 frame widths, got {} and {}",
+                self.smallest, self.largest
+            ));
+        }
+        if self.largest < SMALLEST_LARGEST {
+            return Err(format!(
+                "mosaic: largest is at least 1/256 of the frame, got {}",
+                self.largest
+            ));
+        }
+        if self.levels > DEEPEST {
+            return Err(format!("mosaic: levels is at most {DEEPEST}"));
+        }
+        if self.reach < 0.0 || self.detail < 0.0 || self.relief < 0.0 || self.fold < 0.0 {
+            return Err("mosaic: reach, detail, relief and fold are not negative".into());
+        }
+        if !(self.elevation > 0.0 && self.elevation <= 90.0) {
+            return Err("mosaic: elevation is in (0, 90] degrees".into());
+        }
+        if let Some(spiral) = self.spiral {
+            if !(3..=360).contains(&spiral.arms) {
+                return Err("mosaic: a spiral has 3 to 360 arms".into());
+            }
+            if !(spiral.twist.is_finite() && spiral.center.iter().all(|c| (-4.0..=5.0).contains(c)))
+            {
+                return Err(
+                    "mosaic: a spiral's twist is finite and its center within 4 frames of the frame"
+                        .into(),
+                );
+            }
+        }
+        if let Some(inlay) = self.inlay {
+            if inlay.levels > INLAID || !(0.0..1.0).contains(&inlay.amount) {
+                return Err(format!(
+                    "mosaic: an inlay has at most {INLAID} levels and an amount in [0, 1)"
+                ));
+            }
+        }
+        if let Some(seam) = &self.seam {
+            if !(seam.width > 0.0 && seam.width.is_finite()) {
+                return Err("mosaic: a seam's width is a positive length".into());
+            }
+            if !(0.0..=1.0).contains(&seam.opacity) {
+                return Err("mosaic: a seam's opacity is in [0, 1]".into());
+            }
+            if let Some(paint) = &seam.color {
+                paint.validate("mosaic seam")?;
+            }
+        }
+        if let Some(height) = self.height {
+            let plain = height.field.is_some()
+                && height.view.is_none()
+                && height.inside.is_none()
+                && height.radial.is_none()
+                && height.bubble.is_none()
+                && height.lines.is_none();
+            if !plain {
+                return Err("mosaic: height is a plain field channel, with no view".into());
+            }
+        }
+        Ok(())
+    }
+}
+
+/// The frame a pass reads, in samples, row-major.
+pub struct Frame<'a> {
+    pub width: usize,
+    pub height: usize,
+    /// The composited stack, linear light.
+    pub linear: &'a [[f64; 3]],
+    /// Whether each sample's orbit escaped.
+    pub escaped: &'a [bool],
+    /// The distance to the set in frame widths; not finite where there is none.
+    pub near: &'a [f32],
+    /// A height in `[0, 1]`, not finite where there is none; empty for the picture's own.
+    pub heights: &'a [f32],
+}
+
+/// What the samples under one cell add up to.
+#[derive(Clone, Copy)]
+struct Cell {
+    count: f64,
+    rgb: [f64; 3],
+    /// Root luminance and its square, for `detail`.
+    light: f64,
+    light_squared: f64,
+    near: f32,
+    inside: u32,
+    outside: u32,
+    /// The plane fit's moments over the samples that have a height.
+    fitted: f64,
+    moments: [f64; 8],
+}
+
+impl Cell {
+    const EMPTY: Cell = Cell {
+        count: 0.0,
+        rgb: [0.0; 3],
+        light: 0.0,
+        light_squared: 0.0,
+        near: f32::INFINITY,
+        inside: 0,
+        outside: 0,
+        fitted: 0.0,
+        moments: [0.0; 8],
+    };
+
+    fn add(&mut self, other: &Cell) {
+        self.count += other.count;
+        for k in 0..3 {
+            self.rgb[k] += other.rgb[k];
+        }
+        self.light += other.light;
+        self.light_squared += other.light_squared;
+        self.near = self.near.min(other.near);
+        self.inside += other.inside;
+        self.outside += other.outside;
+        self.fitted += other.fitted;
+        for k in 0..8 {
+            self.moments[k] += other.moments[k];
+        }
+    }
+
+    /// The gradient of the plane fitted to the heights, per frame width.
+    fn slope(&self) -> [f64; 2] {
+        let n = self.fitted;
+        if n < 3.0 {
+            return [0.0; 2];
+        }
+        let [h, hx, hy, x, y, xx, xy, yy] = self.moments;
+        let (mx, my, mh) = (x / n, y / n, h / n);
+        let (sxx, sxy, syy) = (xx - n * mx * mx, xy - n * mx * my, yy - n * my * my);
+        let (sxh, syh) = (hx - n * mx * mh, hy - n * my * mh);
+        let det = sxx * syy - sxy * sxy;
+        // Samples along one row or column leave a spread that is rounding noise.
+        let least = 1e-12 * (xx + yy);
+        if !(sxx > least && syy > least && det > 1e-9 * sxx * syy) {
+            return [0.0; 2];
+        }
+        [(sxh * syy - syh * sxy) / det, (syh * sxx - sxh * sxy) / det]
+    }
+}
+
+/// One cell of the lattice's coarsest level, and where its tree is kept.
+#[derive(Clone, Copy)]
+struct Root {
+    /// Its edge in frame widths.
+    edge: f64,
+    /// How many times it may split.
+    levels: u32,
+    /// Where its level 0 sits among the cells; level `l` follows at `(4^l − 1) / 3`.
+    offset: usize,
+}
+
+fn level_offset(level: u32) -> usize {
+    ((1usize << (2 * level)) - 1) / 3
+}
+
+/// The lattice: which root a frame point is in, and where in it.
+enum Lattice {
+    Triangles {
+        /// Unit vectors of the turned lattice.
+        cos: f64,
+        sin: f64,
+        side: f64,
+        low: [i64; 2],
+        size: [i64; 2],
+    },
+    Spiral {
+        center: [f64; 2],
+        arms: f64,
+        twist: f64,
+        /// One ring's step in `ln r`: a quad as wide as it is deep.
+        step: f64,
+        low: i64,
+        rings: i64,
+    },
+}
+
+/// A point inside one root: barycentric `(a, b, c)` of a triangle, or `(s, t, _)` of a
+/// quad, each in `[0, 1]`.
+type Local = [f64; 3];
+
+const SQRT3_2: f64 = 0.866_025_403_784_438_6;
+
+impl Lattice {
+    /// The lattice over a frame `aspect` (height over width) tall.
+    fn over(mosaic: &Mosaic, aspect: f64) -> Lattice {
+        let corners = [
+            [-0.5, -0.5 * aspect],
+            [0.5, -0.5 * aspect],
+            [-0.5, 0.5 * aspect],
+            [0.5, 0.5 * aspect],
+        ];
+        match mosaic.spiral {
+            None => {
+                let (sin, cos) = mosaic.tilt.to_radians().sin_cos();
+                let side = mosaic.largest;
+                let mut lattice = Lattice::Triangles {
+                    cos,
+                    sin,
+                    side,
+                    low: [0; 2],
+                    size: [1; 2],
+                };
+                let mut bounds = [[i64::MAX, i64::MIN]; 2];
+                for corner in corners {
+                    let [p, q] = lattice.skewed(corner);
+                    for (bound, value) in bounds.iter_mut().zip([p, q]) {
+                        // The coordinates are affine, so the corners bound the frame.
+                        bound[0] = bound[0].min(value.floor() as i64);
+                        bound[1] = bound[1].max(value.floor() as i64);
+                    }
+                }
+                if let Lattice::Triangles { low, size, .. } = &mut lattice {
+                    *low = [bounds[0][0], bounds[1][0]];
+                    *size = [
+                        bounds[0][1] - bounds[0][0] + 1,
+                        bounds[1][1] - bounds[1][0] + 1,
+                    ];
+                }
+                lattice
+            }
+            Some(spiral) => {
+                let arms = spiral.arms as f64;
+                let step = std::f64::consts::TAU / arms;
+                let center = [spiral.center[0] - 0.5, (spiral.center[1] - 0.5) * aspect];
+                let farthest = corners
+                    .iter()
+                    .map(|c| (c[0] - center[0]).hypot(c[1] - center[1]))
+                    .fold(0.0, f64::max);
+                // The innermost ring is the first whose quads are under `smallest`.
+                let innermost = mosaic.smallest / step;
+                let low = (innermost.ln() / step).floor() as i64;
+                let high = (farthest.max(innermost).ln() / step).floor() as i64 + 1;
+                Lattice::Spiral {
+                    center,
+                    arms,
+                    twist: spiral.twist,
+                    step,
+                    low,
+                    rings: (high - low + 1).max(1),
+                }
+            }
+        }
+    }
+
+    /// A frame point in the triangle lattice's own skewed coordinates.
+    fn skewed(&self, [x, y]: [f64; 2]) -> [f64; 2] {
+        let Lattice::Triangles { cos, sin, side, .. } = self else {
+            return [x, y];
+        };
+        let (u, v) = (x * cos + y * sin, y * cos - x * sin);
+        let q = v / (side * SQRT3_2);
+        [u / side - 0.5 * q, q]
+    }
+
+    /// A spiral's `(column, ring)` coordinates of a frame point.
+    fn wound(&self, [x, y]: [f64; 2]) -> [f64; 2] {
+        let Lattice::Spiral {
+            center,
+            arms,
+            twist,
+            step,
+            ..
+        } = self
+        else {
+            return [x, y];
+        };
+        let (dx, dy) = (x - center[0], y - center[1]);
+        let ring = dx.hypot(dy).max(1e-300).ln() / step;
+        let turn = dy.atan2(dx) / std::f64::consts::TAU;
+        [turn * arms + twist * ring, ring]
+    }
+
+    /// A triangle root's corners in the frame, in the order its barycentrics count.
+    fn triangle(&self, root_index: usize) -> [[f64; 2]; 3] {
+        let Lattice::Triangles {
+            cos,
+            sin,
+            side,
+            low,
+            size,
+        } = *self
+        else {
+            return [[0.0; 2]; 3];
+        };
+        let cell = root_index / 2;
+        let (i0, j0) = (
+            (cell as i64 % size[0] + low[0]) as f64,
+            (cell as i64 / size[0] + low[1]) as f64,
+        );
+        let place = |p: f64, q: f64| {
+            let (u, v) = ((p + 0.5 * q) * side, q * side * SQRT3_2);
+            [u * cos - v * sin, u * sin + v * cos]
+        };
+        if root_index % 2 == 0 {
+            [place(i0, j0), place(i0 + 1.0, j0), place(i0, j0 + 1.0)]
+        } else {
+            [
+                place(i0 + 1.0, j0 + 1.0),
+                place(i0, j0 + 1.0),
+                place(i0 + 1.0, j0),
+            ]
+        }
+    }
+
+    /// Each root's edge and how often it may split. A triangle wholly off the frame
+    /// (the lattice is a parallelogram round it) holds no sample and never splits.
+    fn roots(&self, mosaic: &Mosaic, aspect: f64) -> Vec<(f64, u32)> {
+        // How often a cell of `edge` may halve: down to the largest size for nothing,
+        // then `levels` times, never under `smallest`.
+        let levels_of = |edge: f64| {
+            let mut levels = 0;
+            let mut counted = 0;
+            let mut edge = edge;
+            // Two past the deepest is already over the cell budget, and still a
+            // count a 32-bit module holds.
+            while levels < DEEPEST + 2 && edge * 0.5 >= mosaic.smallest {
+                if edge <= mosaic.largest * (1.0 + 1e-9) {
+                    if counted == mosaic.levels {
+                        break;
+                    }
+                    counted += 1;
+                }
+                edge *= 0.5;
+                levels += 1;
+            }
+            levels
+        };
+        match *self {
+            Lattice::Triangles { side, size, .. } => {
+                let levels = levels_of(side);
+                (0..(size[0] * size[1] * 2) as usize)
+                    .map(|root_index| {
+                        let corners = self.triangle(root_index);
+                        let off = |axis: usize, half: f64| {
+                            corners.iter().all(|corner| corner[axis] < -half)
+                                || corners.iter().all(|corner| corner[axis] > half)
+                        };
+                        let outside = off(0, 0.5) || off(1, 0.5 * aspect);
+                        (side, if outside { 0 } else { levels })
+                    })
+                    .collect()
+            }
+            Lattice::Spiral {
+                arms,
+                step,
+                low,
+                rings,
+                ..
+            } => (0..rings)
+                .flat_map(|ring| {
+                    let edge = (((low + ring) as f64 + 0.5) * step).exp() * step;
+                    std::iter::repeat_n((edge, levels_of(edge)), arms as usize)
+                })
+                .collect(),
+        }
+    }
+
+    /// The root a frame point is in, and the point's place in it.
+    fn locate(&self, point: [f64; 2]) -> (usize, Local) {
+        match *self {
+            Lattice::Triangles { low, size, .. } => {
+                let [p, q] = self.skewed(point);
+                let i = (p.floor() as i64).clamp(low[0], low[0] + size[0] - 1);
+                let j = (q.floor() as i64).clamp(low[1], low[1] + size[1] - 1);
+                let (fp, fq) = (
+                    (p - i as f64).clamp(0.0, 1.0),
+                    (q - j as f64).clamp(0.0, 1.0),
+                );
+                let cell = ((j - low[1]) * size[0] + (i - low[0])) as usize * 2;
+                if fp + fq < 1.0 {
+                    (cell, [1.0 - fp - fq, fp, fq])
+                } else {
+                    (cell + 1, [fp + fq - 1.0, 1.0 - fp, 1.0 - fq])
+                }
+            }
+            Lattice::Spiral {
+                arms, low, rings, ..
+            } => {
+                let [a, b] = self.wound(point);
+                let ring = (b.floor() as i64).clamp(low, low + rings - 1);
+                let column = a.floor().rem_euclid(arms);
+                let s = (a - a.floor()).clamp(0.0, 1.0);
+                let t = (b - ring as f64).clamp(0.0, 1.0);
+                (
+                    (ring - low) as usize * arms as usize + column as usize,
+                    [s, t, 0.0],
+                )
+            }
+        }
+    }
+
+    /// Which of a cell's four children a point is in, and its place in that child.
+    fn child(&self, [a, b, c]: Local) -> (usize, Local) {
+        match self {
+            Lattice::Triangles { .. } => {
+                if a >= 0.5 {
+                    (0, [2.0 * a - 1.0, 2.0 * b, 2.0 * c])
+                } else if b >= 0.5 {
+                    (1, [2.0 * a, 2.0 * b - 1.0, 2.0 * c])
+                } else if c >= 0.5 {
+                    (2, [2.0 * a, 2.0 * b, 2.0 * c - 1.0])
+                } else {
+                    (3, [1.0 - 2.0 * a, 1.0 - 2.0 * b, 1.0 - 2.0 * c])
+                }
+            }
+            Lattice::Spiral { .. } => {
+                let (right, up) = (a >= 0.5, b >= 0.5);
+                (
+                    right as usize + 2 * up as usize,
+                    [
+                        2.0 * a - if right { 1.0 } else { 0.0 },
+                        2.0 * b - if up { 1.0 } else { 0.0 },
+                        0.0,
+                    ],
+                )
+            }
+        }
+    }
+}
+
+/// A sample's frame point in frame widths from the frame's middle.
+fn point_of(col: usize, row: usize, width: usize, height: usize) -> [f64; 2] {
+    let w = width as f64;
+    [
+        (col as f64 + 0.5 - 0.5 * w) / w,
+        (row as f64 + 0.5 - 0.5 * height as f64) / w,
+    ]
+}
+
+fn root_luminance(rgb: [f64; 3]) -> f64 {
+    (0.2126 * rgb[0].clamp(0.0, 1.0)
+        + 0.7152 * rgb[1].clamp(0.0, 1.0)
+        + 0.0722 * rgb[2].clamp(0.0, 1.0))
+    .sqrt()
+}
+
+/// A whole number per facet, the same on every machine.
+fn hashed(root: usize, level: u32, node: u64) -> u64 {
+    let mut x = (root as u64)
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        .wrapping_add((level as u64) << 56)
+        .wrapping_add(node);
+    x ^= x >> 30;
+    x = x.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    x ^= x >> 27;
+    x = x.wrapping_mul(0x94D0_49BB_1331_11EB);
+    x ^ (x >> 31)
+}
+
+/// The sample a frame point lands on, mirrored back in at the frame's edges.
+fn sample_at(point: [f64; 2], width: usize, height: usize) -> usize {
+    let w = width as f64;
+    let mirrored = |value: f64, size: usize| {
+        let period = 2.0 * size as f64;
+        let folded = value.rem_euclid(period);
+        let inside = if folded >= size as f64 {
+            period - folded
+        } else {
+            folded
+        };
+        (inside.floor() as usize).min(size - 1)
+    };
+    let col = mirrored(point[0] * w + 0.5 * w, width);
+    let row = mirrored(point[1] * w + 0.5 * height as f64, height);
+    row * width + col
+}
+
+/// Lay the mosaic over `frame`: its linear samples, facet by facet.
+pub fn mosaic(
+    mosaic: &Mosaic,
+    frame: &Frame,
+    colormap: &Colormap,
+) -> Result<Vec<[f64; 3]>, String> {
+    let (width, height) = (frame.width, frame.height);
+    if width == 0 || height == 0 {
+        return Ok(frame.linear.to_vec());
+    }
+    let aspect = height as f64 / width as f64;
+    let lattice = Lattice::over(mosaic, aspect);
+    let mut total = 0usize;
+    let roots: Vec<Root> = lattice
+        .roots(mosaic, aspect)
+        .into_iter()
+        .map(|(edge, levels)| {
+            let offset = total;
+            total = total.saturating_add(level_offset(levels + 1));
+            Root {
+                edge,
+                levels,
+                offset,
+            }
+        })
+        .collect();
+    if total > MOST_CELLS {
+        return Err(format!(
+            "mosaic: {total} cells is over the {MOST_CELLS} it may hold; raise smallest or largest, or lower levels"
+        ));
+    }
+
+    // Every sample into its finest cell, in sample order (so the sums are the same
+    // on every machine), then each level summed into the one above.
+    let mut cells = vec![Cell::EMPTY; total];
+    for row in 0..height {
+        for col in 0..width {
+            let i = row * width + col;
+            let point = point_of(col, row, width, height);
+            let (root_index, mut local) = lattice.locate(point);
+            let root = roots[root_index];
+            let mut node = 0usize;
+            for _ in 0..root.levels {
+                let (digit, inner) = lattice.child(local);
+                node = node * 4 + digit;
+                local = inner;
+            }
+            let cell = &mut cells[root.offset + level_offset(root.levels) + node];
+            let rgb = frame.linear[i];
+            let light = root_luminance(rgb);
+            cell.count += 1.0;
+            for k in 0..3 {
+                cell.rgb[k] += rgb[k];
+            }
+            cell.light += light;
+            cell.light_squared += light * light;
+            if frame.escaped[i] {
+                cell.outside += 1;
+                let near = frame.near[i];
+                if near.is_finite() {
+                    cell.near = cell.near.min(near);
+                }
+            } else {
+                cell.inside += 1;
+            }
+            let h = if frame.heights.is_empty() {
+                light
+            } else {
+                frame.heights[i] as f64
+            };
+            if h.is_finite() {
+                let [x, y] = point;
+                cell.fitted += 1.0;
+                for (moment, value) in
+                    cell.moments
+                        .iter_mut()
+                        .zip([h, h * x, h * y, x, y, x * x, x * y, y * y])
+                {
+                    *moment += value;
+                }
+            }
+        }
+    }
+    for root in &roots {
+        for level in (0..root.levels).rev() {
+            let (parents, children) = (
+                root.offset + level_offset(level),
+                root.offset + level_offset(level + 1),
+            );
+            for node in 0..1usize << (2 * level) {
+                let mut sum = Cell::EMPTY;
+                for digit in 0..4 {
+                    sum.add(&cells[children + node * 4 + digit]);
+                }
+                cells[parents + node] = sum;
+            }
+        }
+    }
+
+    // Which cells split: every one over the largest size, then where the set is.
+    let mut split = vec![false; total];
+    for root in &roots {
+        for level in 0..root.levels {
+            let edge = root.edge / (1u64 << level) as f64;
+            let at = root.offset + level_offset(level);
+            for node in 0..1usize << (2 * level) {
+                let cell = &cells[at + node];
+                if cell.count == 0.0 {
+                    continue;
+                }
+                let spread = (cell.light_squared / cell.count - (cell.light / cell.count).powi(2))
+                    .max(0.0)
+                    .sqrt();
+                split[at + node] = edge > mosaic.largest * (1.0 + 1e-9)
+                    || (cell.inside > 0 && cell.outside > 0)
+                    || (cell.near as f64) < mosaic.reach * edge
+                    || (mosaic.detail > 0.0 && spread > mosaic.detail);
+            }
+        }
+    }
+
+    let (azimuth, elevation) = (mosaic.azimuth.to_radians(), mosaic.elevation.to_radians());
+    // Rows run down the frame, so an anticlockwise azimuth has its `y` turned over.
+    let to_light = [
+        elevation.cos() * azimuth.cos(),
+        -elevation.cos() * azimuth.sin(),
+        elevation.sin(),
+    ];
+    let lit = mosaic.relief > 0.0 || mosaic.fold > 0.0;
+    let seam = mosaic.seam.as_ref().map(|seam| {
+        let color = seam
+            .color
+            .as_ref()
+            .map_or([0.0; 3], |paint| paint.linear(colormap));
+        (seam.width, color, seam.opacity)
+    });
+    let turn = mosaic.turn.to_radians();
+
+    let painted = (0..width * height)
+        .into_par_iter()
+        .map(|i| {
+            let (col, row) = (i % width, i / width);
+            let point = point_of(col, row, width, height);
+            let (root_index, mut local) = lattice.locate(point);
+            let root = roots[root_index];
+            let (mut node, mut level) = (0usize, 0u32);
+            // The facet's corners (a triangle's) or its low corner and size (a quad's),
+            // carried down the tree with the point.
+            let mut corners = match lattice {
+                Lattice::Triangles { .. } => lattice.triangle(root_index),
+                Lattice::Spiral { arms, low, .. } => {
+                    let arms = arms as usize;
+                    [
+                        [
+                            (root_index % arms) as f64,
+                            (root_index / arms) as f64 + low as f64,
+                        ],
+                        [1.0, 0.0],
+                        [0.0; 2],
+                    ]
+                }
+            };
+            while level < root.levels && split[root.offset + level_offset(level) + node] {
+                let (digit, inner) = lattice.child(local);
+                node = node * 4 + digit;
+                local = inner;
+                level += 1;
+                corners = match lattice {
+                    Lattice::Triangles { .. } => {
+                        let [a, b, c] = corners;
+                        let mid =
+                            |p: [f64; 2], q: [f64; 2]| [0.5 * (p[0] + q[0]), 0.5 * (p[1] + q[1])];
+                        match digit {
+                            0 => [a, mid(a, b), mid(a, c)],
+                            1 => [mid(a, b), b, mid(b, c)],
+                            2 => [mid(a, c), mid(b, c), c],
+                            _ => [mid(b, c), mid(a, c), mid(a, b)],
+                        }
+                    }
+                    Lattice::Spiral { .. } => {
+                        let half = 0.5 * corners[1][0];
+                        [
+                            [
+                                corners[0][0] + half * (digit % 2) as f64,
+                                corners[0][1] + half * (digit / 2) as f64,
+                            ],
+                            [half, 0.0],
+                            [0.0; 2],
+                        ]
+                    }
+                };
+            }
+            let cell = &cells[root.offset + level_offset(level) + node];
+            let edge = root.edge / (1u64 << level) as f64;
+
+            // The facet's middle, how far the sample is from its rim, the way out
+            // through the nearest edge, and the number its turn is counted in.
+            let (middle, rim, outward, count) = match lattice {
+                Lattice::Triangles { .. } => {
+                    let [a, b, c] = corners;
+                    let middle = [(a[0] + b[0] + c[0]) / 3.0, (a[1] + b[1] + c[1]) / 3.0];
+                    let nearest = if local[0] <= local[1] && local[0] <= local[2] {
+                        0
+                    } else if local[1] <= local[2] {
+                        1
+                    } else {
+                        2
+                    };
+                    let away = [
+                        middle[0] - corners[nearest][0],
+                        middle[1] - corners[nearest][1],
+                    ];
+                    let length = away[0].hypot(away[1]).max(1e-300);
+                    (
+                        middle,
+                        local[nearest] * edge * SQRT3_2,
+                        [away[0] / length, away[1] / length],
+                        (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
+                    )
+                }
+                Lattice::Spiral {
+                    center,
+                    arms,
+                    twist,
+                    step,
+                    low,
+                    ..
+                } => {
+                    let size = corners[1][0];
+                    let (a, b) = (corners[0][0] + 0.5 * size, corners[0][1] + 0.5 * size);
+                    let radius = (b * step).exp();
+                    let angle = (a - twist * b) / arms * std::f64::consts::TAU;
+                    let middle = [
+                        center[0] + radius * angle.cos(),
+                        center[1] + radius * angle.sin(),
+                    ];
+                    let (dx, dy) = (point[0] - center[0], point[1] - center[1]);
+                    let r = dx.hypot(dy).max(1e-300);
+                    let (out, round) = ([dx / r, dy / r], [-dy / r, dx / r]);
+                    let [s, t, _] = local;
+                    let sides = [
+                        (s, [-round[0], -round[1]]),
+                        (1.0 - s, round),
+                        // Inside the innermost ring a quad is a wedge to the middle:
+                        // it has no inner side for a seam or a face.
+                        (
+                            if r.ln() < low as f64 * step {
+                                f64::INFINITY
+                            } else {
+                                t
+                            },
+                            [-out[0], -out[1]],
+                        ),
+                        (1.0 - t, out),
+                    ];
+                    let (share, outward) =
+                        sides
+                            .into_iter()
+                            .fold((f64::INFINITY, [0.0; 2]), |best, side| {
+                                if side.0 < best.0 { side } else { best }
+                            });
+                    (middle, share * r * step * size, outward, a)
+                }
+            };
+
+            let mut rgb = match mosaic.fill {
+                Fill::Flat => cell.rgb.map(|sum| sum / cell.count.max(1.0)),
+                Fill::Turned => {
+                    let (sin, cos) = (turn * count).sin_cos();
+                    let (dx, dy) = (point[0] - middle[0], point[1] - middle[1]);
+                    let read = [
+                        middle[0] + dx * cos - dy * sin,
+                        middle[1] + dx * sin + dy * cos,
+                    ];
+                    frame.linear[sample_at(read, width, height)]
+                }
+            };
+            if lit {
+                let [gx, gy] = cell.slope();
+                let tilt = [
+                    mosaic.fold * outward[0] - mosaic.relief * edge * gx,
+                    mosaic.fold * outward[1] - mosaic.relief * edge * gy,
+                ];
+                let steep = tilt[0].hypot(tilt[1]);
+                let tilt = tilt.map(|t| t * (STEEPEST / steep.max(STEEPEST)));
+                let length = (tilt[0] * tilt[0] + tilt[1] * tilt[1] + 1.0).sqrt();
+                let facing = (tilt[0] * to_light[0] + tilt[1] * to_light[1] + to_light[2]) / length;
+                let gain = (facing / to_light[2]).max(0.0);
+                rgb = rgb.map(|c| c * gain);
+            }
+            if let Some(inlay) = mosaic.inlay {
+                let (mut inner, mut within, mut size) = (node as u64, local, edge);
+                let mut gain = 1.0;
+                for depth in 1..=inlay.levels {
+                    size *= 0.5;
+                    if size < mosaic.smallest {
+                        break;
+                    }
+                    let (digit, next) = lattice.child(within);
+                    (inner, within) = (inner * 4 + digit as u64, next);
+                    let unit = (hashed(root_index, level + depth, inner) >> 11) as f64
+                        / (1u64 << 53) as f64;
+                    gain *= 1.0 + inlay.amount * (2.0 * unit - 1.0);
+                }
+                rgb = rgb.map(|c| c * gain);
+            }
+            if let Some((seam_width, color, opacity)) = seam {
+                if rim < seam_width.min(SEAM_SHARE * edge) {
+                    for k in 0..3 {
+                        rgb[k] += (color[k] - rgb[k]) * opacity;
+                    }
+                }
+            }
+            rgb
+        })
+        .collect();
+    Ok(painted)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::colormap::Kind;
+
+    fn map() -> Colormap {
+        Colormap::from_stops(
+            "ramp",
+            Kind::Sequential,
+            &[(0.0, [0, 0, 0]), (1.0, [255, 255, 255])],
+        )
+        .unwrap()
+    }
+
+    /// A frame whose set is the vertical line a third of the way across: escaped
+    /// everywhere, `near` the distance to the line, the picture a ramp across.
+    fn painted(mosaic: &Mosaic, width: usize, height: usize) -> Vec<[f64; 3]> {
+        let mut linear = Vec::new();
+        let mut near = Vec::new();
+        for row in 0..height {
+            for col in 0..width {
+                let [x, _] = point_of(col, row, width, height);
+                linear.push([x + 0.5, 0.5, 0.25]);
+                near.push((x + 1.0 / 6.0).abs() as f32);
+            }
+        }
+        let escaped = vec![true; width * height];
+        let frame = Frame {
+            width,
+            height,
+            linear: &linear,
+            escaped: &escaped,
+            near: &near,
+            heights: &[],
+        };
+        super::mosaic(mosaic, &frame, &map()).unwrap()
+    }
+
+    /// The runs of one colour along a row: each is a facet's width in samples.
+    fn runs(row: &[[f64; 3]]) -> Vec<usize> {
+        let mut runs = vec![1];
+        for pair in row.windows(2) {
+            if pair[0] == pair[1] {
+                *runs.last_mut().unwrap() += 1;
+            } else {
+                runs.push(1);
+            }
+        }
+        runs
+    }
+
+    #[test]
+    fn facets_are_fine_at_the_set_and_large_far_from_it() {
+        for spiral in [None, Some(Spiral::default())] {
+            let mosaic = Mosaic {
+                spiral,
+                ..Mosaic::default()
+            };
+            let (width, height) = (600, 400);
+            let picture = painted(&mosaic, width, height);
+            let row = &picture[150 * width..151 * width];
+            let runs = runs(row);
+            let mut at = 0;
+            let (mut beside, mut far) = (usize::MAX, 0);
+            for run in runs {
+                let middle = at + run / 2;
+                if middle.abs_diff(200) < 12 {
+                    beside = beside.min(run);
+                }
+                if middle > 480 {
+                    far = far.max(run);
+                }
+                at += run;
+            }
+            assert!(
+                beside <= 8,
+                "the facets at the set are a few samples: {beside}"
+            );
+            assert!(far >= 20, "the facets far from it are large: {far}");
+        }
+    }
+
+    #[test]
+    fn a_draft_is_the_full_frame_s_picture() {
+        // Sizes are fractions of the frame, so half the samples draw the same facets:
+        // every draft sample is the mean of the full frame's four there, to the
+        // samples a facet's edge crosses.
+        let mosaic = Mosaic {
+            smallest: 0.02,
+            ..Mosaic::default()
+        };
+        let (full, draft) = (painted(&mosaic, 640, 400), painted(&mosaic, 320, 200));
+        let mut far = 0;
+        for row in 0..200 {
+            for col in 0..320 {
+                let small = draft[row * 320 + col];
+                let big = full[(2 * row) * 640 + 2 * col];
+                if (0..3).any(|k| (small[k] - big[k]).abs() > 0.02) {
+                    far += 1;
+                }
+            }
+        }
+        assert!(
+            far < 320 * 200 / 8,
+            "{far} draft samples off the full frame"
+        );
+    }
+
+    #[test]
+    fn a_flat_fill_keeps_the_frame_s_mean_and_a_fold_lights_one_face_of_three() {
+        let flat = painted(&Mosaic::default(), 300, 200);
+        let mean = |picture: &[[f64; 3]]| picture.iter().map(|p| p[0]).sum::<f64>() / 60_000.0;
+        assert!((mean(&flat) - 0.5).abs() < 1e-9);
+        let folded = painted(
+            &Mosaic {
+                fold: 0.5,
+                reach: 0.0,
+                ..Mosaic::default()
+            },
+            300,
+            200,
+        );
+        // Far from the set one large facet shows more than one shade.
+        let row = &folded[100 * 300..101 * 300];
+        let shades = runs(&row[220..300]).len();
+        assert!(shades >= 2, "a folded facet has faces: {shades}");
+    }
+
+    #[test]
+    fn a_seam_never_takes_a_small_facet_s_face() {
+        let seamed = Mosaic {
+            seam: Some(Seam {
+                width: 0.5,
+                color: Some(Paint::Rgb("#ff0000".into())),
+                opacity: 1.0,
+            }),
+            ..Mosaic::default()
+        };
+        let picture = painted(&seamed, 300, 200);
+        let red = picture.iter().filter(|p| **p == [1.0, 0.0, 0.0]).count();
+        assert!(red > 0 && red < picture.len() * 3 / 4, "{red} seam samples");
+    }
+
+    #[test]
+    fn an_inlay_draws_a_calm_facet_s_children_into_it() {
+        let calm = Mosaic {
+            reach: 0.0,
+            ..Mosaic::default()
+        };
+        let inlaid = Mosaic {
+            inlay: Some(Inlay {
+                levels: 3,
+                amount: 0.1,
+            }),
+            ..calm.clone()
+        };
+        let (plain, inlaid) = (painted(&calm, 400, 250), painted(&inlaid, 400, 250));
+        // One row through the far field: a few facets plain, several cells in each inlaid.
+        let row = |picture: &[[f64; 3]]| runs(&picture[125 * 400 + 250..125 * 400 + 400]).len();
+        assert!(
+            row(&inlaid) >= 3 * row(&plain),
+            "{} against {}",
+            row(&inlaid),
+            row(&plain)
+        );
+        // Never more than the amount at each level, either way.
+        for (a, b) in plain.iter().zip(&inlaid) {
+            let gain = b[1] / a[1];
+            assert!(
+                (0.9f64.powi(3) - 1e-9..=1.1f64.powi(3) + 1e-9).contains(&gain),
+                "{gain}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_tall_frame_pays_only_for_the_roots_it_touches() {
+        // The lattice is a parallelogram round the frame; on a 9:16 frame most of its
+        // triangles are off it, and a deep mosaic must still fit the cell budget.
+        let deep = Mosaic {
+            largest: 0.5,
+            smallest: 0.0018,
+            levels: 8,
+            ..Mosaic::default()
+        };
+        let (width, height) = (90, 160);
+        let linear = vec![[0.5; 3]; width * height];
+        let frame = Frame {
+            width,
+            height,
+            linear: &linear,
+            escaped: &vec![true; width * height],
+            near: &vec![1.0; width * height],
+            heights: &[],
+        };
+        assert!(mosaic(&deep, &frame, &map()).is_ok());
+    }
+
+    #[test]
+    fn a_seam_is_a_line_at_a_spiral_s_middle_too() {
+        let seamed = Mosaic {
+            spiral: Some(Spiral::default()),
+            seam: Some(Seam {
+                width: 0.0002,
+                color: Some(Paint::Rgb("#ff0000".into())),
+                opacity: 1.0,
+            }),
+            ..Mosaic::default()
+        };
+        let picture = painted(&seamed, 2000, 1250);
+        // The disc inside the innermost ring is about 20 samples across here; the
+        // seams meet at its very middle, so read the ring 6 to 10 samples out.
+        let (mut red, mut read) = (0, 0);
+        for row in 613..637 {
+            for col in 988..1012 {
+                let from = (col as f64 - 999.5).hypot(row as f64 - 624.5);
+                if (6.0..10.0).contains(&from) {
+                    read += 1;
+                    red += (picture[row * 2000 + col] == [1.0, 0.0, 0.0]) as usize;
+                }
+            }
+        }
+        assert!(
+            red > 0 && red * 2 < read,
+            "{red} of {read} samples are seam"
+        );
+    }
+
+    #[test]
+    fn a_pass_reads_and_refuses() {
+        let pass: Pass =
+            serde_json::from_str(r#"{"kind": "mosaic", "levels": 4, "spiral": {"arms": 9}}"#)
+                .unwrap();
+        assert!(pass.validate().is_ok());
+        let Pass::Mosaic(read) = &pass;
+        assert_eq!((read.levels, read.spiral.unwrap().arms), (4, 9));
+        assert!(serde_json::from_str::<Pass>(r#"{"kind": "mosaic", "depth": 4}"#).is_err());
+        for refused in [
+            r#"{"kind": "mosaic", "smallest": 0.5}"#,
+            r#"{"kind": "mosaic", "largest": 0.001, "smallest": 0.001}"#,
+            r#"{"kind": "mosaic", "smallest": 1e-9}"#,
+            r#"{"kind": "mosaic", "spiral": {"center": [1e300, 0.5]}}"#,
+        ] {
+            let pass: Pass = serde_json::from_str(refused).unwrap();
+            assert!(pass.validate().is_err(), "{refused}");
+        }
+        let fine = Mosaic {
+            smallest: 0.0001,
+            levels: 10,
+            ..Mosaic::default()
+        };
+        let frame = Frame {
+            width: 2,
+            height: 2,
+            linear: &[[0.0; 3]; 4],
+            escaped: &[true; 4],
+            near: &[1.0; 4],
+            heights: &[],
+        };
+        assert!(mosaic(&fine, &frame, &map()).is_err());
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "tri_mosaic_ice",
+  "kind": "sequential",
+  "source": "a midnight indigo through royal and sky blue to an ice white, the albedo of tri_mosaic's blue reading, from wallhaven-4xy8el: triangles folded into cube corners in navy, cyan and frost",
+  "stops": [
+    [0.0, [14, 14, 62]],
+    [0.15, [28, 44, 122]],
+    [0.32, [40, 96, 178]],
+    [0.48, [72, 156, 214]],
+    [0.62, [150, 188, 232]],
+    [0.78, [226, 240, 250]],
+    [1.0, [248, 252, 255]]
+  ]
+}

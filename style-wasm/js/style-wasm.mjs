@@ -34,10 +34,15 @@ export class StyleModule {
 
   // A pointer arrives as a signed i32; past 2 GiB of memory it would read negative.
   text(ptr) {
+    return JSON.parse(this.plain(ptr));
+  }
+
+  // Length-prefixed text as it is: `last_error` is a sentence, not JSON.
+  plain(ptr) {
     ptr >>>= 0;
     const memory = new Uint8Array(this.exports.memory.buffer);
     const len = new DataView(this.exports.memory.buffer).getUint32(ptr, true);
-    const value = JSON.parse(decoder.decode(memory.slice(ptr + 4, ptr + 4 + len)));
+    const value = decoder.decode(memory.slice(ptr + 4, ptr + 4 + len));
     this.exports.dealloc(ptr, len + 4);
     return value;
   }
@@ -45,7 +50,7 @@ export class StyleModule {
   bytes(ptr, len) {
     ptr >>>= 0;
     if (ptr === 0) {
-      throw new Error(this.text(this.exports.last_error()));
+      throw new Error(this.plain(this.exports.last_error()));
     }
     const out = new Uint8ClampedArray(this.exports.memory.buffer.slice(ptr, ptr + len));
     this.exports.dealloc(ptr, len);
@@ -71,6 +76,9 @@ export class Picture {
     this.handle = summary.handle;
     this.summary = summary;
     [this.width, this.height] = summary.resolution;
+    // A style with a post stage reads the whole frame: draw it with `frame()`, which
+    // `tile()` refuses.
+    this.post = summary.post === true;
   }
 
   // Every frame-wide statistic and the tone curve, over a frame of this view: the

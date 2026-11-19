@@ -17,7 +17,8 @@ fractal-wallpapers style sweep --out <dir> [names…]                      # the
 ```
 
 A style is a stack of layers over the channels of one escape loop, composited by
-`engine/src/style.rs` from the spec `styles.py` writes; **`STACK.md` here is the stack's
+`engine/src/style.rs` from the spec `styles.py` writes, and optionally a **post stage**
+over the finished frame (`engine/src/post.rs`); **`STACK.md` here is the stack's
 reference**. `style-wasm/` runs the published modes in a browser (`engine/README.md`'s
 *The style module*). `<name>.keeps.json` is what Matt kept from a style's pickers
 (pictures in `fractal-drive-sync/style-keeps/<name>/`); `catalog.json` is the catalog.
@@ -110,7 +111,11 @@ none); then point the catalog's `show` at the new id and rebuild `style bundle` 
 `style sweep --out <dir>` is the checker after an engine or stack change: every style
 small at its keeps, each public knob at both ends and each palette entry, flagged per
 `style_sweep.FLAGS`, a contact sheet per style; it exits 1 on any flag. Read the sheets too: a flag is a symptom, the sheet is the look. What
-hunts found is `docs/qa-findings.md`.
+hunts found is `docs/qa-findings.md`. A `slow` flag is a timing: on a busy box it lands
+on whichever picture a burst hit and moves between runs, so re-run it idle. To tell a
+new flag from an old one after an engine change, sweep also through the engine built
+from the commit before (a worktree's own `cargo build`, `engine.engine_path` pointed at
+its binary) and compare the pictures byte for byte.
 
 ## A new style from a reference image
 
@@ -136,9 +141,14 @@ The item that brings a picture says "new style from <image>". Background `style 
    formulation, not a new mode. Grep the catalog's `what` lines for the look's nouns and
    name the nearest mode before drafting.
 2. **Add a primitive only where one is missing**, in `engine/src/style.rs`, with a test,
-   listed under `adds`; a function of one sample's channels, no neighbour reads. When the
-   engine changed, `fractal-wallpapers identity <tag> --against <last tag>` must read 0
-   differ (about seven minutes), and the style path's checks run (CLAUDE.md).
+   listed under `adds`. A layer is a function of one sample's channels, no neighbour
+   reads; **what must read neighbours is a post pass** (Matt's ruling; `STACK.md`'s *The
+   post stage*, `engine/src/post.rs`): a pure function over the whole frame's buffers,
+   its sizes fractions of the frame, drawn whole and the same by `style-wasm` (`style
+   wasm-parity` holds it). A post-processed mode goes to the explorer too, never
+   wallpaper-only. When the engine changed, `fractal-wallpapers identity <tag> --against
+   <last tag>` must read 0 differ (about seven minutes), and the style path's checks run
+   (CLAUDE.md).
 3. **Fit the palette with the lighting, not off the pixels**: the lights supply the
    near-whites, so a sampled map is too pale. Author the map as albedo
    (`data/palettes/README.md`), named after the style, and tune stack and map together.

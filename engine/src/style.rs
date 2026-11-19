@@ -17,6 +17,9 @@
 //! that looks like it must, a surface normal, is read analytically off the orbit
 //! (`z` and `dz` at the escape), so a band of rows composites to the same bytes
 //! as the whole frame, and `style-wasm/` compiles this file unchanged for a page.
+//! The one part of a style that does read neighbours is its optional **post stage**
+//! ([`crate::post`]): passes over the whole composited frame, run before the tone is
+//! measured, which is why a style with one is painted whole and never in tiles.
 //!
 //! What the channels are (`data/styles/STACK.md` has every member):
 //!
@@ -61,6 +64,7 @@ use crate::colormap::{Bake, Colormap, srgb_to_linear};
 use crate::family::Family;
 use crate::field::{Field, FieldSpec};
 use crate::iterate::{self, Wants};
+use crate::post::{self, Pass};
 use crate::projection::Projection;
 use crate::resample::{self, Crop};
 use crate::viewport::Viewport;
@@ -86,6 +90,10 @@ pub struct Style {
     /// iterated ([`crate::projection`]). Absent: the straight view.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projection: Option<Projection>,
+    /// The post stage: passes over the whole composited frame, in order, before the
+    /// tone is measured ([`crate::post`]). Empty: the stack as composited.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub post: Vec<Pass>,
 }
 
 /// Per-frame tonal normalisation: the composite's median lightness moved to `median`,
@@ -952,7 +960,7 @@ fn one() -> f64 {
 }
 
 impl Paint {
-    fn linear(&self, colormap: &Colormap) -> [f64; 3] {
+    pub(crate) fn linear(&self, colormap: &Colormap) -> [f64; 3] {
         match self {
             Paint::Rgb(hex) => parse_hex(hex)
                 .map(|rgb| rgb.map(|c| srgb_to_linear(c as f64 / 255.0)))
@@ -961,7 +969,7 @@ impl Paint {
         }
     }
 
-    fn validate(&self, what: &str) -> Result<(), String> {
+    pub(crate) fn validate(&self, what: &str) -> Result<(), String> {
         match self {
             Paint::Rgb(hex) => parse_hex(hex)
                 .map(|_| ())
@@ -1022,6 +1030,10 @@ impl Style {
                     self.name
                 ));
             }
+        }
+        for pass in &self.post {
+            pass.validate()
+                .map_err(|refusal| format!("style '{}' post: {refusal}", self.name))?;
         }
         let mut sigmas = Vec::new();
         for (index, layer) in self.layers.iter().enumerate() {
@@ -1271,6 +1283,19 @@ impl Style {
                 }
             }
         }
+        // A mosaic's height joins the frame's loop, so it is held as a layer's channel is.
+        for Pass::Mosaic(mosaic) in &self.post {
+            match mosaic.height.and_then(|height| height.field) {
+                Some(FieldSpec::Itinerary { .. }) => {
+                    return Err(format!(
+                        "style '{}' post: a mosaic's height cannot be an itinerary",
+                        self.name
+                    ));
+                }
+                Some(FieldSpec::Threads { sigma }) => sigmas.push(sigma),
+                _ => {}
+            }
+        }
         // One escape loop feeds every channel, and it accumulates one threads kernel.
         sigmas.dedup();
         if sigmas.len() > 1 {
@@ -1319,6 +1344,12 @@ impl Style {
             }
             if layer.kind == Kind::Pattern {
                 take(FieldSpec::Decomposition);
+            }
+        }
+        for Pass::Mosaic(mosaic) in &self.post {
+            take(POST_DISTANCE);
+            if let Some(field) = mosaic.height.and_then(|height| height.field) {
+                take(field);
             }
         }
         fields
@@ -1406,6 +1437,59 @@ impl Style {
         }
         centers
     }
+}
+
+/// The distance estimate a post pass reads, in the plane's own units.
+const POST_DISTANCE: FieldSpec = FieldSpec::De { scale: 1.0 };
+
+/// The style's post stage over a composited frame ([`crate::post`]): each pass in
+/// order, reading the channels the frame's escape loop left.
+fn posted(
+    view: &Viewport,
+    style: &Style,
+    colormap: &Colormap,
+    channels: &Channels,
+    mut linear: Vec<[f64; 3]>,
+) -> Result<Vec<[f64; 3]>, String> {
+    if style.post.is_empty() {
+        return Ok(linear);
+    }
+    let escaped: Vec<bool> = channels
+        .lane(Key::Field(FieldSpec::Smooth))
+        .iter()
+        .map(|value| value.is_finite())
+        .collect();
+    let near: Vec<f32> = channels
+        .lane(Key::Field(POST_DISTANCE))
+        .iter()
+        .map(|&distance| (distance as f64 / view.width) as f32)
+        .collect();
+    for Pass::Mosaic(mosaic) in &style.post {
+        let heights: Vec<f32> = match mosaic.height {
+            None => Vec::new(),
+            Some(source) => {
+                let lane = channels.lane(source.key());
+                let stretch = Stretch::over(lane.iter().map(|&v| v as f64));
+                lane.iter()
+                    .map(|&value| match value.is_finite() {
+                        true => source.curve(stretch.position(value as f64)) as f32,
+                        false => f32::NAN,
+                    })
+                    .collect()
+            }
+        };
+        let frame = post::Frame {
+            width: channels.width as usize,
+            height: channels.height as usize,
+            linear: &linear,
+            escaped: &escaped,
+            near: &near,
+            heights: &heights,
+        };
+        linear = post::mosaic(mosaic, &frame, colormap)
+            .map_err(|refusal| format!("style '{}' post: {refusal}", style.name))?;
+    }
+    Ok(linear)
 }
 
 /// The radial channel of one sample: its distance from `center`, in frame heights.
@@ -2406,6 +2490,7 @@ fn measured_frame(
     let channels = gather(view, family, maxiter, style, Window::whole(view));
     let mut measures = measure_layers(style, &channels);
     let linear = composite(view, style, colormap, &channels, &measures);
+    let linear = posted(view, style, colormap, &channels, linear)?;
     let linear = match style.tone {
         Some(tone) => {
             let lifted = lift(linear, tone);
@@ -2468,6 +2553,12 @@ pub(crate) fn paint_window(
     window: Window,
 ) -> Result<Vec<[f64; 3]>, String> {
     style.validate()?;
+    if !style.post.is_empty() {
+        return Err(format!(
+            "style '{}' has a post stage, which reads the whole frame: draw it whole, not in tiles",
+            style.name
+        ));
+    }
     if measures.layers.len() != style.layers.len() {
         return Err(format!(
             "the measures are of a stack of {} layers, and style '{}' has {}",

@@ -14,7 +14,8 @@ fractal-wallpapers style wasm-speed
 ```
 
 `wasm-parity` draws every keep the catalog shows for a published mode both ways and
-compares the bytes; `wasm-speed` times one 1280x800 frame per published mode on one
+compares the bytes, and every style with a post stage the catalog does not publish yet
+at `POST_SEAT`; `wasm-speed` times one 1280x800 frame per published mode on one
 thread. Both run the module under Node (`style-wasm/js/node-render.mjs`), and refuse
 without a built module, naming the build.
 """
@@ -45,6 +46,15 @@ SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 
 #: The tile the parity check's tiled draw cuts the picture into.
 PARITY_TILE = (256, 256)
+
+#: Where the parity check draws a style with a post stage that no published row shows
+#: yet (a round-one style has no keep): a shallow seat with set, lace and far field, so
+#: the pass draws its large facets and its finest.
+POST_SEAT = {
+    "family": {"kind": "mandelbrot"},
+    "viewport": {"center_re": "-0.7453", "center_im": "0.1127", "width": "0.012"},
+    "maxiter": 2000,
+}
 
 BUILD = (
     "cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml"
@@ -85,6 +95,23 @@ def keep_stacks(style: str) -> dict[str, Any]:
     from fractal_wallpapers import style_keeps
 
     return style_keeps.read_record(style)["stacks"]
+
+
+def has_post(stack: dict[str, Any]) -> bool:
+    """Whether a stack has a post stage: it is drawn whole, never in tiles."""
+    return bool(stack.get("post"))
+
+
+def unpublished_post_styles() -> list[str]:
+    """Every style file with a post stage that no published row shows."""
+    from fractal_wallpapers import styles
+
+    published = {row["style"] for row in published_rows()}
+    return [
+        name
+        for name in styles.names()
+        if name not in published and has_post(styles.load(name)["style"])
+    ]
 
 
 def published_rows() -> list[dict[str, Any]]:
@@ -267,9 +294,11 @@ def parity(
 
     Three kinds of job: each shown keep's own record (its stack as drawn, its map), in
     one pass; the first keep of each mode again in tiles against its own measures, which
-    must be the same bytes; and the mode's published stack with every knob at its range's
+    must be the same bytes (a stack with a post stage is drawn whole, so it has no tiled
+    job); and the mode's published stack with every knob at its range's
     middle, at that keep and at every keep whose record carries its own projection, which
     holds the module's knob rules to `style render --knob`'s (a knob wins over a record).
+    A style with a post stage that no row publishes yet is drawn once, at `POST_SEAT`.
     """
     from fractal_wallpapers import style_catalog, styles
 
@@ -286,7 +315,7 @@ def parity(
             jobs.append({"id": ident, "request": asked, "draw": "frame"})
             if index and not render["location"].get("projection"):
                 continue
-            if not index:
+            if not index and not has_post(stack):
                 jobs.append(
                     {
                         "id": f"{ident}__tiles",
@@ -318,6 +347,18 @@ def parity(
                     "draw": "frame",
                 }
             )
+    for name in unpublished_post_styles():
+        document = styles.load(name)
+        ident = f"{name}__post"
+        natives[ident] = (POST_SEAT, document, document["suggested_colormap"], None)
+        asked = request(
+            POST_SEAT,
+            document["style"],
+            colormap_of(document["suggested_colormap"]),
+            resolution,
+            supersample,
+        )
+        jobs.append({"id": ident, "request": asked, "draw": "frame"})
     rows = {result["id"]: result for result in run_node(jobs, folder)}
     out = []
     for job in jobs:

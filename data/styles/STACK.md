@@ -7,7 +7,7 @@ style, and each style file's `notes` say what that style used and taught.
 
 ## The stack and its tone
 
-The stack is `{name, interior, tone, projection, layers}`. `interior` is a paint for a
+The stack is `{name, interior, tone, projection, layers, post}`. `interior` is a paint for a
 sample whose orbit never escaped and that no layer coloured (black when absent). `tone`
 (`{median, p10}`, optional) holds the frame's tonal balance: once the stack is
 composited, the frame's median lightness (CIE L\* over 100) is carried to `median`, and
@@ -163,6 +163,39 @@ Under a style the render spec's own `palette` carries the bake and the rolloff o
 CLI folds a sequential map (`mirror`) only when a palette layer repeats it (`cycles` > 1):
 at one traversal the fold would run the near-set end back to the far field's colour.
 
+## The post stage
+
+`post` (optional) is a list of **passes** over the whole composited frame, run in order
+after the layers and before the tone is measured, so `tone` holds on the picture the
+passes made. A layer never reads a neighbouring sample; a pass is the part of a style
+that may. Each is a pure function of the frame's buffers (its linear samples, whether
+each orbit escaped, the distance to the set, a height), so `style-wasm` draws the same
+picture (`style wasm-parity`), and **a style with a post stage is drawn whole, never in
+tiles** (the module's `open` reports `"post": true`; `tile` refuses). Every length is a
+fraction of the frame's width, so `--draft` and full size are one picture.
+
+The one kind is **`mosaic`**: a recursive tiling whose cells split where the set is, each
+cell a facet of the picture under it.
+
+| member | what |
+| --- | --- |
+| `largest`, `smallest` | the edge of the largest cell (at least 1/256) and the floor no cell's edge goes under (at least 1e-5), in frame widths |
+| `levels` | the most times a cell of the largest size splits (at most 10) |
+| `reach` | a cell splits in four while the set is within `reach` of its edges of it (the least `de` under it), or the set's edge crosses it; 0 keeps only the second rule |
+| `detail` | a cell also splits while the picture inside varies by more than this (the standard deviation of its root luminance); 0 is off |
+| `spiral` | `{center, arms, twist}`: the lattice is quads of a log-polar grid about `center` (fractions of the frame), `arms` to a ring, each ring turned `twist` quads past the one outside it; absent, equilateral triangles split by their edges' midpoints |
+| `tilt` | triangles only: the lattice turned by this many degrees |
+| `fill` | `flat`, the mean of the picture under the facet; `turned`, the picture itself, turned about the facet's middle |
+| `turn` | `turned`: degrees, times a number per facet: a triangle's one of −1, 0, 1; a quad's column round its ring, counted at its middle (360 over `arms` turns each view with the ring) |
+| `relief`, `height` | each facet tilted to the plane fitted through `height` under it, `relief` the tilt per unit of height across one facet edge; `height` is a plain field channel (no view) stretched over the frame, or the picture's own root luminance when absent |
+| `fold` | each facet a low pyramid of this slope, one face per edge |
+| `azimuth`, `elevation` | where the light on `relief` and `fold` comes from; a facet never tilts past a slope of 0.6, so at elevation 45 a face turned away dims to about a third |
+| `inlay` | `{levels, amount}`: the cells the facet would split into, `levels` deep (at most 6, never under `smallest`), each lightened or darkened by up to `amount` of its colour: nested detail inside a calm facet, without splitting it |
+| `seam` | `{width, color, opacity}`: a line along every facet's rim, `width` in frame widths and never over 0.08 of the facet's edge |
+
+A pass costs no escape loop: it reads the lanes the frame already has, plus one `de`
+lane. It holds about 150 bytes a cell, and refuses a tiling of over six million cells.
+
 ## Defaults
 
 What a member left out reads as (`engine/src/style.rs`'s `Default`s and serde defaults;
@@ -170,7 +203,9 @@ the stack refuses unknown members):
 
 | where | defaults |
 | --- | --- |
-| stack | `interior` black; `tone` and `projection` absent |
+| stack | `interior` black; `tone` and `projection` absent; `post` empty |
+| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `tilt` 0, `fill` `flat`, `turn` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45; `spiral`, `height`, `inlay`, `seam` absent |
+| `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
 | `log_polar` | `center` [0.5, 0.5], `turns` 1, `power` = `turns`, `twist` 0, `angle` 0, `ring` 1 |
 | channel | `transform` `linear`, `invert` false |
 | `inside` | `iterations` 1000 |
