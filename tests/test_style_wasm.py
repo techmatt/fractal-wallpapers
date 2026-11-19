@@ -135,6 +135,16 @@ POST_STACKS = {
         "inlay": {"levels": 2, "amount": 0.08},
         "opacity": 0.7,
     },
+    "rhombi": {
+        "rhombi": True,
+        "tilt": -20.0,
+        "fill": "turned",
+        "turn": 6.0,
+        "shift": 0.25,
+        "largest": 0.3,
+        "smallest": 0.04,
+        "levels": 1,
+    },
     "spiral": {
         "spiral": {"arms": 9, "twist": 0.5},
         "smallest": 0.02,

@@ -18,13 +18,14 @@
 //! is, each cell a flat facet of the picture under it.
 //!
 //! ```text
-//! lattice    equilateral triangles, each split in four by its edges' midpoints; or
+//! lattice    equilateral triangles, each split in four by its edges' midpoints; the
+//!            same lattice's rhombi (`rhombi`), split in four as slanted quads; or
 //!            (`spiral`) quads of a log-polar lattice about a point, split in four
 //! split      a cell splits while the set is within `reach` cell edges of it (or it
 //!            straddles the set's edge, or the picture inside varies by `detail`),
 //!            down to `smallest`: big, calm cells far from the set, ever finer at it
 //! fill       `flat`: the mean of the picture under the facet; `turned`: the picture
-//!            itself, turned about the facet's middle
+//!            itself, turned about the facet's middle and slipped by `shift`
 //! shade      `relief`: each facet tilted to the plane fitted through a height under
 //!            it; `fold`: each facet a low pyramid, one face per edge; both lit from
 //!            `azimuth`
@@ -141,7 +142,11 @@ pub struct Mosaic {
     /// The log-polar quad lattice; absent, the triangle lattice.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub spiral: Option<Spiral>,
-    /// Triangles only: the lattice turned by this many degrees.
+    /// The cells are the triangle lattice's rhombi, two triangles each, split in four
+    /// as slanted quads: two families of seams where the triangles have three.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub rhombi: bool,
+    /// Triangles and rhombi: the lattice turned by this many degrees.
     pub tilt: f64,
     /// The edge of the largest cell: the triangle lattice's own, and the size above
     /// which a spiral's quad always splits.
@@ -158,9 +163,12 @@ pub struct Mosaic {
     pub detail: f64,
     pub fill: Fill,
     /// `turned`: degrees each facet's view is turned, times a number per facet: a
-    /// triangle's one of −1, 0, 1; a quad's column round its ring, counted at its middle
-    /// (so 360 over the `arms` turns each view with the ring).
+    /// triangle's or rhombus's one of −1, 0, 1; a spiral quad's column round its ring, at
+    /// its middle (so 360 over the `arms` turns each view with the ring).
     pub turn: f64,
+    /// `turned`: how far each facet's view is slipped, in facet edges, each its own way:
+    /// neighbours then show the picture broken along their seam.
+    pub shift: f64,
     /// The facet's tilt per unit of height across one of its edges, the plane fitted
     /// to `height` under it; 0 leaves the facets level.
     pub relief: f64,
@@ -186,6 +194,7 @@ impl Default for Mosaic {
     fn default() -> Mosaic {
         Mosaic {
             spiral: None,
+            rhombi: false,
             tilt: 0.0,
             largest: 0.25,
             smallest: 0.004,
@@ -194,6 +203,7 @@ impl Default for Mosaic {
             detail: 0.0,
             fill: Fill::Flat,
             turn: 0.0,
+            shift: 0.0,
             relief: 0.0,
             height: None,
             fold: 0.0,
@@ -221,6 +231,7 @@ impl Mosaic {
             self.reach,
             self.detail,
             self.turn,
+            self.shift,
             self.relief,
             self.fold,
             self.azimuth,
@@ -246,6 +257,12 @@ impl Mosaic {
         }
         if self.reach < 0.0 || self.detail < 0.0 || self.relief < 0.0 || self.fold < 0.0 {
             return Err("mosaic: reach, detail, relief and fold are not negative".into());
+        }
+        if !(0.0..=4.0).contains(&self.shift) {
+            return Err("mosaic: shift is 0 to 4 facet edges".into());
+        }
+        if self.rhombi && self.spiral.is_some() {
+            return Err("mosaic: rhombi are the triangle lattice's, not a spiral's".into());
         }
         if !(0.0..=1.0).contains(&self.opacity) {
             return Err("mosaic: opacity is in [0, 1]".into());
@@ -402,6 +419,14 @@ enum Lattice {
         low: [i64; 2],
         size: [i64; 2],
     },
+    /// The triangle lattice's own cells before their diagonal: `(s, t)` along its axes.
+    Rhombi {
+        cos: f64,
+        sin: f64,
+        side: f64,
+        low: [i64; 2],
+        size: [i64; 2],
+    },
     Spiral {
         center: [f64; 2],
         arms: f64,
@@ -432,7 +457,7 @@ impl Lattice {
             None => {
                 let (sin, cos) = mosaic.tilt.to_radians().sin_cos();
                 let side = mosaic.largest;
-                let mut lattice = Lattice::Triangles {
+                let lattice = Lattice::Triangles {
                     cos,
                     sin,
                     side,
@@ -448,14 +473,28 @@ impl Lattice {
                         bound[1] = bound[1].max(value.floor() as i64);
                     }
                 }
-                if let Lattice::Triangles { low, size, .. } = &mut lattice {
-                    *low = [bounds[0][0], bounds[1][0]];
-                    *size = [
-                        bounds[0][1] - bounds[0][0] + 1,
-                        bounds[1][1] - bounds[1][0] + 1,
-                    ];
+                let low = [bounds[0][0], bounds[1][0]];
+                let size = [
+                    bounds[0][1] - bounds[0][0] + 1,
+                    bounds[1][1] - bounds[1][0] + 1,
+                ];
+                if mosaic.rhombi {
+                    Lattice::Rhombi {
+                        cos,
+                        sin,
+                        side,
+                        low,
+                        size,
+                    }
+                } else {
+                    Lattice::Triangles {
+                        cos,
+                        sin,
+                        side,
+                        low,
+                        size,
+                    }
                 }
-                lattice
             }
             Some(spiral) => {
                 let arms = spiral.arms as f64;
@@ -483,12 +522,25 @@ impl Lattice {
 
     /// A frame point in the triangle lattice's own skewed coordinates.
     fn skewed(&self, [x, y]: [f64; 2]) -> [f64; 2] {
-        let Lattice::Triangles { cos, sin, side, .. } = self else {
+        let (Lattice::Triangles { cos, sin, side, .. } | Lattice::Rhombi { cos, sin, side, .. }) =
+            self
+        else {
             return [x, y];
         };
         let (u, v) = (x * cos + y * sin, y * cos - x * sin);
         let q = v / (side * SQRT3_2);
         [u / side - 0.5 * q, q]
+    }
+
+    /// The frame point at the triangle lattice's skewed coordinates `(p, q)`.
+    fn placed(&self, p: f64, q: f64) -> [f64; 2] {
+        let (Lattice::Triangles { cos, sin, side, .. } | Lattice::Rhombi { cos, sin, side, .. }) =
+            self
+        else {
+            return [p, q];
+        };
+        let (u, v) = ((p + 0.5 * q) * side, q * side * SQRT3_2);
+        [u * cos - v * sin, u * sin + v * cos]
     }
 
     /// A spiral's `(column, ring)` coordinates of a frame point.
@@ -579,6 +631,31 @@ impl Lattice {
                     })
                     .collect()
             }
+            Lattice::Rhombi {
+                side, low, size, ..
+            } => {
+                let levels = levels_of(side);
+                (0..size[0] * size[1])
+                    .map(|cell| {
+                        let (i0, j0) = (
+                            (cell % size[0] + low[0]) as f64,
+                            (cell / size[0] + low[1]) as f64,
+                        );
+                        let corners = [
+                            self.placed(i0, j0),
+                            self.placed(i0 + 1.0, j0),
+                            self.placed(i0, j0 + 1.0),
+                            self.placed(i0 + 1.0, j0 + 1.0),
+                        ];
+                        let off = |axis: usize, half: f64| {
+                            corners.iter().all(|corner| corner[axis] < -half)
+                                || corners.iter().all(|corner| corner[axis] > half)
+                        };
+                        let outside = off(0, 0.5) || off(1, 0.5 * aspect);
+                        (side, if outside { 0 } else { levels })
+                    })
+                    .collect()
+            }
             Lattice::Spiral {
                 arms,
                 step,
@@ -597,7 +674,7 @@ impl Lattice {
     /// The root a frame point is in, and the point's place in it.
     fn locate(&self, point: [f64; 2]) -> (usize, Local) {
         match *self {
-            Lattice::Triangles { low, size, .. } => {
+            Lattice::Triangles { low, size, .. } | Lattice::Rhombi { low, size, .. } => {
                 let [p, q] = self.skewed(point);
                 let i = (p.floor() as i64).clamp(low[0], low[0] + size[0] - 1);
                 let j = (q.floor() as i64).clamp(low[1], low[1] + size[1] - 1);
@@ -605,7 +682,11 @@ impl Lattice {
                     (p - i as f64).clamp(0.0, 1.0),
                     (q - j as f64).clamp(0.0, 1.0),
                 );
-                let cell = ((j - low[1]) * size[0] + (i - low[0])) as usize * 2;
+                let cell = ((j - low[1]) * size[0] + (i - low[0])) as usize;
+                if matches!(self, Lattice::Rhombi { .. }) {
+                    return (cell, [fp, fq, 0.0]);
+                }
+                let cell = cell * 2;
                 if fp + fq < 1.0 {
                     (cell, [1.0 - fp - fq, fp, fq])
                 } else {
@@ -642,7 +723,7 @@ impl Lattice {
                     (3, [1.0 - 2.0 * a, 1.0 - 2.0 * b, 1.0 - 2.0 * c])
                 }
             }
-            Lattice::Spiral { .. } => {
+            Lattice::Rhombi { .. } | Lattice::Spiral { .. } => {
                 let (right, up) = (a >= 0.5, b >= 0.5);
                 (
                     right as usize + 2 * up as usize,
@@ -672,6 +753,9 @@ fn root_luminance(rgb: [f64; 3]) -> f64 {
         + 0.0722 * rgb[2].clamp(0.0, 1.0))
     .sqrt()
 }
+
+/// What a facet's slip is hashed under, past every level a turn or an inlay uses.
+const SLIP: u32 = 64;
 
 /// A whole number per facet, the same on every machine.
 fn hashed(root: usize, level: u32, node: u64) -> u64 {
@@ -854,6 +938,17 @@ pub fn mosaic(
             // carried down the tree with the point.
             let mut corners = match lattice {
                 Lattice::Triangles { .. } => lattice.triangle(root_index),
+                Lattice::Rhombi { low, size, .. } => {
+                    let cell = root_index as i64;
+                    [
+                        [
+                            (cell % size[0] + low[0]) as f64,
+                            (cell / size[0] + low[1]) as f64,
+                        ],
+                        [1.0, 0.0],
+                        [0.0; 2],
+                    ]
+                }
                 Lattice::Spiral { arms, low, .. } => {
                     let arms = arms as usize;
                     [
@@ -883,7 +978,7 @@ pub fn mosaic(
                             _ => [mid(b, c), mid(a, c), mid(a, b)],
                         }
                     }
-                    Lattice::Spiral { .. } => {
+                    Lattice::Rhombi { .. } | Lattice::Spiral { .. } => {
                         let half = 0.5 * corners[1][0];
                         [
                             [
@@ -921,6 +1016,36 @@ pub fn mosaic(
                         middle,
                         local[nearest] * edge * SQRT3_2,
                         [away[0] / length, away[1] / length],
+                        (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
+                    )
+                }
+                Lattice::Rhombi { cos, sin, .. } => {
+                    let size = corners[1][0];
+                    let middle =
+                        lattice.placed(corners[0][0] + 0.5 * size, corners[0][1] + 0.5 * size);
+                    // Out through a side: square to the axis that side runs along.
+                    let (along, across) = (
+                        [cos, sin],
+                        [0.5 * cos - SQRT3_2 * sin, 0.5 * sin + SQRT3_2 * cos],
+                    );
+                    let (from_s, from_t) = ([across[1], -across[0]], [-along[1], along[0]]);
+                    let [s, t, _] = local;
+                    let sides = [
+                        (s, [-from_s[0], -from_s[1]]),
+                        (1.0 - s, from_s),
+                        (t, [-from_t[0], -from_t[1]]),
+                        (1.0 - t, from_t),
+                    ];
+                    let (share, outward) =
+                        sides
+                            .into_iter()
+                            .fold((f64::INFINITY, [0.0; 2]), |best, side| {
+                                if side.0 < best.0 { side } else { best }
+                            });
+                    (
+                        middle,
+                        share * edge * SQRT3_2,
+                        outward,
                         (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
                     )
                 }
@@ -974,9 +1099,14 @@ pub fn mosaic(
                 Fill::Turned => {
                     let (sin, cos) = (turn * count).sin_cos();
                     let (dx, dy) = (point[0] - middle[0], point[1] - middle[1]);
+                    // Each facet slips its own way: a direction off its own number.
+                    let way = (hashed(root_index, level + SLIP, node as u64) >> 11) as f64
+                        / (1u64 << 53) as f64
+                        * std::f64::consts::TAU;
+                    let slip = mosaic.shift * edge;
                     let read = [
-                        middle[0] + dx * cos - dy * sin,
-                        middle[1] + dx * sin + dy * cos,
+                        middle[0] + dx * cos - dy * sin + slip * way.cos(),
+                        middle[1] + dx * sin + dy * cos + slip * way.sin(),
                     ];
                     frame.linear[sample_at(read, width, height)]
                 }
@@ -1082,11 +1212,19 @@ mod tests {
 
     #[test]
     fn facets_are_fine_at_the_set_and_large_far_from_it() {
-        for spiral in [None, Some(Spiral::default())] {
-            let mosaic = Mosaic {
-                spiral,
+        let lattices = [
+            Mosaic::default(),
+            Mosaic {
+                rhombi: true,
+                tilt: 20.0,
                 ..Mosaic::default()
-            };
+            },
+            Mosaic {
+                spiral: Some(Spiral::default()),
+                ..Mosaic::default()
+            },
+        ];
+        for mosaic in lattices {
             let (width, height) = (600, 400);
             let picture = painted(&mosaic, width, height);
             let row = &picture[150 * width..151 * width];
@@ -1231,6 +1369,37 @@ mod tests {
     }
 
     #[test]
+    fn a_shift_slips_each_turned_facet_s_view_its_own_way() {
+        // Unsplit rhombi over the ramp: unshifted, a turned view at no turn is the
+        // picture; shifted, each facet reads the ramp a fixed step off, its own.
+        let turned = Mosaic {
+            rhombi: true,
+            fill: Fill::Turned,
+            reach: 0.0,
+            ..Mosaic::default()
+        };
+        let slipped = Mosaic {
+            shift: 0.2,
+            ..turned.clone()
+        };
+        let (plain, slipped) = (painted(&turned, 400, 250), painted(&slipped, 400, 250));
+        let mut steps: Vec<i64> = Vec::new();
+        for (index, (a, b)) in plain.iter().zip(&slipped).enumerate() {
+            let [x, _] = point_of(index % 400, index / 400, 400, 250);
+            assert!((a[0] - (x + 0.5)).abs() < 1e-12);
+            let step = ((b[0] - a[0]) * 400.0).round() as i64;
+            assert!(
+                step.abs() <= 20,
+                "a slip of 0.2 of a 0.25 edge is 20 samples: {step}"
+            );
+            if (-0.4..0.4).contains(&x) && !steps.contains(&step) {
+                steps.push(step);
+            }
+        }
+        assert!(steps.len() >= 3, "facets slip their own ways: {steps:?}");
+    }
+
+    #[test]
     fn a_tall_frame_pays_only_for_the_roots_it_touches() {
         // The lattice is a parallelogram round the frame; on a 9:16 frame most of its
         // triangles are off it, and a deep mosaic must still fit the cell budget.
@@ -1297,6 +1466,8 @@ mod tests {
             r#"{"kind": "mosaic", "largest": 0.001, "smallest": 0.001}"#,
             r#"{"kind": "mosaic", "smallest": 1e-9}"#,
             r#"{"kind": "mosaic", "opacity": 1.5}"#,
+            r#"{"kind": "mosaic", "rhombi": true, "spiral": {}}"#,
+            r#"{"kind": "mosaic", "shift": 5.0}"#,
             r#"{"kind": "mosaic", "inlay": {"levels": 7, "amount": 0.1}}"#,
             r#"{"kind": "mosaic", "spiral": {"center": [1e300, 0.5]}}"#,
         ] {

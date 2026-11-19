@@ -184,9 +184,11 @@ cell a facet of the picture under it.
 | `reach` | a cell splits in four while the set is within `reach` of its edges of it (the least `de` under it), or the set's edge crosses it; 0 keeps only the second rule |
 | `detail` | a cell also splits while the picture inside varies by more than this (the standard deviation of its root luminance); 0 is off |
 | `spiral` | `{center, arms, twist}`: the lattice is quads of a log-polar grid about `center` (fractions of the frame), `arms` to a ring, each ring turned `twist` quads past the one outside it; absent, equilateral triangles split by their edges' midpoints |
-| `tilt` | triangles only: the lattice turned by this many degrees |
-| `fill` | `flat`, the mean of the picture under the facet; `turned`, the picture itself, turned about the facet's middle |
-| `turn` | `turned`: degrees, times a number per facet: a triangle's one of −1, 0, 1; a quad's column round its ring, counted at its middle (360 over `arms` turns each view with the ring) |
+| `rhombi` | `true`: the cells are the triangle lattice's rhombi (two triangles each), split in four as slanted quads, so two families of seams run where the triangles have three |
+| `tilt` | triangles and rhombi: the lattice turned by this many degrees |
+| `fill` | `flat`, the mean of the picture under the facet; `turned`, the picture itself, turned about the facet's middle and slipped by `shift` |
+| `shift` | `turned`: how far each facet's view is slipped (0 to 4 facet edges), each facet its own way, so neighbours show the picture broken along their seam |
+| `turn` | `turned`: degrees, times a number per facet: a triangle's or rhombus's one of −1, 0, 1; a spiral quad's column round its ring, counted at its middle (360 over `arms` turns each view with the ring) |
 | `relief`, `height` | each facet tilted to the plane fitted through `height` under it, `relief` the tilt per unit of height across one facet edge; `height` is a plain field channel (no view) stretched over the frame, or the picture's own root luminance when absent |
 | `fold` | each facet a low pyramid of this slope, one face per edge |
 | `azimuth`, `elevation` | where the light on `relief` and `fold` comes from; a facet never tilts past a slope of 0.6, so at elevation 45 a face turned away dims to about a third |
@@ -207,7 +209,7 @@ the stack refuses unknown members):
 | where | defaults |
 | --- | --- |
 | stack | `interior` black; `tone` and `projection` absent; `post` empty |
-| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `tilt` 0, `fill` `flat`, `turn` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
+| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
 | `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
 | `log_polar` | `center` [0.5, 0.5], `turns` 1, `power` = `turns`, `twist` 0, `angle` 0, `ring` 1 |
 | channel | `transform` `linear`, `invert` false |

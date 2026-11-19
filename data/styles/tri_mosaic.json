@@ -14,7 +14,7 @@
   ],
   "adds": [
     "the post stage: passes over the whole composited frame (engine/src/post.rs)",
-    "the mosaic pass: a triangle or log-polar quad lattice split where the set is, flat or turned fills, relief, fold, inlay, seams and an opacity"
+    "the mosaic pass: a triangle, rhombus or log-polar quad lattice split where the set is, flat or turned and slipped fills, relief, fold, inlay, seams and an opacity"
   ],
   "notes": [
     "From wallhaven-47k2py and wallhaven-4xy8el (item 057), with technology-25, sun-disk-25 and pacific-shore-25 as further readings. The first style with a post stage: the base is one palette layer, and the mosaic pass does the rest.",
@@ -22,7 +22,7 @@
     "Shading: `fold` draws each facet as a low three-faced pyramid (4xy8el's cube corners), `relief` tilts it to the plane fitted through the picture's own luminance under it. A relief read off the smooth count needs about 40 to show; at 12 it is flat.",
     "Tone held at all 40 scouted drafts (`--max-ink 0.10`) as first fitted. The first map missed p90 low (0.74 against 0.88) until its cream took the top third.",
     "`inlay` draws a calm facet's own children into it as faint lighter and darker cells (47k2py's nested texture) without splitting it: f_inlay is flat facets, seams and a three-level inlay at 0.07, the closest reading of that reference.",
-    "Round one's other readings, as formulations: f_flat (seams only), f_fold, f_detail (`reach` 0, `detail` 0.05: cells follow the picture's bands, not the set), f_shards (pacific-shore: turned fills on a tilted lattice), f_spiral and f_spiral_split (technology: turned quads of the `spiral` lattice, at spiral seats), f_spiral_plates (sun-disk: unsplit flat quads at `opacity` 0.6, a shell of translucent plates over the fractal; opaque, the same plates hide the set and fail the fractal feel), and the entry tri_mosaic_ice (4xy8el's blues, tone 0.629/0.176), unkept until a tile is.",
+    "Round one's other readings, as formulations: f_flat (seams only), f_fold, f_detail (`reach` 0, `detail` 0.05: cells follow the picture's bands, not the set), f_rhombi (the lattice's rhombi as slanted quads), f_shards (pacific-shore: unsplit and once-split `rhombi` at tilt -20, each a `turned` view slipped by `shift` 0.25 of its edge, so the picture breaks along two families of slanted seams; triangle shards at turn 30 read as a kaleidoscope instead), f_spiral and f_spiral_split (technology: turned quads of the `spiral` lattice, at spiral seats), f_spiral_plates (sun-disk: unsplit flat quads at `opacity` 0.6, a shell of translucent plates over the fractal; opaque, the same plates hide the set and fail the fractal feel), and the entry tri_mosaic_ice (4xy8el's blues, tone 0.629/0.176), unkept until a tile is.",
     "Tried and dropped: a `copies` fill (the frame's middle shrunk into every facet) drew noise at every depth and left the engine; a flat-filled spiral lattice reads as mush beside the triangles.",
     "Not catalogued yet: the row (lab tier) lands with Matt's score. Until then `style wasm-parity` draws this file at `style_wasm.POST_SEAT`."
   ],
