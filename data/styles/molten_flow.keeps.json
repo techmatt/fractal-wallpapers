@@ -103,9 +103,312 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow",
+      "picker": "style_organic_relief_r1",
+      "picked": [
+        {
+          "row": "molten_flow/interstellar_webs",
+          "key": "baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow"
+        }
+      ],
+      "label": "molten_flow default (baseline): julia-multibrot3_f1cad9d4_molten",
+      "image": "style_organic_relief_r1__baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_f1cad9d4",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.13379412906834562",
+            "center_im": "0.01066720222081552",
+            "width": "0.08255897112532501"
+          },
+          "maxiter": 10220,
+          "note": "final139_general seat 225 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 225,
+            "key": "f1cad9d4acc1ec9b",
+            "p_spiral": 0.002079
+          },
+          "ink": 0.09676
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_organic_relief_r1/molten_flow/interstellar_webs/interstellar_webs__01_julia-multibrot3_f1cad9d4_interstellar_webs",
+      "picker": "style_organic_relief_r1",
+      "picked": [
+        {
+          "row": "molten_flow/interstellar_webs",
+          "key": "interstellar_webs__01_julia-multibrot3_f1cad9d4_interstellar_webs"
+        }
+      ],
+      "label": "entry: julia-multibrot3_f1cad9d4_interstellar",
+      "image": "style_organic_relief_r1__interstellar_webs__01_julia-multibrot3_f1cad9d4_interstellar_webs.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_f1cad9d4",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.13379412906834562",
+            "center_im": "0.01066720222081552",
+            "width": "0.08255897112532501"
+          },
+          "maxiter": 10220,
+          "note": "final139_general seat 225 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 225,
+            "key": "f1cad9d4acc1ec9b",
+            "p_spiral": 0.002079
+          },
+          "ink": 0.09676
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@635a1058",
+        "colormap": "interstellar_webs",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
+    "molten_flow@635a1058": {
+      "name": "molten_flow",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.201,
+        "p10": 0.07
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.7,
+              "shift": [
+                -0.154,
+                -0.21
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.78
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 1.058,
+              "shift": [
+                -0.111,
+                0.35
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.64
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.6,
+              "shift": [
+                0.426,
+                -0.144
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.9
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.35,
+                0.3
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.5,
+          "power": 8.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.5,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.35,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 12.0,
+            "rim": 0.35,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.92
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.45,
+          "power": 3.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.2
+          },
+          "blend": "multiply",
+          "opacity": 0.5,
+          "falloff": 0.0006
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.0002
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 10.0
+        }
+      ]
+    },
     "molten_flow@fa7a5b16": {
       "name": "molten_flow",
       "interior": {

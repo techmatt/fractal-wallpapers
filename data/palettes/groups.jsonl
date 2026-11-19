@@ -244,8 +244,6 @@
 {"schema": 1, "kind": "admitted", "map": "ribbed_tubes", "group": "map:ribbed_tubes", "joined": false, "nearest": "map:wallhaven_wallhaven-4xy8el", "m1": 0.048871}
 {"schema": 1, "kind": "admitted", "map": "heliograph_scales", "group": "map:Hollow Lantern", "joined": true, "nearest": "map:Hollow Lantern", "m1": 0.034082}
 {"schema": 1, "kind": "admitted", "map": "malign_tubes", "group": "map:malign_tubes", "joined": false, "nearest": "map:jadanti", "m1": 0.076688}
-{"schema": 1, "kind": "admitted", "map": "ivory_lace", "group": "map:ivory_lace", "joined": false, "nearest": "map:quiet-waiting-25", "m1": 0.05014}
-{"schema": 1, "kind": "admitted", "map": "ice_grotto", "group": "map:ice_grotto", "joined": false, "nearest": "map:Ice Spire", "m1": 0.039793}
 {"schema": 1, "kind": "admitted", "map": "greenhorn", "group": "map:greenhorn", "joined": false, "nearest": "map:house-of-ivory-25", "m1": 0.059886}
 {"schema": 1, "kind": "admitted", "map": "sliced_strips", "group": "map:sliced_strips", "joined": false, "nearest": "map:Copper Fathom", "m1": 0.062219}
 {"schema": 1, "kind": "admitted", "map": "cut_tiles", "group": "map:cut_tiles", "joined": false, "nearest": "map:riding-on-the-tide-25", "m1": 0.083507}

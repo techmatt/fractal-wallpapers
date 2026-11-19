@@ -1,0 +1,393 @@
+{
+  "schema": 1,
+  "name": "copper_webs",
+  "reference": {
+    "image": "interstellar-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/copper_webs",
+  "keeps": [
+    {
+      "id": "style_organic_relief_r1/copper_webs/locations/loc__12_phoenix_71e305f0_interstellar_webs",
+      "picker": "style_organic_relief_r1",
+      "picked": [
+        {
+          "row": "copper_webs/locations",
+          "key": "loc__12_phoenix_71e305f0_interstellar_webs"
+        }
+      ],
+      "label": "sparkle: phoenix_71e305f0_interstellar",
+      "image": "style_organic_relief_r1__loc__12_phoenix_71e305f0_interstellar_webs.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "copper_webs",
+        "stack": "copper_webs@fc436c4f",
+        "colormap": "interstellar_webs",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs",
+      "picker": "style_organic_relief_r1",
+      "picked": [
+        {
+          "row": "copper_webs/locations",
+          "key": "loc__36_phoenix_ec850bb9_interstellar_webs"
+        }
+      ],
+      "label": "sparkle: phoenix_ec850bb9_interstellar",
+      "image": "style_organic_relief_r1__loc__36_phoenix_ec850bb9_interstellar_webs.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_ec850bb9",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.8032793871411705",
+            "center_im": "-0.2750865837768856",
+            "width": "0.5121586418008199"
+          },
+          "maxiter": 7060,
+          "note": "final139_general seat 104 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 104,
+            "key": "ec850bb9aa298e71",
+            "p_spiral": 0.056009
+          },
+          "ink": 0.09579
+        },
+        "style": "copper_webs",
+        "stack": "copper_webs@fc436c4f",
+        "colormap": "interstellar_webs",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "copper_webs@fc436c4f": {
+      "name": "copper_webs",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.201,
+        "p10": 0.07
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.7,
+              "shift": [
+                -0.154,
+                -0.21
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.78
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 1.058,
+              "shift": [
+                -0.111,
+                0.35
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.64
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.6,
+              "shift": [
+                0.426,
+                -0.144
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.9
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.35,
+                0.3
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.5,
+          "power": 8.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.5,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.35,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 12.0,
+            "rim": 0.35,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.92
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.45,
+          "power": 3.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.2
+          },
+          "blend": "multiply",
+          "opacity": 0.5,
+          "falloff": 0.0006
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.0002
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 10.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.06,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.012
+            }
+          },
+          "power": 4.0,
+          "color": {
+            "rgb": "#9cc8ff"
+          },
+          "blend": "add",
+          "opacity": 0.5,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 1.5
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.06,
+              "spacing": 1.0,
+              "read": "height",
+              "escaped": true,
+              "largest": 0.012
+            }
+          },
+          "power": 12.0,
+          "color": {
+            "rgb": "#f4f8ff"
+          },
+          "blend": "add",
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "invert": true
+            },
+            "power": 1.5
+          }
+        }
+      ]
+    }
+  }
+}

@@ -32,24 +32,22 @@ costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit abo
 - **Rust makes every pixel; Python never renders.** Python reaches the engine only
   through `src/fractal_wallpapers/engine.py`; no other module shells out to the binary
   or computes image data.
-- **Everything runnable is a `fractal-wallpapers` subcommand.** There is no `scripts/`
-  and never will be. One `cli/<group>_commands.py` per command group, holding its
-  handlers and parser; `cli/__init__.py` is the list of them plus `main`. The
-  `_commands` suffix is load-bearing and handler names resolve through `__getattr__`,
-  never re-exported: `cli/__init__.py`'s docstring has why.
+- **Everything runnable is a `fractal-wallpapers` subcommand**; there is no `scripts/`.
+  One `cli/<group>_commands.py` per command group (handlers and parser);
+  `cli/__init__.py` lists them plus `main`, and its docstring has why the suffix is
+  load-bearing and handler names resolve through `__getattr__`, never re-exported.
 - **Records are JSONL**: UTF-8, one object per line, an integer `schema` field from the
   first row. A label row carries its full join (the label *and* the complete render
   parameters), never split across files. Every random draw is seeded, the seed recorded.
 - **Cross-platform by construction**: `pathlib` only, no absolute paths in tracked code.
-  Windows process handling (job objects, priority classes) lives in
-  `src/fractal_wallpapers/process_control.py` and nowhere else. A batch subcommand takes
+  Windows process handling lives in `src/fractal_wallpapers/process_control.py` alone. A batch subcommand takes
   a **manifest file**, never hundreds of paths as arguments.
 - **Formatting is not negotiable**: `ruff` lints and formats Python at line length 100;
   `rustfmt` and `clippy` govern the crates: a repo-wide reformat is never possible.
 - **Line endings are LF**, and **anything writing a tracked text file opens it
-  `newline="\n"`**. CRLF drift is invisible to `git status` and `git diff`, and Git
-  Bash's `grep` reports CR on pure-LF files: `git ls-files --eol` is the only detector,
-  `tests/test_line_endings.py` the guard.
+  `newline="\n"`**. `git ls-files --eol` is the only detector of CRLF drift (`git
+  status`, `git diff` and Git Bash's `grep` all mislead); `tests/test_line_endings.py`
+  is the guard.
 - **Search with `git grep` (or `rg`), never `grep -r` from the root**: the checkout
   holds ~100 GB of untracked files, and `grep --include=*` ignores `.gitignore`.
 
@@ -57,17 +55,16 @@ costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit abo
 
 - **The base install stays torch-free.** `pip install -e .` buys the engine, the walk,
   the supply engine and the labeling rig; `fetch-weights --check` runs on it, so its
-  whole import graph is stdlib (why `models/roster.py` exists apart from `ship`).
-  `tests/test_base_install.py` proves it in a subprocess with those imports refused.
+  import graph is stdlib. `tests/test_base_install.py` proves it in a subprocess.
 - **`dev` is the suite's install**: `numpy` and `pillow`, **never `torch`,
   `torchvision` or `timm`**. A test reaching one of those skips rather than fails;
-  `tests/test_lanes.py` (module-level imports, which abort the whole lane) and
-  `conftest.pytest_runtest_call` (call-time imports) enforce it.
+  `tests/test_lanes.py` (module-level imports) and `conftest.pytest_runtest_call`
+  (call-time imports) enforce it.
 - **CUDA is opt-in, never the default.** `models` is CPU torch everywhere; `cuda` is
   cu124 and conflicts with it, so one environment holds one torch (README's *Install*).
 - **Weights come from GitHub Releases, not LFS.** `fetch-weights` downloads what
-  `models/weights.json` names into `models/<head>/` and verifies each sha256.
-  `roster.TAG` is the one spelling of the tag; a published tag is never moved.
+  `models/weights.json` names and verifies each sha256. `roster.TAG` is the one
+  spelling of the tag; a published tag is never moved.
 
 ### What git tracks
 
@@ -75,11 +72,10 @@ costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit abo
   tracked file that is binary by nature, over `MAX_TRACKED_BYTES` (2 MiB, "the per-file
   history guard"), or a tracked *record* naming an absolute path. Each exemption list
   excuses one rule; every entry is Matt's call with its reason at the constant.
-- **`.gitignore` keeps its shape**: `scratch/` and `artifacts/` (runtime output),
-  `models/**/*.pt` (fetched weights), and toolchain noise; no tracked file inside an
-  ignored tree **except the published records' text** (`gallery.jsonl`, `manifest.json`,
-  `recipes.jsonl`, tracked whole; one over the per-file cap is Matt's to rule on, never
-  an allowlist entry). `index.html` is never tracked.
+- **`.gitignore` keeps its shape**: `scratch/`, `artifacts/`, `models/**/*.pt` and
+  toolchain noise; no tracked file inside an ignored tree **except the published
+  records' text** (`gallery.jsonl`, `manifest.json`, `recipes.jsonl`, tracked whole; one
+  over the per-file cap is Matt's to rule on, never an allowlist entry). `index.html` is never tracked.
 
 ### Records: published, kept, discarded
 
@@ -91,10 +87,9 @@ nineteen collections) and `final140_general2000`. No unpublished record is kept.
   `tests/test_tentative.py`. Tracking a record's text *is* publishing it. A
   `--force-fill` record is never published (`tentative.refuse_forced`).
 - **An unstamped read means `tentative.DEFAULT`** (`final139_general`), never the newest
-  stamp: the twenty-one are peers. `portable.REFERENCE` (in the package's `portable.py`)
-  names `final139_green`, as `GENERAL_CHECK` names `final139_general`. The page a person opens
-  is the `artifacts/curation/viewer/` row of `src/fractal_wallpapers/README.md`'s keep
-  roster.
+  stamp: the twenty-one are peers. `portable.REFERENCE` names `final139_green`, as
+  `GENERAL_CHECK` names `final139_general`. The page a person opens is the
+  `artifacts/curation/viewer/` row of `src/fractal_wallpapers/README.md`'s keep roster.
 - **An unpublished record is DISCARDED by default; keeping needs a reason.** An item that
   records a gallery to measure against deletes it once measured, and says so in its
   report. ⚠ **`curate solve record` keeps by default**: pass `--no-keep`, or run
@@ -103,16 +98,15 @@ nineteen collections) and `final140_general2000`. No unpublished record is kept.
   (`tentative.keep_path()`), never a count of store folders; `tentative.protected_keys()`
   reads it and never sweeps the whole store.
 - **Durability is a backup, not git**: `storage export` runs only at Matt's direction,
-  and no tracked text names an export or a standing instance. Restore is
-  `src/fractal_wallpapers/README.md`'s *Continuing on a fresh box*.
+  and no tracked text names an export or a standing instance. Restore is `src/fractal_wallpapers/README.md`'s
+  *Continuing on a fresh box*.
 
 ### Curation and labels
 
-- **A collection's size is in `curation/targets.py` and nowhere else.** Nineteen
-  collections (twelve hue families, seven modes); `curate solve run|record --collection
-  NAME` take `n` from `TARGETS` and the pool from `targets.pool_for`, `--n` overrides,
-  and a collection the table does not name refuses. A prompt naming a seat count is
-  retyping a target.
+- **A collection's size is in `curation/targets.py` and nowhere else.** `curate solve
+  run|record --collection NAME` take `n` from `TARGETS` and the pool from
+  `targets.pool_for`, `--n` overrides, and a collection the table does not name refuses.
+  A prompt naming a seat count is retyping a target.
 - **Degree 6 is never labelled**: `multibrot6` and `julia:multibrot6` are the mining
   loop's generalization test. `supply.partitions.NEVER_LABELLED` is the list; sheet
   build, ingest and both store writers refuse it, and `plane_seeds.FAMILIES` stops at
@@ -128,13 +122,11 @@ nineteen collections) and `final140_general2000`. No unpublished record is kept.
   unkept pool pictures, which `storage pictures` mirrors. The tiers are
   `src/fractal_wallpapers/README.md`'s *Two roots*.
 - **A picture with no ledger row is garbage**: `curate candidate-ledger orphans` lists,
-  `--apply` deletes. Run it after any killed run and periodically. An unmerged leg is
-  listed and never swept unread; it goes only when someone names it (`--leg <name>` or
-  `--include-unmerged`).
-- **The render pool is three workers at below-normal priority**, for anything that
-  drives the engine (measure pass, sheet build, hunt, mine). More than three
-  `fractal-engine.exe`, or any at normal priority, makes this desktop unusable.
-  `engine.run` sets the priority; only the count is the caller's.
+  `--apply` deletes. Run it after any killed run and periodically. An unmerged leg is listed, never swept
+  until someone names it (`--leg <name>` or `--include-unmerged`).
+- **The render pool is three workers at below-normal priority** for anything driving
+  the engine: more, or any at normal priority, makes this desktop unusable. `engine.run`
+  sets the priority; only the count is the caller's.
 - **One pool-holding process per box.** `curate growth`, `curate solve run`, `curate
   solve record` and the slow test lane each hold the candidate pool whole and never run
   beside each other.
@@ -154,13 +146,12 @@ cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warning
 cargo test --release --manifest-path perturbation/Cargo.toml
 ```
 
-**CI lints with the newest stable Rust**, so a clippy release adds lints to code that
-has not changed. Run `rustup update stable` before the clippy lines; a local toolchain
-behind CI's passes code that CI fails. CI also compiles on Linux and macOS, where some
-errors exist that Windows never reports (an unmangled export named like a libc symbol);
-an item touching a crate's exports or `cfg(unix)` code repeats its clippy line with
-`--target x86_64-unknown-linux-gnu --target-dir out/xtarget`, a type check needing no
-linker (`rustup target add x86_64-unknown-linux-gnu` once).
+**CI lints with the newest stable Rust**: run `rustup update stable` before the clippy
+lines, or a local toolchain behind CI's passes code CI fails. CI also compiles on Linux
+and macOS, where some errors never show on Windows (an unmangled export named like a libc
+symbol): an item touching a crate's exports or `cfg(unix)` code repeats its clippy line
+with `--target x86_64-unknown-linux-gnu --target-dir out/xtarget` (a linker-free type
+check; `rustup target add x86_64-unknown-linux-gnu` once).
 
 An item that touches the style path (`engine/src/style.rs`, `style-wasm/`, a style's
 stack or the bundle) also runs:
@@ -172,29 +163,29 @@ cargo test --release --manifest-path style-wasm/Cargo.toml
 cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml
 ```
 
-Run pytest with the checkout's own `.venv` interpreter: one gallery guard spawns
+Run pytest with the checkout's own `.venv` interpreter: a gallery guard spawns
 `sys.executable`, and another interpreter fails it like a process-control bug. The walk
-tests need a **release** engine and skip without one. A guard asking whether the engine
-is built catches `FileNotFoundError` from `engine.engine_path`; a bare call interrupts
-the lane at collection.
+tests need a **release** engine and skip without one; a guard asking whether the engine
+is built catches `FileNotFoundError` from `engine.engine_path`, or it interrupts the lane
+at collection.
 
 **`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
-(`perturbation/README.md`'s *Running it*), the website's own item; website items never
-commit here. CI also lints its two wasm builds (`.github/workflows/ci.yml`'s *Check the
-kernel for wasm32* step); an edit there runs that step's two commands. The website also parses the root `README.md`'s explorer links and cites
-`perturbation/README.md`'s numbered headings.
+(`perturbation/README.md`'s *Running it*), the website's own item, and runs the two
+commands of `.github/workflows/ci.yml`'s *Check the kernel for wasm32* step. Website
+items never commit here. The website also parses the root `README.md`'s explorer links
+and cites `perturbation/README.md`'s numbered headings.
 
 **CI** runs `pytest --slow` on three OSes with torch and no weights or store; a test
-needing shipped heads skips on a missing file. Reading a red without `gh` and
-reproducing it locally is `tests/README.md`'s *Reading and reproducing a CI red*.
+needing shipped heads skips on a missing file (`tests/README.md`'s *Reading and
+reproducing a CI red*).
 
 ### The two lanes
 
 `python -m pytest` is the **fast lane** and every item runs it, test written or not.
 `python -m pytest --slow` runs everything; CI runs it, and an item runs it only when its
-prompt names it, comparing the two lanes' collected counts when it does. `-n 6`
-(pytest-xdist, in `dev`) prints no held-back line: read a count off a serial run
-(`tests/README.md`'s *On a parallel runner*, which has the measurements behind these).
+prompt names it, comparing the two lanes' collected counts. `-n 6` (pytest-xdist)
+prints no held-back line: read a count off a serial run (`tests/README.md`'s *On a
+parallel runner*).
 
 - **Any red is a lane to read**; there is no expected failure.
 - **Never repoint a census constant at today's reading.** A census that went red because
@@ -205,9 +196,9 @@ prompt names it, comparing the two lanes' collected counts when it does. `-n 6`
 - **A reading compares only with one on the same install** (`tests/README.md`'s *What
   "the fast-lane count" means*): an interpreter without `torch` silently collects a
   smaller suite, and `conftest` prints a red line naming the missing import.
-- **Measure on an idle box**: beside a render run the lane is killed on commit
-  charge. A test whose claim is not about time never reads the wall clock. Before
-  believing a lane, re-run one untouched engine-bound guard: a tenth off means the box.
+- **Measure on an idle box** (beside a render run the lane is killed on commit charge).
+  A test whose claim is not about time never reads the wall clock. Before believing a
+  lane, re-run one untouched engine-bound guard: a tenth off means the box.
 - **A lane that moves right after code landed is the code until measured otherwise**
   (`tests/README.md`'s *Where the time goes* has the worktree check).
 - **A fixture redirects a store at the tier roots, never per accessor.**
@@ -221,27 +212,26 @@ prompt names it, comparing the two lanes' collected counts when it does. `-n 6`
   and priced**: what stopped being covered, at the site and in the report, with the
   seconds it bought (`--durations=0 --durations-min=0` summed by file). Prefer thinning
   a claim to dropping one, and measure after marking.
-- **The fast lane prints how many tests it held back**, and that line is the point:
-  `tests/conftest.py` owns the marker, the flag and the line.
+- **The fast lane prints how many tests it held back** (`tests/conftest.py` owns the
+  marker, the flag and the line).
 
 ## Standing prompt contract
 
 Each prompt is a conductor queue item; conductor's preamble owns the report's path and
 header, the load budget and waiting. This repository adds:
 
-- **The report goes where the preamble says, starting with its header**, ~60 lines,
-  written once with at most one trim pass: findings, numbers, decisions and surprises;
-  no process narration or restated prompt. **Tests are mentioned only for a red you
-  could not fix.**
+- **The report goes where the preamble says, starting with its header**, ~60 lines of
+  findings, numbers, decisions and surprises, written once with at most one trim
+  pass; no process narration or
+  restated prompt. **Tests are mentioned only for a red you could not fix.**
 - **End the console reply with `Report written to <path>`.**
 - **Commit to the branch you are on.**
-- **Every clock time is local 12-hour** (`5:25pm`, never `17:25`/UTC), in chat, ETAs
-  and reports. The CLI's `[HH:MM:SS]` stamps are 24-hour; convert before quoting.
+- **Every clock time is local 12-hour** (`5:25pm`, never `17:25`/UTC). The CLI's
+  `[HH:MM:SS]` stamps are 24-hour; convert before quoting.
 - **A step over about thirty seconds is backgrounded, with a completion waiter on the
   real process**, never on a launcher (`nohup … &` returns at once).
-- **Operational facts learned on the way** (launch commands, ports, drop paths,
-  conventions) **go into the relevant module README as you pass them**, not only into a
-  report.
+- **Operational facts learned on the way go into the relevant module README as you pass
+  them**, not only into a report.
 
 ## Rules
 
@@ -254,18 +244,17 @@ header, the load budget and waiting. This repository adds:
 
 ## Build-era workflow *(delete this section at publication)*
 
-`C:\Code\fractal-maker`, the read-only extraction source, is gone from this box; its
-checks skip here as on CI. What only read it goes at publication with its test and
-subcommand; each is still read by something live, so deleting one means deciding what
-its reader does instead:
+`C:\Code\fractal-maker`, the extraction source, is gone; its checks skip here as on CI.
+What only read it goes at publication with its test and subcommand; each is still read
+by something live, so deleting one means deciding what its reader does instead:
 
 - `labeling/finished_import.py`: `run` has no caller; its conversions (`recipe_of`,
   `family_of`, …) are read by `models.renders.verify`, `models.palette_sets.extract`
   and two tests.
-- `palettes/library_import.py`: only its source-pool reader is build-era (`write`,
-  `text_of` and `run` have live callers).
-- The `--source` commands (`renders verify|preregister`, `palette extract`) go first;
+- `palettes/library_import.py`: only its source-pool reader (`write`, `text_of` and
+  `run` have live callers).
+- The `--source` commands (`renders verify|preregister`, `palette extract`) first;
   `palette label|score` and `palettes provenance` read the source too.
 - `models/acceptance.py`'s extraction half (`INCUMBENT_*`, `beside`,
-  `ExtractionSourceGone`, `extraction_source`), called by `head preregister`; the
+  `ExtractionSourceGone`, `extraction_source`; `head preregister` calls it); the
   vendored yardstick stays.

@@ -130,6 +130,47 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_geometric_sheets_r1/flame_veil_chalk/ivory_lace/baseline_chalk__00_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
+      "picker": "style_geometric_sheets_r1",
+      "picked": [
+        {
+          "row": "flame_veil_chalk/ivory_lace",
+          "key": "baseline_chalk__00_vj_d3_r1.08_t0.124_whole_flame_veil_chalk"
+        }
+      ],
+      "label": "flame_veil_chalk default (baseline): vj_d3_r1.08_t0.124_whole_flame_veil",
+      "image": "style_geometric_sheets_r1__baseline_chalk__00_vj_d3_r1.08_t0.124_whole_flame_veil_chalk.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "vj_d3_r1.08_t0.124_whole",
+          "family": {
+            "kind": "julia",
+            "degree": 3,
+            "c": [
+              "0.4703002567301635",
+              "0.028926321933118226"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "2.9"
+          },
+          "maxiter": 800,
+          "note": "degree-3 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.124), whole; seed 28, draw 10"
+        },
+        "style": "flame_veil_chalk",
+        "stack": "flame_veil_chalk@7784b637",
+        "colormap": "flame_veil_chalk",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {

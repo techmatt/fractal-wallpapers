@@ -1,134 +1,12 @@
 # QA findings
 
-What bug hunts found, one line each: **fixed**, **deferred** (to Matt, with a
-recommendation) or **won't fix** (with the reason). A hunt reads this first and never
-re-reports a line on it. The checker that found most of the style ones is
-`fractal-wallpapers style sweep` (`data/styles/README.md`'s *Checking the library*).
+What bug hunts found and left open, one line each: **deferred** (to Matt, with a
+recommendation) or **won't fix** (with the reason); a fix lives in its commit, not here.
+A hunt reads this first and never re-reports a line on it. The checker that found most
+of the style ones is `fractal-wallpapers style sweep` (`data/styles/README.md`'s
+*Checking the library*).
 
-## The style system (item 039)
-
-### Fixed
-
-- `style show`, `style render`, `style knobs` and `style tones` on a draft `.json` that
-  does not parse, or is not an object, raised a JSON traceback; a missing draft was
-  reported as "no style … under data/styles". Now one refusal line each.
-- `style render --location` (and plain `render --location`) on a missing or garbled
-  file raised a traceback, and **refused an indented record** (one object over many
-  lines, as a keeps file prints it) as "holds N rows". `locations.read_one` reads the
-  whole file first.
-- `style render <mode> --knob NAME=VALUE` was silently overridden by a location record
-  carrying the same member: `teal_tunnel`'s keeps carry `projection.log_polar.turns`
-  (8, outside the knob's 3..6), so `--knob turns=…` drew turns 8 whatever was asked.
-  Knobs are now turned after the record's projection is laid on (`styles.spec_of`).
-- `style tones <merged name>` (`crisis_smooth`, `golden_petals`, `copper_arms`, …) held
-  renders to the mode's reference picture, not the entry's own, so a render tuned to
-  `crisis-25.jpg` read as missing `council.jpg` by 0.21 of median. `styles.at_palette`
-  now carries the entry's `reference`.
-- `style scout --n -3` drew 887 seats (a negative slice); `--n 0` and
-  `--probe-limit 0` drew nothing. Each is refused.
-- `style keep` on a garbled choices file raised a traceback; a choices file with no
-  `name` was reported as "choices 'None'".
-- `style sheet <missing>.txt` raised a traceback.
-- `style render --manifest` with a record named `a/b` wrote into a subfolder; a name with
-  `:` would fail on Windows. Separators and Windows-reserved characters become `_`.
-- `style palettes <discarded mode>` printed "score None"; it prints "no score
-  (discarded)".
-- `style palettes <mode> --sync` on a new catalog row (README step 10) read the
-  default entry's values off its first keep, often a round-one formulation, and wrote a
-  catalog that `style gallery`, `bundle` and `wasm-parity` then refused. The default
-  (the suggested map) is now written with no values.
-- A catalog row showing a named-mode baseline keep passed `style_catalog.check` and then
-  raised `KeyError` in `style bundle` and `wasm-parity`; the check now refuses it.
-- The engine accepted a layer palette's `lambda`, `scale: absolute`, `knee` and `period`
-  and then misread them (a lambda measured the compressed field and placed the raw one;
-  absolute clamped every smooth count to the map's end). `Style::validate` refuses them;
-  `STACK.md` says so. No shipped style used one.
-- **The WebAssembly module turned knobs before laying the record's projection**, so on
-  the page `arch-tunnel`'s `turns` knob did nothing at a keep whose record carries
-  `turns`, and once the CLI was fixed the page and native drew different pictures.
-  `style-wasm`'s `Session::open` now lays the record first, as `styles.spec_of`; the fold
-  is decided on the stack as turned on both sides. `wasm-parity` built its native knob
-  reference in the old order (so it could not see this) and ran knobs only at each
-  mode's first keep; it now turns them as `style render --knob` does, also at every
-  shown keep whose record carries a projection. `engine/README.md` gives the new order
-  and the bundle's `palettes`.
-- `wasm-parity` printed "None pixels differ, by at most None" on a size mismatch; it
-  names the sizes.
-- `style tones` raised a traceback on an unreadable reference, and read a 16-bit grey
-  PNG as white.
-- `style picker` gave a picture offered under two keys two JPEGs, so `style keep`
-  recorded and copied it twice; it is now one image, one keep picked twice. A key with
-  `/` (two keys then saved to one file) and a baseline `render` lacking a member (a
-  traceback at keep time, after the picking) are refused when the picker is built.
-- `style scout --points`: a line that is not an object raised `TypeError`; a hand
-  point's name was used as the probe's file path (`a/b` left folders, `../x` wrote
-  beside `--out`); an empty draw truncated an earlier manifest at `--out`.
-- `style render --manifest` silently replaced a picture drawn by another stack at the
-  same seat and map (README step 6's formulations row, drawn into one folder); it now
-  prints `REPLACED`, and the README says one folder per stack.
-- `style sweep --gallery` (added for the hunt's long runs) draws every style at seeded
-  gallery seats instead of its keeps.
-- `STACK.md` now says that every `inside` channel in a stack shares one loop at the
-  largest `iterations`, and that a `light` at `rings` 0 ignores `bands` and `period`.
-
-- **`lit_petals`' public knob `petal_depth` was dead** (published `soft-petals`): it
-  wrote `/layers/1/light/period`, but that light has `rings` 0, where the normal is the
-  slope alone, so both ends drew byte-identical pictures (the sweep's `dead_knob`).
-  Dropped from the style file's `public` and the catalog row (Matt's ruling, option a);
-  the README lesson on a light's period no longer cites `lit_petals`, and
-  `tests/test_styles.py` holds every knob to moving something. The website's
-  custom-modes bundle needs a rebake to lose the slider.
-- `renders.jsonl` was rewritten in place after every picture, so a run killed mid-write
-  left every picture in the folder unrecorded; it is now written beside and swapped in.
-- `style sweep --tones` holds each seat and palette entry to its reference's band at a
-  checked width; a backgrounded sweep's progress lines now flush.
-- Docs against the code: `STACK.md` claimed `glow_filaments` offers `log_density` 30 as a
-  variant (never kept), that `center [0.5, 0.5]` at spacing 1 keeps `0` off the discs
-  (only under radius 0.7; the default is 1), and listed six blends for every layer (a
-  `light` takes `normal` only). The README's relief lesson cited `cauliflower_scales` for
-  rings 0 (its scales need rings 0.8), called the lace-and-holes styles one stack in five
-  maps (`bead_strands` has two layers more), and said a map joins a set only through a
-  kept tile (`palettes add --mode` puts one in for a round). All corrected.
-- Style notes against their own stacks, corrected in prose only (no stack, knob or name
-  touched): `leaf_veins` (de palette not inverted; a rings-0 light domes nothing),
-  `flame_veil_blue` (sheet fill 0.22), `flame_wisp_spark` (one view, not three), four
-  lace styles' `inside` reuse and shared notes, `bead_strands` (periwinkle highlight),
-  `flame_wisp_waves` (one literal rose, no orange), `bronze_packing` (five height glows),
-  `seahorse_halo` (the fringe lands on blue at 1.5 cycles), `shaded_blades` (crescent
-  reads; one darkened edge), `glow_filaments` (`log_density` tried, not kept).
-
-- `palettes add --mode <merged name>` refused with "no mode"; it now names the mode to
-  pass. A discarded mode is refused a palette round.
-- `style sheet` cut a long `<folder>/<name>` label at a narrow tile's edge, losing the
-  name's end; it elides the middle.
-- A typo in `catalog.json`, which the README sends a person into by hand, raised a JSON
-  traceback from `style gallery`, `bundle`, `wasm-parity`, `style palettes`,
-  `palettes add --mode`, `style keep` and every lookup of an old merged name. Each now
-  refuses with the parse error. `palettes remove` read it only after deleting the map's
-  file and rows, breaking its own "every refusal before the first write"; it reads first.
-- The catalog check passed a score of `4.0`, which then crashed `style gallery`'s stars,
-  and a wrong-case colormap (a Windows path test), which `entry_for` then never matched.
-  Scores are whole numbers 1 to 5 and maps are matched by exact name.
-- `--sync` on a new row with no tile kept in the suggested map left a tuned map heading
-  the set; the suggested map is put first, unkept, the stack's own.
-- The gallery page's Copy choices exported marks for modes no longer on the page (the
-  saved-state key hashes only statuses); it drops them. `style gallery --out` on another
-  drive raised on a relative link; such links are `file://` URLs.
-
-- A knob's write was rounded wherever the file spelled the member as an integer (`1`),
-  natively but not in the module, so a draft's opacity knob was an on/off switch on the
-  CLI and a slider on the page; both now round by the same named members.
-- `style render` read `--location`/`--manifest` through the output resolver (an
-  archived input was refused as if being written) and a missing manifest raised; a
-  draft's malformed knob, a truncated renders sidecar line, a choices file without rows
-  and a picker plan that is not an object each raised. All refuse in one line.
-- **Two `stripe` densities on one escape loop collapsed to the first** (the loop's
-  `Wants` kept one density). Fixed in item 050 by Matt's ruling: one running sum per
-  density (`Wants::more_stripes`, up to four a loop; validation refuses a fifth).
-  `lace_holes` and `flame_wisp_amber` now draw what their stacks say and their keeps
-  were redrawn; `soft_veils`, the other four `flame_wisp_*` and `ember_plume` had each
-  collapsed layer's density rewritten to the one it drew, pixel-identical (his answer:
-  their kept look stays).
+## The style system
 
 ### Deferred to Matt
 
@@ -184,12 +62,11 @@ re-reports a line on it. The checker that found most of the style ones is
   carries a seat's `turns`/`twist` in its stack and a new palette entry read off it gets
   `{}`. Recommend logging the pre-projection stack, with the bundle and parity paths
   projecting a keep's stack over its location.
-
 - **`style tones` drops an RGBA picture's alpha**, measuring transparent areas as their
   hidden colour. Style references are finished pictures; recommend leaving it.
-- **The website must rebake its module** for the knob-order fix to reach the page
+- **The website must rebake its module** for the knob-order fix (`style-wasm` lays the
+  record's projection before turning knobs, as `styles.spec_of`) to reach the page
   (`style-wasm` is built here, served there): the website's item.
-
 - **The tone pass does not re-aim at supersample 1**: a lift that pushes a saturated
   channel past 1 clips, so the picture lands short of its median target, and the
   measure-and-re-aim loop runs only above ss1. Drafts and full renders are ss2, so it

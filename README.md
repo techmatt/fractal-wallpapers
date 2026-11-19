@@ -63,7 +63,7 @@ explorer view renders here at full size.
   for `fractal-wallpapers style render`)
 - `models/`: each judge's tracked metadata; weights are fetched beside it
 - `tests/`, and `examples/` (the four pictures above)
-- `docs/qa-findings.md`: what bug hunts found, and what became of each
+- `docs/qa-findings.md`: what bug hunts found and left open (deferred or won't fix)
 
 Every stage directory has a README.
 

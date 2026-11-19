@@ -38,7 +38,7 @@
         ]
       },
       "what": "Discs packed inside discs along the fractal, with metallic rims, nested beads and gold star-flowers blooming from inside the set.",
-      "kept": "5 locations, 4 palettes, 2 variants",
+      "kept": "5 locations, 4 palettes, 2 variants; greenhorn: 2 tiles (053)",
       "note": "Engine: bubble channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the hero-circle seat and the two with star-flowers closest to the reference. · Matt: higher quality than most, though there is no strict tangent Kleinian hierarchy.",
       "palettes": [
         {
@@ -55,7 +55,8 @@
             "style_bronze_packing_r1/variants/domes",
             "style_bronze_packing_rekeep/rekeep/rekeep_0_00_julia-multibrot6_9cf619af",
             "style_bronze_packing_rekeep/rekeep/rekeep_1_02_julia-multibrot3_b4307aa3",
-            "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60"
+            "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
+            "style_geometric_sheets_r1/bronze_packing/greenhorn/baseline_bronze__00_02_julia-multibrot3_b4307aa3_bronze_packing"
           ],
           "score": 4
         },
@@ -106,8 +107,12 @@
             "/layers/8/opacity": 0.15,
             "/layers/9/opacity": 0.15
           },
-          "keeps": [],
-          "reference": "greenhorn-25.jpg"
+          "keeps": [
+            "style_geometric_sheets_r1/bronze_packing/greenhorn/greenhorn__00_02_julia-multibrot3_b4307aa3_greenhorn",
+            "style_geometric_sheets_r1/bronze_packing/greenhorn/greenhorn_beads__00_02_julia-multibrot3_b4307aa3_greenhorn"
+          ],
+          "reference": "greenhorn-25.jpg",
+          "score": 3
         }
       ]
     },
@@ -974,23 +979,6 @@
             "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue"
           ],
           "score": 2
-        },
-        {
-          "colormap": "ice_grotto",
-          "values": {
-            "/tone/median": 0.416,
-            "/tone/p10": 0.173,
-            "/layers/2/color": {
-              "palette": 1.0
-            },
-            "/layers/2/blend": "normal",
-            "/layers/6/color": {
-              "palette": 0.94
-            },
-            "/layers/2/opacity": 0.9
-          },
-          "keeps": [],
-          "reference": "ice-grotto-25.jpg"
         }
       ]
     },
@@ -1118,20 +1106,10 @@
           "keeps": [
             "style_flame_veil_chalk_r1/formulations/f_blades_only__01_vj_d3_r1.08_t0.124_whole_flame_veil_chalk",
             "style_flame_veil_chalk_r1/locations/locations__00_vj_d2_r1.08_t0.131_whole_flame_veil_chalk",
-            "style_flame_veil_chalk_r1/locations/locations__04_vj_d2_r1.0_t0.767_whole_flame_veil_chalk"
+            "style_flame_veil_chalk_r1/locations/locations__04_vj_d2_r1.0_t0.767_whole_flame_veil_chalk",
+            "style_geometric_sheets_r1/flame_veil_chalk/ivory_lace/baseline_chalk__00_vj_d3_r1.08_t0.124_whole_flame_veil_chalk"
           ],
           "score": 2
-        },
-        {
-          "colormap": "ivory_lace",
-          "values": {
-            "/tone/median": 0.839,
-            "/tone/p10": 0.577,
-            "/layers/10/opacity": 0.55,
-            "/layers/11/opacity": 0.5
-          },
-          "keeps": [],
-          "reference": "ivory-and-lace-25.jpg"
         }
       ]
     },
@@ -1448,7 +1426,7 @@
         ]
       },
       "what": "Molten fire flowing in broad lit folds: a glossy relief in crimson, orange and gold, crossed by translucent folds, with flame lace along the edge of the set.",
-      "kept": "2 locations",
+      "kept": "2 locations; interstellar_webs: 1 tile (054)",
       "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass.",
       "palettes": [
         {
@@ -1456,7 +1434,8 @@
           "values": {},
           "keeps": [
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
-            "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow"
+            "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
+            "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow"
           ],
           "score": 4
         },
@@ -1489,8 +1468,11 @@
               "palette": 0.9
             }
           },
-          "keeps": [],
-          "reference": "interstellar-25.jpg"
+          "keeps": [
+            "style_organic_relief_r1/molten_flow/interstellar_webs/interstellar_webs__01_julia-multibrot3_f1cad9d4_interstellar_webs"
+          ],
+          "reference": "interstellar-25.jpg",
+          "score": 3
         }
       ]
     },
@@ -1564,7 +1546,7 @@
     },
     {
       "style": "cauliflower_scales",
-      "score": 2,
+      "score": 3,
       "status": "publish",
       "tier": "lab",
       "item": "033",
@@ -1576,30 +1558,8 @@
       "variant": "current",
       "show": [
         {
-          "location": {
-            "schema": 1,
-            "name": "multibrot4_2210d3d1",
-            "family": {
-              "kind": "multibrot",
-              "degree": 4
-            },
-            "viewport": {
-              "center_re": "0.31869821889647776",
-              "center_im": "0.7500258281221991",
-              "width": "0.000001192820594349849"
-            },
-            "maxiter": 29514,
-            "note": "final139_general seat 362 (tia, multibrot4)",
-            "gallery": {
-              "record": "final139_general",
-              "seat": 362,
-              "key": "2210d3d1453f93f9",
-              "p_spiral": 0.027748
-            }
-          },
-          "colormap": "cauliflower_scales",
-          "picture": "artifacts/pickers/style_liquid_surfaces_r1/cauliflower_scales/locations/cauliflower_scales__loc__00_multibrot4_2210d3d1_cauliflower_scales.jpg",
-          "caption": "Lit scales packed along the edge of a quartic Multibrot set"
+          "keep": "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales",
+          "caption": "Dark red and bone-grey lit scales curling through a phoenix spiral on black, small domed cells packed into the broad folds"
         }
       ],
       "public": {
@@ -1608,13 +1568,15 @@
         "knobs": []
       },
       "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
-      "kept": "nothing",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale.",
+      "kept": "horror_scales: 1 location; the default map: 1 baseline tile (054)",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice.",
       "palettes": [
         {
           "colormap": "cauliflower_scales",
           "values": {},
-          "keeps": [],
+          "keeps": [
+            "style_organic_relief_r1/cauliflower_scales/horror_scales/baseline_cauli__01_phoenix-classic_9a93355d_cauliflower_scales"
+          ],
           "score": 2
         },
         {
@@ -1640,8 +1602,11 @@
             },
             "/layers/4/opacity": 0.45
           },
-          "keeps": [],
-          "reference": "horror-25.jpg"
+          "keeps": [
+            "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales"
+          ],
+          "reference": "horror-25.jpg",
+          "score": 3
         }
       ]
     },
@@ -2644,6 +2609,163 @@
             "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales"
           ],
           "score": 2
+        }
+      ]
+    },
+    {
+      "style": "sliced_strips",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
+      "item": "053",
+      "reference": "linear-dimensions-25.jpg",
+      "references": [
+        "linear-dimensions-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_geometric_sheets_r1/sliced_strips/locations/loc__07_phoenix_6046d762_sliced_strips",
+          "caption": "A copper phoenix lace cut by straight slices, each shifting a mirrored copy of the set over lit blue satin"
+        },
+        {
+          "keep": "style_geometric_sheets_r1/sliced_strips/locations/loc__02_phoenix_62efdf3b_sliced_strips",
+          "caption": "Blue and copper lace sprinkled over dark folds, a broad slice carrying a shifted copy across the middle"
+        }
+      ],
+      "public": {
+        "name": "sliced-mirrors",
+        "palette": "sliced_strips",
+        "knobs": []
+      },
+      "what": "Straight hard-edged slices across the set, each holding a mirrored, shifted copy of its lace in blue and copper over lit satin folds.",
+      "kept": "2 locations, 3 formulations (default, bold, blue)",
+      "note": "Engine: nothing new (the strip trap's coarse entries as a mask over a viewed field) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5.",
+      "palettes": [
+        {
+          "colormap": "sliced_strips",
+          "values": {},
+          "keeps": [
+            "style_geometric_sheets_r1/sliced_strips/formulations/f_blue__01_phoenix_2d843082_sliced_strips",
+            "style_geometric_sheets_r1/sliced_strips/formulations/f_bold__00_phoenix_807fd2ea_sliced_strips",
+            "style_geometric_sheets_r1/sliced_strips/formulations/f_default__00_phoenix_807fd2ea_sliced_strips",
+            "style_geometric_sheets_r1/sliced_strips/locations/loc__02_phoenix_62efdf3b_sliced_strips",
+            "style_geometric_sheets_r1/sliced_strips/locations/loc__07_phoenix_6046d762_sliced_strips"
+          ],
+          "score": 3
+        }
+      ]
+    },
+    {
+      "style": "cut_tiles",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
+      "item": "053",
+      "reference": "lethe-25.jpg",
+      "references": [
+        "lethe-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_geometric_sheets_r1/cut_tiles/locations/loc__00_julia-mandelbrot_9178ac7c_cut_tiles",
+          "caption": "Hard-cut violet, peach and blue tiles ringing a dark spiral centre, each tile etched with the set's lace"
+        }
+      ],
+      "public": {
+        "name": "cut-tiles",
+        "palette": "cut_tiles",
+        "knobs": []
+      },
+      "what": "Flat hard-cut tiles in violet, peach and blue round small spirals, white gaps holding the set's grey lace, over a brick-patterned escape band.",
+      "kept": "1 location",
+      "note": "Engine: nothing new (the strip trap's step through the map, laid normal) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5.",
+      "palettes": [
+        {
+          "colormap": "cut_tiles",
+          "values": {},
+          "keeps": [
+            "style_geometric_sheets_r1/cut_tiles/locations/loc__00_julia-mandelbrot_9178ac7c_cut_tiles"
+          ],
+          "score": 3
+        }
+      ]
+    },
+    {
+      "style": "scaled_folds",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
+      "item": "054",
+      "reference": "horror-25.jpg",
+      "references": [
+        "horror-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_organic_relief_r1/scaled_folds/formulations/f_nocells__01_phoenix-classic_9a93355d_horror_scales",
+          "caption": "Bone-grey and dark red folds sweeping through a phoenix spiral's lace on black, fine red veins along the set"
+        }
+      ],
+      "public": {
+        "name": "scaled-folds",
+        "palette": "horror_scales",
+        "knobs": []
+      },
+      "what": "Lit scaly folds in dark red and grey-green on black, crossed by translucent viewed folds kept off the lace, fine red veins along the set.",
+      "kept": "1 formulation (without the cells)",
+      "note": "Engine: nothing new (three views masked by de over cauliflower_scales' lit bands) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the palettes and some of the effect properties are nice.",
+      "palettes": [
+        {
+          "colormap": "horror_scales",
+          "values": {},
+          "keeps": [
+            "style_organic_relief_r1/scaled_folds/formulations/f_nocells__01_phoenix-classic_9a93355d_horror_scales"
+          ],
+          "score": 3
+        }
+      ]
+    },
+    {
+      "style": "copper_webs",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
+      "item": "054",
+      "reference": "interstellar-25.jpg",
+      "references": [
+        "interstellar-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_organic_relief_r1/copper_webs/locations/loc__12_phoenix_71e305f0_interstellar_webs",
+          "caption": "Copper lace arching in spirals over deep blue hollows, sparkle dust gathered along the set"
+        },
+        {
+          "keep": "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs",
+          "caption": "A copper web of star-shaped lace folding over a blue starfield"
+        }
+      ],
+      "public": {
+        "name": "copper-webs",
+        "palette": "interstellar_webs",
+        "knobs": []
+      },
+      "what": "Orange-copper webs folding over blue hollows: glossy relief and translucent folds in copper, a blue far field, sparkle dust along the set.",
+      "kept": "2 locations",
+      "note": "Engine: nothing new (molten_flow's relief plus a bubble lattice masked to the set) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the palettes and some of the effect properties are nice.",
+      "palettes": [
+        {
+          "colormap": "interstellar_webs",
+          "values": {},
+          "keeps": [
+            "style_organic_relief_r1/copper_webs/locations/loc__12_phoenix_71e305f0_interstellar_webs",
+            "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs"
+          ],
+          "score": 3
         }
       ]
     }
