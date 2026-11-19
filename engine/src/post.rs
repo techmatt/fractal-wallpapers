@@ -31,6 +31,7 @@
 //! inlay      each facet's own children, and theirs, drawn into it as faint lighter
 //!            and darker cells: nested detail where the tiling itself is calm
 //! seam       a thin line along every facet's rim
+//! opacity    how much of the mosaic is laid over the picture it was made from
 //! ```
 
 use rayon::prelude::*;
@@ -172,6 +173,9 @@ pub struct Mosaic {
     /// Where the light on `relief` and `fold` comes from, degrees anticlockwise.
     pub azimuth: f64,
     pub elevation: f64,
+    /// How much of the mosaic is laid over the picture beneath, in `[0, 1]`: under 1 the
+    /// facets are translucent plates and the stack's own detail shows through them.
+    pub opacity: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inlay: Option<Inlay>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -195,6 +199,7 @@ impl Default for Mosaic {
             fold: 0.0,
             azimuth: 135.0,
             elevation: 45.0,
+            opacity: 1.0,
             inlay: None,
             seam: None,
         }
@@ -241,6 +246,9 @@ impl Mosaic {
         }
         if self.reach < 0.0 || self.detail < 0.0 || self.relief < 0.0 || self.fold < 0.0 {
             return Err("mosaic: reach, detail, relief and fold are not negative".into());
+        }
+        if !(0.0..=1.0).contains(&self.opacity) {
+            return Err("mosaic: opacity is in [0, 1]".into());
         }
         if !(self.elevation > 0.0 && self.elevation <= 90.0) {
             return Err("mosaic: elevation is in (0, 90] degrees".into());
@@ -1009,6 +1017,12 @@ pub fn mosaic(
                     }
                 }
             }
+            if mosaic.opacity < 1.0 {
+                let under = frame.linear[i];
+                for k in 0..3 {
+                    rgb[k] = under[k] + (rgb[k] - under[k]) * mosaic.opacity;
+                }
+            }
             rgb
         })
         .collect();
@@ -1191,6 +1205,32 @@ mod tests {
     }
 
     #[test]
+    fn an_opacity_lays_the_mosaic_over_the_picture_it_was_made_from() {
+        let whole = painted(&Mosaic::default(), 200, 125);
+        let half = painted(
+            &Mosaic {
+                opacity: 0.5,
+                ..Mosaic::default()
+            },
+            200,
+            125,
+        );
+        let none = painted(
+            &Mosaic {
+                opacity: 0.0,
+                ..Mosaic::default()
+            },
+            200,
+            125,
+        );
+        for ((whole, half), under) in whole.iter().zip(&half).zip(&none) {
+            assert!((half[0] - 0.5 * (whole[0] + under[0])).abs() < 1e-12);
+        }
+        // At none of it the frame is the picture: the ramp across.
+        assert!((none[10][0] - (point_of(10, 0, 200, 125)[0] + 0.5)).abs() < 1e-12);
+    }
+
+    #[test]
     fn a_tall_frame_pays_only_for_the_roots_it_touches() {
         // The lattice is a parallelogram round the frame; on a 9:16 frame most of its
         // triangles are off it, and a deep mosaic must still fit the cell budget.
@@ -1256,6 +1296,8 @@ mod tests {
             r#"{"kind": "mosaic", "smallest": 0.5}"#,
             r#"{"kind": "mosaic", "largest": 0.001, "smallest": 0.001}"#,
             r#"{"kind": "mosaic", "smallest": 1e-9}"#,
+            r#"{"kind": "mosaic", "opacity": 1.5}"#,
+            r#"{"kind": "mosaic", "inlay": {"levels": 7, "amount": 0.1}}"#,
             r#"{"kind": "mosaic", "spiral": {"center": [1e300, 0.5]}}"#,
         ] {
             let pass: Pass = serde_json::from_str(refused).unwrap();

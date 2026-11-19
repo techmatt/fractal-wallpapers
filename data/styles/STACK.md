@@ -193,6 +193,9 @@ cell a facet of the picture under it.
 | `inlay` | `{levels, amount}`: the cells the facet would split into, `levels` deep (at most 6, never under `smallest`), each lightened or darkened by up to `amount` of its colour: nested detail inside a calm facet, without splitting it |
 | `seam` | `{width, color, opacity}`: a line along every facet's rim, `width` in frame widths and never over 0.08 of the facet's edge |
 
+`opacity` (in [0, 1]) lays that much of the mosaic over the picture it was made from:
+under 1 the facets are translucent plates and the stack's own detail shows through.
+
 A pass costs no escape loop: it reads the lanes the frame already has, plus one `de`
 lane. It holds about 150 bytes a cell, and refuses a tiling of over six million cells.
 
@@ -204,7 +207,7 @@ the stack refuses unknown members):
 | where | defaults |
 | --- | --- |
 | stack | `interior` black; `tone` and `projection` absent; `post` empty |
-| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `tilt` 0, `fill` `flat`, `turn` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45; `spiral`, `height`, `inlay`, `seam` absent |
+| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `tilt` 0, `fill` `flat`, `turn` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
 | `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
 | `log_polar` | `center` [0.5, 0.5], `turns` 1, `power` = `turns`, `twist` 0, `angle` 0, `ring` 1 |
 | channel | `transform` `linear`, `invert` false |

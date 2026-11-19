@@ -126,7 +126,15 @@ def test_the_module_draws_the_native_picture_with_its_knobs_turned(tmp_path):
 
 #: A post stage on a plain stack: the mosaic on each lattice, every shading member set.
 POST_STACKS = {
-    "triangles": {"largest": 0.25, "smallest": 0.01, "levels": 6, "fold": 0.3, "relief": 6.0},
+    "triangles": {
+        "largest": 0.25,
+        "smallest": 0.01,
+        "levels": 6,
+        "fold": 0.3,
+        "relief": 6.0,
+        "inlay": {"levels": 2, "amount": 0.08},
+        "opacity": 0.7,
+    },
     "spiral": {
         "spiral": {"arms": 9, "twist": 0.5},
         "smallest": 0.02,
