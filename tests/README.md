@@ -54,6 +54,9 @@ What it rests on:
 - **A guard that reads the wall clock turns red under load, not slow.** Declare loops
   too long to bind (`loop_seconds=1e6`) and count work in batches, not minutes
   (`time.monotonic` on Windows ticks at 15.625 ms).
+- **A lane run inside a chained script writes its whole output to a file** (`-rf`, to
+  `out/<item>/`), never only a `tail`: a red that passes on the re-run is then a named
+  test, not an unnamed warning (item 057 lost one that way, beside an identity run).
 - **Commit charge drifts upward on uptime alone**, ~4 GiB a day, reclaimed only by a
   reboot; the symptom is a launch dying on `WinError 1455`. Reboot before an overnight if
   uptime is past a week.

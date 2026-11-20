@@ -98,7 +98,9 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
                 slowest = max(drawn, key=lambda row: row["draw"])
                 print(f"slowest: {slowest['id']} at {slowest['draw']:.2f} s")
             return 0 if len(drawn) == len(rows) else 1
-        rows = style_wasm.parity(folder, tuple(args.resolution), args.supersample)
+        rows = style_wasm.parity(
+            folder, tuple(args.resolution), args.supersample, names=args.names or None
+        )
     except style_wasm.StyleWasmError as refusal:
         print(refusal)
         return 1
@@ -801,6 +803,12 @@ def add_commands(subcommands) -> None:
         "wasm-parity",
         help="draw every keep the catalog shows for a published mode natively and as "
         "WebAssembly under Node, and compare the bytes",
+    )
+    parity.add_argument(
+        "names",
+        nargs="*",
+        help="only these styles (default: every published mode, and every unpublished "
+        "style with a post stage or a stir); the whole run is over an hour",
     )
     parity.add_argument(
         "--resolution",

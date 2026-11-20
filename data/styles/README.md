@@ -5,14 +5,14 @@ file per style, rendered with any colormap.
 fractal-wallpapers style list | show <name> | knobs <mode> | palettes <mode>
 fractal-wallpapers style render <name|draft.json> --location <record.json> [--colormap <map>] [--knob K=V]
 fractal-wallpapers style render <name> --manifest <records.jsonl> --out-dir <dir> [--draft]
-fractal-wallpapers style sheet <sheet.png> <folder|picture|list.txt…>   # a labelled contact sheet
+fractal-wallpapers style sheet <sheet.png> <folder|picture|list.txt…>   # a contact sheet (--tile-width 320 to read forty at once)
 fractal-wallpapers style scout --out <scout.jsonl> [filters]             # seats (step 4)
 fractal-wallpapers style tones <name> <pictures…> [--reference <entry|image>]  # tone check (step 5)
 fractal-wallpapers style picker <plan.json>                              # a picker (step 6)
 fractal-wallpapers style keep <name> <picker>.choices.json               # save a picker's keeps
 fractal-wallpapers style refs [--unused <triage>.choices.json]           # references named, or not yet
 fractal-wallpapers style gallery | bundle                                # custom-modes/; the page's modes
-fractal-wallpapers style wasm-parity | wasm-speed                        # WebAssembly vs native; frame time
+fractal-wallpapers style wasm-parity [names…] | wasm-speed               # WebAssembly vs native; frame time
 fractal-wallpapers style sweep --out <dir> [names…]                      # the checker (below)
 ```
 
@@ -148,7 +148,8 @@ The item that brings a picture says "new style from <image>". Background `style 
    its sizes fractions of the frame, drawn whole and the same by `style-wasm` (`style
    wasm-parity` holds it). A post-processed mode goes to the explorer too, never
    wallpaper-only. When the engine changed, `fractal-wallpapers identity <tag> --against
-   <last tag>` must read 0 differ (about seven minutes), and the style path's checks run
+   <last tag>` (the newest file in `artifacts/identity/`) must read 0 differ (about seven
+   minutes; once, on the final binary), and the style path's checks run
    (CLAUDE.md).
 3. **Fit the palette with the lighting, not off the pixels**: the lights supply the
    near-whites, so a sampled map is too pale. Author the map as albedo

@@ -232,7 +232,8 @@ writes `values` over `stack` at their pointers (`style_palettes.apply`) before o
 session. A shown keep carries the stack it was drawn with. `style wasm-parity` and `style
 wasm-speed` hold the module to the native engine under Node (`style_wasm.py`). The whole
 `wasm-parity` is over an hour on one Node thread (a single keep can take eight minutes):
-give it a detached run of its own, and check a new unpublished stack alone with its job
+give it a detached run of its own, and check the styles an item touched alone with
+`style wasm-parity <name>…`. A draft not yet in `data/styles/` is checked with its job
 list (`style_wasm.request`, `run_node`, `native_rgb`, `compare`).
 
 ## What each family's picture is symmetric under

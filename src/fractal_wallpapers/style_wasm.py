@@ -9,7 +9,7 @@ holds the module to the native engine:
 
 ```
 fractal-wallpapers style bundle [--out <bundle.json>]
-fractal-wallpapers style wasm-parity [--resolution 640 400 --supersample 2]
+fractal-wallpapers style wasm-parity [names…] [--resolution 640 400 --supersample 2]
 fractal-wallpapers style wasm-speed
 ```
 
@@ -295,8 +295,13 @@ def parity(
     folder: Path,
     resolution: tuple[int, int] = PARITY_RESOLUTION,
     supersample: int = PARITY_SUPERSAMPLE,
+    names: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Every shown keep of every published mode, drawn natively and as WebAssembly.
+
+    `names` keeps the check to those styles (published, or unpublished with a post stage
+    or a stir): minutes for the one an item touched, where the whole run is over an hour.
+    A name with nothing to draw is refused rather than passed as a clean run.
 
     Three kinds of job: each shown keep's own record (its stack as drawn, its map), in
     one pass; the first keep of each mode again in tiles against its own measures, which
@@ -310,7 +315,19 @@ def parity(
     from fractal_wallpapers import style_catalog, styles
 
     jobs, natives = [], {}
-    for row in published_rows():
+    rows_drawn = published_rows()
+    unpublished = unpublished_post_or_stir_styles()
+    if names:
+        known = {row["style"] for row in rows_drawn} | set(unpublished)
+        unknown = sorted(set(names) - known)
+        if unknown:
+            raise StyleWasmError(
+                f"nothing to draw for {', '.join(unknown)}: the check covers published modes "
+                "and unpublished styles with a post stage or a stir"
+            )
+        rows_drawn = [row for row in rows_drawn if row["style"] in names]
+        unpublished = [name for name in unpublished if name in names]
+    for row in rows_drawn:
         document = styles.load(row["style"])
         for index, render in enumerate(style_catalog.shown_of(row)):
             stack = render["stack"]
@@ -354,7 +371,7 @@ def parity(
                     "draw": "frame",
                 }
             )
-    for name in unpublished_post_or_stir_styles():
+    for name in unpublished:
         document = styles.load(name)
         posted = has_post(document["style"])
         ident = f"{name}__post" if posted else f"{name}__stir"

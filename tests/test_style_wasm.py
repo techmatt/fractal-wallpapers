@@ -74,6 +74,12 @@ def test_the_module_s_integer_members_are_the_ones_the_style_files_write_as_inte
     assert set(styles.INTEGER_MEMBERS) == named
 
 
+def test_a_parity_run_of_a_name_with_nothing_to_draw_is_refused(tmp_path):
+    """A filtered run that drew nothing would read as a clean one."""
+    with pytest.raises(style_wasm.StyleWasmError, match="nothing to draw for no_such_style"):
+        style_wasm.parity(tmp_path, names=["no_such_style"])
+
+
 def test_the_bundle_command_writes_it(tmp_path):
     from fractal_wallpapers import cli
 
