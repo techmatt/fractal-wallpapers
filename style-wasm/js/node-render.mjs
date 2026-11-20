@@ -1,24 +1,23 @@
 // Draw a list of style requests under Node, for `fractal-wallpapers style wasm-parity` and `wasm-speed`:
 //
-//   node node-render.mjs <style_wasm.wasm> <jobs.json> <out dir>
+//   node node-render.mjs <style_wasm.wasm> <jobs.json> <out dir> [workers]
 //
 // `jobs.json` is `[{id, request, draw}]`, `draw` one of `frame` (one pass) or
 // `{measure: {width, height, supersample}, tile: [w, h]}` (measured, then tiled). Each
 // picture is written raw as `<out dir>/<id>.rgba`; `<out dir>/results.jsonl` gets one
-// line per job, with its seconds. One thread: the module has none of its own.
+// line per job, with its seconds, in the order the jobs finish. The module has no threads
+// of its own, so `workers` (default 1) worker threads each hold an instance and take the
+// next job off one shared counter: a job is always one thread's work, and its seconds
+// are comparable only when the workers leave it a core.
 
 import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
+import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
 
 import { load } from "./style-wasm.mjs";
 
-const [wasmPath, jobsPath, outDir] = process.argv.slice(2);
-const styles = await load(readFileSync(wasmPath));
-const jobs = JSON.parse(readFileSync(jobsPath, "utf8"));
-const results = join(outDir, "results.jsonl");
-
-for (const job of jobs) {
+function draw(styles, job, outDir) {
   const row = { id: job.id };
   let picture = null;
   try {
@@ -59,5 +58,38 @@ for (const job of jobs) {
       picture.close();
     }
   }
-  appendFileSync(results, JSON.stringify(row) + "\n");
+  return row;
+}
+
+if (isMainThread) {
+  const [wasmPath, jobsPath, outDir, workers] = process.argv.slice(2);
+  const count = JSON.parse(readFileSync(jobsPath, "utf8")).length;
+  const results = join(outDir, "results.jsonl");
+  // The next job's index, shared: each worker adds one and draws what it took.
+  const next = new SharedArrayBuffer(4);
+  const threads = Math.max(1, Math.min(Number(workers) || 1, count));
+  for (let i = 0; i < threads; i++) {
+    const worker = new Worker(new URL(import.meta.url), {
+      workerData: { wasmPath, jobsPath, outDir, next },
+    });
+    worker.on("message", (row) => appendFileSync(results, JSON.stringify(row) + "\n"));
+    // A worker lost (the module would not load, a crash outside a job's own catch):
+    // stop at once, since the caller discards a failed run's rows anyway.
+    worker.on("error", (error) => {
+      console.error(error);
+      process.exit(1);
+    });
+  }
+} else {
+  const { wasmPath, jobsPath, outDir, next } = workerData;
+  const styles = await load(readFileSync(wasmPath));
+  const jobs = JSON.parse(readFileSync(jobsPath, "utf8"));
+  const counter = new Int32Array(next);
+  for (;;) {
+    const index = Atomics.add(counter, 0, 1);
+    if (index >= jobs.length) {
+      break;
+    }
+    parentPort.postMessage(draw(styles, jobs[index], outDir));
+  }
 }

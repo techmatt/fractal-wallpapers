@@ -4,18 +4,14 @@ A Rust engine renders escape-time fractals; Python chooses where to look, how to
 it, and which finished images survive, with small neural judges trained on human labels.
 It is the companion repo to a tutorial article, so it is written to be read. `README.md`
 is for visitors; this file is the rules an executor here is held to. Each locked
-convention is Matt's ruling, and changing one is his call.
+convention is Matt's ruling, and changing one is his call. **`docs/rulings.md` holds his
+standing rulings (styles, palettes, checks, the website): read it beside this file.**
 
 ## The naming rule
 
 **Nothing ships under a name the article wouldn't teach.** Names say what a thing
 *does* (`coloring/`, `discovery/`, `curation/`, `labeling/`); a name that needs a
 paragraph of history is the wrong name.
-
-**No wording or prose check gates this repo** (Matt's ruling: the prose passes are done).
-Checks hold structure and data (formats, references, tiers, knob ranges, citations that
-resolve), never vocabulary or style; an item does not run a prose pass unless its prompt
-asks for one.
 
 **Comments and docstrings illustrate a shape, never a live instance.** Write
 `<head>.<sheet>.json`, not a real drop's name, or a grep for the live name answers out of
@@ -163,6 +159,11 @@ cargo test --release --manifest-path style-wasm/Cargo.toml
 cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm/Cargo.toml
 ```
 
+Then the parity run it owes, once, after the last code change: **`fractal-wallpapers style
+wasm-parity`** whole after an engine or module change (about 25 minutes on five Node
+threads), **`style wasm-parity <name>`** after a change to one style (a couple of minutes).
+An engine change also owes `identity` (`data/styles/README.md` step 2).
+
 Run pytest with the checkout's own `.venv` interpreter: a gallery guard spawns
 `sys.executable`, and another interpreter fails it like a process-control bug. The walk
 tests need a **release** engine and skip without one; a guard asking whether the engine
@@ -171,8 +172,7 @@ at collection.
 
 **`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
 (`perturbation/README.md`'s *Running it*), the website's own item, and runs the two
-commands of `.github/workflows/ci.yml`'s *Check the kernel for wasm32* step. Website
-items never commit here. The website also parses the root `README.md`'s explorer links
+commands of `.github/workflows/ci.yml`'s *Check the kernel for wasm32* step. The website also parses the root `README.md`'s explorer links
 and cites `perturbation/README.md`'s numbered headings.
 
 **CI** runs `pytest --slow` on three OSes with torch and no weights or store; a test

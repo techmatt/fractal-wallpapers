@@ -1,0 +1,853 @@
+{
+  "schema": 1,
+  "name": "tri_mosaic",
+  "reference": {
+    "image": "wallhaven_wallhaven-47k2py.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a recursive triangle tiling in navy, rust and cream, unsigned, 3200x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/tri_mosaic",
+  "keeps": [
+    {
+      "id": "style_tri_mosaic_r1/formulations_a/fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "formulations_a",
+          "key": "fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice"
+        }
+      ],
+      "label": "entry: 4xy8el's blues (tri_mosaic_ice)",
+      "image": "style_tri_mosaic_r1__fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@a73225d5",
+        "colormap": "tri_mosaic_ice",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/formulations_a/fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "formulations_a",
+          "key": "fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic"
+        }
+      ],
+      "label": "47k2py's reading: flat facets, seams, nested inlay",
+      "image": "style_tri_mosaic_r1__fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@f4daa050",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/formulations_b/fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "formulations_b",
+          "key": "fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice"
+        }
+      ],
+      "label": "entry: 4xy8el's blues (tri_mosaic_ice)",
+      "image": "style_tri_mosaic_r1__fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_70e1da1e",
+          "family": {
+            "c": [
+              "0.5174789235125195",
+              "0.06779386100974504"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.32487959336108535",
+            "center_im": "-0.6479521593080348",
+            "width": "0.09055584277276531"
+          },
+          "maxiter": 10060,
+          "note": "final139_general seat 841 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 841,
+            "key": "70e1da1e57faff23",
+            "p_spiral": 0.030679
+          },
+          "ink": 0.07784
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@a73225d5",
+        "colormap": "tri_mosaic_ice",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/formulations_b/fo_f_fine__01_julia-multibrot3_70e1da1e_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "formulations_b",
+          "key": "fo_f_fine__01_julia-multibrot3_70e1da1e_tri_mosaic"
+        }
+      ],
+      "label": "finer weave: largest 0.25, reach 1",
+      "image": "style_tri_mosaic_r1__fo_f_fine__01_julia-multibrot3_70e1da1e_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_70e1da1e",
+          "family": {
+            "c": [
+              "0.5174789235125195",
+              "0.06779386100974504"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.32487959336108535",
+            "center_im": "-0.6479521593080348",
+            "width": "0.09055584277276531"
+          },
+          "maxiter": 10060,
+          "note": "final139_general seat 841 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 841,
+            "key": "70e1da1e57faff23",
+            "p_spiral": 0.030679
+          },
+          "ink": 0.07784
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@72242c54",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/formulations_b/fo_f_fold__01_julia-multibrot3_70e1da1e_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "formulations_b",
+          "key": "fo_f_fold__01_julia-multibrot3_70e1da1e_tri_mosaic"
+        }
+      ],
+      "label": "fold only: three lit faces, no seams",
+      "image": "style_tri_mosaic_r1__fo_f_fold__01_julia-multibrot3_70e1da1e_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_70e1da1e",
+          "family": {
+            "c": [
+              "0.5174789235125195",
+              "0.06779386100974504"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.32487959336108535",
+            "center_im": "-0.6479521593080348",
+            "width": "0.09055584277276531"
+          },
+          "maxiter": 10060,
+          "note": "final139_general seat 841 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 841,
+            "key": "70e1da1e57faff23",
+            "p_spiral": 0.030679
+          },
+          "ink": 0.07784
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@91cfd0b1",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/locations/loc__10_julia-multibrot3_2e04e5e2_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "locations",
+          "key": "loc__10_julia-multibrot3_2e04e5e2_tri_mosaic"
+        }
+      ],
+      "label": "",
+      "image": "style_tri_mosaic_r1__loc__10_julia-multibrot3_2e04e5e2_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_2e04e5e2",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.13379412906834562",
+            "center_im": "0.01066720222081552",
+            "width": "0.08255897112532501"
+          },
+          "maxiter": 10220,
+          "note": "final139_general seat 923 (direct_trap_multiply, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 923,
+            "key": "2e04e5e21e6b5512",
+            "p_spiral": 0.002261
+          },
+          "ink": 0.09676
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@3fee538d",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/spiral/sp_f_base__01_julia-multibrot5_3bb3fae3_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "spiral",
+          "key": "sp_f_base__01_julia-multibrot5_3bb3fae3_tri_mosaic"
+        }
+      ],
+      "label": "baseline: the unprocessed base picture",
+      "image": "style_tri_mosaic_r1__sp_f_base__01_julia-multibrot5_3bb3fae3_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_3bb3fae3",
+          "family": {
+            "c": [
+              "0.703985679038223",
+              "0.35993230187315167"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.22256024003389552",
+            "center_im": "-0.6386832162842102",
+            "width": "0.16047468532253215"
+          },
+          "maxiter": 9069,
+          "note": "final139_general seat 129 (tia, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 129,
+            "key": "3bb3fae39c219ce8",
+            "p_spiral": 0.356225
+          }
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@2ef2586e",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "spiral",
+          "key": "sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic"
+        }
+      ],
+      "label": "seven turned quads a ring, no split",
+      "image": "style_tri_mosaic_r1__sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_35b23c31",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-1.2583366697573282",
+              "-0.03810995140056672"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.33378538253283807",
+            "center_im": "-0.10001632773189907",
+            "width": "0.009564736536387666"
+          },
+          "maxiter": 3029,
+          "note": "final139_general seat 463 (threads, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 463,
+            "key": "35b23c31a85b40f0",
+            "p_spiral": 0.894374
+          }
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@e2ca8ccc",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/spiral/sp_f_spiral__01_julia-multibrot5_3bb3fae3_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "spiral",
+          "key": "sp_f_spiral__01_julia-multibrot5_3bb3fae3_tri_mosaic"
+        }
+      ],
+      "label": "seven turned quads a ring, no split",
+      "image": "style_tri_mosaic_r1__sp_f_spiral__01_julia-multibrot5_3bb3fae3_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_3bb3fae3",
+          "family": {
+            "c": [
+              "0.703985679038223",
+              "0.35993230187315167"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.22256024003389552",
+            "center_im": "-0.6386832162842102",
+            "width": "0.16047468532253215"
+          },
+          "maxiter": 9069,
+          "note": "final139_general seat 129 (tia, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 129,
+            "key": "3bb3fae39c219ce8",
+            "p_spiral": 0.356225
+          }
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@e2ca8ccc",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_tri_mosaic_r1/spiral/sp_f_spiral_plates__01_julia-multibrot5_3bb3fae3_tri_mosaic",
+      "picker": "style_tri_mosaic_r1",
+      "picked": [
+        {
+          "row": "spiral",
+          "key": "sp_f_spiral_plates__01_julia-multibrot5_3bb3fae3_tri_mosaic"
+        }
+      ],
+      "label": "sun-disk: flat translucent plates over the fractal",
+      "image": "style_tri_mosaic_r1__sp_f_spiral_plates__01_julia-multibrot5_3bb3fae3_tri_mosaic.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_3bb3fae3",
+          "family": {
+            "c": [
+              "0.703985679038223",
+              "0.35993230187315167"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.22256024003389552",
+            "center_im": "-0.6386832162842102",
+            "width": "0.16047468532253215"
+          },
+          "maxiter": 9069,
+          "note": "final139_general seat 129 (tia, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 129,
+            "key": "3bb3fae39c219ce8",
+            "p_spiral": 0.356225
+          }
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@f4eb1968",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "tri_mosaic@2ef2586e": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ]
+    },
+    "tri_mosaic@3fee538d": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.5,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 0.7,
+          "fold": 0.35,
+          "relief": 6.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0005,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.35
+          }
+        }
+      ]
+    },
+    "tri_mosaic@72242c54": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.25,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 1.0,
+          "fold": 0.35,
+          "relief": 6.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0005,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.35
+          }
+        }
+      ]
+    },
+    "tri_mosaic@91cfd0b1": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.5,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 0.7,
+          "fold": 0.5,
+          "relief": 0.0,
+          "azimuth": 120.0
+        }
+      ]
+    },
+    "tri_mosaic@a73225d5": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.629,
+        "p10": 0.176
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.5,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 0.7,
+          "fold": 0.5,
+          "relief": 0.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0005,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.35
+          }
+        }
+      ]
+    },
+    "tri_mosaic@e2ca8ccc": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 1.0,
+          "smallest": 0.02,
+          "levels": 0,
+          "reach": 0.3,
+          "fold": 0.15,
+          "relief": 0.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0012,
+            "color": {
+              "palette": 0.0
+            },
+            "opacity": 0.85
+          },
+          "spiral": {
+            "arms": 7,
+            "twist": 1.0
+          },
+          "fill": "turned",
+          "turn": 25.0
+        }
+      ]
+    },
+    "tri_mosaic@f4daa050": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.5,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 0.7,
+          "fold": 0.0,
+          "relief": 0.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0005,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.35
+          },
+          "inlay": {
+            "levels": 3,
+            "amount": 0.07
+          }
+        }
+      ]
+    },
+    "tri_mosaic@f4eb1968": {
+      "name": "tri_mosaic",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 1.0,
+          "smallest": 0.02,
+          "levels": 0,
+          "reach": 0.7,
+          "fold": 0.2,
+          "relief": 8.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.001,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.7
+          },
+          "spiral": {
+            "arms": 8,
+            "twist": 1.5
+          },
+          "opacity": 0.6
+        }
+      ]
+    }
+  }
+}

@@ -1426,7 +1426,7 @@
         ]
       },
       "what": "Molten fire flowing in broad lit folds: a glossy relief in crimson, orange and gold, crossed by translucent folds, with flame lace along the edge of the set.",
-      "kept": "2 locations; interstellar_webs: 1 tile (054)",
+      "kept": "2 locations; interstellar_webs: 1 tile (054); 2 baseline tiles (054, 058)",
       "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass.",
       "palettes": [
         {
@@ -1435,7 +1435,8 @@
           "keeps": [
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
-            "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow"
+            "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow",
+            "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow"
           ],
           "score": 4
         },
@@ -2766,6 +2767,148 @@
             "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs"
           ],
           "score": 3
+        }
+      ]
+    },
+    {
+      "style": "tri_mosaic",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
+      "item": "057",
+      "reference": "wallhaven_wallhaven-47k2py.jpg",
+      "references": [
+        "wallhaven_wallhaven-47k2py.jpg",
+        "wallhaven_wallhaven-4xy8el.png",
+        "technology-25.jpg",
+        "sun-disk-25.jpg",
+        "pacific-shore-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_tri_mosaic_r1/locations/loc__10_julia-multibrot3_2e04e5e2_tri_mosaic",
+          "caption": "Folded triangles in cream, rust and navy, large in the open field and splitting to dust along a cubic Julia set's curls"
+        },
+        {
+          "keep": "style_tri_mosaic_r1/formulations_a/fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic",
+          "caption": "Flat facets with fainter triangles inlaid in each, banded round a phoenix island"
+        },
+        {
+          "keep": "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
+          "caption": "The spiral lattice: turned quads winding into a Julia spiral, each showing the fractal broken along its seams"
+        }
+      ],
+      "public": {
+        "name": "tri-mosaic",
+        "palette": "tri_mosaic",
+        "knobs": []
+      },
+      "what": "A mosaic of triangles nested inside triangles: large calm facets far from the set, splitting ever finer towards it, each tilted and folded into lit faces.",
+      "kept": "10 tiles: 1 location, inlay, fine, fold, the base and three spiral readings, the ice entry twice",
+      "note": "Engine: the post stage and its mosaic pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, everything here is interesting but nothing amazing.",
+      "palettes": [
+        {
+          "colormap": "tri_mosaic",
+          "values": {},
+          "keeps": [
+            "style_tri_mosaic_r1/formulations_a/fo_f_inlay__00_phoenix_fc131a7f_tri_mosaic",
+            "style_tri_mosaic_r1/formulations_b/fo_f_fine__01_julia-multibrot3_70e1da1e_tri_mosaic",
+            "style_tri_mosaic_r1/formulations_b/fo_f_fold__01_julia-multibrot3_70e1da1e_tri_mosaic",
+            "style_tri_mosaic_r1/locations/loc__10_julia-multibrot3_2e04e5e2_tri_mosaic",
+            "style_tri_mosaic_r1/spiral/sp_f_base__01_julia-multibrot5_3bb3fae3_tri_mosaic",
+            "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
+            "style_tri_mosaic_r1/spiral/sp_f_spiral__01_julia-multibrot5_3bb3fae3_tri_mosaic",
+            "style_tri_mosaic_r1/spiral/sp_f_spiral_plates__01_julia-multibrot5_3bb3fae3_tri_mosaic"
+          ],
+          "score": 3
+        },
+        {
+          "colormap": "tri_mosaic_ice",
+          "values": {
+            "/post/0/fold": 0.5,
+            "/post/0/relief": 0.0,
+            "/tone/median": 0.629,
+            "/tone/p10": 0.176
+          },
+          "keeps": [
+            "style_tri_mosaic_r1/formulations_a/fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice",
+            "style_tri_mosaic_r1/formulations_b/fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice"
+          ],
+          "score": 3,
+          "reference": "wallhaven_wallhaven-4xy8el.png"
+        }
+      ]
+    },
+    {
+      "style": "stirred_ink",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
+      "item": "058",
+      "reference": "meditation-25.jpg",
+      "references": [
+        "meditation-25.jpg",
+        "vibe-25.jpg",
+        "wallhaven_wallhaven-5gqrp3.jpg",
+        "polished-25.jpg"
+      ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_wide__00_julia-multibrot3_7e312206_stirred_ink",
+          "caption": "Blue ink poured in frame-wide swirls round a cubic Julia set, white crests glowing along the folds"
+        },
+        {
+          "keep": "style_stirred_ink_r1/stirred_ink/formulations_b/b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink",
+          "caption": "Broad glossy sweeps curling into hooks where the lace begins"
+        },
+        {
+          "keep": "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
+          "caption": "Round one's tighter stir at a phoenix seat: dark glossy streams combed through bright spray"
+        }
+      ],
+      "public": {
+        "name": "stirred-ink",
+        "palette": "stirred_ink",
+        "knobs": []
+      },
+      "what": "A poured liquid stirred into S-curls and hooks: one glossy blue ink combed along a turned copy of the fractal, bright crests along the folds, the curls tightening towards the set.",
+      "kept": "5 tiles: 2 locations, f_wide at both seats, f_strong",
+      "note": "Engine: the stir (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the paint-like modes I picked are 4/5; the modes I didn't pick aren't good (1/5); other palettes besides the blue one might be good, but I only liked that one here.",
+      "palettes": [
+        {
+          "colormap": "stirred_ink",
+          "values": {},
+          "keeps": [
+            "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_strong__00_julia-multibrot3_7e312206_stirred_ink",
+            "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_wide__00_julia-multibrot3_7e312206_stirred_ink",
+            "style_stirred_ink_r1/stirred_ink/formulations_b/b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink",
+            "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
+            "style_stirred_ink_r1/stirred_ink/locations/loc__08_julia-multibrot3_84b3a609_stirred_ink"
+          ],
+          "score": 4
+        }
+      ]
+    },
+    {
+      "style": "ring_pools",
+      "score": 1,
+      "status": "drop",
+      "item": "058",
+      "reference": "wallhaven_wallhaven-47xzoe.png",
+      "references": [
+        "wallhaven_wallhaven-47xzoe.png"
+      ],
+      "what": "Pools of tight contour rings round scattered eyes, in flat marbled colour, stirred into irregular pools.",
+      "kept": "nothing",
+      "note": "Engine: the stir (058's) · Matt: round one kept nothing; the modes I didn't pick aren't good (1/5).",
+      "palettes": [
+        {
+          "colormap": "ring_pools",
+          "values": {},
+          "keeps": [],
+          "score": 1
         }
       ]
     }

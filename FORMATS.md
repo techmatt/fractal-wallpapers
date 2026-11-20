@@ -1,44 +1,44 @@
 # File formats
 
 Every file a reader inspects, field by field (`tests/test_formats.py` guards the names).
-JSONL is UTF-8, one object per line, `schema` on every row. A *location key* is
-`supply/location.py`'s `location_key`: `[partition, degree, constants, center_re,
-center_im, width]`, canonical decimal strings. A *recipe key* is 16 hex of the sha256 of
+JSONL is UTF-8, one object per line, `schema` on every row. A *location key*
+(`supply/location.py`'s `location_key`) is `[partition, degree, constants, center_re,
+center_im, width]`, canonical decimal strings; a *recipe key* is 16 hex of the sha256 of
 everything a picture is a function of (`curation/recipes.py`'s `key_of`). Neither holds a
 path. `p_geK` is a judge's `P(rating >= K)` on the 1–5 scale.
 
 ## locations.jsonl
 
 `artifacts/harvest/locations.jsonl` (`harvest export`, `supply/places.py`'s `rows`): per
-location key, the first `survived` candidate (refinement applied) joined to the location
-judge, its columns null until `curate score`.
+location key, the first `survived` candidate (refined) joined to the location judge,
+whose columns are null until `curate score`.
 
-`schema` 1; `key` (location key; joins `supply_scores.jsonl` `key` and a ledger row's
+`schema` 1; `key` (joins `supply_scores.jsonl` `key` and a ledger row's
 `location.key`); `partition` (`mandelbrot`, `multibrot3`–`6`, `julia:<plane>`,
 `phoenix`, `phoenix:classic`); `family` ([the render spec](#the-render-spec)'s);
 `viewport` `{center_re, center_im, width}`; `maxiter`; `depth`; `root_id`;
 `root_channel` (the root's `provenance.channel`: a seed pool, `twin:<source>`, `proven`,
-`viewport_sampler`; else its `source`); `slot_channel` (`share` or `contest`); `origin`
+`viewport_sampler`; else `source`); `slot_channel` (`share` or `contest`); `origin`
 (`walk`, a reframing operator, `refined`); `refined` (bool); `view`
 (`views/node<parent>_c<child>.jpg` or null); `walk_p_ge3`, `walk_p_ge4` (null on
 `--no-scoring`); `p_ge2`, `p_ge3`, `p_ge4`, `score_regime` (e.g. `384x216ss1`),
 `score_view`.
 
 `harvest stats` writes `<run>/stats/stats.json`: `{schema, run, found, places, repeats,
-scored, families}`; `families` by partition, each `{found, places, scored, p_ge3, p_ge4, best, worst}`, the
-`p_ge*` as `{min, q1, median, q3, max, over_half}`, `best`/`worst` location keys.
+scored, families}`; `families` by partition, each `{found, places, scored, p_ge3, p_ge4,
+best, worst}`, the `p_ge*` as `{min, q1, median, q3, max, over_half}`, `best`/`worst` keys.
 
 ## walk.jsonl
 
-A run directory's append-only ledger (`harvest`, `walk`; `discovery/ledger.py`'s
-`Ledger.write`), rows `{schema, kind, ...}`:
+A run's append-only ledger (`harvest`, `walk`; `discovery/ledger.py`'s `Ledger.write`),
+rows `{schema, kind, ...}`:
 
 - `run` (header): `seed`, `scorer`, `scoring`, `identity`, `colormap`, `limits`, `policy`,
   `gates`, `report_foci`, `reframings`, `invocation`, `ledgers_read`.
 - `root` (a lineage): `root_id`, `node_id`, `source`, `family`, `viewport`, `provenance`
   (with `channel`), `plane_root`.
-- `candidate`: below. `refined` (close-time framing scan, applied by
-  `supply/ledgers.py`'s `refined_of`): `viewport`, `refined_viewport`, `refined_maxiter`,
+- `candidate`: below. `refined` (close-time framing scan; `supply/ledgers.py`'s
+  `refined_of` applies it): `viewport`, `refined_viewport`, `refined_maxiter`,
   `score`, `score_great`, `gain`, `framing`, `gate_render`.
 - `foci`: `node_id`, `depth`, `tile`, `found`, `spread_radius`, `kept`. `node_dead`:
   `node_id`, `depth`, `cause` (`width_floor`, `interior_cap`, `instant_escape`, `flat`,
@@ -66,18 +66,18 @@ refusing gate); `scorer`, `score_regime`, `score_view`, `score_error`; `score`,
 
 ## supply_scores.jsonl
 
-`artifacts/curation/supply_scores.jsonl`, one row per location key, upserted by `curate
+`artifacts/curation/supply_scores.jsonl`, a row per location key, upserted by `curate
 score` (`curation/intake.py`'s `score`): `schema` 1, `head` (`location`), `head_sha256`,
 `key`, `ledger` (tracked path), `node_id`, `partition`, `family`, `viewport`, `maxiter`,
 `view`, `regime` (e.g. `640x360ss2`), `p_ge2`, `p_ge3`, `p_ge4`.
 
 ## Candidate ledger rows
 
-`artifacts/curation/candidate_ledger/rows.jsonl`, one row per candidate picture,
-upserted by `curate hunt|mine merge` (`curation/candidate_ledger/rows.py`'s `row`): `schema` 1; `key`; `partition`;
-`location` `{key, agrees}` (`agrees`: the frame computes to that key); `recipe`;
-`at_candidate_regime` (640x360ss2; a solve seats only these); `texture_flat` (routes to
-the smooth slot); `colour` `{cells, families}` or null; `engine` (build fingerprint);
+`artifacts/curation/candidate_ledger/rows.jsonl`, a row per candidate picture, upserted
+by `curate hunt|mine merge` (`curation/candidate_ledger/rows.py`'s `row`): `schema` 1;
+`key`; `partition`; `location` `{key, agrees}` (the frame computes to that key);
+`recipe`; `at_candidate_regime` (640x360ss2; a solve seats only these); `texture_flat`
+(routes to the smooth slot); `colour` `{cells, families}` or null; `engine` (fingerprint);
 `provenance` `{run, candidate, also_rendered, also_recorded}`; `picture` (JPEG under
 `artifacts/curation/<leg>/pictures/`); `rejected` (never seated, or null); `hunt` (leg
 rows) `{seconds, k, drawn_for, drawn_cells}`.
@@ -89,7 +89,7 @@ rows) `{seconds, k, drawn_for, drawn_cells}`.
 
 ## Candidate ledger scores
 
-`scores.jsonl` (merges, `candidate-ledger score`), one row per (recipe, judge, regime),
+`scores.jsonl` (merges, `candidate-ledger score`), a row per (recipe, judge, regime),
 never rewritten (`rows.py`'s `score_row`): `schema` 1, `key`
 (`<recipe_key>|<judge_artifact>|<regime>`), `recipe_key`, `judge_artifact`, `regime`,
 `head` (`smooth_render` or `strange_render`), `p_ge2`, `p_ge3`, `p_ge4`, `rank_score`
@@ -103,9 +103,9 @@ never rewritten (`rows.py`'s `score_row`): `schema` 1, `key`
 
 ## pool_scores.jsonl
 
-`artifacts/gallery_grade_head/pool_scores.jsonl`, the gallery judge on the pool's
-above-bar rows, rewritten by `gallery-grade score-pool` (`models/gallery_grade_train.py`'s
-`score_pool`; re-run after every merge): `schema`, `head` (`gallery_grade`), `run`,
+`artifacts/gallery_grade_head/pool_scores.jsonl`: the gallery judge on the pool's
+above-bar rows, rewritten by `gallery-grade score-pool` after every merge
+(`models/gallery_grade_train.py`'s `score_pool`): `schema`, `head` (`gallery_grade`), `run`,
 `weights` (checkpoint digest), `key`, `p_ge2`, `p_ge3`, `p_ge4` (three-seed mean),
 `rank_score`.
 
@@ -142,12 +142,12 @@ group_cap_from, targets, target_rule}`; `sort_key`, `sort_key_named`; `mode_floo
 `mode_floors`, `mode_floor_rule`, `mode_floor_natural`, `mode_floor_artificial`;
 `modes`; `mode_policy`. Each `*_is` and `bars_are` (`fold_is`, `fine_bar_is`,
 `fine_head_is`, `fine_weights_is`, `forced_is`, `theme_bar_is`, `mode_ceilings_is`,
-`augment_is`) is a sentence saying what its sibling means.
+`augment_is`) says what its sibling means.
 
 ## gallery.jsonl
 
-`artifacts/curation/tentative/<stamp>/gallery.jsonl` (`curate solve record`), a row per
-seat in order (`curation/tentative.py`'s `rows_of`): `schema` 1, `seat`, `key` (**the
+`artifacts/curation/tentative/<stamp>/gallery.jsonl` (`curate solve record`;
+`curation/tentative.py`'s `rows_of`), a row per seat in order: `schema` 1, `seat`, `key` (**the
 picture's ID**), `alias` (shortest unambiguous prefix, ≥8), `mode`, `mode_params`,
 `partition`, `cell`, `hue_family` (the leading ones), `cells`, `families`, `seated_for`,
 `pinned`, `floor`, `floor_cells` (`mandated`, `holding`, `no`), `centered`, `spiral`,
@@ -170,11 +170,11 @@ a sha256 of the sorted keys); `seats` `{asked, filled, shortfall, recorded}`;
 `artifacts/curation/tentative/keep.jsonl`, append-only (`tentative.py`'s `keep`,
 `release`): `{schema, stamp, kept, at, reason}`, a stamp's last row deciding; kept seats
 survive merge prunes. `curate solve record` appends `kept: true` unless `--no-keep`,
-`curate solve release <stamp>` `kept: false`. `tentative.PUBLISHED` keeps the rest.
+`curate solve release <stamp>` `kept: false`.
 
 ## page.json
 
-The source of every inspection page's `index.html` beside it (`judges check`, `harvest
+The source of each inspection page's `index.html` beside it (`judges check`, `harvest
 stats`, `curate candidate-ledger browse`, `curate solve trace`; `grid_page.py`'s
 `document`). `--bundle DIR` copies the pair, pictures under `DIR/pictures/`.
 
@@ -194,15 +194,14 @@ meaning]]`, `rows` ([gallery.jsonl](#galleryjsonl)'s, plus `src`, `full`, `order
 ## counts.json
 
 `artifacts/curation/trace/<stamp>/counts.json` (`curate solve trace`;
-`curation/trace.py`'s `build`), beside a [page.json](#pagejson) and `files/`: verbatim
-slices of each chain file (`gallery.jsonl` through `walk.jsonl`), the walk slice adding
-one row of each unreached kind. `schema` `1`, `stamp`, `seats`, `broken_chains`
+`curation/trace.py`'s `build`), beside a [page.json](#pagejson) and `files/`: slices of
+each chain file (`gallery.jsonl` through `walk.jsonl`), the walk's adding a row of each
+unreached kind. `schema` `1`, `stamp`, `seats`, `broken_chains`
 `[{seat, key, stopped_at}]`, `files` `{name: {source, rows, sliced}}`.
 
 ## walkthrough.json
 
-`artifacts/walkthrough/walkthrough.json` (`walkthrough.py`'s `build`); each folder is a
-bundle. `schema` `1`, `command`, `stamp`; `pages` `[{folder, title, made_by, command,
+`artifacts/walkthrough/walkthrough.json` (`walkthrough.py`'s `build`), a bundle a folder. `schema` `1`, `command`, `stamp`; `pages` `[{folder, title, made_by, command,
 files, bytes}]` (`missing: true` if not run); `files` `[{name, source}]`; `renders`
 `[{name, picture, seconds}]`; `help` (`help/`'s `--help` texts, `walkthrough.py`'s
 `HELP`, e.g. `curate-solve-trace.txt`).
@@ -221,7 +220,7 @@ seconds, reference_seconds, actual, missed}]`.
 ## render.json
 
 `artifacts/walkthrough/render/render.json` (`walkthrough.py`'s `write_renders`): the
-README's two render examples as JPEGs `RENDER_WIDTH` wide. `{schema, renders}`, each
+README's two render examples, JPEGs `RENDER_WIDTH` wide. `{schema, renders}`, each
 `name` (`render`, `render-link`), `picture`, `command`, `rendered_at`, `shown_at`,
 `seconds`.
 
@@ -237,15 +236,15 @@ default, range, says}}`; `colormaps` `[{name, kind}]`; `spec_only` `{key: meanin
 
 ## The render spec
 
-What `fractal-engine render <spec.json>` reads (`engine/src/spec.rs`'s `RenderSpec`);
-unknown keys are refused. Required: `schema` (1), `family`, `resolution` (`[w, h]`),
+What `fractal-engine render <spec.json>` reads (`engine/src/spec.rs`'s `RenderSpec`),
+unknown keys refused. Required: `schema` (1), `family`, `resolution` (`[w, h]`),
 `colormap` (a `palettes list` name), `output` (`.png`/`.jpg`). Optional: `viewport`
 `{center_re, center_im, width}` (decimal strings; home view), `supersample` (1),
 `maxiter`, `colormap_dir` (`data/palettes`), `palette`, `allow_unresolvable_in_f64`
 (false), and one coloring: `mode` (`smooth`) with `params` `{name: number}`, or
 `coloring`, or `style` `{name, interior, tone, projection, stir, layers, post}`
-([`data/styles/STACK.md`](data/styles/STACK.md)), whose `palette` holds only `mirror`,
-`reverse`, `rolloff`.
+([`data/styles/STACK.md`](data/styles/STACK.md), `POST.md` beside it), whose `palette`
+holds only `mirror`, `reverse`, `rolloff`.
 
 `family.kind`: `mandelbrot`; `multibrot` (`degree` 3–6); `julia` (`degree` 2–6, `c`
 `[re, im]`); `phoenix` (`c` `["0.5667","0.0"]`, `p` `["-0.5","0.0"]`, `z_prev` 0);
@@ -262,8 +261,8 @@ unknown keys are refused. Required: `schema` (1), `family`, `resolution` (`[w, h
 `params`: `density` (stripe 6, smooth_stripe), `radius` (trap_circle 1.0,
 smooth_trap_circle, direct_trap_ring), `sigma` (threads 0.15), `weight` (the five smooth_*
 composites 0.85, threads 0.5; [0, 1]), `shift` (itinerary, tail_itinerary 0.5),
-`threshold`, `opacity` (direct_trap_*). The curve is a coloring's `transform`; only a spec
-reaches it, `phoenix_m` and `fractional_multibrot`.
+`threshold`, `opacity` (direct_trap_*). Only a spec reaches a coloring's `transform`
+(the curve), `phoenix_m` and `fractional_multibrot`.
 
 ## The explorer link
 

@@ -24,6 +24,21 @@ def test_the_catalog_holds_its_rows_and_agrees_with_the_styles():
     assert statuses <= set(style_catalog.STATUSES)
 
 
+def test_a_round_one_row_has_neither_score_nor_status():
+    """A style is catalogued as soon as its first picker exists, so its references stop
+    reading as untried; a row with a status still needs its score."""
+    catalog = style_catalog.load()
+    row = next(row for row in catalog["modes"] if row.get("status") == "discarded")
+    unscored = {key: value for key, value in row.items() if key not in ("score", "status")}
+    others = [other for other in catalog["modes"] if other is not row]
+    assert style_catalog.check({**catalog, "modes": [*others, unscored]}) == []
+    assert row["reference"] in style_catalog.named_references({"modes": [unscored]})
+    assert style_catalog.stars(None) == "unscored"
+    ruled = {**unscored, "status": "discarded"}
+    problems = style_catalog.check({**catalog, "modes": [*others, ruled]})
+    assert problems == [f"{row['style']}: score None is not 1 to 5"]
+
+
 #: Shown keeps whose record carries a projection member a knob writes, at a value outside
 #: the knob's range, by (style, keep): a picture the page shows that no setting of its
 #: own slider draws. `docs/qa-findings.md` has each; what to do is Matt's call.

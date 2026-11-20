@@ -5,9 +5,13 @@ spec's `style` key (`engine/src/style.rs` parses it; `engine/src/projection.rs` 
 projection). This is its reference; `README.md` beside it is the procedure that makes a
 style, and each style file's `notes` say what that style used and taught.
 
+**A number is written as a float** (`6.0`, never `6`) unless its member is in
+`styles.INTEGER_MEMBERS`: both engines round by those names (`tests/test_style_wasm.py`).
+
 ## The stack and its tone
 
-The stack is `{name, interior, tone, projection, stir, layers, post}`. `interior` is a paint for a
+The stack is `{name, interior, tone, projection, stir, layers, post}`; `stir` and `post`
+are `POST.md`'s. `interior` is a paint for a
 sample whose orbit never escaped and that no layer coloured (black when absent). `tone`
 (`{median, p10}`, optional) holds the frame's tonal balance: once the stack is
 composited, the frame's median lightness (CIE L\* over 100) is carried to `median`, and
@@ -36,8 +40,7 @@ whole number) copies the plane's full turn that many times round the disc; `powe
 defaults to `turns`, the conformal map; `twist` (radians per e-fold of the plane radius)
 shears the strip, and at a point whose structure turns by `arg λ` as it shrinks by `|λ|`
 a twist of `arg λ / ln|λ|` (less whole turns) stacks every ring's copy straight above
-the last; `ring` is how many escape steps make one ring (below). At one turn and power
-one about the middle it is the straight view. The distance estimate and the light's
+the last; `ring` is how many escape steps make one ring (below). The distance estimate and the light's
 gradient go through its Jacobian, so `de` is a distance in samples and a light's
 `azimuth` is the frame's.
 
@@ -47,53 +50,8 @@ the style's projection member by member (`styles.projected`); a style with no
 projection ignores it. Both come from the point's multiplier `λ` (the derivative of its
 cycle) and the steps `p` per repeat: the smooth count climbs by `p` each time the
 structure shrinks by `|λ|`, so `ring = k·p` with `k` the repeats nearest the ring size
-the style wants. For a quadratic Julia set at its fixed point `(1 ∓ √(1 − 4c))/2`,
-`λ = 2z`; a Misiurewicz point is found by Newton on `f^{k+p}(0) = f^k(0)`.
-
-## The stir
-
-`stir` (optional) is a list of up to four **passes** that move where each sample looks by
-what the fractal itself reads there, after the projection and before anything is
-iterated (`engine/src/stir.rs`): the whole stack is then drawn at the moved point, so
-every layer is stirred alike. A pass is `{view, strength, angle, period, phase, largest,
-steps}`. It reads the smooth count `ν` of a **copy** of the fractal (the frame's own, or
-one seen through a `view` as a channel's is), the unit direction `ĝ` that count climbs
-in, and the copy's distance estimate `L` (capped at `largest` frame widths), and pushes
-the point
-
-`p ← p + (strength / steps) · L · sin(2π·(ν / period + phase)) · e^(i·angle°) · ĝ`
-
-`steps` times, each from where the last landed. At `angle` 90 the push runs along the
-copy's level lines, so the point is carried round whatever the line encloses, about
-`strength` radians in all; the sine reverses it every half `period` of the copy's count
-(`period` 0: no swing), so neighbouring bands shear against each other and the stack's
-own bands, which cross the copy's, are combed into S-curls and hooks. The push is as
-long as the copy's set is far, so curls are large in open field, tighten without end
-towards the set, and a point on or inside the copy's set never moves.
-
-**The copy must differ from the frame** for a look that bands the smooth count: a push
-along the frame's own level lines slides each band along itself and shows nothing, and
-at other angles it scratches. A turned, scaled and shifted view is what stirs.
-`strength` 3 over 4 `steps` is a poured liquid; 6 over 8 winds the curls further;
-`zoom` under 1 with a larger `largest` makes a few frame-wide swirls (keep a second,
-finer pass under them). More `steps` at one `strength` follow the flow more closely:
-one large jump folds the picture over itself.
-
-A light and a distance go through the stirred map's Jacobian as through a projection's,
-so a relief is lit as the curled surface it draws and a falloff glow keeps its width.
-Each step is one escape loop per sample, three when a light, a distance or an `inside`
-channel needs the Jacobian (two passes of 4 and 3 steps: 21 loops). A point inside the
-copy's set ends its pass at the first loop, stopped once the orbit is proven interior;
-the cost is the samples close outside it, whose every loop runs most of the way to the
-seat's `maxiter`, so a stirred stack is drawn at seats of low `maxiter` first. A
-bubble's `largest` and `smallest` stay plane lengths, as under a projection. It is a
-pure function of the sample: tiles and `style-wasm` draw the same picture, **because the
-stir makes its own logarithm and sine** from `+ − × ÷ √`: several steps near the copy's
-set magnify a last-bit difference between two maths libraries into visibly different
-samples (`engine/src/stir.rs`; a fractional-degree family, whose every step is the
-library's `powf`, is the exception, as is a point that came through a projection). The
-module on one thread takes about 100 to 140 s for a
-640x400 ss2 frame of two passes with a light, 28 s for one gentle pass without.
+the style wants (`teal_tunnel`'s notes find `λ` for a Julia fixed point and a
+Misiurewicz point).
 
 ## Channels
 
@@ -164,7 +122,7 @@ read ends, `NaN`, at the first counted entry whose shape pulls back smaller than
 leaving finer detail to the layers beneath.
 
 `{"lines": {radius, arrive, settle, twist, divide, read, side}}` is the **field-lines**
-channel: where the orbit crossed a circle of its own, outside the set and inside it. An
+channel: where the orbit crossed a circle of its own. An
 escaping orbit is read at the step it first leaves `|z| < radius` (a radius near the
 set's own size, 1.2 for a quadratic Julia set, puts several bands in the frame); a
 bounded orbit is run `settle` steps onto its attracting cycle (found as the first repeat
@@ -208,44 +166,6 @@ Under a style the render spec's own `palette` carries the bake and the rolloff o
 CLI folds a sequential map (`mirror`) only when a palette layer repeats it (`cycles` > 1):
 at one traversal the fold would run the near-set end back to the far field's colour.
 
-## The post stage
-
-`post` (optional) is a list of **passes** over the whole composited frame, run in order
-after the layers and before the tone is measured, so `tone` holds on the picture the
-passes made. A layer never reads a neighbouring sample; a pass is the part of a style
-that may. Each is a pure function of the frame's buffers (its linear samples, whether
-each orbit escaped, the distance to the set, a height), so `style-wasm` draws the same
-picture (`style wasm-parity`), and **a style with a post stage is drawn whole, never in
-tiles** (the module's `open` reports `"post": true`; `tile` refuses). Every length is a
-fraction of the frame's width, so `--draft` and full size are one picture.
-
-The one kind is **`mosaic`**: a recursive tiling whose cells split where the set is, each
-cell a facet of the picture under it.
-
-| member | what |
-| --- | --- |
-| `largest`, `smallest` | the edge of the largest cell (at least 1/256) and the floor no cell's edge goes under (at least 1e-5), in frame widths |
-| `levels` | the most times a cell of the largest size splits (at most 10) |
-| `reach` | a cell splits in four while the set is within `reach` of its edges of it (the least `de` under it), or the set's edge crosses it; 0 keeps only the second rule |
-| `detail` | a cell also splits while the picture inside varies by more than this (the standard deviation of its root luminance); 0 is off |
-| `spiral` | `{center, arms, twist}`: the lattice is quads of a log-polar grid about `center` (fractions of the frame), `arms` to a ring, each ring turned `twist` quads past the one outside it; absent, equilateral triangles split by their edges' midpoints |
-| `rhombi` | `true`: the cells are the triangle lattice's rhombi (two triangles each), split in four as slanted quads, so two families of seams run where the triangles have three |
-| `tilt` | triangles and rhombi: the lattice turned by this many degrees |
-| `fill` | `flat`, the mean of the picture under the facet; `turned`, the picture itself, turned about the facet's middle and slipped by `shift` |
-| `shift` | `turned`: how far each facet's view is slipped (0 to 4 facet edges), each facet its own way, so neighbours show the picture broken along their seam |
-| `turn` | `turned`: degrees, times a number per facet: a triangle's or rhombus's one of −1, 0, 1; a spiral quad's column round its ring, counted at its middle (360 over `arms` turns each view with the ring) |
-| `relief`, `height` | each facet tilted to the plane fitted through `height` under it, `relief` the tilt per unit of height across one facet edge; `height` is a plain field channel (no view) stretched over the frame, or the picture's own root luminance when absent |
-| `fold` | each facet a low pyramid of this slope, one face per edge |
-| `azimuth`, `elevation` | where the light on `relief` and `fold` comes from; a facet never tilts past a slope of 0.6, so at elevation 45 a face turned away dims to about a third |
-| `inlay` | `{levels, amount}`: the cells the facet would split into, `levels` deep (at most 6, never under `smallest`), each lightened or darkened by up to `amount` of its colour: nested detail inside a calm facet, without splitting it |
-| `seam` | `{width, color, opacity}`: a line along every facet's rim, `width` in frame widths and never over 0.08 of the facet's edge |
-
-`opacity` (in [0, 1]) lays that much of the mosaic over the picture it was made from:
-under 1 the facets are translucent plates and the stack's own detail shows through.
-
-A pass costs no escape loop: it reads the lanes the frame already has, plus one `de`
-lane. It holds about 150 bytes a cell, and refuses a tiling of over six million cells.
-
 ## Defaults
 
 What a member left out reads as (`engine/src/style.rs`'s `Default`s and serde defaults;
@@ -253,10 +173,7 @@ the stack refuses unknown members):
 
 | where | defaults |
 | --- | --- |
-| stack | `interior` black; `tone` and `projection` absent; `stir` and `post` empty |
-| `stir` pass | `view` straight (the frame's own), `strength` 1, `angle` 90, `period` 4, `phase` 0, `largest` 0.05, `steps` 1 (at most 16) |
-| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
-| `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
+| stack | `interior` black; `tone` and `projection` absent; `stir` and `post` empty (`POST.md`) |
 | `log_polar` | `center` [0.5, 0.5], `turns` 1, `power` = `turns`, `twist` 0, `angle` 0, `ring` 1 |
 | channel | `transform` `linear`, `invert` false |
 | `inside` | `iterations` 1000 |

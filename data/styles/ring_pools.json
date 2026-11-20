@@ -16,7 +16,7 @@
  "notes": [
   "From wallhaven-47xzoe (item 058), stirred_ink's second reading: the reference is flat colour in tight rings round scattered eyes, which a relief cannot draw, so this is its own stack. The eyes are a bubble lattice's discs (radius 0.45 at spacing 1, between 0.012 and 0.3 of the frame): each disc's `height` through the map at 4 cycles is its contour rings, warped a quarter turn by the smooth count's rank so neighbouring pools start on different colours. Under them the smooth count by rank at one cycle is the flat marbled ground the pools sit in.",
   "The stir is one gentle pass (strength 0.6 over 2 steps): it bends the round discs into irregular pools without tearing their rings. At strength 1.2 over 4 steps (round one's f_pools_stirred) the rings drag into marbled streaks. No light: the reference is flat.",
-  "Not catalogued yet: the row (lab tier) lands with Matt's score. Until then `style wasm-parity` draws this file at `style_wasm.POST_SEAT`, whole and in tiles."
+  "Round one kept nothing (Matt: the modes he did not pick are not good, 1/5): the row is score 1, dropped. Unpublished, so `style wasm-parity` draws this file at `style_wasm.POST_SEAT`, whole and in tiles."
  ],
  "style": {
   "name": "ring_pools",

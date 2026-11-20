@@ -24,7 +24,7 @@
     "`inlay` draws a calm facet's own children into it as faint lighter and darker cells (47k2py's nested texture) without splitting it: f_inlay is flat facets, seams and a three-level inlay at 0.07, the closest reading of that reference.",
     "Round one's other readings, as formulations: f_flat (seams only), f_fold, f_detail (`reach` 0, `detail` 0.05: cells follow the picture's bands, not the set), f_rhombi (the lattice's rhombi as slanted quads), f_shards (pacific-shore: unsplit and once-split `rhombi` at tilt -20, each a `turned` view slipped by `shift` 0.25 of its edge, so the picture breaks along two families of slanted seams; triangle shards at turn 30 read as a kaleidoscope instead), f_spiral and f_spiral_split (technology: turned quads of the `spiral` lattice, at spiral seats), f_spiral_plates (sun-disk: unsplit flat quads at `opacity` 0.6, a shell of translucent plates over the fractal; opaque, the same plates hide the set and fail the fractal feel), and the entry tri_mosaic_ice (4xy8el's blues, tone 0.629/0.176), unkept until a tile is.",
     "Tried and dropped: a `copies` fill (the frame's middle shrunk into every facet) drew noise at every depth and left the engine; a flat-filled spiral lattice reads as mush beside the triangles.",
-    "Not catalogued yet: the row (lab tier) lands with Matt's score. Until then `style wasm-parity` draws this file at `style_wasm.POST_SEAT`."
+    "Round one (Matt, 3/5: everything here is interesting but nothing amazing): ten tiles kept, one location, f_inlay, f_fine, f_fold, the base and three spiral readings (f_spiral at both seats, f_spiral_plates), and the ice entry at both formulation seats."
   ],
   "style": {
     "name": "tri_mosaic",

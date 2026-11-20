@@ -80,6 +80,24 @@ def test_a_parity_run_of_a_name_with_nothing_to_draw_is_refused(tmp_path):
         style_wasm.parity(tmp_path, names=["no_such_style"])
 
 
+def test_a_parity_run_draws_the_longest_of_the_last_run_first(tmp_path):
+    """One keep can be a quarter of an hour: started last it is the run's whole tail."""
+    jobs = [{"id": name} for name in ("quick", "new", "slow", "middling")]
+    assert style_wasm.longest_first(jobs, tmp_path) == jobs
+    last = [
+        {"id": "quick", "wasm_seconds": 2.0},
+        {"id": "slow", "wasm_seconds": 900.0},
+        {"id": "middling", "wasm_seconds": 40.0},
+        {"id": "failed"},
+    ]
+    style_wasm.write_seconds(tmp_path, last)
+    # A filtered run in between lays its own times over the folder's and keeps the rest.
+    style_wasm.write_seconds(tmp_path, [{"id": "quick", "wasm_seconds": 3.0}])
+    assert style_wasm.read_seconds(tmp_path) == {"quick": 3.0, "slow": 900.0, "middling": 40.0}
+    order = [job["id"] for job in style_wasm.longest_first(jobs, tmp_path)]
+    assert order == ["new", "slow", "middling", "quick"]
+
+
 def test_the_bundle_command_writes_it(tmp_path):
     from fractal_wallpapers import cli
 

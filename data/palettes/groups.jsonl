@@ -252,5 +252,4 @@
 {"schema": 1, "kind": "admitted", "map": "tri_mosaic", "group": "map:tri_mosaic", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.063642}
 {"schema": 1, "kind": "admitted", "map": "tri_mosaic_ice", "group": "map:tri_mosaic_ice", "joined": false, "nearest": "m41", "m1": 0.04133}
 {"schema": 1, "kind": "admitted", "map": "stirred_ink", "group": "map:flame_wisp_spark", "joined": true, "nearest": "map:flame_wisp_spark", "m1": 0.039712}
-{"schema": 1, "kind": "admitted", "map": "stirred_ink_ember", "group": "map:stirred_ink_ember", "joined": false, "nearest": "map:Copper Fathom", "m1": 0.062404}
 {"schema": 1, "kind": "admitted", "map": "ring_pools", "group": "map:ring_pools", "joined": false, "nearest": "map:wallhaven_wallhaven-47xzoe", "m1": 0.078011}

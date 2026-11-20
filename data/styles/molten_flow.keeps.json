@@ -199,6 +199,54 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow",
+      "picker": "style_stirred_ink_r1",
+      "picked": [
+        {
+          "row": "molten_flow/formulations_a",
+          "key": "a_molten_flow__00_julia-multibrot3_7e312206_molten_flow"
+        }
+      ],
+      "label": "baseline: molten_flow",
+      "image": "style_stirred_ink_r1__a_molten_flow__00_julia-multibrot3_7e312206_molten_flow.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {

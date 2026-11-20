@@ -29,6 +29,13 @@ from, not the engine that drew it, and the engine's tone pass has moved under it
 2026-11-04 it measures the block-averaged picture rather than the samples, so a keep
 drawn at supersample 2 before then comes back a little darker or lighter (up to ~0.03
 of median lightness). The saved picture is the keep; a redraw says so ([`REDRAWN`]).
+
+**Re-drawing a shown keep** under a changed default is a one-row picker: `style render`
+at the keep's location and public palette (a draft `.json` named as the keep's stack, or
+it is refused), `style picker`, a choices file keeping it (`{name, rows: [{id, keys,
+notes}]}`), `style keep` (`--manifest <picker>/manifest.json` when the choices name
+none); then point the catalog's `show` at the new id and rebuild `style bundle` and
+`style gallery`.
 """
 
 from __future__ import annotations

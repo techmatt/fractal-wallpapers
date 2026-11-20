@@ -9,7 +9,8 @@ holds the module to the native engine:
 
 ```
 fractal-wallpapers style bundle [--out <bundle.json>]
-fractal-wallpapers style wasm-parity [names…] [--resolution 640 400 --supersample 2]
+fractal-wallpapers style wasm-parity [names…] [--workers 5]
+                                     [--resolution 640 400 --supersample 2]
 fractal-wallpapers style wasm-speed
 ```
 
@@ -18,11 +19,17 @@ compares the bytes, and every style with a post stage or a stir the catalog does
 publish yet at `POST_SEAT`; `wasm-speed` times one 1280x800 frame per published mode on one
 thread. Both run the module under Node (`style-wasm/js/node-render.mjs`), and refuse
 without a built module, naming the build.
+
+**Which parity run is owed.** A change to the engine's style path or to the module
+(`engine/src/style.rs`, `style-wasm/`, `styles.spec_of`'s rules) owes the full run, no
+names. A change to one style (its stack, knobs, keeps or catalog row) owes that style's
+alone: `style wasm-parity <name>`.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -43,6 +50,19 @@ PARITY_SUPERSAMPLE = 2
 #: The speed reading's frame: the draft size `style render --draft` checks at.
 SPEED_RESOLUTION = DRAFT_RESOLUTION
 SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
+
+#: Node worker threads a parity run draws on, beside the native engine's renders, below
+#: normal priority. The whole run is as long as its longest job (one keep's tiled draw,
+#: 15 minutes alone and 24 beside five others on six cores) or the work over the workers,
+#: whichever is more: four workers measured 30 minutes and six 25 with the box left short
+#: of threads, so more workers buy nothing and cost the box.
+PARITY_WORKERS = 5
+
+#: Threads the native engine takes for its side of a parity run (`RAYON_NUM_THREADS`,
+#: unless the caller's environment already sets one): uncapped it takes every core beside
+#: the Node workers, and the box has none left.
+PARITY_NATIVE_THREADS = 2
+THREADS_ENV = "RAYON_NUM_THREADS"
 
 #: The tile the parity check's tiled draw cuts the picture into.
 PARITY_TILE = (256, 256)
@@ -103,7 +123,7 @@ def has_post(stack: dict[str, Any]) -> bool:
 
 
 def has_stir(stack: dict[str, Any]) -> bool:
-    """Whether a stack stirs its samples before they are iterated (`STACK.md`'s *The stir*)."""
+    """Whether a stack stirs its samples before they are iterated (`POST.md`'s *The stir*)."""
     return bool(stack.get("stir"))
 
 
@@ -244,8 +264,8 @@ def native_rgb(
         return picture.convert("RGB").tobytes(), report
 
 
-def run_node(jobs: list[dict[str, Any]], folder: Path) -> list[dict[str, Any]]:
-    """Draw `jobs` under Node, one thread, below normal priority; their result rows."""
+def start_node(jobs: list[dict[str, Any]], folder: Path, workers: int = 1) -> subprocess.Popen:
+    """Start drawing `jobs` under Node on `workers` threads, below normal priority."""
     from fractal_wallpapers import process_control
 
     module = wasm_path()
@@ -261,12 +281,61 @@ def run_node(jobs: list[dict[str, Any]], folder: Path) -> list[dict[str, Any]]:
     with jobs_path.open("w", encoding="utf-8", newline="\n") as handle:
         json.dump(jobs, handle, ensure_ascii=False)
     runner = crate_dir() / "js" / "node-render.mjs"
-    subprocess.run(
-        [node, str(runner), str(module), str(jobs_path), str(folder)],
-        check=True,
+    return subprocess.Popen(
+        [node, str(runner), str(module), str(jobs_path), str(folder), str(workers)],
         creationflags=process_control.child_priority_flags(),
     )
-    return [json.loads(line) for line in results.read_text(encoding="utf-8").splitlines()]
+
+
+def node_results(
+    node: subprocess.Popen, jobs: list[dict[str, Any]], folder: Path
+) -> list[dict[str, Any]]:
+    """Wait for `start_node`'s process; its result rows in the jobs' order."""
+    code = node.wait()
+    if code:
+        raise subprocess.CalledProcessError(code, node.args)
+    text = (folder / "results.jsonl").read_text(encoding="utf-8")
+    rows = {row["id"]: row for row in map(json.loads, text.splitlines())}
+    lost = [job["id"] for job in jobs if job["id"] not in rows]
+    if lost:
+        raise StyleWasmError(f"Node ended without a result for {', '.join(lost)}")
+    return [rows[job["id"]] for job in jobs]
+
+
+def run_node(jobs: list[dict[str, Any]], folder: Path, workers: int = 1) -> list[dict[str, Any]]:
+    """Draw `jobs` under Node on `workers` threads; their result rows in the jobs' order."""
+    return node_results(start_node(jobs, folder, workers), jobs, folder)
+
+
+#: Beside a folder's `parity.jsonl`: what each job last took as WebAssembly, by id, over
+#: every run into the folder. A filtered run rewrites `parity.jsonl` with its own rows
+#: alone, and the next whole run still needs every job's time to order by.
+SECONDS_FILE = "seconds.json"
+
+
+def read_seconds(folder: Path) -> dict[str, float]:
+    """What each job last took in `folder`, by id; empty before its first run."""
+    path = folder / SECONDS_FILE
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def write_seconds(folder: Path, rows: list[dict[str, Any]]) -> None:
+    """Lay a run's times over the folder's, keeping those of jobs it did not draw."""
+    seconds = read_seconds(folder)
+    seconds.update({row["id"]: row["wasm_seconds"] for row in rows if "wasm_seconds" in row})
+    with (folder / SECONDS_FILE).open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(seconds, indent=1, sort_keys=True) + "\n")
+
+
+def longest_first(jobs: list[dict[str, Any]], folder: Path) -> list[dict[str, Any]]:
+    """`jobs` ordered by what each last took in the folder, the unmeasured first.
+
+    One keep can be a quarter of an hour on its thread: started last, it is the whole
+    run's tail with the other workers idle.
+    """
+    seconds = read_seconds(folder)
+    took = {job["id"]: seconds.get(job["id"]) for job in jobs}
+    return sorted(jobs, key=lambda job: (took[job["id"]] is not None, -(took[job["id"]] or 0.0)))
 
 
 def compare(native: bytes, rgba: bytes) -> dict[str, Any]:
@@ -296,12 +365,15 @@ def parity(
     resolution: tuple[int, int] = PARITY_RESOLUTION,
     supersample: int = PARITY_SUPERSAMPLE,
     names: list[str] | None = None,
+    workers: int = PARITY_WORKERS,
 ) -> list[dict[str, Any]]:
     """Every shown keep of every published mode, drawn natively and as WebAssembly.
 
     `names` keeps the check to those styles (published, or unpublished with a post stage
-    or a stir): minutes for the one an item touched, where the whole run is over an hour.
-    A name with nothing to draw is refused rather than passed as a clean run.
+    or a stir): a couple of minutes for the one an item touched. A name with nothing to
+    draw is refused rather than passed as a clean run. The module's pictures are drawn on
+    `workers` Node threads, the longest of the folder's last run first, while this
+    process draws the native ones.
 
     Three kinds of job: each shown keep's own record (its stack as drawn, its map), in
     one pass; the first keep of each mode again in tiles against its own measures, which
@@ -394,25 +466,43 @@ def parity(
                     "same_as": ident,
                 }
             )
-    rows = {result["id"]: result for result in run_node(jobs, folder)}
+    queued = longest_first(jobs, folder)
+    node = start_node(queued, folder, workers)
+    drawn_natively = {}
+    capped = THREADS_ENV not in os.environ
+    if capped:
+        os.environ[THREADS_ENV] = str(PARITY_NATIVE_THREADS)
+    try:
+        for ident, (location, drawn, colormap, settings) in natives.items():
+            if node.poll():
+                # Node already failed (a stale module, a worker's error): not worth the
+                # rest of the native pictures to find out.
+                raise subprocess.CalledProcessError(node.returncode, node.args)
+            started = time.perf_counter()
+            native, _ = native_rgb(
+                location,
+                drawn,
+                colormap,
+                resolution,
+                supersample,
+                folder / f"{ident}.native.png",
+                knobs=settings,
+            )
+            drawn_natively[ident] = (native, time.perf_counter() - started)
+    except BaseException:
+        node.kill()
+        node.wait()
+        raise
+    finally:
+        if capped:
+            os.environ.pop(THREADS_ENV, None)
+    rows = {result["id"]: result for result in node_results(node, queued, folder)}
     out = []
     for job in jobs:
         ident = job["id"]
         result = rows[ident]
-        base = job.get("same_as", ident)
-        location, drawn, colormap, settings = natives[base]
-        native_png = folder / f"{base}.native.png"
-        if not native_png.is_file() or "same_as" not in job:
-            started = time.perf_counter()
-            native, _ = native_rgb(
-                location, drawn, colormap, resolution, supersample, native_png, knobs=settings
-            )
-            native_seconds = time.perf_counter() - started
-        else:
-            from PIL import Image
-
-            with Image.open(native_png) as picture:
-                native = picture.convert("RGB").tobytes()
+        native, native_seconds = drawn_natively[job.get("same_as", ident)]
+        if "same_as" in job:
             native_seconds = None
         line = {"id": ident, "ok": result["ok"], "native_seconds": native_seconds}
         if result["ok"]:
@@ -425,6 +515,7 @@ def parity(
     with (folder / "parity.jsonl").open("w", encoding="utf-8", newline="\n") as handle:
         for line in out:
             handle.write(json.dumps(line) + "\n")
+    write_seconds(folder, out)
     return out
 
 

@@ -208,6 +208,8 @@ frame(h)                    -> RGBA of the whole picture in one pass (the native
 close(h)
 ```
 
+`last_error()` is a plain sentence, length-prefixed like the rest, never JSON.
+
 A **request** is the CLI's inputs, not the engine's spec: `{schema: 1, location, style,
 knobs, settings, colormap, resolution, supersample}`. `location` is a record as
 `style render --location` reads it (`family`, `viewport`, `maxiter`, a place's own
@@ -230,10 +232,12 @@ example has no `keep` (a draft's place, drawn with the mode's own stack). `palet
 `[{colormap, values, score}]`; the page
 writes `values` over `stack` at their pointers (`style_palettes.apply`) before opening a
 session. A shown keep carries the stack it was drawn with. `style wasm-parity` and `style
-wasm-speed` hold the module to the native engine under Node (`style_wasm.py`). The whole
-`wasm-parity` is over an hour on one Node thread (a single keep can take eight minutes):
-give it a detached run of its own, and check the styles an item touched alone with
-`style wasm-parity <name>…`. A draft not yet in `data/styles/` is checked with its job
+wasm-speed` hold the module to the native engine under Node (`style_wasm.py`). **Which
+parity run is owed**: the whole `wasm-parity` after an engine or module change (about 90
+minutes of Node work, one keep up to fifteen, spread over `--workers` threads, five by
+default, the longest of the last run first: a detached run of its own), and `style
+wasm-parity <name>…` after a change to one style. The native side draws beside the
+workers on two threads. A draft not yet in `data/styles/` is checked with its job
 list (`style_wasm.request`, `run_node`, `native_rgb`, `compare`).
 
 ## What each family's picture is symmetric under

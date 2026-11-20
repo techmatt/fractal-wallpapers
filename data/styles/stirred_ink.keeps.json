@@ -1,0 +1,651 @@
+{
+  "schema": 1,
+  "name": "stirred_ink",
+  "reference": {
+    "image": "meditation-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an Apophysis-style flame (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/stirred_ink",
+  "keeps": [
+    {
+      "id": "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_strong__00_julia-multibrot3_7e312206_stirred_ink",
+      "picker": "style_stirred_ink_r1",
+      "picked": [
+        {
+          "row": "stirred_ink/formulations_a",
+          "key": "a_f_strong__00_julia-multibrot3_7e312206_stirred_ink"
+        }
+      ],
+      "label": "stirred harder: strength 6 over 8 steps, longer windings",
+      "image": "style_stirred_ink_r1__a_f_strong__00_julia-multibrot3_7e312206_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@ba33ceaa",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_wide__00_julia-multibrot3_7e312206_stirred_ink",
+      "picker": "style_stirred_ink_r1",
+      "picked": [
+        {
+          "row": "stirred_ink/formulations_a",
+          "key": "a_f_wide__00_julia-multibrot3_7e312206_stirred_ink"
+        }
+      ],
+      "label": "wide swirls: the first copy at zoom 0.35, a few frame-wide curls over the fine pass",
+      "image": "style_stirred_ink_r1__a_f_wide__00_julia-multibrot3_7e312206_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@675dee6b",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_stirred_ink_r1/stirred_ink/formulations_b/b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink",
+      "picker": "style_stirred_ink_r1",
+      "picked": [
+        {
+          "row": "stirred_ink/formulations_b",
+          "key": "b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink"
+        }
+      ],
+      "label": "wide swirls: the first copy at zoom 0.35, a few frame-wide curls over the fine pass",
+      "image": "style_stirred_ink_r1__b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_f1cad9d4",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.13379412906834562",
+            "center_im": "0.01066720222081552",
+            "width": "0.08255897112532501"
+          },
+          "maxiter": 10220,
+          "note": "final139_general seat 225 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 225,
+            "key": "f1cad9d4acc1ec9b",
+            "p_spiral": 0.002079
+          },
+          "ink": 0.09676
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@675dee6b",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
+      "picker": "style_stirred_ink_r1",
+      "picked": [
+        {
+          "row": "stirred_ink/locations",
+          "key": "loc__01_phoenix_71e305f0_stirred_ink"
+        }
+      ],
+      "label": "",
+      "image": "style_stirred_ink_r1__loc__01_phoenix_71e305f0_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@3dd17c07",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_stirred_ink_r1/stirred_ink/locations/loc__08_julia-multibrot3_84b3a609_stirred_ink",
+      "picker": "style_stirred_ink_r1",
+      "picked": [
+        {
+          "row": "stirred_ink/locations",
+          "key": "loc__08_julia-multibrot3_84b3a609_stirred_ink"
+        }
+      ],
+      "label": "",
+      "image": "style_stirred_ink_r1__loc__08_julia-multibrot3_84b3a609_stirred_ink.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_84b3a609",
+          "family": {
+            "c": [
+              "0.41691379606409645",
+              "0.006939104737155305"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.027438092472795966",
+            "center_im": "0.04998729490643852",
+            "width": "0.0002453809994285905"
+          },
+          "maxiter": 20293,
+          "note": "final139_general seat 359 (smooth_angle_min, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 359,
+            "key": "84b3a6092d582f93",
+            "p_spiral": 0.003588
+          },
+          "ink": 0.07894
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@3dd17c07",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "stirred_ink@3dd17c07": {
+      "name": "stirred_ink",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.471,
+        "p10": 0.22
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.8,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.08,
+          "steps": 4
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 2.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.04,
+          "steps": 3
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 0.9,
+            "azimuth": 120.0,
+            "elevation": 42.0,
+            "ambient": 0.5,
+            "diffuse": 0.5,
+            "specular": 0.7,
+            "shininess": 10.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "transform": "log"
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "color": {
+            "palette": 0.98
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.3,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.8
+          }
+        }
+      ]
+    },
+    "stirred_ink@675dee6b": {
+      "name": "stirred_ink",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.471,
+        "p10": 0.22
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.35,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.2,
+          "steps": 4
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 2.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.04,
+          "steps": 3
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 0.9,
+            "azimuth": 120.0,
+            "elevation": 42.0,
+            "ambient": 0.5,
+            "diffuse": 0.5,
+            "specular": 0.7,
+            "shininess": 10.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "transform": "log"
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "color": {
+            "palette": 0.98
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.3,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.8
+          }
+        }
+      ]
+    },
+    "stirred_ink@ba33ceaa": {
+      "name": "stirred_ink",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.471,
+        "p10": 0.22
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.8,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 6.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.08,
+          "steps": 8
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.04,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 0.9,
+            "azimuth": 120.0,
+            "elevation": 42.0,
+            "ambient": 0.5,
+            "diffuse": 0.5,
+            "specular": 0.7,
+            "shininess": 10.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "transform": "log"
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "color": {
+            "palette": 0.98
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.3,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.8
+          }
+        }
+      ]
+    }
+  }
+}

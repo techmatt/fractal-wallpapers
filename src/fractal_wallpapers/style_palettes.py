@@ -211,9 +211,11 @@ def check_row(
     from fractal_wallpapers import styles
 
     name = row.get("style", "?")
-    palettes = row.get("palettes")
     discarded = row.get("status") == "discarded"
-    if not isinstance(palettes, list) or (not palettes and not discarded):
+    # A round-one row (no score, no status) has no set until its keeps are back.
+    round_one = "status" not in row and "score" not in row
+    palettes = row.get("palettes", [] if round_one else None)
+    if not isinstance(palettes, list) or (not palettes and not (discarded or round_one)):
         return [f"{name}: names no palettes (a mode is a stack and a palette set)"]
     problems = []
     seen = set()

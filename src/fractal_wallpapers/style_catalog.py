@@ -33,6 +33,11 @@ which pictures Matt marked for a mode no row has tried yet.
 style file (`data/styles/README.md`'s *Public knobs*), so `check` holds the two to
 agreeing. Names are proposals Matt may rename: they are data, never code.
 
+A **round-one row** has neither `score` nor `status`: a style gets its row as soon as
+its first picker exists (Matt's ruling), so its `references` stop reading as untried to
+`style refs --unused`, and the score and status land with Matt's keeps. A row with a
+status has a score.
+
 A published mode is in one of two **tiers** (Matt's ruling): `curated` (the website's
 *Custom* list) carries four or five knobs and shows only kept pictures; `lab` (*Custom
 (lab)*) may carry fewer knobs, none at all, and may show an **example** in place of a
@@ -152,7 +157,8 @@ def check(catalog: dict[str, Any]) -> list[str]:
         # No status is a mode Matt has not ruled on yet: its toggles start unmarked.
         if "status" in row and row["status"] not in STATUSES:
             problems.append(f"{name}: status {row.get('status')} is not one of {STATUSES}")
-        if not style_palettes.is_score(row.get("score")):
+        # Neither score nor status is a round-one row: catalogued, not yet scored.
+        if ("score" in row or "status" in row) and not style_palettes.is_score(row.get("score")):
             problems.append(f"{name}: score {row.get('score')} is not 1 to 5")
         if not row.get("item"):
             problems.append(f"{name}: names no item")
@@ -361,8 +367,10 @@ def shrink(source: Path, target: Path, width: int, drawn: dict[str, str]) -> boo
     return True
 
 
-def stars(score: int) -> str:
-    """A score as five stars."""
+def stars(score: int | None) -> str:
+    """A score as five stars; a round-one row's, not yet given, says so."""
+    if score is None:
+        return "unscored"
     return "★" * score + "☆" * (5 - score)
 
 
@@ -518,6 +526,7 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
     esc = html.escape
     meta = f"item {row['item']} · kept: {row['kept']}" if row.get("kept") else f"item {row['item']}"
     reference = f"reference · {row['reference']}"
+    title = f' title="{row["score"]}/5"' if "score" in row else ""
     figures = [
         f'<figure class="ref">{zoom(images["ref_link"], images["ref"], f"{name} · {reference}")}'
         f"<figcaption>{esc(reference)}</figcaption></figure>"
@@ -540,8 +549,8 @@ def card(row: dict[str, Any], document: dict[str, Any], images: dict[str, str]) 
         )
     return (
         f'<section class="mode" data-id="{esc(name)}">\n'
-        f' <header><h2>{esc(name)}</h2><span class="score" title="{row["score"]}/5">'
-        f'{stars(row["score"])}</span><span class="meta">{esc(meta)}</span>\n'
+        f' <header><h2>{esc(name)}</h2><span class="score"{title}>'
+        f'{stars(row.get("score"))}</span><span class="meta">{esc(meta)}</span>\n'
         ' <div class="pub" role="group"><button data-v="publish">Publish</button>'
         '<button data-v="maybe">Maybe</button><button data-v="drop">Drop</button></div>'
         "</header>\n"
@@ -609,7 +618,7 @@ def gallery(folder: Path, catalog: dict[str, Any] | None = None) -> dict[str, An
             caption = f"{name} · reference · {row['reference']}"
             discarded.append(
                 f'<div class="dis">{zoom(full, f"img/{ref_small}", caption)}<div>'
-                f"<b>{esc(name)}</b> (item {esc(row['item'])}) {stars(row['score'])}<br>"
+                f"<b>{esc(name)}</b> (item {esc(row['item'])}) {stars(row.get('score'))}<br>"
                 f"{esc(row.get('note', ''))}</div></div>"
             )
             continue

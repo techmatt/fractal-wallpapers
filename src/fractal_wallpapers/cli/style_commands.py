@@ -9,7 +9,7 @@ import subprocess
 from fractal_wallpapers import engine
 from fractal_wallpapers.cli.common import resolve_input, resolve_output
 from fractal_wallpapers.paths import tracked_name
-from fractal_wallpapers.style_wasm import PARITY_RESOLUTION, PARITY_SUPERSAMPLE
+from fractal_wallpapers.style_wasm import PARITY_RESOLUTION, PARITY_SUPERSAMPLE, PARITY_WORKERS
 
 
 def style(args: argparse.Namespace) -> int:
@@ -99,7 +99,11 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
                 print(f"slowest: {slowest['id']} at {slowest['draw']:.2f} s")
             return 0 if len(drawn) == len(rows) else 1
         rows = style_wasm.parity(
-            folder, tuple(args.resolution), args.supersample, names=args.names or None
+            folder,
+            tuple(args.resolution),
+            args.supersample,
+            names=args.names or None,
+            workers=args.workers,
         )
     except style_wasm.StyleWasmError as refusal:
         print(refusal)
@@ -808,7 +812,14 @@ def add_commands(subcommands) -> None:
         "names",
         nargs="*",
         help="only these styles (default: every published mode, and every unpublished "
-        "style with a post stage or a stir); the whole run is over an hour",
+        "style with a post stage or a stir): one style after a change to it, the whole "
+        "run after an engine or module change",
+    )
+    parity.add_argument(
+        "--workers",
+        type=int,
+        default=PARITY_WORKERS,
+        help=f"Node threads drawing the module's pictures (default: {PARITY_WORKERS})",
     )
     parity.add_argument(
         "--resolution",
