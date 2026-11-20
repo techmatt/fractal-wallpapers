@@ -108,7 +108,7 @@ def palettes_carriers(args: argparse.Namespace) -> int:
 
 def palettes_add(args: argparse.Namespace) -> int:
     """Admit one map to the library, with its produced row and its carrier rows."""
-    from fractal_wallpapers import style_catalog, styles
+    from fractal_wallpapers import style_catalog, style_palettes, styles
     from fractal_wallpapers.curation import colorize
     from fractal_wallpapers.palettes import (
         admit,
@@ -163,8 +163,9 @@ def palettes_add(args: argparse.Namespace) -> int:
     if row is not None:
         # A palette for the mode's next round: it stays in the set once a tile in it is
         # kept, and `palettes remove` takes it out when none is.
-        if not any(entry["colormap"] == report["name"] for entry in row["palettes"]):
-            row["palettes"].append({"colormap": report["name"], "values": {}, "keeps": []})
+        # A round-one row's empty set gains the mode's own map as entry 0 first.
+        default = styles.load(args.mode)["suggested_colormap"]
+        if style_palettes.open_round(row, report["name"], default):
             style_catalog.write(catalog)
         print(
             f"[add] {args.mode}'s palette set: {report['name']} in its round (no keeps yet); "

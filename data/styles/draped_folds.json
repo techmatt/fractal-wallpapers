@@ -1,0 +1,149 @@
+{
+  "schema": 1,
+  "name": "draped_folds",
+  "description": "gold and teal spirals over dark smooth folds that read as draped cloth: a slow stripe's creases and sheen over a glossy relief",
+  "reference": {
+    "image": "underworld-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "suggested_colormap": "draped_folds",
+  "reuses": [
+    "the smooth count by rank",
+    "a `light` on the smooth count (molten_flow's slope relief)",
+    "`de` glows",
+    "the tone pass"
+  ],
+  "adds": [],
+  "notes": [
+    "Item 064 brought eight classic escape-time references (molemou, ovaline, touch, valhalla, underworld, under-a-brighter-sky, toxic-spire, molten) whose geometry is plain seahorse, spiral and dendrite, and whose look is their surface. No primitive was added: a texture probe at three seats found that orbit statistics already draw them. `stripe` at density 24 to 128 draws fine feathered strokes along the escape flow, decorrelating sample to sample near the set (a frost, a grain); at density 3 it swings slowly, so its troughs and crests read as cloth folds (2 still feathers). `gaussian_int` (the orbit's closest pass to the integer lattice) inverted at power 30 to 60 draws sparkle points scattered along the set (a stipple). `tia` and `curvature` draw soft plumes; `velocity` and `trap_circle` band too hard to be a texture.",
+    "The stack: the smooth count by rank (gamma 1.6); a slope `light`; `stripe` 3 inverted as a dark multiply (the creases) and at power 6 as a pale screen (the sheen between them); a gold `de` halo, a teal core and a dark `de` ink. Unlike molten_flow it has no `view`, so it costs one escape loop. Entry: molten_sheets (molten: amber, a steeper light). Readings: d3_one (`stripe` 1, broader folds), d3_plumes (`stripe` 2: feathered), d3_plain (no cloth)."
+  ],
+  "style": {
+    "name": "draped_folds",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.238,
+      "p10": 0.085
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 1.6,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.0,
+          "slope": 1.2,
+          "azimuth": 120.0,
+          "elevation": 40.0,
+          "ambient": 0.4,
+          "diffuse": 0.7,
+          "specular": 0.5,
+          "shininess": 14.0,
+          "rim": 0.2,
+          "rim_power": 2.5,
+          "highlight": {
+            "palette": 0.9
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 3.0
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.6,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 3.0
+          }
+        },
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "power": 6.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0012,
+        "color": {
+          "palette": 0.78
+        },
+        "blend": "screen",
+        "opacity": 0.45
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.00025,
+        "color": {
+          "palette": 0.52
+        },
+        "blend": "screen",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0005,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.4
+      }
+    ]
+  }
+}

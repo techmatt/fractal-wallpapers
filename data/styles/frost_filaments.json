@@ -1,0 +1,164 @@
+{
+  "schema": 1,
+  "name": "frost_filaments",
+  "description": "a deep-blue spiral whose filaments glow white, feathered with frost spikes and a few sparkles, faint circle arcs across the field",
+  "reference": {
+    "image": "valhalla.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "suggested_colormap": "frost_filaments",
+  "reuses": [
+    "the smooth count by rank, gamma 1.3",
+    "`de` glows (halo and core) and a dark `de` ink",
+    "the stroke trap (a circle at `taper` 0: thin arcs)",
+    "the tone pass"
+  ],
+  "adds": [],
+  "notes": [
+    "Item 064 brought eight classic escape-time references (molemou, ovaline, touch, valhalla, underworld, under-a-brighter-sky, toxic-spire, molten) whose geometry is plain seahorse, spiral and dendrite, and whose look is their surface. No primitive was added: a texture probe at three seats found that orbit statistics already draw them. `stripe` at density 24 to 128 draws fine feathered strokes along the escape flow, decorrelating sample to sample near the set (a frost, a grain); at density 3 it swings slowly, so its troughs and crests read as cloth folds (2 still feathers). `gaussian_int` (the orbit's closest pass to the integer lattice) inverted at power 30 to 60 draws sparkle points scattered along the set (a stipple). `tia` and `curvature` draw soft plumes; `velocity` and `trap_circle` band too hard to be a texture.",
+    "The stack: the smooth count by rank (gamma 1.3) on a navy-to-white map; `stripe` 24 masked hard to the set (mask power 5) as frost spikes; a wide `de` halo (falloff 0.0025) and a core; `gaussian_int` sparkle at the set; a circle stroke at `taper` 0 (thin arcs, toxic-spire's); a dark `de` ink. Drafting found the frost at mask power 3 floods the far field grey and at 8 barely shows; 5 keeps it at the filaments and visible. Every render misses the tone check's p90 low (0.67 against valhalla's 0.83): the tone pass pins the median at 0.135, and the seats lack valhalla's large white core; wider glows lowered p90 (0.60). Entries: icy_sky (under-a-brighter-sky: pale ground, navy ink) and toxic_spire (gold dendrites in green, the arcs raised). Readings: f3_wide (frost mask 4), f3_arcs (arcs at 0.7), f3_plain (frost, sparkle and arcs off)."
+  ],
+  "style": {
+    "name": "frost_filaments",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.135,
+      "p10": 0.006
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 1.3,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          }
+        },
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "power": 4.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 5.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0025,
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.75
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0002,
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.7,
+        "power": 60.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "circle",
+            "on_c": true,
+            "radius": 0.8,
+            "width": 0.0008,
+            "taper": 0.0,
+            "largest": 2.0,
+            "smallest": 0.15,
+            "steps": 8,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.3
+      }
+    ]
+  }
+}

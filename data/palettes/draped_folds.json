@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "draped_folds",
+  "kind": "sequential",
+  "source": "a navy-black through indigo, maroon and teal to amber, gold and a warm cream: the albedo of the draped_folds style, from underworld-25.jpg, gold and teal spirals over dark smooth folds that read as draped cloth",
+  "stops": [
+    [0.0, [14, 14, 34]],
+    [0.2, [40, 30, 72]],
+    [0.36, [112, 24, 24]],
+    [0.52, [18, 98, 108]],
+    [0.7, [204, 122, 40]],
+    [0.86, [246, 202, 112]],
+    [1.0, [255, 246, 216]]
+  ]
+}

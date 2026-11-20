@@ -20,6 +20,12 @@ row per option:
 
 A row with `mode` in place of `style` is a named mode's render (a baseline tile).
 
+**A keep belongs to the mode that drew it, not the row it sits in** (`rows_of`): a
+round-one picker ends a style's row with a tile of another catalog mode, so `style keep
+<mode>` also takes the kept keys from any row whose render row names `<mode>`, and
+`style keep <style>` leaves those keys out. A named mode's baseline and a draft
+formulation's own name name no catalog mode and stay with the row's style.
+
 Re-running merges: a keep already recorded stays, a new round's keeps are added, and a
 keep picked again gains the new row and note. A picture whose picker image is gone is
 drawn again from its record.
@@ -199,18 +205,73 @@ def kept(
     return list(keeps.values()), stacks
 
 
-def rows_of(choices: dict[str, Any], name: str) -> dict[str, Any]:
-    """The choices rows that are style `name`'s.
+def drawn_by(render: dict[str, Any] | None, modes: dict[str, str]) -> str | None:
+    """The catalog mode a render row names, or None: a named mode's baseline (`mode`), a
+    draft formulation's own name, or no row at all names none."""
+    return modes.get((render or {}).get("style", ""))
+
+
+def catalog_modes() -> dict[str, str]:
+    """Each catalog mode's name, and each name merged into one, to the mode it is."""
+    from fractal_wallpapers import styles
+
+    rows = styles.catalog_rows()
+    return {name: row["style"] for row in rows for name in [row["style"], *row.get("aliases", [])]}
+
+
+def rows_of(
+    choices: dict[str, Any],
+    name: str,
+    renders: dict[str, dict[str, Any]] | None = None,
+    modes: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """The choices rows, and the keys in them, that are style `name`'s keeps.
 
     A picker for one style has plain row ids (`locations`), all its own. A picker for a
-    group of styles scopes each row as `<style>/<row>`, and only
-    the named style's rows are its keeps, so `style keep` runs once per style on the one
-    choices file.
+    group of styles scopes each row as `<style>/<row>`, and only the named style's rows
+    are its own, so `style keep` runs once per style on the one choices file.
+
+    With the renders sidecar, a key goes by the mode that drew it, not the row it sits
+    in: a round-one picker ends a style's row with another mode's tile, and a keep of
+    that tile is the other mode's. So an own row loses the keys whose render names
+    another catalog mode, and any other row lends the keys whose render names this one.
+    `modes` is `catalog_modes()`, read here when not given.
     """
-    rows = [
-        row for row in choices["rows"] if "/" not in row["id"] or row["id"].split("/", 1)[0] == name
-    ]
+    renders = renders or {}
+    modes = modes if modes is not None else (catalog_modes() if renders else {})
+    mine = modes.get(name, name)
+    rows = []
+    for row in choices["rows"]:
+        own = "/" not in row["id"] or row["id"].split("/", 1)[0] == name
+        drawers = {key: drawn_by(renders.get(key), modes) for key in row["keys"]}
+        if own:
+            keys = [key for key in row["keys"] if drawers[key] in (None, mine)]
+        else:
+            keys = [key for key in row["keys"] if drawers[key] == mine]
+        if keys or (own and not row["keys"]):
+            rows.append({**row, "keys": keys})
     return {**choices, "rows": rows}
+
+
+def left_to(
+    choices: dict[str, Any],
+    name: str,
+    renders: dict[str, dict[str, Any]],
+    modes: dict[str, str] | None = None,
+) -> dict[str, list[str]]:
+    """The kept keys in style `name`'s own rows that another catalog mode drew, by mode:
+    what `rows_of` leaves out, so `style keep` can name the runs that save them."""
+    modes = modes if modes is not None else (catalog_modes() if renders else {})
+    mine = modes.get(name, name)
+    out: dict[str, list[str]] = {}
+    for row in choices["rows"]:
+        if "/" in row["id"] and row["id"].split("/", 1)[0] != name:
+            continue
+        for key in row["keys"]:
+            drawer = drawn_by(renders.get(key), modes)
+            if drawer not in (None, mine):
+                out.setdefault(drawer, []).append(key)
+    return out
 
 
 def merge(old: dict[str, Any], keeps: list[dict[str, Any]], stacks: dict) -> dict[str, Any]:
@@ -265,7 +326,9 @@ def keep(
 
     Each kept tile's map joins the mode's palette set in `catalog.json` (`catalog`
     False leaves it alone). Returns `{record, folder, kept, copied, drawn, total, mode,
-    palettes}`: the counts are this round's, `palettes` the maps new to the set.
+    palettes, others}`: the counts are this round's, `palettes` the maps new to the set,
+    `others` the keys in `name`'s own rows that another mode drew (`left_to`), which a
+    `style keep <that mode>` on the same choices file saves.
     """
     from fractal_wallpapers import engine, styles
 
@@ -283,7 +346,8 @@ def keep(
     manifest_path = manifest_path or manifest_of(choices)
     manifest = read_json(manifest_path, "picker manifest")
     renders = read_renders(renders_path or manifest_path.parent / style_picker.SIDECAR_NAME)
-    choices = rows_of(choices, name)
+    others = left_to(choices, name, renders)
+    choices = rows_of(choices, name, renders)
     keeps, stacks = kept(choices, manifest, renders, manifest_path.parent)
 
     folder = folder or keeps_folder(mode)
@@ -328,6 +392,7 @@ def keep(
         "total": len(merged["keeps"]),
         "mode": mode,
         "palettes": added,
+        "others": others,
     }
 
 

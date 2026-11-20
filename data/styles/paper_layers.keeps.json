@@ -1,0 +1,205 @@
+{
+  "schema": 1,
+  "name": "paper_layers",
+  "reference": {
+    "image": "no-mans-land-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org', 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/paper_layers",
+  "keeps": [
+    {
+      "id": "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
+      "picker": "style_cut_paper_poster_r1",
+      "picked": [
+        {
+          "row": "paper_layers/formulations",
+          "key": "paper_a__p_tia__00_phoenix_fc131a7f"
+        }
+      ],
+      "label": "sheets cut from the tia: wavy blades that pinch",
+      "image": "style_cut_paper_poster_r1__paper_a__p_tia__00_phoenix_fc131a7f.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "paper_layers",
+        "stack": "paper_layers@ca4b0fe2",
+        "colormap": "paper_layers",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_cut_paper_poster_r1/paper_layers/locations/paper_loc__p_stack__01_phoenix_71e305f0",
+      "picker": "style_cut_paper_poster_r1",
+      "picked": [
+        {
+          "row": "paper_layers/locations",
+          "key": "paper_loc__p_stack__01_phoenix_71e305f0"
+        }
+      ],
+      "label": "phoenix tendrils",
+      "image": "style_cut_paper_poster_r1__paper_loc__p_stack__01_phoenix_71e305f0.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_71e305f0",
+          "family": {
+            "c": [
+              "-0.45709691767279576",
+              "-0.199309339142123"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "0.26195066562519664",
+              "-0.03188285542142037"
+            ],
+            "z_prev": [
+              "0.23987361417464126",
+              "0.45066347511034605"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.25337620512610465",
+            "center_im": "0.019520042863297414",
+            "width": "0.05170751794386484"
+          },
+          "maxiter": 11030,
+          "note": "final139_general seat 221 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 221,
+            "key": "71e305f066da5bbb",
+            "p_spiral": 0.015579
+          },
+          "ink": 0.09515
+        },
+        "style": "paper_layers",
+        "stack": "paper_layers@8829a2d7",
+        "colormap": "paper_layers",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "paper_layers@8829a2d7": {
+      "name": "paper_layers",
+      "interior": {
+        "palette": 0.56
+      },
+      "tone": {
+        "median": 0.572,
+        "p10": 0.139
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "paper",
+          "levels": 12,
+          "taper": 0.86,
+          "shadow": {
+            "width": 0.05,
+            "offset": 0.012,
+            "azimuth": 120.0,
+            "opacity": 0.6
+          }
+        }
+      ]
+    },
+    "paper_layers@ca4b0fe2": {
+      "name": "paper_layers",
+      "interior": {
+        "palette": 0.56
+      },
+      "tone": {
+        "median": 0.572,
+        "p10": 0.139
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "paper",
+          "levels": 12,
+          "taper": 0.86,
+          "shadow": {
+            "width": 0.05,
+            "offset": 0.012,
+            "azimuth": 120.0,
+            "opacity": 0.6
+          },
+          "height": {
+            "field": {
+              "kind": "tia"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

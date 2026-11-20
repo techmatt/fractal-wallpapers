@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "icy_sky",
+  "kind": "sequential",
+  "source": "a deep navy through slate blue and sky blue to a pale ice and white: the albedo of frost_filaments' icy_sky entry, from under-a-brighter-sky-25.jpg, navy dendrites over pale icy blue",
+  "stops": [
+    [0.0, [8, 12, 56]],
+    [0.25, [54, 84, 150]],
+    [0.5, [96, 190, 228]],
+    [0.7, [164, 226, 242]],
+    [0.86, [226, 242, 248]],
+    [1.0, [255, 255, 255]]
+  ]
+}

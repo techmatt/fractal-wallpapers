@@ -211,6 +211,11 @@ def keep_style(args: argparse.Namespace) -> int:
         )
     elif done["palettes"]:
         print(f"new in {done['mode']}'s palette set: {', '.join(done['palettes'])}")
+    for other, keys in sorted(done.get("others", {}).items()):
+        print(
+            f"left to {other} (it drew them): {', '.join(keys)}; "
+            f"run `style keep {other} {args.choices}`"
+        )
     return 0
 
 

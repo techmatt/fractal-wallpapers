@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "molten_sheets",
+  "kind": "sequential",
+  "source": "a near-black brown through umber and burnt orange to amber, a gold and a pale cream: the albedo of draped_folds' molten_sheets entry, from molten-25.jpg, lit amber sheets folding into each other, small spirals glowing at their edges",
+  "stops": [
+    [0.0, [24, 8, 2]],
+    [0.3, [88, 34, 8]],
+    [0.55, [170, 78, 14]],
+    [0.75, [232, 140, 40]],
+    [0.9, [255, 204, 104]],
+    [1.0, [255, 246, 212]]
+  ]
+}

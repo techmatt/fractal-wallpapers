@@ -4406,6 +4406,39 @@ mod tests {
     }
 
     #[test]
+    fn a_stroke_under_a_stir_reads_finite_samples() {
+        // A stroke's distance is a frame length, carried through the stir by its
+        // Jacobian; a stack whose only trap is a stroke glow once had no Jacobian taken,
+        // and every stroke sample came back NaN.
+        let style: Style = serde_json::from_str(
+            r##"{"name": "x", "stir": [{"strength": 1.0, "steps": 3}], "layers": [
+                {"kind": "glow", "channel": {"stroke": {"read": "glow"}},
+                 "color": {"rgb": "#ffffff"}}]}"##,
+        )
+        .unwrap();
+        style.validate().unwrap();
+        let view = Viewport {
+            center: Complex::new(-0.75, 0.25),
+            width: 0.6,
+            out_width: 24,
+            out_height: 15,
+            supersample: 1,
+        };
+        let family = Family::Multibrot { degree: 2 };
+        let channels = gather(&view, &family, 200, &style, Window::whole(&view));
+        let [lanes] = channels.strokes.as_slice() else {
+            panic!("{} stroke loops", channels.strokes.len());
+        };
+        let glow = &lanes.reads[StrokeRead::Glow as usize];
+        assert_eq!(
+            glow.len(),
+            (view.sample_width() * view.sample_height()) as usize
+        );
+        assert!(glow.iter().all(|value| value.is_finite()), "{glow:?}");
+        assert!(glow.iter().any(|&value| value > 0.01), "no stroke drawn");
+    }
+
+    #[test]
     fn a_light_on_lines_is_refused_and_lines_stand_alone() {
         let light = r##"{"name": "x", "layers": [{"kind": "light", "channel": {"lines": {}}}]}"##;
         let style: Style = serde_json::from_str(light).unwrap();

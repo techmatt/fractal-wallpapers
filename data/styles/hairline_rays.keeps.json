@@ -1,0 +1,645 @@
+{
+  "schema": 1,
+  "name": "hairline_rays",
+  "reference": {
+    "image": "sear-the-sky-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal orbit traps (signed exoteric.roach.org), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/hairline_rays",
+  "keeps": [
+    {
+      "id": "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",
+      "picker": "style_chrome_stars_hairlines_r1",
+      "picked": [
+        {
+          "row": "hairline_rays/formulations",
+          "key": "w3__r_six__00_julia-mandelbrot_291fb1ab"
+        }
+      ],
+      "label": "six lines: a dense mesh",
+      "image": "style_chrome_stars_hairlines_r1__w3__r_six__00_julia-mandelbrot_291fb1ab.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_291fb1ab",
+          "family": {
+            "c": [
+              "-0.7488551646997019",
+              "-0.13572339871672048"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.5010082104000427",
+            "center_im": "0.06779785703305558",
+            "width": "0.23716968598826318"
+          },
+          "maxiter": 8393,
+          "note": "final139_general seat 83 (smooth, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 83,
+            "key": "291fb1ab3ac3ea9b",
+            "p_spiral": 0.982848
+          }
+        },
+        "style": "hairline_rays",
+        "stack": "hairline_rays@68f1b26f",
+        "colormap": "hairline_rays",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17",
+      "picker": "style_chrome_stars_hairlines_r1",
+      "picked": [
+        {
+          "row": "hairline_rays/locations",
+          "key": "w3__r_stack__02_phoenix_d93f2b17"
+        }
+      ],
+      "label": "phoenix, a mesh round a faint spiral",
+      "image": "style_chrome_stars_hairlines_r1__w3__r_stack__02_phoenix_d93f2b17.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_d93f2b17",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.3982970955162623",
+            "center_im": "0.5492040193988719",
+            "width": "0.2838617155845553"
+          },
+          "maxiter": 8082,
+          "note": "final139_general seat 12 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 12,
+            "key": "d93f2b1719ad1937",
+            "p_spiral": 0.928177
+          }
+        },
+        "style": "hairline_rays",
+        "stack": "hairline_rays@260dc53a",
+        "colormap": "hairline_rays",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "hairline_rays@260dc53a": {
+      "name": "hairline_rays",
+      "interior": {
+        "palette": 0.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "radial": {
+              "center": [
+                0.5,
+                2.5
+              ]
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "value"
+            },
+            "cycles": 0.6,
+            "gamma": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.004,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.1
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 20.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 20.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 80.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 80.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 140.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 140.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        }
+      ],
+      "tone": {
+        "median": 0.144,
+        "p10": 0.063
+      }
+    },
+    "hairline_rays@68f1b26f": {
+      "name": "hairline_rays",
+      "interior": {
+        "palette": 0.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "radial": {
+              "center": [
+                0.5,
+                2.5
+              ]
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "value"
+            },
+            "cycles": 0.6,
+            "gamma": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.004,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.1
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.08
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 20.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 20.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 50.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 50.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 80.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 80.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 110.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 110.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 140.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 140.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 170.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 0.2
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 170.0,
+              "width": 0.0005,
+              "taper": 0.0,
+              "largest": 3.0,
+              "smallest": 0.02,
+              "steps": 40,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 1.0
+        }
+      ],
+      "tone": {
+        "median": 0.144,
+        "p10": 0.063
+      }
+    }
+  }
+}

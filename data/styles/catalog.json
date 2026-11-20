@@ -2914,46 +2914,148 @@
     },
     {
       "style": "paper_layers",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "061",
       "reference": "no-mans-land-25.jpg",
       "references": [
         "no-mans-land-25.jpg"
       ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_cut_paper_poster_r1/paper_layers/locations/paper_loc__p_stack__01_phoenix_71e305f0",
+          "caption": "Slate-blue lace curling over stacked cream, amber and rust sheets, each casting a soft shadow on the one below"
+        },
+        {
+          "keep": "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
+          "caption": "Cream sheets pooled round a phoenix island, rust and slate strips of paper fanning out beneath them"
+        }
+      ],
+      "public": {
+        "name": "paper-layers",
+        "palette": "paper_layers",
+        "knobs": []
+      },
       "what": "Stacked sheets of cut paper: the set's bands as flat cream, rust and slate sheets, each casting a soft shadow on the one under it.",
-      "palettes": []
+      "kept": "2 tiles: p_tia at the formulations seat, the stack at a second phoenix seat",
+      "note": "Engine: the post stage's paper pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
+      "palettes": [
+        {
+          "colormap": "paper_layers",
+          "values": {},
+          "keeps": [
+            "style_cut_paper_poster_r1/paper_layers/formulations/paper_a__p_tia__00_phoenix_fc131a7f",
+            "style_cut_paper_poster_r1/paper_layers/locations/paper_loc__p_stack__01_phoenix_71e305f0"
+          ],
+          "score": 4
+        }
+      ]
     },
     {
       "style": "poster_curls",
+      "score": 1,
+      "status": "drop",
       "item": "061",
       "reference": "wallhaven_wallhaven-6d3zz6.jpg",
       "references": [
         "wallhaven_wallhaven-6d3zz6.jpg"
       ],
       "what": "A screen-print poster: the set's bands as hard flat blocks of eight inks, neighbours far apart on the map, no gradients.",
-      "palettes": []
+      "kept": "nothing",
+      "note": "Engine: the post stage's paper pass (paper_layers') · Matt: round one kept nothing; 1/5, drop.",
+      "palettes": [
+        {
+          "colormap": "poster_curls",
+          "values": {},
+          "keeps": [],
+          "score": 1
+        }
+      ]
     },
     {
       "style": "gouache_cut",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "061",
       "reference": "wallhaven_wallhaven-4omjp5.jpg",
       "references": [
         "wallhaven_wallhaven-4omjp5.jpg"
       ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_cut_paper_poster_r1/gouache_cut/formulations/gouache_a__g_stack__00_phoenix_f7199609",
+          "caption": "Flat teal, navy and mint shapes with dry-brush ragged edges round a phoenix seat, lime knife strokes along the rims"
+        }
+      ],
+      "public": {
+        "name": "gouache-cut",
+        "palette": "gouache_cut",
+        "knobs": []
+      },
       "what": "Gouache: broad flat teal, navy and mint shapes with dry-brush ragged edges and a few lime knife strokes.",
-      "palettes": []
+      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (round one's picks kept nothing)",
+      "note": "Engine: the post stage's paper pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5; no tile picked, so the stack tile from the scoring page is kept for the mode to open in lab.",
+      "palettes": [
+        {
+          "colormap": "gouache_cut",
+          "values": {},
+          "keeps": [
+            "style_cut_paper_poster_r1/gouache_cut/formulations/gouache_a__g_stack__00_phoenix_f7199609"
+          ],
+          "score": 3
+        }
+      ]
     },
     {
       "style": "mercury_tubes",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "062",
       "reference": "visionary-spires-25.jpg",
       "references": [
         "visionary-spires-25.jpg"
       ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae",
+          "caption": "A ring of chrome stars round a spiral of fine lace, mercury tubes sweeping out across the blue"
+        },
+        {
+          "keep": "style_chrome_stars_hairlines_r1/mercury_tubes/formulations/w1__m_fine__00_phoenix_fc131a7f",
+          "caption": "Chrome stars joined by mercury tubes thinning to hairlines, over a navy-to-cyan ground"
+        }
+      ],
+      "public": {
+        "name": "mercury-tubes",
+        "palette": "mercury_tubes",
+        "knobs": []
+      },
       "what": "Liquid chrome: mirror-bright star nodes joined by mercury tubes thinning to hairlines, hairline loops, on a calm navy-to-cyan ground.",
-      "palettes": []
+      "kept": "2 tiles: m_fine at the formulations seat, the stack at a second phoenix seat",
+      "note": "Engine: the stroke trap (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
+      "palettes": [
+        {
+          "colormap": "mercury_tubes",
+          "values": {},
+          "keeps": [
+            "style_chrome_stars_hairlines_r1/mercury_tubes/formulations/w1__m_fine__00_phoenix_fc131a7f",
+            "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae"
+          ],
+          "score": 4
+        }
+      ]
     },
     {
       "style": "neon_loops",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "062",
       "reference": "ten-leaf-clover-25.jpg",
       "references": [
@@ -2961,45 +3063,27 @@
         "tinan-25.jpg",
         "tianan-25.jpg"
       ],
-      "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (cream ribbons on black, blue-white beams between tan stars as palette entries).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_chrome_stars_hairlines_r1/neon_loops/entries/w2__e_tan_star_beams__00_phoenix_8b21e0ae",
+          "caption": "Blue-white beams arcing over a tan lace spiral on a dark navy ground"
+        }
+      ],
+      "public": {
+        "name": "neon-loops",
+        "palette": "neon_loops",
+        "knobs": []
+      },
+      "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (blue-white beams between tan stars as a palette entry).",
+      "kept": "1 tile: the tan_star_beams entry; the stack's own formulations and the cream_ribbons entry kept nothing",
+      "note": "Engine: the stroke trap (mercury_tubes') · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the tan_star_beams entry 3/5.",
       "palettes": [
         {
           "colormap": "neon_loops",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "cream_ribbons",
-          "values": {
-            "/layers/0/palette/gamma": 2.5,
-            "/layers/1/opacity": 0.08,
-            "/layers/2/falloff": 0.0005,
-            "/layers/2/opacity": 0.9,
-            "/layers/3/channel/stroke/smallest": 0.1,
-            "/layers/3/channel/stroke/steps": 8,
-            "/layers/3/channel/stroke/taper": 0.75,
-            "/layers/3/channel/stroke/width": 0.02,
-            "/layers/3/opacity": 0.18,
-            "/layers/3/power": 0.5,
-            "/layers/4/channel/stroke/smallest": 0.1,
-            "/layers/4/channel/stroke/steps": 8,
-            "/layers/4/channel/stroke/taper": 0.75,
-            "/layers/4/channel/stroke/width": 0.02,
-            "/layers/4/power": 1.0,
-            "/layers/5/channel/stroke/smallest": 0.1,
-            "/layers/5/channel/stroke/steps": 8,
-            "/layers/5/channel/stroke/width": 0.0015,
-            "/layers/5/opacity": 0.06,
-            "/layers/5/power": 0.5,
-            "/layers/6/channel/stroke/smallest": 0.1,
-            "/layers/6/channel/stroke/steps": 8,
-            "/layers/6/channel/stroke/width": 0.0015,
-            "/layers/6/opacity": 0.3,
-            "/tone/median": 0.199,
-            "/tone/p10": 0.003
-          },
           "keeps": [],
-          "reference": "tinan-25.jpg"
+          "score": 3
         },
         {
           "colormap": "tan_star_beams",
@@ -3030,20 +3114,174 @@
             "/tone/median": 0.156,
             "/tone/p10": 0.034
           },
-          "keeps": [],
-          "reference": "tianan-25.jpg"
+          "keeps": [
+            "style_chrome_stars_hairlines_r1/neon_loops/entries/w2__e_tan_star_beams__00_phoenix_8b21e0ae"
+          ],
+          "reference": "tianan-25.jpg",
+          "score": 3
         }
       ]
     },
     {
       "style": "hairline_rays",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "062",
       "reference": "sear-the-sky-25.jpg",
       "references": [
         "sear-the-sky-25.jpg"
       ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",
+          "caption": "Hundreds of hairlines crossing in a mesh round a Julia spiral's eye, blue on deep blue"
+        },
+        {
+          "keep": "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17",
+          "caption": "Hairline loops winding into a phoenix spiral, frosted lace along its edges"
+        }
+      ],
+      "public": {
+        "name": "hairline-rays",
+        "palette": "hairline_rays",
+        "knobs": []
+      },
       "what": "Hundreds of fine bright hairlines sweeping out of the spiral centres and crossing in a mesh, blue on deep blue.",
+      "kept": "2 tiles: r_six at the formulations seat, the stack at a phoenix spiral seat",
+      "note": "Engine: the stroke trap (mercury_tubes') · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
+      "palettes": [
+        {
+          "colormap": "hairline_rays",
+          "values": {},
+          "keeps": [
+            "style_chrome_stars_hairlines_r1/hairline_rays/formulations/w3__r_six__00_julia-mandelbrot_291fb1ab",
+            "style_chrome_stars_hairlines_r1/hairline_rays/locations/w3__r_stack__02_phoenix_d93f2b17"
+          ],
+          "score": 4
+        }
+      ]
+    },
+    {
+      "style": "frost_stipple",
+      "item": "064",
+      "reference": "molemou.jpg",
+      "references": [
+        "molemou.jpg",
+        "ovaline.jpg"
+      ],
+      "what": "Frosted seahorse waves in lilac and grey: fine feathered grain and sparkle stipple along the set, soft dark plumes in the valleys, each interior cell mottled (a honeycomb of orange and olive cells as a palette entry).",
+      "palettes": [
+        {
+          "colormap": "frost_stipple",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "honey_cells",
+          "values": {
+            "/layers/0/palette/cycles": 2.5,
+            "/layers/1/opacity": 0.5,
+            "/layers/5/warp/amount": 1.5,
+            "/tone/median": 0.534,
+            "/tone/p10": 0.105
+          },
+          "keeps": [],
+          "reference": "ovaline.jpg"
+        }
+      ]
+    },
+    {
+      "style": "grain_fans",
+      "item": "064",
+      "reference": "touch.jpg",
+      "references": [
+        "touch.jpg"
+      ],
+      "what": "Broad fans of alternating teal and orange bands, each scooped darker towards its edge and carrying fine parallel grain, the set's beads along the edges.",
       "palettes": []
+    },
+    {
+      "style": "frost_filaments",
+      "item": "064",
+      "reference": "valhalla.jpg",
+      "references": [
+        "valhalla.jpg",
+        "under-a-brighter-sky-25.jpg",
+        "toxic-spire-25.jpg"
+      ],
+      "what": "A deep-blue spiral whose filaments glow white, feathered with frost spikes and sparkles, faint circle arcs across it (navy dendrites on pale ice, gold dendrites in green as palette entries).",
+      "palettes": [
+        {
+          "colormap": "frost_filaments",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "icy_sky",
+          "values": {
+            "/layers/0/palette/gamma": 0.8,
+            "/layers/1/opacity": 0.5,
+            "/layers/2/opacity": 0.15,
+            "/layers/3/opacity": 0.1,
+            "/layers/5/opacity": 0.3,
+            "/layers/6/falloff": 0.0015,
+            "/layers/6/opacity": 1.0,
+            "/tone/median": 0.724,
+            "/tone/p10": 0.441
+          },
+          "keeps": [],
+          "reference": "under-a-brighter-sky-25.jpg"
+        },
+        {
+          "colormap": "toxic_spire",
+          "values": {
+            "/layers/0/palette/gamma": 0.8,
+            "/layers/1/mask/power": 4.0,
+            "/layers/1/opacity": 0.5,
+            "/layers/2/falloff": 0.003,
+            "/layers/2/opacity": 0.3,
+            "/layers/3/opacity": 0.6,
+            "/layers/5/opacity": 0.8,
+            "/layers/6/opacity": 0.6,
+            "/tone/median": 0.241,
+            "/tone/p10": 0.035
+          },
+          "keeps": [],
+          "reference": "toxic-spire-25.jpg"
+        }
+      ]
+    },
+    {
+      "style": "draped_folds",
+      "item": "064",
+      "reference": "underworld-25.jpg",
+      "references": [
+        "underworld-25.jpg",
+        "molten-25.jpg"
+      ],
+      "what": "Gold and teal spirals over dark smooth folds that read as draped cloth, a slow stripe's creases and sheen over a glossy relief (lit amber sheets as a palette entry).",
+      "palettes": [
+        {
+          "colormap": "draped_folds",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "molten_sheets",
+          "values": {
+            "/layers/0/palette/gamma": 1.2,
+            "/layers/1/light/slope": 1.8,
+            "/layers/3/opacity": 0.55,
+            "/layers/4/opacity": 0.7,
+            "/tone/median": 0.111,
+            "/tone/p10": 0.014
+          },
+          "keeps": [],
+          "reference": "molten-25.jpg"
+        }
+      ]
     }
   ]
 }

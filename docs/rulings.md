@@ -43,8 +43,9 @@ given in, with its date and the item it came from.
 - **No wording or prose checks** (Matt, 2026-11-13; removed by 051): checks cover
   structure and data only, and none is to be added back. A prose pass runs only when a
   prompt asks for one.
-- **15 KB is the standing bar for the style docs** (Matt, 2026-11-19; 059's audit): the
-  post stage and the stir leave `STACK.md` for `data/styles/POST.md`. `FORMATS.md` is
+- **15 KB (15,000 bytes) is the standing bar for the style docs** (Matt, 2026-11-19;
+  059's audit): the post stage and the stir leave `STACK.md` for `data/styles/POST.md`;
+  `style sweep` leaves `README.md` for `data/styles/CHECKS.md` (064). `FORMATS.md` is
   exempt (Matt, 2026-11-19; 060): the bar is for the style docs, and it stays whole at
   about 16.5 KB, its bytes being field names `tests/test_formats.py` requires. No split.
 - `CLAUDE.md` cleanup picks standing (2026-11-04): the build-era section stays until

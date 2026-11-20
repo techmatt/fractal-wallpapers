@@ -82,6 +82,13 @@ divided by `zoom`, so a falloff glow keeps its width; a `light` cannot read a vi
 channel. `turn`, `zoom` and `shift` are frame-relative and hold at any depth; `c` is in
 plane units, so it is for shallow, hand-placed seats.
 
+**As a texture** (064's probe, a glow over smooth bands): `stripe` at density 24 to 128
+draws fine feathered grain along the escape flow, decorrelating sample to sample near the
+set; at 3 it swings slowly into soft folds; `gaussian_int` inverted at power 30 to 60
+draws sparkle points along the set; `tia` and `curvature` draw soft plumes; `velocity` and
+`trap_circle` band too hard. `gaussian_int`, the traps and `velocity` are defined inside
+the set too, so a layer on one paints the interior unless masked.
+
 The **trap channels** read an orbit against a shape of its own plane, each in a loop
 of its own, and `TRAPS.md` beside this has them: `bubble` (a disc or strip read at an
 entry: a circle packing, blades), `lines` (the angle where the orbit crosses a circle:

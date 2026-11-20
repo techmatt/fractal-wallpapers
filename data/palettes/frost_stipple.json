@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "frost_stipple",
+  "kind": "cyclic",
+  "source": "a deep aubergine-grey through dusty violet and lilac to a frosty near-white and a rose pink, back to the aubergine: the albedo of the frost_stipple style, from molemou.jpg, lilac and grey seahorse waves dusted with sparkling stipple",
+  "stops": [
+    [0.0, [52, 36, 64]],
+    [0.22, [112, 88, 132]],
+    [0.45, [178, 152, 200]],
+    [0.62, [226, 222, 242]],
+    [0.78, [216, 168, 204]],
+    [0.9, [120, 84, 118]],
+    [1.0, [52, 36, 64]]
+  ]
+}

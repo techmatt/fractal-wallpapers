@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "name": "grain_fans",
+  "description": "broad fans of alternating teal and orange bands, each band scooped darker towards its edge and carrying fine parallel grain, a bead chain of the set's lace along the edges",
+  "reference": {
+    "image": "touch.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "suggested_colormap": "grain_fans",
+  "reuses": [
+    "the smooth count through a cyclic map by rank (smooth_bands)",
+    "a multiply sheet",
+    "`de` glows for the bead chain",
+    "the tone pass"
+  ],
+  "adds": [],
+  "notes": [
+    "Item 064 brought eight classic escape-time references (molemou, ovaline, touch, valhalla, underworld, under-a-brighter-sky, toxic-spire, molten) whose geometry is plain seahorse, spiral and dendrite, and whose look is their surface. No primitive was added: a texture probe at three seats found that orbit statistics already draw them. `stripe` at density 24 to 128 draws fine feathered strokes along the escape flow, decorrelating sample to sample near the set (a frost, a grain); at density 3 it swings slowly, so its troughs and crests read as cloth folds (2 still feathers). `gaussian_int` (the orbit's closest pass to the integer lattice) inverted at power 30 to 60 draws sparkle points scattered along the set (a stipple). `tia` and `curvature` draw soft plumes; `velocity` and `trap_circle` band too hard to be a texture.",
+    "The stack: the smooth count by rank at 4 cycles of a teal and orange map; a multiply sheet at 8 bands (each band scooped darker towards its far edge); `stripe` 48 twice, a dark multiply and a pale screen (the grain, running across each band as touch's does); a dark and a pale `de` hair (the bead chain); a faint `gaussian_int` sparkle. This is the feathery stroke crisis_smooth and dalooka_smooth never drew. Round one's readings: g3_fine (`stripe` 96), g3_six (6 cycles), g3_plain (no grain: the headline off)."
+  ],
+  "style": {
+    "name": "grain_fans",
+    "interior": {
+      "palette": 0.84
+    },
+    "tone": {
+      "median": 0.558,
+      "p10": 0.262
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 4.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "bands": 8.0,
+          "edge": 0.15,
+          "fill": 0.35
+        },
+        "blend": "multiply",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 48.0
+          }
+        },
+        "color": {
+          "palette": 0.0
+        },
+        "blend": "multiply",
+        "opacity": 0.6,
+        "power": 1.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 48.0
+          }
+        },
+        "color": {
+          "palette": 0.4
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "power": 5.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.84
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.00015,
+        "color": {
+          "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.36
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "power": 40.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 2.0
+        }
+      }
+    ]
+  }
+}

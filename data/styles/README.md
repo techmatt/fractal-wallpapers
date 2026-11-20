@@ -13,7 +13,7 @@ fractal-wallpapers style keep <name> <picker>.choices.json  # save a picker's ke
 fractal-wallpapers style refs [--unused <triage>.choices.json]  # references named; triage `yes` rows no row names
 fractal-wallpapers style gallery | bundle  # custom-modes/; the page's modes
 fractal-wallpapers style wasm-parity [names…] | wasm-speed  # vs native: whole after an engine change, <name> after a style's (CLAUDE.md); frame time
-fractal-wallpapers style sweep --out <dir> [names…]  # the checker (below)
+fractal-wallpapers style sweep --out <dir> [names…]  # the checker (CHECKS.md)
 ```
 
 A style is a stack of layers over the channels of one escape loop, composited by
@@ -91,15 +91,7 @@ bundle` (the website's `custom-modes.json`) carries each published mode's kept e
 **Re-drawing a shown keep** under a changed default is a one-row picker
 (`style_keeps.py`'s docstring has the steps).
 
-## Checking the library
-
-`style sweep --out <dir>` is the checker after an engine or stack change: every style
-small at its keeps, each public knob at both ends and each palette entry, flagged per
-`style_sweep.FLAGS`, a contact sheet per style; it exits 1 on any flag. Read the sheets
-too: the flag is a symptom. What hunts found is
-`docs/qa-findings.md`. A `slow` flag is a timing: re-run it on an idle box. To tell a new
-flag from an old one, sweep also through the engine built from the commit before (a
-worktree's `cargo build`, `engine.engine_path` pointed at its binary) and compare bytes.
+`style sweep`, the checker after an engine or stack change, is `CHECKS.md` beside this.
 
 ## A new style from a reference image
 
@@ -192,8 +184,10 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    A style's own lessons go in its `notes`, never into this README.
 9. **Save Matt's keeps** after each round: `style keep <name> <picker>.choices.json`
    (a later round merges in). **One picker for a group of styles** scopes its row ids
-   `<style>/<row>`, and `style keep <name>` runs once per style on the one choices file,
-   taking its rows and unscoped ones. Maps go as *Palette sets* says.
+   `<style>/<row>`, and `style keep <name>` runs once per style on one choices file,
+   taking its rows and unscoped ones; a tile goes to the catalog mode that drew it (a
+   baseline's keep is that mode's: run the `style keep <mode>` it prints). Maps go as
+   *Palette sets* says.
 10. **Catalogue it**: the row's score and status as Matt gave them, a published one's
     `tier` (`lab`), `variant`, `show` and `public`, and `references` naming its reference
     (an entry's round adds the entry's file to the mode's `references` and the entry's

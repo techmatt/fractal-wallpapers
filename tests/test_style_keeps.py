@@ -151,6 +151,71 @@ def test_a_group_pickers_keeps_go_to_the_style_each_row_names():
     assert len(choices["rows"]) == 3, "the caller's choices are left whole"
 
 
+def test_a_kept_tile_goes_to_the_mode_that_drew_it_whatever_row_it_sits_in():
+    """060 split a choices file by hand to save a molten_flow baseline tile kept in a
+    stirred_ink row as a molten_flow keep; the render row now decides."""
+    choices = {
+        "name": "style_ink_r1",
+        "rows": [
+            {"id": "ink/formulations", "keys": ["own", "draft", "molten", "smooth"]},
+            {"id": "pools/formulations", "keys": ["pool", "molten_2"]},
+            {"id": "locations", "keys": ["loc", "lobes"]},
+        ],
+    }
+    renders = {
+        "own": {"style": "ink"},
+        "draft": {"style": "ink__no_core"},
+        "molten": {"style": "molten_flow"},
+        "smooth": {"mode": "smooth"},
+        "pool": {"style": "pools"},
+        "molten_2": {"style": "old_molten"},
+        "loc": {"style": "ink"},
+        "lobes": {"style": "glossy_lobes"},
+    }
+    modes = {
+        "ink": "ink",
+        "pools": "pools",
+        "molten_flow": "molten_flow",
+        "old_molten": "molten_flow",
+        "glossy_lobes": "glossy_lobes",
+    }
+
+    def keys(name):
+        rows = style_keeps.rows_of(choices, name, renders, modes)["rows"]
+        return {row["id"]: row["keys"] for row in rows}
+
+    assert keys("ink") == {"ink/formulations": ["own", "draft", "smooth"], "locations": ["loc"]}
+    assert keys("molten_flow") == {
+        "ink/formulations": ["molten"],
+        "pools/formulations": ["molten_2"],
+    }
+    assert keys("pools") == {"pools/formulations": ["pool"]}
+    assert keys("glossy_lobes") == {"locations": ["lobes"]}
+    # what `ink`'s run leaves out is named, so no keep is lost between the two runs
+    assert style_keeps.left_to(choices, "ink", renders, modes) == {
+        "molten_flow": ["molten"],
+        "glossy_lobes": ["lobes"],
+    }
+    assert style_keeps.left_to(choices, "pools", renders, modes) == {
+        "molten_flow": ["molten_2"],
+        "ink": ["loc"],
+        "glossy_lobes": ["lobes"],
+    }
+
+
+def test_style_keep_leaves_another_modes_tile_to_that_mode(tmp_path, places):
+    choices = picker(
+        tmp_path, "style_x_r1", {"shortlist": ["00_m2_somewhere"], "baseline": ["style_00"]}
+    )
+    renders = tmp_path / "style_x_r1" / "renders.jsonl"
+    rows = [json.loads(line) for line in renders.read_text(encoding="utf-8").splitlines()]
+    rows[-1]["style"] = "molten_flow"
+    renders.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    run(choices, places)
+    (entry,) = json.loads(places["record"].read_text(encoding="utf-8"))["keeps"]
+    assert entry["picked"] == [{"row": "shortlist", "key": "00_m2_somewhere"}]
+
+
 def test_a_keeps_file_is_not_a_style():
     assert not any(name.endswith(".keeps") for name in styles.names())
 

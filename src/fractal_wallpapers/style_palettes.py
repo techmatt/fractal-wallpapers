@@ -20,6 +20,7 @@ its `opacity` at 0.
 kept map to the mode's set, and a map no tile kept leaves the library
 (`palettes remove`). `palettes add --mode <mode>` admits a map for a mode's next round as
 an entry with no keeps yet: the round in flight, which its keeps fill or its removal ends.
+On an empty set it first lays in the mode's own map as entry 0 (`open_round`).
 """
 
 from __future__ import annotations
@@ -161,6 +162,22 @@ def score_of(row: dict[str, Any]) -> int | None:
     """The mode's score: its best entry's."""
     scores = [entry["score"] for entry in row.get("palettes", []) if "score" in entry]
     return max(scores) if scores else None
+
+
+def open_round(row: dict[str, Any], colormap: str, default: str) -> bool:
+    """Put `colormap` in the row's set for its next round; whether the set changed.
+
+    An empty set (a round-one row) gains the mode's own map, `default` (its style file's
+    `suggested_colormap`), as entry 0 first: the set's first entry is the stack's own, so
+    a tuned entry never lands in that seat.
+    """
+    palettes = row.setdefault("palettes", [])
+    changed = False
+    for name in ([default] if not palettes else []) + [colormap]:
+        if entry_for(row, name) is None:
+            palettes.append({"colormap": name, "values": {}, "keeps": []})
+            changed = True
+    return changed
 
 
 def add_keeps(

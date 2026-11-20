@@ -30,22 +30,21 @@ costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit abo
   or computes image data.
 - **Everything runnable is a `fractal-wallpapers` subcommand**; there is no `scripts/`.
   One `cli/<group>_commands.py` per command group (handlers and parser);
-  `cli/__init__.py` lists them plus `main`, and its docstring has why the suffix is
-  load-bearing and handler names resolve through `__getattr__`, never re-exported.
+  `cli/__init__.py` lists them plus `main`; its docstring has why the suffix is
+  load-bearing and handlers resolve through `__getattr__`, never re-exported.
 - **Records are JSONL**: UTF-8, one object per line, an integer `schema` field from the
   first row. A label row carries its full join (the label *and* the complete render
   parameters), never split across files. Every random draw is seeded, the seed recorded.
 - **Cross-platform by construction**: `pathlib` only, no absolute paths in tracked code.
-  Windows process handling lives in `src/fractal_wallpapers/process_control.py` alone. A batch subcommand takes
-  a **manifest file**, never hundreds of paths as arguments.
+  Windows process handling lives in `process_control.py` alone. A batch subcommand
+  takes a **manifest file**, never hundreds of paths as arguments.
 - **Formatting is not negotiable**: `ruff` lints and formats Python at line length 100;
   `rustfmt` and `clippy` govern the crates: a repo-wide reformat is never possible.
 - **Line endings are LF**, and **anything writing a tracked text file opens it
-  `newline="\n"`**. `git ls-files --eol` is the only detector of CRLF drift (`git
-  status`, `git diff` and Git Bash's `grep` all mislead); `tests/test_line_endings.py`
-  is the guard.
+  `newline="\n"`**. `git ls-files --eol` is the only detector of CRLF drift;
+  `tests/test_line_endings.py` is the guard.
 - **Search with `git grep` (or `rg`), never `grep -r` from the root**: the checkout
-  holds ~100 GB of untracked files, and `grep --include=*` ignores `.gitignore`.
+  holds ~100 GB of untracked files `grep` does not skip.
 
 ### Installs
 
@@ -75,7 +74,7 @@ costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit abo
 
 ### Records: published, kept, discarded
 
-The saved set is twenty-one records, all published: `final139_*` (general n=1000 and
+The saved set is twenty-one published records: `final139_*` (general n=1000 and
 nineteen collections) and `final140_general2000`. No unpublished record is kept.
 
 - **A record is PUBLISHED only when Matt names it**: a line in
@@ -118,14 +117,14 @@ nineteen collections) and `final140_general2000`. No unpublished record is kept.
   unkept pool pictures, which `storage pictures` mirrors. The tiers are
   `src/fractal_wallpapers/README.md`'s *Two roots*.
 - **A picture with no ledger row is garbage**: `curate candidate-ledger orphans` lists,
-  `--apply` deletes. Run it after any killed run and periodically. An unmerged leg is listed, never swept
-  until someone names it (`--leg <name>` or `--include-unmerged`).
+  `--apply` deletes; run it after a killed run and periodically. An unmerged leg is
+  listed, never swept until someone names it (`--leg <name>` or `--include-unmerged`).
 - **The render pool is three workers at below-normal priority** for anything driving
-  the engine: more, or any at normal priority, makes this desktop unusable. `engine.run`
-  sets the priority; only the count is the caller's.
+  the engine: more makes this desktop unusable. `engine.run` sets the priority; only
+  the count is the caller's.
 - **One pool-holding process per box.** `curate growth`, `curate solve run`, `curate
   solve record` and the slow test lane each hold the candidate pool whole and never run
-  beside each other.
+  together.
 
 ## Checks to run before committing
 
@@ -142,10 +141,9 @@ cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warning
 cargo test --release --manifest-path perturbation/Cargo.toml
 ```
 
-**CI lints with the newest stable Rust**: run `rustup update stable` before the clippy
-lines, or a local toolchain behind CI's passes code CI fails. CI also compiles on Linux
-and macOS, where some errors never show on Windows (an unmangled export named like a libc
-symbol): an item touching a crate's exports or `cfg(unix)` code repeats its clippy line
+**CI lints with the newest stable Rust**: `rustup update stable` before the clippy
+lines. CI also compiles on Linux and macOS, where some errors never show on Windows:
+an item touching a crate's exports or `cfg(unix)` code repeats its clippy line
 with `--target x86_64-unknown-linux-gnu --target-dir out/xtarget` (a linker-free type
 check; `rustup target add x86_64-unknown-linux-gnu` once).
 
@@ -160,16 +158,15 @@ cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm
 ```
 
 Then the parity run it owes, once, after the last code change: **`fractal-wallpapers style
-wasm-parity`** whole after an engine or module change (17 minutes on an idle box, eight
-threads at first; it prints its time), **`style wasm-parity <name>`** after a change to one
-style (seconds to a couple of minutes).
-An engine change also owes `identity` (`data/styles/README.md` step 2).
+wasm-parity`** whole after an engine or module change (17 minutes idle),
+**`style wasm-parity <name>`** after a change to one style (seconds to minutes). An engine
+change also owes `identity` (`data/styles/README.md` step 2).
 
 Run pytest with the checkout's own `.venv` interpreter: a gallery guard spawns
-`sys.executable`, and another interpreter fails it like a process-control bug. The walk
-tests need a **release** engine and skip without one; a guard asking whether the engine
-is built catches `FileNotFoundError` from `engine.engine_path`, or it interrupts the lane
-at collection.
+`sys.executable`, and another fails it like a process-control bug. The walk tests need
+a **release** engine and skip without one; a guard asking whether the engine is built
+catches `FileNotFoundError` from `engine.engine_path`, or it interrupts the lane at
+collection.
 
 **`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
 (`perturbation/README.md`'s *Running it*), the website's own item, and runs the two
@@ -196,8 +193,8 @@ parallel runner*).
   --workers 3`.
 - **A reading compares only with one on the same install** (`tests/README.md`'s *What
   "the fast-lane count" means*): an interpreter without `torch` silently collects a
-  smaller suite, and `conftest` prints a red line naming the missing import.
-- **Measure on an idle box** (beside a render run the lane is killed on commit charge).
+  smaller suite.
+- **Measure on an idle box** (beside a render run, commit charge kills the lane).
   A test whose claim is not about time never reads the wall clock. Before believing a
   lane, re-run one untouched engine-bound guard: a tenth off means the box.
 - **A lane that moves right after code landed is the code until measured otherwise**
@@ -207,7 +204,7 @@ parallel runner*).
   direct `candidate_ledger.read()` adds ~40 s. A guard sweeping the ledger takes a
   budget: the constant, its measurement, and an assertion that it filled.
 - **`@pytest.mark.slow` is for about a second or more of real work**: a render, a
-  training loop, a store sweep; arithmetic stays fast however much there is.
+  training loop, a store sweep; arithmetic stays fast.
   `data/palettes` is parametrized, so a colormap drop moves both counts.
 - **A guard may be weakened or deleted to make a lane faster**, but the trade is **named
   and priced**: what stopped being covered, at the site and in the report, with the
@@ -222,15 +219,15 @@ Each prompt is a conductor queue item; conductor's preamble owns the report's pa
 header, the load budget and waiting. This repository adds:
 
 - **The report goes where the preamble says, starting with its header**, ~60 lines of
-  findings, numbers, decisions and surprises, written once with at most one trim
-  pass; no process narration or
+  findings, numbers, decisions and surprises, written once (one trim pass at most); no
+  process narration or
   restated prompt. **Tests are mentioned only for a red you could not fix.**
 - **End the console reply with `Report written to <path>`.**
 - **Commit to the branch you are on.**
 - **Every clock time is local 12-hour** (`5:25pm`, never `17:25`/UTC). The CLI's
   `[HH:MM:SS]` stamps are 24-hour; convert before quoting.
 - **A step over about thirty seconds is backgrounded, with a completion waiter on the
-  real process**, never on a launcher (`nohup … &` returns at once).
+  real process**, never on a launcher.
 - **Operational facts learned on the way go into the relevant module README as you pass
   them**, not only into a report.
 

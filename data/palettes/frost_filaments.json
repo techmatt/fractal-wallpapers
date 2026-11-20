@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "frost_filaments",
+  "kind": "sequential",
+  "source": "a near-black navy through royal and cornflower blue to an icy white: the albedo of the frost_filaments style, from valhalla.jpg, a deep-blue spiral whose filaments glow white like frost on glass",
+  "stops": [
+    [0.0, [2, 4, 36]],
+    [0.3, [8, 26, 132]],
+    [0.55, [36, 76, 220]],
+    [0.75, [116, 156, 255]],
+    [0.9, [210, 224, 255]],
+    [1.0, [255, 255, 255]]
+  ]
+}

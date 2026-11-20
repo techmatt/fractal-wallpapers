@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "grain_fans",
+  "kind": "cyclic",
+  "source": "a deep teal through aqua and a pale aqua to orange, amber and a brown, back to the teal: the albedo of the grain_fans style, from touch.jpg, broad fans of alternating teal and orange bands carrying fine parallel grain",
+  "stops": [
+    [0.0, [14, 100, 124]],
+    [0.18, [70, 190, 210]],
+    [0.34, [176, 232, 232]],
+    [0.5, [232, 136, 44]],
+    [0.68, [246, 180, 96]],
+    [0.84, [128, 62, 26]],
+    [1.0, [14, 100, 124]]
+  ]
+}

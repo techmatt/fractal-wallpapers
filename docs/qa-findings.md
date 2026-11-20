@@ -3,7 +3,7 @@
 What bug hunts found and left open, one line each: **deferred** (to Matt, with a
 recommendation) or **won't fix** (with the reason); a fix lives in its commit, not here.
 A hunt reads this first and never re-reports a line on it. The checker that found most
-of the style ones is `fractal-wallpapers style sweep` (`data/styles/README.md`'s
+of the style ones is `fractal-wallpapers style sweep` (`data/styles/CHECKS.md`'s
 *Checking the library*).
 
 ## The style system

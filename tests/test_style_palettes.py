@@ -112,6 +112,23 @@ def test_a_kept_tile_lays_its_map_into_the_set_once():
     assert row["palettes"][-1]["keeps"] == ["d"]
 
 
+def test_a_palette_round_on_an_empty_set_lays_the_modes_own_map_in_first():
+    """062 wrote a round-one mode's entry 0 by hand: `palettes add --mode` appended the new
+    map alone, and the check then read its values as the default's."""
+    row = {"style": "m", "palettes": []}
+    assert style_palettes.open_round(row, "pink", "hsv")
+    assert row["palettes"] == [
+        {"colormap": "hsv", "values": {}, "keeps": []},
+        {"colormap": "pink", "values": {}, "keeps": []},
+    ]
+    assert not style_palettes.open_round(row, "pink", "hsv")
+    assert style_palettes.open_round(row, "bone", "hsv")
+    assert [e["colormap"] for e in row["palettes"]] == ["hsv", "pink", "bone"]
+    own = {"style": "m"}
+    assert style_palettes.open_round(own, "hsv", "hsv")
+    assert own["palettes"] == [{"colormap": "hsv", "values": {}, "keeps": []}]
+
+
 def test_every_merged_style_still_opens_as_its_palette_of_the_mode():
     """Old style names keep resolving, so keeps, pickers and links do not break."""
     for row in style_catalog.load()["modes"]:
