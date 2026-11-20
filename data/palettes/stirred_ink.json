@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "stirred_ink",
+  "kind": "sequential",
+  "source": "a blue-black through deep ultramarine and cobalt to azure, sky and an ice white, the albedo of the stirred_ink style, from meditation-25.jpg: a poured blue liquid stirred into curls under one glossy light",
+  "stops": [
+    [0.0, [2, 6, 40]],
+    [0.22, [4, 22, 98]],
+    [0.45, [6, 62, 160]],
+    [0.65, [12, 112, 206]],
+    [0.82, [50, 168, 236]],
+    [0.93, [140, 216, 250]],
+    [1.0, [232, 248, 255]]
+  ]
+}

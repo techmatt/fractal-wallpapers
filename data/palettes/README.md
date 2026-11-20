@@ -225,7 +225,10 @@ A style's draft map already sits at `data/palettes/<name>.json` (renders read a 
 name), and handing over **that same file** is the first admission: the file is left as it
 is and the tables and groups are written. A copy from elsewhere while the library file
 exists needs `--replace`, and is still a first admission to the groups while no table
-names the map. Never move the library file while a render reads it. A new map that carries `dark_vivid_lime` moves
+names the map. **Admit each draft map before writing the next**: with two unadmitted
+files in the library each `add` refuses for the other, and the way out (`palettes
+carriers`, `palettes produced`, then `add --replace`) leaves both out of `groups.jsonl`,
+which only `groups.admit` then fills. Never move the library file while a render reads it. A new map that carries `dark_vivid_lime` moves
 `tests/test_curation_ceiling.py`'s pinned carrier-table reading: re-pin it, naming the map
 in its docstring.
 

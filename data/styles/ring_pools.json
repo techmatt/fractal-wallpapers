@@ -1,0 +1,100 @@
+{
+ "schema": 1,
+ "name": "ring_pools",
+ "description": "pools of tight contour rings round scattered eyes, in flat marbled colour: a lattice of discs ringed by their own height, stirred into irregular pools that crowd and shrink towards the set",
+ "reference": {
+  "image": "wallhaven_wallhaven-47xzoe.png",
+  "folder": "fractal-drive-sync/style-refs",
+  "made_with": "a flame fractal in red, amber and blue (watermarked BoxTail), 1920x1200"
+ },
+ "suggested_colormap": "ring_pools",
+ "reuses": [
+  "the bubble lattice's height (bronze_packing), ringed by a repeated map",
+  "the stir (stirred_ink)"
+ ],
+ "adds": [],
+ "notes": [
+  "From wallhaven-47xzoe (item 058), stirred_ink's second reading: the reference is flat colour in tight rings round scattered eyes, which a relief cannot draw, so this is its own stack. The eyes are a bubble lattice's discs (radius 0.45 at spacing 1, between 0.012 and 0.3 of the frame): each disc's `height` through the map at 4 cycles is its contour rings, warped a quarter turn by the smooth count's rank so neighbouring pools start on different colours. Under them the smooth count by rank at one cycle is the flat marbled ground the pools sit in.",
+  "The stir is one gentle pass (strength 0.6 over 2 steps): it bends the round discs into irregular pools without tearing their rings. At strength 1.2 over 4 steps (round one's f_pools_stirred) the rings drag into marbled streaks. No light: the reference is flat.",
+  "Not catalogued yet: the row (lab tier) lands with Matt's score. Until then `style wasm-parity` draws this file at `style_wasm.POST_SEAT`, whole and in tiles."
+ ],
+ "style": {
+  "name": "ring_pools",
+  "interior": {
+   "palette": 0.0
+  },
+  "tone": {
+   "median": 0.372,
+   "p10": 0.105
+  },
+  "stir": [
+   {
+    "view": {
+     "turn": 100.0,
+     "zoom": 0.8,
+     "shift": [
+      0.13,
+      -0.17
+     ]
+    },
+    "strength": 0.6,
+    "angle": 90.0,
+    "period": 3.0,
+    "largest": 0.08,
+    "steps": 2
+   }
+  ],
+  "layers": [
+   {
+    "kind": "palette",
+    "channel": {
+     "field": {
+      "kind": "smooth"
+     }
+    },
+    "palette": {
+     "cycles": 1.0,
+     "gamma": 1.0,
+     "phase": 0.0,
+     "transfer": {
+      "kind": "rank"
+     }
+    }
+   },
+   {
+    "kind": "palette",
+    "channel": {
+     "bubble": {
+      "center": [
+       0.5,
+       0.5
+      ],
+      "radius": 0.45,
+      "spacing": 1.0,
+      "read": "height",
+      "escaped": false,
+      "largest": 0.3,
+      "smallest": 0.012,
+      "hit": 1
+     }
+    },
+    "palette": {
+     "cycles": 4.0,
+     "gamma": 1.0,
+     "phase": 0.0,
+     "transfer": {
+      "kind": "value"
+     }
+    },
+    "warp": {
+     "channel": {
+      "field": {
+       "kind": "smooth"
+      }
+     },
+     "amount": 0.25
+    }
+   }
+  ]
+ }
+}

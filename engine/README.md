@@ -173,7 +173,9 @@ per field plus the style's channels (`data/styles/STACK.md` owns kinds, channels
 runs one more escape loop per sample at the moved point. Each statistic is measured once, then
 composited per sample, so a band matches the whole frame; **tone**
 is a second measure, of the composite. A `log_polar` **projection** (`src/projection.rs`)
-carries its Jacobian to `de` and the light. **Lighting exists only in a style's `light`
+carries its Jacobian to `de` and the light, and so does a **stir** (`src/stir.rs`; the
+stack's `stir`), which then moves each sample's point along a viewed copy's level lines, one
+more escape loop per step (three with the Jacobian, a forward difference). **Lighting exists only in a style's `light`
 layer**; named modes carry no normal-map shading.
 
 The two halves are public, so a frame can be drawn in pieces: `style::measure` (every
@@ -228,7 +230,10 @@ example has no `keep` (a draft's place, drawn with the mode's own stack). `palet
 `[{colormap, values, score}]`; the page
 writes `values` over `stack` at their pointers (`style_palettes.apply`) before opening a
 session. A shown keep carries the stack it was drawn with. `style wasm-parity` and `style
-wasm-speed` hold the module to the native engine under Node (`style_wasm.py`).
+wasm-speed` hold the module to the native engine under Node (`style_wasm.py`). The whole
+`wasm-parity` is over an hour on one Node thread (a single keep can take eight minutes):
+give it a detached run of its own, and check a new unpublished stack alone with its job
+list (`style_wasm.request`, `run_node`, `native_rgb`, `compare`).
 
 ## What each family's picture is symmetric under
 

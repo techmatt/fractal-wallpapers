@@ -285,7 +285,7 @@ KNOB_KEYS = ("name", "label", "what", "default", "range", "set")
 #: `INTEGER_MEMBERS` is the same list (`tests/test_style_wasm.py` holds them equal).
 #: Rounding by how a file happened to spell a number made `"opacity": 1` an on/off
 #: switch under a knob natively and a slider on the page.
-INTEGER_MEMBERS = ("iterations", "hit", "settle", "sectors", "turns", "levels", "arms")
+INTEGER_MEMBERS = ("iterations", "hit", "settle", "sectors", "turns", "levels", "arms", "steps")
 
 
 def targets(stack: Any, pointer: str) -> list[tuple[Any, Any]]:

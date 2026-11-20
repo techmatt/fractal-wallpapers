@@ -67,6 +67,7 @@ use crate::iterate::{self, Wants};
 use crate::post::{self, Pass};
 use crate::projection::Projection;
 use crate::resample::{self, Crop};
+use crate::stir::{MAX_PASSES, Stir, Stirring};
 use crate::viewport::Viewport;
 
 /// A style as the render spec carries it: the stack, and what the set's inside is.
@@ -90,6 +91,11 @@ pub struct Style {
     /// iterated ([`crate::projection`]). Absent: the straight view.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projection: Option<Projection>,
+    /// The stir: passes that carry each sample's point along a copy of the fractal's
+    /// own level lines, after the projection and before anything is iterated
+    /// ([`crate::stir`]). Empty: the point the projection gave.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stir: Vec<Stir>,
     /// The post stage: passes over the whole composited frame, in order, before the
     /// tone is measured ([`crate::post`]). Empty: the stack as composited.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -268,7 +274,7 @@ impl View {
         }
     }
 
-    fn is_valid(&self) -> bool {
+    pub(crate) fn is_valid(&self) -> bool {
         self.turn.is_finite()
             && self.zoom.is_finite()
             && self.zoom > 0.0
@@ -1003,6 +1009,16 @@ impl Style {
         if let Some(projection) = &self.projection {
             projection
                 .validate()
+                .map_err(|refusal| format!("style '{}': {refusal}", self.name))?;
+        }
+        if self.stir.len() > MAX_PASSES {
+            return Err(format!(
+                "style '{}': a stir is at most {MAX_PASSES} passes",
+                self.name
+            ));
+        }
+        for stir in &self.stir {
+            stir.validate()
                 .map_err(|refusal| format!("style '{}': {refusal}", self.name))?;
         }
         if let Some(tone) = self.tone {
@@ -1924,6 +1940,17 @@ fn gather(
     let reach = style.inside();
     let traps = style.bubbles();
     let circles = style.lines();
+    let stirring = Stirring::of(&style.stir, family);
+    // The stirred map's Jacobian is two more runs of its passes: taken only where a
+    // gradient or a distance is carried through it (a bubble's gradients are a
+    // light's, and its `largest` and `smallest` are plane lengths under any pre-map).
+    let is_distance = |field: &FieldSpec| matches!(field, FieldSpec::De { .. });
+    let stirred_jacobian = lights
+        || reach.is_some()
+        || fields.iter().any(is_distance)
+        || views
+            .iter()
+            .any(|(_, _, fields, _)| fields.iter().any(is_distance));
     type BubbleRow = (
         [Vec<f32>; BUBBLE_READS],
         Vec<[f32; 2]>,
@@ -1962,6 +1989,24 @@ fn gather(
                     None => (view.sample_point(col, row), None),
                     Some(projection) => {
                         let sample = projection.sample(view, col, row);
+                        (sample.point, Some(sample))
+                    }
+                };
+                // Then the stir, from the point the projection gave and its Jacobian.
+                let (pixel, projected) = match &stirring {
+                    None => (pixel, projected),
+                    Some(stirring) => {
+                        let spacing = view.sample_spacing();
+                        let straight = [Complex::new(spacing, 0.0), Complex::new(0.0, spacing)];
+                        let (steps, known) = match projected {
+                            None => (straight, true),
+                            Some(sample) => (
+                                sample.jacobian.unwrap_or(straight),
+                                sample.jacobian.is_some(),
+                            ),
+                        };
+                        let wanted = stirred_jacobian && known;
+                        let sample = stirring.sample(view, maxiter, pixel, steps, wanted);
                         (sample.point, Some(sample))
                     }
                 };

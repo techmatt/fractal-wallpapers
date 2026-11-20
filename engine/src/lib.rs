@@ -91,6 +91,7 @@ pub mod resample;
 pub mod rng;
 pub mod screen;
 pub mod spec;
+pub mod stir;
 pub mod style;
 pub mod tiles;
 pub mod viewport;

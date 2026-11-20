@@ -7,7 +7,7 @@ style, and each style file's `notes` say what that style used and taught.
 
 ## The stack and its tone
 
-The stack is `{name, interior, tone, projection, layers, post}`. `interior` is a paint for a
+The stack is `{name, interior, tone, projection, stir, layers, post}`. `interior` is a paint for a
 sample whose orbit never escaped and that no layer coloured (black when absent). `tone`
 (`{median, p10}`, optional) holds the frame's tonal balance: once the stack is
 composited, the frame's median lightness (CIE L\* over 100) is carried to `median`, and
@@ -49,6 +49,51 @@ cycle) and the steps `p` per repeat: the smooth count climbs by `p` each time th
 structure shrinks by `|λ|`, so `ring = k·p` with `k` the repeats nearest the ring size
 the style wants. For a quadratic Julia set at its fixed point `(1 ∓ √(1 − 4c))/2`,
 `λ = 2z`; a Misiurewicz point is found by Newton on `f^{k+p}(0) = f^k(0)`.
+
+## The stir
+
+`stir` (optional) is a list of up to four **passes** that move where each sample looks by
+what the fractal itself reads there, after the projection and before anything is
+iterated (`engine/src/stir.rs`): the whole stack is then drawn at the moved point, so
+every layer is stirred alike. A pass is `{view, strength, angle, period, phase, largest,
+steps}`. It reads the smooth count `ν` of a **copy** of the fractal (the frame's own, or
+one seen through a `view` as a channel's is), the unit direction `ĝ` that count climbs
+in, and the copy's distance estimate `L` (capped at `largest` frame widths), and pushes
+the point
+
+`p ← p + (strength / steps) · L · sin(2π·(ν / period + phase)) · e^(i·angle°) · ĝ`
+
+`steps` times, each from where the last landed. At `angle` 90 the push runs along the
+copy's level lines, so the point is carried round whatever the line encloses, about
+`strength` radians in all; the sine reverses it every half `period` of the copy's count
+(`period` 0: no swing), so neighbouring bands shear against each other and the stack's
+own bands, which cross the copy's, are combed into S-curls and hooks. The push is as
+long as the copy's set is far, so curls are large in open field, tighten without end
+towards the set, and a point on or inside the copy's set never moves.
+
+**The copy must differ from the frame** for a look that bands the smooth count: a push
+along the frame's own level lines slides each band along itself and shows nothing, and
+at other angles it scratches. A turned, scaled and shifted view is what stirs.
+`strength` 3 over 4 `steps` is a poured liquid; 6 over 8 winds the curls further;
+`zoom` under 1 with a larger `largest` makes a few frame-wide swirls (keep a second,
+finer pass under them). More `steps` at one `strength` follow the flow more closely:
+one large jump folds the picture over itself.
+
+A light and a distance go through the stirred map's Jacobian as through a projection's,
+so a relief is lit as the curled surface it draws and a falloff glow keeps its width.
+Each step is one escape loop per sample, three when a light, a distance or an `inside`
+channel needs the Jacobian (two passes of 4 and 3 steps: 21 loops). A point inside the
+copy's set ends its pass at the first loop, stopped once the orbit is proven interior;
+the cost is the samples close outside it, whose every loop runs most of the way to the
+seat's `maxiter`, so a stirred stack is drawn at seats of low `maxiter` first. A
+bubble's `largest` and `smallest` stay plane lengths, as under a projection. It is a
+pure function of the sample: tiles and `style-wasm` draw the same picture, **because the
+stir makes its own logarithm and sine** from `+ − × ÷ √`: several steps near the copy's
+set magnify a last-bit difference between two maths libraries into visibly different
+samples (`engine/src/stir.rs`; a fractional-degree family, whose every step is the
+library's `powf`, is the exception, as is a point that came through a projection). The
+module on one thread takes about 100 to 140 s for a
+640x400 ss2 frame of two passes with a light, 28 s for one gentle pass without.
 
 ## Channels
 
@@ -208,7 +253,8 @@ the stack refuses unknown members):
 
 | where | defaults |
 | --- | --- |
-| stack | `interior` black; `tone` and `projection` absent; `post` empty |
+| stack | `interior` black; `tone` and `projection` absent; `stir` and `post` empty |
+| `stir` pass | `view` straight (the frame's own), `strength` 1, `angle` 90, `period` 4, `phase` 0, `largest` 0.05, `steps` 1 (at most 16) |
 | `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
 | `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
 | `log_polar` | `center` [0.5, 0.5], `turns` 1, `power` = `turns`, `twist` 0, `angle` 0, `ring` 1 |

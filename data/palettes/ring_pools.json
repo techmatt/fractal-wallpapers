@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "ring_pools",
+  "kind": "cyclic",
+  "source": "indigo, crimson, vermilion, amber yellow, pale lilac, cobalt and back to indigo, the albedo of the ring_pools style, from wallhaven-47xzoe: tight contour rings round scattered eyes in flat marbled colour",
+  "stops": [
+    [0.0, [22, 16, 78]],
+    [0.14, [150, 22, 70]],
+    [0.3, [236, 56, 60]],
+    [0.44, [255, 150, 44]],
+    [0.56, [255, 214, 80]],
+    [0.68, [226, 196, 236]],
+    [0.8, [70, 110, 232]],
+    [0.9, [34, 40, 150]],
+    [1.0, [22, 16, 78]]
+  ]
+}
