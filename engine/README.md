@@ -237,7 +237,7 @@ parity run is owed**: the whole `wasm-parity` after an engine or module change (
 minutes of Node work, one keep up to fifteen, spread over `--workers` threads, five by
 default, the longest of the last run first: a detached run of its own), and `style
 wasm-parity <name>…` after a change to one style. The native side draws beside the
-workers on two threads. A draft not yet in `data/styles/` is checked with its job
+workers on three threads. A draft not yet in `data/styles/` is checked with its job
 list (`style_wasm.request`, `run_node`, `native_rgb`, `compare`).
 
 ## What each family's picture is symmetric under

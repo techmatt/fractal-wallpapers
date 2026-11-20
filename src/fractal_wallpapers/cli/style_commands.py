@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import time
 
 from fractal_wallpapers import engine
 from fractal_wallpapers.cli.common import resolve_input, resolve_output
@@ -98,6 +99,7 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
                 slowest = max(drawn, key=lambda row: row["draw"])
                 print(f"slowest: {slowest['id']} at {slowest['draw']:.2f} s")
             return 0 if len(drawn) == len(rows) else 1
+        started = time.monotonic()
         rows = style_wasm.parity(
             folder,
             tuple(args.resolution),
@@ -125,7 +127,11 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
         else:
             print(f"{row['id']:<32} {row['pixels']} pixels differ, by at most {row['worst']}")
     same = sum(1 for row in rows if row.get("identical"))
-    print(f"{same} of {len(rows)} byte-identical; rows in {folder / 'parity.jsonl'}")
+    minutes, seconds = divmod(round(time.monotonic() - started), 60)
+    print(
+        f"{same} of {len(rows)} byte-identical in {minutes} min {seconds} s; "
+        f"rows in {folder / 'parity.jsonl'}"
+    )
     return 0 if same == len(rows) else 1
 
 

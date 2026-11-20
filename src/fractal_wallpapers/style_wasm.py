@@ -52,16 +52,20 @@ SPEED_RESOLUTION = DRAFT_RESOLUTION
 SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 
 #: Node worker threads a parity run draws on, beside the native engine's renders, below
-#: normal priority. The whole run is as long as its longest job (one keep's tiled draw,
-#: 15 minutes alone and 24 beside five others on six cores) or the work over the workers,
-#: whichever is more: four workers measured 30 minutes and six 25 with the box left short
-#: of threads, so more workers buy nothing and cost the box.
+#: normal priority. The whole run is as long as the longest of three things: its longest
+#: job (one keep's tiled draw, 15 minutes alone and 24 beside five others on six cores),
+#: the module's work over the workers (about 100 thread-minutes alone, 130 beside each
+#: other), and the native side (about 50 thread-minutes over `PARITY_NATIVE_THREADS`).
+#: Measured on this twelve-thread box, 165 jobs: six workers and two native threads 25
+#: minutes, the box left short of threads and the native side the last to finish; five
+#: and two with another job beside it, 30.
 PARITY_WORKERS = 5
 
 #: Threads the native engine takes for its side of a parity run (`RAYON_NUM_THREADS`,
 #: unless the caller's environment already sets one): uncapped it takes every core beside
-#: the Node workers, and the box has none left.
-PARITY_NATIVE_THREADS = 2
+#: the Node workers, and at two it is the whole run's tail. Three is done in about two
+#: thirds of the run, and the workers have the box to themselves after.
+PARITY_NATIVE_THREADS = 3
 THREADS_ENV = "RAYON_NUM_THREADS"
 
 #: The tile the parity check's tiled draw cuts the picture into.
