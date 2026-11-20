@@ -168,7 +168,7 @@ only there. The lane is `f32`, so a short absolute `period` bands at large `ν`:
 ## Styles: a layer stack over one orbit
 
 The spec's `style` key draws through `src/style.rs`: one generic escape loop a sample, lanes
-per field plus the style's channels (`data/styles/STACK.md` owns kinds, channels and blends,
+per field plus the style's channels (`data/styles/STACK.md` owns kinds, channels and blends, `TRAPS.md` the traps,
 `data/styles/README.md` how to make a style). A field read through a **view** (`style::View`)
 runs one more escape loop per sample at the moved point. Each statistic is measured once, then
 composited per sample, so a band matches the whole frame; **tone**

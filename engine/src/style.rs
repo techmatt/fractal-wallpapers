@@ -21,7 +21,7 @@
 //! ([`crate::post`]): passes over the whole composited frame, run before the tone is
 //! measured, which is why a style with one is painted whole and never in tiles.
 //!
-//! What the channels are (`data/styles/STACK.md` has every member):
+//! What the channels are (`data/styles/STACK.md` has every member, `TRAPS.md` the traps'):
 //!
 //! ```text
 //! any FieldSpec    smooth, decomposition, de, threads, trap_cross, stripe, … —
@@ -34,6 +34,8 @@
 //! bubble           a disc or strip trap read at an entry (height, step, angle,
 //!                  crescent, across)
 //! lines            the angle or step where the orbit crosses a circle of its own
+//! stroke           the nearest pullback of a line or circle, its distance taken in
+//!                  the frame: a pen stroke of one weight (height, step, glow, across)
 //! ```
 //!
 //! The layer kinds, in the order a stack usually has them:
@@ -183,6 +185,8 @@ pub struct Source {
     pub bubble: Option<Bubble>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lines: Option<Lines>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stroke: Option<Stroke>,
     /// `field` only: read the field off its own escape loop at a moved point of the
     /// plane ([`View`]), so several layers can each draw one field of a different
     /// view, crossing as translucent sheets. Absent: the frame's own view.
@@ -655,6 +659,293 @@ pub(crate) fn lines(
     None
 }
 
+/// The **stroke** trap: a curve of the orbit's plane (a line or a circle) drawn as a
+/// pen stroke along every pullback of it, each stroke one weight along its length.
+///
+/// A trap read in the orbit's plane ([`Bubble`]'s strip, [`FieldSpec::TrapCross`]) is
+/// as wide in the frame as `1/|dz|` makes it, so a line pulls back as blades that
+/// swell and pinch along their length and vanish where the derivative is large: no
+/// stroke is thin along its whole pullback. Here the distance to the curve is taken
+/// **in the frame**: at step `n` the orbit is `t` from the curve, which is
+/// `t / |dzₙ|` in the pixel to first order, so `s = t / (|dzₙ|·w)` frame widths
+/// (`w` the frame's width in the plane). The curve's own size there is
+/// `S = radius / (|dzₙ|·w)` frame widths, and the stroke's half-width is
+/// `width · S^taper`: at `taper` 0 every pullback is a hairline of one width, at 1 it
+/// is the plane trap again, and between the two a frame-wide curve is a thick tube
+/// and its small copies thin towards hairlines. The read is the nearest stroke over
+/// the steps, `d = min s / (width · S^taper)`, in half-widths.
+///
+/// A line pulls back through each critical point of the iterate as a cross of arms,
+/// so its strokes are stars joined by long curves; a circle pulls back as closed
+/// loops (hearts and petals where it passes a critical value). Its own loop with
+/// `dz`, stopping once `steps` steps were read. `NaN` where none was.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Stroke {
+    pub shape: StrokeShape,
+    /// A point of the line, or the circle's centre: a point of the orbit's plane.
+    pub center: [f64; 2],
+    /// Measure `center` from the orbit's `c` instead of from `0`. A line through the
+    /// critical value pulls back through the critical point as a cross, so on a
+    /// Julia set every preimage of `0` is a star of strokes; a line that misses it
+    /// pulls back as hyperbolas that never meet.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub on_c: bool,
+    /// The circle's radius, and for either shape the length the curve's size in the
+    /// frame is counted from.
+    pub radius: f64,
+    /// The line's direction, in degrees: 0 is the real axis.
+    pub tilt: f64,
+    /// The half-width, in frame widths, of a stroke whose curve is one frame wide.
+    pub width: f64,
+    /// How a stroke's weight follows its curve's size, in `[0, 1]`.
+    pub taper: f64,
+    /// The least a step is counted as stretching the plane (0: the derivative as it
+    /// is). Where strokes cross, at a critical point of the iterate, the derivative
+    /// is 0 and the curve's size has no bound; with a floor the crossing is a round
+    /// **node** the strokes run out of, larger for a larger floor.
+    pub node: f64,
+    /// A step whose curve is larger than this many frame widths is passed over: deep
+    /// in a zoom every early step's curve is one straight edge across the frame.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub largest: Option<f64>,
+    /// A step whose curve is smaller than this many frame widths is passed over, so
+    /// the strokes stop at a size instead of filling the field with lace.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smallest: Option<f64>,
+    /// The most steps read: those whose curve is within the two bounds, counted from
+    /// the first. The loop ends there, at the escape, or at the frame's `maxiter`,
+    /// which a bounded orbit whose curves stay out of the bounds runs whole.
+    pub steps: u32,
+    pub read: StrokeRead,
+    pub side: Side,
+}
+
+impl Default for Stroke {
+    fn default() -> Stroke {
+        Stroke {
+            shape: StrokeShape::Line,
+            center: [0.0, 0.0],
+            on_c: false,
+            radius: 1.0,
+            tilt: 0.0,
+            width: 0.004,
+            taper: 0.5,
+            node: 0.0,
+            largest: None,
+            smallest: None,
+            steps: 256,
+            read: StrokeRead::Height,
+            side: Side::Both,
+        }
+    }
+}
+
+impl Stroke {
+    /// The loop this reads: every read of one curve shares it.
+    fn trap(&self) -> Stroke {
+        Stroke {
+            read: StrokeRead::Height,
+            ..*self
+        }
+    }
+
+    fn is_valid(&self) -> bool {
+        let positive = |v: f64| v.is_finite() && v > 0.0;
+        self.center.iter().all(|c| c.is_finite())
+            && positive(self.radius)
+            && self.tilt.is_finite()
+            && positive(self.width)
+            && (0.0..=1.0).contains(&self.taper)
+            && self.node.is_finite()
+            && self.node >= 0.0
+            && self.largest.is_none_or(positive)
+            && self.smallest.is_none_or(positive)
+            && self.steps >= 1
+    }
+}
+
+/// A stroke trap's curve.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrokeShape {
+    /// The line through `center` at `tilt`.
+    #[default]
+    Line,
+    /// The circle `|z − center| = radius`.
+    Circle,
+}
+
+/// What a stroke channel reads off the nearest stroke. Every read but `step` is
+/// already a position in `[0, 1]`, taken as it is by a glow, a light, an unranked
+/// sheet and a mask; a palette layer and a ranked sheet spend it over the frame as
+/// they do any channel.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StrokeRead {
+    /// `1 − d` on the stroke (`d < 1`), `NaN` off it: 1 on the curve, 0 at the
+    /// stroke's edge. Its gradient points at the curve, so a light at `period` 2
+    /// lights each stroke as a tube.
+    #[default]
+    Height,
+    /// The step of the nearest stroke, on the stroke only.
+    Step,
+    /// `exp(−d)` wherever a step was read: 1 on the curve, falling off by the
+    /// stroke's own half-width, so a thick stroke glows wide and a hairline narrow.
+    Glow,
+    /// Across the stroke, 0 at one edge and 1 at the other (`(±d + 1)/2`, the sign
+    /// the side of the curve the orbit is on), on the stroke only.
+    Across,
+}
+
+/// How many reads a stroke loop has, one lane each.
+const STROKE_READS: usize = 4;
+
+/// The nearest stroke of one orbit: see [`Stroke`].
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Nearest {
+    pub step: u32,
+    /// The distance to the curve in half-widths, signed by the side of the curve.
+    pub distance: f64,
+    /// The unit direction of the orbit's plane towards the curve at that step.
+    toward: Complex<f64>,
+    derivative: Complex<f64>,
+}
+
+impl Nearest {
+    /// The four reads, in [`StrokeRead`]'s order.
+    pub fn reads(&self) -> [f64; STROKE_READS] {
+        let d = self.distance.abs();
+        let on = d < 1.0;
+        [
+            if on { 1.0 - d } else { f64::NAN },
+            if on { self.step as f64 } else { f64::NAN },
+            (-d).exp(),
+            if on {
+                (self.distance + 1.0) / 2.0
+            } else {
+                f64::NAN
+            },
+        ]
+    }
+
+    /// The unit direction the height climbs in the pixel: towards the curve.
+    pub fn uphill(&self) -> Option<[f64; 2]> {
+        pulled_back(self.derivative, self.toward)
+    }
+}
+
+/// The nearest stroke of `trap` to the orbit of `pixel` over its first steps, or
+/// `None` where no step was read. `width` is the frame's width in the plane and
+/// `scale` what a pre-map (a projection, a stir) multiplies a frame length by there.
+pub(crate) fn stroke(
+    family: &Family,
+    pixel: Complex<f64>,
+    maxiter: u32,
+    trap: &Stroke,
+    width: f64,
+    scale: f64,
+) -> Option<Nearest> {
+    let (mut z, mut z_prev, c) = family.seed(pixel);
+    let (mut dz, mut dz_prev) = family.derivative_seed();
+    let center = Complex::new(trap.center[0], trap.center[1]);
+    let center = if trap.on_c { center + c } else { center };
+    let across = Complex::from_polar(1.0, trap.tilt.to_radians()) * Complex::i();
+    let bailout_sq = iterate::BAILOUT * iterate::BAILOUT;
+    let (largest, smallest) = (
+        trap.largest.unwrap_or(f64::INFINITY),
+        trap.smallest.unwrap_or(0.0),
+    );
+    let mut best: Option<Nearest> = None;
+    let mut read = 0;
+    let mut first_entering: Option<f64> = None;
+    for step in 1..=maxiter {
+        if read == trap.steps {
+            break;
+        }
+        let next = family.derivative_step(z, dz, dz_prev);
+        dz_prev = dz;
+        dz = next;
+        let next = family.step(z, z_prev, c);
+        z_prev = z;
+        z = next;
+        let magnitude_sq = z.norm_sqr();
+        if magnitude_sq > bailout_sq || magnitude_sq.is_nan() {
+            break;
+        }
+        // On a parameter plane `z₁` is `c` itself: a curve through `c` is the whole frame.
+        if step == 1 && trap.on_c && !family.pixel_is_z0() {
+            continue;
+        }
+        // The curve's size in the frame at this step, in frame widths, a step counted
+        // as stretching the plane by `node` at least: at a critical point of the
+        // iterate, where `dz` is 0 and the strokes cross, the size stays the step
+        // before's and the distance flattens, so the crossing swells into a node.
+        let stretch = dz.norm().max(trap.node * dz_prev.norm());
+        let size = trap.radius * scale / (stretch * width);
+        if !(size.is_finite() && size <= largest && size >= smallest) {
+            continue;
+        }
+        read += 1;
+        // A stroke thins to nothing as its curve nears either bound, and the last
+        // step read thins as the first fills out, so no stroke ends at a cut: the
+        // read is continuous across the lines where a step enters or leaves.
+        let (entering, bounded) = match largest.is_finite() {
+            true => (
+                ((largest - size) / (STROKE_FADE * largest)).clamp(0.0, 1.0),
+                true,
+            ),
+            false => (1.0, false),
+        };
+        let leaving = match smallest > 0.0 {
+            true => ((size - smallest) / (STROKE_FADE * smallest)).clamp(0.0, 1.0),
+            false => 1.0,
+        };
+        let first = *first_entering.get_or_insert(if bounded { entering } else { 0.0 });
+        let weight = if read == trap.steps && read > 1 {
+            entering.min(leaving) * (1.0 - first)
+        } else {
+            entering.min(leaving)
+        };
+        if weight <= 0.0 || weight.is_nan() {
+            continue;
+        }
+        let offset = z - center;
+        // The signed distance to the curve, and the unit direction away from it.
+        let (signed, outward) = match trap.shape {
+            StrokeShape::Line => ((offset * across.conj()).re, across),
+            StrokeShape::Circle => {
+                let length = offset.norm();
+                if length == 0.0 {
+                    continue;
+                }
+                (length - trap.radius, offset / length)
+            }
+        };
+        // `S^(1 − taper)`, by a square root where it is one: the common tapers then
+        // read the same bits under any maths library.
+        let spread = match trap.taper {
+            1.0 => 1.0,
+            0.0 => size,
+            0.5 => size.sqrt(),
+            taper => size.powf(1.0 - taper),
+        };
+        let distance = signed / trap.radius * spread / (trap.width * weight);
+        if best.is_none_or(|best| distance.abs() < best.distance.abs()) {
+            best = Some(Nearest {
+                step,
+                distance,
+                toward: -outward * signed.signum(),
+                derivative: dz,
+            });
+        }
+    }
+    best
+}
+
+/// The share of a bound over which a stroke thins to nothing as its curve nears it.
+const STROKE_FADE: f64 = 0.25;
+
 /// Which lane a source reads.
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Key {
@@ -664,19 +955,36 @@ enum Key {
     Radial([f64; 2]),
     Bubble(Bubble),
     Lines(Lines),
+    Stroke(Stroke),
 }
 
 impl Source {
     fn key(&self) -> Key {
-        match (self.field, self.radial, self.bubble, self.lines) {
-            (Some(field), _, _, _) => match self.view {
+        match (
+            self.field,
+            self.radial,
+            self.bubble,
+            self.lines,
+            self.stroke,
+        ) {
+            (Some(field), _, _, _, _) => match self.view {
                 Some(view) => Key::Viewed(field, view),
                 None => Key::Field(field),
             },
-            (None, Some(radial), _, _) => Key::Radial(radial.center),
-            (None, None, Some(bubble), _) => Key::Bubble(bubble),
-            (None, None, None, Some(lines)) => Key::Lines(lines),
-            (None, None, None, None) => Key::Inside,
+            (None, Some(radial), _, _, _) => Key::Radial(radial.center),
+            (None, None, Some(bubble), _, _) => Key::Bubble(bubble),
+            (None, None, None, Some(lines), _) => Key::Lines(lines),
+            (None, None, None, None, Some(stroke)) => Key::Stroke(stroke),
+            (None, None, None, None, None) => Key::Inside,
+        }
+    }
+
+    /// The frame-wide stretch of this channel's lane; a stroke's reads but `step` are
+    /// positions already.
+    fn stretch(&self, lane: &[f32]) -> Stretch {
+        match self.stroke {
+            Some(stroke) if stroke.read != StrokeRead::Step => Stretch::UNIT,
+            _ => Stretch::over(lane.iter().map(|&v| v as f64)),
         }
     }
 }
@@ -1201,6 +1509,18 @@ impl Style {
                     "{at}: a light needs a channel with a gradient; radial has none, nor do lines"
                 ));
             }
+            // The one gradient a stroke loop keeps is the height's, which turns over at
+            // the curve; `across` climbs straight through it.
+            if layer.kind == Kind::Light
+                && layer.channel.is_some_and(|s| {
+                    s.stroke
+                        .is_some_and(|stroke| stroke.read == StrokeRead::Across)
+                })
+            {
+                return Err(format!(
+                    "{at}: a light on a stroke reads its height, glow or step, not 'across'"
+                ));
+            }
             if layer.kind == Kind::Light && layer.channel.is_some_and(|s| s.view.is_some()) {
                 return Err(format!(
                     "{at}: a light reads the frame's own gradient; its channel takes no 'view'"
@@ -1217,6 +1537,27 @@ impl Style {
                         ));
                     }
                 }
+                if let Some(stroke) = source.stroke {
+                    let only = source.field.is_none()
+                        && source.inside.is_none()
+                        && source.radial.is_none()
+                        && source.bubble.is_none()
+                        && source.lines.is_none();
+                    if !only {
+                        return Err(format!(
+                            "{at}: a channel names exactly one of 'field', 'inside', 'radial', \
+                             'bubble', 'lines' and 'stroke'"
+                        ));
+                    }
+                    if !stroke.is_valid() {
+                        return Err(format!(
+                            "{at}: a stroke needs a finite centre and tilt, a positive radius, \
+                             width, largest and smallest, a taper in [0, 1], a node >= 0 and \
+                             steps >= 1"
+                        ));
+                    }
+                    continue;
+                }
                 if let Some(lines) = source.lines {
                     let only = source.field.is_none()
                         && source.inside.is_none()
@@ -1225,7 +1566,7 @@ impl Style {
                     if !only {
                         return Err(format!(
                             "{at}: a channel names exactly one of 'field', 'inside', 'radial', \
-                             'bubble' and 'lines'"
+                             'bubble', 'lines' and 'stroke'"
                         ));
                     }
                     if !(lines.radius.is_finite()
@@ -1441,6 +1782,19 @@ impl Style {
         traps
     }
 
+    /// Every stroke loop a layer reads (one per curve), once each.
+    fn strokes(&self) -> Vec<Stroke> {
+        let mut traps: Vec<Stroke> = Vec::new();
+        for source in self.layers.iter().flat_map(|layer| layer.sources()) {
+            if let Some(stroke) = source.stroke {
+                if !traps.contains(&stroke.trap()) {
+                    traps.push(stroke.trap());
+                }
+            }
+        }
+        traps
+    }
+
     /// Every radial centre a layer reads, once each.
     fn radials(&self) -> Vec<[f64; 2]> {
         let mut centers: Vec<[f64; 2]> = Vec::new();
@@ -1564,9 +1918,18 @@ struct Channels {
     bubbles: Vec<BubbleLanes>,
     /// One entry per field-lines loop: its angle and step lanes.
     lines: Vec<(Lines, [Vec<f32>; 2])>,
+    /// One entry per stroke loop: its four reads, and the height's unit gradient
+    /// (empty without a light).
+    strokes: Vec<StrokeLanes>,
     /// One entry per view: the fields read through it and a lane per field.
     viewed: Vec<(View, Vec<FieldSpec>, Vec<Vec<f32>>)>,
     interior_fraction: f64,
+}
+
+struct StrokeLanes {
+    trap: Stroke,
+    reads: [Vec<f32>; STROKE_READS],
+    gradient: Vec<[f32; 2]>,
 }
 
 struct BubbleLanes {
@@ -1618,7 +1981,15 @@ impl Channels {
                     .expect("every field-lines loop a layer reads was gathered")
                     .1[lines.read as usize]
             }
+            Key::Stroke(stroke) => &self.stroke(stroke).reads[stroke.read as usize],
         }
+    }
+
+    fn stroke(&self, stroke: Stroke) -> &StrokeLanes {
+        self.strokes
+            .iter()
+            .find(|lanes| lanes.trap == stroke.trap())
+            .expect("every stroke loop a layer reads was gathered")
     }
 
     fn bubble(&self, bubble: Bubble) -> &BubbleLanes {
@@ -1639,6 +2010,7 @@ impl Channels {
                 &self.bubble(bubble).across_gradient
             }
             Key::Bubble(bubble) => &self.bubble(bubble).gradient,
+            Key::Stroke(stroke) => &self.stroke(stroke).gradient,
             // Refused by `Style::validate`: none has an orbit gradient to light (a
             // view's would have to be turned back into the frame; no style lights one).
             Key::Radial(_) | Key::Lines(_) | Key::Viewed(..) => &[],
@@ -1947,8 +2319,17 @@ fn gather(
 ) -> Channels {
     let fields = style.fields();
     let lights = style.lights();
+    // The frame's own loop keeps its derivative only for a light on a field channel: a
+    // light on a trap or the inside reads that loop's, and the derivative is what bars
+    // the frame's loop from its proofs of interior.
+    let field_lit = style.layers.iter().any(|layer| {
+        layer.kind == Kind::Light
+            && layer
+                .channel
+                .is_none_or(|source| matches!(source.key(), Key::Field(_)))
+    });
     let wants = Wants {
-        derivative: lights || fields.iter().any(|field| field.wants().derivative),
+        derivative: field_lit || fields.iter().any(|field| field.wants().derivative),
         ..wants_of(&fields, family)
     };
     // Each view runs its own loop on its own family, asking only what its fields need.
@@ -1969,13 +2350,16 @@ fn gather(
     let reach = style.inside();
     let traps = style.bubbles();
     let circles = style.lines();
+    let pens = style.strokes();
     let stirring = Stirring::of(&style.stir, family);
     // The stirred map's Jacobian is two more runs of its passes: taken only where a
     // gradient or a distance is carried through it (a bubble's gradients are a
-    // light's, and its `largest` and `smallest` are plane lengths under any pre-map).
+    // light's, and its `largest` and `smallest` are plane lengths under any pre-map; a
+    // stroke's distance is a frame length, so it is carried through as `de` is).
     let is_distance = |field: &FieldSpec| matches!(field, FieldSpec::De { .. });
     let stirred_jacobian = lights
         || reach.is_some()
+        || !pens.is_empty()
         || fields.iter().any(is_distance)
         || views
             .iter()
@@ -1994,7 +2378,9 @@ fn gather(
         Vec<BubbleRow>,
         Vec<[Vec<f32>; 2]>,
         Vec<Vec<Vec<f32>>>,
+        Vec<StrokeRow>,
     );
+    type StrokeRow = ([Vec<f32>; STROKE_READS], Vec<[f32; 2]>);
     let rows: Vec<Row> = (window.row..window.row + height)
         .into_par_iter()
         .map(|row| {
@@ -2006,6 +2392,7 @@ fn gather(
                 traps.iter().map(|_| Default::default()).collect();
             let mut lines_rows: Vec<[Vec<f32>; 2]> =
                 circles.iter().map(|_| Default::default()).collect();
+            let mut stroke_rows: Vec<StrokeRow> = pens.iter().map(|_| Default::default()).collect();
             let mut lanes = vec![Vec::with_capacity(width as usize); fields.len()];
             let mut gradients = Vec::with_capacity(if lights { width as usize } else { 0 });
             let mut insides = Vec::with_capacity(if reach.is_some() { width as usize } else { 0 });
@@ -2080,7 +2467,7 @@ fn gather(
                         lane.push(value.map_or(f32::NAN, |value| value as f32));
                     }
                 }
-                if lights {
+                if field_lit {
                     let unit = to_frame(
                         orbit
                             .escaped
@@ -2123,6 +2510,23 @@ fn gather(
                     angles.push(angle);
                     steps.push(step);
                 }
+                for (trap, (reads, unit_lane)) in pens.iter().zip(&mut stroke_rows) {
+                    let nearest = match (trap.side, orbit.escaped) {
+                        (Side::Outside, false) | (Side::Inside, true) => None,
+                        _ => {
+                            let scale = de_scale.unwrap_or(1.0);
+                            stroke(family, pixel, maxiter, trap, view.width, scale)
+                        }
+                    };
+                    let values = nearest.map_or([f64::NAN; STROKE_READS], |near| near.reads());
+                    for (lane, value) in reads.iter_mut().zip(values) {
+                        lane.push(value as f32);
+                    }
+                    if lights {
+                        let unit = to_frame(nearest.and_then(|near| near.uphill()));
+                        unit_lane.push(unit.map_or([f32::NAN; 2], |[x, y]| [x as f32, y as f32]));
+                    }
+                }
             }
             (
                 lanes,
@@ -2132,6 +2536,7 @@ fn gather(
                 bubble_rows,
                 lines_rows,
                 viewed_rows,
+                stroke_rows,
             )
         })
         .collect();
@@ -2166,9 +2571,31 @@ fn gather(
             )
         })
         .collect();
-    for (row_lanes, row_gradient, row_insides, row_inside, row_bubbles, row_lines, row_viewed) in
-        rows
+    let mut strokes: Vec<StrokeLanes> = pens
+        .iter()
+        .map(|trap| StrokeLanes {
+            trap: *trap,
+            reads: Default::default(),
+            gradient: Vec::new(),
+        })
+        .collect();
+    for (
+        row_lanes,
+        row_gradient,
+        row_insides,
+        row_inside,
+        row_bubbles,
+        row_lines,
+        row_viewed,
+        row_strokes,
+    ) in rows
     {
+        for (whole, (reads, unit_lane)) in strokes.iter_mut().zip(row_strokes) {
+            for (lane, part) in whole.reads.iter_mut().zip(reads) {
+                lane.extend(part);
+            }
+            whole.gradient.extend(unit_lane);
+        }
         for (lane, part) in lanes.iter_mut().zip(row_lanes) {
             lane.extend(part);
         }
@@ -2223,6 +2650,7 @@ fn gather(
         radials,
         bubbles,
         lines: lines_lanes,
+        strokes,
         viewed,
         interior_fraction: inside as f64 / (width as f64 * height as f64).max(1.0),
     }
@@ -2304,9 +2732,7 @@ fn measure_layers(style: &Style, channels: &Channels) -> Measures {
             (Kind::Sheet, Some(source)) if layer.sheet.unwrap_or_default().rank => {
                 Measured::Ranked(Spend::measure(&field_of(source.key()), Transfer::Rank))
             }
-            (_, Some(source)) => Measured::Stretched(Stretch::over(
-                channels.lane(source.key()).iter().map(|&v| v as f64),
-            )),
+            (_, Some(source)) => Measured::Stretched(source.stretch(channels.lane(source.key()))),
             _ => Measured::Nothing,
         })
         .collect();
@@ -2323,9 +2749,9 @@ fn measure_layers(style: &Style, channels: &Channels) -> Measures {
         .layers
         .iter()
         .map(|layer| {
-            layer.mask.map(|mask| {
-                Stretch::over(channels.lane(mask.channel.key()).iter().map(|&v| v as f64))
-            })
+            layer
+                .mask
+                .map(|mask| mask.channel.stretch(channels.lane(mask.channel.key())))
         })
         .collect();
     Measures {
@@ -3876,6 +4302,107 @@ mod tests {
             c: Complex::new(0.25, 0.0),
         };
         assert!(lines(&parabolic, Complex::new(0.1, 0.0), false, &trap).is_none());
+    }
+
+    #[test]
+    fn a_stroke_is_as_far_as_the_frame_says_whatever_the_derivative() {
+        // One step of z² + c with the line through c: z₁ − c = p², real on the two
+        // axes, so the strokes are a cross through 0 and a pixel `e` above the real
+        // axis is `e` from it in the frame, wherever along the arm it sits.
+        let family = Family::Julia {
+            degree: 2,
+            c: Complex::new(0.3, 0.1),
+        };
+        let (frame, half) = (2.0, 0.001);
+        let pen = |taper: f64| Stroke {
+            on_c: true,
+            width: half,
+            taper,
+            steps: 1,
+            ..Stroke::default()
+        };
+        for x in [0.2, 0.7, 1.5] {
+            let pixel = Complex::new(x, 1e-4);
+            let near = stroke(&family, pixel, 100, &pen(0.0), frame, 1.0).unwrap();
+            let expected = 1e-4 / (frame * half);
+            assert!(
+                (near.distance / expected - 1.0).abs() < 1e-3,
+                "{x}: {near:?}"
+            );
+            let [height, step, glow, across] = near.reads();
+            assert!((height - (1.0 - expected)).abs() < 1e-3 && step == 1.0);
+            assert!((glow - (-expected).exp()).abs() < 1e-3);
+            assert!((across - (expected + 1.0) / 2.0).abs() < 1e-3);
+            // Uphill is towards the curve: straight down, for a pixel above the axis.
+            let [ux, uy] = near.uphill().unwrap();
+            assert!(ux.abs() < 1e-3 && (uy + 1.0).abs() < 1e-3, "{x}: {ux} {uy}");
+            // At taper 1 the stroke is the plane's own trap: `|Im p²| / width`.
+            let plain = stroke(&family, pixel, 100, &pen(1.0), frame, 1.0).unwrap();
+            assert!((plain.distance - 2.0 * x * 1e-4 / half).abs() < 1e-9);
+        }
+        // Off the stroke the glow is all that reads.
+        let far = stroke(&family, Complex::new(0.7, 0.5), 100, &pen(0.0), frame, 1.0).unwrap();
+        let [height, step, glow, across] = far.reads();
+        assert!(height.is_nan() && step.is_nan() && across.is_nan());
+        assert!((0.0..1e-6).contains(&glow));
+        // A circle about c of radius 0.25 pulls back as the circle |p| = 0.5.
+        let ring = Stroke {
+            shape: StrokeShape::Circle,
+            radius: 0.25,
+            ..pen(0.0)
+        };
+        let near = stroke(&family, Complex::new(0.0, 0.5001), 100, &ring, frame, 1.0).unwrap();
+        assert!((near.distance / (1e-4 / (frame * half)) - 1.0).abs() < 1e-2);
+        // Within a quarter of a bound the stroke thins: halfway in, it is half as wide.
+        let size = 1.0 / (2.0 * 0.7f64.hypot(1e-4) * frame);
+        let fading = Stroke {
+            largest: Some(size / 0.875),
+            ..pen(0.0)
+        };
+        let thin = stroke(&family, Complex::new(0.7, 1e-4), 1, &fading, frame, 1.0).unwrap();
+        assert!((thin.distance / (2e-4 / (frame * half)) - 1.0).abs() < 1e-3);
+        // A bound the curve's size is outside of passes the step over.
+        for bound in [
+            Stroke {
+                smallest: Some(10.0),
+                ..pen(0.0)
+            },
+            Stroke {
+                largest: Some(1e-3),
+                ..pen(0.0)
+            },
+        ] {
+            assert!(stroke(&family, Complex::new(0.7, 1e-4), 1, &bound, frame, 1.0).is_none());
+        }
+    }
+
+    #[test]
+    fn a_stroke_stands_alone_takes_a_light_and_is_held_to_its_ranges() {
+        let stack = |channel: &str| -> Style {
+            serde_json::from_str(&format!(
+                r##"{{"name": "x", "layers": [{{"kind": "light", "channel": {channel}}}]}}"##
+            ))
+            .unwrap()
+        };
+        assert!(
+            stack(r#"{"stroke": {"shape": "circle", "read": "glow"}}"#)
+                .validate()
+                .is_ok()
+        );
+        let both = stack(r#"{"stroke": {}, "field": {"kind": "smooth"}}"#);
+        assert!(both.validate().unwrap_err().contains("exactly one"));
+        let across = stack(r#"{"stroke": {"read": "across"}}"#);
+        assert!(across.validate().unwrap_err().contains("not 'across'"));
+        for bad in [r#"{"taper": 1.5}"#, r#"{"width": 0.0}"#, r#"{"steps": 0}"#] {
+            let style = stack(&format!(r#"{{"stroke": {bad}}}"#));
+            assert!(style.validate().unwrap_err().contains("a stroke needs"));
+        }
+        // Its positions are taken as they are: a frame holding only faint glow is
+        // not stretched up to full strength.
+        let source: Source = serde_json::from_str(r#"{"stroke": {"read": "glow"}}"#).unwrap();
+        assert!((source.stretch(&[0.1, 0.2]).position(0.2) - 0.2).abs() < 1e-12);
+        let steps: Source = serde_json::from_str(r#"{"stroke": {"read": "step"}}"#).unwrap();
+        assert!((steps.stretch(&[3.0, 5.0, 7.0]).position(7.0) - 1.0).abs() < 0.05);
     }
 
     #[test]

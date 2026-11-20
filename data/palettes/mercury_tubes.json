@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "mercury_tubes",
+  "kind": "sequential",
+  "source": "a deep navy through royal blue to a clear cyan, the calm ground of the mercury_tubes style, from visionary-spires-25.jpg: liquid chrome stars and tubes (the chrome is literal paints of the stack, not the map's)",
+  "stops": [
+    [0.0, [6, 10, 48]],
+    [0.3, [10, 26, 96]],
+    [0.6, [8, 84, 152]],
+    [0.85, [10, 160, 204]],
+    [1.0, [70, 210, 236]]
+  ]
+}

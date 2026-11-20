@@ -1,0 +1,218 @@
+{
+  "schema": 1,
+  "name": "hairline_rays",
+  "description": "hundreds of fine bright hairlines sweeping out of the spiral centres and crossing in a mesh, blue-white on deep blue",
+  "reference": {
+    "image": "sear-the-sky-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal orbit traps (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "hairline_rays",
+  "reuses": [
+    "the radial channel (a near-flat ground, the map's lower 0.6)",
+    "de glows for the set's lace and bloom",
+    "the tone pass"
+  ],
+  "adds": [],
+  "notes": [
+    "The stroke trap is item 062's primitive, for five references whose look is a clean continuous curve drawn like a pen stroke (visionary-spires, ten-leaf-clover, tinan, tianan, sear-the-sky). A line through the critical value (`on_c`) pulls back as stars joined by long curves, a circle as closed loops; the distance is taken in the frame, so a stroke keeps one weight along its whole pullback, which the strip trap's blades and a `de` glow do not. Three stacks came of it: mercury_tubes (lit tubes), neon_loops (glowing outlines; cream_ribbons and tan_star_beams are its palette entries) and hairline_rays (hairlines at `taper` 0).",
+    "Three line strokes at `taper` 0 (tilts 20, 80 and 140 degrees), each a hairline of one width with a faint halo: at a spiral seat every step's pullback sweeps round the centre, and three lines' pullbacks cross as a mesh. The set itself is kept faint (the lace at 0.08), since the reference shows lines and nodes, not a set.",
+    "Round one's lessons: with a bloom on the `de` channel the lace-heavy spiral seats drew the set and hid the lines; `smallest` 0.02 drops the short fur along the set that 0.004 draws. A deep seat costs minutes: the loop runs until the curves are frame-sized. Readings: r_one (one line), r_six (six: a dense mesh), r_taper (`taper` 0.25: the long lines thicker)."
+  ],
+  "style": {
+    "name": "hairline_rays",
+    "interior": {
+      "palette": 0.0
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "radial": {
+            "center": [
+              0.5,
+              2.5
+            ]
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "value"
+          },
+          "cycles": 0.6,
+          "gamma": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.004,
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.1
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.08
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 20.0,
+            "width": 0.0005,
+            "taper": 0.0,
+            "largest": 3.0,
+            "smallest": 0.02,
+            "steps": 40,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 20.0,
+            "width": 0.0005,
+            "taper": 0.0,
+            "largest": 3.0,
+            "smallest": 0.02,
+            "steps": 40,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 80.0,
+            "width": 0.0005,
+            "taper": 0.0,
+            "largest": 3.0,
+            "smallest": 0.02,
+            "steps": 40,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 80.0,
+            "width": 0.0005,
+            "taper": 0.0,
+            "largest": 3.0,
+            "smallest": 0.02,
+            "steps": 40,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 140.0,
+            "width": 0.0005,
+            "taper": 0.0,
+            "largest": 3.0,
+            "smallest": 0.02,
+            "steps": 40,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 0.2
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 140.0,
+            "width": 0.0005,
+            "taper": 0.0,
+            "largest": 3.0,
+            "smallest": 0.02,
+            "steps": 40,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 1.0
+      }
+    ],
+    "tone": {
+      "median": 0.144,
+      "p10": 0.063
+    }
+  }
+}

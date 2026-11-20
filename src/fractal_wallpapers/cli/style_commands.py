@@ -818,8 +818,9 @@ def add_commands(subcommands) -> None:
         "names",
         nargs="*",
         help="only these styles (default: every published mode, and every unpublished "
-        "style with a post stage or a stir): one style after a change to it, the whole "
-        "run after an engine or module change",
+        "style with a post stage or a stir; a named unpublished style is drawn whatever "
+        "its stack): one style after a change to it, the whole run after an engine or "
+        "module change",
     )
     parity.add_argument(
         "--workers",

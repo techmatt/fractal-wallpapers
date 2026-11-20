@@ -256,3 +256,8 @@
 {"schema": 1, "kind": "admitted", "map": "paper_layers", "group": "map:paper_layers", "joined": false, "nearest": "map:lit_petals", "m1": 0.05586}
 {"schema": 1, "kind": "admitted", "map": "poster_curls", "group": "map:poster_curls", "joined": false, "nearest": "map:ring_pools", "m1": 0.075167}
 {"schema": 1, "kind": "admitted", "map": "gouache_cut", "group": "map:gouache_cut", "joined": false, "nearest": "map:Verdigris Furnace", "m1": 0.087984}
+{"schema": 1, "kind": "admitted", "map": "mercury_tubes", "group": "map:mercury_tubes", "joined": false, "nearest": "map:flame_wisp_spark", "m1": 0.074828}
+{"schema": 1, "kind": "admitted", "map": "neon_loops", "group": "map:neon_loops", "joined": false, "nearest": "map:ten-leaf-clover-25", "m1": 0.058257}
+{"schema": 1, "kind": "admitted", "map": "hairline_rays", "group": "map:hairline_rays", "joined": false, "nearest": "map:flame_veil_violet", "m1": 0.075455}
+{"schema": 1, "kind": "admitted", "map": "cream_ribbons", "group": "map:cream_ribbons", "joined": false, "nearest": "m35", "m1": 0.063117}
+{"schema": 1, "kind": "admitted", "map": "tan_star_beams", "group": "map:tan_star_beams", "joined": false, "nearest": "map:Warm Core in the Deep", "m1": 0.047584}

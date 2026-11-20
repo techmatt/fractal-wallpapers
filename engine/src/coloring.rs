@@ -931,6 +931,13 @@ pub struct Stretch {
 }
 
 impl Stretch {
+    /// The stretch that leaves a value where it is: for a lane of positions.
+    pub const UNIT: Stretch = Stretch {
+        low: 0.0,
+        span: 1.0,
+        flat: false,
+    };
+
     /// Measure the stretch over a field's valid samples.
     ///
     /// A frame with no valid samples at all — a view entirely inside the set,

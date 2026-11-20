@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "hairline_rays",
+  "kind": "sequential",
+  "source": "a near-black navy through deep cobalt (the ground, in its lower 0.6), then an electric blue halo, a sky-blue lace and an ice-white line: the albedo of the hairline_rays style, from sear-the-sky-25.jpg: fine bright blue hairlines on deep blue",
+  "stops": [
+    [0.0, [1, 6, 24]],
+    [0.3, [3, 16, 56]],
+    [0.6, [6, 40, 110]],
+    [0.75, [20, 100, 210]],
+    [0.88, [70, 160, 250]],
+    [1.0, [200, 236, 255]]
+  ]
+}

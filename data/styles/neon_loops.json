@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "name": "neon_loops",
+  "description": "neon outline: glowing white loops and beams, each one clean weight with a soft halo, over the set's pale lace on a blue-to-green ground",
+  "reference": {
+    "image": "ten-leaf-clover-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal orbit traps (signed exoteric.roach.org), 2560x1600"
+  },
+  "suggested_colormap": "neon_loops",
+  "reuses": [
+    "the radial channel (a calm ground, the map's lower 0.6)",
+    "de glows for the set's lace and its aura",
+    "the tone pass"
+  ],
+  "adds": [],
+  "notes": [
+    "The stroke trap is item 062's primitive, for five references whose look is a clean continuous curve drawn like a pen stroke (visionary-spires, ten-leaf-clover, tinan, tianan, sear-the-sky). A line through the critical value (`on_c`) pulls back as stars joined by long curves, a circle as closed loops; the distance is taken in the frame, so a stroke keeps one weight along its whole pullback, which the strip trap's blades and a `de` glow do not. Three stacks came of it: mercury_tubes (lit tubes), neon_loops (glowing outlines; cream_ribbons and tan_star_beams are its palette entries) and hairline_rays (hairlines at `taper` 0).",
+    "A circle stroke (the loops) and a line stroke (the beams), each drawn twice off its `glow` read: a wide halo at `power` 0.3 and a white core at 2. The map's layout is the mode's contract with its entries: the ground in the lower 0.6 (the radial channel at `cycles` 0.6), the halo at 0.75, the lace at 0.88, the line at 1.0. cream_ribbons (tinan: the loops faint hairlines, broad soft beams, a dark ground at gamma 2.5) and tan_star_beams (tianan: the lace wide and tan, the beams blue-white) are the same stack with other numbers.",
+    "Round one's lessons: a halo at `power` under about 0.3 on a wide beam floods the ground in the halo's colour; `steps` 10 and `smallest` 0.12 keep the outlines few. Readings: n_loops (no beams), n_thin (half the weight)."
+  ],
+  "style": {
+    "name": "neon_loops",
+    "interior": {
+      "palette": 0.0
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "radial": {
+            "center": [
+              0.6,
+              0.5
+            ]
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "value"
+          },
+          "cycles": 0.6,
+          "gamma": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.02,
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.15
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 20.0,
+            "width": 0.005,
+            "taper": 0.6,
+            "node": 1.0,
+            "largest": 1.5,
+            "smallest": 0.12,
+            "steps": 10,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.45,
+        "power": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "line",
+            "on_c": true,
+            "tilt": 20.0,
+            "width": 0.005,
+            "taper": 0.6,
+            "node": 1.0,
+            "largest": 1.5,
+            "smallest": 0.12,
+            "steps": 10,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "circle",
+            "on_c": true,
+            "radius": 0.7,
+            "width": 0.004,
+            "taper": 0.5,
+            "largest": 1.5,
+            "smallest": 0.12,
+            "steps": 10,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.5,
+        "power": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "stroke": {
+            "shape": "circle",
+            "on_c": true,
+            "radius": 0.7,
+            "width": 0.004,
+            "taper": 0.5,
+            "largest": 1.5,
+            "smallest": 0.12,
+            "steps": 10,
+            "side": "outside",
+            "read": "glow"
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "power": 2.0
+      }
+    ],
+    "tone": {
+      "median": 0.649,
+      "p10": 0.423
+    }
+  }
+}

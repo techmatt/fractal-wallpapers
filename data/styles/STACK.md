@@ -82,62 +82,11 @@ divided by `zoom`, so a falloff glow keeps its width; a `light` cannot read a vi
 channel. `turn`, `zoom` and `shift` are frame-relative and hold at any depth; `c` is in
 plane units, so it is for shallow, hand-placed seats.
 
-`{"bubble": {center, radius, hit, read, spacing, escaped}}` is the **bubble trap**: the
-disc `|z − center| < radius` (`center` a plane point `[re, im]`) read at the step the
-orbit enters it for the `hit`-th time. The samples first landing in the disc at step `n`
-are a conformal preimage of it, so each is a round disc, and later steps' discs fill the
-gaps: a circle packing. `read` is `height` (`1 − |z − center|/radius`, 1 at a disc's
-middle and 0 at its rim, its gradient pointing inwards, so a `light` at `period` 2 domes
-every disc and an inverted `glow` is a bright rim), `step` (the entry's step, one number
-per disc) or `angle` (of `z − center`, a fraction of a turn: rays from each disc's
-middle). `hit` 2 packs smaller discs inside each disc of hit 1. `spacing` repeats the
-disc on a square lattice through `center`, so almost every orbit lands in one and the
-discs fill the frame. Keep the critical point (`0`) off every disc (`center`
-`[0.5, 0.5]` at spacing 1 does while `radius` is under 0.7; the default 1 does not), or
-the discs it falls in pull back as peanuts. `escaped` reads only orbits that escape: an
-interior cycle sitting in a disc smears its whole component into one bubble.
-`largest` (a fraction of the frame width) passes over an entry whose disc pulls back
-larger than that (`radius / |dz| > largest · width`), so the packing starts at the same
-frame-relative size at any depth instead of drawing early discs as straight edges. Its
-own loop, stopping at the entry, with `dz` kept.
-
-`shift` (`[x, y]` in radii, length in (0, 1)) gives each disc a **face**: a smaller disc
-internally tangent to its rim, centred `shift·radius` from its middle, of radius
-`(1 − |shift|)·radius`. The read `crescent` is the lune between rim and face,
-`a / (a + b)` with `a` the distance outside the face and `b` the distance inside the rim
-(0 at the face, 1 at the rim, nothing on the face). Its gradient is the lune's, pulled
-back through `dz`, so a `light` at one band lights each lune as a glossy curved band;
-every disc's pullback turns its crescent its own way.
-
-`shape` `strip` swaps the disc for the **line trap**: the strip
-`|Im((z − center)·e^(−i·tilt))| < radius` about the line through `center` at `tilt`
-degrees, repeated as parallel lines `spacing` apart. A strip pulls back through each
-critical point of the iterate as a cross of tapering arms, so its entries are pointed,
-curved **blades**. `height` is `1 − |v|/radius` (`v` the offset across the line), `step`
-is one number per blade, and a strip has no `angle` and no face. The read **`across`**,
-on either shape, is `(v/radius + 1)/2`, 0 at one edge and 1 at the other, its gradient
-pulled back through `dz`, so a `light` at one band and `rings` 1 shades each blade as a
-lit cylinder. `smallest` (a fraction of the frame width) is `largest`'s partner: the
-read ends, `NaN`, at the first counted entry whose shape pulls back smaller than that,
-leaving finer detail to the layers beneath.
-
-`{"lines": {radius, arrive, settle, twist, divide, read, side}}` is the **field-lines**
-channel: where the orbit crossed a circle of its own. An
-escaping orbit is read at the step it first leaves `|z| < radius` (a radius near the
-set's own size, 1.2 for a quadratic Julia set, puts several bands in the frame); a
-bounded orbit is run `settle` steps onto its attracting cycle (found as the first repeat
-within 64 steps) and read at the first step it comes within `arrive` of a cycle point
-`w`. `read` is `angle` (of `z`, or of `z − w` inside, a fraction of a turn) or `step`
-(the crossing's step). Unlike `decomposition`, read at the `2¹⁶` bailout where its level
-lines are straight rays crowding into moiré, these lines curve out of the points that
-map to `0`, cut into sectors at the band seams, and each interior basin cell holds a
-pinwheel into its centre. `twist` turns the angle by `twist·ln(|z| / radius)` radians
-(`ln(|z − w| / arrive)` inside), bending lines into arcs; `divide` (outside only)
-divides the angle by `divide^step`, so at the degree each band holds as many lines as
-the one outside it. `side` (`both`, `outside`, `inside`) keeps one half of the frame.
-Lines are cut by a sheet's `period` on the raw angle; a palette's stretch on a divided
-angle is spent on the outermost band. No gradient, so no `light`; a parabolic or Siegel
-interior, whose orbit never repeats, has no lines.
+The **trap channels** read an orbit against a shape of its own plane, each in a loop
+of its own, and `TRAPS.md` beside this has them: `bubble` (a disc or strip read at an
+entry: a circle packing, blades), `lines` (the angle where the orbit crosses a circle:
+field lines) and `stroke` (the nearest pullback of a line or circle, measured in the
+frame: pen strokes of one weight).
 
 ## Layers
 
@@ -179,8 +128,6 @@ the stack refuses unknown members):
 | `inside` | `iterations` 1000 |
 | `radial` | `center` [0.5, 0.5] |
 | `view` | `turn` 0, `zoom` 1, `shift` [0, 0], `c` [0, 0] |
-| `bubble` | `center` [0, 0] (on the critical point: always set it), `radius` 1, `hit` 1, `read` `height`, `shape` `disc`, `tilt` 0, `escaped` false; `spacing`, `largest`, `smallest`, `shift` absent |
-| `lines` | `radius` 4, `arrive` 0.05, `settle` 1000, `twist` 0, `divide` 1, `read` `angle`, `side` `both` |
 | layer | `blend` `normal`, `opacity` 1 |
 | `mask` | `invert` false, `power` 1 |
 | palette recipe | `cycles` 1, `gamma` 1, `phase` 0, `transfer` `value` |

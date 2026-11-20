@@ -2941,6 +2941,109 @@
       ],
       "what": "Gouache: broad flat teal, navy and mint shapes with dry-brush ragged edges and a few lime knife strokes.",
       "palettes": []
+    },
+    {
+      "style": "mercury_tubes",
+      "item": "062",
+      "reference": "visionary-spires-25.jpg",
+      "references": [
+        "visionary-spires-25.jpg"
+      ],
+      "what": "Liquid chrome: mirror-bright star nodes joined by mercury tubes thinning to hairlines, hairline loops, on a calm navy-to-cyan ground.",
+      "palettes": []
+    },
+    {
+      "style": "neon_loops",
+      "item": "062",
+      "reference": "ten-leaf-clover-25.jpg",
+      "references": [
+        "ten-leaf-clover-25.jpg",
+        "tinan-25.jpg",
+        "tianan-25.jpg"
+      ],
+      "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (cream ribbons on black, blue-white beams between tan stars as palette entries).",
+      "palettes": [
+        {
+          "colormap": "neon_loops",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "cream_ribbons",
+          "values": {
+            "/layers/0/palette/gamma": 2.5,
+            "/layers/1/opacity": 0.08,
+            "/layers/2/falloff": 0.0005,
+            "/layers/2/opacity": 0.9,
+            "/layers/3/channel/stroke/smallest": 0.1,
+            "/layers/3/channel/stroke/steps": 8,
+            "/layers/3/channel/stroke/taper": 0.75,
+            "/layers/3/channel/stroke/width": 0.02,
+            "/layers/3/opacity": 0.18,
+            "/layers/3/power": 0.5,
+            "/layers/4/channel/stroke/smallest": 0.1,
+            "/layers/4/channel/stroke/steps": 8,
+            "/layers/4/channel/stroke/taper": 0.75,
+            "/layers/4/channel/stroke/width": 0.02,
+            "/layers/4/power": 1.0,
+            "/layers/5/channel/stroke/smallest": 0.1,
+            "/layers/5/channel/stroke/steps": 8,
+            "/layers/5/channel/stroke/width": 0.0015,
+            "/layers/5/opacity": 0.06,
+            "/layers/5/power": 0.5,
+            "/layers/6/channel/stroke/smallest": 0.1,
+            "/layers/6/channel/stroke/steps": 8,
+            "/layers/6/channel/stroke/width": 0.0015,
+            "/layers/6/opacity": 0.3,
+            "/tone/median": 0.199,
+            "/tone/p10": 0.003
+          },
+          "keeps": [],
+          "reference": "tinan-25.jpg"
+        },
+        {
+          "colormap": "tan_star_beams",
+          "values": {
+            "/layers/0/palette/gamma": 1.2,
+            "/layers/1/opacity": 0.3,
+            "/layers/2/falloff": 0.0008,
+            "/layers/2/opacity": 0.55,
+            "/layers/3/channel/stroke/smallest": 0.1,
+            "/layers/3/channel/stroke/steps": 8,
+            "/layers/3/channel/stroke/taper": 0.7,
+            "/layers/3/channel/stroke/width": 0.01,
+            "/layers/3/opacity": 0.36,
+            "/layers/3/power": 0.25,
+            "/layers/4/channel/stroke/smallest": 0.1,
+            "/layers/4/channel/stroke/steps": 8,
+            "/layers/4/channel/stroke/taper": 0.7,
+            "/layers/4/channel/stroke/width": 0.01,
+            "/layers/5/channel/stroke/smallest": 0.1,
+            "/layers/5/channel/stroke/steps": 8,
+            "/layers/5/channel/stroke/width": 0.0015,
+            "/layers/5/opacity": 0.12,
+            "/layers/5/power": 0.25,
+            "/layers/6/channel/stroke/smallest": 0.1,
+            "/layers/6/channel/stroke/steps": 8,
+            "/layers/6/channel/stroke/width": 0.0015,
+            "/layers/6/opacity": 0.3,
+            "/tone/median": 0.156,
+            "/tone/p10": 0.034
+          },
+          "keeps": [],
+          "reference": "tianan-25.jpg"
+        }
+      ]
+    },
+    {
+      "style": "hairline_rays",
+      "item": "062",
+      "reference": "sear-the-sky-25.jpg",
+      "references": [
+        "sear-the-sky-25.jpg"
+      ],
+      "what": "Hundreds of fine bright hairlines sweeping out of the spiral centres and crossing in a mesh, blue on deep blue.",
+      "palettes": []
     }
   ]
 }

@@ -39,7 +39,7 @@ of the style ones is `fractal-wallpapers style sweep` (`data/styles/README.md`'s
   keep. Recommend widening the range to 3..8, read off a sweep at 8. *(Matt's call)*
 - **Field-lines interior needs the orbit within 1e-9 of its cycle after `settle`
   steps**, so the outer part of a bulb whose multiplier is near 1 (|λ| over about 0.98 at
-  period 1, 0.85 at period 8) gets no lines, where `STACK.md` says only a parabolic or
+  period 1, 0.85 at period 8) gets no lines, where `TRAPS.md` says only a parabolic or
   Siegel interior lacks them. A looser cycle test (the arrival read only needs a cycle
   point to within `arrive`) changes `field_lines`, `star_eye` and `clockwork_rings`
   pixels, so it wants an identity run and a look. Recommend the fix with a re-look.

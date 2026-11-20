@@ -72,6 +72,7 @@ fn plain(height: &Source) -> bool {
         && height.radial.is_none()
         && height.bubble.is_none()
         && height.lines.is_none()
+        && height.stroke.is_none()
 }
 
 /// What a facet of the mosaic is filled with.
@@ -1290,6 +1291,7 @@ impl Default for Paper {
                 radial: None,
                 bubble: None,
                 lines: None,
+                stroke: None,
                 view: None,
                 transform: Transform::default(),
                 invert: false,

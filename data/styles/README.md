@@ -18,7 +18,7 @@ fractal-wallpapers style sweep --out <dir> [names…]  # the checker (below)
 
 A style is a stack of layers over the channels of one escape loop, composited by
 `engine/src/style.rs` from the spec `styles.py` writes: **`STACK.md` here is the stack's
-reference**, `POST.md` that of its **stir** (where each sample looks) and **post stage**
+reference**, `TRAPS.md` its trap channels', `POST.md` that of its **stir** (where each sample looks) and **post stage**
 (passes over the finished frame). `style-wasm/` runs the published modes in a browser
 (`engine/README.md`'s *The style module*). `<name>.keeps.json` is what Matt kept from a
 style's pickers (pictures in `fractal-drive-sync/style-keeps/<name>/`); `catalog.json`

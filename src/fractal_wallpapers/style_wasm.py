@@ -16,9 +16,10 @@ fractal-wallpapers style wasm-speed
 
 `wasm-parity` draws every keep the catalog shows for a published mode both ways and
 compares the bytes, and every style with a post stage or a stir the catalog does not
-publish yet at `POST_SEAT`; `wasm-speed` times one 1280x800 frame per published mode on one
-thread. Both run the module under Node (`style-wasm/js/node-render.mjs`), and refuse
-without a built module, naming the build.
+publish yet at `POST_SEAT` (a style named on the command line whatever its stack);
+`wasm-speed` times one 1280x800 frame per published mode on one thread. Both run the
+module under Node (`style-wasm/js/node-render.mjs`), and refuse without a built module,
+naming the build.
 
 **Which parity run is owed.** A change to the engine's style path or to the module
 (`engine/src/style.rs`, `style-wasm/`, `styles.spec_of`'s rules) owes the full run, no
@@ -373,9 +374,11 @@ def parity(
 ) -> list[dict[str, Any]]:
     """Every shown keep of every published mode, drawn natively and as WebAssembly.
 
-    `names` keeps the check to those styles (published, or unpublished with a post stage
-    or a stir): a couple of minutes for the one an item touched. A name with nothing to
-    draw is refused rather than passed as a clean run. The module's pictures are drawn on
+    `names` keeps the check to those styles: a couple of minutes for the one an item
+    touched. A named style no row publishes is drawn at `POST_SEAT` whatever its stack (a
+    round-one style has no keep), so a new primitive is held to the module before its
+    mode is published; a name that is no style is refused rather than passed as a clean
+    run. The module's pictures are drawn on
     `workers` Node threads, the longest of the folder's last run first, while this
     process draws the native ones.
 
@@ -386,7 +389,7 @@ def parity(
     middle, at that keep and at every keep whose record carries its own projection, which
     holds the module's knob rules to `style render --knob`'s (a knob wins over a record).
     A style with a post stage or a stir that no row publishes yet is drawn at `POST_SEAT`:
-    once whole, and a stirred one again in tiles.
+    once whole, and one without a post stage again in tiles.
     """
     from fractal_wallpapers import style_catalog, styles
 
@@ -394,15 +397,17 @@ def parity(
     rows_drawn = published_rows()
     unpublished = unpublished_post_or_stir_styles()
     if names:
-        known = {row["style"] for row in rows_drawn} | set(unpublished)
+        # A style asked for by name is drawn whether or not the whole run would draw it.
+        known = {row["style"] for row in rows_drawn} | set(styles.names())
         unknown = sorted(set(names) - known)
         if unknown:
             raise StyleWasmError(
                 f"nothing to draw for {', '.join(unknown)}: the check covers published modes "
-                "and unpublished styles with a post stage or a stir"
+                "and style files"
             )
+        published = {row["style"] for row in rows_drawn}
         rows_drawn = [row for row in rows_drawn if row["style"] in names]
-        unpublished = [name for name in unpublished if name in names]
+        unpublished = [name for name in styles.names() if name in names and name not in published]
     for row in rows_drawn:
         document = styles.load(row["style"])
         for index, render in enumerate(style_catalog.shown_of(row)):
@@ -450,7 +455,8 @@ def parity(
     for name in unpublished:
         document = styles.load(name)
         posted = has_post(document["style"])
-        ident = f"{name}__post" if posted else f"{name}__stir"
+        stirred = has_stir(document["style"])
+        ident = f"{name}__{'post' if posted else 'stir' if stirred else 'named'}"
         natives[ident] = (POST_SEAT, document, document["suggested_colormap"], None)
         asked = request(
             POST_SEAT,
@@ -461,7 +467,8 @@ def parity(
         )
         jobs.append({"id": ident, "request": asked, "draw": "frame"})
         if not posted:
-            # A stir is a pure function of the sample, so its tiles are the frame's bytes.
+            # Without a post stage a stack is a pure function of the sample, stirred or
+            # not, so its tiles are the frame's bytes.
             jobs.append(
                 {
                     "id": f"{ident}__tiles",

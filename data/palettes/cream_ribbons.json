@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "name": "cream_ribbons",
+  "kind": "sequential",
+  "source": "black through a warm taupe (the ground, in its lower 0.6), then a parchment halo, an ice-blue lace and a cream line: a palette entry of the neon_loops mode, from tinan-25.jpg: broad cream ribbons crossing at a star, thorny hairline tufts, on black",
+  "stops": [
+    [0.0, [0, 0, 0]],
+    [0.3, [10, 9, 8]],
+    [0.6, [84, 76, 64]],
+    [0.75, [200, 190, 165]],
+    [0.88, [200, 220, 245]],
+    [1.0, [244, 240, 222]]
+  ]
+}
