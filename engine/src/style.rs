@@ -1299,12 +1299,12 @@ impl Style {
                 }
             }
         }
-        // A mosaic's height joins the frame's loop, so it is held as a layer's channel is.
-        for Pass::Mosaic(mosaic) in &self.post {
-            match mosaic.height.and_then(|height| height.field) {
+        // A pass's height joins the frame's loop, so it is held as a layer's channel is.
+        for pass in &self.post {
+            match pass.height().and_then(|height| height.field) {
                 Some(FieldSpec::Itinerary { .. }) => {
                     return Err(format!(
-                        "style '{}' post: a mosaic's height cannot be an itinerary",
+                        "style '{}' post: a pass's height cannot be an itinerary",
                         self.name
                     ));
                 }
@@ -1362,9 +1362,11 @@ impl Style {
                 take(FieldSpec::Decomposition);
             }
         }
-        for Pass::Mosaic(mosaic) in &self.post {
-            take(POST_DISTANCE);
-            if let Some(field) = mosaic.height.and_then(|height| height.field) {
+        for pass in &self.post {
+            if matches!(pass, Pass::Mosaic(_)) {
+                take(POST_DISTANCE);
+            }
+            if let Some(field) = pass.height().and_then(|height| height.field) {
                 take(field);
             }
         }
@@ -1475,15 +1477,24 @@ fn posted(
         .iter()
         .map(|value| value.is_finite())
         .collect();
-    let near: Vec<f32> = channels
-        .lane(Key::Field(POST_DISTANCE))
+    // Only a mosaic reads the distance, so only a stack with one carries its lane.
+    let near: Vec<f32> = if style
+        .post
         .iter()
-        .map(|&distance| (distance as f64 / view.width) as f32)
-        .collect();
-    for Pass::Mosaic(mosaic) in &style.post {
-        let heights: Vec<f32> = match mosaic.height {
-            None => Vec::new(),
-            Some(source) => {
+        .any(|pass| matches!(pass, Pass::Mosaic(_)))
+    {
+        channels
+            .lane(Key::Field(POST_DISTANCE))
+            .iter()
+            .map(|&distance| (distance as f64 / view.width) as f32)
+            .collect()
+    } else {
+        Vec::new()
+    };
+    for pass in &style.post {
+        let heights: Vec<f32> = match (pass, pass.height()) {
+            (_, None) => Vec::new(),
+            (Pass::Mosaic(_), Some(source)) => {
                 let lane = channels.lane(source.key());
                 let stretch = Stretch::over(lane.iter().map(|&v| v as f64));
                 lane.iter()
@@ -1493,6 +1504,21 @@ fn posted(
                     })
                     .collect()
             }
+            // Paper cuts on the rank, so it takes the raw value, turned over by `invert`;
+            // a field that has a value inside the set too is given none there, so the
+            // set is the same samples whatever the height.
+            (Pass::Paper(_), Some(source)) => channels
+                .lane(source.key())
+                .iter()
+                .zip(&escaped)
+                .map(
+                    |(&value, &out)| match (out && value.is_finite(), source.invert) {
+                        (false, _) => f32::NAN,
+                        (true, true) => -value,
+                        (true, false) => value,
+                    },
+                )
+                .collect(),
         };
         let frame = post::Frame {
             width: channels.width as usize,
@@ -1502,8 +1528,11 @@ fn posted(
             near: &near,
             heights: &heights,
         };
-        linear = post::mosaic(mosaic, &frame, colormap)
-            .map_err(|refusal| format!("style '{}' post: {refusal}", style.name))?;
+        linear = match pass {
+            Pass::Mosaic(mosaic) => post::mosaic(mosaic, &frame, colormap),
+            Pass::Paper(paper) => post::paper(paper, &frame, colormap),
+        }
+        .map_err(|refusal| format!("style '{}' post: {refusal}", style.name))?;
     }
     Ok(linear)
 }

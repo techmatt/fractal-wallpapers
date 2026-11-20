@@ -130,11 +130,15 @@ def test_a_published_mode_exposes_knobs_whose_defaults_are_its_stack(row):
 
 def test_the_two_tiers_are_matt_s_ruling():
     """Custom: the nine first published and the seven item 050 added; Custom (lab): every
-    other mode Matt did not drop or discard."""
+    other mode Matt did not drop or discard. A round-one row has no status yet, and so
+    no tier."""
     rows = style_catalog.load()["modes"]
     curated = {row["style"] for row in rows if row.get("tier") == "curated"}
     assert curated == CURATED
     for row in rows:
+        if "status" not in row:
+            assert "tier" not in row and "score" not in row, row["style"]
+            continue
         ruled_out = row.get("status") in ("drop", "discarded")
         assert (row.get("status") == "publish") != ruled_out, row["style"]
         if not ruled_out:

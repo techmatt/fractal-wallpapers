@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "paper_layers",
+  "kind": "sequential",
+  "source": "cream through tan and rust to maroon, then black through slate to a pale steel blue: the albedo of the paper_layers style, from no-mans-land-25: stacked sheets of cut paper, a warm half against a slate half",
+  "stops": [
+    [0.0, [255, 238, 168]],
+    [0.14, [240, 196, 120]],
+    [0.28, [212, 140, 76]],
+    [0.4, [160, 78, 44]],
+    [0.5, [104, 26, 22]],
+    [0.56, [16, 14, 18]],
+    [0.68, [26, 34, 48]],
+    [0.82, [48, 68, 96]],
+    [0.93, [82, 110, 148]],
+    [1.0, [150, 176, 210]]
+  ]
+}

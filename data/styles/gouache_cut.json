@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "name": "gouache_cut",
+  "description": "gouache: the set's bands as broad flat shapes in teal, navy and mint, their edges dragged ragged by a dry brush, with a few lime strokes where it caught",
+  "reference": {
+    "image": "wallhaven_wallhaven-4omjp5.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a painted-over flame render, unsigned, 1920x1200"
+  },
+  "suggested_colormap": "gouache_cut",
+  "reuses": [
+    "the smooth count",
+    "the tone pass",
+    "the post stage (tri_mosaic)"
+  ],
+  "adds": [
+    "the post stage's paper pass (engine/src/post.rs)"
+  ],
+  "notes": [
+    "From wallhaven-4omjp5 (item 061). Seven flat sheets of the smooth count, each one of the map's flat paints (`hop` 0.125), their edges torn by the pass's `ragged` member: each sample takes the sheet of a sample up to `reach` 0.035 of the frame away along a stroke at 50 degrees, every bristle (`width` 0.004) its own distance, so an edge frays into parallel tongues the way a dry brush leaves it; the `accent` paints 12% of the strokes the map's lime where they moved an edge. A thin `shadow` (0.006) sits the shapes on each other. The set's own edge is never dragged, so the lace stays whole. Its three looks (paper_layers, poster_curls, gouache_cut) are one palette layer and one `paper` pass, told apart by which of the pass's members they set.",
+    "The brush first pushed each sample's level by noise, in sheets: where the count climbs slowly an edge then moved half the frame and the picture was rain. Dragging in frame widths bounds it. Round one's readings: g_long (`reach` 0.07, `length` 0.3: longer, wilder strokes), g_clean (no brush: the flat shapes alone) and g_fine (bristles 0.0015; drafted, not in the picker). Sheets cut from `tia` or `curvature` under the brush are noise.",
+    "The first map's three dark paints missed the near-black share at four seats of six (0.27 against 0.204); the midnight was lifted and all six hold."
+  ],
+  "style": {
+    "name": "gouache_cut",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.34,
+      "p10": 0.053
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      }
+    ],
+    "post": [
+      {
+        "kind": "paper",
+        "levels": 7,
+        "taper": 0.9,
+        "hop": 0.125,
+        "phase": 0.0625,
+        "ragged": {
+          "reach": 0.035,
+          "length": 0.15,
+          "width": 0.004,
+          "azimuth": 50.0,
+          "accent": {
+            "color": {
+              "palette": 1.0
+            },
+            "share": 0.12
+          }
+        },
+        "shadow": {
+          "width": 0.006,
+          "offset": 0.002,
+          "azimuth": 120.0,
+          "opacity": 0.35
+        }
+      }
+    ]
+  }
+}

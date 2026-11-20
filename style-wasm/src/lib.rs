@@ -169,7 +169,7 @@ fn at_mut<'a>(mut node: &'a mut Value, path: &[Step]) -> &'a mut Value {
 
 /// The stack's members the engine reads as integers: `inside.iterations`, a bubble's
 /// `hit`, the lines' `settle`, a checker's `sectors`, a projection's `turns`, a mosaic's
-/// `levels` and its spiral's `arms`, a stir's `steps`.
+/// or a paper's `levels`, a spiral's `arms`, a stir's `steps`.
 ///
 /// A knob's write to one of these is rounded half to even, by the member's name, on both
 /// sides: `styles.INTEGER_MEMBERS` is the same list and `styles.with_knobs` rounds the

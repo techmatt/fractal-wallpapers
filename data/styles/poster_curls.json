@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "name": "poster_curls",
+  "description": "a screen-print poster: the set's bands as hard flat blocks of navy, orange, cream, plum, lilac, rust, yellow and blue, no gradients, curls at every scale",
+  "reference": {
+    "image": "wallhaven_wallhaven-6d3zz6.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a dragon-curve tiling, unsigned, 5120x2880"
+  },
+  "suggested_colormap": "poster_curls",
+  "reuses": [
+    "the smooth count",
+    "the tone pass",
+    "the post stage (tri_mosaic)"
+  ],
+  "adds": [
+    "the post stage's paper pass (engine/src/post.rs)"
+  ],
+  "notes": [
+    "From wallhaven-6d3zz6 (item 061). The smooth count cut on its rank into 24 flat sheets (`taper` 0.9), each reading one of the map's eight flat inks in turn (`hop` 0.125 from `phase` 0.0625, the middle of each plateau), so neighbouring bands are far apart in colour and nothing blends. Its three looks (paper_layers, poster_curls, gouache_cut) are one palette layer and one `paper` pass, told apart by which of the pass's members they set.",
+    "The reference is a tiling of interlocking dragon curves, which one escape loop does not draw: the bands nest round the set instead of interlocking. Round one's readings towards it: s_curv (sheets cut from the curvature average: feathered curls along every spiral arm, good at open spirals and pink noise at lace-heavy seats), s_shadow (the stack with a thin shadow, paper_layers' depth on the poster's inks). Tried and dropped: sheets cut from `stripe` and `tia` (busy combs), from `decomposition` (moire), and the stack under a stir (smeared bands with no curl).",
+    "The first map held two near-black inks (navy and plum) and every draft missed the near-black share (0.26 against 0.134); the plum was lifted and all six seats hold."
+  ],
+  "style": {
+    "name": "poster_curls",
+    "interior": {
+      "palette": 0.0
+    },
+    "tone": {
+      "median": 0.472,
+      "p10": 0.077
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      }
+    ],
+    "post": [
+      {
+        "kind": "paper",
+        "levels": 24,
+        "taper": 0.9,
+        "hop": 0.125,
+        "phase": 0.0625
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "poster_curls",
+  "kind": "sequential",
+  "source": "eight flat inks, navy, orange, cream, plum, lilac, rust, yellow and blue: the albedo of the poster_curls style, from wallhaven-6d3zz6: a screen-print poster of dragon-curve spirals in hard flat blocks",
+  "stops": [
+    [0.0, [14, 26, 92]],
+    [0.121, [14, 26, 92]],
+    [0.129, [244, 112, 18]],
+    [0.246, [244, 112, 18]],
+    [0.254, [255, 240, 204]],
+    [0.371, [255, 240, 204]],
+    [0.379, [104, 44, 128]],
+    [0.496, [104, 44, 128]],
+    [0.504, [206, 176, 236]],
+    [0.621, [206, 176, 236]],
+    [0.629, [196, 58, 26]],
+    [0.746, [196, 58, 26]],
+    [0.754, [255, 204, 64]],
+    [0.871, [255, 204, 64]],
+    [0.879, [72, 112, 204]],
+    [1.0, [72, 112, 204]]
+  ]
+}

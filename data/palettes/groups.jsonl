@@ -253,3 +253,6 @@
 {"schema": 1, "kind": "admitted", "map": "tri_mosaic_ice", "group": "map:tri_mosaic_ice", "joined": false, "nearest": "m41", "m1": 0.04133}
 {"schema": 1, "kind": "admitted", "map": "stirred_ink", "group": "map:flame_wisp_spark", "joined": true, "nearest": "map:flame_wisp_spark", "m1": 0.039712}
 {"schema": 1, "kind": "admitted", "map": "ring_pools", "group": "map:ring_pools", "joined": false, "nearest": "map:wallhaven_wallhaven-47xzoe", "m1": 0.078011}
+{"schema": 1, "kind": "admitted", "map": "paper_layers", "group": "map:paper_layers", "joined": false, "nearest": "map:lit_petals", "m1": 0.05586}
+{"schema": 1, "kind": "admitted", "map": "poster_curls", "group": "map:poster_curls", "joined": false, "nearest": "map:ring_pools", "m1": 0.075167}
+{"schema": 1, "kind": "admitted", "map": "gouache_cut", "group": "map:gouache_cut", "joined": false, "nearest": "map:Verdigris Furnace", "m1": 0.087984}

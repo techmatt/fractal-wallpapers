@@ -60,8 +60,10 @@ picture (`style wasm-parity`), and **a style with a post stage is drawn whole, n
 tiles** (the module's `open` reports `"post": true`; `tile` refuses). Every length is a
 fraction of the frame's width, so `--draft` and full size are one picture.
 
-The one kind is **`mosaic`**: a recursive tiling whose cells split where the set is, each
-cell a facet of the picture under it.
+There are two kinds, `mosaic` and `paper` (below).
+
+**`mosaic`** is a recursive tiling whose cells split where the set is, each cell a facet
+of the picture under it.
 
 | member | what |
 | --- | --- |
@@ -84,8 +86,29 @@ cell a facet of the picture under it.
 `opacity` (in [0, 1]) lays that much of the mosaic over the picture it was made from:
 under 1 the facets are translucent plates and the stack's own detail shows through.
 
-A pass costs no escape loop: it reads the lanes the frame already has, plus one `de`
+A mosaic costs no escape loop: it reads the lanes the frame already has, plus one `de`
 lane. It holds about 150 bytes a cell, and refuses a tiling of over six million cells.
+
+**`paper`** is the frame as stacked sheets of cut paper: a height cut into a few flat
+sheets, each one colour with a hard edge that is the fractal's own level line. No
+lattice: the shapes are the set's bands.
+
+| member | what |
+| --- | --- |
+| `height` | the channel the sheets are cut from: a plain field channel (no view), the smooth count when absent. It is cut on its **rank** over the frame, so `invert` (which end is the top sheet) changes the picture and `transform` does not |
+| `levels` | how many sheets (2 to 64) |
+| `taper` | each sheet's share of the frame as a multiple of the one under it, in (0, 1]: 1 is equal areas, under 1 the sheets thin towards the top (towards the set, on the smooth count) |
+| `fill` | `map`: each sheet reads the map once; `picture`: the mean of the picture under the sheet |
+| `hop`, `phase` | `map`: sheet `i` reads the map at `phase + i·hop`, wrapped, so neighbouring sheets can be far apart on it (a map of eight flat inks at `hop` 0.125, `phase` 0.0625 reads each ink's middle in turn); `hop` absent, the sheets walk the map once end to end. Each is within 1000 turns |
+| `shadow` | `{width, offset, azimuth, opacity, color}`: each sheet's shadow on the sheets under it, fading over `width` and thrown `offset` from the edge (frame widths, each at most 0.25), away from a light at `azimuth`; `opacity` in [0, 1]; `color` black when absent |
+| `ragged` | `{reach, length, width, azimuth, accent}`: a dry brush's edge. Each sample takes the sheet of a sample up to `reach` away along the stroke (`azimuth`), every bristle (`width` across) its own distance, the wobble running `length` along; an `accent` (`{color, share}`) paints that share of the strokes (in [0, 1]) its own colour where they moved an edge. `reach` is 0 to 0.5 frame widths, and 1e-5 ≤ `width` ≤ `length` ≤ 4 |
+| `opacity` | how much of the paper is laid over the picture beneath, in [0, 1] |
+
+A sample whose orbit never escaped keeps the picture beneath (the stack's `interior`),
+lies over every sheet (under them all when the height is inverted), and is never
+dragged by the brush, so the set's own edge stays whole. The pass costs no escape loop
+beyond its height's field, one sort of the frame's heights, and for a shadow four box
+blurs.
 
 ## Defaults
 
@@ -94,3 +117,5 @@ lane. It holds about 150 bytes a cell, and refuses a tiling of over six million 
 | `stir` pass | `view` straight (the frame's own), `strength` 1, `angle` 90, `period` 4, `phase` 0, `largest` 0.05, `steps` 1 (at most 16) |
 | `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
 | `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
+| `paper` | `height` the smooth count, `levels` 9, `taper` 1, `fill` `map`, `phase` 0, `opacity` 1; `hop`, `shadow`, `ragged` absent |
+| `shadow`, `ragged` | `offset` 0, `azimuth` 135, `opacity` 1, `color` black; `azimuth` 0, `accent` absent (`reach`, `length`, `width` and a shadow's `width` are always given) |

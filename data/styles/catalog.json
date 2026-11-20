@@ -2911,6 +2911,36 @@
           "score": 1
         }
       ]
+    },
+    {
+      "style": "paper_layers",
+      "item": "061",
+      "reference": "no-mans-land-25.jpg",
+      "references": [
+        "no-mans-land-25.jpg"
+      ],
+      "what": "Stacked sheets of cut paper: the set's bands as flat cream, rust and slate sheets, each casting a soft shadow on the one under it.",
+      "palettes": []
+    },
+    {
+      "style": "poster_curls",
+      "item": "061",
+      "reference": "wallhaven_wallhaven-6d3zz6.jpg",
+      "references": [
+        "wallhaven_wallhaven-6d3zz6.jpg"
+      ],
+      "what": "A screen-print poster: the set's bands as hard flat blocks of eight inks, neighbours far apart on the map, no gradients.",
+      "palettes": []
+    },
+    {
+      "style": "gouache_cut",
+      "item": "061",
+      "reference": "wallhaven_wallhaven-4omjp5.jpg",
+      "references": [
+        "wallhaven_wallhaven-4omjp5.jpg"
+      ],
+      "what": "Gouache: broad flat teal, navy and mint shapes with dry-brush ragged edges and a few lime knife strokes.",
+      "palettes": []
     }
   ]
 }

@@ -14,8 +14,11 @@
 //! ([`crate::style::paint`]), never in tiles. Every size a pass takes is a fraction of
 //! the frame's width, so a draft and the full-size frame are the same picture.
 //!
-//! The one pass is the **mosaic**: a recursive tiling whose cells split where the set
-//! is, each cell a flat facet of the picture under it.
+//! There are two passes. The **paper** ([`Paper`]) cuts a height into a few flat
+//! sheets on its rank over the frame, each one colour with the fractal's own level
+//! line for its edge, tears the edges as a dry brush does (`ragged`) and lays each
+//! sheet's `shadow` on those under it. The **mosaic** is a recursive tiling whose
+//! cells split where the set is, each cell a flat facet of the picture under it.
 //!
 //! ```text
 //! lattice    equilateral triangles, each split in four by its edges' midpoints; the
@@ -38,7 +41,9 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::coloring::Transform;
 use crate::colormap::Colormap;
+use crate::field::FieldSpec;
 use crate::style::{Paint, Source};
 
 /// One pass of a style's post stage.
@@ -46,6 +51,27 @@ use crate::style::{Paint, Source};
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Pass {
     Mosaic(Mosaic),
+    Paper(Paper),
+}
+
+impl Pass {
+    /// The channel the pass reads beside the picture, when it names one.
+    pub fn height(&self) -> Option<Source> {
+        match self {
+            Pass::Mosaic(mosaic) => mosaic.height,
+            Pass::Paper(paper) => Some(paper.height),
+        }
+    }
+}
+
+/// Whether a pass's height is a channel the frame's own loop carries: a plain field.
+fn plain(height: &Source) -> bool {
+    height.field.is_some()
+        && height.view.is_none()
+        && height.inside.is_none()
+        && height.radial.is_none()
+        && height.bubble.is_none()
+        && height.lines.is_none()
 }
 
 /// What a facet of the mosaic is filled with.
@@ -219,8 +245,10 @@ impl Default for Mosaic {
 impl Pass {
     /// Refuse a pass that would draw something other than what it says.
     pub fn validate(&self) -> Result<(), String> {
-        let Pass::Mosaic(mosaic) = self;
-        mosaic.validate()
+        match self {
+            Pass::Mosaic(mosaic) => mosaic.validate(),
+            Pass::Paper(paper) => paper.validate(),
+        }
     }
 }
 
@@ -300,16 +328,8 @@ impl Mosaic {
                 paint.validate("mosaic seam")?;
             }
         }
-        if let Some(height) = self.height {
-            let plain = height.field.is_some()
-                && height.view.is_none()
-                && height.inside.is_none()
-                && height.radial.is_none()
-                && height.bubble.is_none()
-                && height.lines.is_none();
-            if !plain {
-                return Err("mosaic: height is a plain field channel, with no view".into());
-            }
+        if self.height.is_some_and(|height| !plain(&height)) {
+            return Err("mosaic: height is a plain field channel, with no view".into());
         }
         Ok(())
     }
@@ -325,7 +345,9 @@ pub struct Frame<'a> {
     pub escaped: &'a [bool],
     /// The distance to the set in frame widths; not finite where there is none.
     pub near: &'a [f32],
-    /// A height in `[0, 1]`, not finite where there is none; empty for the picture's own.
+    /// The pass's height, not finite where there is none. A mosaic's is in `[0, 1]`,
+    /// or empty for the picture's own; a paper's is the raw value, highest on top, and
+    /// not finite wherever the orbit never escaped.
     pub heights: &'a [f32],
 }
 
@@ -1159,6 +1181,447 @@ pub fn mosaic(
     Ok(painted)
 }
 
+/// What a sheet of the paper pass is filled with.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Stock {
+    /// The map, read once per sheet.
+    #[default]
+    Map,
+    /// The mean of the picture under the sheet.
+    Picture,
+}
+
+/// The shadow each sheet casts on the sheets under it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Shadow {
+    /// How far the shadow fades over, in frame widths.
+    pub width: f64,
+    /// How far it is thrown from the edge that casts it, in frame widths.
+    #[serde(default)]
+    pub offset: f64,
+    /// Where the light comes from, degrees anticlockwise: the shadow falls the other way.
+    #[serde(default = "upper_left")]
+    pub azimuth: f64,
+    #[serde(default = "one")]
+    pub opacity: f64,
+    /// Black when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<Paint>,
+}
+
+fn upper_left() -> f64 {
+    135.0
+}
+
+/// A dry brush's edge: each sheet's rim dragged along the stroke, bristle by bristle.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Ragged {
+    /// The farthest a rim is dragged either way, in frame widths.
+    pub reach: f64,
+    /// How long one stroke runs, in frame widths.
+    pub length: f64,
+    /// How wide one bristle is, in frame widths.
+    pub width: f64,
+    /// The way the brush was drawn, degrees anticlockwise.
+    #[serde(default)]
+    pub azimuth: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub accent: Option<Accent>,
+}
+
+/// A few strokes of another colour, laid where the brush moved a rim.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Accent {
+    pub color: Paint,
+    /// The share of strokes that carry it.
+    pub share: f64,
+}
+
+/// The most sheets a paper pass cuts, and the widest its shadow fades.
+pub const MOST_SHEETS: u32 = 64;
+pub const WIDEST_SHADOW: f64 = 0.25;
+
+/// The farthest a paper's `hop` and `phase` go either way, in turns of the map.
+pub const MOST_TURNS: f64 = 1000.0;
+
+/// A bristle is this share of a stroke's broad wobble across the brush.
+const BRISTLES: f64 = 8.0;
+
+/// The **paper** pass: the frame as stacked sheets of cut paper. A height is cut into
+/// `levels` flat sheets on its rank over the frame, each one colour with a hard edge
+/// that is the fractal's own level line; `ragged` tears the edges as a dry brush does,
+/// and `shadow` lays each sheet's shadow on those under it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Paper {
+    /// The height the sheets are cut from: a plain field channel. It is cut on its
+    /// rank, so only `invert` (which end is the top sheet) changes the picture, never
+    /// its `transform`.
+    pub height: Source,
+    /// How many sheets.
+    pub levels: u32,
+    /// Each sheet's share of the frame, as a multiple of the one under it: at 1 the
+    /// sheets are equal areas, under 1 they thin towards the top.
+    pub taper: f64,
+    pub fill: Stock,
+    /// `map`: sheet `i` reads the map at `phase + i·hop`, wrapped, so neighbours can
+    /// be far apart on it. Absent: the sheets walk the map once, end to end.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hop: Option<f64>,
+    pub phase: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ragged: Option<Ragged>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shadow: Option<Shadow>,
+    /// How much of the paper is laid over the picture beneath, in `[0, 1]`.
+    pub opacity: f64,
+}
+
+impl Default for Paper {
+    fn default() -> Paper {
+        Paper {
+            height: Source {
+                field: Some(FieldSpec::Smooth),
+                inside: None,
+                radial: None,
+                bubble: None,
+                lines: None,
+                view: None,
+                transform: Transform::default(),
+                invert: false,
+            },
+            levels: 9,
+            taper: 1.0,
+            fill: Stock::Map,
+            hop: None,
+            phase: 0.0,
+            ragged: None,
+            shadow: None,
+            opacity: 1.0,
+        }
+    }
+}
+
+impl Paper {
+    fn validate(&self) -> Result<(), String> {
+        if !plain(&self.height) {
+            return Err("paper: height is a plain field channel, with no view".into());
+        }
+        if !(2..=MOST_SHEETS).contains(&self.levels) {
+            return Err(format!("paper: levels is 2 to {MOST_SHEETS}"));
+        }
+        if !(self.taper > 0.0 && self.taper <= 1.0) {
+            return Err("paper: taper is in (0, 1]".into());
+        }
+        // Past a few turns of the map a position is only its fraction; far past them
+        // the fraction is rounding, and an overflow has none.
+        let turns = |position: f64| position.abs() <= MOST_TURNS;
+        if !(turns(self.phase) && self.hop.is_none_or(turns)) {
+            return Err(format!(
+                "paper: hop and phase are within {MOST_TURNS} turns of the map"
+            ));
+        }
+        if !(0.0..=1.0).contains(&self.opacity) {
+            return Err("paper: opacity is in [0, 1]".into());
+        }
+        if let Some(ragged) = &self.ragged {
+            if !((0.0..=0.5).contains(&ragged.reach) && ragged.azimuth.is_finite()) {
+                return Err(
+                    "paper: a ragged edge reaches 0 to 0.5 frame widths, at a finite azimuth"
+                        .into(),
+                );
+            }
+            if !(ragged.width >= 1e-5 && ragged.length >= ragged.width && ragged.length <= 4.0) {
+                return Err(
+                    "paper: a ragged edge has 1e-5 <= width <= length <= 4 frame widths".into(),
+                );
+            }
+            if let Some(accent) = &ragged.accent {
+                accent.color.validate("paper accent")?;
+                if !(0.0..=1.0).contains(&accent.share) {
+                    return Err("paper: an accent's share is in [0, 1]".into());
+                }
+            }
+        }
+        if let Some(shadow) = &self.shadow {
+            if !(shadow.width > 0.0 && shadow.width <= WIDEST_SHADOW) {
+                return Err(format!(
+                    "paper: a shadow's width is a length up to {WIDEST_SHADOW} of the frame"
+                ));
+            }
+            if !((0.0..=WIDEST_SHADOW).contains(&shadow.offset) && shadow.azimuth.is_finite()) {
+                return Err(format!(
+                    "paper: a shadow's offset is 0 to {WIDEST_SHADOW} of the frame, its azimuth finite"
+                ));
+            }
+            if !(0.0..=1.0).contains(&shadow.opacity) {
+                return Err("paper: a shadow's opacity is in [0, 1]".into());
+            }
+            if let Some(paint) = &shadow.color {
+                paint.validate("paper shadow")?;
+            }
+        }
+        Ok(())
+    }
+
+    /// The rank each sheet starts at, and 1: `levels + 1` shares of the frame.
+    fn cuts(&self) -> Vec<f64> {
+        let mut cuts = vec![0.0];
+        let (mut share, mut total) = (1.0, 0.0);
+        for _ in 0..self.levels {
+            total += share;
+            cuts.push(total);
+            share *= self.taper;
+        }
+        cuts.iter().map(|cut| cut / total).collect()
+    }
+}
+
+/// A number in `[0, 1)` off a lattice point: the same on every machine.
+fn unit(ix: i64, iy: i64, seed: u64) -> f64 {
+    let mut x = (ix as u64)
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        .wrapping_add((iy as u64).wrapping_mul(0xC2B2_AE3D_27D4_EB4F))
+        .wrapping_add(seed.wrapping_mul(0x1656_67B1_9E37_79F9));
+    x ^= x >> 30;
+    x = x.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    x ^= x >> 27;
+    x = x.wrapping_mul(0x94D0_49BB_1331_11EB);
+    ((x ^ (x >> 31)) >> 11) as f64 / (1u64 << 53) as f64
+}
+
+fn eased(t: f64) -> f64 {
+    t * t * (3.0 - 2.0 * t)
+}
+
+/// Value noise in `[-1, 1]`, smooth both ways.
+fn wobble(x: f64, y: f64, seed: u64) -> f64 {
+    let (ix, iy) = (x.floor(), y.floor());
+    let (fx, fy) = (eased(x - ix), eased(y - iy));
+    let (ix, iy) = (ix as i64, iy as i64);
+    let low = unit(ix, iy, seed) + (unit(ix + 1, iy, seed) - unit(ix, iy, seed)) * fx;
+    let high = unit(ix, iy + 1, seed) + (unit(ix + 1, iy + 1, seed) - unit(ix, iy + 1, seed)) * fx;
+    2.0 * (low + (high - low) * fy) - 1.0
+}
+
+/// Value noise in `[-1, 1]`, smooth along `x` and one value per whole `y`: bristles.
+fn bristled(x: f64, y: f64, seed: u64) -> f64 {
+    let ix = x.floor();
+    let fx = eased(x - ix);
+    let (ix, iy) = (ix as i64, y.floor() as i64);
+    2.0 * (unit(ix, iy, seed) + (unit(ix + 1, iy, seed) - unit(ix, iy, seed)) * fx) - 1.0
+}
+
+/// A lane blurred by a box of `radius` samples each way, twice over (a tent), the
+/// frame's edge samples repeated past it. Sums run in sample order.
+fn blurred(lane: &[f32], width: usize, height: usize, radius: usize) -> Vec<f32> {
+    if radius == 0 {
+        return lane.to_vec();
+    }
+    let span = (2 * radius + 1) as f64;
+    let mut lane = lane.to_vec();
+    let mut next = vec![0f32; lane.len()];
+    for _ in 0..2 {
+        for row in 0..height {
+            let line = &lane[row * width..(row + 1) * width];
+            let at = |col: isize| line[col.clamp(0, width as isize - 1) as usize] as f64;
+            let mut sum: f64 = (-(radius as isize)..=radius as isize).map(at).sum();
+            for col in 0..width {
+                next[row * width + col] = (sum / span) as f32;
+                let col = col as isize;
+                sum += at(col + radius as isize + 1) - at(col - radius as isize);
+            }
+        }
+        let at = |row: isize, col: usize| {
+            next[row.clamp(0, height as isize - 1) as usize * width + col] as f64
+        };
+        let mut sums: Vec<f64> = (0..width)
+            .map(|col| {
+                (-(radius as isize)..=radius as isize)
+                    .map(|row| at(row, col))
+                    .sum()
+            })
+            .collect();
+        for row in 0..height {
+            for (col, sum) in sums.iter_mut().enumerate() {
+                lane[row * width + col] = (*sum / span) as f32;
+                let row = row as isize;
+                *sum += at(row + radius as isize + 1, col) - at(row - radius as isize, col);
+            }
+        }
+    }
+    lane
+}
+
+/// Lay the paper over `frame`: `frame.heights` is the raw height, highest on top and
+/// not finite where the orbit never escaped. Those samples keep the picture beneath
+/// and lie over every sheet (under every sheet when the height is inverted).
+pub fn paper(paper: &Paper, frame: &Frame, colormap: &Colormap) -> Result<Vec<[f64; 3]>, String> {
+    let (width, height) = (frame.width, frame.height);
+    if width == 0 || height == 0 {
+        return Ok(frame.linear.to_vec());
+    }
+    let levels = paper.levels as usize;
+    let mut sorted: Vec<f32> = frame
+        .heights
+        .iter()
+        .copied()
+        .filter(|h| h.is_finite())
+        .collect();
+    sorted.sort_unstable_by(f32::total_cmp);
+    let cuts = paper.cuts();
+    let set = if paper.height.invert {
+        -1.0
+    } else {
+        levels as f32
+    };
+    let brush = paper.ragged.as_ref().map(|ragged| {
+        let (sin, cos) = ragged.azimuth.to_radians().sin_cos();
+        let accent = ragged
+            .accent
+            .as_ref()
+            .map(|accent| (accent.color.linear(colormap), accent.share));
+        // Rows run down the frame, so an anticlockwise azimuth has its `y` turned over.
+        (ragged, [cos, -sin], accent)
+    });
+
+    // Each sample's sheet as the height cuts it: a pure function of the sample.
+    let cut: Vec<f32> = (0..width * height)
+        .into_par_iter()
+        .map(|i| {
+            let h = frame.heights[i];
+            if !h.is_finite() {
+                return set;
+            }
+            let rank = sorted.partition_point(|&v| v < h) as f64 / sorted.len() as f64;
+            (cuts.partition_point(|&cut| cut <= rank) - 1).min(levels - 1) as f32
+        })
+        .collect();
+    // The brush drags each sample's sheet along the stroke, every bristle its own
+    // length, from a sample up to `reach` away; the set's own edge is never dragged.
+    let sheets: Vec<(f32, bool)> = match &brush {
+        None => cut.iter().map(|&sheet| (sheet, false)).collect(),
+        Some((ragged, along, accent)) => (0..width * height)
+            .into_par_iter()
+            .map(|i| {
+                if !frame.heights[i].is_finite() {
+                    return (cut[i], false);
+                }
+                let (col, row) = (i % width, i / width);
+                let [x, y] = point_of(col, row, width, height);
+                let (a, b) = (
+                    (x * along[0] + y * along[1]) / ragged.length,
+                    (y * along[0] - x * along[1]) / ragged.width,
+                );
+                let push = 0.5 * wobble(a, b / BRISTLES, 1) + 0.5 * bristled(a, b, 2);
+                let drag = ragged.reach * push * width as f64;
+                let from = (row as f64 + drag * along[1])
+                    .round()
+                    .clamp(0.0, (height - 1) as f64) as usize
+                    * width
+                    + (col as f64 + drag * along[0])
+                        .round()
+                        .clamp(0.0, (width - 1) as f64) as usize;
+                if !frame.heights[from].is_finite() || cut[from] == cut[i] {
+                    return (cut[i], false);
+                }
+                let accented = accent.is_some_and(|(_, share)| {
+                    unit(a.floor() as i64, (b / BRISTLES).floor() as i64, 3) < share
+                });
+                (cut[from], accented)
+            })
+            .collect(),
+    };
+
+    let fills: Vec<[f64; 3]> = match paper.fill {
+        Stock::Map => (0..levels)
+            .map(|sheet| {
+                let at = match paper.hop {
+                    Some(hop) => paper.phase + sheet as f64 * hop,
+                    None => paper.phase + (sheet as f64 + 0.5) / levels as f64,
+                };
+                colormap.lookup(at - at.floor())
+            })
+            .collect(),
+        Stock::Picture => {
+            let mut sums = vec![([0.0; 3], 0.0f64); levels];
+            for (i, &(sheet, _)) in sheets.iter().enumerate() {
+                if frame.heights[i].is_finite() {
+                    let (sum, count) = &mut sums[sheet as usize];
+                    for k in 0..3 {
+                        sum[k] += frame.linear[i][k];
+                    }
+                    *count += 1.0;
+                }
+            }
+            sums.into_iter()
+                .map(|(sum, count)| sum.map(|c| c / count.max(1.0)))
+                .collect()
+        }
+    };
+
+    let shade = paper.shadow.as_ref().map(|shadow| {
+        let w = width as f64;
+        let lane: Vec<f32> = sheets.iter().map(|&(sheet, _)| sheet).collect();
+        // Two boxes of half the width each fade over about the whole of it.
+        let radius = (0.25 * shadow.width * w).round() as usize;
+        let (sin, cos) = shadow.azimuth.to_radians().sin_cos();
+        let towards = [
+            (shadow.offset * w * cos).round() as isize,
+            (-shadow.offset * w * sin).round() as isize,
+        ];
+        let color = shadow
+            .color
+            .as_ref()
+            .map_or([0.0; 3], |paint| paint.linear(colormap));
+        (
+            blurred(&lane, width, height, radius),
+            towards,
+            color,
+            shadow.opacity,
+        )
+    });
+
+    let painted = (0..width * height)
+        .into_par_iter()
+        .map(|i| {
+            let (sheet, accented) = sheets[i];
+            let under = frame.linear[i];
+            let mut rgb = if !frame.heights[i].is_finite() {
+                under
+            } else if accented {
+                brush
+                    .as_ref()
+                    .and_then(|brush| brush.2)
+                    .map_or(under, |a| a.0)
+            } else {
+                fills[sheet as usize]
+            };
+            if let Some((above, towards, color, opacity)) = &shade {
+                let col = (i % width) as isize + towards[0];
+                let row = (i / width) as isize + towards[1];
+                let from = row.clamp(0, height as isize - 1) as usize * width
+                    + col.clamp(0, width as isize - 1) as usize;
+                let dark = ((above[from] - sheet) as f64).clamp(0.0, 1.0) * opacity;
+                for k in 0..3 {
+                    rgb[k] += (color[k] - rgb[k]) * dark;
+                }
+            }
+            if paper.opacity < 1.0 {
+                for k in 0..3 {
+                    rgb[k] = under[k] + (rgb[k] - under[k]) * paper.opacity;
+                }
+            }
+            rgb
+        })
+        .collect();
+    Ok(painted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1452,13 +1915,176 @@ mod tests {
         );
     }
 
+    /// The paper over a frame whose height climbs left to right (the rightmost
+    /// `inside` columns never escaped), the picture under it a ramp across.
+    fn papered(paper: &Paper, width: usize, height: usize, inside: usize) -> Vec<[f64; 3]> {
+        let (mut linear, mut heights) = (Vec::new(), Vec::new());
+        for _ in 0..height {
+            for col in 0..width {
+                linear.push([col as f64 / width as f64, 0.5, 0.25]);
+                heights.push(if col < width - inside {
+                    col as f32
+                } else {
+                    f32::NAN
+                });
+            }
+        }
+        let frame = Frame {
+            width,
+            height,
+            linear: &linear,
+            escaped: &vec![true; width * height],
+            near: &[],
+            heights: &heights,
+        };
+        super::paper(paper, &frame, &map()).unwrap()
+    }
+
+    #[test]
+    fn paper_cuts_the_height_into_flat_sheets_that_taper() {
+        let even = Paper {
+            levels: 4,
+            ..Paper::default()
+        };
+        let picture = papered(&even, 400, 10, 0);
+        assert_eq!(runs(&picture[..400]), vec![100; 4]);
+        // The grey ramp read once per sheet, at its middle: dark to light.
+        assert!(picture[0][0] < picture[150][0] && picture[150][0] < picture[399][0]);
+        let tapered = Paper {
+            taper: 0.5,
+            ..even.clone()
+        };
+        let widths = runs(&papered(&tapered, 400, 10, 0)[..400]);
+        assert_eq!(widths.len(), 4);
+        assert!(
+            widths.windows(2).all(|pair| pair[1] < pair[0]),
+            "{widths:?}"
+        );
+        // A hop walks the map out of order, wrapped; the picture's mean fills a sheet.
+        let hopped = Paper {
+            hop: Some(0.6),
+            ..even.clone()
+        };
+        let row = papered(&hopped, 400, 10, 0);
+        assert!(
+            row[150][0] > row[250][0],
+            "sheet 1 reads 0.6, sheet 2 reads 0.2"
+        );
+        let mean = Paper {
+            fill: Stock::Picture,
+            ..even
+        };
+        let row = papered(&mean, 400, 10, 0);
+        assert!((row[0][0] - 49.5 / 400.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn a_shadow_falls_on_the_sheet_under_an_edge_and_never_on_the_one_above() {
+        let plain = Paper {
+            levels: 2,
+            ..Paper::default()
+        };
+        let shadowed = Paper {
+            shadow: Some(Shadow {
+                width: 0.1,
+                offset: 0.0,
+                azimuth: 0.0,
+                opacity: 0.5,
+                color: None,
+            }),
+            ..plain.clone()
+        };
+        let (flat, dark) = (papered(&plain, 400, 40, 0), papered(&shadowed, 400, 40, 0));
+        let row = 20 * 400;
+        // The edge is at column 200: the lower sheet darkens towards it, the upper is untouched.
+        assert_eq!(dark[row + 50], flat[row + 50]);
+        assert!(dark[row + 199][0] < dark[row + 185][0] && dark[row + 185][0] <= flat[row][0]);
+        assert!(dark[row + 199][0] >= 0.5 * flat[row][0] - 1e-12);
+        assert_eq!(dark[row + 200..row + 400], flat[row + 200..row + 400]);
+        // The set lies over every sheet and keeps the picture under it; inverted, it
+        // lies under them all and takes their shadow.
+        let over = papered(&shadowed, 400, 40, 40);
+        assert_eq!(over[row + 380], [380.0 / 400.0, 0.5, 0.25]);
+        assert!(over[row + 359][0] < over[row + 300][0]);
+        let mut under = shadowed.clone();
+        under.height.invert = true;
+        let under = papered(&under, 400, 40, 40);
+        assert!(under[row + 360][0] < 360.0 / 400.0);
+    }
+
+    #[test]
+    fn a_ragged_edge_is_dragged_no_farther_than_its_reach() {
+        let clean = Paper {
+            levels: 2,
+            ..Paper::default()
+        };
+        let ragged = Paper {
+            ragged: Some(Ragged {
+                reach: 0.05,
+                length: 0.2,
+                width: 0.01,
+                azimuth: 0.0,
+                accent: Some(Accent {
+                    color: Paint::Rgb("#ff0000".into()),
+                    share: 0.5,
+                }),
+            }),
+            ..clean.clone()
+        };
+        let (flat, torn) = (
+            papered(&clean, 400, 200, 40),
+            papered(&ragged, 400, 200, 40),
+        );
+        let (mut moved, mut red) = (0, 0);
+        for (index, (a, b)) in flat.iter().zip(&torn).enumerate() {
+            if a != b {
+                moved += 1;
+                red += (*b == [1.0, 0.0, 0.0]) as usize;
+                let col = index % 400;
+                assert!((160..240).contains(&col), "column {col} moved");
+            }
+        }
+        assert!(moved > 200, "{moved} samples moved");
+        assert!(red > 0 && red < moved, "{red} of {moved} carry the accent");
+        assert_eq!(torn, papered(&ragged, 400, 200, 40));
+    }
+
+    #[test]
+    fn a_paper_pass_reads_and_refuses() {
+        let pass: Pass = serde_json::from_str(
+            r#"{"kind": "paper", "levels": 5, "shadow": {"width": 0.02},
+                "ragged": {"reach": 0.01, "length": 0.1, "width": 0.002}}"#,
+        )
+        .unwrap();
+        assert!(pass.validate().is_ok());
+        assert_eq!(pass.height().unwrap().field, Some(FieldSpec::Smooth));
+        assert!(serde_json::from_str::<Pass>(r#"{"kind": "paper", "sheets": 4}"#).is_err());
+        for refused in [
+            r#"{"kind": "paper", "levels": 1}"#,
+            r#"{"kind": "paper", "levels": 65}"#,
+            r#"{"kind": "paper", "taper": 0.0}"#,
+            r#"{"kind": "paper", "hop": 1e307}"#,
+            r#"{"kind": "paper", "opacity": 1.5}"#,
+            r#"{"kind": "paper", "height": {"radial": {}}}"#,
+            r#"{"kind": "paper", "shadow": {"width": 0.5}}"#,
+            r#"{"kind": "paper", "shadow": {"width": 0.01, "color": {"rgb": "red"}}}"#,
+            r#"{"kind": "paper", "ragged": {"reach": 0.01, "length": 0.001, "width": 0.002}}"#,
+            r#"{"kind": "paper", "ragged": {"reach": 1.0, "length": 0.1, "width": 0.002}}"#,
+        ] {
+            let pass: Pass = serde_json::from_str(refused).unwrap();
+            assert!(pass.validate().is_err(), "{refused}");
+        }
+    }
+
     #[test]
     fn a_pass_reads_and_refuses() {
         let pass: Pass =
             serde_json::from_str(r#"{"kind": "mosaic", "levels": 4, "spiral": {"arms": 9}}"#)
                 .unwrap();
         assert!(pass.validate().is_ok());
-        let Pass::Mosaic(read) = &pass;
+        let Pass::Mosaic(read) = &pass else {
+            panic!("a mosaic was read");
+        };
         assert_eq!((read.levels, read.spiral.unwrap().arms), (4, 9));
         assert!(serde_json::from_str::<Pass>(r#"{"kind": "mosaic", "depth": 4}"#).is_err());
         for refused in [

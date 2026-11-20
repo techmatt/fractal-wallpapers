@@ -148,8 +148,23 @@ def test_the_module_draws_the_native_picture_with_its_knobs_turned(tmp_path):
             assert found["worst"] <= 2 and found["pixels"] * 200 <= len(native) // 3, found
 
 
-#: A post stage on a plain stack: the mosaic on each lattice, every shading member set.
+#: A post stage on a plain stack: the mosaic on each lattice, every shading member set,
+#: and the paper pass (its own `kind`) with its brush, accent and shadow.
 POST_STACKS = {
+    "paper": {
+        "kind": "paper",
+        "levels": 7,
+        "taper": 0.9,
+        "hop": 0.3,
+        "ragged": {
+            "reach": 0.03,
+            "length": 0.15,
+            "width": 0.004,
+            "azimuth": 50.0,
+            "accent": {"color": {"palette": 1.0}, "share": 0.2},
+        },
+        "shadow": {"width": 0.02, "offset": 0.006, "azimuth": 120.0, "opacity": 0.5},
+    },
     "triangles": {
         "largest": 0.25,
         "smallest": 0.01,
