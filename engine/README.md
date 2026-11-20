@@ -233,11 +233,12 @@ example has no `keep` (a draft's place, drawn with the mode's own stack). `palet
 writes `values` over `stack` at their pointers (`style_palettes.apply`) before opening a
 session. A shown keep carries the stack it was drawn with. `style wasm-parity` and `style
 wasm-speed` hold the module to the native engine under Node (`style_wasm.py`). **Which
-parity run is owed**: the whole `wasm-parity` after an engine or module change (about 90
-minutes of Node work, one keep up to fifteen, spread over `--workers` threads, five by
-default, the longest of the last run first: a detached run of its own), and `style
-wasm-parity <name>…` after a change to one style. The native side draws beside the
-workers on three threads. A draft not yet in `data/styles/` is checked with its job
+parity run is owed**: the whole `wasm-parity` after an engine or module change (17
+minutes on an idle box: about 85 thread-minutes of Node work over `--workers` threads, the
+longest of the last run first, and never shorter than its longest job, one keep's tiled
+draw at 16; a detached run of its own), and `style wasm-parity <name>…` after a change to
+one style. The native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
+`PARITY_NATIVE_THREADS` have the counts and what bounds the run). A draft not yet in `data/styles/` is checked with its job
 list (`style_wasm.request`, `run_node`, `native_rgb`, `compare`).
 
 ## What each family's picture is symmetric under

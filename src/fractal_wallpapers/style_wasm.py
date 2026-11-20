@@ -9,7 +9,7 @@ holds the module to the native engine:
 
 ```
 fractal-wallpapers style bundle [--out <bundle.json>]
-fractal-wallpapers style wasm-parity [names…] [--workers 5]
+fractal-wallpapers style wasm-parity [names…] [--workers N]
                                      [--resolution 640 400 --supersample 2]
 fractal-wallpapers style wasm-speed
 ```
@@ -54,18 +54,18 @@ SPEED_SUPERSAMPLE = DRAFT_SUPERSAMPLE
 
 #: Node worker threads a parity run draws on, beside the native engine's renders, below
 #: normal priority. The whole run is as long as the longest of three things: its longest
-#: job (one keep's tiled draw, 15 minutes alone and 24 beside five others on six cores),
-#: the module's work over the workers (about 100 thread-minutes alone, 130 beside each
-#: other), and the native side (about 50 thread-minutes over `PARITY_NATIVE_THREADS`).
-#: Measured on this twelve-thread box, 165 jobs: six workers and two native threads 25
-#: minutes, the box left short of threads and the native side the last to finish; five
-#: and two with another job beside it, 30.
+#: job (one keep's tiled draw, 16 minutes), the module's work over the workers (86
+#: thread-minutes on an idle box, up to 140 on a busy one), and the native side (12
+#: minutes at `PARITY_NATIVE_THREADS`). Measured on this twelve-thread box, idle, 168
+#: jobs: 17 minutes, the longest job the last to finish, so more workers buy nothing.
+#: On a shared box it was 25 to 30 (six workers and two native threads, and five and two,
+#: the native side the last to finish both times).
 PARITY_WORKERS = 5
 
 #: Threads the native engine takes for its side of a parity run (`RAYON_NUM_THREADS`,
 #: unless the caller's environment already sets one): uncapped it takes every core beside
 #: the Node workers, and at two it is the whole run's tail. Three is done in about two
-#: thirds of the run, and the workers have the box to themselves after.
+#: thirds of the run (36 thread-minutes), and the workers have the box to themselves after.
 PARITY_NATIVE_THREADS = 3
 THREADS_ENV = "RAYON_NUM_THREADS"
 
