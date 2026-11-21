@@ -160,7 +160,9 @@ cargo build --release --target wasm32-unknown-unknown --manifest-path style-wasm
 Then the parity run it owes, once, after the last code change: **`fractal-wallpapers style
 wasm-parity`** whole after an engine or module change (17 minutes idle),
 **`style wasm-parity <name>`** after a change to one style (seconds to minutes). An engine
-change also owes `identity` (`data/styles/README.md` step 2).
+change also owes `identity` (`data/styles/README.md` step 2). An engine change that only
+adds a member no other stack sets owes `identity` (0 differ) plus `style wasm-parity
+<name>` for the style that sets it, not the whole run.
 
 Run pytest with the checkout's own `.venv` interpreter: a gallery guard spawns
 `sys.executable`, and another fails it like a process-control bug. The walk tests need

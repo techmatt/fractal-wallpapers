@@ -3188,14 +3188,15 @@
         "knobs": []
       },
       "what": "Frosted seahorse waves in lilac and grey: fine feathered grain and sparkle stipple along the set, soft dark plumes in the valleys, each interior cell mottled.",
-      "kept": "1 tile: s3_dust at the seahorse-tail seat; the honey_cells entry kept nothing",
+      "kept": "2 tiles: s3_dust at the seahorse-tail seat, the baseline at gilded_leaves' phoenix seat (066); the honey_cells entry kept nothing",
       "note": "Engine: no new primitive (the orbit's own stripe and gaussian_int reads) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
       "palettes": [
         {
           "colormap": "frost_stipple",
           "values": {},
           "keeps": [
-            "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral"
+            "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
+            "style_gilded_leaves_r1/formulations_phoenix/baseA__frost_stipple__phoenix_d4ce71a6_frost_stipple"
           ],
           "score": 4
         }
@@ -3332,13 +3333,42 @@
     },
     {
       "style": "gilded_leaves",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "066",
       "reference": "velvet-flowers-25.jpg",
       "references": [
         "velvet-flowers-25.jpg"
       ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_gilded_leaves_r1/locations/loc__p_stack__julia-mandelbrot_45222fc4_gilded_leaves",
+          "caption": "A quadratic Julia spiral: gold leaf sprays sweeping round a cream core on dark crackled stone"
+        }
+      ],
+      "public": {
+        "name": "gilded-leaves",
+        "palette": "gilded_leaves",
+        "knobs": []
+      },
       "what": "Translucent gilded-glass leaves on dark crackled stone: curved almond blades bright at the spine and fading to their tips, sweeping in sprays and spirals, small copies inlaid in each, the smaller blades faint grey ghosts.",
-      "palettes": []
+      "kept": "4 tiles: the stack at a Julia spiral seat, p_crossed and p_large at the phoenix seat, p_dim at the quartic seat",
+      "note": "Engine: the bubble member fade (066) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
+      "palettes": [
+        {
+          "colormap": "gilded_leaves",
+          "values": {},
+          "keeps": [
+            "style_gilded_leaves_r1/formulations_phoenix/finA__p_crossed__phoenix_d4ce71a6_gilded_leaves",
+            "style_gilded_leaves_r1/formulations_phoenix/finA__p_large__phoenix_d4ce71a6_gilded_leaves",
+            "style_gilded_leaves_r1/formulations_star/finD__p_dim__multibrot4_47d600f4_gilded_leaves",
+            "style_gilded_leaves_r1/locations/loc__p_stack__julia-mandelbrot_45222fc4_gilded_leaves"
+          ],
+          "score": 4
+        }
+      ]
     }
   ]
 }

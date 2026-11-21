@@ -27,6 +27,10 @@ given in, with its date and the item it came from.
 - **The stroke trap keeps its `steps` cap** (Matt, 2026-11-20; 061-063's audit).
 - **The post stage's explorer side waits** until a post-stage look leaves lab (Matt,
   2026-11-20; 061-063's audit).
+- **An additive engine member owes its own style's parity** (Matt, 2026-11-21; 066's
+  audit, message 2525): an item that adds an engine member no other stack sets owes
+  `identity` (0 differ) plus `style wasm-parity <name>` for its own style, not the whole
+  run.
 - New modes enter the lab tier; Matt promotes modes out of lab himself (2026-11-19).
 - **A round-one style gets a catalog row at once** (Matt, 2026-11-19; 059's audit):
   `style_catalog.check` accepts an unscored row with no status, so its references stop

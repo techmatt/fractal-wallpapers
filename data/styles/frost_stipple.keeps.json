@@ -47,9 +47,209 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_gilded_leaves_r1/formulations_phoenix/baseA__frost_stipple__phoenix_d4ce71a6_frost_stipple",
+      "picker": "style_gilded_leaves_r1",
+      "picked": [
+        {
+          "row": "formulations_phoenix",
+          "key": "baseA__frost_stipple__phoenix_d4ce71a6_frost_stipple"
+        }
+      ],
+      "label": "baseline: frost_stipple (the grain the ground borrows)",
+      "image": "style_gilded_leaves_r1__baseA__frost_stipple__phoenix_d4ce71a6_frost_stipple.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_d4ce71a6",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.38387820013100477",
+            "center_im": "0.5512851452094882",
+            "width": "0.007788659508593278"
+          },
+          "maxiter": 14307,
+          "note": "final139_general seat 55 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 55,
+            "key": "d4ce71a6674c537c",
+            "p_spiral": 0.9129
+          }
+        },
+        "style": "frost_stipple",
+        "stack": "frost_stipple@e96f6649",
+        "colormap": "frost_stipple",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
+    "frost_stipple@e96f6649": {
+      "name": "frost_stipple",
+      "interior": {
+        "palette": 0.1
+      },
+      "tone": {
+        "median": 0.494,
+        "p10": 0.209
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.5,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "tia"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.35,
+          "power": 3.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 64.0
+            }
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 0.5
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 256.0
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 8.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 30.0
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0,
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "gaussian_int"
+              }
+            },
+            "amount": 0.6
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        }
+      ]
+    },
     "s3_dust@67d6259e": {
       "name": "s3_dust",
       "interior": {

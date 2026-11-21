@@ -208,7 +208,8 @@ Keep / avoid (optional): <what must survive, what must not appear>.
 Round: 1 | 2 with <picker>.choices.json (round 2: the kept formulations and locations).
 Spare time goes to further readings, drawn before the checks: the checks and the diff
   review run once, after the last code change.
-Checks: the tone check on the stack as shipped; `style wasm-parity <name>`, never the whole run.
+Checks: the tone check on the stack as shipped; `style wasm-parity <name>`, never the whole run
+  (an engine member only this style sets adds `identity`, 0 differ, not the whole run).
 The report header carries one `pick: <manifest path>` line per picker.
 Follow data/styles/README.md's *A new style from a reference image*. Commit when done.
 ```

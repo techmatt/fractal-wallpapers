@@ -237,7 +237,8 @@ parity run is owed**: the whole `wasm-parity` after an engine or module change (
 minutes on an idle box: about 85 thread-minutes of Node work over `--workers` threads, the
 longest of the last run first, and never shorter than its longest job, one keep's tiled
 draw at 16; a detached run of its own), and `style wasm-parity <name>…` after a change to
-one style. The native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
+one style. An engine change that only adds a member no other stack sets owes `identity`
+(0 differ) and `style wasm-parity <name>` for the style that sets it, not the whole run. The native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
 `PARITY_NATIVE_THREADS` have the counts and what bounds the run). A draft not yet in `data/styles/` is checked with its job
 list (`style_wasm.request`, `run_node`, `native_rgb`, `compare`).
 
