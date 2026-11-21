@@ -45,7 +45,15 @@ on either shape, is `(v/radius + 1)/2`, 0 at one edge and 1 at the other, its gr
 pulled back through `dz`, so a `light` at one band and `rings` 1 shades each blade as a
 lit cylinder. `smallest` (a fraction of the frame width) is `largest`'s partner: the
 read ends, `NaN`, at the first counted entry whose shape pulls back smaller than that,
-leaving finer detail to the layers beneath.
+leaving finer detail to the layers beneath. **`fade`** (a share in (0, 1]) thins the
+`height` to 0 towards either bound, from `(1 − fade)·largest` and `(1 + fade)·smallest`,
+as a stroke thins: unfaded, a neighbour reading the next entry where `largest` passed over
+one meets it at a seam; faded, shapes come and go softly, and several `hit`s laid
+additively draw each shape whole (`gilded_leaves`). A loop is shared only by reads with
+one `fade`: a `step` read beside a faded height runs a loop of its own unless it takes the
+same `fade`. With `spacing`, nearly every escaping sample enters some shape, so a
+layer on `height` paints the whole frame unless its `power` is high (8 lights a blade's
+spine alone).
 
 ## Field lines
 
@@ -109,6 +117,6 @@ stay out of the bounds (`side` `outside` leaves those out).
 
 | where | defaults |
 | --- | --- |
-| `bubble` | `center` [0, 0] (on the critical point: always set it), `radius` 1, `hit` 1, `read` `height`, `shape` `disc`, `tilt` 0, `escaped` false; `spacing`, `largest`, `smallest`, `shift` absent |
+| `bubble` | `center` [0, 0] (on the critical point: always set it), `radius` 1, `hit` 1, `read` `height`, `shape` `disc`, `tilt` 0, `escaped` false; `spacing`, `largest`, `smallest`, `fade`, `shift` absent |
 | `lines` | `radius` 4, `arrive` 0.05, `settle` 1000, `twist` 0, `divide` 1, `read` `angle`, `side` `both` |
 | `stroke` | `shape` `line`, `center` [0, 0], `on_c` false, `radius` 1, `tilt` 0, `width` 0.004, `taper` 0.5, `node` 0, `steps` 256, `read` `height`, `side` `both`; `largest`, `smallest` absent |

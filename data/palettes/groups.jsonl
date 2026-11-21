@@ -266,3 +266,4 @@
 {"schema": 1, "kind": "admitted", "map": "icy_sky", "group": "map:icy_sky", "joined": false, "nearest": "m49", "m1": 0.05024}
 {"schema": 1, "kind": "admitted", "map": "toxic_spire", "group": "map:Chartreuse Furnace", "joined": true, "nearest": "map:Chartreuse Furnace", "m1": 0.038421}
 {"schema": 1, "kind": "admitted", "map": "draped_folds", "group": "map:draped_folds", "joined": false, "nearest": "map:paper_layers", "m1": 0.048674}
+{"schema": 1, "kind": "admitted", "map": "gilded_leaves", "group": "map:gilded_leaves", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.053656}

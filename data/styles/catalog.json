@@ -3329,6 +3329,16 @@
           "score": 4
         }
       ]
+    },
+    {
+      "style": "gilded_leaves",
+      "item": "066",
+      "reference": "velvet-flowers-25.jpg",
+      "references": [
+        "velvet-flowers-25.jpg"
+      ],
+      "what": "Translucent gilded-glass leaves on dark crackled stone: curved almond blades bright at the spine and fading to their tips, sweeping in sprays and spirals, small copies inlaid in each, the smaller blades faint grey ghosts.",
+      "palettes": []
     }
   ]
 }

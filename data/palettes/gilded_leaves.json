@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "gilded_leaves",
+  "kind": "sequential",
+  "source": "charcoal through warm stone grey to a pale ghost grey, then deep bronze, copper, a rose-copper and gold to a pale cream gold: the albedo of the gilded_leaves style, from velvet-flowers-25.jpg, translucent gold leaf blades glowing over dark crackled stone",
+  "stops": [
+    [0.0, [16, 15, 16]],
+    [0.12, [38, 36, 35]],
+    [0.26, [70, 67, 64]],
+    [0.4, [150, 148, 146]],
+    [0.5, [92, 60, 34]],
+    [0.62, [160, 96, 52]],
+    [0.72, [186, 118, 104]],
+    [0.84, [222, 162, 62]],
+    [0.94, [242, 206, 118]],
+    [1.0, [255, 238, 190]]
+  ]
+}

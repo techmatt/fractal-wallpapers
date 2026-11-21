@@ -387,6 +387,16 @@ pub struct Bubble {
     /// than the bound is whatever is under them. Absent: no bound.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub smallest: Option<f64>,
+    /// A share in (0, 1]: thin each entry's `height` to 0 as its shape nears a bound,
+    /// as a stroke thins:
+    /// from `(1 − fade)·largest` up to `largest`, and from `(1 + fade)·smallest` down
+    /// to `smallest` (`size` the entry's `radius / (|dz|·width)`). An entry read stops
+    /// at a bound all at once, so where `largest` passes over an entry a neighbour
+    /// reading the next one meets it at a seam; faded, the shapes come and go softly,
+    /// and layers of several `hit`s laid additively draw each shape whole. Absent: no
+    /// fade.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fade: Option<f64>,
     /// The **face**: a smaller disc inside each bubble, internally tangent to its rim,
     /// its centre moved from the bubble's by `shift` (a vector in radii, of length
     /// below 1) and its radius `(1 − |shift|)·radius`. What the `crescent` read paints
@@ -439,6 +449,7 @@ impl Default for Bubble {
             escaped: false,
             largest: None,
             smallest: None,
+            fade: None,
             shift: None,
             shape: BubbleShape::Disc,
             tilt: 0.0,
@@ -447,7 +458,10 @@ impl Default for Bubble {
 }
 
 impl Bubble {
-    /// The loop this reads: every read of one disc and hit shares it.
+    /// The loop this reads: every read of one disc and hit shares it when the rest of
+    /// their members match, `fade` too (it weights the height alone, but the loop lays
+    /// it on the entry): a step read beside a faded height shares its loop only when it
+    /// carries the same `fade`.
     fn trap(&self) -> Bubble {
         Bubble {
             read: BubbleRead::Height,
@@ -1605,6 +1619,7 @@ impl Style {
                             && bubble.spacing.is_none_or(|s| s.is_finite() && s > 0.0)
                             && bubble.largest.is_none_or(|l| l.is_finite() && l > 0.0)
                             && bubble.smallest.is_none_or(|l| l.is_finite() && l > 0.0)
+                            && bubble.fade.is_none_or(|f| f > 0.0 && f <= 1.0)
                             && bubble.shift.is_none_or(|[x, y]| {
                                 let length = x.hypot(y);
                                 length.is_finite() && length > 0.0 && length < 1.0
@@ -1616,7 +1631,7 @@ impl Style {
                                     && bubble.read != BubbleRead::Angle)) => {}
                     (None, None, None, Some(_)) => {
                         return Err(format!(
-                            "{at}: a bubble needs hit >= 1, a positive radius, spacing, largest and smallest, \
+                            "{at}: a bubble needs hit >= 1, a positive radius, spacing, largest and smallest, a fade in (0, 1], \
                              a finite centre and tilt, a shift of length in (0, 1), a shift to read \
                              a crescent, and no shift or angle on a strip"
                         ));
@@ -2084,12 +2099,14 @@ pub(crate) fn inside(
 /// The disc an orbit has arrived at the critical point's cycle in.
 const EPSILON: f64 = 1e-3;
 
-/// One bubble entry: the step, `z − center` there, and `dz/d(pixel)` there.
+/// One bubble entry: the step, `z − center` there, `dz/d(pixel)` there, and the
+/// weight [`Bubble::fade`] lays on its height (1 without one).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Entry {
     pub step: u32,
     pub offset: Complex<f64>,
     pub derivative: Complex<f64>,
+    pub weight: f64,
 }
 
 impl Entry {
@@ -2106,7 +2123,7 @@ impl Entry {
         };
         let crescent = self.lune(trap).map_or(f64::NAN, |(across, _)| across);
         [
-            height,
+            height * self.weight,
             self.step as f64,
             turn,
             crescent,
@@ -2181,7 +2198,8 @@ fn pulled_back(derivative: Complex<f64>, direction: Complex<f64>) -> Option<[f64
 /// Where the orbit of `pixel` enters `trap`'s disc for the `hit`-th time, within
 /// `maxiter` steps and before it escapes. An entry is a step inside the disc after
 /// one outside it; the seed counts as outside, so `z₁` in the disc is the first.
-/// `width` is the frame's width in the plane, read only by [`Bubble::largest`].
+/// `width` is the frame's width in the plane, read by [`Bubble::largest`],
+/// [`Bubble::smallest`] and [`Bubble::fade`].
 pub(crate) fn bubble(
     family: &Family,
     pixel: Complex<f64>,
@@ -2251,12 +2269,29 @@ pub(crate) fn bubble(
                     step,
                     offset,
                     derivative: dz,
+                    weight: faded(trap, trap.radius / (dz.norm() * width)),
                 });
             }
         }
         was_inside = inside;
     }
     None
+}
+
+/// The weight [`Bubble::fade`] lays on an entry whose shape pulls back `size` frame
+/// widths: 1 between the two ramps, falling linearly to 0 at either bound.
+fn faded(trap: &Bubble, size: f64) -> f64 {
+    let Some(fade) = trap.fade else {
+        return 1.0;
+    };
+    let entering = trap
+        .largest
+        .map_or(1.0, |largest| (largest - size) / (fade * largest));
+    let leaving = trap
+        .smallest
+        .map_or(1.0, |smallest| (size - smallest) / (fade * smallest));
+    let weight = entering.min(leaving).clamp(0.0, 1.0);
+    if weight.is_nan() { 0.0 } else { weight }
 }
 
 /// The unit direction in which the smooth count climbs, from the escape's `z` and
@@ -3533,6 +3568,7 @@ mod tests {
             step: 3,
             offset: Complex::new(x, y),
             derivative: Complex::new(2.0, 0.0),
+            weight: 1.0,
         };
         let across = |x: f64, y: f64| at(x, y).reads(&face)[3];
         assert!(
@@ -3609,6 +3645,64 @@ mod tests {
             later > 50,
             "only {later} entries moved: the bound is not exercised"
         );
+    }
+
+    #[test]
+    fn a_fade_thins_the_height_towards_either_bound_and_nothing_else() {
+        // The faded trap enters where the plain one does; its height is the plain
+        // height times a weight that is 1 between the ramps and falls to 0 at a bound.
+        let family = Family::Multibrot { degree: 2 };
+        let (width, largest, smallest, fade) = (1e-3, 2.0, 0.05, 0.5);
+        let plain = Bubble {
+            largest: Some(largest),
+            smallest: Some(smallest),
+            ..trap(1, Some(1.0))
+        };
+        let faded_trap = Bubble {
+            fade: Some(fade),
+            ..plain
+        };
+        let (mut whole, mut thinned) = (0, 0);
+        for pixel in grid() {
+            let free = bubble(&family, pixel, 500, &plain, width);
+            let held = bubble(&family, pixel, 500, &faded_trap, width);
+            let (Some(free), Some(held)) = (free, held) else {
+                assert_eq!(free.is_some(), held.is_some(), "{pixel}");
+                continue;
+            };
+            assert_eq!(
+                (held.step, held.offset),
+                (free.step, free.offset),
+                "{pixel}"
+            );
+            assert_eq!(free.weight, 1.0);
+            let size = 0.3 / (held.derivative.norm() * width);
+            let inside = size <= largest * (1.0 - fade) && size >= smallest * (1.0 + fade);
+            assert!((0.0..=1.0).contains(&held.weight), "{pixel}");
+            assert_eq!(held.weight == 1.0, inside, "{pixel}: size {size}");
+            let [plain_height, step, ..] = free.reads(&plain);
+            let [height, faded_step, ..] = held.reads(&faded_trap);
+            assert!((height - plain_height * held.weight).abs() < 1e-12);
+            assert_eq!(step, faded_step, "the fade thins the height alone");
+            whole += usize::from(inside);
+            thinned += usize::from(!inside);
+        }
+        assert!(
+            whole > 50 && thinned > 50,
+            "whole {whole}, thinned {thinned}"
+        );
+        let style = |fade: f64| {
+            serde_json::from_value::<Style>(serde_json::json!({
+                "name": "fade",
+                "layers": [{"kind": "glow", "color": {"palette": 0.5},
+                            "channel": {"bubble": {"radius": 0.3, "fade": fade}}}]
+            }))
+            .unwrap()
+            .validate()
+        };
+        assert!(style(0.0).is_err() && style(-1.0).is_err() && style(1.5).is_err());
+        assert_eq!(style(0.25), Ok(()));
+        assert_eq!(style(1.0), Ok(()));
     }
 
     #[test]
