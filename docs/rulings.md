@@ -24,6 +24,9 @@ given in, with its date and the item it came from.
 - Custom modes reach the browser as this pipeline's own style compositor compiled to
   WebAssembly, checked for parity against the keeps; a GPU shader is a later speed-up only
   (2026-11-05).
+- **The stroke trap keeps its `steps` cap** (Matt, 2026-11-20; 061-063's audit).
+- **The post stage's explorer side waits** until a post-stage look leaves lab (Matt,
+  2026-11-20; 061-063's audit).
 - New modes enter the lab tier; Matt promotes modes out of lab himself (2026-11-19).
 - **A round-one style gets a catalog row at once** (Matt, 2026-11-19; 059's audit):
   `style_catalog.check` accepts an unscored row with no status, so its references stop
@@ -48,6 +51,8 @@ given in, with its date and the item it came from.
   `style sweep` leaves `README.md` for `data/styles/CHECKS.md` (064). `FORMATS.md` is
   exempt (Matt, 2026-11-19; 060): the bar is for the style docs, and it stays whole at
   about 16.5 KB, its bytes being field names `tests/test_formats.py` requires. No split.
+  `CLAUDE.md` is exempt as `FORMATS.md` is (Matt, 2026-11-20; 064's audit): the bar is
+  15,000 bytes for the style docs alone.
 - `CLAUDE.md` cleanup picks standing (2026-11-04): the build-era section stays until
   publication, and the lane rules stay in `CLAUDE.md`.
 - The memory note `final-statement-ends-with-report-filename` (Matt, 2026-11-19; 059's

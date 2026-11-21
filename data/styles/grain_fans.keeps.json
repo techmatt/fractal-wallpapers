@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "name": "grain_fans",
+  "reference": {
+    "image": "touch.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/grain_fans",
+  "keeps": [
+    {
+      "id": "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",
+      "picker": "style_classic_escape_texture_r1",
+      "picked": [
+        {
+          "row": "grain_fans/formulations",
+          "key": "fin_gA__g3_six__00_julia-mandelbrot_53dd5a48"
+        }
+      ],
+      "label": "six: more, narrower bands",
+      "image": "style_classic_escape_texture_r1__fin_gA__g3_six__00_julia-mandelbrot_53dd5a48.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_53dd5a48",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.7548374821242281",
+              "-0.07387098369508416"
+            ]
+          },
+          "viewport": {
+            "center_re": "-1.1188618103481036",
+            "center_im": "-0.04946681975588861",
+            "width": "0.42881425608049195"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 794 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 794,
+            "key": "53dd5a48644b8586",
+            "p_spiral": 0.099832
+          }
+        },
+        "style": "g3_six",
+        "stack": "g3_six@5b378117",
+        "colormap": "grain_fans",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "g3_six@5b378117": {
+      "name": "g3_six",
+      "interior": {
+        "palette": 0.84
+      },
+      "tone": {
+        "median": 0.558,
+        "p10": 0.262
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 6.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 12.0,
+            "edge": 0.15,
+            "fill": 0.35
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "power": 1.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 48.0
+            }
+          },
+          "color": {
+            "palette": 0.4
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "power": 5.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.84
+          },
+          "blend": "multiply",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00015,
+          "color": {
+            "palette": 0.36
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.36
+          },
+          "blend": "screen",
+          "opacity": 0.6,
+          "power": 40.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 2.0
+          }
+        }
+      ]
+    }
+  }
+}

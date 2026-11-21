@@ -261,10 +261,8 @@
 {"schema": 1, "kind": "admitted", "map": "hairline_rays", "group": "map:hairline_rays", "joined": false, "nearest": "map:flame_veil_violet", "m1": 0.075455}
 {"schema": 1, "kind": "admitted", "map": "tan_star_beams", "group": "map:tan_star_beams", "joined": false, "nearest": "map:Warm Core in the Deep", "m1": 0.047584}
 {"schema": 1, "kind": "admitted", "map": "frost_stipple", "group": "map:frost_stipple", "joined": false, "nearest": "map:Rose Above", "m1": 0.05491}
-{"schema": 1, "kind": "admitted", "map": "honey_cells", "group": "map:honey_cells", "joined": false, "nearest": "map:edge-25", "m1": 0.067447}
 {"schema": 1, "kind": "admitted", "map": "grain_fans", "group": "map:grain_fans", "joined": false, "nearest": "map:abstract-wallpaper-backgrounds-hd", "m1": 0.06852}
 {"schema": 1, "kind": "admitted", "map": "frost_filaments", "group": "map:frost_filaments", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.056672}
 {"schema": 1, "kind": "admitted", "map": "icy_sky", "group": "map:icy_sky", "joined": false, "nearest": "m49", "m1": 0.05024}
 {"schema": 1, "kind": "admitted", "map": "toxic_spire", "group": "map:Chartreuse Furnace", "joined": true, "nearest": "map:Chartreuse Furnace", "m1": 0.038421}
 {"schema": 1, "kind": "admitted", "map": "draped_folds", "group": "map:draped_folds", "joined": false, "nearest": "map:paper_layers", "m1": 0.048674}
-{"schema": 1, "kind": "admitted", "map": "molten_sheets", "group": "map:molten_sheets", "joined": false, "nearest": "map:flame_wisp_amber", "m1": 0.040252}

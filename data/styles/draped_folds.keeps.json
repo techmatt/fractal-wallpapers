@@ -1,0 +1,362 @@
+{
+  "schema": 1,
+  "name": "draped_folds",
+  "reference": {
+    "image": "underworld-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/draped_folds",
+  "keeps": [
+    {
+      "id": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",
+      "picker": "style_classic_escape_texture_r1",
+      "picked": [
+        {
+          "row": "draped_folds/formulations",
+          "key": "fin_dA__d3_one__00_julia-multibrot5_ff8bfbca"
+        }
+      ],
+      "label": "one: broader, slower folds",
+      "image": "style_classic_escape_texture_r1__fin_dA__d3_one__00_julia-multibrot5_ff8bfbca.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_ff8bfbca",
+          "family": {
+            "c": [
+              "-0.5143476278661704",
+              "-0.6479947566292118"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6488806071138624",
+            "center_im": "0.16258993172014186",
+            "width": "0.20438544988364632"
+          },
+          "maxiter": 8650,
+          "note": "final139_general seat 277 (threads, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 277,
+            "key": "ff8bfbcaad12d050",
+            "p_spiral": 0.3883
+          }
+        },
+        "style": "d3_one",
+        "stack": "d3_one@c090eb70",
+        "colormap": "draped_folds",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca",
+      "picker": "style_classic_escape_texture_r1",
+      "picked": [
+        {
+          "row": "draped_folds/formulations",
+          "key": "fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca"
+        }
+      ],
+      "label": "plumes: feathered folds",
+      "image": "style_classic_escape_texture_r1__fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_ff8bfbca",
+          "family": {
+            "c": [
+              "-0.5143476278661704",
+              "-0.6479947566292118"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6488806071138624",
+            "center_im": "0.16258993172014186",
+            "width": "0.20438544988364632"
+          },
+          "maxiter": 8650,
+          "note": "final139_general seat 277 (threads, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 277,
+            "key": "ff8bfbcaad12d050",
+            "p_spiral": 0.3883
+          }
+        },
+        "style": "d3_plumes",
+        "stack": "d3_plumes@17c70dd3",
+        "colormap": "draped_folds",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "d3_one@c090eb70": {
+      "name": "d3_one",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.238,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.2,
+            "azimuth": 120.0,
+            "elevation": 40.0,
+            "ambient": 0.4,
+            "diffuse": 0.7,
+            "specular": 0.5,
+            "shininess": 14.0,
+            "rim": 0.2,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.9
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 1.0
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.8,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 1.0
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00025,
+          "color": {
+            "palette": 0.52
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.4
+        }
+      ]
+    },
+    "d3_plumes@17c70dd3": {
+      "name": "d3_plumes",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.238,
+        "p10": 0.085
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.2,
+            "azimuth": 120.0,
+            "elevation": 40.0,
+            "ambient": 0.4,
+            "diffuse": 0.7,
+            "specular": 0.5,
+            "shininess": 14.0,
+            "rim": 0.2,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 0.9
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.00025,
+          "color": {
+            "palette": 0.52
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.4
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "name": "frost_stipple",
+  "reference": {
+    "image": "molemou.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/frost_stipple",
+  "keeps": [
+    {
+      "id": "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
+      "picker": "style_classic_escape_texture_r1",
+      "picked": [
+        {
+          "row": "frost_stipple/formulations",
+          "key": "fin_sA__s3_dust__00_m2_seahorse_tail_spiral"
+        }
+      ],
+      "label": "dust: a finer, denser frost grain",
+      "image": "style_classic_escape_texture_r1__fin_sA__s3_dust__00_m2_seahorse_tail_spiral.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m2_seahorse_tail_spiral",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7451635",
+            "center_im": "0.112591",
+            "width": "0.0012"
+          },
+          "maxiter": 6000,
+          "symmetry": "1-arm log spiral",
+          "source": "hand-framed by re-centring on the spiral eye in a preview",
+          "note": "classic seahorse tail: one loose logarithmic spiral of beads coiling into an empty eye; most dark space",
+          "preview": "out/yas/locs/prev/m2_seahorse_tail_spiral_style.png"
+        },
+        "style": "s3_dust",
+        "stack": "s3_dust@67d6259e",
+        "colormap": "frost_stipple",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "s3_dust@67d6259e": {
+      "name": "s3_dust",
+      "interior": {
+        "palette": 0.1
+      },
+      "tone": {
+        "median": 0.494,
+        "p10": 0.209
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.5,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "tia"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.35,
+          "power": 3.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 64.0
+            }
+          },
+          "color": {
+            "palette": 0.62
+          },
+          "blend": "screen",
+          "opacity": 0.5,
+          "power": 3.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 0.5
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 512.0
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 8.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 30.0
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0,
+          "warp": {
+            "channel": {
+              "field": {
+                "kind": "gaussian_int"
+              }
+            },
+            "amount": 0.6
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.5
+        }
+      ]
+    }
+  }
+}

@@ -1426,7 +1426,7 @@
         ]
       },
       "what": "Molten fire flowing in broad lit folds: a glossy relief in crimson, orange and gold, crossed by translucent folds, with flame lace along the edge of the set.",
-      "kept": "2 locations; interstellar_webs: 1 tile (054); 2 baseline tiles (054, 058)",
+      "kept": "2 locations; interstellar_webs: 1 tile (054); 3 baseline tiles (054, 058, 064)",
       "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass.",
       "palettes": [
         {
@@ -1436,7 +1436,8 @@
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
             "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow",
-            "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow"
+            "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow",
+            "style_classic_escape_texture_r1/draped_folds/formulations/base_dA__molten_flow__00_julia-multibrot5_ff8bfbca"
           ],
           "score": 4
         },
@@ -3165,42 +3166,76 @@
     },
     {
       "style": "frost_stipple",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "064",
       "reference": "molemou.jpg",
       "references": [
         "molemou.jpg",
         "ovaline.jpg"
       ],
-      "what": "Frosted seahorse waves in lilac and grey: fine feathered grain and sparkle stipple along the set, soft dark plumes in the valleys, each interior cell mottled (a honeycomb of orange and olive cells as a palette entry).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral",
+          "caption": "A seahorse-tail spiral in lilac and grey, fine frost grain sweeping round it and sparkle stipple on its mottled cells"
+        }
+      ],
+      "public": {
+        "name": "frost-stipple",
+        "palette": "frost_stipple",
+        "knobs": []
+      },
+      "what": "Frosted seahorse waves in lilac and grey: fine feathered grain and sparkle stipple along the set, soft dark plumes in the valleys, each interior cell mottled.",
+      "kept": "1 tile: s3_dust at the seahorse-tail seat; the honey_cells entry kept nothing",
+      "note": "Engine: no new primitive (the orbit's own stripe and gaussian_int reads) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
       "palettes": [
         {
           "colormap": "frost_stipple",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "honey_cells",
-          "values": {
-            "/layers/0/palette/cycles": 2.5,
-            "/layers/1/opacity": 0.5,
-            "/layers/5/warp/amount": 1.5,
-            "/tone/median": 0.534,
-            "/tone/p10": 0.105
-          },
-          "keeps": [],
-          "reference": "ovaline.jpg"
+          "keeps": [
+            "style_classic_escape_texture_r1/frost_stipple/formulations/fin_sA__s3_dust__00_m2_seahorse_tail_spiral"
+          ],
+          "score": 4
         }
       ]
     },
     {
       "style": "grain_fans",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "064",
       "reference": "touch.jpg",
       "references": [
         "touch.jpg"
       ],
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48",
+          "caption": "Teal and orange fans spiralling round a Julia set's beaded eyes, each band scooped darker towards its edge and finely grained"
+        }
+      ],
+      "public": {
+        "name": "grain-fans",
+        "palette": "grain_fans",
+        "knobs": []
+      },
       "what": "Broad fans of alternating teal and orange bands, each scooped darker towards its edge and carrying fine parallel grain, the set's beads along the edges.",
-      "palettes": []
+      "kept": "1 tile: g3_six at the formulations seat",
+      "note": "Engine: no new primitive (the orbit's own stripe and gaussian_int reads) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
+      "palettes": [
+        {
+          "colormap": "grain_fans",
+          "values": {},
+          "keeps": [
+            "style_classic_escape_texture_r1/grain_fans/formulations/fin_gA__g3_six__00_julia-mandelbrot_53dd5a48"
+          ],
+          "score": 4
+        }
+      ]
     },
     {
       "style": "frost_filaments",
@@ -3255,31 +3290,43 @@
     },
     {
       "style": "draped_folds",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "064",
       "reference": "underworld-25.jpg",
       "references": [
         "underworld-25.jpg",
         "molten-25.jpg"
       ],
-      "what": "Gold and teal spirals over dark smooth folds that read as draped cloth, a slow stripe's creases and sheen over a glossy relief (lit amber sheets as a palette entry).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",
+          "caption": "Gold-beaded spirals over dark folds that hang like draped cloth, teal and amber stars along the lace"
+        },
+        {
+          "keep": "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca",
+          "caption": "The same five-fold Julia spiral, its folds feathered into fine amber plumes"
+        }
+      ],
+      "public": {
+        "name": "draped-folds",
+        "palette": "draped_folds",
+        "knobs": []
+      },
+      "what": "Gold and teal spirals over dark smooth folds that read as draped cloth, a slow stripe's creases and sheen over a glossy relief.",
+      "kept": "2 tiles: d3_one and d3_plumes at the formulations seat; the molten_flow baseline there is molten_flow's keep; the molten_sheets entry kept nothing",
+      "note": "Engine: no new primitive (the orbit's own stripe and gaussian_int reads) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 4/5.",
       "palettes": [
         {
           "colormap": "draped_folds",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "molten_sheets",
-          "values": {
-            "/layers/0/palette/gamma": 1.2,
-            "/layers/1/light/slope": 1.8,
-            "/layers/3/opacity": 0.55,
-            "/layers/4/opacity": 0.7,
-            "/tone/median": 0.111,
-            "/tone/p10": 0.014
-          },
-          "keeps": [],
-          "reference": "molten-25.jpg"
+          "keeps": [
+            "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_one__00_julia-multibrot5_ff8bfbca",
+            "style_classic_escape_texture_r1/draped_folds/formulations/fin_dA__d3_plumes__00_julia-multibrot5_ff8bfbca"
+          ],
+          "score": 4
         }
       ]
     }

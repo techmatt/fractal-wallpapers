@@ -9,6 +9,53 @@
   "folder": "fractal-drive-sync/style-keeps/molten_flow",
   "keeps": [
     {
+      "id": "style_classic_escape_texture_r1/draped_folds/formulations/base_dA__molten_flow__00_julia-multibrot5_ff8bfbca",
+      "picker": "style_classic_escape_texture_r1",
+      "picked": [
+        {
+          "row": "draped_folds/formulations",
+          "key": "base_dA__molten_flow__00_julia-multibrot5_ff8bfbca"
+        }
+      ],
+      "label": "baseline: molten_flow",
+      "image": "style_classic_escape_texture_r1__base_dA__molten_flow__00_julia-multibrot5_ff8bfbca.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_ff8bfbca",
+          "family": {
+            "c": [
+              "-0.5143476278661704",
+              "-0.6479947566292118"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6488806071138624",
+            "center_im": "0.16258993172014186",
+            "width": "0.20438544988364632"
+          },
+          "maxiter": 8650,
+          "note": "final139_general seat 277 (threads, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 277,
+            "key": "ff8bfbcaad12d050",
+            "p_spiral": 0.3883
+          }
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__02_julia-multibrot3_7e312206_molten_flow",
       "picker": "style_liquid_surfaces_r1",
       "picked": [
