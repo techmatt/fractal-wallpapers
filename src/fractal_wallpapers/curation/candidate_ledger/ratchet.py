@@ -69,7 +69,6 @@ by the fixtures that prune, and the session guard holds the file still.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
 from fractal_wallpapers.paths import repo_root
@@ -170,7 +169,9 @@ def append(record: dict, path: Path | None = None) -> Path:
 
 
 def _now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    from fractal_wallpapers.labeling import store
+
+    return store.now()
 
 
 def reading(path: Path | None = None) -> dict:

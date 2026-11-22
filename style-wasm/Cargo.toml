@@ -11,7 +11,7 @@ publish = false
 # three rules the CLI lays on a
 # style before the engine sees it (`styles.with_knobs`, `styles.projected`, the
 # mirror rule of `styles.spec_of`), so a page drawing a published mode draws the
-# pipeline's picture. `engine/README.md`'s *The style module* has the API.
+# pipeline's picture. `style-wasm/README.md`'s *The style module* has the API.
 #
 # No wasm-bindgen, as the website's `engine-wasm`: JavaScript owns every buffer
 # through `alloc`/`dealloc`, and `js/style-wasm.mjs` is the whole of the glue.

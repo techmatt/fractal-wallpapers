@@ -2,7 +2,7 @@
 // session on one picture, measure it, draw it in tiles or in one pass.
 //
 //   const styles = await load(bytes);              // an ArrayBuffer, typed array or Response
-//   const picture = styles.open(request);          // engine/README.md's *The style module*
+//   const picture = styles.open(request);          // style-wasm/README.md's *The style module*
 //   picture.measure({width: 320, height: 200});    // a preview's balance, or {} for the frame's
 //   const rgba = picture.tile(0, 0, 256, 256);     // Uint8ClampedArray, width·height·4
 //   picture.close();

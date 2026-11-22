@@ -239,5 +239,11 @@ with no ledger gets the map's all-zero row only), splices the map's own rows int
 the map to the groups. About forty seconds, half of it the ledger tally.
 `palettes/admit.py`'s docstring has why each step is shaped as it is.
 
+`--mode <mode>` also lays the map in the mode's catalog row for a round, unkept (an
+entry with empty `values` and `keeps`); an empty set first gains the style file's
+`suggested_colormap` as entry 0 (`style_palettes.open_round`). The mode needs a live
+`catalog.json` row, never a discarded or merged name. A map already in the library
+needs `--replace`, which pays the whole admission again for an unchanged file.
+
 A drop's files stay here, not beside the brief, because a batch file and
 `provenance.jsonl` are one record split in two.

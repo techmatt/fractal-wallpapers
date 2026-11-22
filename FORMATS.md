@@ -52,7 +52,7 @@ rows `{schema, kind, ...}`:
   `distance`/`blocked_by`. `twin_channel`: counts per partition. `summary` (last row):
   `<run>/summary.json`.
 - A reframing leg adds `reframing_fire`, `reframing_summary` and a `reframing` block on
-  its candidates; `deep run` writes a `deep_run` header and `seat`, `sourcing_round`,
+  its candidates; `deep walk` (`deep/run.py`) writes a `deep_run` header and `seat`, `sourcing_round`,
   `batch_killed`.
 
 A `candidate` (`discovery/walk.py`'s `_candidate`): `node_id` (null if unexpanded);

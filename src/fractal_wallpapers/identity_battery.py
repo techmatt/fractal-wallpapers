@@ -71,7 +71,7 @@ WORKERS = 3
 THREADS = 2
 
 #: The environment variable the engine's thread pool reads.
-THREADS_ENV = "RAYON_NUM_THREADS"
+THREADS_ENV = engine.THREADS_ENV
 
 
 def battery_dir() -> Path:

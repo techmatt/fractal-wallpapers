@@ -392,10 +392,6 @@ def config_path(run: str | None = None) -> Path:
     return head_dir(run) / "config.json"
 
 
-def metrics_path(run: str | None = None) -> Path:
-    return head_dir(run) / "metrics.json"
-
-
 def scores_path(kind: str, run: str | None = None) -> Path:
     """One kind's blind sheet, read through the candidate. One file per kind."""
     return head_dir(run) / f"scores_{finished.head_of(kind)}.jsonl"
@@ -1349,7 +1345,6 @@ __all__ = [
     "declared_backbone",
     "declared_for",
     "head_dir",
-    "metrics_path",
     "load",
     "load_checkpoint",
     "of_kind",

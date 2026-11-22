@@ -42,6 +42,19 @@ def test_the_bundle_carries_every_published_mode_whole():
         assert colormap == style_wasm.colormap_of(name)
 
 
+def test_a_named_parity_run_lists_only_that_style_s_jobs():
+    """The job list needs neither Node nor the module: each job is its style's, every
+    picture a job is compared with is drawn natively, and a tiled job names its frame."""
+    style = style_wasm.published_rows()[0]["style"]
+    jobs, natives = style_wasm.parity_jobs(names=[style])
+    assert jobs and all(job["id"].startswith(f"{style}__") for job in jobs)
+    frames = {job["id"] for job in jobs if "same_as" not in job}
+    assert frames == set(natives)
+    assert all(job["same_as"] in frames for job in jobs if "same_as" in job)
+    with pytest.raises(style_wasm.StyleWasmError):
+        style_wasm.parity_jobs(names=["no_such_style"])
+
+
 def test_the_module_s_integer_members_are_the_ones_the_style_files_write_as_integers():
     """`styles.with_knobs` rounds where a file writes an integer; the module, whose stack
     has lost that spelling to `JSON.parse`, rounds by name. The two must name the same."""
@@ -149,7 +162,7 @@ def test_the_module_draws_the_native_picture_with_its_knobs_turned(tmp_path):
 
 
 #: A post stage on a plain stack: the mosaic on each lattice, every shading member set,
-#: and the paper pass (its own `kind`) with its brush, accent and shadow.
+#: and the paper pass with its brush, accent and shadow. Each pass names its `kind`.
 POST_STACKS = {
     "paper": {
         "kind": "paper",
@@ -166,6 +179,7 @@ POST_STACKS = {
         "shadow": {"width": 0.02, "offset": 0.006, "azimuth": 120.0, "opacity": 0.5},
     },
     "triangles": {
+        "kind": "mosaic",
         "largest": 0.25,
         "smallest": 0.01,
         "levels": 6,
@@ -175,6 +189,7 @@ POST_STACKS = {
         "opacity": 0.7,
     },
     "rhombi": {
+        "kind": "mosaic",
         "rhombi": True,
         "tilt": -20.0,
         "fill": "turned",
@@ -185,6 +200,7 @@ POST_STACKS = {
         "levels": 1,
     },
     "spiral": {
+        "kind": "mosaic",
         "spiral": {"arms": 9, "twist": 0.5},
         "smallest": 0.02,
         "fill": "turned",
@@ -201,8 +217,8 @@ POST_STACKS = {
     not (engine.is_built() and style_wasm.wasm_path().is_file() and shutil.which("node")),
     reason="needs the release engine, the built module (style_wasm.BUILD) and node",
 )
-@pytest.mark.parametrize("lattice", sorted(POST_STACKS))
-def test_the_module_draws_a_post_stage_as_the_native_engine_does(tmp_path, lattice):
+@pytest.mark.parametrize("name", sorted(POST_STACKS))
+def test_the_module_draws_a_post_stage_as_the_native_engine_does(tmp_path, name):
     """A post pass reads the whole frame, so it is drawn whole on both sides (`frame`),
     and the module refuses it in tiles."""
     stack = {
@@ -215,7 +231,7 @@ def test_the_module_draws_a_post_stage_as_the_native_engine_does(tmp_path, latti
                 "palette": {"transfer": {"kind": "rank"}},
             }
         ],
-        "post": [{"kind": "mosaic", **POST_STACKS[lattice]}],
+        "post": [POST_STACKS[name]],
     }
     assert style_wasm.has_post(stack)
     palette = style_wasm.published_rows()[0]["public"]["palette"]

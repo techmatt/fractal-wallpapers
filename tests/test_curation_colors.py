@@ -250,6 +250,8 @@ def test_families_fold_the_fifty_two_onto_thirteen_cells() -> None:
         {"dominant": "black"},
     ]
     assert colors._families(rows) == {"green": 2, "neutral": 1}
+    every = [{"dominant": swatch["swatch"]} for swatch in colors.codebook.swatches()]
+    assert len(every) == 52 and len(colors._families(every)) == 13
 
 
 def test_the_spread_of_nothing_is_null_rather_than_zero() -> None:

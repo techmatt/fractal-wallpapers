@@ -115,7 +115,6 @@ import hashlib
 import json
 import time
 from dataclasses import dataclass
-from datetime import UTC
 from pathlib import Path
 
 from fractal_wallpapers import storage
@@ -3858,9 +3857,9 @@ def acceptance(
 
 
 def _stamp() -> str:
-    from datetime import datetime
+    from fractal_wallpapers.labeling import store
 
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return store.now()
 
 
 def selection_statistic(said: dict) -> float:

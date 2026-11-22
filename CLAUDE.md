@@ -44,7 +44,8 @@ costs is one store*, not `GALLERY.md:1487`, which drifts after the next edit abo
   `newline="\n"`**. `git ls-files --eol` is the only detector of CRLF drift;
   `tests/test_line_endings.py` is the guard.
 - **Search with `git grep` (or `rg`), never `grep -r` from the root**: the checkout
-  holds ~100 GB of untracked files `grep` does not skip.
+  holds ~100 GB of untracked files `grep` does not skip. Every `git grep` option goes
+  before the pattern (`git grep -n -A4 PAT -- path`); after it, `-A4` reads as a revision.
 
 ### Installs
 
@@ -167,8 +168,8 @@ adds a member no other stack sets owes `identity` (0 differ) plus `style wasm-pa
 Run pytest with the checkout's own `.venv` interpreter: a gallery guard spawns
 `sys.executable`, and another fails it like a process-control bug. The walk tests need
 a **release** engine and skip without one; a guard asking whether the engine is built
-catches `FileNotFoundError` from `engine.engine_path`, or it interrupts the lane at
-collection.
+asks `engine.is_built()`; a bare `engine.engine_path()` at module level raises
+`FileNotFoundError` and interrupts the lane at collection.
 
 **`perturbation/` is the website's kernel too.** An edit there owes the website a rebake
 (`perturbation/README.md`'s *Running it*), the website's own item, and runs the two

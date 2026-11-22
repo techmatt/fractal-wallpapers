@@ -257,6 +257,12 @@ checkout's interpreter. Reproducing the lean install is a mask at `sys.meta_path
 (`test_base_install.py` carries the finder) blocking `torch,torchvision,timm` and **not**
 `numpy`, which `dev` installs.
 
+### A new doc is invisible to the citation guard until it is tracked
+
+`tests/test_doc_citations.py` sweeps `git ls-files`, so a doc not yet added is neither
+swept nor citable: a citation of one of its headings reads as dangling. `git add -N
+<doc>` puts it in the listing before the commit.
+
 ## On a parallel runner
 
 `pytest-xdist` is in `dev` so a lane can keep to a thread budget: `python -m pytest -n 6`

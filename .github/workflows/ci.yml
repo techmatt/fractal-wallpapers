@@ -100,7 +100,7 @@ jobs:
         run: cargo test --release
         working-directory: perturbation
 
-      # The style compositor as WebAssembly (`engine/README.md`'s *The style module*):
+      # The style compositor as WebAssembly (`style-wasm/README.md`'s *The style module*):
       # its own tests natively, then the module, which `tests/test_style_wasm.py` draws
       # under the runner's Node against the native engine.
       - name: Test and build the style module

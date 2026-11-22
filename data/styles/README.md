@@ -20,7 +20,7 @@ A style is a stack of layers over the channels of one escape loop, composited by
 `engine/src/style.rs` from the spec `styles.py` writes: **`STACK.md` here is the stack's
 reference**, `TRAPS.md` its trap channels', `POST.md` that of its **stir** (where each sample looks) and **post stage**
 (passes over the finished frame). `style-wasm/` runs the published modes in a browser
-(`engine/README.md`'s *The style module*). `<name>.keeps.json` is what Matt kept from a
+(`style-wasm/README.md`'s *The style module*). `<name>.keeps.json` is what Matt kept from a
 style's pickers (pictures in `fractal-drive-sync/style-keeps/<name>/`); `catalog.json`
 is the catalog; `docs/rulings.md` holds Matt's standing rulings.
 
@@ -72,9 +72,9 @@ tiers; `style_catalog.check` holds the rows to the style files. The triage choic
 **A custom render mode is a stack plus a palette set.** Each entry of a row's `palettes`
 is a map with the few values tuned for it, its keeps and its score: `{colormap, was,
 reference, values, keeps, score}` (`style_palettes.py` has the shape). The first entry
-is the default, the stack's own (no values); the mode's score is its
+is the default: the mode's own map, no values; the mode's score is its
 best entry's. A value is a knob-style pointer and what is written there; it must name a
-member the stack writes (a layer an entry drops is its `opacity` at 0, a `light` without
+member the stack writes (an entry drops at most one layer, `MOST_DROPPED`, as its `opacity` at 0, a `light` without
 one set neutral: `ambient` 1, the rest 0). An entry's map is read at fixed slots of the
 stack, and screen-blended layers wash towards the map's top, so its albedo goes well
 past the reference's saturation. `style render <mode> --colormap <map>` applies them.
@@ -133,7 +133,7 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    to 0.5, and a glow floods white above about 0.11. The galleries are lace-heavy (median
    0.23), so `--max-ink 0.10` keeps what a glow can draw and `--thinnest --probe-limit
    200` the thinnest of a seeded 200. Drop by eye a `spiral: false` seat that whirls. **`--spiral`** keeps spiral seats alone, only when
-   the reference is a spiral.
+   the reference is a spiral; some are too deep for a multi-loop stack.
 
    **The one exception**: a style needing a structure the galleries measurably lack may
    use hand-placed or atlas points that have it, measured the same way (`style scout
@@ -153,8 +153,8 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    seat, the best four again at a second, plus the closest named mode as baseline; and
    **locations**, ten to twelve seats kept by eye from the scout's forty `--draft`s (a
    10–15 minute run at four threads; give it a kill limit well past that). Each `view`
-   iterates interior points to the seat's `maxiter`: draw a view-heavy stack at seats of
-   low `maxiter` and time one draft first.
+   iterates interior points to the seat's `maxiter`: draw a view-heavy stack at seats under
+   about 10,000 `maxiter` and time one draft first.
 
    **Draw every reading you will show before you verify**: verification (identity, the
    parity row, the checks) and the diff review run once, after the last code change.
@@ -192,7 +192,8 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
     `tier` (`lab`), `variant`, `show` and `public`, and `references` naming its reference
     (an entry's round adds the entry's file to the mode's `references` and the entry's
     `reference`, kept or not); then `style palettes <name> --sync` to lay its keeps' maps
-    in (each entry Matt's score) and `style gallery`. A new style whose stack is an
+    in (each entry Matt's score) and `style gallery`. A `drop` row keeps its default
+    entry: only discarded and round-one rows have `"palettes": []`. A new style whose stack is an
     existing mode's is merged into it.
 
 ### The per-image prompt

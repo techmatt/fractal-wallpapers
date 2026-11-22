@@ -73,7 +73,6 @@ from __future__ import annotations
 import json
 import statistics
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import page as page_module
@@ -266,7 +265,9 @@ def _write_json(path: Path, document: dict) -> Path:
 
 
 def _now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    from fractal_wallpapers.labeling import store
+
+    return store.now()
 
 
 # --------------------------------------------------------------------------- #

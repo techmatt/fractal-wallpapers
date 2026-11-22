@@ -102,7 +102,7 @@ SUBMIT_AHEAD = 1
 ENGINE_THREADS_PER_WORKER = 7
 
 #: The environment variable the engine's thread pool reads.
-THREADS_ENV = "RAYON_NUM_THREADS"
+THREADS_ENV = engine.THREADS_ENV
 
 
 def engine_threads_for(workers: int) -> int | None:

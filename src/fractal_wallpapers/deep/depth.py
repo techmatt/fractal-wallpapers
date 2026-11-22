@@ -311,7 +311,8 @@ def releasable(center_re, center_im, width: float) -> bool:
 def deepest_releasable_width(center_re, center_im) -> float:
     """The narrowest frame `f64` can still draw here, at the release geometry.
 
-    Reported alongside a seat so a refusal says *how far short* rather than only
+    The relative floor a tuned descent passes as `Gates(min_width=...)`
+    (`deep/README.md`), so a refusal can say *how far short* rather than only
     that it was short — and so the report can say which parts of the plane this
     mode's floor is actually reachable in.
     """

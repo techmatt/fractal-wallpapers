@@ -115,11 +115,6 @@ PERIOD_CAP = 400
 #: Ladder steps one anchor may take before the descent is abandoned.
 MAX_STEPS = 6
 
-#: Seats one anchor may contribute. One: an anchor that produced a seat has had
-#: its neighbourhood read, and a second seat off the same lineage is the same
-#: place at a different period.
-SEATS_PER_ANCHOR = 1
-
 
 @dataclass
 class Seat:

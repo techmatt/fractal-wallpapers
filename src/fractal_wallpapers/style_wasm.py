@@ -1,6 +1,6 @@
 """The style compositor as WebAssembly: the bundle a page draws from, and its checks.
 
-The module is `style-wasm/` (`engine/README.md`'s *The style module*): the engine's own
+The module is `style-wasm/` (`style-wasm/README.md`'s *The style module*): the engine's own
 `style::measure`, `style::tile` and `style::paint` (the whole frame in one pass) behind a
 few raw exports, with the three rules
 `style render` lays on a style file before the engine sees it. This side writes what a
@@ -67,14 +67,14 @@ PARITY_WORKERS = 5
 #: the Node workers, and at two it is the whole run's tail. Three is done in about two
 #: thirds of the run (36 thread-minutes), and the workers have the box to themselves after.
 PARITY_NATIVE_THREADS = 3
-THREADS_ENV = "RAYON_NUM_THREADS"
 
 #: The tile the parity check's tiled draw cuts the picture into.
 PARITY_TILE = (256, 256)
 
-#: Where the parity check draws a style with a post stage or a stir that no published row shows
-#: yet (a round-one style has no keep): a shallow seat with set, lace and far field, so
-#: the pass draws its large facets and its finest.
+#: Where the parity check draws a style no published row shows yet (a round-one style has
+#: no keep): in the whole run one with a post stage or a stir, and any style named on the
+#: command line. A shallow seat with set, lace and far field, so a post pass draws its
+#: large facets and its finest.
 POST_SEAT = {
     "family": {"kind": "mandelbrot"},
     "viewport": {"center_re": "-0.7453", "center_im": "0.1127", "width": "0.012"},
@@ -365,31 +365,16 @@ def midpoints(knobs: list[dict[str, Any]]) -> dict[str, float]:
     return {knob["name"]: (knob["range"][0] + knob["range"][1]) / 2 for knob in knobs}
 
 
-def parity(
-    folder: Path,
+def parity_jobs(
     resolution: tuple[int, int] = PARITY_RESOLUTION,
     supersample: int = PARITY_SUPERSAMPLE,
     names: list[str] | None = None,
-    workers: int = PARITY_WORKERS,
-) -> list[dict[str, Any]]:
-    """Every shown keep of every published mode, drawn natively and as WebAssembly.
+) -> tuple[list[dict[str, Any]], dict[str, tuple]]:
+    """[`parity`]'s jobs for the module and the native pictures they are held to.
 
-    `names` keeps the check to those styles: a couple of minutes for the one an item
-    touched. A named style no row publishes is drawn at `POST_SEAT` whatever its stack (a
-    round-one style has no keep), so a new primitive is held to the module before its
-    mode is published; a name that is no style is refused rather than passed as a clean
-    run. The module's pictures are drawn on
-    `workers` Node threads, the longest of the folder's last run first, while this
-    process draws the native ones.
-
-    Three kinds of job: each shown keep's own record (its stack as drawn, its map), in
-    one pass; the first keep of each mode again in tiles against its own measures, which
-    must be the same bytes (a stack with a post stage is drawn whole, so it has no tiled
-    job); and the mode's published stack with every knob at its range's
-    middle, at that keep and at every keep whose record carries its own projection, which
-    holds the module's knob rules to `style render --knob`'s (a knob wins over a record).
-    A style with a post stage or a stir that no row publishes yet is drawn at `POST_SEAT`:
-    once whole, and one without a post stage again in tiles.
+    A function of the catalog and the style files alone, so the job list is read without
+    Node or a built module. `natives` maps a job id to `(location, document, colormap,
+    settings)`; a `__tiles` job names the frame it must equal in `same_as`.
     """
     from fractal_wallpapers import style_catalog, styles
 
@@ -477,6 +462,38 @@ def parity(
                     "same_as": ident,
                 }
             )
+    return jobs, natives
+
+
+def parity(
+    folder: Path,
+    resolution: tuple[int, int] = PARITY_RESOLUTION,
+    supersample: int = PARITY_SUPERSAMPLE,
+    names: list[str] | None = None,
+    workers: int = PARITY_WORKERS,
+) -> list[dict[str, Any]]:
+    """Every shown keep of every published mode, drawn natively and as WebAssembly.
+
+    `names` keeps the check to those styles: a couple of minutes for the one an item
+    touched. A named style no row publishes is drawn at `POST_SEAT` whatever its stack (a
+    round-one style has no keep), so a new primitive is held to the module before its
+    mode is published; a name that is no style is refused rather than passed as a clean
+    run. The module's pictures are drawn on
+    `workers` Node threads, the longest of the folder's last run first, while this
+    process draws the native ones.
+
+    Three kinds of job: each shown keep's own record (its stack as drawn, its map), in
+    one pass; the first keep of each mode again in tiles against its own measures, which
+    must be the same bytes (a stack with a post stage is drawn whole, so it has no tiled
+    job); and the mode's published stack with every knob at its range's
+    middle, at that keep and at every keep whose record carries its own projection, which
+    holds the module's knob rules to `style render --knob`'s (a knob wins over a record).
+    A style with a post stage or a stir that no row publishes yet is drawn at `POST_SEAT`:
+    once whole, and one without a post stage again in tiles. [`parity_jobs`] lists them.
+    """
+    from fractal_wallpapers.engine import THREADS_ENV
+
+    jobs, natives = parity_jobs(resolution, supersample, names)
     queued = longest_first(jobs, folder)
     node = start_node(queued, folder, workers)
     drawn_natively = {}

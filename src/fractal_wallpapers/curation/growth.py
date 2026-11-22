@@ -551,8 +551,10 @@ def source_commit() -> str | None:
 
 
 def stamp_now() -> str:
-    """The name a run's folder takes: UTC, to the second, sortable."""
-    return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    """The name a run's folder takes: UTC, to the second, sortable (a record's spelling)."""
+    from fractal_wallpapers.curation import tentative
+
+    return tentative.stamp_now()
 
 
 def plan_of(denominators, seeds) -> list:

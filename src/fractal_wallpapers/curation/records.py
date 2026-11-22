@@ -170,14 +170,6 @@ COLLECTIONS = (DIAGNOSTIC, GALLERY)
 #: a slot, and this row won its slot — what it lost was the render.
 KILLED_REASON = "the release render was killed at its deadline and no picture was made"
 
-#: What an [`UNRENDERED`] row says for itself. Also not a member of [`REASONS`],
-#: and for the same reason: the seat was won. What is missing is a picture nobody
-#: asked for yet.
-UNRENDERED_REASON = (
-    "the pass was run with --no-full-size, so this seat has no full-resolution "
-    "render yet; the candidate the decision was taken on is the picture that exists"
-)
-
 #: The sentence a decision row gives for each way a candidate can lose a slot to
 #: something other than its own score. One spelling, here, because the sheet
 #: re-derives the sections of a run it did not make by reading these back.
@@ -788,7 +780,6 @@ __all__ = [
     "KILLED",
     "KILLED_REASON",
     "UNRENDERED",
-    "UNRENDERED_REASON",
     "PASSED_OVER",
     "REASONS",
     "RELEASE",

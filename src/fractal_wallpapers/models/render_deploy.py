@@ -128,10 +128,6 @@ from fractal_wallpapers.paths import under
 #: The schema every record here carries.
 SCHEMA = 1
 
-#: The run whose artifact serves today, named so a report can say what "absent"
-#: means on a score row that carries no judge of its own.
-INCUMBENT_RUN = "enlarged_corpus_seed1"
-
 #: What share of the rows the holdout is drawn to hold. The 20% of a plain
 #: eighty-twenty; lineages are taken whole, so the realized share lands near this
 #: rather than on it, and the realized share is what every record says.
@@ -613,7 +609,6 @@ __all__ = [
     "EPOCHS",
     "HIT_TIER",
     "HOLDOUT_SHARE",
-    "INCUMBENT_RUN",
     "PATIENCE",
     "PINNED",
     "RANK_COLUMN",

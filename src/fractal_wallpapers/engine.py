@@ -60,6 +60,10 @@ __all__ = [
 
 ENGINE_BINARY_NAME = "fractal-engine"
 
+#: The environment variable the engine's thread pool reads (rayon's): uncapped, one
+#: engine takes every core. Each fan-out sets its own cap through it.
+THREADS_ENV = "RAYON_NUM_THREADS"
+
 #: Release first: a debug-built engine is ten times slower, so finding one is a
 #: fallback for a fresh checkout, not a configuration.
 BUILD_PROFILES = ("release", "debug")

@@ -379,7 +379,7 @@ def test_the_split_is_not_reshipped_unasked() -> None:
     assert cli.build_parser().parse_args(["label", "split"]).write is False
 
 
-def test_the_palette_head_is_eight_steps_under_one_subcommand() -> None:
+def test_the_palette_head_is_ten_steps_under_one_subcommand() -> None:
     """It is distilled rather than trained from labels, so it has two steps the
     other heads do not: vendoring the real candidate sets and generating a corpus."""
     parser = cli.build_parser()
@@ -387,6 +387,7 @@ def test_the_palette_head_is_eight_steps_under_one_subcommand() -> None:
         step: parser.parse_args(["palette", step, *extra]).handler
         for step, extra in (
             ("extract", ["--source", "."]),
+            ("admit", []),
             ("plan", []),
             ("build", []),
             ("label", ["--source", "."]),

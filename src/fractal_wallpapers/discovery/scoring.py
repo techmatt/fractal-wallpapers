@@ -103,7 +103,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from fractal_wallpapers import engine_fingerprint
+from fractal_wallpapers import engine, engine_fingerprint
 from fractal_wallpapers.models import location_view
 
 #: Worker processes a scoring pass uses by default: **one**, which is the serial
@@ -123,7 +123,7 @@ DEFAULT_WORKERS = 1
 ENGINE_THREADS_PER_WORKER = 4
 
 #: The environment variable the engine's thread pool reads.
-THREADS_ENV = "RAYON_NUM_THREADS"
+THREADS_ENV = engine.THREADS_ENV
 
 
 def engine_threads_for(workers: int) -> int | None:

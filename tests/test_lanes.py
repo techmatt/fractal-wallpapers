@@ -57,6 +57,35 @@ def _summarise(config) -> list[str]:
     return reporter.lines
 
 
+def test_the_fast_lane_says_how_many_tests_it_held_back(no_modules_skipped, monkeypatch) -> None:
+    """The held-back line is the point of the arrangement: a lane that went quiet about
+    it would read as the whole suite. A stand-in config, so this run's own line is
+    untouched."""
+    monkeypatch.setattr(conftest, "SKIPPED_IN_CALL", {})
+    config = SimpleNamespace(stash={conftest.HELD_BACK: 3})
+
+    said = _summarise(config)
+
+    assert len(said) == 1
+    assert said[0].startswith("3 slow tests not run") and "--slow" in said[0]
+    assert _summarise(SimpleNamespace(stash={})) == [], "nothing held back, nothing said"
+
+
+def test_another_interpreter_is_refused_and_told_the_waiver(monkeypatch, tmp_path) -> None:
+    """Only where the checkout has a `.venv` and this is not it; the waiver lets it by."""
+    venv = tmp_path / ".venv"
+    venv.mkdir()
+    (venv / "pyvenv.cfg").write_text("", encoding="utf-8")
+    monkeypatch.setattr(conftest, "CHECKOUT_VENV", venv)
+    monkeypatch.delenv(conftest.INTERPRETER_WAIVER, raising=False)
+
+    refusal = conftest._wrong_interpreter()
+
+    assert refusal is not None and conftest.INTERPRETER_WAIVER in refusal
+    monkeypatch.setenv(conftest.INTERPRETER_WAIVER, "1")
+    assert conftest._wrong_interpreter() is None
+
+
 def test_the_phrase_the_module_name_is_read_out_of_is_pytests_own(no_modules_skipped) -> None:
     """Pinned against the real refusal rather than a copy of its wording.
 

@@ -99,8 +99,8 @@ HELD_BACK = pytest.StashKey[int]()
 SLOW = (
     "slow: real work rather than arithmetic about it — a render through the engine, a "
     "training loop, or a sweep of a store (the render cache, the tracked pool, the "
-    "distillation corpus). Held back unless --slow is given, which CI and the "
-    "pre-checkpoint run give."
+    "distillation corpus). Held back unless --slow is given, which CI gives and an "
+    "item gives when its prompt names it."
 )
 
 
@@ -245,7 +245,7 @@ def pytest_runtest_call(item):
 
     **This is the half no guard in `tests/` can cover.** A module-level
     `pytest.importorskip` answers for a module that names the extra itself, and
-    [`test_lanes`] holds every test module to having one — but sixteen modules
+    [`test_lanes`] holds every test module to having one — but over a dozen modules
     under `src/` carry a lazy `import torch` inside a function body, so an extra
     can arrive four calls deep in production code no test file mentions. Nothing
     written here can see that statically; catching it is the only spelling that

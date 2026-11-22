@@ -60,7 +60,11 @@ picture (`style wasm-parity`), and **a style with a post stage is drawn whole, n
 tiles** (the module's `open` reports `"post": true`; `tile` refuses). Every length is a
 fraction of the frame's width, so `--draft` and full size are one picture.
 
-There are two kinds, `mosaic` and `paper` (below).
+There are two kinds, `mosaic` and `paper` (below). A kind is wired in three places:
+`engine/src/post.rs`'s `Pass` (its variant, `height` and `validate`), and
+`engine/src/style.rs`'s `Style::fields` (the lanes the frame's loop carries for it) and
+`posted` (the height it is handed and the pass it runs). Python never validates the
+`post` list: the engine's `validate` is the only check.
 
 **`mosaic`** is a recursive tiling whose cells split where the set is, each cell a facet
 of the picture under it.

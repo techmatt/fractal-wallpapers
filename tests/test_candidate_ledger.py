@@ -2066,9 +2066,9 @@ def test_the_sweep_cannot_reach_a_leg_s_fields_however_large_they_get(swept):
     assert [where.name for where in candidate_ledger.picture_dirs()] == ["pictures"]
 
 
-def test_the_sweep_looks_at_the_five_pool_subtrees_and_no_others(swept):
-    """The ledger's pictures live in exactly five subtrees. A sixth holding
-    pictures is somebody else's, and this must not discover it."""
+def test_the_sweep_looks_at_the_pool_subtrees_and_no_others(swept):
+    """The ledger's pictures live in exactly `store.POOL_SUBTREES`. Any other subtree
+    holding pictures is somebody else's, and this must not discover it."""
     a_leg(swept, "depth", "a_leg", ("a",))
     a_leg(swept, "manufacture", "a_leg", ("b",))
     a_leg(swept, "neutral", "a_leg", ("c",))
@@ -2076,7 +2076,7 @@ def test_the_sweep_looks_at_the_five_pool_subtrees_and_no_others(swept):
 
     record = candidate_ledger.orphans(apply=True, log=lambda *_: None)
 
-    assert record["pictures_on_disk"] == 1, "it swept outside the five pool subtrees"
+    assert record["pictures_on_disk"] == 1, "it swept outside the pool subtrees"
     assert (swept / "curation" / "manufacture" / "a_leg" / "pictures" / "b.jpg").is_file()
     assert (swept / "curation" / "neutral" / "a_leg" / "pictures" / "c.jpg").is_file()
 

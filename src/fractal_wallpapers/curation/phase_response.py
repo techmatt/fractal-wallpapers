@@ -199,7 +199,7 @@ def store_root() -> Path:
 
 def pass_dir(name: str) -> Path:
     """The subtree one pass owns: its rows, its record, its baselines, its fields."""
-    return under("curation", UNIT, str(name))
+    return store_root() / str(name)
 
 
 def rows_path(name: str) -> Path:

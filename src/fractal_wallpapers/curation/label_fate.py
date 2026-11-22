@@ -144,7 +144,6 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import page, release
@@ -334,7 +333,9 @@ def _read_json(path: Path) -> dict:
 
 
 def _now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    from fractal_wallpapers.labeling import store
+
+    return store.now()
 
 
 # --------------------------------------------------------------------------- #

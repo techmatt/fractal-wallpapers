@@ -60,9 +60,9 @@ A **channel** is `{"field": <a field spec>, "transform": <curve>}`,
 and any of them takes `"invert": true` to read the position from the other end. A field
 spec is anything the mode catalog's fields are made of (`smooth`, `decomposition`, `de`,
 `threads` with its `sigma`, `trap_cross`, `stripe`, `tia`, …; not `itinerary`); the curve
-is `linear`, `sqrt`, `log` or `scurve`, applied after the frame's stretch (and the
-invert). `inside` is the one channel defined only inside the set: a smooth convergence
-count, highest at each bulb's nucleus, so banding it draws rings into every bulb. Every
+is `linear`, `sqrt`, `log` or `scurve`, applied after the frame's stretch (its 0.5th to
+99.5th percentile mapped to 0..1, `engine/src/coloring.rs`'s `Stretch::over`) and the
+invert. `inside` is the one channel defined only inside the set: a smooth convergence count, highest at each bulb's nucleus, so banding it draws rings into every bulb. Every
 `inside` channel in a stack reads one loop, run at the largest `iterations` any asks
 for. Each loop (the frame's, and each view's) keeps one running sum per `stripe`
 density, up to four; a fifth is refused. `radial` is the one channel not read off the

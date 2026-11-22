@@ -199,9 +199,8 @@ def test_the_archive_is_under_the_drop_directory_and_not_the_store(tmp_path, mon
     assert not store.label_dir().exists(), "archiving a drop touched the row tree"
 
 
-def test_a_revision_leaves_the_original_byte_for_byte(tmp_path, monkeypatch) -> None:
+def test_a_revision_leaves_the_original_byte_for_byte(store_dir) -> None:
     """The rule the append-only guards exist to protect, exercised rather than read."""
-    monkeypatch.setattr(store, "label_dir", lambda: tmp_path / "labels")
     store.register(registry_module.Registration(batch="b", method="a draw, for a test"))
     first = store.label_row(
         batch="b",
