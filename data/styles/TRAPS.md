@@ -103,6 +103,12 @@ is off) counts every step as stretching the plane at least that much: at a cross
 where `dz` is 0 and `S` has no bound, the strokes then swell into a round node instead
 of leaving a hole under `largest`.
 
+**Cost.** Each distinct curve is its own read, but every stroke of a sample shares one run
+of its orbit (`style::strokes`), which ends when every curve's `steps` are read or the
+orbit escapes; a curve's two reads (a glow at two powers) cost nothing extra. A mesh of
+tilts costs the orbit once plus a few operations per curve a step: `hairline_rays`' six
+tilts drew 2.3 times faster than one loop per curve, byte for byte the same (068).
+
 `read` is `height` (`1 − d` on the stroke, its gradient towards the curve, so a `light`
 at `period` 2 lights each stroke as a tube), `across` (0 at one edge, 1 at the other; no
 `light` reads it), `step` (the nearest stroke's), or `glow` (`exp(−d)` wherever a step

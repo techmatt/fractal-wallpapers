@@ -852,6 +852,7 @@ impl Nearest {
 /// The nearest stroke of `trap` to the orbit of `pixel` over its first steps, or
 /// `None` where no step was read. `width` is the frame's width in the plane and
 /// `scale` what a pre-map (a projection, a stir) multiplies a frame length by there.
+#[cfg(test)]
 pub(crate) fn stroke(
     family: &Family,
     pixel: Complex<f64>,
@@ -860,21 +861,30 @@ pub(crate) fn stroke(
     width: f64,
     scale: f64,
 ) -> Option<Nearest> {
+    strokes(family, pixel, maxiter, &[trap], width, scale)[0]
+}
+
+/// The nearest stroke of each of several traps over one orbit, in `traps`' order: the
+/// same bits as one loop per trap. The orbit and its derivative are the
+/// loop's cost, and every pen reads the same ones, so a stack of several curves (a mesh
+/// of tilts) iterates each sample once rather than once per curve; a pen whose steps are
+/// read stops reading, and the loop ends when every pen has or the orbit escapes.
+pub(crate) fn strokes(
+    family: &Family,
+    pixel: Complex<f64>,
+    maxiter: u32,
+    traps: &[&Stroke],
+    width: f64,
+    scale: f64,
+) -> Vec<Option<Nearest>> {
     let (mut z, mut z_prev, c) = family.seed(pixel);
     let (mut dz, mut dz_prev) = family.derivative_seed();
-    let center = Complex::new(trap.center[0], trap.center[1]);
-    let center = if trap.on_c { center + c } else { center };
-    let across = Complex::from_polar(1.0, trap.tilt.to_radians()) * Complex::i();
     let bailout_sq = iterate::BAILOUT * iterate::BAILOUT;
-    let (largest, smallest) = (
-        trap.largest.unwrap_or(f64::INFINITY),
-        trap.smallest.unwrap_or(0.0),
-    );
-    let mut best: Option<Nearest> = None;
-    let mut read = 0;
-    let mut first_entering: Option<f64> = None;
+    let mut pens: Vec<Pen> = traps.iter().map(|trap| Pen::new(trap, c)).collect();
+    let mut open = pens.len();
+    let on_c_plane = !family.pixel_is_z0();
     for step in 1..=maxiter {
-        if read == trap.steps {
+        if open == 0 {
             break;
         }
         let next = family.derivative_step(z, dz, dz_prev);
@@ -887,20 +897,79 @@ pub(crate) fn stroke(
         if magnitude_sq > bailout_sq || magnitude_sq.is_nan() {
             break;
         }
+        let (dz_norm, dz_prev_norm) = (dz.norm(), dz_prev.norm());
+        for pen in pens.iter_mut() {
+            if pen.read == pen.trap.steps {
+                continue;
+            }
+            pen.visit(step, z, dz, dz_norm, dz_prev_norm, on_c_plane, width, scale);
+            if pen.read == pen.trap.steps {
+                open -= 1;
+            }
+        }
+    }
+    pens.into_iter().map(|pen| pen.best).collect()
+}
+
+/// One stroke trap's running read over a shared orbit ([`strokes`]).
+struct Pen<'a> {
+    trap: &'a Stroke,
+    center: Complex<f64>,
+    across: Complex<f64>,
+    largest: f64,
+    smallest: f64,
+    best: Option<Nearest>,
+    read: u32,
+    first_entering: Option<f64>,
+}
+
+impl<'a> Pen<'a> {
+    fn new(trap: &'a Stroke, c: Complex<f64>) -> Pen<'a> {
+        let center = Complex::new(trap.center[0], trap.center[1]);
+        Pen {
+            trap,
+            center: if trap.on_c { center + c } else { center },
+            across: Complex::from_polar(1.0, trap.tilt.to_radians()) * Complex::i(),
+            largest: trap.largest.unwrap_or(f64::INFINITY),
+            smallest: trap.smallest.unwrap_or(0.0),
+            best: None,
+            read: 0,
+            first_entering: None,
+        }
+    }
+
+    /// Read one step of the orbit: `z` and `dz` after `step` steps, and the norms of
+    /// `dz` and the step before's.
+    #[allow(clippy::too_many_arguments)]
+    fn visit(
+        &mut self,
+        step: u32,
+        z: Complex<f64>,
+        dz: Complex<f64>,
+        dz_norm: f64,
+        dz_prev_norm: f64,
+        on_c_plane: bool,
+        width: f64,
+        scale: f64,
+    ) {
+        let trap = self.trap;
+        let (largest, smallest, center, across) =
+            (self.largest, self.smallest, self.center, self.across);
         // On a parameter plane `z₁` is `c` itself: a curve through `c` is the whole frame.
-        if step == 1 && trap.on_c && !family.pixel_is_z0() {
-            continue;
+        if step == 1 && trap.on_c && on_c_plane {
+            return;
         }
         // The curve's size in the frame at this step, in frame widths, a step counted
         // as stretching the plane by `node` at least: at a critical point of the
         // iterate, where `dz` is 0 and the strokes cross, the size stays the step
         // before's and the distance flattens, so the crossing swells into a node.
-        let stretch = dz.norm().max(trap.node * dz_prev.norm());
+        let stretch = dz_norm.max(trap.node * dz_prev_norm);
         let size = trap.radius * scale / (stretch * width);
         if !(size.is_finite() && size <= largest && size >= smallest) {
-            continue;
+            return;
         }
-        read += 1;
+        self.read += 1;
+        let read = self.read;
         // A stroke thins to nothing as its curve nears either bound, and the last
         // step read thins as the first fills out, so no stroke ends at a cut: the
         // read is continuous across the lines where a step enters or leaves.
@@ -915,14 +984,16 @@ pub(crate) fn stroke(
             true => ((size - smallest) / (STROKE_FADE * smallest)).clamp(0.0, 1.0),
             false => 1.0,
         };
-        let first = *first_entering.get_or_insert(if bounded { entering } else { 0.0 });
+        let first = *self
+            .first_entering
+            .get_or_insert(if bounded { entering } else { 0.0 });
         let weight = if read == trap.steps && read > 1 {
             entering.min(leaving) * (1.0 - first)
         } else {
             entering.min(leaving)
         };
         if weight <= 0.0 || weight.is_nan() {
-            continue;
+            return;
         }
         let offset = z - center;
         // The signed distance to the curve, and the unit direction away from it.
@@ -931,7 +1002,7 @@ pub(crate) fn stroke(
             StrokeShape::Circle => {
                 let length = offset.norm();
                 if length == 0.0 {
-                    continue;
+                    return;
                 }
                 (length - trap.radius, offset / length)
             }
@@ -945,8 +1016,11 @@ pub(crate) fn stroke(
             taper => size.powf(1.0 - taper),
         };
         let distance = signed / trap.radius * spread / (trap.width * weight);
-        if best.is_none_or(|best| distance.abs() < best.distance.abs()) {
-            best = Some(Nearest {
+        if self
+            .best
+            .is_none_or(|best| distance.abs() < best.distance.abs())
+        {
+            self.best = Some(Nearest {
                 step,
                 distance,
                 toward: -outward * signed.signum(),
@@ -954,7 +1028,6 @@ pub(crate) fn stroke(
             });
         }
     }
-    best
 }
 
 /// The share of a bound over which a stroke thins to nothing as its curve nears it.
@@ -2545,13 +2618,26 @@ fn gather(
                     angles.push(angle);
                     steps.push(step);
                 }
+                // Every pen this sample's side admits reads one shared orbit (`strokes`).
+                let admitted = |trap: &Stroke| {
+                    !matches!(
+                        (trap.side, orbit.escaped),
+                        (Side::Outside, false) | (Side::Inside, true)
+                    )
+                };
+                let reading: Vec<&Stroke> = pens.iter().filter(|trap| admitted(trap)).collect();
+                let mut nearests = match reading.is_empty() {
+                    true => Vec::new(),
+                    false => {
+                        let scale = de_scale.unwrap_or(1.0);
+                        strokes(family, pixel, maxiter, &reading, view.width, scale)
+                    }
+                }
+                .into_iter();
                 for (trap, (reads, unit_lane)) in pens.iter().zip(&mut stroke_rows) {
-                    let nearest = match (trap.side, orbit.escaped) {
-                        (Side::Outside, false) | (Side::Inside, true) => None,
-                        _ => {
-                            let scale = de_scale.unwrap_or(1.0);
-                            stroke(family, pixel, maxiter, trap, view.width, scale)
-                        }
+                    let nearest = match admitted(trap) {
+                        true => nearests.next().flatten(),
+                        false => None,
                     };
                     let values = nearest.map_or([f64::NAN; STROKE_READS], |near| near.reads());
                     for (lane, value) in reads.iter_mut().zip(values) {
@@ -4396,6 +4482,53 @@ mod tests {
             c: Complex::new(0.25, 0.0),
         };
         assert!(lines(&parabolic, Complex::new(0.1, 0.0), false, &trap).is_none());
+    }
+
+    #[test]
+    fn pens_sharing_an_orbit_read_what_each_reads_alone() {
+        // A mesh of tilts with different step caps and bounds, on both planes: each
+        // pen's nearest stroke is the same bits with or without the others.
+        let pen = |tilt: f64, steps: u32, largest: Option<f64>| Stroke {
+            on_c: true,
+            tilt,
+            width: 0.0005,
+            taper: 0.0,
+            largest,
+            smallest: Some(0.02),
+            steps,
+            ..Stroke::default()
+        };
+        let pens = [
+            pen(20.0, 40, Some(3.0)),
+            pen(80.0, 3, Some(3.0)),
+            pen(140.0, 40, None),
+            Stroke {
+                shape: StrokeShape::Circle,
+                radius: 0.25,
+                ..pen(0.0, 7, Some(1.0))
+            },
+        ];
+        let traps: Vec<&Stroke> = pens.iter().collect();
+        let mut read = [0; 4];
+        for family in [
+            Family::Julia {
+                degree: 2,
+                c: Complex::new(-0.75, -0.13),
+            },
+            Family::Multibrot { degree: 2 },
+        ] {
+            for k in 0..200 {
+                let pixel = Complex::new(-1.5 + 0.0151 * k as f64, 0.37 - 0.0029 * k as f64);
+                let together = strokes(&family, pixel, 500, &traps, 0.25, 1.0);
+                for ((trap, shared), count) in pens.iter().zip(together).zip(&mut read) {
+                    let alone = stroke(&family, pixel, 500, trap, 0.25, 1.0);
+                    assert_eq!(format!("{alone:?}"), format!("{shared:?}"), "{pixel}");
+                    *count += usize::from(shared.is_some());
+                }
+            }
+        }
+        // Every pen read somewhere, or the comparison held nothing.
+        assert!(read.iter().all(|&count| count > 0), "{read:?}");
     }
 
     #[test]

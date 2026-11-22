@@ -210,6 +210,8 @@ Spare time goes to further readings, drawn before the checks: the checks and the
   review run once, after the last code change.
 Checks: the tone check on the stack as shipped; `style wasm-parity <name>`, never the whole run
   (an engine member only this style sets adds `identity`, 0 differ, not the whole run).
+Module and explorer-cost times are read on a quiet box (`locks: [quiet]`), else marked
+  upper bounds.
 The report header carries one `pick: <manifest path>` line per picker.
 Follow data/styles/README.md's *A new style from a reference image*. Commit when done.
 ```
