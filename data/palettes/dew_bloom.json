@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "dew_bloom",
+  "kind": "sequential",
+  "source": "a black plum through aubergine, violet and a dusky rose to a hot pink and a pale lilac white: the albedo of the dew_bloom style, from wallhaven-45pqz1.png, a translucent violet flower with glowing pink petal rims, beaded with dew sparkles",
+  "stops": [
+    [0.0, [10, 6, 16]],
+    [0.14, [30, 16, 40]],
+    [0.3, [62, 34, 78]],
+    [0.46, [104, 62, 120]],
+    [0.62, [160, 80, 138]],
+    [0.76, [214, 104, 160]],
+    [0.9, [236, 176, 214]],
+    [1.0, [246, 230, 248]]
+  ]
+}

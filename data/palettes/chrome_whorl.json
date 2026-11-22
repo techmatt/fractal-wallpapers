@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "chrome_whorl",
+  "kind": "sequential",
+  "source": "near-black through gunmetal and slate blue-grey to a cool silver and a pale blue-white: the albedo of the chrome_whorl style, from metal-emblem-25.jpg, polished chrome tubes whirling out of a small rosette with amber embers glowing between them",
+  "stops": [
+    [0.0, [6, 6, 9]],
+    [0.14, [22, 23, 30]],
+    [0.3, [48, 52, 64]],
+    [0.48, [84, 92, 110]],
+    [0.64, [126, 136, 154]],
+    [0.8, [172, 180, 196]],
+    [0.92, [206, 212, 224]],
+    [1.0, [232, 236, 244]]
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "name": "chrome_whorl",
+  "description": "polished chrome petals whirling out of a small rosette: every second escape band one lit tube, silver and blue-white over near-black hollows, an amber ember glowing in the seam between each tube and the next, the set's lace a dark hair with a silver core",
+  "reference": {
+    "image": "metal-emblem-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "suggested_colormap": "chrome_whorl",
+  "reuses": [
+    "the smooth count by rank at gamma 0.45, so most of the frame sits in the map's silver",
+    "ribbed_tubes' tube light on the smooth count (`rings` 1), here at `period` 2: one fat tube per two escape bands, so a spiral seat's bands read as petals rather than ribs",
+    "a sheet on the smooth count at the same period, its rim alone (`fill` 0) added in amber: the ember in each seam",
+    "a dark `de` ink and a silver `de` core (lit_petals' and ribbed_tubes' hair)",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "Item 072 (round one), triage group (6), petal spirals: metal-emblem (this file), to-the-bone, unfolding-creation and noir as palette entries of this stack (bone_whorl, unfolding_whorl, noir_whorl), wallhaven-45pqz1 as dew_bloom. One escape loop reaches every one: the tubes, the ember and the hair are all functions of one sample's smooth count and distance estimate.",
+    "Nearest mode: ribbed_tubes (tube light at `period` 1 on teal) and lit_petals (soft domes at `period` 3, no tube). What differs: `period` 2 with `rings` 1 draws each petal as one fat chrome tube whose seam carries an amber ember, and gamma 0.45 keeps the lace and the far field in the silver, so a spiral seat reads as a whirl of metal petals rather than ribbed hoses or soft coloured domes.",
+    "Seats: thin spiral seats (`style scout --spiral --max-ink 0.10`) for metal-emblem, to-the-bone and unfolding-creation, the three spiral references; noir_whorl at thin non-spiral seats (`--max-ink 0.10`), noir being a fan of blades, not a spiral. At a lace-dense spiral seat the lace takes the frame and the tubes shrink to corrugations between it. Readings: p1 (a tube per band: thinner, more ribbed), p3 (a tube per three bands), no_ember (the headline off), soft (`rings` 0.6).",
+    "Tone: the reference's highlights are broad, so the light carries p90. At elevation 40, specular 1.0, shininess 22, 13 of 18 scouted seats missed p90 low (0.67 to 0.74 against 0.838); at elevation 55, specular 1.2, shininess 14 six of seven missed high (0.93 to 0.98, white share 0.11 to 0.14); elevation 47, specular 1.1, shininess 16 held 4 of 4 (p90 0.75 to 0.86). The light, not the map, is the lever: the tone pass pins median and p10 and leaves p90 to the stack's highlight share.",
+    "Readings beyond round one's set: wide_ember (the seam's rim at `edge` 0.35, the amber reading closer to the reference's glows) and bone_whorl_hot (the entry with the same wide rim in blue, to-the-bone's glows). Cost (072, box loaded, an upper bound): 64 s as WebAssembly on one thread at 1280x800 ss2 at the parity seat (mandelbrot, maxiter 2000), 14 s native."
+  ],
+  "style": {
+    "name": "chrome_whorl",
+    "interior": {
+      "rgb": "#050608"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 0.45,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 2.0,
+          "rings": 1.0,
+          "slope": 0.2,
+          "azimuth": 135.0,
+          "elevation": 47.0,
+          "ambient": 0.25,
+          "diffuse": 0.75,
+          "specular": 1.1,
+          "shininess": 16.0,
+          "rim": 0.3,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#f4f8ff"
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 2.0,
+          "fill": 0.0,
+          "edge": 0.2
+        },
+        "color": {
+          "rgb": "#ffa53a"
+        },
+        "blend": "add",
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0015,
+        "color": {
+          "rgb": "#040508"
+        },
+        "blend": "multiply",
+        "opacity": 0.75
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.00015,
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.7
+      }
+    ],
+    "tone": {
+      "median": 0.424,
+      "p10": 0.055
+    }
+  }
+}

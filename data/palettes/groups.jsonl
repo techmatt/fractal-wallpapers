@@ -267,3 +267,8 @@
 {"schema": 1, "kind": "admitted", "map": "toxic_spire", "group": "map:Chartreuse Furnace", "joined": true, "nearest": "map:Chartreuse Furnace", "m1": 0.038421}
 {"schema": 1, "kind": "admitted", "map": "draped_folds", "group": "map:draped_folds", "joined": false, "nearest": "map:paper_layers", "m1": 0.048674}
 {"schema": 1, "kind": "admitted", "map": "gilded_leaves", "group": "map:gilded_leaves", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.053656}
+{"schema": 1, "kind": "admitted", "map": "chrome_whorl", "group": "map:not-yet-lost-25", "joined": true, "nearest": "map:not-yet-lost-25", "m1": 0.039505}
+{"schema": 1, "kind": "admitted", "map": "bone_whorl", "group": "map:bone_whorl", "joined": false, "nearest": "map:wallhaven_wallhaven-k97v5q", "m1": 0.044672}
+{"schema": 1, "kind": "admitted", "map": "unfolding_whorl", "group": "map:unfolding_whorl", "joined": false, "nearest": "map:Ivory Gilt", "m1": 0.065968}
+{"schema": 1, "kind": "admitted", "map": "noir_whorl", "group": "map:not-yet-lost-25", "joined": true, "nearest": "map:not-yet-lost-25", "m1": 0.028896}
+{"schema": 1, "kind": "admitted", "map": "dew_bloom", "group": "map:dew_bloom", "joined": false, "nearest": "map:wallhaven_wallhaven-45pqz1", "m1": 0.053365}

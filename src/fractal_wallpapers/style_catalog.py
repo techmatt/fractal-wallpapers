@@ -317,7 +317,9 @@ def unused_references(choices: Path, catalog: dict[str, Any]) -> list[dict[str, 
     """A triage picker's `yes` rows that no catalog row names, in the choices' order:
     each `{id, file, picture}` when its manifest is readable, `file` the picker row's
     label and `picture` its thumbnail's path (the row's first option image, beside the
-    manifest); both `""` when the manifest is not."""
+    manifest); both `""` when the manifest is not. An untried reference is often not in
+    `style-refs/` yet: its original is in the wallpaper folder the triage was drawn from,
+    copied into `style-refs/` before a style names it."""
     try:
         document = json.loads(choices.read_text(encoding="utf-8"))
         rows = document["rows"]

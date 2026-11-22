@@ -3371,6 +3371,89 @@
           "score": 4
         }
       ]
+    },
+    {
+      "style": "chrome_whorl",
+      "item": "072",
+      "reference": "metal-emblem-25.jpg",
+      "references": [
+        "metal-emblem-25.jpg",
+        "to-the-bone-25.jpg",
+        "unfolding-creation-25.jpg",
+        "noir-25.jpg"
+      ],
+      "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam (ivory blades with blue glows, pastel pleats, and black chrome over frosted lace as palette entries).",
+      "palettes": [
+        {
+          "colormap": "chrome_whorl",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "bone_whorl",
+          "values": {
+            "/tone/median": 0.269,
+            "/tone/p10": 0.033,
+            "/layers/2/color": {
+              "rgb": "#2f62ff"
+            },
+            "/layers/1/light/highlight": {
+              "rgb": "#fff6e6"
+            }
+          },
+          "keeps": [],
+          "reference": "to-the-bone-25.jpg"
+        },
+        {
+          "colormap": "unfolding_whorl",
+          "values": {
+            "/tone/median": 0.543,
+            "/tone/p10": 0.424,
+            "/interior": {
+              "palette": 0.3
+            },
+            "/layers/0/palette/gamma": 1.0,
+            "/layers/1/light/ambient": 0.5,
+            "/layers/1/light/specular": 0.45,
+            "/layers/2/color": {
+              "rgb": "#fff4b0"
+            },
+            "/layers/2/opacity": 0.35,
+            "/layers/3/opacity": 0.25
+          },
+          "keeps": [],
+          "reference": "unfolding-creation-25.jpg"
+        },
+        {
+          "colormap": "noir_whorl",
+          "values": {
+            "/tone/median": 0.462,
+            "/tone/p10": 0.103,
+            "/layers/2/color": {
+              "rgb": "#dfe8ff"
+            },
+            "/layers/2/opacity": 0.6
+          },
+          "keeps": [],
+          "reference": "noir-25.jpg"
+        }
+      ]
+    },
+    {
+      "style": "dew_bloom",
+      "item": "072",
+      "reference": "wallhaven_wallhaven-45pqz1.png",
+      "references": [
+        "wallhaven_wallhaven-45pqz1.png"
+      ],
+      "what": "A translucent violet bloom: soft lit petals ringed by glowing pink rims, the set's lace inked dark and beaded with dew sparkles.",
+      "palettes": [
+        {
+          "colormap": "dew_bloom",
+          "values": {},
+          "keeps": []
+        }
+      ]
     }
   ]
 }

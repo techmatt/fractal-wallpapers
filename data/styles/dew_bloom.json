@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "name": "dew_bloom",
+  "description": "a translucent violet bloom: soft lit petals from plum to rose, each ringed by a glowing pink rim, the set's lace darkened and beaded with dew sparkles, a faint rose bloom round it, on a near-black ground",
+  "reference": {
+    "image": "wallhaven_wallhaven-45pqz1.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame or 3D fractal render with depth of field and bokeh (by its look), signed BoxTalk, 2560x1600"
+  },
+  "suggested_colormap": "dew_bloom",
+  "reuses": [
+    "the smooth count by rank through the map",
+    "lit_petals' soft light (`period` 3, `rings` 0, `slope` 1): one dome per petal",
+    "a sheet at the same period, a thin translucent fill and a hot rim, added: the glowing petal edges",
+    "a dark `de` ink at the set, then frost_stipple's `gaussian_int` sparkle (inverted, power 40) over it: dew",
+    "a wide `de` bloom screened at low opacity",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "Item 072 (round one), with chrome_whorl's group. One escape loop reaches it; the reference's bokeh (out-of-focus discs) is a depth-of-field look no per-sample layer draws, and is left out.",
+    "Nearest mode: lit_petals (the same soft dome light). What differs: the petals are translucent and rimmed with light (an added sheet rim, not lit_petals' jewel cycle), the lace is inked dark and carries white dew sparkles, on plum and rose. Readings: p2 (petals at `period` 2), no_dew (the sparkle off), bright_rims (wider rims), tubes (`rings` 1). A sparkle at power 25 with a wider bloom (more_dew) drew no visible change and was not shown.",
+    "Seats: thin non-spiral seats (`style scout --max-ink 0.10`); at a lace-dense seat the petals shrink between the lace and the frame reads as one muddy plum. All 30 scouted seats held the reference's tone.",
+    "Cost (072, box loaded, so upper bounds): as WebAssembly on one thread at 1280x800 ss2, 259 s at the parity seat (mandelbrot, maxiter 2000), under the 5-minute explorer bar there; the picker seats are deeper (phoenix, maxiter 3,000 to 15,365) and were not timed as WebAssembly, so at its own seats it may well miss the bar; chrome_whorl reads 64 s at the same seat. The `gaussian_int` sparkle is most of it: a native draft at a phoenix seat took 26 s whole and 10.6 s without that layer (layer opacity 0 saves nothing: the channel still runs), so dropping or replacing the dew is round two's first lever if the explorer needs it."
+  ],
+  "style": {
+    "name": "dew_bloom",
+    "interior": {
+      "rgb": "#0a0610"
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 1.0,
+          "cycles": 1.0
+        }
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "period": 3.0,
+          "rings": 0.0,
+          "slope": 1.0,
+          "azimuth": 135.0,
+          "elevation": 40.0,
+          "ambient": 0.45,
+          "diffuse": 0.75,
+          "specular": 0.35,
+          "shininess": 14.0,
+          "rim": 0.2,
+          "rim_power": 3.0,
+          "highlight": {
+            "rgb": "#ffe6f6"
+          }
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "period": 3.0,
+          "fill": 0.12,
+          "edge": 0.12
+        },
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "add",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0012,
+        "color": {
+          "rgb": "#0c0612"
+        },
+        "blend": "multiply",
+        "opacity": 0.8
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "rgb": "#ffe8fa"
+        },
+        "blend": "screen",
+        "opacity": 1.0,
+        "power": 40.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "power": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.004,
+        "color": {
+          "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      }
+    ],
+    "tone": {
+      "median": 0.232,
+      "p10": 0.078
+    }
+  }
+}
