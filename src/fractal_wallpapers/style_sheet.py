@@ -30,6 +30,9 @@ LABEL_FILL = (255, 255, 0)
 LABEL_INSET = (6, 4)
 LABEL_STROKE = (0, 0, 0)
 
+#: A caption's colour under a tile: plain light grey on the black strip.
+CAPTION_FILL = (230, 230, 230)
+
 #: JPEG quality when the sheet is written as `.jpg` (a picker's).
 QUALITY = 92
 
@@ -83,6 +86,25 @@ def label_of(picture: Path) -> str:
     return f"{picture.parent.name}/{picture.stem}"
 
 
+def captioned(tile, name: str, font, height: int):
+    """`tile` in a black box `height` tall over a strip one line high holding `name`,
+    centred and elided to fit: every caption in a row sits on one line whatever each
+    picture's aspect."""
+    from PIL import Image, ImageDraw
+
+    draw = ImageDraw.Draw(tile)
+    box = draw.textbbox((0, 0), "Ag", font=font)
+    strip = box[3] + 2 * LABEL_INSET[1]
+    framed = Image.new("RGB", (tile.width, height + strip), (0, 0, 0))
+    framed.paste(tile, (0, (height - tile.height) // 2))
+    draw = ImageDraw.Draw(framed)
+    room = tile.width - 2 * LABEL_INSET[0]
+    text = fitted(name, room, functools.partial(draw.textlength, font=font))
+    left = (tile.width - draw.textlength(text, font=font)) / 2
+    draw.text((left, height + LABEL_INSET[1]), text, fill=CAPTION_FILL, font=font)
+    return framed
+
+
 def contact_sheet(
     pictures: Sequence[Path],
     out: Path,
@@ -90,11 +112,14 @@ def contact_sheet(
     width: int = TILE_WIDTH,
     crop: tuple[int, int, int, int] | None = None,
     labels: bool = True,
+    names: Sequence[str] | None = None,
 ) -> dict[str, int]:
     """Write the sheet to `out` (PNG, or JPEG by suffix) and say how it is laid out.
 
     `crop` is `(x, y, w, h)` in each picture's own pixels, taken before scaling (a
     detail at full size); a box leaving a picture is refused rather than padded.
+    `names`, one per picture, are captions written in a strip under each tile in place
+    of the `<folder>/<name>` corner label (`style refs --unused --sheet`'s file names).
     """
     from PIL import Image, ImageDraw, ImageFont
 
@@ -102,7 +127,10 @@ def contact_sheet(
 
     if columns < 1 or width < 1:
         raise SheetError("--columns and --tile-width must be at least 1")
-    font = ImageFont.load_default(size=max(11, width // 40))
+    if names is not None and len(names) != len(pictures):
+        raise SheetError(f"{len(names)} names for {len(pictures)} pictures")
+    # A caption under the tile is the tile's only name, so it is set a little larger.
+    font = ImageFont.load_default(size=max(13 if names is not None else 11, width // 40))
     tiles = []
     for picture in pictures:
         try:
@@ -118,7 +146,7 @@ def contact_sheet(
         tile = tile.resize(
             (width, max(1, round(width * tile.height / tile.width))), Image.Resampling.LANCZOS
         )
-        if labels:
+        if labels and names is None:  # named tiles are captioned once all are scaled
             draw = ImageDraw.Draw(tile)
             room = tile.width - 2 * LABEL_INSET[0]
             label = fitted(label_of(picture), room, functools.partial(draw.textlength, font=font))
@@ -131,6 +159,11 @@ def contact_sheet(
                 stroke_fill=LABEL_STROKE,
             )
         tiles.append(tile)
+    if names is not None:
+        tallest = max(tile.height for tile in tiles)
+        tiles = [
+            captioned(tile, name, font, tallest) for tile, name in zip(tiles, names, strict=True)
+        ]
     columns = min(columns, len(tiles))
     rows = -(-len(tiles) // columns)
     height = max(tile.height for tile in tiles)

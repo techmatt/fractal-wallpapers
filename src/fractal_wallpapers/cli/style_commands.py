@@ -155,17 +155,27 @@ def build_gallery(args: argparse.Namespace) -> int:
 def list_references(args: argparse.Namespace) -> int:
     """Each reference file the catalog names and its modes; `--unused` a triage's
     `yes` rows no row names yet."""
-    from fractal_wallpapers import style_catalog
+    from fractal_wallpapers import style_catalog, style_sheet
 
     try:
         catalog = style_catalog.load()
+        if args.sheet and not args.unused:
+            print("--sheet draws the --unused rows: name the triage choices with --unused")
+            return 1
         if args.unused:
             rows = style_catalog.unused_references(resolve_input(args.unused), catalog)
             for row in rows:
                 print(f"{row['id']:<56} {row['file']}")
             print(f"{len(rows)} picked yes and named by no catalog row")
+            if args.sheet:
+                done = style_catalog.unused_sheets(rows, resolve_output(args.sheet))
+                for sheet in done["sheets"]:
+                    print(f"sheet  {sheet}")
+                print(f"list   {done['list']}")
+                if done["missing"]:
+                    print(f"{done['missing']} with no thumbnail to draw (marked in the list)")
             return 0
-    except style_catalog.CatalogError as refusal:
+    except (style_catalog.CatalogError, style_sheet.SheetError) as refusal:
         print(refusal)
         return 1
     named = style_catalog.named_references(catalog)
@@ -804,6 +814,13 @@ def add_commands(subcommands) -> None:
         metavar="CHOICES",
         help="a triage picker's saved choices (wallpaper_triage.choices.json): print its "
         "`yes` rows that no catalog row names, so no one matches names by hand",
+    )
+    refs.add_argument(
+        "--sheet",
+        metavar="DIR",
+        help="with --unused, also write those references into DIR as contact sheets "
+        "(unused-01.jpg, ...: thirty thumbnails each, its file name under each) and "
+        "unused.txt, so the triage is read as pictures",
     )
 
     bundle = verbs.add_parser(

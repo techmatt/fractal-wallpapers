@@ -108,9 +108,35 @@ def test_unused_references_are_the_triage_yes_rows_no_row_names(tmp_path):
     ]
     choices.write_text(json.dumps({"rows": rows}), encoding="utf-8")
     catalog = {"modes": [{"style": "soft_veils", "references": ["fish-head-25.jpg"]}]}
-    assert style_catalog.unused_references(choices, catalog) == [{"id": "gyre_25", "file": ""}]
+    assert style_catalog.unused_references(choices, catalog) == [
+        {"id": "gyre_25", "file": "", "picture": ""}
+    ]
     with pytest.raises(style_catalog.CatalogError):
         style_catalog.unused_references(tmp_path / "gone.json", catalog)
+
+
+def test_unused_sheets_draw_each_thumbnail_and_list_every_row(tmp_path):
+    Image = pytest.importorskip("PIL.Image")
+    rows = []
+    for index in range(31):
+        thumb = tmp_path / "thumbs" / f"r{index}.jpg"
+        thumb.parent.mkdir(exist_ok=True)
+        Image.new("RGB", (32, 20), (index * 8, 40, 40)).save(thumb)
+        rows.append({"id": f"r{index}", "file": f"r-{index}.jpg", "picture": str(thumb)})
+    rows.append({"id": "lost", "file": "lost.png", "picture": ""})
+    out = tmp_path / "sheets"
+    out.mkdir()
+    (out / "unused-03.jpg").write_bytes(b"from a longer run")
+    done = style_catalog.unused_sheets(rows, out)
+    # Thirty-one drawn split evenly over two sheets; the stale third is gone.
+    assert [path.name for path in done["sheets"]] == ["unused-01.jpg", "unused-02.jpg"]
+    assert not (out / "unused-03.jpg").exists()
+    assert (done["drawn"], done["missing"]) == (31, 1)
+    with Image.open(done["sheets"][0]) as sheet:
+        assert sheet.width == style_catalog.UNUSED_COLUMNS * style_catalog.UNUSED_TILE_WIDTH
+    lines = (out / "unused.txt").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 32 and lines[0] == "r0\tr-0.jpg"
+    assert lines[-1] == "lost\tlost.png\t(no thumbnail)"
 
 
 def test_the_catalog_is_not_a_style():

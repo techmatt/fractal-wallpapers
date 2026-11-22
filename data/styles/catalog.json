@@ -2872,7 +2872,9 @@
       "public": {
         "name": "stirred-ink",
         "palette": "stirred_ink",
-        "knobs": []
+        "knobs": [
+          "stir_length"
+        ]
       },
       "what": "A poured liquid stirred into S-curls and hooks: one glossy blue ink combed along a turned copy of the fractal, bright crests along the folds, the curls tightening towards the set.",
       "kept": "5 tiles: 2 locations, f_wide at both seats, f_strong",

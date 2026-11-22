@@ -315,13 +315,16 @@ def named_references(catalog: dict[str, Any]) -> dict[str, list[str]]:
 
 def unused_references(choices: Path, catalog: dict[str, Any]) -> list[dict[str, str]]:
     """A triage picker's `yes` rows that no catalog row names, in the choices' order:
-    each `{id, file}`, `file` the picker row's label when its manifest is readable."""
+    each `{id, file, picture}` when its manifest is readable, `file` the picker row's
+    label and `picture` its thumbnail's path (the row's first option image, beside the
+    manifest); both `""` when the manifest is not."""
     try:
         document = json.loads(choices.read_text(encoding="utf-8"))
         rows = document["rows"]
     except (OSError, ValueError, KeyError, TypeError) as unreadable:
         raise CatalogError(f"cannot read the choices {choices}: {unreadable}") from None
-    labels = {}
+    labels: dict[str, str] = {}
+    pictures: dict[str, str] = {}
     manifest = document.get("manifest")
     if manifest:
         # Written from the folder above the checkouts (`<repo>/artifacts/pickers/...`).
@@ -329,18 +332,69 @@ def unused_references(choices: Path, catalog: dict[str, Any]) -> list[dict[str, 
 
         path = repo_root().parent / manifest
         try:
-            labels = {
-                row["id"]: row.get("label", "")
-                for row in json.loads(path.read_text(encoding="utf-8"))["rows"]
-            }
-        except (OSError, ValueError, KeyError, TypeError):
-            labels = {}
+            for row in json.loads(path.read_text(encoding="utf-8"))["rows"]:
+                labels[row["id"]] = row.get("label", "")
+                options = row.get("options") or [{}]
+                if options[0].get("image"):
+                    pictures[row["id"]] = str(path.parent / options[0]["image"])
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            labels, pictures = {}, {}
     used = {triage_id(name) for name in named_references(catalog)}
     return [
-        {"id": row["id"], "file": labels.get(row["id"], "")}
+        {
+            "id": row["id"],
+            "file": labels.get(row["id"], ""),
+            "picture": pictures.get(row["id"], ""),
+        }
         for row in rows
         if row.get("key") == "yes" and row["id"] not in used
     ]
+
+
+#: `style refs --unused --sheet`'s layout: at most thirty thumbnails to a sheet (the rows
+#: split evenly over as few sheets as hold them), six across at
+#: 320 wide, a JPEG of about a megabyte or less, small enough to open over a file bridge.
+UNUSED_PER_SHEET = 30
+UNUSED_COLUMNS = 6
+UNUSED_TILE_WIDTH = 320
+UNUSED_LIST = "unused.txt"
+UNUSED_SHEET = "unused-{:02d}.jpg"
+
+
+def unused_sheets(rows: list[dict[str, str]], folder: Path) -> dict[str, Any]:
+    """Write `rows` (from `unused_references`) into `folder` as captioned contact sheets
+    (`unused-01.jpg`, ...; each file's name under its thumbnail) and `unused.txt`, one
+    `<id>\\t<file>` line per row. Sheets from an earlier, longer run are deleted first.
+    A row with no thumbnail is listed and marked, never drawn."""
+    from fractal_wallpapers import style_sheet
+    from fractal_wallpapers.paths import writing_path
+
+    folder.mkdir(parents=True, exist_ok=True)
+    for stale in folder.glob(UNUSED_SHEET.replace("{:02d}", "*")):
+        stale.unlink()
+    drawn = [row for row in rows if row["picture"] and Path(row["picture"]).is_file()]
+    missing = [row for row in rows if row not in drawn]
+    sheets = []
+    count = -(-len(drawn) // UNUSED_PER_SHEET)  # at most thirty each, split evenly
+    for index in range(count):
+        chunk = drawn[index * len(drawn) // count : (index + 1) * len(drawn) // count]
+        out = folder / UNUSED_SHEET.format(len(sheets) + 1)
+        style_sheet.contact_sheet(
+            [Path(row["picture"]) for row in chunk],
+            out,
+            columns=UNUSED_COLUMNS,
+            width=UNUSED_TILE_WIDTH,
+            names=[row["file"] or row["id"] for row in chunk],
+        )
+        sheets.append(out)
+    listing = folder / UNUSED_LIST
+    scratch = writing_path(listing)
+    with scratch.open("w", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            mark = "\t(no thumbnail)" if row in missing else ""
+            handle.write(f"{row['id']}\t{row['file']}{mark}\n")
+    scratch.replace(listing)
+    return {"sheets": sheets, "list": listing, "drawn": len(drawn), "missing": len(missing)}
 
 
 #: Beside the page's pictures: which source and stamp each was shrunk from, so a rebuild

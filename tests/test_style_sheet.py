@@ -44,6 +44,24 @@ def test_tiles_keep_their_aspect_and_rows_take_the_tallest(tmp_path):
         assert sheet.getpixel((16, 26)) == (0, 0, 0)  # and below it is the ground
 
 
+def test_names_are_captions_in_a_strip_on_one_line_under_each_row(tmp_path):
+    wide = picture(tmp_path / "wide.png", (64, 40), colour=(0, 0, 0))
+    square = picture(tmp_path / "square.png", (40, 40))
+    out = tmp_path / "sheet.png"
+    with pytest.raises(style_sheet.SheetError, match="names"):
+        style_sheet.contact_sheet([wide, square], out, names=["one"])
+    done = style_sheet.contact_sheet(
+        [wide, square], out, columns=2, width=64, names=["wide.png", "square.png"]
+    )
+    assert done["height"] > 64  # the square's 64, plus the caption strip
+    with Image.open(out) as sheet:
+        strip = sheet.crop((0, 64, 128, sheet.height))
+        # Captions on both tiles, in the strip below the tallest (the black wide tile's
+        # own pixels are black, so any light pixel there is its caption).
+        assert strip.crop((0, 0, 64, strip.height)).getextrema()[0][1] > 128
+        assert strip.crop((64, 0, 128, strip.height)).getextrema()[0][1] > 128
+
+
 def test_a_long_label_is_elided_in_the_middle_to_fit_its_tile():
     width = len  # one pixel a character
     assert style_sheet.fitted("short/name", 20, width) == "short/name"

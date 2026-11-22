@@ -5,12 +5,12 @@ file per style, rendered with any colormap.
 fractal-wallpapers style list | show <name> | knobs <mode> | palettes <mode>
 fractal-wallpapers style render <name|draft.json> --location <record.json> [--colormap <map>] [--knob K=V]
 fractal-wallpapers style render <name> --manifest <records.jsonl> --out-dir <dir> [--draft]
-fractal-wallpapers style sheet <sheet.png> <folder|picture|list.txt…>  # a contact sheet (--tile-width 320 to read forty at once)
+fractal-wallpapers style sheet <sheet.png> <folder|picture|list.txt…>  # a contact sheet (--tile-width 320: forty at once)
 fractal-wallpapers style scout --out <scout.jsonl> [filters]  # seats (step 4)
 fractal-wallpapers style tones <name> <pictures…> [--reference <entry|image>]  # tone check (step 5)
 fractal-wallpapers style picker <plan.json>  # a picker (step 6)
 fractal-wallpapers style keep <name> <picker>.choices.json  # save a picker's keeps
-fractal-wallpapers style refs [--unused <triage>.choices.json]  # references named; triage `yes` rows no row names
+fractal-wallpapers style refs [--unused <triage>.choices.json [--sheet <dir>]]  # references named; triage `yes` rows no row names
 fractal-wallpapers style gallery | bundle  # custom-modes/; the page's modes
 fractal-wallpapers style wasm-parity [names…] | wasm-speed  # vs native: whole after an engine change, <name> after a style's (CLAUDE.md); frame time
 fractal-wallpapers style sweep --out <dir> [names…]  # the checker (CHECKS.md)
@@ -64,13 +64,14 @@ the finer scales** (step 6). `set` is pointers into the stack
 (every reference file the mode was fitted or tried against, kept or not), and a
 published mode's **tier**, `curated` (four or five knobs, kept pictures only) or `lab`,
 where every new mode starts. `style_catalog.py`'s docstring has the row's shape and the
-tiers; `style_catalog.check` holds the rows to the style files. The triage choices
-`style refs --unused` reads are the planner's `picks/wallpaper_triage.choices.json`.
+tiers; `style_catalog.check` holds the rows to the style files. `style refs --unused`
+reads the planner's triage, `picks/wallpaper_triage.choices.json`; `--sheet <dir>`
+shows its unused references as captioned sheets plus `unused.txt`.
 
 ## Palette sets
 
 **A custom render mode is a stack plus a palette set.** Each entry of a row's `palettes`
-is a map with the few values tuned for it, its keeps and its score: `{colormap, was,
+is a map with its tuned values, keeps and score: `{colormap, was,
 reference, values, keeps, score}` (`style_palettes.py` has the shape). The first entry
 is the default: the mode's own map, no values; the mode's score is its
 best entry's. A value is a knob-style pointer and what is written there; it must name a
@@ -82,8 +83,8 @@ past the reference's saturation. `style render <mode> --colormap <map>` applies 
 **Only picked palettes are saved**: `palettes add --mode` puts a map in a set for a
 round, unkept, and `style keep` lays each kept tile's map in; an entry no tile kept
 leaves the set, and its map the library by `fractal-wallpapers palettes remove <map>`
-(refused while a kept palette or a live style draws in it). A kept map that outgrew its
-name moves with **`palettes rename <old> <new>`**, never by hand. A style merged into a mode still resolves under its old
+(refused while a kept palette or a live style draws in it). A kept map is renamed by
+**`palettes rename <old> <new>`**, never by hand. A style merged into a mode still resolves under its old
 name (`styles.alias_of`), to its entry or the mode's default.
 
 `style gallery` rebuilds `fractal-drive-sync/custom-modes/`, one card per mode; `style
