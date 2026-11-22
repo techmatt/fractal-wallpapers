@@ -2478,16 +2478,17 @@ fn gather(
         Vec<[f32; 2]>,
         Vec<[f32; 2]>,
     );
-    type Row = (
-        Vec<Vec<f32>>,
-        Vec<[f32; 2]>,
-        Vec<(f32, [f32; 2])>,
-        u64,
-        Vec<BubbleRow>,
-        Vec<[Vec<f32>; 2]>,
-        Vec<Vec<Vec<f32>>>,
-        Vec<StrokeRow>,
-    );
+    /// One row's lanes, stitched into the frame's in row order below.
+    struct Row {
+        lanes: Vec<Vec<f32>>,
+        gradients: Vec<[f32; 2]>,
+        insides: Vec<(f32, [f32; 2])>,
+        inside: u64,
+        bubbles: Vec<BubbleRow>,
+        lines: Vec<[Vec<f32>; 2]>,
+        viewed: Vec<Vec<Vec<f32>>>,
+        strokes: Vec<StrokeRow>,
+    }
     type StrokeRow = ([Vec<f32>; STROKE_READS], Vec<[f32; 2]>);
     let rows: Vec<Row> = (window.row..window.row + height)
         .into_par_iter()
@@ -2649,16 +2650,16 @@ fn gather(
                     }
                 }
             }
-            (
+            Row {
                 lanes,
                 gradients,
                 insides,
                 inside,
-                bubble_rows,
-                lines_rows,
-                viewed_rows,
-                stroke_rows,
-            )
+                bubbles: bubble_rows,
+                lines: lines_rows,
+                viewed: viewed_rows,
+                strokes: stroke_rows,
+            }
         })
         .collect();
 
@@ -2700,16 +2701,16 @@ fn gather(
             gradient: Vec::new(),
         })
         .collect();
-    for (
-        row_lanes,
-        row_gradient,
-        row_insides,
-        row_inside,
-        row_bubbles,
-        row_lines,
-        row_viewed,
-        row_strokes,
-    ) in rows
+    for Row {
+        lanes: row_lanes,
+        gradients: row_gradient,
+        insides: row_insides,
+        inside: row_inside,
+        bubbles: row_bubbles,
+        lines: row_lines,
+        viewed: row_viewed,
+        strokes: row_strokes,
+    } in rows
     {
         for (whole, (reads, unit_lane)) in strokes.iter_mut().zip(row_strokes) {
             for (lane, part) in whole.reads.iter_mut().zip(reads) {

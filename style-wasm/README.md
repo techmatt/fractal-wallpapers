@@ -57,6 +57,9 @@ draw at 16; a detached run of its own), and `style wasm-parity <name>…` after 
 one style. An engine change that only adds a member no other stack sets owes `identity`
 (0 differ) and `style wasm-parity <name>` for the style that sets it, not the whole run. The
 native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
-`PARITY_NATIVE_THREADS` have the counts and what bounds the run). A draft not yet in
-`data/styles/` is checked with its job list (`style_wasm.request`, `run_node`, `native_rgb`,
+`PARITY_NATIVE_THREADS` have the counts and what bounds the run). A clean whole run
+is all identical but two: `flame_veil_teal__0__knobs` and `flame_veil_chalk__1` each read
+one pixel one step off, the same on main since 063's reading; any other miss is the change.
+At `--workers 3` (six threads with the native side) the whole run is about 29 minutes. A
+draft not yet in `data/styles/` is checked with its job list (`style_wasm.request`, `run_node`, `native_rgb`,
 `compare`).

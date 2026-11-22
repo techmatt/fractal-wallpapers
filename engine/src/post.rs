@@ -586,14 +586,7 @@ impl Lattice {
 
     /// A triangle root's corners in the frame, in the order its barycentrics count.
     fn triangle(&self, root_index: usize) -> [[f64; 2]; 3] {
-        let Lattice::Triangles {
-            cos,
-            sin,
-            side,
-            low,
-            size,
-        } = *self
-        else {
+        let Lattice::Triangles { low, size, .. } = *self else {
             return [[0.0; 2]; 3];
         };
         let cell = root_index / 2;
@@ -601,10 +594,7 @@ impl Lattice {
             (cell as i64 % size[0] + low[0]) as f64,
             (cell as i64 / size[0] + low[1]) as f64,
         );
-        let place = |p: f64, q: f64| {
-            let (u, v) = ((p + 0.5 * q) * side, q * side * SQRT3_2);
-            [u * cos - v * sin, u * sin + v * cos]
-        };
+        let place = |p: f64, q: f64| self.placed(p, q);
         if root_index % 2 == 0 {
             [place(i0, j0), place(i0 + 1.0, j0), place(i0, j0 + 1.0)]
         } else {
