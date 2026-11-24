@@ -3101,6 +3101,20 @@ fn composite(
         .collect()
 }
 
+/// The stack as it is drawn: a layer at opacity 0 adds nothing to any sample (the
+/// composite skips an alpha of 0), so it is dropped before anything is gathered or
+/// measured for it, and its channel, view, trap or loop runs only if another layer reads
+/// it. A knob or palette value turning a layer off thus saves that layer's work. The
+/// measures of [`measure`] are of this stack, as [`paint_window`] reads them.
+fn drawn(style: &Style) -> std::borrow::Cow<'_, Style> {
+    if style.layers.iter().all(|layer| layer.opacity > 0.0) {
+        return std::borrow::Cow::Borrowed(style);
+    }
+    let mut kept = style.clone();
+    kept.layers.retain(|layer| layer.opacity > 0.0);
+    std::borrow::Cow::Owned(kept)
+}
+
 /// Gather the whole of `view`, measure it, composite it and tone it: the frame's
 /// measures, and its linear samples before the palette's rolloff.
 fn measured_frame(
@@ -3111,6 +3125,7 @@ fn measured_frame(
     colormap: &Colormap,
 ) -> Result<(Measures, Vec<[f64; 3]>), String> {
     style.validate()?;
+    let style = &*drawn(style);
     let channels = gather(view, family, maxiter, style, Window::whole(view));
     let mut measures = measure_layers(style, &channels);
     let linear = composite(view, style, colormap, &channels, &measures);
@@ -3183,6 +3198,7 @@ pub(crate) fn paint_window(
             style.name
         ));
     }
+    let style = &*drawn(style);
     if measures.layers.len() != style.layers.len() {
         return Err(format!(
             "the measures are of a stack of {} layers, and style '{}' has {}",
@@ -4666,6 +4682,30 @@ mod tests {
         );
         assert!(glow.iter().all(|value| value.is_finite()), "{glow:?}");
         assert!(glow.iter().any(|&value| value > 0.01), "no stroke drawn");
+    }
+
+    #[test]
+    fn a_layer_at_opacity_zero_is_never_gathered() {
+        // dew_bloom's sparkle at opacity 0 once still ran its `gaussian_int` loop.
+        let stack = |opacity: f64| -> Style {
+            serde_json::from_str(&format!(
+                r##"{{"name": "x", "layers": [
+                {{"kind": "palette", "channel": {{"field": {{"kind": "smooth"}}}}}},
+                {{"kind": "glow", "channel": {{"field": {{"kind": "gaussian_int"}}}},
+                 "color": {{"rgb": "#ffffff"}}, "blend": "screen", "opacity": {opacity}}},
+                {{"kind": "light", "channel": {{"field": {{"kind": "smooth"}}}},
+                 "opacity": {opacity}}}]}}"##
+            ))
+            .unwrap()
+        };
+        let off = stack(0.0);
+        off.validate().unwrap();
+        let kept = drawn(&off);
+        assert_eq!(kept.layers.len(), 1);
+        assert_eq!(kept.fields(), vec![FieldSpec::Smooth]);
+        assert!(!kept.lights());
+        // A layer drawn at all is kept whole.
+        assert_eq!(drawn(&stack(0.25)).layers.len(), 3);
     }
 
     #[test]

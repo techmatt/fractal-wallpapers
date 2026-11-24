@@ -87,6 +87,31 @@ def test_the_module_s_integer_members_are_the_ones_the_style_files_write_as_inte
     assert set(styles.INTEGER_MEMBERS) == named
 
 
+def test_a_cost_read_draws_each_style_at_its_deepest_kept_seat(tmp_path):
+    published = [row["style"] for row in style_wasm.published_rows()]
+    jobs = style_wasm.cost_jobs(published)
+    assert [job["style"] for job in jobs] == published
+    for job in jobs:
+        seats = style_wasm.kept_seats(job["style"])
+        depths = [seat["maxiter"] for seat in seats]
+        assert depths == sorted(depths, reverse=True)
+        asked = job["request"]
+        assert asked["location"] == seats[0]
+        assert asked["style"] == styles.load(job["style"])["style"]
+        assert (asked["resolution"], asked["supersample"]) == (
+            list(style_wasm.SPEED_RESOLUTION),
+            style_wasm.SPEED_SUPERSAMPLE,
+        )
+    name = published[0]
+    shallowest = style_wasm.kept_seats(name)[-1]
+    (job,) = style_wasm.cost_jobs([name], seat=shallowest.get("name"))
+    assert job["request"]["location"] == shallowest
+    with pytest.raises(style_wasm.StyleWasmError, match="no kept seat named"):
+        style_wasm.cost_jobs([name], seat="no such seat")
+    with pytest.raises(style_wasm.StyleWasmError, match="render pool"):
+        style_wasm.cost(tmp_path, [name], workers=style_wasm.COST_WORKERS + 1)
+
+
 def test_a_parity_run_of_a_name_with_nothing_to_draw_is_refused(tmp_path):
     """A filtered run that drew nothing would read as a clean one."""
     with pytest.raises(style_wasm.StyleWasmError, match="nothing to draw for no_such_style"):

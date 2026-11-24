@@ -17,7 +17,8 @@
   "adds": [],
   "notes": [
     "Added: nothing past `view`: rank sheets on the cross trap through moved views and `shaded_blades`' strip blades for the shards, a crisp hair on the frame's own Julia dust for the snowflakes. Hand-placed seats, as `flame_veil_blue`",
-    "Lessons: came in one item with flame_veil_blue; its notes hold them."
+    "Lessons: came in one item with flame_veil_blue; its notes hold them.",
+    "Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 25 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (vj_d3_r1.08_t0.124_whole, maxiter 800), under the 5-minute bar."
   ],
   "style": {
     "name": "flame_veil_chalk",

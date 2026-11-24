@@ -17,7 +17,8 @@
   "adds": [],
   "notes": [
     "Added: nothing past `view`: the veils on a pinwheel of views, each with a fine period sheet for its strands. Hand-placed seats, as `flame_veil_blue`",
-    "Lessons: came in one item with flame_veil_blue; its notes hold them."
+    "Lessons: came in one item with flame_veil_blue; its notes hold them.",
+    "Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 19 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (vm_d3, maxiter 800), under the 5-minute bar."
   ],
   "style": {
     "name": "flame_veil_violet",

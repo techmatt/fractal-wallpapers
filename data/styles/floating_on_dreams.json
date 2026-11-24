@@ -96,7 +96,8 @@
     ]
   },
   "notes": [
-    "Added: the compositor, `gradient`, `inside`, `light`, `glow`, `pattern`, `mask`"
+    "Added: the compositor, `gradient`, `inside`, `light`, `glow`, `pattern`, `mask`",
+    "Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 28 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (d4_julia_eight_spirals, maxiter 37,000), under the 5-minute bar."
   ],
   "style": {
     "name": "floating_on_dreams",

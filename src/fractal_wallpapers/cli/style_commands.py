@@ -75,6 +75,20 @@ def style_wasm_command(args: argparse.Namespace) -> int:
         return 1
 
 
+def print_cost(rows: list[dict], style_wasm) -> int:
+    """`style cost`'s table: style, seat, maxiter, seconds, and over or under the bar."""
+    for row in rows:
+        if row["ok"]:
+            verdict = "OVER" if row["over"] else "under"
+            print(
+                f"{row['style']:<20} {row['seat'] or '-':<32} maxiter {row['maxiter']:>6} "
+                f"{row['seconds']:8.1f} s  {verdict} the {style_wasm.COST_BAR_SECONDS} s bar"
+            )
+        else:
+            print(f"{row['style']:<20} {row['seat'] or '-':<32} FAILED: {row['why']}")
+    return 0 if all(row["ok"] for row in rows) else 1
+
+
 def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
     """`bundle`, `wasm-parity` or `wasm-speed`, once the catalog has loaded."""
     if args.what == "bundle":
@@ -87,6 +101,15 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
         return 0
     folder = resolve_output(args.out) if args.out else style_wasm.out_dir() / args.what
     try:
+        if args.what == "cost":
+            from fractal_wallpapers import styles
+
+            try:
+                rows = style_wasm.cost(folder, args.names, args.seat, args.workers)
+            except styles.StyleError as refusal:
+                print(refusal)
+                return 1
+            return print_cost(rows, style_wasm)
         if args.what == "wasm-speed":
             rows = style_wasm.speed(folder)
             for row in rows:
@@ -633,6 +656,7 @@ VERBS = {
     "bundle": style_wasm_command,
     "wasm-parity": style_wasm_command,
     "wasm-speed": style_wasm_command,
+    "cost": style_wasm_command,
     "render": render_style,
     "sweep": sweep_styles,
 }
@@ -873,6 +897,22 @@ def add_commands(subcommands) -> None:
     )
     speed.add_argument(
         "--out", help="the pictures and speed.jsonl (default: artifacts/style-wasm/wasm-speed)"
+    )
+    cost = verbs.add_parser(
+        "cost",
+        help="the explorer's cost: one 1280x800 ss2 frame as WebAssembly on one thread, at "
+        "each named style's deepest kept seat, against the 5-minute bar",
+    )
+    cost.add_argument("names", nargs="+", help="the styles to time")
+    cost.add_argument("--seat", help="a kept seat's name instead of the deepest")
+    cost.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Node threads, one style each (default 1; at most 3, the render pool's count)",
+    )
+    cost.add_argument(
+        "--out", help="the pictures and cost.jsonl (default: artifacts/style-wasm/cost)"
     )
 
     sheet = verbs.add_parser(

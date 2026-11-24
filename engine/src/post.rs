@@ -838,15 +838,49 @@ pub fn mosaic(
         ));
     }
 
-    // Every sample into its finest cell, in sample order (so the sums are the same
-    // on every machine), then each level summed into the one above.
-    let mut cells = vec![Cell::EMPTY; total];
-    for row in 0..height {
-        for col in 0..width {
-            let i = row * width + col;
+    // Each root's tree is built, split and painted in turn, so one root's cells are
+    // held at a time (the whole frame's trees at once ran to about 190 MB at 1280x800
+    // ss2), and each root's samples are listed in sample order, so its sums are the
+    // ones a single tree over the frame held, bit for bit.
+    let mut members: Vec<Vec<u32>> = vec![Vec::new(); roots.len()];
+    for i in 0..width * height {
+        let (root_index, _) = lattice.locate(point_of(i % width, i / width, width, height));
+        let i = u32::try_from(i).map_err(|_| format!("mosaic: {width}x{height} samples"))?;
+        members[root_index].push(i);
+    }
+
+    let (azimuth, elevation) = (mosaic.azimuth.to_radians(), mosaic.elevation.to_radians());
+    // Rows run down the frame, so an anticlockwise azimuth has its `y` turned over.
+    let to_light = [
+        elevation.cos() * azimuth.cos(),
+        -elevation.cos() * azimuth.sin(),
+        elevation.sin(),
+    ];
+    let lit = mosaic.relief > 0.0 || mosaic.fold > 0.0;
+    let seam = mosaic.seam.as_ref().map(|seam| {
+        let color = seam
+            .color
+            .as_ref()
+            .map_or([0.0; 3], |paint| paint.linear(colormap));
+        (seam.width, color, seam.opacity)
+    });
+    let turn = mosaic.turn.to_radians();
+
+    let mut painted = vec![[0.0; 3]; width * height];
+    for (root_index, samples) in members.iter().enumerate() {
+        // The root's tree alone: its level 0 at the start.
+        let root = Root {
+            offset: 0,
+            ..roots[root_index]
+        };
+        // Every sample into its finest cell, in sample order (so the sums are the same
+        // on every machine), then each level summed into the one above.
+        let mut cells = vec![Cell::EMPTY; level_offset(root.levels + 1)];
+        for &i in samples {
+            let i = i as usize;
+            let (col, row) = (i % width, i / width);
             let point = point_of(col, row, width, height);
-            let (root_index, mut local) = lattice.locate(point);
-            let root = roots[root_index];
+            let (_, mut local) = lattice.locate(point);
             let mut node = 0usize;
             for _ in 0..root.levels {
                 let (digit, inner) = lattice.child(local);
@@ -888,8 +922,6 @@ pub fn mosaic(
                 }
             }
         }
-    }
-    for root in &roots {
         for level in (0..root.levels).rev() {
             let (parents, children) = (
                 root.offset + level_offset(level),
@@ -903,11 +935,9 @@ pub fn mosaic(
                 cells[parents + node] = sum;
             }
         }
-    }
 
-    // Which cells split: every one over the largest size, then where the set is.
-    let mut split = vec![false; total];
-    for root in &roots {
+        // Which cells split: every one over the largest size, then where the set is.
+        let mut split = vec![false; cells.len()];
         for level in 0..root.levels {
             let edge = root.edge / (1u64 << level) as f64;
             let at = root.offset + level_offset(level);
@@ -925,255 +955,243 @@ pub fn mosaic(
                     || (mosaic.detail > 0.0 && spread > mosaic.detail);
             }
         }
-    }
 
-    let (azimuth, elevation) = (mosaic.azimuth.to_radians(), mosaic.elevation.to_radians());
-    // Rows run down the frame, so an anticlockwise azimuth has its `y` turned over.
-    let to_light = [
-        elevation.cos() * azimuth.cos(),
-        -elevation.cos() * azimuth.sin(),
-        elevation.sin(),
-    ];
-    let lit = mosaic.relief > 0.0 || mosaic.fold > 0.0;
-    let seam = mosaic.seam.as_ref().map(|seam| {
-        let color = seam
-            .color
-            .as_ref()
-            .map_or([0.0; 3], |paint| paint.linear(colormap));
-        (seam.width, color, seam.opacity)
-    });
-    let turn = mosaic.turn.to_radians();
-
-    let painted = (0..width * height)
-        .into_par_iter()
-        .map(|i| {
-            let (col, row) = (i % width, i / width);
-            let point = point_of(col, row, width, height);
-            let (root_index, mut local) = lattice.locate(point);
-            let root = roots[root_index];
-            let (mut node, mut level) = (0usize, 0u32);
-            // The facet's corners (a triangle's) or its low corner and size (a quad's),
-            // carried down the tree with the point.
-            let mut corners = match lattice {
-                Lattice::Triangles { .. } => lattice.triangle(root_index),
-                Lattice::Rhombi { low, size, .. } => {
-                    let cell = root_index as i64;
-                    [
-                        [
-                            (cell % size[0] + low[0]) as f64,
-                            (cell / size[0] + low[1]) as f64,
-                        ],
-                        [1.0, 0.0],
-                        [0.0; 2],
-                    ]
-                }
-                Lattice::Spiral { arms, low, .. } => {
-                    let arms = arms as usize;
-                    [
-                        [
-                            (root_index % arms) as f64,
-                            (root_index / arms) as f64 + low as f64,
-                        ],
-                        [1.0, 0.0],
-                        [0.0; 2],
-                    ]
-                }
-            };
-            while level < root.levels && split[root.offset + level_offset(level) + node] {
-                let (digit, inner) = lattice.child(local);
-                node = node * 4 + digit;
-                local = inner;
-                level += 1;
-                corners = match lattice {
-                    Lattice::Triangles { .. } => {
-                        let [a, b, c] = corners;
-                        let mid =
-                            |p: [f64; 2], q: [f64; 2]| [0.5 * (p[0] + q[0]), 0.5 * (p[1] + q[1])];
-                        match digit {
-                            0 => [a, mid(a, b), mid(a, c)],
-                            1 => [mid(a, b), b, mid(b, c)],
-                            2 => [mid(a, c), mid(b, c), c],
-                            _ => [mid(b, c), mid(a, c), mid(a, b)],
-                        }
-                    }
-                    Lattice::Rhombi { .. } | Lattice::Spiral { .. } => {
-                        let half = 0.5 * corners[1][0];
+        let drawn: Vec<[f64; 3]> = samples
+            .par_iter()
+            .map(|&i| {
+                let i = i as usize;
+                let (col, row) = (i % width, i / width);
+                let point = point_of(col, row, width, height);
+                let (_, mut local) = lattice.locate(point);
+                let (mut node, mut level) = (0usize, 0u32);
+                // The facet's corners (a triangle's) or its low corner and size (a quad's),
+                // carried down the tree with the point.
+                let mut corners = match lattice {
+                    Lattice::Triangles { .. } => lattice.triangle(root_index),
+                    Lattice::Rhombi { low, size, .. } => {
+                        let cell = root_index as i64;
                         [
                             [
-                                corners[0][0] + half * (digit % 2) as f64,
-                                corners[0][1] + half * (digit / 2) as f64,
+                                (cell % size[0] + low[0]) as f64,
+                                (cell / size[0] + low[1]) as f64,
                             ],
-                            [half, 0.0],
+                            [1.0, 0.0],
+                            [0.0; 2],
+                        ]
+                    }
+                    Lattice::Spiral { arms, low, .. } => {
+                        let arms = arms as usize;
+                        [
+                            [
+                                (root_index % arms) as f64,
+                                (root_index / arms) as f64 + low as f64,
+                            ],
+                            [1.0, 0.0],
                             [0.0; 2],
                         ]
                     }
                 };
-            }
-            let cell = &cells[root.offset + level_offset(level) + node];
-            let edge = root.edge / (1u64 << level) as f64;
-
-            // The facet's middle, how far the sample is from its rim, the way out
-            // through the nearest edge, and the number its turn is counted in.
-            let (middle, rim, outward, count) = match lattice {
-                Lattice::Triangles { .. } => {
-                    let [a, b, c] = corners;
-                    let middle = [(a[0] + b[0] + c[0]) / 3.0, (a[1] + b[1] + c[1]) / 3.0];
-                    let nearest = if local[0] <= local[1] && local[0] <= local[2] {
-                        0
-                    } else if local[1] <= local[2] {
-                        1
-                    } else {
-                        2
+                while level < root.levels && split[root.offset + level_offset(level) + node] {
+                    let (digit, inner) = lattice.child(local);
+                    node = node * 4 + digit;
+                    local = inner;
+                    level += 1;
+                    corners = match lattice {
+                        Lattice::Triangles { .. } => {
+                            let [a, b, c] = corners;
+                            let mid = |p: [f64; 2], q: [f64; 2]| {
+                                [0.5 * (p[0] + q[0]), 0.5 * (p[1] + q[1])]
+                            };
+                            match digit {
+                                0 => [a, mid(a, b), mid(a, c)],
+                                1 => [mid(a, b), b, mid(b, c)],
+                                2 => [mid(a, c), mid(b, c), c],
+                                _ => [mid(b, c), mid(a, c), mid(a, b)],
+                            }
+                        }
+                        Lattice::Rhombi { .. } | Lattice::Spiral { .. } => {
+                            let half = 0.5 * corners[1][0];
+                            [
+                                [
+                                    corners[0][0] + half * (digit % 2) as f64,
+                                    corners[0][1] + half * (digit / 2) as f64,
+                                ],
+                                [half, 0.0],
+                                [0.0; 2],
+                            ]
+                        }
                     };
-                    let away = [
-                        middle[0] - corners[nearest][0],
-                        middle[1] - corners[nearest][1],
-                    ];
-                    let length = away[0].hypot(away[1]).max(1e-300);
-                    (
-                        middle,
-                        local[nearest] * edge * SQRT3_2,
-                        [away[0] / length, away[1] / length],
-                        (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
-                    )
                 }
-                Lattice::Rhombi { cos, sin, .. } => {
-                    let size = corners[1][0];
-                    let middle =
-                        lattice.placed(corners[0][0] + 0.5 * size, corners[0][1] + 0.5 * size);
-                    // Out through a side: square to the axis that side runs along.
-                    let (along, across) = (
-                        [cos, sin],
-                        [0.5 * cos - SQRT3_2 * sin, 0.5 * sin + SQRT3_2 * cos],
-                    );
-                    let (from_s, from_t) = ([across[1], -across[0]], [-along[1], along[0]]);
-                    let [s, t, _] = local;
-                    let sides = [
-                        (s, [-from_s[0], -from_s[1]]),
-                        (1.0 - s, from_s),
-                        (t, [-from_t[0], -from_t[1]]),
-                        (1.0 - t, from_t),
-                    ];
-                    let (share, outward) =
-                        sides
-                            .into_iter()
-                            .fold((f64::INFINITY, [0.0; 2]), |best, side| {
-                                if side.0 < best.0 { side } else { best }
-                            });
-                    (
-                        middle,
-                        share * edge * SQRT3_2,
-                        outward,
-                        (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
-                    )
-                }
-                Lattice::Spiral {
-                    center,
-                    arms,
-                    twist,
-                    step,
-                    low,
-                    ..
-                } => {
-                    let size = corners[1][0];
-                    let (a, b) = (corners[0][0] + 0.5 * size, corners[0][1] + 0.5 * size);
-                    let radius = (b * step).exp();
-                    let angle = (a - twist * b) / arms * std::f64::consts::TAU;
-                    let middle = [
-                        center[0] + radius * angle.cos(),
-                        center[1] + radius * angle.sin(),
-                    ];
-                    let (dx, dy) = (point[0] - center[0], point[1] - center[1]);
-                    let r = dx.hypot(dy).max(1e-300);
-                    let (out, round) = ([dx / r, dy / r], [-dy / r, dx / r]);
-                    let [s, t, _] = local;
-                    let sides = [
-                        (s, [-round[0], -round[1]]),
-                        (1.0 - s, round),
-                        // Inside the innermost ring a quad is a wedge to the middle:
-                        // it has no inner side for a seam or a face.
-                        (
-                            if r.ln() < low as f64 * step {
-                                f64::INFINITY
-                            } else {
-                                t
-                            },
-                            [-out[0], -out[1]],
-                        ),
-                        (1.0 - t, out),
-                    ];
-                    let (share, outward) =
-                        sides
-                            .into_iter()
-                            .fold((f64::INFINITY, [0.0; 2]), |best, side| {
-                                if side.0 < best.0 { side } else { best }
-                            });
-                    (middle, share * r * step * size, outward, a)
-                }
-            };
+                let cell = &cells[root.offset + level_offset(level) + node];
+                let edge = root.edge / (1u64 << level) as f64;
 
-            let mut rgb = match mosaic.fill {
-                Fill::Flat => cell.rgb.map(|sum| sum / cell.count.max(1.0)),
-                Fill::Turned => {
-                    let (sin, cos) = (turn * count).sin_cos();
-                    let (dx, dy) = (point[0] - middle[0], point[1] - middle[1]);
-                    // Each facet slips its own way: a direction off its own number.
-                    let way = (hashed(root_index, level + SLIP, node as u64) >> 11) as f64
-                        / (1u64 << 53) as f64
-                        * std::f64::consts::TAU;
-                    let slip = mosaic.shift * edge;
-                    let read = [
-                        middle[0] + dx * cos - dy * sin + slip * way.cos(),
-                        middle[1] + dx * sin + dy * cos + slip * way.sin(),
+                // The facet's middle, how far the sample is from its rim, the way out
+                // through the nearest edge, and the number its turn is counted in.
+                let (middle, rim, outward, count) = match lattice {
+                    Lattice::Triangles { .. } => {
+                        let [a, b, c] = corners;
+                        let middle = [(a[0] + b[0] + c[0]) / 3.0, (a[1] + b[1] + c[1]) / 3.0];
+                        let nearest = if local[0] <= local[1] && local[0] <= local[2] {
+                            0
+                        } else if local[1] <= local[2] {
+                            1
+                        } else {
+                            2
+                        };
+                        let away = [
+                            middle[0] - corners[nearest][0],
+                            middle[1] - corners[nearest][1],
+                        ];
+                        let length = away[0].hypot(away[1]).max(1e-300);
+                        (
+                            middle,
+                            local[nearest] * edge * SQRT3_2,
+                            [away[0] / length, away[1] / length],
+                            (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
+                        )
+                    }
+                    Lattice::Rhombi { cos, sin, .. } => {
+                        let size = corners[1][0];
+                        let middle =
+                            lattice.placed(corners[0][0] + 0.5 * size, corners[0][1] + 0.5 * size);
+                        // Out through a side: square to the axis that side runs along.
+                        let (along, across) = (
+                            [cos, sin],
+                            [0.5 * cos - SQRT3_2 * sin, 0.5 * sin + SQRT3_2 * cos],
+                        );
+                        let (from_s, from_t) = ([across[1], -across[0]], [-along[1], along[0]]);
+                        let [s, t, _] = local;
+                        let sides = [
+                            (s, [-from_s[0], -from_s[1]]),
+                            (1.0 - s, from_s),
+                            (t, [-from_t[0], -from_t[1]]),
+                            (1.0 - t, from_t),
+                        ];
+                        let (share, outward) =
+                            sides
+                                .into_iter()
+                                .fold((f64::INFINITY, [0.0; 2]), |best, side| {
+                                    if side.0 < best.0 { side } else { best }
+                                });
+                        (
+                            middle,
+                            share * edge * SQRT3_2,
+                            outward,
+                            (hashed(root_index, level, node as u64) % 3) as f64 - 1.0,
+                        )
+                    }
+                    Lattice::Spiral {
+                        center,
+                        arms,
+                        twist,
+                        step,
+                        low,
+                        ..
+                    } => {
+                        let size = corners[1][0];
+                        let (a, b) = (corners[0][0] + 0.5 * size, corners[0][1] + 0.5 * size);
+                        let radius = (b * step).exp();
+                        let angle = (a - twist * b) / arms * std::f64::consts::TAU;
+                        let middle = [
+                            center[0] + radius * angle.cos(),
+                            center[1] + radius * angle.sin(),
+                        ];
+                        let (dx, dy) = (point[0] - center[0], point[1] - center[1]);
+                        let r = dx.hypot(dy).max(1e-300);
+                        let (out, round) = ([dx / r, dy / r], [-dy / r, dx / r]);
+                        let [s, t, _] = local;
+                        let sides = [
+                            (s, [-round[0], -round[1]]),
+                            (1.0 - s, round),
+                            // Inside the innermost ring a quad is a wedge to the middle:
+                            // it has no inner side for a seam or a face.
+                            (
+                                if r.ln() < low as f64 * step {
+                                    f64::INFINITY
+                                } else {
+                                    t
+                                },
+                                [-out[0], -out[1]],
+                            ),
+                            (1.0 - t, out),
+                        ];
+                        let (share, outward) =
+                            sides
+                                .into_iter()
+                                .fold((f64::INFINITY, [0.0; 2]), |best, side| {
+                                    if side.0 < best.0 { side } else { best }
+                                });
+                        (middle, share * r * step * size, outward, a)
+                    }
+                };
+
+                let mut rgb = match mosaic.fill {
+                    Fill::Flat => cell.rgb.map(|sum| sum / cell.count.max(1.0)),
+                    Fill::Turned => {
+                        let (sin, cos) = (turn * count).sin_cos();
+                        let (dx, dy) = (point[0] - middle[0], point[1] - middle[1]);
+                        // Each facet slips its own way: a direction off its own number.
+                        let way = (hashed(root_index, level + SLIP, node as u64) >> 11) as f64
+                            / (1u64 << 53) as f64
+                            * std::f64::consts::TAU;
+                        let slip = mosaic.shift * edge;
+                        let read = [
+                            middle[0] + dx * cos - dy * sin + slip * way.cos(),
+                            middle[1] + dx * sin + dy * cos + slip * way.sin(),
+                        ];
+                        frame.linear[sample_at(read, width, height)]
+                    }
+                };
+                if lit {
+                    let [gx, gy] = cell.slope();
+                    let tilt = [
+                        mosaic.fold * outward[0] - mosaic.relief * edge * gx,
+                        mosaic.fold * outward[1] - mosaic.relief * edge * gy,
                     ];
-                    frame.linear[sample_at(read, width, height)]
+                    let steep = tilt[0].hypot(tilt[1]);
+                    let tilt = tilt.map(|t| t * (STEEPEST / steep.max(STEEPEST)));
+                    let length = (tilt[0] * tilt[0] + tilt[1] * tilt[1] + 1.0).sqrt();
+                    let facing =
+                        (tilt[0] * to_light[0] + tilt[1] * to_light[1] + to_light[2]) / length;
+                    let gain = (facing / to_light[2]).max(0.0);
+                    rgb = rgb.map(|c| c * gain);
                 }
-            };
-            if lit {
-                let [gx, gy] = cell.slope();
-                let tilt = [
-                    mosaic.fold * outward[0] - mosaic.relief * edge * gx,
-                    mosaic.fold * outward[1] - mosaic.relief * edge * gy,
-                ];
-                let steep = tilt[0].hypot(tilt[1]);
-                let tilt = tilt.map(|t| t * (STEEPEST / steep.max(STEEPEST)));
-                let length = (tilt[0] * tilt[0] + tilt[1] * tilt[1] + 1.0).sqrt();
-                let facing = (tilt[0] * to_light[0] + tilt[1] * to_light[1] + to_light[2]) / length;
-                let gain = (facing / to_light[2]).max(0.0);
-                rgb = rgb.map(|c| c * gain);
-            }
-            if let Some(inlay) = mosaic.inlay {
-                let (mut inner, mut within, mut size) = (node as u64, local, edge);
-                let mut gain = 1.0;
-                for depth in 1..=inlay.levels {
-                    size *= 0.5;
-                    if size < mosaic.smallest {
-                        break;
+                if let Some(inlay) = mosaic.inlay {
+                    let (mut inner, mut within, mut size) = (node as u64, local, edge);
+                    let mut gain = 1.0;
+                    for depth in 1..=inlay.levels {
+                        size *= 0.5;
+                        if size < mosaic.smallest {
+                            break;
+                        }
+                        let (digit, next) = lattice.child(within);
+                        (inner, within) = (inner * 4 + digit as u64, next);
+                        let unit = (hashed(root_index, level + depth, inner) >> 11) as f64
+                            / (1u64 << 53) as f64;
+                        gain *= 1.0 + inlay.amount * (2.0 * unit - 1.0);
                     }
-                    let (digit, next) = lattice.child(within);
-                    (inner, within) = (inner * 4 + digit as u64, next);
-                    let unit = (hashed(root_index, level + depth, inner) >> 11) as f64
-                        / (1u64 << 53) as f64;
-                    gain *= 1.0 + inlay.amount * (2.0 * unit - 1.0);
+                    rgb = rgb.map(|c| c * gain);
                 }
-                rgb = rgb.map(|c| c * gain);
-            }
-            if let Some((seam_width, color, opacity)) = seam {
-                if rim < seam_width.min(SEAM_SHARE * edge) {
+                if let Some((seam_width, color, opacity)) = seam {
+                    if rim < seam_width.min(SEAM_SHARE * edge) {
+                        for k in 0..3 {
+                            rgb[k] += (color[k] - rgb[k]) * opacity;
+                        }
+                    }
+                }
+                if mosaic.opacity < 1.0 {
+                    let under = frame.linear[i];
                     for k in 0..3 {
-                        rgb[k] += (color[k] - rgb[k]) * opacity;
+                        rgb[k] = under[k] + (rgb[k] - under[k]) * mosaic.opacity;
                     }
                 }
-            }
-            if mosaic.opacity < 1.0 {
-                let under = frame.linear[i];
-                for k in 0..3 {
-                    rgb[k] = under[k] + (rgb[k] - under[k]) * mosaic.opacity;
-                }
-            }
-            rgb
-        })
-        .collect();
+                rgb
+            })
+            .collect();
+        for (&i, rgb) in samples.iter().zip(drawn) {
+            painted[i as usize] = rgb;
+        }
+    }
     Ok(painted)
 }
 

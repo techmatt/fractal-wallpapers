@@ -547,6 +547,100 @@ def parity(
     return out
 
 
+#: Matt's bar for one explorer frame (1280x800 ss2, one thread): about five minutes.
+COST_BAR_SECONDS = 300
+
+#: The most Node threads a cost read draws on: the render pool's three (CLAUDE.md).
+COST_WORKERS = 3
+
+
+def kept_seats(name: str) -> list[dict[str, Any]]:
+    """A style's kept seats, deepest `maxiter` first: each keep's location once, by name
+    and cap (a keep reopened at a lower cap is a seat of its own). Ties keep the keep
+    record's order.
+
+    A style with no keep record offers the catalog's shown locations instead (a lab
+    example's draft seats).
+    """
+    from fractal_wallpapers import style_catalog, style_keeps
+
+    locations = [keep["render"]["location"] for keep in style_keeps.read_record(name)["keeps"]]
+    if not locations:
+        rows = [row for row in style_catalog.load()["modes"] if row["style"] == name]
+        locations = [shown["location"] for row in rows for shown in style_catalog.shown_of(row)]
+    seats: dict[tuple, dict[str, Any]] = {}
+    for location in locations:
+        key = location.get("name") or json.dumps(location, sort_keys=True)
+        seats.setdefault((key, location["maxiter"]), location)
+    return sorted(seats.values(), key=lambda location: -location["maxiter"])
+
+
+def cost_jobs(names: list[str], seat: str | None = None) -> list[dict[str, Any]]:
+    """[`cost`]'s jobs: each style's published stack and map at its deepest kept seat
+    (or at `seat`, a kept seat's name), one 1280x800 ss2 frame each."""
+    from fractal_wallpapers import styles
+
+    published = {row["style"]: row for row in published_rows()}
+    jobs = []
+    for name in names:
+        document = styles.load(name)
+        seats = kept_seats(name)
+        if seat is not None:
+            seats = [location for location in seats if location.get("name") == seat]
+        if not seats:
+            raise StyleWasmError(f"{name} has no kept seat" + (f" named {seat}" if seat else ""))
+        row = published.get(name)
+        palette = row["public"]["palette"] if row else document["suggested_colormap"]
+        location = seats[0]
+        jobs.append(
+            {
+                "id": f"{name}__{location.get('name', 'seat')}",
+                "style": name,
+                "seat": location.get("name"),
+                "request": request(
+                    location,
+                    document["style"],
+                    colormap_of(palette),
+                    SPEED_RESOLUTION,
+                    SPEED_SUPERSAMPLE,
+                ),
+                "draw": "frame",
+            }
+        )
+    return jobs
+
+
+def cost(
+    folder: Path, names: list[str], seat: str | None = None, workers: int = 1
+) -> list[dict[str, Any]]:
+    """The explorer's cost of each style: one 1280x800 ss2 frame as WebAssembly on one
+    thread, at its deepest kept seat, against [`COST_BAR_SECONDS`].
+
+    Each job is one thread's work whatever `workers` is; a reading is a timing only on a
+    quiet box with a core left for every worker. Rows go to `cost.jsonl` in `folder`.
+    """
+    if not 1 <= workers <= COST_WORKERS:
+        raise StyleWasmError(
+            f"--workers {workers}: a cost read draws on 1 to {COST_WORKERS} threads "
+            "(the render pool's count)"
+        )
+    jobs = cost_jobs(names, seat)
+    results = run_node(jobs, folder, workers)
+    out = []
+    for job, result in zip(jobs, results, strict=True):
+        line = {"style": job["style"], "seat": job["seat"], "ok": result["ok"]}
+        if result["ok"]:
+            seconds = round(result["open"] + result["draw"], 2)
+            line.update(maxiter=result["maxiter"], seconds=seconds, over=seconds > COST_BAR_SECONDS)
+        else:
+            line["why"] = result["why"]
+        out.append(line)
+    with (folder / "cost.jsonl").open("w", encoding="utf-8", newline="\n") as handle:
+        for line in out:
+            handle.write(json.dumps(line) + "\n")
+    return out
+
+
 def speed(folder: Path) -> list[dict[str, Any]]:
     """One 1280x800 frame per published mode, as WebAssembly on one thread.
 

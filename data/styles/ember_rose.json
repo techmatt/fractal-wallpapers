@@ -19,7 +19,8 @@
   "adds": [],
   "notes": [
     "Added: nothing: the `inside` channel cycled into petal rings, softened falloff threads, a bead lattice. Its structure, parabolic flowers, is one the galleries lack: its locations are hand-placed (step 4's exception)",
-    "Lessons: came in one item with teal_filaments; its notes hold them."
+    "Lessons: came in one item with teal_filaments; its notes hold them.",
+    "Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 108 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (fl_d3_3_7_r1.0_w0.8, maxiter 1,000), under the 5-minute bar."
   ],
   "style": {
     "name": "ember_rose",

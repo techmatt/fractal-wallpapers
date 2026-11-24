@@ -17,7 +17,8 @@
   "adds": [],
   "notes": [
     "Added: nothing past `flame_veil_blue`'s `view`: its veils in teal, a radial magenta nebula and veil, a white falloff star masked to the centre. Hand-placed seats, as `flame_veil_blue`",
-    "Lessons: came in one item with flame_veil_blue; its notes hold them."
+    "Lessons: came in one item with flame_veil_blue; its notes hold them.",
+    "Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 21 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (vj_d2_r1.08_t0.131_whole, maxiter 800), under the 5-minute bar."
   ],
   "style": {
     "name": "flame_veil_teal",

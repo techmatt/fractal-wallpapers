@@ -19,7 +19,8 @@
   "notes": [
     "From no-mans-land-25.jpg (item 061). The sheets are the smooth count cut on its rank over the frame into 12 flat levels (`taper` 0.86, so they thin towards the set), each reading the map once; the map walks cream to maroon and then black to steel blue, so the far field is the warm half and the set's neighbourhood the slate half. The paper depth is the pass's `shadow`: the sheet lane blurred by a tent `width` 0.05 wide and read `offset` 0.012 towards the light, darkening only the sheets under an edge. Its three looks (paper_layers, poster_curls, gouache_cut) are one palette layer and one `paper` pass, told apart by which of the pass's members they set.",
     "Round one's readings: p_inv (the height inverted: the far field on top, the set a pale hole at the bottom of the stack, closest to the reference's two halves), p_tia (sheets cut from the triangle-inequality average: wavy blades that pinch together, the reference's seam, but lace-heavy seats go to noise), p_flat (no shadow: what the pass draws without its depth) and p_tight (22 sheets, a narrower shadow; drafted, not in the picker).",
-    "Tone held at all six seats checked (median 0.572, p10 0.139). No lighting, no glow, no lace: the set's fine structure is the top sheets' outlines."
+    "Tone held at all six seats checked (median 0.572, p10 0.139). No lighting, no glow, no lace: the set's fine structure is the top sheets' outlines.",
+    "Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 12 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (phoenix_71e305f0, maxiter 11,030), under the 5-minute bar."
   ],
   "style": {
     "name": "paper_layers",

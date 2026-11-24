@@ -13,7 +13,7 @@
     "a fine bubble lattice masked to the set as points of light (jewel_lace)"
   ],
   "adds": [],
-  "notes": "From interstellar-25.jpg (item 054). Nearest mode: molten_flow (its broad lit folds are interstellar's copper webs). What this adds over the entry (interstellar_webs in molten_flow): sparkle dust, a bubble lattice at radius 0.06 bounded to 0.012 of the frame, a blue halo under a white core, added and masked by the inverted de so it gathers along the set. The reference's glossy blue spheres are not drawn: they echo plastic_orbs (discarded, 1/5), so the blue is the far field's, the low end of the rank map, and the relief carries the look. Seats are a --max-ink 0.10 gallery scout (seed 541), as molten_flow's. No engine change.",
+  "notes": "From interstellar-25.jpg (item 054). Nearest mode: molten_flow (its broad lit folds are interstellar's copper webs). What this adds over the entry (interstellar_webs in molten_flow): sparkle dust, a bubble lattice at radius 0.06 bounded to 0.012 of the frame, a blue halo under a white core, added and masked by the inverted de so it gathers along the set. The reference's glossy blue spheres are not drawn: they echo plastic_orbs (discarded, 1/5), so the blue is the far field's, the low end of the rank map, and the relief carries the look. Seats are a --max-ink 0.10 gallery scout (seed 541), as molten_flow's. No engine change. Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 78 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (phoenix_71e305f0, maxiter 11,030), under the 5-minute bar.",
   "style": {
     "name": "copper_webs",
     "interior": {
