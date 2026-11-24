@@ -10,4 +10,8 @@ worktree's `cargo build`, `engine.engine_path` pointed at its binary) and compar
 
 **Explorer cost** is the module's time for one frame: `style wasm-parity <name>` writes
 each job's `wasm_seconds` (one thread, 640x400 ss2) to `parity.jsonl` and `seconds.json`
-in its folder; 1280x800 is about four times that. Read it on an idle box.
+in its folder; 1280x800 is about four times that. Read it on an idle box. A round-one style
+(no keep) draws at `style_wasm.POST_SEAT` (a Mandelbrot frame at maxiter 2000); its own
+deeper seats cost more. To
+scale from a native render there, `native_seconds` is the engine on
+`style_wasm.PARITY_NATIVE_THREADS` (three), not one thread: compare thread-seconds.

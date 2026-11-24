@@ -106,7 +106,8 @@ def load(name: str) -> dict[str, Any]:
 
     `name` is a style under `data/styles/`, or the path of a draft `.json` anywhere,
     which is how a style is tuned before it joins the library: a draft is held to the
-    same shape except that its file name need not be its name. A style merged into a
+    same shape except that its file name need not be its name (it still needs a
+    `reference`, and its stack's `name` must be its `name`). A style merged into a
     mode (`alias_of`) reads as the mode at the palette that was it.
     """
     draft = name.endswith(".json")

@@ -51,7 +51,9 @@ as a stroke thins: unfaded, a neighbour reading the next entry where `largest` p
 one meets it at a seam; faded, shapes come and go softly, and several `hit`s laid
 additively draw each shape whole (`gilded_leaves`). A loop is shared only by reads with
 one `fade`: a `step` read beside a faded height runs a loop of its own unless it takes the
-same `fade`. With `spacing`, nearly every escaping sample enters some shape, so a
+same `fade`. Fade suits a height read laid additively: an inverted `height` (a rim glow)
+reads 1 where the height faded, so it lights the faded part of each shape as a hard-edged
+shard (074's dials take no fade). With `spacing`, nearly every escaping sample enters some shape, so a
 layer on `height` paints the whole frame unless its `power` is high (8 lights a blade's
 spine alone).
 
@@ -98,7 +100,9 @@ the first fills out, so no stroke ends at a cut.
 `on_c` measures `center` from the orbit's `c`. A line through the critical value pulls
 back through the critical point as a cross, so on a Julia set every preimage of `0` is a
 **star** of strokes joined to its neighbours by long curves, where a line that misses it
-pulls back as hyperbolas that never meet; a circle pulls back as closed loops. `node` (0
+pulls back as hyperbolas that never meet; a circle pulls back as closed loops, round only
+while small beside the distortion round them: at the galleries' seats an `on_c` circle
+reads as long arcs, so concentric rings come from a bubble's `height` (`filigree_dials`). `node` (0
 is off) counts every step as stretching the plane at least that much: at a crossing,
 where `dz` is 0 and `S` has no bound, the strokes then swell into a round node instead
 of leaving a hole under `largest`.
