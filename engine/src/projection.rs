@@ -48,6 +48,7 @@
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
+use crate::stir::cos_sin;
 use crate::viewport::Viewport;
 
 /// A per-sample coordinate pre-map, as a style carries it: `{"log_polar": {…}}`.
@@ -231,29 +232,46 @@ impl Projection {
 }
 
 impl Kaleidoscope {
-    /// The fold: the sample's angle from the middle, less `angle`, folded into
-    /// `[0, π / turns]` by mirroring, at the straight view's radius.
+    /// The fold: the sample's offset from the middle, turned back by `angle`, reflected
+    /// in the box's two mirrors (the `x` axis and the line at `π / turns`) until it lies
+    /// in the wedge between them, then turned forward, at the straight view's radius.
+    ///
+    /// By reflections and `+ − × ÷` alone, the turns from the stir's arithmetic
+    /// `cos_sin`: the library's `atan2`, `sin` and `cos` differ in the last bit between
+    /// the native build and WebAssembly, and the stripe grain magnifies that into
+    /// visibly different samples (`style-wasm`'s parity), as [`crate::stir`] says.
     fn sample(&self, view: &Viewport, col: u32, row: u32) -> Sample {
         let (width, height) = (view.sample_width() as f64, view.sample_height() as f64);
         let x = col as f64 + 0.5 - self.center[0] * width;
         let y = self.center[1] * height - (row as f64 + 0.5);
         let step = view.sample_spacing();
-        let wedge = std::f64::consts::PI / self.turns as f64;
-        let angle = self.angle.to_radians();
-        let theta = y.atan2(x) - angle;
-        let mut folded = theta.rem_euclid(2.0 * wedge);
-        let mirrored = folded > wedge;
-        if mirrored {
-            folded = 2.0 * wedge - folded;
-        }
-        // c − centre = step·R·p, or step·R·p̄ in a mirrored wedge, R a unit turn.
         let frame = Complex::new(x, y);
-        let read = folded + angle;
-        let turn = if mirrored {
-            Complex::from_polar(step, read + theta + angle)
-        } else {
-            Complex::from_polar(step, read - theta - angle)
-        };
+        let (c, s) = cos_sin(self.angle / 360.0);
+        let forward = Complex::new(c, s);
+        // The wedge's far mirror, and the turn that reflects in it: z ↦ e^(2iw)·z̄.
+        let (mc, ms) = cos_sin(0.5 / self.turns as f64);
+        let (rc, rs) = cos_sin(1.0 / self.turns as f64);
+        let reflect = Complex::new(rc, rs);
+        // q = turn·p, or turn·p̄ when `mirrored`: the sample as the wedge reads it.
+        let mut turn = forward.conj();
+        let mut mirrored = false;
+        for _ in 0..2 * self.turns + 2 {
+            let q = if mirrored {
+                turn * frame.conj()
+            } else {
+                turn * frame
+            };
+            if q.im < 0.0 {
+                turn = turn.conj();
+            } else if mc * q.im - ms * q.re > 0.0 {
+                turn = reflect * turn.conj();
+            } else {
+                break;
+            }
+            mirrored = !mirrored;
+        }
+        // c − centre = step·e^(i·angle)·q.
+        let turn = forward * turn * step;
         let (point, dy) = if mirrored {
             (turn * frame.conj(), turn * Complex::new(0.0, -1.0))
         } else {

@@ -126,7 +126,7 @@ fn ln(x: f64) -> f64 {
 
 /// `(cos, sin)` of `turns` whole turns, by arithmetic alone: the turn folded into an
 /// eighth, and the two Taylor series there, to about an ulp.
-fn cos_sin(turns: f64) -> (f64, f64) {
+pub(crate) fn cos_sin(turns: f64) -> (f64, f64) {
     // A turn a hair under a whole one rounds up to it: that is no turn.
     let fraction = turns - turns.floor();
     let quarters = if fraction < 1.0 { 4.0 * fraction } else { 0.0 };
