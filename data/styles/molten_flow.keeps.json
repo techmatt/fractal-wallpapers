@@ -294,6 +294,49 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_webs_clouds_r1/storm_clouds/formulations/scf_molten_flow",
+      "picker": "style_webs_clouds_r1",
+      "picked": [
+        {
+          "row": "storm_clouds/formulations",
+          "key": "scf_molten_flow"
+        }
+      ],
+      "label": "baseline: molten_flow",
+      "image": "style_webs_clouds_r1__scf_molten_flow.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_9a93355d",
+          "family": {
+            "kind": "phoenix"
+          },
+          "viewport": {
+            "center_re": "-0.275707435456956",
+            "center_im": "-0.5348112226278448",
+            "width": "0.21352853949196604"
+          },
+          "maxiter": 1071,
+          "note": "final139_general seat 614 (smooth_angle_min, phoenix:classic)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 614,
+            "key": "9a93355dac469c04",
+            "p_spiral": 0.052222
+          },
+          "ink": 0.26428
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {

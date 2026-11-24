@@ -1439,7 +1439,8 @@
             "style_liquid_surfaces_r1/molten_flow/locations/molten_flow__loc__09_julia-multibrot3_84b3a609_molten_flow",
             "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow",
             "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow",
-            "style_classic_escape_texture_r1/draped_folds/formulations/base_dA__molten_flow__00_julia-multibrot5_ff8bfbca"
+            "style_classic_escape_texture_r1/draped_folds/formulations/base_dA__molten_flow__00_julia-multibrot5_ff8bfbca",
+            "style_webs_clouds_r1/storm_clouds/formulations/scf_molten_flow"
           ],
           "score": 4
         },
@@ -2122,7 +2123,8 @@
             "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
             "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
             "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
-            "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace"
+            "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
+            "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes"
           ],
           "score": 3
         },
@@ -3682,15 +3684,6 @@
           ],
           "reference": "patterns_lilac_fractal_122906_2560x1600.jpg",
           "score": 3
-        },
-        {
-          "colormap": "fern_plumes",
-          "values": {
-            "/tone/median": 0.701,
-            "/tone/p10": 0.44
-          },
-          "keeps": [],
-          "reference": "vitality-25.jpg"
         }
       ],
       "aliases": [
@@ -3699,6 +3692,9 @@
     },
     {
       "style": "hollow_webs",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "077",
       "reference": "thermal-pockets-25.jpg",
       "references": [
@@ -3707,10 +3703,36 @@
         "spellcaster-25.jpg"
       ],
       "what": "Hollow webs: dark wells of every size framed by bright rims, pockets nested in pockets, a membrane of fine fibres between them (magenta and gold; violet cells, and bone strands on crimson, as palette entries).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack",
+          "caption": "Dark wells ringed in nested rims on a gold-lit lace, a fibre membrane between"
+        }
+      ],
+      "public": {
+        "name": "hollow-webs",
+        "palette": "hollow_webs",
+        "knobs": []
+      },
+      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (no tile picked); plus the lace_holes baseline tile, kept to that mode",
+      "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; no tile of its own picked (only the lace_holes baseline), so the stack tile is kept for the mode to open in lab; entries violet_cells and spellcaster_webs kept nothing and leave the set and the library.",
+      "palettes": [
+        {
+          "colormap": "hollow_webs",
+          "values": {},
+          "keeps": [
+            "style_webs_clouds_r1/hollow_webs/formulations/hwf_stack"
+          ],
+          "score": 3
+        }
+      ]
     },
     {
       "style": "storm_clouds",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "077",
       "reference": "wallhaven_wallhaven-45oz58.jpg",
       "references": [
@@ -3719,10 +3741,65 @@
         "wallhaven_wallhaven-3z1jkd.png"
       ],
       "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_webs_clouds_r1/storm_clouds/formulations/scf_ledges",
+          "caption": "Crinkled violet and teal cloud banks combed out of a spiral's lace"
+        }
+      ],
+      "public": {
+        "name": "storm-clouds",
+        "palette": "storm_clouds",
+        "knobs": []
+      },
+      "kept": "7 tiles: scf_ledges at both seats, locations scl_03 and scl_05; entries tributary_clouds (seat 2) and crimson_nebula (both seats); plus the molten_flow baseline tile, kept to that mode",
+      "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; storm_clouds, tributary_clouds and crimson_nebula 3/5.",
+      "palettes": [
+        {
+          "colormap": "storm_clouds",
+          "values": {},
+          "keeps": [
+            "style_webs_clouds_r1/storm_clouds/formulations/scf_ledges",
+            "style_webs_clouds_r1/storm_clouds/formulations2/scf2_ledges",
+            "style_webs_clouds_r1/storm_clouds/locations/scl_03",
+            "style_webs_clouds_r1/storm_clouds/locations/scl_05"
+          ],
+          "score": 3
+        },
+        {
+          "colormap": "tributary_clouds",
+          "values": {
+            "/tone/median": 0.364,
+            "/tone/p10": 0.248
+          },
+          "keeps": [
+            "style_webs_clouds_r1/storm_clouds/entries/e_tributary_clouds_2"
+          ],
+          "reference": "tributaries-25.jpg",
+          "score": 3
+        },
+        {
+          "colormap": "crimson_nebula",
+          "values": {
+            "/layers/6/opacity": 0.6,
+            "/tone/median": 0.177,
+            "/tone/p10": 0.041
+          },
+          "keeps": [
+            "style_webs_clouds_r1/storm_clouds/entries/e_crimson_nebula_1",
+            "style_webs_clouds_r1/storm_clouds/entries/e_crimson_nebula_2"
+          ],
+          "reference": "wallhaven_wallhaven-3z1jkd.png",
+          "score": 3
+        }
+      ]
     },
     {
       "style": "starburst_veils",
+      "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "078",
       "reference": "visions-25.jpg",
       "references": [
@@ -3733,10 +3810,85 @@
         "treasury-25.jpg"
       ],
       "what": "Starlit veils: soft violet veils and wisps over the set's lace, its brightest sparks six-pointed stars whose straight beams cross the frame (jade glass, moss and amber, garnet silk, and gilt as palette entries).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_light_beams_r1/starburst_veils/formulations/sbf_long",
+          "caption": "Violet veils over a spiral's lace, its brightest sparks six-pointed stars"
+        }
+      ],
+      "public": {
+        "name": "starburst-veils",
+        "palette": "starburst_veils",
+        "knobs": []
+      },
+      "kept": "6 tiles: sbf_long, location sbl_13; entries jade_starbursts, moss_starbursts, garnet_starbursts, gilt_starbursts",
+      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; every entry 2/5; the streak locations kept nothing.",
+      "palettes": [
+        {
+          "colormap": "starburst_veils",
+          "values": {},
+          "keeps": [
+            "style_light_beams_r1/starburst_veils/formulations/sbf_long",
+            "style_light_beams_r1/starburst_veils/locations/sbl_13"
+          ],
+          "score": 2
+        },
+        {
+          "colormap": "jade_starbursts",
+          "values": {
+            "/tone/median": 0.651,
+            "/tone/p10": 0.236
+          },
+          "keeps": [
+            "style_light_beams_r1/starburst_veils/entries/e_jade_starbursts"
+          ],
+          "reference": "splendor-25.jpg",
+          "score": 2
+        },
+        {
+          "colormap": "moss_starbursts",
+          "values": {
+            "/tone/median": 0.402,
+            "/tone/p10": 0.242
+          },
+          "keeps": [
+            "style_light_beams_r1/starburst_veils/entries/e_moss_starbursts"
+          ],
+          "reference": "sparx-25.jpg",
+          "score": 2
+        },
+        {
+          "colormap": "garnet_starbursts",
+          "values": {
+            "/tone/median": 0.288,
+            "/tone/p10": 0.093
+          },
+          "keeps": [
+            "style_light_beams_r1/starburst_veils/entries/e_garnet_starbursts"
+          ],
+          "reference": "state-of-being-25.jpg",
+          "score": 2
+        },
+        {
+          "colormap": "gilt_starbursts",
+          "values": {
+            "/tone/median": 0.398,
+            "/tone/p10": 0.19
+          },
+          "keeps": [
+            "style_light_beams_r1/starburst_veils/entries/e_gilt_starbursts"
+          ],
+          "reference": "treasury-25.jpg",
+          "score": 2
+        }
+      ]
     },
     {
       "style": "light_shafts",
+      "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "078",
       "reference": "wallhaven_wallhaven-398e39.png",
       "references": [
@@ -3745,7 +3897,30 @@
         "wallhaven_wallhaven-396d7v.png"
       ],
       "what": "Light shafts: fine blue lace in a dark void, straight shafts of light streaming out of it from a point (a scarlet beam, and ice-blue strands on black, as palette entries).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_light_beams_r1/light_shafts/locations/lsl_21",
+          "caption": "Pale blue spiral lace in a dark void, shafts of light streaming past it"
+        }
+      ],
+      "public": {
+        "name": "light-shafts",
+        "palette": "light_shafts",
+        "knobs": []
+      },
+      "kept": "1 tile: the stack at location lsl_21",
+      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; only location lsl_21 kept; entries scarlet_shafts and ice_shafts kept nothing and leave the set and the library.",
+      "palettes": [
+        {
+          "colormap": "light_shafts",
+          "values": {},
+          "keeps": [
+            "style_light_beams_r1/light_shafts/locations/lsl_21"
+          ],
+          "score": 2
+        }
+      ]
     }
   ]
 }

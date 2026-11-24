@@ -301,6 +301,47 @@
         "supersample": 2
       },
       "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/gold_arcs/formulations/gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
+    },
+    {
+      "id": "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes",
+      "picker": "style_webs_clouds_r1",
+      "picked": [
+        {
+          "row": "hollow_webs/formulations",
+          "key": "hwf_lace_holes"
+        }
+      ],
+      "label": "baseline: lace_holes",
+      "image": "style_webs_clouds_r1__hwf_lace_holes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_rabbitbud_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.11341865594943655",
+              "0.860569472501573"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.30547427085040324",
+            "center_im": "0.5342004727183909",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-6 component (rabbitbud), about a repelling fixed point"
+        },
+        "style": "lace_holes",
+        "stack": "lace_holes@6a648de2",
+        "colormap": "cream_lace",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -1090,6 +1131,151 @@
           },
           "blend": "screen",
           "opacity": 0.7,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "lace_holes@6a648de2": {
+      "name": "lace_holes",
+      "interior": {
+        "rgb": "#000000"
+      },
+      "tone": {
+        "median": 0.245,
+        "p10": 0.012
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 5.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 1.0,
+            "shininess": 40.0,
+            "rim": 0.8,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "falloff": 0.0015
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.98
+          },
+          "blend": "screen",
+          "opacity": 0.85,
           "falloff": 0.0002
         }
       ]

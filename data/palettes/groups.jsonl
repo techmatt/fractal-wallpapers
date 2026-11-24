@@ -280,17 +280,12 @@
 {"schema": 1, "kind": "admitted", "map": "sweet_child", "group": "map:sweet_child", "joined": false, "nearest": "map:Oxblood Procession", "m1": 0.068203}
 {"schema": 1, "kind": "admitted", "map": "twist_in_time", "group": "map:twist_in_time", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.075355}
 {"schema": 1, "kind": "admitted", "map": "crimson_nebula", "group": "map:crimson_nebula", "joined": false, "nearest": "map:Deep Rose Vault", "m1": 0.080492}
-{"schema": 1, "kind": "admitted", "map": "fern_plumes", "group": "map:fern_plumes", "joined": false, "nearest": "map:High Cyan, Low Gold", "m1": 0.067783}
 {"schema": 1, "kind": "admitted", "map": "hollow_webs", "group": "map:hollow_webs", "joined": false, "nearest": "map:wheelance", "m1": 0.066089}
-{"schema": 1, "kind": "admitted", "map": "spellcaster_webs", "group": "map:soft_veils_ember", "joined": true, "nearest": "map:soft_veils_ember", "m1": 0.030831}
 {"schema": 1, "kind": "admitted", "map": "storm_clouds", "group": "map:storm_clouds", "joined": false, "nearest": "map:Opal & Ink", "m1": 0.056745}
 {"schema": 1, "kind": "admitted", "map": "tributary_clouds", "group": "map:tributary_clouds", "joined": false, "nearest": "map:Butter Fathom", "m1": 0.055535}
-{"schema": 1, "kind": "admitted", "map": "violet_cells", "group": "map:violet_cells", "joined": false, "nearest": "map:violet_star_arms", "m1": 0.047101}
 {"schema": 1, "kind": "admitted", "map": "garnet_starbursts", "group": "map:garnet_starbursts", "joined": false, "nearest": "map:horror_scales", "m1": 0.042921}
 {"schema": 1, "kind": "admitted", "map": "gilt_starbursts", "group": "map:gilt_starbursts", "joined": false, "nearest": "map:soft_veils_gold", "m1": 0.047064}
-{"schema": 1, "kind": "admitted", "map": "ice_shafts", "group": "map:ice_shafts", "joined": false, "nearest": "map:cobalt_orbs", "m1": 0.069701}
 {"schema": 1, "kind": "admitted", "map": "jade_starbursts", "group": "map:jade_starbursts", "joined": false, "nearest": "map:High Cyan, Low Gold", "m1": 0.048385}
 {"schema": 1, "kind": "admitted", "map": "light_shafts", "group": "map:light_shafts", "joined": false, "nearest": "map:violet_cells", "m1": 0.060978}
 {"schema": 1, "kind": "admitted", "map": "moss_starbursts", "group": "map:moss_starbursts", "joined": false, "nearest": "map:Olive, Green, Ochre", "m1": 0.04852}
-{"schema": 1, "kind": "admitted", "map": "scarlet_shafts", "group": "map:necromancer-25", "joined": true, "nearest": "map:necromancer-25", "m1": 0.036338}
 {"schema": 1, "kind": "admitted", "map": "starburst_veils", "group": "map:starburst_veils", "joined": false, "nearest": "map:tempest_plumes", "m1": 0.054607}
