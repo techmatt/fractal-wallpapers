@@ -56,7 +56,8 @@
             "style_bronze_packing_rekeep/rekeep/rekeep_0_00_julia-multibrot6_9cf619af",
             "style_bronze_packing_rekeep/rekeep/rekeep_1_02_julia-multibrot3_b4307aa3",
             "style_bronze_packing_rekeep/rekeep/rekeep_2_05_julia-multibrot3_c8f1fd60",
-            "style_geometric_sheets_r1/bronze_packing/greenhorn/baseline_bronze__00_02_julia-multibrot3_b4307aa3_bronze_packing"
+            "style_geometric_sheets_r1/bronze_packing/greenhorn/baseline_bronze__00_02_julia-multibrot3_b4307aa3_bronze_packing",
+            "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_bronze_packing"
           ],
           "score": 4
         },
@@ -3439,6 +3440,9 @@
     },
     {
       "style": "filigree_dials",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "074",
       "reference": "number-of-the-hours-25.jpg",
       "references": [
@@ -3447,24 +3451,31 @@
         "silver-shadow-25.jpg"
       ],
       "what": "Open clockwork dials of every size strewn along the set: cream and gold rings, beaded rims and fine spokes round a hot middle, the blue lace showing through (copper gilt dials round ice blue, and bronze and lavender dials in shadow as palette entries).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_23",
+          "caption": "Open gold dials of every size strewn along a phoenix set's blue lace"
+        }
+      ],
+      "public": {
+        "name": "filigree-dials",
+        "palette": "filigree_dials",
+        "knobs": []
+      },
+      "kept": "5 tiles: the lit formulation, locations fdl_22, fdl_23 and fdl_27, and shadow_dials at seat 1 (plus the bronze_packing baseline tile, kept to that mode)",
+      "note": "Matt: round one 3/5 (2026-11-23); kept fdf_lit, entry shadow_dials (seat 1), locations fdl_22, fdl_23, fdl_27; precious_dials kept nothing and leaves the set and the library.",
       "palettes": [
         {
           "colormap": "filigree_dials",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "precious_dials",
-          "values": {
-            "/tone/median": 0.184,
-            "/tone/p10": 0.023,
-            "/layers/0/palette/gamma": 1.6,
-            "/layers/1/opacity": 0.15,
-            "/layers/5/opacity": 0.7,
-            "/layers/9/opacity": 0.25
-          },
-          "keeps": [],
-          "reference": "precious-things-25.jpg"
+          "keeps": [
+            "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_lit",
+            "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_22",
+            "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_23",
+            "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_27"
+          ],
+          "score": 3
         },
         {
           "colormap": "shadow_dials",
@@ -3476,13 +3487,19 @@
             "/layers/5/opacity": 0.7,
             "/layers/9/opacity": 0.25
           },
-          "keeps": [],
-          "reference": "silver-shadow-25.jpg"
+          "keeps": [
+            "style_ornate_rings_orbs_r1/filigree_dials/entries/e_shadow_dials_1"
+          ],
+          "reference": "silver-shadow-25.jpg",
+          "score": 3
         }
       ]
     },
     {
       "style": "glass_orbs",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "074",
       "reference": "orbits-25.jpg",
       "references": [
@@ -3491,20 +3508,28 @@
         "wallhaven_wallhaven-0wl9zq.jpg"
       ],
       "what": "Translucent glass orbs strung along glowing blue lace, each a glossy dome with a bright rim and a soft inner light, faint ripple rings round the crossings (pearl orbs on steel-blue satin, and cobalt bubbles on copper lace as palette entries).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_ornate_rings_orbs_r1/glass_orbs/formulations/gof_no_ripples",
+          "caption": "Translucent glass orbs strung along glowing blue lace"
+        }
+      ],
+      "public": {
+        "name": "glass-orbs",
+        "palette": "glass_orbs",
+        "knobs": []
+      },
+      "kept": "2 tiles: the no-ripples formulation and cobalt_orbs at seat 1",
+      "note": "Matt: round one 3/5 (2026-11-23); kept gof_no_ripples and entry cobalt_orbs (seat 1); no location kept; satin_orbs kept nothing and leaves the set and the library.",
       "palettes": [
         {
           "colormap": "glass_orbs",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "satin_orbs",
-          "values": {
-            "/tone/median": 0.18,
-            "/tone/p10": 0.051
-          },
-          "keeps": [],
-          "reference": "time-delay-25.jpg"
+          "keeps": [
+            "style_ornate_rings_orbs_r1/glass_orbs/formulations/gof_no_ripples"
+          ],
+          "score": 3
         },
         {
           "colormap": "cobalt_orbs",
@@ -3512,8 +3537,11 @@
             "/tone/median": 0.138,
             "/tone/p10": 0.031
           },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-0wl9zq.jpg"
+          "keeps": [
+            "style_ornate_rings_orbs_r1/glass_orbs/entries/e_cobalt_orbs_1"
+          ],
+          "reference": "wallhaven_wallhaven-0wl9zq.jpg",
+          "score": 3
         }
       ]
     }

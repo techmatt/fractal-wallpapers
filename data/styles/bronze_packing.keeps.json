@@ -700,6 +700,48 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_bronze_packing",
+      "picker": "style_ornate_rings_orbs_r1",
+      "picked": [
+        {
+          "row": "filigree_dials/formulations",
+          "key": "fdf_bronze_packing"
+        }
+      ],
+      "label": "baseline: bronze_packing",
+      "image": "style_ornate_rings_orbs_r1__fdf_bronze_packing.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_53ede0c4",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.1068509766165788",
+            "center_im": "0.23106601206539223",
+            "width": "0.00000015144216586765296"
+          },
+          "maxiter": 33087,
+          "note": "final139_general seat 623 (stripe, mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 623,
+            "key": "53ede0c4c0a32c0f",
+            "p_spiral": 0.109918
+          }
+        },
+        "style": "bronze_packing",
+        "stack": "bronze_packing@faa5f8fa",
+        "colormap": "bronze_packing",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -1898,6 +1940,312 @@
       "tone": {
         "median": 0.303,
         "p10": 0.14
+      }
+    },
+    "bronze_packing@faa5f8fa": {
+      "name": "bronze_packing",
+      "interior": {
+        "palette": 0.8
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 0.6,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "palette",
+          "opacity": 1.0,
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          },
+          "warp": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "hit": 1,
+                "read": "height",
+                "spacing": 1.0,
+                "escaped": true,
+                "largest": 0.12
+              }
+            },
+            "amount": -0.3
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 2,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0
+          },
+          "opacity": 0.35
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "light": {
+            "period": 2.0,
+            "rings": 0.4,
+            "slope": 0.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 0.5,
+            "shininess": 40.0,
+            "rim": 0.6,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.97
+            }
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            },
+            "invert": true
+          },
+          "power": 6.0,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            },
+            "invert": true
+          },
+          "power": 40.0,
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "add",
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "power": 30.0,
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 2,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            },
+            "invert": true
+          },
+          "power": 30.0,
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 2,
+              "read": "height",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "power": 30.0,
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "step",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "power": 3.0,
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "hit": 1,
+              "read": "angle",
+              "spacing": 1.0,
+              "escaped": true,
+              "largest": 0.12
+            }
+          },
+          "sheet": {
+            "bands": 6.0,
+            "rank": false,
+            "edge": 0.04,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        }
+      ],
+      "tone": {
+        "median": 0.321,
+        "p10": 0.099
       }
     },
     "bronze_packing@fc9bbf6d": {

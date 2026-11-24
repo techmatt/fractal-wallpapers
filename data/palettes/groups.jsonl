@@ -268,8 +268,6 @@
 {"schema": 1, "kind": "admitted", "map": "chrome_whorl", "group": "map:not-yet-lost-25", "joined": true, "nearest": "map:not-yet-lost-25", "m1": 0.039505}
 {"schema": 1, "kind": "admitted", "map": "dew_bloom", "group": "map:dew_bloom", "joined": false, "nearest": "map:wallhaven_wallhaven-45pqz1", "m1": 0.053365}
 {"schema": 1, "kind": "admitted", "map": "filigree_dials", "group": "map:filigree_dials", "joined": false, "nearest": "map:cet_linear_protanopic_deuteranopic_kbjyw_5_95_c25", "m1": 0.054173}
-{"schema": 1, "kind": "admitted", "map": "precious_dials", "group": "map:precious_dials", "joined": false, "nearest": "map:gilded_leaves", "m1": 0.048022}
 {"schema": 1, "kind": "admitted", "map": "shadow_dials", "group": "map:shadow_dials", "joined": false, "nearest": "map:metal-emblem-25", "m1": 0.047144}
 {"schema": 1, "kind": "admitted", "map": "glass_orbs", "group": "map:fractal_abstraction_lines_130499_2560x1600", "joined": true, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.037827}
 {"schema": 1, "kind": "admitted", "map": "cobalt_orbs", "group": "map:cobalt_orbs", "joined": false, "nearest": "map:soft_veils_drift", "m1": 0.073529}
-{"schema": 1, "kind": "admitted", "map": "satin_orbs", "group": "map:satin_orbs", "joined": false, "nearest": "map:Pewter Bloom", "m1": 0.040046}

@@ -1,0 +1,1048 @@
+{
+  "schema": 1,
+  "name": "filigree_dials",
+  "reference": {
+    "image": "number-of-the-hours-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/filigree_dials",
+  "keeps": [
+    {
+      "id": "style_ornate_rings_orbs_r1/filigree_dials/entries/e_shadow_dials_1",
+      "picker": "style_ornate_rings_orbs_r1",
+      "picked": [
+        {
+          "row": "filigree_dials/entries",
+          "key": "e_shadow_dials_1"
+        }
+      ],
+      "label": "shadow_dials (silver-shadow), seat 1",
+      "image": "style_ornate_rings_orbs_r1__e_shadow_dials_1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_53ede0c4",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.1068509766165788",
+            "center_im": "0.23106601206539223",
+            "width": "0.00000015144216586765296"
+          },
+          "maxiter": 33087,
+          "note": "final139_general seat 623 (stripe, mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 623,
+            "key": "53ede0c4c0a32c0f",
+            "p_spiral": 0.109918
+          }
+        },
+        "style": "e_shadow_dials",
+        "stack": "e_shadow_dials@05130e7c",
+        "colormap": "shadow_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_lit",
+      "picker": "style_ornate_rings_orbs_r1",
+      "picked": [
+        {
+          "row": "filigree_dials/formulations",
+          "key": "fdf_lit"
+        }
+      ],
+      "label": "lit: a brighter veil, a fainter lace",
+      "image": "style_ornate_rings_orbs_r1__fdf_lit.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "mandelbrot_53ede0c4",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-1.1068509766165788",
+            "center_im": "0.23106601206539223",
+            "width": "0.00000015144216586765296"
+          },
+          "maxiter": 33087,
+          "note": "final139_general seat 623 (stripe, mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 623,
+            "key": "53ede0c4c0a32c0f",
+            "p_spiral": 0.109918
+          }
+        },
+        "style": "filigree_dials__lit",
+        "stack": "filigree_dials__lit@3adc0cd8",
+        "colormap": "filigree_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_22",
+      "picker": "style_ornate_rings_orbs_r1",
+      "picked": [
+        {
+          "row": "filigree_dials/locations",
+          "key": "fdl_22"
+        }
+      ],
+      "label": "phoenix_faae7e86",
+      "image": "style_ornate_rings_orbs_r1__fdl_22.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_faae7e86",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.49561971818797146",
+            "center_im": "-0.66015625",
+            "width": "1.0807502612301254"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 9 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 9,
+            "key": "faae7e86fea46a13",
+            "p_spiral": 0.155065
+          }
+        },
+        "style": "filigree_dials",
+        "stack": "filigree_dials@968cd082",
+        "colormap": "filigree_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_23",
+      "picker": "style_ornate_rings_orbs_r1",
+      "picked": [
+        {
+          "row": "filigree_dials/locations",
+          "key": "fdl_23"
+        }
+      ],
+      "label": "phoenix-classic_f796b896",
+      "image": "style_ornate_rings_orbs_r1__fdl_23.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_f796b896",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.6514032345725556",
+            "center_im": "-0.8412679378637424",
+            "width": "0.010193283824318408"
+          },
+          "maxiter": 13841,
+          "note": "final139_general seat 570 (stripe, phoenix:classic)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 570,
+            "key": "f796b896c0787d3c",
+            "p_spiral": 0.008458
+          }
+        },
+        "style": "filigree_dials",
+        "stack": "filigree_dials@968cd082",
+        "colormap": "filigree_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_27",
+      "picker": "style_ornate_rings_orbs_r1",
+      "picked": [
+        {
+          "row": "filigree_dials/locations",
+          "key": "fdl_27"
+        }
+      ],
+      "label": "julia-multibrot5_59b2125d",
+      "image": "style_ornate_rings_orbs_r1__fdl_27.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_59b2125d",
+          "family": {
+            "c": [
+              "0.5562314365770176",
+              "-0.003715288780965526"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.22852004864802225",
+            "center_im": "-0.1622948350716586",
+            "width": "0.05598181912694581"
+          },
+          "maxiter": 10892,
+          "note": "final139_general seat 633 (tia, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 633,
+            "key": "59b2125d64ca2135",
+            "p_spiral": 0.022392
+          }
+        },
+        "style": "filigree_dials",
+        "stack": "filigree_dials@968cd082",
+        "colormap": "filigree_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "e_shadow_dials@05130e7c": {
+      "name": "e_shadow_dials",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.134,
+        "p10": 0.019
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.4
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.15
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.2,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.6,
+          "power": 30.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.22,
+            "edge": 0.07,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 40.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              },
+              "invert": true
+            },
+            "power": 30.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.0625,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              }
+            },
+            "power": 8.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012,
+              "hit": 2
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 30.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        }
+      ]
+    },
+    "filigree_dials@968cd082": {
+      "name": "filigree_dials",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.428,
+        "p10": 0.003
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.4
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.2,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 30.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.22,
+            "edge": 0.07,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "power": 40.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              },
+              "invert": true
+            },
+            "power": 30.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.0625,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              }
+            },
+            "power": 8.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012,
+              "hit": 2
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 30.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        }
+      ]
+    },
+    "filigree_dials__lit@3adc0cd8": {
+      "name": "filigree_dials__lit",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.428,
+        "p10": 0.003
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.4
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.5,
+          "power": 1.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 30.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.22,
+            "edge": 0.07,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "power": 40.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              },
+              "invert": true
+            },
+            "power": 30.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.0625,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              }
+            },
+            "power": 8.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012,
+              "hit": 2
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 30.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        }
+      ]
+    }
+  }
+}
