@@ -1,0 +1,364 @@
+{
+  "schema": 1,
+  "name": "dew_bloom",
+  "reference": {
+    "image": "wallhaven_wallhaven-45pqz1.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a flame or 3D fractal render with depth of field and bokeh (by its look), signed BoxTalk, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/dew_bloom",
+  "keeps": [
+    {
+      "id": "style_petal_spirals_r1/dew_bloom/formulations/dwf_dew_tubes",
+      "picker": "style_petal_spirals_r1",
+      "picked": [
+        {
+          "row": "dew_bloom/formulations",
+          "key": "dwf_dew_tubes"
+        }
+      ],
+      "label": "tubes: rings 1",
+      "image": "style_petal_spirals_r1__dwf_dew_tubes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_be08d977",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.4471102599431493",
+            "center_im": "-0.44513093814775134",
+            "width": "1.6824237464337766"
+          },
+          "maxiter": 5001,
+          "note": "final139_general seat 566 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 566,
+            "key": "be08d977d466dfc0",
+            "p_spiral": 0.299987
+          },
+          "ink": 0.03679
+        },
+        "style": "dew_bloom",
+        "stack": "dew_bloom@f1ab89fc",
+        "colormap": "dew_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_petal_spirals_r1/dew_bloom/locations/dwl_08",
+      "picker": "style_petal_spirals_r1",
+      "picked": [
+        {
+          "row": "dew_bloom/locations",
+          "key": "dwl_08"
+        }
+      ],
+      "label": "phoenix_4223804e",
+      "image": "style_petal_spirals_r1__dwl_08.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_4223804e",
+          "family": {
+            "c": [
+              "-0.8418714367509399",
+              "-0.5485139127038718"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.4412191563397286",
+              "0.02149698272731098"
+            ],
+            "z_prev": [
+              "0.02235284226744388",
+              "-0.011345512505400552"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.15370887653484167",
+            "center_im": "0.4538434461686248",
+            "width": "1.0001379041824567"
+          },
+          "maxiter": 5901,
+          "note": "final139_general seat 276 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 276,
+            "key": "4223804ea98ca05a",
+            "p_spiral": 0.145096
+          },
+          "ink": 0.03887
+        },
+        "style": "dew_bloom",
+        "stack": "dew_bloom@e712e1e7",
+        "colormap": "dew_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    }
+  ],
+  "stacks": {
+    "dew_bloom@e712e1e7": {
+      "name": "dew_bloom",
+      "interior": {
+        "rgb": "#0a0610"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 0.0,
+            "slope": 1.0,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.35,
+            "shininess": 14.0,
+            "rim": 0.2,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#ffe6f6"
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 3.0,
+            "fill": 0.12,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "add",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "rgb": "#0c0612"
+          },
+          "blend": "multiply",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "rgb": "#ffe8fa"
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 40.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              }
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.004,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        }
+      ],
+      "tone": {
+        "median": 0.232,
+        "p10": 0.078
+      }
+    },
+    "dew_bloom@f1ab89fc": {
+      "name": "dew_bloom",
+      "interior": {
+        "rgb": "#0a0610"
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.0,
+            "cycles": 1.0
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 3.0,
+            "rings": 1.0,
+            "slope": 0.3,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.45,
+            "diffuse": 0.75,
+            "specular": 0.35,
+            "shininess": 14.0,
+            "rim": 0.2,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#ffe6f6"
+            }
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 3.0,
+            "fill": 0.12,
+            "edge": 0.12
+          },
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "add",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0012,
+          "color": {
+            "rgb": "#0c0612"
+          },
+          "blend": "multiply",
+          "opacity": 0.8
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "rgb": "#ffe8fa"
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 40.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "smooth"
+              }
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.004,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3
+        }
+      ],
+      "tone": {
+        "median": 0.232,
+        "p10": 0.078
+      }
+    }
+  }
+}

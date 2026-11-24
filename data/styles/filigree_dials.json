@@ -1,0 +1,292 @@
+{
+  "schema": 1,
+  "name": "filigree_dials",
+  "description": "open clockwork dials strewn along the set: every disc of a circle packing drawn as a cream and gold dial, four concentric rings, a beaded rim, fine spokes round a hot middle and a smaller dial set inside, over the set's blue lace on a dark ground",
+  "reference": {
+    "image": "number-of-the-hours-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "an escape-time render signed 'exoteric.roach.org' (Ultra Fractal by its look), 2560x1600"
+  },
+  "suggested_colormap": "filigree_dials",
+  "reuses": [
+    "the bubble trap on its unit lattice (`center` [0.5, 0.5], `radius` 0.3, `escaped`, bounded by `largest` 0.25 and `smallest` 0.012): each disc a conformal preimage, so dials of every size, crowding to the set",
+    "an unranked sheet on the bubble's `height` at `period` 0.22, its rims alone: four concentric rings a dial",
+    "the inverted `height` as a sharp glow (power 40): the dial's rim; the bubble's `angle` cut into 32 sheet beads masked to the rim, and 16 spokes masked to the middle",
+    "`hit` 2's rims: a smaller dial set inside each",
+    "the smooth count by rank at gamma 2.4 for the ground, a `de` haze and a `de` hair for the lace (glow_filaments')",
+    "the tone pass, at the reference's median and p10"
+  ],
+  "adds": [],
+  "notes": [
+    "Item 074 (round one), triage group (7), ornate rings and orbs: number-of-the-hours (this file), precious-things and silver-shadow as palette entries of this stack (precious_dials, shadow_dials); orbits, wallhaven-0wl9zq and time-delay as glass_orbs. One escape loop reaches it: the bubble trap reads one orbit, the rings, beads and spokes are positions on its `height` and `angle`, and the lace is the distance estimate.",
+    "Nearest modes: bronze_packing (discs packed inside discs, lit metallic rims, filled) and clockwork_rings (one set of equipotential rings round a quasicircle). What differs: each disc is drawn open, as rings and beads with the lace showing through, so the frame reads as many small clock faces of every size rather than filled bronze coins or one clock round one set.",
+    "The first draft drew the rings as circle strokes about the critical value (`on_c`): at the galleries' Julia and Mandelbrot seats their pullbacks are long arcs, not rings, so the dials moved to the bubble trap, whose entries are round. A bubble `fade` lit the faded parts of the inverted-height rim as wedge-shaped shards: the dials take none.",
+    "Readings: bare (the dials off: the headline), plain_rims (no rings, beads or spokes), large (`largest` 0.45), nested (the inner dials bright, eight rings), lit (a brighter veil, a fainter lace).",
+    "Round one (picker style_ornate_rings_orbs_r1): formulations at mandelbrot_53ede0c4 (maxiter 33087) and julia-multibrot5_24d90f8f; ten locations kept by eye from forty `style scout --seed 74` seats. Tone: 8 of the first 10 drafts held number-of-the-hours' balance, the two phoenix-classic seats with large black interiors missing on the black share (0.254 and 0.200 vs 0.141), so 01 and 27 replaced them: all ten shown hold. The entries miss p90 against their own references (precious_dials 0.61 to 0.70 vs 0.485, shadow_dials 0.51 to 0.61 vs 0.400) with or without their values (a fainter lace and haze, a dimmer rim): the open dials' bright rings sit in the top decile, so round two's lever is the rings' sheet or a darker top to the maps. Cost (074, box loaded beside the fast lane, an upper bound): 64 s as WebAssembly on one thread at 1280x800 ss2 at the parity seat (17 s native); a draft (1280x800 ss2) at the Mandelbrot formulation seat (maxiter 33087) took 26 s native at six threads, 156 thread-seconds; the parity run's native side draws on three threads, so WebAssembly costs about 1.25 times native thread-time, about 195 s there, under the 5-minute bar."
+  ],
+  "style": {
+    "name": "filigree_dials",
+    "interior": {
+      "palette": 0.05
+    },
+    "tone": {
+      "median": 0.428,
+      "p10": 0.003
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "gamma": 2.4
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.03,
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "height",
+            "largest": 0.25,
+            "smallest": 0.012
+          }
+        },
+        "color": {
+          "palette": 0.5
+        },
+        "blend": "screen",
+        "opacity": 0.2,
+        "power": 6.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "height",
+            "largest": 0.25,
+            "smallest": 0.012
+          }
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 30.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "height",
+            "largest": 0.25,
+            "smallest": 0.012
+          }
+        },
+        "sheet": {
+          "period": 0.22,
+          "edge": 0.07,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.8
+        },
+        "blend": "screen",
+        "opacity": 0.9
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "height",
+            "largest": 0.25,
+            "smallest": 0.012
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.95
+        },
+        "blend": "screen",
+        "opacity": 0.95,
+        "power": 40.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "angle",
+            "largest": 0.25,
+            "smallest": 0.012
+          }
+        },
+        "sheet": {
+          "period": 0.03125,
+          "edge": 0.3,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "mask": {
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            },
+            "invert": true
+          },
+          "power": 30.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "angle",
+            "largest": 0.25,
+            "smallest": 0.012
+          }
+        },
+        "sheet": {
+          "period": 0.0625,
+          "edge": 0.08,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "mask": {
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "power": 8.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.3,
+            "spacing": 1.0,
+            "escaped": true,
+            "read": "height",
+            "largest": 0.25,
+            "smallest": 0.012,
+            "hit": 2
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.35
+        },
+        "blend": "screen",
+        "opacity": 0.8,
+        "power": 30.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0005,
+        "color": {
+          "palette": 0.85
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      }
+    ]
+  }
+}

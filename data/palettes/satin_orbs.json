@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "satin_orbs",
+  "kind": "sequential",
+  "source": "a blue-black through a steel navy and a slate blue to a pewter grey and a silver white: time-delay-25.jpg, pearl orbs in folds of steel-blue satin",
+  "stops": [
+    [0.0, [6, 9, 16]],
+    [0.2, [18, 30, 52]],
+    [0.35, [36, 58, 92]],
+    [0.5, [70, 92, 124]],
+    [0.65, [120, 130, 146]],
+    [0.8, [170, 178, 190]],
+    [0.9, [210, 216, 228]],
+    [1.0, [242, 246, 252]]
+  ]
+}

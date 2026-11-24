@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "shadow_dials",
+  "kind": "sequential",
+  "source": "a black through umber and rose-brown to a lavender grey, a warm amber and a pale peach: silver-shadow-25.jpg, bronze and rose rings in shadow with lavender filigree between them",
+  "stops": [
+    [0.0, [6, 5, 6]],
+    [0.15, [24, 18, 18]],
+    [0.3, [120, 116, 150]],
+    [0.42, [64, 44, 40]],
+    [0.55, [110, 74, 62]],
+    [0.65, [150, 140, 176]],
+    [0.75, [176, 118, 80]],
+    [0.85, [214, 160, 96]],
+    [0.93, [240, 206, 160]],
+    [1.0, [252, 236, 214]]
+  ]
+}

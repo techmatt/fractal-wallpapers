@@ -1,0 +1,204 @@
+{
+  "schema": 1,
+  "name": "frost_filaments",
+  "reference": {
+    "image": "valhalla.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "Ultra Fractal, 2560x1600"
+  },
+  "folder": "fractal-drive-sync/style-keeps/frost_filaments",
+  "keeps": [
+    {
+      "id": "style_classic_escape_texture_r1/frost_filaments/formulations/fin_fA__f3_stack__00_julia-mandelbrot_f682af93",
+      "picker": "style_classic_escape_texture_r1",
+      "picked": [
+        {
+          "row": "frost_filaments/formulations",
+          "key": "fin_fA__f3_stack__00_julia-mandelbrot_f682af93"
+        }
+      ],
+      "label": "the stack: white glowing filaments feathered with frost, faint arcs",
+      "image": "style_classic_escape_texture_r1__fin_fA__f3_stack__00_julia-mandelbrot_f682af93.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_f682af93",
+          "family": {
+            "c": [
+              "-1.2517612129804818",
+              "0.038979112285470574"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-1.515162206906952",
+            "center_im": "0.018894489205932737",
+            "width": "0.04640390887340657"
+          },
+          "maxiter": 11217,
+          "note": "final140_general2000 seat 24 (stripe, julia:mandelbrot)",
+          "gallery": {
+            "record": "final140_general2000",
+            "seat": 24,
+            "key": "f682af9370201ce1",
+            "p_spiral": 0.920996
+          }
+        },
+        "style": "frost_filaments",
+        "stack": "frost_filaments@7d6f53ec",
+        "colormap": "frost_filaments",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      },
+      "note": "Matt 2026-11-22: 3/5; no tile picked, the stack tile is kept as the mode's example"
+    }
+  ],
+  "stacks": {
+    "frost_filaments@7d6f53ec": {
+      "name": "frost_filaments",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.135,
+        "p10": 0.006
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.3,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 4.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0025,
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.75
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0002,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.97
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 60.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 2.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "circle",
+              "on_c": true,
+              "radius": 0.8,
+              "width": 0.0008,
+              "taper": 0.0,
+              "largest": 2.0,
+              "smallest": 0.15,
+              "steps": 8,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.25,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.3
+        }
+      ]
+    }
+  }
+}

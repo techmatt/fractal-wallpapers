@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "name": "cobalt_orbs",
+  "kind": "sequential",
+  "source": "a navy black through deep blue and cobalt to a copper brown, a tan and an aqua white: wallhaven-0wl9zq.jpg, cobalt glass bubbles over copper-brown spiral lace",
+  "stops": [
+    [0.0, [2, 6, 18]],
+    [0.2, [8, 22, 60]],
+    [0.35, [16, 60, 170]],
+    [0.5, [60, 40, 34]],
+    [0.6, [132, 88, 56]],
+    [0.75, [40, 120, 230]],
+    [0.85, [70, 200, 240]],
+    [0.9, [206, 170, 130]],
+    [0.95, [120, 230, 250]],
+    [1.0, [230, 250, 255]]
+  ]
+}

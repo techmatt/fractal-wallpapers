@@ -2589,7 +2589,8 @@
             "style_glossy_tubes_r1/ribbed_tubes/formulations/f_fat_ribs__00_mandelbrot_4199ca9b_ribbed_tubes",
             "style_glossy_tubes_r1/ribbed_tubes/formulations/f_scales__00_mandelbrot_4199ca9b_ribbed_tubes",
             "style_glossy_tubes_r1/ribbed_tubes/locations/loc__05_mandelbrot_26914365_ribbed_tubes",
-            "style_glossy_tubes_r1/ribbed_tubes/locations/loc__08_phoenix-classic_3b6d967c_ribbed_tubes"
+            "style_glossy_tubes_r1/ribbed_tubes/locations/loc__08_phoenix-classic_3b6d967c_ribbed_tubes",
+            "style_petal_spirals_r1/chrome_whorl/formulations/cwf_ribbed_tubes"
           ],
           "score": 2
         },
@@ -3242,6 +3243,9 @@
     },
     {
       "style": "frost_filaments",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "064",
       "reference": "valhalla.jpg",
       "references": [
@@ -3250,44 +3254,28 @@
         "toxic-spire-25.jpg"
       ],
       "what": "A deep-blue spiral whose filaments glow white, feathered with frost spikes and sparkles, faint circle arcs across it (navy dendrites on pale ice, gold dendrites in green as palette entries).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_classic_escape_texture_r1/frost_filaments/formulations/fin_fA__f3_stack__00_julia-mandelbrot_f682af93",
+          "caption": "A deep-blue Julia spiral, its filaments glowing white and feathered with frost spikes"
+        }
+      ],
+      "public": {
+        "name": "frost-filaments",
+        "palette": "frost_filaments",
+        "knobs": []
+      },
+      "kept": "1 tile: the stack at the formulations seat, kept as the mode's example (no tile picked)",
+      "note": "Matt: 3/5 (2026-11-22, from the 073 review page); no tile picked, so the stack tile is kept for the mode to open in lab; entries icy_sky and toxic_spire kept nothing and leave the set and the library.",
       "palettes": [
         {
           "colormap": "frost_filaments",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "icy_sky",
-          "values": {
-            "/layers/0/palette/gamma": 0.8,
-            "/layers/1/opacity": 0.5,
-            "/layers/2/opacity": 0.15,
-            "/layers/3/opacity": 0.1,
-            "/layers/5/opacity": 0.3,
-            "/layers/6/falloff": 0.0015,
-            "/layers/6/opacity": 1.0,
-            "/tone/median": 0.724,
-            "/tone/p10": 0.441
-          },
-          "keeps": [],
-          "reference": "under-a-brighter-sky-25.jpg"
-        },
-        {
-          "colormap": "toxic_spire",
-          "values": {
-            "/layers/0/palette/gamma": 0.8,
-            "/layers/1/mask/power": 4.0,
-            "/layers/1/opacity": 0.5,
-            "/layers/2/falloff": 0.003,
-            "/layers/2/opacity": 0.3,
-            "/layers/3/opacity": 0.6,
-            "/layers/5/opacity": 0.8,
-            "/layers/6/opacity": 0.6,
-            "/tone/median": 0.241,
-            "/tone/p10": 0.035
-          },
-          "keeps": [],
-          "reference": "toxic-spire-25.jpg"
+          "keeps": [
+            "style_classic_escape_texture_r1/frost_filaments/formulations/fin_fA__f3_stack__00_julia-mandelbrot_f682af93"
+          ],
+          "score": 3
         }
       ]
     },
@@ -3374,6 +3362,9 @@
     },
     {
       "style": "chrome_whorl",
+      "score": 2,
+      "status": "publish",
+      "tier": "lab",
       "item": "072",
       "reference": "metal-emblem-25.jpg",
       "references": [
@@ -3383,75 +3374,146 @@
         "noir-25.jpg"
       ],
       "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam (ivory blades with blue glows, pastel pleats, and black chrome over frosted lace as palette entries).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_petal_spirals_r1/chrome_whorl/formulations/cwf_cw_soft",
+          "caption": "Soft-lit chrome petals whirling out of a small rosette, an amber ember in each seam"
+        }
+      ],
+      "public": {
+        "name": "chrome-whorl",
+        "palette": "chrome_whorl",
+        "knobs": []
+      },
+      "kept": "2 tiles: cw_soft at the formulations seat and cw_wide_ember at the phoenix seat; no palette entry and no location kept",
+      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations.",
       "palettes": [
         {
           "colormap": "chrome_whorl",
           "values": {},
-          "keeps": []
-        },
-        {
-          "colormap": "bone_whorl",
-          "values": {
-            "/tone/median": 0.269,
-            "/tone/p10": 0.033,
-            "/layers/2/color": {
-              "rgb": "#2f62ff"
-            },
-            "/layers/1/light/highlight": {
-              "rgb": "#fff6e6"
-            }
-          },
-          "keeps": [],
-          "reference": "to-the-bone-25.jpg"
-        },
-        {
-          "colormap": "unfolding_whorl",
-          "values": {
-            "/tone/median": 0.543,
-            "/tone/p10": 0.424,
-            "/interior": {
-              "palette": 0.3
-            },
-            "/layers/0/palette/gamma": 1.0,
-            "/layers/1/light/ambient": 0.5,
-            "/layers/1/light/specular": 0.45,
-            "/layers/2/color": {
-              "rgb": "#fff4b0"
-            },
-            "/layers/2/opacity": 0.35,
-            "/layers/3/opacity": 0.25
-          },
-          "keeps": [],
-          "reference": "unfolding-creation-25.jpg"
-        },
-        {
-          "colormap": "noir_whorl",
-          "values": {
-            "/tone/median": 0.462,
-            "/tone/p10": 0.103,
-            "/layers/2/color": {
-              "rgb": "#dfe8ff"
-            },
-            "/layers/2/opacity": 0.6
-          },
-          "keeps": [],
-          "reference": "noir-25.jpg"
+          "keeps": [
+            "style_petal_spirals_r1/chrome_whorl/formulations/cwf_cw_soft",
+            "style_petal_spirals_r1/chrome_whorl/formulations2/cwf2_cw_wide_ember"
+          ],
+          "score": 2
         }
       ]
     },
     {
       "style": "dew_bloom",
+      "score": 3,
+      "status": "publish",
+      "tier": "lab",
       "item": "072",
       "reference": "wallhaven_wallhaven-45pqz1.png",
       "references": [
         "wallhaven_wallhaven-45pqz1.png"
       ],
       "what": "A translucent violet bloom: soft lit petals ringed by glowing pink rims, the set's lace inked dark and beaded with dew sparkles.",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_petal_spirals_r1/dew_bloom/locations/dwl_08",
+          "caption": "A translucent violet bloom, its petals ringed by glowing pink rims, dew sparkling on the dark lace"
+        }
+      ],
+      "public": {
+        "name": "dew-bloom",
+        "palette": "dew_bloom",
+        "knobs": []
+      },
+      "kept": "2 tiles: dew_tubes at the formulations seat and the stack at location dwl_08",
+      "note": "Matt: round one 3/5 (2026-11-22); kept dew_tubes and location dwl_08.",
       "palettes": [
         {
           "colormap": "dew_bloom",
           "values": {},
+          "keeps": [
+            "style_petal_spirals_r1/dew_bloom/formulations/dwf_dew_tubes",
+            "style_petal_spirals_r1/dew_bloom/locations/dwl_08"
+          ],
+          "score": 3
+        }
+      ]
+    },
+    {
+      "style": "filigree_dials",
+      "item": "074",
+      "reference": "number-of-the-hours-25.jpg",
+      "references": [
+        "number-of-the-hours-25.jpg",
+        "precious-things-25.jpg",
+        "silver-shadow-25.jpg"
+      ],
+      "what": "Open clockwork dials of every size strewn along the set: cream and gold rings, beaded rims and fine spokes round a hot middle, the blue lace showing through (copper gilt dials round ice blue, and bronze and lavender dials in shadow as palette entries).",
+      "palettes": [
+        {
+          "colormap": "filigree_dials",
+          "values": {},
           "keeps": []
+        },
+        {
+          "colormap": "precious_dials",
+          "values": {
+            "/tone/median": 0.184,
+            "/tone/p10": 0.023,
+            "/layers/0/palette/gamma": 1.6,
+            "/layers/1/opacity": 0.15,
+            "/layers/5/opacity": 0.7,
+            "/layers/9/opacity": 0.25
+          },
+          "keeps": [],
+          "reference": "precious-things-25.jpg"
+        },
+        {
+          "colormap": "shadow_dials",
+          "values": {
+            "/tone/median": 0.134,
+            "/tone/p10": 0.019,
+            "/layers/1/opacity": 0.15,
+            "/layers/3/opacity": 0.6,
+            "/layers/5/opacity": 0.7,
+            "/layers/9/opacity": 0.25
+          },
+          "keeps": [],
+          "reference": "silver-shadow-25.jpg"
+        }
+      ]
+    },
+    {
+      "style": "glass_orbs",
+      "item": "074",
+      "reference": "orbits-25.jpg",
+      "references": [
+        "orbits-25.jpg",
+        "time-delay-25.jpg",
+        "wallhaven_wallhaven-0wl9zq.jpg"
+      ],
+      "what": "Translucent glass orbs strung along glowing blue lace, each a glossy dome with a bright rim and a soft inner light, faint ripple rings round the crossings (pearl orbs on steel-blue satin, and cobalt bubbles on copper lace as palette entries).",
+      "palettes": [
+        {
+          "colormap": "glass_orbs",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "satin_orbs",
+          "values": {
+            "/tone/median": 0.18,
+            "/tone/p10": 0.051
+          },
+          "keeps": [],
+          "reference": "time-delay-25.jpg"
+        },
+        {
+          "colormap": "cobalt_orbs",
+          "values": {
+            "/tone/median": 0.138,
+            "/tone/p10": 0.031
+          },
+          "keeps": [],
+          "reference": "wallhaven_wallhaven-0wl9zq.jpg"
         }
       ]
     }

@@ -241,6 +241,54 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_petal_spirals_r1/chrome_whorl/formulations/cwf_ribbed_tubes",
+      "picker": "style_petal_spirals_r1",
+      "picked": [
+        {
+          "row": "chrome_whorl/formulations",
+          "key": "cwf_ribbed_tubes"
+        }
+      ],
+      "label": "baseline: ribbed_tubes",
+      "image": "style_petal_spirals_r1__cwf_ribbed_tubes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_e756b257",
+          "family": {
+            "c": [
+              "-0.7548374821242281",
+              "-0.07387098369508416"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.7454251690123987",
+            "center_im": "0.2000312990630411",
+            "width": "0.22451138789494993"
+          },
+          "maxiter": 8488,
+          "note": "final139_general seat 324 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 324,
+            "key": "e756b257884d2082",
+            "p_spiral": 0.583157
+          },
+          "ink": 0.04332
+        },
+        "style": "ribbed_tubes",
+        "stack": "ribbed_tubes@71128eee",
+        "colormap": "ribbed_tubes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
