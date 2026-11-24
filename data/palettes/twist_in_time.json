@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "twist_in_time",
+  "kind": "sequential",
+  "source": "twist_in_time, authored as 8 control points as the albedo of the soft_veils style's entry from twist-in-time-25.jpg: a navy ground, royal and azure veils, cyan rims and a magenta-violet heart.",
+  "stops": [
+    [0.0, [10, 14, 50]],
+    [0.2, [24, 40, 110]],
+    [0.4, [40, 80, 180]],
+    [0.55, [50, 140, 220]],
+    [0.7, [70, 200, 235]],
+    [0.82, [150, 70, 220]],
+    [0.92, [210, 80, 230]],
+    [1.0, [240, 200, 255]]
+  ]
+}

@@ -172,7 +172,7 @@ per field plus the style's channels (`data/styles/STACK.md` owns kinds, channels
 `data/styles/README.md` how to make a style). A field read through a **view** (`style::View`)
 runs one more escape loop per sample at the moved point. Each statistic is measured once, then
 composited per sample, so a band matches the whole frame; **tone**
-is a second measure, of the composite. A `log_polar` **projection** (`src/projection.rs`)
+is a second measure, of the composite. A `log_polar` or `kaleidoscope` **projection** (`src/projection.rs`)
 carries its Jacobian to `de` and the light, and so does a **stir** (`src/stir.rs`; the
 stack's `stir`), which then moves each sample's point along a viewed copy's level lines, one
 more escape loop per step (three with the Jacobian, a forward difference). **Lighting exists only in a style's `light`

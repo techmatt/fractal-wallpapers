@@ -28,7 +28,10 @@ render was given; the second keeps a style in key with every palette.
 ## Projection
 
 `projection` (optional) is where each sample looks: a per-sample pre-map of the frame
-before anything is iterated. The one kind is the **log-polar** (exponential-map) view,
+before anything is iterated. The **kaleidoscope** fold, `{"kaleidoscope": {center, turns,
+angle}}`, is a mirror box: the disc round `center` is cut into `2·turns` wedges and every
+sample reads the one at `angle`°, mirrored in every other, at the straight view's radius,
+so lengths and the light keep their meaning. The other kind is the **log-polar** (exponential-map) view,
 `{"log_polar": {center, turns, power, twist, angle, ring}}`: about a vanishing point at
 `center` (fractions of the frame from its top-left; the location's viewport `center` is
 the plane point it shows), a sample at frame radius `r` and angle `θ` reads
@@ -131,6 +134,7 @@ the stack refuses unknown members):
 | --- | --- |
 | stack | `interior` black; `tone` and `projection` absent; `stir` and `post` empty (`POST.md`) |
 | `log_polar` | `center` [0.5, 0.5], `turns` 1, `power` = `turns`, `twist` 0, `angle` 0, `ring` 1 |
+| `kaleidoscope` | `center` [0.5, 0.5], `turns` 6, `angle` 0 |
 | channel | `transform` `linear`, `invert` false |
 | `inside` | `iterations` 1000 |
 | `radial` | `center` [0.5, 0.5] |

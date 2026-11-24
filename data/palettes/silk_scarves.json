@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "silk_scarves",
+  "kind": "sequential",
+  "source": "silk_scarves, authored as 8 control points as the albedo of the soft_veils style's entry from silk-scarves-25.jpg: a dark teal ground, teal and sea-green silk, lime, gold and orange, a crimson last scarf.",
+  "stops": [
+    [0.0, [8, 22, 22]],
+    [0.2, [20, 80, 80]],
+    [0.35, [40, 150, 140]],
+    [0.5, [110, 180, 90]],
+    [0.65, [230, 200, 50]],
+    [0.8, [250, 150, 30]],
+    [0.9, [220, 50, 60]],
+    [1.0, [255, 200, 120]]
+  ]
+}

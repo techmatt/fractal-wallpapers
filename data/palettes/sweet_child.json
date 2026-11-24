@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "sweet_child",
+  "kind": "sequential",
+  "source": "sweet_child, authored as 8 control points as the albedo of the soft_veils style's entry from sweet-child-25.jpg: a dusky wine ground, rose and dusty pink silk, sage, cream and a white sheen.",
+  "stops": [
+    [0.0, [50, 22, 26]],
+    [0.2, [110, 40, 50]],
+    [0.4, [170, 70, 85]],
+    [0.55, [200, 110, 120]],
+    [0.7, [150, 150, 110]],
+    [0.82, [220, 200, 175]],
+    [0.92, [245, 230, 220]],
+    [1.0, [255, 250, 245]]
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "mean_plumes",
+  "kind": "sequential",
+  "source": "mean_plumes, authored as 8 control points as the albedo of the feather_plumes style's entry from mean-25.jpg: a dark teal night, a rust-red haze, cyan barbs and pale gold tips.",
+  "stops": [
+    [0.0, [6, 14, 18]],
+    [0.2, [60, 18, 14]],
+    [0.35, [150, 40, 28]],
+    [0.5, [30, 110, 140]],
+    [0.65, [50, 170, 210]],
+    [0.8, [140, 210, 220]],
+    [0.92, [230, 225, 170]],
+    [1.0, [255, 245, 220]]
+  ]
+}

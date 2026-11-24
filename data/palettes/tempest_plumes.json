@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "tempest_plumes",
+  "kind": "sequential",
+  "source": "tempest_plumes, authored as 8 control points as the albedo of the feather_plumes style's entry from tempest-25.jpg: an indigo night, violet barbs, magenta and orchid tips.",
+  "stops": [
+    [0.0, [18, 6, 40]],
+    [0.2, [40, 14, 90]],
+    [0.4, [80, 30, 170]],
+    [0.55, [120, 50, 220]],
+    [0.7, [170, 60, 210]],
+    [0.85, [225, 90, 200]],
+    [0.93, [245, 160, 235]],
+    [1.0, [255, 220, 250]]
+  ]
+}

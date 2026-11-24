@@ -2289,7 +2289,11 @@
         "intermission-25.jpg",
         "hazy-summer-garden-25.jpg",
         "holey-trinity-25.jpg",
-        "goldenrod-25.jpg"
+        "goldenrod-25.jpg",
+        "silk-scarves-25.jpg",
+        "sweet-child-25.jpg",
+        "twist-in-time-25.jpg",
+        "the-gift-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -2453,6 +2457,42 @@
           ],
           "reference": "goldenrod-25.jpg",
           "score": 5
+        },
+        {
+          "colormap": "silk_scarves",
+          "values": {
+            "/tone/median": 0.224,
+            "/tone/p10": 0.078
+          },
+          "keeps": [],
+          "reference": "silk-scarves-25.jpg"
+        },
+        {
+          "colormap": "sweet_child",
+          "values": {
+            "/tone/median": 0.378,
+            "/tone/p10": 0.243
+          },
+          "keeps": [],
+          "reference": "sweet-child-25.jpg"
+        },
+        {
+          "colormap": "twist_in_time",
+          "values": {
+            "/tone/median": 0.209,
+            "/tone/p10": 0.103
+          },
+          "keeps": [],
+          "reference": "twist-in-time-25.jpg"
+        },
+        {
+          "colormap": "the_gift",
+          "values": {
+            "/tone/median": 0.238,
+            "/tone/p10": 0.105
+          },
+          "keeps": [],
+          "reference": "the-gift-25.jpg"
         }
       ]
     },
@@ -3542,6 +3582,68 @@
           ],
           "reference": "wallhaven_wallhaven-0wl9zq.jpg",
           "score": 3
+        }
+      ]
+    },
+    {
+      "style": "feather_plumes",
+      "item": "075",
+      "reference": "wallhaven_wallhaven-0w8gpp.png",
+      "references": [
+        "wallhaven_wallhaven-0w8gpp.png",
+        "tempest-25.jpg",
+        "mean-25.jpg",
+        "starlight-25.jpg"
+      ],
+      "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, and ultramarine plumes as palette entries).",
+      "palettes": [
+        {
+          "colormap": "feather_plumes",
+          "values": {},
+          "keeps": []
+        },
+        {
+          "colormap": "tempest_plumes",
+          "values": {
+            "/tone/median": 0.224,
+            "/tone/p10": 0.087
+          },
+          "keeps": [],
+          "reference": "tempest-25.jpg"
+        },
+        {
+          "colormap": "mean_plumes",
+          "values": {
+            "/tone/median": 0.202,
+            "/tone/p10": 0.063
+          },
+          "keeps": [],
+          "reference": "mean-25.jpg"
+        },
+        {
+          "colormap": "starlight_plumes",
+          "values": {
+            "/tone/median": 0.082,
+            "/tone/p10": 0.024
+          },
+          "keeps": [],
+          "reference": "starlight-25.jpg"
+        }
+      ]
+    },
+    {
+      "style": "lilac_kaleidoscope",
+      "item": "075",
+      "reference": "patterns_lilac_fractal_122906_2560x1600.jpg",
+      "references": [
+        "patterns_lilac_fractal_122906_2560x1600.jpg"
+      ],
+      "what": "A lilac mandala: the set's feathered lace folded eightfold through a mirror box, periwinkle barbs and white sparks on royal blue.",
+      "palettes": [
+        {
+          "colormap": "lilac_kaleidoscope",
+          "values": {},
+          "keeps": []
         }
       ]
     }

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "feather_plumes",
+  "kind": "sequential",
+  "source": "feather_plumes, authored as 8 control points as the albedo of the feather_plumes style from wallhaven-0w8gpp.png: a blue-black night, slate and steel-blue barbs, ice-white tips and an amber spark.",
+  "stops": [
+    [0.0, [4, 8, 14]],
+    [0.2, [14, 30, 46]],
+    [0.4, [40, 80, 112]],
+    [0.55, [80, 130, 170]],
+    [0.7, [140, 185, 215]],
+    [0.85, [215, 235, 250]],
+    [0.93, [255, 240, 210]],
+    [1.0, [255, 190, 90]]
+  ]
+}

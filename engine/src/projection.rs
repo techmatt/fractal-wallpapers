@@ -8,7 +8,7 @@
 //! view, so a band of rows draws the same bytes as the whole frame, and `style-wasm/`
 //! compiles it unchanged for a page.
 //!
-//! The one projection is the **log-polar** (exponential-map) view. Around a
+//! The first projection is the **log-polar** (exponential-map) view. Around a
 //! vanishing point at frame position `p₀`, a sample at offset `p` (radius `r`,
 //! angle `θ`, `y` up) reads
 //!
@@ -37,6 +37,13 @@
 //! the local sample spacing (relative to the straight view's), so it stays a
 //! distance in samples, and a gradient is pulled back to the frame, so a light's
 //! azimuth is the frame's and not the plane's.
+//!
+//! The **kaleidoscope** fold, `{"kaleidoscope": {center, turns, angle}}`, is a
+//! mirror box: the disc round `center` is cut into `2·turns` wedges of `π / turns`,
+//! and every sample reads the wedge at `angle`, mirrored in every other one, so the
+//! picture has the `turns`-fold dihedral symmetry of a kaleidoscope. Its radius is the
+//! straight view's (a fold is an isometry piece by piece), so the Jacobian is a turn
+//! or a reflection and a distance keeps its length.
 
 use num_complex::Complex;
 use serde::{Deserialize, Serialize};
@@ -48,6 +55,31 @@ use crate::viewport::Viewport;
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Projection {
     LogPolar(LogPolar),
+    Kaleidoscope(Kaleidoscope),
+}
+
+/// The mirror-box fold: see the module documentation.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Kaleidoscope {
+    /// The fold's middle, as fractions of the frame from its top-left corner. The
+    /// viewport's `center` is the plane point it shows.
+    pub center: [f64; 2],
+    /// Mirrored pairs of wedges round the middle: the picture's symmetry. At least 1.
+    pub turns: u32,
+    /// Degrees anticlockwise from the frame's `x` axis to the wedge every sample
+    /// reads.
+    pub angle: f64,
+}
+
+impl Default for Kaleidoscope {
+    fn default() -> Kaleidoscope {
+        Kaleidoscope {
+            center: [0.5, 0.5],
+            turns: 6,
+            angle: 0.0,
+        }
+    }
 }
 
 /// The exponential-map view: see the module documentation for the formula.
@@ -121,7 +153,18 @@ impl Sample {
 impl Projection {
     /// Refuse a projection that would draw something other than what it says.
     pub fn validate(&self) -> Result<(), String> {
-        let Projection::LogPolar(view) = self;
+        let view = match self {
+            Projection::LogPolar(view) => view,
+            Projection::Kaleidoscope(fold) => {
+                if fold.turns == 0 {
+                    return Err("kaleidoscope turns is at least 1".into());
+                }
+                if !(fold.angle.is_finite() && fold.center.iter().all(|f| f.is_finite())) {
+                    return Err("kaleidoscope angle and center are finite".into());
+                }
+                return Ok(());
+            }
+        };
         if view.turns == 0 {
             return Err("log_polar turns is at least 1".into());
         }
@@ -145,13 +188,18 @@ impl Projection {
 
     /// The unit a layer's `period` is counted in under this view.
     pub fn ring(&self) -> f64 {
-        let Projection::LogPolar(view) = self;
-        view.ring
+        match self {
+            Projection::LogPolar(view) => view.ring,
+            Projection::Kaleidoscope(_) => 1.0,
+        }
     }
 
     /// The plane point sample `(col, row)` of `view`'s supersampled grid reads.
     pub fn sample(&self, view: &Viewport, col: u32, row: u32) -> Sample {
-        let Projection::LogPolar(map) = self;
+        let map = match self {
+            Projection::LogPolar(map) => map,
+            Projection::Kaleidoscope(fold) => return fold.sample(view, col, row),
+        };
         let (width, height) = (view.sample_width() as f64, view.sample_height() as f64);
         let x = col as f64 + 0.5 - map.center[0] * width;
         let y = map.center[1] * height - (row as f64 + 0.5);
@@ -178,6 +226,42 @@ impl Projection {
         Sample {
             point: view.center + offset,
             jacobian: Some([offset * du[0] + turn * dv[0], offset * du[1] + turn * dv[1]]),
+        }
+    }
+}
+
+impl Kaleidoscope {
+    /// The fold: the sample's angle from the middle, less `angle`, folded into
+    /// `[0, π / turns]` by mirroring, at the straight view's radius.
+    fn sample(&self, view: &Viewport, col: u32, row: u32) -> Sample {
+        let (width, height) = (view.sample_width() as f64, view.sample_height() as f64);
+        let x = col as f64 + 0.5 - self.center[0] * width;
+        let y = self.center[1] * height - (row as f64 + 0.5);
+        let step = view.sample_spacing();
+        let wedge = std::f64::consts::PI / self.turns as f64;
+        let angle = self.angle.to_radians();
+        let theta = y.atan2(x) - angle;
+        let mut folded = theta.rem_euclid(2.0 * wedge);
+        let mirrored = folded > wedge;
+        if mirrored {
+            folded = 2.0 * wedge - folded;
+        }
+        // c − centre = step·R·p, or step·R·p̄ in a mirrored wedge, R a unit turn.
+        let frame = Complex::new(x, y);
+        let read = folded + angle;
+        let turn = if mirrored {
+            Complex::from_polar(step, read + theta + angle)
+        } else {
+            Complex::from_polar(step, read - theta - angle)
+        };
+        let (point, dy) = if mirrored {
+            (turn * frame.conj(), turn * Complex::new(0.0, -1.0))
+        } else {
+            (turn * frame, turn * Complex::new(0.0, 1.0))
+        };
+        Sample {
+            point: view.center + point,
+            jacobian: Some([turn, dy]),
         }
     }
 }
@@ -268,7 +352,9 @@ mod tests {
             center: [0.3, 0.6],
             ring: 1.0,
         });
-        let Projection::LogPolar(lp) = map;
+        let Projection::LogPolar(lp) = map else {
+            unreachable!()
+        };
         // The formula, at a non-grid point, differenced.
         let at = |x: f64, y: f64| {
             let width = view.sample_width() as f64;
@@ -287,6 +373,84 @@ mod tests {
         let [jx, jy] = sample.jacobian.unwrap();
         assert!((jx - dx).norm() < 1e-6 * dx.norm(), "{jx} vs {dx}");
         assert!((jy - dy).norm() < 1e-6 * dy.norm(), "{jy} vs {dy}");
+    }
+
+    fn kaleidoscope(turns: u32, angle: f64) -> Projection {
+        Projection::Kaleidoscope(Kaleidoscope {
+            turns,
+            angle,
+            ..Kaleidoscope::default()
+        })
+    }
+
+    #[test]
+    fn the_kaleidoscope_reads_its_own_wedge_straight_and_mirrors_the_next() {
+        let view = view();
+        let map = kaleidoscope(4, 10.0);
+        let (w, h) = (view.sample_width() as f64, view.sample_height() as f64);
+        let mut straight = 0;
+        for row in 0..view.sample_height() {
+            for col in 0..view.sample_width() {
+                let x = col as f64 + 0.5 - 0.5 * w;
+                let y = 0.5 * h - (row as f64 + 0.5);
+                let theta =
+                    (y.atan2(x) - 10f64.to_radians()).rem_euclid(2.0 * std::f64::consts::PI);
+                let got = map.sample(&view, col, row);
+                // Inside the read wedge, the straight view, sample for sample.
+                if theta > 1e-9 && theta < std::f64::consts::FRAC_PI_4 - 1e-9 {
+                    let want = view.sample_point(col, row);
+                    assert!((got.point - want).norm() < 1e-12, "({col}, {row})");
+                    straight += 1;
+                }
+                // Every sample keeps its distance from the middle and its spacing.
+                let r = x.hypot(y) * view.sample_spacing();
+                assert!(((got.point - view.center).norm() - r).abs() < 1e-12);
+                assert!((got.spacing().unwrap() / view.sample_spacing() - 1.0).abs() < 1e-9);
+            }
+        }
+        assert!(straight > 0);
+    }
+
+    #[test]
+    fn the_kaleidoscope_s_jacobian_is_the_finite_difference_on_both_sides_of_a_mirror() {
+        let view = view();
+        let map = kaleidoscope(3, 25.0);
+        let Projection::Kaleidoscope(fold) = map else {
+            unreachable!()
+        };
+        let at = |x: f64, y: f64| {
+            let wedge = std::f64::consts::PI / 3.0;
+            let a = fold.angle.to_radians();
+            let mut t = (y.atan2(x) - a).rem_euclid(2.0 * wedge);
+            if t > wedge {
+                t = 2.0 * wedge - t;
+            }
+            view.center + Complex::from_polar(x.hypot(y) * view.sample_spacing(), t + a)
+        };
+        let (w, h) = (view.sample_width() as f64, view.sample_height() as f64);
+        for (col, row) in [(50u32, 7u32), (10, 60), (100, 70), (70, 20)] {
+            let x = col as f64 + 0.5 - 0.5 * w;
+            let y = 0.5 * h - (row as f64 + 0.5);
+            let hstep = 1e-5;
+            let dx = (at(x + hstep, y) - at(x - hstep, y)) / (2.0 * hstep);
+            let dy = (at(x, y + hstep) - at(x, y - hstep)) / (2.0 * hstep);
+            let sample = map.sample(&view, col, row);
+            assert!((sample.point - at(x, y)).norm() < 1e-12, "({col}, {row})");
+            let [jx, jy] = sample.jacobian.unwrap();
+            assert!((jx - dx).norm() < 1e-6 * dx.norm(), "{jx} vs {dx}");
+            assert!((jy - dy).norm() < 1e-6 * dy.norm(), "{jy} vs {dy}");
+        }
+    }
+
+    #[test]
+    fn a_kaleidoscope_that_cannot_draw_is_refused() {
+        assert!(kaleidoscope(0, 0.0).validate().is_err());
+        assert!(kaleidoscope(2, f64::NAN).validate().is_err());
+        let parsed: Projection =
+            serde_json::from_str(r#"{"kaleidoscope": {"turns": 8, "angle": 15.0}}"#).unwrap();
+        assert!(parsed.validate().is_ok());
+        assert_eq!(parsed.ring(), 1.0);
+        assert!(serde_json::from_str::<Projection>(r#"{"kaleidoscope": {"twist": 1.0}}"#).is_err());
     }
 
     #[test]

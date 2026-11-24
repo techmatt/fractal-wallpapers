@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "starlight_plumes",
+  "kind": "sequential",
+  "source": "starlight_plumes, authored as 8 control points as the albedo of the feather_plumes style's entry from starlight-25.jpg: a violet-black night, ultramarine barbs and ice-cyan tips.",
+  "stops": [
+    [0.0, [10, 4, 26]],
+    [0.2, [30, 12, 80]],
+    [0.4, [60, 30, 150]],
+    [0.55, [80, 60, 210]],
+    [0.7, [90, 130, 230]],
+    [0.85, [150, 210, 245]],
+    [0.93, [210, 240, 255]],
+    [1.0, [250, 250, 255]]
+  ]
+}

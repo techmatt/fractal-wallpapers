@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "lilac_kaleidoscope",
+  "kind": "sequential",
+  "source": "lilac_kaleidoscope, authored as 8 control points as the albedo of the lilac_kaleidoscope style from patterns_lilac: a deep indigo, royal blue and periwinkle, lilac and a white core.",
+  "stops": [
+    [0.0, [14, 8, 50]],
+    [0.2, [30, 24, 110]],
+    [0.4, [50, 50, 170]],
+    [0.55, [80, 90, 220]],
+    [0.7, [120, 130, 240]],
+    [0.82, [170, 160, 245]],
+    [0.92, [220, 215, 255]],
+    [1.0, [255, 255, 255]]
+  ]
+}
