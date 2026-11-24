@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "jade_starbursts",
+  "kind": "sequential",
+  "source": "jade_starbursts, authored as 8 control points as the albedo of the jade_starbursts style from splendor-25.jpg: a black-green ground, jade and teal sheets, aqua glass, lilac folds and a lemon-gold star.",
+  "stops": [
+    [0.0, [6, 12, 12]],
+    [0.18, [20, 56, 44]],
+    [0.36, [40, 110, 96]],
+    [0.52, [70, 160, 160]],
+    [0.66, [110, 200, 210]],
+    [0.78, [150, 130, 200]],
+    [0.9, [210, 220, 120]],
+    [1.0, [250, 250, 210]]
+  ]
+}

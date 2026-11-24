@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "starburst_veils",
+  "kind": "sequential",
+  "source": "starburst_veils, authored as 8 control points as the albedo of the starburst_veils style from visions-25.jpg: a deep indigo night, violet and royal-blue veils, magenta strands, lavender to a pale lilac star.",
+  "stops": [
+    [0.0, [14, 6, 34]],
+    [0.2, [40, 16, 86]],
+    [0.4, [70, 30, 140]],
+    [0.55, [110, 50, 200]],
+    [0.7, [150, 70, 230]],
+    [0.82, [190, 90, 220]],
+    [0.92, [170, 160, 250]],
+    [1.0, [235, 220, 255]]
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "schema": 1,
+  "name": "light_shafts",
+  "description": "Light shafts: a dim fine lace in a dark void, straight shafts of light streaming out of its bright points away from one point, as through haze.",
+  "reference": {
+    "image": "wallhaven_wallhaven-398e39.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (Apophysis-style flame)"
+  },
+  "suggested_colormap": "light_shafts",
+  "reuses": [
+    "stripe grain through views (feather_plumes)",
+    "de glows"
+  ],
+  "adds": [
+    "post pass `rays` (engine/src/post.rs): shafts from a `center`"
+  ],
+  "notes": "Round one (078): triage group (9)'s light beams, wallhaven-398e39 the default; necromancer (scarlet_shafts) and wallhaven-396d7v (ice_shafts) as palette entries (tone only). The shafts are the post stage's new `rays` pass with a `center` (POST.md): the brightest 3% of the frame (the lit lace and the set's hair) casts light outwards from a point just above the middle, each sample taking the mean of the light behind it over 0.25 frame widths, so shafts stream out of the fractal's own bright lace. A first cut gathered 160 taps a stride apart and drew moire rings; the pass sums by doubling (a dozen one-tap passes), which skips no sample. Under it, fine stripe grain at density 24 from three loops masked to the set, the set's hair, a dark void, all at about a third of full so the shafts (strength 10) carry the picture: with the lace full (the lit_lace reading, strength 4) the lace led, the shafts read as background, and 22 of 35 location drafts missed the reference's p90 (the lace too bright). Nearest mode: hairline_rays (stroke-trap hairlines: curves, never straight); route two, the stroke trap's own lines laid on this stack (strokes), is in the picker beside the post-pass route. Readings: streak (a second pass: a horizontal two-spoke streak, 398e39's horizon), long (0.5), low (the point near the bottom edge), lit_lace, no_rays. A further reading puts necromancer on starburst_veils instead, as one long scarlet streak (two spokes at 150 degrees, length 0.4). Tone, round one: 20 of 35 scout drafts hold (all 12 kept seats), misses p90 on lace-dense seats; both entries miss (scarlet_shafts lifts the dark stack whole: no range; ice_shafts too black). Cost: 43.7 s as WebAssembly on one thread at 1280x800 ss2 at phoenix_2d843082 (maxiter 9,266), the shafts 2.0 s of it.",
+  "style": {
+    "interior": {
+      "palette": 0.02
+    },
+    "tone": {
+      "median": 0.12,
+      "p10": 0.026,
+      "log_density": 8.0
+    },
+    "layers": [
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "palette": 0.04
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 2.0
+          }
+        },
+        "color": {
+          "palette": 0.35
+        },
+        "blend": "screen",
+        "opacity": 0.06,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          }
+        },
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.21,
+        "power": 6.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 5.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.8,
+            "shift": [
+              -0.133,
+              -0.181
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.6000000000000001
+        },
+        "blend": "screen",
+        "opacity": 0.21,
+        "power": 6.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 5.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 0.951,
+            "shift": [
+              -0.096,
+              0.303
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.65
+        },
+        "blend": "screen",
+        "opacity": 0.21,
+        "power": 6.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 5.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0015,
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.105
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0003,
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.21
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 10
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "palette": 0.02
+        },
+        "opacity": 1.0
+      }
+    ],
+    "post": [
+      {
+        "kind": "rays",
+        "share": 0.03,
+        "spokes": 4,
+        "angle": 45.0,
+        "length": 0.25,
+        "center": [
+          0.5,
+          0.42
+        ],
+        "strength": 10.0
+      }
+    ],
+    "name": "light_shafts"
+  }
+}

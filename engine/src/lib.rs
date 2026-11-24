@@ -16,7 +16,7 @@
 //! direct_trap  the one coloring that paints during iteration and makes no field
 //! style        a declarative stack of layers over several channels of one orbit
 //! projection   a style's per-sample pre-map of the frame: log-polar, kaleidoscope
-//! post         a style's whole-frame passes after its stack: mosaic, paper
+//! post         a style's whole-frame passes after its stack: mosaic, paper, rays
 //! dump         a field written to disk, and the record that says what it is
 //! resample     Lanczos-3 down to the target resolution, then sRGB
 //! ```

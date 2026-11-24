@@ -3720,6 +3720,32 @@
       ],
       "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
       "palettes": []
+    },
+    {
+      "style": "starburst_veils",
+      "item": "078",
+      "reference": "visions-25.jpg",
+      "references": [
+        "visions-25.jpg",
+        "splendor-25.jpg",
+        "sparx-25.jpg",
+        "state-of-being-25.jpg",
+        "treasury-25.jpg"
+      ],
+      "what": "Starlit veils: soft violet veils and wisps over the set's lace, its brightest sparks six-pointed stars whose straight beams cross the frame (jade glass, moss and amber, garnet silk, and gilt as palette entries).",
+      "palettes": []
+    },
+    {
+      "style": "light_shafts",
+      "item": "078",
+      "reference": "wallhaven_wallhaven-398e39.png",
+      "references": [
+        "wallhaven_wallhaven-398e39.png",
+        "necromancer-25.jpg",
+        "wallhaven_wallhaven-396d7v.png"
+      ],
+      "what": "Light shafts: fine blue lace in a dark void, straight shafts of light streaming out of it from a point (a scarlet beam, and ice-blue strands on black, as palette entries).",
+      "palettes": []
     }
   ]
 }

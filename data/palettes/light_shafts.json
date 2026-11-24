@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "light_shafts",
+  "kind": "sequential",
+  "source": "light_shafts, authored as 8 control points as the albedo of the light_shafts style from wallhaven-398e39.png: a black void, navy and indigo shafts, cobalt and violet strands, a pink-lilac glint and a white star.",
+  "stops": [
+    [0.0, [2, 2, 8]],
+    [0.2, [10, 10, 34]],
+    [0.4, [28, 26, 90]],
+    [0.55, [50, 52, 160]],
+    [0.7, [90, 80, 220]],
+    [0.82, [170, 90, 200]],
+    [0.92, [170, 170, 250]],
+    [1.0, [240, 236, 255]]
+  ]
+}

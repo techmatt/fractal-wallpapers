@@ -1935,7 +1935,8 @@ fn posted(
     };
     for pass in &style.post {
         let heights: Vec<f32> = match (pass, pass.height()) {
-            (_, None) => Vec::new(),
+            // Rays read the picture alone.
+            (_, None) | (Pass::Rays(_), _) => Vec::new(),
             (Pass::Mosaic(_), Some(source)) => {
                 let lane = channels.lane(source.key());
                 let stretch = Stretch::over(lane.iter().map(|&v| v as f64));
@@ -1973,6 +1974,7 @@ fn posted(
         linear = match pass {
             Pass::Mosaic(mosaic) => post::mosaic(mosaic, &frame, colormap),
             Pass::Paper(paper) => post::paper(paper, &frame, colormap),
+            Pass::Rays(rays) => post::rays(rays, &frame, colormap),
         }
         .map_err(|refusal| format!("style '{}' post: {refusal}", style.name))?;
     }

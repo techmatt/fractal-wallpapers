@@ -169,12 +169,13 @@ fn at_mut<'a>(mut node: &'a mut Value, path: &[Step]) -> &'a mut Value {
 
 /// The stack's members the engine reads as integers: `inside.iterations`, a bubble's
 /// `hit`, the lines' `settle`, a checker's `sectors`, a projection's `turns`, a mosaic's
-/// or a paper's `levels`, a spiral's `arms`, a stir's or a stroke's `steps`.
+/// or a paper's `levels`, a spiral's `arms`, a stir's or a stroke's `steps`, a rays
+/// pass's `spokes`.
 ///
 /// A knob's write to one of these is rounded half to even, by the member's name, on both
 /// sides: `styles.INTEGER_MEMBERS` is the same list and `styles.with_knobs` rounds the
 /// same way (`tests/test_style_wasm.py` holds the two lists equal).
-pub const INTEGER_MEMBERS: [&str; 8] = [
+pub const INTEGER_MEMBERS: [&str; 9] = [
     "iterations",
     "hit",
     "settle",
@@ -183,6 +184,7 @@ pub const INTEGER_MEMBERS: [&str; 8] = [
     "levels",
     "arms",
     "steps",
+    "spokes",
 ];
 
 /// The stack turned to `settings`, as `styles.with_knobs` turns it: each knob writes

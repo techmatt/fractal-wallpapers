@@ -1,0 +1,327 @@
+{
+  "schema": 1,
+  "name": "starburst_veils",
+  "description": "Starlit veils: soft translucent veils and wisps over the set's violet lace, each of its brightest sparks a six-pointed star whose straight beams cross the frame.",
+  "reference": {
+    "image": "visions-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (Apophysis-style flame)"
+  },
+  "suggested_colormap": "starburst_veils",
+  "reuses": [
+    "soft_veils' scooped sheets and stripe wisps in three loops",
+    "gaussian_int sparks (feather_plumes)",
+    "de glows"
+  ],
+  "adds": [
+    "post pass `rays` (engine/src/post.rs): six-spoke stars"
+  ],
+  "notes": "Round one (078): triage group (9)'s light beams, visions-25.jpg the default; splendor (jade_starbursts), sparx (moss_starbursts), state-of-being (garnet_starbursts) and treasury (gilt_starbursts) as palette entries (tone only). Straight beams do not come from one escape loop (052: a loop draws arcs along the arms), so the beams are the post stage's new `rays` pass (POST.md): the brightest 0.15% of the frame casts six spokes from 15 degrees (none upright: at 90 the first cut's one-sample spokes read as rain; the 135 and 315 pair are one-sample diagonals, which read as crisp star points), each fading over 0.08 frame widths, tinted the map's 0.9. What casts is the stack's own sparkle (gaussian_int sparks masked to the set by inverted de at power 6) and the set's hair, so every star sits on the fractal. Under it, soft_veils' reading in three loops (scooped sheets of the smooth count and stripe wisps, the frame's and two views) and a dark interior. Nearest mode: soft_veils (veils); the stars are what differ. Round one's lessons: unmasked sparks cast a cross-hatch screen over the whole frame; untinted beams summed over four spokes wash the violet to grey; the beams want seats whose sparks cluster (phoenix seats read best). Readings: cross (four spokes at 45), long (0.15), flare (a second pass: the brightest 0.01% casting a long four-spoke X), burst (radial shafts from the middle under the stars), white (beams in their source's colour), no_rays (the headline off). Tone, round one: 25 of 35 scout drafts hold (10 of the 12 kept seats); every miss is p90 (0.50 to 0.60 against 0.403) at star clusters and lace-dense seats. Cost: 66.5 s as WebAssembly on one thread at 1280x800 ss2 at phoenix_2d843082 (maxiter 9,266), the rays pass 7.3 s of it.",
+  "style": {
+    "interior": {
+      "palette": 0.02
+    },
+    "tone": {
+      "median": 0.246,
+      "p10": 0.181,
+      "log_density": 8.0
+    },
+    "layers": [
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "palette": 0.04
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 2.0
+          }
+        },
+        "color": {
+          "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.1,
+        "power": 2.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "sheet": {
+          "bands": 3.0,
+          "phase": 0.0,
+          "fill": 0.2,
+          "edge": 0.05
+        },
+        "color": {
+          "palette": 0.45
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 4.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.8,
+            "shift": [
+              -0.133,
+              -0.181
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 3.0,
+          "phase": 0.37,
+          "fill": 0.2,
+          "edge": 0.05
+        },
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 4.0
+        }
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 0.951,
+            "shift": [
+              -0.096,
+              0.303
+            ]
+          }
+        },
+        "sheet": {
+          "bands": 3.0,
+          "phase": 0.74,
+          "fill": 0.2,
+          "edge": 0.05
+        },
+        "color": {
+          "palette": 0.65
+        },
+        "blend": "screen",
+        "opacity": 0.35,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 4.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 10.0
+          }
+        },
+        "color": {
+          "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 10.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 10.0
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.8,
+            "shift": [
+              -0.133,
+              -0.181
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.74
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 10.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 10.0
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 0.951,
+            "shift": [
+              -0.096,
+              0.303
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.7799999999999999
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "power": 10.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 3.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.002,
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0004,
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.5
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 40.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 6.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 10
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "palette": 0.02
+        },
+        "opacity": 1.0
+      }
+    ],
+    "post": [
+      {
+        "kind": "rays",
+        "share": 0.0015,
+        "spokes": 6,
+        "angle": 15.0,
+        "length": 0.08,
+        "strength": 2.5,
+        "color": {
+          "palette": 0.9
+        }
+      }
+    ],
+    "name": "starburst_veils"
+  }
+}

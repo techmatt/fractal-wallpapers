@@ -60,7 +60,7 @@ picture (`style wasm-parity`), and **a style with a post stage is drawn whole, n
 tiles** (the module's `open` reports `"post": true`; `tile` refuses). Every length is a
 fraction of the frame's width, so `--draft` and full size are one picture.
 
-There are two kinds, `mosaic` and `paper` (below). A kind is wired in three places:
+There are three kinds, `mosaic`, `paper` and `rays` (below). A kind is wired in three places:
 `engine/src/post.rs`'s `Pass` (its variant, `height` and `validate`), and
 `engine/src/style.rs`'s `Style::fields` (the lanes the frame's loop carries for it) and
 `posted` (the height it is handed and the pass it runs). Python never validates the
@@ -114,6 +114,26 @@ dragged by the brush, so the set's own edge stays whole. The pass costs no escap
 beyond its height's field, one sort of the frame's heights, and for a shadow four box
 blurs.
 
+**`rays`** casts straight beams of light from the frame's brightest samples: a star
+filter's spokes, or shafts through haze. One escape loop draws only arcs (a beam is a
+line thin along its whole pullback), so the beam is a pass: each sample brighter than
+all but `share` of the frame casts the part of its light above that cut, and the beams
+are added over the picture. What casts is whatever the stack lit, so a beam's root is
+the fractal's own: a spark, a rim, the set's hair.
+
+| member | what |
+| --- | --- |
+| `share` | the brightest share of the frame's samples that cast, by luminance, in (0, 0.5]: about 0.002 for stars off sparks, 0.03 for shafts off the lace. A sample casts only what it has above the cut, so a frame whose brightest share is one flat value casts nothing |
+| `spokes`, `angle` | each source's beams, evenly round the circle from `angle` (degrees anticlockwise from the right): 2 a streak, 4 a cross, 6 or 8 a star (at most 16). Each spoke is one sweep over the frame, each sample its own light plus `fade` of the beam one step behind, so a beam at a multiple of 45 degrees stays one sample wide its whole length (one upright reads as rain) and any other spreads as it runs, the step's interpolation repeated: about 6 samples across after 200 steps at 15 degrees |
+| `length` | how far a beam runs before it fades to 1/e, in frame widths (1e-4 to 2) |
+| `center` | shafts instead of spokes: each sample gathers the light between it and this point (fractions of the frame), so shafts run outwards from it. A shaft is the **mean** of the light behind it (a spoke is the sum), summed by doubling, 2^k samples in `k` one-tap passes, out to three `length`s. `spokes` and `angle` are not read |
+| `strength` | the beams' gain, 0 to 100 |
+| `color` | every beam this paint times the luminance of the light its source casts (a dark paint dims the beams); absent, each beam that light's colour |
+
+A pass costs no escape loop: a select over the frame's luminance, then a sweep per spoke
+(two transposes for a spoke nearer level than upright), or about a dozen one-tap passes
+for shafts.
+
 ## Defaults
 
 | where | defaults |
@@ -122,4 +142,5 @@ blurs.
 | `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
 | `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
 | `paper` | `height` the smooth count, `levels` 9, `taper` 1, `fill` `map`, `phase` 0, `opacity` 1; `hop`, `shadow`, `ragged` absent |
+| `rays` | `share` 0.02, `spokes` 4, `angle` 45, `length` 0.05, `strength` 1; `center`, `color` absent |
 | `shadow`, `ragged` | `offset` 0, `azimuth` 135, `opacity` 1, `color` black; `azimuth` 0, `accent` absent (`reach`, `length`, `width` and a shadow's `width` are always given) |

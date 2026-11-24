@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "garnet_starbursts",
+  "kind": "sequential",
+  "source": "garnet_starbursts, authored as 8 control points as the albedo of the garnet_starbursts style from state-of-being-25.jpg: a near-black maroon, umber haze, garnet red strands, taupe and ivory silk.",
+  "stops": [
+    [0.0, [16, 4, 4]],
+    [0.18, [46, 14, 14]],
+    [0.34, [70, 40, 34]],
+    [0.48, [170, 20, 40]],
+    [0.6, [110, 84, 68]],
+    [0.74, [160, 132, 104]],
+    [0.88, [210, 186, 150]],
+    [1.0, [250, 236, 210]]
+  ]
+}

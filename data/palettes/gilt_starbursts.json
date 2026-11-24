@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "gilt_starbursts",
+  "kind": "sequential",
+  "source": "gilt_starbursts, authored as 8 control points as the albedo of the gilt_starbursts style from treasury-25.jpg: a black-olive ground, bronze and brass veils, a sea-green thread, gold to a lemon star.",
+  "stops": [
+    [0.0, [8, 8, 4]],
+    [0.2, [40, 34, 14]],
+    [0.38, [90, 74, 30]],
+    [0.5, [70, 120, 90]],
+    [0.62, [140, 112, 46]],
+    [0.76, [190, 156, 64]],
+    [0.9, [235, 205, 100]],
+    [1.0, [255, 248, 170]]
+  ]
+}

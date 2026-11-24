@@ -14,11 +14,13 @@
 //! ([`crate::style::paint`]), never in tiles. Every size a pass takes is a fraction of
 //! the frame's width, so a draft and the full-size frame are the same picture.
 //!
-//! There are two passes. The **paper** ([`Paper`]) cuts a height into a few flat
+//! There are three passes. The **paper** ([`Paper`]) cuts a height into a few flat
 //! sheets on its rank over the frame, each one colour with the fractal's own level
 //! line for its edge, tears the edges as a dry brush does (`ragged`) and lays each
-//! sheet's `shadow` on those under it. The **mosaic** is a recursive tiling whose
-//! cells split where the set is, each cell a flat facet of the picture under it.
+//! sheet's `shadow` on those under it. The **rays** ([`Rays`]) cast straight beams
+//! from the frame's brightest samples, as spokes or as shafts from a point. The
+//! **mosaic** is a recursive tiling whose cells split where the set is, each cell a
+//! flat facet of the picture under it.
 //!
 //! ```text
 //! lattice    equilateral triangles, each split in four by its edges' midpoints; the
@@ -52,6 +54,7 @@ use crate::style::{Paint, Source};
 pub enum Pass {
     Mosaic(Mosaic),
     Paper(Paper),
+    Rays(Rays),
 }
 
 impl Pass {
@@ -60,6 +63,7 @@ impl Pass {
         match self {
             Pass::Mosaic(mosaic) => mosaic.height,
             Pass::Paper(paper) => Some(paper.height),
+            Pass::Rays(_) => None,
         }
     }
 }
@@ -249,6 +253,7 @@ impl Pass {
         match self {
             Pass::Mosaic(mosaic) => mosaic.validate(),
             Pass::Paper(paper) => paper.validate(),
+            Pass::Rays(rays) => rays.validate(),
         }
     }
 }
@@ -1614,6 +1619,303 @@ pub fn paper(paper: &Paper, frame: &Frame, colormap: &Colormap) -> Result<Vec<[f
     Ok(painted)
 }
 
+/// The **rays** pass: beams of light cast from the frame's brightest samples. Each
+/// sample brighter than all but `share` of the frame casts the part of its light above
+/// that cut along `spokes` straight lines (a streak at 2, a cross at 4, a star at 6 or
+/// 8), fading over `length`; or, with `center`, outwards along the line from that point,
+/// as shafts through haze. A beam is straight and reads its neighbours, so no layer can
+/// draw it: the light along it is whatever the fractal set alight at its root.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct Rays {
+    /// The share of the frame's samples that cast (by luminance), in (0, 0.5].
+    pub share: f64,
+    /// How many beams each source casts, evenly round the circle from `angle`.
+    pub spokes: u32,
+    /// The first spoke's direction, degrees anticlockwise from the right.
+    pub angle: f64,
+    /// How far a beam runs before it fades to 1/e, in frame widths.
+    pub length: f64,
+    /// Shafts from this point instead of spokes (fractions of the frame's width and
+    /// height): each sample gathers the light between it and the point. With a center,
+    /// `spokes` and `angle` are not read.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub center: Option<[f64; 2]>,
+    /// The beams' gain over the light that casts them.
+    pub strength: f64,
+    /// Every beam this paint times its source's luminance (so a dark paint dims the
+    /// beams); absent, each beam its source's own colour.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<Paint>,
+}
+
+impl Default for Rays {
+    fn default() -> Rays {
+        Rays {
+            share: 0.02,
+            spokes: 4,
+            angle: 45.0,
+            length: 0.05,
+            center: None,
+            strength: 1.0,
+            color: None,
+        }
+    }
+}
+
+/// The most spokes a rays pass casts, and the longest a beam runs (frame widths).
+pub const MOST_SPOKES: u32 = 16;
+pub const LONGEST_BEAM: f64 = 2.0;
+
+/// The most doubling passes a shaft sums over: 2^14 samples. A long `length` on a wide
+/// frame can ask for more, but only samples on the frame cast, so no shaft ever needs
+/// more than the frame's diagonal (5,120 x 3,200 samples at full size: about 6,000).
+const SHAFT_PASSES: u32 = 14;
+
+/// A shaft gathers out to this many `length`s, past which its light is under 1/20.
+const SHAFT_REACH: f64 = 3.0;
+
+impl Rays {
+    fn validate(&self) -> Result<(), String> {
+        let finite = [self.share, self.angle, self.length, self.strength];
+        if finite.iter().any(|value| !value.is_finite()) {
+            return Err("rays: every member is a finite number".into());
+        }
+        if !(self.share > 0.0 && self.share <= 0.5) {
+            return Err("rays: share is in (0, 0.5]".into());
+        }
+        if !(1..=MOST_SPOKES).contains(&self.spokes) {
+            return Err(format!("rays: 1 to {MOST_SPOKES} spokes"));
+        }
+        if !(self.length >= 1e-4 && self.length <= LONGEST_BEAM) {
+            return Err(format!(
+                "rays: length is 1e-4 to {LONGEST_BEAM} frame widths"
+            ));
+        }
+        if !(0.0..=100.0).contains(&self.strength) {
+            return Err("rays: strength is 0 to 100".into());
+        }
+        if let Some(center) = self.center {
+            if !center
+                .iter()
+                .all(|c| c.is_finite() && (-4.0..=5.0).contains(c))
+            {
+                return Err("rays: a center is within 4 frames of the frame".into());
+            }
+        }
+        if let Some(paint) = &self.color {
+            paint.validate("rays")?;
+        }
+        Ok(())
+    }
+}
+
+/// The light one sample casts: the part of it above the frame's cut, by luminance.
+fn casting(linear: &[[f64; 3]], share: f64) -> Vec<[f32; 3]> {
+    let luminance = |rgb: &[f64; 3]| 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    let mut sorted: Vec<f64> = linear.iter().map(luminance).collect();
+    let rank = ((sorted.len() as f64 * (1.0 - share)) as usize).min(sorted.len() - 1);
+    let (_, &mut cut, _) = sorted.select_nth_unstable_by(rank, f64::total_cmp);
+    linear
+        .iter()
+        .map(|rgb| {
+            let light = luminance(rgb);
+            if !(light > cut && light.is_finite()) {
+                return [0.0; 3];
+            }
+            let above = 1.0 - cut.max(0.0) / light;
+            rgb.map(|c| (c.max(0.0) * above) as f32)
+        })
+        .collect()
+}
+
+/// One spoke's beams, swept in a single pass: each sample is its own light plus the
+/// beam arriving from one step back along the spoke, faded by `fade`. `lanes` is laid
+/// out `major` slices of `minor` samples, the sweep running across slices; a step back
+/// is one slice back and `slope` samples along it (between two samples, it reads both).
+fn swept(
+    lanes: &[[f32; 3]],
+    major: usize,
+    minor: usize,
+    ahead: bool,
+    slope: f64,
+    fade: f32,
+) -> Vec<[f32; 3]> {
+    let mut beam = vec![[0.0f32; 3]; lanes.len()];
+    let order: Vec<usize> = match ahead {
+        true => (0..major).collect(),
+        false => (0..major).rev().collect(),
+    };
+    let (whole, part) = (slope.floor(), (slope - slope.floor()) as f32);
+    let whole = whole as isize;
+    let mut previous: Option<usize> = None;
+    for slice in order {
+        let at = slice * minor;
+        for m in 0..minor {
+            let mut rgb = lanes[at + m];
+            if let Some(back) = previous {
+                // The beam arriving here left one slice back, `slope` samples behind.
+                let from = m as isize - whole;
+                let read = |i: isize| -> [f32; 3] {
+                    match i >= 0 && (i as usize) < minor {
+                        true => beam[back * minor + i as usize],
+                        false => [0.0; 3],
+                    }
+                };
+                let (near, far) = (read(from), read(from - 1));
+                for k in 0..3 {
+                    rgb[k] += fade * (near[k] * (1.0 - part) + far[k] * part);
+                }
+            }
+            beam[at + m] = rgb;
+        }
+        previous = Some(slice);
+    }
+    beam
+}
+
+/// The pass: the picture with the beams its brightest samples cast added over it.
+pub fn rays(rays: &Rays, frame: &Frame, colormap: &Colormap) -> Result<Vec<[f64; 3]>, String> {
+    let (width, height) = (frame.width, frame.height);
+    if width == 0 || height == 0 {
+        return Ok(frame.linear.to_vec());
+    }
+    let mut light = casting(frame.linear, rays.share);
+    if let Some(paint) = &rays.color {
+        let tint = paint.linear(colormap);
+        for rgb in light.iter_mut() {
+            let bright = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+            *rgb = tint.map(|c| (c * bright as f64) as f32);
+        }
+    }
+    let reach = rays.length * width as f64;
+    let mut beams = vec![[0.0f32; 3]; width * height];
+    match rays.center {
+        None => {
+            for spoke in 0..rays.spokes {
+                let degrees = rays.angle + 360.0 * spoke as f64 / rays.spokes as f64;
+                let (sin, cos) = degrees.to_radians().sin_cos();
+                // Rows run down the frame, so anticlockwise is up: the beam's row step is -sin.
+                let (dx, dy) = (cos, -sin);
+                let across = dx.abs() >= dy.abs();
+                let (step, slope) = match across {
+                    true => (dx, dy / dx.abs()),
+                    false => (dy, dx / dy.abs()),
+                };
+                let fade = (-(1.0 + slope * slope).sqrt() / reach).exp() as f32;
+                let beam = if across {
+                    // Sweep the columns: lay the frame out column by column first.
+                    let mut columns = vec![[0.0f32; 3]; width * height];
+                    for row in 0..height {
+                        for col in 0..width {
+                            columns[col * height + row] = light[row * width + col];
+                        }
+                    }
+                    let swept = swept(&columns, width, height, step > 0.0, slope, fade);
+                    let mut rows = vec![[0.0f32; 3]; width * height];
+                    for col in 0..width {
+                        for row in 0..height {
+                            rows[row * width + col] = swept[col * height + row];
+                        }
+                    }
+                    rows
+                } else {
+                    swept(&light, height, width, step > 0.0, slope, fade)
+                };
+                for ((sum, beam), own) in beams.iter_mut().zip(&beam).zip(&light) {
+                    for k in 0..3 {
+                        sum[k] += beam[k] - own[k];
+                    }
+                }
+            }
+        }
+        Some(center) => {
+            let (cx, cy) = (center[0] * width as f64, center[1] * height as f64);
+            // A shaft sums the light behind a sample, towards the center, each sample
+            // `fade` of the one before. Summed by doubling: after pass `k` each sample
+            // holds the sum over the 2^k samples behind it, so `SHAFT_PASSES` passes of
+            // one tap each reach 2^SHAFT_PASSES samples and skip none on the way.
+            let longest = SHAFT_REACH * reach;
+            let passes = (longest.max(2.0).log2().ceil() as u32).min(SHAFT_PASSES);
+            let mut fade = (-1.0 / reach).exp();
+            let mut sum: Vec<[f32; 3]> = light.clone();
+            let mut stride = 1.0;
+            for _ in 0..passes {
+                let behind = &sum;
+                let next: Vec<[f32; 3]> = (0..width * height)
+                    .into_par_iter()
+                    .map(|i| {
+                        let (px, py) = ((i % width) as f64 + 0.5, (i / width) as f64 + 0.5);
+                        let (tx, ty) = (cx - px, cy - py);
+                        let distance = (tx * tx + ty * ty).sqrt();
+                        let mut rgb = behind[i];
+                        if distance > stride {
+                            let at = bilinear(
+                                behind,
+                                width,
+                                height,
+                                px + tx / distance * stride,
+                                py + ty / distance * stride,
+                            );
+                            for k in 0..3 {
+                                rgb[k] += (fade * at[k]) as f32;
+                            }
+                        }
+                        rgb
+                    })
+                    .collect();
+                sum = next;
+                stride *= 2.0;
+                fade *= fade;
+            }
+            // A shaft is the mean of the light behind it, the nearest counting most.
+            let mean = (1.0 - (-1.0 / reach).exp()) as f32;
+            beams = sum
+                .iter()
+                .zip(&light)
+                .map(|(total, own)| [0, 1, 2].map(|k| (total[k] - own[k]) * mean))
+                .collect();
+        }
+    }
+    Ok(frame
+        .linear
+        .iter()
+        .zip(&beams)
+        .map(|(rgb, beam)| {
+            let mut out = *rgb;
+            for k in 0..3 {
+                out[k] += rays.strength * beam[k] as f64;
+            }
+            out
+        })
+        .collect())
+}
+
+/// The lanes between four samples at a point in samples (`0.5` is the first sample's
+/// middle), each read in proportion; off the frame, nothing.
+fn bilinear(lanes: &[[f32; 3]], width: usize, height: usize, x: f64, y: f64) -> [f64; 3] {
+    let (x, y) = (x - 0.5, y - 0.5);
+    let (x0, y0) = (x.floor(), y.floor());
+    let (fx, fy) = (x - x0, y - y0);
+    let mut rgb = [0.0; 3];
+    for (ox, oy, w) in [
+        (0, 0, (1.0 - fx) * (1.0 - fy)),
+        (1, 0, fx * (1.0 - fy)),
+        (0, 1, (1.0 - fx) * fy),
+        (1, 1, fx * fy),
+    ] {
+        let (col, row) = (x0 as isize + ox, y0 as isize + oy);
+        if col < 0 || row < 0 || col >= width as isize || row >= height as isize {
+            continue;
+        }
+        let at = lanes[row as usize * width + col as usize];
+        for k in 0..3 {
+            rgb[k] += w * at[k] as f64;
+        }
+    }
+    rgb
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2106,5 +2408,111 @@ mod tests {
             heights: &[],
         };
         assert!(mosaic(&fine, &frame, &map()).is_err());
+    }
+
+    /// A dark frame with one bright sample at `(col, row)`, through a rays pass.
+    fn rayed(rays: &Rays, width: usize, height: usize, col: usize, row: usize) -> Vec<[f64; 3]> {
+        let mut linear = vec![[0.01, 0.01, 0.01]; width * height];
+        linear[row * width + col] = [1.0, 0.5, 0.25];
+        let escaped = vec![true; width * height];
+        let frame = Frame {
+            width,
+            height,
+            linear: &linear,
+            escaped: &escaped,
+            near: &[],
+            heights: &[],
+        };
+        super::rays(rays, &frame, &map()).unwrap()
+    }
+
+    #[test]
+    fn a_streak_runs_both_ways_along_its_row_and_fades() {
+        let streak = Rays {
+            share: 0.01,
+            spokes: 2,
+            angle: 0.0,
+            length: 0.1,
+            ..Rays::default()
+        };
+        let (width, height) = (64, 16);
+        let out = rayed(&streak, width, height, 32, 8);
+        let at = |col: usize, row: usize| out[row * width + col];
+        // Along the row, both ways, fading with distance and keeping its source's colour.
+        assert!(at(33, 8)[0] > at(40, 8)[0] && at(40, 8)[0] > at(60, 8)[0]);
+        assert!(at(31, 8)[0] > at(24, 8)[0] && at(24, 8)[0] > 0.02);
+        assert!((at(40, 8)[0] - 0.01) > 1.9 * (at(40, 8)[1] - 0.01));
+        // Off the row, nothing: a beam at angle 0 is one sample thin.
+        for col in 0..width {
+            assert_eq!(at(col, 7), [0.01, 0.01, 0.01]);
+            assert_eq!(at(col, 9), [0.01, 0.01, 0.01]);
+        }
+        // The source itself is not lit twice.
+        assert_eq!(at(32, 8), [1.0, 0.5, 0.25]);
+    }
+
+    #[test]
+    fn a_star_casts_a_beam_along_each_spoke_and_none_between() {
+        let star = Rays {
+            share: 0.01,
+            spokes: 4,
+            angle: 45.0,
+            length: 0.2,
+            ..Rays::default()
+        };
+        let (width, height) = (48, 48);
+        let out = rayed(&star, width, height, 24, 24);
+        let lit = |col: usize, row: usize| out[row * width + col][0] - 0.01;
+        for (col, row) in [(30, 18), (18, 18), (18, 30), (30, 30)] {
+            assert!(lit(col, row) > 0.1, "a diagonal at ({col}, {row})");
+        }
+        for (col, row) in [(30, 24), (24, 18), (18, 24), (24, 30)] {
+            assert!(
+                lit(col, row).abs() < 1e-9,
+                "between spokes at ({col}, {row})"
+            );
+        }
+    }
+
+    #[test]
+    fn a_shaft_runs_away_from_its_center() {
+        let shafts = Rays {
+            share: 0.01,
+            length: 0.2,
+            center: Some([0.0, 0.5]),
+            ..Rays::default()
+        };
+        let (width, height) = (64, 16);
+        let out = rayed(&shafts, width, height, 16, 8);
+        let lit = |col: usize, row: usize| out[row * width + col][0] - 0.01;
+        // A shaft is the mean light behind it: one bright sample in 12.8 dims it to ~1/13.
+        assert!(lit(24, 8) > 0.01 && lit(24, 8) > lit(40, 8) && lit(40, 8) > 0.0);
+        // Nothing between the source and the center.
+        assert!(lit(8, 8).abs() < 1e-9);
+    }
+
+    #[test]
+    fn rays_refuse_what_they_cannot_draw() {
+        for bad in [
+            Rays {
+                share: 0.0,
+                ..Rays::default()
+            },
+            Rays {
+                spokes: 0,
+                ..Rays::default()
+            },
+            Rays {
+                length: 3.0,
+                ..Rays::default()
+            },
+            Rays {
+                strength: f64::NAN,
+                ..Rays::default()
+            },
+        ] {
+            assert!(Pass::Rays(bad).validate().is_err());
+        }
+        assert!(Pass::Rays(Rays::default()).validate().is_ok());
     }
 }
