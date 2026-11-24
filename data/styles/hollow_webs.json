@@ -1,0 +1,225 @@
+{
+  "schema": 1,
+  "name": "hollow_webs",
+  "description": "Hollow webs: dark wells of every size, each framed by a bright rim with fainter pockets nested inside it, the web between them a membrane of fine fibres combed off the set, magenta fibres and gold rims on a black plum night.",
+  "reference": {
+    "image": "thermal-pockets-25.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (Apophysis-style flame)"
+  },
+  "suggested_colormap": "hollow_webs",
+  "reuses": [
+    "stripe grain through views (feather_plumes)",
+    "inside rim glow (lace_holes)",
+    "de glows"
+  ],
+  "adds": [],
+  "notes": "Round one (077): triage group (8)'s webs, thermal-pockets-25.jpg the default, wallhaven-391g76 (violet_cells) and spellcaster-25.jpg (spellcaster_webs) as palette entries (tone only). Nearest mode: lace_holes (a lace web pierced by holes, each lit as a glass bead); here no bead light: each hole is a well darkened towards its nucleus (an `inside` glow multiplied), framed by a wide inverted-`inside` rim, and the well's convergence count is cut into five sheet rims, so pockets nest in pockets as in the reference. The web between the holes is a membrane of stripe grain at density 24 from the frame's loop and two views, masked hard to the set (inverted de at power 16; at 2.5 the fibres ran across the whole frame as 032's wisps did). Not reachable by one escape loop: the membrane's crossing fibres are three loops; the one_loop formulation is the single-loop answer. The holes are the set's interior, which the galleries lack (lace_holes' notes), so the seats are hand-placed Julia sets at the centre of a hyperbolic component (rabbit, kokopelli, basilica, a cubic and a quartic), whole and about a repelling fixed point, plus lace_holes' kept rabbitbud and basilica2 seats (the formulation rows'); dropped by eye: the airplane (a bare line) and the basilica and cubic fixed points (wells so large they hide the finer scales). Nearest modes considered: lace_holes (named: its what line is a web pierced by holes) and copper_webs (webs over hollows, but a relief, not rimmed holes). Tone, round one: median and p10 hold, p90 and the near-white share miss on 8 of 9 shipped-stack drafts (p90 0.86-0.88 against 0.763) and on both entries' seats: the bright rim and the de core are round two's levers (narrower, dimmer).",
+  "style": {
+    "name": "hollow_webs",
+    "interior": {
+      "palette": 0.12
+    },
+    "tone": {
+      "median": 0.449,
+      "p10": 0.185
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 3.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 3.0
+          }
+        },
+        "color": {
+          "palette": 0.35
+        },
+        "blend": "screen",
+        "opacity": 0.08,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          }
+        },
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.55,
+        "power": 3.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 16.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.8,
+            "shift": [
+              -0.133,
+              -0.181
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.65
+        },
+        "blend": "screen",
+        "opacity": 0.55,
+        "power": 3.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 16.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 24.0
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 0.951,
+            "shift": [
+              -0.096,
+              0.303
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.75
+        },
+        "blend": "screen",
+        "opacity": 0.55,
+        "power": 3.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 16.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "color": {
+          "palette": 0.02
+        },
+        "blend": "multiply",
+        "opacity": 0.85,
+        "power": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.88
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 5.0
+      },
+      {
+        "kind": "sheet",
+        "channel": {
+          "inside": {
+            "iterations": 1000
+          }
+        },
+        "sheet": {
+          "bands": 5.0,
+          "edge": 0.08,
+          "fill": 0.0
+        },
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.3
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.7
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "falloff": 0.0008
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.97
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "falloff": 0.0003
+      }
+    ]
+  }
+}

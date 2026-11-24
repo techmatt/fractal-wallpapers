@@ -1,0 +1,192 @@
+{
+  "schema": 1,
+  "name": "storm_clouds",
+  "description": "Storm clouds: banks of crinkled cloud in teal, violet and orchid, the set's lace their crinkled edge, broad soft colour patches drifting through them, lit as a relief, a few stars along the set.",
+  "reference": {
+    "image": "wallhaven_wallhaven-45oz58.jpg",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "unknown (Apophysis-style flame)"
+  },
+  "suggested_colormap": "storm_clouds",
+  "reuses": [
+    "relief light (molten_flow)",
+    "stripe grain (frost_stipple)",
+    "gaussian_int sparkle",
+    "de glows"
+  ],
+  "adds": [],
+  "notes": "Round one (077): triage group (8)'s clouds, wallhaven-45oz58 the default, tributaries-25.jpg (tributary_clouds) and wallhaven-3z1jkd (crimson_nebula, sparks at 0.6) as palette entries. Nearest mode: molten_flow (a glossy relief in broad lit folds); here the relief is broad and soft (one band, slope only, no seams) and the cloud is texture and colour: stripe grain at density 64 laid bright (masked to the set) and dark (multiplied), a palette layer on a density-2 stripe screened over the ground so colour drifts in broad patches, a de glow at 0.005 as the cloud's body. Reachable by one escape loop: the default draws from the frame's loop alone (the `billows` formulation adds two views' sheets). Lessons from the drafts: a uniform bloom (de falloff 0.02) is undone by the tone pass, which carries the frame back to the reference's median; a `light` cut into 14 bands draws terraced ledges whose seams read as rings in the far field (the `ledges` formulation); `tia` drew arcs, not plumes. Seats are a --min-ink 0.15 gallery scout (seed 77), maxiter under 15,000, spirals and degree 6 passed over; most of the forty still whirl at draft size and were dropped by eye, and two phoenix-classic seats at about 14,000 iterations with a sixth of the frame interior took ~200 s a draft at six threads (every loop iterates the interior to maxiter), so were dropped on cost. The default stack drew at a deep multibrot seat as lace with seams, not cloud: what reads as cloud is a shallow seat where the colour banks and grain have room (the phoenix-classic seat at 1,071 iterations).",
+  "style": {
+    "name": "storm_clouds",
+    "interior": {
+      "palette": 0.02
+    },
+    "tone": {
+      "median": 0.271,
+      "p10": 0.026
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 0.8,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "warp": {
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "amount": 0.35
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 2.0
+          }
+        },
+        "palette": {
+          "cycles": 1.0,
+          "gamma": 1.0,
+          "phase": 0.0,
+          "transfer": {
+            "kind": "rank"
+          }
+        },
+        "blend": "screen",
+        "opacity": 0.6
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.72
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "falloff": 0.005
+      },
+      {
+        "kind": "light",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "light": {
+          "bands": 1.0,
+          "rings": 0.0,
+          "slope": 1.5,
+          "azimuth": 110.0,
+          "elevation": 35.0,
+          "ambient": 0.5,
+          "diffuse": 0.7,
+          "specular": 0.4,
+          "shininess": 8.0,
+          "rim": 0.4,
+          "rim_power": 2.5,
+          "highlight": {
+            "palette": 0.95
+          }
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 64.0
+          }
+        },
+        "color": {
+          "palette": 0.9
+        },
+        "blend": "screen",
+        "opacity": 0.3,
+        "power": 6.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 1.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 64.0
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.03
+        },
+        "blend": "multiply",
+        "opacity": 0.3,
+        "power": 6.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.15,
+        "power": 40.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "color": {
+          "palette": 0.92
+        },
+        "blend": "screen",
+        "opacity": 0.25,
+        "falloff": 0.001
+      }
+    ]
+  }
+}

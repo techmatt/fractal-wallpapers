@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "spellcaster_webs",
+  "kind": "sequential",
+  "source": "spellcaster_webs, authored as 7 control points as the albedo of the hollow_webs style from spellcaster-25.jpg: an oxblood night, crimson haze, rust and slate teal, to bone and parchment strands.",
+  "stops": [
+    [0.0, [14, 6, 6]],
+    [0.18, [60, 12, 14]],
+    [0.35, [130, 24, 28]],
+    [0.5, [70, 84, 80]],
+    [0.65, [190, 90, 60]],
+    [0.8, [205, 170, 140]],
+    [1.0, [245, 232, 210]]
+  ]
+}

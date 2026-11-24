@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "crimson_nebula",
+  "kind": "sequential",
+  "source": "crimson_nebula, authored as 7 control points as the albedo of the storm_clouds style from wallhaven-3z1jkd: a plum black, wine, crimson and rose, a violet-blue and a white star.",
+  "stops": [
+    [0.0, [10, 2, 10]],
+    [0.2, [50, 6, 30]],
+    [0.4, [130, 10, 50]],
+    [0.55, [210, 30, 80]],
+    [0.7, [240, 90, 150]],
+    [0.82, [120, 100, 240]],
+    [1.0, [250, 245, 255]]
+  ]
+}

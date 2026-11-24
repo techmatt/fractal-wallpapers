@@ -3598,7 +3598,8 @@
         "tempest-25.jpg",
         "mean-25.jpg",
         "starlight-25.jpg",
-        "patterns_lilac_fractal_122906_2560x1600.jpg"
+        "patterns_lilac_fractal_122906_2560x1600.jpg",
+        "vitality-25.jpg"
       ],
       "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, ultramarine plumes, and periwinkle plumes on royal blue as palette entries).",
       "variant": "current",
@@ -3671,9 +3672,6 @@
             "/layers/3/opacity": 0.55,
             "/layers/4/opacity": 0.55,
             "/layers/5/opacity": 0.45,
-            "/layers/6/color": {
-              "palette": 0.85
-            },
             "/layers/6/opacity": 0.45,
             "/layers/7/opacity": 0.45,
             "/tone/median": 0.321,
@@ -3684,11 +3682,44 @@
           ],
           "reference": "patterns_lilac_fractal_122906_2560x1600.jpg",
           "score": 3
+        },
+        {
+          "colormap": "fern_plumes",
+          "values": {
+            "/tone/median": 0.701,
+            "/tone/p10": 0.44
+          },
+          "keeps": [],
+          "reference": "vitality-25.jpg"
         }
       ],
       "aliases": [
         "lilac_kaleidoscope"
       ]
+    },
+    {
+      "style": "hollow_webs",
+      "item": "077",
+      "reference": "thermal-pockets-25.jpg",
+      "references": [
+        "thermal-pockets-25.jpg",
+        "wallhaven_wallhaven-391g76.png",
+        "spellcaster-25.jpg"
+      ],
+      "what": "Hollow webs: dark wells of every size framed by bright rims, pockets nested in pockets, a membrane of fine fibres between them (magenta and gold; violet cells, and bone strands on crimson, as palette entries).",
+      "palettes": []
+    },
+    {
+      "style": "storm_clouds",
+      "item": "077",
+      "reference": "wallhaven_wallhaven-45oz58.jpg",
+      "references": [
+        "wallhaven_wallhaven-45oz58.jpg",
+        "tributaries-25.jpg",
+        "wallhaven_wallhaven-3z1jkd.png"
+      ],
+      "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
+      "palettes": []
     }
   ]
 }

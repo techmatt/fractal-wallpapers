@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "storm_clouds",
+  "kind": "sequential",
+  "source": "storm_clouds, authored as 8 control points as the albedo of the storm_clouds style from wallhaven-45oz58: a navy black, indigo and violet banks, deep teal, cyan, orchid pink and a white crest.",
+  "stops": [
+    [0.0, [4, 6, 18]],
+    [0.15, [20, 22, 70]],
+    [0.3, [60, 36, 120]],
+    [0.45, [20, 90, 120]],
+    [0.6, [40, 190, 210]],
+    [0.75, [150, 110, 200]],
+    [0.88, [220, 160, 230]],
+    [1.0, [245, 250, 255]]
+  ]
+}

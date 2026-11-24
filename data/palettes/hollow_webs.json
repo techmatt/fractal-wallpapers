@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "hollow_webs",
+  "kind": "sequential",
+  "source": "hollow_webs, authored as 8 control points as the albedo of the hollow_webs style from thermal-pockets-25.jpg: a black plum ground, maroon and rust wells, magenta and orchid fibres, olive gold to a yellow and cream rim.",
+  "stops": [
+    [0.0, [8, 4, 8]],
+    [0.15, [40, 12, 22]],
+    [0.3, [96, 32, 40]],
+    [0.45, [150, 70, 130]],
+    [0.6, [190, 110, 170]],
+    [0.72, [160, 140, 40]],
+    [0.85, [240, 200, 60]],
+    [1.0, [255, 245, 190]]
+  ]
+}

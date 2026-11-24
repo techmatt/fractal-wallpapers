@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "violet_cells",
+  "kind": "sequential",
+  "source": "violet_cells, authored as 7 control points as the albedo of the hollow_webs style from wallhaven-391g76: an ink-blue night, indigo and violet cells, magenta seams and a periwinkle to lavender rim.",
+  "stops": [
+    [0.0, [6, 6, 20]],
+    [0.2, [24, 16, 60]],
+    [0.4, [60, 30, 120]],
+    [0.55, [110, 40, 150]],
+    [0.7, [110, 90, 230]],
+    [0.85, [150, 150, 255]],
+    [1.0, [225, 225, 255]]
+  ]
+}
