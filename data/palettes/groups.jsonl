@@ -275,8 +275,7 @@
 {"schema": 1, "kind": "admitted", "map": "tempest_plumes", "group": "map:tempest_plumes", "joined": false, "nearest": "map:Nebula Flare", "m1": 0.07259}
 {"schema": 1, "kind": "admitted", "map": "mean_plumes", "group": "map:mean_plumes", "joined": false, "nearest": "map:cet_linear_tritanopic_krjcw_5_95_c24", "m1": 0.047573}
 {"schema": 1, "kind": "admitted", "map": "starlight_plumes", "group": "map:starlight_plumes", "joined": false, "nearest": "map:along-the-starry-way-25", "m1": 0.050088}
-{"schema": 1, "kind": "admitted", "map": "lilac_kaleidoscope", "group": "map:lilac_kaleidoscope", "joined": false, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.048307}
+{"schema": 1, "kind": "admitted", "map": "lilac_plumes", "group": "map:lilac_plumes", "joined": false, "nearest": "map:fractal_abstraction_lines_130499_2560x1600", "m1": 0.048307}
 {"schema": 1, "kind": "admitted", "map": "silk_scarves", "group": "map:silk_scarves", "joined": false, "nearest": "map:banded_lines_teal", "m1": 0.087787}
 {"schema": 1, "kind": "admitted", "map": "sweet_child", "group": "map:sweet_child", "joined": false, "nearest": "map:Oxblood Procession", "m1": 0.068203}
 {"schema": 1, "kind": "admitted", "map": "twist_in_time", "group": "map:twist_in_time", "joined": false, "nearest": "map:skyroads-blue-25", "m1": 0.075355}
-{"schema": 1, "kind": "admitted", "map": "the_gift", "group": "map:the_gift", "joined": false, "nearest": "map:helping-hands-25", "m1": 0.055127}

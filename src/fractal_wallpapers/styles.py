@@ -67,9 +67,8 @@ def catalog_rows() -> list[dict[str, Any]]:
 def alias_of(name: str) -> tuple[str, str | None] | None:
     """`(mode, colormap)` for a style name merged into a mode, or None.
 
-    A style merged into a mode keeps resolving (`data/styles/README.md`'s *Palette
-    sets*): to the palette entry that was it, or to the mode's default when none was
-    kept.
+    A style merged into a mode keeps resolving (`data/styles/PALETTES.md`): to the palette
+    entry that was it, or to the mode's default when none was kept.
     """
     for row in catalog_rows():
         if name in row.get("aliases", []):

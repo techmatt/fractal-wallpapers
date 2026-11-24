@@ -68,29 +68,9 @@ tiers; `style_catalog.check` holds the rows to the style files. `style refs --un
 reads the planner's triage, `picks/wallpaper_triage.choices.json`; `--sheet <dir>`
 shows its unused references as captioned sheets plus `unused.txt`.
 
-## Palette sets
-
-**A custom render mode is a stack plus a palette set.** Each entry of a row's `palettes`
-is a map with its tuned values, keeps and score: `{colormap, was,
-reference, values, keeps, score}` (`style_palettes.py` has the shape). The first entry
-is the default: the mode's own map, no values; the mode's score is its
-best entry's. A value is a knob-style pointer and what is written there; it must name a
-member the stack writes (an entry drops at most one layer, `MOST_DROPPED`, as its `opacity` at 0, a `light` without
-one set neutral: `ambient` 1, the rest 0). An entry's map is read at fixed slots of the
-stack, and screen-blended layers wash towards the map's top, so its albedo goes well
-past the reference's saturation. `style render <mode> --colormap <map>` applies them.
-
-**Only picked palettes are saved**: `palettes add --mode` puts a map in a set for a
-round, unkept, and `style keep` lays each kept tile's map in; an entry no tile kept
-leaves the set, and its map the library by `fractal-wallpapers palettes remove <map>`
-(refused while a kept palette or a live style draws in it). A kept map is renamed by
-**`palettes rename <old> <new>`**, never by hand. A style merged into a mode still resolves under its old
-name (`styles.alias_of`), to its entry or the mode's default.
-
-`style gallery` rebuilds `fractal-drive-sync/custom-modes/`, one card per mode; `style
-bundle` (the website's `custom-modes.json`) carries each published mode's kept entries.
-**Re-drawing a shown keep** under a changed default is a one-row picker
-(`style_keeps.py`'s docstring has the steps).
+**A custom render mode is a stack plus a palette set** (each entry a map with its tuned
+values, keeps and score): `PALETTES.md` beside this has the sets, saving only picked
+palettes, renaming a map, and merging a style into a mode.
 
 `style sweep`, the checker after an engine or stack change, is `CHECKS.md` beside this.
 
@@ -188,7 +168,7 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    `<style>/<row>`, and `style keep <name>` runs once per style on one choices file,
    taking its rows and unscoped ones; a tile goes to the catalog mode that drew it (a
    baseline's keep is that mode's: run the `style keep <mode>` it prints). Maps go as
-   *Palette sets* says.
+   `PALETTES.md` says.
 10. **Catalogue it**: the row's score and status as Matt gave them, a published one's
     `tier` (`lab`), `variant`, `show` and `public`, and `references` naming its reference
     (an entry's round adds the entry's file to the mode's `references` and the entry's

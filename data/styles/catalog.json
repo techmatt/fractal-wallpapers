@@ -1333,7 +1333,8 @@
           "values": {},
           "keeps": [
             "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__03_phoenix_1b501757_flame_wisp_frost",
-            "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost"
+            "style_flame_wisps_r1/flame_wisp_frost/locations/frost__loc__05_phoenix-classic_618cd4e4_flame_wisp_frost",
+            "style_flames_r1/feather_plumes/formulations/fpf_flame_wisp_frost"
           ],
           "score": 4
         }
@@ -2323,7 +2324,7 @@
       },
       "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them.",
       "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing",
-      "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do.",
+      "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do. · 075's entries (2026-11-24): silk_scarves (seat 1), sweet_child (seat 1), twist_in_time (seat 2) 3/5; the_gift kept nothing and left the set and library.",
       "palettes": [
         {
           "colormap": "soft_veils_teal",
@@ -2464,8 +2465,11 @@
             "/tone/median": 0.224,
             "/tone/p10": 0.078
           },
-          "keeps": [],
-          "reference": "silk-scarves-25.jpg"
+          "keeps": [
+            "style_flames_r1/soft_veils/entries/e_silk_scarves_1"
+          ],
+          "reference": "silk-scarves-25.jpg",
+          "score": 3
         },
         {
           "colormap": "sweet_child",
@@ -2473,8 +2477,11 @@
             "/tone/median": 0.378,
             "/tone/p10": 0.243
           },
-          "keeps": [],
-          "reference": "sweet-child-25.jpg"
+          "keeps": [
+            "style_flames_r1/soft_veils/entries/e_sweet_child_1"
+          ],
+          "reference": "sweet-child-25.jpg",
+          "score": 3
         },
         {
           "colormap": "twist_in_time",
@@ -2482,17 +2489,11 @@
             "/tone/median": 0.209,
             "/tone/p10": 0.103
           },
-          "keeps": [],
-          "reference": "twist-in-time-25.jpg"
-        },
-        {
-          "colormap": "the_gift",
-          "values": {
-            "/tone/median": 0.238,
-            "/tone/p10": 0.105
-          },
-          "keeps": [],
-          "reference": "the-gift-25.jpg"
+          "keeps": [
+            "style_flames_r1/soft_veils/entries/e_twist_in_time_2"
+          ],
+          "reference": "twist-in-time-25.jpg",
+          "score": 3
         }
       ]
     },
@@ -3587,20 +3588,43 @@
     },
     {
       "style": "feather_plumes",
+      "score": 4,
+      "status": "publish",
+      "tier": "lab",
       "item": "075",
       "reference": "wallhaven_wallhaven-0w8gpp.png",
       "references": [
         "wallhaven_wallhaven-0w8gpp.png",
         "tempest-25.jpg",
         "mean-25.jpg",
-        "starlight-25.jpg"
+        "starlight-25.jpg",
+        "patterns_lilac_fractal_122906_2560x1600.jpg"
       ],
-      "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, and ultramarine plumes as palette entries).",
+      "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, ultramarine plumes, and periwinkle plumes on royal blue as palette entries).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_flames_r1/feather_plumes/formulations/fpf_long",
+          "caption": "Frosted feather plumes combed out of a phoenix set's lace, amber sparks on a blue-black night"
+        }
+      ],
+      "public": {
+        "name": "feather-plumes",
+        "palette": "feather_plumes",
+        "knobs": []
+      },
+      "kept": "7 tiles: fpf_long at both seats and fpf2_stack; entries tempest_plumes, mean_plumes, starlight_plumes (seat 2); lilac_plumes (lilac_kaleidoscope's unfolded tile); plus the flame_wisp_frost baseline tile, kept to that mode",
+      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine.",
       "palettes": [
         {
           "colormap": "feather_plumes",
           "values": {},
-          "keeps": []
+          "keeps": [
+            "style_flames_r1/feather_plumes/formulations/fpf_long",
+            "style_flames_r1/feather_plumes/formulations2/fpf2_stack",
+            "style_flames_r1/feather_plumes/formulations2/fpf2_long"
+          ],
+          "score": 3
         },
         {
           "colormap": "tempest_plumes",
@@ -3608,8 +3632,11 @@
             "/tone/median": 0.224,
             "/tone/p10": 0.087
           },
-          "keeps": [],
-          "reference": "tempest-25.jpg"
+          "keeps": [
+            "style_flames_r1/feather_plumes/entries/e_tempest_plumes_2"
+          ],
+          "reference": "tempest-25.jpg",
+          "score": 4
         },
         {
           "colormap": "mean_plumes",
@@ -3617,8 +3644,11 @@
             "/tone/median": 0.202,
             "/tone/p10": 0.063
           },
-          "keeps": [],
-          "reference": "mean-25.jpg"
+          "keeps": [
+            "style_flames_r1/feather_plumes/entries/e_mean_plumes_2"
+          ],
+          "reference": "mean-25.jpg",
+          "score": 3
         },
         {
           "colormap": "starlight_plumes",
@@ -3626,25 +3656,38 @@
             "/tone/median": 0.082,
             "/tone/p10": 0.024
           },
-          "keeps": [],
-          "reference": "starlight-25.jpg"
-        }
-      ]
-    },
-    {
-      "style": "lilac_kaleidoscope",
-      "item": "075",
-      "reference": "patterns_lilac_fractal_122906_2560x1600.jpg",
-      "references": [
-        "patterns_lilac_fractal_122906_2560x1600.jpg"
-      ],
-      "what": "A lilac mandala: the set's feathered lace folded eightfold through a mirror box, periwinkle barbs and white sparks on royal blue.",
-      "palettes": [
+          "keeps": [
+            "style_flames_r1/feather_plumes/entries/e_starlight_plumes_2"
+          ],
+          "reference": "starlight-25.jpg",
+          "score": 3
+        },
         {
-          "colormap": "lilac_kaleidoscope",
-          "values": {},
-          "keeps": []
+          "colormap": "lilac_plumes",
+          "was": "lilac_kaleidoscope",
+          "values": {
+            "/layers/1/opacity": 0.25,
+            "/layers/2/opacity": 0.55,
+            "/layers/3/opacity": 0.55,
+            "/layers/4/opacity": 0.55,
+            "/layers/5/opacity": 0.45,
+            "/layers/6/color": {
+              "palette": 0.85
+            },
+            "/layers/6/opacity": 0.45,
+            "/layers/7/opacity": 0.45,
+            "/tone/median": 0.321,
+            "/tone/p10": 0.15
+          },
+          "keeps": [
+            "style_flames_r1/lilac_kaleidoscope/formulations/lkf_unfolded"
+          ],
+          "reference": "patterns_lilac_fractal_122906_2560x1600.jpg",
+          "score": 3
         }
+      ],
+      "aliases": [
+        "lilac_kaleidoscope"
       ]
     }
   ]

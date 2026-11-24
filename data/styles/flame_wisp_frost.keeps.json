@@ -103,6 +103,60 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_flames_r1/feather_plumes/formulations/fpf_flame_wisp_frost",
+      "picker": "style_flames_r1",
+      "picked": [
+        {
+          "row": "feather_plumes/formulations",
+          "key": "fpf_flame_wisp_frost"
+        }
+      ],
+      "label": "baseline: flame_wisp_frost",
+      "image": "style_flames_r1__fpf_flame_wisp_frost.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_frost_keep",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.7903675443707822",
+              "-0.46059628853008105"
+            ],
+            "p": [
+              "-0.07072481292971435",
+              "-0.43908467679287494"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.8475217631306413",
+            "center_im": "0.04446787554256711",
+            "width": "0.3827587642618578"
+          },
+          "maxiter": 945,
+          "note": "final139_general seat 973 (direct_trap_lines, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 973,
+            "key": "1b50175755a9e8b5",
+            "p_spiral": 0.093238
+          }
+        },
+        "style": "flame_wisp_frost",
+        "stack": "flame_wisp_frost@7255734b",
+        "colormap": "flame_wisp_frost",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
