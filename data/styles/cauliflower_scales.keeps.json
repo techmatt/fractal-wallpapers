@@ -86,8 +86,8 @@
             "center_im": "0.8395661201695902",
             "width": "0.0072618899060757905"
           },
-          "maxiter": 14428,
-          "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic)",
+          "maxiter": 2000,
+          "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic); its cap lowered from the seat's 14428 to 2000 for the page's draw (Matt, 082: \"can't see much difference, faster seems better\"); the saved picture was drawn at 14428",
           "gallery": {
             "record": "final139_general",
             "seat": 791,

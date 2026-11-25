@@ -127,6 +127,10 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
    (`styles.TONE_BAND`). A stack whose every render misses p90 is re-tuned (narrower
    glows, less fog), not its locations dropped; on a dark reference keep the ground in
    the map's dark end, since a layer sinking it to black makes the pass lift the rest.
+   The pass holds the median, so dimming one glow or light can leave p90 where the seat
+   puts it (081's glass_orbs, 082's lace_holes drafts, each under 0.02); in 082's drafts
+   the ground's `cycles` moved it (bead_strands, 1 to 0.65: p90 0.686 to 0.639 at
+   `--draft`), keeping the ground off the map's bright end.
    Check at `--draft`, on the stack as shipped. A palette entry is held to **its own**
    reference: `style tones <mode> <pictures…> --reference <entry map>`.
 6. **Round one: a picker of about twenty tiles**: **formulations**, four to six readings

@@ -1572,9 +1572,9 @@
         "palette": "cauliflower_scales",
         "knobs": []
       },
-      "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps under faint feathered strands.",
+      "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps.",
       "kept": "horror_scales: 1 location; the default map: 1 baseline tile (054)",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice.",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic_8fa28807 keep opened at an iteration cap of 2000 in place of the seat's 14428, and the stack without its two stripe-view glows (082, Matt's picks in explorer_cost_cuts_080: \"can't see much difference, faster seems better\") · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice.",
       "palettes": [
         {
           "colormap": "cauliflower_scales",
@@ -1597,15 +1597,7 @@
             },
             "/layers/1/light/ambient": 0.35,
             "/layers/1/light/rim": 0.5,
-            "/layers/2/light/ambient": 0.45,
-            "/layers/3/color": {
-              "palette": 0.43
-            },
-            "/layers/3/opacity": 0.45,
-            "/layers/4/color": {
-              "palette": 0.43
-            },
-            "/layers/4/opacity": 0.45
+            "/layers/2/light/ambient": 0.45
           },
           "keeps": [
             "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales"
