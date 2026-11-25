@@ -186,6 +186,9 @@ def bundle() -> dict[str, Any]:
             palettes.append(
                 {
                     "colormap": entry["colormap"],
+                    # The old style this entry was before it merged into the mode: a
+                    # page resolves a link naming that style to this entry.
+                    **({"was": entry["was"]} if entry.get("was") else {}),
                     "values": entry.get("values") or {},
                     **({"score": entry["score"]} if "score" in entry else {}),
                 }
@@ -198,6 +201,9 @@ def bundle() -> dict[str, Any]:
                 "tier": row["tier"],
                 "palette": palette,
                 "palettes": palettes,
+                # Old style names merged into this mode (`styles.alias_of`), each resolving
+                # here: to its entry (`was`) or the default.
+                "aliases": row.get("aliases") or [],
                 "variant": row["variant"],
                 "what": row.get("what", document["description"]),
                 "knobs": (document.get("public") or {}).get("knobs") or [],

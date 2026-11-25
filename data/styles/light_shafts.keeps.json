@@ -62,6 +62,61 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_november_r2/light_shafts/levers/ls2_subtler",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "light_shafts/levers",
+          "key": "ls2_subtler"
+        }
+      ],
+      "label": "subtler: share 0.008, length 0.1, strength 3.5 [tone miss: p90 0.432 vs 0.330]",
+      "image": "style_november_r2__ls2_subtler.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "light_shafts__subtler",
+        "stack": "light_shafts__subtler@d240ae56",
+        "colormap": "light_shafts",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -248,6 +303,190 @@
         }
       ],
       "name": "light_shafts"
+    },
+    "light_shafts__subtler@d240ae56": {
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.12,
+        "p10": 0.026,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.04
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.06,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.21,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.8,
+              "shift": [
+                -0.133,
+                -0.181
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.6000000000000001
+          },
+          "blend": "screen",
+          "opacity": 0.21,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 24.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.951,
+              "shift": [
+                -0.096,
+                0.303
+              ]
+            }
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.21,
+          "power": 6.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 5.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0015,
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.105
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.21
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 10
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.02
+          },
+          "opacity": 1.0
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.008,
+          "spokes": 4,
+          "angle": 45.0,
+          "length": 0.1,
+          "center": [
+            0.5,
+            0.42
+          ],
+          "strength": 3.5
+        }
+      ],
+      "name": "light_shafts__subtler"
     }
   }
 }

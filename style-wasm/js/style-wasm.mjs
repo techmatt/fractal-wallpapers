@@ -5,6 +5,9 @@
 //   const picture = styles.open(request);          // style-wasm/README.md's *The style module*
 //   picture.measure({width: 320, height: 200});    // a preview's balance, or {} for the frame's
 //   const rgba = picture.tile(0, 0, 256, 256);     // Uint8ClampedArray, width·height·4
+//   const report = picture.exportMeasure();        // Uint8Array: another worker's
+//   other.importMeasure(report);                   //   Picture tiles against it, unmeasured
+//   picture.recolour(request);                     // another map, from the kept frame
 //   picture.close();
 //
 // Every buffer is copied out of the module's memory before it is freed, so what a call
@@ -57,16 +60,36 @@ export class StyleModule {
     return out;
   }
 
-  open(request) {
-    const raw = encoder.encode(typeof request === "string" ? request : JSON.stringify(request));
+  // Length-prefixed bytes as a fresh Uint8Array; null is `last_error`'s.
+  prefixed(ptr) {
+    ptr >>>= 0;
+    if (ptr === 0) {
+      throw new Error(this.plain(this.exports.last_error()));
+    }
+    const len = new DataView(this.exports.memory.buffer).getUint32(ptr, true);
+    const out = new Uint8Array(this.exports.memory.buffer.slice(ptr + 4, ptr + 4 + len));
+    this.exports.dealloc(ptr, len + 4);
+    return out;
+  }
+
+  // `name(...args, ptr, len)` over `raw` copied into the module, its JSON answer out.
+  send(name, raw, ...args) {
     const ptr = this.exports.alloc(raw.length);
     new Uint8Array(this.exports.memory.buffer, ptr, raw.length).set(raw);
-    const answer = this.call("open", ptr, raw.length);
+    const answer = this.call(name, ...args, ptr, raw.length);
     this.exports.dealloc(ptr, raw.length);
     if (!answer.ok) {
       throw new Error(answer.why);
     }
-    return new Picture(this, answer);
+    return answer;
+  }
+
+  encoded(request) {
+    return encoder.encode(typeof request === "string" ? request : JSON.stringify(request));
+  }
+
+  open(request) {
+    return new Picture(this, this.send("open", this.encoded(request)));
   }
 }
 
@@ -93,6 +116,26 @@ export class Picture {
     if (!answer.ok) {
       throw new Error(answer.why);
     }
+    return answer;
+  }
+
+  // The measures as bytes (a Uint8Array) another Picture of the same picture takes with
+  // `importMeasure`: in another worker or module instance, so only one measures.
+  exportMeasure() {
+    return this.module.prefixed(this.module.exports.export_measure(this.handle));
+  }
+
+  // Take an `exportMeasure` report as this picture's measures, measuring nothing.
+  importMeasure(report) {
+    return this.module.send("import_measure", report, this.handle);
+  }
+
+  // Another map or palette entry's values at the same place and size, re-measured from
+  // the frame the last `measure()` kept: no orbit is iterated. Throws (the picture
+  // unchanged) when the request moves the place or the channels; then measure afresh.
+  recolour(request) {
+    const answer = this.module.send("recolour", this.module.encoded(request), this.handle);
+    this.summary = { ...this.summary, style: answer.style, mirror: answer.mirror };
     return answer;
   }
 

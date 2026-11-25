@@ -15,7 +15,7 @@
   "adds": [
     "post pass `rays` (engine/src/post.rs): shafts from a `center`"
   ],
-  "notes": "Round one (078): triage group (9)'s light beams, wallhaven-398e39 the default; necromancer (scarlet_shafts) and wallhaven-396d7v (ice_shafts) as palette entries (tone only). The shafts are the post stage's new `rays` pass with a `center` (POST.md): the brightest 3% of the frame (the lit lace and the set's hair) casts light outwards from a point just above the middle, each sample taking the mean of the light behind it over 0.25 frame widths, so shafts stream out of the fractal's own bright lace. A first cut gathered 160 taps a stride apart and drew moire rings; the pass sums by doubling (a dozen one-tap passes), which skips no sample. Under it, fine stripe grain at density 24 from three loops masked to the set, the set's hair, a dark void, all at about a third of full so the shafts (strength 10) carry the picture: with the lace full (the lit_lace reading, strength 4) the lace led, the shafts read as background, and 22 of 35 location drafts missed the reference's p90 (the lace too bright). Nearest mode: hairline_rays (stroke-trap hairlines: curves, never straight); route two, the stroke trap's own lines laid on this stack (strokes), is in the picker beside the post-pass route. Readings: streak (a second pass: a horizontal two-spoke streak, 398e39's horizon), long (0.5), low (the point near the bottom edge), lit_lace, no_rays. A further reading puts necromancer on starburst_veils instead, as one long scarlet streak (two spokes at 150 degrees, length 0.4). Tone, round one: 20 of 35 scout drafts hold (all 12 kept seats), misses p90 on lace-dense seats; both entries miss (scarlet_shafts lifts the dark stack whole: no range; ice_shafts too black). Cost: 43.7 s as WebAssembly on one thread at 1280x800 ss2 at phoenix_2d843082 (maxiter 9,266), the shafts 2.0 s of it. Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 32 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (phoenix_fc131a7f, maxiter 4,930), under the 5-minute bar.",
+  "notes": "Round one (078): triage group (9)'s light beams, wallhaven-398e39 the default; necromancer (scarlet_shafts) and wallhaven-396d7v (ice_shafts) as palette entries (tone only). The shafts are the post stage's new `rays` pass with a `center` (POST.md): the brightest 3% of the frame (the lit lace and the set's hair) casts light outwards from a point just above the middle, each sample taking the mean of the light behind it over 0.25 frame widths, so shafts stream out of the fractal's own bright lace. A first cut gathered 160 taps a stride apart and drew moire rings; the pass sums by doubling (a dozen one-tap passes), which skips no sample. Under it, fine stripe grain at density 24 from three loops masked to the set, the set's hair, a dark void, all at about a third of full so the shafts (strength 10) carry the picture: with the lace full (the lit_lace reading, strength 4) the lace led, the shafts read as background, and 22 of 35 location drafts missed the reference's p90 (the lace too bright). Nearest mode: hairline_rays (stroke-trap hairlines: curves, never straight); route two, the stroke trap's own lines laid on this stack (strokes), is in the picker beside the post-pass route. Readings: streak (a second pass: a horizontal two-spoke streak, 398e39's horizon), long (0.5), low (the point near the bottom edge), lit_lace, no_rays. A further reading puts necromancer on starburst_veils instead, as one long scarlet streak (two spokes at 150 degrees, length 0.4). Tone, round one: 20 of 35 scout drafts hold (all 12 kept seats), misses p90 on lace-dense seats; both entries miss (scarlet_shafts lifts the dark stack whole: no range; ice_shafts too black). Cost: 43.7 s as WebAssembly on one thread at 1280x800 ss2 at phoenix_2d843082 (maxiter 9,266), the shafts 2.0 s of it. Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 32 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (phoenix_fc131a7f, maxiter 4,930), under the 5-minute bar. Round two (picker style_november_r2, Matt 2026-11-24): Matt kept only the subtler lever (share 0.03 to 0.008, length 0.25 to 0.1, strength 10 to 3.5) and no tile of the old reading, so subtler is the default stack; its draft missed p90 (0.432 against 0.330). The round-one figures above (strength 10, the costs) are the old reading's.",
   "style": {
     "interior": {
       "palette": 0.02
@@ -187,15 +187,15 @@
     "post": [
       {
         "kind": "rays",
-        "share": 0.03,
+        "share": 0.008,
         "spokes": 4,
         "angle": 45.0,
-        "length": 0.25,
+        "length": 0.1,
         "center": [
           0.5,
           0.42
         ],
-        "strength": 10.0
+        "strength": 3.5
       }
     ],
     "name": "light_shafts"

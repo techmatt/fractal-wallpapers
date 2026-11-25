@@ -7,7 +7,7 @@
     "folder": "fractal-drive-sync/style-refs",
     "made_with": "unknown (Apophysis-style flame)"
   },
-  "suggested_colormap": "feather_plumes",
+  "suggested_colormap": "tempest_plumes",
   "reuses": [
     "stripe grain (frost_stipple)",
     "views (flame_wisp_frost)",
@@ -15,15 +15,15 @@
     "gaussian_int sparkle"
   ],
   "adds": [],
-  "notes": "Round one (075): triage group (9)'s feathered strokes, wallhaven-0w8gpp as the default, tempest, mean and starlight as palette entries (tone only). Not reachable by one escape loop: a flame's plumes are accumulated density, drawn here as three loops (the frame's and two views), each laying stripe grain at density 48 masked hard to the set (inverted de at power 6 for the body, 12 for the tips), so the barbs comb off the set's own lace instead of crossing the frame (flame_wisp_frost's veils are density-3 stripes over the whole frame). The one_loop formulation is the single-loop answer. gaussian_int sparks are defined inside the set, so a last `inside` glow at 10 iterations keeps the interior dark. Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 73 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (phoenix_2d843082, maxiter 9,266), under the 5-minute bar.",
+  "notes": "Round one (075): triage group (9)'s feathered strokes, wallhaven-0w8gpp as the default, tempest, mean and starlight as palette entries (tone only). Not reachable by one escape loop: a flame's plumes are accumulated density, drawn here as three loops (the frame's and two views), each laying stripe grain at density 48 masked hard to the set (inverted de at power 6 for the body, 12 for the tips), so the barbs comb off the set's own lace instead of crossing the frame (flame_wisp_frost's veils are density-3 stripes over the whole frame). The one_loop formulation is the single-loop answer. gaussian_int sparks are defined inside the set, so a last `inside` glow at 10 iterations keeps the interior dark. Explorer cost (080, `style cost`, read beside other Node workers: an upper bound): 73 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (phoenix_2d843082, maxiter 9,266), under the 5-minute bar. Round two (picker style_november_r2, Matt 2026-11-24): Matt kept his readings on tempest_plumes, so tempest_plumes (tempest-25) is the default map and the stack carries its tone (median 0.224, p10 0.087); the feather_plumes map (wallhaven-0w8gpp, median 0.061, p10 0.007) is an entry.",
   "style": {
     "name": "feather_plumes",
     "interior": {
       "palette": 0.02
     },
     "tone": {
-      "median": 0.061,
-      "p10": 0.007,
+      "median": 0.224,
+      "p10": 0.087,
       "log_density": 8.0
     },
     "layers": [

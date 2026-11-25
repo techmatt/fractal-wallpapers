@@ -2420,6 +2420,21 @@ fn wants_of(fields: &[FieldSpec], family: &Family) -> Wants {
     }
 }
 
+/// Whether a light reads a field channel. The frame's own loop keeps its derivative only
+/// for one: a light on a trap or the inside reads that loop's, and the derivative is what
+/// bars the frame's loop from its proofs of interior.
+fn field_lit(style: &Style) -> bool {
+    style.layers.iter().any(|layer| {
+        layer.kind == Kind::Light
+            && layer
+                .channel
+                .is_none_or(|source| matches!(source.key(), Key::Field(_)))
+    })
+}
+
+/// Every lane `style` reads over `window` of `view`'s samples, from one escape loop
+/// (and one per view or trap). It reads the stack only through what [`Reads`] holds:
+/// a new read here is a new member there, or a recolour could reuse a frame it should not.
 fn gather(
     view: &Viewport,
     family: &Family,
@@ -2429,15 +2444,7 @@ fn gather(
 ) -> Channels {
     let fields = style.fields();
     let lights = style.lights();
-    // The frame's own loop keeps its derivative only for a light on a field channel: a
-    // light on a trap or the inside reads that loop's, and the derivative is what bars
-    // the frame's loop from its proofs of interior.
-    let field_lit = style.layers.iter().any(|layer| {
-        layer.kind == Kind::Light
-            && layer
-                .channel
-                .is_none_or(|source| matches!(source.key(), Key::Field(_)))
-    });
+    let field_lit = field_lit(style);
     let wants = Wants {
         derivative: field_lit || fields.iter().any(|field| field.wants().derivative),
         ..wants_of(&fields, family)
@@ -3127,9 +3134,21 @@ fn measured_frame(
     style.validate()?;
     let style = &*drawn(style);
     let channels = gather(view, family, maxiter, style, Window::whole(view));
-    let mut measures = measure_layers(style, &channels);
-    let linear = composite(view, style, colormap, &channels, &measures);
-    let linear = posted(view, style, colormap, &channels, linear)?;
+    measured_from(view, style, colormap, &channels)
+}
+
+/// The measure half over a frame's gathered channels, `style` already [`drawn`]: the
+/// frame's measures, and its linear samples before the palette's rolloff. Everything
+/// [`measured_frame`] does after the escape loop, which is all a recolour redoes.
+fn measured_from(
+    view: &Viewport,
+    style: &Style,
+    colormap: &Colormap,
+    channels: &Channels,
+) -> Result<(Measures, Vec<[f64; 3]>), String> {
+    let mut measures = measure_layers(style, channels);
+    let linear = composite(view, style, colormap, channels, &measures);
+    let linear = posted(view, style, colormap, channels, linear)?;
     let linear = match style.tone {
         Some(tone) => {
             let lifted = lift(linear, tone);
@@ -3175,6 +3194,240 @@ pub fn measure(
     colormap: &Colormap,
 ) -> Result<Measures, String> {
     Ok(measured_frame(view, family, maxiter, style, colormap)?.0)
+}
+
+/// What [`gather`] reads of a stack, and nothing else: two stacks with the same reads
+/// gather the same channels over the same frame, whatever their colours, opacities,
+/// palettes, lights' settings or tone. A recolour ([`measure_gathered`]) is allowed
+/// exactly when the new stack's reads are the gathered one's.
+#[derive(PartialEq)]
+struct Reads {
+    fields: Vec<FieldSpec>,
+    views: Vec<(View, Vec<FieldSpec>)>,
+    lights: bool,
+    field_lit: bool,
+    inside: Option<u32>,
+    bubbles: Vec<(Bubble, [bool; BUBBLE_READS])>,
+    lines: Vec<Lines>,
+    strokes: Vec<Stroke>,
+    radials: Vec<[f64; 2]>,
+    stir: Vec<Stir>,
+    projection: Option<Projection>,
+}
+
+impl Reads {
+    /// The reads of a stack already [`drawn`].
+    fn of(style: &Style) -> Reads {
+        Reads {
+            fields: style.fields(),
+            views: style.views(),
+            lights: style.lights(),
+            field_lit: field_lit(style),
+            inside: style.inside(),
+            bubbles: style.bubbles(),
+            lines: style.lines(),
+            strokes: style.strokes(),
+            radials: style.radials(),
+            stir: style.stir.clone(),
+            projection: style.projection,
+        }
+    }
+}
+
+/// One frame's escape loop, kept: every channel a stack read over the whole of a view,
+/// so the measure half can be taken again under another colormap or another stack with
+/// the same [`Reads`] without iterating a single orbit ([`measure_gathered`]).
+///
+/// It holds a lane per channel per sample (four bytes each, more with gradients or
+/// traps), so keeping one costs about what the measure itself allocated.
+pub struct Gathered {
+    view: Viewport,
+    family: Family,
+    maxiter: u32,
+    reads: Reads,
+    channels: Channels,
+}
+
+/// The escape loop of [`measure`] alone, over the whole of `view`, kept.
+pub fn gather_frame(
+    view: &Viewport,
+    family: &Family,
+    maxiter: u32,
+    style: &Style,
+) -> Result<Gathered, String> {
+    style.validate()?;
+    let style = &*drawn(style);
+    Ok(Gathered {
+        view: *view,
+        family: *family,
+        maxiter,
+        reads: Reads::of(style),
+        channels: gather(view, family, maxiter, style, Window::whole(view)),
+    })
+}
+
+/// The measure half over a kept frame: exactly [`measure`]'s measures of
+/// `gathered`'s view under `style` and `colormap`, the escape loop not run again.
+/// Refused when `style` reads channels the gathered stack did not ([`Reads`]).
+pub fn measure_gathered(
+    gathered: &Gathered,
+    style: &Style,
+    colormap: &Colormap,
+) -> Result<Measures, String> {
+    style.validate()?;
+    let style = &*drawn(style);
+    if Reads::of(style) != gathered.reads {
+        return Err(format!(
+            "style '{}' reads channels the kept frame did not gather: measure it afresh",
+            style.name
+        ));
+    }
+    Ok(measured_from(&gathered.view, style, colormap, &gathered.channels)?.0)
+}
+
+impl Gathered {
+    /// Whether this frame is `view` of `family` at `maxiter`: what a caller checks before
+    /// recolouring a picture from it.
+    pub fn is_of(&self, view: &Viewport, family: &Family, maxiter: u32) -> bool {
+        // `Viewport` has no `PartialEq`; its `Debug` spells every `f64` exactly.
+        format!("{:?}", self.view) == format!("{view:?}")
+            && self.family == *family
+            && self.maxiter == maxiter
+    }
+}
+
+/// The first bytes of [`Measures::to_bytes`], with its version.
+const MEASURES_MAGIC: &[u8; 4] = b"FWM1";
+
+impl Measures {
+    /// Every statistic here as exact bytes, each `f64` its bits: what another thread,
+    /// worker or instance drawing the same picture reads back with
+    /// [`Measures::from_bytes`] to composite tiles to the same bytes, instead of
+    /// measuring the frame itself. A rank spend carries every valid sample (eight bytes
+    /// each); the rest are a few hundred bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = MEASURES_MAGIC.to_vec();
+        out.extend_from_slice(&(self.layers.len() as u64).to_le_bytes());
+        for measured in &self.layers {
+            match measured {
+                Measured::Palette { spend, .. } => {
+                    out.push(0);
+                    spend.write(&mut out);
+                }
+                Measured::Ranked(spend) => {
+                    out.push(1);
+                    spend.write(&mut out);
+                }
+                Measured::Stretched(stretch) => {
+                    out.push(2);
+                    stretch.write(&mut out);
+                }
+                Measured::Nothing => out.push(3),
+            }
+        }
+        for spend in &self.warps {
+            out.push(spend.is_some() as u8);
+            if let Some(spend) = spend {
+                spend.write(&mut out);
+            }
+        }
+        for stretch in &self.masks {
+            out.push(stretch.is_some() as u8);
+            if let Some(stretch) = stretch {
+                stretch.write(&mut out);
+            }
+        }
+        out.push(self.tone.is_some() as u8);
+        let (b, g) = self.tone.unwrap_or((0.0, 0.0));
+        out.extend_from_slice(&b.to_le_bytes());
+        out.extend_from_slice(&g.to_le_bytes());
+        out.extend_from_slice(&self.interior_fraction.to_le_bytes());
+        out
+    }
+
+    /// The measures [`Measures::to_bytes`] wrote, for `style` (the stack they were
+    /// measured under: a palette layer's settings are read from it, not carried).
+    /// Refused when the bytes do not fit the stack's layers.
+    pub fn from_bytes(bytes: &[u8], style: &Style) -> Result<Measures, String> {
+        let style = &*drawn(style);
+        let Some(rest) = bytes.strip_prefix(MEASURES_MAGIC) else {
+            return Err("measures: these bytes are not a measure report".into());
+        };
+        let mut bytes = coloring::Bytes { rest };
+        let count = bytes.u64()? as usize;
+        if count != style.layers.len() {
+            return Err(format!(
+                "measures: they are of a stack of {count} layers, and style '{}' draws {}",
+                style.name,
+                style.layers.len()
+            ));
+        }
+        let mut layers = Vec::with_capacity(count);
+        for layer in &style.layers {
+            let tag = bytes.u8()?;
+            // The measure `measure_layers` takes of this layer, arm for arm.
+            let expected = match (layer.kind, layer.channel) {
+                (Kind::Palette, Some(_)) => 0,
+                (Kind::Sheet, Some(_)) if layer.sheet.unwrap_or_default().rank => 1,
+                (_, Some(_)) => 2,
+                _ => 3,
+            };
+            if tag != expected {
+                return Err(format!(
+                    "measures: layer measure {tag} does not fit a {:?} layer of style '{}'",
+                    layer.kind, style.name
+                ));
+            }
+            layers.push(match tag {
+                0 => Measured::Palette {
+                    spend: Spend::read(&mut bytes)?,
+                    palette: layer.palette.unwrap_or_default(),
+                },
+                1 => Measured::Ranked(Spend::read(&mut bytes)?),
+                2 => Measured::Stretched(Stretch::read(&mut bytes)?),
+                _ => Measured::Nothing,
+            });
+        }
+        // A warp's and a mask's measure is there exactly when the layer has one.
+        let present = |bytes: &mut coloring::Bytes, has: bool, what: &str| {
+            let flag = bytes.u8()?;
+            if flag > 1 || (flag == 1) != has {
+                return Err(format!("measures: a {what} measure does not fit the stack"));
+            }
+            Ok(has)
+        };
+        let mut warps = Vec::with_capacity(count);
+        for layer in &style.layers {
+            let has = present(&mut bytes, layer.warp.is_some(), "warp")?;
+            warps.push(if has {
+                Some(Spend::read(&mut bytes)?)
+            } else {
+                None
+            });
+        }
+        let mut masks = Vec::with_capacity(count);
+        for layer in &style.layers {
+            let has = present(&mut bytes, layer.mask.is_some(), "mask")?;
+            masks.push(if has {
+                Some(Stretch::read(&mut bytes)?)
+            } else {
+                None
+            });
+        }
+        let toned = bytes.u8()? != 0;
+        let (b, g) = (bytes.f64()?, bytes.f64()?);
+        let interior_fraction = bytes.f64()?;
+        if !bytes.rest.is_empty() {
+            return Err("measures: bytes are left over after the last statistic".into());
+        }
+        Ok(Measures {
+            layers,
+            warps,
+            masks,
+            tone: toned.then_some((b, g)),
+            interior_fraction,
+        })
+    }
 }
 
 /// The samples half over one window of `view`'s sample grid, against `measures`:

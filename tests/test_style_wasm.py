@@ -23,6 +23,13 @@ def test_the_bundle_carries_every_published_mode_whole():
         assert mode["stack"] == source["style"]
         assert mode["knobs"] == ((source.get("public") or {}).get("knobs") or [])
         assert mode["palette"] in document["colormaps"]
+        # A merged style's old name resolves on the page as `styles.alias_of` resolves it.
+        assert mode["aliases"] == row.get("aliases", [])
+        for alias in mode["aliases"]:
+            entry = styles.alias_of(alias)[1]
+            assert entry is None or [
+                e["colormap"] for e in mode["palettes"] if e.get("was") == alias
+            ] == [entry]
         assert mode["shown"], f"{row['style']} opens nowhere"
         assert [s.get("keep") for s in mode["shown"]] == [s.get("keep") for s in row["show"]]
         keeps = style_catalog.keeps_of(row["style"])
@@ -282,3 +289,39 @@ def test_the_module_draws_a_post_stage_as_the_native_engine_does(tmp_path, name)
         # As above, and a unit in the last place can also move one facet's edge or
         # split: a few pixels by any step, never the frame.
         assert found["pixels"] is not None and found["pixels"] * 50 <= len(native) // 3, found
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not (style_wasm.wasm_path().is_file() and shutil.which("node")),
+    reason="needs the built module (style_wasm.BUILD) and node",
+)
+def test_the_shared_measure_and_the_recolour_draw_the_plain_picture(tmp_path):
+    """A worker taking another's measure report, and a picture recoloured to another
+    palette entry from its kept frame, each tile to the bytes of a plain draw."""
+    from fractal_wallpapers import style_palettes
+
+    row = next(r for r in style_wasm.published_rows() if r["style"] == "lace_holes")
+    document = styles.load(row["style"])
+    kept = [entry for entry in row["palettes"] if entry.get("keeps")]
+    default, other = kept[0], next(entry for entry in kept[1:] if entry.get("values"))
+    location = style_catalog.keeps_of(row["style"])[row["show"][0]["keep"]]["render"]["location"]
+
+    def asked(entry):
+        stack = style_palettes.apply(document["style"], entry.get("values") or {})
+        colormap = style_wasm.colormap_of(entry["colormap"])
+        return style_wasm.request(location, stack, colormap, (96, 60), 2)
+
+    tiled = {"measure": {}, "tile": [40, 25]}
+    jobs = [
+        {"id": "plain", "request": asked(other), "draw": "frame"},
+        {"id": "shared", "request": asked(other), "draw": {**tiled, "shared": True}},
+        {"id": "recoloured", "request": asked(other), "draw": {**tiled, "from": asked(default)}},
+        {"id": "before", "request": asked(default), "draw": "frame"},
+    ]
+    results = style_wasm.run_node(jobs, tmp_path)
+    assert all(result["ok"] for result in results), results
+    plain = (tmp_path / "plain.rgba").read_bytes()
+    assert plain != (tmp_path / "before.rgba").read_bytes(), "the entry is another picture"
+    for job in ("shared", "recoloured"):
+        assert (tmp_path / f"{job}.rgba").read_bytes() == plain, job

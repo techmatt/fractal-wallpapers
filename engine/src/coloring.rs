@@ -1194,6 +1194,113 @@ impl Spend {
             Spend::Absolute => value.clamp(0.0, 1.0),
         }
     }
+
+    /// Append this spend's exact bytes: a tag, then each `f64` as its bits, so a reader
+    /// on another thread or instance holds the same statistic to the last bit
+    /// ([`crate::style::Measures::to_bytes`]).
+    pub(crate) fn write(&self, out: &mut Vec<u8>) {
+        match self {
+            Spend::Value(stretch) => {
+                out.push(0);
+                stretch.write(out);
+            }
+            Spend::Edge(stretch, edges) => {
+                out.push(1);
+                stretch.write(out);
+                write_floats(out, &edges.curve);
+            }
+            Spend::Rank(ranks) => {
+                out.push(2);
+                write_floats(out, &ranks.sorted);
+            }
+            Spend::Absolute => out.push(3),
+        }
+    }
+
+    /// The spend [`Spend::write`] wrote.
+    pub(crate) fn read(bytes: &mut Bytes) -> Result<Spend, String> {
+        Ok(match bytes.u8()? {
+            0 => Spend::Value(Stretch::read(bytes)?),
+            1 => {
+                let stretch = Stretch::read(bytes)?;
+                let curve = bytes.floats()?;
+                // `Edges::remap` reads every bin edge: a shorter curve would panic there.
+                if curve.len() != TRANSFER_BINS + 1 {
+                    return Err(format!(
+                        "measures: an edge curve has {} points, not {}",
+                        curve.len(),
+                        TRANSFER_BINS + 1
+                    ));
+                }
+                Spend::Edge(stretch, Edges { curve })
+            }
+            2 => Spend::Rank(Ranks {
+                sorted: bytes.floats()?,
+            }),
+            3 => Spend::Absolute,
+            tag => return Err(format!("measures: no spend has tag {tag}")),
+        })
+    }
+}
+
+impl Stretch {
+    pub(crate) fn write(&self, out: &mut Vec<u8>) {
+        out.extend_from_slice(&self.low.to_le_bytes());
+        out.extend_from_slice(&self.span.to_le_bytes());
+        out.push(self.flat as u8);
+    }
+
+    pub(crate) fn read(bytes: &mut Bytes) -> Result<Stretch, String> {
+        Ok(Stretch {
+            low: bytes.f64()?,
+            span: bytes.f64()?,
+            flat: bytes.u8()? != 0,
+        })
+    }
+}
+
+fn write_floats(out: &mut Vec<u8>, values: &[f64]) {
+    out.extend_from_slice(&(values.len() as u64).to_le_bytes());
+    for value in values {
+        out.extend_from_slice(&value.to_le_bytes());
+    }
+}
+
+/// A cursor over bytes [`Spend::write`] and its callers wrote: every read checks it
+/// stays inside them, so a short or foreign buffer is an error, never a panic.
+pub(crate) struct Bytes<'a> {
+    pub(crate) rest: &'a [u8],
+}
+
+impl Bytes<'_> {
+    fn take(&mut self, n: usize) -> Result<&[u8], String> {
+        if self.rest.len() < n {
+            return Err("measures: the bytes end early".into());
+        }
+        let (head, rest) = self.rest.split_at(n);
+        self.rest = rest;
+        Ok(head)
+    }
+
+    pub(crate) fn u8(&mut self) -> Result<u8, String> {
+        Ok(self.take(1)?[0])
+    }
+
+    pub(crate) fn u64(&mut self) -> Result<u64, String> {
+        Ok(u64::from_le_bytes(self.take(8)?.try_into().unwrap()))
+    }
+
+    pub(crate) fn f64(&mut self) -> Result<f64, String> {
+        Ok(f64::from_le_bytes(self.take(8)?.try_into().unwrap()))
+    }
+
+    fn floats(&mut self) -> Result<Vec<f64>, String> {
+        let len = self.u64()? as usize;
+        if len > self.rest.len() / 8 {
+            return Err("measures: the bytes end early".into());
+        }
+        (0..len).map(|_| self.f64()).collect()
+    }
 }
 
 /// Everything a coloring pass produced.

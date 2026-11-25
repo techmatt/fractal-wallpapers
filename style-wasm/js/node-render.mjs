@@ -3,7 +3,9 @@
 //   node node-render.mjs <style_wasm.wasm> <jobs.json> <out dir> [workers]
 //
 // `jobs.json` is `[{id, request, draw}]`, `draw` one of `frame` (one pass) or
-// `{measure: {width, height, supersample}, tile: [w, h]}` (measured, then tiled). Each
+// `{measure: {width, height, supersample}, tile: [w, h]}` (measured, then tiled; with
+// `shared: true` another picture measures and this one imports its report, with
+// `from: <request>` that request's picture is measured and recoloured to this one). Each
 // picture is written raw as `<out dir>/<id>.rgba`; `<out dir>/results.jsonl` gets one
 // line per job, with its seconds, in the order the jobs finish. The module has no threads
 // of its own, so `workers` (default 1) worker threads each hold an instance and take the
@@ -29,7 +31,24 @@ function draw(styles, job, outDir) {
     if (job.draw === "frame") {
       rgba = picture.frame();
     } else {
-      row.measured = picture.measure(job.draw.measure || {});
+      if (job.draw.from) {
+        // A recolour: measure the `from` request's picture, then switch it to this one.
+        picture.close();
+        picture = styles.open(job.draw.from);
+        picture.measure(job.draw.measure || {});
+        row.measured = picture.recolour(job.request);
+      } else if (job.draw.shared) {
+        // The shared measure: another picture measures, this one takes its report.
+        const measurer = styles.open(job.request);
+        try {
+          measurer.measure(job.draw.measure || {});
+          row.measured = picture.importMeasure(measurer.exportMeasure());
+        } finally {
+          measurer.close();
+        }
+      } else {
+        row.measured = picture.measure(job.draw.measure || {});
+      }
       row.measure = (performance.now() - started) / 1000;
       started = performance.now();
       const [tw, th] = job.draw.tile;

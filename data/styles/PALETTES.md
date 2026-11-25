@@ -17,6 +17,16 @@ leaves the set, and its map the library by `fractal-wallpapers palettes remove <
 **`palettes rename <old> <new>`**, never by hand. A style merged into a mode still resolves under its old
 name (`styles.alias_of`), to its entry or the mode's default.
 
+**A round-two lever or map that becomes the default** is a hand edit: `style keep` only
+appends keeps, and writes `values` only for an entry new to the set, never re-reads an
+existing entry's. Write the new default into the style file *before* `style keep`, so new
+entries' values are read against it; a new default map is the stack taking that entry's
+values, the entry moved first with none, the old map an entry with the old values, and
+`suggested_colormap` and the row's `public.palette` renamed (`style_catalog.check` holds
+`public.palette` to the set's first entry; only `tests/test_style_catalog.py` holds
+`suggested_colormap`, for a published row). An existing entry taking a lever's values is
+written by hand.
+
 **Merging a style into a mode** (its kept stack is the mode's up to values): rename its
 map to the entry's name, write the entry with `was` the old style name and `values` from
 `style_palettes.values_between(mode stack, kept stack)`, add the old name to the row's

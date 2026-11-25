@@ -9,6 +9,323 @@
   "folder": "fractal-drive-sync/style-keeps/filigree_dials",
   "keeps": [
     {
+      "id": "style_november_r2/filigree_dials/kept/fd2_lit_faae",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "filigree_dials/kept",
+          "key": "fd2_lit_faae"
+        }
+      ],
+      "label": "lit at phoenix_faae7e86",
+      "image": "style_november_r2__fd2_lit_faae.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_faae7e86",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.49561971818797146",
+            "center_im": "-0.66015625",
+            "width": "1.0807502612301254"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 9 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 9,
+            "key": "faae7e86fea46a13",
+            "p_spiral": 0.155065
+          }
+        },
+        "style": "filigree_dials__lit",
+        "stack": "filigree_dials__lit@3adc0cd8",
+        "colormap": "filigree_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_november_r2/filigree_dials/kept/fd2_shadow_59b2",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "filigree_dials/kept",
+          "key": "fd2_shadow_59b2"
+        }
+      ],
+      "label": "shadow_dials entry at julia-multibrot5_59b2125d [tone miss: p90 0.528 vs 0.400]",
+      "image": "style_november_r2__fd2_shadow_59b2.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_59b2125d",
+          "family": {
+            "c": [
+              "0.5562314365770176",
+              "-0.003715288780965526"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.22852004864802225",
+            "center_im": "-0.1622948350716586",
+            "width": "0.05598181912694581"
+          },
+          "maxiter": 10892,
+          "note": "final139_general seat 633 (tia, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 633,
+            "key": "59b2125d64ca2135",
+            "p_spiral": 0.022392
+          }
+        },
+        "style": "e_shadow_dials",
+        "stack": "e_shadow_dials@05130e7c",
+        "colormap": "shadow_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_november_r2/filigree_dials/levers/fd2_shadow_darktop_faae",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "filigree_dials/levers",
+          "key": "fd2_shadow_darktop_faae"
+        }
+      ],
+      "label": "shadow_dials, darker map top (slots 1.0/0.95/0.92/0.85 to 0.82/0.8/0.78/0.75) at phoenix_faae7e86",
+      "image": "style_november_r2__fd2_shadow_darktop_faae.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_faae7e86",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.49561971818797146",
+            "center_im": "-0.66015625",
+            "width": "1.0807502612301254"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 9 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 9,
+            "key": "faae7e86fea46a13",
+            "p_spiral": 0.155065
+          }
+        },
+        "style": "e_shadow_dials__dark_top",
+        "stack": "e_shadow_dials__dark_top@c7b2b1cc",
+        "colormap": "shadow_dials",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_november_r2/filigree_dials/maps/fd2_map_gilded_leaves",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "filigree_dials/maps",
+          "key": "fd2_map_gilded_leaves"
+        }
+      ],
+      "label": "lit with gilded_leaves",
+      "image": "style_november_r2__fd2_map_gilded_leaves.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_faae7e86",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.49561971818797146",
+            "center_im": "-0.66015625",
+            "width": "1.0807502612301254"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 9 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 9,
+            "key": "faae7e86fea46a13",
+            "p_spiral": 0.155065
+          }
+        },
+        "style": "filigree_dials__lit",
+        "stack": "filigree_dials__lit@3adc0cd8",
+        "colormap": "gilded_leaves",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_november_r2/filigree_dials/maps/fd2_map_soft_veils_amber",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "filigree_dials/maps",
+          "key": "fd2_map_soft_veils_amber"
+        }
+      ],
+      "label": "lit with soft_veils_amber",
+      "image": "style_november_r2__fd2_map_soft_veils_amber.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_faae7e86",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.49561971818797146",
+            "center_im": "-0.66015625",
+            "width": "1.0807502612301254"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 9 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 9,
+            "key": "faae7e86fea46a13",
+            "p_spiral": 0.155065
+          }
+        },
+        "style": "filigree_dials__lit",
+        "stack": "filigree_dials__lit@3adc0cd8",
+        "colormap": "soft_veils_amber",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_november_r2/filigree_dials/maps/fd2_map_tempest_plumes",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "filigree_dials/maps",
+          "key": "fd2_map_tempest_plumes"
+        }
+      ],
+      "label": "lit with tempest_plumes",
+      "image": "style_november_r2__fd2_map_tempest_plumes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_faae7e86",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.49561971818797146",
+            "center_im": "-0.66015625",
+            "width": "1.0807502612301254"
+          },
+          "maxiter": 3000,
+          "note": "final139_general seat 9 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 9,
+            "key": "faae7e86fea46a13",
+            "p_spiral": 0.155065
+          }
+        },
+        "style": "filigree_dials__lit",
+        "stack": "filigree_dials__lit@3adc0cd8",
+        "colormap": "tempest_plumes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_ornate_rings_orbs_r1/filigree_dials/entries/e_shadow_dials_1",
       "picker": "style_ornate_rings_orbs_r1",
       "picked": [
@@ -508,6 +825,271 @@
           "falloff": 0.0005,
           "color": {
             "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        }
+      ]
+    },
+    "e_shadow_dials__dark_top@c7b2b1cc": {
+      "name": "e_shadow_dials__dark_top",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.134,
+        "p10": 0.019
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.4
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.03,
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 0.15
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.2,
+          "power": 6.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "color": {
+            "palette": 0.82
+          },
+          "blend": "screen",
+          "opacity": 0.6,
+          "power": 30.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.22,
+            "edge": 0.07,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 40.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.03125,
+            "edge": 0.3,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.78
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              },
+              "invert": true
+            },
+            "power": 30.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "angle",
+              "largest": 0.25,
+              "smallest": 0.012
+            }
+          },
+          "sheet": {
+            "period": 0.0625,
+            "edge": 0.08,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.3
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "mask": {
+            "channel": {
+              "bubble": {
+                "center": [
+                  0.5,
+                  0.5
+                ],
+                "radius": 0.3,
+                "spacing": 1.0,
+                "escaped": true,
+                "read": "height",
+                "largest": 0.25,
+                "smallest": 0.012
+              }
+            },
+            "power": 8.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "radius": 0.3,
+              "spacing": 1.0,
+              "escaped": true,
+              "read": "height",
+              "largest": 0.25,
+              "smallest": 0.012,
+              "hit": 2
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.35
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 30.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0005,
+          "color": {
+            "palette": 0.75
           },
           "blend": "screen",
           "opacity": 0.25

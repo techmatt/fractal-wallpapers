@@ -3422,17 +3422,45 @@
         "palette": "chrome_whorl",
         "knobs": []
       },
-      "kept": "2 tiles: cw_soft at the formulations seat and cw_wide_ember at the phoenix seat; no palette entry and no location kept",
-      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations.",
+      "kept": "2 tiles: cw_soft at the formulations seat and cw_wide_ember at the phoenix seat; no palette entry and no location kept; round two (style_november_r2): wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6)",
+      "note": "Matt: round one 2/5 (2026-11-22); kept cw_soft and cw_wide_ember (phoenix seat), no entries (bone_whorl, unfolding_whorl and noir_whorl leave the set and the library), no locations. Round two (2026-11-24): kept wide_ember at seat e756; library maps tempest_plumes, gilded_leaves and twilight on soft (rings 0.6); Scores unchanged.",
       "palettes": [
         {
           "colormap": "chrome_whorl",
           "values": {},
           "keeps": [
             "style_petal_spirals_r1/chrome_whorl/formulations/cwf_cw_soft",
-            "style_petal_spirals_r1/chrome_whorl/formulations2/cwf2_cw_wide_ember"
+            "style_petal_spirals_r1/chrome_whorl/formulations2/cwf2_cw_wide_ember",
+            "style_november_r2/chrome_whorl/kept/cw2_wide_ember_e756"
           ],
           "score": 2
+        },
+        {
+          "colormap": "tempest_plumes",
+          "values": {
+            "/layers/1/light/rings": 0.6
+          },
+          "keeps": [
+            "style_november_r2/chrome_whorl/maps/cw2_map_tempest_plumes"
+          ]
+        },
+        {
+          "colormap": "gilded_leaves",
+          "values": {
+            "/layers/1/light/rings": 0.6
+          },
+          "keeps": [
+            "style_november_r2/chrome_whorl/maps/cw2_map_gilded_leaves"
+          ]
+        },
+        {
+          "colormap": "twilight",
+          "values": {
+            "/layers/1/light/rings": 0.6
+          },
+          "keeps": [
+            "style_november_r2/chrome_whorl/maps/cw2_map_twilight"
+          ]
         }
       ]
     },
@@ -3459,17 +3487,28 @@
         "palette": "dew_bloom",
         "knobs": []
       },
-      "kept": "2 tiles: dew_tubes at the formulations seat and the stack at location dwl_08",
-      "note": "Matt: round one 3/5 (2026-11-22); kept dew_tubes and location dwl_08.",
+      "kept": "2 tiles: dew_tubes at the formulations seat and the stack at location dwl_08; round two (style_november_r2): the stack at seat be08; library map tempest_plumes on tubes",
+      "note": "Matt: round one 3/5 (2026-11-22); kept dew_tubes and location dwl_08. Round two (2026-11-24): kept the stack at seat be08; library map tempest_plumes on tubes; Scores unchanged.",
       "palettes": [
         {
           "colormap": "dew_bloom",
           "values": {},
           "keeps": [
             "style_petal_spirals_r1/dew_bloom/formulations/dwf_dew_tubes",
-            "style_petal_spirals_r1/dew_bloom/locations/dwl_08"
+            "style_petal_spirals_r1/dew_bloom/locations/dwl_08",
+            "style_november_r2/dew_bloom/kept/dw2_stack_be08"
           ],
           "score": 3
+        },
+        {
+          "colormap": "tempest_plumes",
+          "values": {
+            "/layers/1/light/rings": 1.0,
+            "/layers/1/light/slope": 0.3
+          },
+          "keeps": [
+            "style_november_r2/dew_bloom/maps/dw2_map_tempest_plumes"
+          ]
         }
       ]
     },
@@ -3498,8 +3537,8 @@
         "palette": "filigree_dials",
         "knobs": []
       },
-      "kept": "5 tiles: the lit formulation, locations fdl_22, fdl_23 and fdl_27, and shadow_dials at seat 1 (plus the bronze_packing baseline tile, kept to that mode)",
-      "note": "Matt: round one 3/5 (2026-11-23); kept fdf_lit, entry shadow_dials (seat 1), locations fdl_22, fdl_23, fdl_27; precious_dials kept nothing and leaves the set and the library.",
+      "kept": "5 tiles: the lit formulation, locations fdl_22, fdl_23 and fdl_27, and shadow_dials at seat 1 (plus the bronze_packing baseline tile, kept to that mode); round two (style_november_r2): lit at seat faae, shadow_dials at seat 59b2 and its darker-top lever; library maps tempest_plumes, gilded_leaves and soft_veils_amber on lit",
+      "note": "Matt: round one 3/5 (2026-11-23); kept fdf_lit, entry shadow_dials (seat 1), locations fdl_22, fdl_23, fdl_27; precious_dials kept nothing and leaves the set and the library. Round two (2026-11-24): kept lit at seat faae, shadow_dials at seat 59b2 and its darker-top lever; library maps tempest_plumes, gilded_leaves and soft_veils_amber on lit; the stack stays the default; shadow_dials takes the darker map top. Scores unchanged.",
       "palettes": [
         {
           "colormap": "filigree_dials",
@@ -3508,7 +3547,8 @@
             "style_ornate_rings_orbs_r1/filigree_dials/formulations/fdf_lit",
             "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_22",
             "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_23",
-            "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_27"
+            "style_ornate_rings_orbs_r1/filigree_dials/locations/fdl_27",
+            "style_november_r2/filigree_dials/kept/fd2_lit_faae"
           ],
           "score": 3
         },
@@ -3520,13 +3560,60 @@
             "/layers/1/opacity": 0.15,
             "/layers/3/opacity": 0.6,
             "/layers/5/opacity": 0.7,
-            "/layers/9/opacity": 0.25
+            "/layers/9/opacity": 0.25,
+            "/layers/3/color": {
+              "palette": 0.82
+            },
+            "/layers/5/color": {
+              "palette": 0.8
+            },
+            "/layers/6/color": {
+              "palette": 0.78
+            },
+            "/layers/9/color": {
+              "palette": 0.75
+            }
           },
           "keeps": [
-            "style_ornate_rings_orbs_r1/filigree_dials/entries/e_shadow_dials_1"
+            "style_ornate_rings_orbs_r1/filigree_dials/entries/e_shadow_dials_1",
+            "style_november_r2/filigree_dials/kept/fd2_shadow_59b2",
+            "style_november_r2/filigree_dials/levers/fd2_shadow_darktop_faae"
           ],
           "reference": "silver-shadow-25.jpg",
           "score": 3
+        },
+        {
+          "colormap": "tempest_plumes",
+          "values": {
+            "/layers/2/opacity": 0.5,
+            "/layers/2/power": 1.5,
+            "/layers/9/opacity": 0.25
+          },
+          "keeps": [
+            "style_november_r2/filigree_dials/maps/fd2_map_tempest_plumes"
+          ]
+        },
+        {
+          "colormap": "gilded_leaves",
+          "values": {
+            "/layers/2/opacity": 0.5,
+            "/layers/2/power": 1.5,
+            "/layers/9/opacity": 0.25
+          },
+          "keeps": [
+            "style_november_r2/filigree_dials/maps/fd2_map_gilded_leaves"
+          ]
+        },
+        {
+          "colormap": "soft_veils_amber",
+          "values": {
+            "/layers/2/opacity": 0.5,
+            "/layers/2/power": 1.5,
+            "/layers/9/opacity": 0.25
+          },
+          "keeps": [
+            "style_november_r2/filigree_dials/maps/fd2_map_soft_veils_amber"
+          ]
         }
       ]
     },
@@ -3595,7 +3682,7 @@
         "patterns_lilac_fractal_122906_2560x1600.jpg",
         "vitality-25.jpg"
       ],
-      "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine, crossing plumes and amber star sparks on a blue-black night (violet and magenta plumes, teal plumes over a rust haze, ultramarine plumes, and periwinkle plumes on royal blue as palette entries).",
+      "what": "Frosted feather plumes combed out of the set: fine barbs off a thin lit spine and crossing plumes in violet and magenta (amber star sparks on a blue-black night, teal plumes over a rust haze, ultramarine plumes, periwinkle plumes on royal blue, magma, and ice-blue frost as palette entries).",
       "variant": "current",
       "show": [
         {
@@ -3605,33 +3692,37 @@
       ],
       "public": {
         "name": "feather-plumes",
-        "palette": "feather_plumes",
+        "palette": "tempest_plumes",
         "knobs": []
       },
-      "kept": "7 tiles: fpf_long at both seats and fpf2_stack; entries tempest_plumes, mean_plumes, starlight_plumes (seat 2); lilac_plumes (lilac_kaleidoscope's unfolded tile); plus the flame_wisp_frost baseline tile, kept to that mode",
-      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine.",
+      "kept": "7 tiles: fpf_long at both seats and fpf2_stack; entries tempest_plumes, mean_plumes, starlight_plumes (seat 2); lilac_plumes (lilac_kaleidoscope's unfolded tile); plus the flame_wisp_frost baseline tile, kept to that mode; round two (style_november_r2): long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long",
+      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine. Round two (2026-11-24): kept long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long; tempest_plumes is the default map (Matt kept his readings on it). Scores unchanged.",
       "palettes": [
         {
-          "colormap": "feather_plumes",
+          "colormap": "tempest_plumes",
           "values": {},
+          "keeps": [
+            "style_flames_r1/feather_plumes/entries/e_tempest_plumes_2",
+            "style_november_r2/feather_plumes/kept/fp2_long_2d84_tempest",
+            "style_november_r2/feather_plumes/kept/fp2_stack_2d84_tempest",
+            "style_november_r2/feather_plumes/levers/fp2_long_tips_tempest"
+          ],
+          "reference": "tempest-25.jpg",
+          "score": 4
+        },
+        {
+          "colormap": "feather_plumes",
+          "values": {
+            "/tone/median": 0.061,
+            "/tone/p10": 0.007
+          },
           "keeps": [
             "style_flames_r1/feather_plumes/formulations/fpf_long",
             "style_flames_r1/feather_plumes/formulations2/fpf2_stack",
             "style_flames_r1/feather_plumes/formulations2/fpf2_long"
           ],
-          "score": 3
-        },
-        {
-          "colormap": "tempest_plumes",
-          "values": {
-            "/tone/median": 0.224,
-            "/tone/p10": 0.087
-          },
-          "keeps": [
-            "style_flames_r1/feather_plumes/entries/e_tempest_plumes_2"
-          ],
-          "reference": "tempest-25.jpg",
-          "score": 4
+          "score": 3,
+          "reference": "wallhaven_wallhaven-0w8gpp.png"
         },
         {
           "colormap": "mean_plumes",
@@ -3652,7 +3743,8 @@
             "/tone/p10": 0.024
           },
           "keeps": [
-            "style_flames_r1/feather_plumes/entries/e_starlight_plumes_2"
+            "style_flames_r1/feather_plumes/entries/e_starlight_plumes_2",
+            "style_november_r2/feather_plumes/levers/fp2_starlight_dim_barbs"
           ],
           "reference": "starlight-25.jpg",
           "score": 3
@@ -3676,6 +3768,38 @@
           ],
           "reference": "patterns_lilac_fractal_122906_2560x1600.jpg",
           "score": 3
+        },
+        {
+          "colormap": "magma",
+          "values": {
+            "/layers/2/mask/power": 2.5,
+            "/layers/3/mask/power": 2.5,
+            "/layers/4/mask/power": 2.5,
+            "/layers/5/mask/power": 5.0,
+            "/layers/6/mask/power": 5.0,
+            "/layers/7/mask/power": 5.0,
+            "/tone/median": 0.061,
+            "/tone/p10": 0.007
+          },
+          "keeps": [
+            "style_november_r2/feather_plumes/maps/fp2_frostmap_magma"
+          ]
+        },
+        {
+          "colormap": "flame_wisp_frost",
+          "values": {
+            "/layers/2/mask/power": 2.5,
+            "/layers/3/mask/power": 2.5,
+            "/layers/4/mask/power": 2.5,
+            "/layers/5/mask/power": 5.0,
+            "/layers/6/mask/power": 5.0,
+            "/layers/7/mask/power": 5.0,
+            "/tone/median": 0.061,
+            "/tone/p10": 0.007
+          },
+          "keeps": [
+            "style_november_r2/feather_plumes/maps/fp2_frostmap_flame_wisp_frost"
+          ]
         }
       ],
       "aliases": [
@@ -3745,8 +3869,8 @@
         "palette": "storm_clouds",
         "knobs": []
       },
-      "kept": "7 tiles: scf_ledges at both seats, locations scl_03 and scl_05; entries tributary_clouds (seat 2) and crimson_nebula (both seats); plus the molten_flow baseline tile, kept to that mode",
-      "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; storm_clouds, tributary_clouds and crimson_nebula 3/5.",
+      "kept": "7 tiles: scf_ledges at both seats, locations scl_03 and scl_05; entries tributary_clouds (seat 2) and crimson_nebula (both seats); plus the molten_flow baseline tile, kept to that mode; round two (style_november_r2): ledges at seats 9a93 and bf30, crimson_nebula on ledges at bf30; library maps molten_flow and soft_veils_drift on ledges",
+      "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; storm_clouds, tributary_clouds and crimson_nebula 3/5. Round two (2026-11-24): kept ledges at seats 9a93 and bf30, crimson_nebula on ledges at bf30; library maps molten_flow and soft_veils_drift on ledges; Scores unchanged.",
       "palettes": [
         {
           "colormap": "storm_clouds",
@@ -3755,7 +3879,9 @@
             "style_webs_clouds_r1/storm_clouds/formulations/scf_ledges",
             "style_webs_clouds_r1/storm_clouds/formulations2/scf2_ledges",
             "style_webs_clouds_r1/storm_clouds/locations/scl_03",
-            "style_webs_clouds_r1/storm_clouds/locations/scl_05"
+            "style_webs_clouds_r1/storm_clouds/locations/scl_05",
+            "style_november_r2/storm_clouds/kept/sc2_ledges_9a93",
+            "style_november_r2/storm_clouds/kept/sc2_ledges_bf30"
           ],
           "score": 3
         },
@@ -3780,10 +3906,33 @@
           },
           "keeps": [
             "style_webs_clouds_r1/storm_clouds/entries/e_crimson_nebula_1",
-            "style_webs_clouds_r1/storm_clouds/entries/e_crimson_nebula_2"
+            "style_webs_clouds_r1/storm_clouds/entries/e_crimson_nebula_2",
+            "style_november_r2/storm_clouds/kept/sc2_crimson_ledges_bf30"
           ],
           "reference": "wallhaven_wallhaven-3z1jkd.png",
           "score": 3
+        },
+        {
+          "colormap": "molten_flow",
+          "values": {
+            "/layers/3/light/bands": 14.0,
+            "/layers/3/light/rings": 0.35,
+            "/layers/3/light/slope": 1.2
+          },
+          "keeps": [
+            "style_november_r2/storm_clouds/maps/sc2_map_molten_flow"
+          ]
+        },
+        {
+          "colormap": "soft_veils_drift",
+          "values": {
+            "/layers/3/light/bands": 14.0,
+            "/layers/3/light/rings": 0.35,
+            "/layers/3/light/slope": 1.2
+          },
+          "keeps": [
+            "style_november_r2/storm_clouds/maps/sc2_map_soft_veils_drift"
+          ]
         }
       ]
     },
@@ -3814,26 +3963,35 @@
         "palette": "starburst_veils",
         "knobs": []
       },
-      "kept": "6 tiles: sbf_long, location sbl_13; entries jade_starbursts, moss_starbursts, garnet_starbursts, gilt_starbursts",
-      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; every entry 2/5; the streak locations kept nothing.",
+      "kept": "6 tiles: sbf_long, location sbl_13; entries jade_starbursts, moss_starbursts, garnet_starbursts, gilt_starbursts; round two (style_november_r2): long at seat 8b21, the subtler lever at c480, the four entries on subtler; library maps soft_veils_gold, soft_veils_drift and soft_veils_teal on subtler",
+      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; every entry 2/5; the streak locations kept nothing. Round two (2026-11-24): kept long at seat 8b21, the subtler lever at c480, the four entries on subtler; library maps soft_veils_gold, soft_veils_drift and soft_veils_teal on subtler; the stack stays the default with subtler a keep; the four entries, kept only on subtler, take its values. Scores unchanged.",
       "palettes": [
         {
           "colormap": "starburst_veils",
           "values": {},
           "keeps": [
             "style_light_beams_r1/starburst_veils/formulations/sbf_long",
-            "style_light_beams_r1/starburst_veils/locations/sbl_13"
+            "style_light_beams_r1/starburst_veils/locations/sbl_13",
+            "style_november_r2/starburst_veils/kept/sb2_long_8b21",
+            "style_november_r2/starburst_veils/levers/sb2_subtler_c480"
           ],
           "score": 2
         },
         {
           "colormap": "jade_starbursts",
           "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2,
             "/tone/median": 0.651,
             "/tone/p10": 0.236
           },
           "keeps": [
-            "style_light_beams_r1/starburst_veils/entries/e_jade_starbursts"
+            "style_light_beams_r1/starburst_veils/entries/e_jade_starbursts",
+            "style_november_r2/starburst_veils/entries/sb2_jade_starbursts_subtler"
           ],
           "reference": "splendor-25.jpg",
           "score": 2
@@ -3841,11 +3999,18 @@
         {
           "colormap": "moss_starbursts",
           "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2,
             "/tone/median": 0.402,
             "/tone/p10": 0.242
           },
           "keeps": [
-            "style_light_beams_r1/starburst_veils/entries/e_moss_starbursts"
+            "style_light_beams_r1/starburst_veils/entries/e_moss_starbursts",
+            "style_november_r2/starburst_veils/entries/sb2_moss_starbursts_subtler"
           ],
           "reference": "sparx-25.jpg",
           "score": 2
@@ -3853,11 +4018,18 @@
         {
           "colormap": "garnet_starbursts",
           "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2,
             "/tone/median": 0.288,
             "/tone/p10": 0.093
           },
           "keeps": [
-            "style_light_beams_r1/starburst_veils/entries/e_garnet_starbursts"
+            "style_light_beams_r1/starburst_veils/entries/e_garnet_starbursts",
+            "style_november_r2/starburst_veils/entries/sb2_garnet_starbursts_subtler"
           ],
           "reference": "state-of-being-25.jpg",
           "score": 2
@@ -3865,14 +4037,63 @@
         {
           "colormap": "gilt_starbursts",
           "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2,
             "/tone/median": 0.398,
             "/tone/p10": 0.19
           },
           "keeps": [
-            "style_light_beams_r1/starburst_veils/entries/e_gilt_starbursts"
+            "style_light_beams_r1/starburst_veils/entries/e_gilt_starbursts",
+            "style_november_r2/starburst_veils/entries/sb2_gilt_starbursts_subtler"
           ],
           "reference": "treasury-25.jpg",
           "score": 2
+        },
+        {
+          "colormap": "soft_veils_gold",
+          "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2
+          },
+          "keeps": [
+            "style_november_r2/starburst_veils/maps/sb2_map_soft_veils_gold"
+          ]
+        },
+        {
+          "colormap": "soft_veils_drift",
+          "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2
+          },
+          "keeps": [
+            "style_november_r2/starburst_veils/maps/sb2_map_soft_veils_drift"
+          ]
+        },
+        {
+          "colormap": "soft_veils_teal",
+          "values": {
+            "/layers/10/opacity": 0.7,
+            "/layers/10/power": 90.0,
+            "/post/0/length": 0.03,
+            "/post/0/share": 0.0003,
+            "/post/0/spokes": 4,
+            "/post/0/strength": 1.2
+          },
+          "keeps": [
+            "style_november_r2/starburst_veils/maps/sb2_map_soft_veils_teal"
+          ]
         }
       ]
     },
@@ -3901,14 +4122,15 @@
         "palette": "light_shafts",
         "knobs": []
       },
-      "kept": "1 tile: the stack at location lsl_21",
-      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; only location lsl_21 kept; entries scarlet_shafts and ice_shafts kept nothing and leave the set and the library.",
+      "kept": "1 tile: the stack at location lsl_21; round two (style_november_r2): the subtler lever only",
+      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; only location lsl_21 kept; entries scarlet_shafts and ice_shafts kept nothing and leave the set and the library. Round two (2026-11-24): kept the subtler lever only; subtler is the default (no tile of the old reading kept). Scores unchanged.",
       "palettes": [
         {
           "colormap": "light_shafts",
           "values": {},
           "keeps": [
-            "style_light_beams_r1/light_shafts/locations/lsl_21"
+            "style_light_beams_r1/light_shafts/locations/lsl_21",
+            "style_november_r2/light_shafts/levers/ls2_subtler"
           ],
           "score": 2
         }

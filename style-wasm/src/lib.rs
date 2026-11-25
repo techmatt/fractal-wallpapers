@@ -11,8 +11,18 @@
 //! tile(h, x, y, width, height)  -> RGBA      output pixels of the picture, against them
 //! frame(h)                      -> RGBA      the whole picture in one pass: measure and
 //!                                            tile at once, as the native engine draws it
+//! export_measure(h)             -> bytes     the measures, for another session to take
+//! import_measure(h, report)     -> JSON      another session's measures, taken as this one's
+//! recolour(h, request)          -> JSON      another map or entry's values, re-measured
+//!                                            from the frame `measure` kept
 //! close(h)
 //! ```
+//!
+//! **One measure serves many sessions.** A measure report ([`Session::export_measure`])
+//! is the engine's measures as exact bytes ([`Measures::to_bytes`]), so a pool of
+//! workers drawing one picture in tiles measures it once; and `measure` keeps the
+//! frame's escape loop ([`Gathered`]), so a palette switch re-measures without
+//! iterating ([`Session::recolour`]).
 //!
 //! `measure` at the picture's own size (`0, 0, 0`) makes the tiles stitch to `frame`'s
 //! bytes, which are the native engine's; at a smaller size of the same aspect it is a
@@ -44,7 +54,7 @@ use fractal_engine::colormap::{Colormap, Kind};
 use fractal_engine::family::Family;
 use fractal_engine::resample::{self, Crop};
 use fractal_engine::spec::RenderSpec;
-use fractal_engine::style::{self, Measures, Style};
+use fractal_engine::style::{self, Gathered, Measures, Style};
 use fractal_engine::viewport::Viewport;
 use serde::Deserialize;
 use serde_json::value::RawValue;
@@ -309,7 +319,26 @@ pub struct Session {
     /// The stack as drawn — knobs turned, projection laid over — for the page's record.
     pub drawn: Value,
     pub measures: Option<Measures>,
+    /// What the measures are measures of, bar the frame's size: the place, the stack as
+    /// drawn and the map, hashed ([`fnv`]). A measure report carries it, and
+    /// [`Session::import_measure`] takes only a report of the same picture.
+    pub identity: u64,
+    /// The frame [`Session::measure`] last iterated, kept for a recolour, with the view
+    /// it was measured at (the picture's own, or a preview's).
+    pub gathered: Option<(Viewport, Gathered)>,
+    /// `[width, height, supersample]` the current measures were taken over.
+    pub measured: Option<[u32; 3]>,
 }
+
+/// FNV-1a over `text`: a picture's identity in a measure report, not a security hash.
+fn fnv(text: &str) -> u64 {
+    text.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+        (hash ^ byte as u64).wrapping_mul(0x0100_0000_01b3)
+    })
+}
+
+/// The first bytes of a measure report: [`Session::export_measure`]'s, version 1.
+const REPORT_MAGIC: &[u8; 4] = b"SWM1";
 
 impl Session {
     /// Resolve a request through the CLI's rules and the engine's own spec reader.
@@ -354,6 +383,19 @@ impl Session {
         if mirrored(&stack, colormap.kind) {
             spec["palette"] = json!({"mirror": true});
         }
+        // The picture bar its size: what a measure is of, and so what a report names.
+        let identity = {
+            let mut key = spec.clone();
+            for size in ["resolution", "supersample"] {
+                key.as_object_mut().map(|key| key.remove(size));
+            }
+            key["colormap"] = json!({
+                "name": colormap.name,
+                "kind": format!("{:?}", colormap.kind),
+                "stops": colormap.stops,
+            });
+            fnv(&key.to_string())
+        };
         // Through text, as a native render's spec reaches the engine.
         let resolved = RenderSpec::parse(&spec.to_string())?.resolve()?;
         let style = resolved.style.ok_or("the request draws no style")?;
@@ -372,7 +414,124 @@ impl Session {
             colormap,
             drawn: stack,
             measures: None,
+            identity,
+            gathered: None,
+            measured: None,
         })
+    }
+
+    /// The view of a frame `width × height` at supersample `ss` of this picture; zeros:
+    /// the picture's own.
+    fn frame_view(&self, width: u32, height: u32, ss: u32) -> Viewport {
+        if width == 0 || height == 0 {
+            self.view
+        } else {
+            Viewport {
+                out_width: width,
+                out_height: height,
+                supersample: ss.max(1),
+                ..self.view
+            }
+        }
+    }
+
+    /// What `measure`, `import_measure` and `recolour` answer about the measures now held.
+    fn measure_report(&self) -> Value {
+        let measures = self.measures.as_ref();
+        let [width, height, ss] = self.measured.unwrap_or_default();
+        json!({
+            "ok": true,
+            "measured": [width, height],
+            "supersample": ss,
+            "tone": measures.and_then(Measures::tone_curve).map(|(b, g)| json!({"b": b, "g": g})),
+            "interior_fraction": measures.map(|m| m.interior_fraction),
+        })
+    }
+
+    /// The current measures as a report another session of the same picture takes
+    /// ([`Self::import_measure`]): the picture's identity, the frame measured, then the
+    /// engine's exact bytes ([`Measures::to_bytes`]).
+    pub fn export_measure(&self) -> Result<Vec<u8>, String> {
+        let (Some(measures), Some(measured)) = (&self.measures, self.measured) else {
+            return Err("measure before exporting: there is no measure to share".into());
+        };
+        let mut out = REPORT_MAGIC.to_vec();
+        out.extend_from_slice(&self.identity.to_le_bytes());
+        for n in measured {
+            out.extend_from_slice(&n.to_le_bytes());
+        }
+        out.extend_from_slice(&measures.to_bytes());
+        Ok(out)
+    }
+
+    /// Take another session's measure report as this one's measures, measuring nothing:
+    /// the tiles then composite exactly as against that session's own. Refused for a
+    /// report of another picture (place, stack as drawn, or map); a kept frame for a
+    /// recolour is dropped, since the measures are no longer its.
+    pub fn import_measure(&mut self, report: &[u8]) -> Result<Value, String> {
+        let header = REPORT_MAGIC.len() + 8 + 12;
+        if report.len() < header || !report.starts_with(REPORT_MAGIC) {
+            return Err("this is not a measure report".into());
+        }
+        let word = |at: usize| u32::from_le_bytes(report[at..at + 4].try_into().unwrap());
+        let identity = u64::from_le_bytes(report[4..12].try_into().unwrap());
+        if identity != self.identity {
+            return Err(
+                "the report is of another picture (its place, stack or map differs)".into(),
+            );
+        }
+        let measures = Measures::from_bytes(&report[header..], &self.style)?;
+        self.measures = Some(measures);
+        self.measured = Some([word(12), word(16), word(20)]);
+        self.gathered = None;
+        Ok(self.measure_report())
+    }
+
+    /// Re-measure this picture under `request` — the same place, size and knobs' reads,
+    /// another map or another palette entry's values — from the frame the last
+    /// [`Self::measure`] kept, iterating no orbit: the measures are exactly what
+    /// `measure` of the new request at that frame would take. On success the session
+    /// *is* the new request's (its stack, map and measures); refused, it is unchanged.
+    pub fn recolour(&mut self, request: &str) -> Result<Value, String> {
+        let (view, gathered) = self
+            .gathered
+            .take()
+            .ok_or("measure before recolouring: no frame is kept to recolour from")?;
+        let attempt = (|| {
+            let next = Session::open(request)?;
+            let wanted = next.frame_view(view.out_width, view.out_height, view.supersample);
+            if !gathered.is_of(&wanted, &next.family, next.maxiter)
+                || next.view.out_width != self.view.out_width
+                || next.view.out_height != self.view.out_height
+                || next.view.supersample != self.view.supersample
+            {
+                return Err(
+                    "a recolour keeps the place and size: this request moves them".to_string(),
+                );
+            }
+            let measures = style::measure_gathered(&gathered, &next.style, &next.colormap)?;
+            Ok((next, measures))
+        })();
+        match attempt {
+            Ok((next, measures)) => {
+                let measured = self.measured;
+                *self = Session {
+                    measures: Some(measures),
+                    gathered: Some((view, gathered)),
+                    measured,
+                    ..next
+                };
+                let mut report = self.measure_report();
+                report["recoloured"] = json!(true);
+                report["style"] = self.drawn.clone();
+                report["mirror"] = json!(self.palette.bake.mirror);
+                Ok(report)
+            }
+            Err(why) => {
+                self.gathered = Some((view, gathered));
+                Err(why)
+            }
+        }
     }
 
     /// What `open` reports: the picture's shape and the stack as drawn.
@@ -392,33 +551,19 @@ impl Session {
 
     /// Measure over a frame of this view at `width × height`, supersample `ss`; zeros
     /// mean the picture's own size, which is what makes tiles stitch to [`Self::frame`].
+    ///
+    /// The frame's escape loop is kept ([`Gathered`]) for [`Self::recolour`]: `measure`
+    /// is [`style::measure`] split at that seam, the same measures to the bit.
     pub fn measure(&mut self, width: u32, height: u32, ss: u32) -> Result<Value, String> {
-        let view = if width == 0 || height == 0 {
-            self.view
-        } else {
-            Viewport {
-                out_width: width,
-                out_height: height,
-                supersample: ss.max(1),
-                ..self.view
-            }
-        };
-        let measures = style::measure(
-            &view,
-            &self.family,
-            self.maxiter,
-            &self.style,
-            &self.colormap,
-        )?;
-        let report = json!({
-            "ok": true,
-            "measured": [view.out_width, view.out_height],
-            "supersample": view.supersample,
-            "tone": measures.tone_curve().map(|(b, g)| json!({"b": b, "g": g})),
-            "interior_fraction": measures.interior_fraction,
-        });
+        let view = self.frame_view(width, height, ss);
+        // The old frame goes first: two frames' lanes are never held at once.
+        self.gathered = None;
+        let gathered = style::gather_frame(&view, &self.family, self.maxiter, &self.style)?;
+        let measures = style::measure_gathered(&gathered, &self.style, &self.colormap)?;
         self.measures = Some(measures);
-        Ok(report)
+        self.measured = Some([view.out_width, view.out_height, view.supersample]);
+        self.gathered = Some((view, gathered));
+        Ok(self.measure_report())
     }
 
     /// Output pixels `crop` of the picture, RGB, against the last [`Self::measure`].
@@ -517,6 +662,43 @@ pub extern "C" fn measure(handle: u32, width: u32, height: u32, ss: u32) -> *mut
     release_text(&report.to_string())
 }
 
+/// The session's measures as a report another session of the same picture takes:
+/// four bytes of little-endian length, then the report; null when nothing is measured.
+#[unsafe(no_mangle)]
+pub extern "C" fn export_measure(handle: u32) -> *mut u8 {
+    match with_session(handle, |s| s.export_measure()).and_then(|r| r) {
+        Ok(report) => {
+            let mut bytes = Vec::with_capacity(report.len() + 4);
+            bytes.extend_from_slice(&(report.len() as u32).to_le_bytes());
+            bytes.extend_from_slice(&report);
+            release(bytes)
+        }
+        Err(why) => failed(why),
+    }
+}
+
+/// Take a report [`export_measure`] wrote as this session's measures, measuring
+/// nothing. JSON: `measure`'s answer, or `{ok: false, why}`.
+#[unsafe(no_mangle)]
+pub extern "C" fn import_measure(handle: u32, report_ptr: *const u8, report_len: usize) -> *mut u8 {
+    let answer = heap(report_ptr, report_len, "report")
+        .and_then(|report| with_session(handle, |s| s.import_measure(report)).and_then(|r| r))
+        .unwrap_or_else(|why| json!({"ok": false, "why": why}));
+    release_text(&answer.to_string())
+}
+
+/// Re-measure the session under another request of the same place and size (another
+/// map, another palette entry's values) from the frame its last `measure` kept, without
+/// iterating. JSON: `measure`'s answer plus `recoloured`, `style` and `mirror`, or
+/// `{ok: false, why}` (the session unchanged: measure afresh).
+#[unsafe(no_mangle)]
+pub extern "C" fn recolour(handle: u32, request_ptr: *const u8, request_len: usize) -> *mut u8 {
+    let answer = text(request_ptr, request_len)
+        .and_then(|request| with_session(handle, |s| s.recolour(&request)).and_then(|r| r))
+        .unwrap_or_else(|why| json!({"ok": false, "why": why}));
+    release_text(&answer.to_string())
+}
+
 /// Output pixels `[x, x + width) × [y, y + height)` as RGBA, `width · height · 4`
 /// bytes; null when it cannot be drawn ([`last_error`]).
 #[unsafe(no_mangle)]
@@ -578,11 +760,16 @@ pub unsafe extern "C" fn dealloc(ptr: *mut u8, len: usize) {
 
 // ------------------------------------------------------------------- the plumbing
 
-fn text(ptr: *const u8, len: usize) -> Result<String, String> {
+/// The `len` bytes JavaScript wrote at `ptr` (through [`alloc`]), named `what` in a refusal.
+fn heap<'a>(ptr: *const u8, len: usize, what: &str) -> Result<&'a [u8], String> {
     if ptr.is_null() {
-        return Err("no request was written to the heap".into());
+        return Err(format!("no {what} was written to the heap"));
     }
-    let raw = unsafe { std::slice::from_raw_parts(ptr, len) };
+    Ok(unsafe { std::slice::from_raw_parts(ptr, len) })
+}
+
+fn text(ptr: *const u8, len: usize) -> Result<String, String> {
+    let raw = heap(ptr, len, "request")?;
     std::str::from_utf8(raw)
         .map(str::to_string)
         .map_err(|_| "the request is not valid UTF-8".into())
@@ -734,6 +921,113 @@ mod tests {
             stitched[y * 29 * 3..(y + height) * 29 * 3].copy_from_slice(&rgb);
         }
         assert_eq!(stitched, whole);
+    }
+
+    /// The picture in two row bands of tiles, against the session's measures.
+    fn stitched(session: &Session) -> Vec<u8> {
+        let (width, height) = (session.view.out_width, session.view.out_height);
+        let cut = height / 2;
+        let mut rgb = Vec::new();
+        for (y, rows) in [(0, cut), (cut, height - cut)] {
+            let crop = Crop {
+                x: 0,
+                y: y as usize,
+                width: width as usize,
+                height: rows as usize,
+            };
+            rgb.extend(session.tile(crop).unwrap());
+        }
+        rgb
+    }
+
+    #[test]
+    fn a_published_mode_through_the_shared_measure_and_the_recolour_is_its_plain_draw() {
+        // A published mode as the bundle carries it: its stack, its knobs, and two kept
+        // palette entries (the default, and one whose values move opacities, colours,
+        // a palette's gamma, a light and the tone).
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let read = |path: &str| -> Value {
+            serde_json::from_str(&std::fs::read_to_string(root.join(path)).unwrap()).unwrap()
+        };
+        let mode = "lace_holes";
+        let document = read(&format!("data/styles/{mode}.json"));
+        let catalog = read("data/styles/catalog.json");
+        let row = catalog["modes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["style"] == mode)
+            .unwrap();
+        let entry = |map: &str| {
+            row["palettes"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|entry| entry["colormap"] == map)
+                .unwrap()
+                .clone()
+        };
+        let request = |entry: &Value, width: u32| {
+            let mut stack = document["style"].clone();
+            for (pointer, value) in entry["values"].as_object().into_iter().flatten() {
+                *stack.pointer_mut(pointer).unwrap() = value.clone();
+            }
+            let map = entry["colormap"].as_str().unwrap();
+            json!({
+                "schema": 1,
+                "location": {"family": {"kind": "mandelbrot"},
+                             "viewport": {"center_re": "-0.745", "center_im": "0.112",
+                                          "width": format!("{}", 0.01 * width as f64 / 40.0)},
+                             "maxiter": 600},
+                "style": stack,
+                "knobs": document["public"].get("knobs").cloned().unwrap_or(json!([])),
+                "settings": {},
+                "colormap": read(&format!("data/palettes/{map}.json")),
+                "resolution": [width, 24],
+                "supersample": 2,
+            })
+            .to_string()
+        };
+        let (default, other) = (row["palettes"][0].clone(), entry("gold_arcs"));
+        assert!(!other["values"].as_object().unwrap().is_empty());
+        let plain = |text: &str| Session::open(text).unwrap().frame().unwrap();
+
+        // The shared measure: one session measures, another takes its report and tiles.
+        let mut measurer = Session::open(&request(&default, 40)).unwrap();
+        measurer.measure(0, 0, 0).unwrap();
+        let report = measurer.export_measure().unwrap();
+        let mut worker = Session::open(&request(&default, 40)).unwrap();
+        let answer = worker.import_measure(&report).unwrap();
+        assert_eq!(answer["measured"], json!([40, 24]));
+        assert_eq!(stitched(&worker), plain(&request(&default, 40)));
+
+        // The recolour: the measurer switches to another entry from its kept frame, and
+        // a worker takes the recoloured report.
+        let answer = measurer.recolour(&request(&other, 40)).unwrap();
+        assert_eq!(answer["recoloured"], json!(true));
+        let gold = plain(&request(&other, 40));
+        assert_ne!(
+            gold,
+            plain(&request(&default, 40)),
+            "the entry is another picture"
+        );
+        assert_eq!(stitched(&measurer), gold);
+        let mut worker = Session::open(&request(&other, 40)).unwrap();
+        worker
+            .import_measure(&measurer.export_measure().unwrap())
+            .unwrap();
+        assert_eq!(stitched(&worker), gold);
+
+        // Another picture's report is refused, and so is a recolour that moves the place.
+        let mut elsewhere = Session::open(&request(&other, 40)).unwrap();
+        assert!(elsewhere.import_measure(&report).is_err());
+        let refusal = measurer.recolour(&request(&other, 44)).unwrap_err();
+        assert!(refusal.contains("place and size"), "{refusal}");
+        assert_eq!(
+            stitched(&measurer),
+            gold,
+            "a refused recolour leaves the session"
+        );
     }
 
     #[test]

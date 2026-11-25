@@ -9,6 +9,116 @@
   "folder": "fractal-drive-sync/style-keeps/dew_bloom",
   "keeps": [
     {
+      "id": "style_november_r2/dew_bloom/kept/dw2_stack_be08",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "dew_bloom/kept",
+          "key": "dw2_stack_be08"
+        }
+      ],
+      "label": "the stack at phoenix_be08d977",
+      "image": "style_november_r2__dw2_stack_be08.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_be08d977",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.4471102599431493",
+            "center_im": "-0.44513093814775134",
+            "width": "1.6824237464337766"
+          },
+          "maxiter": 5001,
+          "note": "final139_general seat 566 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 566,
+            "key": "be08d977d466dfc0",
+            "p_spiral": 0.299987
+          },
+          "ink": 0.03679
+        },
+        "style": "dew_bloom",
+        "stack": "dew_bloom@e712e1e7",
+        "colormap": "dew_bloom",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_november_r2/dew_bloom/maps/dw2_map_tempest_plumes",
+      "picker": "style_november_r2",
+      "picked": [
+        {
+          "row": "dew_bloom/maps",
+          "key": "dw2_map_tempest_plumes"
+        }
+      ],
+      "label": "tubes with tempest_plumes",
+      "image": "style_november_r2__dw2_map_tempest_plumes.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_4223804e",
+          "family": {
+            "c": [
+              "-0.8418714367509399",
+              "-0.5485139127038718"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.4412191563397286",
+              "0.02149698272731098"
+            ],
+            "z_prev": [
+              "0.02235284226744388",
+              "-0.011345512505400552"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.15370887653484167",
+            "center_im": "0.4538434461686248",
+            "width": "1.0001379041824567"
+          },
+          "maxiter": 5901,
+          "note": "final139_general seat 276 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 276,
+            "key": "4223804ea98ca05a",
+            "p_spiral": 0.145096
+          },
+          "ink": 0.03887
+        },
+        "style": "dew_bloom",
+        "stack": "dew_bloom@f1ab89fc",
+        "colormap": "tempest_plumes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_petal_spirals_r1/dew_bloom/formulations/dwf_dew_tubes",
       "picker": "style_petal_spirals_r1",
       "picked": [
