@@ -105,6 +105,171 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "cauliflower_scales/entries",
+          "key": "r2_cs_horror_8fa2"
+        }
+      ],
+      "label": "horror_scales entry on the new 3-layer default",
+      "image": "style_retrospective_082__r2_cs_horror_8fa2.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_8fa28807",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.6197823342308655",
+            "center_im": "0.8395661201695902",
+            "width": "0.0072618899060757905"
+          },
+          "maxiter": 2000,
+          "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic); its cap lowered from the seat's 14428 to 2000 for the page's draw (Matt, 082: \"can't see much difference, faster seems better\"); the saved picture was drawn at 14428",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 791,
+            "key": "8fa28807ffcc9280",
+            "p_spiral": 0.017271
+          },
+          "ink": 0.32467
+        },
+        "style": "e_horror_scales",
+        "stack": "e_horror_scales@a2086c75",
+        "colormap": "horror_scales",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/cauliflower_scales/kept/r2_cs_default_8fa2",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "cauliflower_scales/kept",
+          "key": "r2_cs_default_8fa2"
+        }
+      ],
+      "label": "cauliflower_scales new default (3 layers, stripe glows dropped) at phoenix-classic_8fa28807",
+      "image": "style_retrospective_082__r2_cs_default_8fa2.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_8fa28807",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.6197823342308655",
+            "center_im": "0.8395661201695902",
+            "width": "0.0072618899060757905"
+          },
+          "maxiter": 2000,
+          "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic); its cap lowered from the seat's 14428 to 2000 for the page's draw (Matt, 082: \"can't see much difference, faster seems better\"); the saved picture was drawn at 14428",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 791,
+            "key": "8fa28807ffcc9280",
+            "p_spiral": 0.017271
+          },
+          "ink": 0.32467
+        },
+        "style": "cauliflower_scales",
+        "stack": "cauliflower_scales@39c9e09e",
+        "colormap": "cauliflower_scales",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/cauliflower_scales/maps/r2_cs_map_soft_veils_ember",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "cauliflower_scales/maps",
+          "key": "r2_cs_map_soft_veils_ember"
+        }
+      ],
+      "label": "soft_veils_ember on the new default (no value changes)",
+      "image": "style_retrospective_082__r2_cs_map_soft_veils_ember.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_8fa28807",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.6197823342308655",
+            "center_im": "0.8395661201695902",
+            "width": "0.0072618899060757905"
+          },
+          "maxiter": 2000,
+          "note": "final139_general seat 791 (direct_trap_lines, phoenix:classic); its cap lowered from the seat's 14428 to 2000 for the page's draw (Matt, 082: \"can't see much difference, faster seems better\"); the saved picture was drawn at 14428",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 791,
+            "key": "8fa28807ffcc9280",
+            "p_spiral": 0.017271
+          },
+          "ink": 0.32467
+        },
+        "style": "cauliflower_scales",
+        "stack": "cauliflower_scales@39c9e09e",
+        "colormap": "soft_veils_ember",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -244,6 +409,96 @@
         }
       ]
     },
+    "cauliflower_scales@39c9e09e": {
+      "name": "cauliflower_scales",
+      "interior": {
+        "palette": 0.08
+      },
+      "tone": {
+        "median": 0.423,
+        "p10": 0.275
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 2.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.8,
+            "slope": 0.3,
+            "azimuth": 160.0,
+            "elevation": 35.0,
+            "ambient": 0.55,
+            "diffuse": 0.7,
+            "specular": 0.4,
+            "shininess": 10.0,
+            "rim": 0.0,
+            "rim_power": 3.0,
+            "period": 1.0,
+            "highlight": {
+              "rgb": "#f2ede4"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "escaped": true,
+              "radius": 0.45,
+              "spacing": 1.0,
+              "largest": 0.03,
+              "smallest": 0.001,
+              "read": "height"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 160.0,
+            "elevation": 35.0,
+            "ambient": 0.55,
+            "diffuse": 0.7,
+            "specular": 0.2,
+            "shininess": 8.0,
+            "rim": 0.0,
+            "rim_power": 3.0,
+            "period": 2.0,
+            "highlight": {
+              "palette": 0.4
+            }
+          },
+          "opacity": 0.9
+        }
+      ]
+    },
     "cauliflower_scales@7dc715bf": {
       "name": "cauliflower_scales",
       "interior": {
@@ -377,6 +632,96 @@
           "blend": "screen",
           "opacity": 0.15,
           "power": 12.0
+        }
+      ]
+    },
+    "e_horror_scales@a2086c75": {
+      "name": "e_horror_scales",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.092,
+        "p10": 0.011
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 2.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.8,
+            "slope": 0.3,
+            "azimuth": 160.0,
+            "elevation": 35.0,
+            "ambient": 0.35,
+            "diffuse": 0.7,
+            "specular": 0.4,
+            "shininess": 10.0,
+            "rim": 0.5,
+            "rim_power": 3.0,
+            "period": 1.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "bubble": {
+              "center": [
+                0.5,
+                0.5
+              ],
+              "escaped": true,
+              "radius": 0.45,
+              "spacing": 1.0,
+              "largest": 0.03,
+              "smallest": 0.001,
+              "read": "height"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 160.0,
+            "elevation": 35.0,
+            "ambient": 0.45,
+            "diffuse": 0.7,
+            "specular": 0.2,
+            "shininess": 8.0,
+            "rim": 0.0,
+            "rim_power": 3.0,
+            "period": 2.0,
+            "highlight": {
+              "palette": 0.4
+            }
+          },
+          "opacity": 0.9
         }
       ]
     }

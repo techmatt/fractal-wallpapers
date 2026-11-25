@@ -9,6 +9,246 @@
   "folder": "fractal-drive-sync/style-keeps/stirred_ink",
   "keeps": [
     {
+      "id": "style_retrospective_082/stirred_ink/kept/r1_si_strong_7e31",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "stirred_ink/kept",
+          "key": "r1_si_strong_7e31"
+        }
+      ],
+      "label": "strong (kept): strength 6 over 8 steps at julia-multibrot3_7e312206",
+      "image": "style_retrospective_082__r1_si_strong_7e31.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@ba33ceaa",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/stirred_ink/kept/r1_si_wide_7e31",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "stirred_ink/kept",
+          "key": "r1_si_wide_7e31"
+        }
+      ],
+      "label": "wide (kept, the shown reading) at julia-multibrot3_7e312206",
+      "image": "style_retrospective_082__r1_si_wide_7e31.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@675dee6b",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/stirred_ink/levers/r1_si_strong_rays_f_7e31",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "stirred_ink/levers",
+          "key": "r1_si_strong_rays_f_7e31"
+        }
+      ],
+      "label": "strong + crest glints, dimmed for p90: rays share 0.01 -> 0.003, strength 0.6 -> 0.3",
+      "image": "style_retrospective_082__r1_si_strong_rays_f_7e31.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink__rays_dim",
+        "stack": "stirred_ink__rays_dim@0b75f102",
+        "colormap": "stirred_ink",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/stirred_ink/maps/r1_si_map_molten_flow",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "stirred_ink/maps",
+          "key": "r1_si_map_molten_flow"
+        }
+      ],
+      "label": "wide with molten flow (4/5, glossy)",
+      "image": "style_retrospective_082__r1_si_map_molten_flow.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@675dee6b",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/stirred_ink/maps/r1_si_map_soft_veils_ember",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "stirred_ink/maps",
+          "key": "r1_si_map_soft_veils_ember"
+        }
+      ],
+      "label": "wide with ember veils (5/5)",
+      "image": "style_retrospective_082__r1_si_map_soft_veils_ember.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "stirred_ink",
+        "stack": "stirred_ink@675dee6b",
+        "colormap": "soft_veils_ember",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_strong__00_julia-multibrot3_7e312206_stirred_ink",
       "picker": "style_stirred_ink_r1",
       "picked": [
@@ -644,6 +884,146 @@
           "color": {
             "palette": 0.8
           }
+        }
+      ]
+    },
+    "stirred_ink__rays_dim@0b75f102": {
+      "name": "stirred_ink__rays_dim",
+      "interior": {
+        "palette": 0.05
+      },
+      "tone": {
+        "median": 0.471,
+        "p10": 0.22
+      },
+      "stir": [
+        {
+          "view": {
+            "turn": 100.0,
+            "zoom": 0.8,
+            "shift": [
+              0.13,
+              -0.17
+            ]
+          },
+          "strength": 6.0,
+          "angle": 90.0,
+          "period": 3.0,
+          "largest": 0.08,
+          "steps": 8
+        },
+        {
+          "view": {
+            "turn": 220.0,
+            "zoom": 1.5,
+            "shift": [
+              -0.2,
+              0.1
+            ]
+          },
+          "strength": 3.0,
+          "angle": 90.0,
+          "period": 2.0,
+          "largest": 0.04,
+          "steps": 4
+        }
+      ],
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.6,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          }
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 0.9,
+            "azimuth": 120.0,
+            "elevation": 42.0,
+            "ambient": 0.5,
+            "diffuse": 0.5,
+            "specular": 0.7,
+            "shininess": 10.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              },
+              "transform": "log"
+            },
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.03,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.95,
+          "color": {
+            "palette": 0.98
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "bands": 5.0,
+            "edge": 0.3,
+            "fill": 0.0,
+            "rank": false
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.8
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.003,
+          "spokes": 6,
+          "angle": 15.0,
+          "length": 0.012,
+          "strength": 0.3
         }
       ]
     }

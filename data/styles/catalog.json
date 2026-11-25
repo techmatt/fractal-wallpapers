@@ -466,15 +466,19 @@
         ]
       },
       "what": "Brass discs packed inside discs, threaded with glossy blue crescent ribbons.",
-      "kept": "2 locations",
-      "note": "Engine: bubble shift + crescent · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: warmer and browner than the lilac reference.",
+      "kept": "2 locations; retrospective (style_retrospective_082): the default at both kept seats; cooler slots, and cooler slots with lilac ribbons",
+      "note": "Engine: bubble shift + crescent · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: warmer and browner than the lilac reference. Retrospective (2026-11-24, style_retrospective_082): kept the default at both kept seats; cooler slots, and cooler slots with lilac ribbons; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "ribbon_packing",
           "values": {},
           "keeps": [
             "style_ribbon_packing_r1/locations/locations__01_julia-multibrot6_11c49c17_ribbon_packing",
-            "style_ribbon_packing_r1/locations/locations__07_julia-multibrot6_9aa8f703_ribbon_packing"
+            "style_ribbon_packing_r1/locations/locations__07_julia-multibrot6_9aa8f703_ribbon_packing",
+            "style_retrospective_082/ribbon_packing/kept/r6_rp_default_s1",
+            "style_retrospective_082/ribbon_packing/kept/r6_rp_default_s2",
+            "style_retrospective_082/ribbon_packing/levers/r6_rp_cool_s1",
+            "style_retrospective_082/ribbon_packing/levers/r6_rp_lilac_s2"
           ],
           "score": 3
         }
@@ -513,15 +517,17 @@
         ]
       },
       "what": "Engraved gold filigree set with jewel orbs, a warm haze and sparkle.",
-      "kept": "1 location, many_orbs",
-      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob. · Matt: 1 of 12 locations kept; wide minibrot interiors wash to a pale blob.",
+      "kept": "1 location, many_orbs; retrospective (style_retrospective_082): the default at the many_orbs seat; the dimmed interior",
+      "note": "Engine: none new · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · many_orbs (kept) is the top of the Orb size knob. · Matt: 1 of 12 locations kept; wide minibrot interiors wash to a pale blob. Retrospective (2026-11-24, style_retrospective_082): kept the default at the many_orbs seat; the dimmed interior; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "gilded_orbs",
           "values": {},
           "keeps": [
             "style_gilded_orbs_r1/formulations/f_many_orbs__01_multibrot3_1ec297e1_gilded_orbs",
-            "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs"
+            "style_gilded_orbs_r1/locations/locations__05_mandelbrot_c0061186_gilded_orbs",
+            "style_retrospective_082/gilded_orbs/kept/r6_go_default_s2",
+            "style_retrospective_082/gilded_orbs/levers/r6_go_dim_blob"
           ],
           "score": 3
         }
@@ -555,14 +561,15 @@
         ]
       },
       "what": "Smoothly shaded crescent blades over a hairline of light along the set.",
-      "kept": "1 formulation",
-      "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Matt: giant foreground blades occlude the finer ones and kill the fractal feel, so Blade size tops out at the kept size.",
+      "kept": "1 formulation; retrospective (style_retrospective_082): blades bounded at largest 0.08",
+      "note": "Engine: bubble strip, across, smallest (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Your one keep, the crescent-based lune_blades, is now the style's default stack; the strip shape is not published. Matt: giant foreground blades occlude the finer ones and kill the fractal feel, so Blade size tops out at the kept size. Retrospective (2026-11-24, style_retrospective_082): kept blades bounded at largest 0.08; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "shaded_blades",
           "values": {},
           "keeps": [
-            "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades"
+            "style_shaded_blades_r1/formulations/f_lune_blades__00_multibrot3_1ec297e1_shaded_blades",
+            "style_retrospective_082/shaded_blades/levers/r6_sb_b008_s1"
           ],
           "score": 3
         }
@@ -656,8 +663,8 @@
         }
       ],
       "what": "Glowing threads from the distance estimate: near-white core, green halo and bloom, faint equipotential threads in the dark.",
-      "kept": "3 locations, no_fog variant",
-      "note": "Engine: glow falloff, tone log_density · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: its threads are sharper and brighter than the flame's soft strands, so it is dropped from publishing.",
+      "kept": "3 locations, no_fog variant; retrospective (style_retrospective_082): the default; the darker-paint lever",
+      "note": "Engine: glow falloff, tone log_density · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: its threads are sharper and brighter than the flame's soft strands, so it is dropped from publishing. Retrospective (2026-11-24, style_retrospective_082): kept the default; the darker-paint lever; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "glow_filaments",
@@ -666,7 +673,9 @@
             "style_glow_filaments_r1/shortlist/03_m_branching_dendrite",
             "style_glow_filaments_r1/shortlist/08_j_curl_chain",
             "style_glow_filaments_r1/shortlist/09_m_spiral_pair",
-            "style_glow_filaments_r1/variants/no_fog"
+            "style_glow_filaments_r1/variants/no_fog",
+            "style_retrospective_082/glow_filaments/kept/r7_gf_default_s1",
+            "style_retrospective_082/glow_filaments/levers/r7_gf_dark_s1"
           ],
           "score": 3
         }
@@ -786,8 +795,8 @@
         "knobs": []
       },
       "what": "A luminous blue eye: a Julia set's ring glowing round a dark pupil that holds a star, fine strands curving out of the ring and in to the star.",
-      "kept": "2 locations, fine and sharp formulations",
-      "note": "Engine: nothing new (falloff ring, lines channel on both sides) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (quasicircles are not in the galleries). · Matt: its discontinuities are jarring.",
+      "kept": "2 locations, fine and sharp formulations; retrospective (style_retrospective_082): the default at the cubic and quartic rings; the seam-free lever; seam-free on library map soft_veils_amber (the entry draws the default stack: seam-free is another structure)",
+      "note": "Engine: nothing new (falloff ring, lines channel on both sides) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Locations hand-placed (quasicircles are not in the galleries). · Matt: its discontinuities are jarring. Retrospective (2026-11-24, style_retrospective_082): kept the default at the cubic and quartic rings; the seam-free lever; seam-free on library map soft_veils_amber (the entry draws the default stack: seam-free is another structure); Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "star_eye",
@@ -796,9 +805,19 @@
             "style_star_eye_r1/formulations/f_fine__01_rg_d3_0.65_0.0_w4.5_star_eye",
             "style_star_eye_r1/formulations/f_sharp__01_rg_d3_0.65_0.0_w4.5_star_eye",
             "style_star_eye_r1/locations/locations__02_rg_d3_0.65_0.0_w4.5_star_eye",
-            "style_star_eye_r1/locations/locations__06_rg_d4_0.65_0.0_w4.5_star_eye"
+            "style_star_eye_r1/locations/locations__06_rg_d4_0.65_0.0_w4.5_star_eye",
+            "style_retrospective_082/star_eye/kept/r5_se_default_s1",
+            "style_retrospective_082/star_eye/kept/r5_se_default_s2",
+            "style_retrospective_082/star_eye/levers/r5_se_seamfree_s1"
           ],
           "score": 3
+        },
+        {
+          "colormap": "soft_veils_amber",
+          "values": {},
+          "keeps": [
+            "style_retrospective_082/star_eye/maps/r5_se_amber_s1"
+          ]
         }
       ]
     },
@@ -969,15 +988,17 @@
         "knobs": []
       },
       "what": "Translucent blue flame veils crossing over a crisp fractal, their rims lit lemon yellow, on a deep blue ground.",
-      "kept": "2 locations",
-      "note": "Engine: the `view` member of a field channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
+      "kept": "2 locations; retrospective (style_retrospective_082): the default; set-bound stripe crests over the veils",
+      "note": "Engine: the `view` member of a field channel (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak. Retrospective (2026-11-24, style_retrospective_082): kept the default; set-bound stripe crests over the veils; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "flame_veil_blue",
           "values": {},
           "keeps": [
             "style_flame_veil_blue_r1/locations/locations__05_vj_d2_r1.0_t0.196_whole_flame_veil_blue",
-            "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue"
+            "style_flame_veil_blue_r1/locations/locations__08_vm_d4_flame_veil_blue",
+            "style_retrospective_082/flame_veil_blue/kept/r4_blue_ship_s1",
+            "style_retrospective_082/flame_veil_blue/levers/r4_blue_over_s1"
           ],
           "score": 2
         }
@@ -1050,8 +1071,8 @@
         "knobs": []
       },
       "what": "Violet-blue flame ribbons swirling round the frame, each a veil of fine silky strands, a few teal, on a navy ground.",
-      "kept": "3 locations, the no-strands formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak.",
+      "kept": "3 locations, the no-strands formulation; retrospective (style_retrospective_082): no_strands and the default at vm_d3; set-bound stripe crests over the veils",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: okay but a bit weak. Retrospective (2026-11-24, style_retrospective_082): kept no_strands and the default at vm_d3; set-bound stripe crests over the veils; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "flame_veil_violet",
@@ -1060,7 +1081,10 @@
             "style_flame_veil_violet_r1/formulations/f_no_strands__00_vm_d3_flame_veil_violet",
             "style_flame_veil_violet_r1/locations/locations__02_vj_d3_r1.08_t0.124_whole_flame_veil_violet",
             "style_flame_veil_violet_r1/locations/locations__05_vj_d3_r1.08_t0.320_whole_flame_veil_violet",
-            "style_flame_veil_violet_r1/locations/locations__07_vm_d3_flame_veil_violet"
+            "style_flame_veil_violet_r1/locations/locations__07_vm_d3_flame_veil_violet",
+            "style_retrospective_082/flame_veil_violet/kept/r4_violet_nostrands_s2",
+            "style_retrospective_082/flame_veil_violet/kept/r4_violet_ship_s2",
+            "style_retrospective_082/flame_veil_violet/levers/r4_violet_over_s1"
           ],
           "score": 2
         }
@@ -1246,15 +1270,17 @@
         "knobs": []
       },
       "what": "Glowing orange and gold flame ribbons curling over one another in a warm brown haze, brightest at the middle.",
-      "kept": "the close-views formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted.",
+      "kept": "the close-views formulation; retrospective (style_retrospective_082): close views; close views tied to the set at frost's phoenix seat",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted. Retrospective (2026-11-24, style_retrospective_082): kept close views; close views tied to the set at frost's phoenix seat; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "flame_wisp_amber",
           "values": {},
           "keeps": [
             "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
-            "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp"
+            "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
+            "style_retrospective_082/flame_wisp_amber/kept/r3_am_cv_s1",
+            "style_retrospective_082/flame_wisp_amber/levers/r3_am_cvtie_s2_g"
           ],
           "score": 2
         }
@@ -1283,14 +1309,16 @@
         "knobs": []
       },
       "what": "Lit blue flame veils and strands crossing on a deep blue ground, strewn with gold star sparks.",
-      "kept": "the close-views formulation",
-      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted.",
+      "kept": "the close-views formulation; retrospective (style_retrospective_082): close views; star-cross sparks at frost's phoenix seat",
+      "note": "Engine: nothing new (views, as flame_veil_blue) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: lost the fractal feel; not promoted. Retrospective (2026-11-24, style_retrospective_082): kept close views; star-cross sparks at frost's phoenix seat; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "flame_wisp_spark",
           "values": {},
           "keeps": [
-            "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark"
+            "style_flame_wisps_r1/flame_wisp_spark/formulations/spark__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp_spark",
+            "style_retrospective_082/flame_wisp_spark/kept/r3_sp_cv_s1",
+            "style_retrospective_082/flame_wisp_spark/levers/r3_sp_star_s2"
           ],
           "score": 2
         }
@@ -1428,8 +1456,8 @@
         ]
       },
       "what": "Molten fire flowing in broad lit folds: a glossy relief in crimson, orange and gold, crossed by translucent folds, with flame lace along the edge of the set.",
-      "kept": "2 locations; interstellar_webs: 1 tile (054); 3 baseline tiles (054, 058, 064)",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass.",
+      "kept": "2 locations; interstellar_webs: 1 tile (054); 3 baseline tiles (054, 058, 064); retrospective (style_retrospective_082): the default at seat 7e31; the deep-shadow white-hot lever at seats 7e31 and ff8b",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the reference's darks (its p10) are not reached by the tone pass. Retrospective (2026-11-24, style_retrospective_082): kept the default at seat 7e31; the deep-shadow white-hot lever at seats 7e31 and ff8b; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "molten_flow",
@@ -1440,7 +1468,10 @@
             "style_organic_relief_r1/molten_flow/interstellar_webs/baseline_molten__01_julia-multibrot3_f1cad9d4_molten_flow",
             "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow",
             "style_classic_escape_texture_r1/draped_folds/formulations/base_dA__molten_flow__00_julia-multibrot5_ff8bfbca",
-            "style_webs_clouds_r1/storm_clouds/formulations/scf_molten_flow"
+            "style_webs_clouds_r1/storm_clouds/formulations/scf_molten_flow",
+            "style_retrospective_082/molten_flow/kept/r2_mf_default_7e31",
+            "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_7e31",
+            "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_ff8b"
           ],
           "score": 4
         },
@@ -1538,14 +1569,28 @@
         "knobs": []
       },
       "what": "Glossy chrome swirls: a mirror-bright relief in silver and slate, chrome ribbons, and red orbs swelling to gold along the arms.",
-      "kept": "nothing",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale.",
+      "kept": "nothing; retrospective (style_retrospective_082): library map mercury_tubes (highlight and de glow from the map)",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Nothing kept in round one; no round two. Matt: not interesting enough, or too grayscale. Retrospective (2026-11-24, style_retrospective_082): kept library map mercury_tubes (highlight and de glow from the map); Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "chrome_orbs",
           "values": {},
           "keeps": [],
           "score": 2
+        },
+        {
+          "colormap": "mercury_tubes",
+          "values": {
+            "/layers/1/light/highlight": {
+              "palette": 0.95
+            },
+            "/layers/5/color": {
+              "palette": 0.9
+            }
+          },
+          "keeps": [
+            "style_retrospective_082/chrome_orbs/maps/r2_co_map_mercury_tubes"
+          ]
         }
       ]
     },
@@ -1573,14 +1618,15 @@
         "knobs": []
       },
       "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps.",
-      "kept": "horror_scales: 1 location; the default map: 1 baseline tile (054)",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic_8fa28807 keep opened at an iteration cap of 2000 in place of the seat's 14428, and the stack without its two stripe-view glows (082, Matt's picks in explorer_cost_cuts_080: \"can't see much difference, faster seems better\") · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice.",
+      "kept": "horror_scales: 1 location; the default map: 1 baseline tile (054); retrospective (style_retrospective_082): the new three-layer default at seat 8fa2; horror_scales on it; library map soft_veils_ember",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic_8fa28807 keep opened at an iteration cap of 2000 in place of the seat's 14428, and the stack without its two stripe-view glows (082, Matt's picks in explorer_cost_cuts_080: \"can't see much difference, faster seems better\") · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice. Retrospective (2026-11-24, style_retrospective_082): kept the new three-layer default at seat 8fa2; horror_scales on it; library map soft_veils_ember; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "cauliflower_scales",
           "values": {},
           "keeps": [
-            "style_organic_relief_r1/cauliflower_scales/horror_scales/baseline_cauli__01_phoenix-classic_9a93355d_cauliflower_scales"
+            "style_organic_relief_r1/cauliflower_scales/horror_scales/baseline_cauli__01_phoenix-classic_9a93355d_cauliflower_scales",
+            "style_retrospective_082/cauliflower_scales/kept/r2_cs_default_8fa2"
           ],
           "score": 2
         },
@@ -1600,10 +1646,18 @@
             "/layers/2/light/ambient": 0.45
           },
           "keeps": [
-            "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales"
+            "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales",
+            "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2"
           ],
           "reference": "horror-25.jpg",
           "score": 3
+        },
+        {
+          "colormap": "soft_veils_ember",
+          "values": {},
+          "keeps": [
+            "style_retrospective_082/cauliflower_scales/maps/r2_cs_map_soft_veils_ember"
+          ]
         }
       ]
     },
@@ -1644,8 +1698,8 @@
         ]
       },
       "what": "Fine, hair-like streamlines sweep the whole frame around a small copy of the Mandelbrot set whose rim glows orange against deep blue.",
-      "kept": "2 locations, the ribbons formulation",
-      "note": "Engine: nothing new (streamlines from the stripe average) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the sweeping lines that break up the stripe pattern are pleasing in some ways.",
+      "kept": "2 locations, the ribbons formulation; retrospective (style_retrospective_082): the default; the slow-stripe overlay",
+      "note": "Engine: nothing new (streamlines from the stripe average) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the sweeping lines that break up the stripe pattern are pleasing in some ways. Retrospective (2026-11-24, style_retrospective_082): kept the default; the slow-stripe overlay; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "crescent_lines",
@@ -1653,7 +1707,9 @@
           "keeps": [
             "style_crescent_lines_r1/crescent_lines/formulations/crescent_lines__f_ribbons__01_minibrot-p7_14_crescent_lines",
             "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__03_minibrot-p9_06_crescent_lines",
-            "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__08_minibrot-p9_07_crescent_lines"
+            "style_crescent_lines_r1/crescent_lines/locations/crescent_lines__loc__08_minibrot-p9_07_crescent_lines",
+            "style_retrospective_082/crescent_lines/kept/r5_cl_default_s1",
+            "style_retrospective_082/crescent_lines/levers/r5_cl_slow_s1"
           ],
           "score": 3
         }
@@ -2103,8 +2159,8 @@
         ]
       },
       "what": "A glowing lace web of fine strands, pierced by round holes of every size, each hole lit like a glass bead.",
-      "kept": "four palettes (cream_lace, copper_mail, gold_arcs, bead_strands): 2 locations and 5 formulations (3 bubbles, 2 current)",
-      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim, an inside rim glow and an inside light doming each hole; Julia holes placed by hand) · the default stack is the bubbles formulation, bead_strands' structure, so all four kept styles are one mode; ember_plume kept nothing and was discarded · Matt: okay; the interior colouring approaches, the bubbles formulation, are cool.",
+      "kept": "four palettes (cream_lace, copper_mail, gold_arcs, bead_strands): 2 locations and 5 formulations (3 bubbles, 2 current); retrospective (style_retrospective_082): bead_strands, copper_mail and cream_lace as they draw now, and each held in band (ground cycles 0.55 to 0.65)",
+      "note": "Engine: nothing new (the stripe average's crests masked by the inverted de, de lace on every rim, an inside rim glow and an inside light doming each hole; Julia holes placed by hand) · the default stack is the bubbles formulation, bead_strands' structure, so all four kept styles are one mode; ember_plume kept nothing and was discarded · Matt: okay; the interior colouring approaches, the bubbles formulation, are cool. Retrospective (2026-11-24, style_retrospective_082): kept bead_strands, copper_mail and cream_lace as they draw now, and each held in band (ground cycles 0.55 to 0.65); Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "cream_lace",
@@ -2116,7 +2172,9 @@
             "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
             "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
             "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
-            "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes"
+            "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes",
+            "style_retrospective_082/lace_holes/levers/r6_lh_cream_now_f",
+            "style_retrospective_082/lace_holes/entries/r6_lh_cream_now"
           ],
           "score": 3
         },
@@ -2156,7 +2214,9 @@
             "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail",
             "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
             "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
-            "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail"
+            "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail",
+            "style_retrospective_082/lace_holes/levers/r6_lh_copper_dark_f",
+            "style_retrospective_082/lace_holes/entries/r6_lh_copper_now"
           ],
           "score": 3
         },
@@ -2236,7 +2296,9 @@
             "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
             "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
             "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
-            "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands"
+            "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
+            "style_retrospective_082/lace_holes/levers/r6_lh_bead_now_f",
+            "style_retrospective_082/lace_holes/entries/r6_lh_bead_now"
           ],
           "score": 3
         }
@@ -2615,8 +2677,8 @@
         "knobs": []
       },
       "what": "Glossy ribbed hoses curling out of the set, one lit segment per escape band, fat in the far field and ever finer towards the grey lace.",
-      "kept": "two palettes (ribbed_tubes, heliograph_scales): 2 locations, 2 formulations (fat ribs, scales) and 1 heliograph_scales entry tile",
-      "note": "Engine: nothing new (a light at period 1 on the smooth count over the count through the map, de glows for the lace; the escape-band checker for heliograph's scales) · reproducible: every keep has its full render record · Matt: okay but not amazing (round one).",
+      "kept": "two palettes (ribbed_tubes, heliograph_scales): 2 locations, 2 formulations (fat ribs, scales) and 1 heliograph_scales entry tile; retrospective (style_retrospective_082): the default at both seats; scales with rays; heliograph_scales with six-spoke stars",
+      "note": "Engine: nothing new (a light at period 1 on the smooth count over the count through the map, de glows for the lace; the escape-band checker for heliograph's scales) · reproducible: every keep has its full render record · Matt: okay but not amazing (round one). Retrospective (2026-11-24, style_retrospective_082): kept the default at both seats; scales with rays; heliograph_scales with six-spoke stars; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "ribbed_tubes",
@@ -2626,7 +2688,10 @@
             "style_glossy_tubes_r1/ribbed_tubes/formulations/f_scales__00_mandelbrot_4199ca9b_ribbed_tubes",
             "style_glossy_tubes_r1/ribbed_tubes/locations/loc__05_mandelbrot_26914365_ribbed_tubes",
             "style_glossy_tubes_r1/ribbed_tubes/locations/loc__08_phoenix-classic_3b6d967c_ribbed_tubes",
-            "style_petal_spirals_r1/chrome_whorl/formulations/cwf_ribbed_tubes"
+            "style_petal_spirals_r1/chrome_whorl/formulations/cwf_ribbed_tubes",
+            "style_retrospective_082/ribbed_tubes/kept/r7_rt_default_s1",
+            "style_retrospective_082/ribbed_tubes/kept/r7_rt_default_s2",
+            "style_retrospective_082/ribbed_tubes/levers/r7_rt_scales_shafts_s1"
           ],
           "score": 2
         },
@@ -2645,7 +2710,8 @@
             "/tone/p10": 0.019
           },
           "keeps": [
-            "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales"
+            "style_glossy_tubes_r1/ribbed_tubes/heliograph_scales/heliograph_scales__02_phoenix-classic_c0dc1f27_heliograph_scales",
+            "style_retrospective_082/ribbed_tubes/entries/r7_rt_helio_stars_s2"
           ],
           "score": 2
         }
@@ -2794,15 +2860,16 @@
         "knobs": []
       },
       "what": "Orange-copper webs folding over blue hollows: glossy relief and translucent folds in copper, a blue far field, sparkle dust along the set.",
-      "kept": "2 locations",
-      "note": "Engine: nothing new (molten_flow's relief plus a bubble lattice masked to the set) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the palettes and some of the effect properties are nice.",
+      "kept": "2 locations; retrospective (style_retrospective_082): the default at seat 364f",
+      "note": "Engine: nothing new (molten_flow's relief plus a bubble lattice masked to the set) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the palettes and some of the effect properties are nice. Retrospective (2026-11-24, style_retrospective_082): kept the default at seat 364f; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "interstellar_webs",
           "values": {},
           "keeps": [
             "style_organic_relief_r1/copper_webs/locations/loc__12_phoenix_71e305f0_interstellar_webs",
-            "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs"
+            "style_organic_relief_r1/copper_webs/locations/loc__36_phoenix_ec850bb9_interstellar_webs",
+            "style_retrospective_082/copper_webs/kept/r2_cw_default_364f"
           ],
           "score": 3
         }
@@ -2843,8 +2910,8 @@
         "knobs": []
       },
       "what": "A mosaic of triangles nested inside triangles: large calm facets far from the set, splitting ever finer towards it, each tilted and folded into lit faces.",
-      "kept": "10 tiles: 1 location, inlay, fine, fold, the base and three spiral readings, the ice entry twice",
-      "note": "Engine: the post stage and its mosaic pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, everything here is interesting but nothing amazing.",
+      "kept": "10 tiles: 1 location, inlay, fine, fold, the base and three spiral readings, the ice entry twice; retrospective (style_retrospective_082): inlay at seat fc13 and fine at seat 70e1; levers plates_thin and shards' re-tone; the ice entry on inlay and on fine",
+      "note": "Engine: the post stage and its mosaic pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, everything here is interesting but nothing amazing. Retrospective (2026-11-24, style_retrospective_082): kept inlay at seat fc13 and fine at seat 70e1; levers plates_thin and shards' re-tone; the ice entry on inlay and on fine; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "tri_mosaic",
@@ -2857,7 +2924,11 @@
             "style_tri_mosaic_r1/spiral/sp_f_base__01_julia-multibrot5_3bb3fae3_tri_mosaic",
             "style_tri_mosaic_r1/spiral/sp_f_spiral__00_julia-mandelbrot_35b23c31_tri_mosaic",
             "style_tri_mosaic_r1/spiral/sp_f_spiral__01_julia-multibrot5_3bb3fae3_tri_mosaic",
-            "style_tri_mosaic_r1/spiral/sp_f_spiral_plates__01_julia-multibrot5_3bb3fae3_tri_mosaic"
+            "style_tri_mosaic_r1/spiral/sp_f_spiral_plates__01_julia-multibrot5_3bb3fae3_tri_mosaic",
+            "style_retrospective_082/tri_mosaic/kept/r1_tm_inlay_fc13",
+            "style_retrospective_082/tri_mosaic/kept/r1_tm_fine_70e1",
+            "style_retrospective_082/tri_mosaic/levers/r1_tm_plates_thin_3bb3",
+            "style_retrospective_082/tri_mosaic/levers/r1_tm_shards_m43_fc13"
           ],
           "score": 3
         },
@@ -2871,7 +2942,9 @@
           },
           "keeps": [
             "style_tri_mosaic_r1/formulations_a/fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice",
-            "style_tri_mosaic_r1/formulations_b/fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice"
+            "style_tri_mosaic_r1/formulations_b/fo_e_tri_mosaic_ice__01_julia-multibrot3_70e1da1e_tri_mosaic_ice",
+            "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_inlay_fc13",
+            "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_fine_70e1"
           ],
           "score": 3,
           "reference": "wallhaven_wallhaven-4xy8el.png"
@@ -2914,8 +2987,8 @@
         ]
       },
       "what": "A poured liquid stirred into S-curls and hooks: one glossy blue ink combed along a turned copy of the fractal, bright crests along the folds, the curls tightening towards the set.",
-      "kept": "5 tiles: 2 locations, f_wide at both seats, f_strong",
-      "note": "Engine: the stir (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the paint-like modes I picked are 4/5; the modes I didn't pick aren't good (1/5); other palettes besides the blue one might be good, but I only liked that one here.",
+      "kept": "5 tiles: 2 locations, f_wide at both seats, f_strong; retrospective (style_retrospective_082): wide and strong at seat 7e31, strong with dimmed crest glints; library maps molten_flow and soft_veils_ember on wide",
+      "note": "Engine: the stir (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the paint-like modes I picked are 4/5; the modes I didn't pick aren't good (1/5); other palettes besides the blue one might be good, but I only liked that one here. Retrospective (2026-11-24, style_retrospective_082): kept wide and strong at seat 7e31, strong with dimmed crest glints; library maps molten_flow and soft_veils_ember on wide; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "stirred_ink",
@@ -2925,9 +2998,30 @@
             "style_stirred_ink_r1/stirred_ink/formulations_a/a_f_wide__00_julia-multibrot3_7e312206_stirred_ink",
             "style_stirred_ink_r1/stirred_ink/formulations_b/b_f_wide__01_julia-multibrot3_f1cad9d4_stirred_ink",
             "style_stirred_ink_r1/stirred_ink/locations/loc__01_phoenix_71e305f0_stirred_ink",
-            "style_stirred_ink_r1/stirred_ink/locations/loc__08_julia-multibrot3_84b3a609_stirred_ink"
+            "style_stirred_ink_r1/stirred_ink/locations/loc__08_julia-multibrot3_84b3a609_stirred_ink",
+            "style_retrospective_082/stirred_ink/kept/r1_si_wide_7e31",
+            "style_retrospective_082/stirred_ink/kept/r1_si_strong_7e31",
+            "style_retrospective_082/stirred_ink/levers/r1_si_strong_rays_f_7e31"
           ],
           "score": 4
+        },
+        {
+          "colormap": "molten_flow",
+          "values": {
+            "/stir/0/steps": 4
+          },
+          "keeps": [
+            "style_retrospective_082/stirred_ink/maps/r1_si_map_molten_flow"
+          ]
+        },
+        {
+          "colormap": "soft_veils_ember",
+          "values": {
+            "/stir/0/steps": 4
+          },
+          "keeps": [
+            "style_retrospective_082/stirred_ink/maps/r1_si_map_soft_veils_ember"
+          ]
         }
       ]
     },
@@ -3409,7 +3503,7 @@
         "unfolding-creation-25.jpg",
         "noir-25.jpg"
       ],
-      "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam (ivory blades with blue glows, pastel pleats, and black chrome over frosted lace as palette entries).",
+      "what": "Polished chrome petals whirling out of a small rosette, one lit tube per two escape bands, an amber ember glowing in each seam.",
       "variant": "current",
       "show": [
         {
@@ -3686,8 +3780,8 @@
       "variant": "current",
       "show": [
         {
-          "keep": "style_flames_r1/feather_plumes/formulations/fpf_long",
-          "caption": "Frosted feather plumes combed out of a phoenix set's lace, amber sparks on a blue-black night"
+          "keep": "style_november_r2/feather_plumes/kept/fp2_stack_2d84_tempest",
+          "caption": "Violet feather plumes combed out of a phoenix set's spirals, white star sparks on an indigo night"
         }
       ],
       "public": {
@@ -3696,7 +3790,7 @@
         "knobs": []
       },
       "kept": "7 tiles: fpf_long at both seats and fpf2_stack; entries tempest_plumes, mean_plumes, starlight_plumes (seat 2); lilac_plumes (lilac_kaleidoscope's unfolded tile); plus the flame_wisp_frost baseline tile, kept to that mode; round two (style_november_r2): long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long",
-      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine. Round two (2026-11-24): kept long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long; tempest_plumes is the default map (Matt kept his readings on it). Scores unchanged.",
+      "note": "Matt: round one (2026-11-24) feather_plumes 3/5, tempest_plumes 4/5 (Matt suspects the palette carries it: the paged backlog), mean and starlight 3/5; lilac_kaleidoscope kept only its unfolded tile (3/5), so it is this stack with the lilac map and merged here as lilac_plumes; the kaleidoscope projection stays in the engine. Round two (2026-11-24): kept long and the stack with tempest_plumes at seat 2d84, the brighter-tips lever on tempest_plumes, starlight_plumes with dimmed barbs; library maps magma and flame_wisp_frost on long; tempest_plumes is the default map (Matt kept his readings on it). Scores unchanged. Follow-up (2026-11-24, the planner's default by the round-two rule): starlight_plumes, kept only on its dim-barbs lever, takes barbs 0.55; the card shows fp2_stack_2d84_tempest, the new default.",
       "palettes": [
         {
           "colormap": "tempest_plumes",
@@ -3740,7 +3834,10 @@
           "colormap": "starlight_plumes",
           "values": {
             "/tone/median": 0.082,
-            "/tone/p10": 0.024
+            "/tone/p10": 0.024,
+            "/layers/2/opacity": 0.55,
+            "/layers/3/opacity": 0.55,
+            "/layers/4/opacity": 0.55
           },
           "keeps": [
             "style_flames_r1/feather_plumes/entries/e_starlight_plumes_2",
@@ -4109,12 +4206,12 @@
         "necromancer-25.jpg",
         "wallhaven_wallhaven-396d7v.png"
       ],
-      "what": "Light shafts: fine blue lace in a dark void, straight shafts of light streaming out of it from a point (a scarlet beam, and ice-blue strands on black, as palette entries).",
+      "what": "Light shafts: fine blue lace in a dark void, fine shafts of light streaming out of it from a point.",
       "variant": "current",
       "show": [
         {
-          "keep": "style_light_beams_r1/light_shafts/locations/lsl_21",
-          "caption": "Pale blue spiral lace in a dark void, shafts of light streaming past it"
+          "keep": "style_november_r2/light_shafts/levers/ls2_subtler",
+          "caption": "Pale blue spiral lace in a dark void, fine shafts of light streaming out of it"
         }
       ],
       "public": {
@@ -4123,7 +4220,7 @@
         "knobs": []
       },
       "kept": "1 tile: the stack at location lsl_21; round two (style_november_r2): the subtler lever only",
-      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; only location lsl_21 kept; entries scarlet_shafts and ice_shafts kept nothing and leave the set and the library. Round two (2026-11-24): kept the subtler lever only; subtler is the default (no tile of the old reading kept). Scores unchanged.",
+      "note": "Matt: round one (2026-11-24), 2/5: \"the effect feels a bit forced\"; only location lsl_21 kept; entries scarlet_shafts and ice_shafts kept nothing and leave the set and the library. Round two (2026-11-24): kept the subtler lever only; subtler is the default (no tile of the old reading kept). Scores unchanged. The card shows ls2_subtler, the new default (2026-11-24).",
       "palettes": [
         {
           "colormap": "light_shafts",

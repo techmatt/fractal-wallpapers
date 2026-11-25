@@ -48,6 +48,101 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_retrospective_082/flame_wisp_spark/kept/r3_sp_cv_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "flame_wisp_spark/kept",
+          "key": "r3_sp_cv_s1"
+        }
+      ],
+      "label": "close views (kept reading)",
+      "image": "style_retrospective_082__r3_sp_cv_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "vj_d2_r1.08_t0.131_whole",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "0.3889675417982833",
+              "0.10480482214569203"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.0",
+            "center_im": "0.0",
+            "width": "3.4"
+          },
+          "maxiter": 800,
+          "note": "degree-2 Julia set, fixed-point multiplier 1.08*e^(2 pi i 0.131), whole; seed 28, draw 0"
+        },
+        "style": "flame_wisp_spark__close_views",
+        "stack": "flame_wisp_spark__close_views@cc3fae69",
+        "colormap": "flame_wisp_spark",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/flame_wisp_spark/levers/r3_sp_star_s2",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "flame_wisp_spark/levers",
+          "key": "r3_sp_star_s2"
+        }
+      ],
+      "label": "sparks as points with star crosses (as at the first seat) at frost's phoenix seat",
+      "image": "style_retrospective_082__r3_sp_star_s2.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_1b501757",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "-0.7903675443707822",
+              "-0.46059628853008105"
+            ],
+            "p": [
+              "-0.07072481292971435",
+              "-0.43908467679287494"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.8475217631306413",
+            "center_im": "0.04446787554256711",
+            "width": "0.3827587642618578"
+          },
+          "maxiter": 945,
+          "note": "final139_general seat 973 (direct_trap_lines, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 973,
+            "key": "1b50175755a9e8b5",
+            "p_spiral": 0.093238
+          }
+        },
+        "style": "flame_wisp_spark__star",
+        "stack": "flame_wisp_spark__star@c1c61309",
+        "colormap": "flame_wisp_spark",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -452,6 +547,389 @@
           },
           "blend": "screen",
           "opacity": 0.45
+        }
+      ]
+    },
+    "flame_wisp_spark__star@c1c61309": {
+      "name": "flame_wisp_spark__star",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.32,
+        "p10": 0.155,
+        "log_density": 8.0
+      },
+      "layers": [
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "power": 0.0001,
+          "color": {
+            "palette": 0.08
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.45
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.3,
+              "shift": [
+                -0.06,
+                -0.082
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.492
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.355,
+              "shift": [
+                -0.043,
+                0.138
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.533
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 0.421,
+              "shift": [
+                0.167,
+                -0.057
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.575
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 0.499,
+              "shift": [
+                -0.167,
+                -0.117
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.617
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 0.591,
+              "shift": [
+                0.005,
+                0.228
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.658
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 105.0,
+              "zoom": 0.7,
+              "shift": [
+                0.199,
+                -0.152
+              ]
+            }
+          },
+          "power": 2.0,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.18
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.3,
+              "shift": [
+                -0.06,
+                -0.082
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 0.355,
+              "shift": [
+                -0.043,
+                0.138
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 0.421,
+              "shift": [
+                0.167,
+                -0.057
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 190.0,
+              "zoom": 0.499,
+              "shift": [
+                -0.167,
+                -0.117
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 327.5,
+              "zoom": 0.591,
+              "shift": [
+                0.005,
+                0.228
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 3.0
+            },
+            "view": {
+              "turn": 105.0,
+              "zoom": 0.7,
+              "shift": [
+                0.199,
+                -0.152
+              ]
+            }
+          },
+          "power": 10.0,
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.28
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0006,
+          "color": {
+            "rgb": "#ffc878"
+          },
+          "blend": "screen",
+          "opacity": 0.12
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "gaussian_int"
+            },
+            "invert": true
+          },
+          "color": {
+            "rgb": "#fff0d0"
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 40.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 6.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.0015,
+          "spokes": 4,
+          "angle": 45.0,
+          "length": 0.05,
+          "strength": 2.0,
+          "color": {
+            "rgb": "#ffd890"
+          }
         }
       ]
     }

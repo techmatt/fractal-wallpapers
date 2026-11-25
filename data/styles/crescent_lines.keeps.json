@@ -116,6 +116,78 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_retrospective_082/crescent_lines/kept/r5_cl_default_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "crescent_lines/kept",
+          "key": "r5_cl_default_s1"
+        }
+      ],
+      "label": "default (shipped stack) at minibrot p9 06",
+      "image": "style_retrospective_082__r5_cl_default_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "minibrot-p9_06",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.143351400187997243672",
+            "center_im": "1.05143798940230187191",
+            "width": "0.0004783313612811232"
+          },
+          "maxiter": 6600,
+          "note": "hand-placed: period-9 minibrot nucleus by Newton, size 1.59e-05, frame 30 sizes wide (nuclei.py seed 35, start -0.123006+1.057794i); off-centre by seats.py (scale 1, seed 6)"
+        },
+        "style": "crescent_lines",
+        "stack": "crescent_lines@3864667b",
+        "colormap": "crescent_lines",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/crescent_lines/levers/r5_cl_slow_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "crescent_lines/levers",
+          "key": "r5_cl_slow_s1"
+        }
+      ],
+      "label": "slow stripe: a second stripe palette at 1 cycle (phase 0.5) overlaid 0.9 on the 3-cycle lines",
+      "image": "style_retrospective_082__r5_cl_slow_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "minibrot-p9_06",
+          "family": {
+            "kind": "mandelbrot"
+          },
+          "viewport": {
+            "center_re": "-0.143351400187997243672",
+            "center_im": "1.05143798940230187191",
+            "width": "0.0004783313612811232"
+          },
+          "maxiter": 6600,
+          "note": "hand-placed: period-9 minibrot nucleus by Newton, size 1.59e-05, frame 30 sizes wide (nuclei.py seed 35, start -0.123006+1.057794i); off-centre by seats.py (scale 1, seed 6)"
+        },
+        "style": "crescent_lines__slow",
+        "stack": "crescent_lines__slow@01edc9be",
+        "colormap": "crescent_lines",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -140,6 +212,105 @@
           "palette": {
             "cycles": 3.0
           }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "palette": {
+            "cycles": 1.0,
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 1.2
+          },
+          "blend": "overlay",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.003,
+          "color": {
+            "rgb": "#b0562a"
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0003,
+          "color": {
+            "rgb": "#ff9a3c"
+          },
+          "blend": "screen",
+          "opacity": 0.9
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0001,
+          "color": {
+            "rgb": "#ffe2a8"
+          },
+          "blend": "add",
+          "opacity": 0.8
+        }
+      ]
+    },
+    "crescent_lines__slow@01edc9be": {
+      "name": "crescent_lines__slow",
+      "interior": {
+        "rgb": "#020208"
+      },
+      "tone": {
+        "median": 0.272,
+        "p10": 0.153
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 6.0
+            }
+          },
+          "palette": {
+            "cycles": 3.0
+          }
+        },
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 6.0
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "phase": 0.5
+          },
+          "blend": "overlay",
+          "opacity": 0.9
         },
         {
           "kind": "palette",

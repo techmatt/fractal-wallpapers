@@ -248,6 +248,149 @@
       }
     },
     {
+      "id": "style_retrospective_082/molten_flow/kept/r2_mf_default_7e31",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "molten_flow/kept",
+          "key": "r2_mf_default_7e31"
+        }
+      ],
+      "label": "molten_flow default (shipped) at julia-multibrot3_7e312206 [tone miss: p10 0.225 vs 0.117; p90 0.724 vs 0.870]",
+      "image": "style_retrospective_082__r2_mf_default_7e31.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "molten_flow",
+        "stack": "molten_flow@fa7a5b16",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_7e31",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "molten_flow/levers",
+          "key": "r2_mf_shadowdeep_whitest_7e31"
+        }
+      ],
+      "label": "deep shadow light, white-hot: highlight, gold hair (opacity 0.9), strands (0.4) and the heart all at map 1.0, from 0.9, 0.9, 0.8 and 0.88 (fixes p90)",
+      "image": "style_retrospective_082__r2_mf_shadowdeep_whitest_7e31.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_7e312206",
+          "family": {
+            "c": [
+              "0.4169190761394084",
+              "0.006933824661843332"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.21194222504856358",
+            "center_im": "0.1873982280382586",
+            "width": "0.5156906251665773"
+          },
+          "maxiter": 7048,
+          "note": "final139_general seat 78 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 78,
+            "key": "7e312206457ba5b2",
+            "p_spiral": 0.004165
+          },
+          "ink": 0.08408
+        },
+        "style": "molten_flow__shadow_deep_whitest",
+        "stack": "molten_flow__shadow_deep_whitest@933844ea",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/molten_flow/levers/r2_mf_shadowdeep_whitest_ff8b",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "molten_flow/levers",
+          "key": "r2_mf_shadowdeep_whitest_ff8b"
+        }
+      ],
+      "label": "deep shadow light, white-hot, at the second kept seat: highlight, gold hair (opacity 0.9), strands (0.4) and the heart all at map 1.0",
+      "image": "style_retrospective_082__r2_mf_shadowdeep_whitest_ff8b.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_ff8bfbca",
+          "family": {
+            "c": [
+              "-0.5143476278661704",
+              "-0.6479947566292118"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.6488806071138624",
+            "center_im": "0.16258993172014186",
+            "width": "0.20438544988364632"
+          },
+          "maxiter": 8650,
+          "note": "final139_general seat 277 (threads, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 277,
+            "key": "ff8bfbcaad12d050",
+            "p_spiral": 0.3883
+          }
+        },
+        "style": "molten_flow__shadow_deep_whitest",
+        "stack": "molten_flow__shadow_deep_whitest@933844ea",
+        "colormap": "molten_flow",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_stirred_ink_r1/stirred_ink/formulations_a/a_molten_flow__00_julia-multibrot3_7e312206_molten_flow",
       "picker": "style_stirred_ink_r1",
       "picked": [
@@ -750,6 +893,235 @@
           },
           "blend": "screen",
           "opacity": 0.25,
+          "power": 10.0
+        }
+      ]
+    },
+    "molten_flow__shadow_deep_whitest@933844ea": {
+      "name": "molten_flow__shadow_deep_whitest",
+      "interior": {
+        "palette": 0.02
+      },
+      "tone": {
+        "median": 0.442,
+        "p10": 0.117
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 137.5,
+              "zoom": 0.7,
+              "shift": [
+                -0.154,
+                -0.21
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.35
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 275.0,
+              "zoom": 1.058,
+              "shift": [
+                -0.111,
+                0.35
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.525
+          }
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "view": {
+              "turn": 52.5,
+              "zoom": 1.6,
+              "shift": [
+                0.426,
+                -0.144
+              ]
+            }
+          },
+          "sheet": {
+            "bands": 3.0,
+            "edge": 0.06,
+            "fill": 0.12
+          },
+          "blend": "screen",
+          "opacity": 0.4,
+          "color": {
+            "palette": 0.7
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "radial": {
+              "center": [
+                0.35,
+                0.3
+              ]
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 8.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.5,
+            "azimuth": 120.0,
+            "elevation": 38.0,
+            "ambient": 0.35,
+            "diffuse": 0.6,
+            "specular": 0.9,
+            "shininess": 12.0,
+            "rim": 0.35,
+            "rim_power": 2.5,
+            "highlight": {
+              "palette": 1.0
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 0.0,
+            "slope": 1.5,
+            "azimuth": 120.0,
+            "elevation": 30.0,
+            "ambient": 0.0,
+            "diffuse": 1.0,
+            "specular": 0.0,
+            "shininess": 12.0,
+            "rim": 0.0,
+            "rim_power": 2.5
+          },
+          "opacity": 0.75
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "power": 3.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.2
+          },
+          "blend": "multiply",
+          "opacity": 0.5,
+          "falloff": 0.0006
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "falloff": 0.0002
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 10.0
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.4,
           "power": 10.0
         }
       ]

@@ -289,9 +289,333 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_retrospective_082/ribbed_tubes/entries/r7_rt_helio_stars_s2",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "ribbed_tubes/entries",
+          "key": "r7_rt_helio_stars_s2"
+        }
+      ],
+      "label": "heliograph_scales entry + rays: six-spoke stars, share 0.0005, length 0.06, warm paint",
+      "image": "style_retrospective_082__r7_rt_helio_stars_s2.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_3b6d967c",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.4895170251685842",
+            "center_im": "0.19561999659418494",
+            "width": "0.016536894032864718"
+          },
+          "maxiter": 13003,
+          "note": "final140_general2000 seat 50 (smooth_mean_angle, phoenix:classic)",
+          "gallery": {
+            "record": "final140_general2000",
+            "seat": 50,
+            "key": "3b6d967c35386c7f",
+            "p_spiral": 0.583664
+          }
+        },
+        "style": "e_heliograph_scales__stars",
+        "stack": "e_heliograph_scales__stars@dfe2a0c5",
+        "colormap": "heliograph_scales",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/ribbed_tubes/kept/r7_rt_default_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "ribbed_tubes/kept",
+          "key": "r7_rt_default_s1"
+        }
+      ],
+      "label": "default (shipped): ribs at period 1, no post pass",
+      "image": "style_retrospective_082__r7_rt_default_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_e756b257",
+          "family": {
+            "c": [
+              "-0.7548374821242281",
+              "-0.07387098369508416"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.7454251690123987",
+            "center_im": "0.2000312990630411",
+            "width": "0.22451138789494993"
+          },
+          "maxiter": 8488,
+          "note": "final139_general seat 324 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 324,
+            "key": "e756b257884d2082",
+            "p_spiral": 0.583157
+          },
+          "ink": 0.04332
+        },
+        "style": "ribbed_tubes",
+        "stack": "ribbed_tubes@71128eee",
+        "colormap": "ribbed_tubes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/ribbed_tubes/kept/r7_rt_default_s2",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "ribbed_tubes/kept",
+          "key": "r7_rt_default_s2"
+        }
+      ],
+      "label": "default (shipped): ribs at period 1, no post pass",
+      "image": "style_retrospective_082__r7_rt_default_s2.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix-classic_3b6d967c",
+          "family": {
+            "c": [
+              "0.5667",
+              "0.0"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.5",
+              "0.0"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.4895170251685842",
+            "center_im": "0.19561999659418494",
+            "width": "0.016536894032864718"
+          },
+          "maxiter": 13003,
+          "note": "final140_general2000 seat 50 (smooth_mean_angle, phoenix:classic)",
+          "gallery": {
+            "record": "final140_general2000",
+            "seat": 50,
+            "key": "3b6d967c35386c7f",
+            "p_spiral": 0.583664
+          }
+        },
+        "style": "ribbed_tubes",
+        "stack": "ribbed_tubes@71128eee",
+        "colormap": "ribbed_tubes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/ribbed_tubes/levers/r7_rt_scales_shafts_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "ribbed_tubes/levers",
+          "key": "r7_rt_scales_shafts_s1"
+        }
+      ],
+      "label": "scales (black checker 0.6) + rays: shafts out of the spiral centre (0.3, 0.5) off the brightest 2%, length 0.3, strength 12",
+      "image": "style_retrospective_082__r7_rt_scales_shafts_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-mandelbrot_e756b257",
+          "family": {
+            "c": [
+              "-0.7548374821242281",
+              "-0.07387098369508416"
+            ],
+            "degree": 2,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.7454251690123987",
+            "center_im": "0.2000312990630411",
+            "width": "0.22451138789494993"
+          },
+          "maxiter": 8488,
+          "note": "final139_general seat 324 (smooth_mean_angle, julia:mandelbrot)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 324,
+            "key": "e756b257884d2082",
+            "p_spiral": 0.583157
+          },
+          "ink": 0.04332
+        },
+        "style": "ribbed_tubes__scales_shafts",
+        "stack": "ribbed_tubes__scales_shafts@5f0a8059",
+        "colormap": "ribbed_tubes",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
+    "e_heliograph_scales__stars@dfe2a0c5": {
+      "name": "e_heliograph_scales__stars",
+      "interior": {
+        "palette": 0.9
+      },
+      "tone": {
+        "median": 0.283,
+        "p10": 0.019
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 1.0,
+            "slope": 0.3,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.35,
+            "diffuse": 0.75,
+            "specular": 0.8,
+            "shininess": 16.0,
+            "rim": 0.25,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#ffe2c0"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "pattern",
+          "checker": {
+            "sectors": 2
+          },
+          "color": {
+            "palette": 0.0
+          },
+          "blend": "multiply",
+          "opacity": 0.7
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "rgb": "#03050c"
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "falloff": 0.002
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.6,
+          "falloff": 0.0005
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "falloff": 0.0002
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.001,
+          "spokes": 6,
+          "angle": 15.0,
+          "length": 0.07,
+          "strength": 2.0,
+          "color": {
+            "rgb": "#ffe2c0"
+          }
+        }
+      ]
+    },
     "ribbed_tubes@71128eee": {
       "name": "ribbed_tubes",
       "interior": {
@@ -503,6 +827,127 @@
           "blend": "screen",
           "opacity": 0.8,
           "falloff": 0.0002
+        }
+      ]
+    },
+    "ribbed_tubes__scales_shafts@5f0a8059": {
+      "name": "ribbed_tubes__scales_shafts",
+      "interior": {
+        "palette": 0.9
+      },
+      "tone": {
+        "median": 0.181,
+        "p10": 0.017
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 1.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "light": {
+            "period": 1.0,
+            "rings": 1.0,
+            "slope": 0.3,
+            "azimuth": 135.0,
+            "elevation": 40.0,
+            "ambient": 0.35,
+            "diffuse": 0.75,
+            "specular": 0.8,
+            "shininess": 16.0,
+            "rim": 0.25,
+            "rim_power": 3.0,
+            "highlight": {
+              "rgb": "#cfe6ff"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "pattern",
+          "checker": {
+            "sectors": 2
+          },
+          "color": {
+            "rgb": "#05070e"
+          },
+          "blend": "multiply",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "rgb": "#03050c"
+          },
+          "blend": "multiply",
+          "opacity": 0.6,
+          "falloff": 0.002
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.86
+          },
+          "blend": "screen",
+          "opacity": 0.6,
+          "falloff": 0.0005
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "falloff": 0.0002
+        }
+      ],
+      "post": [
+        {
+          "kind": "rays",
+          "share": 0.01,
+          "spokes": 4,
+          "angle": 45.0,
+          "length": 0.3,
+          "center": [
+            0.3,
+            0.5
+          ],
+          "strength": 30.0
         }
       ]
     },

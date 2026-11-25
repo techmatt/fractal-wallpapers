@@ -303,6 +303,252 @@
       "note": "Redrawn under one stripe sum per density (item 050): replaces style_lace_holes_r1/gold_arcs/formulations/gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
     },
     {
+      "id": "style_retrospective_082/lace_holes/entries/r6_lh_bead_now",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "lace_holes/entries",
+          "key": "r6_lh_bead_now"
+        }
+      ],
+      "label": "bead_strands entry as it draws now (after 050's stripe fix) [tone miss: p90 0.686 vs 0.568]",
+      "image": "style_retrospective_082__r6_lh_bead_now.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_basilica2_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-1.3107026413368328",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.7492808496638508",
+            "center_im": "0.0",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-4 component (basilica2), about a repelling fixed point"
+        },
+        "style": "e_bead_strands",
+        "stack": "e_bead_strands@6da0b6ab",
+        "colormap": "bead_strands",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/lace_holes/entries/r6_lh_copper_now",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "lace_holes/entries",
+          "key": "r6_lh_copper_now"
+        }
+      ],
+      "label": "copper_mail entry as it draws now (after its map-top fix) [tone miss: p90 0.652 vs 0.528]",
+      "image": "style_retrospective_082__r6_lh_copper_now.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_basilica2_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-1.3107026413368328",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.7492808496638508",
+            "center_im": "0.0",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-4 component (basilica2), about a repelling fixed point"
+        },
+        "style": "e_copper_mail",
+        "stack": "e_copper_mail@de7e9682",
+        "colormap": "copper_mail",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/lace_holes/entries/r6_lh_cream_now",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "lace_holes/entries",
+          "key": "r6_lh_cream_now"
+        }
+      ],
+      "label": "cream_lace (the default map) as it draws now (after 050's stripe fix) [tone miss: p90 0.810 vs 0.637]",
+      "image": "style_retrospective_082__r6_lh_cream_now.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_rabbitbud_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.11341865594943655",
+              "0.860569472501573"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.30547427085040324",
+            "center_im": "0.5342004727183909",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-6 component (rabbitbud), about a repelling fixed point"
+        },
+        "style": "e_cream_lace",
+        "stack": "e_cream_lace@22bf55c2",
+        "colormap": "cream_lace",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/lace_holes/levers/r6_lh_bead_now_f",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "lace_holes/levers",
+          "key": "r6_lh_bead_now_f"
+        }
+      ],
+      "label": "bead_strands, ground map top capped: ground cycles 1 -> 0.65 (probe p90 0.681 -> 0.634, ref 0.568)",
+      "image": "style_retrospective_082__r6_lh_bead_now_f.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_basilica2_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-1.3107026413368328",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.7492808496638508",
+            "center_im": "0.0",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-4 component (basilica2), about a repelling fixed point"
+        },
+        "style": "e_bead_strands__captop",
+        "stack": "e_bead_strands__captop@a0aa4d67",
+        "colormap": "bead_strands",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/lace_holes/levers/r6_lh_copper_dark_f",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "lace_holes/levers",
+          "key": "r6_lh_copper_dark_f"
+        }
+      ],
+      "label": "copper_mail darker holes, held in band: ground cycles 1 -> 0.55, interior #5a2412 -> #3c160a, hole rim glow 0.9 -> 0.5, bead ambient 0.6 -> 0.35 (probe p90 0.605, black 0.009; ref 0.528, 0.014)",
+      "image": "style_retrospective_082__r6_lh_copper_dark_f.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_basilica2_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-1.3107026413368328",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.7492808496638508",
+            "center_im": "0.0",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-4 component (basilica2), about a repelling fixed point"
+        },
+        "style": "e_copper_mail__darkcap",
+        "stack": "e_copper_mail__darkcap@3e60494a",
+        "colormap": "copper_mail",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/lace_holes/levers/r6_lh_cream_now_f",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "lace_holes/levers",
+          "key": "r6_lh_cream_now_f"
+        }
+      ],
+      "label": "cream_lace highlights held down: ground cycles 1 -> 0.6, de hairline 0.85 -> 0.4, wide de glow 0.45 -> 0, hole rim glow 0.9 -> 0.45, bead specular 1.0 -> 0.4, rim 0.8 -> 0.4, ambient 0.6 -> 0.35 (probe p90 0.800 -> 0.709, ref 0.637)",
+      "image": "style_retrospective_082__r6_lh_cream_now_f.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "hand_rabbitbud_alpha",
+          "family": {
+            "kind": "julia",
+            "degree": 2,
+            "c": [
+              "-0.11341865594943655",
+              "0.860569472501573"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.30547427085040324",
+            "center_im": "0.5342004727183909",
+            "width": "0.6"
+          },
+          "maxiter": 2000,
+          "note": "hand: Julia z^2+c at the centre of a period-6 component (rabbitbud), about a repelling fixed point"
+        },
+        "style": "e_cream_lace__held",
+        "stack": "e_cream_lace__held@45cb4cd2",
+        "colormap": "cream_lace",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes",
       "picker": "style_webs_clouds_r1",
       "picked": [
@@ -986,6 +1232,876 @@
           },
           "blend": "screen",
           "opacity": 0.85,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "e_bead_strands@6da0b6ab": {
+      "name": "e_bead_strands",
+      "interior": {
+        "rgb": "#000000"
+      },
+      "tone": {
+        "median": 0.185,
+        "p10": 0.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 5.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.5
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 1.0,
+            "shininess": 40.0,
+            "rim": 0.8,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.85
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.001
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "e_bead_strands__captop@a0aa4d67": {
+      "name": "e_bead_strands__captop",
+      "interior": {
+        "rgb": "#000000"
+      },
+      "tone": {
+        "median": 0.185,
+        "p10": 0.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 0.65,
+            "gamma": 5.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.65
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.5
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.92
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 4.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.85
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 1.0,
+            "shininess": 40.0,
+            "rim": 0.8,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.85
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.3,
+          "falloff": 0.001
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.7,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "e_copper_mail@de7e9682": {
+      "name": "e_copper_mail",
+      "interior": {
+        "rgb": "#5a2412"
+      },
+      "tone": {
+        "median": 0.328,
+        "p10": 0.158
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 2.5,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 1.0,
+            "shininess": 40.0,
+            "rim": 0.8,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.9
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.35,
+          "falloff": 0.0015
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.85,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "e_copper_mail__darkcap@3e60494a": {
+      "name": "e_copper_mail__darkcap",
+      "interior": {
+        "rgb": "#3c160a"
+      },
+      "tone": {
+        "median": 0.328,
+        "p10": 0.158
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 0.55,
+            "gamma": 2.5,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.5,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.35,
+            "diffuse": 0.5,
+            "specular": 1.0,
+            "shininess": 40.0,
+            "rim": 0.8,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.9
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "screen",
+          "opacity": 0.35,
+          "falloff": 0.0015
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.85,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "e_cream_lace@22bf55c2": {
+      "name": "e_cream_lace",
+      "interior": {
+        "rgb": "#000000"
+      },
+      "tone": {
+        "median": 0.245,
+        "p10": 0.012
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 1.0,
+            "gamma": 5.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.6,
+            "diffuse": 0.5,
+            "specular": 1.0,
+            "shininess": 40.0,
+            "rim": 0.8,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "falloff": 0.0015
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.98
+          },
+          "blend": "screen",
+          "opacity": 0.85,
+          "falloff": 0.0002
+        }
+      ]
+    },
+    "e_cream_lace__held@45cb4cd2": {
+      "name": "e_cream_lace__held",
+      "interior": {
+        "rgb": "#000000"
+      },
+      "tone": {
+        "median": 0.245,
+        "p10": 0.012
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "cycles": 0.6,
+            "gamma": 5.0,
+            "phase": 0.0,
+            "transfer": {
+              "kind": "rank"
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 2.0
+            }
+          },
+          "color": {
+            "palette": 0.55
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "stripe",
+              "density": 4.0
+            }
+          },
+          "color": {
+            "palette": 0.9
+          },
+          "blend": "screen",
+          "opacity": 0.8,
+          "power": 10.0,
+          "mask": {
+            "channel": {
+              "field": {
+                "kind": "de"
+              }
+            },
+            "invert": true,
+            "power": 3.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            },
+            "invert": true
+          },
+          "color": {
+            "palette": 0.95
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "power": 6.0
+        },
+        {
+          "kind": "light",
+          "channel": {
+            "inside": {
+              "iterations": 1000
+            }
+          },
+          "light": {
+            "bands": 1.0,
+            "rings": 1.0,
+            "slope": 0.0,
+            "azimuth": 135.0,
+            "elevation": 45.0,
+            "ambient": 0.35,
+            "diffuse": 0.5,
+            "specular": 0.4,
+            "shininess": 40.0,
+            "rim": 0.4,
+            "rim_power": 4.0,
+            "highlight": {
+              "palette": 0.95
+            }
+          },
+          "opacity": 1.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.8
+          },
+          "blend": "screen",
+          "opacity": 0.0,
+          "falloff": 0.0015
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "color": {
+            "palette": 0.98
+          },
+          "blend": "screen",
+          "opacity": 0.4,
           "falloff": 0.0002
         }
       ]

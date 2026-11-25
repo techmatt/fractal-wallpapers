@@ -9,6 +9,314 @@
   "folder": "fractal-drive-sync/style-keeps/tri_mosaic",
   "keeps": [
     {
+      "id": "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_fine_70e1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "tri_mosaic/entries",
+          "key": "r8_tm_ice_fine_70e1"
+        }
+      ],
+      "label": "the ice palette (Matt's kept entry, its fold 0.5 and relief 0) on fine's lattice (largest 0.25, reach 1)",
+      "image": "style_retrospective_082__r8_tm_ice_fine_70e1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_70e1da1e",
+          "family": {
+            "c": [
+              "0.5174789235125195",
+              "0.06779386100974504"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.32487959336108535",
+            "center_im": "-0.6479521593080348",
+            "width": "0.09055584277276531"
+          },
+          "maxiter": 10060,
+          "note": "final139_general seat 841 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 841,
+            "key": "70e1da1e57faff23",
+            "p_spiral": 0.030679
+          },
+          "ink": 0.07784
+        },
+        "style": "e_tri_mosaic_ice__fine",
+        "stack": "e_tri_mosaic_ice__fine@575b92c8",
+        "colormap": "tri_mosaic_ice",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/tri_mosaic/entries/r8_tm_ice_inlay_fc13",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "tri_mosaic/entries",
+          "key": "r8_tm_ice_inlay_fc13"
+        }
+      ],
+      "label": "the ice palette (Matt's kept entry, its tone values) on inlay, inlay's flat facets kept (fold 0, not the entry's 0.5)",
+      "image": "style_retrospective_082__r8_tm_ice_inlay_fc13.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "e_tri_mosaic_ice__inlay",
+        "stack": "e_tri_mosaic_ice__inlay@2efa243e",
+        "colormap": "tri_mosaic_ice",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/tri_mosaic/kept/r1_tm_fine_70e1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "tri_mosaic/kept",
+          "key": "r1_tm_fine_70e1"
+        }
+      ],
+      "label": "fine (kept): largest 0.25, reach 1, as a default candidate at julia-multibrot3_70e1da1e",
+      "image": "style_retrospective_082__r1_tm_fine_70e1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot3_70e1da1e",
+          "family": {
+            "c": [
+              "0.5174789235125195",
+              "0.06779386100974504"
+            ],
+            "degree": 3,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.32487959336108535",
+            "center_im": "-0.6479521593080348",
+            "width": "0.09055584277276531"
+          },
+          "maxiter": 10060,
+          "note": "final139_general seat 841 (threads, julia:multibrot3)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 841,
+            "key": "70e1da1e57faff23",
+            "p_spiral": 0.030679
+          },
+          "ink": 0.07784
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@72242c54",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/tri_mosaic/kept/r1_tm_inlay_fc13",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "tri_mosaic/kept",
+          "key": "r1_tm_inlay_fc13"
+        }
+      ],
+      "label": "inlay (kept): flat facets, seams, 3-level inlay at 0.07, as a default candidate at phoenix_fc131a7f",
+      "image": "style_retrospective_082__r1_tm_inlay_fc13.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "tri_mosaic",
+        "stack": "tri_mosaic@f4daa050",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/tri_mosaic/levers/r1_tm_plates_thin_3bb3",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "tri_mosaic/levers",
+          "key": "r1_tm_plates_thin_3bb3"
+        }
+      ],
+      "label": "spiral plates re-tuned for p90: plate opacity 0.6 to 0.3, plates split 3 levels towards the set (levels 0 to 3) [tone miss: p90 0.757 vs 0.877]",
+      "image": "style_retrospective_082__r1_tm_plates_thin_3bb3.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot5_3bb3fae3",
+          "family": {
+            "c": [
+              "0.703985679038223",
+              "0.35993230187315167"
+            ],
+            "degree": 5,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "-0.22256024003389552",
+            "center_im": "-0.6386832162842102",
+            "width": "0.16047468532253215"
+          },
+          "maxiter": 9069,
+          "note": "final139_general seat 129 (tia, julia:multibrot5)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 129,
+            "key": "3bb3fae39c219ce8",
+            "p_spiral": 0.356225
+          }
+        },
+        "style": "tri_mosaic__plates_thin",
+        "stack": "tri_mosaic__plates_thin@17ff7b0f",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/tri_mosaic/levers/r1_tm_shards_m43_fc13",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "tri_mosaic/levers",
+          "key": "r1_tm_shards_m43_fc13"
+        }
+      ],
+      "label": "shards re-tuned for white share: tone median 0.457 to 0.43, map gamma 1 to 1.25",
+      "image": "style_retrospective_082__r1_tm_shards_m43_fc13.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_fc131a7f",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.797164153883992",
+            "center_im": "0.41015624999999994",
+            "width": "1.7526149488693006"
+          },
+          "maxiter": 4930,
+          "note": "final139_general seat 145 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 145,
+            "key": "fc131a7f21537f6c",
+            "p_spiral": 0.031184
+          },
+          "ink": 0.02976
+        },
+        "style": "tri_mosaic__shards_m43",
+        "stack": "tri_mosaic__shards_m43@2f308cca",
+        "colormap": "tri_mosaic",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_tri_mosaic_r1/formulations_a/fo_e_tri_mosaic_ice__00_phoenix_fc131a7f_tri_mosaic_ice",
       "picker": "style_tri_mosaic_r1",
       "picked": [
@@ -500,6 +808,100 @@
     }
   ],
   "stacks": {
+    "e_tri_mosaic_ice__fine@575b92c8": {
+      "name": "e_tri_mosaic_ice__fine",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.629,
+        "p10": 0.176
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.25,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 1.0,
+          "fold": 0.5,
+          "relief": 0.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0005,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.35
+          }
+        }
+      ]
+    },
+    "e_tri_mosaic_ice__inlay@2efa243e": {
+      "name": "e_tri_mosaic_ice__inlay",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.629,
+        "p10": 0.176
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.5,
+          "smallest": 0.0018,
+          "levels": 8,
+          "reach": 0.7,
+          "fold": 0.0,
+          "relief": 0.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0005,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.35
+          },
+          "inlay": {
+            "levels": 3,
+            "amount": 0.07
+          }
+        }
+      ]
+    },
     "tri_mosaic@2ef2586e": {
       "name": "tri_mosaic",
       "interior": {
@@ -846,6 +1248,107 @@
             "twist": 1.5
           },
           "opacity": 0.6
+        }
+      ]
+    },
+    "tri_mosaic__plates_thin@17ff7b0f": {
+      "name": "tri_mosaic__plates_thin",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.457,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 1.0,
+          "smallest": 0.02,
+          "levels": 3,
+          "reach": 0.7,
+          "fold": 0.2,
+          "relief": 8.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.001,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.7
+          },
+          "spiral": {
+            "arms": 8,
+            "twist": 1.5
+          },
+          "opacity": 0.3
+        }
+      ]
+    },
+    "tri_mosaic__shards_m43@2f308cca": {
+      "name": "tri_mosaic__shards_m43",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.43,
+        "p10": 0.224
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "cycles": 2.0,
+            "gamma": 1.25
+          }
+        }
+      ],
+      "post": [
+        {
+          "kind": "mosaic",
+          "largest": 0.3,
+          "smallest": 0.04,
+          "levels": 1,
+          "reach": 0.5,
+          "fold": 0.0,
+          "relief": 0.0,
+          "azimuth": 120.0,
+          "seam": {
+            "width": 0.0006,
+            "color": {
+              "palette": 1.0
+            },
+            "opacity": 0.5
+          },
+          "rhombi": true,
+          "tilt": -20.0,
+          "fill": "turned",
+          "turn": 6.0,
+          "shift": 0.25
         }
       ]
     }

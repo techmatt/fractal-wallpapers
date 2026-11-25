@@ -163,6 +163,80 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_retrospective_082/glow_filaments/kept/r7_gf_default_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "glow_filaments/kept",
+          "key": "r7_gf_default_s1"
+        }
+      ],
+      "label": "default (shipped): core 0.0002 add 0.7, halo 0.001, bloom 0.012 [tone miss: p90 0.743 vs 0.369]",
+      "image": "style_retrospective_082__r7_gf_default_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m_spiral_pair",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7746996",
+            "center_im": "0.1373981",
+            "width": "0.0001"
+          },
+          "maxiter": 5000,
+          "note": "seahorse-valley spirals near -0.7747+0.1374i: a spiral curl and a star cluster joined by threads, dark margins"
+        },
+        "style": "glow_filaments",
+        "stack": "glow_filaments@0cd49685",
+        "colormap": "glow_filaments",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
+      "id": "style_retrospective_082/glow_filaments/levers/r7_gf_dark_s1",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "glow_filaments/levers",
+          "key": "r7_gf_dark_s1"
+        }
+      ],
+      "label": "default in darker paint for p90: de wash opacity 0.8 -> 0.45, halo colour 0.62 -> 0.5, core colour 0.88 -> 0.7 at add 0.7 -> 0.4 [tone miss: p90 0.639 vs 0.369]",
+      "image": "style_retrospective_082__r7_gf_dark_s1.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "m_spiral_pair",
+          "family": {
+            "kind": "mandelbrot",
+            "degree": 2
+          },
+          "viewport": {
+            "center_re": "-0.7746996",
+            "center_im": "0.1373981",
+            "width": "0.0001"
+          },
+          "maxiter": 5000,
+          "note": "seahorse-valley spirals near -0.7747+0.1374i: a spiral curl and a star cluster joined by threads, dark margins"
+        },
+        "style": "glow_filaments__dark",
+        "stack": "glow_filaments__dark@84e7dc32",
+        "colormap": "glow_filaments",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
@@ -305,6 +379,94 @@
           },
           "blend": "add",
           "opacity": 0.7
+        },
+        {
+          "kind": "sheet",
+          "channel": {
+            "field": {
+              "kind": "smooth"
+            }
+          },
+          "sheet": {
+            "period": 1.0,
+            "edge": 0.03,
+            "fill": 0.0
+          },
+          "color": {
+            "palette": 0.6
+          },
+          "blend": "screen",
+          "opacity": 0.25
+        }
+      ]
+    },
+    "glow_filaments__dark@84e7dc32": {
+      "name": "glow_filaments__dark",
+      "interior": {
+        "palette": 0.0
+      },
+      "tone": {
+        "median": 0.11,
+        "p10": 0.031
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "field": {
+              "kind": "de"
+            },
+            "invert": true
+          },
+          "palette": {
+            "transfer": {
+              "kind": "rank"
+            },
+            "gamma": 2.0
+          },
+          "opacity": 0.45
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.012,
+          "color": {
+            "palette": 0.42
+          },
+          "blend": "screen",
+          "opacity": 0.35
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.001,
+          "color": {
+            "palette": 0.5
+          },
+          "blend": "screen",
+          "opacity": 0.5
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0002,
+          "color": {
+            "palette": 0.7
+          },
+          "blend": "add",
+          "opacity": 0.4
         },
         {
           "kind": "sheet",

@@ -117,6 +117,54 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_retrospective_082/copper_webs/kept/r2_cw_default_364f",
+      "picker": "style_retrospective_082",
+      "picked": [
+        {
+          "row": "copper_webs/kept",
+          "key": "r2_cw_default_364f"
+        }
+      ],
+      "label": "copper_webs default at round-one seat julia-multibrot4_364f02ea (misses: black 0.219 vs 0.163) [tone miss: black 0.220 vs 0.163]",
+      "image": "style_retrospective_082__r2_cw_default_364f.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "julia-multibrot4_364f02ea",
+          "family": {
+            "c": [
+              "0.5169327378461521",
+              "0.013670487056224784"
+            ],
+            "degree": 4,
+            "kind": "julia"
+          },
+          "viewport": {
+            "center_re": "0.34472225250015903",
+            "center_im": "-0.5616321060941554",
+            "width": "1.106692474831146"
+          },
+          "maxiter": 5726,
+          "note": "final139_general seat 982 (itinerary, julia:multibrot4)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 982,
+            "key": "364f02eae7d2c1f3",
+            "p_spiral": 0.014195
+          },
+          "ink": 0.09507
+        },
+        "style": "copper_webs",
+        "stack": "copper_webs@fc436c4f",
+        "colormap": "interstellar_webs",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {

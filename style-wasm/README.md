@@ -88,6 +88,7 @@ native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
 is all identical but two: `flame_veil_teal__0__knobs` and `flame_veil_chalk__1` each read
 one pixel one step off, the same on main since 063's reading; any other miss is the change.
 At `--workers 3` (six threads with the native side) the whole run is about 38 minutes (223
-jobs, 083's reading). A
+jobs, 083's reading). A mode's jobs are its shown keeps (`style_catalog.shown_of`), not its
+palette entries: an entry's new values or a new entry moves no job, a new `show` does. A
 draft not yet in `data/styles/` is checked with its job list (`style_wasm.request`, `run_node`, `native_rgb`,
 `compare`).
