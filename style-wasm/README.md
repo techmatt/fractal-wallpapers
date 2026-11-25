@@ -87,6 +87,7 @@ native side draws beside the workers (`style_wasm.PARITY_WORKERS` and
 `PARITY_NATIVE_THREADS` have the counts and what bounds the run). A clean whole run
 is all identical but two: `flame_veil_teal__0__knobs` and `flame_veil_chalk__1` each read
 one pixel one step off, the same on main since 063's reading; any other miss is the change.
-At `--workers 3` (six threads with the native side) the whole run is about 29 minutes. A
+At `--workers 3` (six threads with the native side) the whole run is about 38 minutes (223
+jobs, 083's reading). A
 draft not yet in `data/styles/` is checked with its job list (`style_wasm.request`, `run_node`, `native_rgb`,
 `compare`).
