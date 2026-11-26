@@ -16,13 +16,8 @@ from __future__ import annotations
 
 import pytest
 
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.curation import colorize, phase_response
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 #: A cyclic map and a folded one, named rather than drawn, so a kind that moved
 #: under these tests cannot make one pass for the wrong reason.

@@ -7,14 +7,13 @@ satisfied at all before anybody spends an hour finding out.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import (
     FIRST_SOLVE,
     SCHEMA,
     LedgerError,
 )
+from fractal_wallpapers.labeling import store as label_store
 
 #: The prose this module's records carry on their `*_is` / `*_are` fields, in
 #: one place. The builder reads it at write time and the row still carries the
@@ -56,7 +55,7 @@ def census(rows=None, n: int = FIRST_SOLVE, log=print) -> dict:
     log(f"[census] {len(stored):,} rows")
     return {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "population": _population(stored),
         "locations": _locations(stored),
         "cells": _fill(stored, dominance.cells(), _cells_of),
@@ -178,7 +177,7 @@ def modes(candidates=None, log=print) -> dict:
     log(f"[modes] {read:,} ledger row(s) over {len(held)} routed mode(s)")
     return {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "ledger_rows": read,
         "fine_bar": bar,
         "fine_bar_is": SCHEMA_NOTES["fine_bar_is"],
@@ -201,7 +200,6 @@ def _human_keys_of_the_gates() -> set:
     different question from the one asked.
     """
     from fractal_wallpapers.labeling import finished
-    from fractal_wallpapers.labeling import store as label_store
 
     out: set = set()
     for head in finished.HEADS:

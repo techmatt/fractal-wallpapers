@@ -94,7 +94,7 @@ from pathlib import Path
 
 import pytest
 
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.curation import recipes
 
 # --------------------------------------------------------------------------- #
@@ -548,10 +548,6 @@ RENDERERS: tuple[Renderer, ...] = (
 # --------------------------------------------------------------------------- #
 # The guard.
 # --------------------------------------------------------------------------- #
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 def _digest(picture: Path) -> str:

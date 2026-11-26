@@ -14,17 +14,13 @@ import random
 import mpmath as mp
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.curation import pacing
 from fractal_wallpapers.deep import centers, depth, roots
 from fractal_wallpapers.deep import run as deep_run
 from fractal_wallpapers.discovery import nucleus as nuc
 from fractal_wallpapers.discovery import walk as walk_module
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 #: A real degree-2 nucleus deep enough to be a seat, and the seed that reaches
 #: it. Seahorse valley, which is where every published deep Mandelbrot anchor in

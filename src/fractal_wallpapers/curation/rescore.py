@@ -60,11 +60,11 @@ from __future__ import annotations
 import functools
 import json
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers import paths
 from fractal_wallpapers.curation import records
+from fractal_wallpapers.labeling import store as label_store
 
 #: The prose this module's records carry on their `*_is` / `*_are` fields, in
 #: one place. The builder reads it at write time and the row still carries the
@@ -452,7 +452,7 @@ def re_render(
     wall = time.time() - started
     record = {
         "schema": records.SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "share_fields": bool(share_fields),
         "named_but_absent": len(wanted),
         "reproduce_their_own_recipe": len(jobs) if limit is None else None,

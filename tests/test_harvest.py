@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
 from fractal_wallpapers.supply.allocation import CAPPED_GROUP, CAPPED_GROUP_SHARE
@@ -37,12 +37,6 @@ POOL_FED = [
     "multibrot4",
     "multibrot5",
 ]
-
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 def census(currency: dict | None = None, partitions=ALL_PARTITIONS) -> Census:

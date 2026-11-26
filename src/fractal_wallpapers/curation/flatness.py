@@ -71,11 +71,11 @@ ranks on a form carrying this column never has to impute one.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import NamedTuple
 
 from fractal_wallpapers.curation import candidate_ledger, durability
+from fractal_wallpapers.labeling import store as label_store
 
 #: The schema every sidecar row carries.
 SCHEMA = 1
@@ -395,7 +395,7 @@ def coverage(candidates, rows=None) -> dict:
         "without": len(candidates) - have,
         "share": round(have / max(len(candidates), 1), 6),
         "sidecar_rows": len(known),
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
     }
 
 

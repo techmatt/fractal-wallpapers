@@ -14,7 +14,7 @@ import re
 
 import pytest
 
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.scoring import NullScorer
 from fractal_wallpapers.discovery.walk import (
@@ -32,12 +32,6 @@ from fractal_wallpapers.discovery.walk import (
 #: framing. Where a walk root *actually* starts is the engine's home table, and
 #: `test_home_views.py` is what pins that.
 VIEW = {"center_re": "0.0", "center_im": "0.0", "width": "3.0"}
-
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 def walk(tmp_path, **kwargs) -> Walk:

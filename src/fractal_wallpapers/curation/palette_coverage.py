@@ -749,7 +749,7 @@ def realized(log=print) -> dict:
 # --------------------------------------------------------------------------- #
 def take(log=print) -> dict:
     """Both reads, side by side, over the rows the probe wrote and the census holds."""
-    from datetime import UTC, datetime
+    from fractal_wallpapers.labeling import store as label_store
 
     document = panel()
     rows = read_rows()
@@ -772,7 +772,7 @@ def take(log=print) -> dict:
 
     readout = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "thresholds": list(THRESHOLDS),
         "codebook": codebook.document(),
         "panel": document,

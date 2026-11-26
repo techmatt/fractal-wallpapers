@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import shutil
 import time
-from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 
@@ -19,6 +18,7 @@ from fractal_wallpapers.curation import release
 from fractal_wallpapers.curation.candidate_ledger import rows as rows_module
 from fractal_wallpapers.curation.candidate_ledger import store
 from fractal_wallpapers.curation.candidate_ledger.store import SCHEMA
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import Tiers, rehome, stored_parts, tracked_name, under
 
 #: Every progress and ETA line here goes out through this: `print` with the flush
@@ -183,7 +183,7 @@ def bare_varied(out=None, log=FLUSHED) -> dict:
     log(f"[bare-varied] {len(named):,} of {varied:,} varied row(s) — {tracked_name(out)}")
     return {
         "schema": SCHEMA,
-        "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "at": label_store.now(),
         "varied_rows": varied,
         "drawn_bare": len(named),
         "settings_aware": sorted(aware),
@@ -249,7 +249,7 @@ def recolour(keys, limit: int | None = None, log=FLUSHED) -> dict:
     saved = durability.save(store.durable_rows(), log=log) if fresh else None
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "named": len(named),
         "in_the_store": len(wanted),
         "not_in_the_store": len(absent),
@@ -617,7 +617,7 @@ def re_render(
     wall = time.time() - started
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "share_fields": bool(share_fields),
         # Which population ran, so a re-render over named keys is never read as a
         # sweep for absent files. `named_but_absent` keeps its name and counts the
@@ -806,7 +806,7 @@ def rescore(
     partial_scores_path().unlink(missing_ok=True)
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "artifact": want,
         "rows": len(stored),
         "with_picture": len(present),

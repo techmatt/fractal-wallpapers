@@ -52,11 +52,11 @@ published record's two text files, and it means a backfilled seat is replayable
 from __future__ import annotations
 
 import json
-import time
 from pathlib import Path
 
 from fractal_wallpapers.coloring import autolevel
 from fractal_wallpapers.curation import tentative
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import colormap_dir, under
 
 #: The schema every backfill row carries.
@@ -140,7 +140,7 @@ def row(key: str, stamp: dict, checked: str, source: dict) -> dict:
     return {
         "schema": SCHEMA,
         "key": str(key),
-        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "at": label_store.now(),
         "autolevel": marked,
         "checked": str(checked),
         "source": dict(source),

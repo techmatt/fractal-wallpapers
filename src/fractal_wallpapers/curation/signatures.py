@@ -119,10 +119,10 @@ from __future__ import annotations
 import base64
 import json
 from collections import Counter
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, durability
+from fractal_wallpapers.labeling import store as label_store
 
 #: The schema every sidecar row carries.
 SCHEMA = 1
@@ -471,7 +471,7 @@ def sweep(
     return {
         "of": "one reduced pixel-cloud signature per recipe with a picture on disk, in "
         "the shape curation.rules.Twins reads for its bound",
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "schema": SCHEMA,
         "sidecar": str(path),
         "blocks": shape()[0],

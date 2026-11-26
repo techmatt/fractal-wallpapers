@@ -44,7 +44,10 @@ from fractal_wallpapers.paths import repo_root
 #: Skip a test that drives the engine when no binary is built. Asked through
 #: [`engine.is_built`], never the raising `engine.engine_path()`, so a module that
 #: imports it is still collected on a checkout without an engine.
-needs_engine = pytest.mark.skipif(not engine.is_built(), reason="the engine is not built")
+needs_engine = pytest.mark.skipif(
+    not engine.is_built(),
+    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
+)
 
 # --------------------------------------------------------------------------- #
 # The interpreter.

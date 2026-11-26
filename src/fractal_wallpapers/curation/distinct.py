@@ -67,10 +67,10 @@ from __future__ import annotations
 
 import statistics
 from dataclasses import replace
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import embeddings, neutral, rules
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name
 
 #: The schema every record this module writes carries.
@@ -1209,7 +1209,7 @@ def read(
     stored = embeddings.read()
     report = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "join": join(locations, stored),
     }
     keys, matrix = matrix_for(locations, stored)

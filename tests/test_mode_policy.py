@@ -13,6 +13,7 @@ from __future__ import annotations
 import pytest
 from tests.test_solve import a_pool_the_fine_head_has_read  # noqa: F401 — autouse here too
 
+from conftest import needs_engine
 from fractal_wallpapers import engine, paths
 from fractal_wallpapers.curation import mode_policy
 
@@ -31,12 +32,6 @@ def artifacts_on_disk(tmp_path, monkeypatch):
     monkeypatch.setenv(paths.HOT_ROOT_VARIABLE, str(root))
     monkeypatch.setenv(paths.ARCHIVE_ROOT_VARIABLE, "")
     return root
-
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 # --------------------------------------------------------------------------- #

@@ -8,15 +8,9 @@ is pinned here is the door Python comes in by and the shape of what comes back.
 
 from __future__ import annotations
 
-import pytest
-
+from conftest import needs_engine
 from fractal_wallpapers import engine, locations
 from fractal_wallpapers.discovery import walk as walk_module
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 def screening(rows, **extra) -> dict:

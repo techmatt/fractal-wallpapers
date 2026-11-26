@@ -26,7 +26,6 @@ import json
 import os
 import shutil
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation.candidate_ledger import ratchet, store
@@ -48,6 +47,7 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
     SCHEMA,
     LedgerError,
 )
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import (
     is_pool_picture,
     rehome,
@@ -912,7 +912,7 @@ def orphans(apply: bool = False, unmerged: tuple | str = (), log=print) -> dict:
 
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "applied": bool(apply),
         "subtrees": list(POOL_SUBTREES),
         "by_subtree": dict(sorted(by_subtree.items())),
@@ -1090,7 +1090,7 @@ def prune(keep: int = RETAIN_PER_PAIR, apply: bool = True, log=print) -> dict:
 
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "applied": bool(apply),
         "keep_per_location_mode": int(keep),
         "store": tracked_name(files[0].parent),
@@ -1539,7 +1539,7 @@ def remove(keys, why: str, apply: bool = True, log=print) -> dict:
     found = {key for key, _picture in meta}
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "applied": bool(apply),
         "why": str(why),
         "named": len(named),

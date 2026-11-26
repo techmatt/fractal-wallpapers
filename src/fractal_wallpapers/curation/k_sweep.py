@@ -91,10 +91,10 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import ceiling, solve, tentative
+from fractal_wallpapers.labeling import store as label_store
 
 #: The rungs the 2026-09-06 sweep ran, and the default set.
 #:
@@ -431,7 +431,7 @@ def sweep(rungs=RUNGS, n: int = SEATS, control: str | None = None, log=print) ->
         log(f"[k-sweep] {page}")
 
     held = readings(out, control=control, log=log)
-    held["taken_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    held["taken_at"] = label_store.now()
     held["stamp"] = sweep_stamp
     held["n"] = int(n)
     held["k"] = ks

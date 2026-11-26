@@ -7,9 +7,7 @@ everything above it can be true of a channel nothing ever drew from.
 
 from __future__ import annotations
 
-import pytest
-
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery.pools import C_SPACING_FLOOR
 from fractal_wallpapers.discovery.walk import Limits, Policy, Walk
@@ -18,11 +16,6 @@ from fractal_wallpapers.supply.harvest import Budget, Harvest
 from fractal_wallpapers.supply.partitions import DYNAMICAL_PLANES
 from fractal_wallpapers.supply.refill import Refill
 from test_harvest import quota
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 #: The four twins with no `c`-pool of their own. Not the channel's roster — it
 #: serves all five — but the scope most of the refill tests below are built at, so

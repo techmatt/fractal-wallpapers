@@ -17,7 +17,6 @@ and still arrive here.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import recipes, records
@@ -29,6 +28,7 @@ from fractal_wallpapers.curation.candidate_ledger.store import (
     MADE_IT,
     SCHEMA,
 )
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name
 
 
@@ -233,7 +233,7 @@ def backfill(recolour: bool = False, log=print) -> dict:
     _say_what_was_rebuilt(counts, log=log)
     return {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "rows_path": written["rows_path"],
         "scores_path": written["scores_path"],
         # ⚠ **The FILE after the upsert, and not what this backfill rebuilt.**

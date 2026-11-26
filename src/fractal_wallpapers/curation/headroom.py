@@ -93,7 +93,6 @@ stated on every row for that reason.
 from __future__ import annotations
 
 import statistics
-from datetime import UTC, datetime
 
 from fractal_wallpapers.curation import (
     candidate_ledger,
@@ -103,6 +102,7 @@ from fractal_wallpapers.curation import (
     mode_policy,
     solve,
 )
+from fractal_wallpapers.labeling import store as label_store
 
 #: The schema every record this module writes carries.
 #:
@@ -689,7 +689,7 @@ def census(
     rule = solve.rule_for()
     return {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "reads": "necessary conditions only. A short row is provable infeasibility; a row "
         "with slack is NOT a claim that the selection is possible, jointly or at all",
         "bars": table,

@@ -18,7 +18,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from fractal_wallpapers import engine
+from conftest import needs_engine
 from fractal_wallpapers.discovery import boundary
 from fractal_wallpapers.discovery import viewport_sampler as sampler
 from fractal_wallpapers.supply.partitions import (
@@ -29,11 +29,6 @@ from fractal_wallpapers.supply.partitions import (
     PINNED_PLANES,
 )
 from fractal_wallpapers.supply.refill import Refill
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 SEED = 20260902
 PLANE = "multibrot3"

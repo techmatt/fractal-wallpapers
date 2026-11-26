@@ -97,7 +97,6 @@ import math
 import time
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import augment as augment_module
@@ -115,6 +114,7 @@ from fractal_wallpapers.curation import (
 )
 from fractal_wallpapers.curation import pins as pins_module
 from fractal_wallpapers.curation import stamps as stamps_module
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.palettes import dominance
 from fractal_wallpapers.paths import rehome, tracked_name, under
 
@@ -3167,7 +3167,7 @@ def solve(
     pins_block["seated"] = [key for key in pins_block["eligible"] if gallery.state.holds(key)]
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "config": _config(
             n,
             rule,

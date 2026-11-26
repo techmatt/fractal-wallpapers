@@ -63,10 +63,10 @@ import contextlib
 import hashlib
 import json
 import time
-from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import repo_root
 
 #: Progress lines go out flushed: a leg backgrounded with stdout redirected is
@@ -441,7 +441,7 @@ def measure(
     wall = time.time() - started
     return {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "offered": len(rows),
         "unmeasured": len(wanted),
         "probed": len(jobs),
@@ -568,7 +568,7 @@ def stamp_ledger(log=print) -> dict:
     written = candidate_ledger.merge(rows, [], log=log) if rows else {}
     return {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "stamped": len(rows),
         "flat": sum(1 for stored in rows if stored["texture_flat"]),
         "moved": changed,

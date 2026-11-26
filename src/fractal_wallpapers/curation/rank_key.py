@@ -144,10 +144,10 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import flatness, records
+from fractal_wallpapers.labeling import store as label_store
 
 #: The schema the artifact and every population row carries.
 SCHEMA = 1
@@ -674,7 +674,7 @@ def fit(rows=None, log=print) -> dict:
 
     document = {
         "schema": SCHEMA,
-        "fitted_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "fitted_at": label_store.now(),
         "form": "sigmoid(intercept + sum(w_c * (x_c - mean_c) / deviation_c))",
         "columns": list(COLUMNS),
         "weights": "SHARED over both stores; per-kind bought +0.000 [-.011,+.012] smooth "

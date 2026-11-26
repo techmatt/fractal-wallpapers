@@ -70,10 +70,10 @@ import json
 import random
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, recipes, repetition
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every plan unit this module writes carries.
@@ -585,7 +585,7 @@ def run(
     _write_jsonl(plan_path(name), units_planned)
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "name": name,
         "config": {
             "units": int(units),

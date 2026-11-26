@@ -56,7 +56,6 @@ import statistics
 import time
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import (
@@ -69,6 +68,7 @@ from fractal_wallpapers.curation import (
     release,
     solve,
 )
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -3048,7 +3048,7 @@ def run(
 
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "name": name,
         "config": {
             "seed": seed,

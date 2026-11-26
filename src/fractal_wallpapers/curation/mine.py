@@ -56,7 +56,6 @@ import statistics
 import time
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 
 from fractal_wallpapers.curation import (
@@ -67,6 +66,7 @@ from fractal_wallpapers.curation import (
     recipes,
     solve,
 )
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name, under
 from fractal_wallpapers.storage import sha256_of
 
@@ -1164,7 +1164,7 @@ def run(
             )
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "name": name,
         "config": {
             "seed": seed,
@@ -1393,7 +1393,7 @@ def package(name: str, out: Path, log=print) -> dict:
         "schema": SCHEMA,
         "kind": UNIT,
         "name": str(name),
-        "packed_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "packed_at": label_store.now(),
         "engine": _live_engine(),
         "row_engines": _row_engines(rows),
         "source_ledger": {"rows": held.get("rows"), "sha256": held.get("sha256")},
@@ -1556,7 +1556,7 @@ def unpack(
     live = _live_engine()
     record = {
         "schema": SCHEMA,
-        "unpacked_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "unpacked_at": label_store.now(),
         "name": str(name),
         "from": str(source),
         "verified": manifest is not None,

@@ -57,7 +57,6 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import (
@@ -70,6 +69,7 @@ from fractal_wallpapers.curation import (
     recipes,
     release,
 )
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -786,7 +786,7 @@ def run(
     counts["stopped_for_budget"] = max(0, len(units) - counts["made"] - counts["failed"])
     record = {
         "schema": SCHEMA,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "name": name,
         "config": {
             "from_mode": str(from_mode),

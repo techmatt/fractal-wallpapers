@@ -18,8 +18,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import pytest
-
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import walk as walk_module
 from fractal_wallpapers.discovery.walk import Walk
@@ -43,12 +42,6 @@ FAMILIES = [
     ("julia", {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}),
     ("phoenix", {"kind": "phoenix"}),
 ]
-
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 # --------------------------------------------------------------------------- #

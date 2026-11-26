@@ -64,10 +64,10 @@ import random
 import time
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from datetime import UTC, datetime
 from pathlib import Path
 
 from fractal_wallpapers.curation import candidate_ledger, release
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import tracked_name, under
 
 #: The schema every record and every row this module writes carries.
@@ -1148,7 +1148,7 @@ def run(
     from fractal_wallpapers.curation.candidate_ledger import sweep
 
     started = time.monotonic()
-    began_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    began_at = label_store.now()
     world = population(bar, owed=bool(take_owed), log=log) if world is None else world
     planned, shape = plan_of(world["sources"], seed, world["known"], rotations)
     build = ledger.live_engine()
@@ -1463,7 +1463,7 @@ def run(
         "schema": SCHEMA,
         "name": name,
         "began_at": began_at,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "seed": int(seed),
         "tolerance": float(tolerance),
         "rotations_a_row": int(rotations),
@@ -2176,7 +2176,7 @@ def mine(
     from fractal_wallpapers.curation.candidate_ledger import sweep
 
     started = time.monotonic()
-    began_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    began_at = label_store.now()
     roster = list(roster) if roster else mode_policy.mined()
     # ⚠ `curate depth`'s own default roster is the three SHAREABLE modes and not
     # the policy's twelve, and nothing warns — `palette_variant_mine_ckpt120`'s
@@ -2531,7 +2531,7 @@ def mine(
         "name": name,
         "arm": "mine",
         "began_at": began_at,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "seed": int(seed),
         "rotations_a_shot": int(rotations),
         "repeat": REPEAT,

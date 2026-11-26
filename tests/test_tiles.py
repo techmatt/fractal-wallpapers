@@ -11,6 +11,7 @@ import json
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.labeling import pins
 from fractal_wallpapers.models import tiles as tile_module
@@ -25,12 +26,6 @@ LEGACY_NAME = "t{index:02d}_{palette}_s{scale:.4f}_sh{shift:.4f}_{level}_q{quali
 MANDELBROT = {"kind": "mandelbrot"}
 JULIA = {"kind": "julia", "degree": 2, "c": ["-0.4", "0.6"]}
 VIEW = {"center_re": "-0.5", "center_im": "0", "width": "3.0"}
-
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 def test_a_locations_id_is_a_function_of_the_location() -> None:

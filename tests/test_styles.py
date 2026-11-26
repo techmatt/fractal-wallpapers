@@ -6,9 +6,8 @@ import json
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import cli, engine, styles
-
-needs_engine = pytest.mark.skipif(not engine.is_built(), reason="the engine is not built")
 
 #: A location every style draws something of: a Julia set with a round interior.
 LOCATION = {

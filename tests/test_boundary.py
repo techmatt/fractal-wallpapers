@@ -13,13 +13,9 @@ import random
 
 import pytest
 
-from fractal_wallpapers import engine, locations
+from conftest import needs_engine
+from fractal_wallpapers import locations
 from fractal_wallpapers.discovery import boundary
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 BOX = (-0.77, 0.0, 1.98, 1.11375)
 

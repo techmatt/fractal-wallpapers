@@ -19,6 +19,7 @@ import json
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import identity
 from fractal_wallpapers.discovery.scoring import Reading
@@ -33,12 +34,6 @@ SEEDS = (
     ("-0.7453", "0.1127", "0.2"),
     ("0.2929", "0.0149", "0.1"),
     ("-0.748", "0.263", "0.06"),
-)
-
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
 )
 
 

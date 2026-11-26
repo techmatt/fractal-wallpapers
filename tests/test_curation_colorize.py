@@ -8,14 +8,10 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
+from conftest import needs_engine
 from fractal_wallpapers import engine
 from fractal_wallpapers.curation import budget, colorize, release
 from fractal_wallpapers.palettes import space
-
-needs_engine = pytest.mark.skipif(
-    not engine.is_built(),
-    reason="the engine is not built: cargo build --release --manifest-path engine/Cargo.toml",
-)
 
 
 @needs_engine

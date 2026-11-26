@@ -229,6 +229,7 @@ from fractal_wallpapers import engine
 from fractal_wallpapers.discovery import ledger as ledger_module
 from fractal_wallpapers.discovery import operators
 from fractal_wallpapers.discovery.ledger import Ledger
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.supply import currency as money
 from fractal_wallpapers.supply.location import key_of_row, location_key
 from fractal_wallpapers.supply.location import text_of_row as location_text
@@ -1877,7 +1878,7 @@ class Channel:
             # ledger's mtime for the legs written before this was stamped, which
             # survives archiving (`storage` copies through `shutil.copy2`) but
             # not a re-copy by hand.
-            "started": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "started": label_store.now(),
             "run_seed": self.seed,
             "rungs": list(self.rungs),
             "operators": list(OPERATORS),

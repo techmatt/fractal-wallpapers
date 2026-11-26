@@ -78,9 +78,9 @@ reason.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.palettes import codebook
 
 #: The artifact's schema, carried from the first row.
@@ -758,7 +758,7 @@ def take(stages=STAGES, log=print) -> dict:
     readout: dict = {
         "schema": SCHEMA,
         "baseline": BASELINE,
-        "taken_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": label_store.now(),
         "codebook": codebook.document(),
         "stages": {},
     }

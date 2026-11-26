@@ -58,10 +58,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import parse_qsl, quote, urlsplit
 
+from fractal_wallpapers.labeling import store as label_store
 from fractal_wallpapers.paths import repo_root
 
 #: The schema [`RESOLVED_NAME`] carries.
@@ -455,7 +455,7 @@ def resolve(links=None, rows=None, fine=None, seatable=None, log=print) -> dict:
         "of": "the pinned seats: each link in data/curation/pins.txt resolved to the ledger "
         "row it means, by plane, mode and place. Every solve seats these first; see "
         "curation/pins.py",
-        "resolved_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "resolved_at": label_store.now(),
         "links_sha256": links_digest() if links is None else _digest_of(held_links),
         "place_tolerance": PLACE_TOLERANCE,
         "place_tolerance_is": SCHEMA_NOTES["place_tolerance_is"],
