@@ -4218,6 +4218,32 @@
           "score": 2
         }
       ]
+    },
+    {
+      "style": "flat_spirals",
+      "item": "088",
+      "reference": "wallhaven_wallhaven-d67kpg.png",
+      "references": [
+        "wallhaven_wallhaven-d67kpg.png",
+        "wallhaven_wallhaven-m35mmk.png",
+        "wallhaven_wallhaven-wej3pr.jpg",
+        "wallhaven_wallhaven-d6yv9m.jpg",
+        "wallhaven_wallhaven-gp62o7.png",
+        "wallhaven_wallhaven-7pvqqv.png"
+      ],
+      "what": "Flat poster spirals: the set's bands as hard flat inks, packed with flat discs of every size winding along each spiral arm, no gradients and no light (umber and mint, coral and ice, ember on navy, ash clouds without discs, and slate rosettes as palette entries).",
+      "palettes": []
+    },
+    {
+      "style": "cube_facets",
+      "item": "088",
+      "reference": "wallhaven_wallhaven-nrl8ym.png",
+      "references": [
+        "wallhaven_wallhaven-nrl8ym.png",
+        "wallhaven_wallhaven-n61olx.jpg"
+      ],
+      "what": "Stacked cubes seen corner-on: a mosaic of triangles shaded as three cube faces, calm large cubes far from the set splitting into ever smaller cubes along it, small cubes inlaid in each face (crimson and white cubes as a palette entry).",
+      "palettes": []
     }
   ]
 }

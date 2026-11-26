@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "name": "flat_spirals",
+  "description": "flat poster spirals: the set's bands as hard flat inks, packed with flat discs of every size that wind along each spiral arm, no gradients and no light",
+  "reference": {
+    "image": "wallhaven_wallhaven-d67kpg.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a dense spiral tiling in a few flat teal and navy colours, unsigned, 2560x1440"
+  },
+  "suggested_colormap": "flat_spirals",
+  "reuses": [
+    "the smooth count through a map of flat inks by rank (gouache_cut's plateaus, without the paper pass)",
+    "the bubble trap's disc lattice read as `step` (bronze_packing), unlit, one flat ink per disc"
+  ],
+  "adds": [],
+  "notes": [
+    "From wallhaven-d67kpg (item 088), with m35mmk, wej3pr, d6yv9m, gp62o7 and 7pvqqv as palette entries: triage group (10)'s flat spiral tilings, flat clouds and packed rosettes, read as one mode. Two layers and no light: the smooth count by rank through a map of flat inks (plateaus, as gouache_cut's), so each band is one ink with the set's own level line for its edge; and the bubble trap's disc lattice (radius 0.15, `largest` 0.05) read as `step` at five cycles of the map, so every disc is one flat ink. At spiral seats the discs pack along the arms, shrinking without end towards the set: spirals drawn in dots of every size, the fractal feel the reference's spirals-of-spirals carry.",
+    "Reachable by one escape loop: yes, the frame's loop plus the bubble trap's own (every trap channel runs one), no views, no post stage and no new primitive. Nearest mode bronze_packing holds both layer kinds among its twelve lit ones; whether this unlit pair is its own mode or bronze_packing's formulation is Matt's call (question 088-1), so round one keeps it a mode. The interlocking spiral tiles themselves are not: poster_curls (061) found that one loop's bands nest round the set rather than interlock, so this reading draws spirals of flat discs instead of copying the tiles.",
+    "Tried and dropped before the picker: the paper pass's sheets at spiral seats (the nearest mode's look, kept as the gouache_cut baseline tile), a second paper pass cut from `tia` or `stripe` over the first (washed translucent shapes), and nested discs at `hit` 2 (fine noise). Round one's readings: f_nodots (flat inks alone: gp62o7's clouds, and the ash_clouds entry), f_dense (radius 0.3, `largest` 0.03: smaller, denser discs, the slate_rosettes entry), f_blades (the strip trap's blades in place of discs, cut_tiles' tiles without its gaps) and f_hues (the ground at two cycles warped by a turned zoomed-out view, so large regions of the frame take their own half of the map).",
+    "Locations: a `--spiral` scout (seed 88), drafted under maxiter 14,000 after the first eleven: the trap's loop runs every escaping sample to its entry, so the deep Mandelbrot seats (maxiter 22,000 to 37,000) took about a minute a draft.",
+    "Tone as shipped (median 0.487, p10 0.071, d67kpg's): the first six-ink map held 16 of 30 location drafts, every miss p90 low (about 0.80 against 0.932): its one near-white covered under a tenth of the frame. A second near-white overshot (white share 0.19 to 0.22 against 0.142, 4 of 12 picker seats); a pale mint between mint and white holds 9 of the 12 picker locations, and misses at both formulation seats (p90 0.83 against 0.932). Entries against their own references: umber and ash hold at both seats, coral and slate at one, ember at neither (p90 0.39 to 0.51 against 0.645, even after its warm inks were widened to five of eight: on a dark median the tone curve holds the brights down). Round two's lever for ember is its tone values, not its map.",
+    "Explorer cost (item 088, an upper bound, read beside nothing heavy but not on a held box): 36 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-multibrot3_15c7b042, maxiter 17,587), 32 s at the deepest location candidate (multibrot3_5ada26e6, maxiter 32,054), under the 5-minute bar."
+  ],
+  "style": {
+    "name": "flat_spirals",
+    "interior": {
+      "palette": 0.5
+    },
+    "tone": {
+      "median": 0.487,
+      "p10": 0.071
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          }
+        }
+      },
+      {
+        "kind": "palette",
+        "opacity": 1.0,
+        "channel": {
+          "bubble": {
+            "center": [
+              0.5,
+              0.5
+            ],
+            "radius": 0.15,
+            "hit": 1,
+            "read": "step",
+            "spacing": 1.0,
+            "escaped": true,
+            "largest": 0.05
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 5.0
+        }
+      }
+    ]
+  }
+}

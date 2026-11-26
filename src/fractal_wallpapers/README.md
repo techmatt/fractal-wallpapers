@@ -88,7 +88,7 @@ here but `.leveled/` is outside that shape, and kept by this list, not a mechani
 | `artifacts/curation/growth/20260902T150756Z/` | a fixed series' rung |
 | `data/coloring/texture_flat.jsonl` | old rows' flat-texture register |
 | `data/spiral/`, `models/spiral/` | spiral probe |
-| `models/render/` | `weights-v6`, `render.v5.fp16.pt`, the runs bars were read on |
+| `models/render/` | `weights-2026-09-14` (`models/weights.json`'s `render` tag), `render.v5.fp16.pt`, the runs bars were read on |
 | `models/gallery_grade/` | the fine head, k=3 members |
 | `artifacts/gallery_grade_head/pool_scores.jsonl` | the cascade **refuses** without it |
 | `artifacts/render_folds/` | render arms' folds; below |

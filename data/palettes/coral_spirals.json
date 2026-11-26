@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "coral_spirals",
+  "kind": "sequential",
+  "source": "seven flat inks, maroon, crimson, coral red, salmon, a pale lemon, ice and sky: a flat_spirals entry, from wallhaven-wej3pr's red and ice spiral tiling",
+  "stops": [
+    [0.0, [78, 18, 38]],
+    [0.1389, [78, 18, 38]],
+    [0.1469, [168, 28, 54]],
+    [0.2817, [168, 28, 54]],
+    [0.2897, [227, 52, 74]],
+    [0.4246, [227, 52, 74]],
+    [0.4326, [240, 138, 122]],
+    [0.5674, [240, 138, 122]],
+    [0.5754, [241, 237, 182]],
+    [0.7103, [241, 237, 182]],
+    [0.7183, [211, 237, 236]],
+    [0.8531, [211, 237, 236]],
+    [0.8611, [140, 203, 220]],
+    [1.0, [140, 203, 220]]
+  ]
+}

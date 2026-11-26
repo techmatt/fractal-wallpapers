@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "name": "cube_facets",
+  "description": "a tiling of stacked cubes seen corner-on: each triangle of a recursive mosaic one face of a cube, three flat shades, large calm cubes far from the set splitting into ever smaller cubes along it, smaller cubes inlaid in each face",
+  "reference": {
+    "image": "wallhaven_wallhaven-nrl8ym.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a rhombus tiling nested in rhombi, amber, slate and maroon, unsigned, 2500x1563"
+  },
+  "suggested_colormap": "cube_facets",
+  "reuses": [
+    "the smooth count through the map by rank at 2 cycles (tri_mosaic)",
+    "the mosaic pass's triangle lattice, split where the set is, flat fill and inlay (tri_mosaic)"
+  ],
+  "adds": [
+    "the mosaic's `faces`: each triangle shaded by which face of a cube it is, the six round every third vertex paired into three rhombi, inlays drawn as cubes too (engine/src/post.rs)"
+  ],
+  "notes": [
+    "From wallhaven-nrl8ym (item 088), with wallhaven-n61olx as the crimson_cubes entry: triage group (10)'s triangle and rhombus tilings. Both references are isometric cubes at several sizes (nrl8ym's rhombi nested in rhombi, n61olx's three-pointed stars, a cube's corner seen end-on), so the mode is tri_mosaic's split triangle lattice with each facet shaded as a cube face: the engine's new `faces` member pairs the six triangles round every third vertex of a facet's own lattice into three rhombi, one gain each (1, 0.7, 0.42). Big calm cubes far from the set, ever smaller cubes along it, and `inlay` draws each calm face's own children as cubes at half the contrast, so each face holds smaller cubes.",
+    "Reachable by one escape loop: yes, one loop and the mosaic pass (which costs no loop). Distinct from tri_mosaic at draft size: its facets are lit by a fitted relief and a fold pyramid, so neighbours differ at random; here every hexagon of triangles reads as a cube.",
+    "Tried: a paper pass of flat inks under the mosaic (each facet the mean of the inks under it: washed and muddy) and a finer lattice (`largest` 0.25). Round one's readings: f_noinlay, f_flat (no faces: what the stack is without its headline), f_coarse (`reach` 0.25, five levels: big cubes), f_seams (a dark rim on every facet) and f_deep (deeper shading, three inlaid levels). `faces` refuses the rhombus and spiral lattices: their rhombi all face one way.",
+    "Locations: a `--max-ink 0.10` scout (seed 88) under maxiter 14,000, 35 drafts. Tone as shipped (median 0.484, p10 0.184, nrl8ym's): all 35 hold, and both formulation seats; the crimson_cubes entry misses its own reference's p90 at both seats (0.68 and 0.73 against 0.893, after its whites were widened to three of eight inks): n61olx's whites are wide flat triangles that the mosaic's means and the cube shading pull down.",
+    "Explorer cost (item 088, an upper bound, not on a held box): 8.1 s as WebAssembly on one thread at 1280x800 ss2 at its deepest formulation seat (julia-multibrot3_70e1da1e, maxiter 10,060), of which the mosaic pass is about 2.6 s of the whole frame (5.4 s without it); 9.0 s at the deepest location candidate (maxiter 10,220). Under the 5-minute bar."
+  ],
+  "style": {
+    "name": "cube_facets",
+    "interior": {
+      "palette": 0.5
+    },
+    "tone": {
+      "median": 0.484,
+      "p10": 0.184
+    },
+    "layers": [
+      {
+        "kind": "palette",
+        "channel": {
+          "field": {
+            "kind": "smooth"
+          }
+        },
+        "palette": {
+          "transfer": {
+            "kind": "rank"
+          },
+          "cycles": 2.0
+        }
+      }
+    ],
+    "post": [
+      {
+        "kind": "mosaic",
+        "largest": 0.5,
+        "smallest": 0.004,
+        "levels": 7,
+        "reach": 0.5,
+        "faces": [
+          1.0,
+          0.7,
+          0.42
+        ],
+        "inlay": {
+          "levels": 2,
+          "amount": 0.5
+        }
+      }
+    ]
+  }
+}

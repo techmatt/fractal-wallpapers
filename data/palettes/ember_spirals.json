@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "name": "ember_spirals",
+  "kind": "sequential",
+  "source": "eight flat inks, midnight, navy, steel blue, brick, rust orange, orange, amber and tangerine: a flat_spirals entry, from wallhaven-d6yv9m's orange spiral on navy",
+  "stops": [
+    [0.0, [12, 24, 48]],
+    [0.121, [12, 24, 48]],
+    [0.129, [26, 51, 96]],
+    [0.246, [26, 51, 96]],
+    [0.254, [54, 99, 142]],
+    [0.371, [54, 99, 142]],
+    [0.379, [122, 42, 20]],
+    [0.496, [122, 42, 20]],
+    [0.504, [200, 84, 28]],
+    [0.621, [200, 84, 28]],
+    [0.629, [245, 152, 46]],
+    [0.746, [245, 152, 46]],
+    [0.754, [247, 166, 64]],
+    [0.871, [247, 166, 64]],
+    [0.879, [239, 138, 36]],
+    [1.0, [239, 138, 36]]
+  ]
+}

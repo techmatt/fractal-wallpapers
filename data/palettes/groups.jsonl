@@ -289,3 +289,11 @@
 {"schema": 1, "kind": "admitted", "map": "light_shafts", "group": "map:light_shafts", "joined": false, "nearest": "map:violet_cells", "m1": 0.060978}
 {"schema": 1, "kind": "admitted", "map": "moss_starbursts", "group": "map:moss_starbursts", "joined": false, "nearest": "map:Olive, Green, Ochre", "m1": 0.04852}
 {"schema": 1, "kind": "admitted", "map": "starburst_veils", "group": "map:starburst_veils", "joined": false, "nearest": "map:tempest_plumes", "m1": 0.054607}
+{"schema": 1, "kind": "admitted", "map": "cube_facets", "group": "map:cube_facets", "joined": false, "nearest": "map:wallhaven_wallhaven-nrl8ym", "m1": 0.059722}
+{"schema": 1, "kind": "admitted", "map": "crimson_cubes", "group": "map:crimson_cubes", "joined": false, "nearest": "map:delphic-oracle-25", "m1": 0.074896}
+{"schema": 1, "kind": "admitted", "map": "flat_spirals", "group": "map:flat_spirals", "joined": false, "nearest": "map:cmr.ocean", "m1": 0.061113}
+{"schema": 1, "kind": "admitted", "map": "umber_spirals", "group": "map:umber_spirals", "joined": false, "nearest": "map:Copper Bloom, Teal Fleck", "m1": 0.045903}
+{"schema": 1, "kind": "admitted", "map": "coral_spirals", "group": "map:coral_spirals", "joined": false, "nearest": "map:crimson_cubes", "m1": 0.075518}
+{"schema": 1, "kind": "admitted", "map": "ember_spirals", "group": "map:ember_spirals", "joined": false, "nearest": "map:grace-25", "m1": 0.0648}
+{"schema": 1, "kind": "admitted", "map": "ash_clouds", "group": "map:ash_clouds", "joined": false, "nearest": "map:umber_spirals", "m1": 0.054038}
+{"schema": 1, "kind": "admitted", "map": "slate_rosettes", "group": "map:slate_rosettes", "joined": false, "nearest": "map:02598_asgardrealmofthegods_2560x1600", "m1": 0.061093}

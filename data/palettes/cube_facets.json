@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "cube_facets",
+  "kind": "sequential",
+  "source": "seven flat inks, slate navy, maroon, steel grey, blue grey, beige, sage and amber: the albedo of the cube_facets style, from wallhaven-nrl8ym's rhombus tiling",
+  "stops": [
+    [0.0, [58, 68, 88]],
+    [0.1389, [58, 68, 88]],
+    [0.1469, [90, 36, 32]],
+    [0.2817, [90, 36, 32]],
+    [0.2897, [95, 109, 118]],
+    [0.4246, [95, 109, 118]],
+    [0.4326, [140, 156, 164]],
+    [0.5674, [140, 156, 164]],
+    [0.5754, [198, 182, 158]],
+    [0.7103, [198, 182, 158]],
+    [0.7183, [155, 168, 151]],
+    [0.8531, [155, 168, 151]],
+    [0.8611, [238, 162, 62]],
+    [1.0, [238, 162, 62]]
+  ]
+}

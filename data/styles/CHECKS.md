@@ -24,7 +24,9 @@ as the bar is set: the published stack and map at each style's deepest kept seat
 `maxiter`, ties to the keep record's first; `--seat <name>` for another kept seat), one 1280x800 ss2 frame as WebAssembly on one thread,
 printed against Matt's 5-minute bar (`style_wasm.COST_BAR_SECONDS`), rows in `cost.jsonl`.
 `--workers 3` reads three styles at once (the render pool's count, never more); read it
-idle, as every time here. Deepest is not always dearest: dew_bloom
+idle, as every time here. A round-one mode has no kept seat and no shown one, so `style
+cost` refuses it: build `cost_jobs`' job by hand at the named seat (`style_wasm.request`,
+then `run_node`), as 088 did. Deepest is not always dearest: dew_bloom
 takes 21 s at its own deepest seat and about 260 s at `POST_SEAT`, whose interior runs
 every sample to the cap. Before it, `style wasm-parity <name>` writes
 each job's `wasm_seconds` (one thread, 640x400 ss2) to `parity.jsonl` and `seconds.json`

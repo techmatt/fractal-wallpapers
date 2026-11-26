@@ -279,6 +279,7 @@ POST_STACKS = {
         "fold": 0.3,
         "relief": 6.0,
         "inlay": {"levels": 2, "amount": 0.08},
+        "faces": [1.0, 0.7, 0.42],
         "opacity": 0.7,
     },
     "rhombi": {

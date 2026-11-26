@@ -86,6 +86,7 @@ of the picture under it.
 | `azimuth`, `elevation` | where the light on `relief` and `fold` comes from; a facet never tilts past a slope of 0.6, so at elevation 45 a face turned away dims to about a third |
 | `inlay` | `{levels, amount}`: the cells the facet would split into, `levels` deep (at most 6, never under `smallest`), each lightened or darkened by up to `amount` of its colour: nested detail inside a calm facet, without splitting it |
 | `seam` | `{width, color, opacity}`: a line along every facet's rim, `width` in frame widths and never over 0.08 of the facet's edge |
+| `faces` | triangles only, three gains in [0, 4]: each facet's colour times the gain of the cube face it is (the six triangles round every third lattice vertex pair into three rhombi), so the tiling reads as stacked cubes at every size; an `inlay` then draws cubes too, gain `g` as `1 + amount·(g − 1)` |
 
 `opacity` (in [0, 1]) lays that much of the mosaic over the picture it was made from:
 under 1 the facets are translucent plates and the stack's own detail shows through.
@@ -139,7 +140,7 @@ for shafts.
 | where | defaults |
 | --- | --- |
 | `stir` pass | `view` straight (the frame's own), `strength` 1, `angle` 90, `period` 4, `phase` 0, `largest` 0.05, `steps` 1 (at most 16) |
-| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam` absent |
+| `mosaic` | `largest` 0.25, `smallest` 0.004, `levels` 6, `reach` 1, `detail` 0, `rhombi` false, `tilt` 0, `fill` `flat`, `turn` 0, `shift` 0, `relief` 0, `fold` 0, `azimuth` 135, `elevation` 45, `opacity` 1; `spiral`, `height`, `inlay`, `seam`, `faces` absent |
 | `spiral`, `inlay`, `seam` | `center` [0.5, 0.5], `arms` 12, `twist` 0; `levels` 2; `color` black, `opacity` 1 |
 | `paper` | `height` the smooth count, `levels` 9, `taper` 1, `fill` `map`, `phase` 0, `opacity` 1; `hop`, `shadow`, `ragged` absent |
 | `rays` | `share` 0.02, `spokes` 4, `angle` 45, `length` 0.05, `strength` 1; `center`, `color` absent |

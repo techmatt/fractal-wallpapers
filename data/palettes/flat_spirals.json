@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "name": "flat_spirals",
+  "kind": "sequential",
+  "source": "seven flat inks, midnight navy through deep teal, teal, aqua, mint and pale mint to a near-white: the albedo of the flat_spirals style, from wallhaven-d67kpg's dense teal spiral tiling",
+  "stops": [
+    [0.0, [11, 27, 56]],
+    [0.1389, [11, 27, 56]],
+    [0.1469, [15, 69, 96]],
+    [0.2817, [15, 69, 96]],
+    [0.2897, [29, 127, 143]],
+    [0.4246, [29, 127, 143]],
+    [0.4326, [69, 181, 180]],
+    [0.5674, [69, 181, 180]],
+    [0.5754, [159, 224, 208]],
+    [0.7103, [159, 224, 208]],
+    [0.7183, [200, 236, 225]],
+    [0.8531, [200, 236, 225]],
+    [0.8611, [238, 249, 244]],
+    [1.0, [238, 249, 244]]
+  ]
+}

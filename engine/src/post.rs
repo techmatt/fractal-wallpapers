@@ -37,6 +37,7 @@
 //! inlay      each facet's own children, and theirs, drawn into it as faint lighter
 //!            and darker cells: nested detail where the tiling itself is calm
 //! seam       a thin line along every facet's rim
+//! faces      triangles shaded as the three faces of stacked cubes, inlays too
 //! opacity    how much of the mosaic is laid over the picture it was made from
 //! ```
 
@@ -219,6 +220,13 @@ pub struct Mosaic {
     pub inlay: Option<Inlay>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub seam: Option<Seam>,
+    /// Triangles only: each facet's colour times one of three gains by which face of a
+    /// cube it is. The triangles round every third vertex of the facet's own lattice
+    /// (a hexagon) pair into three rhombi, one per gain, so the tiling reads as stacked
+    /// cubes seen corner-on, at every size the splitting reaches; with an `inlay`, the
+    /// facet's children are drawn as cubes too, each gain `g` as `1 + amount·(g − 1)`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub faces: Option<[f64; 3]>,
 }
 
 impl Default for Mosaic {
@@ -243,6 +251,7 @@ impl Default for Mosaic {
             opacity: 1.0,
             inlay: None,
             seam: None,
+            faces: None,
         }
     }
 }
@@ -336,6 +345,14 @@ impl Mosaic {
         }
         if self.height.is_some_and(|height| !plain(&height)) {
             return Err("mosaic: height is a plain field channel, with no view".into());
+        }
+        if let Some(faces) = self.faces {
+            if self.rhombi || self.spiral.is_some() {
+                return Err("mosaic: faces are the triangle lattice's".into());
+            }
+            if !faces.iter().all(|gain| (0.0..=4.0).contains(gain)) {
+                return Err("mosaic: each of faces is a gain in [0, 4]".into());
+            }
         }
         Ok(())
     }
@@ -611,6 +628,35 @@ impl Lattice {
         }
     }
 
+    /// Which cube face a triangle of the lattice `level` splits deep is, 0 to 2. Every
+    /// third vertex of that lattice, `(i − j) mod 3 = 0` in its skewed coordinates, is a
+    /// hexagon's middle; each triangle has one such corner, and the direction from it
+    /// to the triangle's middle, one of six 60 degrees apart, pairs the hexagon's six
+    /// triangles into three rhombi. Only the triangle lattice is ever asked.
+    fn face(&self, corners: [[f64; 2]; 3], level: u32) -> usize {
+        let scale = (1u64 << level) as f64;
+        let skewed = corners.map(|corner| self.skewed(corner).map(|value| value * scale));
+        let vertex = skewed
+            .iter()
+            .copied()
+            .find(|[p, q]| (p.round() as i64 - q.round() as i64).rem_euclid(3) == 0)
+            .unwrap_or(skewed[0]);
+        let (p, q) = (
+            (skewed[0][0] + skewed[1][0] + skewed[2][0]) / 3.0 - vertex[0],
+            (skewed[0][1] + skewed[1][1] + skewed[2][1]) / 3.0 - vertex[1],
+        );
+        // In the lattice's own frame the six directions are at 30, 90, ... 330 degrees,
+        // `(p, q)` a third of the way along: 30 and 90 are one face, 150 and 210 the
+        // next, 270 and 330 the last. Sign tests only, so no maths library is read.
+        if q < 0.0 && p > 0.0 {
+            2
+        } else if p < -0.5 || (q < 0.0 && p < 0.0) {
+            1
+        } else {
+            0
+        }
+    }
+
     /// Each root's edge and how often it may split. A triangle wholly off the frame
     /// (the lattice is a parallelogram round it) holds no sample and never splits.
     fn roots(&self, mosaic: &Mosaic, aspect: f64) -> Vec<(f64, u32)> {
@@ -753,6 +799,17 @@ impl Lattice {
                 )
             }
         }
+    }
+}
+
+/// A triangle's child `digit` (as [`Lattice::child`] counts them): its corners.
+fn halved([a, b, c]: [[f64; 2]; 3], digit: usize) -> [[f64; 2]; 3] {
+    let mid = |p: [f64; 2], q: [f64; 2]| [0.5 * (p[0] + q[0]), 0.5 * (p[1] + q[1])];
+    match digit {
+        0 => [a, mid(a, b), mid(a, c)],
+        1 => [mid(a, b), b, mid(b, c)],
+        2 => [mid(a, c), mid(b, c), c],
+        _ => [mid(b, c), mid(a, c), mid(a, b)],
     }
 }
 
@@ -997,18 +1054,7 @@ pub fn mosaic(
                     local = inner;
                     level += 1;
                     corners = match lattice {
-                        Lattice::Triangles { .. } => {
-                            let [a, b, c] = corners;
-                            let mid = |p: [f64; 2], q: [f64; 2]| {
-                                [0.5 * (p[0] + q[0]), 0.5 * (p[1] + q[1])]
-                            };
-                            match digit {
-                                0 => [a, mid(a, b), mid(a, c)],
-                                1 => [mid(a, b), b, mid(b, c)],
-                                2 => [mid(a, c), mid(b, c), c],
-                                _ => [mid(b, c), mid(a, c), mid(a, b)],
-                            }
-                        }
+                        Lattice::Triangles { .. } => halved(corners, digit),
                         Lattice::Rhombi { .. } | Lattice::Spiral { .. } => {
                             let half = 0.5 * corners[1][0];
                             [
@@ -1142,6 +1188,10 @@ pub fn mosaic(
                         frame.linear[sample_at(read, width, height)]
                     }
                 };
+                if let Some(faces) = mosaic.faces {
+                    let gain = faces[lattice.face(corners, level)];
+                    rgb = rgb.map(|c| c * gain);
+                }
                 if lit {
                     let [gx, gy] = cell.slope();
                     let tilt = [
@@ -1159,6 +1209,7 @@ pub fn mosaic(
                 if let Some(inlay) = mosaic.inlay {
                     let (mut inner, mut within, mut size) = (node as u64, local, edge);
                     let mut gain = 1.0;
+                    let mut nested = corners;
                     for depth in 1..=inlay.levels {
                         size *= 0.5;
                         if size < mosaic.smallest {
@@ -1166,6 +1217,13 @@ pub fn mosaic(
                         }
                         let (digit, next) = lattice.child(within);
                         (inner, within) = (inner * 4 + digit as u64, next);
+                        if let Some(faces) = mosaic.faces {
+                            nested = halved(nested, digit);
+                            // Arithmetic only, never `powf`: the module draws these bits.
+                            let face = faces[lattice.face(nested, level + depth)];
+                            gain *= 1.0 + inlay.amount * (face - 1.0);
+                            continue;
+                        }
                         let unit = (hashed(root_index, level + depth, inner) >> 11) as f64
                             / (1u64 << 53) as f64;
                         gain *= 1.0 + inlay.amount * (2.0 * unit - 1.0);
@@ -2131,6 +2189,70 @@ mod tests {
     }
 
     #[test]
+    fn faces_pair_each_hexagon_s_triangles_into_three_rhombi() {
+        // Every triangle of a lattice is one face, and the six round a hexagon's
+        // middle (a vertex with (i - j) mod 3 = 0) are two of each, the two of a face
+        // side by side.
+        let lattice = Lattice::over(
+            &Mosaic {
+                largest: 0.1,
+                ..Mosaic::default()
+            },
+            0.625,
+        );
+        let at = |p: f64, q: f64| lattice.placed(p, q);
+        let round = [
+            [at(0.0, 0.0), at(1.0, 0.0), at(0.0, 1.0)],
+            [at(0.0, 0.0), at(0.0, 1.0), at(-1.0, 1.0)],
+            [at(0.0, 0.0), at(-1.0, 1.0), at(-1.0, 0.0)],
+            [at(0.0, 0.0), at(-1.0, 0.0), at(0.0, -1.0)],
+            [at(0.0, 0.0), at(0.0, -1.0), at(1.0, -1.0)],
+            [at(0.0, 0.0), at(1.0, -1.0), at(1.0, 0.0)],
+        ];
+        let faces: Vec<usize> = round.iter().map(|t| lattice.face(*t, 0)).collect();
+        assert_eq!(faces, [0, 0, 1, 1, 2, 2]);
+        // A split triangle's children are faces of the lattice one level down.
+        let children: Vec<usize> = (0..4)
+            .map(|digit| lattice.face(halved(round[0], digit), 1))
+            .collect();
+        assert_eq!(children, [0, 2, 1, 1]);
+
+        // Over the ramp, every facet is its flat colour times one of the three gains,
+        // and all three are drawn.
+        let shaded = Mosaic {
+            faces: Some([1.0, 0.7, 0.4]),
+            ..Mosaic::default()
+        };
+        let flat = painted(&Mosaic::default(), 200, 125);
+        let mut drawn = [false; 3];
+        for (a, b) in flat.iter().zip(&painted(&shaded, 200, 125)) {
+            let gain = b[1] / a[1];
+            let face = [1.0, 0.7, 0.4]
+                .iter()
+                .position(|g| (gain - g).abs() < 1e-12);
+            drawn[face.unwrap_or_else(|| panic!("{gain}"))] = true;
+        }
+        assert_eq!(drawn, [true; 3]);
+
+        // With an inlay, each child's cube face scales it by 1 + amount·(g − 1) on top.
+        let inlaid = Mosaic {
+            inlay: Some(Inlay {
+                levels: 1,
+                amount: 0.5,
+            }),
+            ..shaded.clone()
+        };
+        let steps = [1.0, 0.85, 0.7];
+        for (a, b) in painted(&shaded, 200, 125)
+            .iter()
+            .zip(&painted(&inlaid, 200, 125))
+        {
+            let gain = b[1] / a[1];
+            assert!(steps.iter().any(|g| (gain - g).abs() < 1e-12), "{gain}");
+        }
+    }
+
+    #[test]
     fn an_opacity_lays_the_mosaic_over_the_picture_it_was_made_from() {
         let whole = painted(&Mosaic::default(), 200, 125);
         let half = painted(
@@ -2421,6 +2543,9 @@ mod tests {
             r#"{"kind": "mosaic", "shift": 5.0}"#,
             r#"{"kind": "mosaic", "inlay": {"levels": 7, "amount": 0.1}}"#,
             r#"{"kind": "mosaic", "spiral": {"center": [1e300, 0.5]}}"#,
+            r#"{"kind": "mosaic", "rhombi": true, "faces": [1.0, 0.8, 0.6]}"#,
+            r#"{"kind": "mosaic", "spiral": {}, "faces": [1.0, 0.8, 0.6]}"#,
+            r#"{"kind": "mosaic", "faces": [1.0, -0.1, 0.6]}"#,
         ] {
             let pass: Pass = serde_json::from_str(refused).unwrap();
             assert!(pass.validate().is_err(), "{refused}");

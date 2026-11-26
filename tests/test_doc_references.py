@@ -40,8 +40,6 @@ import re
 from functools import cache
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "src" / "fractal_wallpapers"
 
@@ -192,15 +190,27 @@ def _symbols(module: str) -> _Symbols | None:
     return _Symbols(ast.parse(_text(module)), module, path.name == "__init__.py")
 
 
-TOP_LEVEL = re.compile(r"^(?:(?:async\s+)?def\s+|class\s+)?([A-Za-z_]\w*)\s*[:=(]", re.M)
-ANY_DEF = re.compile(r"^[ \t]*(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)", re.M)
+TOP_LEVEL = re.compile(r"(?:(?:async\s+)?def\s+|class\s+)?([A-Za-z_]\w*)\s*[:=(]")
+ANY_DEF = re.compile(r"(?:async\s+)?(?:def|class)\s+([A-Za-z_]\w*)")
 
 
 @cache
 def _plain(module: str) -> tuple[frozenset[str], frozenset[str]]:
-    """`(column-0 names, def/class names at any depth)` as the text shows them."""
-    text = _text(module)
-    return frozenset(TOP_LEVEL.findall(text)), frozenset(ANY_DEF.findall(text))
+    """`(column-0 names, def/class names at any depth)` as the text shows them.
+
+    Read line by line with `match`: a multiline `^` pattern tries every character of
+    the text, and that search was a quarter of this guard's time."""
+    top, nested = set(), set()
+    for line in _text(module).splitlines():
+        if line[:1] not in (" ", "\t"):
+            if found := TOP_LEVEL.match(line):
+                top.add(found.group(1))
+            stripped = line
+        else:
+            stripped = line.lstrip(" \t")
+        if stripped[:1] in ("d", "c", "a") and (found := ANY_DEF.match(stripped)):
+            nested.add(found.group(1))
+    return frozenset(top), frozenset(nested)
 
 
 def _plainly_defined(module: str, name: str, anywhere: bool = False) -> bool:
@@ -226,13 +236,19 @@ def _plain_member(module: str, owner: str, name: str) -> bool:
     a method, an attribute or field at the class body's indent, or a `self.` store."""
     if module not in _modules():
         return False
+    return name in _class_members(module, owner)
+
+
+@cache
+def _class_members(module: str, owner: str) -> frozenset[str]:
+    """The names `_plain_member` reads in one class's block, found once per class."""
     text = _text(module)
     start = re.search(rf"^class\s+{owner}\b.*$", text, re.M)
     if start is None:
-        return False
+        return frozenset()
     end = re.search(r"^[^\s#)\]]", text[start.end() :], re.M)
     block = text[start.end() : start.end() + end.start()] if end else text[start.end() :]
-    return any(name in pair for pair in MEMBER.findall(block))
+    return frozenset(name for pair in MEMBER.findall(block) for name in pair if name)
 
 
 def _find_module(dotted: str, citing: str) -> list[str]:
@@ -329,10 +345,10 @@ def _sweep() -> tuple[list[tuple[str, str]], int]:
     return dangling, resolved
 
 
-#: Slow: about 1.1 s on this desktop, most of it parsing the three dozen modules
-#: whose references the text cannot settle (`solve`, `depth`, `rules` among them).
-#: The fast lane stops covering reference rot; `--slow` and CI's run still do.
-@pytest.mark.slow
+#: Fast lane (Matt, 2026-11-25): 0.55 s on this desktop idle (088's reading), most of
+#: it parsing the three dozen modules whose references the text cannot settle (`solve`,
+#: `depth`, `rules` among them); the line-by-line text read and the cached class blocks
+#: took about 0.2 s off the 1.1 s it was.
 def test_every_code_reference_in_a_docstring_names_something_defined():
     dangling, resolved = _sweep()
     assert not dangling, "references to something the named module does not define:\n" + (
