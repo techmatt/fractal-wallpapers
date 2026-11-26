@@ -1,6 +1,6 @@
 """The two things that make a deep run spend its hours on breadth.
 
-`deep_run1` was given eight hours and spent two hours ten, and 741 of its
+The first deep run was given eight hours and spent two hours ten, and 741 of its
 admissions came off 15 of its 48 roots. Two changes answer those separately —
 seats sized against the wall budget and topped up inside the run, and a cap on
 what one lineage may book — and they are tested together because they are one
@@ -28,7 +28,7 @@ from fractal_wallpapers.discovery import walk as walk_module
 
 EIGHT_HOURS = 8 * 3600.0
 
-#: What `deep_run1` actually seated, for the comparisons the report is quoted
+#: What the first deep run actually seated, for the comparisons the report is quoted
 #: against. Thirty-two, by hand, against the same eight hours.
 DEEP_RUN1_SEATS = 32
 
@@ -45,7 +45,7 @@ def test_an_eight_hour_budget_buys_a_seat_count_rather_than_a_guess() -> None:
         costs.sourcing_per_seat + costs.walk_per_seat + costs.evaluation_per_seat
     )
     assert plan.seats == int(plan.room // plan.per_seat)
-    # The whole point of the change, as a number: the same budget `deep_run1`
+    # The whole point of the change, as a number: the same budget the first deep run
     # took 32 seats out of buys several times that.
     assert plan.seats > 5 * DEEP_RUN1_SEATS
     assert plan.record()["nodes"] > 2000
@@ -358,7 +358,7 @@ def test_the_cap_is_on_for_a_deep_run_and_off_for_the_shallow_walk() -> None:
     assert deep_run.walk_limits(deep_run.Limits()).lineage_admissions == (
         deep_run.LINEAGE_ADMISSIONS
     )
-    # Half again `deep_run1`'s equal share of 741 admissions over 48 roots, and
+    # Half again the first deep run's equal share of 741 admissions over 48 roots, and
     # well under the 85 the largest lineage actually took.
     assert 741 / 48 < deep_run.LINEAGE_ADMISSIONS < 85
 

@@ -83,7 +83,7 @@ MIN_WIDTH = 1e-11
 #: **Degree 5 stops a decade early, and the reason is the only visible failure
 #: this mode has.** Every plane's escape counts are already partly wrong at
 #: `1e-11` — measured against 50-digit orbits at 8.0%, 14.5% and 22.0% of
-#: sampled points on the three planes `deep_run1` walked — and none of that
+#: sampled points on the three planes the first deep run walked — and none of that
 #: shows in a picture. Degree 5 fails differently: its neighbouring orbits do
 #: not scatter, they *collapse*, and at `1e-11` two thirds of horizontally
 #: adjacent samples come back bit-identical, which reads as a mosaic of flat

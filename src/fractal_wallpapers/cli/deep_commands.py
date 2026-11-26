@@ -88,7 +88,7 @@ def deep_anchor_pool(args: argparse.Namespace) -> int:
     flag's default is eight, which is 32 anchors over the four parameter planes;
     a projection at eight hours asks for a few hundred descents and would run the
     queues dry in its first round. So a budgeted run raises the pool to what its
-    own projection needs, at `deep_run1`'s measured arrival rate, and the flag
+    own projection needs, at the first deep run's measured arrival rate, and the flag
     still wins whenever it is set higher.
     """
     import math
@@ -213,8 +213,9 @@ def add_commands(subcommands) -> None:
         metavar="SECONDS",
         help="size the seating against this, and stop cleanly rather than start a batch that "
         "would overrun it. Covers this run AND the evaluation frames that follow it: a "
-        "seat is priced sourcing + walk + evaluation off deep_run1's measurements, so eight "
-        "hours buys about 184 seats where that run took 32 and spent a quarter of its clock",
+        "seat is priced sourcing + walk + evaluation off the first deep run's measurements, "
+        "so eight hours buys about 184 seats where that run took 32 and spent a quarter of "
+        "its clock",
     )
     walking.add_argument(
         "--no-evaluation-reserve",
@@ -243,7 +244,7 @@ def add_commands(subcommands) -> None:
         type=int,
         default=deep_module.LINEAGE_ADMISSIONS,
         help=f"admissions any one lineage may book before the walk stops expanding it "
-        f"(default: {deep_module.LINEAGE_ADMISSIONS}; 0 turns the cap off). deep_run1 put "
+        f"(default: {deep_module.LINEAGE_ADMISSIONS}; 0 turns the cap off). The first deep run put "
         f"741 admissions on 15 of its 48 roots and 85 on one, and its floor frames were "
         f"largely one composition. Nothing is retro-refused: expansion stops, fates stand",
     )
