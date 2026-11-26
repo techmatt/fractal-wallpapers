@@ -13,8 +13,8 @@ round's lever at its seat) is passed over for the next.
 
 **The page's palette switch**: `style wasm-parity --recolour [names]` measures each published
 mode's default entry at its first shown place, recolours it to every other kept entry and
-tiles it, against a plain module frame of that entry (96x60 ss2, module only: about a
-minute and a half for every mode on three workers). Each switch reads `identical`, or
+tiles it, against a plain module frame of that entry (96x60 ss2, module only: 67 switches
+in 32 s on three workers, quiet box, 085). Each switch reads `identical`, or
 `refused` where the entry moves what the frame gathered (a stir's `steps`, a trap's
 `largest`, a layer switched on from opacity 0), which the page meets by measuring afresh;
 anything else exits 1. A mode with a post stage is drawn whole and never recoloured.
