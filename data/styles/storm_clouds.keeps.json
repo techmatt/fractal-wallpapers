@@ -9,6 +9,61 @@
   "folder": "fractal-drive-sync/style-keeps/storm_clouds",
   "keeps": [
     {
+      "id": "style_light_lines_nebulae_r1/star_nebula/forms_a/sn_a_baseline",
+      "picker": "style_light_lines_nebulae_r1",
+      "picked": [
+        {
+          "row": "star_nebula/forms_a",
+          "key": "sn_a_baseline"
+        }
+      ],
+      "label": "baseline: storm_clouds, the nearest mode, in the star_nebula map",
+      "image": "style_light_lines_nebulae_r1__sn_a_baseline.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_6046d762",
+          "family": {
+            "kind": "phoenix",
+            "c": [
+              "0.4507380371623594",
+              "0.13346705902013667"
+            ],
+            "p": [
+              "0.8375476102242677",
+              "0.4087796988016554"
+            ],
+            "z_prev": [
+              "0.0",
+              "0.0"
+            ]
+          },
+          "viewport": {
+            "center_re": "0.001040775796243054",
+            "center_im": "0.822321252388517",
+            "width": "0.03832382273952431"
+          },
+          "maxiter": 1443,
+          "note": "final139_general seat 113 (smooth_angle_min, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 113,
+            "key": "6046d762e53567c1",
+            "p_spiral": 0.289308
+          },
+          "ink": 0.01721
+        },
+        "style": "storm_clouds",
+        "stack": "storm_clouds@362cd86e",
+        "colormap": "blue_nebula",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
+    },
+    {
       "id": "style_november_r2/storm_clouds/kept/sc2_crimson_ledges_bf30",
       "picker": "style_november_r2",
       "picked": [

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "blue_nebula",
+  "kind": "sequential",
+  "source": "blue_nebula, authored as 8 control points as an albedo from wallhaven-jewqgw (a storm_clouds entry): a black-navy sky, a deep blue haze, then the cloud's cobalt and sky blue, its red-orange filaments high up, and a blue-white for the stars.",
+  "stops": [
+    [0.0, [2, 6, 18]],
+    [0.16, [8, 22, 56]],
+    [0.32, [24, 62, 130]],
+    [0.48, [62, 120, 196]],
+    [0.62, [132, 176, 224]],
+    [0.76, [214, 92, 48]],
+    [0.88, [250, 150, 90]],
+    [1.0, [240, 246, 255]]
+  ]
+}

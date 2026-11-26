@@ -3220,15 +3220,6 @@
             "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae"
           ],
           "score": 4
-        },
-        {
-          "colormap": "glow_tube",
-          "values": {
-            "/tone/median": 0.095,
-            "/tone/p10": 0.081
-          },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-ym8rqk.png"
         }
       ]
     },
@@ -3258,8 +3249,8 @@
         "knobs": []
       },
       "what": "Neon outline: glowing white loops and beams of one clean weight over the set's pale lace, on a blue-to-green ground (blue-white beams between tan stars as a palette entry).",
-      "kept": "1 tile: the tan_star_beams entry; the stack's own formulations and the cream_ribbons entry kept nothing",
-      "note": "Engine: the stroke trap (mercury_tubes') · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the tan_star_beams entry 3/5.",
+      "kept": "2 tiles: the tan_star_beams entry, and the violet_threads entry at seat b (style_light_lines_nebulae_r1); the stack's own formulations and the cream_ribbons entry kept nothing",
+      "note": "Engine: the stroke trap (mercury_tubes') · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, the tan_star_beams entry 3/5. Item 092's violet_threads entry (2026-11-26): \"good\", 3/5.",
       "palettes": [
         {
           "colormap": "neon_loops",
@@ -3308,8 +3299,11 @@
             "/tone/median": 0.106,
             "/tone/p10": 0.019
           },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-r21py7.png"
+          "keeps": [
+            "style_light_lines_nebulae_r1/neon_loops/violet_threads/nl_b_e_violet_threads"
+          ],
+          "reference": "wallhaven_wallhaven-r21py7.png",
+          "score": 3
         }
       ]
     },
@@ -4002,7 +3996,8 @@
       "references": [
         "wallhaven_wallhaven-45oz58.jpg",
         "tributaries-25.jpg",
-        "wallhaven_wallhaven-3z1jkd.png"
+        "wallhaven_wallhaven-3z1jkd.png",
+        "wallhaven_wallhaven-jewqgw.png"
       ],
       "what": "Storm clouds: crinkled cloud banks in teal, violet and orchid, the lace their edge, soft colour drifting through them, lit as a broad relief (blue and gold, and a crimson nebula with stars, as palette entries).",
       "variant": "current",
@@ -4017,7 +4012,7 @@
         "palette": "storm_clouds",
         "knobs": []
       },
-      "kept": "7 tiles: scf_ledges at both seats, locations scl_03 and scl_05; entries tributary_clouds (seat 2) and crimson_nebula (both seats); plus the molten_flow baseline tile, kept to that mode; round two (style_november_r2): ledges at seats 9a93 and bf30, crimson_nebula on ledges at bf30; library maps molten_flow and soft_veils_drift on ledges",
+      "kept": "7 tiles: scf_ledges at both seats, locations scl_03 and scl_05; entries tributary_clouds (seat 2) and crimson_nebula (both seats); plus the molten_flow baseline tile, kept to that mode; round two (style_november_r2): ledges at seats 9a93 and bf30, crimson_nebula on ledges at bf30; library maps molten_flow and soft_veils_drift on ledges; item 092's baseline tile (style_light_lines_nebulae_r1): the stack in jewqgw's blue_nebula map at that round's seat a (phoenix_6046d762), an entry (unscored)",
       "note": "Matt: round one (2026-11-24): \"these are fine, 3/5, although some palettes are not great here\"; storm_clouds, tributary_clouds and crimson_nebula 3/5. Round two (2026-11-24): kept ledges at seats 9a93 and bf30, crimson_nebula on ledges at bf30; library maps molten_flow and soft_veils_drift on ledges; Scores unchanged.",
       "palettes": [
         {
@@ -4081,6 +4076,14 @@
           "keeps": [
             "style_november_r2/storm_clouds/maps/sc2_map_soft_veils_drift"
           ]
+        },
+        {
+          "colormap": "blue_nebula",
+          "values": {},
+          "keeps": [
+            "style_light_lines_nebulae_r1/star_nebula/forms_a/sn_a_baseline"
+          ],
+          "reference": "wallhaven_wallhaven-jewqgw.png"
         }
       ]
     },
@@ -4680,29 +4683,6 @@
           "reference": "wallhaven_wallhaven-wqg52p.png"
         }
       ]
-    },
-    {
-      "style": "light_pillar",
-      "item": "092",
-      "reference": "wallhaven_wallhaven-dp5p9o.png",
-      "references": [
-        "wallhaven_wallhaven-dp5p9o.png",
-        "wallhaven_wallhaven-ym8rqk.png",
-        "wallhaven_wallhaven-j3ygpw.jpg"
-      ],
-      "what": "Pillars of light: the set's hair burning hot round one point of the frame and streaming upright as a translucent pillar of straight streaks, over ripple rings (a thin rim on every escape step's level line), violet on a black-indigo ground (a slanting blue glow tube and crossing bundles of cream strings as palette entries).",
-      "palettes": []
-    },
-    {
-      "style": "star_nebula",
-      "item": "092",
-      "reference": "wallhaven_wallhaven-jewqgw.png",
-      "references": [
-        "wallhaven_wallhaven-jewqgw.png",
-        "wallhaven_wallhaven-jxddgp.png"
-      ],
-      "what": "A nebula among stars: soft blue cloud masses from three turned views, dark dust lanes through fine grain, the set's hair as hot red filaments, and sparkle stars twinkling as short four-spoke rays (violet and pink star clusters as a palette entry).",
-      "palettes": []
     }
   ]
 }

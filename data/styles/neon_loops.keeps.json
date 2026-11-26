@@ -62,9 +62,216 @@
         ],
         "supersample": 2
       }
+    },
+    {
+      "id": "style_light_lines_nebulae_r1/neon_loops/violet_threads/nl_b_e_violet_threads",
+      "picker": "style_light_lines_nebulae_r1",
+      "picked": [
+        {
+          "row": "neon_loops/violet_threads",
+          "key": "nl_b_e_violet_threads"
+        }
+      ],
+      "label": "",
+      "image": "style_light_lines_nebulae_r1__nl_b_e_violet_threads.jpg",
+      "render": {
+        "location": {
+          "schema": 1,
+          "name": "phoenix_8b21e0ae",
+          "family": {
+            "c": [
+              "-0.5266783574752247",
+              "-0.652322729101436"
+            ],
+            "kind": "phoenix",
+            "p": [
+              "-0.28353182998131243",
+              "-0.02545285599096059"
+            ],
+            "z_prev": [
+              "-0.10324356398202189",
+              "0.43684294503006016"
+            ]
+          },
+          "viewport": {
+            "center_re": "-0.4471102599431493",
+            "center_im": "-0.44513093814775134",
+            "width": "1.6824237464337766"
+          },
+          "maxiter": 5001,
+          "note": "final139_general seat 624 (smooth_mean_angle, phoenix)",
+          "gallery": {
+            "record": "final139_general",
+            "seat": 624,
+            "key": "8b21e0ae0ec59010",
+            "p_spiral": 0.209808
+          },
+          "ink": 0.03679
+        },
+        "style": "e_violet_threads",
+        "stack": "e_violet_threads@2bc22590",
+        "colormap": "violet_threads",
+        "resolution": [
+          1280,
+          800
+        ],
+        "supersample": 2
+      }
     }
   ],
   "stacks": {
+    "e_violet_threads@2bc22590": {
+      "name": "e_violet_threads",
+      "interior": {
+        "palette": 0.0
+      },
+      "layers": [
+        {
+          "kind": "palette",
+          "channel": {
+            "radial": {
+              "center": [
+                0.6,
+                0.5
+              ]
+            }
+          },
+          "palette": {
+            "transfer": {
+              "kind": "value"
+            },
+            "cycles": 0.6,
+            "gamma": 1.0
+          }
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.02,
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.15
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "falloff": 0.0004,
+          "color": {
+            "palette": 0.88
+          },
+          "blend": "screen",
+          "opacity": 0.6
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 20.0,
+              "width": 0.005,
+              "taper": 0.6,
+              "node": 1.0,
+              "largest": 1.5,
+              "smallest": 0.12,
+              "steps": 10,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.45,
+          "power": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "line",
+              "on_c": true,
+              "tilt": 20.0,
+              "width": 0.005,
+              "taper": 0.6,
+              "node": 1.0,
+              "largest": 1.5,
+              "smallest": 0.12,
+              "steps": 10,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 0.9,
+          "power": 2.0
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "circle",
+              "on_c": true,
+              "radius": 0.7,
+              "width": 0.004,
+              "taper": 0.5,
+              "largest": 1.5,
+              "smallest": 0.12,
+              "steps": 10,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 0.75
+          },
+          "blend": "screen",
+          "opacity": 0.5,
+          "power": 0.3
+        },
+        {
+          "kind": "glow",
+          "channel": {
+            "stroke": {
+              "shape": "circle",
+              "on_c": true,
+              "radius": 0.7,
+              "width": 0.004,
+              "taper": 0.5,
+              "largest": 1.5,
+              "smallest": 0.12,
+              "steps": 10,
+              "side": "outside",
+              "read": "glow"
+            }
+          },
+          "color": {
+            "palette": 1.0
+          },
+          "blend": "screen",
+          "opacity": 1.0,
+          "power": 2.0
+        }
+      ],
+      "tone": {
+        "median": 0.106,
+        "p10": 0.019
+      }
+    },
     "neon_loops@bc328eec": {
       "name": "neon_loops",
       "interior": {

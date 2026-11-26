@@ -305,9 +305,5 @@
 {"schema": 1, "kind": "admitted", "map": "silk_shards", "group": "map:silk_shards", "joined": false, "nearest": "map:Cochineal & Cream", "m1": 0.05266}
 {"schema": 1, "kind": "admitted", "map": "bone_star", "group": "map:bone_star", "joined": false, "nearest": "map:Umber & Ember", "m1": 0.042711}
 {"schema": 1, "kind": "admitted", "map": "soft_veils_wine", "group": "map:soft_veils_wine", "joined": false, "nearest": "m61", "m1": 0.063072}
-{"schema": 1, "kind": "admitted", "map": "light_pillar", "group": "m48", "joined": true, "nearest": "m48", "m1": 0.033601}
-{"schema": 1, "kind": "admitted", "map": "glow_tube", "group": "map:glow_tube", "joined": false, "nearest": "map:Ice Spire", "m1": 0.047099}
-{"schema": 1, "kind": "admitted", "map": "string_lines", "group": "map:string_lines", "joined": false, "nearest": "map:cream_lace", "m1": 0.060283}
 {"schema": 1, "kind": "admitted", "map": "violet_threads", "group": "map:violet_threads", "joined": false, "nearest": "map:tempest_plumes", "m1": 0.039937}
-{"schema": 1, "kind": "admitted", "map": "star_nebula", "group": "map:star_nebula", "joined": false, "nearest": "map:Ice-to-Ember Cliff", "m1": 0.06631}
-{"schema": 1, "kind": "admitted", "map": "star_clusters", "group": "map:star_clusters", "joined": false, "nearest": "map:Violet Ascension", "m1": 0.077903}
+{"schema": 1, "kind": "admitted", "map": "blue_nebula", "group": "map:blue_nebula", "joined": false, "nearest": "map:Ice-to-Ember Cliff", "m1": 0.06631}
