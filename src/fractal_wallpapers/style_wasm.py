@@ -710,35 +710,50 @@ def kept_seats(name: str) -> list[dict[str, Any]]:
     return sorted(seats.values(), key=lambda location: -location["maxiter"])
 
 
-def cost_jobs(names: list[str], seat: str | None = None) -> list[dict[str, Any]]:
+def cost_resolution(shrink: int = 1) -> tuple[int, int]:
+    """The frame a cost read draws: the explorer's 1280x800, each side over `shrink`."""
+    width, height = SPEED_RESOLUTION
+    if shrink < 1 or width % shrink or height % shrink:
+        raise StyleWasmError(f"--shrink {shrink}: it must divide {width}x{height} (1, 2, 4, 8, 16)")
+    return width // shrink, height // shrink
+
+
+def cost_jobs(
+    names: list[str],
+    seat: str | None = None,
+    location: dict[str, Any] | None = None,
+    shrink: int = 1,
+) -> list[dict[str, Any]]:
     """[`cost`]'s jobs: each style's published stack and map at its deepest kept seat
-    (or at `seat`, a kept seat's name), one 1280x800 ss2 frame each."""
+    (or at `seat`, a kept seat's name, or at `location`, any location record: a round-one
+    style has no kept seat), one 1280x800 ss2 frame each, or that frame over `shrink`."""
     from fractal_wallpapers import styles
 
+    resolution = cost_resolution(shrink)
     published = {row["style"]: row for row in published_rows()}
     jobs = []
     for name in names:
         document = styles.load(name)
         # A merged style's old name reads as its mode at the entry that was it
         # (`styles.load`): the mode's seats, the entry's stack and map.
-        seats = kept_seats(document["name"])
-        if seat is not None:
-            seats = [location for location in seats if location.get("name") == seat]
+        seats = [location] if location is not None else kept_seats(document["name"])
+        if seat is not None and location is None:
+            seats = [kept for kept in seats if kept.get("name") == seat]
         if not seats:
             raise StyleWasmError(f"{name} has no kept seat" + (f" named {seat}" if seat else ""))
         row = published.get(name)
         palette = row["public"]["palette"] if row else document["suggested_colormap"]
-        location = seats[0]
+        chosen = seats[0]
         jobs.append(
             {
-                "id": f"{name}__{location.get('name', 'seat')}",
+                "id": f"{name}__{chosen.get('name', 'seat')}",
                 "style": name,
-                "seat": location.get("name"),
+                "seat": chosen.get("name"),
                 "request": request(
-                    location,
+                    chosen,
                     document["style"],
                     colormap_of(palette),
-                    SPEED_RESOLUTION,
+                    resolution,
                     SPEED_SUPERSAMPLE,
                 ),
                 "draw": "frame",
@@ -748,27 +763,38 @@ def cost_jobs(names: list[str], seat: str | None = None) -> list[dict[str, Any]]
 
 
 def cost(
-    folder: Path, names: list[str], seat: str | None = None, workers: int = 1
+    folder: Path,
+    names: list[str],
+    seat: str | None = None,
+    workers: int = 1,
+    location: dict[str, Any] | None = None,
+    shrink: int = 1,
 ) -> list[dict[str, Any]]:
     """The explorer's cost of each style: one 1280x800 ss2 frame as WebAssembly on one
     thread, at its deepest kept seat, against [`COST_BAR_SECONDS`].
 
     Each job is one thread's work whatever `workers` is; a reading is a timing only on a
     quiet box with a core left for every worker. Rows go to `cost.jsonl` in `folder`.
+    With `shrink` the frame is drawn at 1/shrink of each side and its time scaled by
+    shrink² to the full frame (a row's `read_seconds` is what it took): the read for a
+    mode already known to be over, whose whole frame would hold a worker for many minutes.
     """
     if not 1 <= workers <= COST_WORKERS:
         raise StyleWasmError(
             f"--workers {workers}: a cost read draws on 1 to {COST_WORKERS} threads "
             "(the render pool's count)"
         )
-    jobs = cost_jobs(names, seat)
+    jobs = cost_jobs(names, seat, location, shrink)
     results = run_node(jobs, folder, workers)
     out = []
     for job, result in zip(jobs, results, strict=True):
         line = {"style": job["style"], "seat": job["seat"], "ok": result["ok"]}
         if result["ok"]:
-            seconds = round(result["open"] + result["draw"], 2)
+            read = round(result["open"] + result["draw"], 2)
+            seconds = round(read * shrink * shrink, 2)
             line.update(maxiter=result["maxiter"], seconds=seconds, over=seconds > COST_BAR_SECONDS)
+            if shrink > 1:
+                line.update(shrink=shrink, read_seconds=read)
         else:
             line["why"] = result["why"]
         out.append(line)

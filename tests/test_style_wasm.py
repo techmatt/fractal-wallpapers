@@ -165,6 +165,16 @@ def test_a_cost_read_draws_each_style_at_its_deepest_kept_seat(tmp_path):
         style_wasm.cost_jobs([name], seat="no such seat")
     with pytest.raises(style_wasm.StyleWasmError, match="render pool"):
         style_wasm.cost(tmp_path, [name], workers=style_wasm.COST_WORKERS + 1)
+    # Any location record reads in place of the kept seats (a round-one style has none),
+    # and every style named is read there, not only the first; `shrink` divides each side.
+    (one, two) = style_wasm.cost_jobs(published[:2], location=shallowest, shrink=4)
+    for job in (one, two):
+        assert job["request"]["location"] == shallowest
+        assert job["request"]["resolution"] == [s // 4 for s in style_wasm.SPEED_RESOLUTION]
+    (first, second) = style_wasm.cost_jobs(published[:2])
+    assert second["request"]["location"] == style_wasm.kept_seats(published[1])[0]
+    with pytest.raises(style_wasm.StyleWasmError, match="must divide"):
+        style_wasm.cost_jobs([name], shrink=3)
     # A parity run and a recolour check are held to the same pool (Matt, 2026-11-25).
     assert style_wasm.PARITY_WORKERS == engine.POOL_WORKERS
     with pytest.raises(style_wasm.StyleWasmError, match="render pool"):

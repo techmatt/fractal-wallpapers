@@ -88,9 +88,15 @@ def print_cost(rows: list[dict], style_wasm) -> int:
     for row in rows:
         if row["ok"]:
             verdict = "OVER" if row["over"] else "under"
+            scaled = (
+                f" (read {row['read_seconds']:.1f} s at 1/{row['shrink']}, x{row['shrink'] ** 2})"
+                if row.get("shrink")
+                else ""
+            )
             print(
                 f"{row['style']:<20} {row['seat'] or '-':<32} maxiter {row['maxiter']:>6} "
                 f"{row['seconds']:8.1f} s  {verdict} the {style_wasm.COST_BAR_SECONDS} s bar"
+                f"{scaled}"
             )
         else:
             print(f"{row['style']:<20} {row['seat'] or '-':<32} FAILED: {row['why']}")
@@ -138,11 +144,19 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
     folder = resolve_output(args.out) if args.out else style_wasm.out_dir() / args.what
     try:
         if args.what == "cost":
-            from fractal_wallpapers import styles
+            from fractal_wallpapers import locations, style_picker, styles
 
             try:
-                rows = style_wasm.cost(folder, args.names, args.seat, args.workers)
-            except styles.StyleError as refusal:
+                location = None
+                if args.location:
+                    # Checked as `style render --location` checks it, sent as written.
+                    source = resolve_input(args.location)
+                    locations.read_one(source, drawing=True)
+                    location = style_picker.records_as_written(source)[0]
+                rows = style_wasm.cost(
+                    folder, args.names, args.seat, args.workers, location, args.shrink
+                )
+            except (styles.StyleError, locations.LocationError) as refusal:
                 print(refusal)
                 return 1
             return print_cost(rows, style_wasm)
@@ -969,7 +983,19 @@ def add_commands(subcommands) -> None:
         "each named style's deepest kept seat, against the 5-minute bar",
     )
     cost.add_argument("names", nargs="+", help="the styles to time")
-    cost.add_argument("--seat", help="a kept seat's name instead of the deepest")
+    where = cost.add_mutually_exclusive_group()
+    where.add_argument("--seat", help="a kept seat's name instead of the deepest")
+    where.add_argument(
+        "--location",
+        help="one location record to read at instead (a round-one style has no kept seat)",
+    )
+    cost.add_argument(
+        "--shrink",
+        type=int,
+        default=1,
+        help="draw at 1/N of each side and scale the time by N squared: for a mode already "
+        "known to be over the bar (default 1, the whole frame)",
+    )
     cost.add_argument(
         "--workers",
         type=int,
