@@ -30,7 +30,7 @@ render was given; the second keeps a style in key with every palette.
 `projection` (optional) is where each sample looks: a per-sample pre-map of the frame
 before anything is iterated. The **kaleidoscope** fold, `{"kaleidoscope": {center, turns,
 angle}}`, is a mirror box: the disc round `center` is cut into `2·turns` wedges and every
-sample reads the one at `angle`°, mirrored in every other, at the straight view's radius,
+sample reads the one at `angle`°, mirrored in every other (`turns` 1 to 64), at the straight view's radius,
 so lengths and the light keep their meaning. The other kind is the **log-polar** (exponential-map) view,
 `{"log_polar": {center, turns, power, twist, angle, ring}}`: about a vanishing point at
 `center` (fractions of the frame from its top-left; the location's viewport `center` is

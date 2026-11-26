@@ -59,6 +59,10 @@ pub enum Projection {
     Kaleidoscope(Kaleidoscope),
 }
 
+/// The most mirrored pairs a kaleidoscope folds into: a sample costs up to two
+/// reflections a turn, and past a few dozen the wedges are slivers.
+pub const MOST_KALEIDOSCOPE_TURNS: u32 = 64;
+
 /// The mirror-box fold: see the module documentation.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, default)]
@@ -66,7 +70,8 @@ pub struct Kaleidoscope {
     /// The fold's middle, as fractions of the frame from its top-left corner. The
     /// viewport's `center` is the plane point it shows.
     pub center: [f64; 2],
-    /// Mirrored pairs of wedges round the middle: the picture's symmetry. At least 1.
+    /// Mirrored pairs of wedges round the middle: the picture's symmetry, 1 to
+    /// [`MOST_KALEIDOSCOPE_TURNS`].
     pub turns: u32,
     /// Degrees anticlockwise from the frame's `x` axis to the wedge every sample
     /// reads.
@@ -157,8 +162,12 @@ impl Projection {
         let view = match self {
             Projection::LogPolar(view) => view,
             Projection::Kaleidoscope(fold) => {
-                if fold.turns == 0 {
-                    return Err("kaleidoscope turns is at least 1".into());
+                // A sample is folded by up to `2·turns + 2` reflections, so a vast count
+                // would never finish (and past 2^31 the bound wraps to no fold at all).
+                if !(1..=MOST_KALEIDOSCOPE_TURNS).contains(&fold.turns) {
+                    return Err(format!(
+                        "kaleidoscope turns is 1 to {MOST_KALEIDOSCOPE_TURNS}"
+                    ));
                 }
                 if !(fold.angle.is_finite() && fold.center.iter().all(|f| f.is_finite())) {
                     return Err("kaleidoscope angle and center are finite".into());
@@ -464,6 +473,17 @@ mod tests {
     fn a_kaleidoscope_that_cannot_draw_is_refused() {
         assert!(kaleidoscope(0, 0.0).validate().is_err());
         assert!(kaleidoscope(2, f64::NAN).validate().is_err());
+        assert!(
+            kaleidoscope(MOST_KALEIDOSCOPE_TURNS, 0.0)
+                .validate()
+                .is_ok()
+        );
+        assert!(
+            kaleidoscope(MOST_KALEIDOSCOPE_TURNS + 1, 0.0)
+                .validate()
+                .is_err()
+        );
+        assert!(kaleidoscope(u32::MAX / 2, 0.0).validate().is_err());
         let parsed: Projection =
             serde_json::from_str(r#"{"kaleidoscope": {"turns": 8, "angle": 15.0}}"#).unwrap();
         assert!(parsed.validate().is_ok());

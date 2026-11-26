@@ -1278,7 +1278,6 @@
           "values": {},
           "keeps": [
             "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
-            "style_flame_wisp_amber_resave/redrawn/00_amber__f_close_views__01_vj_d2_r1.08_t0.131_whole_flame_wisp",
             "style_retrospective_082/flame_wisp_amber/kept/r3_am_cv_s1",
             "style_retrospective_082/flame_wisp_amber/levers/r3_am_cvtie_s2_g"
           ],
@@ -1608,7 +1607,7 @@
       "variant": "current",
       "show": [
         {
-          "keep": "style_organic_relief_r1/cauliflower_scales/locations/loc__07_phoenix-classic_8fa28807_horror_scales",
+          "keep": "style_retrospective_082/cauliflower_scales/entries/r2_cs_horror_8fa2",
           "caption": "Dark red and bone-grey lit scales curling through a phoenix spiral on black, small domed cells packed into the broad folds"
         }
       ],
@@ -1619,7 +1618,7 @@
       },
       "what": "Billowing cauliflower scales: each band of colour a lit scale, tan to blue, packed with small domed bumps.",
       "kept": "horror_scales: 1 location; the default map: 1 baseline tile (054); retrospective (style_retrospective_082): the new three-layer default at seat 8fa2; horror_scales on it; library map soft_veils_ember",
-      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic_8fa28807 keep opened at an iteration cap of 2000 in place of the seat's 14428, and the stack without its two stripe-view glows (082, Matt's picks in explorer_cost_cuts_080: \"can't see much difference, faster seems better\") · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice. Retrospective (2026-11-24, style_retrospective_082): kept the new three-layer default at seat 8fa2; horror_scales on it; library map soft_veils_ember; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
+      "note": "Engine: nothing new (relief on the smooth count) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Shown: the phoenix-classic_8fa28807 seat at an iteration cap of 2000 in place of its 14428, on the stack without its two stripe-view glows: 082's horror_scales keep there, drawn so (a card draws its keep's own stack; 085) (082, Matt's picks in explorer_cost_cuts_080: \"can't see much difference, faster seems better\") · Matt: round one kept nothing (not interesting enough, or too grayscale); the horror entry (054) kept, 3/5: the palettes and some of the effect properties are nice. Retrospective (2026-11-24, style_retrospective_082): kept the new three-layer default at seat 8fa2; horror_scales on it; library map soft_veils_ember; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
           "colormap": "cauliflower_scales",
@@ -2170,8 +2169,6 @@
           "keeps": [
             "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
             "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
-            "style_lace_holes_resave/redrawn/04_cream_lace__f_bubbles__00_hand_rabbitbud_alpha_cream_lace",
-            "style_lace_holes_resave/redrawn/05_cream_lace__f_current__01_hand_basilica2_alpha_cream_lace",
             "style_webs_clouds_r1/hollow_webs/formulations/hwf_lace_holes",
             "style_retrospective_082/lace_holes/levers/r6_lh_cream_now_f",
             "style_retrospective_082/lace_holes/entries/r6_lh_cream_now"
@@ -2213,8 +2210,6 @@
           "keeps": [
             "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail",
             "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
-            "style_lace_holes_resave/redrawn/02_copper_mail__f_bubbles__01_hand_basilica2_alpha_copper_mail",
-            "style_lace_holes_resave/redrawn/03_copper_mail__loc__09_hand_basilica2_value_copper_mail",
             "style_retrospective_082/lace_holes/levers/r6_lh_copper_dark_f",
             "style_retrospective_082/lace_holes/entries/r6_lh_copper_now"
           ],
@@ -2254,7 +2249,6 @@
             "/tone/p10": 0.364
           },
           "keeps": [
-            "style_lace_holes_resave/redrawn/06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs",
             "style_lace_holes_resave/redrawn/06_gold_arcs__f_bubbles__01_hand_basilica2_alpha_gold_arcs"
           ],
           "score": 3
@@ -2295,8 +2289,6 @@
           "keeps": [
             "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
             "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
-            "style_lace_holes_resave/redrawn/00_bead_strands__f_current__01_hand_basilica2_alpha_bead_strand",
-            "style_lace_holes_resave/redrawn/01_bead_strands__loc__05_hand_rabbitbud_alpha_deep_bead_strands",
             "style_retrospective_082/lace_holes/levers/r6_lh_bead_now_f",
             "style_retrospective_082/lace_holes/entries/r6_lh_bead_now"
           ],

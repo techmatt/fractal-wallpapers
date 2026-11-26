@@ -68,7 +68,8 @@ shown: [{keep, caption, location, colormap, stack}]}], colormaps: {name: file}}`
 per published row of `data/styles/catalog.json` (`style_wasm.bundle`'s docstring). `tier` is
 `curated` (the *Custom* list) or `lab` (*Custom (lab)*); a lab mode's `knobs` may be empty,
 and a shown example has no `keep` (a draft's place, drawn with the mode's own stack).
-`palettes` is `[{colormap, was, values, score}]`; the page writes `values` over `stack` at their
+`palettes` is `[{colormap, was, values, score}]`, the mode's own map first (values `{}`,
+there whether or not a keep was drawn in it) and then each kept entry; the page writes `values` over `stack` at their
 pointers (`style_palettes.apply`) before opening a session, and switches entries with
 `recolour`. `aliases` are old style names merged into the mode (`styles.alias_of`): a link
 naming one opens the entry whose `was` it is, else the mode's default. A shown keep carries the stack it

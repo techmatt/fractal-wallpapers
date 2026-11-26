@@ -85,9 +85,39 @@ of the style ones is `fractal-wallpapers style sweep` (`data/styles/CHECKS.md`'s
   kind of node (a number over a colour passes, then fails at the engine or on the page).
   Recommend comparing kinds in `check_row`.
 
+- **A knob turned on a palette entry overwrites the entry's values** (085): the page writes
+  an entry's `values` over the stack and a knob then writes `scale·value + offset` over
+  the same member, on both sides (`styles.with_knobs`, the module's `with_knobs`). Twelve
+  entries set a knob-owned member no single in-range setting reproduces (veil-drift's
+  `brightness` on nine soft_veils entries, `disc_size` on brass-foam's greenhorn,
+  soft-petals' golden_egg_petals, molten-folds' interstellar_webs, glass-beads'
+  bead_strands), so a visitor on one who touches the slider jumps to another picture and
+  cannot get back; twenty more are reachable but the bundle lists the mode's default.
+  Options: the bundle carries per-entry knob defaults (the inverse of the entry's value,
+  the knob marked fixed on that entry where no in-range value draws it); `check_row`
+  refuses such entries; or a knob never writes a member the active entry sets. Recommend
+  the first: no picture changes, and the page seeds its sliders per entry. *(Matt's call)*
+- **A recolour to an entry that switches a layer off is refused** though the kept frame
+  holds every lane it needs (`drawn` drops a layer at opacity 0, so its reads shrink).
+  No shipped entry does it; recommend accepting a subset of the gathered reads when one
+  does.
+- **Two entries draw readings no kept tile shows**: feather_plumes' starlight_plumes took
+  its dim-barbs lever's barbs but not the long masks that lever was drawn on (the row
+  records the choice), and chrome_whorl's published stack (rings 1.0, edge 0.2) is none
+  of its kept formulations (soft, wide_ember), where light_shafts made its kept lever the
+  default. Recommend chrome_whorl take soft as its default, as light_shafts did; leave
+  starlight_plumes as recorded. *(Matt's call)*
+
 ### Won't fix
 
 - `style sweep` raises `slow` on `bronze_packing`, and on a phoenix seat of
   `flame_wisp_frost`, which read 10–50x the library's median time per sample: those are
   the stacks' and seats' own cost (README's render times), so the flag compares each
   picture with its own style's median instead.
+- The module's `measure` accepts a preview of another aspect, and `tile` a size past
+  2^32 (wrapped by the u32 call): each needs a page breaking the documented contract
+  (`style-wasm/README.md`'s *The style module: a custom mode in a page*: a preview of the
+  same aspect), and the answer names the size measured.
+- `style cost` leaves a lab mode's shown example out of its seats once the mode has a keep
+  record (chrome_orbs since 082): the bar is the deepest *kept* seat by definition
+  (`data/styles/CHECKS.md`).

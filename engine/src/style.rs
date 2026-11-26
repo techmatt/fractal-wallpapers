@@ -3197,9 +3197,11 @@ pub fn measure(
 }
 
 /// What [`gather`] reads of a stack, and nothing else: two stacks with the same reads
-/// gather the same channels over the same frame, whatever their colours, opacities,
-/// palettes, lights' settings or tone. A recolour ([`measure_gathered`]) is allowed
-/// exactly when the new stack's reads are the gathered one's.
+/// gather the same channels over the same frame, whatever their colours, opacities above
+/// 0, palettes, lights' settings or tone. A layer at opacity 0 is not drawn ([`drawn`]),
+/// so it reads nothing: setting the only reader of a channel to 0 changes the reads. A
+/// recolour ([`measure_gathered`]) is allowed exactly when the new stack's reads are the
+/// gathered one's.
 #[derive(PartialEq)]
 struct Reads {
     fields: Vec<FieldSpec>,

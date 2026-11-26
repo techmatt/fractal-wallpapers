@@ -158,6 +158,15 @@ def test_a_draft_knob_of_the_wrong_shape_is_refused_not_raised():
         assert styles.check_public(document)
 
 
+def test_a_merged_style_s_knobs_are_listed_in_step_under_its_old_name(capsys):
+    # An alias reads as its mode at the entry that was it; an entry whose values move a
+    # knob's member is a palette, not a mode out of step with its own knobs.
+    # glossy_spirals' golden_petals entry moves its `shadow` and `relief` knobs' members.
+    assert styles.alias_of("golden_petals") == ("glossy_spirals", "golden_petals")
+    assert cli.main(["style", "knobs", "golden_petals"]) == 0
+    assert "OUT OF STEP" not in capsys.readouterr().out
+
+
 def test_a_missing_manifest_is_a_refusal(tmp_path):
     from fractal_wallpapers import locations
 

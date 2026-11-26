@@ -23,6 +23,9 @@ def test_the_bundle_carries_every_published_mode_whole():
         assert mode["stack"] == source["style"]
         assert mode["knobs"] == ((source.get("public") or {}).get("knobs") or [])
         assert mode["palette"] in document["colormaps"]
+        # The set a page cycles opens at the mode's own map, kept in or not.
+        assert mode["palettes"][0]["colormap"] == mode["palette"], row["style"]
+        assert mode["palettes"][0]["values"] == {}, row["style"]
         # A merged style's old name resolves on the page as `styles.alias_of` resolves it.
         assert mode["aliases"] == row.get("aliases", [])
         for alias in mode["aliases"]:
@@ -47,6 +50,30 @@ def test_the_bundle_carries_every_published_mode_whole():
     assert tiers == set(style_catalog.TIERS), "the bundle carries both tiers, told apart"
     for name, colormap in document["colormaps"].items():
         assert colormap == style_wasm.colormap_of(name)
+
+
+def test_the_recolour_check_switches_every_second_entry_of_a_tiled_mode():
+    """`wasm-parity --recolour`'s jobs, without Node: per published mode drawn in tiles,
+    each kept entry after the default as a plain frame and as the page's switch to it."""
+    document = style_wasm.bundle()
+    modes = document["modes"]
+    jobs = style_wasm.recolour_jobs(document=document)
+    frames = {job["id"] for job in jobs if job["draw"] == "frame"}
+    switches = [job for job in jobs if "same_as" in job]
+    assert {job["same_as"] for job in switches} == frames
+    expected = sum(
+        len(mode["palettes"]) - 1
+        for mode in modes
+        if not style_wasm.has_post(mode["stack"]) and len(mode["palettes"]) > 1
+    )
+    assert expected and len(switches) == expected
+    for job in switches:
+        assert job["draw"]["from"]["location"] == job["request"]["location"]
+        assert job["draw"]["from"]["colormap"] != job["request"]["colormap"] or (
+            job["draw"]["from"]["style"] != job["request"]["style"]
+        ), f"{job['id']} switches to the picture it started from"
+    with pytest.raises(style_wasm.StyleWasmError):
+        style_wasm.recolour_jobs(["no_such_style"], document=document)
 
 
 def test_a_named_parity_run_lists_only_that_style_s_jobs():
@@ -117,6 +144,13 @@ def test_a_cost_read_draws_each_style_at_its_deepest_kept_seat(tmp_path):
         style_wasm.cost_jobs([name], seat="no such seat")
     with pytest.raises(style_wasm.StyleWasmError, match="render pool"):
         style_wasm.cost(tmp_path, [name], workers=style_wasm.COST_WORKERS + 1)
+    # A merged style's old name opens as its mode at the entry that was it, so it is read
+    # at the mode's seats in that entry's stack and map.
+    row = next(r for r in style_wasm.published_rows() if r.get("aliases"))
+    alias = row["aliases"][0]
+    (job,) = style_wasm.cost_jobs([alias])
+    assert job["request"]["location"] == style_wasm.kept_seats(row["style"])[0]
+    assert job["request"]["style"] == styles.load(alias)["style"]
 
 
 def test_a_parity_run_of_a_name_with_nothing_to_draw_is_refused(tmp_path):

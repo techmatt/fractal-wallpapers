@@ -187,7 +187,7 @@ zoomed in, and its structure reads as the fractal's own (`docs/rulings.md`). Bac
 Goal: a new style from <image>, in fractal-drive-sync/style-refs/.
 Name: <style_name>. The look, in a line: <what makes the picture>.
 Nearest mode: <name>; what must differ from it: <headline>.
-Structure it needs (optional): <e.g. thin sets: --max-ink 0.10; Julia sets only: --kind julia>.
+Structure it needs (optional): <e.g. thin sets: --max-ink 0.10; dynamical planes (Julia, phoenix) only: --kind julia>.
   Lacking in the galleries? <yes: hand or atlas points via --points, per step 4's exception>.
   Reachable by one escape loop? (optional) <yes | no: density from several views or a new primitive>.
 Keep / avoid (optional): <what must survive, what must not appear>.

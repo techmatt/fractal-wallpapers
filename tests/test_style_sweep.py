@@ -104,6 +104,16 @@ def test_the_plan_draws_seats_both_knob_ends_and_every_palette_entry():
     assert all(item["location"] for item in todo)
 
 
+def test_a_style_s_seats_are_distinct_places_though_its_first_keeps_share_one():
+    # A round-two lever is often kept where round one was: starburst_veils' first two keeps
+    # share a seat, so its second seat is the next place, not the first drawn twice; every
+    # light_shafts keep is one place, so it has one seat.
+    for name, count in (("starburst_veils", 2), ("light_shafts", 1)):
+        seats = style_sweep.seats_of(name, [], 2)
+        places = {(s["location"]["name"], s["location"]["viewport"]["width"]) for s in seats}
+        assert len(places) == len(seats) == count, (name, places)
+
+
 def test_a_style_with_no_keeps_draws_gallery_seats():
     seats = style_sweep.seats_of("no_such_style_keeps", [{"name": "g0"}, {"name": "g1"}], 1)
     assert seats == [{"location": {"name": "g0"}, "colormap": None}]

@@ -97,6 +97,9 @@ def test_a_row_holds_its_set_to_its_keeps_and_its_score_to_its_best_palette():
     row, keeps = _row()
     row["palettes"][0]["values"] = {"/tone/p10": 0.1}
     assert any("stack's own" in p for p in style_palettes.check_row(row, STACK, keeps))
+    row, keeps = _row()
+    row["palettes"][1]["keeps"] = ["b", "b"]
+    assert style_palettes.check_row(row, STACK, keeps) == ["m: palette magma names keep 'b' twice"]
 
 
 def test_a_kept_tile_lays_its_map_into_the_set_once():

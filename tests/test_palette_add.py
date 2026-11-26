@@ -415,6 +415,25 @@ def test_rename_moves_a_map_through_every_table_and_back_byte_for_byte(library) 
     assert _files(where) == before
 
 
+def test_rename_reaches_a_shown_example_s_map_in_the_catalog() -> None:
+    # A lab mode's example (no keep) names its own map; a keep's comes from its record.
+    catalog = {
+        "modes": [
+            {
+                "palettes": [{"colormap": "a"}, {"colormap": "b"}],
+                "public": {"palette": "a"},
+                "show": [{"caption": "x", "colormap": "a"}, {"keep": "k", "caption": "y"}],
+            }
+        ]
+    }
+    assert admit.renamed_in_catalog(catalog, "a", "z")
+    (row,) = catalog["modes"]
+    assert [e["colormap"] for e in row["palettes"]] == ["z", "b"]
+    assert row["public"]["palette"] == "z" and row["show"][0]["colormap"] == "z"
+    assert "colormap" not in row["show"][1]
+    assert not admit.renamed_in_catalog(catalog, "a", "z")
+
+
 def test_remove_refuses_a_map_the_grouping_cut_placed(library) -> None:
     where, _ = library
     before = _files(where)

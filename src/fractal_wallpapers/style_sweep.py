@@ -104,14 +104,26 @@ def difference(a: Path, b: Path) -> float:
 
 
 def seats_of(name: str, gallery: list[dict[str, Any]], count: int) -> list[dict[str, Any]]:
-    """`[{location, colormap}]`: a style's first kept places, or gallery seats."""
+    """`[{location, colormap}]`: a style's first kept places, or gallery seats.
+
+    A place is taken once: a later round's lever is often kept at an earlier keep's seat,
+    and drawing the same stack there again would sweep one place under two names.
+    """
     from fractal_wallpapers import style_keeps
 
-    seats = []
+    seats, taken = [], set()
     for keep in style_keeps.read_record(name)["keeps"]:
         render = keep.get("render") or {}
-        if render.get("location"):
-            seats.append({"location": render["location"], "colormap": render.get("colormap")})
+        location = render.get("location")
+        if not location:
+            continue
+        place = json.dumps(
+            {key: location.get(key) for key in ("family", "viewport", "maxiter", "projection")},
+            sort_keys=True,
+        )
+        if place not in taken:
+            taken.add(place)
+            seats.append({"location": location, "colormap": render.get("colormap")})
         if len(seats) == count:
             return seats
     return seats or [{"location": row, "colormap": None} for row in gallery[:count]]

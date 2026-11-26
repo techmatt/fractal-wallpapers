@@ -139,6 +139,12 @@ def test_a_degree_filter_never_answers_for_a_family_without_one(gallery):
     assert keys == {"01"} and tentative.read_rows("A")[-1]["partition"] == "phoenix"
 
 
+def test_a_phoenix_seat_is_a_dynamical_plane_and_its_parameter_plane_is_not():
+    family = {"julia": "julia", "phoenix": "julia", "phoenix_m": "plane", "mandelbrot": "plane"}
+    for kind, plane in family.items():
+        assert style_scout.kind_of({"family": {"kind": kind}}) == plane, kind
+
+
 def test_the_render_log_keeps_the_record_as_written_cap_and_all(tmp_path):
     from fractal_wallpapers import locations
 

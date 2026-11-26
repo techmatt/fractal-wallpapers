@@ -177,10 +177,12 @@ def bundle() -> dict[str, Any]:
         palette = row["public"]["palette"]
         maps.setdefault(palette, colormap_of(palette))
         # The set a page cycles: each kept map with the values tuned for it, written over
-        # `stack` at their pointers (`style_palettes`), the default first.
+        # `stack` at their pointers (`style_palettes`), the default first. The default is
+        # the mode's own map, there whether or not a keep was drawn in it (a lab mode shows
+        # an example), so the page can always switch back to it.
         palettes = []
-        for entry in row["palettes"]:
-            if not entry.get("keeps"):
+        for index, entry in enumerate(row["palettes"]):
+            if index and not entry.get("keeps"):
                 continue  # still in its first round: not a kept palette yet
             maps.setdefault(entry["colormap"], colormap_of(entry["colormap"]))
             palettes.append(
@@ -553,6 +555,105 @@ def parity(
     return out
 
 
+#: The recolour check's size: the page's switch is size-blind (the same measure code at
+#: any size), so it is drawn small; every published mode's entries in about two minutes.
+RECOLOUR_RESOLUTION = (96, 60)
+
+#: The tile the recolour check cuts its pictures into: several per frame, so a seam shows.
+RECOLOUR_TILE = (40, 25)
+
+
+def recolour_jobs(
+    names: list[str] | None = None,
+    resolution: tuple[int, int] = RECOLOUR_RESOLUTION,
+    supersample: int = PARITY_SUPERSAMPLE,
+    document: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """[`recolour_check`]'s jobs: per published mode drawn in tiles, each kept palette
+    entry after the default as the page switches to it (the default measured, recoloured
+    to the entry, tiled) beside a plain frame of the entry, from the bundle as a page
+    reads it (its stack, knobs, entry values, the first shown place); `document` is that
+    bundle when the caller holds it already.
+
+    A mode with a post stage is drawn whole, never recoloured, so it has no jobs.
+    """
+    from fractal_wallpapers import style_palettes
+
+    document = document or bundle()
+    modes = document["modes"]
+    if names:
+        unknown = sorted(set(names) - {mode["style"] for mode in modes})
+        if unknown:
+            raise StyleWasmError(f"no published mode {', '.join(unknown)} to recolour")
+        modes = [mode for mode in modes if mode["style"] in names]
+    jobs = []
+    for mode in modes:
+        if has_post(mode["stack"]) or not mode["shown"] or len(mode["palettes"]) < 2:
+            continue
+        location = mode["shown"][0]["location"]
+
+        def asked(entry: dict[str, Any], mode=mode, location=location) -> dict[str, Any]:
+            stack = style_palettes.apply(mode["stack"], entry["values"])
+            colormap = document["colormaps"][entry["colormap"]]
+            return request(location, stack, colormap, resolution, supersample, mode["knobs"])
+
+        default = mode["palettes"][0]
+        for index, entry in enumerate(mode["palettes"][1:], 1):
+            ident = f"{mode['style']}__{index}_{entry['colormap']}"
+            jobs.append({"id": f"{ident}__plain", "request": asked(entry), "draw": "frame"})
+            jobs.append(
+                {
+                    "id": f"{ident}__recoloured",
+                    "request": asked(entry),
+                    "draw": {"measure": {}, "tile": list(RECOLOUR_TILE), "from": asked(default)},
+                    "same_as": f"{ident}__plain",
+                }
+            )
+    return jobs
+
+
+def recolour_check(
+    folder: Path,
+    names: list[str] | None = None,
+    workers: int = 3,
+    resolution: tuple[int, int] = RECOLOUR_RESOLUTION,
+    supersample: int = PARITY_SUPERSAMPLE,
+) -> list[dict[str, Any]]:
+    """The page's palette switch held to a plain draw, module against module: one row
+    per switch, `identical`, or `refused` with the module's reason (an entry moving what
+    the frame gathered, which the page meets by measuring afresh: slower, never wrong).
+    Rows also in `recolour.jsonl`.
+    """
+    jobs = recolour_jobs(names, resolution, supersample)
+    if not jobs:
+        raise StyleWasmError("no published mode here has a second palette entry to recolour")
+    folder.mkdir(parents=True, exist_ok=True)
+    rows = {row["id"]: row for row in run_node(jobs, folder, workers)}
+    out = []
+    for job in jobs:
+        if "same_as" not in job:
+            continue
+        ident = job["id"].removesuffix("__recoloured")
+        plain, switched = rows[job["same_as"]], rows[job["id"]]
+        line = {"id": ident, "ok": plain["ok"] and switched["ok"]}
+        if not plain["ok"]:
+            line["why"] = f"the plain frame failed: {plain['why']}"
+        elif not switched["ok"]:
+            line.update(
+                refused=True, why=switched["why"], ok="measure it afresh" in switched["why"]
+            )
+        else:
+            line["identical"] = (folder / f"{job['id']}.rgba").read_bytes() == (
+                folder / f"{job['same_as']}.rgba"
+            ).read_bytes()
+            line["ok"] = line["identical"]
+        out.append(line)
+    with (folder / "recolour.jsonl").open("w", encoding="utf-8", newline="\n") as handle:
+        for line in out:
+            handle.write(json.dumps(line) + "\n")
+    return out
+
+
 #: Matt's bar for one explorer frame (1280x800 ss2, one thread): about five minutes.
 COST_BAR_SECONDS = 300
 
@@ -590,7 +691,9 @@ def cost_jobs(names: list[str], seat: str | None = None) -> list[dict[str, Any]]
     jobs = []
     for name in names:
         document = styles.load(name)
-        seats = kept_seats(name)
+        # A merged style's old name reads as its mode at the entry that was it
+        # (`styles.load`): the mode's seats, the entry's stack and map.
+        seats = kept_seats(document["name"])
         if seat is not None:
             seats = [location for location in seats if location.get("name") == seat]
         if not seats:

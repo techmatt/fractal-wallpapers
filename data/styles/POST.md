@@ -127,7 +127,7 @@ the fractal's own: a spark, a rim, the set's hair.
 | `spokes`, `angle` | each source's beams, evenly round the circle from `angle` (degrees anticlockwise from the right): 2 a streak, 4 a cross, 6 or 8 a star (at most 16). Each spoke is one sweep over the frame, each sample its own light plus `fade` of the beam one step behind, so a beam at a multiple of 45 degrees stays one sample wide its whole length (one upright reads as rain) and any other spreads as it runs, the step's interpolation repeated: about 6 samples across after 200 steps at 15 degrees |
 | `length` | how far a beam runs before it fades to 1/e, in frame widths (1e-4 to 2) |
 | `center` | shafts instead of spokes: each sample gathers the light between it and this point (fractions of the frame), so shafts run outwards from it. A shaft is the **mean** of the light behind it (a spoke is the sum), summed by doubling, 2^k samples in `k` one-tap passes, out to three `length`s. `spokes` and `angle` are not read |
-| `strength` | the beams' gain, 0 to 100 |
+| `strength` | the beams' gain, 0 to 100. A spoke sums the samples behind it, so its gain is read at the draft's 2560 samples across and scaled by that over the frame's: a draft, the full frame and the explorer draw one picture |
 | `color` | every beam this paint times the luminance of the light its source casts (a dark paint dims the beams); absent, each beam that light's colour |
 
 A pass costs no escape loop: a select over the frame's luminance, then a sweep per spoke

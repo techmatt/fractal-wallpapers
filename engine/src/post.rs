@@ -1690,6 +1690,13 @@ pub const LONGEST_BEAM: f64 = 2.0;
 /// more than the frame's diagonal (5,120 x 3,200 samples at full size: about 6,000).
 const SHAFT_PASSES: u32 = 14;
 
+/// The frame width in samples a spoke's `strength` means what it says at: the draft's
+/// (1280 wide at supersample 2), where styles are tuned and kept. A spoke sums the light
+/// behind each sample, and a source covers more samples on a finer grid, so its beams are
+/// scaled by this over the frame's width: a draft, the full frame and the explorer draw
+/// one picture, and at the draft's own width the scale is exactly 1.
+pub const SPOKE_WIDTH: f64 = 2560.0;
+
 /// A shaft gathers out to this many `length`s, past which its light is under 1/20.
 const SHAFT_REACH: f64 = 3.0;
 
@@ -1808,6 +1815,12 @@ pub fn rays(rays: &Rays, frame: &Frame, colormap: &Colormap) -> Result<Vec<[f64;
     }
     let reach = rays.length * width as f64;
     let mut beams = vec![[0.0f32; 3]; width * height];
+    // A shaft is a mean, the same at any size; a spoke is a sum over the samples behind,
+    // so it is scaled to the width its `strength` is read at.
+    let gain = match rays.center {
+        None => rays.strength * (SPOKE_WIDTH / width as f64),
+        Some(_) => rays.strength,
+    };
     match rays.center {
         None => {
             for spoke in 0..rays.spokes {
@@ -1902,7 +1915,7 @@ pub fn rays(rays: &Rays, frame: &Frame, colormap: &Colormap) -> Result<Vec<[f64;
         .map(|(rgb, beam)| {
             let mut out = *rgb;
             for k in 0..3 {
-                out[k] += rays.strength * beam[k] as f64;
+                out[k] += gain * beam[k] as f64;
             }
             out
         })
@@ -2490,6 +2503,45 @@ mod tests {
                 "between spokes at ({col}, {row})"
             );
         }
+    }
+
+    #[test]
+    fn a_spoke_is_one_beam_at_every_size() {
+        // A source a fixed share of the frame wide covers twice the samples on a grid
+        // twice as fine; the beam a fixed fraction of the frame past it holds its light.
+        let streak = Rays {
+            share: 0.05,
+            spokes: 2,
+            angle: 0.0,
+            length: 0.1,
+            ..Rays::default()
+        };
+        let beam_at = |width: usize| {
+            let height = width / 4;
+            let mut linear = vec![[0.01, 0.01, 0.01]; width * height];
+            for row in height / 2 - width / 64..height / 2 + width / 64 {
+                for col in width / 4 - width / 64..width / 4 + width / 64 {
+                    linear[row * width + col] = [1.0, 1.0, 1.0];
+                }
+            }
+            let escaped = vec![true; width * height];
+            let frame = Frame {
+                width,
+                height,
+                linear: &linear,
+                escaped: &escaped,
+                near: &[],
+                heights: &[],
+            };
+            let out = super::rays(&streak, &frame, &map()).unwrap();
+            out[(height / 2) * width + width / 2][0] - 0.01
+        };
+        let (coarse, fine) = (beam_at(256), beam_at(512));
+        assert!(coarse > 0.01, "the beam reaches mid-frame: {coarse}");
+        assert!(
+            (fine / coarse - 1.0).abs() < 0.1,
+            "twice the samples, the same beam: {coarse} then {fine}"
+        );
     }
 
     #[test]

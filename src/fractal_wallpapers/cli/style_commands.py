@@ -10,7 +10,12 @@ import time
 from fractal_wallpapers import engine
 from fractal_wallpapers.cli.common import resolve_input, resolve_output
 from fractal_wallpapers.paths import tracked_name
-from fractal_wallpapers.style_wasm import PARITY_RESOLUTION, PARITY_SUPERSAMPLE, PARITY_WORKERS
+from fractal_wallpapers.style_wasm import (
+    PARITY_RESOLUTION,
+    PARITY_SUPERSAMPLE,
+    PARITY_WORKERS,
+    RECOLOUR_RESOLUTION,
+)
 
 
 def style(args: argparse.Namespace) -> int:
@@ -51,7 +56,10 @@ def list_knobs(args: argparse.Namespace) -> int:
     if not knobs:
         print(f"style '{document['name']}' exposes no knobs")
         return 1
-    problems = styles.check_public(document)
+    # A merged style's old name reads as its mode at the entry that was it, whose values
+    # may move a knob's member off its default: the mode's own file is what is checked.
+    own = document if document["name"] == args.name else styles.load(document["name"])
+    problems = styles.check_public(own)
     for knob in knobs:
         if styles.knob_shape(knob) is not None:
             continue  # check_public names what is wrong with it, below
@@ -89,6 +97,34 @@ def print_cost(rows: list[dict], style_wasm) -> int:
     return 0 if all(row["ok"] for row in rows) else 1
 
 
+def print_recolour(style_wasm, folder, args: argparse.Namespace, started: float) -> int:
+    """`wasm-parity --recolour`: each palette switch identical, refused, or what broke."""
+    if not args.out:
+        folder = style_wasm.out_dir() / "recolour"
+    rows = style_wasm.recolour_check(
+        folder,
+        args.names or None,
+        args.workers,
+        tuple(args.resolution or style_wasm.RECOLOUR_RESOLUTION),
+        args.supersample,
+    )
+    for row in rows:
+        if row.get("refused"):
+            print(f"{row['id']:<40} refused: {row['why']}")
+        elif row.get("identical"):
+            print(f"{row['id']:<40} identical")
+        else:
+            print(f"{row['id']:<40} {'DIFFERS' if 'identical' in row else row['why']}")
+    bad = sum(1 for row in rows if not row["ok"])
+    minutes, seconds = divmod(round(time.monotonic() - started), 60)
+    print(
+        f"{len(rows)} switches, {sum(1 for row in rows if row.get('identical'))} identical, "
+        f"{sum(1 for row in rows if row.get('refused'))} refused, {bad} wrong, in "
+        f"{minutes} min {seconds} s; rows in {folder / 'recolour.jsonl'}"
+    )
+    return 1 if bad else 0
+
+
 def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
     """`bundle`, `wasm-parity` or `wasm-speed`, once the catalog has loaded."""
     if args.what == "bundle":
@@ -123,9 +159,11 @@ def wasm_verb(args: argparse.Namespace, style_wasm) -> int:
                 print(f"slowest: {slowest['id']} at {slowest['draw']:.2f} s")
             return 0 if len(drawn) == len(rows) else 1
         started = time.monotonic()
+        if args.recolour:
+            return print_recolour(style_wasm, folder, args, started)
         rows = style_wasm.parity(
             folder,
-            tuple(args.resolution),
+            tuple(args.resolution or style_wasm.PARITY_RESOLUTION),
             args.supersample,
             names=args.names or None,
             workers=args.workers,
@@ -726,7 +764,10 @@ def add_commands(subcommands) -> None:
         help="only this gallery partition (mandelbrot, julia:multibrot3, ...); repeatable",
     )
     scout.add_argument(
-        "--kind", action="append", choices=["julia", "plane"], help="dynamical or parameter plane"
+        "--kind",
+        action="append",
+        choices=["julia", "plane"],
+        help="dynamical plane (julia and phoenix seats) or parameter plane",
     )
     scout.add_argument("--degree", action="append", type=int, help="only this degree; repeatable")
     scout.add_argument(
@@ -879,8 +920,17 @@ def add_commands(subcommands) -> None:
         nargs=2,
         type=int,
         metavar=("W", "H"),
-        default=list(PARITY_RESOLUTION),
-        help="output size in pixels (default: {} {})".format(*PARITY_RESOLUTION),
+        default=None,
+        help="output size in pixels (default: {} {}; {} {} with --recolour)".format(
+            *PARITY_RESOLUTION, *RECOLOUR_RESOLUTION
+        ),
+    )
+    parity.add_argument(
+        "--recolour",
+        action="store_true",
+        help="hold the page's palette switch instead, module against module: each published "
+        "mode's default entry measured and recoloured to each other kept entry, tiled, "
+        "against a plain frame of that entry",
     )
     parity.add_argument(
         "--supersample",

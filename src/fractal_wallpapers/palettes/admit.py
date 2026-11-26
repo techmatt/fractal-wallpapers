@@ -697,6 +697,23 @@ def _renamed_json(path: Path, rename, old: str) -> str | None:
     return json.dumps(document, indent=2, ensure_ascii=False) + "\n"
 
 
+def renamed_in_catalog(catalog: dict, old: str, new: str) -> bool:
+    """Every place the style catalog spells map `old` respelled `new`: each palette entry,
+    each public palette, and each shown example (one with no keep names its own map).
+    Whether anything changed."""
+    touched = False
+    for row in catalog["modes"]:
+        for entry in row.get("palettes", []):
+            if entry["colormap"] == old:
+                entry["colormap"], touched = new, True
+        if (row.get("public") or {}).get("palette") == old:
+            row["public"]["palette"], touched = new, True
+        for shown in row.get("show", []):
+            if "keep" not in shown and shown.get("colormap") == old:
+                shown["colormap"], touched = new, True
+    return touched
+
+
 def rename(old: str, new: str, directory: Path | None = None) -> dict:
     """Give a library map a new name everywhere the repository spells it: its file (and
     the file's `name`), its produced row, carrier rows and groups rows (its own, the group
@@ -748,14 +765,7 @@ def rename(old: str, new: str, directory: Path | None = None) -> dict:
                 row[key] = f"map:{new}"
 
     def in_catalog(catalog: dict) -> bool:
-        touched = False
-        for row in catalog["modes"]:
-            for entry in row.get("palettes", []):
-                if entry["colormap"] == old:
-                    entry["colormap"], touched = new, True
-            if (row.get("public") or {}).get("palette") == old:
-                row["public"]["palette"], touched = new, True
-        return touched
+        return renamed_in_catalog(catalog, old, new)
 
     def in_style(style: dict) -> bool:
         if style.get("suggested_colormap") != old:

@@ -256,7 +256,10 @@ def check_row(
             problems.append(f"{name}: palette {colormap}: {refusal}")
         if "score" in entry and not is_score(entry["score"]):
             problems.append(f"{name}: palette {colormap} scores {entry['score']}, not 1 to 5")
-        for ident in entry.get("keeps", []):
+        named = entry.get("keeps", [])
+        for ident in sorted({ident for ident in named if named.count(ident) > 1}):
+            problems.append(f"{name}: palette {colormap} names keep '{ident}' twice")
+        for ident in named:
             keep = keeps.get(ident)
             if keep is None:
                 problems.append(f"{name}: palette {colormap} names '{ident}', not in its keeps")

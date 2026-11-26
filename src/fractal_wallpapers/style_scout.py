@@ -96,8 +96,16 @@ def default_record() -> str:
 
 
 def kind_of(recipe: dict[str, Any]) -> str:
-    """`julia` for a dynamical-plane seat, `plane` for a parameter-plane one."""
-    return "julia" if recipe["family"].get("kind") == "julia" else "plane"
+    """`julia` for a dynamical-plane seat, `plane` for a parameter-plane one.
+
+    A `phoenix` seat is a dynamical plane (the pixel is `z₀`, as a Julia set's is); its
+    parameter plane is `phoenix_m`.
+    """
+    return "julia" if recipe["family"].get("kind") in DYNAMICAL_KINDS else "plane"
+
+
+#: Family kinds whose pixel is the orbit's start, not its parameter.
+DYNAMICAL_KINDS = ("julia", "phoenix")
 
 
 def degree_of(recipe: dict[str, Any]) -> int | None:

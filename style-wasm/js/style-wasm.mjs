@@ -74,10 +74,15 @@ export class StyleModule {
 
   // `name(...args, ptr, len)` over `raw` copied into the module, its JSON answer out.
   send(name, raw, ...args) {
-    const ptr = this.exports.alloc(raw.length);
-    new Uint8Array(this.exports.memory.buffer, ptr, raw.length).set(raw);
-    const answer = this.call(name, ...args, ptr, raw.length);
-    this.exports.dealloc(ptr, raw.length);
+    // A pointer arrives as a signed i32: past 2 GiB of memory it would read negative.
+    const ptr = this.exports.alloc(raw.length) >>> 0;
+    let answer;
+    try {
+      new Uint8Array(this.exports.memory.buffer, ptr, raw.length).set(raw);
+      answer = this.call(name, ...args, ptr, raw.length);
+    } finally {
+      this.exports.dealloc(ptr, raw.length);
+    }
     if (!answer.ok) {
       throw new Error(answer.why);
     }
