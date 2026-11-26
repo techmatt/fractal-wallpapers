@@ -1,0 +1,236 @@
+{
+  "schema": 1,
+  "name": "star_nebula",
+  "description": "a nebula: soft cloud masses from turned views, dark dust lanes, the set's hair as hot red filaments, and stars twinkling as short four-spoke rays",
+  "reference": {
+    "image": "wallhaven_wallhaven-jewqgw.png",
+    "folder": "fractal-drive-sync/style-refs",
+    "made_with": "a space render (nebula and stars)"
+  },
+  "suggested_colormap": "star_nebula",
+  "reuses": [
+    "storm_clouds' slow stripe and grain layers, through turned views",
+    "starburst_veils' sparkle points and the post stage's `rays`"
+  ],
+  "adds": [],
+  "notes": [
+    "From wallhaven-jewqgw (item 092, triage group 13, nebulae), with wallhaven-jxddgp (star_clusters) as a palette entry. The look: blue cloud masses on a black sky, thin red filaments through them, and a field of stars. No new engine member. Clouds: the slow stripe average (density 3) read through three turned views at zoom 0.45 to 0.75, screened in the map's blue slots (0.3 to 0.55), so cloud banks cross over the frame's own structure; a fine grain (stripe 64) lights their insides near the set and the same grain inverted, multiplied, cuts dark dust lanes. Filaments: the set's hair as a `de` glow in the map's red slots (halo 0.74 at falloff 0.0025, core 0.86 at 0.0005). Stars: sparkle points (`gaussian_int` inverted, power 40, masked to near the set), and the post stage's `rays` (four spokes at 0 degrees, length 0.025, share 0.0012) turns the brightest into twinkling crosses.",
+    "Nearest mode: storm_clouds (its baseline tile ends both formulation rows, in this map), which has a crimson-nebula entry. What differs at draft size: storm_clouds is lit cloud relief with the lace as its crinkled edge; here the clouds are soft and unlit, the lace is thin red filament, and the sky is a starfield of four-pointed stars.",
+    "Reachable by one escape loop: no. The clouds are three views (three more loops, four a sample) and the star crosses are a post pass.",
+    "Seats: dense lace drowned the clouds in salmon (a phoenix seat at maxiter 945, a Julia lace at 6,887), so the seats are the thin ones (`style scout --max-ink 0.10`, the same forty as light_pillar's); two quartic Julia seats drew broken white swirls and were dropped by eye.",
+    "Tone: the reference's 0.115/0.003 holds at eleven of twelve seats as shipped (p90 0.335 to 0.392 against 0.404; the phoenix formulation seat reads 0.298, low). star_clusters (jxddgp, 0.138/0.054: sparkle at 1.0, power 25, unmasked to power 1, rays share 0.003) holds both seats.",
+    "Explorer cost (092, round one, nothing else running): 120.5 s as WebAssembly on one thread at 1280x800 ss2 at its deeper formulation seat (julia-mandelbrot_049d7582, maxiter 3,000), the post pass included (the frame is drawn whole), under the 5-minute bar. At the deepest location seat offered (phoenix_807fd2ea, maxiter 15,365; over step 6's 10,000 for a view-heavy stack) 225.8 s, read beside the test lane: an upper bound, under the bar. At the parity seat (`style_wasm.POST_SEAT`, an interior-heavy Mandelbrot frame at 2,000) the 640x400 parity draw took 198 s, about 13 minutes at 1280x800: over the bar there."
+  ],
+  "style": {
+    "name": "star_nebula",
+    "interior": {
+      "palette": 0.03
+    },
+    "tone": {
+      "median": 0.115,
+      "p10": 0.003
+    },
+    "layers": [
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "palette": 0.04
+        },
+        "opacity": 1.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 3.0
+          },
+          "view": {
+            "turn": 137.5,
+            "zoom": 0.45,
+            "shift": [
+              -0.133,
+              -0.181
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.3
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 3.0
+          },
+          "view": {
+            "turn": 275.0,
+            "zoom": 0.6,
+            "shift": [
+              -0.096,
+              0.303
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.42
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 3.0
+          },
+          "view": {
+            "turn": 52.5,
+            "zoom": 0.75,
+            "shift": [
+              0.22,
+              -0.075
+            ]
+          }
+        },
+        "color": {
+          "palette": 0.55
+        },
+        "blend": "screen",
+        "opacity": 0.6,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 64.0
+          }
+        },
+        "color": {
+          "palette": 0.6
+        },
+        "blend": "screen",
+        "opacity": 0.4,
+        "power": 3.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "stripe",
+            "density": 64.0
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 0.02
+        },
+        "blend": "multiply",
+        "opacity": 0.3,
+        "power": 2.0
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0025,
+        "color": {
+          "palette": 0.74
+        },
+        "blend": "screen",
+        "opacity": 0.25
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "de"
+          }
+        },
+        "falloff": 0.0005,
+        "color": {
+          "palette": 0.86
+        },
+        "blend": "screen",
+        "opacity": 0.7
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "field": {
+            "kind": "gaussian_int"
+          },
+          "invert": true
+        },
+        "color": {
+          "palette": 1.0
+        },
+        "blend": "screen",
+        "opacity": 0.9,
+        "power": 40.0,
+        "mask": {
+          "channel": {
+            "field": {
+              "kind": "de"
+            }
+          },
+          "invert": true,
+          "power": 2.0
+        }
+      },
+      {
+        "kind": "glow",
+        "channel": {
+          "inside": {
+            "iterations": 10
+          }
+        },
+        "power": 0.0001,
+        "color": {
+          "palette": 0.03
+        },
+        "opacity": 1.0
+      }
+    ],
+    "post": [
+      {
+        "kind": "rays",
+        "share": 0.0012,
+        "spokes": 4,
+        "angle": 0.0,
+        "length": 0.025,
+        "strength": 2.0,
+        "color": {
+          "palette": 1.0
+        }
+      }
+    ]
+  }
+}

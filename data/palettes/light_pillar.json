@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "light_pillar",
+  "kind": "sequential",
+  "source": "light_pillar, authored as 7 control points as the albedo of the light_pillar style from wallhaven-dp5p9o: a black-indigo ground through deep violet and periwinkle to lavender and a lilac white on the pillar's streaks.",
+  "stops": [
+    [0.0, [4, 3, 12]],
+    [0.2, [18, 12, 48]],
+    [0.4, [52, 38, 120]],
+    [0.58, [96, 82, 190]],
+    [0.72, [146, 132, 226]],
+    [0.86, [200, 192, 246]],
+    [1.0, [246, 242, 255]]
+  ]
+}

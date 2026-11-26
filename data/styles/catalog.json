@@ -3189,7 +3189,8 @@
       "item": "062",
       "reference": "visionary-spires-25.jpg",
       "references": [
-        "visionary-spires-25.jpg"
+        "visionary-spires-25.jpg",
+        "wallhaven_wallhaven-ym8rqk.png"
       ],
       "variant": "current",
       "show": [
@@ -3219,6 +3220,15 @@
             "style_chrome_stars_hairlines_r1/mercury_tubes/locations/w1__m_stack__03_phoenix_8b21e0ae"
           ],
           "score": 4
+        },
+        {
+          "colormap": "glow_tube",
+          "values": {
+            "/tone/median": 0.095,
+            "/tone/p10": 0.081
+          },
+          "keeps": [],
+          "reference": "wallhaven_wallhaven-ym8rqk.png"
         }
       ]
     },
@@ -3232,7 +3242,8 @@
       "references": [
         "ten-leaf-clover-25.jpg",
         "tinan-25.jpg",
-        "tianan-25.jpg"
+        "tianan-25.jpg",
+        "wallhaven_wallhaven-r21py7.png"
       ],
       "variant": "current",
       "show": [
@@ -3290,6 +3301,15 @@
           ],
           "reference": "tianan-25.jpg",
           "score": 3
+        },
+        {
+          "colormap": "violet_threads",
+          "values": {
+            "/tone/median": 0.106,
+            "/tone/p10": 0.019
+          },
+          "keeps": [],
+          "reference": "wallhaven_wallhaven-r21py7.png"
         }
       ]
     },
@@ -4545,7 +4565,7 @@
         "wallhaven_wallhaven-wqg52p.png",
         "wallhaven_wallhaven-kwg7v6.png"
       ],
-      "what": "Veils broken into shards: translucent panes cut along the set's level lines and across them along bent field lines, each cell a soft scoop with a hard bright rim, crossing veils from turned views, green with gold rims (a bone-white star of veils and red silk strands as palette entries).",
+      "what": "Veils broken into shards: translucent panes cut along the set's level lines and across them along bent field lines, each cell a soft scoop with a hard bright rim, crossing veils from turned views, green with gold rims (bone-white veils and red silk strands as palette entries).",
       "variant": "current",
       "show": [
         {
@@ -4584,7 +4604,8 @@
             "style_flame_veils_r1/veil_shards/bone_star/vs_a_e_bone_star",
             "style_flame_veils_r1/veil_shards/bone_star/vs_b_e_bone_star"
           ],
-          "score": 5
+          "score": 5,
+          "reference": "wallhaven_wallhaven-wqg52p.png"
         },
         {
           "colormap": "silk_shards",
@@ -4610,7 +4631,8 @@
             "style_flame_veils_r1/veil_shards/silk_shards/vs_a_e_silk_shards",
             "style_flame_veils_r1/veil_shards/silk_shards/vs_b_e_silk_shards"
           ],
-          "score": 5
+          "score": 5,
+          "reference": "wallhaven_wallhaven-kwg7v6.png"
         }
       ]
     },
@@ -4654,9 +4676,33 @@
           "keeps": [
             "style_flame_veils_r1/veil_shards/bone_star/vs_star_e_bone_star"
           ],
-          "score": 5
+          "score": 5,
+          "reference": "wallhaven_wallhaven-wqg52p.png"
         }
       ]
+    },
+    {
+      "style": "light_pillar",
+      "item": "092",
+      "reference": "wallhaven_wallhaven-dp5p9o.png",
+      "references": [
+        "wallhaven_wallhaven-dp5p9o.png",
+        "wallhaven_wallhaven-ym8rqk.png",
+        "wallhaven_wallhaven-j3ygpw.jpg"
+      ],
+      "what": "Pillars of light: the set's hair burning hot round one point of the frame and streaming upright as a translucent pillar of straight streaks, over ripple rings (a thin rim on every escape step's level line), violet on a black-indigo ground (a slanting blue glow tube and crossing bundles of cream strings as palette entries).",
+      "palettes": []
+    },
+    {
+      "style": "star_nebula",
+      "item": "092",
+      "reference": "wallhaven_wallhaven-jewqgw.png",
+      "references": [
+        "wallhaven_wallhaven-jewqgw.png",
+        "wallhaven_wallhaven-jxddgp.png"
+      ],
+      "what": "A nebula among stars: soft blue cloud masses from three turned views, dark dust lanes through fine grain, the set's hair as hot red filaments, and sparkle stars twinkling as short four-spoke rays (violet and pink star clusters as a palette entry).",
+      "palettes": []
     }
   ]
 }

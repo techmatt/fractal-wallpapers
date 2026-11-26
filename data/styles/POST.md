@@ -122,7 +122,9 @@ filter's spokes, or shafts through haze. One escape loop draws only arcs (a beam
 line thin along its whole pullback), so the beam is a pass: each sample brighter than
 all but `share` of the frame casts the part of its light above that cut, and the beams
 are added over the picture. What casts is whatever the stack lit, so a beam's root is
-the fractal's own: a spark, a rim, the set's hair.
+the fractal's own: a spark, a rim, the set's hair. Where the whole lace casts, the beams
+are a rain over the frame; one pillar needs the brightest share gathered at a point (the
+hair masked by a `radial` channel at power 20 to 40: `light_pillar`).
 
 | member | what |
 | --- | --- |

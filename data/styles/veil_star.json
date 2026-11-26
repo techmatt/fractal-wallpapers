@@ -16,6 +16,7 @@
   "notes": [
     "From wallhaven-wqg52p (item 090's star fold, s_base, made its own mode at keep time in item 092): veil_shards' stack, with its views at twice the zoom and the set's hair at 0.1, folded by the kaleidoscope projection into a five-point star. A projection is not an entry value, so the fold is a mode, not a veil_shards entry. Round one kept s_base at seat a (a cubic Julia, the veil_shards map) and the bone_star tile at the shallow quadratic seat; at a dense quintic seat the fold drew a lace mandala.",
     "Reachable by one escape loop: no, as veil_shards (six loops a sample).",
+    "Explorer cost (092, read beside the test lane: an upper bound): 64.8 s as WebAssembly on one thread at 1280x800 ss2 at its deepest kept seat (08_vj_d2, maxiter 800), under the 5-minute bar.",
     "Matt (2026-11-26): the flame veils (veil_shards, veil_star) are \"very good\", 5/5."
   ],
   "style": {
