@@ -301,3 +301,8 @@
 {"schema": 1, "kind": "admitted", "map": "pour_cells", "group": "map:pour_cells", "joined": false, "nearest": "map:Coral in the Trench", "m1": 0.043933}
 {"schema": 1, "kind": "admitted", "map": "crimson_cells", "group": "map:crimson_cells", "joined": false, "nearest": "map:Sapphire & Dusk Rose", "m1": 0.072553}
 {"schema": 1, "kind": "admitted", "map": "golden_sand", "group": "map:golden_sand", "joined": false, "nearest": "map:whispers-on-golden-sand-25", "m1": 0.086917}
+{"schema": 1, "kind": "admitted", "map": "veil_shards", "group": "map:veil_shards", "joined": false, "nearest": "map:moss_starbursts", "m1": 0.051638}
+{"schema": 1, "kind": "admitted", "map": "silk_shards", "group": "map:silk_shards", "joined": false, "nearest": "map:Cochineal & Cream", "m1": 0.05266}
+{"schema": 1, "kind": "admitted", "map": "bone_star", "group": "map:bone_star", "joined": false, "nearest": "map:Umber & Ember", "m1": 0.042711}
+{"schema": 1, "kind": "admitted", "map": "frost_star", "group": "map:Delft Deep", "joined": true, "nearest": "map:Delft Deep", "m1": 0.030553}
+{"schema": 1, "kind": "admitted", "map": "soft_veils_wine", "group": "map:soft_veils_wine", "joined": false, "nearest": "m61", "m1": 0.063072}

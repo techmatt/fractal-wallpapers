@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "bone_star",
+  "kind": "sequential",
+  "source": "bone_star, authored as 7 control points as the albedo of the veil_shards style's entry from wallhaven-wqg52p: a dark umber ground through taupe and beige to a peach-cream and a warm white on the star's creases.",
+  "stops": [
+    [0.0, [22, 16, 12]],
+    [0.2, [62, 48, 38]],
+    [0.4, [118, 94, 78]],
+    [0.58, [170, 136, 112]],
+    [0.72, [206, 170, 144]],
+    [0.86, [232, 206, 184]],
+    [1.0, [252, 244, 236]]
+  ]
+}

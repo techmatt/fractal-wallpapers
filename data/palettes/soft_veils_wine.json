@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "soft_veils_wine",
+  "kind": "sequential",
+  "source": "soft_veils_wine, authored as 8 control points as the albedo of the soft_veils style's entry from wine-and-roses-25.jpg: a black-wine ground, a burgundy haze, then crimson veils to rose-gold, gold and a pale straw.",
+  "stops": [
+    [0.0, [12, 2, 6]],
+    [0.18, [52, 6, 20]],
+    [0.35, [110, 14, 36]],
+    [0.5, [160, 30, 48]],
+    [0.64, [196, 96, 60]],
+    [0.78, [226, 168, 70]],
+    [0.9, [244, 214, 120]],
+    [1.0, [252, 240, 190]]
+  ]
+}

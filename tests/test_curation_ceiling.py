@@ -179,14 +179,15 @@ def test_the_implied_raise_is_read_off_the_tracked_carrier_table() -> None:
     it stands.** `dark_vivid_lime` is carried by 27 maps now against 24 before
     `classic-pairs-2026-09`, and its companion rate on `dark_muted_lime` read
     0.4211 over the smaller table and 0.380952 over that one; the `leaf_veins` map
-    made 28 carriers and the rate 0.4 (the allowance 73 before it, 76 now) — a
+    made 28 carriers and the rate 0.4 (the allowance 73 before it, 76 after), and the
+    `veil_shards` map 29 and 0.391304 (allowance 75) — a
     delivery is a (map, field) picture, so new carriers re-weight the denominator.
     What is being pinned is that the raise comes off the record at all, which is why
     the value is exact rather than a band.
     """
     rule = ceiling.Rule(targets={"dark_vivid_lime": 1.0})
-    assert rule.implied["dark_muted_lime"] == pytest.approx(0.4, abs=1e-3)
-    assert rule.allowed("dark_muted_lime", 60) == 76, (
+    assert rule.implied["dark_muted_lime"] == pytest.approx(0.391304, abs=1e-3)
+    assert rule.allowed("dark_muted_lime", 60) == 75, (
         "the cell the n=60 lime solve was thirteen short in, at an allowance of four"
     )
     assert rule.allowed("dark_vivid_red", 60) == 4, "an untouched cell keeps the default"

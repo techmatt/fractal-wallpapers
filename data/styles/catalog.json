@@ -1331,7 +1331,8 @@
       "item": "032",
       "reference": "creeping-frost-25.jpg",
       "references": [
-        "creeping-frost-25.jpg"
+        "creeping-frost-25.jpg",
+        "wallhaven_wallhaven-6oez67.jpg"
       ],
       "variant": "current",
       "show": [
@@ -1364,6 +1365,23 @@
             "style_flames_r1/feather_plumes/formulations/fpf_flame_wisp_frost"
           ],
           "score": 4
+        },
+        {
+          "colormap": "frost_star",
+          "values": {
+            "/layers/8/opacity": 0.5,
+            "/layers/9/opacity": 0.5,
+            "/layers/10/opacity": 0.5,
+            "/layers/11/opacity": 0.5,
+            "/layers/12/opacity": 0.5,
+            "/layers/13/opacity": 0.5,
+            "/layers/14/opacity": 0.5,
+            "/layers/16/opacity": 1.0,
+            "/tone/median": 0.129,
+            "/tone/p10": 0.003
+          },
+          "keeps": [],
+          "reference": "wallhaven_wallhaven-6oez67.jpg"
         }
       ]
     },
@@ -2342,7 +2360,8 @@
         "silk-scarves-25.jpg",
         "sweet-child-25.jpg",
         "twist-in-time-25.jpg",
-        "the-gift-25.jpg"
+        "the-gift-25.jpg",
+        "wine-and-roses-25.jpg"
       ],
       "variant": "current",
       "show": [
@@ -2542,6 +2561,28 @@
           ],
           "reference": "twist-in-time-25.jpg",
           "score": 3
+        },
+        {
+          "colormap": "soft_veils_wine",
+          "values": {
+            "/layers/7/opacity": 0.55,
+            "/layers/8/opacity": 0.55,
+            "/layers/9/opacity": 0.55,
+            "/layers/10/opacity": 0.55,
+            "/layers/11/opacity": 0.55,
+            "/layers/12/opacity": 0.55,
+            "/layers/13/opacity": 0.4,
+            "/layers/14/opacity": 0.4,
+            "/layers/15/opacity": 0.4,
+            "/layers/16/opacity": 0.4,
+            "/layers/17/opacity": 0.4,
+            "/layers/18/opacity": 0.4,
+            "/layers/19/opacity": 0.6,
+            "/tone/median": 0.258,
+            "/tone/p10": 0.12
+          },
+          "keeps": [],
+          "reference": "wine-and-roses-25.jpg"
         }
       ]
     },
@@ -2902,7 +2943,7 @@
         "knobs": []
       },
       "what": "A mosaic of triangles nested inside triangles: large calm facets far from the set, splitting ever finer towards it, each tilted and folded into lit faces.",
-      "kept": "10 tiles: 1 location, inlay, fine, fold, the base and three spiral readings, the ice entry twice; retrospective (style_retrospective_082): inlay at seat fc13 and fine at seat 70e1; levers plates_thin and shards' re-tone; the ice entry on inlay and on fine",
+      "kept": "10 tiles: 1 location, inlay, fine, fold, the base and three spiral readings, the ice entry twice; retrospective (style_retrospective_082): inlay at seat fc13 and fine at seat 70e1; levers plates_thin and shards' re-tone; the ice entry on inlay and on fine; flat graphic round one (style_flat_graphic_r1): its baseline tile at both cube_facets seats",
       "note": "Engine: the post stage and its mosaic pass (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: round one 3/5, everything here is interesting but nothing amazing. Retrospective (2026-11-24, style_retrospective_082): kept inlay at seat fc13 and fine at seat 70e1; levers plates_thin and shards' re-tone; the ice entry on inlay and on fine; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
@@ -2982,7 +3023,7 @@
         ]
       },
       "what": "A poured liquid stirred into S-curls and hooks: one glossy blue ink combed along a turned copy of the fractal, bright crests along the folds, the curls tightening towards the set.",
-      "kept": "5 tiles: 2 locations, f_wide at both seats, f_strong; retrospective (style_retrospective_082): wide and strong at seat 7e31, strong with dimmed crest glints; library maps molten_flow and soft_veils_ember on wide",
+      "kept": "5 tiles: 2 locations, f_wide at both seats, f_strong; retrospective (style_retrospective_082): wide and strong at seat 7e31, strong with dimmed crest glints; library maps molten_flow and soft_veils_ember on wide; poured paint round one (style_poured_paint_r1): its baseline tile at both marbled_pour seats and pour_cells' seat b, and the golden_sand entry",
       "note": "Engine: the stir (new) · reproducible: every keep has its full render record (location, stack as drawn, palette, size) · Matt: the paint-like modes I picked are 4/5; the modes I didn't pick aren't good (1/5); other palettes besides the blue one might be good, but I only liked that one here. Retrospective (2026-11-24, style_retrospective_082): kept wide and strong at seat 7e31, strong with dimmed crest glints; library maps molten_flow and soft_veils_ember on wide; Matt: \"some of these are fine but not dramatically better than the baselines\". No default moves; scores unchanged.",
       "palettes": [
         {
@@ -4252,7 +4293,7 @@
         "wallhaven_wallhaven-gp62o7.png",
         "wallhaven_wallhaven-7pvqqv.png"
       ],
-      "what": "Flat poster spirals: the set's bands as hard flat inks, packed with flat discs of every size winding along each spiral arm, no gradients and no light (umber and mint, coral and ice, ember on navy, ash clouds without discs, and slate rosettes as palette entries).",
+      "what": "Flat poster spirals: the set's bands as hard flat inks, packed with flat discs of every size winding along each spiral arm, no gradients and no light (umber and mint, coral and ice, ember on navy, and slate rosettes as palette entries).",
       "variant": "current",
       "show": [
         {
@@ -4355,7 +4396,7 @@
         "palette": "cube_facets",
         "knobs": []
       },
-      "kept": "6 tiles: f_seams, f_coarse (seat b), crimson_cubes and locations cf_loc_07, 14, 22, 27 and 32 (plus the two tri_mosaic baseline tiles, kept to that mode)",
+      "kept": "8 tiles: f_seams, f_coarse (seat b), crimson_cubes and locations cf_loc_07, 14, 22, 27 and 32 (plus the two tri_mosaic baseline tiles, kept to that mode)",
       "note": "Matt: round one 3/5 (2026-11-26).",
       "palettes": [
         {
@@ -4505,6 +4546,18 @@
           "score": 4
         }
       ]
+    },
+    {
+      "style": "veil_shards",
+      "item": "090",
+      "reference": "wallhaven_wallhaven-r7ev9m.png",
+      "references": [
+        "wallhaven_wallhaven-r7ev9m.png",
+        "wallhaven_wallhaven-wqg52p.png",
+        "wallhaven_wallhaven-kwg7v6.png"
+      ],
+      "what": "Veils broken into shards: translucent panes cut along the set's level lines and across them along bent field lines, each cell a soft scoop with a hard bright rim, crossing veils from turned views, green with gold rims (a bone-white star of veils and red silk strands as palette entries).",
+      "palettes": []
     }
   ]
 }

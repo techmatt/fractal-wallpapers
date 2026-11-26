@@ -221,6 +221,9 @@ fractal-wallpapers palettes add <map.json> --mode <mode>            a palette fo
 fractal-wallpapers palettes remove <name>                           a map no tile kept leaves
 ```
 
+Each `add` takes about a minute (it re-reads the candidate ledger for the shares): admit a
+round's maps in one backgrounded loop.
+
 A style's draft map already sits at `data/palettes/<name>.json` (renders read a map by
 name), and handing over **that same file** is the first admission: the file is left as it
 is and the tables and groups are written. A copy from elsewhere while the library file

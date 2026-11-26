@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "veil_shards",
+  "kind": "sequential",
+  "source": "veil_shards, authored as 7 control points as the albedo of the veil_shards style from wallhaven-r7ev9m: a deep bottle-green ground through jade and olive to amber, gold and a pale lemon on the sheets' rims.",
+  "stops": [
+    [0.0, [8, 34, 22]],
+    [0.2, [20, 72, 44]],
+    [0.38, [46, 110, 58]],
+    [0.55, [120, 132, 36]],
+    [0.7, [206, 140, 30]],
+    [0.85, [240, 196, 64]],
+    [1.0, [252, 240, 150]]
+  ]
+}

@@ -142,6 +142,11 @@ cargo clippy --manifest-path perturbation/Cargo.toml --all-targets -- -D warning
 cargo test --release --manifest-path perturbation/Cargo.toml
 ```
 
+**An item that changes `engine/` is done only when the main checkout's release binary is
+rebuilt after its last engine commit** (`cargo build --release --manifest-path
+engine/Cargo.toml`, run in the main checkout, not a worktree): every render, the walk and
+the next item read that binary, and a stale one has twice predated its own engine commit.
+
 **CI lints with the newest stable Rust**: `rustup update stable` before the clippy
 lines. CI also compiles on Linux and macOS, where some errors never show on Windows:
 an item touching a crate's exports or `cfg(unix)` code repeats its clippy line

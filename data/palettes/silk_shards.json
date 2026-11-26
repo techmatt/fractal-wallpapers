@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "name": "silk_shards",
+  "kind": "sequential",
+  "source": "silk_shards, authored as 7 control points as the albedo of the veil_shards style's entry from wallhaven-kwg7v6: a black-maroon ground, oxblood haze, then crimson strands to a hot rose and a pale pink on their sheen.",
+  "stops": [
+    [0.0, [10, 2, 4]],
+    [0.2, [44, 6, 12]],
+    [0.4, [104, 10, 24]],
+    [0.58, [176, 18, 38]],
+    [0.72, [222, 40, 62]],
+    [0.86, [246, 110, 130]],
+    [1.0, [255, 214, 220]]
+  ]
+}
