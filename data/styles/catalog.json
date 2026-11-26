@@ -1365,23 +1365,6 @@
             "style_flames_r1/feather_plumes/formulations/fpf_flame_wisp_frost"
           ],
           "score": 4
-        },
-        {
-          "colormap": "frost_star",
-          "values": {
-            "/layers/8/opacity": 0.5,
-            "/layers/9/opacity": 0.5,
-            "/layers/10/opacity": 0.5,
-            "/layers/11/opacity": 0.5,
-            "/layers/12/opacity": 0.5,
-            "/layers/13/opacity": 0.5,
-            "/layers/14/opacity": 0.5,
-            "/layers/16/opacity": 1.0,
-            "/tone/median": 0.129,
-            "/tone/p10": 0.003
-          },
-          "keeps": [],
-          "reference": "wallhaven_wallhaven-6oez67.jpg"
         }
       ]
     },
@@ -2390,7 +2373,7 @@
         ]
       },
       "what": "Soft translucent veils of light rising out of the set, their folds lit and crossing, fine wisps over them.",
-      "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing",
+      "kept": "eight palettes (soft_veils_teal, _neon, _ember, _drift, _amber, _fire, _peach, _gold): 5 locations and 1 formulation (current); _amber from jewel_lace's round (item 044); _fire, _peach and _gold from item 046's flame references, whose other five kept nothing; flame veils round one (style_flame_veils_r1): soft_veils_wine at both seats (unscored)",
       "note": "Engine: nothing new (scooped smooth-count sheets through the frame's loop and five views, masked by the inverted de; stripe wisps; Julia and Misiurewicz seats placed by hand) · a new mode, not a flame_veil variant (flame_veil_blue's baseline tiles kept nothing); olive kept nothing and its map left the library · Matt: interesting texture and detail in sparse regions without removing the underlying fractal's visibility the way the opaque shells do. · 075's entries (2026-11-24): silk_scarves (seat 1), sweet_child (seat 1), twist_in_time (seat 2) 3/5; the_gift kept nothing and left the set and library.",
       "palettes": [
         {
@@ -2581,7 +2564,10 @@
             "/tone/median": 0.258,
             "/tone/p10": 0.12
           },
-          "keeps": [],
+          "keeps": [
+            "style_flame_veils_r1/soft_veils/soft_veils_wine/sv_a_e_soft_veils_wine",
+            "style_flame_veils_r1/soft_veils/soft_veils_wine/sv_b_e_soft_veils_wine"
+          ],
           "reference": "wine-and-roses-25.jpg"
         }
       ]
@@ -4549,6 +4535,9 @@
     },
     {
       "style": "veil_shards",
+      "score": 5,
+      "status": "publish",
+      "tier": "lab",
       "item": "090",
       "reference": "wallhaven_wallhaven-r7ev9m.png",
       "references": [
@@ -4557,7 +4546,117 @@
         "wallhaven_wallhaven-kwg7v6.png"
       ],
       "what": "Veils broken into shards: translucent panes cut along the set's level lines and across them along bent field lines, each cell a soft scoop with a hard bright rim, crossing veils from turned views, green with gold rims (a bone-white star of veils and red silk strands as palette entries).",
-      "palettes": []
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_f_broad",
+          "caption": "Green veils of light netted into curved shards round a cubic Julia set, each pane rimmed in gold, the shards growing finer towards the set"
+        }
+      ],
+      "public": {
+        "name": "veil-shards",
+        "palette": "veil_shards",
+        "knobs": []
+      },
+      "kept": "10 tiles: f_broad and f_gilt at both seats, locations vs_loc_05 and vs_loc_16; entries bone_star and silk_shards at both seats",
+      "note": "Matt: round one 5/5 (2026-11-26), the flame veils \"very good\"; the star fold's two keeps became their own mode, veil_star.",
+      "palettes": [
+        {
+          "colormap": "veil_shards",
+          "values": {},
+          "keeps": [
+            "style_flame_veils_r1/veil_shards/forms_a/vs_a_f_broad",
+            "style_flame_veils_r1/veil_shards/forms_a/vs_a_f_gilt",
+            "style_flame_veils_r1/veil_shards/forms_b/vs_b_f_broad",
+            "style_flame_veils_r1/veil_shards/forms_b/vs_b_f_gilt",
+            "style_flame_veils_r1/veil_shards/locations/vs_loc_05_vm_d3",
+            "style_flame_veils_r1/veil_shards/locations/vs_loc_16_rg_d3_0.65_0.0_w4.5"
+          ],
+          "score": 5
+        },
+        {
+          "colormap": "bone_star",
+          "values": {
+            "/tone/median": 0.405,
+            "/tone/p10": 0.25
+          },
+          "keeps": [
+            "style_flame_veils_r1/veil_shards/bone_star/vs_a_e_bone_star",
+            "style_flame_veils_r1/veil_shards/bone_star/vs_b_e_bone_star"
+          ],
+          "score": 5
+        },
+        {
+          "colormap": "silk_shards",
+          "values": {
+            "/layers/6/opacity": 0.1,
+            "/layers/7/opacity": 0.75,
+            "/layers/8/opacity": 0.1,
+            "/layers/9/opacity": 0.75,
+            "/layers/10/opacity": 0.1,
+            "/layers/11/opacity": 0.75,
+            "/layers/12/opacity": 0.1,
+            "/layers/13/opacity": 0.75,
+            "/layers/14/opacity": 0.1,
+            "/layers/15/opacity": 0.75,
+            "/layers/16/opacity": 0.1,
+            "/layers/16/sheet/period": 0.0625,
+            "/layers/17/opacity": 0.75,
+            "/layers/17/sheet/period": 0.0625,
+            "/tone/median": 0.135,
+            "/tone/p10": 0.093
+          },
+          "keeps": [
+            "style_flame_veils_r1/veil_shards/silk_shards/vs_a_e_silk_shards",
+            "style_flame_veils_r1/veil_shards/silk_shards/vs_b_e_silk_shards"
+          ],
+          "score": 5
+        }
+      ]
+    },
+    {
+      "style": "veil_star",
+      "score": 5,
+      "status": "publish",
+      "tier": "lab",
+      "item": "090",
+      "reference": "wallhaven_wallhaven-wqg52p.png",
+      "references": [
+        "wallhaven_wallhaven-wqg52p.png"
+      ],
+      "what": "A star of veils: veil_shards' rimmed shards and crossing veils folded by a five-turn kaleidoscope into a five-point star round the frame's centre (green and gold; a bone-white star as a palette entry).",
+      "variant": "current",
+      "show": [
+        {
+          "keep": "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base",
+          "caption": "Veil_shards' rimmed green panes folded by a kaleidoscope into a five-point star of veils round a Julia set's lace"
+        }
+      ],
+      "public": {
+        "name": "veil-star",
+        "palette": "veil_shards",
+        "knobs": []
+      },
+      "kept": "2 tiles: s_base at seat a (veil_shards' map), bone_star at the quadratic star seat",
+      "note": "Matt: round one 5/5 (2026-11-26), the flame veils \"very good\"; drawn in 090's veil_shards round as the star fold (s_base) and made its own mode at keep time (item 092), since a projection is not an entry value.",
+      "palettes": [
+        {
+          "colormap": "veil_shards",
+          "values": {},
+          "keeps": [
+            "style_flame_veils_r1/veil_shards/forms_a/vs_a_s_base"
+          ],
+          "score": 5
+        },
+        {
+          "colormap": "bone_star",
+          "values": {},
+          "keeps": [
+            "style_flame_veils_r1/veil_shards/bone_star/vs_star_e_bone_star"
+          ],
+          "score": 5
+        }
+      ]
     }
   ]
 }
